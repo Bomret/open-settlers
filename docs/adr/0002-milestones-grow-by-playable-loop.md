@@ -2,12 +2,12 @@
 
 **Status:** Accepted
 
-After the foundation milestones (analysis access, asset layer, map), the roadmap grows the game one
-production chain at a time, starting from the smallest playable loop: a castle, a road with flags,
-carriers, and a woodcutter whose log reaches storage. Each milestone ends in a mode a person can run and
-check by hand. The transport network is the backbone of the game, so it carries real load from the first
-playable milestone, and faults in the interplay of systems, such as carrier congestion or goods
-priorities, surface early.
+The foundation milestones are analysis access, the asset layer, and the map. After them, the roadmap
+grows the game one production chain at a time. Growth starts from the smallest playable loop: a castle,
+a road with flags, carriers, and a woodcutter whose log reaches storage. Each milestone ends in a mode a
+person can run and check by hand. The transport network is the backbone of the game, so it carries
+real load from the first playable milestone, and faults in the interplay of systems, such as carrier
+congestion or goods priorities, surface early.
 
 ## Considered options
 

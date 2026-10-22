@@ -165,8 +165,8 @@ M9 completes the [free-play release](../CONTEXT.md#roadmap).
 
 - **Runnable mode:** the engine started from its free-game start menu.
 - **Done when:** a person starts a free game from the start menu and plays it to a win or a loss. The
-  person saves the game and loads it again in the engine's own save format. The game plays its sound effects and shows the
-  remaining original panels. Checking the game needs an install.
+  person saves the game and loads it again in the engine's own save format. The game plays its sound
+  effects and shows the remaining original panels. Checking the game needs an install.
 - **Depends on:** M8.
 - **Investigate:** the free-game start menu, the win and loss conditions, the triggers of the sound
   effects, and the remaining panels.
