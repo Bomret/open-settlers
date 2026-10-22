@@ -40,7 +40,8 @@ The game state and the rules that advance it, independent of rendering, input de
 _Avoid_: game logic, model, world
 
 **Tick**
-One fixed step of the simulation, at the rate the original program uses.
+One fixed step of the simulation: one unit of the original's game clock, 10 milliseconds at normal speed
+(`docs/rules/timing.md`).
 _Avoid_: frame, update, turn
 
 ## Roadmap

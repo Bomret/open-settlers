@@ -27,6 +27,7 @@ The engine does not support an install of the DOS CD release.
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.
+- `docs/rules/`: the rules recovered from the game's program, each with its address as evidence.
 - `docs/agents/`: instructions for coding agents.
 
 ## Build and test
