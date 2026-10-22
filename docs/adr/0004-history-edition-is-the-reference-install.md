@@ -7,8 +7,9 @@ reproduces is `Siedler1.exe`, not `SIED.EXE`.
 
 The reference install is The Settlers History Edition (Ubisoft, 2018). Its program `Siedler1.exe` is a
 32-bit Windows (PE32) executable, and the analysis tool REA opens it directly. Its game code is the game
-code of the DOS program `SIED.EXE`, rebuilt for Windows: with address operands masked, routines in the
-band `0x41f000`–`0x479000` match `SIED.EXE` byte for byte. The rest of the file is a new platform layer
+code of the DOS program `SIED.EXE`, rebuilt for Windows: with address operands masked, most routines in
+the game code (see [docs/rules/game-code.md](../rules/game-code.md) for its exact band) match `SIED.EXE`
+byte for byte. The rest of the file is a new platform layer
 for graphics, sound, timing, and input, together with the Uplay client, libcurl, and OpenSSL. The game's
 graphics file `SPAD.PA` is byte-identical in both releases. The project recovers every rule from
 `Siedler1.exe` and cites its address there. `SIED.EXE` is not evidence.
