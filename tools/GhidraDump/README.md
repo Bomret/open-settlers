@@ -6,7 +6,10 @@ with `grep`:
 - `functions/<address>.c`: the decompiled code of each function.
 - `functions.tsv`: per function the address, name, size, callers, callees, referenced strings, and data
   references. Callers are the code that calls or jumps to the entry. Data references are the other
-  references to the entry, such as tables of routine addresses.
+  references to the entry, such as tables of routine addresses. A caller that is a bare address, not a
+  function entry, is a call site in code that Ghidra assigns to no function. In the game code band such
+  a site can lie far past the end of the function before it, so read the code around the site to find
+  its routine.
 - `strings.tsv`: per string its address, value, and the functions that reference it.
 
 The dump and the Ghidra project hold decompiler output of the game's program. They stay in `re-local/`,

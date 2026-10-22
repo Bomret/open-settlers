@@ -98,14 +98,16 @@ format".
 | Address | Name | Role | Status | Layer | Anchor |
 | --- | --- | --- | --- | --- | --- |
 | `0x45f755` | `Save_WriteArchiveIndex` | Creates `ARCHIV.DS` in the `[SP]` folder and writes 160 bytes from state `+0xd8` into it. | confirmed | game | String `[SP]/ARCHIV.DS`. |
-| `0x45fa13` | `Save_WriteGame` | Builds the save game in the save buffer and writes it. | confirmed | game | Save fields at `0x45fbf8` and `0x45fc29`. |
-| `0x4600a8`, `0x46010d`, `0x4601f4`, `0x4602db`, `0x4603c2` | — | Write further save records through `Save_WriteRecord`. | inferred | game | Call `Save_WriteRecord`. |
+| `0x45fa13` | `Save_WriteGame` | Builds the first record of a save game in the save buffer and writes it. | confirmed | game | Save fields at `0x45fbf8` and `0x45fc29`. |
+| `0x4600a8`, `0x46010d`, `0x4601f4`, `0x4602db`, `0x4603c2` | — | Write records 2 to 6 of a save game, in this order, through `Save_WriteRecord`. | inferred | game | Called in sequence from `0x4507b4` to `0x4507d0`. |
 | `0x46049a` | `Save_WriteRecord` | Writes the save buffer to the open file; the EDI block gives the length. | confirmed | game | Calls `File_Write`. |
-| `0x4604ed` | `Load_ReadGame` | Reads a save game and copies its fields back into the game state. | confirmed | game | Load fields at `0x4606bc` and `0x4606ee`. |
-| `0x460bba`, `0x460c28`, `0x460d5a`, `0x460e8c`, `0x460fbe` | — | Read further save records through `Load_ReadRecord`. | inferred | game | Call `Load_ReadRecord`. |
+| `0x45f7d1` | `Load_LoadSlot` | Opens the save game file of the current slot and runs the six load routines in order. Entry inferred from the return before it. | inferred | game | Calls `File_Open` and `Load_ReadGame`. |
+| `0x4604ed` | `Load_ReadGame` | Reads the first record of a save game and copies its fields back into the game state. | confirmed | game | Load fields at `0x4606bc` and `0x4606ee`. |
+| `0x460bba`, `0x460c28`, `0x460d5a`, `0x460e8c`, `0x460fbe` | — | Read records 2 to 6 of a save game, in this order, through `Load_ReadRecord`. | inferred | game | Called in sequence from `0x45f83c` to `0x45f868`. |
 | `0x4610e3` | `Load_ReadRecord` | Reads from the open file into the save buffer. | inferred | game | Calls `File_Read`. |
 | `0x461136` | `Mem_CopyBytes` | Copies a count of bytes between two pointers in the EDI block. | confirmed | game | Called by every save and load routine. |
-| `0x407750` | `File_Create` | Opens a file for the game code. | confirmed | platform | Imports `CreateFileW`. |
+| `0x407750` | `File_Create` | Opens a file for writing. | inferred | platform | Imports `CreateFileW`; called by the save code. |
+| `0x4076d0` | `File_Open` | Opens a file for reading. | inferred | platform | Imports `CreateFileW`; called by `Load_LoadSlot`. |
 | `0x407800` | `File_Write` | Writes to the open file. | confirmed | platform | Imports `WriteFile`. |
 | `0x407870` | `File_Read` | Reads from the open file. | confirmed | platform | Imports `ReadFile`. |
 | `0x4077e0` | `File_Close` | Closes the open file. | confirmed | platform | Imports `CloseHandle`. |
@@ -114,6 +116,9 @@ Sites:
 
 - `0x45fbf8`: save writes the game clock. `0x45fc29`: save writes the generator state.
 - `0x4606bc`: load reads the game clock. `0x4606ee`: load reads the generator state.
+- `0x45074c`: the save code calls `Save_WriteArchiveIndex`. `0x450769`: it builds the save file name.
+  `0x45078d`: it calls `File_Create`. `0x4507ad` to `0x4507d0`: it calls the six save routines in
+  order. Ghidra assigns this code to no function, and its entry is unknown.
 
 ### Files and configuration
 
@@ -152,14 +157,20 @@ state block.
 | `+0x64`, `+0x68`, `+0x6c`, `+0x70` | `State_SaveBlocks` | 4 bytes each | Pointers to the four areas that a save game carries in full. The save copies each from 128 bytes before the pointer. | confirmed |
 | `+0x74` | `State_SaveBuffer` | 4 bytes | Pointer to the save buffer. | confirmed |
 | `+0xd8` | `State_ArchiveIndex` | 160 bytes | The content of `ARCHIV.DS`. | confirmed |
+| `+0x1f8` | `Save_Slot` | 2 bytes | The save slot. Save and load put its digit into the save file name. | confirmed |
 | `+0x202` | `Clock_Game` | 4 bytes | The game clock: fixed point, 16 fraction bits. | confirmed |
 | `+0x212`, `+0x214`, `+0x216` | `Rng_State` | 2 bytes each | The random generator's three state words. | confirmed |
 
 ### Save format
 
-**Status:** confirmed by `Save_WriteGame` and `Load_ReadGame`.
+**Status:** confirmed by `Save_WriteGame` and `Load_ReadGame`, except where marked.
 
-A save game is one record of 34762 bytes:
+A save game is the file `SAVEn.DS` in the `[SP]` folder, where `n` is the digit of `Save_Slot`. The save
+code takes the name from the string `[SP]/SAVE-.DS` at `0x674886` and puts the digit in place of the `-`.
+The file holds six records, written and read in a fixed order. **Inferred:** the records follow each
+other without a gap.
+
+The first record has 34762 bytes:
 
 | Save offset | Size | Content |
 | --- | --- | --- |
@@ -186,6 +197,7 @@ The other header fields copy single fields of the game state block. Their roles 
 | `0x405fe0` | `Speed_SetFactor` | Timing |
 | `0x406c90` | `Timer_ThreadMain` | Timing |
 | `0x406fb0` | `Sound_LoadFile` | Files and configuration |
+| `0x4076d0` | `File_Open` | Save and load |
 | `0x407750` | `File_Create` | Save and load |
 | `0x4077e0` | `File_Close` | Save and load |
 | `0x407800` | `File_Write` | Save and load |
@@ -201,6 +213,7 @@ The other header fields copy single fields of the game state block. Their roles 
 | `0x45772e` | `Game_Pause` | Timing |
 | `0x457751` | `Game_Resume` | Timing |
 | `0x45f755` | `Save_WriteArchiveIndex` | Save and load |
+| `0x45f7d1` | `Load_LoadSlot` | Save and load |
 | `0x45fa13` | `Save_WriteGame` | Save and load |
 | `0x46049a` | `Save_WriteRecord` | Save and load |
 | `0x4604ed` | `Load_ReadGame` | Save and load |
@@ -219,11 +232,12 @@ The other header fields copy single fields of the game state block. Their roles 
 
 Ghidra finds 7232 functions in `Siedler1.exe` and 429 of them in the game code band. The game code
 builds no stack frames, so Ghidra misses some of its routines, and 429 is a lower bound. This index names
-19 routines in the band and lists 12 more without a name.
+20 routines in the band and lists 12 more without a name.
 
 Anchors not yet followed:
 
-- The other save and load routines: which part of the state each writes or reads.
+- Save records 2 to 6: which part of the state each holds, and its size.
+- The entry of the save code around `0x45074c` to `0x4507d0`, and what calls it and `Load_LoadSlot`.
 - The roles of the header fields in the save format.
 - The 22 further callees of `Main_Loop` and the callee `0x479e54` of `Timer_Handler`.
 - The callers of `Rng_Step` between `0x421d71` and `0x424a9e`: inferred to be map generation passes.
