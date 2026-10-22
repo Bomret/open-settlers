@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0004](0004-history-edition-is-the-reference-install.md)
+
 The engine reproduces the rules and constants of `SIED.EXE`, each with its address as evidence. The
 engine advances a deterministic simulation in fixed ticks. Where the program shows an order or a
 timing, the engine follows it. Examples are which carrier moves first and how many ticks a step takes.
