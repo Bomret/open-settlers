@@ -29,6 +29,7 @@ A mixed-mode CD image (data track and audio track) needs the `.cue` file, not an
 - `OpenSettlers.csproj`, `project.godot`: the Godot project.
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
+- `docs/roadmap.md`: the milestone plan.
 - `docs/agents/`: instructions for coding agents.
 
 ## Build and test
