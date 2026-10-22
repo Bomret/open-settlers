@@ -61,7 +61,7 @@ never an odd number.
 
 A routine at `0x425c9c` resets the interrupt counter and waits until the next timer call has happened.
 Its callers are unknown: the program holds no direct call to it and no reference to its address as a
-value. **Inferred:** a pass uses it to wait for the timer.
+value. Whether any code reaches this routine is unknown.
 
 **Consequence for the engine (inferred):** the rules see time in whole timer calls, so the original
 advances them in steps of 2 clock units. The number of steps per pass depends on how long a pass takes.
