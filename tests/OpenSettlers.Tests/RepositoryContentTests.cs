@@ -9,8 +9,24 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RepositoryContentTests
 {
-    // The file types of a Die Siedler install: archives, palettes, music, and the game's programs.
-    static readonly string[] InstallExtensions = [".pa", ".pal", ".xmi", ".ad", ".mt", ".opl", ".exe", ".dll", ".adv"];
+    // The file types of a Die Siedler install: archives, palettes, sounds, music, save games, the intro
+    // video, and the game's programs.
+    static readonly string[] InstallExtensions =
+    [
+        ".pa",
+        ".pal",
+        ".snd",
+        ".xmi",
+        ".midi",
+        ".ad",
+        ".mt",
+        ".opl",
+        ".ds",
+        ".wmv",
+        ".exe",
+        ".dll",
+        ".adv",
+    ];
 
     static readonly string[] SkippedFolders = [".git", ".godot", "bin", "obj", ".superdev"];
 

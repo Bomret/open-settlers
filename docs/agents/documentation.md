@@ -68,6 +68,7 @@ Optional. `/superdev:document audit` reads a default tree — the `AGENTS.md` hi
 every glob listed here:
 
 - `docs/invariants.md`
+- `docs/rules/*.md`
 - `docs/agents/CODING.md`
 - `docs/agents/CODING_PATTERNS.md`
 
