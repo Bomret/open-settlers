@@ -20,9 +20,9 @@ _Avoid_: default, placeholder
 ## Game rules
 
 **Rule**
-A behavior of the original game that the engine reproduces, recovered from `SIED.EXE` and restated in our
-own words with its address as evidence. A rule the program does not confirm is marked **inferred** or
-**stand-in**.
+A behavior of the original game that the engine reproduces. We recover each rule from `SIED.EXE` and
+restate it in our own words, with its address as evidence. We mark a rule that the program does not
+confirm as **inferred** or **stand-in**.
 _Avoid_: mechanic, logic
 
 **Simulation**
@@ -36,6 +36,6 @@ _Avoid_: frame, update, turn
 ## Roadmap
 
 **Free-play release**
-The first goal of the roadmap: a free game against the computer opponent on a generated map, playable to
-a win or a loss, with saving, loading, and sound effects.
+The first goal of the roadmap: a free game against the computer opponent on a generated map. A person
+plays the game to a win or a loss. The release includes saving, loading, and sound effects.
 _Avoid_: MVP, version 1.0

@@ -11,9 +11,9 @@ reproduces the rules of `SIED.EXE` under rule fidelity
 ([ADR 0003](adr/0003-rule-fidelity-not-state-identity.md)). Each milestone ends in a mode that a person
 can run and check by hand.
 
-Each milestone is planned as its own feature, with its own `/superdev:plan` interview and its own feature
-label. The roadmap carries no progress status and no dates. The pull requests and the issue tracker show
-which milestone work has landed.
+The project plans each milestone as its own feature, with its own `/superdev:plan` interview and its own
+feature label. The roadmap carries no progress status and no dates. The pull requests and the issue
+tracker show the progress of each milestone.
 
 The roadmap rests on these recorded decisions, invariants, and glossary terms:
 
@@ -32,16 +32,16 @@ Each of M0 to M9 states its goal and these parts:
 - **Depends on:** the earlier milestones it builds on.
 - **Investigate:** the parts of the original program that the milestone recovers rules from.
 
-M10, M11, and the extensions state their goal and what they depend on.
+M10, M11, and the extensions state only their goal and what they depend on.
 
 ## Working names and open assumptions
 
 The building and profession names in this roadmap are working names. The program confirms or replaces
-each name when a milestone investigates it.
+each name when a milestone investigates that name.
 
 Two assumptions are open until M0 settles them:
 
-- Maps are generated from a seed.
+- The program generates each map from a seed.
 - The program advances its simulation at a fixed tick rate that the program defines.
 
 ## Milestones to the free-play release
@@ -49,15 +49,18 @@ Two assumptions are open until M0 settles them:
 ### M0 Analysis access
 
 M0 makes the 32-bit game code of `SIED.EXE` analyzable. The program is a Linear Executable (LE) behind
-the DOS/4GW extender. REA opens the file as a 16-bit MZ image and sees only the DOS/4GW stub.
+the DOS/4GW extender. The analysis tool REA opens the file as a 16-bit MZ image and sees only the
+DOS/4GW stub.
 
-- **Runnable mode:** REA, the analysis tool, opened on the 32-bit game code.
-- **Done when:** REA lists and decompiles procedures of the 32-bit game code. The map-seed and tick-rate
-  assumptions are confirmed or refuted, each with an address as evidence. Checking it needs an install.
+- **Runnable mode:** REA with the 32-bit game code open.
+- **Done when:** REA lists and decompiles procedures of the 32-bit game code. M0 confirms or refutes the
+  map-seed and tick-rate assumptions, each with an address as evidence. Checking this outcome needs an
+  install.
 - **Depends on:** none.
 - **Investigate:** the layout of the LE payload, the code that starts a map, and the timer that drives
   the game loop.
-- **Open decision:** unbind the LE payload into a file REA reads, or add an LE-capable loader to REA.
+- **Open decision:** whether M0 unbinds the LE payload into a file that REA reads, or adds an LE-capable
+  loader to REA.
 
 ### M1 Assets
 
@@ -103,12 +106,12 @@ M3 runs the smallest playable loop on the fixed-tick simulation
 
 ### M4 Construction
 
-M4 builds buildings from materials, with the workers who build them.
+M4 adds construction: workers build buildings from materials.
 
 - **Runnable mode:** a game where a person places building sites and the settlers build them.
-- **Done when:** a placed building site is leveled, receives its planks and stones over the road, and
-  becomes a working building. The forester, the sawmill, and the stonecutter work. Checking the game
-  needs an install.
+- **Done when:** a digger levels a building site that a person placed. The site receives its planks and
+  stones over the road and becomes a working building. The forester, the sawmill, and the stonecutter
+  work. Checking the game needs an install.
 - **Depends on:** M3.
 - **Investigate:** the placement rules for each building size, the construction sequence, the builder
   and the digger, and the forester, sawmill, and stonecutter.
@@ -129,8 +132,9 @@ M6 adds the mines, the smelters, and the tools.
 
 - **Runnable mode:** a game where a person sends geologists and builds mines, smelters, and the
   toolmaker.
-- **Done when:** a geologist marks resources, and a mine fed with food produces. A smelter makes iron or
-  gold, and the toolmaker makes the tools that new workers need. Checking the game needs an install.
+- **Done when:** a geologist marks resources, and a mine that receives food produces. A smelter makes
+  iron or gold, and the toolmaker makes the tools that new workers need. Checking the game needs an
+  install.
 - **Depends on:** M5.
 - **Investigate:** the geologist, the resources in the ground, the food each mine uses, the smelters,
   and the toolmaker.
@@ -141,9 +145,9 @@ M7 adds knights, military buildings, and territory.
 
 - **Runnable mode:** a game with a second party that does not act, whose military buildings a person can
   attack.
-- **Done when:** knights occupy military buildings, the territory grows with them, and an attack
-  captures a building of the other party. The weaponsmith equips new knights. Checking the game needs an
-  install.
+- **Done when:** knights occupy military buildings, the territory grows with each occupied building, and
+  an attack captures a building of the other party. The weaponsmith equips new knights. Checking the game
+  needs an install.
 - **Depends on:** M6.
 - **Investigate:** the military buildings, the territory borders, the knight levels and gold, the
   weaponsmith, and the combat rules.
@@ -163,7 +167,7 @@ M8 adds a computer opponent that builds and fights.
 
 M9 completes the [free-play release](../CONTEXT.md#roadmap).
 
-- **Runnable mode:** the engine started from its free-game start menu.
+- **Runnable mode:** the engine with its free-game start menu.
 - **Done when:** a person starts a free game from the start menu and plays it to a win or a loss. The
   person saves the game and loads it again in the engine's own save format. The game plays its sound
   effects and shows the remaining original panels. Checking the game needs an install.
@@ -173,17 +177,20 @@ M9 completes the [free-play release](../CONTEXT.md#roadmap).
 
 ## After the release
 
+The roadmap plans this work after the free-play release:
+
 - **M10 Missions:** the original missions. Depends on M9.
 - **M11 Music:** the original music. Depends on M9.
 - **Extensions:** features and rule changes that the original lacks. Depends on M10 and M11.
 
-The two-player split-screen mode is deferred and has no milestone.
+This work leaves out the two-player split-screen mode. The roadmap defers that mode and gives it no
+milestone.
 
 ## Non-goals
 
 The roadmap excludes these goals:
 
-- Loading save games of the DOS original ([ADR 0003](adr/0003-rule-fidelity-not-state-identity.md)).
-- Any rule change before the missions are done.
-- Game data or transcribed program content in the repository ([INV-0001](invariants.md#inv-0001)).
+- Loading save games of the DOS original ([ADR 0003](adr/0003-rule-fidelity-not-state-identity.md))
+- Any rule change before M10 completes the missions
+- Game data or transcribed program content in the repository ([INV-0001](invariants.md#inv-0001))
 - Dates.
