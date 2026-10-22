@@ -5,3 +5,4 @@ obj/
 .superdev/
 .DS_Store
 CLAUDE.local.md
+TestResults/
