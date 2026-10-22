@@ -16,3 +16,26 @@ _Avoid_: resource, game file
 A value that the engine supplies itself because the install does not define it or the program does not
 confirm it.
 _Avoid_: default, placeholder
+
+## Game rules
+
+**Rule**
+A behavior of the original game that the engine reproduces, recovered from `SIED.EXE` and restated in our
+own words with its address as evidence. A rule the program does not confirm is marked **inferred** or
+**stand-in**.
+_Avoid_: mechanic, logic
+
+**Simulation**
+The game state and the rules that advance it, independent of rendering, input devices, and frame rate.
+_Avoid_: game logic, model, world
+
+**Tick**
+One fixed step of the simulation, at the rate the original program uses.
+_Avoid_: frame, update, turn
+
+## Roadmap
+
+**Free-play release**
+The first goal of the roadmap: a free game against the computer opponent on a generated map, playable to
+a win or a loss, with saving, loading, and sound effects.
+_Avoid_: MVP, version 1.0
