@@ -16,8 +16,8 @@ output, REA databases, snapshots, and evidence bundles stay on the local machine
 A routine row has these fields:
 
 - **Address:** the entry of the routine.
-- **Name:** our name, in the form `Subsystem_Verb`. Data names use the form `Subsystem_Noun`. The same
-  names are set in REA with `set_addresses_names`, so a REA database can be rebuilt from this index.
+- **Name:** our name, in the form `Subsystem_Verb`. Data names use the form `Subsystem_Noun`. REA takes
+  the routine names from this index (see [Rule notes](AGENTS.md#program-index)).
 - **Role:** one line.
 - **Status:** **confirmed** when the code was read and shows the role, **inferred** when the role
   follows from callers, strings, or names but the code was not read, **unknown** when the role is open.

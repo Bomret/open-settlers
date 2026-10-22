@@ -41,8 +41,12 @@ A rule note never holds decompiler output, assembly, byte sequences, or byte pat
 [Program index](program-index.md) records where routines and data lie in `Siedler1.exe`, under our
 own names. Read it before you open the program in REA. When an investigation names or explains a
 routine, a datum, or a save field, add or update its row and take its area out of "Unexplored", in the
-same commit as the rule note. Set the same names in REA with `set_addresses_names`. The index links to
-the rule notes and does not restate the rules.
+same commit as the rule note. The index links to the rule notes and does not restate the rules.
+
+REA's Ghidra provider keeps names only while the program stays open in REA, and it names only routines
+that it found: use `annotate_native_function`, since it rejects `set_address_name` and
+`set_addresses_names`. To read REA output with our names, set the index names again in each new REA
+session.
 
 To search the whole program, use the local dump in `re-local/dump` (`tools/GhidraDump/README.md`):
 `functions.tsv` and `strings.tsv` find a routine by string, caller, or callee. When the dump is
