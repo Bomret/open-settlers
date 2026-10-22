@@ -35,7 +35,7 @@ Each of M0 to M9 states its goal and these parts:
 
 M10, M11, and the extensions state only their goal and what they depend on.
 
-## Working names and open assumptions
+## Working names and M0 findings
 
 The building and profession names in this roadmap are working names. The program confirms or replaces
 each name when a milestone investigates that name.
@@ -44,8 +44,8 @@ The [rule notes](rules/AGENTS.md) record what M0 found about the program:
 
 - [Timing](rules/timing.md): a fixed-rate timer drives a game clock with a fixed unit, and each pass of
   the main loop advances the rules by the clock units that elapsed.
-
-One assumption is open until M0 settles it: the program generates each map from a seed.
+- [Map start](rules/map-start.md): the program generates each map from a 48-bit seed through its random
+  generator.
 
 ## Milestones to the free-play release
 

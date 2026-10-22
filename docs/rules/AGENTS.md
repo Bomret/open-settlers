@@ -40,3 +40,5 @@ A rule note never holds decompiler output, assembly, byte sequences, or byte pat
 
 - [Game code](game-code.md): where the game code lies inside `Siedler1.exe`.
 - [Timing](timing.md): the timer, the game clock, and how the main loop advances the simulation.
+- [Map start](map-start.md): the random generator, the free-game seed, and where the seed enters the
+  map generation.
