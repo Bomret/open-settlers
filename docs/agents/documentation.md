@@ -61,6 +61,20 @@ so docs converge on the standard as they are touched.
   backticks.
 - **Terms left in another language:** none. All prose is English.
 
+## Audit set
+
+Optional. `/superdev:document audit` reads a default tree — the `AGENTS.md` hierarchy, `README.md`,
+`CONTEXT.md`, and the local knowledge-base pages when the knowledge base is a local `docs/kb/` — plus
+every glob listed here:
+
+- `docs/invariants.md`
+- `docs/agents/CODING.md`
+- `docs/agents/CODING_PATTERNS.md`
+
+List the documentation that default tree does not reach: a `docs/` guide tree, a release runbook, prose
+that is itself the product. Nothing outside the default tree → the section is absent, and the audit reads
+the default tree alone and says so in its report.
+
 superdev usage:
 
 - `/superdev:plan` records the glossary (`CONTEXT.md`), ADRs (`docs/adr/`), and any invariants (the
