@@ -8,7 +8,8 @@ reads the files of a Die Siedler install the user owns. See `README.md` for layo
 - Domain terms: `CONTEXT.md`.
 - Decisions: `docs/adr/`. Invariants: `docs/invariants.md`.
 - Milestone plan: `docs/roadmap.md`.
-- Rules recovered from the game's program: `docs/rules/` (start at `docs/rules/AGENTS.md`).
+- Rules recovered from the game's program: `docs/rules/` (start at `docs/rules/AGENTS.md`). Where
+  routines and data lie in the program: `docs/rules/program-index.md`.
 - Layout, requirements, and how to get an install: `README.md`.
 
 ## Game install

@@ -29,6 +29,7 @@ The engine does not support an install of the DOS CD release.
 - `docs/roadmap.md`: the milestone plan.
 - `docs/rules/`: the rules recovered from the game's program, each with its address as evidence.
 - `docs/agents/`: instructions for coding agents.
+- `tools/GhidraDump/`: a Ghidra script that writes a local, searchable dump of the game's program.
 
 ## Build and test
 

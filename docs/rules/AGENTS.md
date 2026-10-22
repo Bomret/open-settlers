@@ -36,6 +36,18 @@ Each rule note holds:
 A rule note never holds decompiler output, assembly, byte sequences, or byte patterns from the program
 ([INV-0001](../invariants.md#inv-0001)). Describe what the code does, and cite where.
 
+## Program index
+
+[Program index](program-index.md) records where routines and data lie in `Siedler1.exe`, under our
+own names. Read it before you open the program in REA. When an investigation names or explains a
+routine, a datum, or a save field, add or update its row and take its area out of "Unexplored", in the
+same commit as the rule note. Set the same names in REA with `set_addresses_names`. The index links to
+the rule notes and does not restate the rules.
+
+To search the whole program, use the local dump in `re-local/dump` (`tools/GhidraDump/README.md`):
+`functions.tsv` and `strings.tsv` find a routine by string, caller, or callee. When the dump is
+missing, build it before you search the program in REA.
+
 ## Topics
 
 - [Game code](game-code.md): where the game code lies inside `Siedler1.exe`.
