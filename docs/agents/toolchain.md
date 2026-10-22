@@ -6,8 +6,8 @@
   `net8.0`.
 - Engine: Godot 4.7.2 .NET build (`godot-mono`; macOS: `brew install --cask godot-mono`). The SDK
   version in `OpenSettlers.csproj` (`Godot.NET.Sdk/4.7.2`) must match the installed editor.
-- Game files: a Die Siedler install the user owns, passed as `--game <dir>` or the `SIEDLER_DIR`
-  environment variable. The repository ships no game content.
+- Game files: a History Edition install the user owns (the folder that holds `Siedler1.exe`), passed as
+  `--game <dir>` or the `SIEDLER_DIR` environment variable. The repository ships no game content.
 - Commands:
   - Tests — see `docs/agents/verification.md`
   - Restore the formatter — `dotnet tool restore` (needs NuGet access the first time)
