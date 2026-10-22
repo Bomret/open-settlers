@@ -15,11 +15,13 @@ reads the files of a Die Siedler install the user owns. See `README.md` for layo
 The path of the local install is in `CLAUDE.local.md`, a gitignored file per checkout. Read it there,
 and ask the user for the path when the file is missing.
 
-Investigate the game's logic, rules, and file formats in the `SIED.EXE` of that install with REA (the
+The install is The Settlers History Edition ([ADR 0004](docs/adr/0004-history-edition-is-the-reference-install.md)).
+Investigate the game's logic, rules, and file formats in the `Siedler1.exe` of that install with REA (the
 `reverse-engineer-anything` skill and the `rea` MCP tools) before you build a rule or a reader. Do not
 guess a rule or copy one from a fan source or another reimplementation. Record each recovered rule in our
 own words with its address as evidence (INV-0001). Mark a rule that the program does not confirm as
-**inferred** or **stand-in**.
+**inferred** or **stand-in**. Mark a finding that lies only in the platform layer, outside the game code
+(`CONTEXT.md`), as a platform-layer finding.
 
 ## Agent skills
 

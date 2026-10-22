@@ -7,7 +7,7 @@ milestones M0 to M9 lead to that release. Missions (M10), music (M11), and the e
 
 After the foundation milestones M0 to M2, the game grows one production chain at a time, starting from
 the smallest playable loop ([ADR 0002](adr/0002-milestones-grow-by-playable-loop.md)). Every milestone
-reproduces the rules of `SIED.EXE` under rule fidelity
+reproduces the rules of the game code of `Siedler1.exe` under rule fidelity
 ([ADR 0003](adr/0003-rule-fidelity-not-state-identity.md)). Each milestone ends in a mode that a person
 can run and check by hand.
 
@@ -17,8 +17,9 @@ tracker show the progress of each milestone.
 
 The roadmap rests on these recorded decisions, invariants, and glossary terms:
 
-- Decisions: [ADR 0002](adr/0002-milestones-grow-by-playable-loop.md) and
-  [ADR 0003](adr/0003-rule-fidelity-not-state-identity.md).
+- Decisions: [ADR 0002](adr/0002-milestones-grow-by-playable-loop.md),
+  [ADR 0003](adr/0003-rule-fidelity-not-state-identity.md), and
+  [ADR 0004](adr/0004-history-edition-is-the-reference-install.md).
 - Invariants: [INV-0001](invariants.md#inv-0001) to [INV-0004](invariants.md#inv-0004).
 - Glossary terms: [Rule, Simulation, and Tick](../CONTEXT.md#game-rules), and
   [Free-play release](../CONTEXT.md#roadmap).
@@ -48,19 +49,17 @@ Two assumptions are open until M0 settles them:
 
 ### M0 Analysis access
 
-M0 makes the 32-bit game code of `SIED.EXE` analyzable. The program is a Linear Executable (LE) behind
-the DOS/4GW extender. The analysis tool REA opens the file as a 16-bit MZ image and sees only the
-DOS/4GW stub.
+M0 makes the game code of `Siedler1.exe`, the program of the History Edition, analyzable and records where
+it lies ([ADR 0004](adr/0004-history-edition-is-the-reference-install.md)). The analysis tool REA opens the
+program directly.
 
-- **Runnable mode:** REA with the 32-bit game code open.
-- **Done when:** REA lists and decompiles procedures of the 32-bit game code. M0 confirms or refutes the
-  map-seed and tick-rate assumptions, each with an address as evidence. Checking this outcome needs an
-  install.
+- **Runnable mode:** REA with `Siedler1.exe` open.
+- **Done when:** the rule notes record the address band of the game code, the tick rate, and whether the
+  program generates a map from a seed, each with an address in `Siedler1.exe` as evidence. Checking this
+  outcome needs an install.
 - **Depends on:** none.
-- **Investigate:** the layout of the LE payload, the code that starts a map, and the timer that drives
-  the game loop.
-- **Open decision:** whether M0 unbinds the LE payload into a file that REA reads, or adds an LE-capable
-  loader to REA.
+- **Investigate:** the boundary between the game code and the platform layer, the code that starts a map,
+  and the timer that drives the game loop.
 
 ### M1 Assets
 
@@ -190,7 +189,8 @@ milestone.
 
 The roadmap excludes these goals:
 
-- Loading save games of the DOS original ([ADR 0003](adr/0003-rule-fidelity-not-state-identity.md))
+- Loading save games of either release of the original game
+  ([ADR 0003](adr/0003-rule-fidelity-not-state-identity.md), [ADR 0004](adr/0004-history-edition-is-the-reference-install.md))
 - Any rule change before M10 completes the missions
 - Game data or transcribed program content in the repository ([INV-0001](invariants.md#inv-0001))
 - Dates.
