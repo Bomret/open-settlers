@@ -1,7 +1,19 @@
 # Ghidra dump
 
-`DumpProgram.java` is a Ghidra script. It analyzes `Siedler1.exe` and writes a local dump for searching
-with `grep`:
+The Ghidra scripts in this folder build a local Ghidra project of `Siedler1.exe` and write a dump of it
+for searching with `grep`:
+
+- `CreateMissingFunctions.java` creates functions for code that Ghidra's analysis leaves outside any
+  function: call targets without a function, and code reached only through jumps or jump tables. Some
+  of these are pieces of another routine: a function with no callers whose only references are data
+  references from inside another function is a case block or jump target of that function.
+- `ApplyIndexNames.java` applies the names of the "By address" table in
+  `docs/rules/program-index.md` to the project: function names at code addresses, labels at data
+  addresses.
+- `DumpProgram.java` writes the dump.
+- `StateFields.java` writes the table of game-state fields.
+
+The dump has these files:
 
 - `functions/<address>.c`: the decompiled code of each function.
 - `functions.tsv`: per function the address, name, size, callers, callees, referenced strings, and data
@@ -11,6 +23,10 @@ with `grep`:
   a site can lie far past the end of the function before it, so read the code around the site to find
   its routine.
 - `strings.tsv`: per string its address, value, and the functions that reference it.
+- `state_fields.tsv`: per offset into the game state block, the operand sizes seen, the routines that
+  read it, and the routines that write it. A routine appears as `Name@address` when the index names it.
+  The script follows the state block pointer through straight-line code only, so it misses accesses
+  that pass through other registers or across branches.
 
 The dump and the Ghidra project hold decompiler output of the game's program. They stay in `re-local/`,
 which git ignores ([INV-0001](../../docs/invariants.md#inv-0001)). Record findings in
@@ -24,21 +40,43 @@ which git ignores ([INV-0001](../../docs/invariants.md#inv-0001)). Record findin
 ## Run
 
 Run Ghidra headless directly. The REA tools and `rea analyze` stop after a fixed timeout that a full
-analysis of `Siedler1.exe` can exceed. Ghidra headless has no timeout.
+analysis of `Siedler1.exe` can exceed. Ghidra headless has no timeout. Run every command from the
+repository root.
 
 ```sh
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 export PATH="$JAVA_HOME/bin:$PATH"
-mkdir -p "$PWD/re-local/ghidra" "$PWD/re-local/dump"
-/opt/homebrew/opt/ghidra/libexec/support/analyzeHeadless "$PWD/re-local/ghidra" Siedler1 \
-  -import "$SIEDLER_DIR/Siedler1.exe" -overwrite \
-  -scriptPath "$PWD/tools/GhidraDump" -postScript DumpProgram.java "$PWD/re-local/dump"
+export HEADLESS=/opt/homebrew/opt/ghidra/libexec/support/analyzeHeadless
 ```
 
-Run it from the repository root. The project path must be absolute, and no element of it may start with
-a dot: Ghidra headless rejects such a path.
+Build the project. This takes about 7 minutes:
 
-The run leaves a Ghidra project in `re-local/ghidra`. To run a script on it again without a new
-analysis, replace `-import "$SIEDLER_DIR/Siedler1.exe" -overwrite` with `-process Siedler1 -noanalysis`.
+```sh
+mkdir -p "$PWD/re-local/ghidra"
+"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -import "$SIEDLER_DIR/Siedler1.exe" -overwrite \
+  -scriptPath "$PWD/tools/GhidraDump" -postScript CreateMissingFunctions.java \
+  -postScript ApplyIndexNames.java "$PWD/docs/rules/program-index.md"
+```
+
+Update the project after the index changes. This runs both scripts again and analyzes only their
+changes:
+
+```sh
+"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -process Siedler1.exe \
+  -scriptPath "$PWD/tools/GhidraDump" -postScript CreateMissingFunctions.java \
+  -postScript ApplyIndexNames.java "$PWD/docs/rules/program-index.md"
+```
+
+Write the dump from the project, without changing it:
+
+```sh
+rm -rf "$PWD/re-local/dump" && mkdir -p "$PWD/re-local/dump"
+"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -process Siedler1.exe -noanalysis -readOnly \
+  -scriptPath "$PWD/tools/GhidraDump" -postScript DumpProgram.java "$PWD/re-local/dump" \
+  -postScript StateFields.java "$PWD/re-local/dump"
+```
+
+The project path must be absolute, and no element of it may start with a dot: Ghidra headless rejects
+such a path.
 
 Run one analysis at a time on a machine. Two Ghidra analyses at once can overload the machine.

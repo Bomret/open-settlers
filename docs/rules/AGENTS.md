@@ -49,8 +49,10 @@ that it found: use `annotate_native_function`, since it rejects `set_address_nam
 session.
 
 To search the whole program, use the local dump in `re-local/dump` (`tools/GhidraDump/README.md`):
-`functions.tsv` and `strings.tsv` find a routine by string, caller, or callee. When the dump is
-missing, build it before you search the program in REA.
+`functions.tsv` and `strings.tsv` find a routine by string, caller, or callee, and `state_fields.tsv`
+finds the routines that read or write a field of the game state. The dump carries the index names.
+When the dump is missing, build it before you search the program in REA. After you change the index,
+update the project and write the dump again.
 
 ## Topics
 

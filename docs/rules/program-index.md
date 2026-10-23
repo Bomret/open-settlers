@@ -662,8 +662,9 @@ The other header fields copy single fields of the game state block. Their roles 
 
 ## Unexplored
 
-Ghidra finds 7232 functions in `Siedler1.exe` and 429 of them in the game code band. The game code
-builds no stack frames, so Ghidra misses some of its routines, and 429 is a lower bound. This index names
+The Ghidra project of the dump holds 7489 functions in `Siedler1.exe` and 471 of them in the game code
+band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/README.md`). A routine
+reached only through a computed jump can still be missing, so 471 is a lower bound. This index names
 122 routines in the band and lists 12 more without a name.
 
 Anchors not yet followed:
