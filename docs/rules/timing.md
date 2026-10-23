@@ -53,19 +53,29 @@ reads it back.
 The main loop starts at `0x425a10`. On each pass it calls the routine at `0x426dfc`. That routine takes the
 whole clock units of the game clock, subtracts the value it saw on the previous pass, and keeps the
 difference as the elapsed units of this pass. The rules then advance by that difference: for example,
-the pass adds it to a running total and subtracts it from a countdown that starts at 6000 units
-(`0x425a44`). **Inferred:** 6000 units are 60 seconds at normal speed.
+the pass adds it to a running total and subtracts it from a countdown (`0x426e8b`). The main loop sets
+that countdown to 6000 units when a game starts (`0x425a44`). **Inferred:** 6000 units are 60 seconds
+at normal speed.
 
-Because the whole clock units advance in steps of 2, the elapsed units of a pass are 0, 2, 4, and so on,
-never an odd number.
+Because the whole clock units advance in steps of 2, the elapsed units of a pass are always even.
+
+## The frame wait
+
+**Status:** confirmed.
+
+Each pass of the main loop calls the routine at `0x45d718` before it presents the frame. That routine
+waits until the interrupt counter is at least 4 above the value it stored at the previous frame, then
+stores the new value. A pass therefore takes at least 4 timer calls: at least 80 milliseconds at normal
+speed. While the clock runs, the elapsed units of a pass are at least 8. The wait itself lies in the
+game code; it waits through a platform routine at `0x406c60` that hands control between the threads.
 
 A routine at `0x425c9c` resets the interrupt counter and waits until the next timer call has happened.
 Its callers are unknown: the program holds no direct call to it and no reference to its address as a
 value. Whether any code reaches this routine is unknown.
 
-**Consequence for the engine (inferred):** the rules see time in whole timer calls, so the original
-advances them in steps of 2 clock units. The number of steps per pass depends on how long a pass takes.
-The engine advances its simulation one timer call per tick, that is, 2 clock units per tick. Rule timers
-keep counting in clock units, and each tick advances them by 2. This gives the same result as the
-original whenever a pass of the original takes less than one timer call. One possible exception: the game
-clock that the load code at `0x4606bc` restores from a save game could hold an odd number of whole units.
+**Consequence for the engine: open for a decision.** The original advances the rules once per pass, by
+the elapsed units of that pass. Because of the frame wait, that is at least 8 units at every speed,
+and more when a pass takes longer than 4 timer calls. A tick of one timer call, 2 clock units, as
+`CONTEXT.md` defines it, does not match this step size. Which step the engine uses, and how rule timers
+count against it, is not decided. Separately, the game clock that the load code at `0x4606bc` restores
+from a save game could hold an odd number of whole units.
