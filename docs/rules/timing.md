@@ -73,9 +73,61 @@ A routine at `0x425c9c` resets the interrupt counter and waits until the next ti
 Its callers are unknown: the program holds no direct call to it and no reference to its address as a
 value. Whether any code reaches this routine is unknown.
 
-**Consequence for the engine: open for a decision.** The original advances the rules once per pass, by
-the elapsed units of that pass. Because of the frame wait, that is at least 8 units at every speed,
-and more when a pass takes longer than 4 timer calls. A tick of one timer call, 2 clock units, as
-`CONTEXT.md` defines it, does not match this step size. Which step the engine uses, and how rule timers
-count against it, is not decided. Separately, the game clock that the load code at `0x4606bc` restores
-from a save game could hold an odd number of whole units.
+## Rules that count passes
+
+**Status:** confirmed.
+
+While a game runs, each pass of the main loop calls these routines once, in this order: `0x4286d8`,
+`Sim_StepPhase` at `0x4291c2`, then the routines for the item tables at `0x46414d`, `0x42cb2d`, and
+`0x42f3d9`. `Sim_StepPhase` adds 1 to the phase counter and wraps it at the phase count. The routine at
+`0x42055e` sets the phase count when a game starts: 33, or 49 when a player's start parameter at
+`+0x1d6` is from 1 to 11.
+
+The phase selects the work of a pass:
+
+- Phases 0 to 31: the per-player update for player `phase & 3`, and a slice of each item table.
+  `Sim_StepPhase` skips the per-player update while the clock step is 0.
+- Phases from 32: one routine from the phase table at `0x4292ee`. The routine at `0x42a74a`, reached
+  from that table, copies the running total of the elapsed units and resets it.
+
+Which work runs counts passes, not clock units: each entry of an item table gets its turn once per
+phase cycle, however many clock units the cycle takes. The work on a turn can itself count clock units,
+as the countdowns of `Table18` do (see the next section).
+
+While the clock step is 0, the main loop still advances the phase and still calls the routines for the
+item tables, with 0 elapsed units. Whether that work changes the game state is unknown.
+
+## Rules that count clock units
+
+**Status:** confirmed.
+
+`Main_ComputeElapsed` at `0x426dfc` stores the whole units of the current pass at `+0x206`. Rules read
+either those units or the elapsed units at `+0x284`. They count in three ways:
+
+- A countdown that fires once. The rule subtracts the elapsed units and fires when the countdown goes
+  below zero. The two notice countdowns at `+0x17e` and `+0x182` post a message then. The timed
+  messages of a player (`0x44cb8f`) work the same way. `Game_Countdown` stops at 0 instead. A countdown
+  in each view record fires when it reaches 0 or goes below it (`0x426f91`).
+- A countdown per entry. Each entry of `Table18` that `0x42cb2d` processes keeps the clock units of its
+  last turn. On its turn, the rule subtracts the units since then from the entry's countdown and fires
+  when the countdown goes below zero.
+- A period with a remainder. The rule fires when the clock has passed the period, and it reloads by
+  adding the period to the old value, so the remainder carries into the next period. A rule that fires
+  by a countdown repeats until the countdown is no longer below zero: `0x428d10` with a period of 20
+  units, and a timer of each player block in `0x428a75`. A rule that compares the clock with a stored
+  mark fires at most once per pass and moves the mark by the period: `Stats_RecordHistory` every 1500
+  units, and `0x42639a` every 6000 units.
+
+The constants that start these counts include 6000, 180000, and 360000 units. The 20-unit period and
+the 1500-unit interval are not multiples of 8.
+
+Only the readers of the clock fields that the dump lists for the game state block are checked
+(`re-local/dump/state_fields.tsv`). Code that reaches these fields through another pointer is not
+covered.
+
+## Consequence for the engine
+
+The engine's tick is one pass of 8 clock units
+([ADR 0005](../adr/0005-a-tick-is-one-pass-of-eight-clock-units.md)). On a machine that finishes a pass
+within 4 timer calls, every pass of the original advances the clock by exactly 8 units, so the tick
+keeps the rate of the pass-counting rules relative to the clock-counting rules.

@@ -60,6 +60,7 @@ the quit request returns.
 | `0x468717` | `Game_SetStartParams` | Fills the start parameters and the map seed from a mission record or from the free-game settings; returns the size class. | confirmed | game | Sites `0x4688f4`, `0x468b3d`. |
 | `0x41eeeb` | — | After map generation, calls `0x41f1f4` once per player block with its start values. Inferred: places the players. | unknown | game | Called by `Game_Start`. |
 | `0x42593a` | `Game_ResetCounters` | Zeroes the clock, the statistics, and other counters at a new game. | confirmed | game | Called by `Game_Start`. |
+| `0x42055e` | — | Sets up the player blocks at a new game and sets `Sim_PhaseCount`. Its full role is unknown. | unknown | game | Called by `Game_Start`. |
 | `0x467c03` | `StartScreen_HandleClick` | Click handler of the start screens; dispatches 42 actions through the table at `0x468148`. | inferred | game | Called by `0x440b01`. |
 | `0x466b94` | `StartScreen_SwitchPage` | Moves a requested start-screen page into the current page and runs its handler. | confirmed | game | `Main_Loop` while `Game_Flags` bit 4 is set. |
 | `0x4685bc` | `StartScreen_StartGame` | Action 38: sets the start parameters and the map size, then requests a new game. Entry inferred. | confirmed | game | Slot `0x468278` of the table at `0x468148`. |
@@ -94,6 +95,7 @@ wait, and the key handling.
 | `0x406c60` | `Frame_Handshake` | Releases one semaphore and waits on another. | confirmed | platform | Imports `ReleaseSemaphore`, `WaitForSingleObject`. |
 | `0x406880` | `Frame_Present` | Hands the screen buffer to the platform output. | inferred | platform | Called by `Frame_WaitAndPresent`. |
 | `0x425cb9` | `Stats_RecordHistory` | Every 1500 clock units, records values for the four players in ring buffers. | inferred | game | Called by `Main_Loop`. |
+| `0x42639a` | — | Every 6000 clock units, advances the counter at `+0x32e`, which wraps after 120 values. | unknown | game | Called by `Stats_RecordHistory`. |
 | `0x44cb6e` | `Msg_RunTimers` | Counts down each player's timed messages by the elapsed units and posts the expired ones. | confirmed | game | Called by `Main_Loop` and the start routines. |
 | `0x431c31` | `Msg_Post` | Writes a message into the first free of 64 slots of a player block. | confirmed | game | Called by `Main_ComputeElapsed`. |
 
@@ -183,13 +185,14 @@ entries per phase (see "Item tables").
 | `0x4291c2` | `Sim_StepPhase` | Advances `Sim_Phase`; phases 0 to 31 run the per-player update for player `phase & 3`, later phases draw from the random generator and dispatch through a table. | confirmed | game | Called by `Main_Loop`; tables at `0x4292ee` and `0x42923c`. |
 | `0x474da3` | `Ai_UpdatePlayer` | Per-player update for players whose block marks them active and computer-controlled. | inferred | game | Reached from `Sim_StepPhase`; calls `Rng_Step`. |
 | `0x46414d` | — | Processes the phase's slice of `Table70`. | unknown | game | Called by `Main_Loop`. |
-| `0x42cb2d` | — | Processes the phase's slice of `Table18`. | unknown | game | Called by `Main_Loop`. |
+| `0x42cb2d` | — | Processes the phase's slice of `Table18`; counts down each entry's timer by the clock units since its last turn. | unknown | game | Called by `Main_Loop`. |
 | `0x42f3d9` | — | Processes the phase's slice of `Table16`, dispatching each entry on its type byte through `0x42fc81`. | unknown | game | Called by `Main_Loop`. |
 | `0x42f4f1` | — | For each view, gathers the objects on the shown tiles and dispatches them through `0x42fc81`. | unknown | game | Called by `Main_Loop`. |
 | `0x4286d8` | — | Runs `0x428728`, `Sound_RunAmbient`, and `0x428d10`, then `0x428a75` for each player block. | unknown | game | Called by `Main_Loop`. |
 | `0x428728` | — | Clears one flag bit per entry of `Table18` and `Table70`, a limited number per pass. | unknown | game | Called by `0x4286d8`. |
 | `0x428d10` | — | Every 20 clock units, steps a cursor across the map and changes tiles with the random generator. | unknown | game | Called by `0x4286d8`; calls `Rng_Step`. |
-| `0x428a75` | — | Counts down three timers of a player block. | unknown | game | Called by `0x4286d8`. |
+| `0x428a75` | — | Counts down three timers of a player block; the timer at `+0x120` repeats its work once per period that has elapsed. | unknown | game | Called by `0x4286d8`. |
+| `0x42a74a` | — | Copies `Clock_ElapsedTotal` and resets it, then calls `0x42a7ac` for each player block. | unknown | game | Reached from the phase table of `Sim_StepPhase`. |
 
 ### Random generator and map start
 
@@ -395,14 +398,14 @@ from `+0x21e` to `+0x237`) are in the dump, not here.
 | `+0x1fa` | `Clock_SavedStep` | 4 | The clock step that pause saved. | confirmed |
 | `+0x1fe` | `Clock_Step` | 4 | The clock step: 2.0 or 0. | confirmed |
 | `+0x202` | `Clock_Game` | 4 | The game clock: fixed point, 16 fraction bits. | confirmed |
-| `+0x206` | `Clock_PrevUnits` | 2 | Whole units of the game clock at the previous pass. | confirmed |
+| `+0x206` | `Clock_PrevUnits` | 2 | Whole units of the game clock at the previous pass; `Main_ComputeElapsed` sets it to those of the current pass, which later readers in the pass see. | confirmed |
 | `+0x208` | `Timer_CallCount` | 2 | Counts the timer calls. | confirmed |
 | `+0x20a` | `Frame_LastCallCount` | 2 | `Timer_CallCount` at the previous frame. | confirmed |
 | `+0x212`, `+0x214`, `+0x216` | `Rng_State` | 2 each | The random generator's three state words. | confirmed |
 | `+0x21c` | `MapGen_PatchCount` | 2 | Base count of patches, clusters, and deposits. | confirmed |
 | `+0x240` | `Archive_Result` | 2 | Result code of the last save or load. | confirmed |
 | `+0x258` to `+0x266` | `Table70_Count` (`+0x25e`), `Table18_Count` (`+0x260`), `Table16_Count` (`+0x262`), `Table120_Count` (`+0x266`), and capacities | 2 each | Slots in use and slot capacity of the item tables. | confirmed |
-| `+0x26c`, `+0x286` | `Sim_Phase`, `Sim_PhaseCount` | 2 each | The phase counter and its wrap value. | confirmed |
+| `+0x26c`, `+0x286` | `Sim_Phase`, `Sim_PhaseCount` | 2 each | The phase counter and its wrap value: 33, or 49 when a player's start parameter is from 1 to 11 (`0x42055e`). | confirmed |
 | `+0x284` | `Clock_Elapsed` | 2 | Elapsed whole units of this pass. | confirmed |
 | `+0x288` | `Clock_ElapsedTotal` | 2 | Running total of the elapsed units. | confirmed |
 | `+0x30c` | `Memory_SizeClass` | 1 | Low 4 bits: the size class of the game buffer; it caps the free-game map size. | confirmed |
@@ -531,6 +534,7 @@ The other header fields copy single fields of the game state block. Their roles 
 | `0x41ee84` | `Game_Start` | Program start and game flow |
 | `0x41eeeb` | — | Program start and game flow |
 | `0x41f4d7` | `Game_ResumeLoaded` | Program start and game flow |
+| `0x42055e` | — | Program start and game flow |
 | `0x421530` | `MapGen_InitParams` | Map generation |
 | `0x4216e9` | `MapGen_Generate` | Map generation |
 | `0x421841` | `MapGen_CountResource1` | Map generation |
@@ -585,6 +589,7 @@ The other header fields copy single fields of the game state block. Their roles 
 | `0x425a10` | `Main_Loop` | Main loop |
 | `0x425c9c` | `Timer_WaitNextCall` | Timing |
 | `0x425cb9` | `Stats_RecordHistory` | Main loop |
+| `0x42639a` | — | Main loop |
 | `0x426abe` | `Main_HandleKeys` | Main loop |
 | `0x426dfc` | `Main_ComputeElapsed` | Main loop |
 | `0x427062` | `Input_ApplyPointerMotion` | Input |
@@ -594,6 +599,7 @@ The other header fields copy single fields of the game state block. Their roles 
 | `0x428a75` | — | Simulation |
 | `0x428d10` | — | Simulation |
 | `0x4291c2` | `Sim_StepPhase` | Simulation |
+| `0x42a74a` | — | Simulation |
 | `0x42cb2d` | — | Simulation |
 | `0x42f3d9` | — | Simulation |
 | `0x42f4f1` | — | Simulation |
@@ -665,7 +671,7 @@ The other header fields copy single fields of the game state block. Their roles 
 The Ghidra project of the dump holds 7489 functions in `Siedler1.exe` and 471 of them in the game code
 band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/README.md`). A routine
 reached only through a computed jump can still be missing, so 471 is a lower bound. This index names
-122 routines in the band and lists 12 more without a name.
+122 routines in the band and lists 15 more without a name.
 
 Anchors not yet followed:
 
