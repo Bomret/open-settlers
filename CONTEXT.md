@@ -12,6 +12,15 @@ _Avoid_: game folder, game directory, assets folder
 One loadable piece of game data in an install, such as a palette, sprite, sound, or map.
 _Avoid_: resource, game file
 
+**Asset browser**
+The engine's interactive mode for picking any asset of an install and inspecting its preview.
+_Avoid_: sprite viewer, asset viewer
+
+**Preview**
+The asset browser's rendering of one asset, showing that its meaning was understood: a palette as its
+colors, a sprite as the game draws it, a sound as playback.
+_Avoid_: thumbnail, view
+
 **Stand-in**
 A value that the engine supplies itself because the install does not define it or the program does not
 confirm it.
