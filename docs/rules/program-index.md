@@ -163,6 +163,16 @@ Note: [Timing](timing.md).
 
 Note: [Sound files](sound-files.md).
 
+### Music
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x419a60` | `Music_ApplyOption` | When the music option changes, stops the player or reads `snd/music_1.midi` whole, loads it, and starts the stream. | confirmed | platform | String `snd/music_1.midi`; called by `Timer_ThreadMain`. |
+| `0x415130` | `Music_LoadFile` | Checks the header and track tags of the music file in memory and records the format, division, and each track's start and length. | confirmed | platform | Called by `Music_ApplyOption`. |
+| `0x415390` | `Music_Stop` | Stops and closes the MIDI stream. | inferred | platform | Calls `midiStreamStop` and `midiStreamClose`. |
+
+Note: [Music file](music-file.md).
+
 ### Views, panels, and drawing
 
 | Address | Name | Role | Status | Layer | Anchor |
@@ -531,8 +541,11 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x407800` | `File_Write` | confirmed | Save and load |
 | `0x407870` | `File_Read` | confirmed | Save and load |
 | `0x40b8c0` | `Sound_CreateBuffer` | confirmed | Sound |
+| `0x415130` | `Music_LoadFile` | confirmed | Music |
+| `0x415390` | `Music_Stop` | inferred | Music |
 | `0x417bb0` | `Platform_GameThreadMain` | confirmed | Program start and game flow |
 | `0x417c50` | `Platform_StartGameThread` | confirmed | Program start and game flow |
+| `0x419a60` | `Music_ApplyOption` | confirmed | Music |
 | `0x41da10` | `Game_Entry` | confirmed | Program start and game flow |
 | `0x41dbea` | — | unknown | Program start and game flow |
 | `0x41e6c0` | `Game_InitOnce` | confirmed | Program start and game flow |
