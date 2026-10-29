@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using OpenSettlers.Formats;
 
 namespace OpenSettlers.Assets;
@@ -42,28 +44,34 @@ public sealed class TextKind : AssetKind
 
     /// <inheritdoc/>
     public override IEnumerable<Asset> Enumerate(Install install) =>
-        Languages.Select(l => new Asset
-        {
-            Kind = KindName,
-            File = l.File,
-            Name = Path.GetFileName(l.File),
-            Load = () => Table(install, l.File),
-        });
+        Languages.Select(
+            (l, index) =>
+                new Asset
+                {
+                    Kind = KindName,
+                    File = l.File,
+                    Name = Path.GetFileName(l.File),
+                    Load = () => Table(install, index),
+                }
+        );
 
-    static Preview Table(Install install, string own)
+    // Each file is read once. A file that cannot be read leaves its column empty; its own asset fails with the reason.
+    static Preview Table(Install install, int own)
     {
-        var files = Languages
-            .Select(l => l.File == own ? TextFile.Read(install.ReadAll(own)) : TryRead(install, l.File))
-            .ToList();
-        var ownFile = files[System.Array.FindIndex(Languages, l => l.File == own)]!;
-        if (ownFile.Rejected.Count > 0)
+        var reads = Languages.Select(l => Read(install, l.File)).ToList();
+        if (reads[own].Error is { } error)
         {
-            throw new InvalidDataException(
-                string.Join("; ", ownFile.Rejected.Select(r => $"line {r.Line}: {r.Reason}"))
-            );
+            ExceptionDispatchInfo.Capture(error).Throw();
         }
 
-        var keys = files.Where(f => f != null).SelectMany(f => f!.Entries.Select(e => e.Key)).Distinct();
+        var rejected = reads[own].File!.Rejected;
+        if (rejected.Count > 0)
+        {
+            throw new InvalidDataException(string.Join("; ", rejected.Select(r => $"line {r.Line}: {r.Reason}")));
+        }
+
+        var files = reads.Select(r => r.File).ToList();
+        var keys = files.SelectMany(f => f?.Entries.Select(e => e.Key) ?? []).Distinct();
         var rows = keys.Select(k => new TextRow(k, files.Select(f => f?.Get(k)).ToList())).ToList();
 
         return new TextPreview
@@ -74,16 +82,15 @@ public sealed class TextKind : AssetKind
         };
     }
 
-    // A language file that cannot be read leaves its column empty; its own asset reports the reason.
-    static TextFile? TryRead(Install install, string file)
+    static (TextFile? File, Exception? Error) Read(Install install, string file)
     {
         try
         {
-            return TextFile.Read(install.ReadAll(file));
+            return (TextFile.Read(install.ReadAll(file)), null);
         }
-        catch (IOException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return null;
+            return (null, e);
         }
     }
 }

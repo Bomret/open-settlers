@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -52,6 +53,31 @@ public sealed class TextKindTests
         var table = (TextPreview)assets[0].Load();
         CollectionAssert.AreEqual(new[] { "eng", "ger", "fre" }, table.Languages.ToArray());
         CollectionAssert.AreEqual(new[] { "one", null, "un" }, table.Rows.Single().Values.ToArray());
+    }
+
+    [TestMethod]
+    public void AnUnreadableFileFailsOnLoadAndTheOthersStillLoad()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("File modes do not deny reading on Windows.");
+        }
+
+        using var fake = Install3("ALPHA=\"one\"\r\n", "ALPHA=\"eins\"\r\n", "ALPHA=\"un\"\r\n");
+        var ger = Path.Combine(fake.Root, "loca/ger.txt");
+        File.SetUnixFileMode(ger, UnixFileMode.None);
+        try
+        {
+            var assets = new TextKind().Enumerate(Open(fake)).ToList();
+
+            Assert.ThrowsExactly<UnauthorizedAccessException>(() => assets[1].Load());
+            var table = (TextPreview)assets[0].Load();
+            CollectionAssert.AreEqual(new[] { "one", null, "un" }, table.Rows.Single().Values.ToArray());
+        }
+        finally
+        {
+            File.SetUnixFileMode(ger, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
     }
 
     [TestMethod]

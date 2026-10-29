@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace OpenSettlers.Formats;
@@ -23,11 +24,11 @@ public sealed class TextFile
 
     readonly Dictionary<string, string> _values;
 
-    TextFile(List<TextEntry> entries, List<RejectedLine> rejected, Dictionary<string, string> values)
+    TextFile(List<TextEntry> entries, List<RejectedLine> rejected)
     {
         Entries = entries;
         Rejected = rejected;
-        _values = values;
+        _values = entries.ToDictionary(e => e.Key, e => e.Value);
     }
 
     /// <summary>The keys in order of first appearance, each with the value of its last line.</summary>
@@ -89,7 +90,7 @@ public sealed class TextFile
 
         var entries = order.ConvertAll(k => new TextEntry(k, values[k]));
 
-        return new TextFile(entries, rejected, values);
+        return new TextFile(entries, rejected);
     }
 
     // The reason the line is not accepted, or null with the key and the value.

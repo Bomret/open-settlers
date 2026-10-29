@@ -90,6 +90,21 @@ public sealed class TextFileTests
     }
 
     [TestMethod]
+    public void ALastLineWithoutCrlfFollowsTheSameLengthLimitsAsAnyOtherLine()
+    {
+        var value254 = new string('x', 254 - "K=\"\"".Length);
+        var value255 = new string('x', 255 - "K=\"\"".Length);
+
+        var short4 = Read("A=\"\"");
+        var long254 = Read($"K=\"{value254}\"");
+        var long255 = Read($"K=\"{value255}\"");
+
+        StringAssert.Contains(short4.Rejected.Single().Reason, "too short");
+        Assert.AreEqual(1, long254.Entries.Count);
+        StringAssert.Contains(long255.Rejected.Single().Reason, "too long");
+    }
+
+    [TestMethod]
     public void TheTerminatorAfterTheLastLineStartsNoLine()
     {
         Assert.IsEmpty(Read("ALPHA=\"one\"\r\n").Rejected);

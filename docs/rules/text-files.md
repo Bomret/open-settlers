@@ -16,7 +16,9 @@ one that reaches the reader follows from the table and the call, not from a sing
 
 `Text_LoadLanguage` fails when the file cannot be opened (the program then reports that it cannot load
 the language file). It does not check that the file is complete: it asks for 224 fixed keys one after
-another, and the reference install's three files hold exactly those 224 keys. After each lookup it
+another, and the reference install's three files hold exactly those 224 keys. A key the file lacks
+makes `Text_Lookup` answer with no value, and `Text_LoadLanguage` then reads through that null pointer
+at once, so the program crashes (inferred from the code, not observed). After each lookup it
 appends a byte of value 255 after the end of the found text, which marks the text's end for the code
 that draws it (inferred).
 
@@ -31,7 +33,9 @@ which this note does not cover.
 
 - **Line end.** A line ends at a line feed or at a carriage return. A carriage return followed by a line
   feed is one line end, because the text mode folds the pair. The last line needs no line end: the end
-  of the file ends it. The text mode treats a Ctrl-Z byte as the end of the file (inferred from the
+  of the file ends it, and the program counts its bytes by the same two limits below (the end-of-file
+  marker the loop stores is not counted, so an unterminated line of 254 bytes is read and one of 4 bytes is
+  skipped, as with a line end). The text mode treats a Ctrl-Z byte as the end of the file (inferred from the
   runtime's behaviour, not from an address).
 - **Too long.** A line of 255 bytes or more before its line end overruns the buffer, and the program
   stops with a range-check failure. Lines of up to 254 bytes are safe.
