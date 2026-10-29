@@ -18,7 +18,9 @@ public abstract class AssetKind
     /// <summary>
     /// Lists the assets of this kind in the install, in the order the browser shows them (file-number or entry
     /// order). A listed file that is missing, or a kind that finds none of its files, is listed as an asset whose
-    /// <see cref="Asset.Load"/> throws with the reason. Does not read the assets' contents.
+    /// <see cref="Asset.Load"/> throws with the reason. A file the kind cannot index is likewise one asset of that
+    /// file whose <see cref="Asset.Load"/> throws, so the report names the file; <c>Enumerate</c> itself throws only
+    /// for a failure that belongs to no file. Does not read the assets' contents.
     /// </summary>
     public abstract IEnumerable<Asset> Enumerate(Install install);
 

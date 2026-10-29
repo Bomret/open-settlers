@@ -22,7 +22,10 @@ public sealed class AssetBrowserState
         Categories = kinds.Keys.ToList();
     }
 
-    /// <summary>Set when there is no usable install: the one message the browser shows. Names <c>--game</c> and <c>SIEDLER_DIR</c>.</summary>
+    /// <summary>
+    /// Set when there is no usable install (the message names <c>--game</c> and <c>SIEDLER_DIR</c>) or when two kinds
+    /// share a name: the one message the browser shows.
+    /// </summary>
     public string? Message { get; }
 
     /// <summary>The category names, one per kind, sorted by name; empty when <see cref="Message"/> is set.</summary>
@@ -48,7 +51,7 @@ public sealed class AssetBrowserState
 
     /// <summary>
     /// Opens the install the launch arguments name and selects the first kind and its first asset. Does not throw:
-    /// without a usable install the state holds <see cref="Message"/> and no categories.
+    /// without a usable install, or with two kinds of one name, the state holds <see cref="Message"/> and no categories.
     /// </summary>
     public static AssetBrowserState Open(LaunchArgs args, IEnumerable<AssetKind> kinds)
     {
@@ -57,11 +60,18 @@ public sealed class AssetBrowserState
             return new AssetBrowserState(problem, null, new Dictionary<string, AssetKind>());
         }
 
-        var state = new AssetBrowserState(
-            null,
-            install,
-            kinds.OrderBy(k => k.Name, StringComparer.Ordinal).ToDictionary(k => k.Name)
-        );
+        var sorted = kinds.OrderBy(k => k.Name, StringComparer.Ordinal).ToList();
+        var twice = sorted.GroupBy(k => k.Name).FirstOrDefault(g => g.Count() > 1);
+        if (twice != null)
+        {
+            return new AssetBrowserState(
+                $"two asset kinds are named \"{twice.Key}\"; a kind's name must be unique",
+                null,
+                new Dictionary<string, AssetKind>()
+            );
+        }
+
+        var state = new AssetBrowserState(null, install, sorted.ToDictionary(k => k.Name));
         if (state.Categories.Count > 0)
         {
             state.SelectKind(state.Categories[0]);

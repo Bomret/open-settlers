@@ -135,6 +135,30 @@ public sealed class AssetBrowserStateTests
     }
 
     [TestMethod]
+    public void TwoKindsOfTheSameNameShowOneMessageAndNoCategoriesInsteadOfThrowing()
+    {
+        using var fake = new FakeInstall();
+
+        var state = Open(fake, new ListedKind("text", Item("text", "a")), new ListedKind("text", Item("text", "b")));
+
+        StringAssert.Contains(state.Message, "\"text\"");
+        Assert.IsEmpty(state.Categories);
+    }
+
+    [TestMethod]
+    public void TheRealKindsHaveUniqueNamesAndStampTheirAssetsWithTheirOwnName()
+    {
+        using var fake = new FakeInstall();
+        var kinds = AssetKind.Discover().Where(k => k.GetType().Namespace == "OpenSettlers.Assets").ToList();
+
+        Assert.AreEqual(kinds.Count, kinds.Select(k => k.Name).Distinct().Count());
+        foreach (var kind in kinds)
+        {
+            Assert.IsTrue(kind.Enumerate(new Install { Root = fake.Root }).All(a => a.Kind == kind.Name), kind.Name);
+        }
+    }
+
+    [TestMethod]
     public void SelectingAnUnknownKindOrAssetChangesNothing()
     {
         using var fake = new FakeInstall();

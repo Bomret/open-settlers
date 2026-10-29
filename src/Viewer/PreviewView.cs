@@ -19,7 +19,7 @@ public abstract class PreviewView
     /// <summary>Builds the control that shows <c>preview</c>, which is of this view's kind.</summary>
     public abstract Control Create(Preview preview);
 
-    /// <summary>The views by kind name; a later view of the same kind name replaces the earlier one.</summary>
+    /// <summary>The views by kind name.</summary>
     public static IReadOnlyDictionary<string, PreviewView> Discover() =>
         typeof(PreviewView)
             .Assembly.GetTypes()
@@ -27,6 +27,5 @@ public abstract class PreviewView
                 t.IsSubclassOf(typeof(PreviewView)) && !t.IsAbstract && t.GetConstructor(Type.EmptyTypes) != null
             )
             .Select(t => (PreviewView)Activator.CreateInstance(t)!)
-            .GroupBy(v => v.KindName)
-            .ToDictionary(g => g.Key, g => g.Last());
+            .ToDictionary(v => v.KindName);
 }

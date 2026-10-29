@@ -124,6 +124,7 @@ public sealed class AssetCheckTests
 
         var report = Run(fake, new SoundKind());
 
+        CollectionAssert.Contains(report.Lines.ToList(), "snd/01.SND: 1 entry (sound)");
         Assert.IsFalse(report.Lines.Any(l => l.Contains("100.SND") || l.Contains("OTHER.DAT")));
     }
 

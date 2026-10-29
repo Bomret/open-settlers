@@ -22,7 +22,7 @@ public sealed class SoundKind : AssetKind
     public const string KindName = "sound";
 
     /// <summary>The first and the last sound file number the program tries.</summary>
-    public const int FirstNumber = 1,
+    const int FirstNumber = 1,
         LastNumber = 99;
 
     /// <inheritdoc/>
