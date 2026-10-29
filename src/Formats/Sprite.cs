@@ -79,9 +79,12 @@ public static class SpriteFile
         }
 
         var area = (long)width * header.Height;
-        if (area > Array.MaxLength)
+        // Stand-in bound: the RGBA of the sprite (four bytes a pixel) must fit an array.
+        if (area * 4 > Array.MaxLength)
         {
-            throw new InvalidDataException($"the sprite is {width} x {header.Height}, too large to hold");
+            throw new InvalidDataException(
+                $"the sprite is {width} x {header.Height}, {area} pixels, whose RGBA of {area * 4} bytes is more than an array holds"
+            );
         }
 
         var indices = new byte[area];

@@ -45,7 +45,7 @@ public sealed class MaskKind : ArchiveEntryKind
         // 0x406120 reads the mask at 0x674008. Mask = 60 + a 9 x 9 index at 0x4278be and 141 + the same kind of index at
         // 0x427a25 (the tables hold 81 entries); at 0x428008, 0x428105, and 0x4281cc a base of 234, 243, or 252 plus
         // the height difference of two nodes, which the nine-wide spacing is inferred to bound at -4 to 4. Under that
-        // inferred bound masks 222 to 229 are reached by none of the five (the arithmetic alone reaches 203 to 265).
+        // inferred bound masks 222 to 229 are reached by none of the five (the arithmetic alone reaches 203 to 283).
         (60, 221, "textured fill", FirstPlayerColor),
         (230, 256, "textured fill", FirstPlayerColor),
     ];

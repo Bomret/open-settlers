@@ -114,16 +114,18 @@ draw call. The disassembly of the game code band then gave these results.
 - **Immediates.** No drawing call or entry find takes an immediate number from 3900 to 3999 as an entry. The only
   immediates in 3900 to 3999 are the clamp of a value to 3999 at `0x47664e` and `0x478294`, which the code then
   scales as a multiplier and never as an entry number. The immediates in 448 to 521 that name an entry are the
-  two pairs below (152 and 153 plus 320). A first search stopped at immediates and bases and so missed the sums of a
-  base and an index.
+  two pairs below (152 and 153 plus 320). Immediates and bases alone do not show the entries a sum of a base and an
+  index reaches, so the next item follows the sums.
 - **Base plus index.** The routine at `0x44de9a` adds 320 to the entry field and draws through `0x4062e0` (call at
-  `0x44dec8`). It has 38 call sites, grouped in the table below; four of them are tail jumps (`0x44f42e`, `0x44f528`,
+  `0x44dec8`). It has 39 call sites, grouped in the table below; four of them are tail jumps (`0x44f42e`, `0x44f528`,
   `0x44f5c8`, `0x44f908`). Each was followed to the numbers it can hand over. A bound that comes
   from a mask, an immediate, or an inline table is read from the code; a bound marked inferred is not.
 - **Other bases.** The routine at `0x44da4d` adds 1250 (and 1500 for the shadow) to an index. The callers read take
   it from immediates, masks, and the inline byte tables at `0x44fcfe` and `0x44fd16` (values 152 to 193), so they
   reach 1250 to 1443. The figure routine `0x406610` adds 1850, 2500, and 3150 to words of the tables at `0x4501a1`
-  (137 pairs) whose largest values are 533 and 627, so it reaches 1850 to 2383, 2500 to 3033, and 3150 to 3777. The
+  (137 pairs) whose largest values are 533 and 627. It then adds a word of the table at `0x4503c5` to both fields
+(`0x450128` to `0x45014c`; the words are 0 to about 62 for the first field and 0 to 5 for the second, and the index
+byte into that table is not bounded by the code), so it reaches about 1850 to 2446, 2500 to 3095, and 3150 to 3782. The
   routine at `0x44ff59` forms a number from 0 to 15 and adds 630. Reaching 3900 to 3999 would need an index of 2650
   or more on base 1250, 2050 on base 1850, 1400 on base 2500, 750 on base 3150, or 3580 on base 320. No bounded
   index is that large. The callers of `0x44da4d` were not all read, so that bound is inferred for them.
@@ -137,7 +139,7 @@ The call sites of `0x44de9a` and the entries they reach (the number is the value
 
 | Call sites | Value in the entry field | Entries reached |
 | --- | --- | --- |
-| `0x44dba2`, `0x44dbf2`, `0x44dc42`, `0x44dcfd`, `0x44dd4d`, `0x44dd9d`, `0x44dded`, `0x44de3d` | an object byte masked to 0 to 31 | 320 to 351 (inside slice 04's 321 to 372) |
+| `0x44dba2`, `0x44dbf2`, `0x44dc42`, `0x44dcfd`, `0x44dd4d`, `0x44dd9d`, `0x44dded`, `0x44de3d` | an object byte masked to 0 to 31 | 320 to 351 (inside the sprite range 321 to 372) |
 | `0x44faf3`, `0x44fba7` | the immediates 10 and 8 | 330 and 328 |
 | `0x44f528`, `0x44f5c8`, `0x44f908` | the counter at the game state block's `+0x206`, shifted right by 3 and masked to 0 to 7, plus 128 | 448 to 455 |
 | `0x44e0d1` | an entry of a sprite list (0 or 8 in the 25 inline lists at `0x44e114`), plus a phase of 0 to 7 that the routine cycles, plus 136 | 456 to 471 |
@@ -145,14 +147,14 @@ The call sites of `0x44de9a` and the entries they reach (the number is the value
 | `0x44f42e` | the counter, shifted right by 3 and masked to 0 to 7, plus 154 | 474 to 481 |
 | `0x44ee56`, `0x44eeda`, `0x44ef5e`, `0x44efd8`, `0x44f05c`, `0x44f0e0`, `0x44f160`, `0x44f1e3` | the first byte of a byte pair of the table at `0x44f225`, found by an even index of 0 to 254; the table is 128 pairs (the data after the jump at `0x44f220`, up to the code at `0x44f325`) and its first bytes are 162 to 173, each of them present | 482 to 493 |
 | `0x44ecfc`, `0x44f6aa`, `0x44f79a`, `0x44f82d` | the counter shifted right by 3 and masked to 0 to 3, plus 4 times the object byte 5 masked to 0 to 3, plus 182 | 502 to 517 |
-| `0x44e6c5` | the object byte 9 plus 174; the site runs only for a byte of 1 or more (the test at `0x44e653`) | 495 and up; the byte is not masked and the archives hold entries to 521 (inferred) |
-| `0x450f2f` | a byte of the state block's `+0x30` pointer at offset `0x101`: 47, or the byte plus 46 (a byte of 5 counts as 4) | 367 and up; the byte is not bounded here |
-| `0x450ada`, `0x450fc5` | a word of a list that the game fills at run time (the state block's `+0x1aa` and `+0xa4`) | not bounded here |
+| `0x44e6c5` | the object byte 9 plus 174; the site runs only for a byte of 1 or more (the test at `0x44e653`) | 495 to 749; the byte is not masked (inferred) |
+| `0x450f2f` | a byte of the object that the EDI block's `+0x30` pointer names, at offset `0x101`: 47, or the byte plus 46 (a byte of 5 counts as 4) | 367 and up; the byte is not bounded here |
+| `0x450ada`, `0x450fc5` | a word of a list that the game fills at run time (read through the EDI block's `+0x20` pointer at `+0x1aa` and `+0xa4`) | not bounded here |
 
 Entries 502 to 517 are reached by two routes (the object byte 9 of `0x44e6c5` and the four counter sites). Entry 494
 would need an object byte of 0, which `0x44e6c5` skips, and no other route shown hands it over. The claim of 495 to
-521 as sprites is **inferred** at its upper end: the unmasked byte could name any value up to 750, and the archives
-hold entries only up to 521 there. What remains unreached is 494, 3900 to 3994, and 3999. The open routes are the
+521 as sprites is **inferred** at its upper end: the unmasked byte could name any value up to 749. The archives hold
+no entry in 522 to 599 and hold entries in 600 to 749, so the byte could also name a present entry from 600 on. What remains unreached is 494, 3900 to 3994, and 3999. The open routes are the
 three callers `0x450f2f`, `0x450ada`, and `0x450fc5`, whose writers were not followed, so the status stays inferred.
 
 ## Corrupt archives
