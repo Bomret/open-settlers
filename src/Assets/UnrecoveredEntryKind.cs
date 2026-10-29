@@ -1,21 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using OpenSettlers.Formats;
 
 namespace OpenSettlers.Assets;
 
-/// <summary>The preview of an entry no kind has recovered yet: where it lies and how large it is.</summary>
-public sealed record UnrecoveredPreview : Preview
-{
-    /// <summary>The entry.</summary>
-    public required ArchiveEntry Entry { get; init; }
-}
-
 /// <summary>
-/// The graphics-archive entries that no other <see cref="ArchiveEntryKind"/> claims yet, listed with their
-/// location and size. It also reports a missing or corrupt archive once, so it stands for the archive file when no
-/// entry can be listed.
+/// The graphics-archive entries that no other <see cref="ArchiveEntryKind"/> claims: each is a gap in the
+/// entry-kind map, so its asset fails with the entry and the reason, and the check fails. It also reports a missing
+/// or corrupt archive once, so it stands for the archive file when no entry can be listed.
 /// </summary>
 public sealed class UnrecoveredEntryKind : ArchiveEntryKind
 {
@@ -39,10 +33,7 @@ public sealed class UnrecoveredEntryKind : ArchiveEntryKind
 
     /// <inheritdoc/>
     protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
-        new UnrecoveredPreview
-        {
-            Entry = entry,
-            Summary =
-                $"Entry {entry.Number}: offset {entry.Offset}, size {entry.Size}. No kind has recovered this entry yet.",
-        };
+        throw new InvalidDataException(
+            $"no kind claims entry {entry.Number} (offset {entry.Offset}, size {entry.Size}): the entry-kind map has a gap"
+        );
 }

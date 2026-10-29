@@ -17,7 +17,7 @@ namespace OpenSettlers.Assets;
 /// Entries are claimed by their program number, the same in all three archives (<c>docs/rules/graphics-archives.md</c>).
 /// An alias is claimed by whichever kind claims the entry it repeats, so a kind never names an alias: a kind that
 /// claims an alias's number makes that alias fail with a reason naming both entries. An entry
-/// claimed by no kind is listed by <see cref="UnrecoveredEntryKind"/>. An entry claimed by two kinds fails in both,
+/// claimed by no kind fails, listed by <see cref="UnrecoveredEntryKind"/>. An entry claimed by two kinds fails in both,
 /// with a reason that names both; the test over the discovered kinds fails too.
 /// </remarks>
 public abstract class ArchiveEntryKind : AssetKind
