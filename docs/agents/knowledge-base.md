@@ -95,8 +95,7 @@ not used: it reads a disabled wiki's 404 as an empty listing.
   page returns fewer than 50 entries. It returns metadata only (`title`, `html_url`, `sub_url`,
   `last_commit`), and no body.
 - **`sub_url` comes from the listing, never from the title slugged by hand.** A title's `sub_url` diverges
-  in ways a slugger cannot guess (`ADR 0023: The knowledge-base publish is its own command` becomes
-  `ADR+0023%3A+The-knowledge-base-publish-is-its-own-command.-`).
+  in ways a slugger cannot guess.
 - **Read a page's body:** `tea api /repos/bomret/open-settlers/wiki/page/<sub_url>` returns `content_base64`,
   which decodes to the page markdown. A 404 there, for a title the find call listed, is a read failure,
   never absence.
