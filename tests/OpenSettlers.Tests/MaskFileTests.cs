@@ -183,4 +183,15 @@ public sealed class MaskFileTests
 
         CollectionAssert.AreEqual(new byte[] { 252, 0, 0, 0, 252, 0, 0, 255 }, mask.ToRgba(Palette(), 5));
     }
+
+    // The side bound is inclusive: a graphic exactly 2048 wide or tall reads.
+    [TestMethod]
+    [DataRow(2048, 1)]
+    [DataRow(1, 2048)]
+    public void AGraphicOfTheBoundSideIsReadable(int width, int height)
+    {
+        var read = MaskFile.Read(Entry((ushort)width, (ushort)height, new byte[height * 2]));
+
+        Assert.AreEqual(width * height, read.Covered.Length);
+    }
 }

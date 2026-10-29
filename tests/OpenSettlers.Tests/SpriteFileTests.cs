@@ -181,4 +181,15 @@ public sealed class SpriteFileTests
         StringAssert.Contains(failure.Message, $"{width} x {height}");
         StringAssert.Contains(failure.Message, "an image holds");
     }
+
+    // The side bound is inclusive: a graphic exactly 2048 wide or tall reads.
+    [TestMethod]
+    [DataRow(2048, 1)]
+    [DataRow(1, 2048)]
+    public void AGraphicOfTheBoundSideIsReadable(int width, int height)
+    {
+        var read = SpriteFile.Read(Sprite((ushort)width, (ushort)height, 0, 0, new byte[height * 2]));
+
+        Assert.AreEqual(width * height, read.Indices.Length);
+    }
 }

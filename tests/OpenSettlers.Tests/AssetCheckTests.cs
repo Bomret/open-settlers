@@ -171,7 +171,7 @@ public sealed class AssetCheckTests
     }
 
     [TestMethod]
-    public void TwoKindsOfTheSameNameStopTheCheckWithExitCodeTwo()
+    public void TwoKindsOfTheSameNameStopTheCheckWithExitCodeThree()
     {
         using var fake = new FakeInstall().Put("snd/01.SND", [1]);
 
@@ -181,7 +181,7 @@ public sealed class AssetCheckTests
             new ListedKind("text", Entry("text", "snd/01.SND", "2"))
         );
 
-        Assert.AreEqual(2, report.ExitCode);
+        Assert.AreEqual(3, report.ExitCode);
         StringAssert.Contains(report.Lines[0], "\"text\"");
     }
 }

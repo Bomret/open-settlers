@@ -8,7 +8,7 @@ namespace OpenSettlers.Assets;
 /// <summary>The asset check's outcome: the process exit code and the report, one line each.</summary>
 public sealed record CheckReport
 {
-    /// <summary>0 when every entry was read, 1 when an entry cannot be read or a listed file is missing, 2 when there is no usable install or two kinds share a name.</summary>
+    /// <summary>0 when every entry was read, 1 when an entry cannot be read or a listed file is missing, 2 when there is no usable install, 3 when two kinds share a name.</summary>
     public required int ExitCode { get; init; }
 
     /// <summary>The report lines, in the order the check wrote them.</summary>
@@ -25,7 +25,7 @@ public static class AssetCheck
 {
     /// <summary>
     /// Runs the check of <c>kinds</c> over the install the launch arguments name. Exit code 2 (no install given,
-    /// folder missing, no program in it, a launch problem, or two kinds of one name) wins over 1. A kind or an asset that throws fails only
+    /// folder missing, no program in it, or a launch problem) wins over 1; exit code 3 (two kinds of one name) stops the check before it reads. A kind or an asset that throws fails only
     /// itself; the check goes on with the rest. A file that fails as a whole is reported once, however many kinds
     /// list it. Never throws.
     /// </summary>
@@ -39,7 +39,7 @@ public static class AssetCheck
         kinds = kinds.ToList();
         if (AssetKind.NameClash(kinds) is { } clash)
         {
-            return new CheckReport { ExitCode = 2, Lines = [$"ERROR {clash}"] };
+            return new CheckReport { ExitCode = 3, Lines = [$"ERROR {clash}"] };
         }
 
         var files = new Dictionary<string, FileTally>();
