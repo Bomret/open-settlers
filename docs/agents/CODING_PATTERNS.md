@@ -32,8 +32,13 @@ Such a gap is one of three cases: a file that cannot be read (`IOException`), a 
 (`UnauthorizedAccessException`), or corrupt data (`InvalidDataException`). The asset check and the browser
 catch these three when they turn an asset into an unreadable entry. A reader may catch another exception and
 rewrap it as `InvalidDataException` when its cause is corrupt data: `ArchiveEntryKind.PaletteOf` does so for
-an `ArgumentOutOfRangeException` from a palette lookup. Any other exception is a bug: let it propagate. The
-asset browser (`AssetBrowserView`) catches whatever escapes `AssetCheck.Run`, prints `asset check crashed` to stderr, and exits 1.
+an `ArgumentOutOfRangeException` from a palette lookup. Any other exception is a bug: let it propagate. Two
+entry points catch what propagates. The asset check (`AssetBrowserView.RunCheck`) catches whatever escapes
+`AssetCheck.Run`, prints `asset check crashed` to stderr, and exits 1. The asset browser
+(`AssetBrowserView.Guard`) catches whatever escapes `AssetBrowserState` while it selects a kind or an asset or
+draws a preview, prints `asset browser crashed` to stderr, and shows `<file or kind>: crashed: <Type>: <message>`
+in the preview pane, or in the window when it fails on opening. A Godot callback exception only reaches the log,
+so the view catches it to show anything.
 
 ## Stand-ins
 

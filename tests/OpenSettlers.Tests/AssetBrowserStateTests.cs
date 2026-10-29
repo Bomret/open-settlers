@@ -136,6 +136,59 @@ public sealed class AssetBrowserStateTests
         Assert.ThrowsExactly<IndexOutOfRangeException>(() => Open(fake, new ListedKind("sprite", bug)));
     }
 
+    [TestMethod]
+    public void AnAssetThatThrowsLeavesNoPreviewOrFailureOfThePreviousAsset()
+    {
+        using var fake = new FakeInstall();
+        var failed = Item("text", "f", () => throw new InvalidDataException("bad"));
+        var bug = Item("text", "bug", () => throw new IndexOutOfRangeException("reader bug"));
+        var state = Open(fake, new ListedKind("text", Item("text", "a"), failed, bug));
+
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => state.SelectAsset(2));
+        Assert.AreSame(bug, state.SelectedAsset);
+        Assert.IsNull(state.Preview);
+        Assert.IsNull(state.Failure);
+
+        state.SelectAsset(1);
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => state.SelectAsset(2));
+        Assert.IsNull(state.Failure);
+    }
+
+    [TestMethod]
+    public void AKindThatThrowsWhileListingLeavesNoAssetsOfThePreviousKind()
+    {
+        using var fake = new FakeInstall();
+        var state = Open(fake, new ListedKind("a", Item("a", "x")), new BuggyKind());
+
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => state.SelectKind("buggy"));
+        Assert.AreEqual("buggy", state.SelectedKind);
+        Assert.IsEmpty(state.Assets);
+        Assert.IsNull(state.SelectedAsset);
+        Assert.IsNull(state.Preview);
+        Assert.IsNull(state.Notice);
+
+        state.SelectKind("a");
+        Assert.AreEqual("x", state.SelectedAsset!.Name);
+    }
+
+    [TestMethod]
+    public void OpeningWithoutTheFirstSelectionLeavesItToTheCaller()
+    {
+        using var fake = new FakeInstall();
+        var state = AssetBrowserState.Open(LaunchArgs.Parse(["--game", fake.Root], null), [new BuggyKind()], false);
+
+        Assert.IsNull(state.SelectedKind);
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => state.SelectKind(state.Categories[0]));
+        Assert.AreEqual("buggy", state.SelectedKind);
+    }
+
+    sealed class BuggyKind : AssetKind
+    {
+        public override string Name => "buggy";
+
+        public override IEnumerable<Asset> Enumerate(Install install) => throw new IndexOutOfRangeException("bug");
+    }
+
     sealed class ThrowingKind : AssetKind
     {
         public override string Name => "broken";

@@ -37,9 +37,44 @@ public partial class AssetBrowserView : Control
         }
 
         _views = PreviewView.Discover();
-        _state = AssetBrowserState.Open(args, kinds);
+        _state = AssetBrowserState.Open(args, kinds, selectFirst: false);
+        if (_state.Categories.Count > 0 && Guard(() => _state.SelectKind(_state.Categories[0])) is { } crash)
+        {
+            AddChild(Wrapped(crash));
+
+            return;
+        }
+
         Build();
     }
+
+    // AssetBrowserState propagates a programming error, and a Godot callback exception only reaches the log, so the
+    // view catches it like RunCheck does and returns the text to show in its place.
+    string? Guard(Action action)
+    {
+        try
+        {
+            action();
+
+            return null;
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"asset browser crashed: {e}");
+            var subject = _state.SelectedAsset?.File ?? _state.SelectedKind;
+
+            return $"{subject}: crashed: {e.GetType().Name}: {e.Message}";
+        }
+    }
+
+    static Label Wrapped(string text) =>
+        new()
+        {
+            Text = text,
+            AutowrapMode = TextServer.AutowrapMode.Word,
+            AnchorRight = 1,
+            AnchorBottom = 1,
+        };
 
     // A Godot callback exception does not set the exit code, so the check owns it.
     void RunCheck(LaunchArgs args, System.Collections.Generic.IReadOnlyList<AssetKind> kinds)
@@ -68,15 +103,7 @@ public partial class AssetBrowserView : Control
     {
         if (_state.Message != null)
         {
-            AddChild(
-                new Label
-                {
-                    Text = _state.Message,
-                    AutowrapMode = TextServer.AutowrapMode.Word,
-                    AnchorRight = 1,
-                    AnchorBottom = 1,
-                }
-            );
+            AddChild(Wrapped(_state.Message));
 
             return;
         }
@@ -96,13 +123,13 @@ public partial class AssetBrowserView : Control
 
         _kinds.ItemSelected += index =>
         {
-            _state.SelectKind(_state.Categories[(int)index]);
-            ShowAssets();
+            var crash = Guard(() => _state.SelectKind(_state.Categories[(int)index]));
+            ShowAssets(crash);
         };
         _assets.ItemSelected += index =>
         {
-            _state.SelectAsset((int)index);
-            ShowPreview();
+            var crash = Guard(() => _state.SelectAsset((int)index));
+            ShowPreview(crash);
         };
         if (_state.Categories.Count > 0)
         {
@@ -112,7 +139,7 @@ public partial class AssetBrowserView : Control
         ShowAssets();
     }
 
-    void ShowAssets()
+    void ShowAssets(string? crash = null)
     {
         _assets.Clear();
         foreach (var asset in _state.Assets)
@@ -125,16 +152,33 @@ public partial class AssetBrowserView : Control
             _assets.Select(0);
         }
 
-        ShowPreview();
+        ShowPreview(crash);
     }
 
-    void ShowPreview()
+    // A crash, from the selection or from drawing the preview, replaces the pane; the lists stay usable.
+    void ShowPreview(string? crash = null)
+    {
+        ClearPane();
+
+        crash ??= Guard(DrawPreview);
+        if (crash != null)
+        {
+            ClearPane();
+
+            _pane.AddChild(new Label { Text = crash, AutowrapMode = TextServer.AutowrapMode.Word });
+        }
+    }
+
+    void ClearPane()
     {
         foreach (var child in _pane.GetChildren())
         {
             child.QueueFree();
         }
+    }
 
+    void DrawPreview()
+    {
         if (_state.Notice != null)
         {
             _pane.AddChild(new Label { Text = _state.Notice });

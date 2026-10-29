@@ -53,10 +53,12 @@ public sealed class AssetBrowserState
     public string? Failure { get; private set; }
 
     /// <summary>
-    /// Opens the install the launch arguments name and selects the first kind and its first asset. Does not throw:
-    /// without a usable install, or with two kinds of one name, the state holds <see cref="Message"/> and no categories.
+    /// Opens the install the launch arguments name and, unless <c>selectFirst</c> is false, selects the first kind and
+    /// its first asset. The view passes false so it can guard the first selection itself; the default serves callers
+    /// that want the first kind selected on open. Without a usable install, or with two kinds of one name, the state holds <see cref="Message"/>
+    /// and no categories. Only the first selection can throw, as <see cref="SelectKind"/> does.
     /// </summary>
-    public static AssetBrowserState Open(LaunchArgs args, IEnumerable<AssetKind> kinds)
+    public static AssetBrowserState Open(LaunchArgs args, IEnumerable<AssetKind> kinds, bool selectFirst = true)
     {
         if (!Install.TryOpen(args, out var install, out var problem))
         {
@@ -70,7 +72,7 @@ public sealed class AssetBrowserState
         }
 
         var state = new AssetBrowserState(null, install, sorted.ToDictionary(k => k.Name));
-        if (state.Categories.Count > 0)
+        if (selectFirst && state.Categories.Count > 0)
         {
             state.SelectKind(state.Categories[0]);
         }
@@ -80,7 +82,7 @@ public sealed class AssetBrowserState
 
     /// <summary>
     /// Selects the kind named <c>name</c>, lists its assets, and selects the first. A name that is no category
-    /// changes nothing.
+    /// changes nothing. A programming error propagates, leaving the kind selected with no assets of the previous kind.
     /// </summary>
     public void SelectKind(string name)
     {
@@ -91,6 +93,10 @@ public sealed class AssetBrowserState
 
         SelectedKind = name;
         Notice = null;
+        Assets = [];
+        SelectedAsset = null;
+        Preview = null;
+        Failure = null;
         try
         {
             Assets = kind.Enumerate(_install).ToList();
@@ -101,7 +107,6 @@ public sealed class AssetBrowserState
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            Assets = [];
             Notice = $"cannot list the {name} assets: {e.Message}";
         }
 
@@ -111,7 +116,7 @@ public sealed class AssetBrowserState
     /// <summary>
     /// Selects the asset at <c>index</c> of <see cref="Assets"/> and loads its preview; a failure to load becomes
     /// <see cref="Failure"/>. An index outside the list changes nothing, except that index 0 of an empty list
-    /// clears the selection.
+    /// clears the selection. A programming error propagates, leaving the asset selected with no preview and no failure.
     /// </summary>
     public void SelectAsset(int index)
     {
@@ -130,14 +135,14 @@ public sealed class AssetBrowserState
         }
 
         SelectedAsset = Assets[index];
+        Preview = null;
+        Failure = null;
         try
         {
             Preview = SelectedAsset.Load();
-            Failure = null;
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            Preview = null;
             Failure = e.Message;
         }
     }
