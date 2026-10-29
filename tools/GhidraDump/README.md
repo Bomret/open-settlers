@@ -53,7 +53,8 @@ export PATH="$JAVA_HOME/bin:$PATH"
 export HEADLESS=<Ghidra 12.1.x folder>/support/analyzeHeadless
 ```
 
-Build the project. This takes about 7 minutes:
+Build the project only when `re-local/ghidra` holds no project. The import replaces an existing project
+and loses every change applied to it. The build takes about 7 minutes:
 
 ```sh
 mkdir -p "$PWD/re-local/ghidra"
@@ -71,7 +72,8 @@ changes:
   -postScript ApplyIndexNames.java "$PWD/docs/rules/program-index.md"
 ```
 
-Write the dump from the project, without changing it:
+Write the dump from the project, without changing it. Never edit the dump by hand, because this run
+overwrites it. Run it only under the conditions in `docs/rules/AGENTS.md`, "Program index":
 
 ```sh
 rm -rf "$PWD/re-local/dump" && mkdir -p "$PWD/re-local/dump"

@@ -48,8 +48,23 @@ Investigate the program in this order:
 3. Use REA only for a question that the dump cannot answer yet.
 
 When an investigation names or explains a routine, a datum, or a save field, add or update its row and
-take its area out of "Unexplored", in the same commit as the rule note. Then update the Ghidra project
-and write the dump again, so that the dump carries the finding for the next investigation.
+take its area out of "Unexplored", in the same commit as the rule note.
+
+REA opens `Siedler1.exe` directly and does not read the Ghidra project in `re-local/ghidra`. Apply
+what REA finds, such as a missing function, a function's boundaries, a type, or a comment, to the
+Ghidra project as you go.
+
+Never edit the dump by hand: the next dump run overwrites it. A dump run is costly. Write the dump
+again only when all of these hold:
+
+- The implementation of the scope is done. Never run it during an investigation or a slice, or only
+  because the program was opened or a finding was made.
+- The Ghidra project holds a change that alters what the dump says about code: a function created, a
+  function's boundaries fixed, or a type or signature that changes the decompiled code. Names and
+  comments alone do not count, because the program index carries them.
+- Later work will read the dump again. Otherwise the change waits for the next dump run that is due
+  anyway.
+- The user agreed to this run, after being told the changes that make it necessary.
 
 REA's Ghidra provider keeps names only while the program stays open in REA, and it names only routines
 that it found: use `annotate_native_function`, since it rejects `set_address_name` and
