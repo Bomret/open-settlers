@@ -270,14 +270,27 @@ public sealed class ArchiveEntryKindTests
     [TestMethod]
     public void TheCheckReportsPresentEntriesAndAliasesSeparatelyPerArchive()
     {
+        // Entry 1352 is a sprite and its copies are aliases; entry 3 is the palette that the sprite needs.
+        var sprite = GraphicFileTests.Entry(1, 0, 1, 1, 0, 0, [0, 1, 1, 0, 0]);
         using var fake = InstallWith(
-            ArchiveBytes.Build(Rows, new Dictionary<int, byte[]> { [1352] = [4], [12] = [1] })
+            ArchiveBytes.Build(
+                Rows,
+                new Dictionary<int, byte[]>
+                {
+                    [1352] = sprite,
+                    [3] = new byte[768],
+                    [12] = [1],
+                }
+            )
         );
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, [new UnrecoveredEntryKind()]);
+        var report = AssetCheck.Run(args, [new PaletteKind(), new SpriteKind(), new UnrecoveredEntryKind()]);
 
         Assert.AreEqual(0, report.ExitCode);
-        CollectionAssert.Contains(report.Lines.ToList(), "loca/SPAD.PA: 2 entries, 6 aliases (unrecovered)");
+        CollectionAssert.Contains(
+            report.Lines.ToList(),
+            "loca/SPAD.PA: 3 entries, 6 aliases (palette, sprite, unrecovered)"
+        );
     }
 }

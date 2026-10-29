@@ -30,10 +30,7 @@ public sealed class SpriteFileTests
         var sprite = SpriteFile.Read(entry);
 
         CollectionAssert.AreEqual(new byte[] { 0, 5, 6, 0, 7, 0, 8, 0 }, sprite.Indices);
-        CollectionAssert.AreEqual(
-            new[] { false, true, true, false, true, false, true, false },
-            sprite.Drawn
-        );
+        CollectionAssert.AreEqual(new[] { false, true, true, false, true, false, true, false }, sprite.Drawn);
     }
 
     [TestMethod]

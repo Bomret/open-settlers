@@ -96,6 +96,79 @@ the same color in 3 and in 3998 in the reference install, so their preview is th
 
 All entries of these ranges in the reference archives have exactly the size that their width and height give.
 
+## Transparent sprites
+
+**Status:** confirmed for the encoding and for the two routines. Confirmed for the ranges whose call site fixes a
+base (marked below), with the upper bound inferred. **Inferred** for the ranges marked shape only.
+
+`0x405590` draws a sprite and `0x405880` draws the same stream in one color. Both take the entry's address and
+the position, add the entry's two offsets to the position, and clip against the clip rectangle like
+`Gfx_BlitRaw`. The pixels after the header are the rows from the top, one after the other. A row is a series of
+runs. A run is a skip byte, a count byte, and as many palette indices as the count. The skip moves the pen to
+the right over pixels that stay as they are. A run with a count of 0 ends the row, and the program ignores its
+skip. `0x405590` copies the indices of a run to the surface, so an index of 0 is drawn like any other, and
+`0x405880` writes one color value in place of those indices and skips the indices in the stream. The program
+reads the stream with no check against the width, the height, or the entry's size: it trusts the entry.
+
+The two routines are reached through three callers. `0x4062e0` draws a sprite with `0x405590`. `0x406490`
+draws one with `0x405880`. `0x406610` is the routine for a settler with a player color: it calls `0x405590`,
+then `0x405880` with a color of the player (40 hex plus four times a player number), then, where a second
+entry is set, `0x405590` again with an entry from the base 3150 at the offset of a second figure. The
+decompiler hides which entry each call gets, so the pairing of entry and call is **inferred**.
+
+The entries of a transparent sprite, in the three archives alike. Each present entry of a range, and no other
+one in it, decodes as a sprite of at least one drawn pixel. All present entries of the three archives are the
+same.
+
+| Entries | Where | Drawn |
+| --- | --- | --- |
+| 321 to 372 | `0x44de9a` and `0x44fd4a`: an index plus 320 | palette |
+| 448 to 521 | shape only | palette |
+| 610 to 619 | `0x428528`: 610 to 612, those plus 3 or 6, and 619 | palette |
+| 630 to 645 | shape only | palette |
+| 750 to 793 | `0x4511d5` through `0x406490`: a character's glyph, the character's code plus 749 | one color, index 31 |
+| 810 to 853 | the same routine, the glyph plus 809, as the shadow of the text | one color, index 1 |
+| 1250 to 1273 | `0x44da4d`: an index plus 1250 | palette |
+| 1314 to 1362, 1378 to 1443 | shape only | palette |
+| 1850 to 2390 | `0x406610`: an index plus 1850 | palette, and in a player color |
+| 2500 to 2669, 2671 to 2701, 2740 to 2965, 3000 to 3009, 3033 to 3040 | shape only | palette |
+| 3150 to 3450 | `0x406610`: an index plus 3150 | palette |
+| 3456 to 3732, every sixth | `0x406610`: the first entry of each group of six that `Archive_FillAliases` fills | palette |
+| 3738 to 3764 and 3768 to 3779 | `0x406610`: an index plus 3150 | palette |
+
+The text routines in `0x4511d5` fill the color from the game state: the sites at `0x450fde` and `0x451111` set
+31 and the site at `0x451043` sets 47 as the text color, and each sets 1 as the shadow color. Palettes 3 and
+3998 agree on colors 1, 31, and 47, so the preview uses palette 3 and index 31. The text color is **stand-in**:
+the program picks it at run time.
+
+A range marked shape only holds entries whose whole stream decodes as a sprite with drawn pixels, and the only
+routines that decode this shape are the two above. The callers that pick those entries are not recovered: the
+game script code computes them (the EDI block holds the entry), and no direct number shows them. None of the 432 raw
+images decodes this way, so the shape tells the two kinds apart. Twelve entries inside the ranges (490, 1909,
+1918, 1938, 2019, 2023, 2212, 2378, 3176, 3193, 3233, 3415) happen to have the size a raw image would have
+and decode as sprites: the neighbouring entries are animation frames, and they are sprites.
+
+Entries the engine does not claim, because their rows are all empty and the same bytes are also a mask with
+nothing covered: 1597 and 1598 (inside the mask ranges), 2670, and 3010 to 3032. Entry 3999 decodes as a 16 x 16
+sprite of 60 pixels but is outside every range and follows no known caller.
+
+### Corrupt sprites
+
+**Status:** stand-in. The program checks none of these. The engine reports each for its own entry.
+
+- A sprite shorter than its 10-byte header is unreadable.
+- A sprite of width 0 or height 0 is unreadable: nothing to draw.
+- A row that has a run ending past the width is unreadable. The message names the row and the width.
+- A stream that ends inside a run or before the pair that ends a row is unreadable. The message names the row.
+- Bytes after the last row are ignored.
+
+### Sprites in the engine
+
+`SpriteFile.Read` in `src/Formats` decodes an entry into one index per pixel and a flag for each pixel the
+program draws; `Sprite.ToRgba` lowers the alpha of the others to 0, or draws every drawn pixel in one color.
+`SpriteKind` in `src/Assets` claims the ranges above, draws in palette 3, and gives the entries of 750 to 853
+their color. The offsets only appear in the summary: the preview draws the sprite alone at its own size.
+
 ## Corrupt entries
 
 **Status:** stand-in. The program checks none of these; the engine reports them, each for its own entry, and
