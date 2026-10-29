@@ -23,22 +23,6 @@ public sealed class FillTextureKind : ArchiveEntryKind
     public override bool Claims(int entry) => Array.Exists(Ranges, r => entry >= r.First && entry <= r.Last);
 
     /// <inheritdoc/>
-    protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
-        throw new InvalidOperationException("a fill texture is read with the palette of its archive");
-
-    /// <inheritdoc/>
-    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data)
-    {
-        var image = GraphicFile.ReadRaw(data);
-        var palette = PaletteOf(archive, PaletteKind.GamePalette);
-
-        return new RawImagePreview
-        {
-            Summary =
-                $"Fill texture of entry {entry.Number}: {image.Header.Width} x {image.Header.Height}, opaque, in the palette of entry {PaletteKind.GamePalette}.",
-            Width = image.Header.Width,
-            Height = image.Header.Height,
-            Rgba = IndexedImage.ToRgba(image.Pixels.Span, palette),
-        };
-    }
+    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
+        RawImageKind.Draw("Fill texture", archive, entry, data, PaletteKind.GamePalette);
 }

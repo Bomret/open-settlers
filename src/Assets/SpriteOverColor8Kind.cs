@@ -25,25 +25,12 @@ public sealed class SpriteOverColor8Kind : ArchiveEntryKind
     public override bool Claims(int entry) => entry >= First && entry <= Last;
 
     /// <inheritdoc/>
-    protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
-        throw new InvalidOperationException("a sprite is read with the palette of its archive");
-
-    /// <inheritdoc/>
-    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data)
-    {
-        var sprite = SpriteFile.Read(data);
-        var palette = PaletteOf(archive, PaletteKind.GamePalette);
-        var header = sprite.Header;
-
-        return new SpritePreview
-        {
-            Summary =
-                $"Sprite of entry {entry.Number}: {header.Width} x {header.Height}, offset {header.OffsetX}, {header.OffsetY}, drawn only over color 8 (palette index 8) of the surface, in the palette of entry {PaletteKind.GamePalette}; the preview shows every pixel of the stream over a transparent background.",
-            Width = header.Width,
-            Height = header.Height,
-            OffsetX = header.OffsetX,
-            OffsetY = header.OffsetY,
-            Rgba = sprite.ToRgba(palette),
-        };
-    }
+    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
+        SpriteKind.Draw(
+            archive,
+            entry,
+            data,
+            null,
+            $"drawn only over color 8 (palette index 8) of the surface, in the palette of entry {PaletteKind.GamePalette}; the preview shows every pixel of the stream over a transparent background"
+        );
 }

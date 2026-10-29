@@ -61,20 +61,28 @@ public sealed class RawImageKind : ArchiveEntryKind
     static int Find(int entry) => Array.FindIndex(Ranges, r => entry >= r.First && entry <= r.Last);
 
     /// <inheritdoc/>
-    protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
-        throw new InvalidOperationException("a raw image is read with the palette of its archive");
+    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
+        Draw("Raw image", archive, entry, data, PaletteEntryOf(entry.AliasOf ?? entry.Number));
 
-    /// <inheritdoc/>
-    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data)
+    /// <summary>
+    /// The preview of a raw image of an archive, opaque, in the palette of entry <c>paletteEntry</c>; the summary
+    /// starts with <c>what</c>.
+    /// </summary>
+    internal static RawImagePreview Draw(
+        string what,
+        Archive archive,
+        ArchiveEntry entry,
+        ReadOnlyMemory<byte> data,
+        int paletteEntry
+    )
     {
         var image = GraphicFile.ReadRaw(data);
-        var paletteEntry = PaletteEntryOf(entry.AliasOf ?? entry.Number);
         var palette = PaletteOf(archive, paletteEntry);
 
         return new RawImagePreview
         {
             Summary =
-                $"Raw image of entry {entry.Number}: {image.Header.Width} x {image.Header.Height}, opaque, in the palette of entry {paletteEntry}.",
+                $"{what} of entry {entry.Number}: {image.Header.Width} x {image.Header.Height}, opaque, in the palette of entry {paletteEntry}.",
             Width = image.Header.Width,
             Height = image.Header.Height,
             Rgba = IndexedImage.ToRgba(image.Pixels.Span, palette),

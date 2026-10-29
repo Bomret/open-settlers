@@ -35,7 +35,7 @@ public sealed class PaletteKind : ArchiveEntryKind
     public override bool Claims(int entry) => entry is GamePalette or TitlePalette or StartPalette;
 
     /// <inheritdoc/>
-    protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
+    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
         new PalettePreview
         {
             Summary = $"Palette of entry {entry.Number}: 256 colors, 6 bits per component, color 0 black.",

@@ -24,7 +24,7 @@ public sealed class ArchiveEntryKindTests
 
         public override bool Claims(int entry) => entry >= first && entry <= last;
 
-        protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
+        protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
             new ClaimedPreview { Summary = $"{data.Length} bytes", Entry = entry };
     }
 

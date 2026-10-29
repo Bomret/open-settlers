@@ -32,7 +32,7 @@ public sealed class UnrecoveredEntryKind : ArchiveEntryKind
         $"{base.Label(file, entry)}: offset {entry.Offset}, size {entry.Size}";
 
     /// <inheritdoc/>
-    protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
+    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
         throw new InvalidDataException(
             $"no kind claims entry {entry.Number} (offset {entry.Offset}, size {entry.Size}): the entry-kind map has a gap"
         );

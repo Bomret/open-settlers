@@ -33,7 +33,7 @@ public sealed class UnreadEntryKind : ArchiveEntryKind
         $"{base.Label(file, entry)}: offset {entry.Offset}, size {entry.Size}, not read by the program";
 
     /// <inheritdoc/>
-    protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
+    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
         new LocatedEntryPreview
         {
             Entry = entry,

@@ -59,10 +59,6 @@ public sealed class MaskKind : ArchiveEntryKind
     static int Find(int entry) => Array.FindIndex(Ranges, r => entry >= r.First && entry <= r.Last);
 
     /// <inheritdoc/>
-    protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
-        throw new InvalidOperationException("a mask is read with the palette of its archive");
-
-    /// <inheritdoc/>
     protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data)
     {
         var mask = MaskFile.Read(data);

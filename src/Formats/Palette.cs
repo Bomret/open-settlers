@@ -17,17 +17,17 @@ public sealed class Palette
     public const int ColorCount = 256;
 
     // R, G, B, A of each color as 8-bit values, ready for the conversion of an indexed image.
-    readonly byte[] rgba = new byte[ColorCount * 4];
+    readonly byte[] _rgba = new byte[ColorCount * 4];
 
     internal Palette(IReadOnlyList<Rgb> colors)
     {
         Colors = colors;
         for (var i = 0; i < ColorCount; i++)
         {
-            rgba[i * 4] = (byte)(colors[i].R << 2);
-            rgba[i * 4 + 1] = (byte)(colors[i].G << 2);
-            rgba[i * 4 + 2] = (byte)(colors[i].B << 2);
-            rgba[i * 4 + 3] = 255;
+            _rgba[i * 4] = (byte)(colors[i].R << 2);
+            _rgba[i * 4 + 1] = (byte)(colors[i].G << 2);
+            _rgba[i * 4 + 2] = (byte)(colors[i].B << 2);
+            _rgba[i * 4 + 3] = 255;
         }
     }
 
@@ -38,7 +38,7 @@ public sealed class Palette
     public Rgb this[int index] => Colors[index];
 
     /// <summary>The color with this index as four bytes, red, green, blue, and an opaque alpha, as the game shows it.</summary>
-    public ReadOnlySpan<byte> Rgba(int index) => rgba.AsSpan(index * 4, 4);
+    public ReadOnlySpan<byte> Rgba(int index) => _rgba.AsSpan(index * 4, 4);
 }
 
 /// <summary>The palette reader (<c>docs/rules/graphics-images.md</c>).</summary>

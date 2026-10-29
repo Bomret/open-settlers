@@ -27,7 +27,7 @@ public sealed class RuleDataKind : ArchiveEntryKind
         $"{base.Label(file, entry)}: offset {entry.Offset}, size {entry.Size}, meaning pending";
 
     /// <inheritdoc/>
-    protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
+    protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
         new LocatedEntryPreview
         {
             Entry = entry,

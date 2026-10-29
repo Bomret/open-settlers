@@ -93,22 +93,40 @@ public sealed class SpriteKind : ArchiveEntryKind
         };
 
     /// <inheritdoc/>
-    protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
-        throw new InvalidOperationException("a sprite is read with the palette of its archive");
-
-    /// <inheritdoc/>
     protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data)
+    {
+        var oneColor = OneColorOf(entry.AliasOf ?? entry.Number);
+        var drawing = oneColor is { } color ? $"in one color, palette index {color}" : "in its own colors";
+
+        return Draw(
+            archive,
+            entry,
+            data,
+            oneColor,
+            $"{drawing}, over a transparent background, in the palette of entry {PaletteKind.GamePalette}"
+        );
+    }
+
+    /// <summary>
+    /// The preview of a sprite of an archive in the game's palette, in the palette index <c>oneColor</c> when it is
+    /// set; <c>how</c> ends the summary and says how the program draws it.
+    /// </summary>
+    internal static SpritePreview Draw(
+        Archive archive,
+        ArchiveEntry entry,
+        ReadOnlyMemory<byte> data,
+        int? oneColor,
+        string how
+    )
     {
         var sprite = SpriteFile.Read(data);
         var palette = PaletteOf(archive, PaletteKind.GamePalette);
-        var oneColor = OneColorOf(entry.AliasOf ?? entry.Number);
         var header = sprite.Header;
-        var drawing = oneColor is { } color ? $"in one color, palette index {color}" : "in its own colors";
 
         return new SpritePreview
         {
             Summary =
-                $"Sprite of entry {entry.Number}: {header.Width} x {header.Height}, offset {header.OffsetX}, {header.OffsetY}, {drawing}, over a transparent background, in the palette of entry {PaletteKind.GamePalette}.",
+                $"Sprite of entry {entry.Number}: {header.Width} x {header.Height}, offset {header.OffsetX}, {header.OffsetY}, {how}.",
             Width = header.Width,
             Height = header.Height,
             OffsetX = header.OffsetX,

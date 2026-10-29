@@ -38,17 +38,11 @@ public abstract class ArchiveEntryKind : AssetKind
     /// <summary>
     /// Reads one claimed entry. <c>data</c> holds its bytes; <c>entry</c> is the slot being read, an alias
     /// included, whose <see cref="ArchiveEntry.Offset"/> and <see cref="ArchiveEntry.Size"/> are the data's
-    /// location. Throws <see cref="InvalidDataException"/> for corrupt data; the message is the reason the check
-    /// reports.
+    /// location. <c>archive</c> is the archive it lies in, for a kind that needs another entry of the same archive,
+    /// such as the palette (<see cref="PaletteOf"/>); a kind that needs none ignores it. Throws
+    /// <see cref="InvalidDataException"/> for corrupt data; the message is the reason the check reports.
     /// </summary>
-    protected abstract Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data);
-
-    /// <summary>
-    /// Reads one claimed entry with the archive it lies in, for a kind that needs another entry of the same
-    /// archive, such as the palette (<see cref="PaletteOf"/>). The base class calls this one; it hands the
-    /// entry to <see cref="Read(ArchiveEntry, ReadOnlyMemory{byte})"/> unless a kind overrides it.
-    /// </summary>
-    protected virtual Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) => Read(entry, data);
+    protected abstract Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data);
 
     /// <summary>
     /// A palette of an archive, by its entry number (<c>docs/rules/graphics-images.md</c>).

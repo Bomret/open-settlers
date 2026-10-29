@@ -44,33 +44,33 @@ public sealed record ArchiveEntry
 /// <summary>A graphics archive: its entries and the bytes they point into.</summary>
 public sealed class Archive
 {
-    readonly byte[] bytes;
-    readonly ArchiveEntry[] rows;
+    readonly byte[] _bytes;
+    readonly ArchiveEntry[] _rows;
 
     internal Archive(byte[] bytes, ArchiveEntry[] rows)
     {
-        this.bytes = bytes;
-        this.rows = rows;
+        _bytes = bytes;
+        _rows = rows;
     }
 
     /// <summary>The number of table rows the header declares, the header's own row included.</summary>
-    public int RowCount => rows.Length;
+    public int RowCount => _rows.Length;
 
     /// <summary>Every slot from entry 1 to the last, in number order, absent slots included.</summary>
     public IReadOnlyList<ArchiveEntry> Entries =>
-        new ArraySegment<ArchiveEntry>(rows, Math.Min(1, rows.Length), Math.Max(rows.Length - 1, 0));
+        new ArraySegment<ArchiveEntry>(_rows, Math.Min(1, _rows.Length), Math.Max(_rows.Length - 1, 0));
 
     /// <summary>
     /// The slot with the given program number (1 to <see cref="RowCount"/> - 1). Row 0 is the header and no entry:
     /// it and any number past the table throw <see cref="ArgumentOutOfRangeException"/>.
     /// </summary>
     public ArchiveEntry this[int number] =>
-        number >= 1 && number < rows.Length
-            ? rows[number]
+        number >= 1 && number < _rows.Length
+            ? _rows[number]
             : throw new ArgumentOutOfRangeException(
                 nameof(number),
                 number,
-                $"an entry number is 1 to {rows.Length - 1}"
+                $"an entry number is 1 to {_rows.Length - 1}"
             );
 
     /// <summary>
@@ -85,14 +85,14 @@ public sealed class Archive
             throw new InvalidOperationException($"entry {entry.Number} is absent and has no data");
         }
 
-        if ((long)entry.Offset + entry.Size > bytes.Length)
+        if ((long)entry.Offset + entry.Size > _bytes.Length)
         {
             throw new InvalidDataException(
-                $"entry {entry.Number} runs past the end of the file: offset {entry.Offset}, size {entry.Size}, file length {bytes.Length}"
+                $"entry {entry.Number} runs past the end of the file: offset {entry.Offset}, size {entry.Size}, file length {_bytes.Length}"
             );
         }
 
-        return new ReadOnlyMemory<byte>(bytes, (int)entry.Offset, (int)entry.Size);
+        return new ReadOnlyMemory<byte>(_bytes, (int)entry.Offset, (int)entry.Size);
     }
 }
 
