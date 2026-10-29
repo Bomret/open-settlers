@@ -195,6 +195,14 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x407410` | `Palette_LoadTitle` | Loads the palette of entry 3997 by a jump into `Palette_Load`. | confirmed | platform | Called at `0x451ee9`, in the title scene. |
 | `0x6816d0` | `Palette_Current` | Data: the current palette, 256 colors of three bytes with 6-bit components. | confirmed | platform | Written by `Palette_Load`; read by `Frame_Present`. |
 | `0x405730` | `Gfx_BlitRaw` | Copies the width x height palette indices of a raw image to the surface row by row, clipped to the clip rectangle, with no transparency. | confirmed | platform | Called by `Gfx_DrawSprite`, which hands it the entry's address and the position. |
+| `0x405590` | `Gfx_BlitSprite` | Draws a transparent sprite: per row, runs of a skip byte, a count byte, and that many palette indices copied to the surface, a count of 0 ending the row; clipped to the clip rectangle. | confirmed | platform | Called by `Gfx_DrawSpriteTransparent`, `Gfx_DrawSpriteGrowing`, `Gfx_DrawSpriteNoOffset`, and `Gfx_DrawSettler`. |
+| `0x405880` | `Gfx_BlitSpriteOneColor` | Draws the same stream as `Gfx_BlitSprite` but writes one color value for every drawn pixel and skips the stored indices. | confirmed | platform | Called by `Gfx_DrawSpriteOneColor` and `Gfx_DrawSettler`. |
+| `0x4062e0` | `Gfx_DrawSpriteTransparent` | Loads the clip rectangle of the target surface and calls `Gfx_BlitSprite` with the entry and the position of the EDI block. | confirmed | platform | Called at `0x4286b8`, `0x44dace`, `0x44dec8`, `0x44fd59`. |
+| `0x406490` | `Gfx_DrawSpriteOneColor` | Loads the clip rectangle and calls `Gfx_BlitSpriteOneColor` with the entry, the position, and the color of the EDI block. | confirmed | platform | Called at `0x4512da` and `0x45130f`. |
+| `0x406350` | `Gfx_DrawSpriteGrowing` | Draws a transparent sprite through `Gfx_BlitSprite` with its top moved by a fraction of its height, which the EDI block holds, and the top clipped to the clip rectangle; the entry is the base 1250 plus a script index. | inferred | platform | Called at `0x44ff45`. See [Graphics images](graphics-images.md). |
+| `0x406590` | `Gfx_DrawSpriteNoOffset` | Draws a transparent sprite through `Gfx_BlitSprite` with the entry's two offsets set to 0 for the call and restored after; the entry is the base 1250 plus a script index. | confirmed | platform | Called at `0x44db12`. See [Graphics images](graphics-images.md). |
+| `0x406610` | `Gfx_DrawSettler` | Draws a settler: the figure from the base 1850 through `Gfx_BlitSprite`, the overlay of the same index plus 2500 through `Gfx_BlitSpriteOneColor` in the player color (40 hex plus four times the player), then, where a second figure is set, an entry from the base 3150 through `Gfx_BlitSprite`, moved by header bytes 0 and 1 of the first figure as signed offsets. | confirmed | platform | Called at `0x450189`. See [Graphics images](graphics-images.md). |
+| `0x4511d5` | `Text_DrawGlyphs` | Draws a string of characters as one-color sprites: for each character, a shadow glyph (entry plus 809) in the shadow color when one is set, then the glyph (entry plus 749) in the text color; steps 8 pixels per character. | inferred | game | Called at `0x450fde`, `0x451043`, `0x4510a8`, `0x451111`, `0x451173` (each jumps to it); calls `Gfx_DrawSpriteOneColor`. |
 
 Note: [Graphics images](graphics-images.md).
 
@@ -558,13 +566,20 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | Address | Name | Status | Topic |
 | --- | --- | --- | --- |
 | `0x401090` | — | unknown | Files and configuration |
+| `0x405590` | `Gfx_BlitSprite` | confirmed | Graphics images |
 | `0x405730` | `Gfx_BlitRaw` | confirmed | Graphics images |
+| `0x405880` | `Gfx_BlitSpriteOneColor` | confirmed | Graphics images |
 | `0x405d70` | `Archive_ReadFile` | confirmed | Graphics archives |
 | `0x405e00` | `Archive_Load` | confirmed | Graphics archives |
 | `0x405f60` | `Archive_Free` | confirmed | Graphics archives |
 | `0x405fe0` | `Speed_SetFactor` | confirmed | Timing |
 | `0x4060b0` | `Gfx_DrawSprite` | confirmed | Views, panels, and drawing |
+| `0x4062e0` | `Gfx_DrawSpriteTransparent` | confirmed | Graphics images |
+| `0x406350` | `Gfx_DrawSpriteGrowing` | inferred | Graphics images |
+| `0x406490` | `Gfx_DrawSpriteOneColor` | confirmed | Graphics images |
 | `0x406500` | `Gfx_CopyRect` | confirmed | Views, panels, and drawing |
+| `0x406590` | `Gfx_DrawSpriteNoOffset` | confirmed | Graphics images |
+| `0x406610` | `Gfx_DrawSettler` | confirmed | Graphics images |
 | `0x406880` | `Frame_Present` | inferred | Main loop |
 | `0x406980` | `Key_ReadCode` | confirmed | Input |
 | `0x4069f0` | `Input_ReadPointerA` | confirmed | Input |
@@ -686,6 +701,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
 | `0x450609` | `Save_ConfirmSlot` | confirmed | Save and load |
 | `0x450a35` | `Render_DrawViewOverlay` | inferred | Views, panels, and drawing |
+| `0x4511d5` | `Text_DrawGlyphs` | inferred | Graphics images |
 | `0x451355` | `Panel_Update` | inferred | Views, panels, and drawing |
 | `0x45772e` | `Game_Pause` | confirmed | Timing |
 | `0x457751` | `Game_Resume` | confirmed | Timing |
@@ -746,7 +762,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 122 routines of the 471 functions in the dump's game code band and lists 15 more without a name: 95 confirmed, 27 inferred, 15 unknown.
+Coverage: the index names 123 routines of the 471 functions in the dump's game code band and lists 15 more without a name: 95 confirmed, 28 inferred, 15 unknown.
 <!-- coverage:end -->
 
 Anchors not yet followed:

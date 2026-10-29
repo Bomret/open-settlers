@@ -34,11 +34,12 @@ The reference install holds each of the three entries at exactly 768 bytes in al
 
 **Status:** confirmed for the width, the height, and the two offsets, which the routines at `0x405730`,
 `0x405590`, `0x405880`, `0x405b80`, and `0x47b19c` read. **Inferred** that the first two bytes carry no
-drawing mode: none of those routines reads them.
+drawing mode: none of those routines reads them (`0x406610` reads them as offsets, see below).
 
 Every graphics entry starts with a header of 10 bytes, all little-endian:
 
-- Byte 0 and byte 1: two signed bytes. No drawing routine read so far reads them. Byte 0 is 1 in every one of
+- Byte 0 and byte 1: two signed bytes. Only `0x406610` reads them, in an entry of 1850 to 2390, as the signed offsets of the
+  second figure (**confirmed**, see Transparent sprites). Byte 0 is 1 in every one of
   the 432 raw images of the reference install (the same in all three archives), which fits a kind tag, and
   the second byte is 0 in each of them. Across all present graphics entries the pairs are not uniform: 1 and 0 in
   1697, 2 and 0 in 281, 0 and 0 in 157, 0 and -8 in 78, -1 and -8 in 58, and a few hundred more in other
@@ -95,6 +96,97 @@ the same color in 3 and in 3998 in the reference install, so their preview is th
 `RawImageKind` uses 3998.
 
 All entries of these ranges in the reference archives have exactly the size that their width and height give.
+
+## Transparent sprites
+
+**Status:** confirmed for the encoding and for the two routines. Confirmed for the ranges whose call site fixes a
+base (marked below), with the upper bound inferred from the entries the archives hold.
+
+`0x405590` draws a sprite and `0x405880` draws the same stream in one color. Both take the entry's address and
+the position, add the entry's two offsets to the position, and clip against the clip rectangle like
+`Gfx_BlitRaw`. The pixels after the header are the rows from the top, one after the other. A row is a series of
+runs. A run is a skip byte, a count byte, and as many palette indices as the count. The skip moves the pen to
+the right over pixels that stay as they are. A run with a count of 0 ends the row, and the program ignores its
+skip. `0x405590` copies the indices of a run to the surface, so an index of 0 is drawn like any other, and
+`0x405880` writes one color value in place of those indices and skips the indices in the stream. The program
+reads the stream with no check against the width, the height, or the entry's size: it trusts the entry.
+
+The two routines are reached through these callers (call sites in parentheses). `0x4062e0` draws a sprite with
+`0x405590` (called at `0x4286b8`, `0x44dace`, `0x44dec8`, `0x44fd59`). `0x406350` (called at `0x44ff45`) and `0x406590`
+(called at `0x44db12`) also draw one with `0x405590`; `0x406590` draws it at the position with the entry's offsets
+left out. `0x406490` draws one with `0x405880` (called at `0x4512da` and `0x45130f`). `0x406610` (called at
+`0x450189`) draws a settler: the figure from the base 1850 through `0x405590`, then the entry of the same index
+plus 2500 through `0x405880` with the player's color (40 hex plus four times a player number; `add 0x9c4` at
+`0x40669a`, the call at `0x4066bf`), then, where a second figure is set, an entry from the base 3150 through
+`0x405590`. All of this is **confirmed** from the disassembly. The entries of 2500 and up are stencils: they
+store only the indices 0 and 1, and the program draws every drawn pixel in the player's color. In every archive
+entry 1850 + i is present exactly when 2500 + i is. `0x406610` reads the header bytes 0 and 1 of the entry
+1850 + i as signed offsets (`0x4066d2`, `0x4066e4`) added to the position of the second figure (**confirmed**).
+
+The entries of a transparent sprite, in the three archives alike. Each present entry of a range, and no other
+one in it, decodes as a sprite of at least one drawn pixel. All present entries of the three archives are the
+same.
+
+| Entries | Where | Drawn |
+| --- | --- | --- |
+| 321 to 372 | `0x44de9a` and `0x44fd4a`: an index plus 320 | palette |
+| 610 to 619 | `0x428528`: 610 to 612, those plus 3 or 6, and 619 | palette |
+| 750 to 793 | `0x4511d5` through `0x406490`: a character's glyph, the character's code plus 749 | one color, index 31 |
+| 810 to 853 | the same routine, the glyph plus 809, as the shadow of the text | one color, index 1 |
+| 1250 to 1273 | `0x44da4d`: an index plus 1250 | palette |
+| 1314 to 1362, 1378 to 1443 | `0x44da4d`, `0x406350`, `0x406590`: an index plus 1250 (64 to 112 and 128 to 193) | palette |
+| 1850 to 2390 | `0x406610`: an index plus 1850, the figure | palette |
+| 2500 to 2701, 2740 to 2965, 3000 to 3040 | `0x406610` through `0x405880`: an index plus 2500, the overlay of the figure 1850 + i | one color, the player's color |
+| 3150 to 3450 | `0x406610`: an index plus 3150 | palette |
+| 3456 to 3732, every sixth | `0x406610`: the first entry of each group of six that `Archive_FillAliases` fills | palette |
+| 3738 to 3764 and 3768 to 3779 | `0x406610`: an index plus 3150 | palette |
+
+The overlays of 2500 to 3040 include 2670 and 3010 to 3032, which have no drawn pixel (every row is empty): the
+program reads them like the others, and they draw nothing. The preview shows an empty transparent image of their
+size. The player's color is **stand-in**: the program picks the player at run time, and the preview uses the first
+player's color, palette index 40 hex.
+
+The text routines in `0x4511d5` fill the color from the game state: five sites (`0x450fde`, `0x451043`,
+`0x4510a8`, `0x451111`, `0x451173`) set the text color, and each jumps to `0x4511d5` (none calls it). The sites at
+`0x450fde`, `0x4510a8`, and `0x451111` set 31 and the site at `0x451043` sets 47, and each sets 1 as the shadow
+color; the last site, `0x451173`, sets 31 and shadow 0, which draws no shadow. Palettes 3 and
+3998 agree on colors 1, 31, and 47, so the preview uses palette 3 and index 31. The text color is **stand-in**:
+the program picks it at run time.
+
+The base of each range is confirmed by the routine named; the upper bound of a range is the last entry that
+the archives hold and that decodes as a sprite: the game script code computes the index (the EDI block holds
+the entry), and no direct number shows it. None of the 432 raw images decodes this way, so the shape tells the
+two kinds apart. Eleven entries inside the ranges (1909, 1918, 1938, 2019, 2023, 2212, 2378, 3176,
+3193, 3233, 3415) happen to have the size a raw image would have and decode as sprites: the neighbouring entries
+are animation frames, and they are sprites.
+
+The range 1314 to 1443 is based on 1250, not on 320, by its callers: `0x44da9e` and `0x44ff24` draw the entry of
+the index plus 1500 (the shadow) with the same index just before `0x44dac8` and `0x44ff3f` draw the index plus
+1250, and 1250 + i is present exactly when 1500 + i is (i = 0 to 249). The base 320 has no such pairing.
+
+No reader was found yet for 448 to 521 (including 490) and 630 to 645. They decode as sprites, and they equal the
+base 320 plus 128 to 201 and 310 to 325, but nothing proves that the base-320 callers reach them, so no kind
+claims them. Entries 1597 and 1598 have all rows empty and lie inside the mask ranges. Entry 3999 decodes as a
+16 x 16 sprite of 60 pixels but is outside every range and follows no known caller.
+
+### Corrupt sprites
+
+**Status:** stand-in. The program checks none of these. The engine reports each for its own entry.
+
+- A sprite shorter than its 10-byte header is unreadable.
+- A sprite of width 0 or height 0 is unreadable: nothing to draw.
+- A row that has a run ending past the width is unreadable. The message names the row and the width.
+- A stream that ends inside a run or before the pair that ends a row is unreadable. The message names the row.
+- A height larger than half the stream (each row needs at least the pair that ends it) is unreadable, whatever
+  the width: the check comes before anything is allocated. The message names the height.
+- Bytes after the last row are ignored.
+
+### Sprites in the engine
+
+`SpriteFile.Read` in `src/Formats` decodes an entry into one index per pixel and a flag for each pixel the
+program draws; `Sprite.ToRgba` lowers the alpha of the others to 0, or draws every drawn pixel in one color.
+`SpriteKind` in `src/Assets` claims the ranges above, draws in palette 3, and gives the entries of 750 to 853
+their color and the entries of 2500 to 3040 the first player's color. The offsets only appear in the summary: the preview draws the sprite alone at its own size.
 
 ## Corrupt entries
 
