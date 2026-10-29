@@ -29,6 +29,8 @@ public class DumpProgram extends GhidraScript {
     protected void run() throws Exception {
         String[] args = getScriptArgs();
         File out = new File(args.length > 0 ? args[0] : "dump");
+        // "index-only" skips the pseudocode files, which take most of the run time.
+        boolean pseudocode = !(args.length > 1 && args[1].equals("index-only"));
         File functions = new File(out, "functions");
         functions.mkdirs();
 
@@ -75,6 +77,9 @@ public class DumpProgram extends GhidraScript {
                     String.join(",", callers), String.join(",", callees), String.join(" | ", referenced),
                     String.join(",", dataRefs));
 
+                if (!pseudocode) {
+                    continue;
+                }
                 DecompileResults r = decompiler.decompileFunction(f, 60, monitor);
                 try (PrintWriter c = new PrintWriter(new File(functions, address + ".c"), "UTF-8")) {
                     c.printf("// %s %s callers: %s data refs: %s%n", address, f.getName(true),

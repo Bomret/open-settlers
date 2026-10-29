@@ -18,8 +18,11 @@ The path of the local install is in `CLAUDE.local.md`, a gitignored file per che
 and ask the user for the path when the file is missing.
 
 The install is The Settlers History Edition ([ADR 0004](docs/adr/0004-history-edition-is-the-reference-install.md)).
-Investigate the game's logic, rules, and file formats in the `Siedler1.exe` of that install with REA (the
-`reverse-engineer-anything` skill and the `rea` MCP tools) before you build a rule or a reader. Do not
+Investigate the game's logic, rules, and file formats in the `Siedler1.exe` of that install before you
+build a rule or a reader. Check the program index and the local dump first. Use REA (the
+`reverse-engineer-anything` skill and the `rea` MCP tools) only for a question that the dump cannot
+answer yet. Record every finding in the program index and apply it to the Ghidra project. Write the
+dump again only under the conditions in `docs/rules/AGENTS.md`, "Program index". Do not
 guess a rule or copy one from a fan source or another reimplementation. Record each recovered rule in our
 own words with its address as evidence (INV-0001). Mark a rule that the program does not confirm as
 **inferred** or **stand-in**. Mark a finding that lies only in the platform layer, outside the game code
