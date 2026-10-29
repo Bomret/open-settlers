@@ -96,5 +96,6 @@ When the dump is missing, build it before you investigate.
   lines the program skips.
 - [Graphics archives](graphics-archives.md): the three `loca/SPA*.PA` archives, their header and table,
   the entry numbering, and the slots the program fills with copies.
-- [Graphics images](graphics-images.md): the palette entries, the 10-byte header of a graphics entry, and the
-  raw images the program draws opaque.
+- [Graphics images](graphics-images.md): the palette entries, the 10-byte header of a graphics entry, the
+  raw images the program draws opaque, the transparent sprites, the sprites over color 8, the masks, the
+  textured fill, and the corrupt entries.

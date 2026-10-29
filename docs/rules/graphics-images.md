@@ -1,9 +1,9 @@
 # Graphics images
 
 This note covers the palette entries of the graphics archives, the 10-byte header that every graphics entry
-starts with, and the raw images: the entries that the program draws as plain rows of palette indices. Sprites
-with transparency and glyphs read the same header and are other notes; the masks are below. How the archives are loaded and
-numbered is in [Graphics archives](graphics-archives.md).
+starts with, and the raw images: the entries that the program draws as plain rows of palette indices. It also
+covers the transparent sprites, the sprites over color 8, the masks, and the textured fill. How the archives
+are loaded and numbered is in [Graphics archives](graphics-archives.md).
 
 ## The palette
 
