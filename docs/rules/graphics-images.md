@@ -164,10 +164,25 @@ The range 1314 to 1443 is based on 1250, not on 320, by its callers: `0x44da9e` 
 the index plus 1500 (the shadow) with the same index just before `0x44dac8` and `0x44ff3f` draw the index plus
 1250, and 1250 + i is present exactly when 1500 + i is (i = 0 to 249). The base 320 has no such pairing.
 
-No reader was found yet for 448 to 521 (including 490) and 630 to 645. They decode as sprites, and they equal the
-base 320 plus 128 to 201 and 310 to 325, but nothing proves that the base-320 callers reach them, so no kind
-claims them. Entries 1597 and 1598 have all rows empty and lie inside the mask ranges. Entry 3999 decodes as a
-16 x 16 sprite of 60 pixels but is outside every range and follows no known caller.
+Entries 448 to 521 (including 490) and 3999 decode as sprites, and no reader was found for them: the search is
+in [Graphics archives](graphics-archives.md#entries-no-routine-reads), and no sprite kind claims them. Entries 630
+to 645 have a reader of their own, below. Entries 1597 and 1598 have all rows empty and lie inside the mask ranges.
+
+### Sprites drawn over color 8
+
+**Status:** confirmed for the routines and the entry range. The reading of "color 8" is the one the routine shows:
+it is a palette index of the surface, and what it stands for in the picture is open.
+
+Entries 630 to 645 hold the stream of a transparent sprite and are drawn by a routine of their own. `0x44ff59`,
+called from `0x44d5b4`, takes a value of the object being drawn and the counter at `+0x206` of the game state
+block, combines them into a number from 0 to 15, and adds 630 (the add is at `0x44ffc7`), so the sixteen entries
+are sixteen phases of one picture. It calls `0x406420`, which sets the clip rectangle and calls `0x405d00`, which
+calls `0x47b4f9`, the last routine of the game code band. That routine reads the same stream as `Gfx_BlitSprite`
+(skip, count, indices, a count of 0 ending the row) and clips the same way, but writes a pixel only where the
+surface pixel already has the palette index 8. A drawn pixel over any other index is left as it is.
+
+The engine decodes them as the other sprites do (`SpriteFile.Read`, palette 3), in the kind `SpriteOverColor8Kind`.
+The preview shows every pixel of the stream, because the surface under it is not known; the summary says so.
 
 ### Corrupt sprites
 

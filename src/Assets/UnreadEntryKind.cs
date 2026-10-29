@@ -25,8 +25,8 @@ public sealed class UnreadEntryKind : ArchiveEntryKind
     static readonly (int First, int Last)[] Ranges =
     [
         (448, 521), // sprite-shaped, including 490, which has the shape of a raw image
-        (3900, 3994), // the entries from 3900: 3990 to 3994 have a header of height 0
-        (3999, 3999), // height 0; the program only clamps a value to 3999
+        (3900, 3994), // the entries from 3900; 3990 to 3994 hold XMIDI music containers
+        (3999, 3999), // decodes as a 16 x 16 sprite; the program only clamps a value to 3999 (0x47664e, 0x478294)
     ];
 
     /// <inheritdoc/>
