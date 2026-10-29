@@ -120,7 +120,8 @@ How the program draws a mask:
   header.
 - **Player color.** `Gfx_DrawSettler` at `0x406610` draws one entry in the color `0x40` plus 4 times the player
   through `0x405880`. That routine skips cover bytes of pixel data in the stream, so the entries it draws are
-  sprites and no mask of the reference install is drawn that way.
+  sprites (entries 2500 to 2701, 2740 to 2965, and 3000 to 3040, among them the empty 2670 and 3010 to 3032), and no mask of
+  the reference install is drawn that way. The sprite note previews them in the first player's color.
 
 Entry ranges, in all three archives, with the routine that reads them:
 
@@ -134,7 +135,7 @@ Entry ranges, in all three archives, with the routine that reads them:
 The mask entries of the reference install all decode with this layout and consume exactly their size: no run
 passes the width. Entries 1597 and 1598 are masks whose rows are all end pairs (48 x 11, nothing covered); they
 lie in the shadow range. Entries 2670 and 3010 to 3032 are of the same shape but lie among sprites, and no mask
-routine reaches them by number, so they are not claimed.
+routine reaches them by number, so the mask kind does not claim them (they are the player-color overlays above).
 
 The preview draws each mask alone in the one color the program stores for it: a shadow in index `0x80`.
 A textured-fill mask has no color of its own (the program fills it with a texture); the preview draws it in
