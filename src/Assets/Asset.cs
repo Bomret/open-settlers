@@ -37,9 +37,10 @@ public sealed record Asset
     public required string Name { get; init; }
 
     /// <summary>
-    /// Reads the asset and returns its preview. Throws when the asset cannot be read (an
-    /// <see cref="System.IO.InvalidDataException"/> for corrupt data); the exception's message is the reason the
-    /// check reports and the browser shows. The same method stands for a failure the kind found while listing,
+    /// Reads the asset and returns its preview. Throws when the asset cannot be read: an
+    /// <see cref="System.IO.InvalidDataException"/> for corrupt data, an <see cref="System.IO.IOException"/> or
+    /// <see cref="System.UnauthorizedAccessException"/> for a file it cannot open. The exception's message is the
+    /// reason the check reports and the browser shows; any other exception is a bug and propagates. The same method stands for a failure the kind found while listing,
     /// such as a missing file.
     /// </summary>
     public required Func<Preview> Load { get; init; }

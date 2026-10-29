@@ -85,6 +85,15 @@ public sealed class AssetCheckTests
     }
 
     [TestMethod]
+    public void AProgrammingErrorWhileLoadingIsNotReportedAsAnUnreadableEntry()
+    {
+        using var fake = new FakeInstall();
+        var bug = Entry("sprite", "loca/A.PA", "7", () => throw new IndexOutOfRangeException("reader bug"));
+
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => Run(fake, new ListedKind("sprite", bug)));
+    }
+
+    [TestMethod]
     public void AMissingSndFolderIsReportedAndTheOtherKindsAreStillRead()
     {
         using var fake = new FakeInstall();

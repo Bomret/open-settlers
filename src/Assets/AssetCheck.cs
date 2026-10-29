@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using OpenSettlers.Launch;
 
@@ -53,7 +54,7 @@ public static class AssetCheck
             {
                 assets = kind.Enumerate(install).ToList();
             }
-            catch (Exception e)
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
                 failures.Add($"FAIL {kind.Name}: cannot list the assets: {e.Message}");
 
@@ -84,7 +85,7 @@ public static class AssetCheck
                         tally.Kinds.Add(asset.Kind);
                     }
                 }
-                catch (Exception e)
+                catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
                 {
                     if (asset.Entry == null && !failedFiles.Add(asset.File))
                     {

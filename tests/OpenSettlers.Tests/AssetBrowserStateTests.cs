@@ -127,6 +127,15 @@ public sealed class AssetBrowserStateTests
         Assert.IsNull(state.SelectedAsset);
     }
 
+    [TestMethod]
+    public void AProgrammingErrorWhileLoadingAPreviewIsNotShownAsAFailure()
+    {
+        using var fake = new FakeInstall();
+        var bug = Item("sprite", "A", () => throw new IndexOutOfRangeException("reader bug"));
+
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => Open(fake, new ListedKind("sprite", bug)));
+    }
+
     sealed class ThrowingKind : AssetKind
     {
         public override string Name => "broken";

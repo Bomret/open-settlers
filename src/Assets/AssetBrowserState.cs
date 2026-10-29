@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using OpenSettlers.Launch;
 
@@ -98,7 +99,7 @@ public sealed class AssetBrowserState
                 Notice = $"no {name} assets";
             }
         }
-        catch (Exception e)
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             Assets = [];
             Notice = $"cannot list the {name} assets: {e.Message}";
@@ -134,7 +135,7 @@ public sealed class AssetBrowserState
             Preview = SelectedAsset.Load();
             Failure = null;
         }
-        catch (Exception e)
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             Preview = null;
             Failure = e.Message;
