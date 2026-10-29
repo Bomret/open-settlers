@@ -85,6 +85,16 @@ public sealed class GraphicFileTests
     }
 
     [TestMethod]
+    public void TheLargestRawImageHeaderNamesAPositiveExpectedSize()
+    {
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
+            GraphicFile.ReadRaw(Entry(1, 0, 65535, 65535, 0, 0, [1]))
+        );
+
+        StringAssert.Contains(failure.Message, "4294836235");
+    }
+
+    [TestMethod]
     public void ARawImageOfWidthZeroIsUnreadable()
     {
         var failure = Assert.ThrowsExactly<InvalidDataException>(() =>

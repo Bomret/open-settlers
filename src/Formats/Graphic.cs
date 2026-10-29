@@ -13,7 +13,7 @@ public sealed record GraphicHeader
     /// <summary>The size of the header in bytes; the pixel data starts after it.</summary>
     public const int Size = 10;
 
-    /// <summary>The first signed byte. No routine that draws an entry reads it; it is not the kind of the entry.</summary>
+    /// <summary>The first signed byte. No routine that draws an entry reads it. It is 1 in every raw image of the reference install, which fits a kind tag (inferred).</summary>
     public required sbyte First { get; init; }
 
     /// <summary>The second signed byte. No routine that draws an entry reads it.</summary>
@@ -104,7 +104,8 @@ public static class GraphicFile
             );
         }
 
-        var expected = GraphicHeader.Size + header.Width * header.Height;
+        // Long: 65535 x 65535 does not fit an int.
+        var expected = GraphicHeader.Size + (long)header.Width * header.Height;
         if (entry.Length != expected)
         {
             throw new InvalidDataException(

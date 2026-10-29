@@ -33,14 +33,16 @@ The reference install holds each of the three entries at exactly 768 bytes in al
 ## The header
 
 **Status:** confirmed for the width, the height, and the two offsets, which the routines at `0x405730`,
-`0x405590`, `0x405880`, `0x405b80`, and `0x47b19c` read. **Inferred** that the first two bytes carry no kind:
-none of those routines reads them.
+`0x405590`, `0x405880`, `0x405b80`, and `0x47b19c` read. **Inferred** that the first two bytes carry no
+drawing mode: none of those routines reads them.
 
 Every graphics entry starts with a header of 10 bytes, all little-endian:
 
-- Byte 0 and byte 1: two signed bytes. No drawing routine reads them. In the raw images of the reference install
-  the first is 1 in nearly all entries and 0 or -1 in a few, and the second is 0 or -8. They do not say how
-  the entry is drawn: the routine that reads the entry says it.
+- Byte 0 and byte 1: two signed bytes. No drawing routine read so far reads them. Byte 0 is 1 in every one of
+  the 432 raw images of the reference install (the same in all three archives), which fits a kind tag, and
+  the second byte is 0 in each of them. Across all present graphics entries the pairs are not uniform: 1 and 0 in
+  1697, 2 and 0 in 281, 0 and 0 in 157, 0 and -8 in 78, -1 and -8 in 58, and a few hundred more in other
+  combinations. The status stays inferred: the byte may be a kind tag that the routines read so far do not use.
 - Bytes 2 and 3: the width in pixels.
 - Bytes 4 and 5: the height in pixels.
 - Bytes 6 and 7: a signed offset from the draw position to the image's left edge.
@@ -70,7 +72,7 @@ The call sites of `Gfx_DrawSprite` that give these entry numbers:
 | 15 to 21 | `0x452443`; a counter of 0 to 6 plus 15 | 3997 |
 | 25 to 38 | `0x45f9ae`; a value from the game state plus 25. Inferred bounds. | 3 |
 | 40 and 41 | `0x41ea7c`, `0x41eaaa` | 3998 |
-| 42 to 57 | the list at `0x674824`, drawn at `0x41ee33`; also `0x425926` as 42 plus an index. Inferred for the second. | 3998 |
+| 42 to 57 | the list at `0x674824`, drawn at `0x41ee33` (3998); also `0x425926` as 42 plus an index, in the setup that loads palette 3 at `0x4250a8` (3) | 3998 and 3 |
 | 600 to 603 | `0x42105f` to `0x4213e9` | 3 |
 | 660 to 663 | `0x421412` to `0x42152a`, `0x45cf10` | 3 |
 | 670 to 677 | `0x45cf57` to `0x45d02c`; 670 to 673, and the same plus 4 | 3 |
@@ -85,6 +87,12 @@ while it draws the entry (**inferred** from the order of loads and draws: the ti
 3997, the first screens follow the load of 3998, and the game follows the load of 3). The engine draws an entry
 in that palette. A range of the table is one kind in the engine: `RawImageKind` claims it by entry number, in
 all three archives.
+
+Entries 42 to 57 are drawn in both palettes. The setup at `0x4250a8` loads palette 3 and stores two index
+tables in the game state; the draw at `0x425926` reads the second, whose 16 values are 0 to 15 in some order, and
+adds 42, so the code fixes the bound 42 to 57 (confirmed). The six palette indices that these images use have
+the same color in 3 and in 3998 in the reference install, so their preview is the same in either, and
+`RawImageKind` uses 3998.
 
 All entries of these ranges in the reference archives have exactly the size that their width and height give.
 

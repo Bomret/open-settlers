@@ -211,7 +211,7 @@ Note: [Graphics images](graphics-images.md).
 | `0x44d2fc` | — | For each view, copies a rectangle from the surface at `+0x108` into the view's screen. | unknown | game | Called by `Main_Loop` in a game. |
 | `0x424d87` | `Minimap_Build` | Writes one byte per tile from terrain and height to the buffer at `+0x8c`. | inferred | game | Called by `MapGen_Generate` and `Game_ResumeLoaded`. |
 | `0x406500` | `Gfx_CopyRect` | Copies a rectangle between two surfaces. | confirmed | platform | Called by panel and view code. |
-| `0x4060b0` | `Gfx_DrawSprite` | Draws a sprite with clipping. | inferred | platform | 13 callers. |
+| `0x4060b0` | `Gfx_DrawSprite` | Finds a raw image by its entry number and draws it opaque to the surface through `Gfx_BlitRaw`. | confirmed | platform | 55 call sites in 13 callers. See [Graphics images](graphics-images.md). |
 
 ### Simulation
 
@@ -563,7 +563,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x405e00` | `Archive_Load` | confirmed | Graphics archives |
 | `0x405f60` | `Archive_Free` | confirmed | Graphics archives |
 | `0x405fe0` | `Speed_SetFactor` | confirmed | Timing |
-| `0x4060b0` | `Gfx_DrawSprite` | inferred | Views, panels, and drawing |
+| `0x4060b0` | `Gfx_DrawSprite` | confirmed | Views, panels, and drawing |
 | `0x406500` | `Gfx_CopyRect` | confirmed | Views, panels, and drawing |
 | `0x406880` | `Frame_Present` | inferred | Main loop |
 | `0x406980` | `Key_ReadCode` | confirmed | Input |

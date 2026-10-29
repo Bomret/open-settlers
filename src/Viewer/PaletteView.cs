@@ -1,4 +1,4 @@
-using System;
+using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
 using OpenSettlers.Formats;
@@ -18,11 +18,7 @@ public sealed class PaletteView : PreviewView
     public override Control Create(Preview preview)
     {
         var palette = ((PalettePreview)preview).Palette;
-        var rgba = new byte[Palette.ColorCount * 4];
-        for (var i = 0; i < Palette.ColorCount; i++)
-        {
-            palette.Rgba(i).CopyTo(rgba.AsSpan(i * 4));
-        }
+        var rgba = IndexedImage.ToRgba(Enumerable.Range(0, Palette.ColorCount).Select(i => (byte)i).ToArray(), palette);
 
         var image = Image.CreateFromData(Columns, Palette.ColorCount / Columns, false, Image.Format.Rgba8, rgba);
         var grid = new TextureRect

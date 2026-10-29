@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using OpenSettlers.Formats;
 
 namespace OpenSettlers.Assets;
@@ -36,7 +35,9 @@ public sealed class RawImageKind : ArchiveEntryKind
         (5, 11, PaletteKind.TitlePalette), // 0x452400: a table of 0 to 6, plus 5
         (15, 21, PaletteKind.TitlePalette), // 0x452443: a counter of 0 to 6, plus 15
         (25, 38, PaletteKind.GamePalette), // 0x45f9ae: a value of the game state, plus 25
-        (40, 57, PaletteKind.StartPalette), // 0x41ea7c and 0x41eaaa (40, 41), the list at 0x674824 drawn by 0x41ee33 (42 to 57), 0x425926 (42 plus an index)
+        // 0x41ea7c and 0x41eaaa (40, 41), the list at 0x674824 drawn by 0x41ee33 (42 to 57), and 0x425926 (42 plus an
+        // index of 0 to 15, which draws in palette 3). The six colors that 42 to 57 use are the same in 3 and 3998.
+        (40, 57, PaletteKind.StartPalette),
         (600, 603, PaletteKind.GamePalette), // 0x42105f to 0x4213e9
         (660, 663, PaletteKind.GamePalette), // 0x421412 to 0x42152a, 0x45cf10
         (670, 677, PaletteKind.GamePalette), // 0x45cf57 to 0x45d02c: 670 to 673, and 674 to 677 as 670 to 673 plus 4
@@ -51,10 +52,13 @@ public sealed class RawImageKind : ArchiveEntryKind
     public override string Name => KindName;
 
     /// <inheritdoc/>
-    public override bool Claims(int entry) => Ranges.Any(r => entry >= r.First && entry <= r.Last);
+    public override bool Claims(int entry) => Find(entry) >= 0;
 
     /// <summary>The entry of the palette a raw image is drawn in: the palette the program has loaded while it draws the image.</summary>
-    public static int PaletteEntryOf(int entry) => Ranges.First(r => entry >= r.First && entry <= r.Last).Palette;
+    public static int PaletteEntryOf(int entry) => Ranges[Find(entry)].Palette;
+
+    // The index of the range that holds the entry, or -1.
+    static int Find(int entry) => Array.FindIndex(Ranges, r => entry >= r.First && entry <= r.Last);
 
     /// <inheritdoc/>
     protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>

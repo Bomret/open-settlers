@@ -51,11 +51,10 @@ public abstract class ArchiveEntryKind : AssetKind
     protected virtual Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) => Read(entry, data);
 
     /// <summary>
-    /// A palette of an archive, by its entry number (<c>docs/rules/graphics-images.md</c>): the game's palette,
-    /// entry 3, unless the kind says another.
+    /// A palette of an archive, by its entry number (<c>docs/rules/graphics-images.md</c>).
     /// </summary>
     /// <exception cref="InvalidDataException">The archive has no such entry or the entry is not a palette.</exception>
-    protected static Palette PaletteOf(Archive archive, int number = PaletteKind.GamePalette)
+    protected static Palette PaletteOf(Archive archive, int number)
     {
         try
         {
