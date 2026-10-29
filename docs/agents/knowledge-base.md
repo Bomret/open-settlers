@@ -1,7 +1,7 @@
 # Knowledge base: Codeberg wiki
 
-An external knowledge base for durable, human-facing docs (file-format specifications, design overviews,
-ADR summaries), published to the wiki of `bomret/open-settlers` on Codeberg. In-repo docs
+An external knowledge base for durable, human-facing docs (file-format specifications, design overviews),
+published to the wiki of `bomret/open-settlers` on Codeberg. In-repo docs
 (`docs/agents/documentation.md`) remain the source of truth; the wiki is a published view.
 
 ## Configuration
@@ -18,8 +18,8 @@ ADR summaries), published to the wiki of `bomret/open-settlers` on Codeberg. In-
   variable `SUPERDEV_KB_TEA_LOGIN` names one of several matching logins: set and naming exactly one entry
   whose `url` is `https://codeberg.org`, that login is used; set and naming none, the step stops with exit 2 and lists
   the matching names. No token environment variable is read.
-- **What to publish:** file-format specifications, design overviews, player guides, ADR summaries, and
-  the changelog — durable, reader-facing docs only, not every `AGENTS.md`.
+- **What to publish:** file-format specifications, design overviews, player guides, and the
+  changelog — durable, reader-facing docs only, not every `AGENTS.md`.
 - **Hierarchy:** links. A Forgejo wiki nests no pages. Each child page links from a list item in its
   parent's body, and `/superdev:publish-kb` writes that link (ADR 0168).
 
@@ -46,8 +46,6 @@ A living skeleton. `/superdev:plan` and `/superdev:document` fill and extend it.
   section `Pages`.
 - **Developer pages** (`Architecture`, `Build and setup`, `Roadmap`). One topic per page. Parent:
   `Developers`, section `Pages`.
-- **`ADR summaries`.** `(aggregate)`: one `## ADR NNNN: <title>` section per decision, never deeper and
-  never `#`. Parent: `Developers`, section `Pages`.
 - **`Changelog`.** `(aggregate)`: one `## <feature>` section per shipped feature, never deeper and never
   `#`. Parent: `Developers`, section `Pages`.
 
