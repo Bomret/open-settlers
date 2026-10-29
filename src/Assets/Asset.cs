@@ -27,6 +27,12 @@ public sealed record Asset
     /// <summary>The asset's entry in <see cref="File"/>; null when the file is one asset.</summary>
     public string? Entry { get; init; }
 
+    /// <summary>
+    /// Whether the asset is an archive slot that the program fills with a copy of another entry. The check counts
+    /// aliases apart from entries.
+    /// </summary>
+    public bool IsAlias { get; init; }
+
     /// <summary>The asset's name in the browser's list.</summary>
     public required string Name { get; init; }
 

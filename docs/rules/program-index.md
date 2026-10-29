@@ -173,6 +173,18 @@ Note: [Sound files](sound-files.md).
 
 Note: [Music file](music-file.md).
 
+### Graphics archives
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x405e00` | `Archive_Load` | Takes the length of the archive file, allocates a buffer of that size, and reads the whole file into it; returns the buffer, which is the archive base. | confirmed | platform | Called by `Platform_RunGame`; calls `Archive_ReadFile`. |
+| `0x405d70` | `Archive_ReadFile` | Opens a file in binary mode and reads the requested number of bytes, or the whole file, into a buffer. | confirmed | platform | Called by `Archive_Load`. |
+| `0x407290` | `Archive_FillAliases` | Copies the size and offset of source rows over the rows that repeat them: 255 rows in four kinds of block. | confirmed | game | Called by `Platform_RunGame`; data `Archive_Base`. |
+| `0x405f60` | `Archive_Free` | Frees the archive buffer, or each entry's own buffer first when the header flag is 1. | confirmed | platform | Called by `Platform_RunGame` at the end. |
+| `0x6812ec` | `Archive_Base` | Data: pointer to the loaded archive; an entry lies at the base plus its row's offset, and offset 0 means no entry. | confirmed | platform | Written once in `Platform_RunGame`; read at `0x406120`, `0x406610`, `0x4071c0`, `0x4073d0`. |
+
+Note: [Graphics archives](graphics-archives.md).
+
 ### Views, panels, and drawing
 
 | Address | Name | Role | Status | Layer | Anchor |
@@ -533,6 +545,9 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | Address | Name | Status | Topic |
 | --- | --- | --- | --- |
 | `0x401090` | — | unknown | Files and configuration |
+| `0x405d70` | `Archive_ReadFile` | confirmed | Graphics archives |
+| `0x405e00` | `Archive_Load` | confirmed | Graphics archives |
+| `0x405f60` | `Archive_Free` | confirmed | Graphics archives |
 | `0x405fe0` | `Speed_SetFactor` | confirmed | Timing |
 | `0x4060b0` | `Gfx_DrawSprite` | inferred | Views, panels, and drawing |
 | `0x406500` | `Gfx_CopyRect` | confirmed | Views, panels, and drawing |
@@ -545,6 +560,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x406c90` | `Timer_ThreadMain` | confirmed | Timing |
 | `0x406fb0` | `Sound_LoadFile` | confirmed | Sound |
 | `0x407130` | `Sound_Start` | inferred | Sound |
+| `0x407290` | `Archive_FillAliases` | confirmed | Graphics archives |
 | `0x407480` | `Platform_RunGame` | confirmed | Program start and game flow |
 | `0x4076d0` | `File_Open` | inferred | Save and load |
 | `0x407750` | `File_Create` | inferred | Save and load |
@@ -701,6 +717,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x674048` | `Speed_Factor` | confirmed | Timing |
 | `0x67d608` | `Timer_RateHz` | confirmed | Timing |
 | `0x67d614` | `Loca_FileTable` | inferred | Files and configuration |
+| `0x6812ec` | `Archive_Base` | confirmed | Graphics archives |
 <!-- by-address:end -->
 
 ## Unexplored

@@ -61,7 +61,15 @@ public static class AssetCheck
                         files[asset.File] = tally = new FileTally();
                     }
 
-                    tally.Entries++;
+                    if (asset.IsAlias)
+                    {
+                        tally.Aliases++;
+                    }
+                    else
+                    {
+                        tally.Entries++;
+                    }
+
                     if (!tally.Kinds.Contains(asset.Kind))
                     {
                         tally.Kinds.Add(asset.Kind);
@@ -77,20 +85,24 @@ public static class AssetCheck
 
         var lines = files
             .Select(f =>
-                $"{f.Key}: {f.Value.Entries} {(f.Value.Entries == 1 ? "entry" : "entries")} ({string.Join(", ", f.Value.Kinds)})"
+                $"{f.Key}: {f.Value.Entries} {(f.Value.Entries == 1 ? "entry" : "entries")}{Aliases(f.Value.Aliases)} ({string.Join(", ", f.Value.Kinds)})"
             )
             .Concat(failures)
             .ToList();
         lines.Add(
-            $"{files.Count} files read, {files.Values.Sum(t => t.Entries)} entries read, {failures.Count} failed"
+            $"{files.Count} files read, {files.Values.Sum(t => t.Entries)} entries read{Aliases(files.Values.Sum(t => t.Aliases))}, {failures.Count} failed"
         );
 
         return new CheckReport { ExitCode = failures.Count == 0 ? 0 : 1, Lines = lines };
     }
 
+    // The aliases of a file or of the run, counted apart from its entries; nothing when there are none.
+    static string Aliases(int count) => count == 0 ? "" : $", {count} {(count == 1 ? "alias" : "aliases")}";
+
     sealed class FileTally
     {
         public int Entries;
+        public int Aliases;
         public readonly List<string> Kinds = [];
     }
 }

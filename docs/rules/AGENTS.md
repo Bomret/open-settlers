@@ -94,3 +94,5 @@ When the dump is missing, build it before you investigate.
 - [Music file](music-file.md): where the program loads `snd/music_1.midi` and the Standard MIDI File it holds.
 - [Text files](text-files.md): the language files in `loca/`, their `KEY="VALUE"` lines, and which
   lines the program skips.
+- [Graphics archives](graphics-archives.md): the three `loca/SPA*.PA` archives, their header and table,
+  the entry numbering, and the slots the program fills with copies.
