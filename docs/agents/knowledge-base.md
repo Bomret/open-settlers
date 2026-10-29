@@ -231,7 +231,7 @@ case "$code" in 2??) ;; *) exit 1 ;; esac
 
 ## Degrade / switching
 
-No `tea` on the path, no `tea` login for `https://codeberg.org`, or an unreachable host →
-`/superdev:publish-kb` leaves every page staged, reports why, and deletes nothing; a later run retries
-exactly the pages that did not land. The in-repo docs are the record meanwhile. To move to a different
+No `tea` on the path, no `tea` login for `https://codeberg.org`, a disabled or external wiki, or an
+unreachable host → `/superdev:publish-kb` leaves every page staged, reports why, and deletes nothing; a
+later run retries exactly the pages that did not land. The in-repo docs are the record meanwhile. To move to a different
 knowledge base later, re-run `/superdev:setup`.
