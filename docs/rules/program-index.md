@@ -1,7 +1,7 @@
 # Program index
 
-This index records where routines and data lie in `Siedler1.exe`. Read it before you open the program in
-REA. It names places and states their role in one line. The rules themselves are in the rule notes that
+This index records where routines and data lie in `Siedler1.exe`. Read it before you search the dump or
+open the program in REA. It names places and states their role in one line. The rules themselves are in the rule notes that
 it links to.
 
 - Build and address notation: [Rule notes](AGENTS.md#reference-build).

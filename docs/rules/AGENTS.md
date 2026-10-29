@@ -39,9 +39,17 @@ A rule note never holds decompiler output, assembly, byte sequences, or byte pat
 ## Program index
 
 [Program index](program-index.md) records where routines and data lie in `Siedler1.exe`, under our
-own names. Read it before you open the program in REA. When an investigation names or explains a
-routine, a datum, or a save field, add or update its row and take its area out of "Unexplored", in the
-same commit as the rule note. The index links to the rule notes and does not restate the rules.
+own names. The index links to the rule notes and does not restate the rules.
+
+Investigate the program in this order:
+
+1. Read the program index.
+2. Search and read the local dump in `re-local/dump` (below).
+3. Use REA only for a question that the dump cannot answer yet.
+
+When an investigation names or explains a routine, a datum, or a save field, add or update its row and
+take its area out of "Unexplored", in the same commit as the rule note. Then update the Ghidra project
+and write the dump again, so that the dump carries the finding for the next investigation.
 
 REA's Ghidra provider keeps names only while the program stays open in REA, and it names only routines
 that it found: use `annotate_native_function`, since it rejects `set_address_name` and
@@ -51,8 +59,7 @@ session.
 To search the whole program, use the local dump in `re-local/dump` (`tools/GhidraDump/README.md`):
 `functions.tsv` and `strings.tsv` find a routine by string, caller, or callee, and `state_fields.tsv`
 finds the routines that read or write a field of the game state. The dump carries the index names.
-When the dump is missing, build it before you search the program in REA. After you change the index,
-update the project and write the dump again.
+When the dump is missing, build it before you investigate.
 
 ## Topics
 
