@@ -1,0 +1,149 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Assets;
+using OpenSettlers.Launch;
+
+namespace OpenSettlers.Tests;
+
+[TestClass]
+public sealed class AssetBrowserStateTests
+{
+    sealed record TextPreview : Preview;
+
+    sealed class ListedKind(string name, params Asset[] assets) : AssetKind
+    {
+        public override string Name => name;
+
+        public override IEnumerable<Asset> Enumerate(Install install) => assets;
+    }
+
+    static Asset Item(string kind, string name, Func<Preview>? load = null) =>
+        new()
+        {
+            Kind = kind,
+            File = $"x/{name}",
+            Name = name,
+            Load = load ?? (() => new TextPreview { Summary = $"preview of {name}" }),
+        };
+
+    static AssetBrowserState Open(FakeInstall fake, params AssetKind[] kinds) =>
+        AssetBrowserState.Open(LaunchArgs.Parse(["--game", fake.Root], null), kinds);
+
+    [TestMethod]
+    public void WithoutAnInstallTheBrowserHoldsOneMessageThatNamesBothWaysToGiveOne()
+    {
+        var state = AssetBrowserState.Open(LaunchArgs.Parse([], null), [new SoundKind()]);
+
+        StringAssert.Contains(state.Message, "--game");
+        StringAssert.Contains(state.Message, "SIEDLER_DIR");
+        Assert.IsEmpty(state.Categories);
+    }
+
+    [TestMethod]
+    public void AFolderWithoutTheProgramShowsTheMessageToo()
+    {
+        using var fake = new FakeInstall(withProgram: false);
+
+        var state = Open(fake, new SoundKind());
+
+        StringAssert.Contains(state.Message, "Siedler1.exe");
+        StringAssert.Contains(state.Message, "SIEDLER_DIR");
+    }
+
+    [TestMethod]
+    public void TheCategoriesAreTheKindsByNameAndTheFirstIsSelectedWithItsFirstAsset()
+    {
+        using var fake = new FakeInstall();
+        var state = Open(
+            fake,
+            new ListedKind("text", Item("text", "a")),
+            new ListedKind("palette", Item("palette", "p"))
+        );
+
+        CollectionAssert.AreEqual(new[] { "palette", "text" }, state.Categories.ToList());
+        Assert.AreEqual("palette", state.SelectedKind);
+        Assert.AreEqual("p", state.SelectedAsset!.Name);
+        Assert.IsNull(state.Message);
+    }
+
+    [TestMethod]
+    public void SelectingAKindListsItsAssetsInTheOrderTheKindGaveThem()
+    {
+        using var fake = new FakeInstall().Put("snd/10.SND", [1]).Put("snd/02.SND", [1]);
+        var state = Open(fake, new ListedKind("text", Item("text", "a")), new SoundKind());
+
+        state.SelectKind("sound");
+
+        CollectionAssert.AreEqual(new[] { "02.SND", "10.SND" }, state.Assets.Select(a => a.Name).ToList());
+        Assert.AreEqual("02.SND", state.SelectedAsset!.Name);
+    }
+
+    [TestMethod]
+    public void SelectingAnAssetShowsItsPreview()
+    {
+        using var fake = new FakeInstall();
+        var state = Open(fake, new ListedKind("text", Item("text", "a"), Item("text", "b")));
+
+        state.SelectAsset(1);
+
+        Assert.AreEqual("b", state.SelectedAsset!.Name);
+        Assert.AreEqual("preview of b", state.Preview!.Summary);
+        Assert.IsNull(state.Failure);
+    }
+
+    [TestMethod]
+    public void AFailedAssetShowsItsReasonInPlaceOfAPreview()
+    {
+        using var fake = new FakeInstall().Put("snd/01.SND", []);
+        var state = Open(fake, new SoundKind());
+
+        Assert.IsNull(state.Preview);
+        StringAssert.Contains(state.Failure, "empty");
+    }
+
+    [TestMethod]
+    public void AFailedAssetDoesNotStopTheNextSelection()
+    {
+        using var fake = new FakeInstall().Put("snd/01.SND", []).Put("snd/02.SND", [0x80]);
+        var state = Open(fake, new SoundKind());
+
+        state.SelectAsset(1);
+
+        Assert.IsNotNull(state.Preview);
+        Assert.IsNull(state.Failure);
+    }
+
+    [TestMethod]
+    public void AKindThatCannotListItsAssetsShowsANoticeAndNoAssets()
+    {
+        using var fake = new FakeInstall();
+        var state = Open(fake, new ThrowingKind());
+
+        Assert.IsEmpty(state.Assets);
+        StringAssert.Contains(state.Notice, "cannot list");
+        Assert.IsNull(state.SelectedAsset);
+    }
+
+    sealed class ThrowingKind : AssetKind
+    {
+        public override string Name => "broken";
+
+        public override IEnumerable<Asset> Enumerate(Install install) => throw new IOException("cannot list");
+    }
+
+    [TestMethod]
+    public void SelectingAnUnknownKindOrAssetChangesNothing()
+    {
+        using var fake = new FakeInstall();
+        var state = Open(fake, new ListedKind("text", Item("text", "a")));
+
+        state.SelectKind("nope");
+        state.SelectAsset(5);
+
+        Assert.AreEqual("text", state.SelectedKind);
+        Assert.AreEqual("a", state.SelectedAsset!.Name);
+    }
+}

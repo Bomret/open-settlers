@@ -158,7 +158,10 @@ Note: [Timing](timing.md).
 | `0x44fd5f` | `Sound_Request` | Inserts a sound code into a view's four-slot request list. | inferred | game | 17 callers. |
 | `0x428964` | `Sound_RunAmbient` | For each view, may request a random ambient sound. | inferred | game | Called by `0x4286d8`; calls `Rng_Step` through `0x428985`. |
 | `0x407130` | `Sound_Start` | Scales the volume and starts playback. | inferred | platform | Called by `Sound_Play`. |
-| `0x406fb0` | `Sound_LoadFile` | Opens a numbered sound file in `snd/` with the C runtime's file calls. | inferred | platform | String `snd/%02d.SND`. |
+| `0x406fb0` | `Sound_LoadFile` | Tries the sound file numbers 1 to 99 in `snd/`, reads each file present whole, and passes it to `Sound_CreateBuffer`. | confirmed | platform | String `snd/%02d.SND`; called by `Platform_RunGame`. |
+| `0x40b8c0` | `Sound_CreateBuffer` | Describes a sound to DirectSound as 8-bit mono PCM at 8403 Hz and copies the whole file into the buffer. | confirmed | platform | Called by `Sound_LoadFile`. |
+
+Note: [Sound files](sound-files.md).
 
 ### Views, panels, and drawing
 
@@ -519,7 +522,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x406b20` | `Input_ReadButtons` | confirmed | Input |
 | `0x406c60` | `Frame_Handshake` | confirmed | Main loop |
 | `0x406c90` | `Timer_ThreadMain` | confirmed | Timing |
-| `0x406fb0` | `Sound_LoadFile` | inferred | Sound |
+| `0x406fb0` | `Sound_LoadFile` | confirmed | Sound |
 | `0x407130` | `Sound_Start` | inferred | Sound |
 | `0x407480` | `Platform_RunGame` | confirmed | Program start and game flow |
 | `0x4076d0` | `File_Open` | inferred | Save and load |
@@ -527,6 +530,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4077e0` | `File_Close` | confirmed | Save and load |
 | `0x407800` | `File_Write` | confirmed | Save and load |
 | `0x407870` | `File_Read` | confirmed | Save and load |
+| `0x40b8c0` | `Sound_CreateBuffer` | confirmed | Sound |
 | `0x417bb0` | `Platform_GameThreadMain` | confirmed | Program start and game flow |
 | `0x417c50` | `Platform_StartGameThread` | confirmed | Program start and game flow |
 | `0x41da10` | `Game_Entry` | confirmed | Program start and game flow |
