@@ -66,11 +66,12 @@ mkdir -p "$PWD/re-local/ghidra"
   -postScript ApplyIndexNames.java "$PWD/docs/rules/program-index.md"
 ```
 
-Update the project after the index changes. This runs both scripts again and analyzes only their
-changes:
+Update the project after the index changes. This runs both scripts again on the saved project, without
+Ghidra's auto-analysis, and saves the project. Without `-noanalysis` Ghidra first re-analyses the whole
+program before the scripts run:
 
 ```sh
-"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -process Siedler1.exe \
+"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -process Siedler1.exe -noanalysis \
   -scriptPath "$PWD/tools/GhidraDump" -postScript CreateMissingFunctions.java \
   -postScript ApplyIndexNames.java "$PWD/docs/rules/program-index.md"
 ```
