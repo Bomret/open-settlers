@@ -25,13 +25,21 @@ The engine does not support an install of the DOS CD release.
 
 Both modes need an install. Give it with `--game <install>` after the `--` that ends the Godot arguments, or set `SIEDLER_DIR` to the install folder. `--game` wins when both are present. The commands use `godot-mono`, the binary of the Homebrew cask.
 
+Build the C# project once after a clone and again after each change to the code:
+
+```sh
+dotnet build OpenSettlers.csproj
+```
+
+Without the build Godot cannot load the C# scripts: the asset check prints `Cannot instantiate C# script` and does not exit, and the browser shows an empty window.
+
 The asset check runs without a window:
 
 ```sh
 godot-mono --headless --path . -- --check --game <install>
 ```
 
-It reads every asset of every kind and prints one line per file with its entry count and kinds. Each failure prints a line with the file, the entry, and the reason. The last line gives the totals. The exit code is 0 when every entry was read. It is 1 when an entry cannot be read or a listed file is missing. It is 2 when there is no usable install: no `--game` value, a missing folder, or a folder without `Siedler1.exe`.
+It reads every asset of every kind and prints one line per file with its entry count and kinds. Each failure prints a line with the file, the entry, and the reason. The last line gives the totals. The exit code is 0 when every entry was read. It is 1 when an entry cannot be read or a listed file is missing. It is 2 when there is no usable install (no `--game` value, a missing folder, or a folder without `Siedler1.exe`) or when two asset kinds share a name.
 
 The asset browser opens a window:
 
@@ -39,7 +47,7 @@ The asset browser opens a window:
 godot-mono --path . -- --game <install>
 ```
 
-It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. It shows a message instead when there is no usable install.
+It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. It shows a message instead when there is no usable install or two asset kinds share a name, and a notice when the selected kind lists no assets.
 
 Neither mode writes to the install.
 

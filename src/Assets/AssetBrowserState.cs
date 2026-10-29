@@ -37,7 +37,9 @@ public sealed class AssetBrowserState
     /// <summary>The assets of the selected kind in the kind's order; empty when it lists none or could not list them.</summary>
     public IReadOnlyList<Asset> Assets { get; private set; } = [];
 
-    /// <summary>Set when the selected kind could not list its assets: the reason.</summary>
+    /// <summary>
+    /// Set when the selected kind lists no assets ("no unrecovered assets") or could not list them (the reason).
+    /// </summary>
     public string? Notice { get; private set; }
 
     /// <summary>The selected asset; null when the kind lists none.</summary>
@@ -61,14 +63,9 @@ public sealed class AssetBrowserState
         }
 
         var sorted = kinds.OrderBy(k => k.Name, StringComparer.Ordinal).ToList();
-        var twice = sorted.GroupBy(k => k.Name).FirstOrDefault(g => g.Count() > 1);
-        if (twice != null)
+        if (AssetKind.NameClash(sorted) is { } clash)
         {
-            return new AssetBrowserState(
-                $"two asset kinds are named \"{twice.Key}\"; a kind's name must be unique",
-                null,
-                new Dictionary<string, AssetKind>()
-            );
+            return new AssetBrowserState(clash, null, new Dictionary<string, AssetKind>());
         }
 
         var state = new AssetBrowserState(null, install, sorted.ToDictionary(k => k.Name));
@@ -96,6 +93,10 @@ public sealed class AssetBrowserState
         try
         {
             Assets = kind.Enumerate(_install).ToList();
+            if (Assets.Count == 0)
+            {
+                Notice = $"no {name} assets";
+            }
         }
         catch (Exception e)
         {

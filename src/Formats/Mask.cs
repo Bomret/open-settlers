@@ -48,7 +48,7 @@ public static class MaskFile
     /// <summary>
     /// Reads an entry as a mask. Throws <see cref="InvalidDataException"/> with its reason, naming the row where
     /// there is one, for an entry shorter than its header, a width or height of 0 (stand-in: nothing to draw), a
-    /// height that needs more rows than the entry holds, a width x height of more pixels than the engine's image holds (<see cref="IndexedImage.MaxPixels"/>; both before
+    /// height that needs more rows than the entry holds, a width or height of more pixels than a side of the engine's image holds (<see cref="IndexedImage.MaxSide"/>; both before
     /// anything is allocated), a run that ends past the width, and a stream that ends before every row has its end
     /// pair. The bytes after the last row are ignored, as the
     /// program, which stops after the height's rows, ignores them.
@@ -72,14 +72,15 @@ public static class MaskFile
             );
         }
 
-        var area = (long)header.Width * header.Height;
         // Stand-in bound: the mask must fit the engine's image.
-        if (area > IndexedImage.MaxPixels)
+        if (header.Width > IndexedImage.MaxSide || header.Height > IndexedImage.MaxSide)
         {
             throw new InvalidDataException(
-                $"the mask is {header.Width} x {header.Height}, {area} pixels, more than the {IndexedImage.MaxPixels} pixels an image holds"
+                $"the mask is {header.Width} x {header.Height}, more than the {IndexedImage.MaxSide} pixels a side of an image holds"
             );
         }
+
+        var area = header.Width * header.Height;
 
         var covered = new bool[area];
         var position = 0;

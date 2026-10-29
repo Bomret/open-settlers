@@ -3,8 +3,8 @@ using System;
 namespace OpenSettlers.Assets;
 
 /// <summary>
-/// What an asset's preview shows, as plain data. The Godot view of the kind draws it
-/// (<c>src/Viewer/PreviewView.cs</c>); a kind without a view shows <see cref="Summary"/>.
+/// What an asset's preview shows, as plain data. A <c>PreviewView</c> (<c>src/Viewer/PreviewView.cs</c>) draws a
+/// <see cref="Preview"/> type; a type without a view shows its <see cref="Summary"/>.
 /// </summary>
 public abstract record Preview
 {

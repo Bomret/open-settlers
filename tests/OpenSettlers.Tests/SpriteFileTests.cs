@@ -166,13 +166,13 @@ public sealed class SpriteFileTests
         StringAssert.Contains(failure.Message, $"{height} rows");
     }
 
-    // Every row an end pair, so the stream holds exactly the rows the height needs and only the area bound can refuse
-    // it. The bound is the engine's image: width x height must be at most 2^28 pixels (65535 x 4097 is just above).
+    // Every row an end pair, so the stream holds exactly the rows the height needs and only the side bound can refuse
+    // it. The bound is a stand-in: a width or height of more than 2048 pixels is refused (65535 x 4096 fits an 8 KB entry).
     [TestMethod]
-    [DataRow(65535, 32769)]
-    [DataRow(65535, 8193)]
-    [DataRow(65535, 4097)]
-    public void ASpriteOfMorePixelsThanAnImageHoldsIsUnreadableBeforeAnythingIsAllocated(int width, int height)
+    [DataRow(65535, 4096)]
+    [DataRow(2049, 1)]
+    [DataRow(1, 2049)]
+    public void ASpriteWiderOrTallerThanAnImageSideHoldsIsUnreadableBeforeAnythingIsAllocated(int width, int height)
     {
         var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
             SpriteFile.Read(Sprite((ushort)width, (ushort)height, 0, 0, new byte[height * 2]))

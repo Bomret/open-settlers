@@ -55,7 +55,7 @@ public static class SpriteFile
     /// Decodes an entry: after the header, each of the height rows is a sequence of runs, each run a skip byte, a
     /// count byte, and that many palette indices; a run whose count is 0 ends the row and its skip is ignored.
     /// Throws <see cref="InvalidDataException"/> for an entry shorter than its header, for a width or height of
-    /// 0 (stand-in: nothing to draw), for a height the stream cannot hold (each row needs at least its ending pair), for a width x height of more pixels than the engine's image holds (<see cref="IndexedImage.MaxPixels"/>, stand-in: the engine's bound), for a row whose runs end beyond the width, and for a stream that ends before
+    /// 0 (stand-in: nothing to draw), for a height the stream cannot hold (each row needs at least its ending pair), for a width or height of more pixels than a side of the engine's image holds (<see cref="IndexedImage.MaxSide"/>, stand-in: the engine's bound), for a row whose runs end beyond the width, and for a stream that ends before
     /// its last row or inside a run. Bytes after the last row are ignored, as the program ignores them.
     /// </summary>
     public static Sprite Read(ReadOnlyMemory<byte> entry)
@@ -78,14 +78,15 @@ public static class SpriteFile
             );
         }
 
-        var area = (long)width * header.Height;
         // Stand-in bound: the sprite must fit the engine's image.
-        if (area > IndexedImage.MaxPixels)
+        if (width > IndexedImage.MaxSide || header.Height > IndexedImage.MaxSide)
         {
             throw new InvalidDataException(
-                $"the sprite is {width} x {header.Height}, {area} pixels, more than the {IndexedImage.MaxPixels} pixels an image holds"
+                $"the sprite is {width} x {header.Height}, more than the {IndexedImage.MaxSide} pixels a side of an image holds"
             );
         }
+
+        var area = width * header.Height;
 
         var indices = new byte[area];
         var drawn = new bool[indices.Length];

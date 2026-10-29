@@ -217,4 +217,14 @@ public sealed class AssetBrowserStateTests
 
         StringAssert.Contains(state.Failure, "loca/SPAD.PA");
     }
+
+    [TestMethod]
+    public void AKindThatListsNoAssetsShowsANotice()
+    {
+        using var fake = new FakeInstall();
+
+        var state = Open(fake, new ListedKind("unrecovered"));
+
+        Assert.AreEqual("no unrecovered assets", state.Notice);
+    }
 }
