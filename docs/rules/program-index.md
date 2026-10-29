@@ -182,7 +182,7 @@ Note: [Music file](music-file.md).
 | `0x407290` | `Archive_FillAliases` | Copies the size and offset of source rows over the rows that repeat them: 255 rows in four kinds of block. | confirmed | game | Called by `Platform_RunGame`; data `Archive_Base`. |
 | `0x405f60` | `Archive_Free` | Frees the archive buffer, or each entry's own buffer first when the header flag is 1. | confirmed | platform | Called by `Platform_RunGame` at the end. |
 | `0x6812ec` | `Archive_Base` | Data: pointer to the loaded archive; an entry lies at the base plus its row's offset, and offset 0 means no entry. | confirmed | platform | Written once in `Platform_RunGame`; read at `0x406120`, `0x406610`, `0x4071c0`, `0x4073d0`. |
-| `0x4073d0` | `Archive_FindEntry` | Finds one entry: stores the archive base plus the offset of the row whose number is in the EDI block's field `+0x8` into the field `+0x24`, and stores 0 when the row's offset is 0. | confirmed | platform | Called at `0x41dbea` (row 40) and by `RuleData_Load`; data `Archive_Base`. |
+| `0x4073d0` | `Archive_FindEntry` | Finds one entry: stores the archive base plus the offset of the row whose number is in the EDI block's field `+0x8` into the field `+0x24`, and stores 0 when the row's offset is 0. | confirmed | platform | Called at `0x41de6e`, in the routine at `0x41dbea` (row 40), and at `0x41e8f6`, in `RuleData_Load`; data `Archive_Base`. |
 | `0x41e8e0` | `RuleData_Load` | Finds entry 2, skips its first 4 bytes, byte-swaps the next 200 dwords in place, and stores the address after the skipped bytes in the game state block's field `+0xb0`. | confirmed | game | Called by `Game_InitSettings`; read through `+0xb0` by `0x43f537`. |
 
 Note: [Graphics archives](graphics-archives.md).
@@ -207,7 +207,6 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x4511d5` | `Text_DrawGlyphs` | Draws a string of characters as one-color sprites: for each character, a shadow glyph (entry plus 809) in the shadow color when one is set, then the glyph (entry plus 749) in the text color; steps 8 pixels per character. | inferred | game | Called at `0x450fde`, `0x451043`, `0x4510a8`, `0x451111`, `0x451173` (each jumps to it); calls `Gfx_DrawSpriteOneColor`. |
 | `0x405b80` | `Gfx_BlitShadow` | Draws a mask to the surface, clipped, storing palette index `0x80` on every covered pixel with no blending. | confirmed | platform | Called at `0x4061fa`, in `Gfx_DrawShadow`, and at `0x4062c9`, in the second shadow routine at `0x406210`, which `0x44ff2a` calls with an object's number plus 1500 (reached from `0x44fcd0` and `0x44fd30` as well as the call sites for the table at `0x44fc87`). |
 | `0x4061a0` | `Gfx_DrawShadow` | Sets the clip rectangle and draws the mask whose entry number is in the draw block's third field through `Gfx_BlitShadow`. | confirmed | platform | Called at `0x44daa4` (the entry is an object's number plus 1500, in the routine at `0x44da4d`, which about 38 sites reach) and at `0x45007d` (entry 4). |
-| `0x47b19c` | `Gfx_BlitTextured` | Draws a mask to the surface, clipped, copying each covered pixel from a raw-image texture that repeats down only (it never wraps within a row), with no blending. | confirmed | platform | Called at `0x405b67`, in `Gfx_FillTextured`. |
 | `0x405b40` | `Gfx_FillTextured` | Hands the mask and the texture entry to `Gfx_BlitTextured`. | confirmed | platform | Called at `0x40618c`, in `Gfx_DrawTexturedFill`. |
 | `0x406120` | `Gfx_DrawTexturedFill` | Sets the clip rectangle, finds the texture entry from the draw block's fourth field, and fills the mask of its third field with it. | confirmed | platform | Called at `0x4279a9`, `0x427b0d`, and `0x428363`, in the routines at `0x4278be`, `0x427a25`, and `0x428008`, `0x428105`, `0x4281cc`, which form the mask (60 plus an index, 141 plus an index, or a base of 234, 243, or 252 plus a height difference) and the texture (260 or 300 plus an offset). |
 | `0x406420` | `Gfx_DrawSpriteOverColor8` | Sets the clip rectangle from the target surface and draws the entry of the draw block through `Gfx_SpriteOverColor8`. | confirmed | platform | Called at `0x44ffcd`, in `0x44ff59`. |
@@ -423,7 +422,8 @@ Note: [Game code](game-code.md).
 
 | Address | Name | Role | Status | Layer | Anchor |
 | --- | --- | --- | --- | --- | --- |
-| `0x47b4f9` | `Gfx_BlitSpriteOverColor8` | Draws a transparent sprite stream, clipped, writing a pixel only where the surface pixel has the palette index 8. Last routine of the game code band. | confirmed | game | Called by `Gfx_SpriteOverColor8`; band comparison. See [Graphics images](graphics-images.md). |
+| `0x47b19c` | `Gfx_BlitTextured` | Draws a mask to the surface, clipped, copying each covered pixel from a raw-image texture that repeats down only (it never wraps within a row), with no blending. | confirmed | game | Called at `0x405b67`, in `Gfx_FillTextured`. Lies inside the band and takes its arguments in registers, not in the EDI block, like `Gfx_BlitSpriteOverColor8`. See [Graphics images](graphics-images.md). |
+| `0x47b4f9` | `Gfx_BlitSpriteOverColor8` | Draws a transparent sprite stream, clipped, writing a pixel only where the surface pixel has the palette index 8. Last routine of the game code band. | confirmed | game | Called by `Gfx_SpriteOverColor8`; band comparison; takes its arguments in registers, not in the EDI block, like `Gfx_BlitTextured`. See [Graphics images](graphics-images.md). |
 
 ## Structures and data
 
@@ -766,7 +766,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x479e54` | `Sound_UpdateChannels` | inferred | Sound |
 | `0x47a32d` | `Sound_Play` | confirmed | Sound |
 | `0x47a4c3` | `Input_UpdatePointer` | inferred | Input |
-| `0x47b19c` | `Gfx_BlitTextured` | confirmed | Graphics images |
+| `0x47b19c` | `Gfx_BlitTextured` | confirmed | Game code band |
 | `0x47b4f9` | `Gfx_BlitSpriteOverColor8` | confirmed | Game code band |
 | `0x674048` | `Speed_Factor` | confirmed | Timing |
 | `0x67d608` | `Timer_RateHz` | confirmed | Timing |
