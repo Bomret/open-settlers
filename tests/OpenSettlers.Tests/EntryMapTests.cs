@@ -64,7 +64,7 @@ public sealed class EntryMapTests
         StringAssert.Contains(asset.Name, "offset 32000");
         StringAssert.Contains(asset.Name, "meaning pending");
         var preview = asset.Load();
-        Assert.IsInstanceOfType<RuleDataPreview>(preview);
+        Assert.IsInstanceOfType<LocatedEntryPreview>(preview);
         StringAssert.Contains(preview.Summary, "meaning pending");
         StringAssert.Contains(preview.Summary, "size 12");
     }
@@ -73,7 +73,7 @@ public sealed class EntryMapTests
     public void TheUnreadKindClaimsTheEntriesNoRoutineReads()
     {
         CollectionAssert.AreEqual(
-            Enumerable.Range(448, 74).Concat(Enumerable.Range(3900, 95)).Concat([3999]).ToList(),
+            new[] { 494 }.Concat(Enumerable.Range(3900, 95)).Concat([3999]).ToList(),
             Claimed<UnreadEntryKind>().ToList()
         );
     }
@@ -90,7 +90,7 @@ public sealed class EntryMapTests
         StringAssert.Contains(assets[0].Name, "size 5");
         StringAssert.Contains(assets[0].Name, "not read by the program");
         var preview = assets[1].Load();
-        Assert.IsInstanceOfType<UnreadEntryPreview>(preview);
+        Assert.IsInstanceOfType<LocatedEntryPreview>(preview);
         StringAssert.Contains(preview.Summary, "not read by the program");
         StringAssert.Contains(preview.Summary, "size 2");
     }
@@ -130,9 +130,16 @@ public sealed class EntryMapTests
 
     [TestMethod]
     [DataRow(2, "rule data")]
-    [DataRow(448, "unread")]
-    [DataRow(490, "unread")]
-    [DataRow(521, "unread")]
+    [DataRow(448, "sprite")]
+    [DataRow(472, "sprite")]
+    [DataRow(482, "sprite")]
+    [DataRow(490, "sprite")]
+    [DataRow(493, "sprite")]
+    [DataRow(494, "unread")]
+    [DataRow(495, "sprite")]
+    [DataRow(502, "sprite")]
+    [DataRow(517, "sprite")]
+    [DataRow(521, "sprite")]
     [DataRow(630, "sprite over color 8")]
     [DataRow(645, "sprite over color 8")]
     [DataRow(3901, "unread")]
@@ -143,23 +150,5 @@ public sealed class EntryMapTests
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
         CollectionAssert.AreEqual(new[] { kind }, ArchiveEntryKind.ClaimedBy(entry, all).ToArray());
-    }
-
-    [TestMethod]
-    [DataRow(447)]
-    [DataRow(522)]
-    [DataRow(629)]
-    [DataRow(646)]
-    [DataRow(3899)]
-    [DataRow(3995)]
-    [DataRow(3998)]
-    public void AnEntryNextToTheRemainingRangesKeepsItsOwnKind(int entry)
-    {
-        var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
-        var names = ArchiveEntryKind.ClaimedBy(entry, all);
-
-        CollectionAssert.DoesNotContain(names.ToList(), "unread");
-        CollectionAssert.DoesNotContain(names.ToList(), "rule data");
-        CollectionAssert.DoesNotContain(names.ToList(), "sprite over color 8");
     }
 }

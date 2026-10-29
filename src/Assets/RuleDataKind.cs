@@ -3,13 +3,6 @@ using OpenSettlers.Formats;
 
 namespace OpenSettlers.Assets;
 
-/// <summary>The preview of a rule-data entry: where it lies and that its meaning is not decoded. It has no byte preview.</summary>
-public sealed record RuleDataPreview : Preview
-{
-    /// <summary>The entry.</summary>
-    public required ArchiveEntry Entry { get; init; }
-}
-
 /// <summary>
 /// The rule data of the game: entry 2, which the program reads at start-up (<c>0x41e8e0</c> through
 /// <c>0x4073d0</c>) and hands to the simulation; see <c>docs/rules/graphics-archives.md</c>. The kind names the
@@ -35,7 +28,7 @@ public sealed class RuleDataKind : ArchiveEntryKind
 
     /// <inheritdoc/>
     protected override Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
-        new RuleDataPreview
+        new LocatedEntryPreview
         {
             Entry = entry,
             Summary =
