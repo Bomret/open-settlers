@@ -1,6 +1,6 @@
 # 5. A tick is one pass of 8 clock units
 
-**Status:** Proposed
+**Status:** Accepted
 
 The engine's tick is one pass of the original's main loop at its shortest length: 4 timer calls, 8
 units of the game clock. At normal speed this is 80 milliseconds, 12.5 ticks per second. On each tick

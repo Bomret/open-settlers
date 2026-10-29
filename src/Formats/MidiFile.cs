@@ -41,7 +41,7 @@ public static class MidiFile
 
     /// <summary>
     /// Reads a music file. Throws <see cref="InvalidDataException"/>, with the reason in the message, for a bad
-    /// header or track tag, a chunk past the end of the file, a missing track, or an event cut short.
+    /// header or track tag, a header length other than 6, a chunk past the end of the file, a missing track, or an event cut short.
     /// </summary>
     public static MusicFile Read(byte[] bytes)
     {
@@ -55,16 +55,15 @@ public static class MidiFile
             throw new InvalidDataException("the header chunk is cut short");
         }
 
-        var headerLength = ReadInt(bytes, 4, 4);
-        if (headerLength < 6 || 8 + (long)headerLength > bytes.Length)
+        if (ReadInt(bytes, 4, 4) != 6)
         {
-            throw new InvalidDataException("the header chunk is cut short or past the end of the file");
+            throw new InvalidDataException("the header length is not 6");
         }
 
         var format = ReadInt(bytes, 8, 2);
         var trackCount = ReadInt(bytes, 10, 2);
         var division = ReadInt(bytes, 12, 2);
-        var position = 8 + headerLength;
+        var position = 14;
 
         var tracks = new List<MidiTrack>();
         var tempos = new List<(long Tick, int Microseconds)>();

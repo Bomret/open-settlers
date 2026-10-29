@@ -29,12 +29,16 @@ Each rule note holds:
 - One or more addresses as evidence.
 - A status: **confirmed** when the code at the address shows the rule, **inferred** when the rule
   follows from the code but no single address shows it, or **stand-in** when the engine supplies a value
-  that the program does not confirm.
+  or a check that the program does not confirm.
 - The mark **platform layer** when the evidence lies outside the game code (`CONTEXT.md`). The platform
   layer is new Windows code, so such a rule may differ from the DOS original.
 
 A rule note never holds decompiler output, assembly, byte sequences, or byte patterns from the program
-([INV-0001](../invariants.md#inv-0001)). Describe what the code does, and cite where.
+([INV-0001](../invariants.md#inv-0001)). Describe what the code does, and cite where. Cite a routine that
+the program index names as `Name` at `0xaddr` on its first mention, and by name after that.
+
+A note may end with `## In the engine`: the source files that implement the rule and every place where the
+engine departs from the program.
 
 ## Program index
 
@@ -65,7 +69,7 @@ again only when all of these hold:
 - The Ghidra project holds a change that alters what the dump says about code: a function created, a
   function's boundaries fixed, or a type or signature that changes the decompiled code. Names and
   comments alone do not count, because the program index carries them.
-- Later work will read the dump again. Otherwise the change waits for the next dump run that is due
+- Later work reads the dump again. Otherwise the change waits for the next dump run that is due
   anyway.
 - The user agreed to this run, after being told the changes that make it necessary.
 
