@@ -91,3 +91,5 @@ When the dump is missing, build it before you investigate.
   map generation.
 - [Sound files](sound-files.md): the numbered sound files in `snd/`, their headerless 8-bit format, and
   the sample rate.
+- [Graphics archives](graphics-archives.md): the three `loca/SPA*.PA` archives, their header and table,
+  the entry numbering, and the slots the program fills with copies.
