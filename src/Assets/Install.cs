@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using OpenSettlers.Launch;
@@ -44,7 +45,7 @@ public sealed class Install
         {
             problem = $"install folder not found: {args.Game} ({HowToGive})";
         }
-        else if (!File.Exists(Path.Combine(args.Game, Program)))
+        else if (Find(args.Game, Program) == null)
         {
             problem = $"no {Program} in {args.Game}, so it is not an install ({HowToGive})";
         }
@@ -56,9 +57,66 @@ public sealed class Install
         return install != null;
     }
 
-    /// <summary>Whether the install holds a file at <c>path</c>.</summary>
-    public bool Exists(string path) => File.Exists(Path.Combine(Root, path));
+    /// <summary>Whether the install holds a file at <c>path</c>, in any letter case.</summary>
+    public bool Exists(string path) => Find(Root, path) != null;
 
-    /// <summary>The bytes of the file at <c>path</c>. Throws when it cannot be read.</summary>
-    public byte[] ReadAll(string path) => File.ReadAllBytes(Path.Combine(Root, path));
+    /// <summary>The bytes of the file at <c>path</c>, in any letter case. Throws when it cannot be read.</summary>
+    public byte[] ReadAll(string path) => File.ReadAllBytes(Find(Root, path) ?? Path.Combine(Root, path));
+
+    /// <summary>
+    /// The file at the relative <c>path</c> under <c>root</c>, each segment matched without regard to letter
+    /// case: a folder segment only against folders, the last only against files. Where names differ only in case,
+    /// the exact spelling wins, otherwise the first in ordinal order. Null when no spelling exists or a folder on
+    /// the way cannot be listed.
+    /// </summary>
+    static string? Find(string root, string path)
+    {
+        var segments = path.Split('/');
+        var current = root;
+        for (var i = 0; i < segments.Length; i++)
+        {
+            var last = i == segments.Length - 1;
+            string[] names;
+            try
+            {
+                names = last ? Directory.GetFiles(current) : Directory.GetDirectories(current);
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return null;
+            }
+
+            string? found = null;
+            foreach (var candidate in names)
+            {
+                var name = Path.GetFileName(candidate);
+                if (name == segments[i])
+                {
+                    found = candidate;
+                    break;
+                }
+
+                if (
+                    string.Equals(name, segments[i], StringComparison.OrdinalIgnoreCase)
+                    && (found == null || string.CompareOrdinal(name, Path.GetFileName(found)) < 0)
+                )
+                {
+                    found = candidate;
+                }
+            }
+
+            if (found == null)
+            {
+                return null;
+            }
+
+            current = found;
+        }
+
+        return current;
+    }
 }
