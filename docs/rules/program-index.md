@@ -363,6 +363,17 @@ Sites:
 - `0x4015ac`: references the string `game.ini`.
 - `0x40fc40`: references the registry key `Control Panel\Mouse`.
 
+### Text files
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x412570` | `Text_LoadLanguage` | Reads the language's text file through `Text_ReadFile`, looks up 224 fixed keys with `Text_Lookup`, and appends a byte of value 255 after each found text. | confirmed | platform | Called by `Platform_RunGame`; strings such as `MENUTEXT1`. |
+| `0x410e30` | `Text_ReadFile` | Puts the application-folder prefix before the file name and calls `Text_ParseFile`; answers whether the file opened. | confirmed | platform | String `[AP]/`; called by `Text_LoadLanguage`. |
+| `0x410f40` | `Text_ParseFile` | Reads a file line by line and stores each `KEY="VALUE"` line in the key map; skips the other lines. | confirmed | platform | Callers `Text_ReadFile` and `0x416d70`; imports `_wfopen_s`, `fgetc`, `strchr`. |
+| `0x4111a0` | `Text_Lookup` | Finds a value text by key in the key map; answers none when the key is absent. | confirmed | platform | Called by `Text_LoadLanguage` and `Platform_RunGame` (key `LANGUAGE`). |
+
+Note: [Text files](text-files.md).
+
 ### Game code band
 
 Note: [Game code](game-code.md).
@@ -541,6 +552,10 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x407800` | `File_Write` | confirmed | Save and load |
 | `0x407870` | `File_Read` | confirmed | Save and load |
 | `0x40b8c0` | `Sound_CreateBuffer` | confirmed | Sound |
+| `0x410e30` | `Text_ReadFile` | confirmed | Text files |
+| `0x410f40` | `Text_ParseFile` | confirmed | Text files |
+| `0x4111a0` | `Text_Lookup` | confirmed | Text files |
+| `0x412570` | `Text_LoadLanguage` | confirmed | Text files |
 | `0x415130` | `Music_LoadFile` | confirmed | Music |
 | `0x415390` | `Music_Stop` | inferred | Music |
 | `0x417bb0` | `Platform_GameThreadMain` | confirmed | Program start and game flow |

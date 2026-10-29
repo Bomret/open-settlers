@@ -92,3 +92,5 @@ When the dump is missing, build it before you investigate.
 - [Sound files](sound-files.md): the numbered sound files in `snd/`, their headerless 8-bit format, and
   the sample rate.
 - [Music file](music-file.md): where the program loads `snd/music_1.midi` and the Standard MIDI File it holds.
+- [Text files](text-files.md): the language files in `loca/`, their `KEY="VALUE"` lines, and which
+  lines the program skips.
