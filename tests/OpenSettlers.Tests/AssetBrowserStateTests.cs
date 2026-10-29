@@ -57,7 +57,11 @@ public sealed class AssetBrowserStateTests
     public void TheCategoriesAreTheKindsByNameAndTheFirstIsSelectedWithItsFirstAsset()
     {
         using var fake = new FakeInstall();
-        var state = Open(fake, new ListedKind("text", Item("text", "a")), new ListedKind("palette", Item("palette", "p")));
+        var state = Open(
+            fake,
+            new ListedKind("text", Item("text", "a")),
+            new ListedKind("palette", Item("palette", "p"))
+        );
 
         CollectionAssert.AreEqual(new[] { "palette", "text" }, state.Categories.ToList());
         Assert.AreEqual("palette", state.SelectedKind);

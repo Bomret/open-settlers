@@ -10,7 +10,8 @@ public sealed class FakeInstall : IDisposable
     {
         Root = Path.Combine(Path.GetTempPath(), "open-settlers-tests-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Root);
-        if (withProgram) {
+        if (withProgram)
+        {
             Put("Siedler1.exe", [1, 2, 3]);
         }
     }

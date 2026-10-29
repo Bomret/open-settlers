@@ -30,34 +30,45 @@ public static class AssetCheck
     /// </summary>
     public static CheckReport Run(LaunchArgs args, IEnumerable<AssetKind> kinds)
     {
-        if (!Install.TryOpen(args, out var install, out var problem)) {
+        if (!Install.TryOpen(args, out var install, out var problem))
+        {
             return new CheckReport { ExitCode = 2, Lines = [$"ERROR {problem}"] };
         }
 
         var files = new Dictionary<string, FileTally>();
         var failures = new List<string>();
-        foreach (var kind in kinds) {
+        foreach (var kind in kinds)
+        {
             List<Asset> assets;
-            try {
+            try
+            {
                 assets = kind.Enumerate(install).ToList();
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 failures.Add($"FAIL {kind.Name}: cannot list the assets: {e.Message}");
 
                 continue;
             }
 
-            foreach (var asset in assets) {
-                try {
+            foreach (var asset in assets)
+            {
+                try
+                {
                     asset.Load();
-                    if (!files.TryGetValue(asset.File, out var tally)) {
+                    if (!files.TryGetValue(asset.File, out var tally))
+                    {
                         files[asset.File] = tally = new FileTally();
                     }
 
                     tally.Entries++;
-                    if (!tally.Kinds.Contains(asset.Kind)) {
+                    if (!tally.Kinds.Contains(asset.Kind))
+                    {
                         tally.Kinds.Add(asset.Kind);
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e)
+                {
                     var entry = asset.Entry == null ? "" : $" entry {asset.Entry}";
                     failures.Add($"FAIL {asset.File}{entry}: {e.Message}");
                 }
@@ -70,7 +81,9 @@ public static class AssetCheck
             )
             .Concat(failures)
             .ToList();
-        lines.Add($"{files.Count} files read, {files.Values.Sum(t => t.Entries)} entries read, {failures.Count} failed");
+        lines.Add(
+            $"{files.Count} files read, {files.Values.Sum(t => t.Entries)} entries read, {failures.Count} failed"
+        );
 
         return new CheckReport { ExitCode = failures.Count == 0 ? 0 : 1, Lines = lines };
     }

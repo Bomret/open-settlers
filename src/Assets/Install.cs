@@ -32,15 +32,24 @@ public sealed class Install
     {
         install = null;
         problem = null;
-        if (args.Problems.Count > 0) {
+        if (args.Problems.Count > 0)
+        {
             problem = $"{string.Join("; ", args.Problems)}: {HowToGive}";
-        } else if (string.IsNullOrEmpty(args.Game)) {
+        }
+        else if (string.IsNullOrEmpty(args.Game))
+        {
             problem = $"no install given: {HowToGive}";
-        } else if (!Directory.Exists(args.Game)) {
+        }
+        else if (!Directory.Exists(args.Game))
+        {
             problem = $"install folder not found: {args.Game} ({HowToGive})";
-        } else if (!File.Exists(Path.Combine(args.Game, Program))) {
+        }
+        else if (!File.Exists(Path.Combine(args.Game, Program)))
+        {
             problem = $"no {Program} in {args.Game}, so it is not an install ({HowToGive})";
-        } else {
+        }
+        else
+        {
             install = new Install { Root = args.Game };
         }
 

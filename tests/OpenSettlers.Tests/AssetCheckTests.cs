@@ -161,7 +161,10 @@ public sealed class AssetCheckTests
     [TestMethod]
     public void ExitTwoWinsOverOneWhenTheInstallIsMissingAndAnEntryWouldFail()
     {
-        var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--game", "/no/such/folder"], null), [new SoundKind()]);
+        var report = AssetCheck.Run(
+            LaunchArgs.Parse(["--check", "--game", "/no/such/folder"], null),
+            [new SoundKind()]
+        );
 
         Assert.AreEqual(2, report.ExitCode);
     }

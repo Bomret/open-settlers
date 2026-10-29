@@ -46,10 +46,12 @@ public sealed class LaunchArgs
         var problems = new List<string>();
         var index = Array.IndexOf(args, GameFlag);
         string? game = string.IsNullOrEmpty(siedlerDir) ? null : siedlerDir;
-        if (index >= 0) {
+        if (index >= 0)
+        {
             var hasValue = index + 1 < args.Length && args[index + 1].Length > 0 && !args[index + 1].StartsWith("--");
             game = hasValue ? args[index + 1] : null;
-            if (!hasValue) {
+            if (!hasValue)
+            {
                 problems.Add($"{GameFlag} needs a value");
             }
         }

@@ -23,7 +23,10 @@ public sealed class SoundKindTests
 
         var assets = new SoundKind().Enumerate(Open(fake)).ToList();
 
-        CollectionAssert.AreEqual(new[] { "snd/02.SND", "snd/10.SND", "snd/99.SND" }, assets.Select(a => a.File).ToList());
+        CollectionAssert.AreEqual(
+            new[] { "snd/02.SND", "snd/10.SND", "snd/99.SND" },
+            assets.Select(a => a.File).ToList()
+        );
     }
 
     [TestMethod]

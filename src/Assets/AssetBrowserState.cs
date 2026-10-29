@@ -52,7 +52,8 @@ public sealed class AssetBrowserState
     /// </summary>
     public static AssetBrowserState Open(LaunchArgs args, IEnumerable<AssetKind> kinds)
     {
-        if (!Install.TryOpen(args, out var install, out var problem)) {
+        if (!Install.TryOpen(args, out var install, out var problem))
+        {
             return new AssetBrowserState(problem, null, new Dictionary<string, AssetKind>());
         }
 
@@ -61,7 +62,8 @@ public sealed class AssetBrowserState
             install,
             kinds.OrderBy(k => k.Name, StringComparer.Ordinal).ToDictionary(k => k.Name)
         );
-        if (state.Categories.Count > 0) {
+        if (state.Categories.Count > 0)
+        {
             state.SelectKind(state.Categories[0]);
         }
 
@@ -74,15 +76,19 @@ public sealed class AssetBrowserState
     /// </summary>
     public void SelectKind(string name)
     {
-        if (_install == null || !_kinds.TryGetValue(name, out var kind)) {
+        if (_install == null || !_kinds.TryGetValue(name, out var kind))
+        {
             return;
         }
 
         SelectedKind = name;
         Notice = null;
-        try {
+        try
+        {
             Assets = kind.Enumerate(_install).ToList();
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             Assets = [];
             Notice = $"cannot list the {name} assets: {e.Message}";
         }
@@ -97,7 +103,8 @@ public sealed class AssetBrowserState
     /// </summary>
     public void SelectAsset(int index)
     {
-        if (Assets.Count == 0 && index == 0) {
+        if (Assets.Count == 0 && index == 0)
+        {
             SelectedAsset = null;
             Preview = null;
             Failure = null;
@@ -105,15 +112,19 @@ public sealed class AssetBrowserState
             return;
         }
 
-        if (index < 0 || index >= Assets.Count) {
+        if (index < 0 || index >= Assets.Count)
+        {
             return;
         }
 
         SelectedAsset = Assets[index];
-        try {
+        try
+        {
             Preview = SelectedAsset.Load();
             Failure = null;
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             Preview = null;
             Failure = e.Message;
         }

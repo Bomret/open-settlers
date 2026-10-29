@@ -19,7 +19,8 @@ public sealed class Sound
     public byte[] SignedSamples()
     {
         var signed = Samples.ToArray();
-        for (var i = 0; i < signed.Length; i++) {
+        for (var i = 0; i < signed.Length; i++)
+        {
             signed[i] ^= 0x80;
         }
 

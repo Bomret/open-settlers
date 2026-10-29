@@ -32,9 +32,11 @@ public sealed class SoundKind : AssetKind
     public override IEnumerable<Asset> Enumerate(Install install)
     {
         var found = false;
-        for (var number = FirstNumber; number <= LastNumber; number++) {
+        for (var number = FirstNumber; number <= LastNumber; number++)
+        {
             var file = $"snd/{number:00}.SND";
-            if (!install.Exists(file)) {
+            if (!install.Exists(file))
+            {
                 continue;
             }
 
@@ -49,7 +51,8 @@ public sealed class SoundKind : AssetKind
             };
         }
 
-        if (!found) {
+        if (!found)
+        {
             yield return new Asset
             {
                 Kind = KindName,
