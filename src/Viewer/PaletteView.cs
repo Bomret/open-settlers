@@ -12,7 +12,7 @@ public sealed class PaletteView : PreviewView
     const int Square = 16;
 
     /// <inheritdoc/>
-    public override string KindName => PaletteKind.KindName;
+    public override System.Type PreviewType => typeof(PalettePreview);
 
     /// <inheritdoc/>
     public override Control Create(Preview preview)

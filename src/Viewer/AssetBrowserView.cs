@@ -19,7 +19,7 @@ public partial class AssetBrowserView : Control
     ItemList _kinds = null!;
     ItemList _assets = null!;
     VBoxContainer _pane = null!;
-    System.Collections.Generic.IReadOnlyDictionary<string, PreviewView> _views = null!;
+    System.Collections.Generic.IReadOnlyDictionary<System.Type, PreviewView> _views = null!;
 
     /// <inheritdoc/>
     public override void _Ready()
@@ -149,7 +149,7 @@ public partial class AssetBrowserView : Control
         else if (_state.Preview is { } preview)
         {
             _pane.AddChild(
-                _views.TryGetValue(_state.SelectedKind!, out var view)
+                _views.TryGetValue(preview.GetType(), out var view)
                     ? view.Create(preview)
                     : new Label { Text = preview.Summary }
             );

@@ -7,7 +7,7 @@ namespace OpenSettlers.Viewer;
 public sealed class TextView : PreviewView
 {
     /// <inheritdoc/>
-    public override string KindName => TextKind.KindName;
+    public override System.Type PreviewType => typeof(TextPreview);
 
     /// <inheritdoc/>
     public override Control Create(Preview preview)

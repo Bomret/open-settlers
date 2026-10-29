@@ -7,7 +7,7 @@ namespace OpenSettlers.Viewer;
 public sealed class SoundView : PreviewView
 {
     /// <inheritdoc/>
-    public override string KindName => SoundKind.KindName;
+    public override System.Type PreviewType => typeof(SoundPreview);
 
     /// <inheritdoc/>
     public override Control Create(Preview preview)

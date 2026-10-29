@@ -3,11 +3,11 @@ using OpenSettlers.Assets;
 
 namespace OpenSettlers.Viewer;
 
-/// <summary>The view of a transparent sprite: its pixels scaled to fit the pane over a flat background that shows the transparent pixels.</summary>
+/// <summary>The view of a <see cref="SpritePreview"/> (a sprite, or one drawn over color 8): its pixels scaled to fit the pane over a flat background that shows the transparent pixels.</summary>
 public sealed class SpriteView : PreviewView
 {
     /// <inheritdoc/>
-    public override string KindName => SpriteKind.KindName;
+    public override System.Type PreviewType => typeof(SpritePreview);
 
     /// <inheritdoc/>
     public override Control Create(Preview preview)
