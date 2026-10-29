@@ -43,6 +43,35 @@ public abstract class ArchiveEntryKind : AssetKind
     /// </summary>
     protected abstract Preview Read(ArchiveEntry entry, ReadOnlyMemory<byte> data);
 
+    /// <summary>
+    /// Reads one claimed entry with the archive it lies in, for a kind that needs another entry of the same
+    /// archive, such as the palette (<see cref="PaletteOf"/>). The base class calls this one; it hands the
+    /// entry to <see cref="Read(ArchiveEntry, ReadOnlyMemory{byte})"/> unless a kind overrides it.
+    /// </summary>
+    protected virtual Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) => Read(entry, data);
+
+    /// <summary>
+    /// A palette of an archive, by its entry number (<c>docs/rules/graphics-images.md</c>).
+    /// </summary>
+    /// <exception cref="InvalidDataException">The archive has no such entry or the entry is not a palette.</exception>
+    protected static Palette PaletteOf(Archive archive, int number)
+    {
+        try
+        {
+            var entry = archive[number];
+            if (entry.State == EntryState.Absent)
+            {
+                throw new InvalidDataException($"the archive has no entry {number}");
+            }
+
+            return PaletteFile.Read(archive.Data(entry).Span);
+        }
+        catch (Exception e) when (e is InvalidDataException or ArgumentOutOfRangeException)
+        {
+            throw new InvalidDataException($"the palette (entry {number}) is unreadable: {e.Message}", e);
+        }
+    }
+
     /// <summary>The label of an entry in the browser's list.</summary>
     protected virtual string Label(string file, ArchiveEntry entry) =>
         entry.AliasOf is { } source
@@ -128,7 +157,7 @@ public abstract class ArchiveEntryKind : AssetKind
                                 throw new InvalidDataException(
                                     $"entry {entry.Number} is a copy of entry {entry.AliasOf} and follows it, yet {string.Join(", ", strays)} claims the copy"
                                 )
-                        : () => Read(entry, archive.Data(entry)),
+                        : () => Read(archive, entry, archive.Data(entry)),
                 };
             }
         }
