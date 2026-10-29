@@ -17,3 +17,8 @@ config/features=PackedStringArray("4.7", "C#")
 [dotnet]
 
 project/assembly_name="OpenSettlers"
+
+[display]
+
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
