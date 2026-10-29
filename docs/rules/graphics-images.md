@@ -2,7 +2,7 @@
 
 This note covers the palette entries of the graphics archives, the 10-byte header that every graphics entry
 starts with, and the raw images: the entries that the program draws as plain rows of palette indices. Sprites
-with transparency, masks, and glyphs read the same header and are other notes. How the archives are loaded and
+with transparency and glyphs read the same header and are other notes; the masks are below. How the archives are loaded and
 numbered is in [Graphics archives](graphics-archives.md).
 
 ## The palette
@@ -96,6 +96,62 @@ the same color in 3 and in 3998 in the reference install, so their preview is th
 
 All entries of these ranges in the reference archives have exactly the size that their width and height give.
 
+## Masks
+
+**Status:** confirmed for the stream layout and for the routines that read it. **Inferred** for the upper
+bounds of the shadow range (below). A mask is a graphic that holds only runs of skipped and covered pixels and
+no pixel colors. The routines that read the stream are `Gfx_BlitShadow` at `0x405b80` and `Gfx_BlitTextured` at
+`0x47b19c`. An entry that carries pixel colors in its runs is a sprite, even when the program draws it in one
+color, and belongs to the sprite note.
+
+The stream after the 10-byte header has one row after the other from the top, as many rows as the height. A row
+is pairs of two bytes: a skip and a cover. The skip moves right from where the previous run ended (from the left
+edge for the first run), the cover is the number of pixels to fill from there. A pair whose cover is 0 ends the
+row and its skip byte is not used. Both routines clip against the clip rectangle and skip the rows above it by
+walking pairs to each end pair. A row with no run is only its end pair.
+
+How the program draws a mask:
+
+- **Shadow.** `Gfx_DrawShadow` at `0x4061a0` hands the entry to `Gfx_BlitShadow`, which stores palette index
+  `0x80` on every covered pixel. It blends nothing, so a shadow is a hard-edged shape in one color.
+- **Textured fill.** `Gfx_DrawTexturedFill` at `0x406120` hands a mask and a raw image to `Gfx_BlitTextured`,
+  which copies, on each covered pixel, the pixel of the texture at the same distance from the mask's position,
+  repeating the texture across and down. The texture is a raw image (10 bytes plus width x height) and has its own
+  header.
+- **Player color.** `Gfx_DrawSettler` at `0x406610` draws one entry in the color `0x40` plus 4 times the player
+  through `0x405880`. That routine skips cover bytes of pixel data in the stream, so the entries it draws are
+  sprites and no mask of the reference install is drawn that way.
+
+Entry ranges, in all three archives, with the routine that reads them:
+
+| Entries | Kind | Routine and how the number arises |
+| --- | --- | --- |
+| 4 | shadow | `0x44fff3` sets the entry to 4 and calls `Gfx_DrawShadow` |
+| 1500 to 1612, 1619 to 1693 | shadow | `0x44da4d` adds 1500 to an object's number and calls `Gfx_DrawShadow`; the same number plus 1250 is the object's sprite. The code reaches the numbers 0 to 119 (`0x44d5b4`) and 128 to 143 (`0x44db26`); the bounds up to 193 follow the archives' entries, which run parallel to the sprites. Inferred. 1613 to 1618 are copies of 1602 (see [Graphics archives](graphics-archives.md)). |
+| 60 to 256 | textured fill | `Gfx_DrawTexturedFill`, called at `0x4278be` (mask number plus 60), `0x427a25` (plus 141), and `0x4281cc` (a computed number). The routine is certain, the upper bound follows the archives' entries. Inferred. |
+| 260 to 292, 300 to 309 | texture of the fill | the texture number at the same three call sites: 260 plus a table value of 0 to 32 at the first two, and 300 to 309 at the third. Confirmed |
+
+The mask entries of the reference install all decode with this layout and consume exactly their size: no run
+passes the width. Entries 1597 and 1598 are masks whose rows are all end pairs (48 x 11, nothing covered); they
+lie in the shadow range. Entries 2670 and 3010 to 3032 are of the same shape but lie among sprites, and no mask
+routine reaches them by number, so they are not claimed.
+
+The preview draws each mask alone in the one color the program stores for it: a shadow in index `0x80`.
+A textured-fill mask has no color of its own (the program fills it with a texture); the preview draws it in
+the first player's color, index `0x40`, as a **stand-in**. The texture belongs to the milestone that draws
+terrain; the texture entries show as raw images. All previews use the game's palette, entry 3.
+
+### Corrupt masks
+
+**Status:** stand-in. The program checks none of these. Each is unreadable for its own entry, with the row in the
+message:
+
+- A run whose end (the skip and the cover added to the end of the previous run) is past the width.
+- A stream that ends before every row of the height has its end pair, including a half pair at the end.
+- A width or height of 0 (nothing to draw), and an entry shorter than its header.
+
+Bytes after the last row are ignored, as the program stops after the height's rows.
+
 ## Corrupt entries
 
 **Status:** stand-in. The program checks none of these; the engine reports them, each for its own entry, and
@@ -113,5 +169,6 @@ the other entries stay readable.
 
 `PaletteFile.Read` and `GraphicFile.Read` and `GraphicFile.ReadRaw` in `src/Formats` read the entries.
 `IndexedImage.ToRgba` turns palette indices into RGBA on the CPU, with no Godot type, and the previews of
-`PaletteKind` and `RawImageKind` in `src/Assets` hold the result. How the game renders palette graphics is
+`PaletteKind` and `RawImageKind` in `src/Assets` hold the result. `MaskFile.Read` reads a mask; `MaskKind` previews
+the masks and `FillTextureKind` the textures of the fill. How the game renders palette graphics is
 decided with the renderer.
