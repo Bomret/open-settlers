@@ -28,6 +28,10 @@ A format reader parses bytes into plain data. It does not read files or know whe
 An asset that is missing or fails to parse is reported with its name and reason and then skipped. Do not
 let such an exception escape a load loop or a scene build.
 
+Such a gap is an `IOException` (a file that cannot be read), an `UnauthorizedAccessException` (a file that
+cannot be opened), or an `InvalidDataException` (corrupt data). Catch those three only. Any other exception
+is a bug in a reader or a kind: let it propagate, so it is never reported as a bad file.
+
 ## Stand-ins
 
 A value that the install defines is read from the install at run time. A value that the engine supplies
