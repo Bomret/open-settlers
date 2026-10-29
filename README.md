@@ -15,7 +15,7 @@ Status: milestone M1. The engine reads the data files of an install. It has two 
 The reference install is The Settlers History Edition (Ubisoft). Ubisoft Connect installs it and runs only on Windows. On macOS or Linux:
 
 1. Install The Settlers History Edition through Ubisoft Connect on a Windows computer or in a Windows virtual machine.
-2. Copy the install folder unchanged to your computer. The install folder holds `Siedler1.exe` and the folders `loca/` and `snd/`.
+2. Copy the install folder unchanged to your computer. The install folder holds `Siedler1.exe` and the folders `loca/` and `snd/`. The engine finds these names in any letter case, so a copy whose names an archiver changed to lower or upper case also works.
 3. Pass that folder as `--game`, or set `SIEDLER_DIR` to it.
 
 The engine does not support an install of the DOS CD release.
