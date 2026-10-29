@@ -89,3 +89,13 @@ When the dump is missing, build it before you investigate.
 - [Timing](timing.md): the timer, the game clock, and how the main loop advances the simulation.
 - [Map start](map-start.md): the random generator, the free-game seed, and where the seed enters the
   map generation.
+- [Sound files](sound-files.md): the numbered sound files in `snd/`, their headerless 8-bit format, and
+  the sample rate.
+- [Music file](music-file.md): where the program loads `snd/music_1.midi` and the Standard MIDI File it holds.
+- [Text files](text-files.md): the language files in `loca/`, their `KEY="VALUE"` lines, and which
+  lines the program skips.
+- [Graphics archives](graphics-archives.md): the three `loca/SPA*.PA` archives, their header and table,
+  the entry numbering, and the slots the program fills with copies.
+- [Graphics images](graphics-images.md): the palette entries, the 10-byte header of a graphics entry, the
+  raw images the program draws opaque, the transparent sprites, the sprites over color 8, the masks, the
+  textured fill, and the corrupt entries.

@@ -12,6 +12,25 @@ _Avoid_: game folder, game directory, assets folder
 One loadable piece of game data in an install, such as a palette, sprite, sound, or map.
 _Avoid_: resource, game file
 
+**Archive**
+A graphics file of an install, such as `loca/SPAD.PA`, that holds numbered entries. Each entry present
+in it is one asset.
+_Avoid_: pack, container, PA file
+
+**Asset kind**
+What an asset is, such as a palette, a sprite, a sound, or rule data. The routine of the program that
+reads an asset decides its kind; nothing in the asset itself states it.
+_Avoid_: asset type, format
+
+**Rule data**
+An asset whose meaning only a rule explains, such as a table the simulation reads. The milestone that
+recovers the rule decodes its meaning.
+_Avoid_: game data, tables
+
+**Asset check**
+The engine's headless mode that reads every asset of an install and reports each one it cannot read.
+_Avoid_: validator, scan
+
 **Asset browser**
 The engine's interactive mode for picking any asset of an install and inspecting its preview.
 _Avoid_: sprite viewer, asset viewer

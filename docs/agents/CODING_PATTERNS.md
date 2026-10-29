@@ -28,6 +28,13 @@ A format reader parses bytes into plain data. It does not read files or know whe
 An asset that is missing or fails to parse is reported with its name and reason and then skipped. Do not
 let such an exception escape a load loop or a scene build.
 
+Such a gap is one of three cases: a file that cannot be read (`IOException`), a file that cannot be opened
+(`UnauthorizedAccessException`), or corrupt data (`InvalidDataException`). The asset check and the browser
+catch these three when they turn an asset into an unreadable entry. A reader may catch another exception and
+rewrap it as `InvalidDataException` when its cause is corrupt data: `ArchiveEntryKind.PaletteOf` does so for
+an `ArgumentOutOfRangeException` from a palette lookup. Any other exception is a bug: let it propagate. The
+check's view catches whatever escapes `AssetCheck.Run`, prints `asset check crashed` to stderr, and exits 1.
+
 ## Stand-ins
 
 A value that the install defines is read from the install at run time. A value that the engine supplies

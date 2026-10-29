@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0006](0006-the-engine-reads-what-siedler1-reads.md)
+
 Amends [ADR 0003](0003-rule-fidelity-not-state-identity.md): the program whose rules the engine
 reproduces is `Siedler1.exe`, not `SIED.EXE`.
 

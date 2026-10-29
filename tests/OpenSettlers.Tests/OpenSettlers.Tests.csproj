@@ -4,4 +4,11 @@
     <Nullable>enable</Nullable>
     <RootNamespace>OpenSettlers.Tests</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- The Godot-free engine code is compiled in directly, so the tests run without Godot. A folder left
+         out of this list is silently untested. -->
+    <Compile Include="../../src/Launch/**/*.cs" />
+    <Compile Include="../../src/Formats/**/*.cs" />
+    <Compile Include="../../src/Assets/**/*.cs" />
+  </ItemGroup>
 </Project>

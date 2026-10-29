@@ -158,7 +158,66 @@ Note: [Timing](timing.md).
 | `0x44fd5f` | `Sound_Request` | Inserts a sound code into a view's four-slot request list. | inferred | game | 17 callers. |
 | `0x428964` | `Sound_RunAmbient` | For each view, may request a random ambient sound. | inferred | game | Called by `0x4286d8`; calls `Rng_Step` through `0x428985`. |
 | `0x407130` | `Sound_Start` | Scales the volume and starts playback. | inferred | platform | Called by `Sound_Play`. |
-| `0x406fb0` | `Sound_LoadFile` | Opens a numbered sound file in `snd/` with the C runtime's file calls. | inferred | platform | String `snd/%02d.SND`. |
+| `0x406fb0` | `Sound_LoadFile` | Tries the sound file numbers 1 to 99 in `snd/`, reads each file present whole, and passes it to `Sound_CreateBuffer`. | confirmed | platform | String `snd/%02d.SND`; called by `Platform_RunGame`. |
+| `0x40b8c0` | `Sound_CreateBuffer` | Describes a sound to DirectSound as 8-bit mono PCM at 8403 Hz and copies the whole file into the buffer. | confirmed | platform | Called by `Sound_LoadFile`. |
+
+Note: [Sound files](sound-files.md).
+
+### Music
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x419a60` | `Music_ApplyOption` | When the music option changes, stops the player or reads `snd/music_1.midi` whole, loads it, and starts the stream. | confirmed | platform | String `snd/music_1.midi`; called by `Timer_ThreadMain`. |
+| `0x415130` | `Music_LoadFile` | Checks the header and track tags of the music file in memory and records the format, division, and each track's start and length. | confirmed | platform | Called by `Music_ApplyOption`. |
+| `0x415390` | `Music_Stop` | Stops and closes the MIDI stream. | inferred | platform | Calls `midiStreamStop` and `midiStreamClose`. |
+| `0x415480` | `Music_SetVolume` | Caps the stored volume option at 100 and sends it, scaled to 127, to every MIDI channel as a volume controller message. | inferred | platform | Calls `midiOutShortMsg`; called at `0x419b7b`, in `Music_ApplyOption`, and at `0x406fa8`, in `Music_SetVolumeFromEdi`. |
+| `0x406fa0` | `Music_SetVolumeFromEdi` | Passes the first word of the EDI block to `Music_SetVolume` as the volume. | inferred | platform | Calls `Music_SetVolume` at `0x406fa8`; called at `0x425c89` and `0x452226`. |
+
+Note: [Music file](music-file.md).
+
+### Graphics archives
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x405e00` | `Archive_Load` | Takes the length of the archive file, allocates a buffer of that size, and reads the whole file into it; returns the buffer, which is the archive base. | confirmed | platform | Called by `Platform_RunGame`; calls `Archive_ReadFile`. |
+| `0x405d70` | `Archive_ReadFile` | Opens a file in binary mode and reads the requested number of bytes, or the whole file, into a buffer. | confirmed | platform | Called by `Archive_Load`. |
+| `0x407290` | `Archive_FillAliases` | Copies the size and offset of source rows over the rows that repeat them: 255 rows in four kinds of block. | confirmed | game | Called by `Platform_RunGame`; data `Archive_Base`. |
+| `0x405f60` | `Archive_Free` | Frees the archive buffer, or each entry's own buffer first when the header flag is 1. | confirmed | platform | Called by `Platform_RunGame` at the end. |
+| `0x6812ec` | `Archive_Base` | Data: pointer to the loaded archive; an entry lies at the base plus its row's offset, and offset 0 means no entry. | confirmed | platform | Written once in `Platform_RunGame`; read at `0x406120`, `0x406610`, `0x4071c0`, `0x4073d0`. |
+| `0x4073d0` | `Archive_FindEntry` | Finds one entry: stores the archive base plus the offset of the row whose number is in the EDI block's field `+0x8` into the field `+0x24`, and stores 0 when the row's offset is 0. | confirmed | platform | Called at `0x41de6e`, in the routine at `0x41dbea` (row 40), and at `0x41e8f6`, in `RuleData_Load`; data `Archive_Base`. |
+| `0x41e8e0` | `RuleData_Load` | Finds entry 2, skips its first 4 bytes, byte-swaps the next 200 dwords in place, and stores the address after the skipped bytes in the game state block's field `+0xb0`. | confirmed | game | Called by `Game_InitSettings`; read through `+0xb0` by `0x43f537`. |
+
+Note: [Graphics archives](graphics-archives.md).
+
+### Graphics images
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x4071c0` | `Palette_Load` | Reads the 768 bytes of the archive entry whose row number is in `CX` as 256 colors of three bytes, reduces each component to 6 bits, stores them in `Palette_Current`, and forces color 0 to black. | confirmed | platform | Called by `Palette_LoadGameFlagged`, `Palette_LoadGame`, and `Platform_RunGame`; data `Archive_Base`. |
+| `0x407250` | `Palette_LoadGameFlagged` | Loads the palette of entry 3, then sets a flag at `0x6812d8`. | confirmed | platform | Called at `0x4471f9` and `0x447200`. |
+| `0x407400` | `Palette_LoadGame` | Loads the palette of entry 3 by a jump into `Palette_Load`. | confirmed | platform | Called at `0x4250a8` and `0x45229d`. |
+| `0x407410` | `Palette_LoadTitle` | Loads the palette of entry 3997 by a jump into `Palette_Load`. | confirmed | platform | Called at `0x451ee9`, in the title scene. |
+| `0x6816d0` | `Palette_Current` | Data: the current palette, 256 colors of three bytes with 6-bit components. | confirmed | platform | Written by `Palette_Load`; read by `Frame_Present`. |
+| `0x405730` | `Gfx_BlitRaw` | Copies the width x height palette indices of a raw image to the surface row by row, clipped to the clip rectangle, with no transparency. | confirmed | platform | Called by `Gfx_DrawSprite`, which hands it the entry's address and the position. |
+| `0x405590` | `Gfx_BlitSprite` | Draws a transparent sprite: per row, runs of a skip byte, a count byte, and that many palette indices copied to the surface, a count of 0 ending the row; clipped to the clip rectangle. | confirmed | platform | Called by `Gfx_DrawSpriteTransparent`, `Gfx_DrawSpriteGrowing`, `Gfx_DrawSpriteNoOffset`, and `Gfx_DrawSettler`. |
+| `0x405880` | `Gfx_BlitSpriteOneColor` | Draws the same stream as `Gfx_BlitSprite` but writes one color value for every drawn pixel and skips the stored indices. | confirmed | platform | Called by `Gfx_DrawSpriteOneColor` and `Gfx_DrawSettler`. |
+| `0x4062e0` | `Gfx_DrawSpriteTransparent` | Loads the clip rectangle of the target surface and calls `Gfx_BlitSprite` with the entry and the position of the EDI block. | confirmed | platform | Called at `0x4286b8`, `0x44dace`, `0x44dec8`, `0x44fd59`. |
+| `0x406490` | `Gfx_DrawSpriteOneColor` | Loads the clip rectangle and calls `Gfx_BlitSpriteOneColor` with the entry, the position, and the color of the EDI block. | confirmed | platform | Called at `0x4512da` and `0x45130f`. |
+| `0x406350` | `Gfx_DrawSpriteGrowing` | Draws a transparent sprite through `Gfx_BlitSprite` with its top moved by a fraction of its height, which the EDI block holds, and the top clipped to the clip rectangle; the entry is the base 1250 plus a script index. | inferred | platform | Called at `0x44ff45`. See [Graphics images](graphics-images.md). |
+| `0x406590` | `Gfx_DrawSpriteNoOffset` | Draws a transparent sprite through `Gfx_BlitSprite` with the entry's two offsets set to 0 for the call and restored after; the entry is the base 1250 plus a script index. | confirmed | platform | Called at `0x44db12`. See [Graphics images](graphics-images.md). |
+| `0x406610` | `Gfx_DrawSettler` | Draws a settler: the figure from the base 1850 through `Gfx_BlitSprite`, the overlay of the same index plus 2500 through `Gfx_BlitSpriteOneColor` in the player color (40 hex plus four times the player), then, where a second figure is set, an entry from the base 3150 through `Gfx_BlitSprite`, moved by header bytes 0 and 1 of the first figure as signed offsets. | confirmed | platform | Called at `0x450189`. See [Graphics images](graphics-images.md). |
+| `0x4511d5` | `Text_DrawGlyphs` | Draws a string of characters as one-color sprites: for each character, a shadow glyph (entry plus 809) in the shadow color when one is set, then the glyph (entry plus 749) in the text color; steps 8 pixels per character. | inferred | game | Entered by jumps at `0x45103e`, `0x4510a3`, `0x45110c`, `0x451171`, `0x4511d3`, the ends of the five sites that start at `0x450fde`, `0x451043`, `0x4510a8`, `0x451111`, `0x451173`; calls `Gfx_DrawSpriteOneColor`. |
+| `0x405b80` | `Gfx_BlitShadow` | Draws a mask to the surface, clipped, storing palette index `0x80` on every covered pixel with no blending. | confirmed | platform | Called at `0x4061fa`, in `Gfx_DrawShadow`, and at `0x4062c9`, in the second shadow routine at `0x406210`, which `0x44ff2a` calls with an object's number plus 1500 (reached from `0x44fcd0`, from `0x44fd2f` by the jump at `0x44e56a`, and by a third path that reads the table at `0x44fcfe` (at `0x44fc4f`) after the call at `0x44fc21` and jumps to `0x44fee2` at `0x44fc70`). |
+| `0x4061a0` | `Gfx_DrawShadow` | Sets the clip rectangle and draws the mask whose entry number is in the draw block's third field through `Gfx_BlitShadow`. | confirmed | platform | Called at `0x44daa4` (the entry is an object's number plus 1500, in `Gfx_DrawObjectSprite`, which about 38 sites reach) and at `0x45007d` (entry 4). |
+| `0x44da4d` | `Gfx_DrawObjectSprite` | Draws an object: scales the position field by 8 and moves the position by 16 and 8, draws the mask of the entry plus 1500 through `Gfx_DrawShadow`, then the sprite of the entry plus 1250 through `Gfx_DrawSpriteTransparent`. | confirmed | game | Called at `0x44d6e8` and `0x44dcad`, in the routines at `0x44d5b4` and `0x44db26`; a scan of the code band finds 38 call or jump sites, not all read. See [Graphics archives](graphics-archives.md). |
+| `0x44de9a` | `Gfx_DrawSpriteBase320` | Moves the position by 16 and 8 and draws the sprite of the entry plus 320 through `Gfx_DrawSpriteTransparent`. | confirmed | game | 39 call or jump sites, listed with the entries they reach in [Graphics archives](graphics-archives.md#entries-no-routine-reads); four are tail jumps. |
+| `0x405b40` | `Gfx_FillTextured` | Hands the mask and the texture entry to `Gfx_BlitTextured`. | confirmed | platform | Called at `0x40618c`, in `Gfx_DrawTexturedFill`. |
+| `0x406120` | `Gfx_DrawTexturedFill` | Sets the clip rectangle, finds the texture entry from the draw block's fourth field, and fills the mask of its third field with it. | confirmed | platform | Called at `0x4279a9`, `0x427b0d`, and `0x428363`, in the routines at `0x4278be`, `0x427a25`, and `0x428008`, `0x428105`, `0x4281cc`, which form the mask (60 plus an index, 141 plus an index, or a base of 234, 243, or 252 plus a height difference) and the texture (260 or 300 plus an offset). |
+| `0x406420` | `Gfx_DrawSpriteOverColor8` | Sets the clip rectangle from the target surface and draws the entry of the draw block through `Gfx_SpriteOverColor8`. | confirmed | platform | Called at `0x44ffcd`, in `0x44ff59`. |
+| `0x405d00` | `Gfx_SpriteOverColor8` | Passes the surface, the position, and the entry's address to `Gfx_BlitSpriteOverColor8`. | confirmed | platform | Called at `0x40647a`, in `Gfx_DrawSpriteOverColor8`. |
+| `0x44ff59` | `Gfx_DrawPhaseSprite` | Picks one of the 16 entries 630 to 645 from a value of the object and the counter at the game state block's `+0x206`, and draws it through `Gfx_DrawSpriteOverColor8`. | confirmed | game | Called by `0x44d5b4`; the add of 630 is at `0x44ffc7`. |
+
+Note: [Graphics images](graphics-images.md).
 
 ### Views, panels, and drawing
 
@@ -173,7 +232,7 @@ Note: [Timing](timing.md).
 | `0x44d2fc` | — | For each view, copies a rectangle from the surface at `+0x108` into the view's screen. | unknown | game | Called by `Main_Loop` in a game. |
 | `0x424d87` | `Minimap_Build` | Writes one byte per tile from terrain and height to the buffer at `+0x8c`. | inferred | game | Called by `MapGen_Generate` and `Game_ResumeLoaded`. |
 | `0x406500` | `Gfx_CopyRect` | Copies a rectangle between two surfaces. | confirmed | platform | Called by panel and view code. |
-| `0x4060b0` | `Gfx_DrawSprite` | Draws a sprite with clipping. | inferred | platform | 13 callers. |
+| `0x4060b0` | `Gfx_DrawSprite` | Finds a raw image by its entry number and draws it opaque to the surface through `Gfx_BlitRaw`. | confirmed | platform | 55 call sites in 13 callers. See [Graphics images](graphics-images.md). |
 
 ### Simulation
 
@@ -350,13 +409,25 @@ Sites:
 - `0x4015ac`: references the string `game.ini`.
 - `0x40fc40`: references the registry key `Control Panel\Mouse`.
 
+### Text files
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x412570` | `Text_LoadLanguage` | Reads the language's text file through `Text_ReadFile`, looks up 224 fixed keys with `Text_Lookup`, and appends a byte of value 255 after each found text. | confirmed | platform | Called by `Platform_RunGame`; strings such as `MENUTEXT1`. |
+| `0x410e30` | `Text_ReadFile` | Puts the application-folder prefix before the file name and calls `Text_ParseFile`; answers whether the file opened. | confirmed | platform | String `[AP]/`; called by `Text_LoadLanguage`. |
+| `0x410f40` | `Text_ParseFile` | Reads a file line by line and stores each `KEY="VALUE"` line in the key map; skips the other lines. | confirmed | platform | Callers `Text_ReadFile` and `0x416d70`; imports `_wfopen_s`, `fgetc`, `strchr`. |
+| `0x4111a0` | `Text_Lookup` | Finds a value text by key in the key map; answers none when the key is absent. | confirmed | platform | Called by `Text_LoadLanguage` and `Platform_RunGame` (key `LANGUAGE`). |
+
+Note: [Text files](text-files.md).
+
 ### Game code band
 
 Note: [Game code](game-code.md).
 
 | Address | Name | Role | Status | Layer | Anchor |
 | --- | --- | --- | --- | --- | --- |
-| `0x47b4f9` | — | Last routine of the game code band. | unknown | game | Band comparison. |
+| `0x47b19c` | `Gfx_BlitTextured` | Draws a mask to the surface, clipped, copying each covered pixel from a raw-image texture that repeats down only (it never wraps within a row), with no blending. | confirmed | game | Called at `0x405b67`, in `Gfx_FillTextured`. Lies inside the band and takes its arguments in registers, not in the EDI block, like `Gfx_BlitSpriteOverColor8`. See [Graphics images](graphics-images.md). |
+| `0x47b4f9` | `Gfx_BlitSpriteOverColor8` | Draws a transparent sprite stream, clipped, writing a pixel only where the surface pixel has the palette index 8. Last routine of the game code band. | confirmed | game | Called by `Gfx_SpriteOverColor8`; band comparison; takes its arguments in registers, not in the EDI block, like `Gfx_BlitTextured`. See [Graphics images](graphics-images.md). |
 
 ## Structures and data
 
@@ -509,9 +580,26 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | Address | Name | Status | Topic |
 | --- | --- | --- | --- |
 | `0x401090` | — | unknown | Files and configuration |
+| `0x405590` | `Gfx_BlitSprite` | confirmed | Graphics images |
+| `0x405730` | `Gfx_BlitRaw` | confirmed | Graphics images |
+| `0x405880` | `Gfx_BlitSpriteOneColor` | confirmed | Graphics images |
+| `0x405b40` | `Gfx_FillTextured` | confirmed | Graphics images |
+| `0x405b80` | `Gfx_BlitShadow` | confirmed | Graphics images |
+| `0x405d00` | `Gfx_SpriteOverColor8` | confirmed | Graphics images |
+| `0x405d70` | `Archive_ReadFile` | confirmed | Graphics archives |
+| `0x405e00` | `Archive_Load` | confirmed | Graphics archives |
+| `0x405f60` | `Archive_Free` | confirmed | Graphics archives |
 | `0x405fe0` | `Speed_SetFactor` | confirmed | Timing |
-| `0x4060b0` | `Gfx_DrawSprite` | inferred | Views, panels, and drawing |
+| `0x4060b0` | `Gfx_DrawSprite` | confirmed | Views, panels, and drawing |
+| `0x406120` | `Gfx_DrawTexturedFill` | confirmed | Graphics images |
+| `0x4061a0` | `Gfx_DrawShadow` | confirmed | Graphics images |
+| `0x4062e0` | `Gfx_DrawSpriteTransparent` | confirmed | Graphics images |
+| `0x406350` | `Gfx_DrawSpriteGrowing` | inferred | Graphics images |
+| `0x406420` | `Gfx_DrawSpriteOverColor8` | confirmed | Graphics images |
+| `0x406490` | `Gfx_DrawSpriteOneColor` | confirmed | Graphics images |
 | `0x406500` | `Gfx_CopyRect` | confirmed | Views, panels, and drawing |
+| `0x406590` | `Gfx_DrawSpriteNoOffset` | confirmed | Graphics images |
+| `0x406610` | `Gfx_DrawSettler` | confirmed | Graphics images |
 | `0x406880` | `Frame_Present` | inferred | Main loop |
 | `0x406980` | `Key_ReadCode` | confirmed | Input |
 | `0x4069f0` | `Input_ReadPointerA` | confirmed | Input |
@@ -519,21 +607,38 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x406b20` | `Input_ReadButtons` | confirmed | Input |
 | `0x406c60` | `Frame_Handshake` | confirmed | Main loop |
 | `0x406c90` | `Timer_ThreadMain` | confirmed | Timing |
-| `0x406fb0` | `Sound_LoadFile` | inferred | Sound |
+| `0x406fa0` | `Music_SetVolumeFromEdi` | inferred | Music |
+| `0x406fb0` | `Sound_LoadFile` | confirmed | Sound |
 | `0x407130` | `Sound_Start` | inferred | Sound |
+| `0x4071c0` | `Palette_Load` | confirmed | Graphics images |
+| `0x407250` | `Palette_LoadGameFlagged` | confirmed | Graphics images |
+| `0x407290` | `Archive_FillAliases` | confirmed | Graphics archives |
+| `0x4073d0` | `Archive_FindEntry` | confirmed | Graphics archives |
+| `0x407400` | `Palette_LoadGame` | confirmed | Graphics images |
+| `0x407410` | `Palette_LoadTitle` | confirmed | Graphics images |
 | `0x407480` | `Platform_RunGame` | confirmed | Program start and game flow |
 | `0x4076d0` | `File_Open` | inferred | Save and load |
 | `0x407750` | `File_Create` | inferred | Save and load |
 | `0x4077e0` | `File_Close` | confirmed | Save and load |
 | `0x407800` | `File_Write` | confirmed | Save and load |
 | `0x407870` | `File_Read` | confirmed | Save and load |
+| `0x40b8c0` | `Sound_CreateBuffer` | confirmed | Sound |
+| `0x410e30` | `Text_ReadFile` | confirmed | Text files |
+| `0x410f40` | `Text_ParseFile` | confirmed | Text files |
+| `0x4111a0` | `Text_Lookup` | confirmed | Text files |
+| `0x412570` | `Text_LoadLanguage` | confirmed | Text files |
+| `0x415130` | `Music_LoadFile` | confirmed | Music |
+| `0x415390` | `Music_Stop` | inferred | Music |
+| `0x415480` | `Music_SetVolume` | inferred | Music |
 | `0x417bb0` | `Platform_GameThreadMain` | confirmed | Program start and game flow |
 | `0x417c50` | `Platform_StartGameThread` | confirmed | Program start and game flow |
+| `0x419a60` | `Music_ApplyOption` | confirmed | Music |
 | `0x41da10` | `Game_Entry` | confirmed | Program start and game flow |
 | `0x41dbea` | — | unknown | Program start and game flow |
 | `0x41e6c0` | `Game_InitOnce` | confirmed | Program start and game flow |
 | `0x41e706` | `Game_Restart` | confirmed | Program start and game flow |
 | `0x41e710` | `Game_StartClock` | confirmed | Timing |
+| `0x41e8e0` | `RuleData_Load` | confirmed | Graphics archives |
 | `0x41ee3b` | `FreeGame_NewSeed` | confirmed | Random generator and map start |
 | `0x41ee84` | `Game_Start` | confirmed | Program start and game flow |
 | `0x41eeeb` | — | unknown | Program start and game flow |
@@ -617,9 +722,13 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44cb6e` | `Msg_RunTimers` | confirmed | Main loop |
 | `0x44d2fc` | — | unknown | Views, panels, and drawing |
 | `0x44d38d` | `Render_DrawMapView` | inferred | Views, panels, and drawing |
+| `0x44da4d` | `Gfx_DrawObjectSprite` | confirmed | Graphics images |
+| `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
+| `0x44ff59` | `Gfx_DrawPhaseSprite` | confirmed | Graphics images |
 | `0x450609` | `Save_ConfirmSlot` | confirmed | Save and load |
 | `0x450a35` | `Render_DrawViewOverlay` | inferred | Views, panels, and drawing |
+| `0x4511d5` | `Text_DrawGlyphs` | inferred | Graphics images |
 | `0x451355` | `Panel_Update` | inferred | Views, panels, and drawing |
 | `0x45772e` | `Game_Pause` | confirmed | Timing |
 | `0x457751` | `Game_Resume` | confirmed | Timing |
@@ -665,10 +774,13 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x479e54` | `Sound_UpdateChannels` | inferred | Sound |
 | `0x47a32d` | `Sound_Play` | confirmed | Sound |
 | `0x47a4c3` | `Input_UpdatePointer` | inferred | Input |
-| `0x47b4f9` | — | unknown | Game code band |
+| `0x47b19c` | `Gfx_BlitTextured` | confirmed | Game code band |
+| `0x47b4f9` | `Gfx_BlitSpriteOverColor8` | confirmed | Game code band |
 | `0x674048` | `Speed_Factor` | confirmed | Timing |
 | `0x67d608` | `Timer_RateHz` | confirmed | Timing |
 | `0x67d614` | `Loca_FileTable` | inferred | Files and configuration |
+| `0x6812ec` | `Archive_Base` | confirmed | Graphics archives |
+| `0x6816d0` | `Palette_Current` | confirmed | Graphics images |
 <!-- by-address:end -->
 
 ## Unexplored
@@ -678,7 +790,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 122 routines of the 471 functions in the dump's game code band and lists 15 more without a name: 95 confirmed, 27 inferred, 15 unknown.
+Coverage: the index names 129 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 101 confirmed, 28 inferred, 14 unknown.
 <!-- coverage:end -->
 
 Anchors not yet followed:
@@ -691,5 +803,4 @@ Anchors not yet followed:
   `0x420fff`, `0x41f513`, `0x41f58b`, `0x41f6a5`, and the resource loaders called by
   `Game_InitSettings`.
 - The panel handlers dispatched by `Panel_HandleClick` and `Panel_Update`.
-- The asset readers of the game code. Few strings are referenced from the band, so file names are weak
-  anchors there.
+- What the rule data of entry 2 holds, and the routines that read its 200 records (`0x43f537` is one).
