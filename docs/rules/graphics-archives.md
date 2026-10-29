@@ -34,7 +34,7 @@ The file starts with a header of eight bytes and continues with the table. All n
 
 The header takes the place of row 0, so the first entry is row 1. The program numbers an entry by its row,
 and so does the engine, everywhere: the palette is entry 3. `0x407250` loads the palette by calling `0x4071c0`
-with row 3, and the startup in `Platform_RunGame` (the call at `0x4075a7`) calls it the same way with row
+with row 3, and the startup in `Platform_RunGame` (the call at `0x4075ac`) calls it the same way with row
 3998; `0x4071c0` reads the row's 768 bytes as 256 colour triples. Each reader computes the address of an entry as
 the archive base plus the row's offset, and uses no address at all when the offset is 0.
 

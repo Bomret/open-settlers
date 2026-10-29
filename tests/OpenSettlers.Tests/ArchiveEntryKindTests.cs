@@ -260,6 +260,20 @@ public sealed class ArchiveEntryKindTests
         StringAssert.Contains(failure.Message, "stray");
     }
 
+    static bool CanStillRead(string path)
+    {
+        try
+        {
+            File.ReadAllBytes(path);
+
+            return true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     [TestMethod]
     [UnsupportedOSPlatform("windows")]
     public void AnArchiveTheProcessMayNotReadIsOneFailingAssetOfTheFileAndNoException()
@@ -270,7 +284,12 @@ public sealed class ArchiveEntryKindTests
         }
 
         using var fake = InstallWith(Small());
-        File.SetUnixFileMode(Path.Combine(fake.Root, Files[1]), UnixFileMode.None);
+        var path = Path.Combine(fake.Root, Files[1]);
+        File.SetUnixFileMode(path, UnixFileMode.None);
+        if (CanStillRead(path))
+        {
+            Assert.Inconclusive("The process reads files whatever their mode (root).");
+        }
 
         var failing = List(new UnrecoveredEntryKind(), fake).Single(a => a.File == Files[1]);
 

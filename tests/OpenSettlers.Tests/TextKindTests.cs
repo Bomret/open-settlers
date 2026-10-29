@@ -55,6 +55,20 @@ public sealed class TextKindTests
         CollectionAssert.AreEqual(new[] { "one", null, "un" }, table.Rows.Single().Values.ToArray());
     }
 
+    static bool CanStillRead(string path)
+    {
+        try
+        {
+            File.ReadAllBytes(path);
+
+            return true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     [TestMethod]
     public void AnUnreadableFileFailsOnLoadAndTheOthersStillLoad()
     {
@@ -68,6 +82,11 @@ public sealed class TextKindTests
         File.SetUnixFileMode(ger, UnixFileMode.None);
         try
         {
+            if (CanStillRead(ger))
+            {
+                Assert.Inconclusive("The process reads files whatever their mode (root).");
+            }
+
             var assets = new TextKind().Enumerate(Open(fake)).ToList();
 
             Assert.ThrowsExactly<UnauthorizedAccessException>(() => assets[1].Load());

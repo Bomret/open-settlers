@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.ExceptionServices;
 using OpenSettlers.Formats;
 
 namespace OpenSettlers.Assets;
@@ -43,34 +42,34 @@ public sealed class TextKind : AssetKind
     public override string Name => KindName;
 
     /// <inheritdoc/>
-    public override IEnumerable<Asset> Enumerate(Install install) =>
-        Languages.Select(
+    public override IEnumerable<Asset> Enumerate(Install install)
+    {
+        // The three assets of one listing share these reads: each file is read and parsed once, on first use.
+        var reads = Languages.Select(l => new Lazy<TextFile>(() => TextFile.Read(install.ReadAll(l.File)))).ToList();
+
+        return Languages.Select(
             (l, index) =>
                 new Asset
                 {
                     Kind = KindName,
                     File = l.File,
                     Name = Path.GetFileName(l.File),
-                    Load = () => Table(install, index),
+                    Load = () => Table(reads, index),
                 }
         );
+    }
 
-    // Each file is read once. A file that cannot be read leaves its column empty; its own asset fails with the reason.
-    static Preview Table(Install install, int own)
+    // A file that cannot be read leaves its column empty; its own asset fails with the reason.
+    static Preview Table(IReadOnlyList<Lazy<TextFile>> reads, int own)
     {
-        var reads = Languages.Select(l => Read(install, l.File)).ToList();
-        if (reads[own].Error is { } error)
-        {
-            ExceptionDispatchInfo.Capture(error).Throw();
-        }
-
-        var rejected = reads[own].File!.Rejected;
+        var ownFile = reads[own].Value;
+        var rejected = ownFile.Rejected;
         if (rejected.Count > 0)
         {
             throw new InvalidDataException(string.Join("; ", rejected.Select(r => $"line {r.Line}: {r.Reason}")));
         }
 
-        var files = reads.Select(r => r.File).ToList();
+        var files = reads.Select((r, index) => index == own ? ownFile : Readable(r)).ToList();
         var keys = files.SelectMany(f => f?.Entries.Select(e => e.Key) ?? []).Distinct();
         var rows = keys.Select(k => new TextRow(k, files.Select(f => f?.Get(k)).ToList())).ToList();
 
@@ -82,15 +81,15 @@ public sealed class TextKind : AssetKind
         };
     }
 
-    static (TextFile? File, Exception? Error) Read(Install install, string file)
+    static TextFile? Readable(Lazy<TextFile> read)
     {
         try
         {
-            return (TextFile.Read(install.ReadAll(file)), null);
+            return read.Value;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return (null, e);
+            return null;
         }
     }
 }
