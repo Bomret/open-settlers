@@ -44,39 +44,54 @@ public sealed class SpriteKindTests
         return (SpritePreview)List(fake).First(a => a.File == Files[0] && a.Entry == entry.ToString()).Load();
     }
 
-    // Color 1 is (63, 0, 0) at 6 bits, color 31 (0, 63, 0).
+    // Color 1 is (63, 0, 0) at 6 bits, color 31 (0, 63, 0), color 64 (0, 0, 63).
     static byte[] Palette()
     {
         var bytes = new byte[768];
         bytes[3] = 0xFC;
         bytes[31 * 3 + 1] = 0xFC;
+        bytes[64 * 3 + 2] = 0xFC;
 
         return bytes;
     }
 
+    // The bases and ends come from the call sites in docs/rules/graphics-images.md, not from the Ranges table.
     [TestMethod]
-    [DataRow(321, 372)]
-    [DataRow(610, 619)]
-    [DataRow(750, 793)]
-    [DataRow(810, 853)]
-    [DataRow(1250, 1273)]
-    [DataRow(1314, 1362)]
-    [DataRow(1378, 1443)]
-    [DataRow(1850, 2390)]
-    [DataRow(2500, 2669)]
-    [DataRow(2671, 2701)]
-    [DataRow(2740, 2965)]
-    [DataRow(3000, 3009)]
-    [DataRow(3033, 3040)]
-    [DataRow(448, 521)]
-    [DataRow(630, 645)]
-    [DataRow(3150, 3450)]
-    [DataRow(3738, 3764)]
-    [DataRow(3768, 3779)]
-    public void TheSpriteKindClaimsTheEntriesOfAnAnimationOrFontRange(int first, int last)
+    [DataRow(321)]
+    [DataRow(372)]
+    [DataRow(490)]
+    [DataRow(610)]
+    [DataRow(619)]
+    [DataRow(750)]
+    [DataRow(793)]
+    [DataRow(810)]
+    [DataRow(853)]
+    [DataRow(1250)]
+    [DataRow(1273)]
+    [DataRow(1314)]
+    [DataRow(1362)]
+    [DataRow(1378)]
+    [DataRow(1443)]
+    [DataRow(1850)]
+    [DataRow(2390)]
+    [DataRow(2500)]
+    [DataRow(2670)]
+    [DataRow(2701)]
+    [DataRow(2740)]
+    [DataRow(2965)]
+    [DataRow(3000)]
+    [DataRow(3010)]
+    [DataRow(3032)]
+    [DataRow(3040)]
+    [DataRow(3150)]
+    [DataRow(3450)]
+    [DataRow(3738)]
+    [DataRow(3764)]
+    [DataRow(3768)]
+    [DataRow(3779)]
+    public void TheSpriteKindClaimsTheFirstAndLastEntryThatACallSiteReaches(int entry)
     {
-        var kind = new SpriteKind();
-        Assert.IsTrue(Enumerable.Range(first, last - first + 1).All(kind.Claims));
+        Assert.IsTrue(new SpriteKind().Claims(entry));
     }
 
     [TestMethod]
@@ -95,9 +110,18 @@ public sealed class SpriteKindTests
     [DataRow(1597)]
     [DataRow(1598)]
     [DataRow(1500)]
-    [DataRow(2670)]
-    [DataRow(3010)]
-    [DataRow(3032)]
+    [DataRow(373)]
+    [DataRow(489)]
+    [DataRow(491)]
+    [DataRow(448)]
+    [DataRow(521)]
+    [DataRow(630)]
+    [DataRow(645)]
+    [DataRow(794)]
+    [DataRow(854)]
+    [DataRow(2391)]
+    [DataRow(2499)]
+    [DataRow(3041)]
     [DataRow(3999)]
     [DataRow(3880)]
     [DataRow(3780)]
@@ -105,7 +129,7 @@ public sealed class SpriteKindTests
     [DataRow(1363)]
     [DataRow(3451)]
     [DataRow(3765)]
-    public void TheSpriteKindClaimsNoEntryNextToItsRangesOrOneThatReadsAsAnEmptyMask(int entry)
+    public void TheSpriteKindClaimsNoEntryNextToItsRangesOrOneNoRoutineIsKnownToRead(int entry)
     {
         Assert.IsFalse(new SpriteKind().Claims(entry));
     }
@@ -143,6 +167,45 @@ public sealed class SpriteKindTests
 
         Assert.AreEqual(31, preview.OneColor);
         CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0, 0, 252, 0, 255 }, preview.Rgba);
+    }
+
+    [TestMethod]
+    public void AnOverlayOfAPlayerColoredSettlerIsPreviewedInTheFirstPlayersColor()
+    {
+        var preview = Preview(2500);
+
+        Assert.AreEqual(0x40, preview.OneColor);
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0, 0, 0, 252, 255 }, preview.Rgba);
+    }
+
+    [TestMethod]
+    public void AnOverlayWithNoDrawnPixelIsPreviewedAsATransparentImageOfItsSize()
+    {
+        using var fake = InstallWith(
+            ArchiveBytes.Build(
+                4000,
+                new Dictionary<int, byte[]>
+                {
+                    [3010] = GraphicFileTests.Entry(1, 0, 2, 1, 0, 0, [0, 0]),
+                    [3] = Palette(),
+                }
+            )
+        );
+
+        var preview = (SpritePreview)List(fake).First(a => a.File == Files[0] && a.Entry == "3010").Load();
+
+        Assert.AreEqual(2, preview.Width);
+        CollectionAssert.AreEqual(new byte[8], preview.Rgba);
+    }
+
+    [TestMethod]
+    public void TheFiguresOf1850To2390AreDrawnInTheirOwnColorsAndTheOverlaysInThePlayerColor()
+    {
+        Assert.IsNull(SpriteKind.OneColorOf(1850));
+        Assert.IsNull(SpriteKind.OneColorOf(2390));
+        Assert.AreEqual(0x40, SpriteKind.OneColorOf(2500));
+        Assert.AreEqual(0x40, SpriteKind.OneColorOf(3040));
+        Assert.IsNull(SpriteKind.OneColorOf(3041));
     }
 
     [TestMethod]

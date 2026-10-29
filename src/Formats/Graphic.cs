@@ -13,10 +13,10 @@ public sealed record GraphicHeader
     /// <summary>The size of the header in bytes; the pixel data starts after it.</summary>
     public const int Size = 10;
 
-    /// <summary>The first signed byte. No routine that draws an entry reads it. It is 1 in every raw image of the reference install, which fits a kind tag (inferred).</summary>
+    /// <summary>The first signed byte. <c>0x406610</c> reads it in an entry of 1850 to 2390 as the horizontal offset of the second figure (from the base 3150, <c>0x4066d2</c>); no other routine that draws an entry reads it. It is 1 in every raw image of the reference install, which fits a kind tag (inferred).</summary>
     public required sbyte First { get; init; }
 
-    /// <summary>The second signed byte. No routine that draws an entry reads it.</summary>
+    /// <summary>The second signed byte. <c>0x406610</c> reads it in an entry of 1850 to 2390 as the vertical offset of that figure (<c>0x4066e4</c>); no other routine that draws an entry reads it.</summary>
     public required sbyte Second { get; init; }
 
     /// <summary>The width in pixels.</summary>

@@ -124,7 +124,7 @@ public sealed class SpriteFileTests
 
         var failure = Assert.ThrowsExactly<InvalidDataException>(() => SpriteFile.Read(entry));
 
-        StringAssert.Contains(failure.Message, "row 2");
+        StringAssert.Contains(failure.Message, "3 rows");
     }
 
     [TestMethod]
@@ -138,5 +138,20 @@ public sealed class SpriteFileTests
     {
         Assert.ThrowsExactly<InvalidDataException>(() => SpriteFile.Read(Sprite(0, 1, 0, 0, 0, 0)));
         Assert.ThrowsExactly<InvalidDataException>(() => SpriteFile.Read(Sprite(1, 0, 0, 0)));
+    }
+
+    [TestMethod]
+    [DataRow((ushort)65535, (ushort)65535)]
+    [DataRow((ushort)40000, (ushort)40000)]
+    public void AHeightThatTheStreamCannotHoldIsUnreadableWithAReasonBeforeAnythingIsAllocated(
+        ushort width,
+        ushort height
+    )
+    {
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
+            SpriteFile.Read(Sprite(width, height, 0, 0, 0, 0, 0, 0))
+        );
+
+        StringAssert.Contains(failure.Message, $"{height} rows");
     }
 }

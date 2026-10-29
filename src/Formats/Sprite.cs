@@ -55,7 +55,7 @@ public static class SpriteFile
     /// Decodes an entry: after the header, each of the height rows is a sequence of runs, each run a skip byte, a
     /// count byte, and that many palette indices; a run whose count is 0 ends the row and its skip is ignored.
     /// Throws <see cref="InvalidDataException"/> for an entry shorter than its header, for a width or height of
-    /// 0 (stand-in: nothing to draw), for a row whose runs end beyond the width, and for a stream that ends before
+    /// 0 (stand-in: nothing to draw), for a height the stream cannot hold (each row needs at least its ending pair), for a row whose runs end beyond the width, and for a stream that ends before
     /// its last row or inside a run. Bytes after the last row are ignored, as the program ignores them.
     /// </summary>
     public static Sprite Read(ReadOnlyMemory<byte> entry)
@@ -71,7 +71,20 @@ public static class SpriteFile
 
         var body = graphic.Body.Span;
         var width = header.Width;
-        var indices = new byte[width * header.Height];
+        if (header.Height > body.Length / 2)
+        {
+            throw new InvalidDataException(
+                $"the sprite claims {header.Height} rows, but its stream of {body.Length} bytes holds at most {body.Length / 2} rows of at least the pair that ends a row"
+            );
+        }
+
+        var area = (long)width * header.Height;
+        if (area > Array.MaxLength)
+        {
+            throw new InvalidDataException($"the sprite is {width} x {header.Height}, too large to hold");
+        }
+
+        var indices = new byte[area];
         var drawn = new bool[indices.Length];
         var at = 0;
         for (var row = 0; row < header.Height; row++)

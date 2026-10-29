@@ -31,9 +31,8 @@ public sealed record SpritePreview : Preview
 /// <summary>
 /// The entries the program draws as transparent sprites: the stream that <c>0x405590</c> reads (called from
 /// <c>0x4062e0</c> and <c>0x406610</c>), and in one color <c>0x405880</c> (called from <c>0x406490</c> and
-/// <c>0x406610</c>); see <c>docs/rules/graphics-images.md</c>. Each range names the code that picks its entries, or
-/// says it is shape only: the entries are the ones whose stream decodes as a sprite with drawn pixels, and the
-/// callers that pick them are not recovered.
+/// <c>0x406610</c>); see <c>docs/rules/graphics-images.md</c>. Each range names the code that picks its entries;
+/// the entries of a range are the ones the archive holds. An overlay of 2500 to 3040 may have no drawn pixel.
 /// </summary>
 public sealed class SpriteKind : ArchiveEntryKind
 {
@@ -43,6 +42,9 @@ public sealed class SpriteKind : ArchiveEntryKind
     /// <summary>The palette index of the text color the program draws the glyphs of 750 to 793 in (<c>0x450fde</c>, <c>0x451111</c>).</summary>
     const int GlyphColor = 31;
 
+    /// <summary>The palette index of the first player's color (0x40 plus 4 times the player, <c>0x406610</c>), the stand-in for the player of the overlays of 2500 to 3040.</summary>
+    const int FirstPlayerColor = 0x40;
+
     /// <summary>The palette index of the shadow color the program draws the glyphs of 810 to 853 in (<c>0x4511d5</c>).</summary>
     const int GlyphShadowColor = 1;
 
@@ -51,20 +53,17 @@ public sealed class SpriteKind : ArchiveEntryKind
     static readonly (int First, int Last, int Step)[] Ranges =
     [
         (321, 372, 1), // 0x44de9a and 0x44fd4a: an index plus 320
-        (448, 521, 1), // shape only
+        (490, 490, 1), // 0x44de9a and 0x44fd4a: an index plus 320 (170), the one entry of the dropped range 448 to 521 that the controller keeps
         (610, 619, 1), // 0x428528: 610 to 612, those plus 3 or 6, and 619
-        (630, 645, 1), // shape only
         (750, 793, 1), // 0x4511d5 through 0x406490: a glyph plus 749, one color
         (810, 853, 1), // 0x4511d5 through 0x406490: a glyph plus 809, one color
         (1250, 1273, 1), // 0x44da4d: an index plus 1250
-        (1314, 1362, 1), // shape only
-        (1378, 1443, 1), // shape only
+        (1314, 1362, 1), // 0x44da4d, 0x406350, 0x406590: an index plus 1250 (64 to 112)
+        (1378, 1443, 1), // 0x44da4d, 0x406350, 0x406590: an index plus 1250 (128 to 193)
         (1850, 2390, 1), // 0x406610: an index plus 1850
-        (2500, 2669, 1), // shape only
-        (2671, 2701, 1), // shape only
-        (2740, 2965, 1), // shape only
-        (3000, 3009, 1), // shape only
-        (3033, 3040, 1), // shape only
+        (2500, 2701, 1), // 0x406610: an index plus 2500, in the player color
+        (2740, 2965, 1), // 0x406610: an index plus 2500, in the player color
+        (3000, 3040, 1), // 0x406610: an index plus 2500, in the player color
         (3150, 3450, 1), // 0x406610: an index plus 3150
         (3456, 3732, 6), // 0x406610: the first entry of each group of six that 0x407290 fills
         (3738, 3764, 1), // 0x406610: an index plus 3150
@@ -84,6 +83,7 @@ public sealed class SpriteKind : ArchiveEntryKind
         {
             >= 750 and <= 793 => GlyphColor,
             >= 810 and <= 853 => GlyphShadowColor,
+            >= 2500 and <= 3040 => FirstPlayerColor,
             _ => null,
         };
 
