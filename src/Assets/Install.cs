@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using OpenSettlers.Launch;
 
 namespace OpenSettlers.Assets;
@@ -81,34 +82,20 @@ public sealed class Install
             {
                 names = last ? Directory.GetFiles(current) : Directory.GetDirectories(current);
             }
-            catch (IOException)
-            {
-                return null;
-            }
-            catch (UnauthorizedAccessException)
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
                 return null;
             }
 
-            string? found = null;
-            foreach (var candidate in names)
-            {
-                var name = Path.GetFileName(candidate);
-                if (name == segments[i])
-                {
-                    found = candidate;
-                    break;
-                }
-
-                if (
-                    string.Equals(name, segments[i], StringComparison.OrdinalIgnoreCase)
-                    && (found == null || string.CompareOrdinal(name, Path.GetFileName(found)) < 0)
+            var segment = segments[i];
+            var matches = names
+                .Where(candidate =>
+                    string.Equals(Path.GetFileName(candidate), segment, StringComparison.OrdinalIgnoreCase)
                 )
-                {
-                    found = candidate;
-                }
-            }
-
+                .ToList();
+            var found =
+                matches.FirstOrDefault(candidate => Path.GetFileName(candidate) == segment)
+                ?? matches.OrderBy(Path.GetFileName, StringComparer.Ordinal).FirstOrDefault();
             if (found == null)
             {
                 return null;
