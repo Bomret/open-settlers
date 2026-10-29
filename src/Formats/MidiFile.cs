@@ -45,9 +45,14 @@ public static class MidiFile
     /// </summary>
     public static MusicFile Read(byte[] bytes)
     {
-        if (bytes.Length < 14 || !HasTag(bytes, 0, "MThd"))
+        if (!HasTag(bytes, 0, "MThd"))
         {
             throw new InvalidDataException("the header chunk is missing or has a bad tag");
+        }
+
+        if (bytes.Length < 14)
+        {
+            throw new InvalidDataException("the header chunk is cut short");
         }
 
         var headerLength = ReadInt(bytes, 4, 4);
@@ -63,7 +68,7 @@ public static class MidiFile
 
         var tracks = new List<MidiTrack>();
         var tempos = new List<(long Tick, int Microseconds)>();
-        var ends = new List<long>();
+        var longest = 0L;
         for (var index = 0; index < trackCount; index++)
         {
             if (position + 8 > bytes.Length)
@@ -85,7 +90,7 @@ public static class MidiFile
 
             var (count, end) = ReadEvents(bytes, start, start + length, index, tempos);
             tracks.Add(new MidiTrack { Index = index, EventCount = count });
-            ends.Add(end);
+            longest = Math.Max(longest, end);
             position = start + length;
         }
 
@@ -94,7 +99,7 @@ public static class MidiFile
             Format = format,
             Division = division,
             Tracks = tracks,
-            LengthSeconds = ends.Count == 0 ? 0 : Seconds(ends.Max(), tempos, division),
+            LengthSeconds = Seconds(longest, tempos, division),
         };
     }
 
@@ -209,7 +214,7 @@ public static class MidiFile
             var frames = 256 - (division >> 8);
             var ticksPerFrame = division & 0xFF;
 
-            return endTick / (double)(frames * ticksPerFrame);
+            return ticksPerFrame == 0 ? 0 : endTick / (double)(frames * ticksPerFrame);
         }
 
         if (division == 0)

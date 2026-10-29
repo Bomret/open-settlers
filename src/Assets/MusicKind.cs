@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using OpenSettlers.Formats;
 
 namespace OpenSettlers.Assets;
@@ -45,16 +47,13 @@ public sealed class MusicKind : AssetKind
 
     static Preview Preview(MusicFile music)
     {
-        var tracks = string.Join(
-            ", ",
-            System.Linq.Enumerable.Select(music.Tracks, t => $"track {t.Index + 1}: {t.EventCount} events")
-        );
+        var tracks = string.Join(", ", music.Tracks.Select(t => $"track {t.Index + 1}: {t.EventCount} events"));
 
         return new MusicPreview
         {
             Music = music,
             Summary =
-                $"{music.Tracks.Count} {(music.Tracks.Count == 1 ? "track" : "tracks")} ({tracks}), {music.LengthSeconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)} s",
+                $"{music.Tracks.Count} {(music.Tracks.Count == 1 ? "track" : "tracks")} ({tracks}), {music.LengthSeconds.ToString("0.0", CultureInfo.InvariantCulture)} s",
         };
     }
 }

@@ -12,7 +12,7 @@ the file holds. It does not cover how the program plays the notes.
 When they differ it logs "Changing music to" and the new value. Switching the option off stops the
 player (`Music_Stop`, `0x415390`). Switching it on reads the whole of `snd/music_1.midi` into memory and
 hands the bytes and their length to `Music_LoadFile` at `0x415130`, then starts the stream and
-applies a second stored option (`0x415480`, inferred to be the volume), pausing the stream around that
+applies a second stored option (`Music_SetVolume` at `0x415480`, inferred to be the volume), pausing the stream around that
 call when it plays.
 
 No other music file name occurs in the program's strings, so the program loads no other file of the
@@ -44,6 +44,6 @@ microseconds per quarter note, 500000 until one occurs.
 The engine reads the file as bytes in and tracks out (`src/Formats/MidiFile.cs`): the tracks with their
 event counts and the length in seconds from the tempo changes of all tracks. A bad header tag, a bad track
 tag, a chunk past the end of the file, a missing track, and an event cut short are unreadable and name the
-reason. The program checks the events in routines this note does not cover, so what it does with a cut event
+reason. The engine accepts a header length above 6 and skips the extra bytes, where the program refuses it. The program checks the events in routines this note does not cover, so what it does with a cut event
 is open. The browser shows the tracks and the length and does not play
 the file.

@@ -74,7 +74,9 @@ public sealed class MusicKindTests
 
         var asset = new MusicKind().Enumerate(Open(fake)).Single();
 
-        Assert.ThrowsExactly<InvalidDataException>(() => asset.Load());
+        var error = Assert.ThrowsExactly<InvalidDataException>(() => asset.Load());
+
+        StringAssert.Contains(error.Message, "bad track chunk tag");
     }
 
     [TestMethod]

@@ -170,6 +170,7 @@ Note: [Sound files](sound-files.md).
 | `0x419a60` | `Music_ApplyOption` | When the music option changes, stops the player or reads `snd/music_1.midi` whole, loads it, and starts the stream. | confirmed | platform | String `snd/music_1.midi`; called by `Timer_ThreadMain`. |
 | `0x415130` | `Music_LoadFile` | Checks the header and track tags of the music file in memory and records the format, division, and each track's start and length. | confirmed | platform | Called by `Music_ApplyOption`. |
 | `0x415390` | `Music_Stop` | Stops and closes the MIDI stream. | inferred | platform | Calls `midiStreamStop` and `midiStreamClose`. |
+| `0x415480` | `Music_SetVolume` | Caps the stored volume option at 100 and sends it, scaled to 127, to every MIDI channel as a volume controller message. | inferred | platform | Calls `midiOutShortMsg`; called by `Music_ApplyOption`. |
 
 Note: [Music file](music-file.md).
 
@@ -624,6 +625,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x412570` | `Text_LoadLanguage` | confirmed | Text files |
 | `0x415130` | `Music_LoadFile` | confirmed | Music |
 | `0x415390` | `Music_Stop` | inferred | Music |
+| `0x415480` | `Music_SetVolume` | inferred | Music |
 | `0x417bb0` | `Platform_GameThreadMain` | confirmed | Program start and game flow |
 | `0x417c50` | `Platform_StartGameThread` | confirmed | Program start and game flow |
 | `0x419a60` | `Music_ApplyOption` | confirmed | Music |

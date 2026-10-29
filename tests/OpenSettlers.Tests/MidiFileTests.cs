@@ -183,7 +183,17 @@ public sealed class MidiFileTests
     {
         var error = Assert.ThrowsExactly<InvalidDataException>(() => MidiFile.Read(Header(0, 1, 96)[..10]));
 
-        StringAssert.Contains(error.Message, "header");
+        StringAssert.Contains(error.Message, "the header chunk is cut short");
+    }
+
+    [TestMethod]
+    public void AFrameBasedDivisionOfZeroTicksPerFrameGivesLengthZero()
+    {
+        var track = Track(Ev(0x87, 0x68, 0x90, 60, 100));
+
+        var music = MidiFile.Read(File(Header(0, 1, 0xE700), track));
+
+        Assert.AreEqual(0.0, music.LengthSeconds);
     }
 
     [TestMethod]
@@ -194,7 +204,7 @@ public sealed class MidiFileTests
 
         var error = Assert.ThrowsExactly<InvalidDataException>(() => MidiFile.Read(bytes));
 
-        StringAssert.Contains(error.Message, "track");
+        StringAssert.Contains(error.Message, "bad track chunk tag");
     }
 
     [TestMethod]
@@ -214,7 +224,7 @@ public sealed class MidiFileTests
             MidiFile.Read(File(Header(0, 2, 96), Track(EndOfTrack)))
         );
 
-        StringAssert.Contains(error.Message, "track");
+        StringAssert.Contains(error.Message, "is missing");
     }
 
     [TestMethod]
