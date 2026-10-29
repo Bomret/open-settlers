@@ -143,6 +143,21 @@ public sealed class MaskFileTests
         StringAssert.Contains(failure.Message, "too few bytes");
     }
 
+    // Every row an end pair, so the entry holds exactly the rows the height needs and only the area bound can refuse it.
+    // The bound is the RGBA of the mask: width x height x 4 must fit an array.
+    [TestMethod]
+    [DataRow(65535, 32769)]
+    [DataRow(65535, 8193)]
+    public void AMaskWhoseRgbaDoesNotFitAnArrayIsUnreadableBeforeAnythingIsAllocated(int width, int height)
+    {
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
+            MaskFile.Read(Entry((ushort)width, (ushort)height, new byte[height * 2]))
+        );
+
+        StringAssert.Contains(failure.Message, $"{width} x {height}");
+        StringAssert.Contains(failure.Message, "RGBA");
+    }
+
     [TestMethod]
     public void TheBytesAfterTheLastRowAreIgnored()
     {

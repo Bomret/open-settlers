@@ -1,3 +1,4 @@
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Formats;
 
@@ -49,6 +50,19 @@ public sealed class IndexedImageTests
     public void AnEmptyImageConvertsToNoBytes()
     {
         Assert.AreEqual(0, IndexedImage.ToRgba([], Palette()).Length);
+    }
+
+    // The size is tested through RgbaLength: an input of this many pixels would need gigabytes to build.
+    [TestMethod]
+    public void TheRgbaOfAnInputIsFourBytesPerIndex()
+    {
+        Assert.AreEqual(12, IndexedImage.RgbaLength(3));
+    }
+
+    [TestMethod]
+    public void AnInputWhoseRgbaDoesNotFitAnArrayIsRefusedInsteadOfWrapping()
+    {
+        Assert.ThrowsExactly<ArgumentException>(() => IndexedImage.RgbaLength(int.MaxValue / 2));
     }
 
     [TestMethod]
