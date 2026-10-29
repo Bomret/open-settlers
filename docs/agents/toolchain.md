@@ -16,6 +16,8 @@
   - Build — `dotnet build OpenSettlers.csproj`
   - Unit tests — `dotnet test --project tests/OpenSettlers.Tests` (MSTest on Microsoft.Testing.Platform,
     selected in `global.json`)
+  - Ghidra dump — the Ghidra scripts in `tools/GhidraDump/` build a local Ghidra project of `Siedler1.exe`
+    and write a searchable dump into `re-local/`. Needs Ghidra and Java 21. See `tools/GhidraDump/README.md`.
 - Formatter: CSharpier `1.3.0`, a local dotnet tool pinned in `dotnet-tools.json`;
   `.csharpierrc.json` sets `printWidth: 120` and leaves every other option at its default. CSharpier
   reads `.gitignore`, so `.godot/`, `bin/`, `obj/`, and `.superdev/` are skipped.
