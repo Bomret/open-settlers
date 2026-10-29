@@ -26,9 +26,10 @@ public static class AssetCheck
 {
     /// <summary>
     /// Runs the check of <c>kinds</c> over the install the launch arguments name. Exit code 2 (no install given,
-    /// folder missing, no program in it, or a launch problem) wins over 1; exit code 3 (two kinds of one name) stops the check before it reads. A kind or an asset that throws fails only
-    /// itself; the check goes on with the rest. A file that fails as a whole is reported once, however many kinds
-    /// list it. Never throws.
+    /// folder missing, no program in it, or a launch problem) wins over 1; exit code 3 (two kinds of one name) stops
+    /// the check before it reads. A kind or an asset that throws <c>IOException</c>, <c>InvalidDataException</c> or
+    /// <c>UnauthorizedAccessException</c> fails only itself; the check goes on with the rest. Any other exception
+    /// propagates to the caller. A file that fails as a whole is reported once, however many kinds list it.
     /// </summary>
     public static CheckReport Run(LaunchArgs args, IEnumerable<AssetKind> kinds)
     {
