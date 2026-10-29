@@ -150,7 +150,7 @@ public sealed class ArchiveEntryKindTests
     }
 
     [TestMethod]
-    public void AnEntryNoKindClaimsIsListedByTheUnrecoveredKindWithItsLocationAndSize()
+    public void AnEntryNoKindClaimsIsListedByTheUnrecoveredKindWithItsLocationAndFailsWithTheReason()
     {
         using var fake = InstallWith(Small());
         var palette = new ClaimingKind("palette", 3, 3);
@@ -161,7 +161,24 @@ public sealed class ArchiveEntryKindTests
         CollectionAssert.AreEqual(new[] { "1", "2", "5" }, assets.Select(a => a.Entry).ToList());
         StringAssert.Contains(assets[1].Name, "size 2");
         StringAssert.Contains(assets[1].Name, "offset 65");
-        StringAssert.Contains(assets[1].Load().Summary, "offset 65");
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => assets[1].Load());
+        StringAssert.Contains(failure.Message, "entry 2");
+        StringAssert.Contains(failure.Message, "no kind");
+    }
+
+    [TestMethod]
+    public void TheCheckFailsAPresentEntryNoKindClaimsWithFileEntryAndReason()
+    {
+        // Entry 12 lies in no range of the discovered kinds.
+        using var fake = InstallWith(ArchiveBytes.Build(Rows, new Dictionary<int, byte[]> { [12] = [1] }));
+        var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
+
+        var report = AssetCheck.Run(args, [new UnrecoveredEntryKind()]);
+
+        Assert.AreEqual(1, report.ExitCode);
+        var line = report.Lines.Single(l => l.StartsWith("FAIL loca/SPAF.PA entry 12:"));
+        StringAssert.Contains(line, "no kind claims entry 12");
+        Assert.AreEqual(3, report.Lines.Count(l => l.StartsWith("FAIL ") && l.Contains("entry 12:")));
     }
 
     [TestMethod]
@@ -270,7 +287,7 @@ public sealed class ArchiveEntryKindTests
     [TestMethod]
     public void TheCheckReportsPresentEntriesAndAliasesSeparatelyPerArchive()
     {
-        // Entry 1352 is a sprite and its copies are aliases; entry 3 is the palette that the sprite needs.
+        // Entry 1352 is a sprite and its copies are aliases; entry 3 is the palette that the sprite needs; entry 2 is rule data.
         var sprite = GraphicFileTests.Entry(1, 0, 1, 1, 0, 0, [0, 1, 1, 0, 0]);
         using var fake = InstallWith(
             ArchiveBytes.Build(
@@ -279,18 +296,21 @@ public sealed class ArchiveEntryKindTests
                 {
                     [1352] = sprite,
                     [3] = new byte[768],
-                    [12] = [1],
+                    [2] = [1],
                 }
             )
         );
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, [new PaletteKind(), new SpriteKind(), new UnrecoveredEntryKind()]);
+        var report = AssetCheck.Run(
+            args,
+            [new PaletteKind(), new SpriteKind(), new RuleDataKind(), new UnrecoveredEntryKind()]
+        );
 
         Assert.AreEqual(0, report.ExitCode);
         CollectionAssert.Contains(
             report.Lines.ToList(),
-            "loca/SPAD.PA: 3 entries, 6 aliases (palette, sprite, unrecovered)"
+            "loca/SPAD.PA: 3 entries, 6 aliases (palette, sprite, rule data)"
         );
     }
 }

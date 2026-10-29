@@ -53,6 +53,12 @@ public sealed class SpriteKind : ArchiveEntryKind
     static readonly (int First, int Last, int Step)[] Ranges =
     [
         (321, 372, 1), // 0x44de9a and 0x44fd4a: an index plus 320
+        (448, 455, 1), // 0x44de9a from 0x44f528, 0x44f5c8, 0x44f908: (counter >> 3 & 7) plus 0x80 plus 320
+        (456, 471, 1), // 0x44de9a from 0x44e0d1: a list byte (0 or 8) plus a phase (0 to 7) plus 0x88 plus 320
+        (472, 473, 1), // 0x44de9a from 0x44e720 and 7 more sites: the immediates 0x98 and 0x99 plus 320
+        (474, 481, 1), // 0x44de9a from 0x44f42e: (counter >> 3 & 7) plus 0x9a plus 320
+        (482, 493, 1), // 0x44de9a from 0x44ee56 and 7 more sites: the entry bytes 162 to 173 of the table at 0x44f225, plus 320
+        (495, 521, 1), // 0x44de9a from 0x44e6c5 (an object byte of 1 or more plus 0xae plus 320; the upper end is inferred) and, for 502 to 517, 0x44ecfc and 3 more sites
         (610, 619, 1), // 0x428528: 610 to 612, those plus 3 or 6, and 619
         (750, 793, 1), // 0x4511d5 through 0x406490: a glyph plus 749, one color
         (810, 853, 1), // 0x4511d5 through 0x406490: a glyph plus 809, one color

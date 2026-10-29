@@ -130,6 +130,12 @@ same.
 | Entries | Where | Drawn |
 | --- | --- | --- |
 | 321 to 372 | `0x44de9a` and `0x44fd4a`: an index plus 320 | palette |
+| 448 to 455 | `0x44de9a` from `0x44f528`, `0x44f5c8`, `0x44f908`: the counter at `+0x206` of the game state block, shifted right by 3 and masked to 0 to 7, plus 128, plus 320 | palette |
+| 456 to 471 | `0x44de9a` from `0x44e0d1`: a sprite-list entry (0 or 8), a phase of 0 to 7, plus 136, plus 320 | palette |
+| 472 and 473 | `0x44de9a` from eight sites each (`0x44e720` and 3 more for 472, `0x44e781` and 3 more for 473): the immediates 152 and 153 plus 320 | palette |
+| 474 to 481 | `0x44de9a` from `0x44f42e`: the counter shifted and masked to 0 to 7, plus 154, plus 320 | palette |
+| 482 to 493 | `0x44de9a` from `0x44ee56` and seven more sites: the first bytes (162 to 173) of the byte-pair table at `0x44f225`, plus 320 | palette |
+| 495 to 521 | `0x44de9a` from `0x44e6c5`: the object byte 9 (1 or more) plus 174, plus 320; 502 to 517 also from `0x44ecfc`, `0x44f6aa`, `0x44f79a`, `0x44f82d`: the counter shifted and masked to 0 to 3, plus 4 times the object byte 5 masked to 0 to 3, plus 182, plus 320 | palette |
 | 610 to 619 | `0x428528`: 610 to 612, those plus 3 or 6, and 619 | palette |
 | 750 to 793 | `0x4511d5` through `0x406490`: a character's glyph, the character's code plus 749 | one color, index 31 |
 | 810 to 853 | the same routine, the glyph plus 809, as the shadow of the text | one color, index 1 |
@@ -164,10 +170,28 @@ The range 1314 to 1443 is based on 1250, not on 320, by its callers: `0x44da9e` 
 the index plus 1500 (the shadow) with the same index just before `0x44dac8` and `0x44ff3f` draw the index plus
 1250, and 1250 + i is present exactly when 1500 + i is (i = 0 to 249). The base 320 has no such pairing.
 
-No reader was found yet for 448 to 521 (including 490) and 630 to 645. They decode as sprites, and they equal the
-base 320 plus 128 to 201 and 310 to 325, but nothing proves that the base-320 callers reach them, so no kind
-claims them. Entries 1597 and 1598 have all rows empty and lie inside the mask ranges. Entry 3999 decodes as a
-16 x 16 sprite of 60 pixels but is outside every range and follows no known caller.
+The base-320 ranges from 448 up are reached through the call sites of `0x44de9a`, each followed to the numbers it can
+hand over: the table of call sites and the bounds are in
+[Graphics archives](graphics-archives.md#entries-no-routine-reads). The upper end of 495 to 521 is inferred: the object
+byte of `0x44e6c5` is not masked, and the archives hold entries to 521 there. Entry 494 and 3999 decode as sprites, and
+no route shown reaches them, so no sprite kind claims them (the same note). Entries 630
+to 645 have a reader of their own, below. Entries 1597 and 1598 have all rows empty and lie inside the mask ranges.
+
+### Sprites drawn over color 8
+
+**Status:** confirmed for the routines and the entry range. The reading of "color 8" is the one the routine shows:
+it is a palette index of the surface, and what it stands for in the picture is open.
+
+Entries 630 to 645 hold the stream of a transparent sprite and are drawn by a routine of their own. `0x44ff59`,
+called from `0x44d5b4`, takes a value of the object being drawn and the counter at `+0x206` of the game state
+block, combines them into a number from 0 to 15, and adds 630 (the add is at `0x44ffc7`), so the sixteen entries
+are sixteen phases of one picture. It calls `0x406420`, which sets the clip rectangle and calls `0x405d00`, which
+calls `0x47b4f9`, the last routine of the game code band. That routine reads the same stream as `Gfx_BlitSprite`
+(skip, count, indices, a count of 0 ending the row) and clips the same way, but writes a pixel only where the
+surface pixel already has the palette index 8. A drawn pixel over any other index is left as it is.
+
+The engine decodes them as the other sprites do (`SpriteFile.Read`, palette 3), in the kind `SpriteOverColor8Kind`.
+The preview shows every pixel of the stream, because the surface under it is not known; the summary says so.
 
 ### Corrupt sprites
 
