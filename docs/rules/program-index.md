@@ -793,7 +793,7 @@ reached only through a computed jump can still be missing, so 471 is a lower bou
 Coverage: the index names 129 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 101 confirmed, 28 inferred, 14 unknown.
 <!-- coverage:end -->
 
-Anchors not yet followed:
+Open anchors:
 
 - What the four item tables hold, and the routines that process them: `0x46414d`, `0x42cb2d`,
   `0x42f3d9`, `0x428728`, and the dispatch `0x42fc81`.

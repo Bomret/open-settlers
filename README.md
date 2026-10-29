@@ -6,17 +6,16 @@ Status: milestone M1. The engine reads the data files of an install. It has two 
 
 ## Requirements
 
-- Godot 4.7 .NET build (`brew install --cask godot-mono`)
+- Godot 4.7.2 .NET build (`brew install --cask godot-mono`)
 - .NET SDK 10 (pinned in `global.json`; the project targets `net8.0`)
-- An install of The Settlers History Edition, as described below. Rule recovery from the game's program needs
-  it as well.
+- A History Edition install (see below). Rule recovery from the game's program needs it too.
 
 ## Get the History Edition install
 
 The reference install is The Settlers History Edition (Ubisoft). Ubisoft Connect installs it and runs only on Windows. On macOS or Linux:
 
 1. Install The Settlers History Edition through Ubisoft Connect on a Windows computer or in a Windows virtual machine.
-2. Copy the game folder unchanged to your computer. The game folder holds `Siedler1.exe` and the folders `loca/` and `snd/`.
+2. Copy the install folder unchanged to your computer. The install folder holds `Siedler1.exe` and the folders `loca/` and `snd/`.
 3. Pass that folder as `--game`, or set `SIEDLER_DIR` to it.
 
 The engine does not support an install of the DOS CD release.
@@ -39,7 +38,12 @@ The asset check runs without a window:
 godot-mono --headless --path . -- --check --game <install>
 ```
 
-It reads every asset of every kind and prints one line per file with its entry count and kinds. Each failure prints a line with the file, the entry, and the reason. The last line gives the totals. The exit code is 0 when every entry was read. It is 1 when an entry cannot be read (a file that cannot be read or opened, or corrupt data), when a listed file is missing, or when the check crashes on an error it does not catch; the message `asset check crashed` then goes to stderr. It is 2 when there is no usable install (no `--game` value, a missing folder, or a folder without `Siedler1.exe`). It is 3 when two asset kinds share a name.
+It reads every asset of every kind and prints one line per file with its entry count and kinds. Each failure prints a line with the file, the entry, and the reason. The last line gives the totals. Exit codes:
+
+- 0: every entry was read.
+- 1: an entry cannot be read (a file that cannot be read or opened, or corrupt data), a listed file is missing, or the check crashed on an error it does not catch (`asset check crashed` goes to stderr).
+- 2: no usable install (no `--game` value, a missing folder, or a folder without `Siedler1.exe`).
+- 3: two asset kinds share a name.
 
 The asset browser opens a window:
 
@@ -60,7 +64,7 @@ Neither mode writes to the install.
 - `docs/roadmap.md`: the milestone plan.
 - `docs/rules/`: the rules recovered from the game's program, each with its address as evidence.
 - `docs/agents/`: instructions for coding agents.
-- `tools/GhidraDump/`: a Ghidra script that writes a local, searchable dump of the game's program.
+- `tools/GhidraDump/`: Ghidra scripts that build a local Ghidra project and write a searchable dump of the game's program.
 
 ## Build and test
 

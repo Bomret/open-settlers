@@ -179,6 +179,17 @@ public sealed class MidiFileTests
     }
 
     [TestMethod]
+    public void AHeaderLengthAboveSixIsUnreadable()
+    {
+        byte[] header = [.. Header(0, 1, 96), 0];
+        header[7] = 7;
+
+        var error = Assert.ThrowsExactly<InvalidDataException>(() => MidiFile.Read(File(header, Track(EndOfTrack))));
+
+        StringAssert.Contains(error.Message, "the header length is not 6");
+    }
+
+    [TestMethod]
     public void AFileShorterThanTheHeaderIsUnreadable()
     {
         var error = Assert.ThrowsExactly<InvalidDataException>(() => MidiFile.Read(Header(0, 1, 96)[..10]));

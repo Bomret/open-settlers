@@ -13,9 +13,6 @@ for searching with `grep`:
 - `DumpProgram.java` writes the dump.
 - `StateFields.java` writes the table of game-state fields.
 
-`program_index.py` rebuilds the generated sections of `docs/rules/program-index.md` from its topic
-tables.
-
 The dump has these files:
 
 - `functions/<address>.c`: the decompiled code of each function.
@@ -26,6 +23,8 @@ The dump has these files:
   a site can lie far past the end of the function before it, so read the code around the site to find
   its routine.
 - `strings.tsv`: per string its address, value, and the functions that reference it.
+- `vtables.tsv`: per class whose vtable Ghidra recovers from RTTI, the vtable address, the class, and its
+  slots in order.
 - `state_fields.tsv`: per offset into the game state block, the operand sizes seen, the routines that
   read it, and the routines that write it. A routine appears as `Name@address` when the index names it.
   The script follows the state block pointer through straight-line code only, so it misses accesses

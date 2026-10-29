@@ -1,10 +1,8 @@
 # Coding Guidelines (LLM Reference)
 
-Target audience: LLMs. General rules apply to any language, specific languages have their own heading.
+Target audience: LLMs. The general rules come first, then the C# rules.
 
 ## General
-
-These are general coding guidelines that must be used for all programming languages that support these concepts.
 
 ### Immutable data / behavioral services
 
@@ -49,10 +47,6 @@ if (condition) {
 
 Always use braces around loops and conditional branching. The one exception is a branch whose sole statement is a jump (`return`, `break`, `continue`, `throw`): it may go without braces. CSharpier puts that statement on its own line.
 
-### Member ordering
-
-Follow the language's established conventions and best practices for member ordering.
-
 ### Document
 
 Document public and protected/abstract/overridable facing types and members using appropriate code documentation. Be specific and concise but also mention side-effects, possible errors/exceptions and possibly unexpected behavior.
@@ -80,11 +74,11 @@ Default to `var`. Use explicit types only when it aids readability, e.g. `IReadO
 
 | Thing | Convention | Example |
 |-------|-----------|---------|
-| Classes / interfaces | PascalCase | `GameFileSystem`, `AssetKind` |
+| Classes / interfaces | PascalCase | `Archive`, `AssetKind` |
 | Interface prefix | `I` | `IComparer<T>` |
 | Private fields | `_camelCase` | `_entries` |
-| Records | PascalCase | `PhysicsValues`, `ShipPose` |
-| Constants | PascalCase | `PaletteKind.KindName`, `Reached` |
+| Records | PascalCase | `TextEntry`, `Rgb` |
+| Constants | PascalCase | `PaletteKind.KindName`, `Palette.ColorCount` |
 
 ### Modern C# features
 
@@ -113,5 +107,5 @@ var alarm = new Alarm { JobName = "job-a", State = AlarmState.Raised };
 public sealed record Alarm(string JobName, AlarmState State);
 ```
 
-A property that carries a default stays a non-`required` init property with an initializer (`public uint Flags { get; init; } = 0;`). Primary constructors remain the norm for classes (for example, `UnsupportedFormatException`); the rule above is records-only.
+A property that carries a default stays a non-`required` init property with an initializer (`public uint Flags { get; init; } = 0;`). Primary constructors remain the norm for classes; the rule above is records-only.
 

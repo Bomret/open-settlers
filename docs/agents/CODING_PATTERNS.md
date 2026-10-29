@@ -33,7 +33,7 @@ Such a gap is one of three cases: a file that cannot be read (`IOException`), a 
 catch these three when they turn an asset into an unreadable entry. A reader may catch another exception and
 rewrap it as `InvalidDataException` when its cause is corrupt data: `ArchiveEntryKind.PaletteOf` does so for
 an `ArgumentOutOfRangeException` from a palette lookup. Any other exception is a bug: let it propagate. The
-check's view catches whatever escapes `AssetCheck.Run`, prints `asset check crashed` to stderr, and exits 1.
+asset browser (`AssetBrowserView`) catches whatever escapes `AssetCheck.Run`, prints `asset check crashed` to stderr, and exits 1.
 
 ## Stand-ins
 
@@ -42,8 +42,9 @@ itself is a stand-in. Mark each stand-in with a `stand-in:` comment where it is 
 the value replaces.
 
 ```csharp
-// stand-in: a serf nearer than this counts as arrived.
-const float Arrived = 1e-4f;
+/// The most pixels a side of a preview image holds, 2048 (stand-in: the program builds no image; the bound is
+/// below the texture size Godot uploads and above every graphic of the reference install).
+public const int MaxSide = 2048;
 ```
 
 ## Tests

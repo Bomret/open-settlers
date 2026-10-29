@@ -12,7 +12,7 @@
   - Tests — see `docs/agents/verification.md`
   - Restore the formatter — `dotnet tool restore` (needs NuGet access the first time)
   - Format — `dotnet csharpier format .`
-  - Check formatting — `dotnet csharpier check .`. The full verification command runs it first.
+  - Check formatting — `dotnet csharpier check .`
   - Build — `dotnet build OpenSettlers.csproj`
   - Unit tests — `dotnet test --project tests/OpenSettlers.Tests` (MSTest on Microsoft.Testing.Platform,
     selected in `global.json`)
@@ -23,4 +23,4 @@
   reads `.gitignore`, so `.godot/`, `bin/`, `obj/`, and `.superdev/` are skipped.
   `// csharpier-ignore` keeps a hand-laid-out fixture, such as a pixel grid, as written.
 - Not wired: no linter or `.editorconfig`.
-- Style prose: none beyond `README.md`.
+- Style prose: `docs/agents/CODING.md` and `docs/agents/CODING_PATTERNS.md`.
