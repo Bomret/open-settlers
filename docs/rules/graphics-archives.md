@@ -19,8 +19,8 @@ buffer.
 ## The header and the table
 
 **Status:** confirmed for the table rows (every reader at `0x406120`, `0x406610`, `0x4071c0`, and `0x4073d0`
-finds an entry through them). **Inferred** for the header words other than the file size: the program
-reads the length, the row count, and the flag only in `Archive_Free`.
+finds an entry through them). **Inferred** for the three header words: the program reads the length, the
+row count, and the flag only in `Archive_Free`, and no game code checks the length against the file.
 
 The file starts with a header of eight bytes and continues with the table. All numbers are little-endian.
 
@@ -32,7 +32,9 @@ The file starts with a header of eight bytes and continues with the table. All n
   the file.
 
 The header takes the place of row 0, so the first entry is row 1. The program numbers an entry by its row,
-and so does the engine, everywhere: the palette is entry 3. Each reader computes the address of an entry as
+and so does the engine, everywhere: the palette is entry 3. `0x407250` loads the palette by calling `0x4071c0`
+with row 3, and the startup in `Platform_RunGame` (the call at `0x4075a7`) calls it the same way with row
+3998; `0x4071c0` reads the row's 768 bytes as 256 colour triples. Each reader computes the address of an entry as
 the archive base plus the row's offset, and uses no address at all when the offset is 0.
 
 An entry is **present** when its offset is not 0 and **absent** when it is 0. The program never looks at the
@@ -55,14 +57,17 @@ It copies without looking at what the destination row held. The copies are, in r
 Every destination is empty in the reference files, so the copies fill empty slots. A destination shows as
 the entry it repeats and is an **alias**; the engine counts it as an alias and never as an entry of its own.
 No source row is a destination, so a copy never chains. A source that is absent leaves its destinations
-absent. The engine applies a copy only where both rows lie inside the table the header declares.
+absent. The engine applies a copy only where both rows lie inside the table the header declares. A kind
+claims a source row and never a destination: an alias follows its source, and a kind that claims a
+destination makes that alias fail with a reason naming both rows.
 
 ## Corrupt archives
 
 **Status:** stand-in. The program checks none of these; the engine reports them.
 
 The engine reports an archive as unreadable when the file is shorter than its header (8 bytes), shorter
-than its table (the row count times 8), or when the length in the header differs from the file's length. An
+than its table (the row count times 8), or when the length in the header differs from the file's length. Each message names
+its offset: the end of the header or of the table, or offset 0 for the header's length word. An
 entry whose offset plus size lies beyond the end of the file is reported on its own, with its number and
 offset, and the other entries stay readable.
 
@@ -70,5 +75,5 @@ offset, and the other entries stay readable.
 
 `ArchiveFile.Read` in `src/Formats/Archive.cs` reads bytes in and gives entries out, as present, alias, or
 absent. `ArchiveEntryKind` in `src/Assets` lists the entries of the three archives and is the base of every
-kind that reads an entry. A kind claims entries by their number in its own file, and the browser lists an
+kind that reads an entry. Row 0 is the header and no entry: asking for it throws. A kind claims entries by their number in its own file, and the browser lists an
 entry no kind claims with its location and size.

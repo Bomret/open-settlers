@@ -15,7 +15,8 @@ namespace OpenSettlers.Assets;
 /// </summary>
 /// <remarks>
 /// Entries are claimed by their program number, the same in all three archives (<c>docs/rules/graphics-archives.md</c>).
-/// An alias is claimed by whichever kind claims the entry it repeats, so a kind never names an alias. An entry
+/// An alias is claimed by whichever kind claims the entry it repeats, so a kind never names an alias: a kind that
+/// claims an alias's number makes that alias fail with a reason naming both entries. An entry
 /// claimed by no kind is listed by <see cref="UnrecoveredEntryKind"/>. An entry claimed by two kinds fails in both,
 /// with a reason that names both; the test over the discovered kinds fails too.
 /// </remarks>
@@ -30,7 +31,7 @@ public abstract class ArchiveEntryKind : AssetKind
 
     /// <summary>
     /// Whether this kind claims the entry with this program number (1 and up). Pure and independent of the file.
-    /// Claim present entries only: an alias follows its source.
+    /// Claim present entries only: an alias follows its source, and a claim on an alias's own number fails it.
     /// </summary>
     public abstract bool Claims(int entry);
 
@@ -78,7 +79,7 @@ public abstract class ArchiveEntryKind : AssetKind
             {
                 archive = Open(install, file);
             }
-            catch (Exception e) when (e is IOException or InvalidDataException)
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
                 problem = e;
             }
@@ -107,22 +108,27 @@ public abstract class ArchiveEntryKind : AssetKind
                     continue;
                 }
 
-                var number = entry.Number;
-                var current = entry;
+                var strays =
+                    entry.AliasOf == null ? [] : all.Where(k => k.Claims(entry.Number)).Select(k => k.Name).ToList();
                 yield return new Asset
                 {
                     Kind = Name,
                     File = file,
-                    Entry = number.ToString(),
+                    Entry = entry.Number.ToString(),
                     Name = Label(file, entry),
                     IsAlias = entry.State == EntryState.Alias,
                     Load =
                         claimants.Count > 1
                             ? () =>
                                 throw new InvalidDataException(
-                                    $"entry {number} is claimed by more than one kind: {string.Join(", ", claimants)}"
+                                    $"entry {entry.Number} is claimed by more than one kind: {string.Join(", ", claimants)}"
                                 )
-                            : () => Read(current, archive.Data(current)),
+                        : strays.Any()
+                            ? () =>
+                                throw new InvalidDataException(
+                                    $"entry {entry.Number} is a copy of entry {entry.AliasOf} and follows it, yet {string.Join(", ", strays)} claims the copy"
+                                )
+                        : () => Read(entry, archive.Data(entry)),
                 };
             }
         }

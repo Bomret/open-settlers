@@ -179,6 +179,16 @@ public sealed class ArchiveFileTests
 
         StringAssert.Contains(failure.Message, $"{bytes.Length + 5}");
         StringAssert.Contains(failure.Message, $"{bytes.Length}");
+        StringAssert.Contains(failure.Message, "offset 0");
+    }
+
+    [TestMethod]
+    public void RowZeroIsTheHeaderAndNoEntry()
+    {
+        var archive = Read(4);
+
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => archive[0]);
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => archive[4]);
     }
 
     [TestMethod]

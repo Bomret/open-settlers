@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Versioning;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Assets;
 using OpenSettlers.Formats;
@@ -213,6 +214,51 @@ public sealed class ArchiveEntryKindTests
             .ToList();
 
         Assert.IsEmpty(doubled, string.Join("; ", doubled));
+    }
+
+    [TestMethod]
+    public void NoDiscoveredKindClaimsAnAliasDestination()
+    {
+        var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
+        var sources = Enumerable.Range(1, Rows - 1).ToDictionary(n => n, _ => new byte[] { 1 });
+        var aliases = ArchiveFile.Read(ArchiveBytes.Build(Rows, sources)).Entries.Where(e => e.AliasOf != null);
+
+        var claimed = aliases.Where(a => all.Any(k => k.Claims(a.Number))).Select(a => a.Number).ToList();
+
+        Assert.IsEmpty(claimed, string.Join(", ", claimed));
+    }
+
+    [TestMethod]
+    public void AKindThatClaimsACopyDestinationFailsTheAliasAndNamesBothEntries()
+    {
+        using var fake = InstallWith(ArchiveBytes.Build(Rows, new Dictionary<int, byte[]> { [1352] = [4] }));
+        var sprite = new ClaimingKind("sprite", 1352, 1352);
+        var stray = new ClaimingKind("stray", 1363, 1363);
+
+        var alias = List(sprite, fake, stray).Single(a => a.File == Files[0] && a.Entry == "1363");
+
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => alias.Load());
+        StringAssert.Contains(failure.Message, "1363");
+        StringAssert.Contains(failure.Message, "1352");
+        StringAssert.Contains(failure.Message, "stray");
+    }
+
+    [TestMethod]
+    [UnsupportedOSPlatform("windows")]
+    public void AnArchiveTheProcessMayNotReadIsOneFailingAssetOfTheFileAndNoException()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("File modes need Unix.");
+        }
+
+        using var fake = InstallWith(Small());
+        File.SetUnixFileMode(Path.Combine(fake.Root, Files[1]), UnixFileMode.None);
+
+        var failing = List(new UnrecoveredEntryKind(), fake).Single(a => a.File == Files[1]);
+
+        Assert.IsNull(failing.Entry);
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => failing.Load());
     }
 
     [TestMethod]

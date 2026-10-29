@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace OpenSettlers.Formats;
 
@@ -59,8 +60,18 @@ public sealed class Archive
     public IReadOnlyList<ArchiveEntry> Entries =>
         new ArraySegment<ArchiveEntry>(rows, Math.Min(1, rows.Length), Math.Max(rows.Length - 1, 0));
 
-    /// <summary>The slot with the given program number (1 to <see cref="RowCount"/> - 1).</summary>
-    public ArchiveEntry this[int number] => rows[number];
+    /// <summary>
+    /// The slot with the given program number (1 to <see cref="RowCount"/> - 1). Row 0 is the header and no entry:
+    /// it and any number past the table throw <see cref="ArgumentOutOfRangeException"/>.
+    /// </summary>
+    public ArchiveEntry this[int number] =>
+        number >= 1 && number < rows.Length
+            ? rows[number]
+            : throw new ArgumentOutOfRangeException(
+                nameof(number),
+                number,
+                $"an entry number is 1 to {rows.Length - 1}"
+            );
 
     /// <summary>
     /// The bytes of a present or aliased entry. Throws <see cref="InvalidDataException"/> naming the entry, its
@@ -95,7 +106,15 @@ public static class ArchiveFile
 
     // The slots the program fills with a copy of another slot after loading (0x407290): the source and the
     // first and last slot filled.
-    static readonly (int Source, int First, int Last)[] Copies = BuildCopies();
+    static readonly (int Source, int First, int Last)[] Copies =
+    [
+        (1352, 1363, 1368),
+        (1602, 1613, 1618),
+        (3762, 3765, 3765),
+        (3763, 3766, 3766),
+        (3764, 3767, 3767),
+        .. Enumerable.Range(0, 48).Select(group => (3450 + 6 * group, 3451 + 6 * group, 3455 + 6 * group)),
+    ];
 
     /// <summary>
     /// Reads the header and the table. Throws <see cref="InvalidDataException"/>, naming what is wrong and the
@@ -124,7 +143,7 @@ public static class ArchiveFile
         if (size != bytes.Length)
         {
             throw new InvalidDataException(
-                $"the header gives the file size {size}, the file is {bytes.Length} bytes long"
+                $"the header gives the file size {size} at offset 0, the file is {bytes.Length} bytes long"
             );
         }
 
@@ -149,7 +168,7 @@ public static class ArchiveFile
                         {
                             Number = number,
                             State = EntryState.Alias,
-                            AliasOf = original.Number,
+                            AliasOf = source,
                         };
             }
         }
@@ -163,39 +182,14 @@ public static class ArchiveFile
         var offset = BitConverter.ToUInt32(bytes, number * RowSize + 4);
 
         // The program tests the offset alone for presence.
-        return offset == 0
-            ? new ArchiveEntry
-            {
-                Number = number,
-                State = EntryState.Absent,
-                Offset = 0,
-                Size = 0,
-            }
-            : new ArchiveEntry
-            {
-                Number = number,
-                State = EntryState.Present,
-                Offset = offset,
-                Size = size,
-            };
-    }
+        var present = offset != 0;
 
-    static (int, int, int)[] BuildCopies()
-    {
-        var copies = new List<(int, int, int)>
+        return new ArchiveEntry
         {
-            (1352, 1363, 1368),
-            (1602, 1613, 1618),
-            (3762, 3765, 3765),
-            (3763, 3766, 3766),
-            (3764, 3767, 3767),
+            Number = number,
+            State = present ? EntryState.Present : EntryState.Absent,
+            Offset = present ? offset : 0,
+            Size = present ? size : 0,
         };
-        for (var group = 0; group < 48; group++)
-        {
-            var source = 3450 + 6 * group;
-            copies.Add((source, source + 1, source + 5));
-        }
-
-        return [.. copies];
     }
 }
