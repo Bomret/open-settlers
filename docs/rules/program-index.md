@@ -185,6 +185,19 @@ Note: [Music file](music-file.md).
 
 Note: [Graphics archives](graphics-archives.md).
 
+### Graphics images
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x4071c0` | `Palette_Load` | Reads the 768 bytes of the archive entry whose row number is in `CX` as 256 colors of three bytes, reduces each component to 6 bits, stores them in `Palette_Current`, and forces color 0 to black. | confirmed | platform | Called by `Palette_LoadGameFlagged`, `Palette_LoadGame`, and `Platform_RunGame`; data `Archive_Base`. |
+| `0x407250` | `Palette_LoadGameFlagged` | Loads the palette of entry 3, then sets a flag at `0x6812d8`. | confirmed | platform | Called at `0x4471f9` and `0x447200`. |
+| `0x407400` | `Palette_LoadGame` | Loads the palette of entry 3 by a jump into `Palette_Load`. | confirmed | platform | Called at `0x4250a8` and `0x45229d`. |
+| `0x407410` | `Palette_LoadTitle` | Loads the palette of entry 3997 by a jump into `Palette_Load`. | confirmed | platform | Called at `0x451ee9`, in the title scene. |
+| `0x6816d0` | `Palette_Current` | Data: the current palette, 256 colors of three bytes with 6-bit components. | confirmed | platform | Written by `Palette_Load`; read by `Frame_Present`. |
+| `0x405730` | `Gfx_BlitRaw` | Copies the width x height palette indices of a raw image to the surface row by row, clipped to the clip rectangle, with no transparency. | confirmed | platform | Called by `Gfx_DrawSprite`, which hands it the entry's address and the position. |
+
+Note: [Graphics images](graphics-images.md).
+
 ### Views, panels, and drawing
 
 | Address | Name | Role | Status | Layer | Anchor |
@@ -545,6 +558,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | Address | Name | Status | Topic |
 | --- | --- | --- | --- |
 | `0x401090` | — | unknown | Files and configuration |
+| `0x405730` | `Gfx_BlitRaw` | confirmed | Graphics images |
 | `0x405d70` | `Archive_ReadFile` | confirmed | Graphics archives |
 | `0x405e00` | `Archive_Load` | confirmed | Graphics archives |
 | `0x405f60` | `Archive_Free` | confirmed | Graphics archives |
@@ -560,7 +574,11 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x406c90` | `Timer_ThreadMain` | confirmed | Timing |
 | `0x406fb0` | `Sound_LoadFile` | confirmed | Sound |
 | `0x407130` | `Sound_Start` | inferred | Sound |
+| `0x4071c0` | `Palette_Load` | confirmed | Graphics images |
+| `0x407250` | `Palette_LoadGameFlagged` | confirmed | Graphics images |
 | `0x407290` | `Archive_FillAliases` | confirmed | Graphics archives |
+| `0x407400` | `Palette_LoadGame` | confirmed | Graphics images |
+| `0x407410` | `Palette_LoadTitle` | confirmed | Graphics images |
 | `0x407480` | `Platform_RunGame` | confirmed | Program start and game flow |
 | `0x4076d0` | `File_Open` | inferred | Save and load |
 | `0x407750` | `File_Create` | inferred | Save and load |
@@ -718,6 +736,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x67d608` | `Timer_RateHz` | confirmed | Timing |
 | `0x67d614` | `Loca_FileTable` | inferred | Files and configuration |
 | `0x6812ec` | `Archive_Base` | confirmed | Graphics archives |
+| `0x6816d0` | `Palette_Current` | confirmed | Graphics images |
 <!-- by-address:end -->
 
 ## Unexplored
