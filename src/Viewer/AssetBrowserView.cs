@@ -158,20 +158,22 @@ public partial class AssetBrowserView : Control
     // A crash, from the selection or from drawing the preview, replaces the pane; the lists stay usable.
     void ShowPreview(string? crash = null)
     {
-        foreach (var child in _pane.GetChildren())
-        {
-            child.QueueFree();
-        }
+        ClearPane();
 
         crash ??= Guard(DrawPreview);
         if (crash != null)
         {
-            foreach (var child in _pane.GetChildren())
-            {
-                child.QueueFree();
-            }
+            ClearPane();
 
             _pane.AddChild(new Label { Text = crash, AutowrapMode = TextServer.AutowrapMode.Word });
+        }
+    }
+
+    void ClearPane()
+    {
+        foreach (var child in _pane.GetChildren())
+        {
+            child.QueueFree();
         }
     }
 
