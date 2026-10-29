@@ -46,9 +46,11 @@ public sealed record Mask
 public static class MaskFile
 {
     /// <summary>
-    /// Reads an entry as a mask. Throws <see cref="InvalidDataException"/> naming the row for an entry shorter
-    /// than its header, a width or height of 0 (stand-in: nothing to draw), a run that ends past the width, and a
-    /// stream that ends before every row has its end pair. The bytes after the last row are ignored, as the
+    /// Reads an entry as a mask. Throws <see cref="InvalidDataException"/> with its reason, naming the row where
+    /// there is one, for an entry shorter than its header, a width or height of 0 (stand-in: nothing to draw), a
+    /// height that needs more rows than the entry holds, a width x height beyond an array's length (both before
+    /// anything is allocated), a run that ends past the width, and a stream that ends before every row has its end
+    /// pair. The bytes after the last row are ignored, as the
     /// program, which stops after the height's rows, ignores them.
     /// </summary>
     public static Mask Read(ReadOnlyMemory<byte> entry)
@@ -63,7 +65,22 @@ public static class MaskFile
         }
 
         var body = graphic.Body.Span;
-        var covered = new bool[header.Width * header.Height];
+        if (header.Height > body.Length / 2)
+        {
+            throw new InvalidDataException(
+                $"the mask is {header.Width} x {header.Height} but only {body.Length} bytes follow the header, too few bytes for {header.Height} rows that each need at least an end pair"
+            );
+        }
+
+        var area = (long)header.Width * header.Height;
+        if (area > Array.MaxLength)
+        {
+            throw new InvalidDataException(
+                $"the mask is {header.Width} x {header.Height}, {area} pixels, more than a mask can hold"
+            );
+        }
+
+        var covered = new bool[area];
         var position = 0;
         for (var row = 0; row < header.Height; row++)
         {

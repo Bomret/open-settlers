@@ -195,12 +195,11 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x407410` | `Palette_LoadTitle` | Loads the palette of entry 3997 by a jump into `Palette_Load`. | confirmed | platform | Called at `0x451ee9`, in the title scene. |
 | `0x6816d0` | `Palette_Current` | Data: the current palette, 256 colors of three bytes with 6-bit components. | confirmed | platform | Written by `Palette_Load`; read by `Frame_Present`. |
 | `0x405730` | `Gfx_BlitRaw` | Copies the width x height palette indices of a raw image to the surface row by row, clipped to the clip rectangle, with no transparency. | confirmed | platform | Called by `Gfx_DrawSprite`, which hands it the entry's address and the position. |
-| `0x405b80` | `Gfx_BlitShadow` | Draws a mask to the surface, clipped, storing palette index `0x80` on every covered pixel with no blending. | confirmed | platform | Called only by `Gfx_DrawShadow`. |
-| `0x4061a0` | `Gfx_DrawShadow` | Sets the clip rectangle and draws the mask whose entry number is in the draw block's third field through `Gfx_BlitShadow`. | confirmed | platform | Called at `0x44da4d` (the entry is an object's number plus 1500) and at `0x44fff3` (entry 4). |
-| `0x47b19c` | `Gfx_BlitTextured` | Draws a mask to the surface, clipped, copying each covered pixel from a raw-image texture tiled from the mask's own position, with no blending. | confirmed | platform | Called only by `Gfx_FillTextured`. |
-| `0x405b40` | `Gfx_FillTextured` | Hands the mask and the texture entry to `Gfx_BlitTextured`. | confirmed | platform | Called only by `Gfx_DrawTexturedFill`. |
-| `0x406120` | `Gfx_DrawTexturedFill` | Sets the clip rectangle, finds the texture entry from the draw block's fourth field, and fills the mask of its third field with it. | confirmed | platform | Called at `0x4278be`, `0x427a25`, and `0x4281cc`, which add 60, 141, or a computed number for the mask and 260 or 300 for the texture. |
-| `0x406610` | `Gfx_DrawSettler` | Draws a settler: a sprite, the same kind of entry in one color (`0x40` plus 4 times the player), and a second sprite. | confirmed | platform | Called at `0x44fff3`; entries are a field of the draw block plus 1850 and plus 2500. |
+| `0x405b80` | `Gfx_BlitShadow` | Draws a mask to the surface, clipped, storing palette index `0x80` on every covered pixel with no blending. | confirmed | platform | Called at `0x4061fa`, in `Gfx_DrawShadow`, and at `0x4062c9`, in the second shadow routine at `0x406210`, which `0x44ff2a` calls with an object's number plus 1500. |
+| `0x4061a0` | `Gfx_DrawShadow` | Sets the clip rectangle and draws the mask whose entry number is in the draw block's third field through `Gfx_BlitShadow`. | confirmed | platform | Called at `0x44daa4` (the entry is an object's number plus 1500, in the routine at `0x44da4d`, which about 38 sites reach) and at `0x45007d` (entry 4). |
+| `0x47b19c` | `Gfx_BlitTextured` | Draws a mask to the surface, clipped, copying each covered pixel from a raw-image texture that repeats down only (it never wraps within a row), with no blending. | confirmed | platform | Called at `0x405b67`, in `Gfx_FillTextured`. |
+| `0x405b40` | `Gfx_FillTextured` | Hands the mask and the texture entry to `Gfx_BlitTextured`. | confirmed | platform | Called at `0x40618c`, in `Gfx_DrawTexturedFill`. |
+| `0x406120` | `Gfx_DrawTexturedFill` | Sets the clip rectangle, finds the texture entry from the draw block's fourth field, and fills the mask of its third field with it. | confirmed | platform | Called at `0x4279a9`, `0x427b0d`, and `0x428363`, in the routines at `0x4278be`, `0x427a25`, and `0x428008`, `0x428105`, `0x4281cc`, which form the mask (60 plus an index, 141 plus an index, or a base of 234, 243, or 252 plus a height difference) and the texture (260 or 300 plus an offset). |
 
 Note: [Graphics images](graphics-images.md).
 
@@ -575,7 +574,6 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x406120` | `Gfx_DrawTexturedFill` | confirmed | Graphics images |
 | `0x4061a0` | `Gfx_DrawShadow` | confirmed | Graphics images |
 | `0x406500` | `Gfx_CopyRect` | confirmed | Views, panels, and drawing |
-| `0x406610` | `Gfx_DrawSettler` | confirmed | Graphics images |
 | `0x406880` | `Frame_Present` | inferred | Main loop |
 | `0x406980` | `Key_ReadCode` | confirmed | Input |
 | `0x4069f0` | `Input_ReadPointerA` | confirmed | Input |

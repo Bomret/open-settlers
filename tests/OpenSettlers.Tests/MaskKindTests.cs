@@ -56,9 +56,13 @@ public sealed class MaskKindTests
 
         CollectionAssert.AreEqual(
             new[] { 4 }
-                .Concat(Enumerable.Range(60, 197))
+                .Concat(Enumerable.Range(60, 162))
+                .Concat(Enumerable.Range(230, 27))
                 .Concat(Enumerable.Range(1500, 113))
-                .Concat(Enumerable.Range(1619, 75))
+                .Concat([1619])
+                .Concat(Enumerable.Range(1628, 18))
+                .Concat(Enumerable.Range(1652, 20))
+                .Concat(Enumerable.Range(1674, 20))
                 .ToList(),
             claimed
         );
@@ -68,9 +72,17 @@ public sealed class MaskKindTests
     [DataRow(3)]
     [DataRow(5)]
     [DataRow(59)]
+    [DataRow(222)]
+    [DataRow(229)]
     [DataRow(257)]
     [DataRow(260)]
     [DataRow(1499)]
+    [DataRow(1620)]
+    [DataRow(1627)]
+    [DataRow(1646)]
+    [DataRow(1651)]
+    [DataRow(1672)]
+    [DataRow(1673)]
     [DataRow(1694)]
     [DataRow(1750)]
     public void TheMaskKindClaimsNoEntryNextToItsRanges(int entry)
@@ -97,15 +109,19 @@ public sealed class MaskKindTests
     }
 
     [TestMethod]
-    [DataRow(4, 0x80)]
-    [DataRow(1500, 0x80)]
-    [DataRow(1612, 0x80)]
-    [DataRow(1693, 0x80)]
-    [DataRow(60, 0x40)]
-    [DataRow(256, 0x40)]
-    public void EachRangeHasTheColorTheProgramStoresForIt(int entry, int color)
+    [DataRow(4, 0, 252, 0)]
+    [DataRow(1500, 0, 252, 0)]
+    [DataRow(1645, 0, 252, 0)]
+    [DataRow(1693, 0, 252, 0)]
+    [DataRow(60, 252, 0, 0)]
+    [DataRow(221, 252, 0, 0)]
+    [DataRow(230, 252, 0, 0)]
+    [DataRow(256, 252, 0, 0)]
+    public void EachRangeIsDrawnInTheColorTheProgramStoresForIt(int entry, int red, int green, int blue)
     {
-        Assert.AreEqual(color, MaskKind.ColorOf(entry));
+        var covered = Preview(entry).Rgba.Skip(4).Take(4);
+
+        CollectionAssert.AreEqual(new byte[] { (byte)red, (byte)green, (byte)blue, 255 }, covered.ToArray());
     }
 
     static RawImagePreview Preview(int entry)

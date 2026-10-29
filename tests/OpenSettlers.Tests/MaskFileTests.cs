@@ -105,7 +105,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void FewerRowsThanTheHeightIsAStreamPastTheEnd()
     {
-        var failure = Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(4, 3, 0, 1, 0, 0)));
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(4, 2, 0, 1, 0, 0)));
 
         StringAssert.Contains(failure.Message, "row 1");
         StringAssert.Contains(failure.Message, "past the end");
@@ -128,6 +128,19 @@ public sealed class MaskFileTests
     {
         Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(0, 1, 0, 0)));
         Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(1, 0)));
+    }
+
+    [TestMethod]
+    [DataRow(65535, 65535)]
+    [DataRow(40000, 40000)]
+    public void AHeightThatNeedsMoreRowsThanTheEntryHoldsIsUnreadableBeforeAnythingIsAllocated(int width, int height)
+    {
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
+            MaskFile.Read(Entry((ushort)width, (ushort)height, 0, 0))
+        );
+
+        StringAssert.Contains(failure.Message, $"{width} x {height}");
+        StringAssert.Contains(failure.Message, "too few bytes");
     }
 
     [TestMethod]
