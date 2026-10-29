@@ -55,6 +55,18 @@ public sealed class TextKindTests
         CollectionAssert.AreEqual(new[] { "one", null, "un" }, table.Rows.Single().Values.ToArray());
     }
 
+    [TestMethod]
+    public void AMissingFileFailsWithItsInstallRelativePathAsTheOtherKindsDo()
+    {
+        using var fake = new FakeInstall().Put("loca/eng.txt", Bytes("ALPHA=\"one\"\r\n"));
+
+        var failure = Assert.ThrowsExactly<FileNotFoundException>(() =>
+            new TextKind().Enumerate(Open(fake)).ToList()[1].Load()
+        );
+
+        Assert.AreEqual("the file loca/ger.txt is missing: the install must hold it", failure.Message);
+    }
+
     static bool CanStillRead(string path)
     {
         try

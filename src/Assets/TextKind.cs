@@ -45,7 +45,7 @@ public sealed class TextKind : AssetKind
     public override IEnumerable<Asset> Enumerate(Install install)
     {
         // The three assets of one listing share these reads: each file is read and parsed once, on first use.
-        var reads = Languages.Select(l => new Lazy<TextFile>(() => TextFile.Read(install.ReadAll(l.File)))).ToList();
+        var reads = Languages.Select(l => new Lazy<TextFile>(() => Read(install, l.File))).ToList();
 
         return Languages.Select(
             (l, index) =>
@@ -58,6 +58,11 @@ public sealed class TextKind : AssetKind
                 }
         );
     }
+
+    static TextFile Read(Install install, string file) =>
+        install.Exists(file)
+            ? TextFile.Read(install.ReadAll(file))
+            : throw new FileNotFoundException($"the file {file} is missing: the install must hold it");
 
     // A file that cannot be read leaves its column empty; its own asset fails with the reason.
     static Preview Table(IReadOnlyList<Lazy<TextFile>> reads, int own)
