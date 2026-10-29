@@ -63,7 +63,11 @@ public static class PaletteFile
         var colors = new Rgb[Palette.ColorCount];
         for (var i = 1; i < colors.Length; i++)
         {
-            colors[i] = new Rgb((byte)(bytes[i * 3] >> 2), (byte)(bytes[i * 3 + 1] >> 2), (byte)(bytes[i * 3 + 2] >> 2));
+            colors[i] = new Rgb(
+                (byte)(bytes[i * 3] >> 2),
+                (byte)(bytes[i * 3 + 1] >> 2),
+                (byte)(bytes[i * 3 + 2] >> 2)
+            );
         }
 
         return new Palette(colors);

@@ -270,7 +270,9 @@ public sealed class ArchiveEntryKindTests
     [TestMethod]
     public void TheCheckReportsPresentEntriesAndAliasesSeparatelyPerArchive()
     {
-        using var fake = InstallWith(ArchiveBytes.Build(Rows, new Dictionary<int, byte[]> { [1352] = [4], [7] = [1] }));
+        using var fake = InstallWith(
+            ArchiveBytes.Build(Rows, new Dictionary<int, byte[]> { [1352] = [4], [12] = [1] })
+        );
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
         var report = AssetCheck.Run(args, [new UnrecoveredEntryKind()]);
