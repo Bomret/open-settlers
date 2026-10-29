@@ -19,6 +19,50 @@ public abstract class PreviewView
     /// <summary>Builds the control that shows <c>preview</c>, which is of this view's kind.</summary>
     public abstract Control Create(Preview preview);
 
+    /// <summary>
+    /// A picture of <c>width</c> by <c>height</c> RGBA pixels under its summary, scaled to fill the pane with its
+    /// aspect ratio kept and its pixels kept sharp. A <c>backdrop</c> is drawn behind the picture alone, so it shows
+    /// the transparent pixels and the picture's bounds.
+    /// </summary>
+    protected static Control Picture(string summary, int width, int height, byte[] rgba, Color? backdrop = null)
+    {
+        var image = Image.CreateFromData(width, height, false, Image.Format.Rgba8, rgba);
+        var picture = new TextureRect
+        {
+            Texture = ImageTexture.CreateFromImage(image),
+            TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.Scale,
+        };
+        var fit = new AspectRatioContainer
+        {
+            Ratio = (float)width / height,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+        };
+        if (backdrop is { } color)
+        {
+            var rect = new ColorRect { Color = color };
+            picture.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            rect.AddChild(picture);
+            fit.AddChild(rect);
+        }
+        else
+        {
+            fit.AddChild(picture);
+        }
+
+        var box = new VBoxContainer
+        {
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+        };
+        box.AddChild(new Label { Text = summary });
+        box.AddChild(fit);
+
+        return box;
+    }
+
     /// <summary>The views by kind name.</summary>
     public static IReadOnlyDictionary<string, PreviewView> Discover() =>
         typeof(PreviewView)

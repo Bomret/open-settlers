@@ -212,7 +212,7 @@ The preview shows every pixel of the stream, because the surface under it is not
 `SpriteFile.Read` in `src/Formats` decodes an entry into one index per pixel and a flag for each pixel the
 program draws; `Sprite.ToRgba` lowers the alpha of the others to 0, or draws every drawn pixel in one color.
 `SpriteKind` in `src/Assets` claims the ranges above, draws in palette 3, and gives the entries of 750 to 853
-their color and the entries of 2500 to 3040 the first player's color. The offsets only appear in the summary: the preview draws the sprite alone at its own size.
+their color and the entries of 2500 to 3040 the first player's color. The offsets only appear in the summary: the preview draws the sprite alone, and the browser scales it to fit its pane.
 
 ## Masks
 

@@ -3,7 +3,7 @@ using OpenSettlers.Assets;
 
 namespace OpenSettlers.Viewer;
 
-/// <summary>The view of a fill texture: its pixels at their own size, opaque, shown as a raw image is.</summary>
+/// <summary>The view of a fill texture: its pixels scaled to fit the pane, opaque, shown as a raw image is.</summary>
 public sealed class FillTextureView : PreviewView
 {
     /// <inheritdoc/>
