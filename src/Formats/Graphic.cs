@@ -121,6 +121,12 @@ public static class GraphicFile
 public static class IndexedImage
 {
     /// <summary>
+    /// The most pixels a preview image holds: Godot's <c>Image.MAX_PIXELS</c>, 2^28 (stand-in: the engine's bound;
+    /// the program builds no image). A reader that allocates per pixel refuses a larger width x height first.
+    /// </summary>
+    public const long MaxPixels = 1L << 28;
+
+    /// <summary>
     /// Converts palette indices to RGBA, four bytes per pixel in pixel order, each pixel in the color the game
     /// shows for its index (<see cref="Palette.Rgba"/>) with alpha 255. A kind with transparency lowers the alpha
     /// of the pixels its routine does not draw.

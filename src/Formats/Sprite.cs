@@ -55,7 +55,7 @@ public static class SpriteFile
     /// Decodes an entry: after the header, each of the height rows is a sequence of runs, each run a skip byte, a
     /// count byte, and that many palette indices; a run whose count is 0 ends the row and its skip is ignored.
     /// Throws <see cref="InvalidDataException"/> for an entry shorter than its header, for a width or height of
-    /// 0 (stand-in: nothing to draw), for a height the stream cannot hold (each row needs at least its ending pair), for a width x height whose RGBA (four bytes a pixel) does not fit an array (stand-in: the engine's bound), for a row whose runs end beyond the width, and for a stream that ends before
+    /// 0 (stand-in: nothing to draw), for a height the stream cannot hold (each row needs at least its ending pair), for a width x height of more pixels than the engine's image holds (<see cref="IndexedImage.MaxPixels"/>, stand-in: the engine's bound), for a row whose runs end beyond the width, and for a stream that ends before
     /// its last row or inside a run. Bytes after the last row are ignored, as the program ignores them.
     /// </summary>
     public static Sprite Read(ReadOnlyMemory<byte> entry)
@@ -79,11 +79,11 @@ public static class SpriteFile
         }
 
         var area = (long)width * header.Height;
-        // Stand-in bound: the RGBA of the sprite (four bytes a pixel) must fit an array.
-        if (area * 4 > Array.MaxLength)
+        // Stand-in bound: the sprite must fit the engine's image.
+        if (area > IndexedImage.MaxPixels)
         {
             throw new InvalidDataException(
-                $"the sprite is {width} x {header.Height}, {area} pixels, whose RGBA of {area * 4} bytes is more than an array holds"
+                $"the sprite is {width} x {header.Height}, {area} pixels, more than the {IndexedImage.MaxPixels} pixels an image holds"
             );
         }
 

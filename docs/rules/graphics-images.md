@@ -203,8 +203,8 @@ The preview shows every pixel of the stream, because the surface under it is not
 - A stream that ends inside a run or before the pair that ends a row is unreadable. The message names the row.
 - A height larger than half the stream (each row needs at least the pair that ends it) is unreadable, whatever
   the width: the check comes before anything is allocated. The message names the height.
-- A width x height whose RGBA (four bytes a pixel) is beyond what an array holds is unreadable, before anything is
-  allocated. The program has no such bound (it draws row by row and builds no RGBA), so this one is the engine's.
+- A width x height of more than 2^28 pixels (the most Godot's `Image` holds) is unreadable, before anything is
+  allocated. The program has no such bound (it draws row by row and builds no image), so this one is the engine's.
 - Bytes after the last row are ignored.
 
 ### Sprites in the engine
@@ -277,8 +277,8 @@ row, where there is one) in the message:
 - A stream that ends before every row of the height has its end pair, including a half pair at the end.
 - A width or height of 0 (nothing to draw), and an entry shorter than its header.
 - A height that needs more rows than the entry holds (each row has at least its end pair, 2 bytes), and a width x
-  height whose RGBA (four bytes a pixel) is beyond what an array holds. Both are refused before the pixel flags are
-  allocated. The program has no such bound (it draws row by row and builds no RGBA), so this one is the engine's.
+  height of more than 2^28 pixels (the most Godot's `Image` holds). Both are refused before the pixel flags are
+  allocated. The program has no such bound (it draws row by row and builds no image), so this one is the engine's.
 
 Bytes after the last row are ignored, as the program stops after the height's rows.
 

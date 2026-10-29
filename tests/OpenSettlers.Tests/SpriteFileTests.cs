@@ -167,17 +167,18 @@ public sealed class SpriteFileTests
     }
 
     // Every row an end pair, so the stream holds exactly the rows the height needs and only the area bound can refuse
-    // it. The bound is the RGBA of the sprite: width x height x 4 must fit an array.
+    // it. The bound is the engine's image: width x height must be at most 2^28 pixels (65535 x 4097 is just above).
     [TestMethod]
     [DataRow(65535, 32769)]
     [DataRow(65535, 8193)]
-    public void ASpriteWhoseRgbaDoesNotFitAnArrayIsUnreadableBeforeAnythingIsAllocated(int width, int height)
+    [DataRow(65535, 4097)]
+    public void ASpriteOfMorePixelsThanAnImageHoldsIsUnreadableBeforeAnythingIsAllocated(int width, int height)
     {
         var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
             SpriteFile.Read(Sprite((ushort)width, (ushort)height, 0, 0, new byte[height * 2]))
         );
 
         StringAssert.Contains(failure.Message, $"{width} x {height}");
-        StringAssert.Contains(failure.Message, "RGBA");
+        StringAssert.Contains(failure.Message, "an image holds");
     }
 }

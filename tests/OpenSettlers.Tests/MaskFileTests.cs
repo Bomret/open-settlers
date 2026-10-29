@@ -144,18 +144,19 @@ public sealed class MaskFileTests
     }
 
     // Every row an end pair, so the entry holds exactly the rows the height needs and only the area bound can refuse it.
-    // The bound is the RGBA of the mask: width x height x 4 must fit an array.
+    // The bound is the engine's image: width x height must be at most 2^28 pixels (65535 x 4097 is just above).
     [TestMethod]
     [DataRow(65535, 32769)]
     [DataRow(65535, 8193)]
-    public void AMaskWhoseRgbaDoesNotFitAnArrayIsUnreadableBeforeAnythingIsAllocated(int width, int height)
+    [DataRow(65535, 4097)]
+    public void AMaskOfMorePixelsThanAnImageHoldsIsUnreadableBeforeAnythingIsAllocated(int width, int height)
     {
         var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
             MaskFile.Read(Entry((ushort)width, (ushort)height, new byte[height * 2]))
         );
 
         StringAssert.Contains(failure.Message, $"{width} x {height}");
-        StringAssert.Contains(failure.Message, "RGBA");
+        StringAssert.Contains(failure.Message, "an image holds");
     }
 
     [TestMethod]
