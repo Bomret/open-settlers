@@ -41,11 +41,16 @@ A living skeleton. `/superdev:plan` and `/superdev:document` fill and extend it.
   `Pages` with the link list to its own pages. Parent: `Home`, section `Pages`.
 - **Player guides** (`Getting started`, `Known limitations`). One task or limitation per page. Parent:
   `Players`, section `Pages`.
-- **File formats.** One page per game file format. Parent: `Modders`, section `Pages`.
+- **File formats** (`Graphics archives`, `Graphics images`, `Music file`, `Sound files`, `Text files`,
+  `Map start`). One page per rule note of the same name in `docs/rules/`, which stays the source. Parent:
+  `Modders`, section `Pages`.
 - **Modding guides** (`Asset loading`). How a modder reaches and replaces game content. Parent: `Modders`,
   section `Pages`.
-- **Developer pages** (`Architecture`, `Build and setup`, `Roadmap`). One topic per page. Parent:
-  `Developers`, section `Pages`.
+- **Developer pages** (`Architecture`, `Build and setup`, `Game rules`). One topic per page. `Game rules`
+  summarizes `docs/rules/timing.md` and `docs/rules/game-code.md`; the program index stays in the
+  repository. Parent: `Developers`, section `Pages`. The `Developers` page links to
+  [`docs/roadmap.md`](https://codeberg.org/bomret/open-settlers/src/branch/main/docs/roadmap.md) by hand,
+  outside its `Pages` section, instead of a wiki copy.
 - **`Changelog`.** `(aggregate)`: one `## <feature>` section per shipped feature, never deeper and never
   `#`. Parent: `Developers`, section `Pages`.
 

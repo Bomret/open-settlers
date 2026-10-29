@@ -68,6 +68,8 @@ Neither mode writes to the install.
 
 ## Build and test
 
+These are the steps of the full verification command in `docs/agents/verification.md`.
+
 ```sh
 dotnet tool restore
 dotnet csharpier check .
