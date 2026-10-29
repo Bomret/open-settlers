@@ -18,7 +18,9 @@ public sealed class MaskFileTests
             Enumerable
                 .Range(0, mask.Height)
                 .Select(y =>
-                    string.Concat(Enumerable.Range(0, mask.Width).Select(x => mask.Covered[y * mask.Width + x] ? '#' : '.'))
+                    string.Concat(
+                        Enumerable.Range(0, mask.Width).Select(x => mask.Covered[y * mask.Width + x] ? '#' : '.')
+                    )
                 )
         );
 
@@ -77,7 +79,9 @@ public sealed class MaskFileTests
     [TestMethod]
     public void ARunThatOverrunsTheWidthIsUnreadableWithItsRowAndColumn()
     {
-        var failure = Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(4, 2, 0, 4, 0, 0, 2, 3, 0, 0)));
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
+            MaskFile.Read(Entry(4, 2, 0, 4, 0, 0, 2, 3, 0, 0))
+        );
 
         StringAssert.Contains(failure.Message, "row 1");
         StringAssert.Contains(failure.Message, "width 4");
