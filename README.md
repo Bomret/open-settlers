@@ -39,7 +39,7 @@ The asset check runs without a window:
 godot-mono --headless --path . -- --check --game <install>
 ```
 
-It reads every asset of every kind and prints one line per file with its entry count and kinds. Each failure prints a line with the file, the entry, and the reason. The last line gives the totals. The exit code is 0 when every entry was read. It is 1 when an entry cannot be read (a file that cannot be opened, or corrupt data) or a listed file is missing. A programming error in a reader is not counted as an unreadable entry: it stops the check with an unhandled error, so it is not mistaken for a bad file. It is 2 when there is no usable install (no `--game` value, a missing folder, or a folder without `Siedler1.exe`). It is 3 when two asset kinds share a name.
+It reads every asset of every kind and prints one line per file with its entry count and kinds. Each failure prints a line with the file, the entry, and the reason. The last line gives the totals. The exit code is 0 when every entry was read. It is 1 when an entry cannot be read (a file that cannot be read or opened, or corrupt data), when a listed file is missing, or when the check crashes on an error it does not catch; the message `asset check crashed` then goes to stderr. It is 2 when there is no usable install (no `--game` value, a missing folder, or a folder without `Siedler1.exe`). It is 3 when two asset kinds share a name.
 
 The asset browser opens a window:
 
