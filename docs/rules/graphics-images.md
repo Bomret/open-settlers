@@ -2,7 +2,7 @@
 
 This note covers the palette entries of the graphics archives, the 10-byte header that every graphics entry
 starts with, and the raw images: the entries that the program draws as plain rows of palette indices. Sprites
-with transparency, masks, and glyphs read the same header and are other notes. How the archives are loaded and
+with transparency and glyphs read the same header and are other notes; the masks are below. How the archives are loaded and
 numbered is in [Graphics archives](graphics-archives.md).
 
 ## The palette
@@ -188,6 +188,74 @@ program draws; `Sprite.ToRgba` lowers the alpha of the others to 0, or draws eve
 `SpriteKind` in `src/Assets` claims the ranges above, draws in palette 3, and gives the entries of 750 to 853
 their color and the entries of 2500 to 3040 the first player's color. The offsets only appear in the summary: the preview draws the sprite alone at its own size.
 
+## Masks
+
+**Status:** confirmed for the stream layout and for the routines that read it. Each entry range below is the
+numbers some site in the code reaches; the textured-fill ranges are **inferred** at their ends, because the code
+reaches them through a height difference whose bound the code does not check (below). A mask is a graphic that holds only runs of skipped and covered pixels and
+no pixel colors. The routines that read the stream are `Gfx_BlitShadow` at `0x405b80` and `Gfx_BlitTextured` at
+`0x47b19c`. An entry that carries pixel colors in its runs is a sprite, even when the program draws it in one
+color, and belongs to the sprite note.
+
+The stream after the 10-byte header has one row after the other from the top, as many rows as the height. A row
+is pairs of two bytes: a skip and a cover. The skip moves right from where the previous run ended (from the left
+edge for the first run), the cover is the number of pixels to fill from there. A pair whose cover is 0 ends the
+row and its skip byte is not used. Both routines clip against the clip rectangle and skip the rows above it by
+walking pairs to each end pair. A row with no run is only its end pair.
+
+How the program draws a mask:
+
+- **Shadow.** `Gfx_DrawShadow` at `0x4061a0` hands the entry to `Gfx_BlitShadow`, which stores palette index
+  `0x80` on every covered pixel. It blends nothing, so a shadow is a hard-edged shape in one color.
+- **Textured fill.** `Gfx_DrawTexturedFill` at `0x406120` hands a mask and a raw image to `Gfx_BlitTextured`,
+  which copies, on each covered pixel, the pixel of the texture at the same distance from the mask's position,
+  repeating the texture down only: within a row the texture pointer advances with the destination and never
+  wraps, and after the texture's height in rows it returns to the first row. The texture is a raw image (10 bytes
+  plus width x height) and has its own header.
+- **Player color.** The routine at `0x406610` draws one entry in the color `0x40` plus 4 times the player through
+  `0x405880`. That routine skips cover bytes of pixel data in the stream, so the entries it draws are sprites
+  (entries 2500 to 2701, 2740 to 2965, and 3000 to 3040, among them the empty 2670 and 3010 to 3032), and no mask of
+  the reference install is drawn that way. The sprite note describes the routine and previews those entries in the
+  first player's color.
+
+Entry ranges, in all three archives, with the routine that reads them:
+
+| Entries | Kind | Routine and how the number arises |
+| --- | --- | --- |
+| 4 | shadow | `0x45006a` stores 4 and the call at `0x45007d` reaches `Gfx_DrawShadow`. Confirmed |
+| 1500 to 1612, 1619 | shadow | `0x44da4d` adds 1500 to an object's number and calls `Gfx_DrawShadow` at `0x44daa4`; the same number plus 1250 is the object's sprite. Objects 0 to 119 reach it from the call at `0x44d6e8`: the number is a byte of the map object, either kept as it is (24 and up) or combined with a phase (0 to 23). Confirmed. 1613 to 1618 are copies of 1602 (see [Graphics archives](graphics-archives.md)). |
+| 1628 to 1645 | shadow | Objects 128 to 143 reach `0x44da4d` from the call at `0x44dcad` (128 plus 0, 4, 8, or 12 plus a phase of 0 to 3), object 144 from the jump at `0x44fa74`, and object 145 from the call at `0x44fc21`. Confirmed |
+| 1652 to 1671, 1674 | shadow | Objects 152 to 171 and 174: the object routines in `0x44e62b` to `0x44f928` store each number and jump or call into `0x44da4d` (sites `0x44e636` to `0x44f928`). Confirmed. Objects 172 and 173 appear in none of them, so entries 1672 and 1673 are left unclaimed |
+| 1675 to 1693 | shadow | Objects 175 to 177, 179 to 187, and 193 come from the 24-entry table that the call at `0x44fcac` indexes at `0x44fc87` (an index of 1 to 23 that the stores from `0x44f933` to `0x44fa5d` set); 178 and 192 are stored before the call at `0x44f928` and the jump at `0x44ec2a`; 188 to 191 are 188 plus 0 to 3 at `0x44f3a8` (jump at `0x44f3ae`). Confirmed. The same table values are also drawn through the second shadow routine at `0x406210`, which `0x44ff2a` calls with the number plus 1500. That call is reached for 152 to 171, 174, 188, and 192 from `0x44fcd0` through the table at `0x44fd16`, and for 178 from `0x44fd30` |
+| 60 to 140 | textured fill | `Gfx_DrawTexturedFill`, called at `0x4279a9`: the mask is 60 plus an index from the heights of three neighbouring nodes, `(h1 + 4 - h2) + 9 x (h1 + 4 - h3)` (formed at `0x4278be`), which indexes the 81-entry tables of 9 x 9 combinations. The range assumes the height difference to a neighbour is at most 4 either way, which the 9 x 9 tables encode and the code does not check. Confirmed routine, inferred bound |
+| 141 to 221 | textured fill | the same call and index at `0x427a25` (call at `0x427b0d`) with 141 added in place of 60 |
+| 230 to 256 | textured fill | the three routines at `0x428008`, `0x428105`, and `0x4281cc` (called at `0x427dc7`, `0x427eb3`, and `0x427f98`) form a mask number from a base (234, 243, and 252) plus the difference of two 5-bit heights, and all three draw through the call at `0x428363`. With the same bound of 4 either way the three bases give 230 to 238, 239 to 247, and 248 to 256. Confirmed routine, inferred bound. Under the inferred bound of 4, entries 222 to 229 are reached by none of the five sites and are left unclaimed (the arithmetic alone reaches 203 to 265, so a larger real bound would reach them) |
+| 260 to 292, 300 to 309 | texture of the fill | the texture number at the same call sites: 260 plus a table value of 0 to 32 at `0x4279a9` and `0x427b0d`, and 300 to 302 plus 0, 3, or 6, or 309, at `0x428363`. Confirmed |
+
+The mask entries of the reference install all decode with this layout and consume exactly their size: no run
+passes the width. Entries 1597 and 1598 are masks whose rows are all end pairs (48 x 11, nothing covered); they
+lie in the shadow range. Entries 2670 and 3010 to 3032 are of the same shape but lie among sprites, and no mask
+routine reaches them by number, so the mask kind does not claim them (they are the player-color overlays above).
+
+The preview draws each mask alone in the one color the program stores for it: a shadow in index `0x80`.
+A textured-fill mask has no color of its own (the program fills it with a texture); the preview draws it in
+the first player's color, index `0x40`, as a **stand-in**. The texture belongs to the milestone that draws
+terrain; the texture entries show as raw images. All previews use the game's palette, entry 3.
+
+### Corrupt masks
+
+**Status:** stand-in. The program checks none of these. Each is unreadable for its own entry, with its reason (and the
+row, where there is one) in the message:
+
+- A run whose end (the skip and the cover added to the end of the previous run) is past the width.
+- A stream that ends before every row of the height has its end pair, including a half pair at the end.
+- A width or height of 0 (nothing to draw), and an entry shorter than its header.
+- A height that needs more rows than the entry holds (each row has at least its end pair, 2 bytes), and a width x
+  height whose RGBA (four bytes a pixel) is beyond what an array holds. Both are refused before the pixel flags are
+  allocated. The program has no such bound (it draws row by row and builds no RGBA), so this one is the engine's.
+
+Bytes after the last row are ignored, as the program stops after the height's rows.
+
 ## Corrupt entries
 
 **Status:** stand-in. The program checks none of these; the engine reports them, each for its own entry, and
@@ -205,5 +273,6 @@ the other entries stay readable.
 
 `PaletteFile.Read` and `GraphicFile.Read` and `GraphicFile.ReadRaw` in `src/Formats` read the entries.
 `IndexedImage.ToRgba` turns palette indices into RGBA on the CPU, with no Godot type, and the previews of
-`PaletteKind` and `RawImageKind` in `src/Assets` hold the result. How the game renders palette graphics is
+`PaletteKind` and `RawImageKind` in `src/Assets` hold the result. `MaskFile.Read` reads a mask; `MaskKind` previews
+the masks and `FillTextureKind` the textures of the fill. How the game renders palette graphics is
 decided with the renderer.

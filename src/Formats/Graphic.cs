@@ -125,14 +125,28 @@ public static class IndexedImage
     /// shows for its index (<see cref="Palette.Rgba"/>) with alpha 255. A kind with transparency lowers the alpha
     /// of the pixels its routine does not draw.
     /// </summary>
+    /// <exception cref="ArgumentException">The RGBA of the input does not fit an array.</exception>
     public static byte[] ToRgba(ReadOnlySpan<byte> indices, Palette palette)
     {
-        var rgba = new byte[indices.Length * 4];
+        var rgba = new byte[RgbaLength(indices.Length)];
         for (var i = 0; i < indices.Length; i++)
         {
             palette.Rgba(indices[i]).CopyTo(rgba.AsSpan(i * 4));
         }
 
         return rgba;
+    }
+
+    /// <summary>The bytes of the RGBA of <paramref name="pixels"/> pixels, computed in long so a large input cannot wrap.</summary>
+    /// <exception cref="ArgumentException">The RGBA does not fit an array.</exception>
+    public static int RgbaLength(long pixels)
+    {
+        var length = pixels * 4;
+        if (length > Array.MaxLength)
+        {
+            throw new ArgumentException($"{pixels} pixels need {length} bytes of RGBA, more than an array holds");
+        }
+
+        return (int)length;
     }
 }

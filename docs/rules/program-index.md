@@ -203,6 +203,11 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x406590` | `Gfx_DrawSpriteNoOffset` | Draws a transparent sprite through `Gfx_BlitSprite` with the entry's two offsets set to 0 for the call and restored after; the entry is the base 1250 plus a script index. | confirmed | platform | Called at `0x44db12`. See [Graphics images](graphics-images.md). |
 | `0x406610` | `Gfx_DrawSettler` | Draws a settler: the figure from the base 1850 through `Gfx_BlitSprite`, the overlay of the same index plus 2500 through `Gfx_BlitSpriteOneColor` in the player color (40 hex plus four times the player), then, where a second figure is set, an entry from the base 3150 through `Gfx_BlitSprite`, moved by header bytes 0 and 1 of the first figure as signed offsets. | confirmed | platform | Called at `0x450189`. See [Graphics images](graphics-images.md). |
 | `0x4511d5` | `Text_DrawGlyphs` | Draws a string of characters as one-color sprites: for each character, a shadow glyph (entry plus 809) in the shadow color when one is set, then the glyph (entry plus 749) in the text color; steps 8 pixels per character. | inferred | game | Called at `0x450fde`, `0x451043`, `0x4510a8`, `0x451111`, `0x451173` (each jumps to it); calls `Gfx_DrawSpriteOneColor`. |
+| `0x405b80` | `Gfx_BlitShadow` | Draws a mask to the surface, clipped, storing palette index `0x80` on every covered pixel with no blending. | confirmed | platform | Called at `0x4061fa`, in `Gfx_DrawShadow`, and at `0x4062c9`, in the second shadow routine at `0x406210`, which `0x44ff2a` calls with an object's number plus 1500 (reached from `0x44fcd0` and `0x44fd30` as well as the call sites for the table at `0x44fc87`). |
+| `0x4061a0` | `Gfx_DrawShadow` | Sets the clip rectangle and draws the mask whose entry number is in the draw block's third field through `Gfx_BlitShadow`. | confirmed | platform | Called at `0x44daa4` (the entry is an object's number plus 1500, in the routine at `0x44da4d`, which about 38 sites reach) and at `0x45007d` (entry 4). |
+| `0x47b19c` | `Gfx_BlitTextured` | Draws a mask to the surface, clipped, copying each covered pixel from a raw-image texture that repeats down only (it never wraps within a row), with no blending. | confirmed | platform | Called at `0x405b67`, in `Gfx_FillTextured`. |
+| `0x405b40` | `Gfx_FillTextured` | Hands the mask and the texture entry to `Gfx_BlitTextured`. | confirmed | platform | Called at `0x40618c`, in `Gfx_DrawTexturedFill`. |
+| `0x406120` | `Gfx_DrawTexturedFill` | Sets the clip rectangle, finds the texture entry from the draw block's fourth field, and fills the mask of its third field with it. | confirmed | platform | Called at `0x4279a9`, `0x427b0d`, and `0x428363`, in the routines at `0x4278be`, `0x427a25`, and `0x428008`, `0x428105`, `0x4281cc`, which form the mask (60 plus an index, 141 plus an index, or a base of 234, 243, or 252 plus a height difference) and the texture (260 or 300 plus an offset). |
 
 Note: [Graphics images](graphics-images.md).
 
@@ -569,11 +574,15 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x405590` | `Gfx_BlitSprite` | confirmed | Graphics images |
 | `0x405730` | `Gfx_BlitRaw` | confirmed | Graphics images |
 | `0x405880` | `Gfx_BlitSpriteOneColor` | confirmed | Graphics images |
+| `0x405b40` | `Gfx_FillTextured` | confirmed | Graphics images |
+| `0x405b80` | `Gfx_BlitShadow` | confirmed | Graphics images |
 | `0x405d70` | `Archive_ReadFile` | confirmed | Graphics archives |
 | `0x405e00` | `Archive_Load` | confirmed | Graphics archives |
 | `0x405f60` | `Archive_Free` | confirmed | Graphics archives |
 | `0x405fe0` | `Speed_SetFactor` | confirmed | Timing |
 | `0x4060b0` | `Gfx_DrawSprite` | confirmed | Views, panels, and drawing |
+| `0x406120` | `Gfx_DrawTexturedFill` | confirmed | Graphics images |
+| `0x4061a0` | `Gfx_DrawShadow` | confirmed | Graphics images |
 | `0x4062e0` | `Gfx_DrawSpriteTransparent` | confirmed | Graphics images |
 | `0x406350` | `Gfx_DrawSpriteGrowing` | inferred | Graphics images |
 | `0x406490` | `Gfx_DrawSpriteOneColor` | confirmed | Graphics images |
@@ -747,6 +756,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x479e54` | `Sound_UpdateChannels` | inferred | Sound |
 | `0x47a32d` | `Sound_Play` | confirmed | Sound |
 | `0x47a4c3` | `Input_UpdatePointer` | inferred | Input |
+| `0x47b19c` | `Gfx_BlitTextured` | confirmed | Graphics images |
 | `0x47b4f9` | — | unknown | Game code band |
 | `0x674048` | `Speed_Factor` | confirmed | Timing |
 | `0x67d608` | `Timer_RateHz` | confirmed | Timing |
@@ -762,7 +772,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 123 routines of the 471 functions in the dump's game code band and lists 15 more without a name: 95 confirmed, 28 inferred, 15 unknown.
+Coverage: the index names 124 routines of the 471 functions in the dump's game code band and lists 15 more without a name: 96 confirmed, 28 inferred, 15 unknown.
 <!-- coverage:end -->
 
 Anchors not yet followed:
