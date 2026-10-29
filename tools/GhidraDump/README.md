@@ -34,7 +34,11 @@ which git ignores ([INV-0001](../../docs/invariants.md#inv-0001)). Record findin
 
 ## Requirements
 
-- Ghidra (`brew install ghidra`) and Java 21 (`brew install openjdk@21`).
+- Ghidra 12.1.x, the release line REA accepts, so one install serves REA and the dump. Extract the
+  official release from `github.com/NationalSecurityAgency/ghidra`. The release ships no native
+  decompiler for macOS on Apple silicon: build it with `gradle buildNatives` in the release's
+  `support/gradle/` folder (`brew install gradle`).
+- A JDK 21 or newer (`brew install openjdk@25`).
 - The `Siedler1.exe` of the reference install (`docs/rules/AGENTS.md`, "Reference build").
 
 ## Run
@@ -44,9 +48,9 @@ analysis of `Siedler1.exe` can exceed. Ghidra headless has no timeout. Run every
 repository root.
 
 ```sh
-export JAVA_HOME=/opt/homebrew/opt/openjdk@21
+export JAVA_HOME=/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home
 export PATH="$JAVA_HOME/bin:$PATH"
-export HEADLESS=/opt/homebrew/opt/ghidra/libexec/support/analyzeHeadless
+export HEADLESS=<Ghidra 12.1.x folder>/support/analyzeHeadless
 ```
 
 Build the project. This takes about 7 minutes:
