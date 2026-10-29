@@ -129,7 +129,7 @@ same.
 
 | Entries | Where | Drawn |
 | --- | --- | --- |
-| 321 to 372, and 490 | `0x44de9a` and `0x44fd4a`: an index plus 320 | palette |
+| 321 to 372 | `0x44de9a` and `0x44fd4a`: an index plus 320 | palette |
 | 610 to 619 | `0x428528`: 610 to 612, those plus 3 or 6, and 619 | palette |
 | 750 to 793 | `0x4511d5` through `0x406490`: a character's glyph, the character's code plus 749 | one color, index 31 |
 | 810 to 853 | the same routine, the glyph plus 809, as the shadow of the text | one color, index 1 |
@@ -147,20 +147,24 @@ size. The player's color is **stand-in**: the program picks the player at run ti
 player's color, palette index 40 hex.
 
 The text routines in `0x4511d5` fill the color from the game state: five sites (`0x450fde`, `0x451043`,
-`0x4510ac`, `0x451111`, `0x451177`) set the text color. The sites at `0x450fde` and `0x451111` set 31 and the site
-at `0x451043` sets 47, and each sets 1 as the shadow color; the last site, `0x451177`, sets shadow 0, which draws
-no shadow. Palettes 3 and
+`0x4510a8`, `0x451111`, `0x451173`) set the text color, and each jumps to `0x4511d5` (none calls it). The sites at
+`0x450fde`, `0x4510a8`, and `0x451111` set 31 and the site at `0x451043` sets 47, and each sets 1 as the shadow
+color; the last site, `0x451173`, sets 31 and shadow 0, which draws no shadow. Palettes 3 and
 3998 agree on colors 1, 31, and 47, so the preview uses palette 3 and index 31. The text color is **stand-in**:
 the program picks it at run time.
 
 The base of each range is confirmed by the routine named; the upper bound of a range is the last entry that
 the archives hold and that decodes as a sprite: the game script code computes the index (the EDI block holds
 the entry), and no direct number shows it. None of the 432 raw images decodes this way, so the shape tells the
-two kinds apart. Entry 490 and eleven others inside the ranges (1909, 1918, 1938, 2019, 2023, 2212, 2378, 3176,
+two kinds apart. Eleven entries inside the ranges (1909, 1918, 1938, 2019, 2023, 2212, 2378, 3176,
 3193, 3233, 3415) happen to have the size a raw image would have and decode as sprites: the neighbouring entries
-are animation frames, and they are sprites. Entry 490 is the one entry of 448 to 521 that stays claimed.
+are animation frames, and they are sprites.
 
-No reader was found yet for 448 to 521 (except 490) and 630 to 645. They decode as sprites, and they equal the
+The range 1314 to 1443 is based on 1250, not on 320, by its callers: `0x44da9e` and `0x44ff24` draw the entry of
+the index plus 1500 (the shadow) with the same index just before `0x44dac8` and `0x44ff3f` draw the index plus
+1250, and 1250 + i is present exactly when 1500 + i is (i = 0 to 249). The base 320 has no such pairing.
+
+No reader was found yet for 448 to 521 (including 490) and 630 to 645. They decode as sprites, and they equal the
 base 320 plus 128 to 201 and 310 to 325, but nothing proves that the base-320 callers reach them, so no kind
 claims them. Entries 1597 and 1598 have all rows empty and lie inside the mask ranges. Entry 3999 decodes as a
 16 x 16 sprite of 60 pixels but is outside every range and follows no known caller.

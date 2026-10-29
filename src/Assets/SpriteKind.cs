@@ -30,7 +30,7 @@ public sealed record SpritePreview : Preview
 
 /// <summary>
 /// The entries the program draws as transparent sprites: the stream that <c>0x405590</c> reads (called from
-/// <c>0x4062e0</c> and <c>0x406610</c>), and in one color <c>0x405880</c> (called from <c>0x406490</c> and
+/// <c>0x4062e0</c>, <c>0x406350</c>, <c>0x406590</c> and <c>0x406610</c>), and in one color <c>0x405880</c> (called from <c>0x406490</c> and
 /// <c>0x406610</c>); see <c>docs/rules/graphics-images.md</c>. Each range names the code that picks its entries;
 /// the entries of a range are the ones the archive holds. An overlay of 2500 to 3040 may have no drawn pixel.
 /// </summary>
@@ -39,7 +39,7 @@ public sealed class SpriteKind : ArchiveEntryKind
     /// <summary>The kind's name.</summary>
     public const string KindName = "sprite";
 
-    /// <summary>The palette index of the text color the program draws the glyphs of 750 to 793 in (<c>0x450fde</c>, <c>0x451111</c>).</summary>
+    /// <summary>The palette index of the text color the program draws the glyphs of 750 to 793 in (<c>0x450fde</c>, <c>0x4510a8</c>, <c>0x451111</c>, <c>0x451173</c>).</summary>
     const int GlyphColor = 31;
 
     /// <summary>The palette index of the first player's color (0x40 plus 4 times the player, <c>0x406610</c>), the stand-in for the player of the overlays of 2500 to 3040.</summary>
@@ -53,7 +53,6 @@ public sealed class SpriteKind : ArchiveEntryKind
     static readonly (int First, int Last, int Step)[] Ranges =
     [
         (321, 372, 1), // 0x44de9a and 0x44fd4a: an index plus 320
-        (490, 490, 1), // 0x44de9a and 0x44fd4a: an index plus 320 (170), the one entry of the dropped range 448 to 521 that the controller keeps
         (610, 619, 1), // 0x428528: 610 to 612, those plus 3 or 6, and 619
         (750, 793, 1), // 0x4511d5 through 0x406490: a glyph plus 749, one color
         (810, 853, 1), // 0x4511d5 through 0x406490: a glyph plus 809, one color

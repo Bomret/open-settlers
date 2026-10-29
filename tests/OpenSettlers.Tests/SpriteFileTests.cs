@@ -118,6 +118,17 @@ public sealed class SpriteFileTests
     }
 
     [TestMethod]
+    public void AStreamThatEndsInsideARowNamesTheRow()
+    {
+        // Row 0 is complete. The body ends where row 1 would start its first pair.
+        var entry = Sprite(4, 2, 0, 0, 0, 2, 7, 7, 0, 0);
+
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => SpriteFile.Read(entry));
+
+        StringAssert.Contains(failure.Message, "inside row 1");
+    }
+
+    [TestMethod]
     public void AStreamWithFewerRowsThanTheHeightIsUnreadable()
     {
         var entry = Sprite(2, 3, 0, 0, 0, 0, 0, 0);
