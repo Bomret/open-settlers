@@ -72,6 +72,9 @@ every glob listed here:
 - `docs/rules/*.md`
 - `docs/agents/CODING.md`
 - `docs/agents/CODING_PATTERNS.md`
+- `docs/adr/*.md`
+- `docs/roadmap.md`
+- `tools/GhidraDump/README.md`
 
 List the documentation that default tree does not reach: a `docs/` guide tree, a release runbook, prose
 that is itself the product. Nothing outside the default tree → the section is absent, and the audit reads

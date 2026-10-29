@@ -24,8 +24,6 @@ The roadmap rests on these recorded decisions, invariants, and glossary terms:
 - Glossary terms: [Rule, Simulation, and Tick](../CONTEXT.md#game-rules), and
   [Free-play release](../CONTEXT.md#roadmap).
 
-The roadmap links these records and does not restate them.
-
 Each of M0 to M9 states its goal and these parts:
 
 - **Runnable mode:** what a person can run at the end of the milestone.
@@ -40,12 +38,8 @@ M10, M11, and the extensions state only their goal and what they depend on.
 The building and profession names in this roadmap are working names. The program confirms or replaces
 each name when a milestone investigates that name.
 
-The [rule notes](rules/AGENTS.md) record what M0 found about the program:
-
-- [Timing](rules/timing.md): a fixed-rate timer drives a game clock with a fixed unit, and each pass of
-  the main loop advances the rules by the clock units that elapsed.
-- [Map start](rules/map-start.md): the program generates each map from a 48-bit seed through its random
-  generator.
+The [rule notes](rules/AGENTS.md) record what M0 found about the program: [Timing](rules/timing.md) and
+[Map start](rules/map-start.md).
 
 ## Milestones to the free-play release
 
@@ -193,6 +187,7 @@ The roadmap excludes these goals:
 
 - Loading save games of either release of the original game
   ([ADR 0003](adr/0003-rule-fidelity-not-state-identity.md), [ADR 0004](adr/0004-history-edition-is-the-reference-install.md))
+- Reading a DOS CD install ([ADR 0006](adr/0006-the-engine-reads-what-siedler1-reads.md))
 - Any rule change before M10 completes the missions
 - Game data or transcribed program content in the repository ([INV-0001](invariants.md#inv-0001))
 - Dates.

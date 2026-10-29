@@ -33,9 +33,8 @@ which this note does not cover.
 
 - **Line end.** A line ends at a line feed or at a carriage return. A carriage return followed by a line
   feed is one line end, because the text mode folds the pair. The last line needs no line end: the end
-  of the file ends it, and the program counts its bytes by the same two limits below (the end-of-file
-  marker the loop stores is not counted, so an unterminated line of 254 bytes is read and one of 4 bytes is
-  skipped, as with a line end). The text mode treats a Ctrl-Z byte as the end of the file (inferred from the
+  of the file ends it, and the program counts its bytes by the same two limits below; the end-of-file
+  marker the loop stores does not count. The text mode treats a Ctrl-Z byte as the end of the file (inferred from the
   runtime's behaviour, not from an address).
 - **Too long.** A line of 255 bytes or more before its line end overruns the buffer, and the program
   stops with a range-check failure. Lines of up to 254 bytes are safe.

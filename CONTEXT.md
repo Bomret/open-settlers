@@ -41,16 +41,15 @@ colors, a sprite as the game draws it, a sound as playback.
 _Avoid_: thumbnail, view
 
 **Stand-in**
-A value that the engine supplies itself because the install does not define it or the program does not
+A value or check that the engine supplies itself because the install does not define it or the program does not
 confirm it.
 _Avoid_: default, placeholder
 
 ## Game rules
 
 **Rule**
-A behavior of the original game that the engine reproduces. We recover each rule from the game code of
-`Siedler1.exe` and restate it in our own words, with its address as evidence. We mark a rule that the program does not
-confirm as **inferred** or **stand-in**.
+A behavior of the original game that the engine reproduces, recovered from the game code of `Siedler1.exe`
+(`docs/rules/AGENTS.md`).
 _Avoid_: mechanic, logic
 
 **Game code**
