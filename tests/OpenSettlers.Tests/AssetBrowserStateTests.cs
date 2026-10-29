@@ -148,13 +148,50 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void TheRealKindsHaveUniqueNamesAndStampTheirAssetsWithTheirOwnName()
     {
-        using var fake = new FakeInstall();
+        // One minimal file per kind, built here: every entry of the three archives is one byte, so each kind's normal
+        // listing path runs and not only its missing-file path.
+        var archive = ArchiveBytes.Build(4000, Enumerable.Range(1, 3999).ToDictionary(n => n, _ => new byte[] { 0 }));
+        byte[] midi =
+        [
+            .. "MThd"u8.ToArray(),
+            0,
+            0,
+            0,
+            6,
+            0,
+            0,
+            0,
+            1,
+            0,
+            96,
+            .. "MTrk"u8.ToArray(),
+            0,
+            0,
+            0,
+            4,
+            0,
+            0xFF,
+            0x2F,
+            0,
+        ];
+        using var fake = new FakeInstall()
+            .Put("loca/SPAD.PA", archive)
+            .Put("loca/SPAE.PA", archive)
+            .Put("loca/SPAF.PA", archive)
+            .Put("snd/01.SND", [1])
+            .Put("snd/music_1.midi", midi)
+            .Put("loca/eng.txt", "A=\"x\"\r\n"u8.ToArray())
+            .Put("loca/ger.txt", "A=\"y\"\r\n"u8.ToArray())
+            .Put("loca/fre.txt", "A=\"z\"\r\n"u8.ToArray());
         var kinds = AssetKind.Discover().Where(k => k.GetType().Namespace == "OpenSettlers.Assets").ToList();
 
         Assert.AreEqual(kinds.Count, kinds.Select(k => k.Name).Distinct().Count());
         foreach (var kind in kinds)
         {
-            Assert.IsTrue(kind.Enumerate(new Install { Root = fake.Root }).All(a => a.Kind == kind.Name), kind.Name);
+            var assets = kind.Enumerate(new Install { Root = fake.Root }).ToList();
+
+            Assert.IsNotEmpty(assets, kind.Name);
+            Assert.IsTrue(assets.All(a => a.Kind == kind.Name), kind.Name);
         }
     }
 

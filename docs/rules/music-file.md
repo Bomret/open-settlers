@@ -44,6 +44,6 @@ microseconds per quarter note, 500000 until one occurs.
 The engine reads the file as bytes in and tracks out (`src/Formats/MidiFile.cs`): the tracks with their
 event counts and the length in seconds from the tempo changes of all tracks. A bad header tag, a bad track
 tag, a chunk past the end of the file, a missing track, and an event cut short are unreadable and name the
-reason. The engine accepts a header length above 6 and skips the extra bytes, where the program refuses it. The program checks the events in routines this note does not cover, so what it does with a cut event
+reason. The engine accepts a header length above 6 and skips the extra bytes, where the program refuses it. A division of 0, or a frame-based division with 0 ticks per frame, gives a length of 0, which is the engine's choice. The program checks the events in routines this note does not cover, so what it does with a cut event
 is open. The browser shows the tracks and the length and does not play
 the file.
