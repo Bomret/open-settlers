@@ -51,7 +51,7 @@ The asset browser opens a window:
 godot-mono --path . -- --game <install>
 ```
 
-It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. It shows a message instead when there is no usable install or two asset kinds share a name, and a notice when the selected kind lists no assets.
+It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. Its text and lists scale with the window. It shows a message instead when there is no usable install or two asset kinds share a name, and a notice when the selected kind lists no assets.
 
 A programming error in the browser does not close it. When the browser fails while it selects a kind or an asset, or while it draws a preview, it shows `<file or kind>: crashed: <Type>: <message>` in the preview pane and keeps the lists usable. A crash while the window opens shows that text in place of the window. Each crash also goes to stderr as `asset browser crashed`. A crash is a bug in the engine. A corrupt file is shown as a failure of that file, not as a crash.
 
