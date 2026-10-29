@@ -26,7 +26,8 @@ public static class AssetCheck
     /// <summary>
     /// Runs the check of <c>kinds</c> over the install the launch arguments name. Exit code 2 (no install given,
     /// folder missing, no program in it, or a launch problem) wins over 1. A kind or an asset that throws fails only
-    /// itself; the check goes on with the rest. Never throws.
+    /// itself; the check goes on with the rest. A file that fails as a whole is reported once, however many kinds
+    /// list it. Never throws.
     /// </summary>
     public static CheckReport Run(LaunchArgs args, IEnumerable<AssetKind> kinds)
     {
@@ -37,6 +38,8 @@ public static class AssetCheck
 
         var files = new Dictionary<string, FileTally>();
         var failures = new List<string>();
+        // The files that failed as a whole, such as a missing archive that every archive kind lists.
+        var failedFiles = new HashSet<string>();
         foreach (var kind in kinds)
         {
             List<Asset> assets;
@@ -77,6 +80,11 @@ public static class AssetCheck
                 }
                 catch (Exception e)
                 {
+                    if (asset.Entry == null && !failedFiles.Add(asset.File))
+                    {
+                        continue;
+                    }
+
                     var entry = asset.Entry == null ? "" : $" entry {asset.Entry}";
                     failures.Add($"FAIL {asset.File}{entry}: {e.Message}");
                 }

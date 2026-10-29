@@ -8,8 +8,7 @@ namespace OpenSettlers.Assets;
 
 /// <summary>
 /// The graphics-archive entries that no other <see cref="ArchiveEntryKind"/> claims: each is a gap in the
-/// entry-kind map, so its asset fails with the entry and the reason, and the check fails. It also reports a missing
-/// or corrupt archive once, so it stands for the archive file when no entry can be listed.
+/// entry-kind map, so its asset fails with the entry and the reason, and the check fails.
 /// </summary>
 public sealed class UnrecoveredEntryKind : ArchiveEntryKind
 {
@@ -24,8 +23,6 @@ public sealed class UnrecoveredEntryKind : ArchiveEntryKind
 
     internal override bool Takes(int entry, IReadOnlyList<ArchiveEntryKind> all) =>
         !all.Any(k => !ReferenceEquals(k, this) && k.Claims(entry));
-
-    internal override bool ReportsFileFailures => true;
 
     /// <inheritdoc/>
     protected override string Label(string file, ArchiveEntry entry) =>

@@ -192,20 +192,31 @@ public sealed class ArchiveEntryKindTests
     }
 
     [TestMethod]
-    public void ACorruptTableIsOneFailingAssetOfTheFileFromTheUnrecoveredKindAndNoOtherKind()
+    public void ACorruptTableIsOneFailingAssetOfTheFileInEveryKind()
     {
         using var fake = InstallWith(Small());
         fake.Put(Files[1], Small()[..20]);
         var palette = new ClaimingKind("palette", 1, 7);
+        var unrecovered = new UnrecoveredEntryKind();
 
-        var fromPalette = List(palette, fake).Where(a => a.File == Files[1]).ToList();
-        var fromUnrecovered = List(new UnrecoveredEntryKind(), fake, palette).Where(a => a.File == Files[1]).ToList();
+        foreach (var kind in new ArchiveEntryKind[] { palette, unrecovered })
+        {
+            var failing = List(kind, fake, palette, unrecovered).Single(a => a.File == Files[1]);
+            Assert.IsNull(failing.Entry);
+            StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => failing.Load()).Message, "table");
+        }
+    }
 
-        Assert.AreEqual(0, fromPalette.Count);
-        var failing = fromUnrecovered.Single();
-        Assert.AreEqual(Files[1], failing.File);
-        Assert.IsNull(failing.Entry);
-        StringAssert.Contains(Assert.ThrowsExactly<InvalidDataException>(() => failing.Load()).Message, "table");
+    [TestMethod]
+    public void TheCheckReportsAFailingArchiveOnceWhateverNumberOfKindsListIt()
+    {
+        using var fake = new FakeInstall().Put(Files[0], Small()).Put(Files[1], Small()[..20]);
+        var args = LaunchArgs.Parse(["--game", fake.Root], null);
+
+        var report = AssetCheck.Run(args, [new ClaimingKind("palette", 1, 7), new UnrecoveredEntryKind()]);
+
+        Assert.AreEqual(1, report.Lines.Count(l => l.StartsWith($"FAIL {Files[1]}:")));
+        Assert.AreEqual(1, report.Lines.Count(l => l.StartsWith($"FAIL {Files[2]}:")));
     }
 
     [TestMethod]

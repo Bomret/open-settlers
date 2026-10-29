@@ -173,6 +173,7 @@ offset, and the other entries stay readable.
 absent. `ArchiveEntryKind` in `src/Assets` lists the entries of the three archives and is the base of every
 kind that reads an entry. Row 0 is the header and no entry: asking for it throws. A kind claims entries by their number, the same in all three
 files. `UnrecoveredEntryKind` stands for a present entry that no kind claims: the check fails it with the file, the
-entry, and the reason, so a new install or a gap in the map shows. It also reports a missing or corrupt archive
-once, for the file. `RuleDataKind` and `UnreadEntryKind` list entry 2 and the entries no routine reads, each with its
+entry, and the reason, so a new install or a gap in the map shows. Every such kind lists a missing or corrupt
+archive as one failing asset of the file, so each category of the browser names it; the check reports it once.
+`RuleDataKind` and `UnreadEntryKind` list entry 2 and the entries no routine reads, each with its
 location and size, and neither shows bytes.

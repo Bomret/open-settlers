@@ -207,4 +207,14 @@ public sealed class AssetBrowserStateTests
         Assert.AreEqual("text", state.SelectedKind);
         Assert.AreEqual("a", state.SelectedAsset!.Name);
     }
+
+    [TestMethod]
+    public void AnArchiveKindShowsAMissingArchiveAsTheFailureOfItsSelectedAsset()
+    {
+        using var fake = new FakeInstall();
+
+        var state = Open(fake, new PaletteKind());
+
+        StringAssert.Contains(state.Failure, "loca/SPAD.PA");
+    }
 }

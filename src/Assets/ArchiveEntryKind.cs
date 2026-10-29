@@ -75,12 +75,6 @@ public abstract class ArchiveEntryKind : AssetKind
     /// <summary>Whether this kind lists the entry among the claimants <c>all</c>; <see cref="Claims"/> unless overridden.</summary>
     internal virtual bool Takes(int entry, IReadOnlyList<ArchiveEntryKind> all) => Claims(entry);
 
-    /// <summary>
-    /// Whether this kind reports a missing or corrupt archive. One kind does, so that a failing file is reported
-    /// once and not once per kind.
-    /// </summary>
-    internal virtual bool ReportsFileFailures => false;
-
     /// <summary>The names of the kinds of <c>all</c> that list the entry.</summary>
     public static IReadOnlyList<string> ClaimedBy(int entry, IReadOnlyList<ArchiveEntryKind> all) =>
         all.Where(k => k.Takes(entry, all)).Select(k => k.Name).ToList();
@@ -109,16 +103,13 @@ public abstract class ArchiveEntryKind : AssetKind
 
             if (archive == null)
             {
-                if (ReportsFileFailures)
+                yield return new Asset
                 {
-                    yield return new Asset
-                    {
-                        Kind = Name,
-                        File = file,
-                        Name = Path.GetFileName(file),
-                        Load = () => throw problem!,
-                    };
-                }
+                    Kind = Name,
+                    File = file,
+                    Name = Path.GetFileName(file),
+                    Load = () => throw problem!,
+                };
 
                 continue;
             }
