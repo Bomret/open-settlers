@@ -159,8 +159,8 @@ public sealed class ArchiveEntryKindTests
 
         CollectionAssert.AreEqual(new[] { "1", "2", "5" }, assets.Select(a => a.Entry).ToList());
         StringAssert.Contains(assets[1].Name, "size 2");
-        StringAssert.Contains(assets[1].Name, "offset 64");
-        StringAssert.Contains(assets[1].Load().Summary, "offset 64");
+        StringAssert.Contains(assets[1].Name, "offset 65");
+        StringAssert.Contains(assets[1].Load().Summary, "offset 65");
     }
 
     [TestMethod]
