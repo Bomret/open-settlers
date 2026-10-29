@@ -47,8 +47,11 @@ Investigate the program in this order:
 2. Search and read the local dump in `re-local/dump` (below).
 3. Use REA only for a question that the dump cannot answer yet.
 
-When an investigation names or explains a routine, a datum, or a save field, add or update its row and
-take its area out of "Unexplored", in the same commit as the rule note.
+When an investigation names or explains a routine, a datum, or a save field, add or update its row in
+the topic tables and take its area out of "Unexplored". Then rebuild the index's generated sections, the
+"By address" table and the coverage line, with
+`python3 -I tools/GhidraDump/program_index.py docs/rules/program-index.md re-local/dump`. Do both in
+the same commit as the rule note. Never edit a generated section by hand.
 
 REA opens `Siedler1.exe` directly and does not read the Ghidra project in `re-local/ghidra`. Apply
 what REA finds, such as a missing function, a function's boundaries, a type, or a comment, to the
@@ -65,6 +68,10 @@ again only when all of these hold:
 - Later work will read the dump again. Otherwise the change waits for the next dump run that is due
   anyway.
 - The user agreed to this run, after being told the changes that make it necessary.
+
+When the run must change only the tables of the dump, write it in index-only mode
+(`tools/GhidraDump/README.md`). Import the program into a new project only when `re-local/ghidra` holds
+none: the import replaces the project and loses every change applied to it.
 
 REA's Ghidra provider keeps names only while the program stays open in REA, and it names only routines
 that it found: use `annotate_native_function`, since it rejects `set_address_name` and

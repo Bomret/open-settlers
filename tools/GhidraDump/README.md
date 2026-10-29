@@ -13,6 +13,9 @@ for searching with `grep`:
 - `DumpProgram.java` writes the dump.
 - `StateFields.java` writes the table of game-state fields.
 
+`program_index.py` rebuilds the generated sections of `docs/rules/program-index.md` from its topic
+tables.
+
 The dump has these files:
 
 - `functions/<address>.c`: the decompiled code of each function.
@@ -80,6 +83,24 @@ rm -rf "$PWD/re-local/dump" && mkdir -p "$PWD/re-local/dump"
 "$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -process Siedler1.exe -noanalysis -readOnly \
   -scriptPath "$PWD/tools/GhidraDump" -postScript DumpProgram.java "$PWD/re-local/dump" \
   -postScript StateFields.java "$PWD/re-local/dump"
+```
+
+When only the tables must change, such as the names in `functions.tsv` and `strings.tsv`, write the
+dump in index-only mode. It rewrites `functions.tsv`, `strings.tsv`, and `vtables.tsv`, does not
+decompile, and leaves the files in `functions/` as they are, so their names can be stale:
+
+```sh
+"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -process Siedler1.exe -noanalysis -readOnly \
+  -scriptPath "$PWD/tools/GhidraDump" -postScript DumpProgram.java "$PWD/re-local/dump" index-only \
+  -postScript StateFields.java "$PWD/re-local/dump"
+```
+
+`program_index.py` rebuilds the generated sections of the program index from its topic tables: the
+"By address" table, which `ApplyIndexNames.java` reads, and the coverage line. With the dump folder as
+its second argument, the coverage line also counts the functions of the game code band in the dump:
+
+```sh
+python3 -I tools/GhidraDump/program_index.py docs/rules/program-index.md re-local/dump
 ```
 
 The project path must be absolute, and no element of it may start with a dot: Ghidra headless rejects

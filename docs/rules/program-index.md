@@ -502,176 +502,184 @@ The other header fields copy single fields of the game state block. Their roles 
 
 ## By address
 
-| Address | Name | Topic |
-| --- | --- | --- |
-| `0x401090` | — | Files and configuration |
-| `0x405fe0` | `Speed_SetFactor` | Timing |
-| `0x4060b0` | `Gfx_DrawSprite` | Views, panels, and drawing |
-| `0x406500` | `Gfx_CopyRect` | Views, panels, and drawing |
-| `0x406880` | `Frame_Present` | Main loop |
-| `0x406980` | `Key_ReadCode` | Input |
-| `0x4069f0` | `Input_ReadPointerA` | Input |
-| `0x406a30` | `Input_ReadPointerB` | Input |
-| `0x406b20` | `Input_ReadButtons` | Input |
-| `0x406c60` | `Frame_Handshake` | Main loop |
-| `0x406c90` | `Timer_ThreadMain` | Timing |
-| `0x406fb0` | `Sound_LoadFile` | Sound |
-| `0x407130` | `Sound_Start` | Sound |
-| `0x407480` | `Platform_RunGame` | Program start and game flow |
-| `0x4076d0` | `File_Open` | Save and load |
-| `0x407750` | `File_Create` | Save and load |
-| `0x4077e0` | `File_Close` | Save and load |
-| `0x407800` | `File_Write` | Save and load |
-| `0x407870` | `File_Read` | Save and load |
-| `0x417bb0` | `Platform_GameThreadMain` | Program start and game flow |
-| `0x417c50` | `Platform_StartGameThread` | Program start and game flow |
-| `0x41da10` | `Game_Entry` | Program start and game flow |
-| `0x41dbea` | — | Program start and game flow |
-| `0x41e6c0` | `Game_InitOnce` | Program start and game flow |
-| `0x41e706` | `Game_Restart` | Program start and game flow |
-| `0x41e710` | `Game_StartClock` | Timing |
-| `0x41ee3b` | `FreeGame_NewSeed` | Random generator and map start |
-| `0x41ee84` | `Game_Start` | Program start and game flow |
-| `0x41eeeb` | — | Program start and game flow |
-| `0x41f4d7` | `Game_ResumeLoaded` | Program start and game flow |
-| `0x42055e` | — | Program start and game flow |
-| `0x421530` | `MapGen_InitParams` | Map generation |
-| `0x4216e9` | `MapGen_Generate` | Map generation |
-| `0x421841` | `MapGen_CountResource1` | Map generation |
-| `0x4218ca` | `MapGen_ResetProgress` | Map generation |
-| `0x4218d8` | `MapGen_StepProgress` | Map generation |
-| `0x42195c` | `Map_SetGeometry` | Map generation |
-| `0x421d3a` | `MapGen_ClearMap` | Map generation |
-| `0x421d71` | `MapGen_SeedHeights` | Map generation |
-| `0x421e75` | `MapGen_SubdivideHeights` | Map generation |
-| `0x4220ec` | `MapGen_DisplaceMidpoint` | Map generation |
-| `0x42215a` | `MapGen_LimitSlopes` | Map generation |
-| `0x42223b` | `MapGen_LimitSlopeStepA` | Map generation |
-| `0x4222ad` | `MapGen_LimitSlopeStepB` | Map generation |
-| `0x42231f` | `MapGen_LowerToWaterLevel` | Map generation |
-| `0x42237d` | `MapGen_ScaleHeights` | Map generation |
-| `0x4223de` | `MapGen_KeepMainLand` | Map generation |
-| `0x42280a` | `MapGen_ClearByte3` | Map generation |
-| `0x422857` | `MapGen_ClassifyTerrain` | Map generation |
-| `0x42297f` | `MapGen_TerrainFromHeightSum` | Map generation |
-| `0x422a0e` | `MapGen_FillLakes` | Map generation |
-| `0x422b72` | `MapGen_FloodLevel` | Map generation |
-| `0x422bf3` | `MapGen_GrowLake` | Map generation |
-| `0x423041` | `MapGen_GrowLakeTile` | Map generation |
-| `0x4232ef` | `MapGen_MarkWaterAdjacent` | Map generation |
-| `0x42336d` | `MapGen_PlaceTerrainAndObjects` | Map generation |
-| `0x4234bd` | `MapGen_GradeWaterDepth` | Map generation |
-| `0x423536` | `MapGen_SetShoreTerrain` | Map generation |
-| `0x42355f` | `MapGen_ReplaceTerrainNear` | Map generation |
-| `0x423789` | `MapGen_HasTerrainNearUpper` | Map generation |
-| `0x4238b2` | `MapGen_HasTerrainNearLower` | Map generation |
-| `0x4239db` | `MapGen_PlacePatches` | Map generation |
-| `0x423aa3` | `MapGen_RandomPos` | Map generation |
-| `0x423b30` | `MapGen_SpiralPos` | Map generation |
-| `0x423c10` | `MapGen_CanPatchLower` | Map generation |
-| `0x423cc7` | `MapGen_CanPatchUpper` | Map generation |
-| `0x423d74` | `MapGen_BlendPatchEdges` | Map generation |
-| `0x423e6a` | `MapGen_ResetTypes7To9` | Map generation |
-| `0x423f07` | `MapGen_RandomSpiralPos` | Map generation |
-| `0x423fec` | `MapGen_MarkPeaks` | Map generation |
-| `0x424755` | `MapGen_ScatterObjects` | Map generation |
-| `0x424802` | `MapGen_FitsTerrain` | Map generation |
-| `0x424976` | `MapGen_PlaceDeposits1` | Map generation |
-| `0x4249bc` | `MapGen_PlaceDeposits2` | Map generation |
-| `0x424a03` | `MapGen_PlaceDeposits3` | Map generation |
-| `0x424a58` | `MapGen_PlaceDeposits4` | Map generation |
-| `0x424a9e` | `MapGen_PlaceDeposits` | Map generation |
-| `0x424be5` | `MapGen_FillDepositRing` | Map generation |
-| `0x424c57` | `MapGen_ResolveObjectOverlap` | Map generation |
-| `0x424d87` | `Minimap_Build` | Views, panels, and drawing |
-| `0x424fca` | `Game_InitSettings` | Program start and game flow |
-| `0x42593a` | `Game_ResetCounters` | Program start and game flow |
-| `0x425a10` | `Main_Loop` | Main loop |
-| `0x425c9c` | `Timer_WaitNextCall` | Timing |
-| `0x425cb9` | `Stats_RecordHistory` | Main loop |
-| `0x42639a` | — | Main loop |
-| `0x426abe` | `Main_HandleKeys` | Main loop |
-| `0x426dfc` | `Main_ComputeElapsed` | Main loop |
-| `0x427062` | `Input_ApplyPointerMotion` | Input |
-| `0x4286d8` | — | Simulation |
-| `0x428728` | — | Simulation |
-| `0x428964` | `Sound_RunAmbient` | Sound |
-| `0x428a75` | — | Simulation |
-| `0x428d10` | — | Simulation |
-| `0x4291c2` | `Sim_StepPhase` | Simulation |
-| `0x42a74a` | — | Simulation |
-| `0x42cb2d` | — | Simulation |
-| `0x42f3d9` | — | Simulation |
-| `0x42f4f1` | — | Simulation |
-| `0x430ee9` | `Player_SwapInSecondView` | Input |
-| `0x430fd3` | `Player_SwapOutSecondView` | Input |
-| `0x431c31` | `Msg_Post` | Main loop |
-| `0x440aae` | `Ui_HandleViews` | Views, panels, and drawing |
-| `0x44591d` | `Panel_HandleClick` | Views, panels, and drawing |
-| `0x448418` | `Game_ConfirmEnd` | Program start and game flow |
-| `0x448436` | `Game_EndToStartScreen` | Program start and game flow |
-| `0x44cb6e` | `Msg_RunTimers` | Main loop |
-| `0x44d2fc` | — | Views, panels, and drawing |
-| `0x44d38d` | `Render_DrawMapView` | Views, panels, and drawing |
-| `0x44fd5f` | `Sound_Request` | Sound |
-| `0x450609` | `Save_ConfirmSlot` | Save and load |
-| `0x450a35` | `Render_DrawViewOverlay` | Views, panels, and drawing |
-| `0x451355` | `Panel_Update` | Views, panels, and drawing |
-| `0x45772e` | `Game_Pause` | Timing |
-| `0x457751` | `Game_Resume` | Timing |
-| `0x45ce5a` | `Panel_CopyToScreen` | Views, panels, and drawing |
-| `0x45d718` | `Frame_WaitAndPresent` | Main loop |
-| `0x45f755` | `Save_WriteArchiveIndex` | Save and load |
-| `0x45f7ab` | `Load_LoadSlot` | Save and load |
-| `0x45fa13` | `Save_WriteGame` | Save and load |
-| `0x4600a8` | `Save_WriteMap` | Save and load |
-| `0x46010d` | `Save_WriteTable16` | Save and load |
-| `0x4601f4` | `Save_WriteTable70` | Save and load |
-| `0x4602db` | `Save_WriteTable18` | Save and load |
-| `0x4603c2` | `Save_WriteTable120` | Save and load |
-| `0x46049a` | `Save_WriteRecord` | Save and load |
-| `0x4604ed` | `Load_ReadGame` | Save and load |
-| `0x460bba` | `Load_ReadMap` | Save and load |
-| `0x460c28` | `Load_ReadTable16` | Save and load |
-| `0x460d5a` | `Load_ReadTable70` | Save and load |
-| `0x460e8c` | `Load_ReadTable18` | Save and load |
-| `0x460fbe` | `Load_ReadTable120` | Save and load |
-| `0x4610e3` | `Load_ReadRecord` | Save and load |
-| `0x461136` | `Mem_CopyBytes` | Save and load |
-| `0x461157` | `Table_ToOffsets70` | Save and load |
-| `0x461231` | `Table_ToPointers70` | Save and load |
-| `0x46130b` | `Table_ToOffsets18` | Save and load |
-| `0x4613e7` | `Table_ToPointers18` | Save and load |
-| `0x4614c3` | `Table_ToOffsets16` | Save and load |
-| `0x461548` | `Table_ToPointers16` | Save and load |
-| `0x46414d` | — | Simulation |
-| `0x466ade` | `Rng_Step` | Random generator and map start |
-| `0x466b94` | `StartScreen_SwitchPage` | Program start and game flow |
-| `0x467c03` | `StartScreen_HandleClick` | Program start and game flow |
-| `0x4684b6` | `StartScreen_ResumeLoaded` | Program start and game flow |
-| `0x468577` | `StartScreen_OpenLoad` | Program start and game flow |
-| `0x4685bc` | `StartScreen_StartGame` | Program start and game flow |
-| `0x468717` | `Game_SetStartParams` | Program start and game flow |
-| `0x4692aa` | `FreeGame_OpenScreen` | Random generator and map start |
-| `0x4692d4` | `FreeGame_RandomizeOpponents` | Random generator and map start |
-| `0x4694e0` | `Game_RequestQuit` | Program start and game flow |
-| `0x474da3` | `Ai_UpdatePlayer` | Simulation |
-| `0x479cb2` | `Timer_GameEntry` | Timing |
-| `0x479cc0` | `Timer_Handler` | Timing |
-| `0x479e54` | `Sound_UpdateChannels` | Sound |
-| `0x47a32d` | `Sound_Play` | Sound |
-| `0x47a4c3` | `Input_UpdatePointer` | Input |
-| `0x47b4f9` | — | Game code band |
-| `0x674048` | `Speed_Factor` | Timing |
-| `0x67d608` | `Timer_RateHz` | Timing |
-| `0x67d614` | `Loca_FileTable` | Files and configuration |
+Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit by hand.
+`ApplyIndexNames.java` reads this table.
+
+<!-- by-address:start -->
+| Address | Name | Status | Topic |
+| --- | --- | --- | --- |
+| `0x401090` | — | unknown | Files and configuration |
+| `0x405fe0` | `Speed_SetFactor` | confirmed | Timing |
+| `0x4060b0` | `Gfx_DrawSprite` | inferred | Views, panels, and drawing |
+| `0x406500` | `Gfx_CopyRect` | confirmed | Views, panels, and drawing |
+| `0x406880` | `Frame_Present` | inferred | Main loop |
+| `0x406980` | `Key_ReadCode` | confirmed | Input |
+| `0x4069f0` | `Input_ReadPointerA` | confirmed | Input |
+| `0x406a30` | `Input_ReadPointerB` | confirmed | Input |
+| `0x406b20` | `Input_ReadButtons` | confirmed | Input |
+| `0x406c60` | `Frame_Handshake` | confirmed | Main loop |
+| `0x406c90` | `Timer_ThreadMain` | confirmed | Timing |
+| `0x406fb0` | `Sound_LoadFile` | inferred | Sound |
+| `0x407130` | `Sound_Start` | inferred | Sound |
+| `0x407480` | `Platform_RunGame` | confirmed | Program start and game flow |
+| `0x4076d0` | `File_Open` | inferred | Save and load |
+| `0x407750` | `File_Create` | inferred | Save and load |
+| `0x4077e0` | `File_Close` | confirmed | Save and load |
+| `0x407800` | `File_Write` | confirmed | Save and load |
+| `0x407870` | `File_Read` | confirmed | Save and load |
+| `0x417bb0` | `Platform_GameThreadMain` | confirmed | Program start and game flow |
+| `0x417c50` | `Platform_StartGameThread` | confirmed | Program start and game flow |
+| `0x41da10` | `Game_Entry` | confirmed | Program start and game flow |
+| `0x41dbea` | — | unknown | Program start and game flow |
+| `0x41e6c0` | `Game_InitOnce` | confirmed | Program start and game flow |
+| `0x41e706` | `Game_Restart` | confirmed | Program start and game flow |
+| `0x41e710` | `Game_StartClock` | confirmed | Timing |
+| `0x41ee3b` | `FreeGame_NewSeed` | confirmed | Random generator and map start |
+| `0x41ee84` | `Game_Start` | confirmed | Program start and game flow |
+| `0x41eeeb` | — | unknown | Program start and game flow |
+| `0x41f4d7` | `Game_ResumeLoaded` | inferred | Program start and game flow |
+| `0x42055e` | — | unknown | Program start and game flow |
+| `0x421530` | `MapGen_InitParams` | inferred | Map generation |
+| `0x4216e9` | `MapGen_Generate` | confirmed | Map generation |
+| `0x421841` | `MapGen_CountResource1` | confirmed | Map generation |
+| `0x4218ca` | `MapGen_ResetProgress` | confirmed | Map generation |
+| `0x4218d8` | `MapGen_StepProgress` | inferred | Map generation |
+| `0x42195c` | `Map_SetGeometry` | inferred | Map generation |
+| `0x421d3a` | `MapGen_ClearMap` | confirmed | Map generation |
+| `0x421d71` | `MapGen_SeedHeights` | confirmed | Map generation |
+| `0x421e75` | `MapGen_SubdivideHeights` | confirmed | Map generation |
+| `0x4220ec` | `MapGen_DisplaceMidpoint` | confirmed | Map generation |
+| `0x42215a` | `MapGen_LimitSlopes` | confirmed | Map generation |
+| `0x42223b` | `MapGen_LimitSlopeStepA` | confirmed | Map generation |
+| `0x4222ad` | `MapGen_LimitSlopeStepB` | confirmed | Map generation |
+| `0x42231f` | `MapGen_LowerToWaterLevel` | confirmed | Map generation |
+| `0x42237d` | `MapGen_ScaleHeights` | confirmed | Map generation |
+| `0x4223de` | `MapGen_KeepMainLand` | confirmed | Map generation |
+| `0x42280a` | `MapGen_ClearByte3` | confirmed | Map generation |
+| `0x422857` | `MapGen_ClassifyTerrain` | confirmed | Map generation |
+| `0x42297f` | `MapGen_TerrainFromHeightSum` | confirmed | Map generation |
+| `0x422a0e` | `MapGen_FillLakes` | confirmed | Map generation |
+| `0x422b72` | `MapGen_FloodLevel` | confirmed | Map generation |
+| `0x422bf3` | `MapGen_GrowLake` | confirmed | Map generation |
+| `0x423041` | `MapGen_GrowLakeTile` | confirmed | Map generation |
+| `0x4232ef` | `MapGen_MarkWaterAdjacent` | confirmed | Map generation |
+| `0x42336d` | `MapGen_PlaceTerrainAndObjects` | confirmed | Map generation |
+| `0x4234bd` | `MapGen_GradeWaterDepth` | confirmed | Map generation |
+| `0x423536` | `MapGen_SetShoreTerrain` | confirmed | Map generation |
+| `0x42355f` | `MapGen_ReplaceTerrainNear` | confirmed | Map generation |
+| `0x423789` | `MapGen_HasTerrainNearUpper` | confirmed | Map generation |
+| `0x4238b2` | `MapGen_HasTerrainNearLower` | inferred | Map generation |
+| `0x4239db` | `MapGen_PlacePatches` | confirmed | Map generation |
+| `0x423aa3` | `MapGen_RandomPos` | confirmed | Map generation |
+| `0x423b30` | `MapGen_SpiralPos` | confirmed | Map generation |
+| `0x423c10` | `MapGen_CanPatchLower` | confirmed | Map generation |
+| `0x423cc7` | `MapGen_CanPatchUpper` | confirmed | Map generation |
+| `0x423d74` | `MapGen_BlendPatchEdges` | confirmed | Map generation |
+| `0x423e6a` | `MapGen_ResetTypes7To9` | confirmed | Map generation |
+| `0x423f07` | `MapGen_RandomSpiralPos` | confirmed | Map generation |
+| `0x423fec` | `MapGen_MarkPeaks` | confirmed | Map generation |
+| `0x424755` | `MapGen_ScatterObjects` | confirmed | Map generation |
+| `0x424802` | `MapGen_FitsTerrain` | confirmed | Map generation |
+| `0x424976` | `MapGen_PlaceDeposits1` | confirmed | Map generation |
+| `0x4249bc` | `MapGen_PlaceDeposits2` | confirmed | Map generation |
+| `0x424a03` | `MapGen_PlaceDeposits3` | confirmed | Map generation |
+| `0x424a58` | `MapGen_PlaceDeposits4` | confirmed | Map generation |
+| `0x424a9e` | `MapGen_PlaceDeposits` | confirmed | Map generation |
+| `0x424be5` | `MapGen_FillDepositRing` | confirmed | Map generation |
+| `0x424c57` | `MapGen_ResolveObjectOverlap` | inferred | Map generation |
+| `0x424d87` | `Minimap_Build` | inferred | Views, panels, and drawing |
+| `0x424fca` | `Game_InitSettings` | confirmed | Program start and game flow |
+| `0x42593a` | `Game_ResetCounters` | confirmed | Program start and game flow |
+| `0x425a10` | `Main_Loop` | confirmed | Main loop |
+| `0x425c9c` | `Timer_WaitNextCall` | confirmed | Timing |
+| `0x425cb9` | `Stats_RecordHistory` | inferred | Main loop |
+| `0x42639a` | — | unknown | Main loop |
+| `0x426abe` | `Main_HandleKeys` | inferred | Main loop |
+| `0x426dfc` | `Main_ComputeElapsed` | confirmed | Main loop |
+| `0x427062` | `Input_ApplyPointerMotion` | confirmed | Input |
+| `0x4286d8` | — | unknown | Simulation |
+| `0x428728` | — | unknown | Simulation |
+| `0x428964` | `Sound_RunAmbient` | inferred | Sound |
+| `0x428a75` | — | unknown | Simulation |
+| `0x428d10` | — | unknown | Simulation |
+| `0x4291c2` | `Sim_StepPhase` | confirmed | Simulation |
+| `0x42a74a` | — | unknown | Simulation |
+| `0x42cb2d` | — | unknown | Simulation |
+| `0x42f3d9` | — | unknown | Simulation |
+| `0x42f4f1` | — | unknown | Simulation |
+| `0x430ee9` | `Player_SwapInSecondView` | confirmed | Input |
+| `0x430fd3` | `Player_SwapOutSecondView` | confirmed | Input |
+| `0x431c31` | `Msg_Post` | confirmed | Main loop |
+| `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
+| `0x44591d` | `Panel_HandleClick` | inferred | Views, panels, and drawing |
+| `0x448418` | `Game_ConfirmEnd` | inferred | Program start and game flow |
+| `0x448436` | `Game_EndToStartScreen` | confirmed | Program start and game flow |
+| `0x44cb6e` | `Msg_RunTimers` | confirmed | Main loop |
+| `0x44d2fc` | — | unknown | Views, panels, and drawing |
+| `0x44d38d` | `Render_DrawMapView` | inferred | Views, panels, and drawing |
+| `0x44fd5f` | `Sound_Request` | inferred | Sound |
+| `0x450609` | `Save_ConfirmSlot` | confirmed | Save and load |
+| `0x450a35` | `Render_DrawViewOverlay` | inferred | Views, panels, and drawing |
+| `0x451355` | `Panel_Update` | inferred | Views, panels, and drawing |
+| `0x45772e` | `Game_Pause` | confirmed | Timing |
+| `0x457751` | `Game_Resume` | confirmed | Timing |
+| `0x45ce5a` | `Panel_CopyToScreen` | inferred | Views, panels, and drawing |
+| `0x45d718` | `Frame_WaitAndPresent` | confirmed | Main loop |
+| `0x45f755` | `Save_WriteArchiveIndex` | confirmed | Save and load |
+| `0x45f7ab` | `Load_LoadSlot` | confirmed | Save and load |
+| `0x45fa13` | `Save_WriteGame` | confirmed | Save and load |
+| `0x4600a8` | `Save_WriteMap` | inferred | Save and load |
+| `0x46010d` | `Save_WriteTable16` | confirmed | Save and load |
+| `0x4601f4` | `Save_WriteTable70` | confirmed | Save and load |
+| `0x4602db` | `Save_WriteTable18` | confirmed | Save and load |
+| `0x4603c2` | `Save_WriteTable120` | confirmed | Save and load |
+| `0x46049a` | `Save_WriteRecord` | confirmed | Save and load |
+| `0x4604ed` | `Load_ReadGame` | confirmed | Save and load |
+| `0x460bba` | `Load_ReadMap` | inferred | Save and load |
+| `0x460c28` | `Load_ReadTable16` | confirmed | Save and load |
+| `0x460d5a` | `Load_ReadTable70` | confirmed | Save and load |
+| `0x460e8c` | `Load_ReadTable18` | confirmed | Save and load |
+| `0x460fbe` | `Load_ReadTable120` | confirmed | Save and load |
+| `0x4610e3` | `Load_ReadRecord` | inferred | Save and load |
+| `0x461136` | `Mem_CopyBytes` | confirmed | Save and load |
+| `0x461157` | `Table_ToOffsets70` | confirmed | Save and load |
+| `0x461231` | `Table_ToPointers70` | confirmed | Save and load |
+| `0x46130b` | `Table_ToOffsets18` | confirmed | Save and load |
+| `0x4613e7` | `Table_ToPointers18` | confirmed | Save and load |
+| `0x4614c3` | `Table_ToOffsets16` | confirmed | Save and load |
+| `0x461548` | `Table_ToPointers16` | confirmed | Save and load |
+| `0x46414d` | — | unknown | Simulation |
+| `0x466ade` | `Rng_Step` | confirmed | Random generator and map start |
+| `0x466b94` | `StartScreen_SwitchPage` | confirmed | Program start and game flow |
+| `0x467c03` | `StartScreen_HandleClick` | inferred | Program start and game flow |
+| `0x4684b6` | `StartScreen_ResumeLoaded` | confirmed | Program start and game flow |
+| `0x468577` | `StartScreen_OpenLoad` | inferred | Program start and game flow |
+| `0x4685bc` | `StartScreen_StartGame` | confirmed | Program start and game flow |
+| `0x468717` | `Game_SetStartParams` | confirmed | Program start and game flow |
+| `0x4692aa` | `FreeGame_OpenScreen` | inferred | Random generator and map start |
+| `0x4692d4` | `FreeGame_RandomizeOpponents` | confirmed | Random generator and map start |
+| `0x4694e0` | `Game_RequestQuit` | confirmed | Program start and game flow |
+| `0x474da3` | `Ai_UpdatePlayer` | inferred | Simulation |
+| `0x479cb2` | `Timer_GameEntry` | confirmed | Timing |
+| `0x479cc0` | `Timer_Handler` | confirmed | Timing |
+| `0x479e54` | `Sound_UpdateChannels` | inferred | Sound |
+| `0x47a32d` | `Sound_Play` | confirmed | Sound |
+| `0x47a4c3` | `Input_UpdatePointer` | inferred | Input |
+| `0x47b4f9` | — | unknown | Game code band |
+| `0x674048` | `Speed_Factor` | confirmed | Timing |
+| `0x67d608` | `Timer_RateHz` | confirmed | Timing |
+| `0x67d614` | `Loca_FileTable` | inferred | Files and configuration |
+<!-- by-address:end -->
 
 ## Unexplored
 
 The Ghidra project of the dump holds 7489 functions in `Siedler1.exe` and 471 of them in the game code
 band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/README.md`). A routine
-reached only through a computed jump can still be missing, so 471 is a lower bound. This index names
-122 routines in the band and lists 15 more without a name.
+reached only through a computed jump can still be missing, so 471 is a lower bound.
+
+<!-- coverage:start -->
+Coverage: the index names 122 routines of the 471 functions in the dump's game code band and lists 15 more without a name: 95 confirmed, 27 inferred, 15 unknown.
+<!-- coverage:end -->
 
 Anchors not yet followed:
 
