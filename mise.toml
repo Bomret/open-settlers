@@ -1,0 +1,100 @@
+# Development tools and tasks. `mise install` installs the tools; `mise tasks` lists the tasks.
+# Per-machine settings, such as SIEDLER_DIR, go in the gitignored `mise.local.toml`.
+
+[tools]
+# 10 matches global.json. 8 brings the .NET 8 runtime that the net8.0 tests run on.
+dotnet = ["10.0.402", "8.0.427"]
+# Ghidra and the build of its decompiler. Microsoft's build, because it covers Windows on ARM.
+java = "microsoft-25"
+gradle = "9"
+# program_index.py.
+python = "3.13"
+
+# Godot .NET build. The version must match Godot.NET.Sdk in OpenSettlers.csproj and GODOT below.
+[tools."github:godotengine/godot-builds"]
+version = "4.7.2-stable"
+version_prefix = ""
+
+[tools."github:godotengine/godot-builds".platforms]
+macos-arm64 = { asset_pattern = "Godot_v*-stable_mono_macos.universal.zip" }
+macos-x64 = { asset_pattern = "Godot_v*-stable_mono_macos.universal.zip" }
+linux-x64 = { asset_pattern = "Godot_v*-stable_mono_linux_x86_64.zip" }
+linux-arm64 = { asset_pattern = "Godot_v*-stable_mono_linux_arm64.zip" }
+windows-x64 = { asset_pattern = "Godot_v*-stable_mono_win64.zip" }
+windows-arm64 = { asset_pattern = "Godot_v*-stable_mono_windows_arm64.zip" }
+
+# Ghidra 12.1.x, the release line REA accepts. bin_path puts analyzeHeadless on PATH.
+[tools."github:NationalSecurityAgency/ghidra"]
+version = "12.1.4_build"
+version_prefix = "Ghidra_"
+asset_pattern = "ghidra_*_PUBLIC_*.zip"
+strip_components = 1
+bin_path = "support"
+
+[env]
+# The name of the Godot executable, which differs per platform.
+GODOT = """{% if os() == 'macos' %}Godot\
+{% elif os() == 'windows' %}Godot_v4.7.2-stable_mono_{{ arch(x64='win64', arm64='windows_arm64') }}_console.exe\
+{% else %}Godot_v4.7.2-stable_mono_linux.{{ arch(x64='x86_64', arm64='arm64') }}{% endif %}"""
+
+[tasks.restore]
+description = "Restore the formatter"
+run = "dotnet tool restore"
+
+[tasks.format]
+description = "Format the C# code"
+depends = ["restore"]
+run = "dotnet csharpier format ."
+
+[tasks.build]
+description = "Build the C# project"
+run = "dotnet build OpenSettlers.csproj"
+
+[tasks.test]
+description = "Run the unit tests"
+run = "dotnet test --project tests/OpenSettlers.Tests"
+
+[tasks.check]
+description = "Full verification: format check, unit tests, build"
+depends = ["restore"]
+run = [
+  "dotnet csharpier check .",
+  "dotnet test --project tests/OpenSettlers.Tests",
+  "dotnet build OpenSettlers.csproj",
+]
+
+[tasks.assets]
+description = "Run the asset check (needs SIEDLER_DIR)"
+depends = ["build"]
+run = "{{ env.GODOT }} --headless --path . -- --check"
+
+[tasks.browser]
+description = "Open the asset browser (needs SIEDLER_DIR)"
+depends = ["build"]
+run = "{{ env.GODOT }} --path ."
+
+[tasks.editor]
+description = "Open the project in the Godot editor"
+depends = ["build"]
+run = "{{ env.GODOT }} --path . --editor"
+
+[tasks."ghidra:natives"]
+description = "Build Ghidra's decompiler where the release ships none (macOS on Apple silicon)"
+run = "python -I tools/GhidraDump/headless.py natives"
+
+[tasks."ghidra:import"]
+description = "Build the Ghidra project from Siedler1.exe; replaces an existing project"
+run = "python -I tools/GhidraDump/headless.py import"
+
+[tasks."ghidra:update"]
+description = "Apply the program index to the Ghidra project"
+run = "python -I tools/GhidraDump/headless.py update"
+
+[tasks."ghidra:dump"]
+description = "Write the dump into re-local/dump (add index-only to skip decompiling)"
+usage = 'arg "[mode]" help="index-only to rewrite only the tables"'
+run = "python -I tools/GhidraDump/headless.py dump {{ usage.mode | default(value='') }}"
+
+[tasks.index]
+description = "Rebuild the generated sections of the program index"
+run = "python -I tools/GhidraDump/program_index.py docs/rules/program-index.md re-local/dump"

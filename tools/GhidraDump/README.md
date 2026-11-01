@@ -36,33 +36,30 @@ which git ignores ([INV-0001](../../docs/invariants.md#inv-0001)). Record findin
 
 ## Requirements
 
-- Ghidra 12.1.x, the release line REA accepts, so one install serves REA and the dump. Extract the
-  official release from `github.com/NationalSecurityAgency/ghidra`. The release ships no native
-  decompiler for macOS on Apple silicon: build it with `gradle buildNatives` in the release's
-  `support/gradle/` folder (`brew install gradle`).
-- A JDK 21 or newer (`brew install openjdk@25`).
-- The `Siedler1.exe` of the reference install (`docs/rules/AGENTS.md`, "Reference build").
+`mise install` installs these tools (`mise.toml`):
+
+- Ghidra 12.1.x, the release line REA accepts, so one install serves REA and the dump.
+  `mise where github:NationalSecurityAgency/ghidra` prints its folder. The release ships no native
+  decompiler for macOS on Apple silicon: `mise run ghidra:natives` builds it with Gradle. The build
+  needs a C++ compiler (on macOS, the Xcode Command Line Tools: `xcode-select --install`).
+- A JDK 25 and Gradle.
+- Python, for `program_index.py`.
+
+The import also needs the `Siedler1.exe` of the reference install (`docs/rules/AGENTS.md`, "Reference
+build"), found through `SIEDLER_DIR`.
 
 ## Run
 
 Run Ghidra headless directly. The REA tools and `rea analyze` stop after a fixed timeout that a full
-analysis of `Siedler1.exe` can exceed. Ghidra headless has no timeout. Run every command from the
-repository root.
-
-```sh
-export JAVA_HOME=/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home
-export PATH="$JAVA_HOME/bin:$PATH"
-export HEADLESS=<Ghidra 12.1.x folder>/support/analyzeHeadless
-```
+analysis of `Siedler1.exe` can exceed. Ghidra headless has no timeout. The tasks run
+`headless.py`, which calls Ghidra's `analyzeHeadless` on the project in `re-local/ghidra`.
 
 Build the project only when `re-local/ghidra` holds no project. The import replaces an existing project
-and loses every change applied to it. The build takes about 7 minutes:
+and loses every change applied to it. The build takes about 7 minutes. It imports the program, runs
+`CreateMissingFunctions.java`, and applies the index with `ApplyIndexNames.java`:
 
 ```sh
-mkdir -p "$PWD/re-local/ghidra"
-"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -import "$SIEDLER_DIR/Siedler1.exe" -overwrite \
-  -scriptPath "$PWD/tools/GhidraDump" -postScript CreateMissingFunctions.java \
-  -postScript ApplyIndexNames.java "$PWD/docs/rules/program-index.md"
+mise run ghidra:import
 ```
 
 Update the project after the index changes. This runs both scripts again on the saved project, without
@@ -70,19 +67,15 @@ Ghidra's auto-analysis, and saves the project. Without `-noanalysis` Ghidra firs
 program before the scripts run:
 
 ```sh
-"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -process Siedler1.exe -noanalysis \
-  -scriptPath "$PWD/tools/GhidraDump" -postScript CreateMissingFunctions.java \
-  -postScript ApplyIndexNames.java "$PWD/docs/rules/program-index.md"
+mise run ghidra:update
 ```
 
 Write the dump from the project, without changing it. Never edit the dump by hand, because this run
-overwrites it. Run it only under the conditions in `docs/rules/AGENTS.md`, "Program index":
+removes `re-local/dump` and writes it again. Run it only under the conditions in `docs/rules/AGENTS.md`,
+"Program index":
 
 ```sh
-rm -rf "$PWD/re-local/dump" && mkdir -p "$PWD/re-local/dump"
-"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -process Siedler1.exe -noanalysis -readOnly \
-  -scriptPath "$PWD/tools/GhidraDump" -postScript DumpProgram.java "$PWD/re-local/dump" \
-  -postScript StateFields.java "$PWD/re-local/dump"
+mise run ghidra:dump
 ```
 
 When only the tables must change, such as the names in `functions.tsv` and `strings.tsv`, write the
@@ -90,17 +83,15 @@ dump in index-only mode. It rewrites `functions.tsv`, `strings.tsv`, and `vtable
 decompile, and leaves the files in `functions/` as they are, so their names can be stale:
 
 ```sh
-"$HEADLESS" "$PWD/re-local/ghidra" Siedler1 -process Siedler1.exe -noanalysis -readOnly \
-  -scriptPath "$PWD/tools/GhidraDump" -postScript DumpProgram.java "$PWD/re-local/dump" index-only \
-  -postScript StateFields.java "$PWD/re-local/dump"
+mise run ghidra:dump index-only
 ```
 
 `program_index.py` rebuilds the generated sections of the program index from its topic tables: the
-"By address" table, which `ApplyIndexNames.java` reads, and the coverage line. With the dump folder as
-its second argument, the coverage line also counts the functions of the game code band in the dump:
+"By address" table, which `ApplyIndexNames.java` reads, and the coverage line. It passes the dump folder
+as its second argument, so the coverage line also counts the functions of the game code band in the dump:
 
 ```sh
-python3 -I tools/GhidraDump/program_index.py docs/rules/program-index.md re-local/dump
+mise run index
 ```
 
 The project path must be absolute, and no element of it may start with a dot: Ghidra headless rejects

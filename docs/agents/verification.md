@@ -1,15 +1,16 @@
 # Verification
 
 ```sh
-dotnet tool restore && dotnet csharpier check . && dotnet test --project tests/OpenSettlers.Tests && dotnet build OpenSettlers.csproj
+mise run check
 ```
 
 ```sh
-dotnet test --project tests/OpenSettlers.Tests
+mise run test
 ```
 
 The full command restores the local tools, checks formatting (CSharpier names each unformatted file;
-`dotnet csharpier format .` fixes them), runs the unit tests, and builds the project.
+`mise run format` fixes them), runs the unit tests, and builds the project. `mise.toml` holds the
+steps.
 
 The focused command runs the unit tests alone. They build their fixtures in code and need neither an
 install nor Godot.

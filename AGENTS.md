@@ -46,7 +46,7 @@ Codeberg wiki of `bomret/open-settlers`, staged locally and sent by `/superdev:p
 C# style rules in `docs/agents/CODING.md`; the patterns this repo uses in `docs/agents/CODING_PATTERNS.md`.
 
 ### Toolchain
-.NET SDK 10 (net8.0), Godot 4.7.2 .NET, CSharpier 1.3.0. See `docs/agents/toolchain.md`.
+.NET SDK 10 (net8.0), Godot 4.7.2 .NET, CSharpier 1.3.0, pinned in `mise.toml`. See `docs/agents/toolchain.md`.
 
 ### Verification
 Full: format check, unit tests, and build; focused: unit tests. See `docs/agents/verification.md`.

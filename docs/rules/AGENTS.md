@@ -53,9 +53,8 @@ Investigate the program in this order:
 
 When an investigation names or explains a routine, a datum, or a save field, add or update its row in
 the topic tables and take its area out of "Unexplored". Then rebuild the index's generated sections, the
-"By address" table and the coverage line, with
-`python3 -I tools/GhidraDump/program_index.py docs/rules/program-index.md re-local/dump`. Do both in
-the same commit as the rule note. Never edit a generated section by hand.
+"By address" table and the coverage line, with `mise run index`. Do both in the same commit as the
+rule note. Never edit a generated section by hand.
 
 REA opens `Siedler1.exe` directly and does not read the Ghidra project in `re-local/ghidra`. Apply
 what REA finds, such as a missing function, a function's boundaries, a type, or a comment, to the
