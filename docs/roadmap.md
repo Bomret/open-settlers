@@ -31,6 +31,9 @@ Each of M0 to M9 states its goal and these parts:
 - **Depends on:** the earlier milestones it builds on.
 - **Investigate:** the parts of the original program that the milestone recovers rules from.
 
+M3 to M9 link their **Investigate** part to a [scope file](milestones/AGENTS.md) that lists the leads in
+`Siedler1.exe` where the investigation starts.
+
 M10, M11, and the extensions state only their goal and what they depend on.
 
 ## Working names and M0 findings
@@ -95,7 +98,7 @@ M3 runs the smallest playable loop on the fixed-tick simulation
   game needs an install.
 - **Depends on:** M2.
 - **Investigate:** the tick loop, the rules for flags and roads, and carrier movement with the order of
-  handovers at a flag. M3 also investigates the woodcutter's work cycle and the castle's storage.
+  handovers at a flag. M3 also investigates the woodcutter's work cycle and the castle's storage. Scope: [M3 scope](milestones/m3-first-loop.md).
 - **Open decision:** the interface approach, that is, how the engine builds the original's panels and
   input.
 
@@ -109,7 +112,7 @@ M4 adds construction: workers build buildings from materials.
   work. Checking the game needs an install.
 - **Depends on:** M3.
 - **Investigate:** the placement rules for each building size, the construction sequence, the builder
-  and the digger, and the forester, sawmill, and stonecutter.
+  and the digger, and the forester, sawmill, and stonecutter. Scope: [M4 scope](milestones/m4-construction.md).
 
 ### M5 Food
 
@@ -119,7 +122,7 @@ M5 adds the food chains.
 - **Done when:** the fisher, the farm, the mill, the baker, the pig farm, the butcher, and the well
   produce, and their goods reach storage. Checking the game needs an install.
 - **Depends on:** M4.
-- **Investigate:** the production cycle of each food building and the transport priorities of goods.
+- **Investigate:** the production cycle of each food building and the transport priorities of goods. Scope: [M5 scope](milestones/m5-food.md).
 
 ### M6 Mining and metal
 
@@ -132,7 +135,7 @@ M6 adds the mines, the smelters, and the tools.
   install.
 - **Depends on:** M5.
 - **Investigate:** the geologist, the resources in the ground, the food each mine uses, the smelters,
-  and the toolmaker.
+  and the toolmaker. Scope: [M6 scope](milestones/m6-mining-and-metal.md).
 
 ### M7 Military and territory
 
@@ -145,7 +148,7 @@ M7 adds knights, military buildings, and territory.
   needs an install.
 - **Depends on:** M6.
 - **Investigate:** the military buildings, the territory borders, the knight levels and gold, the
-  weaponsmith, and the combat rules.
+  weaponsmith, and the combat rules. Scope: [M7 scope](milestones/m7-military-and-territory.md).
 
 ### M8 Computer opponent
 
@@ -155,7 +158,7 @@ M8 adds a computer opponent that builds and fights.
 - **Done when:** the computer opponent builds an economy, occupies territory, and attacks the player.
   Checking the game needs an install.
 - **Depends on:** M7.
-- **Investigate:** the routines that decide what the computer opponent builds and attacks.
+- **Investigate:** the routines that decide what the computer opponent builds and attacks. Scope: [M8 scope](milestones/m8-computer-opponent.md).
 - **Open decision:** how much of the original opponent's logic the engine recovers.
 
 ### M9 Free-play release
@@ -168,7 +171,7 @@ M9 completes the [free-play release](../CONTEXT.md#roadmap).
   effects and shows the remaining original panels. Checking the game needs an install.
 - **Depends on:** M8.
 - **Investigate:** the free-game start menu, the win and loss conditions, the triggers of the sound
-  effects, and the remaining panels.
+  effects, and the remaining panels. Scope: [M9 scope](milestones/m9-free-play-release.md).
 
 ## After the release
 
