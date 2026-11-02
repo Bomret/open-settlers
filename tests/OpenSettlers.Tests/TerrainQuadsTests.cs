@@ -79,5 +79,12 @@ public sealed class TerrainQuadsTests
 
         Assert.AreEqual(triangles.Count, bands.Sum(band => band.Count));
         Assert.IsLessThanOrEqualTo((map.Size.Height + 15) / 16, bands.Count);
+        var chunks = TerrainTiling.Chunks(1, map.Size.Height, 16);
+        Assert.HasCount(chunks.Count, bands);
+        for (var i = 0; i < bands.Count; i++)
+        {
+            var (_, row, _, height) = chunks[i];
+            Assert.HasCount(triangles.Count(t => t.Row >= row && t.Row < row + height), bands[i]);
+        }
     }
 }

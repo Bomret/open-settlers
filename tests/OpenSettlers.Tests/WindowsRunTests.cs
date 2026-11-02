@@ -23,7 +23,10 @@ public sealed class WindowsRunTests
 
         foreach (var row in rows)
         {
-            Assert.IsTrue(row.StartsWith(Origin, StringComparison.Ordinal), $"the row names no Windows run origin: {row}");
+            Assert.IsTrue(
+                row.StartsWith(Origin, StringComparison.Ordinal),
+                $"the row names no Windows run origin: {row}"
+            );
             var values = row[Origin.Length..];
             var key = string.Join(' ', values.Split(' ').Take(3));
             var expected = emulator.Single(line => line.StartsWith(key + " ", StringComparison.Ordinal));
