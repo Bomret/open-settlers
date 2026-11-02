@@ -158,14 +158,22 @@ public sealed class AssetCheckTests
     }
 
     [TestMethod]
-    public void AFlagWithoutItsValueExitsTwo()
+    public void AFlagWithoutItsValueExitsFour()
     {
         using var fake = new FakeInstall();
 
         var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--game"], fake.Root), [new SoundKind()]);
 
-        Assert.AreEqual(2, report.ExitCode);
+        Assert.AreEqual(4, report.ExitCode);
         Assert.IsTrue(report.Lines.Any(l => l.Contains("--game needs a value")));
+    }
+
+    [TestMethod]
+    public void ABadArgumentExitsFourEvenWithNoInstall()
+    {
+        var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--map"], null), [new SoundKind()]);
+
+        Assert.AreEqual(4, report.ExitCode);
     }
 
     [TestMethod]
