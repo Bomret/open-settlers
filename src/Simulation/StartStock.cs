@@ -45,7 +45,12 @@ public static class StartStock
     /// </summary>
     public static IReadOnlyList<int> At(int level)
     {
-        var low = level < 10 ? 0 : level < 20 ? 1 : level < 30 ? 2 : level < 40 ? 3 : 4;
+        var low =
+            level < 10 ? 0
+            : level < 20 ? 1
+            : level < 30 ? 2
+            : level < 40 ? 3
+            : 4;
         var high = low == 4 ? 4 : low + 1;
         var weight = (level - 10 * low) * 0x199a & 0xffff;
         var stock = new int[Goods];
@@ -73,7 +78,11 @@ public static class StartStock
     /// </summary>
     public static int LevelOf(Seed seed)
     {
-        var generator = new RandomGenerator((ushort)(seed.W0 ^ 0x5a5a), (ushort)(seed.W1 ^ 0xa5a5), (ushort)(seed.W2 ^ 0xc3c3));
+        var generator = new RandomGenerator(
+            (ushort)(seed.W0 ^ 0x5a5a),
+            (ushort)(seed.W1 ^ 0xa5a5),
+            (ushort)(seed.W2 ^ 0xc3c3)
+        );
 
         // The draws, in order: 4 rounds of 4 for the four opponents' settings, then the pair for player 1 and the
         // pair for player 0, whose first draw is the human's level.

@@ -15,7 +15,8 @@ public sealed class MapPickingTests
 
     private static readonly Map Map = MapViewState.Open("1234567812345678", 1).Map!;
 
-    public static IEnumerable<object[]> Scales => new[] { 0.25, 0.8, 1, 2.5, 4 }.Select(scale => new object[] { scale });
+    public static IEnumerable<object[]> Scales =>
+        new[] { 0.25, 0.8, 1, 2.5, 4 }.Select(scale => new object[] { scale });
 
     // The screen position at which the view draws a node of the copy with this offset: the node's drawn point, lifted
     // by its height, moved by the copy's offset, relative to the camera, scaled, around the middle of the view.
@@ -54,7 +55,11 @@ public sealed class MapPickingTests
         var picked = Pick(camera, scale, Screen(column, row, copy, camera, scale));
 
         // Two nodes of different heights can be drawn on one point; either is a node under the click.
-        Assert.AreEqual(DrawnPoint(column, row), DrawnPoint(picked.X, picked.Y), $"node {column},{row} at scale {scale}");
+        Assert.AreEqual(
+            DrawnPoint(column, row),
+            DrawnPoint(picked.X, picked.Y),
+            $"node {column},{row} at scale {scale}"
+        );
     }
 
     [TestMethod]
@@ -103,14 +108,27 @@ public sealed class MapPickingTests
         var heights = Map.Layer(MapLayer.Height).ToArray();
         var raised = Enumerable
             .Range(0, heights.Length)
-            .First(node => (heights[node] & 31) >= 8 && node % Map.Size.Width is > 3 and < 28 && node / Map.Size.Width is > 8 and < 24);
+            .First(node =>
+                (heights[node] & 31) >= 8
+                && node % Map.Size.Width is > 3 and < 28
+                && node / Map.Size.Width is > 8 and < 24
+            );
         var (column, row) = (raised % Map.Size.Width, raised / Map.Size.Width);
         var flat = Camera.NodePosition(column, row);
         var drawn = DrawnPoint(column, row);
         var camera = ((double)flat.X, (double)flat.Y);
 
         var atDrawn = Pick(camera, 1, Screen(column, row, (0, 0), camera, 1));
-        var atFlat = MapPicking.Pick(Map, camera.Item1, camera.Item2, 1, ViewWidth, ViewHeight, ViewWidth / 2, ViewHeight / 2);
+        var atFlat = MapPicking.Pick(
+            Map,
+            camera.Item1,
+            camera.Item2,
+            1,
+            ViewWidth,
+            ViewHeight,
+            ViewWidth / 2,
+            ViewHeight / 2
+        );
 
         Assert.AreEqual(drawn, DrawnPoint(atDrawn.X, atDrawn.Y));
         Assert.AreNotEqual((column, row), (atFlat.X, atFlat.Y));

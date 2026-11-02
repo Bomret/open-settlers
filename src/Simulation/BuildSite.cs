@@ -83,7 +83,10 @@ public static class BuildSite
         var edge = flags[p[0]] & 0x3f;
         if (edge == 0)
         {
-            node = Class(2) == 3 ? 5 : (flags[p[2]] & 0x3f) == 0 ? 7 : 6;
+            node =
+                Class(2) == 3 ? 5
+                : (flags[p[2]] & 0x3f) == 0 ? 7
+                : 6;
         }
         else if (edge is 2 or 0x10)
         {
@@ -98,7 +101,12 @@ public static class BuildSite
         if (own != 0)
             return new(node, 0, 0);
 
-        if ((Terrain(0) & 0xcc) == 0 && (Terrain(4) & 0x0c) == 0 && (Terrain(5) & 0xcc) == 0 && (Terrain(6) & 0xc0) == 0)
+        if (
+            (Terrain(0) & 0xcc) == 0
+            && (Terrain(4) & 0x0c) == 0
+            && (Terrain(5) & 0xcc) == 0
+            && (Terrain(6) & 0xc0) == 0
+        )
             return new(node, 0, 0);
 
         var flagNear = false;
@@ -136,7 +144,12 @@ public static class BuildSite
                 return new(node, site, 0);
         }
 
-        if ((Terrain(1) & 0xc0) == 0 || (Terrain(3) & 0x0c) == 0 || (Terrain(2) & 0xc0) == 0 || (Terrain(2) & 0x0c) == 0)
+        if (
+            (Terrain(1) & 0xc0) == 0
+            || (Terrain(3) & 0x0c) == 0
+            || (Terrain(2) & 0xc0) == 0
+            || (Terrain(2) & 0x0c) == 0
+        )
             return new(node, site, 0);
 
         for (var i = 1; i <= 6; i++)
@@ -148,17 +161,22 @@ public static class BuildSite
         // The six triangles around the node: terrain codes 4 to 7 are plain land, 11 to 14 mountain, others
         // (water, snow, swamp) cannot be built on (0x44be72).
         var kinds = 0;
-        foreach (var nibble in new[]
+        foreach (
+            var nibble in new[]
+            {
+                Terrain(0) >> 4,
+                Terrain(0) & 0xf,
+                Terrain(4) & 0xf,
+                Terrain(5) >> 4,
+                Terrain(5) & 0xf,
+                Terrain(6) >> 4,
+            }
+        )
         {
-            Terrain(0) >> 4,
-            Terrain(0) & 0xf,
-            Terrain(4) & 0xf,
-            Terrain(5) >> 4,
-            Terrain(5) & 0xf,
-            Terrain(6) >> 4,
-        })
-        {
-            kinds |= nibble is >= 4 and < 8 ? 0 : nibble is > 10 and < 15 ? 1 : 2;
+            kinds |=
+                nibble is >= 4 and < 8 ? 0
+                : nibble is > 10 and < 15 ? 1
+                : 2;
         }
 
         if (kinds > 1)
@@ -225,24 +243,26 @@ public static class BuildSite
     private static byte[] BuildClasses()
     {
         var classes = new byte[128];
-        foreach (var (first, last, value) in new (int, int, byte)[]
-        {
-            (1, 1, 3),
-            (2, 2, 4),
-            (3, 3, 5),
-            (4, 4, 6),
-            (8, 27, 1),
-            (28, 31, 2),
-            (72, 81, 2),
-            (82, 82, 1),
-            (88, 89, 2),
-            (90, 96, 1),
-            (98, 101, 1),
-            (103, 104, 1),
-            (105, 110, 2),
-            (121, 126, 2),
-            (127, 127, 255),
-        })
+        foreach (
+            var (first, last, value) in new (int, int, byte)[]
+            {
+                (1, 1, 3),
+                (2, 2, 4),
+                (3, 3, 5),
+                (4, 4, 6),
+                (8, 27, 1),
+                (28, 31, 2),
+                (72, 81, 2),
+                (82, 82, 1),
+                (88, 89, 2),
+                (90, 96, 1),
+                (98, 101, 1),
+                (103, 104, 1),
+                (105, 110, 2),
+                (121, 126, 2),
+                (127, 127, 255),
+            }
+        )
         {
             Array.Fill(classes, value, first, last - first + 1);
         }

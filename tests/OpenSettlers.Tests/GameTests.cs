@@ -9,8 +9,7 @@ public sealed class GameTests
 {
     const int Ticks = 40;
 
-    static Command Place(long tick, int x, int y, int player = 0) =>
-        new(tick, player, CommandKind.PlaceCastle, x, y);
+    static Command Place(long tick, int x, int y, int player = 0) => new(tick, player, CommandKind.PlaceCastle, x, y);
 
     static Game Run(params Command[] commands)
     {

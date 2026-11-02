@@ -38,7 +38,13 @@ public sealed class CastlePlacementTests
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, tile[0], tile[1]));
         game.Tick();
 
-        var site = BuildSite.Evaluate(MapGenerator.Generate(ParseSeed(fields["seed"]), size!), tile[0], tile[1], 0, false);
+        var site = BuildSite.Evaluate(
+            MapGenerator.Generate(ParseSeed(fields["seed"]), size!),
+            tile[0],
+            tile[1],
+            0,
+            false
+        );
         var actual =
             $"seed={fields["seed"]} size={fields["size"]} tile={fields["tile"]} level={fields["level"]} "
             + $"evaluator={site.Node}.{site.Site}.{site.Height} stock={string.Join(',', game.Stock)} "
@@ -194,8 +200,7 @@ public sealed class CastlePlacementTests
         );
     }
 
-    private static ulong Digest(byte[] bytes) =>
-        bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
+    private static ulong Digest(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
 
     private static MapSeed ParseSeed(string text)
     {

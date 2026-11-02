@@ -49,7 +49,10 @@ public sealed class ObjectDrawsTests
         // The castle's node 15,5 is levelled to 15: x = 15 * 32 - 5 * 16 + 16, y = 5 * 20 - 15 * 4 + 8.
         var castle = draws.Single(draw => draw.Entry == ObjectSprites.CastleEntry);
         Assert.AreEqual(new ObjectDraw(5, ObjectSprites.CastleEntry, 416, 48), castle);
-        CollectionAssert.AreEqual(draws.Select(draw => draw.Row).Order().ToList(), draws.Select(draw => draw.Row).ToList());
+        CollectionAssert.AreEqual(
+            draws.Select(draw => draw.Row).Order().ToList(),
+            draws.Select(draw => draw.Row).ToList()
+        );
     }
 
     [TestMethod]
