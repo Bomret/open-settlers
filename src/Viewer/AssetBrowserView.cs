@@ -37,7 +37,7 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        if (args.Mode == LaunchMode.Map)
+        if (args.Mode is LaunchMode.Map or LaunchMode.Play)
         {
             RunMap(args);
 
@@ -96,7 +96,7 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        AddChild(new MapViewControl(install));
+        AddChild(new MapViewControl(install, args.Mode == LaunchMode.Play));
     }
 
     // A Godot callback exception does not set the exit code, so the check owns it.

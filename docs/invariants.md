@@ -14,7 +14,7 @@ Class: architecture
 Concepts: Simulation, Tick
 Statement: The simulation draws randomness only from its own seeded generator. It never draws randomness from wall-clock time, frame timing, the iteration order of an unordered collection, or floating-point arithmetic whose result can differ between platforms. The same seed and the same inputs give the same state after the same number of ticks.
 Breaks: silently
-Check: none yet. The check is a test that runs the same seed and inputs twice and compares the states.
+Check: `GameTests` (`TheSameSeedAndCommandsGiveTheSameDigest`, `ACommandAtAnotherTickGivesAnotherDigest`) runs the same seed and commands twice and compares `Game.Digest()`.
 
 ### INV-0003
 

@@ -4,8 +4,8 @@ Goal and done condition: [roadmap, M3](../roadmap.md#m3-first-loop). Marks: [Lea
 
 ## Item tables
 
-The survey reads the four item tables this way. Settling it is the first task of M3, because every
-other lead depends on it.
+The four item tables, their item sizes, their allocator and release pairs, and how a pass walks them are
+settled: [Item tables](../rules/item-tables.md). What is left open:
 
 - `Table70`: flags. Six links to other `Table70` items, one per road direction, and one link to a
   building. It is the node set of the route search below. guess
@@ -14,13 +14,10 @@ other lead depends on it.
 - `Table16`: settlers, with a job byte at item `+0xa`, a state byte at `+0xb`, and a link at `+0xc`.
   guess
 
-Allocators and release routines, with one pair per table: `0x45d7ad` allocates and `0x45d974` frees a
-`Table70` slot (likely). `0x45da8f`, `0x45dc0d`, `0x45dd1c`, `0x45e012`, `0x45e121`, and `0x45e273`
-follow the same pattern for the other tables (guess).
-
 ## Tick
 
-- `0x4286d8` and its callees `0x428728`, `0x428d10`, `0x428a75`: known (Simulation).
+- `0x4286d8` and its callees `0x428728`, `0x428d10`, `0x428a75`: known (Simulation); the tick loop is in
+  [Timing](../rules/timing.md#in-the-engine).
 - `0x46414d`: known. The phase's slice of `Table70`. Its per-item worker is `0x464c36`, with the helpers
   `0x464bb2` and `0x45d3ea`. likely
 - `0x42cb2d`, `0x42f3d9`: known. The slices of `Table18` and `Table16`.

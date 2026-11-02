@@ -100,7 +100,9 @@ M3 runs the smallest playable loop on the fixed-tick simulation
 - **Investigate:** the tick loop, the rules for flags and roads, and carrier movement with the order of
   handovers at a flag. M3 also investigates the woodcutter's work cycle and the castle's storage. Scope: [M3 scope](milestones/m3-first-loop.md).
 - **Open decision:** the interface approach, that is, how the engine builds the original's panels and
-  input.
+  input. M3 answers it with a stand-in: a minimal build interface of Godot controls and mouse picks on
+  the `--play` view, which sends `Command`s to the `Game`. It does not read the original's panels. The
+  original's panels and input stay open for a later milestone.
 
 ### M4 Construction
 

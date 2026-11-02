@@ -13,11 +13,14 @@ public enum LaunchMode
 
     /// <summary>The map view: a generated map drawn from the install's terrain graphics.</summary>
     Map,
+
+    /// <summary>The game view: a game on a generated map that ticks at the original's normal speed.</summary>
+    Play,
 }
 
 /// <summary>
 /// The user arguments after <c>--</c>, read once. <c>--check</c> selects <see cref="LaunchMode.Check"/>, <c>--map</c>
-/// selects <see cref="LaunchMode.Map"/>; two different mode flags are a problem and select no mode (the browser). No mode
+/// selects <see cref="LaunchMode.Map"/>, <c>--play</c> selects <see cref="LaunchMode.Play"/>; two different mode flags are a problem and select no mode (the browser). No mode
 /// flag selects <see cref="LaunchMode.Browser"/>. <c>--game &lt;dir&gt;</c> names the install and wins over the
 /// <c>SIEDLER_DIR</c> value. A flag that needs a value and has none, at the end or before another flag, is a
 /// problem and its value is never read as a path.
@@ -32,6 +35,9 @@ public sealed class LaunchArgs
 
     /// <summary>The flag that selects the map view.</summary>
     public const string MapFlag = "--map";
+
+    /// <summary>The flag that selects the game view.</summary>
+    public const string PlayFlag = "--play";
 
     /// <summary>The environment variable that stands in for <see cref="GameFlag"/>.</summary>
     public const string GameVariable = "SIEDLER_DIR";
@@ -74,7 +80,7 @@ public sealed class LaunchArgs
                     problems.Add($"{GameFlag} needs a value");
                 }
             }
-            else if (args[i] == CheckFlag || args[i] == MapFlag)
+            else if (args[i] == CheckFlag || args[i] == MapFlag || args[i] == PlayFlag)
             {
                 if (modeFlag is not null && modeFlag != args[i])
                 {
@@ -82,7 +88,12 @@ public sealed class LaunchArgs
                 }
 
                 modeFlag ??= args[i];
-                mode ??= args[i] == CheckFlag ? LaunchMode.Check : LaunchMode.Map;
+                mode ??= args[i] switch
+                {
+                    CheckFlag => LaunchMode.Check,
+                    MapFlag => LaunchMode.Map,
+                    _ => LaunchMode.Play,
+                };
             }
         }
 
