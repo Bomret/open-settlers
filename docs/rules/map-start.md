@@ -78,8 +78,9 @@ same text is not checked against the running game: the operator can confirm it b
 
 When a free game starts, the code at `0x468b3d` combines each of the three seed words with a fixed
 16-bit mask and stores the results as the map seed. **Emulated:** the masks are `5A5A`, `A5A5`, and `C3C3`,
-combined by exclusive or: the seed `1234 5678 9ABC` gives the map seed `486E F3DD 597F`. It also hands on a value that is, inferred from
-the start screen's map-size setting, the map size.
+combined by exclusive or: the seed `1234 5678 9ABC` gives the map seed `486E F3DD 597F`. It also hands on
+the map size value, the free-game size value at state `+0x362` (`Game_SetStartParams` at `0x468717`, which
+is the routine's return value); the sizes that value gives are in [Map form](map-form.md#map-sizes).
 
 A mission does not use the free-game seed. The code at `0x4688f4` takes the map seed from the mission's
 record instead.
@@ -87,7 +88,8 @@ record instead.
 The map generator is `MapGen_Generate` at `0x4216e9`, called from the game start at `0x41eeb9`. It loads the
 three words of the map seed into the random generator's state, draws two values, and then runs a fixed
 sequence of generation passes. The passes draw their random values from that generator. The order of
-the passes, and which of them draw, are in the [Program index](program-index.md#map-generation).
+the passes, and which of them draw, are in the [Program index](program-index.md#map-generation). The
+height and terrain passes, with their draw counts, are in [Map form](map-form.md#the-passes).
 
 The sound code cannot step the generator during map generation: the map generator clears bit 5 of the
 game flags at its start and sets it at its end, and the sound code runs only while that bit is set.
