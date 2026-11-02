@@ -256,6 +256,7 @@ public class EmulateMapStart extends GhidraScript {
         emu.writeMemory(toAddr(MAP), fill);
         putInt(STATE + MAP_BUFFER, MAP);
         call(0x42195c);
+        // MapGen_InitParams: only its first two stores (water level, lake radius) are run; it stops at 0x421546.
         runTo(0x421530, 0x421546);
         putInt(STATE + OBJECT_SIZES_POINTER, OBJECT_SIZES);
         call(SPIRAL_BUILDER);

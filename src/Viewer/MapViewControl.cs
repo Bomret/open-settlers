@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
 using OpenSettlers.MapView;
@@ -12,9 +13,8 @@ namespace OpenSettlers.Viewer;
 /// is drawn on the GPU (ADR 0007): one triangle mesh per band of rows, the fill masks and textures as array
 /// textures of palette indices, and <c>Terrain.gdshader</c> looking each index up in a palette texture. The
 /// generated objects are quads of sprite layers (<c>Objects.gdshader</c>: the indices and the coverage in their own
-/// array textures) drawn over the terrain. The
-/// arrow keys and a mouse drag move the <see cref="Camera"/>, which wraps at the map's edges; nine copies of the
-/// meshes tile the plane around it.
+/// array textures) drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
+/// wraps at the map's edges; nine copies of the meshes tile the plane around it.
 /// </summary>
 public partial class MapViewControl : Control
 {
@@ -38,6 +38,7 @@ public partial class MapViewControl : Control
     ObjectGraphics? _objects;
     System.Collections.Generic.IReadOnlyList<MaskImage> _masks = [];
     string? _graphicsProblem;
+    string? _objectsProblem;
     bool _dragging;
 
     /// <summary>The view of the map of this install's graphics.</summary>
@@ -97,12 +98,22 @@ public partial class MapViewControl : Control
             var graphics = TerrainGraphics.Load(_install);
             _material = BuildMaterial(graphics);
             _masks = graphics.Masks;
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _graphicsProblem = e.Message;
+            GD.PrintErr($"map view: {e.Message}");
+        }
+
+        try
+        {
             _objects = ObjectGraphics.Load(_install);
             _objectMaterial = BuildObjectMaterial(_objects);
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            _graphicsProblem = e.Message;
+            _objects = null;
+            _objectsProblem = e.Message;
             GD.PrintErr($"map view: {e.Message}");
         }
 
@@ -161,7 +172,7 @@ public partial class MapViewControl : Control
     {
         _message.Text = _graphicsProblem is not null
             ? $"Cannot draw the map: {_graphicsProblem}"
-            : _state.Problem ?? "";
+            : _state.Problem ?? (_objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}" : "");
         _message.Modulate = new Color(1, 0.4f, 0.4f);
     }
 
@@ -172,7 +183,7 @@ public partial class MapViewControl : Control
             child.QueueFree();
         }
 
-        if (_state.Map is null || _material is null || _objectMaterial is null)
+        if (_state.Map is null || _material is null)
         {
             return;
         }
@@ -293,7 +304,46 @@ public partial class MapViewControl : Control
         return material;
     }
 
-    // One mesh per band of rows, one quad per object sprite: the corners of its image, the layer in COLOR.
+    // The corners of a quad in the order its two triangles use them.
+    static readonly (int X, int Y)[] Corners = [(0, 0), (1, 0), (1, 1), (0, 1)];
+
+    // One mesh of quads: each quad is a rectangle at its position, its color carrying the array texture layers.
+    static ArrayMesh BuildQuadMesh(
+        System.Collections.Generic.IEnumerable<(int X, int Y, int Width, int Height, Color Color)> quads
+    )
+    {
+        var vertices = new System.Collections.Generic.List<Vector2>();
+        var uvs = new System.Collections.Generic.List<Vector2>();
+        var colors = new System.Collections.Generic.List<Color>();
+        var indices = new System.Collections.Generic.List<int>();
+        foreach (var quad in quads)
+        {
+            var origin = new Vector2(quad.X, quad.Y);
+            var first = vertices.Count;
+            foreach (var (cx, cy) in Corners)
+            {
+                var corner = new Vector2(cx * quad.Width, cy * quad.Height);
+                vertices.Add(origin + corner);
+                uvs.Add(corner);
+                colors.Add(quad.Color);
+            }
+
+            indices.AddRange([first, first + 1, first + 2, first, first + 2, first + 3]);
+        }
+
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
+        arrays[(int)Mesh.ArrayType.TexUV] = uvs.ToArray();
+        arrays[(int)Mesh.ArrayType.Color] = colors.ToArray();
+        arrays[(int)Mesh.ArrayType.Index] = indices.ToArray();
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+
+        return mesh;
+    }
+
+    // One mesh per band of rows, one quad per object sprite: the layer in COLOR.
     System.Collections.Generic.List<ArrayMesh> BuildObjectMeshes(Map map)
     {
         var meshes = new System.Collections.Generic.List<ArrayMesh>();
@@ -304,35 +354,9 @@ public partial class MapViewControl : Control
 
         foreach (var band in ObjectQuads.Bands(ObjectDraws.Of(map), _objects.Images, map.Size.Height, BandRows))
         {
-            var vertices = new System.Collections.Generic.List<Vector2>();
-            var uvs = new System.Collections.Generic.List<Vector2>();
-            var colors = new System.Collections.Generic.List<Color>();
-            var indices = new System.Collections.Generic.List<int>();
-            foreach (var quad in band)
-            {
-                var origin = new Vector2(quad.X, quad.Y);
-                var color = new Color(quad.Layer / 255f, 0, 0, 1);
-                var first = vertices.Count;
-                foreach (var (cx, cy) in new[] { (0, 0), (1, 0), (1, 1), (0, 1) })
-                {
-                    var corner = new Vector2(cx * quad.Width, cy * quad.Height);
-                    vertices.Add(origin + corner);
-                    uvs.Add(corner);
-                    colors.Add(color);
-                }
-
-                indices.AddRange([first, first + 1, first + 2, first, first + 2, first + 3]);
-            }
-
-            var arrays = new Godot.Collections.Array();
-            arrays.Resize((int)Mesh.ArrayType.Max);
-            arrays[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
-            arrays[(int)Mesh.ArrayType.TexUV] = uvs.ToArray();
-            arrays[(int)Mesh.ArrayType.Color] = colors.ToArray();
-            arrays[(int)Mesh.ArrayType.Index] = indices.ToArray();
-            var mesh = new ArrayMesh();
-            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-            meshes.Add(mesh);
+            meshes.Add(
+                BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, new Color(q.Layer / 255f, 0, 0, 1))))
+            );
         }
 
         return meshes;
@@ -348,35 +372,13 @@ public partial class MapViewControl : Control
         var meshes = new System.Collections.Generic.List<ArrayMesh>();
         foreach (var band in TerrainQuads.Bands(triangles, _masks, size.Height, BandRows))
         {
-            var vertices = new System.Collections.Generic.List<Vector2>();
-            var uvs = new System.Collections.Generic.List<Vector2>();
-            var colors = new System.Collections.Generic.List<Color>();
-            var indices = new System.Collections.Generic.List<int>();
-            foreach (var quad in band)
-            {
-                var origin = new Vector2(quad.X, quad.Y);
-                var color = new Color(quad.MaskLayer / 255f, quad.TextureLayer / 255f, 0, 1);
-                var first = vertices.Count;
-                foreach (var (cx, cy) in new[] { (0, 0), (1, 0), (1, 1), (0, 1) })
-                {
-                    var corner = new Vector2(cx * quad.Width, cy * quad.Height);
-                    vertices.Add(origin + corner);
-                    uvs.Add(corner);
-                    colors.Add(color);
-                }
-
-                indices.AddRange([first, first + 1, first + 2, first, first + 2, first + 3]);
-            }
-
-            var arrays = new Godot.Collections.Array();
-            arrays.Resize((int)Mesh.ArrayType.Max);
-            arrays[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
-            arrays[(int)Mesh.ArrayType.TexUV] = uvs.ToArray();
-            arrays[(int)Mesh.ArrayType.Color] = colors.ToArray();
-            arrays[(int)Mesh.ArrayType.Index] = indices.ToArray();
-            var mesh = new ArrayMesh();
-            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-            meshes.Add(mesh);
+            meshes.Add(
+                BuildQuadMesh(
+                    band.Select(q =>
+                        (q.X, q.Y, q.Width, q.Height, new Color(q.MaskLayer / 255f, q.TextureLayer / 255f, 0, 1))
+                    )
+                )
+            );
         }
 
         return meshes;

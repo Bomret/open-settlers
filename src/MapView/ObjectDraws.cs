@@ -35,14 +35,7 @@ public static class ObjectDraws
 
             var (x, y) = Camera.NodePosition(item.X, item.Y);
             var height = heights[item.Y * width + item.X] & 31;
-            draws.Add(
-                new ObjectDraw(
-                    item.Y,
-                    entry,
-                    x + OffsetX,
-                    y - height * TerrainTriangles.HeightStep + OffsetY
-                )
-            );
+            draws.Add(new ObjectDraw(item.Y, entry, x + OffsetX, y - height * TerrainTriangles.HeightStep + OffsetY));
         }
 
         return draws;

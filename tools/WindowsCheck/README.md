@@ -7,9 +7,14 @@ outside it, and only the short generator words and the digests are recorded (INV
 
 ## What you need
 
+- An Intel or AMD Windows machine. On Windows on ARM the Ubisoft layer (`uplay_r1`, `UbiServices`) does not
+  tolerate a debugger: launched under a debugger the process exits and the launcher restarts it outside, and
+  attached the game UI freezes and later shuts down (operator run, 2026-11-02, WinDbg/cdb x86 in a Windows on
+  ARM VM; module base `0x00a70000`, and breakpoints at the relocated addresses never hit).
 - The History Edition `Siedler1.exe`, the one the emulator harness reads, and a debugger for 32-bit programs
-  (for example x32dbg). The addresses below are those of the program's image at its link base `0x400000`.
-  Check the module base in the debugger. If it differs, add the difference to every address below.
+  (x32dbg or WinDbg; the commands of both are listed below). The addresses below are those of the program's
+  image at its link base `0x400000`. Check the module base in the debugger. If it differs, add the
+  difference to every address below.
 - Python 3 in the VM, or copy the dump out and run `digest.py` on the host.
 
 ## Addresses
@@ -31,11 +36,25 @@ The emulator harness reads the generator words and the map buffer at `0x421808`,
 there as well. `Minimap_Build` runs after that point and the game goes on to change the buffer, so a read
 taken later does not compare.
 
+## Debugger commands
+
+| Step | x32dbg | WinDbg |
+| --- | --- | --- |
+| breakpoint at an address | `bp <address>` | `bp <address>` |
+| continue | `run` (F9) | `g` |
+| read 3 words | dump pane at the address | `dw <address> L3` |
+| read a dword | dump pane at the address | `dd <address> L1` |
+| write a word | edit in the dump pane | `ew <address> <value>` |
+| save the map buffer | dump pane, Binary, Save to file | `.writemem <file> <address> L<length>` |
+
 ## Step 0: the live screen check (slice 01)
 
 1. Start the game and open the free-game page.
-2. Type `1234567812345678` as the seed.
+2. Type `1234567812345678` as the seed and press Enter. The display shows the result only after Enter: before
+   it the field echoes the typed text (`1234 5678 1234 5678`).
 3. The page must show `2731 4582 2731 4582`. Record what it shows, whether or not it matches.
+
+Done: the page showed `2731 4582 2731 4582` (Windows run, 2026-11-02, no debugger), as the emulator shows.
 
 If it differs, report it as a finding with the screen text, and carry on with the steps below.
 
@@ -45,9 +64,10 @@ Do the run once for each size value. Seed A, the screen seed `1234567812345678`,
 run for each of seed B and seed C is optional, for more coverage.
 
 1. In the debugger set a breakpoint at `0x4216e9` (`MapGen_Generate`) and another at `0x421808`.
-2. Start the game and open the free-game page. Type the seed `1234567812345678` (seed A).
+2. Start the game and open the free-game page. Type the seed `1234567812345678` (seed A) and press Enter.
 3. Write the size value N (1, 2, or 3) as a word at `0x674404`, for example in the dump pane of the debugger.
-   Do not click a size on the page: the page offers none.
+   The free-game page shows `MAPSIZE : 3` (operator run, 2026-11-02). This procedure has no recovered page
+   control for the size, so the memory write is the way to pick the size under the debugger.
 4. Start the game. The program stops at `0x4216e9`.
 5. Read the three words at `0x674290`. For seed A they must be `6359 A0D2 B4FA`. Read the words at `0x674264`
    and `0x674266`: width and height must be `32 32` for N = 1, `64 32` for N = 2, and `64 64` for N = 3. A
@@ -61,7 +81,8 @@ run for each of seed B and seed C is optional, for more coverage.
    - the dword at `0x6740c6`, the address of the map buffer.
 8. Dump the map buffer: from the address of step 7, `height * 8 * width` bytes, that is 8192 bytes for N = 1,
    16384 for N = 2, and 32768 for N = 3. In x32dbg: go to the address in the dump pane, select the range
-   (right-click, Binary, Edit or "Select" with the length), then right-click, Binary, Save to file.
+   (right-click, Binary, Edit or "Select" with the length), then right-click, Binary, Save to file. In WinDbg:
+   `.writemem <file> <address> L<length>`.
    Keep the file outside the repository.
 9. Compute the digests:
 

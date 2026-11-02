@@ -185,7 +185,12 @@ public sealed class MapGeneratorTests
         );
         Assert.AreEqual(1091, map.Deposits.Count);
         CollectionAssert.AreEqual(
-            new[] { new ResourceDeposit(34, 0, 3, 4), new ResourceDeposit(35, 0, 3, 8), new ResourceDeposit(36, 0, 3, 8) },
+            new[]
+            {
+                new ResourceDeposit(34, 0, 3, 4),
+                new ResourceDeposit(35, 0, 3, 8),
+                new ResourceDeposit(36, 0, 3, 8),
+            },
             map.Deposits.Take(3).ToList()
         );
         Assert.AreEqual(new ResourceDeposit(18, 20, 1, 4), map.Deposits.First(deposit => deposit.Type == 1));
