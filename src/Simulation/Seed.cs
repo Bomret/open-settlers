@@ -1,0 +1,83 @@
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+
+namespace OpenSettlers.Simulation;
+
+/// <summary>
+/// The free-game seed: 48 bits held as three unsigned 16-bit words. The free-game screen shows and takes it as
+/// four groups of four digits <c>1</c> to <c>8</c>, three bits to a digit (<c>docs/rules/map-start.md</c>).
+/// </summary>
+public readonly record struct Seed(ushort W0, ushort W1, ushort W2)
+{
+    private const int Groups = 4;
+    private const int DigitsPerGroup = 4;
+
+    /// <summary>
+    /// Reads the screen form: four groups of four digits <c>1</c> to <c>8</c>, separated by spaces or hyphens.
+    /// Returns false with the reason the text is not a seed.
+    /// </summary>
+    public static bool TryParse(string? screen, out Seed seed, [NotNullWhen(false)] out string? problem)
+    {
+        seed = default;
+        var groups = (screen ?? "").Split([' ', '-'], StringSplitOptions.RemoveEmptyEntries);
+        problem = null;
+        if (groups.Length == 0)
+        {
+            problem = "the seed is empty";
+        }
+        else if (groups.Length != Groups)
+        {
+            problem = $"the seed has {groups.Length} groups, not {Groups} groups";
+        }
+        else if (groups.FirstOrDefault(group => group.Length != DigitsPerGroup) is { } wrong)
+        {
+            problem = $"the group '{wrong}' does not have {DigitsPerGroup} characters";
+        }
+        else if (groups.SelectMany(group => group).FirstOrDefault(c => c is < '1' or > '8') is var bad and not '\0')
+        {
+            problem = $"'{bad}' is not a digit from 1 to 8";
+        }
+
+        if (problem != null)
+        {
+            return false;
+        }
+
+        // The original reads the 16 digits as two 24-bit numbers, first digit highest, and stores each as three
+        // bytes with the highest byte first. The words read those bytes lowest byte first.
+        var digits = groups.SelectMany(group => group).Select(c => c - '1').ToArray();
+        var high = Combine(digits[..8]);
+        var low = Combine(digits[8..]);
+        seed = new Seed(Word(high >> 16, high >> 8), Word(high, low >> 16), Word(low >> 8, low));
+        return true;
+    }
+
+    /// <summary>
+    /// The groups as the free-game screen shows them. The four groups overlap: the screen reads the words
+    /// lowest byte first, so a group holds bits of two neighbouring words.
+    /// </summary>
+    public string ToScreen()
+    {
+        var first = (uint)W0 | (uint)W1 << 16;
+        var second = (uint)W1 | (uint)W2 << 16;
+        int[] groups = [W0 >> 4, (int)(first >> 8 & 0xFFF), (int)(second >> 12 & 0xFFF), W2 & 0xFFF];
+
+        return string.Join(' ', groups.Select(Digits));
+    }
+
+    /// <summary>The map seed a free game starts with: each word xor a fixed mask (<c>0x468b3d</c>).</summary>
+    public MapSeed ToMapSeed() => new((ushort)(W0 ^ 0x5A5A), (ushort)(W1 ^ 0xA5A5), (ushort)(W2 ^ 0xC3C3));
+
+    private static int Combine(int[] digits) => digits.Aggregate(0, (value, digit) => value << 3 | digit);
+
+    private static ushort Word(int low, int high) => (ushort)((low & 0xFF) | (high & 0xFF) << 8);
+
+    private static string Digits(int group) =>
+        new([
+            (char)('1' + (group >> 9 & 7)),
+            (char)('1' + (group >> 6 & 7)),
+            (char)('1' + (group >> 3 & 7)),
+            (char)('1' + (group & 7)),
+        ]);
+}
