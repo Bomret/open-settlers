@@ -14,13 +14,18 @@ namespace OpenSettlers.Viewer;
 /// textures of palette indices, and <c>Terrain.gdshader</c> looking each index up in a palette texture. The
 /// generated objects are quads of sprite layers (<c>Objects.gdshader</c>: the indices and the coverage in their own
 /// array textures) drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
-/// wraps at the map's edges; nine copies of the meshes tile the plane around it.
+/// wraps at the map's edges; the copies of <see cref="Camera.Copies"/> tile the plane around it. The mouse wheel, and the plus and
+/// minus keys, and a touchpad pinch change the <see cref="Zoom"/>; the wheel and the pinch keep the map point under
+/// the pointer in place. A two-finger touchpad swipe moves the camera.
 /// </summary>
 public partial class MapViewControl : Control
 {
     // Rows of tiles in one mesh; 16 rows of the widest map are about 8,200 vertices.
     const int BandRows = 16;
     const float KeySpeed = 700f;
+
+    // Screen pixels per unit of a touchpad swipe's delta.
+    const float PanGestureSpeed = 10f;
 
     // The layer limit of a GPU array texture.
     const int MaxArrayLayers = 256;
@@ -32,6 +37,7 @@ public partial class MapViewControl : Control
     Label _ticks = null!;
     MapViewState _state = null!;
     Camera _camera = null!;
+    readonly Zoom _zoom = new();
     LineEdit _seed = null!;
     OptionButton _size = null!;
     Label _message = null!;
@@ -45,6 +51,7 @@ public partial class MapViewControl : Control
     string? _objectsProblem;
     bool _dragging;
     Vector2 _keyCarry;
+    Vector2 _dragCarry;
 
     /// <summary>
     /// The view of the map of this install's graphics. With <paramref name="play"/> a <see cref="Game"/> on the
@@ -160,7 +167,8 @@ public partial class MapViewControl : Control
             _ticks.Text = $"Tick {_game.TickCount}";
         }
 
-        var step = (float)(KeySpeed * delta);
+        // The keys move the view at the same screen speed at every zoom.
+        var step = (float)(KeySpeed * delta) / _zoom.Scale;
         var x = (Input.IsKeyPressed(Key.Right) ? step : 0) - (Input.IsKeyPressed(Key.Left) ? step : 0);
         var y = (Input.IsKeyPressed(Key.Down) ? step : 0) - (Input.IsKeyPressed(Key.Up) ? step : 0);
         if (_seed.HasFocus())
@@ -178,7 +186,38 @@ public partial class MapViewControl : Control
             _camera.Move(dx, dy);
         }
 
-        _world.Position = new Vector2(_canvas.Size.X / 2f - _camera.X, _canvas.Size.Y / 2f - _camera.Y);
+        _zoom.Fit(_camera, _canvas.Size.X, _canvas.Size.Y);
+        _world.Scale = new Vector2(_zoom.Scale, _zoom.Scale);
+        _world.Position = _canvas.Size / 2f - new Vector2(_camera.X, _camera.Y) * _zoom.Scale;
+    }
+
+    /// <inheritdoc/>
+    public override void _UnhandledKeyInput(InputEvent input)
+    {
+        if (input is not InputEventKey { Pressed: true } key || _seed.HasFocus())
+        {
+            return;
+        }
+
+        var factor = key.Keycode switch
+        {
+            Key.Plus or Key.Equal or Key.KpAdd => Zoom.Step,
+            Key.Minus or Key.KpSubtract => 1 / Zoom.Step,
+            _ => 1,
+        };
+        if (factor != 1)
+        {
+            ZoomAt(factor, _canvas.Size / 2f);
+        }
+    }
+
+    // Zooms by the factor and moves the camera so the map point under this canvas position stays under it.
+    void ZoomAt(float factor, Vector2 at)
+    {
+        var fromCenter = at - _canvas.Size / 2f;
+        var before = fromCenter / _zoom.Scale;
+        _zoom.ByFactor(factor, _camera, _canvas.Size.X, _canvas.Size.Y);
+        MoveMap(before - fromCenter / _zoom.Scale);
     }
 
     void OnCanvasInput(InputEvent input)
@@ -189,10 +228,36 @@ public partial class MapViewControl : Control
                 _dragging = button.Pressed;
                 _canvas.GrabFocus();
                 break;
+            case InputEventMouseButton
+            {
+                ButtonIndex: MouseButton.WheelUp or MouseButton.WheelDown,
+                Pressed: true
+            } wheel:
+                ZoomAt(wheel.ButtonIndex == MouseButton.WheelUp ? Zoom.Step : 1 / Zoom.Step, wheel.Position);
+                break;
+            case InputEventMagnifyGesture pinch:
+                ZoomAt(pinch.Factor, pinch.Position);
+                break;
+            case InputEventPanGesture swipe:
+                Pan(swipe.Delta * PanGestureSpeed);
+                break;
             case InputEventMouseMotion motion when _dragging:
-                _camera.Move(-(int)Math.Round(motion.Relative.X), -(int)Math.Round(motion.Relative.Y));
+                Pan(-motion.Relative);
                 break;
         }
+    }
+
+    // Moves the view by a distance in screen pixels.
+    void Pan(Vector2 screen) => MoveMap(screen / _zoom.Scale);
+
+    // Moves the view by a distance in map pixels. The camera moves in whole pixels; the fraction carries to the next
+    // move, so slow drags at a high zoom and the zoom's own shifts add up without drift.
+    void MoveMap(Vector2 map)
+    {
+        _dragCarry += map;
+        var (mx, my) = ((int)_dragCarry.X, (int)_dragCarry.Y);
+        _dragCarry -= new Vector2(mx, my);
+        _camera.Move(mx, my);
     }
 
     void Apply(string seedText)

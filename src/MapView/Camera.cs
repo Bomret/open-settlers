@@ -59,14 +59,15 @@ public sealed class Camera
     }
 
     /// <summary>
-    /// The offsets, in pixels, at which to draw the map so the copies around the camera tile the plane: the camera's
-    /// copy and its eight neighbours along the two repeat directions.
+    /// The offsets, in pixels, at which to draw the map so the copies around the camera tile the plane. Each row of
+    /// copies leans west by 16 pixels times the rows, at most half of <see cref="PeriodX"/> on every offered size.
+    /// The copies cover a view of up to two maps each way around the camera (<see cref="Zoom.Fit"/>).
     /// </summary>
     public IEnumerable<(int X, int Y)> Copies()
     {
-        for (var j = -1; j <= 1; j++)
+        for (var j = -2; j <= 2; j++)
         {
-            for (var i = -1; i <= 1; i++)
+            for (var i = -3; i <= 3; i++)
             {
                 yield return (i * PeriodX - j * RowLean * _rows, j * PeriodY);
             }
