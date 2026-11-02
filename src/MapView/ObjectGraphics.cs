@@ -91,7 +91,11 @@ public sealed class ObjectGraphics
             Array.Copy(image.Coverage, y * image.Width, coverage, y * width, image.Width);
         }
 
-        return image with { Indices = indices, Coverage = coverage };
+        return image with
+        {
+            Indices = indices,
+            Coverage = coverage,
+        };
     }
 
     static T Read<T>(Archive archive, int number, string what, Func<ReadOnlyMemory<byte>, T> read)
