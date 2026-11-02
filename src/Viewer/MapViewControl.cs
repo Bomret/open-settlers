@@ -40,6 +40,7 @@ public partial class MapViewControl : Control
     string? _graphicsProblem;
     string? _objectsProblem;
     bool _dragging;
+    Vector2 _keyCarry;
 
     /// <summary>The view of the map of this install's graphics.</summary>
     public MapViewControl(Install install)
@@ -64,7 +65,7 @@ public partial class MapViewControl : Control
             MaxLength = 19,
             CustomMinimumSize = new Vector2(240, 0),
         };
-        _seed.TextChanged += _ => Apply();
+        _seed.TextSubmitted += _ => Apply();
         bar.AddChild(_seed);
         bar.AddChild(new Label { Text = "Size" });
         _size = new OptionButton();
@@ -126,14 +127,19 @@ public partial class MapViewControl : Control
     /// <inheritdoc/>
     public override void _Process(double delta)
     {
-        var step = (int)Math.Round(KeySpeed * delta);
-        var dx = (Input.IsKeyPressed(Key.Right) ? step : 0) - (Input.IsKeyPressed(Key.Left) ? step : 0);
-        var dy = (Input.IsKeyPressed(Key.Down) ? step : 0) - (Input.IsKeyPressed(Key.Up) ? step : 0);
+        var step = (float)(KeySpeed * delta);
+        var x = (Input.IsKeyPressed(Key.Right) ? step : 0) - (Input.IsKeyPressed(Key.Left) ? step : 0);
+        var y = (Input.IsKeyPressed(Key.Down) ? step : 0) - (Input.IsKeyPressed(Key.Up) ? step : 0);
         if (_seed.HasFocus())
         {
-            dx = dy = 0;
+            x = y = 0;
         }
 
+        // The camera moves in whole pixels; the fraction carries to the next frame so a high frame rate still moves.
+        _keyCarry += new Vector2(x, y);
+        var dx = (int)_keyCarry.X;
+        var dy = (int)_keyCarry.Y;
+        _keyCarry -= new Vector2(dx, dy);
         if (dx != 0 || dy != 0)
         {
             _camera.Move(dx, dy);
