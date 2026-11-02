@@ -91,9 +91,42 @@ public sealed class CameraTests
 
         var copies = camera.Copies().ToList();
 
-        Assert.HasCount(9, copies);
+        Assert.HasCount(35, copies);
         Assert.Contains((0, 0), copies);
         Assert.Contains((camera.PeriodX, 0), copies);
         Assert.Contains((-16 * 64, 20 * 64), copies);
+    }
+
+    [TestMethod]
+    public void TheCopiesCoverAViewOfTwoMapsAtEveryCameraCorner()
+    {
+        foreach (var size in MapSize.Offered)
+        {
+            foreach (var (cx, cy) in new[] { (0, 0), (1, 0), (0, 1), (1, 1) })
+            {
+                var camera = new Camera(size);
+                camera.Move(cx * (camera.PeriodX - 1), cy * (camera.PeriodY - 1));
+                var copies = camera.Copies().ToList();
+                for (var py = camera.Y - camera.PeriodY; py <= camera.Y + camera.PeriodY; py += 10)
+                {
+                    for (var px = camera.X - camera.PeriodX; px <= camera.X + camera.PeriodX; px += 16)
+                    {
+                        Assert.IsTrue(
+                            copies.Any(copy => Covers(size, copy, px, py)),
+                            $"size {size.Value}, camera ({camera.X}, {camera.Y}): ({px}, {py}) is not covered"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // Whether the copy drawn at this offset holds the pixel: its row from y, then its column from x and the lean.
+    static bool Covers(MapSize size, (int X, int Y) copy, int px, int py)
+    {
+        var row = System.Math.Floor((py - copy.Y) / 20.0);
+        var column = System.Math.Floor((px - copy.X + 16 * row) / 32.0);
+
+        return row >= 0 && row < size.Height && column >= 0 && column < size.Width;
     }
 }
