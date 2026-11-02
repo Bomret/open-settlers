@@ -61,6 +61,14 @@ mise run browser
 
 It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. Its text and lists scale with the window. It shows a message instead when there is no usable install or two asset kinds share a name, and a notice when the selected kind lists no assets.
 
+The map view opens a window with a seed field (16 digits from 1 to 8, as the original's screen shows it) and a size picker above the terrain of the generated map:
+
+```sh
+mise run map
+```
+
+A valid seed or a new size regenerates and redraws the map. An invalid seed shows its reason and keeps the last map. The arrow keys and a mouse drag move the view, which wraps at the map's edges. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: `--check` and `--map` together are a problem.
+
 A programming error in the browser does not close it. When the browser fails while it selects a kind or an asset, or while it draws a preview, it shows `<file or kind>: crashed: <Type>: <message>` in the preview pane and keeps the lists usable. A crash while the window opens shows that text in place of the window. Each crash also goes to stderr as `asset browser crashed`. A crash is a bug in the engine. A corrupt file is shown as a failure of that file, not as a crash.
 
 Neither mode writes to the install.

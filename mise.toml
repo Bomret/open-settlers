@@ -73,6 +73,11 @@ description = "Open the asset browser (needs SIEDLER_DIR)"
 depends = ["build"]
 run = "{{ env.GODOT }} --path ."
 
+[tasks.map]
+description = "Open the map view (needs SIEDLER_DIR)"
+depends = ["build"]
+run = "{{ env.GODOT }} --path . -- --map"
+
 [tasks.editor]
 description = "Open the project in the Godot editor"
 depends = ["build"]

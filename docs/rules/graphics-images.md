@@ -268,6 +268,29 @@ A textured-fill mask has no color of its own (the program fills it with a textur
 the first player's color, index `0x40`, as a **stand-in**. The texture belongs to the milestone that draws
 terrain; the texture entries show as raw images. All previews use the game's palette, entry 3.
 
+### Terrain drawing
+
+**Status:** confirmed routines (`0x427642`, `0x4278be`, `0x427a25`), tables read from `Siedler1.exe`; the screen layout is
+**inferred** from the masks. The engine's `TerrainRules` holds the tables.
+
+A tile has an upper triangle (apex the tile's node, base the nodes south and south-east of it) and a lower one (apex the
+node south-east of the tile, top the tile's node and the node east of it). Heights are the five low bits of the height byte.
+`0x4278be` (upper) and `0x427a25` (lower) form `index = (a + 4 - b) + 9 x (a' + 4 - b')` over the three nodes: the apex
+height `a` minus the left base node and the right base node for the upper triangle, the left and right top nodes minus the
+apex for the lower. The mask is 60 + index (upper) or 141 + index (lower). A table of 81 bytes (`0x4279d4` upper,
+`0x427b38` lower) gives a multiple of 4, `0xff` for no texture; the terrain code of the triangle (high nibble upper, low
+nibble lower) times 8 plus that value divided by 4 indexes the 128 bytes at `0x427b89`, whose value plus 260 is the
+texture. Codes 0 to 3 are water (texture 292), 4 to 7 give 260 to 267, 8 to 10 give 284 to 291, 11 to 13 give 268 to 275,
+14 and 15 give 276 to 283. The archive leaves out exactly the masks whose table value is `0xff`.
+
+Screen layout (**inferred**): a node (column, row) is at x = 32 x column - 16 x row, y = 20 x row - 4 x height. A mask is
+drawn with its left edge 16 pixels west of its anchor node (the apex) and its top at the anchor's y plus the header's
+vertical offset.
+
+Not drawn: the edge-blend masks 230 to 256 and the textures 300 to 309 (edges between terrains, `0x428008` and after). The
+map view (`src/Viewer/MapViewControl.cs`, with `src/MapView/TerrainQuads.cs` planning each band's rectangles) paints
+the fill masks 60 to 221 and the fill textures 260 to 292 only; the edge blend is not part of it.
+
 ### Corrupt masks
 
 **Status:** stand-in. The program checks none of these. Each is unreadable for its own entry, with its reason (and the
