@@ -130,4 +130,26 @@ public sealed class LaunchArgsTests
         Assert.AreEqual(LaunchMode.Browser, args.Mode);
         Assert.AreEqual("/siedler/--map", args.Game);
     }
+
+    [TestMethod]
+    public void ThePlayFlagSelectsTheGame()
+    {
+        var args = LaunchArgs.Parse(["--play", "--game", "/siedler"], null);
+
+        Assert.AreEqual(LaunchMode.Play, args.Mode);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--check")]
+    public void ThePlayFlagWithAnotherModeFlagIsAConflict(string other)
+    {
+        var args = LaunchArgs.Parse(["--play", other], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--play");
+        StringAssert.Contains(args.Problems[0], other);
+        Assert.AreEqual(LaunchMode.Play, args.Mode);
+    }
 }
