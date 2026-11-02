@@ -117,14 +117,6 @@ public sealed class TerrainTests
     }
 
     [TestMethod]
-    public void LayersOfOneSizeFitTheLimit()
-    {
-        Assert.AreEqual(197, TerrainTiling.Layers(60, 256));
-        Assert.IsTrue(TerrainTiling.FitsLayerLimit(197, 256));
-        Assert.IsFalse(TerrainTiling.FitsLayerLimit(257, 256));
-    }
-
-    [TestMethod]
     public void ThePaletteTextureHoldsTheColorsAtEightBitsWithAnOpaqueAlpha()
     {
         var bytes = new byte[PaletteFile.Size];

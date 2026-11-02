@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace OpenSettlers.MapView;
 
-/// <summary>The limits that keep the map's drawing within what a GPU holds.</summary>
+/// <summary>The split that keeps the map's drawing within what a GPU holds.</summary>
 public static class TerrainTiling
 {
     /// <summary>
@@ -23,10 +23,4 @@ public static class TerrainTiling
 
         return chunks;
     }
-
-    /// <summary>The number of entries from <c>first</c> to <c>last</c>, each its own layer of an array texture.</summary>
-    public static int Layers(int first, int last) => last - first + 1;
-
-    /// <summary>Whether an array texture of <c>count</c> layers is within <c>limit</c> layers.</summary>
-    public static bool FitsLayerLimit(int count, int limit) => count <= limit;
 }

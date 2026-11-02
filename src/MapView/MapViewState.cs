@@ -34,7 +34,7 @@ public sealed class MapViewState
     public static MapViewState Open(string seedText, int sizeValue)
     {
         var state = new MapViewState(seedText, sizeValue);
-        state.Apply(seedText, sizeValue, force: true);
+        state.Apply(seedText, sizeValue);
 
         return state;
     }
@@ -43,9 +43,7 @@ public sealed class MapViewState
     /// Applies a typed seed and a size. Returns true when a new map was generated, false when the change was refused
     /// (see <see cref="Problem"/>) or the seed and size are the ones already applied.
     /// </summary>
-    public bool Apply(string seedText, int sizeValue) => Apply(seedText, sizeValue, force: false);
-
-    bool Apply(string seedText, int sizeValue, bool force)
+    public bool Apply(string seedText, int sizeValue)
     {
         if (!Seed.TryParse(seedText, out var seed, out var problem))
         {
@@ -54,7 +52,7 @@ public sealed class MapViewState
             return false;
         }
 
-        if (!force && Map is not null && seedText == SeedText && sizeValue == SizeValue)
+        if (Map is not null && seedText == SeedText && sizeValue == SizeValue)
         {
             Problem = null;
 

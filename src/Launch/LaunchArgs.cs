@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 
 namespace OpenSettlers.Launch;
 
@@ -56,7 +55,9 @@ public sealed class LaunchArgs
         var problems = new List<string>();
         string? game = null;
         var gameGiven = false;
-        var modes = new List<(string Flag, LaunchMode Mode)>();
+        LaunchMode? mode = null;
+        string? modeFlag = null;
+        string? conflictFlag = null;
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] == GameFlag && !gameGiven)
@@ -73,25 +74,26 @@ public sealed class LaunchArgs
                     problems.Add($"{GameFlag} needs a value");
                 }
             }
-            else if (args[i] == CheckFlag)
+            else if (args[i] == CheckFlag || args[i] == MapFlag)
             {
-                modes.Add((args[i], LaunchMode.Check));
-            }
-            else if (args[i] == MapFlag)
-            {
-                modes.Add((args[i], LaunchMode.Map));
+                if (modeFlag is not null && modeFlag != args[i])
+                {
+                    conflictFlag ??= args[i];
+                }
+
+                modeFlag ??= args[i];
+                mode ??= args[i] == CheckFlag ? LaunchMode.Check : LaunchMode.Map;
             }
         }
 
-        var flags = modes.Select(m => m.Flag).Distinct().ToList();
-        if (flags.Count > 1)
+        if (conflictFlag is not null)
         {
-            problems.Add($"{string.Join(" and ", flags)} are different modes, give only one");
+            problems.Add($"{modeFlag} and {conflictFlag} are different modes, give only one");
         }
 
         return new LaunchArgs
         {
-            Mode = flags.Count == 1 ? modes[0].Mode : LaunchMode.Browser,
+            Mode = mode ?? LaunchMode.Browser,
             Game =
                 gameGiven ? game
                 : string.IsNullOrEmpty(siedlerDir) ? null

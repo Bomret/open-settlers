@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -88,7 +89,7 @@ public sealed class CameraTests
         var camera = new Camera(Largest);
         camera.Move(5, 7);
 
-        var copies = camera.Copies();
+        var copies = camera.Copies().ToList();
 
         Assert.HasCount(9, copies);
         Assert.Contains((0, 0), copies);

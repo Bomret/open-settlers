@@ -285,8 +285,11 @@ texture. Codes 0 to 3 are water (texture 292), 4 to 7 give 260 to 267, 8 to 10 g
 
 Screen layout (**inferred**): a node (column, row) is at x = 32 x column - 16 x row, y = 20 x row - 4 x height. A mask is
 drawn with its left edge 16 pixels west of its anchor node (the apex) and its top at the anchor's y plus the header's
-vertical offset. The masks 230 to 256 with the textures 300 to 309 (edges between terrains, `0x428008` and after) are not
-drawn yet.
+vertical offset.
+
+Not drawn: the edge-blend masks 230 to 256 and the textures 300 to 309 (edges between terrains, `0x428008` and after). The
+map view (`src/Viewer/MapViewControl.cs`, with `src/MapView/TerrainQuads.cs` planning each band's rectangles) paints
+the fill masks 60 to 221 and the fill textures 260 to 292 only; the edge blend is not part of it.
 
 ### Corrupt masks
 

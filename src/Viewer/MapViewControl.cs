@@ -20,6 +20,9 @@ public partial class MapViewControl : Control
     const int BandRows = 16;
     const float KeySpeed = 700f;
 
+    // The layer limit of a GPU array texture.
+    const int MaxArrayLayers = 256;
+
     readonly Install _install;
     MapViewState _state = null!;
     Camera _camera = null!;
@@ -29,6 +32,7 @@ public partial class MapViewControl : Control
     Control _canvas = null!;
     Node2D _world = null!;
     ShaderMaterial? _material;
+    System.Collections.Generic.IReadOnlyList<MaskImage> _masks = [];
     string? _graphicsProblem;
     bool _dragging;
 
@@ -86,7 +90,9 @@ public partial class MapViewControl : Control
 
         try
         {
-            _material = BuildMaterial(TerrainGraphics.Load(_install));
+            var graphics = TerrainGraphics.Load(_install);
+            _material = BuildMaterial(graphics);
+            _masks = graphics.Masks;
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -208,7 +214,7 @@ public partial class MapViewControl : Control
             );
         }
 
-        if (!TerrainTiling.FitsLayerLimit(masks.Count, 256) || !TerrainTiling.FitsLayerLimit(textures.Count, 256))
+        if (masks.Count > MaxArrayLayers || textures.Count > MaxArrayLayers)
         {
             throw new InvalidDataException(
                 "the terrain graphics need more array texture layers than the GPU limit of 256"
@@ -226,12 +232,9 @@ public partial class MapViewControl : Control
         material.SetShaderParameter("masks", maskArray);
         material.SetShaderParameter("textures", textureArray);
         material.SetShaderParameter("palette", palette);
-        _masks = graphics.Masks;
 
         return material;
     }
-
-    System.Collections.Generic.IReadOnlyList<MaskImage> _masks = [];
 
     // One mesh per band of rows, so the painting order of the rows holds across bands (each band is added after the
     // one above it) and no mesh grows with the map. A triangle is four vertices: the corners of its mask.
@@ -241,39 +244,26 @@ public partial class MapViewControl : Control
     )
     {
         var meshes = new System.Collections.Generic.List<ArrayMesh>();
-        var next = 0;
-        foreach (var band in TerrainTiling.Chunks(1, size.Height, BandRows))
+        foreach (var band in TerrainQuads.Bands(triangles, _masks, size.Height, BandRows))
         {
             var vertices = new System.Collections.Generic.List<Vector2>();
             var uvs = new System.Collections.Generic.List<Vector2>();
             var colors = new System.Collections.Generic.List<Color>();
             var indices = new System.Collections.Generic.List<int>();
-            while (next < triangles.Count && triangles[next].Row < band.Row + band.Height)
+            foreach (var quad in band)
             {
-                var triangle = triangles[next++];
-                var maskLayer = TerrainGraphics.MaskLayer(triangle.Mask);
-                var mask = _masks[maskLayer];
-                // The mask hangs from its anchor: centered on it and moved by the header's offset.
-                var origin = new Vector2(
-                    triangle.X - TerrainGraphics.LayerWidth / 2 + mask.OffsetX,
-                    triangle.Y + mask.OffsetY
-                );
-                var color = new Color(maskLayer / 255f, TerrainGraphics.TextureLayer(triangle.Texture) / 255f, 0, 1);
+                var origin = new Vector2(quad.X, quad.Y);
+                var color = new Color(quad.MaskLayer / 255f, quad.TextureLayer / 255f, 0, 1);
                 var first = vertices.Count;
                 foreach (var (cx, cy) in new[] { (0, 0), (1, 0), (1, 1), (0, 1) })
                 {
-                    var corner = new Vector2(cx * mask.Width, cy * mask.Height);
+                    var corner = new Vector2(cx * quad.Width, cy * quad.Height);
                     vertices.Add(origin + corner);
                     uvs.Add(corner);
                     colors.Add(color);
                 }
 
                 indices.AddRange([first, first + 1, first + 2, first, first + 2, first + 3]);
-            }
-
-            if (vertices.Count == 0)
-            {
-                continue;
             }
 
             var arrays = new Godot.Collections.Array();

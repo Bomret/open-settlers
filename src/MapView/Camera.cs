@@ -62,18 +62,15 @@ public sealed class Camera
     /// The offsets, in pixels, at which to draw the map so the copies around the camera tile the plane: the camera's
     /// copy and its eight neighbours along the two repeat directions.
     /// </summary>
-    public IReadOnlyList<(int X, int Y)> Copies()
+    public IEnumerable<(int X, int Y)> Copies()
     {
-        var copies = new List<(int, int)>(9);
         for (var j = -1; j <= 1; j++)
         {
             for (var i = -1; i <= 1; i++)
             {
-                copies.Add((i * PeriodX - j * RowLean * _rows, j * PeriodY));
+                yield return (i * PeriodX - j * RowLean * _rows, j * PeriodY);
             }
         }
-
-        return copies;
     }
 
     void Set(long x, long y)
