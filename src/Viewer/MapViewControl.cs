@@ -11,6 +11,8 @@ namespace OpenSettlers.Viewer;
 /// The map view (<c>--map</c>): a seed field and a size picker above the terrain of the generated map. The terrain
 /// is drawn on the GPU (ADR 0007): one triangle mesh per band of rows, the fill masks and textures as array
 /// textures of palette indices, and <c>Terrain.gdshader</c> looking each index up in a palette texture. The
+/// generated objects are quads of sprite layers (<c>Objects.gdshader</c>: the indices and the coverage in their own
+/// array textures) drawn over the terrain. The
 /// arrow keys and a mouse drag move the <see cref="Camera"/>, which wraps at the map's edges; nine copies of the
 /// meshes tile the plane around it.
 /// </summary>
@@ -32,6 +34,8 @@ public partial class MapViewControl : Control
     Control _canvas = null!;
     Node2D _world = null!;
     ShaderMaterial? _material;
+    ShaderMaterial? _objectMaterial;
+    ObjectGraphics? _objects;
     System.Collections.Generic.IReadOnlyList<MaskImage> _masks = [];
     string? _graphicsProblem;
     bool _dragging;
@@ -93,6 +97,8 @@ public partial class MapViewControl : Control
             var graphics = TerrainGraphics.Load(_install);
             _material = BuildMaterial(graphics);
             _masks = graphics.Masks;
+            _objects = ObjectGraphics.Load(_install);
+            _objectMaterial = BuildObjectMaterial(_objects);
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -154,7 +160,7 @@ public partial class MapViewControl : Control
     void ShowMessage()
     {
         _message.Text = _graphicsProblem is not null
-            ? $"Cannot draw the terrain: {_graphicsProblem}"
+            ? $"Cannot draw the map: {_graphicsProblem}"
             : _state.Problem ?? "";
         _message.Modulate = new Color(1, 0.4f, 0.4f);
     }
@@ -166,18 +172,33 @@ public partial class MapViewControl : Control
             child.QueueFree();
         }
 
-        if (_state.Map is null || _material is null)
+        if (_state.Map is null || _material is null || _objectMaterial is null)
         {
             return;
         }
 
         var meshes = BuildMeshes(TerrainTriangles.Of(_state.Map), _state.Map.Size);
+        var objectMeshes = BuildObjectMeshes(_state.Map);
         foreach (var (x, y) in _camera.Copies())
         {
             var copy = new Node2D { Position = new Vector2(x, y) };
             foreach (var mesh in meshes)
             {
                 copy.AddChild(new MeshInstance2D { Mesh = mesh, Material = _material });
+            }
+
+            // Objects paint over the terrain of every copy: an absolute z index above the terrain's 0.
+            foreach (var mesh in objectMeshes)
+            {
+                copy.AddChild(
+                    new MeshInstance2D
+                    {
+                        Mesh = mesh,
+                        Material = _objectMaterial,
+                        ZAsRelative = false,
+                        ZIndex = 1,
+                    }
+                );
             }
 
             _world.AddChild(copy);
@@ -234,6 +255,87 @@ public partial class MapViewControl : Control
         material.SetShaderParameter("palette", palette);
 
         return material;
+    }
+
+    ShaderMaterial BuildObjectMaterial(ObjectGraphics graphics)
+    {
+        Godot.Collections.Array<Image> Layers(System.Func<ObjectImage, byte[]> pixels)
+        {
+            var images = new Godot.Collections.Array<Image>();
+            foreach (var image in graphics.Images)
+            {
+                images.Add(
+                    Image.CreateFromData(
+                        Math.Max(graphics.LayerWidth, 1),
+                        Math.Max(graphics.LayerHeight, 1),
+                        false,
+                        Image.Format.R8,
+                        pixels(image)
+                    )
+                );
+            }
+
+            return images;
+        }
+
+        var indices = new Texture2DArray();
+        indices.CreateFromImages(Layers(image => image.Indices));
+        var coverage = new Texture2DArray();
+        coverage.CreateFromImages(Layers(image => image.Coverage));
+        var palette = ImageTexture.CreateFromImage(
+            Image.CreateFromData(256, 1, false, Image.Format.Rgba8, graphics.PaletteRgba)
+        );
+        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Objects.gdshader") };
+        material.SetShaderParameter("indices", indices);
+        material.SetShaderParameter("coverage", coverage);
+        material.SetShaderParameter("palette", palette);
+
+        return material;
+    }
+
+    // One mesh per band of rows, one quad per object sprite: the corners of its image, the layer in COLOR.
+    System.Collections.Generic.List<ArrayMesh> BuildObjectMeshes(Map map)
+    {
+        var meshes = new System.Collections.Generic.List<ArrayMesh>();
+        if (_objects is null)
+        {
+            return meshes;
+        }
+
+        foreach (var band in ObjectQuads.Bands(ObjectDraws.Of(map), _objects.Images, map.Size.Height, BandRows))
+        {
+            var vertices = new System.Collections.Generic.List<Vector2>();
+            var uvs = new System.Collections.Generic.List<Vector2>();
+            var colors = new System.Collections.Generic.List<Color>();
+            var indices = new System.Collections.Generic.List<int>();
+            foreach (var quad in band)
+            {
+                var origin = new Vector2(quad.X, quad.Y);
+                var color = new Color(quad.Layer / 255f, 0, 0, 1);
+                var first = vertices.Count;
+                foreach (var (cx, cy) in new[] { (0, 0), (1, 0), (1, 1), (0, 1) })
+                {
+                    var corner = new Vector2(cx * quad.Width, cy * quad.Height);
+                    vertices.Add(origin + corner);
+                    uvs.Add(corner);
+                    colors.Add(color);
+                }
+
+                indices.AddRange([first, first + 1, first + 2, first, first + 2, first + 3]);
+            }
+
+            var arrays = new Godot.Collections.Array();
+            arrays.Resize((int)Mesh.ArrayType.Max);
+            arrays[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
+            arrays[(int)Mesh.ArrayType.TexUV] = uvs.ToArray();
+            arrays[(int)Mesh.ArrayType.Color] = colors.ToArray();
+            arrays[(int)Mesh.ArrayType.Index] = indices.ToArray();
+            var mesh = new ArrayMesh();
+            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+            meshes.Add(mesh);
+        }
+
+        return meshes;
     }
 
     // One mesh per band of rows, so the painting order of the rows holds across bands (each band is added after the
