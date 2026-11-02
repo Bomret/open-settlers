@@ -12,4 +12,7 @@
     <Compile Include="../../src/Assets/**/*.cs" />
     <Compile Include="../../src/Simulation/**/*.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="map-digests.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
