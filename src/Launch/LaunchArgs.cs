@@ -187,8 +187,8 @@ public sealed class LaunchArgs
 
         return new LaunchArgs
         {
-            Mode =
-                conflictFlag is not null ? LaunchMode.Browser
+            Mode = conflictFlag is not null
+                ? LaunchMode.Browser
                 : modeFlag switch
                 {
                     CheckFlag => LaunchMode.Check,
