@@ -22,35 +22,24 @@ public sealed class ObjectSpritesTests
     }
 
     [TestMethod]
-    public void CodesEightToFifteenShareOneEightFrameAnimationThatTheCounterAdvances()
+    public void CodesEightToFifteenShareTheFirstFrameOfTheirEightFrameAnimation()
     {
-        Assert.AreEqual(1250, ObjectSprites.Entry(8, 0));
-        Assert.AreEqual(1250, ObjectSprites.Entry(15, 0));
-        Assert.AreEqual(1251, ObjectSprites.Entry(8, 16));
-        Assert.AreEqual(1250, ObjectSprites.Entry(8, 128));
+        Assert.AreEqual(1250, ObjectSprites.Entry(8));
+        Assert.AreEqual(1250, ObjectSprites.Entry(15));
     }
 
     [TestMethod]
-    public void TheLowBitsOfACodeOffsetItsPhase()
+    public void CodesSixteenToTwentyThreeTakeTheFirstFrameOfTheNextEightEntries()
     {
-        // The counter plus the code's index, shifted right by 4: code 15 (index 7) turns over 9 counts before code 8.
-        Assert.AreEqual(1251, ObjectSprites.Entry(15, 9));
-        Assert.AreEqual(1250, ObjectSprites.Entry(8, 9));
+        Assert.AreEqual(1258, ObjectSprites.Entry(16));
+        Assert.AreEqual(1258, ObjectSprites.Entry(23));
     }
 
     [TestMethod]
-    public void CodesSixteenToTwentyThreeAnimateTheNextEightEntries()
+    public void CodesTwentyFourToThirtyOneTakeTheSecondFrameOfTheirGroupOfFour()
     {
-        Assert.AreEqual(1258, ObjectSprites.Entry(16, 0));
-        Assert.AreEqual(1259, ObjectSprites.Entry(16, 16));
-    }
-
-    [TestMethod]
-    public void CodesTwentyFourToThirtyOneAnimateTwoGroupsOfFourEntries()
-    {
-        Assert.AreEqual(1267, ObjectSprites.Entry(24, 0));
-        Assert.AreEqual(1266, ObjectSprites.Entry(24, 48));
-        Assert.AreEqual(1271, ObjectSprites.Entry(28, 0));
-        Assert.AreEqual(1270, ObjectSprites.Entry(28, 48));
+        Assert.AreEqual(1267, ObjectSprites.Entry(24));
+        Assert.AreEqual(1267, ObjectSprites.Entry(27));
+        Assert.AreEqual(1271, ObjectSprites.Entry(28));
     }
 }

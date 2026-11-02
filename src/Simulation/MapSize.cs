@@ -11,17 +11,26 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed record MapSize
 {
-    /// <summary>The sizes the original offers, smallest first.</summary>
-    public static IReadOnlyList<MapSize> Offered { get; } = [FromValue(1), FromValue(2), FromValue(3)];
+    // The original starts at 32 by 32 and doubles the width, then the height, then the width again, once for
+    // each step of the value above 1 (0x4685da to 0x468603).
+    /// <summary>The sizes the original offers, smallest first. Only these exist.</summary>
+    public static IReadOnlyList<MapSize> Offered { get; } = [new(1, 32, 32), new(2, 64, 32), new(3, 64, 64)];
+
+    private MapSize(int value, int width, int height)
+    {
+        Value = value;
+        Width = width;
+        Height = height;
+    }
 
     /// <summary>The size value: 1 for 32 by 32 tiles, 2 for 64 by 32, 3 for 64 by 64.</summary>
-    public required int Value { get; init; }
+    public int Value { get; }
 
     /// <summary>The number of tile columns; a power of two.</summary>
-    public required int Width { get; init; }
+    public int Width { get; }
 
     /// <summary>The number of tile rows; a power of two.</summary>
-    public required int Height { get; init; }
+    public int Height { get; }
 
     /// <summary>
     /// Finds the offered size with this value. Returns false with the reason when the original offers no such
@@ -39,31 +48,5 @@ public sealed record MapSize
             : null;
 
         return size is not null;
-    }
-
-    // The original starts at 32 by 32 and doubles the width, then the height, then the width again, once for
-    // each step of the value above 1 (0x4685da to 0x468603).
-    private static MapSize FromValue(int value)
-    {
-        var width = 32;
-        var height = 32;
-        for (var steps = value - 1; steps > 0; steps--)
-        {
-            if (width == height)
-            {
-                width *= 2;
-            }
-            else
-            {
-                height *= 2;
-            }
-        }
-
-        return new MapSize
-        {
-            Value = value,
-            Width = width,
-            Height = height,
-        };
     }
 }

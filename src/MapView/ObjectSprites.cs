@@ -17,12 +17,12 @@ public static class ObjectSprites
     public const int FirstEntry = 1250;
 
     /// <summary>
-    /// The sprite entry of a code, or null where the view draws none (a code below 8 or above 127). <c>counter</c> is
-    /// the program's frame counter (state <c>+0x206</c>); a still frame takes 0. Indexes 0 to 15 (codes 8 to 23)
-    /// form two animations of 8 frames, indexes 16 to 23 (codes 24 to 31) two of 4 frames. The frame is the
-    /// counter plus the index, shifted right by 4, so the low bits of the code offset each object's phase.
+    /// The sprite entry of a code, or null where the view draws none (a code below 8 or above 127). The view
+    /// draws the frame of the program's frame counter 0 (state <c>+0x206</c>); the animation rule is in
+    /// <c>docs/rules/map-objects.md</c>. At counter 0 indexes 0 to 15 (codes 8 to 23) take the first frame of
+    /// their group of 8 and indexes 16 to 23 (codes 24 to 31) the second frame of their group of 4.
     /// </summary>
-    public static int? Entry(int code, int counter = 0)
+    public static int? Entry(int code)
     {
         if (code is < FirstCode or > LastCode)
         {
@@ -30,16 +30,12 @@ public static class ObjectSprites
         }
 
         var index = code - FirstCode;
-        if (index < 16)
+        index = index switch
         {
-            var phase = ((counter + index) >> 4) & 7;
-            index = (index & 0x78) + phase;
-        }
-        else if (index < 24)
-        {
-            var phase = ((counter + index) >> 4) & 3;
-            index = (index & 0x7c) + phase;
-        }
+            < 16 => index & 0x78,
+            < 24 => (index & 0x7c) + 1,
+            _ => index,
+        };
 
         return FirstEntry + index;
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 
@@ -62,13 +63,21 @@ public sealed class TerrainQuadsTests
     }
 
     [TestMethod]
-    public void TheTrianglesOfAMapAreInRowOrder()
+    public void ATriangleBelowTheLastRowIsRefused()
+    {
+        Assert.ThrowsExactly<ArgumentException>(() => TerrainQuads.Bands([Triangle(0), Triangle(48)], Masks(), 48, 16));
+    }
+
+    [TestMethod]
+    public void EveryTriangleOfAMapLandsInExactlyOneBand()
     {
         var map = MapViewState.Open("1234567812345678", 1).Map;
         Assert.IsNotNull(map);
+        var triangles = TerrainTriangles.Of(map);
 
-        var bands = TerrainQuads.Bands(TerrainTriangles.Of(map), Masks(), map.Size.Height, 16);
+        var bands = TerrainQuads.Bands(triangles, Masks(), map.Size.Height, 16);
 
-        Assert.IsTrue(bands.Count > 0);
+        Assert.AreEqual(triangles.Count, bands.Sum(band => band.Count));
+        Assert.IsLessThanOrEqualTo((map.Size.Height + 15) / 16, bands.Count);
     }
 }

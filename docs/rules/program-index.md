@@ -297,7 +297,7 @@ nothing. The call order of `MapGen_Generate`:
 | Address | Name | Role | Status | Layer | Anchor |
 | --- | --- | --- | --- | --- | --- |
 | `0x42195c` | `Map_SetGeometry` | Derives the map masks, row stride, tile count, and neighbor steps from `Map_Width` and `Map_Height`; a tile is two 4-byte records, the second 4 times the columns after the first. | confirmed | game | Called by `Game_Start`. |
-| `0x421530` | `MapGen_InitParams` | Sets the water level (20) and the lake radius (14) and clears other generator fields. | confirmed | game | Called by `Game_Start`. |
+| `0x421530` | `MapGen_InitParams` | Sets the water level (20) and the lake radius (14) and clears other generator fields. | inferred | game | Called by `Game_Start`. Only the first two stores (water level, lake radius) are ported and emulated. |
 | `0x4216e9` | `MapGen_Generate` | Seeds the generator from `Map_Seed` and runs the generation passes. | confirmed | game | Called by `Game_Start` at `0x41eeb9`. |
 | `0x4218ca` | `MapGen_ResetProgress` | Zeroes the progress counter. | confirmed | game | Called by `MapGen_Generate`. |
 | `0x4218d8` | `MapGen_StepProgress` | Draws segments of the progress bar. | inferred | game | Called between the passes. |
@@ -646,7 +646,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x41eeeb` | — | unknown | Program start and game flow |
 | `0x41f4d7` | `Game_ResumeLoaded` | inferred | Program start and game flow |
 | `0x42055e` | — | unknown | Program start and game flow |
-| `0x421530` | `MapGen_InitParams` | confirmed | Map generation |
+| `0x421530` | `MapGen_InitParams` | inferred | Map generation |
 | `0x4216e9` | `MapGen_Generate` | confirmed | Map generation |
 | `0x421841` | `MapGen_CountResource1` | confirmed | Map generation |
 | `0x4218ca` | `MapGen_ResetProgress` | confirmed | Map generation |

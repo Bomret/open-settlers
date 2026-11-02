@@ -18,17 +18,11 @@ public static class MapGenerator
     /// <summary>
     /// Generates the map of a seed and size, reporting to the observer after the seeding and after each pass.
     /// </summary>
-    /// <exception cref="ArgumentException">The size is not one of <see cref="MapSize.Offered"/>.</exception>
     /// <exception cref="InvalidOperationException">
     /// No land mass covers a quarter of the map. The original searches for one without end.
     /// </exception>
     public static Map Generate(MapSeed seed, MapSize size, MapPassObserver? observer = null)
     {
-        if (!MapSize.TryFromValue(size.Value, out var offered, out var problem) || offered != size)
-        {
-            throw new ArgumentException(problem ?? "the map size is not one the original offers", nameof(size));
-        }
-
         return new Generation(seed, size, observer).Run();
     }
 
@@ -915,8 +909,9 @@ public static class MapGenerator
         }
 
         // MapGen_PlaceDeposits (0x424a9e): for each of the pass's deposits, up to 100 random tiles for one that fits
-        // terrain 11 to 14, then rings of 1, 6, 12, 18, 24, and 30 tiles around it on the spiral, the first with an
-        // amount of 8, 12, 16, or 20 and each next 4 less, until the amount runs out. The original also tests the
+        // terrain 11 to 14, then rings of 1, 6, 12, 18, and 24 tiles around it on the spiral, the first with an
+        // amount of 8, 12, 16, or 20 and each next 4 less, until the amount runs out. A sixth ring would get
+        // amount 0 even from 20 (20, 16, 12, 8, 4), so the walk ends after the fifth. The original also tests the
         // byte after the resource byte of the tile (the site 0x424ad8); no pass writes that byte, so the test
         // always holds and the engine leaves it out.
         private void PlaceDeposits(Deposit pass)
@@ -939,7 +934,7 @@ public static class MapGenerator
 
                 var amount = (Draw() & 0x0c) + 8;
                 var index = 0;
-                foreach (var ring in new[] { 1, 6, 12, 18, 24, 30 })
+                foreach (var ring in new[] { 1, 6, 12, 18, 24 })
                 {
                     for (var step = 0; step < ring; step++)
                     {

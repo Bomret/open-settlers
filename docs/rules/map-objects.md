@@ -31,7 +31,8 @@ water sprite and is no object), and the low 7 bits are the object code.
   phase. Codes 24 to 27 take 1266 to 1269 and codes 28 to 31 take 1270 to 1273.
 - The routine also counts the objects it draws of indexes below 24 in the view (`+0x1b6`), which the engine leaves out.
 
-The engine's view draws the frame of counter 0.
+The engine's view draws the frame of counter 0: it takes no counter and does not compute the phase, and the rule
+above stays as recovered.
 
 ## Where the sprite sits
 

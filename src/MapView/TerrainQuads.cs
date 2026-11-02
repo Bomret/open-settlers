@@ -13,7 +13,8 @@ public static class TerrainQuads
     /// Turns <c>triangles</c>, sorted by row as <see cref="TerrainTriangles.Of"/> returns them, into rectangles and
     /// groups them in bands of <c>bandRows</c> rows (the last band may be shorter), so the painting order holds across
     /// bands. A band without a triangle is left out. A mask hangs from its anchor: centered on it and moved by the
-    /// header's offset. Throws <see cref="ArgumentException"/> where a triangle's row is lower than its predecessor's.
+    /// header's offset. Throws <see cref="ArgumentException"/> where a triangle's row is lower than its predecessor's or
+    /// not below <c>rows</c>.
     /// </summary>
     public static List<List<TerrainQuad>> Bands(
         IReadOnlyList<TerrainTriangle> triangles,
@@ -55,6 +56,11 @@ public static class TerrainQuads
             {
                 bands.Add(quads);
             }
+        }
+
+        if (next < triangles.Count)
+        {
+            throw new ArgumentException("a triangle's row lies below the last row of the map", nameof(triangles));
         }
 
         return bands;

@@ -47,7 +47,8 @@ row down), south (one row down), west, north-west (one column west and one row u
 ## The parameters
 
 `MapGen_InitParams` at `0x421530` stores the water level 20 and the lake radius 14 first, then clears other
-generator fields. **Inferred:** the passes of this note read only those two values.
+generator fields. **Partial:** only those first two stores are ported and emulated; the clearing of the other
+fields is not run. **Inferred:** the passes of this note read only those two values.
 
 ## The canonical map form
 
@@ -92,6 +93,12 @@ the number of draws, so a pass's draw count is part of what a digest line checks
 
 **Status:** confirmed; every pass is **emulated** for the three sizes and three seeds in
 `tests/OpenSettlers.Tests/map-digests.txt`.
+
+Each pinned line is a harness line `EMU gen size=N pass=P rng=W0,W1,W2 flags=… height=… terrain=… lake=…
+object=… resource=… [total=T]` rewritten as `N S0,S1,S2 P W0,W1,W2 D0 … D5 [total=T]`: the size value, the
+seed words the `gen:N:S0,S1,S2` command was given (the harness line does not repeat them), the pass name,
+the generator words, and the six layer digests in layer order without their names. The `Seed` line has no
+digests.
 
 1. **Seeding.** `MapGen_Generate` copies the map seed into the random generator and steps it twice. A pass
    draws the new first word of the generator. Two draws.
@@ -207,7 +214,8 @@ position wraps at both edges.
     `2P` deposits on terrain 11 to 14. A deposit: up to 100 times draw a random position until
     `MapGen_FitsTerrain` holds, then draw once for the first amount (the draw masked with 12, plus 8: 8, 12,
     16, or 20), and fill rings of 1, 6, 12, 18, and 24 tiles from the spiral table, in index order from 0,
-    each ring with an amount 4 less than the one before, stopping when the amount reaches 0
+    each ring with an amount 4 less than the one before, stopping when the amount reaches 0 (from 20 the
+    fifth ring has 4, so a sixth ring would get 0 and the walk ends first)
     (`MapGen_FillDepositRing`, `0x424be5`). A ring tile takes the deposit (type times 32 plus the amount) when
     its byte is 0 or its amount is below the ring's. **Site `0x424ad8`:** the position test reads the byte
     after the one the pass writes (byte 1 of record B, where the pass writes byte 0). No pass writes that

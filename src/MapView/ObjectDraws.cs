@@ -3,8 +3,8 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
 
-/// <summary>One object to draw: its tile, its code, its sprite entry and the draw position in map pixels.</summary>
-public readonly record struct ObjectDraw(int Column, int Row, int Code, int Entry, int X, int Y);
+/// <summary>One object to draw: its tile row, its sprite entry and the draw position in map pixels.</summary>
+public readonly record struct ObjectDraw(int Row, int Entry, int X, int Y);
 
 /// <summary>Where each generated object lies on the map (<c>docs/rules/map-objects.md</c>).</summary>
 public static class ObjectDraws
@@ -21,14 +21,14 @@ public static class ObjectDraws
     /// sprite's own header offsets apply where the sprite is drawn. A code without a sprite is left out. Resources
     /// are no objects and are never drawn.
     /// </summary>
-    public static List<ObjectDraw> Of(Map map, int counter = 0)
+    public static List<ObjectDraw> Of(Map map)
     {
         var heights = map.Layer(MapLayer.Height);
         var width = map.Size.Width;
         var draws = new List<ObjectDraw>(map.Objects.Count);
         foreach (var item in map.Objects)
         {
-            if (ObjectSprites.Entry(item.Code, counter) is not { } entry)
+            if (ObjectSprites.Entry(item.Code) is not { } entry)
             {
                 continue;
             }
@@ -37,9 +37,7 @@ public static class ObjectDraws
             var height = heights[item.Y * width + item.X] & 31;
             draws.Add(
                 new ObjectDraw(
-                    item.X,
                     item.Y,
-                    item.Code,
                     entry,
                     x + OffsetX,
                     y - height * TerrainTriangles.HeightStep + OffsetY

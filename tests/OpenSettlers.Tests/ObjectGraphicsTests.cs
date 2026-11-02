@@ -113,9 +113,9 @@ public sealed class ObjectGraphicsTests
         };
         var draws = new[]
         {
-            new ObjectDraw(0, 0, 8, 1250, 100, 50),
-            new ObjectDraw(1, 0, 9, 1251, 132, 50),
-            new ObjectDraw(0, 20, 8, 1250, 100, 450),
+            new ObjectDraw(0, 1250, 100, 50),
+            new ObjectDraw(0, 1251, 132, 50),
+            new ObjectDraw(20, 1250, 100, 450),
         };
 
         var bands = ObjectQuads.Bands(draws, images, 21, 16);

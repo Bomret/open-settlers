@@ -169,49 +169,27 @@ public sealed class MapGeneratorTests
     }
 
     [TestMethod]
-    [DataRow(1)]
-    [DataRow(2)]
-    [DataRow(3)]
-    public void TheObjectsAndDepositsListTheTilesOfTheirLayers(int sizeValue)
+    public void TheObjectsAndDepositsListTheTilesOfTheirLayersAsTheEmulatedMapHasThem()
     {
-        MapSize.TryFromValue(sizeValue, out var size, out _);
-        var map = MapGenerator.Generate(ParseSeed(Seeds[0]), size!);
-        var width = size!.Width;
+        // Seed 6359,A0D2,B4FA at size 3. The engine's layer digests and the type 1 total of this map equal the
+        // emulator's (map-digests.txt); the entries are read from that engine map, which is therefore the
+        // emulator's, and pinned here as column, row, and object code or deposit type and amount.
+        MapSize.TryFromValue(3, out var size, out _);
 
-        var codes = map.Layer(MapLayer.Object).ToArray();
-        var expectedObjects = Enumerable
-            .Range(0, codes.Length)
-            .Where(tile => (codes[tile] & 0x7f) != 0)
-            .Select(tile => new MapObject(tile % width, tile / width, (byte)(codes[tile] & 0x7f)))
-            .ToList();
-        var resources = map.Layer(MapLayer.Resource).ToArray();
-        var expectedDeposits = Enumerable
-            .Range(0, resources.Length)
-            .Where(tile => resources[tile] >> 5 != 0)
-            .Select(tile => new ResourceDeposit(
-                tile % width,
-                tile / width,
-                resources[tile] >> 5,
-                resources[tile] & 0x1f
-            ))
-            .ToList();
+        var map = MapGenerator.Generate(ParseSeed(Seeds[1]), size!);
 
-        Assert.IsTrue(expectedObjects.Count > 0);
-        Assert.IsTrue(expectedDeposits.Count > 0);
-        CollectionAssert.AreEqual(expectedObjects, map.Objects.ToList());
-        CollectionAssert.AreEqual(expectedDeposits, map.Deposits.ToList());
-        Assert.AreEqual(
-            expectedDeposits.Where(deposit => deposit.Type == 1).Sum(deposit => deposit.Amount),
-            map.Resource1Total
+        Assert.AreEqual(552, map.Objects.Count);
+        CollectionAssert.AreEqual(
+            new[] { new MapObject(9, 0, 82), new MapObject(22, 0, 73), new MapObject(45, 0, 21) },
+            map.Objects.Take(3).ToList()
         );
-    }
-
-    [TestMethod]
-    public void TheResourceLayerIsTheLakeLayersByteAsTheOriginalKeepsBoth()
-    {
-        var map = MapGenerator.Generate(ParseSeed(Seeds[1]), MapSize.Offered[2]);
-
-        CollectionAssert.AreEqual(map.Layer(MapLayer.Lake).ToArray(), map.Layer(MapLayer.Resource).ToArray());
+        Assert.AreEqual(1091, map.Deposits.Count);
+        CollectionAssert.AreEqual(
+            new[] { new ResourceDeposit(34, 0, 3, 4), new ResourceDeposit(35, 0, 3, 8), new ResourceDeposit(36, 0, 3, 8) },
+            map.Deposits.Take(3).ToList()
+        );
+        Assert.AreEqual(new ResourceDeposit(18, 20, 1, 4), map.Deposits.First(deposit => deposit.Type == 1));
+        Assert.AreEqual(956, map.Resource1Total);
     }
 
     private static int DrawsBetween(RandomGenerator from, RandomGenerator to)
