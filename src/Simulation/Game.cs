@@ -49,7 +49,10 @@ public sealed class Game
         {
             var command = _queue.Min;
             _queue.Remove(command);
-            _applied = Mix(Mix(Mix(Mix(Mix(_applied, command.Tick), command.Player), command.Kind), command.X), command.Y);
+            _applied = Mix(
+                Mix(Mix(Mix(Mix(_applied, command.Tick), command.Player), command.Kind), command.X),
+                command.Y
+            );
         }
 
         TickCount++;

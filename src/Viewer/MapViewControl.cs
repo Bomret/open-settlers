@@ -26,6 +26,10 @@ public partial class MapViewControl : Control
     const int MaxArrayLayers = 256;
 
     readonly Install _install;
+    readonly bool _play;
+    Game? _game;
+    double _tickCarry;
+    Label _ticks = null!;
     MapViewState _state = null!;
     Camera _camera = null!;
     LineEdit _seed = null!;
@@ -42,10 +46,14 @@ public partial class MapViewControl : Control
     bool _dragging;
     Vector2 _keyCarry;
 
-    /// <summary>The view of the map of this install's graphics.</summary>
-    public MapViewControl(Install install)
+    /// <summary>
+    /// The view of the map of this install's graphics. With <paramref name="play"/> a <see cref="Game"/> on the
+    /// shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
+    /// </summary>
+    public MapViewControl(Install install, bool play = false)
     {
         _install = install;
+        _play = play;
     }
 
     /// <inheritdoc/>
@@ -83,6 +91,8 @@ public partial class MapViewControl : Control
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
         };
         bar.AddChild(_message);
+        _ticks = new Label { Visible = _play };
+        bar.AddChild(_ticks);
 
         _canvas = new Control
         {
@@ -121,13 +131,35 @@ public partial class MapViewControl : Control
 
         _state = MapViewState.Open(_seed.Text, _size.GetItemId(0));
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
+        StartGame();
         Redraw();
         ShowMessage();
+    }
+
+    void StartGame()
+    {
+        if (_play && _state.Map is not null)
+        {
+            _game = new Game(_state.Map);
+            _tickCarry = 0;
+        }
     }
 
     /// <inheritdoc/>
     public override void _Process(double delta)
     {
+        if (_game is not null)
+        {
+            // The frame rate does not set the tick rate: whole ticks are due, the fraction carries.
+            _tickCarry += delta * Game.TicksPerSecond;
+            for (; _tickCarry >= 1; _tickCarry--)
+            {
+                _game.Tick();
+            }
+
+            _ticks.Text = $"Tick {_game.TickCount}";
+        }
+
         var step = (float)(KeySpeed * delta);
         var x = (Input.IsKeyPressed(Key.Right) ? step : 0) - (Input.IsKeyPressed(Key.Left) ? step : 0);
         var y = (Input.IsKeyPressed(Key.Down) ? step : 0) - (Input.IsKeyPressed(Key.Up) ? step : 0);
@@ -169,6 +201,7 @@ public partial class MapViewControl : Control
         if (changed)
         {
             _camera = new Camera(_state.Map!.Size);
+            StartGame();
             Redraw();
         }
 

@@ -126,4 +126,8 @@ covered.
 ## In the engine
 
 The engine's tick is one pass of 8 clock units
-([ADR 0005](../adr/0005-a-tick-is-one-pass-of-eight-clock-units.md)).
+([ADR 0005](../adr/0005-a-tick-is-one-pass-of-eight-clock-units.md)): 4 timer calls, 12.5 ticks per
+second at normal speed. `Game.Tick` in `src/Simulation/Game.cs` applies the commands due at the tick,
+then advances the tick count; the view calls it 12.5 times per second of frame time and carries the
+fraction. The rules of the passes, the phase walk of the item tables
+([Item tables](item-tables.md#how-a-pass-walks-a-table)), are not in the engine yet.
