@@ -44,6 +44,7 @@ Run every command through its mise task from the repository root. `mise tasks` l
 
 - Write commit messages as [Conventional Commits](https://www.conventionalcommits.org/):
   `<type>(<scope>): <summary>`, for example `fix(assets): find install files case-insensitively`.
-- Open a pull request into `main` on GitHub (`Bomret/open-settlers`). Keep one change per pull request.
+- Report bugs and propose changes as issues on GitHub (`Bomret/open-settlers`).
+- Open a pull request into `main` on GitHub. Keep one change per pull request.
 - Pull requests are merged by squash. The pull request title becomes the commit message, so it follows
   Conventional Commits too.
