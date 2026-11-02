@@ -31,16 +31,16 @@ own words with its address as evidence (INV-0001). Mark a rule that the program 
 ## Agent skills
 
 ### Slice store
-Codeberg Issues on `bomret/open-settlers`, through the `tea` login for `https://codeberg.org`. See `docs/agents/issue-tracker.md`.
+GitHub Issues on `Bomret/open-settlers`, through `gh api` with `GITHUB_TOKEN`. See `docs/agents/issue-tracker.md`.
 
 ### Code host
-Codeberg (`bomret/open-settlers`) through `tea`; scopes open as draft pull requests into `main`. See `docs/agents/code-management.md`.
+GitHub (`Bomret/open-settlers`) through `gh`; scopes open as draft pull requests into `main`. See `docs/agents/code-management.md`.
 
 ### Documentation
 In-repo `AGENTS.md` hierarchy, controlled writing standard, American English. See `docs/agents/documentation.md`.
 
 ### Knowledge base
-Codeberg wiki of `bomret/open-settlers`, staged locally and sent by `/superdev:publish-kb`. See `docs/agents/knowledge-base.md`.
+GitHub wiki of `Bomret/open-settlers`, staged locally and sent by `/superdev:publish-kb` through git. See `docs/agents/knowledge-base.md`.
 
 ### Coding
 C# style rules in `docs/agents/CODING.md`; the patterns this repo uses in `docs/agents/CODING_PATTERNS.md`.
