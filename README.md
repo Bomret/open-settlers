@@ -2,7 +2,7 @@
 
 An open-source engine for Die Siedler (Blue Byte, 1993), built on Godot 4 with C#. It ships no game content: it reads the files of a Die Siedler install the player owns.
 
-Status: milestone M1. The engine reads the data files of an install. It has two modes, the asset check and the asset browser.
+Status: milestone M2. The engine reads the data files of an install and generates the map of a seed. It has three modes, the asset check, the asset browser, and the map view.
 
 ## Requirements
 
@@ -79,13 +79,14 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 
 - `OpenSettlers.csproj`, `project.godot`: the Godot project.
 - `mise.toml`: the pinned development tools and the tasks.
-- `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, and `Viewer/` the asset browser and its previews.
+- `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `Simulation/` the random generator, the seed, and the map generator, `MapView/` the terrain and object drawing plans and the camera, and `Viewer/` the asset browser, the map view, and their shaders.
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.
 - `docs/rules/`: the rules recovered from the game's program, each with its address as evidence.
 - `docs/agents/`: instructions for coding agents.
-- `tools/GhidraDump/`: Ghidra scripts that build a local Ghidra project and write a searchable dump of the game's program.
+- `tools/GhidraDump/`: Ghidra scripts that build a local Ghidra project and write a searchable dump of the game's program, and the emulator harness that runs the original's map-start code for reference values.
+- `tools/WindowsCheck/`: the procedure that confirms the emulator's values by running the original in Windows.
 
 ## Build and test
 
