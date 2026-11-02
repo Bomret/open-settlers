@@ -1,0 +1,4 @@
+# Results of the Windows run (tools/WindowsCheck/README.md, ADR 0008). One row per seed and size, as
+# digest.py prints it: origin "Windows run", a bar, then the size value, the map seed, the pass
+# CountResource1, the generator words, the digests of the six layers, and the total. A row is recorded as
+# observed; a row that differs from map-digests.txt is a finding, never edited to match.

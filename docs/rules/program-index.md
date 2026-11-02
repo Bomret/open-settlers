@@ -228,6 +228,8 @@ Note: [Graphics images](graphics-images.md).
 | `0x451355` | `Panel_Update` | For each view, runs the handler of the requested or current panel screen. | inferred | game | Called by `Main_Loop`. |
 | `0x45ce5a` | `Panel_CopyToScreen` | For each view, copies the panel into the view's screen. | inferred | game | Called by `Main_Loop`. |
 | `0x44d38d` | `Render_DrawMapView` | For each view, draws the map row by row. | inferred | game | Called by `Main_Loop` in a game. |
+| `0x44d3ae` | `Render_DrawViewRows` | Walks the rows of one view two at a time and runs `Render_DrawRowTiles` for each. | confirmed | game | Called by `Render_DrawMapView`. See [Map objects](map-objects.md). |
+| `0x44d5b4` | `Render_DrawRowTiles` | Draws the tiles of one row from west to east: for the object code in byte 3 of record A, no sprite for 0, other routines for 1 to 7, the animated or still sprite through `Gfx_DrawObjectSprite` from 8 on. | confirmed | game | Called by `Render_DrawViewRows`. See [Map objects](map-objects.md). |
 | `0x450a35` | `Render_DrawViewOverlay` | For each view, draws sprite lists over the map. | inferred | game | Called by `Main_Loop` in a game. |
 | `0x44d2fc` | — | For each view, copies a rectangle from the surface at `+0x108` into the view's screen. | unknown | game | Called by `Main_Loop` in a game. |
 | `0x424d87` | `Minimap_Build` | Writes one byte per tile from terrain and height to the buffer at `+0x8c`. | inferred | game | Called by `MapGen_Generate` and `Game_ResumeLoaded`. |
@@ -276,7 +278,7 @@ Sites:
 
 ### Map generation
 
-Note: [Map start](map-start.md).
+Notes: [Map start](map-start.md), [Map form](map-form.md).
 
 `Game_Start` calls `Map_SetGeometry`, then `MapGen_InitParams`, then `MapGen_Generate`. Passes marked
 with an asterisk draw from the random generator. `MapGen_StepProgress` runs between the passes and draws
@@ -294,8 +296,8 @@ nothing. The call order of `MapGen_Generate`:
 
 | Address | Name | Role | Status | Layer | Anchor |
 | --- | --- | --- | --- | --- | --- |
-| `0x42195c` | `Map_SetGeometry` | Derives the map masks, row stride, tile count, and neighbor steps from `Map_Width` and `Map_Height`. | inferred | game | Called by `Game_Start`. |
-| `0x421530` | `MapGen_InitParams` | Sets the water level and lake radius and clears other generator fields. | inferred | game | Called by `Game_Start`. |
+| `0x42195c` | `Map_SetGeometry` | Derives the map masks, row stride, tile count, and neighbor steps from `Map_Width` and `Map_Height`; a tile is two 4-byte records, the second 4 times the columns after the first. | confirmed | game | Called by `Game_Start`. |
+| `0x421530` | `MapGen_InitParams` | Sets the water level (20) and the lake radius (14) and clears other generator fields. | inferred | game | Called by `Game_Start`. Only the first two stores (water level, lake radius) are ported and emulated. |
 | `0x4216e9` | `MapGen_Generate` | Seeds the generator from `Map_Seed` and runs the generation passes. | confirmed | game | Called by `Game_Start` at `0x41eeb9`. |
 | `0x4218ca` | `MapGen_ResetProgress` | Zeroes the progress counter. | confirmed | game | Called by `MapGen_Generate`. |
 | `0x4218d8` | `MapGen_StepProgress` | Draws segments of the progress bar. | inferred | game | Called between the passes. |
@@ -649,7 +651,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x421841` | `MapGen_CountResource1` | confirmed | Map generation |
 | `0x4218ca` | `MapGen_ResetProgress` | confirmed | Map generation |
 | `0x4218d8` | `MapGen_StepProgress` | inferred | Map generation |
-| `0x42195c` | `Map_SetGeometry` | inferred | Map generation |
+| `0x42195c` | `Map_SetGeometry` | confirmed | Map generation |
 | `0x421d3a` | `MapGen_ClearMap` | confirmed | Map generation |
 | `0x421d71` | `MapGen_SeedHeights` | confirmed | Map generation |
 | `0x421e75` | `MapGen_SubdivideHeights` | confirmed | Map generation |
@@ -722,6 +724,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44cb6e` | `Msg_RunTimers` | confirmed | Main loop |
 | `0x44d2fc` | — | unknown | Views, panels, and drawing |
 | `0x44d38d` | `Render_DrawMapView` | inferred | Views, panels, and drawing |
+| `0x44d3ae` | `Render_DrawViewRows` | confirmed | Views, panels, and drawing |
+| `0x44d5b4` | `Render_DrawRowTiles` | confirmed | Views, panels, and drawing |
 | `0x44da4d` | `Gfx_DrawObjectSprite` | confirmed | Graphics images |
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
@@ -790,7 +794,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 129 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 101 confirmed, 28 inferred, 14 unknown.
+Coverage: the index names 131 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 105 confirmed, 26 inferred, 14 unknown.
 <!-- coverage:end -->
 
 Open anchors:

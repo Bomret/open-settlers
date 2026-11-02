@@ -1,0 +1,138 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Formats;
+using OpenSettlers.MapView;
+
+namespace OpenSettlers.Tests;
+
+[TestClass]
+public sealed class ObjectGraphicsTests
+{
+    const string Archive = "loca/SPAD.PA";
+
+    // A 3 x 1 sprite: pixel 0 is skipped, pixel 1 is drawn with palette index 0, pixel 2 with index 7.
+    static byte[] Sprite(short offsetX = -1, short offsetY = -2) =>
+        GraphicFileTests.Entry(1, 0, 3, 1, offsetX, offsetY, [1, 2, 0, 7, 0, 0]);
+
+    static Dictionary<int, byte[]> Payloads() =>
+        new()
+        {
+            [3] = new byte[768],
+            [1250] = Sprite(),
+            [1251] = GraphicFileTests.Entry(1, 0, 2, 2, 5, 6, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]),
+            [1369] = Sprite(),
+        };
+
+    static OpenSettlers.Assets.Install Open(FakeInstall fake)
+    {
+        Assert.IsTrue(
+            OpenSettlers.Assets.Install.TryOpen(
+                OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null),
+                out var install,
+                out _
+            )
+        );
+
+        return install;
+    }
+
+    static FakeInstall Install(Dictionary<int, byte[]> payloads) =>
+        new FakeInstall().Put(Archive, ArchiveBytes.Build(1400, payloads));
+
+    [TestMethod]
+    public void TheCoverageOfAnImageIsKeptApartFromItsPaletteIndices()
+    {
+        var image = ObjectImage.From(SpriteFile.Read(Sprite()));
+
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 7 }, image.Indices);
+        CollectionAssert.AreEqual(new byte[] { 0, 255, 255 }, image.Coverage);
+        Assert.AreEqual(-1, image.OffsetX);
+        Assert.AreEqual(-2, image.OffsetY);
+    }
+
+    [TestMethod]
+    public void LoadingReadsEverySpriteOfTheObjectsAndPadsThemToOneLayerSize()
+    {
+        using var fake = Install(Payloads());
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        Assert.HasCount(ObjectGraphics.EntryCount, graphics.Images);
+        Assert.AreEqual(3, graphics.LayerWidth);
+        Assert.AreEqual(2, graphics.LayerHeight);
+        Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
+        Assert.AreEqual(2, graphics.Images[ObjectGraphics.Layer(1251)].Height);
+        Assert.AreEqual(5, graphics.Images[ObjectGraphics.Layer(1251)].OffsetX);
+        Assert.AreEqual(3 * 2, graphics.Images[0].Coverage.Length);
+        Assert.AreEqual(0, ObjectGraphics.Layer(1250));
+        Assert.AreEqual(119, ObjectGraphics.Layer(1369));
+    }
+
+    [TestMethod]
+    public void AnAbsentEntryIsAnEmptyImage()
+    {
+        using var fake = Install(Payloads());
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        Assert.AreEqual(0, graphics.Images[ObjectGraphics.Layer(1300)].Width);
+        Assert.IsTrue(Array.TrueForAll(graphics.Images[ObjectGraphics.Layer(1300)].Coverage, c => c == 0));
+    }
+
+    [TestMethod]
+    public void AnArchiveWithNoObjectSpriteIsRefusedWithAMessage()
+    {
+        using var fake = Install(new Dictionary<int, byte[]> { [3] = new byte[768] });
+
+        var problem = Assert.ThrowsExactly<InvalidDataException>(() => ObjectGraphics.Load(Open(fake)));
+
+        StringAssert.Contains(problem.Message, "no object sprite");
+        StringAssert.Contains(problem.Message, "1250");
+    }
+
+    [TestMethod]
+    public void AnUnreadableSpriteNamesItsEntry()
+    {
+        var payloads = Payloads();
+        payloads[1260] = [1, 2, 3];
+        using var fake = Install(payloads);
+
+        var problem = Assert.ThrowsExactly<InvalidDataException>(() => ObjectGraphics.Load(Open(fake)));
+
+        StringAssert.Contains(problem.Message, "entry 1260");
+    }
+
+    [TestMethod]
+    public void AMissingArchiveIsAnErrorThatNamesIt()
+    {
+        using var fake = new FakeInstall();
+
+        var problem = Assert.ThrowsExactly<FileNotFoundException>(() => ObjectGraphics.Load(Open(fake)));
+
+        StringAssert.Contains(problem.Message, Archive);
+    }
+
+    [TestMethod]
+    public void AQuadHangsFromTheDrawPositionByTheImagesOffsetsAndAnEmptyImageHasNone()
+    {
+        var images = new[]
+        {
+            new ObjectImage(3, 1, -1, -2, new byte[3], new byte[] { 0, 255, 255 }),
+            new ObjectImage(0, 0, 0, 0, [], []),
+        };
+        var draws = new[]
+        {
+            new ObjectDraw(0, 1250, 100, 50),
+            new ObjectDraw(0, 1251, 132, 50),
+            new ObjectDraw(20, 1250, 100, 450),
+        };
+
+        var bands = ObjectQuads.Bands(draws, images, 21, 16);
+
+        Assert.HasCount(2, bands);
+        CollectionAssert.AreEqual(new[] { new ObjectQuad(99, 48, 3, 1, 0) }, bands[0]);
+        Assert.AreEqual(448, bands[1][0].Y);
+    }
+}

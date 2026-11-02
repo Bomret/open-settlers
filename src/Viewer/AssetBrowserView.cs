@@ -11,6 +11,7 @@ namespace OpenSettlers.Viewer;
 /// preview of the selected asset.
 ///   godot --headless --path . -- --check --game &lt;install&gt;
 ///   godot --path . -- --game &lt;install&gt;
+///   godot --path . -- --map --game &lt;install&gt;   (the map view, <see cref="MapViewControl"/>)
 /// <c>SIEDLER_DIR</c> stands in for <c>--game</c>.
 /// </summary>
 public partial class AssetBrowserView : Control
@@ -32,6 +33,13 @@ public partial class AssetBrowserView : Control
         if (args.Mode == LaunchMode.Check)
         {
             RunCheck(args, kinds);
+
+            return;
+        }
+
+        if (args.Mode == LaunchMode.Map)
+        {
+            RunMap(args);
 
             return;
         }
@@ -75,6 +83,21 @@ public partial class AssetBrowserView : Control
             AnchorRight = 1,
             AnchorBottom = 1,
         };
+
+    // Without an install the map view exits as the asset check does: the same message and exit code 2. A Godot
+    // callback exception does not set the exit code, so this owns it.
+    void RunMap(LaunchArgs args)
+    {
+        if (!Install.TryOpen(args, out var install, out var problem))
+        {
+            GD.Print($"ERROR {problem}");
+            GetTree().Quit(2);
+
+            return;
+        }
+
+        AddChild(new MapViewControl(install));
+    }
 
     // A Godot callback exception does not set the exit code, so the check owns it.
     void RunCheck(LaunchArgs args, System.Collections.Generic.IReadOnlyList<AssetKind> kinds)

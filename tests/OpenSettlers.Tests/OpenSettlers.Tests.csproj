@@ -10,5 +10,11 @@
     <Compile Include="../../src/Launch/**/*.cs" />
     <Compile Include="../../src/Formats/**/*.cs" />
     <Compile Include="../../src/Assets/**/*.cs" />
+    <Compile Include="../../src/Simulation/**/*.cs" />
+    <Compile Include="../../src/MapView/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="map-digests.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="windows-run.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

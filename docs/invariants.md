@@ -22,7 +22,7 @@ Class: fidelity
 Concepts: Simulation, Rule
 Statement: The engine's random generator produces the same sequence as the original game's generator for the same seed. The engine's map generator produces the same map from a seed as the original game's map generator. The original game is the game code that both releases share, as `Siedler1.exe` carries it (ADR 0004).
 Breaks: silently
-Check: none yet. The checks are tests that compare generated sequences with values observed in the original, and generated maps with digests of the original's maps (INV-0001).
+Check: `RandomGeneratorTests` and `SeedTests` compare generated sequences and parsed seeds with values observed in the original, and `MapGeneratorTests` (`EveryPassMatchesTheEmulatorForEverySizeAndSeed`) compares generated maps with digests of the original's maps (INV-0001).
 
 ### INV-0004
 

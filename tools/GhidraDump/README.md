@@ -98,3 +98,24 @@ The project path must be absolute, and no element of it may start with a dot: Gh
 such a path.
 
 Run one analysis at a time on a machine. Two Ghidra analyses at once can overload the machine.
+
+## Emulator harness
+
+`EmulateMapStart.java` runs the original's map-start code in Ghidra's emulator and prints the values it
+produces (ADR 0008). Tests quote these values and name the command. `emulate.py` finds `Siedler1.exe` in the
+install (`--game <dir>` or `SIEDLER_DIR`), imports it into a temporary project without analysis, runs the
+commands, and removes the project, so it needs no project in `re-local/` and commits no program bytes:
+
+```sh
+python3 -I tools/GhidraDump/emulate.py --game "$SIEDLER_DIR" rng:FFFF,FFFF,FFFF steps:6:1234,5678,9ABC \
+  parse:1234567812345678 show:1234,5678,9ABC mask:1234,5678,9ABC
+```
+
+Each output line starts with `EMU `. The header of `EmulateMapStart.java` lists the commands. Words are
+hexadecimal, without spaces.
+
+The `gen` command runs `MapGen_Generate` up to the end of `MapGen_CountResource1` for a size value and a map
+seed, for example `gen:3:1234,5678,9ABC` (the size value is decimal), and prints the generator words and the
+layer digests of the canonical map form after each pass (`docs/rules/map-form.md`). A run takes from 15
+seconds to a few minutes, the longer for the larger sizes. The `tables:x` command prints the digest of the
+spiral table and the object codes of the large objects.

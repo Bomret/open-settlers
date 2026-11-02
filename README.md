@@ -2,7 +2,7 @@
 
 An open-source engine for Die Siedler (Blue Byte, 1993), built on Godot 4 with C#. It ships no game content: it reads the files of a Die Siedler install the player owns.
 
-Status: milestone M1. The engine reads the data files of an install. It has two modes, the asset check and the asset browser.
+Status: milestone M2. The engine reads the data files of an install and generates the map of a seed. It has three modes, the asset check, the asset browser, and the map view.
 
 ## Requirements
 
@@ -36,9 +36,9 @@ The reference install is The Settlers History Edition (Ubisoft). Ubisoft Connect
 
 The engine does not support an install of the DOS CD release.
 
-## Run the asset check and the asset browser
+## Run the asset check, the asset browser, and the map view
 
-Both modes need an install. The tasks take it from `SIEDLER_DIR`. Each task builds the C# project first, because without the build Godot cannot load the C# scripts: the asset check prints `Cannot instantiate C# script` and does not exit, and the browser shows an empty window.
+All three modes need an install. The tasks take it from `SIEDLER_DIR`. Each task builds the C# project first, because without the build Godot cannot load the C# scripts: the asset check prints `Cannot instantiate C# script` and does not exit, and the browser shows an empty window.
 
 The asset check runs without a window:
 
@@ -61,9 +61,17 @@ mise run browser
 
 It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. Its text and lists scale with the window. It shows a message instead when there is no usable install or two asset kinds share a name, and a notice when the selected kind lists no assets.
 
+The map view opens a window with a seed field (16 digits from 1 to 8, as the original's screen shows it) and a size picker above the terrain of the generated map:
+
+```sh
+mise run map
+```
+
+A valid seed, applied with Enter, or a new size regenerates and redraws the map. A new size keeps the last applied seed. An invalid seed shows its reason and keeps the last map. The arrow keys and a mouse drag move the view, which wraps at the map's edges. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and selects the asset browser.
+
 A programming error in the browser does not close it. When the browser fails while it selects a kind or an asset, or while it draws a preview, it shows `<file or kind>: crashed: <Type>: <message>` in the preview pane and keeps the lists usable. A crash while the window opens shows that text in place of the window. Each crash also goes to stderr as `asset browser crashed`. A crash is a bug in the engine. A corrupt file is shown as a failure of that file, not as a crash.
 
-Neither mode writes to the install.
+No mode writes to the install.
 
 To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in the `GODOT` variable of `mise.toml` for your platform. Give the install with `--game <install>` after the `--` that ends the Godot arguments, or set `SIEDLER_DIR`. `--game` wins when both are present. `mise run editor` opens the project in the Godot editor.
 
@@ -71,13 +79,14 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 
 - `OpenSettlers.csproj`, `project.godot`: the Godot project.
 - `mise.toml`: the pinned development tools and the tasks.
-- `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, and `Viewer/` the asset browser and its previews.
+- `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `Simulation/` the random generator, the seed, and the map generator, `MapView/` the terrain and object drawing plans and the camera, and `Viewer/` the asset browser, the map view, and their shaders.
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.
 - `docs/rules/`: the rules recovered from the game's program, each with its address as evidence.
 - `docs/agents/`: instructions for coding agents.
-- `tools/GhidraDump/`: Ghidra scripts that build a local Ghidra project and write a searchable dump of the game's program.
+- `tools/GhidraDump/`: Ghidra scripts that build a local Ghidra project and write a searchable dump of the game's program, and the emulator harness that runs the original's map-start code for reference values.
+- `tools/WindowsCheck/`: the procedure that confirms the emulator's values by running the original in Windows.
 
 ## Build and test
 
