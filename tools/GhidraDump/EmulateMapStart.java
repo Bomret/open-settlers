@@ -16,10 +16,13 @@
 //   gen:N:S0,S1,S2           MapGen_Generate (0x4216e9) for the size value N (the value Game_SetStartParams hands
 //                            on) and the map seed words S0,S1,S2, from the size loop of StartScreen_StartGame
 //                            (0x4685cf) through Map_SetGeometry (0x42195c) and the first two stores of
-//                            MapGen_InitParams (0x421530) to the end of MapGen_ScaleHeights. Prints the
+//                            MapGen_InitParams (0x421530), the spiral table builder (0x41e726) and the object
+//                            size table pointer, to the end of MapGen_CountResource1 (0x421841). Prints the
 //                            geometry, then after the seeding the generator words, and after each pass the
 //                            generator words and one FNV-1a 64-bit digest per layer of the canonical map form
-//                            (docs/rules/map-form.md)
+//                            (docs/rules/map-form.md); after MapGen_CountResource1 also the total
+//   tables:x                 the digest of the first 256 spiral table entries, the seeds of its groups of six,
+//                            and the object codes whose size byte is above 1
 //
 // Output lines start with "EMU " so that the caller can tell them from Ghidra's log.
 //@category OpenSettlers
@@ -66,6 +69,7 @@ public class EmulateMapStart extends GhidraScript {
                     case "show" -> show(rest);
                     case "mask" -> mask(rest);
                     case "gen" -> gen(rest);
+                    case "tables" -> tables();
                     default -> throw new IllegalArgumentException("unknown command " + command);
                 }
             } finally {
@@ -211,12 +215,31 @@ public class EmulateMapStart extends GhidraScript {
 
     /** The instruction after each call in MapGen_Generate that ends a recorded step, with the step's name. */
     private static final long[] END_ADDRESS = {0x421749, 0x421761, 0x421774, 0x421779, 0x42178c, 0x42179f,
-            0x4217b2, 0x4217c5, 0x4217d8, 0x4217eb};
+            0x4217b2, 0x4217c5, 0x4217d8, 0x4217eb,
+            // MapGen_PlaceTerrainAndObjects (0x42336d): after each pass it calls, the 15 scatter passes singly
+            0x423372, 0x423385, 0x423398, 0x4233ab, 0x4233be, 0x4233d1, 0x4233d6, 0x4233e9, 0x4233ee, 0x423401,
+            0x423406, 0x423419, 0x42341e, 0x423423, 0x423428, 0x42343b, 0x423440, 0x423445, 0x42344a, 0x42344f,
+            0x423462, 0x423475, 0x423488, 0x42349b, 0x4234ae,
+            // MapGen_Generate: after MapGen_MarkWaterAdjacent and MapGen_CountResource1
+            0x421803, 0x421808};
     private static final String[] END_NAME = {"Seed", "ClearMap", "SeedHeights", "SubdivideHeights",
-            "LimitSlopes", "FillLakes", "LowerToWaterLevel", "ClassifyTerrain", "KeepMainLand", "ScaleHeights"};
+            "LimitSlopes", "FillLakes", "LowerToWaterLevel", "ClassifyTerrain", "KeepMainLand", "ScaleHeights",
+            "GradeWaterDepth", "SetShoreTerrain", "PlacePatches", "BlendPatchEdges", "MarkPeaks",
+            "ScatterObjects1", "ScatterObjects2", "ScatterObjects3", "ScatterObjects4", "ScatterObjects5",
+            "ScatterObjects6", "ScatterObjects7", "ScatterObjects8", "ScatterObjects9", "ScatterObjects10",
+            "ScatterObjects11", "ScatterObjects12", "ScatterObjects13", "ScatterObjects14", "ScatterObjects15",
+            "PlaceDeposits3", "PlaceDeposits2", "PlaceDeposits1", "PlaceDeposits4", "ResolveObjectOverlap",
+            "MarkWaterAdjacent", "CountResource1"};
     /** The calls to MapGen_StepProgress (0x4218d8), which draws the progress bar; the harness skips them. */
     private static final long[] SKIP_CALL = {0x421757, 0x42176a, 0x421782, 0x421795, 0x4217a8, 0x4217bb,
-            0x4217ce, 0x4217e1};
+            0x4217ce, 0x4217e1, 0x4217f4, 0x42337b, 0x42338e, 0x4233a1, 0x4233b4, 0x4233c7, 0x4233df, 0x4233f7,
+            0x42340f, 0x423431, 0x423458, 0x42346b, 0x42347e, 0x423491, 0x4234a4, 0x4234b7};
+    /** Game_Init's table of object sizes (0x41e640, set into +0xc8 by 0x41dbea) and the spiral table builder. */
+    private static final long OBJECT_SIZES = 0x41e640L;
+    private static final int OBJECT_SIZES_POINTER = 0xc8;
+    private static final long SPIRAL_BUILDER = 0x41e726L;
+    private static final int SPIRAL_POINTER = 0x80;
+    private static final int RESOURCE_TOTAL = 0x4c;
 
     private void gen(String rest) throws Exception {
         String[] parts = rest.split(":");
@@ -234,10 +257,13 @@ public class EmulateMapStart extends GhidraScript {
         putInt(STATE + MAP_BUFFER, MAP);
         call(0x42195c);
         runTo(0x421530, 0x421546);
+        putInt(STATE + OBJECT_SIZES_POINTER, OBJECT_SIZES);
+        call(SPIRAL_BUILDER);
         for (int i = 0; i < 3; i++) {
             putWord(STATE + MAP_SEED_WORDS + 2 * i, seed[i]);
         }
-        println("EMU gen size=" + size + " width=" + width + " height=" + height);
+        println("EMU gen size=" + size + " width=" + width + " height=" + height + " bits="
+                + getWord(STATE + 0x30) + " colmask=" + getWord(STATE + 0x32) + " rowmask=" + getWord(STATE + 0x34));
         emu.writeRegister(emu.getPCRegister(), 0x4216e9);
         for (long address : SKIP_CALL) {
             emu.setBreakpoint(toAddr(address));
@@ -280,19 +306,63 @@ public class EmulateMapStart extends GhidraScript {
             return;
         }
         byte[] map = emu.readMemory(toAddr(MAP), height * 8 * width);
-        long[] hash = {0xcbf29ce484222325L, 0xcbf29ce484222325L, 0xcbf29ce484222325L, 0xcbf29ce484222325L};
+        long[] hash = new long[6];
+        java.util.Arrays.fill(hash, 0xcbf29ce484222325L);
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int a = y * 8 * width + x * 4;
                 int b = a + 4 * width;
-                int[] at = {a, a + 1, a + 2, b};
-                for (int layer = 0; layer < 4; layer++) {
+                // flags, height, terrain, lake, object (record A byte 3), resource (record B byte 0, as the lake)
+                int[] at = {a, a + 1, a + 2, b, a + 3, b};
+                for (int layer = 0; layer < 6; layer++) {
                     hash[layer] = (hash[layer] ^ (map[at[layer]] & 0xff)) * 0x100000001b3L;
+                }
+                // The rules note that no pass writes bytes 1 to 3 of record B (MapGen_PlaceDeposits reads byte 1).
+                if (map[b + 1] != 0 || map[b + 2] != 0 || map[b + 3] != 0) {
+                    throw new IllegalStateException("record B holds more than byte 0 at " + x + "," + y);
                 }
             }
         }
+        String total = "";
+        if (pass.equals("CountResource1")) {
+            total = " total=" + (getWord(STATE + RESOURCE_TOTAL) | (getWord(STATE + RESOURCE_TOTAL + 2) << 16));
+        }
         println("EMU gen size=" + size + " pass=" + pass + rng
-                + String.format(" flags=%016X height=%016X terrain=%016X lake=%016X", hash[0], hash[1], hash[2],
-                        hash[3]));
+                + String.format(" flags=%016X height=%016X terrain=%016X lake=%016X object=%016X resource=%016X",
+                        hash[0], hash[1], hash[2], hash[3], hash[4], hash[5])
+                + total);
+    }
+
+    /** Builds the spiral table and prints its entries and the object size table (a small view, not the bytes). */
+    private void tables() throws Exception {
+        prepare();
+        putInt(STATE + OBJECT_SIZES_POINTER, OBJECT_SIZES);
+        call(SPIRAL_BUILDER);
+        long pointer = 0;
+        byte[] raw = emu.readMemory(toAddr(STATE + SPIRAL_POINTER), 4);
+        for (int i = 3; i >= 0; i--) {
+            pointer = (pointer << 8) | (raw[i] & 0xff);
+        }
+        // The passes index at most 255 (a draw masked with 0xff, or a count of 256); the later entries are not used.
+        int entries = 256;
+        byte[] bytes = emu.readMemory(toAddr(pointer), entries * 2);
+        long hash = 0xcbf29ce484222325L;
+        StringBuilder head = new StringBuilder();
+        for (int i = 0; i < bytes.length; i++) {
+            hash = (hash ^ (bytes[i] & 0xff)) * 0x100000001b3L;
+        }
+        // Entry 0 is the center; each later group of six entries is the six rotations of its first entry (the seed).
+        for (int i = 0; i < 43; i++) {
+            head.append(" ").append(bytes[2 * (6 * i + 1)]).append(",").append(bytes[2 * (6 * i + 1) + 1]);
+        }
+        println("EMU tables spiral=" + String.format("%016X", hash) + " seeds=" + head);
+        byte[] sizes = emu.readMemory(toAddr(OBJECT_SIZES), 128);
+        StringBuilder large = new StringBuilder();
+        for (int i = 0; i < 128; i++) {
+            if ((sizes[i] & 0xff) > 1) {
+                large.append(" ").append(i);
+            }
+        }
+        println("EMU tables large=" + large);
     }
 }
