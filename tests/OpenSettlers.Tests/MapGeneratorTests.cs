@@ -11,7 +11,8 @@ namespace OpenSettlers.Tests;
 // The expected digests in map-digests.txt are the output of the emulator harness (tools/GhidraDump/emulate.py,
 // command gen:N:S0,S1,S2) running MapGen_Generate at 0x4216e9 of the reference Siedler1.exe (ADR 0008). Each
 // line holds the size value, the map seed words, the pass, the generator words after the pass, and the FNV-1a
-// digests of the flags, height, terrain, and lake layers (docs/rules/map-form.md). The seeds are 1234,5678,9ABC,
+// digests of the flags, height, terrain, lake, object, and resource layers (docs/rules/map-form.md), and after
+// CountResource1 the total of resource type 1. The seeds are 1234,5678,9ABC,
 // 6359,A0D2,B4FA (the map seed of the typed screen seed 1234567812345678), and FFFF,0001,8001.
 [TestClass]
 public sealed class MapGeneratorTests
@@ -127,7 +128,10 @@ public sealed class MapGeneratorTests
             {
                 draws[pass] = pass == MapPass.Seed ? 0 : DrawsBetween(previous, generator);
                 previous = generator;
-                lakes = map.Layer(MapLayer.Flags).ToArray().Count(flags => (flags & 0x40) != 0);
+                if (pass == MapPass.FillLakes)
+                {
+                    lakes = map.Layer(MapLayer.Flags).ToArray().Count(flags => (flags & 0x40) != 0);
+                }
             }
         );
 
@@ -144,6 +148,70 @@ public sealed class MapGeneratorTests
         {
             Assert.AreEqual(0, draws[pass]);
         }
+    }
+
+    [TestMethod]
+    public void TheSpiralTableMatchesTheEmulator()
+    {
+        // Emulator: tables:x builds the table with the original's builder at 0x41e726; this is the FNV-1a digest
+        // of its first 256 entries, a byte each for the column and the row step.
+        var hash = 0xcbf29ce484222325UL;
+        foreach (var (dx, dy) in MapGenerator.SpiralOffsets)
+        {
+            foreach (var value in new[] { (byte)dx, (byte)dy })
+            {
+                hash = (hash ^ value) * 0x100000001b3UL;
+            }
+        }
+
+        Assert.AreEqual(256, MapGenerator.SpiralOffsets.Count);
+        Assert.AreEqual(0x754DC58840EF0513UL, hash);
+    }
+
+    [TestMethod]
+    [DataRow(1)]
+    [DataRow(2)]
+    [DataRow(3)]
+    public void TheObjectsAndDepositsListTheTilesOfTheirLayers(int sizeValue)
+    {
+        MapSize.TryFromValue(sizeValue, out var size, out _);
+        var map = MapGenerator.Generate(ParseSeed(Seeds[0]), size!);
+        var width = size!.Width;
+
+        var codes = map.Layer(MapLayer.Object).ToArray();
+        var expectedObjects = Enumerable
+            .Range(0, codes.Length)
+            .Where(tile => (codes[tile] & 0x7f) != 0)
+            .Select(tile => new MapObject(tile % width, tile / width, (byte)(codes[tile] & 0x7f)))
+            .ToList();
+        var resources = map.Layer(MapLayer.Resource).ToArray();
+        var expectedDeposits = Enumerable
+            .Range(0, resources.Length)
+            .Where(tile => resources[tile] >> 5 != 0)
+            .Select(tile => new ResourceDeposit(
+                tile % width,
+                tile / width,
+                resources[tile] >> 5,
+                resources[tile] & 0x1f
+            ))
+            .ToList();
+
+        Assert.IsTrue(expectedObjects.Count > 0);
+        Assert.IsTrue(expectedDeposits.Count > 0);
+        CollectionAssert.AreEqual(expectedObjects, map.Objects.ToList());
+        CollectionAssert.AreEqual(expectedDeposits, map.Deposits.ToList());
+        Assert.AreEqual(
+            expectedDeposits.Where(deposit => deposit.Type == 1).Sum(deposit => deposit.Amount),
+            map.Resource1Total
+        );
+    }
+
+    [TestMethod]
+    public void TheResourceLayerIsTheLakeLayersByteAsTheOriginalKeepsBoth()
+    {
+        var map = MapGenerator.Generate(ParseSeed(Seeds[1]), MapSize.Offered[2]);
+
+        CollectionAssert.AreEqual(map.Layer(MapLayer.Lake).ToArray(), map.Layer(MapLayer.Resource).ToArray());
     }
 
     private static int DrawsBetween(RandomGenerator from, RandomGenerator to)
@@ -179,7 +247,8 @@ public sealed class MapGeneratorTests
                                             " ",
                                             Enum.GetValues<MapLayer>().Select(layer => $"{map.Digest(layer):X16}")
                                         )
-                            ),
+                            )
+                            + (pass == MapPass.CountResource1 ? $" total={map.Resource1Total}" : ""),
                     }
                 )
         );

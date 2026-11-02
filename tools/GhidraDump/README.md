@@ -114,7 +114,8 @@ python3 -I tools/GhidraDump/emulate.py --game "$SIEDLER_DIR" rng:FFFF,FFFF,FFFF 
 Each output line starts with `EMU `. The header of `EmulateMapStart.java` lists the commands. Words are
 hexadecimal, without spaces.
 
-The `gen` command runs the whole `MapGen_Generate` up to the end of `MapGen_ScaleHeights` for a size value
-and a map seed, for example `gen:3:1234,5678,9ABC` (the size value is decimal), and prints the generator words
-and the layer digests of the canonical map form after each pass (`docs/rules/map-form.md`). A run takes
-about 15 seconds.
+The `gen` command runs `MapGen_Generate` up to the end of `MapGen_CountResource1` for a size value and a map
+seed, for example `gen:3:1234,5678,9ABC` (the size value is decimal), and prints the generator words and the
+layer digests of the canonical map form after each pass (`docs/rules/map-form.md`). A run takes from 15
+seconds to a few minutes, the longer for the larger sizes. The `tables:x` command prints the digest of the
+spiral table and the object codes of the large objects.
