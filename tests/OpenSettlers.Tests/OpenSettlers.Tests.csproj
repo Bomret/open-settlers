@@ -10,5 +10,6 @@
     <Compile Include="../../src/Launch/**/*.cs" />
     <Compile Include="../../src/Formats/**/*.cs" />
     <Compile Include="../../src/Assets/**/*.cs" />
+    <Compile Include="../../src/Simulation/**/*.cs" />
   </ItemGroup>
 </Project>
