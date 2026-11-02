@@ -41,7 +41,7 @@ public sealed class SeedTests
     public void AMixOfBoundaryGroupsGivesTheEmulatorWords()
     {
         // Emulator: parse:1111888811118888 gives 0F00,00FF,FF0F.
-        Assert.AreEqual(new Seed(0x0F00, 0x00FF, 0xFF0F), Parse("1111-8888-1111-8888"));
+        Assert.AreEqual(new Seed(0x0F00, 0x00FF, 0xFF0F), Parse("1111 8888 1111 8888"));
     }
 
     [TestMethod]
@@ -109,18 +109,42 @@ public sealed class SeedTests
     }
 
     [TestMethod]
+    public void ATypedSeedWithoutGroupSeparatorsParsesLikeTheGroupedForm()
+    {
+        // Emulator: parse:1234567812345678 gives 3905,0577,7739; the original takes the 16 digits as typed.
+        Assert.AreEqual(Parse("1234 5678 1234 5678"), Parse("1234567812345678"));
+    }
+
+    [TestMethod]
+    public void ATypedSeedDoesNotShowAsItWasTyped()
+    {
+        // Emulator: parse:1234567812345678 gives 3905,0577,7739; show:3905,0577,7739 gives groups 390, 739,
+        // 390, 739 as 2731 4582 2731 4582. The original's parse and display are not inverse (map-start.md).
+        var seed = Parse("1234 5678 1234 5678");
+        Assert.AreEqual("2731 4582 2731 4582", seed.ToScreen());
+    }
+
+    [TestMethod]
+    [DataRow(null, "empty")]
     [DataRow("", "empty")]
-    [DataRow("   ", "empty")]
-    [DataRow("1111 1111 1111", "4 groups")]
-    [DataRow("1111 1111 1111 1111 1111", "4 groups")]
-    [DataRow("1111111111111111", "4 groups")]
-    [DataRow("1111 1111 1111 111", "4 characters")]
-    [DataRow("1111 1111 1111 11111", "4 characters")]
-    [DataRow("1111 1111 1111 1119", "'9'")]
-    [DataRow("1111 1111 1111 1110", "'0'")]
-    [DataRow("1111 1111 1111 111G", "'G'")]
+    [DataRow("   ", "3 characters")]
+    [DataRow("111111111111111", "15 characters")]
+    [DataRow("11111111111111111", "17 characters")]
+    [DataRow("1111 1111 1111", "14 characters")]
+    [DataRow("1111 1111 1111 1111 1111", "24 characters")]
+    [DataRow(" 1111111111111111", "17 characters")]
+    [DataRow("1111111111111111 ", "17 characters")]
+    [DataRow(" 1111 1111 1111 1111 ", "21 characters")]
+    [DataRow("1111-1111-1111-1111", "19 characters")]
+    [DataRow("1111-1111 1111 1111", "19 characters")]
+    [DataRow("1111  1111 1111 111", "19 characters")]
+    [DataRow("11111 111 1111 1111", "19 characters")]
+    [DataRow("111111111111111 9", "17 characters")]
+    [DataRow("1111111111111119", "'9'")]
+    [DataRow("1111111111111110", "'0'")]
+    [DataRow("111111111111111G", "'G'")]
     [DataRow("1111 1111 1111 FFFF", "'F'")]
-    public void AMalformedScreenSeedIsRefusedWithItsReason(string screen, string reason)
+    public void AMalformedScreenSeedIsRefusedWithItsReason(string? screen, string reason)
     {
         Assert.IsFalse(Seed.TryParse(screen, out _, out var problem));
         StringAssert.Contains(problem, reason);

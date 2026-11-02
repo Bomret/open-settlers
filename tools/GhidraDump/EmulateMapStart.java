@@ -20,6 +20,7 @@
 // when a Ghidra release drops it.
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 
 import ghidra.app.emulator.EmulatorHelper;
 import ghidra.app.script.GhidraScript;
@@ -74,18 +75,25 @@ public class EmulateMapStart extends GhidraScript {
     }
 
     private void putInt(long address, long value) throws Exception {
-        for (int i = 0; i < 4; i++) {
-            emu.writeMemory(toAddr(address + i), new byte[] {(byte) (value >>> (8 * i))});
-        }
+        emu.writeMemory(toAddr(address), new byte[] {(byte) value, (byte) (value >>> 8), (byte) (value >>> 16),
+                (byte) (value >>> 24)});
     }
 
     private void putWord(long address, int value) throws Exception {
-        emu.writeMemory(toAddr(address), new byte[] {(byte) value});
-        emu.writeMemory(toAddr(address + 1), new byte[] {(byte) (value >>> 8)});
+        emu.writeMemory(toAddr(address), new byte[] {(byte) value, (byte) (value >>> 8)});
     }
 
     private int getWord(long address) throws Exception {
-        return (emu.readMemory(toAddr(address), 1)[0] & 0xff) | ((emu.readMemory(toAddr(address + 1), 1)[0] & 0xff) << 8);
+        byte[] bytes = emu.readMemory(toAddr(address), 2);
+        return (bytes[0] & 0xff) | ((bytes[1] & 0xff) << 8);
+    }
+
+    /** Prepares the registers and stores the three seed words in the game state. */
+    private void putSeed(int[] seed) throws Exception {
+        prepare();
+        for (int i = 0; i < 3; i++) {
+            putWord(STATE + SEED_0 + 2 * i, seed[i]);
+        }
     }
 
     private int[] words(String list) {
@@ -151,9 +159,7 @@ public class EmulateMapStart extends GhidraScript {
 
     private void parse(String rest) throws Exception {
         prepare();
-        for (int i = 0; i < rest.length(); i++) {
-            emu.writeMemory(toAddr(TEXT + i), new byte[] {(byte) rest.charAt(i)});
-        }
+        emu.writeMemory(toAddr(TEXT), rest.getBytes(StandardCharsets.ISO_8859_1));
         long stop = runTo(0x467e12, 0x467f39, 0x467f49);
         if (stop == 0x467f49) {
             println("EMU parse in=" + rest + " REFUSED");
@@ -164,11 +170,7 @@ public class EmulateMapStart extends GhidraScript {
     }
 
     private void show(String rest) throws Exception {
-        int[] seed = words(rest);
-        prepare();
-        for (int i = 0; i < 3; i++) {
-            putWord(STATE + SEED_0 + 2 * i, seed[i]);
-        }
+        putSeed(words(rest));
         // The four calls at 0x467841, 0x46786b, 0x467899 and 0x4678c1 hand one group each in [EDI+8]. Run each
         // group's call target up to the end of its four character stores instead of through the screen redraw.
         long[] calls = {0x467841, 0x46786b, 0x467899, 0x4678c1};
@@ -178,10 +180,7 @@ public class EmulateMapStart extends GhidraScript {
             runTo(from, call);
             int group = getWord(REGISTERS + 8);
             runTo(0x4678c7, 0x467941);
-            StringBuilder text = new StringBuilder();
-            for (int i = 0; i < 4; i++) {
-                text.append((char) (emu.readMemory(toAddr(GROUP_TEXT + i), 1)[0] & 0xff));
-            }
+            String text = new String(emu.readMemory(toAddr(GROUP_TEXT), 4), StandardCharsets.ISO_8859_1);
             out.append(" group=").append(String.format("%03X", group)).append(":").append(text);
             from = call + 5;
         }
@@ -189,11 +188,7 @@ public class EmulateMapStart extends GhidraScript {
     }
 
     private void mask(String rest) throws Exception {
-        int[] seed = words(rest);
-        prepare();
-        for (int i = 0; i < 3; i++) {
-            putWord(STATE + SEED_0 + 2 * i, seed[i]);
-        }
+        putSeed(words(rest));
         runTo(0x468b3d, 0x468ba8);
         println("EMU mask in=" + rest.toUpperCase() + " out=" + hex4(getWord(STATE + MAP_SEED_0)) + ","
                 + hex4(getWord(STATE + MAP_SEED_0 + 2)) + "," + hex4(getWord(STATE + MAP_SEED_0 + 4)));

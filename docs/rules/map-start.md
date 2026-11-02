@@ -53,15 +53,24 @@ and `8888` is `FFF`. No other character is accepted: the typing code (`0x467e12`
 **The typed form to the words.** The typing code reads 16 digits as two numbers of 24 bits, the first digit
 highest, and stores each as three bytes, highest byte first, at the seed's six bytes (`+0x364` to
 `+0x369`). The seed words read these bytes lowest byte first. Digits `1234 5678 1234 5678` give the words
-`3905 0577 7739`.
+`3905 0577 7739`. The original takes the 16 digits as typed, with no separator. The engine accepts those
+16 digits, or four groups of four digits separated by single spaces as the screen shows them. It refuses
+any other text, with its reason: empty, a length other than 16 characters (after the single spaces of the
+grouped form), or a character outside `1` to `8`.
 
-**The words to the screen.** The display code (`0x467831`) does not undo that. It reads the words lowest byte
-first and cuts four groups that overlap: the first is bits 4 to 15 of word 0, the second bits 8 to 19 of
-words 0 and 1 together, the third bits 12 to 23 of words 1 and 2 together, and the fourth the low 12 bits
-of word 2. Each group is shown as four digits from its bits, highest three bits first. The words `1234 5678
-9ABC` show as `1554 5133 6816 6385`. **Inferred:** because of this, the typed groups and the shown groups
-of one seed differ, apart from groups of all zero bits or all one bits; the emulated values confirm
-the difference for the words above.
+**The words to the screen.** The display code (`0x467831`) does not undo that. **Static:** it reads the
+seed's six bytes as words, lowest byte first, and cuts four groups that overlap: the first is the word at
+`+0x364` shifted right by 4, the second the double word at `+0x364` shifted right by 8 and masked to 12
+bits, the third the double word at `+0x366` shifted right by 12 and masked, and the fourth the word at
+`+0x368` masked. The reads and shifts are in the decompiled `0x467547`, and the typing code's byte stores
+(highest byte at `+0x364`) are in the decompiled `0x467c03`. The harness runs the same instructions and
+agrees. Each group is shown as four digits (`0x4678c7`, bits 11 to 9, 8 to 6, 5 to 3, 2 to 0, each plus
+`1`), highest three bits first. The words `1234 5678 9ABC` show as `1554 5133 6816 6385`, and the words
+`3905 0577 7739` that the digits `1234 5678 1234 5678` parse to show as `2731 4582 2731 4582`. Bits 0 to 3 of
+word 0 never reach the screen. **Inferred:** the typed groups and the shown groups of one seed therefore
+differ, apart from groups of all zero bits or all one bits. Whether the History Edition screen shows the
+same text is not checked against the running game: the operator can confirm it by typing
+`1234567812345678` and reading the screen.
 
 ## From the seed to the map
 

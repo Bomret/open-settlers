@@ -14,39 +14,38 @@ public readonly record struct Seed(ushort W0, ushort W1, ushort W2)
     private const int DigitsPerGroup = 4;
 
     /// <summary>
-    /// Reads the screen form: four groups of four digits <c>1</c> to <c>8</c>, separated by spaces or hyphens.
-    /// Returns false with the reason the text is not a seed.
+    /// Reads the screen form: 16 digits <c>1</c> to <c>8</c>, as the original takes them, or the same digits as
+    /// four groups of four separated by single spaces, as the screen shows them. Returns false with the reason
+    /// the text is not a seed.
     /// </summary>
     public static bool TryParse(string? screen, out Seed seed, [NotNullWhen(false)] out string? problem)
     {
         seed = default;
-        var groups = (screen ?? "").Split([' ', '-'], StringSplitOptions.RemoveEmptyEntries);
-        problem = null;
-        if (groups.Length == 0)
+        if (string.IsNullOrEmpty(screen))
         {
             problem = "the seed is empty";
-        }
-        else if (groups.Length != Groups)
-        {
-            problem = $"the seed has {groups.Length} groups, not {Groups} groups";
-        }
-        else if (groups.FirstOrDefault(group => group.Length != DigitsPerGroup) is { } wrong)
-        {
-            problem = $"the group '{wrong}' does not have {DigitsPerGroup} characters";
-        }
-        else if (groups.SelectMany(group => group).FirstOrDefault(c => c is < '1' or > '8') is var bad and not '\0')
-        {
-            problem = $"'{bad}' is not a digit from 1 to 8";
-        }
-
-        if (problem != null)
-        {
             return false;
         }
 
+        var text = screen is [_, _, _, _, ' ', _, _, _, _, ' ', _, _, _, _, ' ', _, _, _, _]
+            ? screen.Replace(" ", "")
+            : screen;
+        if (text.Length != Groups * DigitsPerGroup)
+        {
+            problem = $"the seed has {text.Length} characters, not {Groups * DigitsPerGroup} characters";
+            return false;
+        }
+
+        if (text.FirstOrDefault(c => c is < '1' or > '8') is var bad and not '\0')
+        {
+            problem = $"'{bad}' is not a digit from 1 to 8";
+            return false;
+        }
+
+        problem = null;
         // The original reads the 16 digits as two 24-bit numbers, first digit highest, and stores each as three
         // bytes with the highest byte first. The words read those bytes lowest byte first.
-        var digits = groups.SelectMany(group => group).Select(c => c - '1').ToArray();
+        var digits = text.Select(c => c - '1').ToArray();
         var high = Combine(digits[..8]);
         var low = Combine(digits[8..]);
         seed = new Seed(Word(high >> 16, high >> 8), Word(high, low >> 16), Word(low >> 8, low));
