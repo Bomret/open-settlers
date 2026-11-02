@@ -34,6 +34,16 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    public void TheAppliedSeedTypedInGroupsDoesNotRegenerate()
+    {
+        var state = MapViewState.Open(Seed, 1);
+
+        var changed = state.Apply("1234 5678 1234 5678", 1);
+
+        Assert.IsFalse(changed);
+    }
+
+    [TestMethod]
     public void ANewSizeRegeneratesTheMap()
     {
         var state = MapViewState.Open(Seed, 1);

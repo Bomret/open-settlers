@@ -21,6 +21,9 @@ public sealed class MapViewState
     /// <summary>The seed last applied, as typed.</summary>
     public string SeedText { get; private set; }
 
+    /// <summary>The seed last applied, parsed; compared so the same seed typed in another form does not regenerate.</summary>
+    Seed _applied;
+
     /// <summary>The size value last applied.</summary>
     public int SizeValue { get; private set; }
 
@@ -41,7 +44,7 @@ public sealed class MapViewState
 
     /// <summary>
     /// Applies a typed seed and a size. Returns true when a new map was generated, false when the change was refused
-    /// (see <see cref="Problem"/>) or the seed and size are the ones already applied.
+    /// (see <see cref="Problem"/>) or the seed, in any screen form, and size are the ones already applied.
     /// </summary>
     public bool Apply(string seedText, int sizeValue)
     {
@@ -52,7 +55,7 @@ public sealed class MapViewState
             return false;
         }
 
-        if (Map is not null && seedText == SeedText && sizeValue == SizeValue)
+        if (Map is not null && seed == _applied && sizeValue == SizeValue)
         {
             Problem = null;
 
@@ -79,6 +82,7 @@ public sealed class MapViewState
         }
 
         SeedText = seedText;
+        _applied = seed;
         SizeValue = sizeValue;
         Problem = null;
 
