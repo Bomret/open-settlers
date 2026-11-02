@@ -72,4 +72,7 @@ public sealed class Map
     }
 
     internal byte[] Bytes(MapLayer layer) => _layers[(int)layer];
+
+    /// <summary>The index of a node in a layer; the column and the row wrap at the edges.</summary>
+    internal int Index(int x, int y) => (y & (Size.Height - 1)) * Size.Width + (x & (Size.Width - 1));
 }

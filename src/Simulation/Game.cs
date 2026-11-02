@@ -6,8 +6,9 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// A game: a <see cref="Map"/> and a queue of <see cref="Command"/>s, advanced one tick (ADR 0005) at a time.
 /// <see cref="Tick"/> applies the commands due at the tick in a total order (player, kind, column, row), so the
-/// order of <see cref="Enqueue"/> calls does not change the game (INV-0002). No rule beyond that exists yet: a
-/// command applied changes the state only by being recorded in the digest. The game draws no randomness.
+/// order of <see cref="Enqueue"/> calls does not change the game (INV-0002). The only rule so far is the castle:
+/// <see cref="CommandKind.PlaceCastle"/> puts it where the original allows (<c>docs/rules/castle.md</c>), and every
+/// other command is refused. A refused command changes nothing, not even the digest. The game draws no randomness.
 /// </summary>
 public sealed class Game
 {
@@ -18,16 +19,28 @@ public sealed class Game
     private const ulong FnvPrime = 0x100000001b3;
 
     private readonly SortedSet<Command> _queue = new(Comparer<Command>.Create(Compare));
+    private readonly int _stockLevel;
     private ulong _applied = FnvOffset;
 
-    /// <summary>A game on <paramref name="map"/>, at tick 0 with no command queued.</summary>
-    public Game(Map map)
+    /// <summary>
+    /// A game on <paramref name="map"/>, at tick 0 with no command queued and no castle. The castle will hold the
+    /// stock of <paramref name="stockLevel"/> (<see cref="StartStock.At"/>). The game changes the map it is given:
+    /// placing the castle writes the castle, its flag, the heights, and the territory into the map's layers.
+    /// </summary>
+    public Game(Map map, int stockLevel = 0)
     {
         Map = map;
+        _stockLevel = stockLevel;
     }
 
     /// <summary>The map the game is played on.</summary>
     public Map Map { get; }
+
+    /// <summary>The castle of the one player, or null before it is placed.</summary>
+    public Castle? Castle { get; private set; }
+
+    /// <summary>The goods in the castle, <see cref="StartStock.Goods"/> counts; empty before the castle is placed.</summary>
+    public IReadOnlyList<int> Stock { get; private set; } = [];
 
     /// <summary>The number of ticks run so far; the next <see cref="Tick"/> is the tick with this number.</summary>
     public long TickCount { get; private set; }
@@ -49,25 +62,64 @@ public sealed class Game
         {
             var command = _queue.Min;
             _queue.Remove(command);
-            _applied = Mix(
-                Mix(Mix(Mix(Mix(_applied, command.Tick), command.Player), command.Kind), command.X),
-                command.Y
-            );
+            if (Apply(command))
+            {
+                _applied = Mix(
+                    Mix(Mix(Mix(Mix(_applied, command.Tick), command.Player), command.Kind), command.X),
+                    command.Y
+                );
+            }
         }
 
         TickCount++;
     }
 
-    /// <summary>The FNV-1a 64-bit fingerprint of the whole game state: the tick, the commands applied, and every map layer.</summary>
+    /// <summary>
+    /// The FNV-1a 64-bit fingerprint of the whole game state: the tick, the commands applied, the castle and its stock,
+    /// and every map layer.
+    /// </summary>
     public ulong Digest()
     {
         var hash = Mix(Mix(FnvOffset, TickCount), (long)_applied);
+        hash = Mix(hash, Castle is { } castle ? castle.X * 65536L + castle.Y : -1);
+        foreach (var count in Stock)
+        {
+            hash = Mix(hash, count);
+        }
+
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
             hash = Mix(hash, (long)Map.Digest(layer));
         }
 
         return hash;
+    }
+
+    // Applies a command if its rule allows it and tells whether it did.
+    private bool Apply(Command command)
+    {
+        if (command is not { Kind: CommandKind.PlaceCastle, Player: 0 } || Castle is not null)
+        {
+            return false;
+        }
+
+        var size = Map.Size;
+        if (command.X < 0 || command.X >= size.Width || command.Y < 0 || command.Y >= size.Height)
+        {
+            return false;
+        }
+
+        var site = BuildSite.Evaluate(Map, command.X, command.Y, 0, hasCastle: false);
+        if (!site.IsCastleSite)
+        {
+            return false;
+        }
+
+        Castle = new Castle(command.X, command.Y, site.Height);
+        Stock = StartStock.At(_stockLevel);
+        CastlePlacement.Apply(Map, command.X, command.Y, site.Height, 0);
+
+        return true;
     }
 
     private static int Compare(Command a, Command b)
