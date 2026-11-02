@@ -13,8 +13,9 @@ namespace OpenSettlers.Simulation;
 /// south-east node has flag bits. 7: the node and the node south-east of it are free.
 /// </param>
 /// <param name="Site">
-/// What a building may be. 0: none. 1: a flag only. 3: a small building. 4: a large building. 5: the site of the
-/// first castle, which is judged like a large building (the player owns nothing yet).
+/// What a building may be. 0: none. 1: a flag only. 2: a mountain site (no building of the plain; inferred: a
+/// mine). 3: a small building. 4: a large building. 5: the site of the first castle, which is judged like a large
+/// building (the player owns nothing yet).
 /// </param>
 /// <param name="Height">
 /// The height the building site is levelled to; set with <paramref name="Site"/> 4 or 5, else 0.
@@ -165,7 +166,7 @@ public static class BuildSite
 
         if (kinds != 0)
         {
-            return new(node, hasCastle ? 0 : site, 0);
+            return new(node, hasCastle ? 2 : site, 0);
         }
 
         if (hasCastle)

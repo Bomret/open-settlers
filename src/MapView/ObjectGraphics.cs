@@ -14,7 +14,7 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed class ObjectGraphics
 {
-    /// <summary>The number of sprite entries: those of codes 8 to 127.</summary>
+    /// <summary>The number of object sprite entries: those of codes 8 to 127. The castle's sprite follows them.</summary>
     public const int EntryCount = ObjectSprites.LastCode - ObjectSprites.FirstCode + 1;
 
     /// <summary>The palette of entry 3 as <see cref="PaletteTexture.Rgba"/>.</summary>
@@ -26,11 +26,15 @@ public sealed class ObjectGraphics
     /// <summary>The tallest sprite; the height of every layer.</summary>
     public required int LayerHeight { get; init; }
 
-    /// <summary>One image per entry from <see cref="ObjectSprites.FirstEntry"/> on, each padded to the layer size in its pixel arrays.</summary>
+    /// <summary>
+    /// One image per entry from <see cref="ObjectSprites.FirstEntry"/> on, then the castle's
+    /// (<see cref="ObjectSprites.CastleEntry"/>), each padded to the layer size in its pixel arrays.
+    /// </summary>
     public required IReadOnlyList<ObjectImage> Images { get; init; }
 
-    /// <summary>The layer of a sprite entry.</summary>
-    public static int Layer(int entry) => entry - ObjectSprites.FirstEntry;
+    /// <summary>The layer of a sprite entry: the object entries in order, then the castle's.</summary>
+    public static int Layer(int entry) =>
+        entry == ObjectSprites.CastleEntry ? EntryCount : entry - ObjectSprites.FirstEntry;
 
     /// <summary>
     /// Reads the sprites from the install. Throws <see cref="FileNotFoundException"/> for a missing archive and
@@ -58,6 +62,17 @@ public sealed class ObjectGraphics
                     : Read(archive, entry, "the sprite", data => ObjectImage.From(SpriteFile.Read(data)))
             );
         }
+
+        images.Add(
+            archive[ObjectSprites.CastleEntry].State == EntryState.Absent
+                ? ObjectImage.Empty
+                : Read(
+                    archive,
+                    ObjectSprites.CastleEntry,
+                    "the castle sprite",
+                    data => ObjectImage.From(SpriteFile.Read(data))
+                )
+        );
 
         var width = images.Max(image => image.Width);
         var height = images.Max(image => image.Height);

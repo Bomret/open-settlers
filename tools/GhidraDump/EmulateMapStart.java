@@ -416,6 +416,11 @@ public class EmulateMapStart extends GhidraScript {
                 }
                 evaluated++;
                 kinds.merge(kind + "." + site, 1, Integer::sum);
+                if (site == 2 && System.getenv("SITE2") != null) {
+                    println("EMU site2 " + x + "," + y + " kind=" + kind + " bytes="
+                            + String.format("%02X%02X%02X%02X", result[0] & 0xff, result[1] & 0xff, result[2] & 0xff,
+                                    result[3] & 0xff) + " b2=" + (emu.readMemory(toAddr(player + 2), 2)[0] & 0xff));
+                }
                 if (site == validSite && (kind == 7 || !fresh)) {
                     if (valid < 16) {
                         first.append(" ").append(x).append(",").append(y).append(",").append(level);

@@ -33,7 +33,34 @@ public sealed class BuildSiteTests
         MapSize.TryFromValue(sizeValue, out var size, out _);
         var map = MapGenerator.Generate(ParseSeed(seedText), size!);
 
-        Assert.AreEqual(expected, Observe(seedText, map));
+        Assert.AreEqual(
+            expected,
+            $"seed={seedText} size={sizeValue} width={map.Size.Width} height={map.Size.Height} {Observe(map, hasCastle: false)}"
+        );
+    }
+
+    public static IEnumerable<object[]> AfterLines =>
+        File.ReadAllLines("castle-sites.txt").Select(line => new object[] { line });
+
+    [TestMethod]
+    [DynamicData(nameof(AfterLines))]
+    public void WithTheCastleStandingTheEvaluatorMatchesTheEmulatorOnEveryNodeOfTheMap(string expected)
+    {
+        var fields = expected
+            .Split(' ')
+            .Take(4)
+            .ToDictionary(field => field.Split('=')[0], field => field.Split('=')[1]);
+        MapSize.TryFromValue(int.Parse(fields["size"], CultureInfo.InvariantCulture), out var size, out _);
+        var map = MapGenerator.Generate(ParseSeed(fields["seed"]), size!);
+        var tile = fields["tile"].Split(',').Select(int.Parse).ToArray();
+        var game = new Game(map);
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, tile[0], tile[1]));
+        game.Tick();
+
+        Assert.AreEqual(
+            expected,
+            $"seed={fields["seed"]} size={fields["size"]} tile={fields["tile"]} level={fields["level"]} {Observe(map, hasCastle: true)}"
+        );
     }
 
     [TestMethod]
@@ -60,7 +87,9 @@ public sealed class BuildSiteTests
         Assert.IsFalse(new BuildSiteResult(7, 0, 0).AllowsFlag);
     }
 
-    private static string Observe(string seedText, Map map)
+    // The judgment of every node whose object has a class below 3, as the harness line states it. Without a castle
+    // the valid nodes are the castle sites; with one they are the sites of a large building (site 4).
+    private static string Observe(Map map, bool hasCastle)
     {
         var width = map.Size.Width;
         var hash = FnvOffset;
@@ -79,7 +108,7 @@ public sealed class BuildSiteTests
                     continue;
                 }
 
-                var result = BuildSite.Evaluate(map, x, y, 0, hasCastle: false);
+                var result = BuildSite.Evaluate(map, x, y, 0, hasCastle);
                 foreach (var value in new[] { result.Node, result.Site, result.Height & 0xff, result.Height >> 8 })
                 {
                     hash = (hash ^ (byte)value) * FnvPrime;
@@ -88,7 +117,7 @@ public sealed class BuildSiteTests
                 evaluated++;
                 var key = $"{result.Node}.{result.Site}";
                 kinds[key] = kinds.GetValueOrDefault(key) + 1;
-                if (result.IsCastleSite)
+                if (hasCastle ? result.Site == 4 : result.IsCastleSite)
                 {
                     if (valid < 16)
                     {
@@ -100,8 +129,7 @@ public sealed class BuildSiteTests
             }
         }
 
-        return $"seed={seedText} size={map.Size.Value} width={width} height={map.Size.Height} evaluated={evaluated} "
-            + $"skipped={skipped} valid={valid} digest={hash:X16} "
+        return $"evaluated={evaluated} skipped={skipped} valid={valid} digest={hash:X16} "
             + $"kinds={string.Join(' ', kinds.Select(pair => $"{pair.Key}:{pair.Value}"))} first={string.Join(' ', first)}";
     }
 

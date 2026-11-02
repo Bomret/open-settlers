@@ -18,5 +18,6 @@
     <None Include="windows-run.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="build-sites.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="castle-placements.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="castle-sites.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -19,9 +19,9 @@ public static class ObjectDraws
     /// The objects of a map in row-major order, which is the order the original paints them. A draw sits at its
     /// tile's node with the node's height taken off, moved by <see cref="OffsetX"/> and <see cref="OffsetY"/>; the
     /// sprite's own header offsets apply where the sprite is drawn. A code without a sprite is left out. Resources
-    /// are no objects and are never drawn.
+    /// are no objects and are never drawn. With a <paramref name="castle"/>, its sprite is drawn at its node.
     /// </summary>
-    public static List<ObjectDraw> Of(Map map)
+    public static List<ObjectDraw> Of(Map map, Castle? castle = null)
     {
         var heights = map.Layer(MapLayer.Height);
         var width = map.Size.Width;
@@ -36,6 +36,25 @@ public static class ObjectDraws
             var (x, y) = Camera.NodePosition(item.X, item.Y);
             var height = heights[item.Y * width + item.X] & 31;
             draws.Add(new ObjectDraw(item.Y, entry, x + OffsetX, y - height * TerrainTriangles.HeightStep + OffsetY));
+        }
+
+        if (castle is { } placed)
+        {
+            // The castle is no map object of code 8 or more; it is drawn at its node in the order of its row, after
+            // the objects of its row. inferred: its alignment to the node is that of an object, which the sprite's own
+            // header offsets then adjust.
+            var (x, y) = Camera.NodePosition(placed.X, placed.Y);
+            var height = heights[placed.Y * width + placed.X] & 31;
+            var index = draws.FindIndex(draw => draw.Row > placed.Y);
+            draws.Insert(
+                index < 0 ? draws.Count : index,
+                new ObjectDraw(
+                    placed.Y,
+                    ObjectSprites.CastleEntry,
+                    x + OffsetX,
+                    y - height * TerrainTriangles.HeightStep + OffsetY
+                )
+            );
         }
 
         return draws;
