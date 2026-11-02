@@ -67,7 +67,7 @@ The map view opens a window with a seed field (16 digits from 1 to 8, as the ori
 mise run map
 ```
 
-A valid seed, applied with Enter, or a new size regenerates and redraws the map. An invalid seed shows its reason and keeps the last map. The arrow keys and a mouse drag move the view, which wraps at the map's edges. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: `--check` and `--map` together are a problem.
+A valid seed, applied with Enter, or a new size regenerates and redraws the map. A new size keeps the last applied seed. An invalid seed shows its reason and keeps the last map. The arrow keys and a mouse drag move the view, which wraps at the map's edges. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: `--check` and `--map` together are a problem.
 
 A programming error in the browser does not close it. When the browser fails while it selects a kind or an asset, or while it draws a preview, it shows `<file or kind>: crashed: <Type>: <message>` in the preview pane and keeps the lists usable. A crash while the window opens shows that text in place of the window. Each crash also goes to stderr as `asset browser crashed`. A crash is a bug in the engine. A corrupt file is shown as a failure of that file, not as a crash.
 

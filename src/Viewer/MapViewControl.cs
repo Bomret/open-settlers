@@ -65,7 +65,7 @@ public partial class MapViewControl : Control
             MaxLength = 19,
             CustomMinimumSize = new Vector2(240, 0),
         };
-        _seed.TextSubmitted += _ => Apply();
+        _seed.TextSubmitted += text => Apply(text);
         bar.AddChild(_seed);
         bar.AddChild(new Label { Text = "Size" });
         _size = new OptionButton();
@@ -74,7 +74,8 @@ public partial class MapViewControl : Control
             _size.AddItem($"{size.Value}: {size.Width} x {size.Height}", size.Value);
         }
 
-        _size.ItemSelected += _ => Apply();
+        // A size change keeps the applied seed; text typed but not submitted with Enter stays unapplied.
+        _size.ItemSelected += _ => Apply(_state.SeedText);
         bar.AddChild(_size);
         _message = new Label
         {
@@ -162,9 +163,9 @@ public partial class MapViewControl : Control
         }
     }
 
-    void Apply()
+    void Apply(string seedText)
     {
-        var changed = _state.Apply(_seed.Text, _size.GetItemId(_size.Selected));
+        var changed = _state.Apply(seedText, _size.GetItemId(_size.Selected));
         if (changed)
         {
             _camera = new Camera(_state.Map!.Size);
