@@ -1,5 +1,5 @@
-using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace OpenSettlers.Launch;
 
@@ -11,10 +11,14 @@ public enum LaunchMode
 
     /// <summary>The asset check, a headless run that sets the process exit code.</summary>
     Check,
+
+    /// <summary>The map view: a generated map drawn from the install's terrain graphics.</summary>
+    Map,
 }
 
 /// <summary>
-/// The user arguments after <c>--</c>, read once. <c>--check</c> selects <see cref="LaunchMode.Check"/>; no mode
+/// The user arguments after <c>--</c>, read once. <c>--check</c> selects <see cref="LaunchMode.Check"/>, <c>--map</c>
+/// selects <see cref="LaunchMode.Map"/>; two different mode flags are a problem and select no mode (the browser). No mode
 /// flag selects <see cref="LaunchMode.Browser"/>. <c>--game &lt;dir&gt;</c> names the install and wins over the
 /// <c>SIEDLER_DIR</c> value. A flag that needs a value and has none, at the end or before another flag, is a
 /// problem and its value is never read as a path.
@@ -23,6 +27,12 @@ public sealed class LaunchArgs
 {
     /// <summary>The flag that names the install.</summary>
     public const string GameFlag = "--game";
+
+    /// <summary>The flag that selects the asset check.</summary>
+    public const string CheckFlag = "--check";
+
+    /// <summary>The flag that selects the map view.</summary>
+    public const string MapFlag = "--map";
 
     /// <summary>The environment variable that stands in for <see cref="GameFlag"/>.</summary>
     public const string GameVariable = "SIEDLER_DIR";
@@ -44,22 +54,45 @@ public sealed class LaunchArgs
     public static LaunchArgs Parse(string[] args, string? siedlerDir)
     {
         var problems = new List<string>();
-        var index = Array.IndexOf(args, GameFlag);
-        string? game = string.IsNullOrEmpty(siedlerDir) ? null : siedlerDir;
-        if (index >= 0)
+        string? game = null;
+        var gameGiven = false;
+        var modes = new List<(string Flag, LaunchMode Mode)>();
+        for (var i = 0; i < args.Length; i++)
         {
-            var hasValue = index + 1 < args.Length && args[index + 1].Length > 0 && !args[index + 1].StartsWith("--");
-            game = hasValue ? args[index + 1] : null;
-            if (!hasValue)
+            if (args[i] == GameFlag && !gameGiven)
             {
-                problems.Add($"{GameFlag} needs a value");
+                gameGiven = true;
+                // The value is the next argument unless it is missing, empty, or another flag; it is not consumed
+                // then, so a mode flag after the game flag still selects its mode.
+                if (i + 1 < args.Length && args[i + 1].Length > 0 && !args[i + 1].StartsWith("--"))
+                {
+                    game = args[++i];
+                }
+                else
+                {
+                    problems.Add($"{GameFlag} needs a value");
+                }
             }
+            else if (args[i] == CheckFlag)
+            {
+                modes.Add((args[i], LaunchMode.Check));
+            }
+            else if (args[i] == MapFlag)
+            {
+                modes.Add((args[i], LaunchMode.Map));
+            }
+        }
+
+        var flags = modes.Select(m => m.Flag).Distinct().ToList();
+        if (flags.Count > 1)
+        {
+            problems.Add($"{string.Join(" and ", flags)} are different modes, give only one");
         }
 
         return new LaunchArgs
         {
-            Mode = Array.IndexOf(args, "--check") >= 0 ? LaunchMode.Check : LaunchMode.Browser,
-            Game = game,
+            Mode = flags.Count == 1 ? modes[0].Mode : LaunchMode.Browser,
+            Game = gameGiven ? game : string.IsNullOrEmpty(siedlerDir) ? null : siedlerDir,
             Problems = problems,
         };
     }

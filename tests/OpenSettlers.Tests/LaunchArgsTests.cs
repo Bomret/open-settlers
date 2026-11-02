@@ -82,4 +82,52 @@ public sealed class LaunchArgsTests
         Assert.HasCount(1, args.Problems);
         Assert.AreEqual(LaunchMode.Check, args.Mode);
     }
+
+    [TestMethod]
+    public void TheMapFlagSelectsTheMapView()
+    {
+        var args = LaunchArgs.Parse(["--map", "--game", "/siedler"], null);
+
+        Assert.AreEqual(LaunchMode.Map, args.Mode);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    public void AModeFlagAfterTheGameFlagIsNeverItsValue()
+    {
+        var args = LaunchArgs.Parse(["--game", "--map"], null);
+
+        Assert.IsNull(args.Game);
+        Assert.HasCount(1, args.Problems);
+        Assert.AreEqual(LaunchMode.Map, args.Mode);
+    }
+
+    [TestMethod]
+    public void TwoModeFlagsAreAProblem()
+    {
+        var args = LaunchArgs.Parse(["--check", "--map", "--game", "/siedler"], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--check");
+        StringAssert.Contains(args.Problems[0], "--map");
+        Assert.AreEqual("/siedler", args.Game);
+    }
+
+    [TestMethod]
+    public void ARepeatedModeFlagIsNoConflict()
+    {
+        var args = LaunchArgs.Parse(["--map", "--map"], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual(LaunchMode.Map, args.Mode);
+    }
+
+    [TestMethod]
+    public void AModeFlagInsideAPathIsNotAMode()
+    {
+        var args = LaunchArgs.Parse(["--game", "/siedler/--map"], null);
+
+        Assert.AreEqual(LaunchMode.Browser, args.Mode);
+        Assert.AreEqual("/siedler/--map", args.Game);
+    }
 }
