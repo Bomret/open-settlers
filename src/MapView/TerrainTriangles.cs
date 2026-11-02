@@ -41,14 +41,24 @@ public static class TerrainTriangles
                 if (TerrainRules.Upper(node, south, southEast, code >> 4) is { } upper)
                 {
                     var (x, y) = Camera.NodePosition(column, row);
-                    triangles.Add(new TerrainTriangle(column, row, true, upper.Mask, upper.Texture, x, y - node * HeightStep));
+                    triangles.Add(
+                        new TerrainTriangle(column, row, true, upper.Mask, upper.Texture, x, y - node * HeightStep)
+                    );
                 }
 
                 if (TerrainRules.Lower(southEast, node, east, code & 15) is { } lower)
                 {
                     var (x, y) = Camera.NodePosition(column + 1, row + 1);
                     triangles.Add(
-                        new TerrainTriangle(column, row, false, lower.Mask, lower.Texture, x, y - southEast * HeightStep)
+                        new TerrainTriangle(
+                            column,
+                            row,
+                            false,
+                            lower.Mask,
+                            lower.Texture,
+                            x,
+                            y - southEast * HeightStep
+                        )
                     );
                 }
             }

@@ -92,7 +92,10 @@ public sealed class LaunchArgs
         return new LaunchArgs
         {
             Mode = flags.Count == 1 ? modes[0].Mode : LaunchMode.Browser,
-            Game = gameGiven ? game : string.IsNullOrEmpty(siedlerDir) ? null : siedlerDir,
+            Game =
+                gameGiven ? game
+                : string.IsNullOrEmpty(siedlerDir) ? null
+                : siedlerDir,
             Problems = problems,
         };
     }

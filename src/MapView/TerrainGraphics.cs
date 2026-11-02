@@ -11,7 +11,7 @@ public sealed record MaskImage(int Width, int Height, int OffsetX, int OffsetY, 
 
 /// <summary>
 /// The terrain graphics of an install as the GPU takes them: the game palette as a lookup texture, each fill mask
-/// (entries 60 to 221) as a <see cref="LayerWidth"/> x <see cref="MaskLayerHeight"/> layer holding 255 on a covered
+/// (entries 60 to 221, an empty layer where the archive has none and no triangle needs it) as a <see cref="LayerWidth"/> x <see cref="MaskLayerHeight"/> layer holding 255 on a covered
 /// pixel, and each fill texture (entries 260 to 292) as a 32 x 20 layer of palette indices.
 /// </summary>
 public sealed class TerrainGraphics
@@ -72,7 +72,12 @@ public sealed class TerrainGraphics
         var masks = new List<MaskImage>();
         for (var entry = FirstMask; entry <= LastMask; entry++)
         {
-            masks.Add(Entry(archive, entry, "the mask", data => ToLayer(MaskFile.Read(data))));
+            // The archive leaves out the masks no combination of heights reaches.
+            masks.Add(
+                !TerrainRules.UsesMask(entry) && archive[entry].State == EntryState.Absent
+                    ? new MaskImage(0, 0, 0, 0, new byte[LayerWidth * MaskLayerHeight])
+                    : Entry(archive, entry, "the mask", data => ToLayer(MaskFile.Read(data)))
+            );
         }
 
         var textures = new List<byte[]>();

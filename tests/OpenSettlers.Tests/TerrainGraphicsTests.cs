@@ -127,6 +127,23 @@ public sealed class TerrainGraphicsTests
     }
 
     [TestMethod]
+    public void AMaskTheRulesNeverPickIsAllowedToBeAbsent()
+    {
+        var payloads = Payloads();
+        payloads.Remove(65);
+        payloads.Remove(141 + 5);
+        using var fake = Install(payloads);
+
+        var graphics = TerrainGraphics.Load(Open(fake));
+
+        Assert.AreEqual(0, graphics.Masks[TerrainGraphics.MaskLayer(65)].Width);
+        Assert.IsFalse(TerrainRules.UsesMask(65));
+        Assert.IsFalse(TerrainRules.UsesMask(146));
+        Assert.IsTrue(TerrainRules.UsesMask(100));
+        Assert.IsTrue(TerrainRules.UsesMask(181));
+    }
+
+    [TestMethod]
     public void AnUnreadableMaskNamesItsEntry()
     {
         using var fake = Install(Payloads(n => n == 77 ? [1, 2, 3] : null));
