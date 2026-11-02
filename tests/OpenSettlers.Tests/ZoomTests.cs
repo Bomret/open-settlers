@@ -13,7 +13,7 @@ public sealed class ZoomTests
     public void AStepInMultipliesTheScale()
     {
         var zoom = new Zoom();
-        zoom.By(1, Smallest, 100, 100);
+        zoom.ByFactor(Zoom.Step, Smallest, 100, 100);
 
         Assert.AreEqual(Zoom.Step, zoom.Scale, 1e-6);
     }
@@ -22,7 +22,7 @@ public sealed class ZoomTests
     public void TheScaleStopsAtTheLargest()
     {
         var zoom = new Zoom();
-        zoom.By(100, Smallest, 100, 100);
+        zoom.ByFactor(1000, Smallest, 100, 100);
 
         Assert.AreEqual(Zoom.Max, zoom.Scale);
     }
@@ -31,7 +31,7 @@ public sealed class ZoomTests
     public void TheScaleStopsAtTheSmallestInASmallView()
     {
         var zoom = new Zoom();
-        zoom.By(-100, Smallest, 100, 100);
+        zoom.ByFactor(0.001f, Smallest, 100, 100);
 
         Assert.AreEqual(Zoom.Min, zoom.Scale);
     }
@@ -41,7 +41,7 @@ public sealed class ZoomTests
     {
         // The smallest map is 1,024 pixels wide: a 4,096-pixel view needs a scale of 2 to cover 2,048.
         var zoom = new Zoom();
-        zoom.By(-100, Smallest, 4096, 100);
+        zoom.ByFactor(0.001f, Smallest, 4096, 100);
 
         Assert.AreEqual(2f, zoom.Scale, 1e-6);
     }

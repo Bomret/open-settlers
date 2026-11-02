@@ -91,6 +91,7 @@ public sealed class CameraTests
 
         var copies = camera.Copies().ToList();
 
+        Assert.HasCount(35, copies);
         Assert.Contains((0, 0), copies);
         Assert.Contains((camera.PeriodX, 0), copies);
         Assert.Contains((-16 * 64, 20 * 64), copies);

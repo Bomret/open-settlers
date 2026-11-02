@@ -1,10 +1,10 @@
 namespace OpenSettlers.MapView;
 
 /// <summary>
-/// The scale of the map view: screen pixels per map pixel. It moves in steps of <see cref="Step"/> between
-/// <see cref="Min"/> and <see cref="Max"/>. The view draws nine copies of the map around the camera
-/// (<see cref="Camera.Copies"/>), so a view wider or taller than two maps would show a gap at its edge:
-/// <see cref="Fit"/> raises the scale until the view is at most two maps across.
+/// The scale of the map view: screen pixels per map pixel, between <see cref="Min"/> and <see cref="Max"/>. The
+/// copies of <see cref="Camera.Copies"/> cover a view of at most two maps each way, so a wider or taller view would
+/// show a gap at its edge: <see cref="Fit"/> raises the scale until the view is at most two maps across, past
+/// <see cref="Max"/> in a window of more than eight maps at that scale.
 /// </summary>
 public sealed class Zoom
 {
@@ -14,15 +14,11 @@ public sealed class Zoom
     /// <summary>The largest scale.</summary>
     public const float Max = 4f;
 
-    /// <summary>The factor of one step.</summary>
+    /// <summary>The factor of one step of the wheel or a key.</summary>
     public const float Step = 1.25f;
 
     /// <summary>The screen pixels per map pixel, 1 at the start.</summary>
     public float Scale { get; private set; } = 1f;
-
-    /// <summary>Zooms in by <c>steps</c> steps, or out for a negative count, and keeps the view inside two maps.</summary>
-    public void By(int steps, Camera camera, float viewWidth, float viewHeight) =>
-        ByFactor(System.MathF.Pow(Step, steps), camera, viewWidth, viewHeight);
 
     /// <summary>Multiplies the scale by <c>factor</c>, as a pinch does, and keeps the view inside two maps.</summary>
     public void ByFactor(float factor, Camera camera, float viewWidth, float viewHeight)

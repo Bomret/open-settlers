@@ -14,7 +14,7 @@ namespace OpenSettlers.Viewer;
 /// textures of palette indices, and <c>Terrain.gdshader</c> looking each index up in a palette texture. The
 /// generated objects are quads of sprite layers (<c>Objects.gdshader</c>: the indices and the coverage in their own
 /// array textures) drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
-/// wraps at the map's edges; nine copies of the meshes tile the plane around it. The mouse wheel, and the plus and
+/// wraps at the map's edges; the copies of <see cref="Camera.Copies"/> tile the plane around it. The mouse wheel, and the plus and
 /// minus keys, and a touchpad pinch change the <see cref="Zoom"/>; the wheel and the pinch keep the map point under
 /// the pointer in place. A two-finger touchpad swipe moves the camera.
 /// </summary>
@@ -167,28 +167,25 @@ public partial class MapViewControl : Control
             return;
         }
 
-        var steps = key.Keycode switch
+        var factor = key.Keycode switch
         {
-            Key.Plus or Key.Equal or Key.KpAdd => 1,
-            Key.Minus or Key.KpSubtract => -1,
-            _ => 0,
+            Key.Plus or Key.Equal or Key.KpAdd => Zoom.Step,
+            Key.Minus or Key.KpSubtract => 1 / Zoom.Step,
+            _ => 1,
         };
-        if (steps != 0)
+        if (factor != 1)
         {
-            ZoomAt(steps, _canvas.Size / 2f);
+            ZoomAt(factor, _canvas.Size / 2f);
         }
     }
 
-    // Zooms by steps and moves the camera so the map point under this canvas position stays under it.
-    void ZoomAt(int steps, Vector2 at) => ZoomAt(MathF.Pow(Zoom.Step, steps), at);
-
+    // Zooms by the factor and moves the camera so the map point under this canvas position stays under it.
     void ZoomAt(float factor, Vector2 at)
     {
         var fromCenter = at - _canvas.Size / 2f;
         var before = fromCenter / _zoom.Scale;
         _zoom.ByFactor(factor, _camera, _canvas.Size.X, _canvas.Size.Y);
-        var shift = before - fromCenter / _zoom.Scale;
-        _camera.Move((int)Math.Round(shift.X), (int)Math.Round(shift.Y));
+        MoveMap(before - fromCenter / _zoom.Scale);
     }
 
     void OnCanvasInput(InputEvent input)
@@ -204,7 +201,7 @@ public partial class MapViewControl : Control
                 ButtonIndex: MouseButton.WheelUp or MouseButton.WheelDown,
                 Pressed: true
             } wheel:
-                ZoomAt(wheel.ButtonIndex == MouseButton.WheelUp ? 1 : -1, wheel.Position);
+                ZoomAt(wheel.ButtonIndex == MouseButton.WheelUp ? Zoom.Step : 1 / Zoom.Step, wheel.Position);
                 break;
             case InputEventMagnifyGesture pinch:
                 ZoomAt(pinch.Factor, pinch.Position);
@@ -219,10 +216,13 @@ public partial class MapViewControl : Control
     }
 
     // Moves the view by a distance in screen pixels.
-    void Pan(Vector2 screen)
+    void Pan(Vector2 screen) => MoveMap(screen / _zoom.Scale);
+
+    // Moves the view by a distance in map pixels. The camera moves in whole pixels; the fraction carries to the next
+    // move, so slow drags at a high zoom and the zoom's own shifts add up without drift.
+    void MoveMap(Vector2 map)
     {
-        // At a high zoom a screen pixel is less than a map pixel; the fraction carries to the next move.
-        _dragCarry += screen / _zoom.Scale;
+        _dragCarry += map;
         var (mx, my) = ((int)_dragCarry.X, (int)_dragCarry.Y);
         _dragCarry -= new Vector2(mx, my);
         _camera.Move(mx, my);
