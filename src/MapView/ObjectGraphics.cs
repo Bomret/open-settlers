@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using OpenSettlers.Assets;
 using OpenSettlers.Formats;
 
@@ -33,8 +34,9 @@ public sealed class ObjectGraphics
 
     /// <summary>
     /// Reads the sprites from the install. Throws <see cref="FileNotFoundException"/> for a missing archive and
-    /// <see cref="InvalidDataException"/>, naming the entry and the reason, for a sprite that is unreadable. An
-    /// entry the archive leaves out is an empty image: the objects the generation places do not reach every code.
+    /// <see cref="InvalidDataException"/>, naming the entry and the reason, for a sprite that is unreadable and for an
+    /// archive with no object sprite at all. An entry the archive leaves out is an empty image: the objects the
+    /// generation places do not reach every code.
     /// </summary>
     public static ObjectGraphics Load(Install install)
     {
@@ -57,19 +59,16 @@ public sealed class ObjectGraphics
             );
         }
 
-        var width = 0;
-        var height = 0;
-        foreach (var image in images)
+        var width = images.Max(image => image.Width);
+        var height = images.Max(image => image.Height);
+        if (width == 0 || height == 0)
         {
-            width = Math.Max(width, image.Width);
-            height = Math.Max(height, image.Height);
+            throw new InvalidDataException(
+                $"{TerrainGraphics.ArchiveFile} holds no object sprite: entries {ObjectSprites.FirstEntry} to {ObjectSprites.FirstEntry + EntryCount - 1} are all absent"
+            );
         }
 
-        var padded = new List<ObjectImage>();
-        foreach (var image in images)
-        {
-            padded.Add(Pad(image, width, height));
-        }
+        var padded = images.Select(image => Pad(image, width, height)).ToList();
 
         return new ObjectGraphics
         {

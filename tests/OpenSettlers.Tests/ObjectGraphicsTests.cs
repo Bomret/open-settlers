@@ -82,6 +82,17 @@ public sealed class ObjectGraphicsTests
     }
 
     [TestMethod]
+    public void AnArchiveWithNoObjectSpriteIsRefusedWithAMessage()
+    {
+        using var fake = Install(new Dictionary<int, byte[]> { [3] = new byte[768] });
+
+        var problem = Assert.ThrowsExactly<InvalidDataException>(() => ObjectGraphics.Load(Open(fake)));
+
+        StringAssert.Contains(problem.Message, "no object sprite");
+        StringAssert.Contains(problem.Message, "1250");
+    }
+
+    [TestMethod]
     public void AnUnreadableSpriteNamesItsEntry()
     {
         var payloads = Payloads();

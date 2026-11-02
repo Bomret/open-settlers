@@ -1,3 +1,4 @@
+using System;
 using OpenSettlers.Formats;
 
 namespace OpenSettlers.MapView;
@@ -20,11 +21,7 @@ public sealed record ObjectImage(int Width, int Height, int OffsetX, int OffsetY
     /// <summary>Splits a decoded sprite into indices and coverage.</summary>
     public static ObjectImage From(Sprite sprite)
     {
-        var coverage = new byte[sprite.Drawn.Length];
-        for (var pixel = 0; pixel < coverage.Length; pixel++)
-        {
-            coverage[pixel] = sprite.Drawn[pixel] ? (byte)255 : (byte)0;
-        }
+        var coverage = Array.ConvertAll(sprite.Drawn, drawn => drawn ? (byte)255 : (byte)0);
 
         return new ObjectImage(
             sprite.Header.Width,
