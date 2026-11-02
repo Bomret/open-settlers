@@ -22,7 +22,19 @@
 //                            generator words and one FNV-1a 64-bit digest per layer of the canonical map form
 //                            (docs/rules/map-form.md); after MapGen_CountResource1 also the total
 //   tables:x                 the digest of the first 256 spiral table entries, the seeds of its groups of six,
-//                            and the object codes whose size byte is above 1
+//                            and the object codes whose size byte is above 1, then the size byte of every code as runs
+//   site:N:S0,S1,S2          the build-site evaluator (0x44b6e6, docs/rules/build-sites.md) on every tile of the
+//                            map gen:N:S0,S1,S2 makes, for a player without a castle: a digest of the results,
+//                            the count of each (node state, site) pair, and the first castle sites with their height
+//   castle:N:S0,S1,S2:L:x,y;x,y;...[:sites]
+//                            the castle placement (0x442704, docs/rules/castle.md) on that map at each tile after
+//                            the evaluator judged it, for the start stock levels L (decimal, comma separated): the
+//                            26 stock words, a digest of each byte of a tile's two records, the tiles that
+//                            changed, and the first bytes of the new settlers; with sites also the evaluator's
+//                            sweep (as site) for the player who owns the territory
+//   stockrows:x              the five rows of start stock numbers the placement interpolates (0x442e8a)
+//   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
+//   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
 //
 // Output lines start with "EMU " so that the caller can tell them from Ghidra's log.
 //@category OpenSettlers
@@ -416,11 +428,6 @@ public class EmulateMapStart extends GhidraScript {
                 }
                 evaluated++;
                 kinds.merge(kind + "." + site, 1, Integer::sum);
-                if (site == 2 && System.getenv("SITE2") != null) {
-                    println("EMU site2 " + x + "," + y + " kind=" + kind + " bytes="
-                            + String.format("%02X%02X%02X%02X", result[0] & 0xff, result[1] & 0xff, result[2] & 0xff,
-                                    result[3] & 0xff) + " b2=" + (emu.readMemory(toAddr(player + 2), 2)[0] & 0xff));
-                }
                 if (site == validSite && (kind == 7 || !fresh)) {
                     if (valid < 16) {
                         first.append(" ").append(x).append(",").append(y).append(",").append(level);

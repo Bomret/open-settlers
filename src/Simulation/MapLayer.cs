@@ -9,7 +9,10 @@ public enum MapLayer
     /// <summary>The flag byte of each tile; bit 6 marks the middle of a lake.</summary>
     Flags = 0,
 
-    /// <summary>The height of each tile's corner.</summary>
+    /// <summary>
+    /// The height of each tile's corner in the low 5 bits. After a castle stands, the top 3 bits hold the owner of
+    /// the node (the player's number plus 4), 0 for a node nobody owns (<c>docs/rules/castle.md</c>).
+    /// </summary>
     Height = 1,
 
     /// <summary>The terrain of the two triangles of each tile: the upper triangle in the high nibble.</summary>
