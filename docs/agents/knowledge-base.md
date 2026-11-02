@@ -36,7 +36,7 @@ A living skeleton. `/superdev:plan` and `/superdev:document` fill and extend it.
 - **Player guides** (`Getting started`, `Known limitations`). One task or limitation per page. Parent:
   `Players`, section `Pages`.
 - **File formats** (`Graphics archives`, `Graphics images`, `Music file`, `Sound files`, `Text files`,
-  `Map start`). One page per rule note of the same name in `docs/rules/`, which stays the source. Parent:
+  `Map start`, `Map form`, `Map objects`). One page per rule note of the same name in `docs/rules/`, which stays the source. Parent:
   `Modders`, section `Pages`.
 - **Modding guides** (`Asset loading`). How a modder reaches and replaces game content. Parent: `Modders`,
   section `Pages`.
