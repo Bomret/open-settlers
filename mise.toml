@@ -78,6 +78,11 @@ description = "Open the map view (needs SIEDLER_DIR)"
 depends = ["build"]
 run = "{{ env.GODOT }} --path . -- --map"
 
+[tasks.godot]
+description = "Run the project in Godot with the given program arguments: -- <args>"
+depends = ["build"]
+run = "{{ env.GODOT }} --path . --"
+
 [tasks.seed-info]
 description = "Print the digests and counts of one seed's map (no install needed): -- --seed <seed> [--size <n>]"
 depends = ["build"]
