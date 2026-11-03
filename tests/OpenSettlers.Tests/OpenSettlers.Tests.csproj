@@ -16,5 +16,18 @@
   <ItemGroup>
     <None Include="map-digests.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="windows-run.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="build-sites.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="castle-placements.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="castle-sites.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="flag-verdicts.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="flag-placements.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="road-builds.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="road-strips.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="worker-walks.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="carrier-walks.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="wood-walks.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="flag-goods.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="home-walks.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -87,6 +87,23 @@ One fixed step of the simulation: one pass of the original's main loop at its sh
 ADR 0005).
 _Avoid_: frame, update, turn
 
+**Command**
+A player's action that the simulation takes at a given tick, such as placing a flag or building a road.
+The same seed and the same commands at the same ticks give the same game (INV-0002).
+_Avoid_: input, event, order
+
+**Flag**
+A point on the map where roads meet and where goods wait to be carried on. A building stands at a flag.
+_Avoid_: node, waypoint
+
+**Road**
+A path between two flags, built one of six directions at a time. One carrier serves each road.
+_Avoid_: edge, path, street
+
+**Carrier**
+A settler who walks one road and carries goods between its two flags.
+_Avoid_: porter, transporter, worker
+
 ## Roadmap
 
 **Free-play release**

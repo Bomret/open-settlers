@@ -1,0 +1,588 @@
+road-flag size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,6 PLACED
+road-flag size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,3 PLACED
+road-flag size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,4 PLACED
+road-flag size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,7 PLACED
+road-flag size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,4 PLACED
+road-flag size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,8 PLACED
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=0 step=0 dir=0 mask=2F target=17,6 sounds=8 length=1 cursor=17,6 changes=16,6:0=90>91 17,6:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=0 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=03 step=0 dir=0 mask=2F target=17,6 sounds=8 length=1 cursor=17,6 changes=16,6:0=90>91 17,6:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=03 step=1 dir=3 mask=3F target=16,6 sounds=8 length=0 cursor=16,6 changes=16,6:0=91>90 17,6:0=08>00
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=03 outcome=CANCELLED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=033 step=0 dir=0 mask=2F target=17,6 sounds=8 length=1 cursor=17,6 changes=16,6:0=90>91 17,6:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=033 step=1 dir=3 mask=3F target=16,6 sounds=8 length=0 cursor=16,6 changes=16,6:0=91>90 17,6:0=08>00
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=033 step=2 dir=3 mask=2F target=15,6 sounds=8 length=1 cursor=15,6 changes=15,6:0=00>01 16,6:0=90>98
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=033 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=15,5 dirs=0 START-REFUSED kind=0
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=20,10 dirs=0 START-REFUSED kind=7
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=2223 step=0 dir=2 mask=3F target=17,4 sounds=8 length=1 cursor=17,4 changes=17,3:0=80>84 17,4:0=00>20
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=2223 step=1 dir=2 mask=3F target=17,5 sounds=8 length=2 cursor=17,5 changes=17,4:0=20>24 17,5:0=00>20
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=2223 step=2 dir=2 mask=3F target=17,6 sounds=8 length=3 cursor=17,6 changes=17,5:0=20>24 17,6:0=00>20
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=2223 step=3 dir=3 mask=3F target=16,6 sounds=2 END length=0 cursor=16,6 changes=16,6:0=90>91 17,6:0=20>28
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=2223 outcome=BUILT view1=04 length=0 roadchanges=17,3:0=80>84 17,4:0=00>24 17,5:0=00>24 16,6:0=90>91 17,6:0=00>28 items=0:3=00>01 0:4=40>41 0:6=00>10 0:24=00>8C 0:27=00>23 0:3c=00>10 2:3=00>04 2:4=00>04 2:8=00>10 2:2f=00>23
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=443 step=0 dir=4 mask=2E target=15,5 sounds=4 length=0 cursor=16,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=443 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=550 step=0 dir=5 mask=27 target=18,5 sounds=8 length=1 cursor=18,5 changes=18,5:0=00>04 18,6:0=80>A0
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=550 step=1 dir=5 mask=27 target=18,4 sounds=8 length=2 cursor=18,4 changes=18,4:0=00>04 18,5:0=04>24
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=550 step=2 dir=0 mask=37 target=19,4 sounds=2 END length=0 cursor=19,4 changes=18,4:0=04>05 19,4:0=80>88
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=550 outcome=BUILT view1=04 length=0 roadchanges=18,4:0=00>05 19,4:0=80>88 18,5:0=00>24 18,6:0=80>A0 items=1:3=00>20 1:4=00>20 1:38=00>5E 1:39=00>01 1:3b=00>23 1:41=00>18 5:3=00>08 5:4=00>08 5:30=00>46 5:33=00>23 5:3f=00>28
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=44333 step=0 dir=4 mask=07 target=17,5 sounds=4 length=0 cursor=18,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=44333 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=1 step=0 dir=1 mask=3F target=14,8 sounds=2 END length=0 cursor=14,8 changes=13,7:0=80>82 14,8:0=80>90
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=1 outcome=BUILT view1=04 length=0 roadchanges=13,7:0=80>82 14,8:0=80>90 items=4:3=00>02 4:4=00>02 4:28=00>A4 4:29=00>01 4:2b=00>23 4:3d=00>20 6:3=00>10 6:4=00>10 6:34=00>18 6:35=00>01 6:37=00>23 6:40=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=50000 step=0 dir=5 mask=3F target=13,3 sounds=8 length=1 cursor=13,3 changes=13,3:0=00>04 13,4:0=80>A0
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=50000 step=1 dir=0 mask=3F target=14,3 sounds=8 length=2 cursor=14,3 changes=13,3:0=04>05 14,3:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=50000 step=2 dir=0 mask=3F target=15,3 sounds=8 length=3 cursor=15,3 changes=14,3:0=08>09 15,3:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=50000 step=3 dir=0 mask=3F target=16,3 sounds=8 length=4 cursor=16,3 changes=15,3:0=08>09 16,3:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=50000 step=4 dir=0 mask=3D target=17,3 sounds=2 END length=0 cursor=17,3 changes=16,3:0=08>09 17,3:0=84>8C
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=50000 outcome=BUILT view1=04 length=0 roadchanges=13,3:0=00>05 14,3:0=00>09 15,3:0=00>09 16,3:0=00>09 17,3:0=84>8C 13,4:0=80>A0 items=2:3=04>0C 2:4=04>0C 2:9=00>10 2:30=00>D2 2:33=00>23 2:3f=00>28 3:3=00>20 3:4=00>20 3:b=00>10 3:38=00>8C 3:3b=00>23 3:41=00>18
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=4555 step=0 dir=4 mask=3F target=13,7 sounds=8 length=65535 cursor=13,7 changes=13,7:0=82>80 14,8:0=90>80
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=4555 outcome=CORRUPTED view1=C4 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=3322 step=0 dir=3 mask=2E target=15,6 sounds=8 length=1 cursor=15,6 changes=15,6:0=00>01 16,6:0=91>99
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=3322 step=1 dir=3 mask=1F target=14,6 sounds=8 length=2 cursor=14,6 changes=14,6:0=00>01 15,6:0=01>09
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=3322 step=2 dir=2 mask=3F target=14,7 sounds=8 length=3 cursor=14,7 changes=14,6:0=01>05 14,7:0=00>20
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=3322 step=3 dir=2 mask=3F target=14,8 sounds=2 END length=0 cursor=14,8 changes=14,7:0=20>24 14,8:0=90>B0
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=3322 outcome=BUILT view1=04 length=0 roadchanges=14,6:0=00>05 15,6:0=00>09 16,6:0=91>99 14,7:0=00>24 14,8:0=90>B0 items=0:3=01>09 0:4=41>49 0:9=00>10 0:30=00>A4 0:31=00>01 0:33=00>23 0:3f=00>28 6:3=10>30 6:4=10>30 6:b=00>10 6:3b=00>23 6:41=00>18
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=55000 step=0 dir=5 mask=26 target=16,5 sounds=8 length=1 cursor=16,5 changes=16,5:0=00>04 16,6:0=99>B9
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=55000 step=1 dir=5 mask=34 target=16,4 sounds=8 length=2 cursor=16,4 changes=16,4:0=00>04 16,5:0=04>24
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=55000 step=2 dir=0 mask=1C target=17,4 sounds=4 length=2 cursor=16,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=55000 outcome=STEP-REFUSED view1=04 length=2 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=344 step=0 dir=3 mask=26 target=15,6 sounds=4 length=0 cursor=16,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=344 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=2221 step=0 dir=2 mask=1F target=13,5 sounds=8 length=1 cursor=13,5 changes=13,4:0=A0>A4 13,5:0=00>20
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=2221 step=1 dir=2 mask=3F target=13,6 sounds=8 length=2 cursor=13,6 changes=13,5:0=20>24 13,6:0=00>20
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=2221 step=2 dir=2 mask=3D target=13,7 sounds=2 END length=0 cursor=13,7 changes=13,6:0=20>24 13,7:0=82>A2
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=2221 outcome=BUILT view1=04 length=0 roadchanges=13,4:0=A0>A4 13,5:0=00>24 13,6:0=00>24 13,7:0=82>A2 items=3:3=20>24 3:4=20>24 3:2c=00>18 3:2d=00>01 3:2f=00>23 3:3e=00>28 4:3=02>22 4:4=02>22 4:38=00>D2 4:3b=00>23 4:41=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=554 step=0 dir=5 mask=07 target=18,5 sounds=4 length=0 cursor=18,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=554 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=01 step=0 dir=0 mask=31 target=18,3 sounds=8 length=1 cursor=18,3 changes=17,3:0=8C>8D 18,3:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=01 step=1 dir=1 mask=3B target=19,4 sounds=2 END length=0 cursor=19,4 changes=18,3:0=08>0A 19,4:0=88>98
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=01 outcome=BUILT view1=04 length=0 roadchanges=17,3:0=8C>8D 18,3:0=00>0A 19,4:0=88>98 items=2:3=0C>0D 2:4=0C>0D 2:24=00>5E 2:25=00>01 2:27=00>23 2:3c=00>20 5:3=08>18 5:4=08>18 5:34=00>8C 5:37=00>23
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=221 step=0 dir=2 mask=30 target=17,4 sounds=4 length=0 cursor=17,3 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=221 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=34 step=0 dir=3 mask=27 target=18,4 sounds=4 length=0 cursor=19,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=34 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=23333 step=0 dir=2 mask=30 target=17,4 sounds=4 length=0 cursor=17,3 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=23333 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=00055 step=0 dir=0 mask=26 target=17,6 sounds=4 length=0 cursor=16,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=00055 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=43 step=0 dir=4 mask=27 target=18,3 sounds=4 length=0 cursor=19,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=43 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=110 step=0 dir=1 mask=1B target=14,5 sounds=8 length=1 cursor=14,5 changes=13,4:0=A4>A6 14,5:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=110 step=1 dir=1 mask=34 target=15,6 sounds=4 length=1 cursor=14,5 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=110 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=0555 step=0 dir=0 mask=26 target=17,6 sounds=4 length=0 cursor=16,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=0555 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=223 step=0 dir=2 mask=27 target=19,5 sounds=8 length=1 cursor=19,5 changes=19,4:0=98>9C 19,5:0=00>20
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=223 step=1 dir=2 mask=27 target=19,6 sounds=8 length=2 cursor=19,6 changes=19,5:0=20>24 19,6:0=00>20
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=223 step=2 dir=3 mask=2F target=18,6 sounds=2 END length=0 cursor=18,6 changes=18,6:0=A0>A1 19,6:0=20>28
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=223 outcome=BUILT view1=04 length=0 roadchanges=19,4:0=98>9C 19,5:0=00>24 18,6:0=A0>A1 19,6:0=00>28 items=1:3=20>21 1:4=20>21 1:24=00>5E 1:25=00>01 1:27=00>23 1:3c=00>10 5:3=18>1C 5:4=18>1C 5:2c=00>46 5:2f=00>23
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=055 step=0 dir=0 mask=06 target=19,6 sounds=4 length=0 cursor=18,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=055 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=00 step=0 dir=0 mask=26 target=17,6 sounds=4 length=0 cursor=16,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=00 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=011 step=0 dir=0 mask=1B target=14,4 sounds=8 length=1 cursor=14,4 changes=13,4:0=A4>A5 14,4:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=011 step=1 dir=1 mask=2D target=15,5 sounds=4 length=1 cursor=14,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=011 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=1222 step=0 dir=1 mask=1B target=14,5 sounds=8 length=1 cursor=14,5 changes=13,4:0=A4>A6 14,5:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=1222 step=1 dir=2 mask=34 target=14,6 sounds=4 length=1 cursor=14,5 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=1222 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=5000 step=0 dir=5 mask=1E target=13,6 sounds=4 length=0 cursor=13,7 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=5000 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=5554 step=0 dir=5 mask=1F target=14,7 sounds=4 length=0 cursor=14,8 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=5554 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=33332 step=0 dir=3 mask=30 target=16,3 sounds=4 length=0 cursor=17,3 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=33332 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=122 step=0 dir=1 mask=30 target=18,4 sounds=4 length=0 cursor=17,3 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=122 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=33344 step=0 dir=3 mask=06 target=17,6 sounds=4 length=0 cursor=18,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=33344 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=234052 step=0 dir=2 mask=1B target=13,5 sounds=4 length=0 cursor=13,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=234052 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=1420040 step=0 dir=1 mask=30 target=18,4 sounds=4 length=0 cursor=17,3 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=1420040 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=2 step=0 dir=2 mask=1B target=13,5 sounds=4 length=0 cursor=13,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=2 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=0 step=0 dir=0 mask=1B target=14,4 sounds=8 length=1 cursor=14,4 changes=13,4:0=A4>A5 14,4:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=0 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=011033 step=0 dir=0 mask=1F target=15,8 sounds=8 length=1 cursor=15,8 changes=14,8:0=B0>B1 15,8:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=011033 step=1 dir=1 mask=2F target=16,9 sounds=8 length=2 cursor=16,9 changes=15,8:0=08>0A 16,9:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=011033 step=2 dir=1 mask=3F target=17,10 sounds=8 length=3 cursor=17,10 changes=16,9:0=10>12 17,10:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=011033 step=3 dir=0 mask=3F target=18,10 sounds=8 length=4 cursor=18,10 changes=17,10:0=10>11 18,10:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=011033 step=4 dir=3 mask=3F target=17,10 sounds=8 length=3 cursor=17,10 changes=17,10:0=11>10 18,10:0=08>00
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=011033 step=5 dir=3 mask=3F target=16,10 sounds=8 length=4 cursor=16,10 changes=16,10:0=00>01 17,10:0=10>18
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=011033 outcome=CANCELLED view1=04 length=4 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=3045 step=0 dir=3 mask=23 target=18,4 sounds=4 length=0 cursor=19,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=3045 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=5220220 step=0 dir=5 mask=06 target=18,5 sounds=4 length=0 cursor=18,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=5220220 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=0115000 step=0 dir=0 mask=1B target=14,4 sounds=8 length=1 cursor=14,4 changes=13,4:0=A4>A5 14,4:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=0115000 step=1 dir=1 mask=2D target=15,5 sounds=4 length=1 cursor=14,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=0115000 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=3154134 step=0 dir=3 mask=1B target=12,4 sounds=8 length=1 cursor=12,4 changes=12,4:0=00>01 13,4:0=A4>AC
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=3154134 step=1 dir=1 mask=3D target=13,5 sounds=4 length=1 cursor=12,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=3154134 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=135303 step=0 dir=1 mask=06 target=19,7 sounds=8 length=1 cursor=19,7 changes=18,6:0=A1>A3 19,7:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=135303 step=1 dir=3 mask=1F target=18,7 sounds=8 length=2 cursor=18,7 changes=18,7:0=00>01 19,7:0=10>18
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=135303 step=2 dir=5 mask=2F target=18,6 sounds=2 END length=0 cursor=18,6 changes=18,6:0=A3>A7 18,7:0=01>21
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=135303 outcome=BUILT view1=04 length=0 roadchanges=18,6:0=A1>A7 18,7:0=00>21 19,7:0=00>18 items=1:3=21>27 1:4=21>27 1:28=00>46 1:2b=00>23 1:2c=00>46 1:2f=00>23 1:3d=00>10 1:3e=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=02 step=0 dir=0 mask=1B target=14,4 sounds=8 length=1 cursor=14,4 changes=13,4:0=A4>A5 14,4:0=00>08
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=02 step=1 dir=2 mask=2D target=14,5 sounds=8 length=2 cursor=14,5 changes=14,4:0=08>0C 14,5:0=00>20
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=02 outcome=CANCELLED view1=04 length=2 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=4201134 step=0 dir=4 mask=1F target=13,7 sounds=8 length=65535 cursor=13,7 changes=13,7:0=A2>A0 14,8:0=B0>A0
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=4201134 outcome=CORRUPTED view1=C4 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=00113 step=0 dir=0 mask=23 target=20,4 sounds=8 length=1 cursor=20,4 changes=19,4:0=9C>9D 20,4:0=40>48
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=00113 step=1 dir=0 mask=3F target=21,4 sounds=8 length=2 cursor=21,4 changes=20,4:0=48>49 21,4:0=40>48
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=00113 step=2 dir=1 mask=3F target=22,5 sounds=8 length=3 cursor=22,5 changes=21,4:0=48>4A 22,5:0=40>50
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=00113 step=3 dir=1 mask=3F target=23,6 sounds=8 length=4 cursor=23,6 changes=22,5:0=50>52 23,6:0=40>50
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=00113 step=4 dir=3 mask=3C target=22,6 sounds=8 length=5 cursor=22,6 changes=22,6:0=40>41 23,6:0=50>58
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=00113 outcome=CANCELLED view1=04 length=5 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=4 step=0 dir=4 mask=30 target=16,2 sounds=8 length=1 cursor=16,2 changes=16,2:0=00>02 17,3:0=8D>9D
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=4 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=2300014 step=0 dir=2 mask=30 target=17,4 sounds=4 length=0 cursor=17,3 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=2300014 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=04 step=0 dir=0 mask=23 target=20,4 sounds=8 length=1 cursor=20,4 changes=19,4:0=9C>9D 20,4:0=40>48
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=04 step=1 dir=4 mask=3F target=19,3 sounds=8 length=2 cursor=19,3 changes=19,3:0=00>02 20,4:0=48>58
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=04 outcome=CANCELLED view1=04 length=2 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=431 step=0 dir=4 mask=30 target=16,2 sounds=8 length=1 cursor=16,2 changes=16,2:0=00>02 17,3:0=8D>9D
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=431 step=1 dir=3 mask=3B target=15,2 sounds=8 length=2 cursor=15,2 changes=15,2:0=00>01 16,2:0=02>0A
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=431 step=2 dir=1 mask=3D target=16,3 sounds=4 length=2 cursor=15,2 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=431 outcome=STEP-REFUSED view1=04 length=2 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=4131 step=0 dir=4 mask=1E target=12,6 sounds=8 length=1 cursor=12,6 changes=12,6:0=00>02 13,7:0=A2>B2
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=4131 step=1 dir=1 mask=3E target=13,7 sounds=8 length=0 cursor=13,7 changes=12,6:0=02>00 13,7:0=B2>A2
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=4131 step=2 dir=3 mask=1E target=12,7 sounds=8 length=1 cursor=12,7 changes=12,7:0=00>01 13,7:0=A2>AA
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=4131 step=3 dir=1 mask=3F target=13,8 sounds=8 length=2 cursor=13,8 changes=12,7:0=01>03 13,8:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=4131 outcome=CANCELLED view1=04 length=2 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=21 step=0 dir=2 mask=23 target=19,5 sounds=4 length=0 cursor=19,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=21 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=15115 step=0 dir=1 mask=1F target=15,9 sounds=8 length=1 cursor=15,9 changes=14,8:0=B0>B2 15,9:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=15115 step=1 dir=5 mask=3F target=15,8 sounds=8 length=2 cursor=15,8 changes=15,8:0=00>04 15,9:0=10>30
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=15115 step=2 dir=1 mask=2F target=16,9 sounds=8 length=3 cursor=16,9 changes=15,8:0=04>06 16,9:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=15115 step=3 dir=1 mask=37 target=17,10 sounds=8 length=4 cursor=17,10 changes=16,9:0=10>12 17,10:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=15115 step=4 dir=5 mask=3F target=17,9 sounds=8 length=5 cursor=17,9 changes=17,9:0=00>04 17,10:0=10>30
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=14,8 dirs=15115 outcome=CANCELLED view1=04 length=5 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=15334 step=0 dir=1 mask=23 target=20,5 sounds=8 length=1 cursor=20,5 changes=19,4:0=9C>9E 20,5:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=15334 step=1 dir=5 mask=37 target=20,4 sounds=8 length=2 cursor=20,4 changes=20,4:0=40>44 20,5:0=10>30
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=15334 step=2 dir=3 mask=3F target=19,4 sounds=4 END length=2 cursor=20,4 changes=19,4:0=9E>9C 20,4:0=44>40 20,5:0=30>00
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=19,4 dirs=15334 outcome=REFUSED-AT-END view1=04 length=2 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=0000 step=0 dir=0 mask=26 target=17,6 sounds=4 length=0 cursor=16,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=0000 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=155 step=0 dir=1 mask=1E target=14,8 sounds=8 length=65535 cursor=14,8 changes=13,7:0=A2>A0 14,8:0=B0>A0
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,7 dirs=155 outcome=CORRUPTED view1=C4 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=343 step=0 dir=3 mask=1B target=12,4 sounds=8 length=1 cursor=12,4 changes=12,4:0=00>01 13,4:0=A4>AC
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=343 step=1 dir=4 mask=3D target=11,3 sounds=8 length=2 cursor=11,3 changes=11,3:0=00>02 12,4:0=01>11
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=343 step=2 dir=3 mask=3F target=10,3 sounds=8 length=3 cursor=10,3 changes=10,3:0=00>01 11,3:0=02>0A
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=343 outcome=CANCELLED view1=04 length=3 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=15011 step=0 dir=1 mask=30 target=18,4 sounds=4 length=0 cursor=17,3 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=15011 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=54402 step=0 dir=5 mask=1B target=13,3 sounds=4 length=0 cursor=13,4 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=13,4 dirs=54402 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=50 step=0 dir=5 mask=00 target=18,5 sounds=4 length=0 cursor=18,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=18,6 dirs=50 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=331 step=0 dir=3 mask=26 target=15,6 sounds=4 length=0 cursor=16,6 changes=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=331 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=1 step=0 dir=1 mask=26 target=17,7 sounds=8 length=1 cursor=17,7 changes=16,6:0=99>9B 17,7:0=00>10
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=16,6 dirs=1 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=441 step=0 dir=4 mask=30 target=16,2 sounds=8 length=1 cursor=16,2 changes=16,2:0=00>02 17,3:0=8D>9D
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=441 step=1 dir=4 mask=3B target=15,1 sounds=8 length=2 cursor=15,1 changes=15,1:0=00>02 16,2:0=02>12
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=441 step=2 dir=1 mask=3F target=16,2 sounds=8 length=1 cursor=16,2 changes=15,1:0=02>00 16,2:0=12>02
+road size=1 seed=1234,5678,9ABC castle=15,5 level=0 start=17,3 dirs=441 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road-flag size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=20,0 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=16,31 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=13,0 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=22,0 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=19,30 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=21,30 PLACED
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=0 step=0 dir=0 mask=2F target=19,1 sounds=8 length=1 cursor=19,1 changes=18,1:0=90>91 19,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=0 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=03 step=0 dir=0 mask=2F target=19,1 sounds=8 length=1 cursor=19,1 changes=18,1:0=90>91 19,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=03 step=1 dir=3 mask=3F target=18,1 sounds=8 length=0 cursor=18,1 changes=18,1:0=91>90 19,1:0=08>00
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=03 outcome=CANCELLED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=033 step=0 dir=0 mask=2F target=19,1 sounds=8 length=1 cursor=19,1 changes=18,1:0=90>91 19,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=033 step=1 dir=3 mask=3F target=18,1 sounds=8 length=0 cursor=18,1 changes=18,1:0=91>90 19,1:0=08>00
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=033 step=2 dir=3 mask=2F target=17,1 sounds=8 length=1 cursor=17,1 changes=17,1:0=00>01 18,1:0=90>98
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=033 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=17,0 dirs=0 START-REFUSED kind=0
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,5 dirs=0 START-REFUSED kind=7
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=0001 step=0 dir=0 mask=3D target=17,31 sounds=8 length=1 cursor=17,31 changes=16,31:0=80>81 17,31:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=0001 step=1 dir=0 mask=3B target=18,31 sounds=8 length=2 cursor=18,31 changes=17,31:0=08>09 18,31:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=0001 step=2 dir=0 mask=3F target=19,31 sounds=8 length=3 cursor=19,31 changes=18,31:0=08>09 19,31:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=0001 step=3 dir=1 mask=3F target=20,0 sounds=2 END length=0 cursor=20,0 changes=20,0:0=80>90 19,31:0=08>0A
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=0001 outcome=BUILT view1=04 length=0 roadchanges=20,0:0=80>90 16,31:0=80>81 17,31:0=00>09 18,31:0=00>09 19,31:0=00>0A items=1:3=00>10 1:4=00>10 1:a=00>10 1:34=00>8C 1:37=00>23 2:3=00>01 2:4=00>01 2:6=00>10 2:24=00>46 2:27=00>23 2:3c=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=33334 step=0 dir=3 mask=2F target=17,1 sounds=8 length=1 cursor=17,1 changes=17,1:0=00>01 18,1:0=90>98
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=33334 step=1 dir=3 mask=1F target=16,1 sounds=8 length=2 cursor=16,1 changes=16,1:0=00>01 17,1:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=33334 step=2 dir=3 mask=3F target=15,1 sounds=8 length=3 cursor=15,1 changes=15,1:0=00>01 16,1:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=33334 step=3 dir=3 mask=3F target=14,1 sounds=8 length=4 cursor=14,1 changes=14,1:0=00>01 15,1:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=33334 step=4 dir=4 mask=3F target=13,0 sounds=2 END length=0 cursor=13,0 changes=13,0:0=80>82 14,1:0=01>11
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=33334 outcome=BUILT view1=04 length=0 roadchanges=13,0:0=80>82 14,1:0=00>11 15,1:0=00>09 16,1:0=00>09 17,1:0=00>09 18,1:0=90>98 items=0:3=00>08 0:4=40>48 0:9=00>10 0:30=00>D2 0:33=00>23 0:3f=00>08 3:3=00>02 3:4=00>02 3:7=00>10 3:2b=00>23 3:3d=00>18
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=5550 step=0 dir=5 mask=27 target=18,0 sounds=8 length=1 cursor=18,0 changes=18,0:0=00>04 18,1:0=98>B8
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=5550 step=1 dir=5 mask=07 target=18,31 sounds=4 length=1 cursor=18,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=5550 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=12 step=0 dir=1 mask=3B target=20,31 sounds=8 length=1 cursor=20,31 changes=19,30:0=80>82 20,31:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=12 step=1 dir=2 mask=37 target=20,0 sounds=2 END length=0 cursor=20,0 changes=20,0:0=90>B0 20,31:0=10>14
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=12 outcome=BUILT view1=04 length=0 roadchanges=20,0:0=90>B0 19,30:0=80>82 20,31:0=00>14 items=1:3=10>30 1:4=10>30 1:38=00>5E 1:39=00>01 1:3b=00>23 1:41=00>08 5:3=00>02 5:4=00>02 5:28=00>46 5:2b=00>23 5:3d=00>28
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=3334 step=0 dir=3 mask=0F target=19,0 sounds=8 length=1 cursor=19,0 changes=19,0:0=00>01 20,0:0=B0>B8
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=3334 step=1 dir=3 mask=0F target=18,0 sounds=8 length=2 cursor=18,0 changes=18,0:0=00>01 19,0:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=3334 step=2 dir=3 mask=07 target=17,0 sounds=4 length=2 cursor=18,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=3334 outcome=STEP-REFUSED view1=04 length=2 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=322 step=0 dir=3 mask=3F target=20,30 sounds=8 length=1 cursor=20,30 changes=20,30:0=00>01 21,30:0=80>88
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=322 step=1 dir=2 mask=3B target=20,31 sounds=4 length=1 cursor=20,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=322 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=43333 step=0 dir=4 mask=27 target=17,0 sounds=4 length=0 cursor=18,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=43333 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=21 step=0 dir=2 mask=39 target=19,31 sounds=4 length=0 cursor=19,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=21 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=00001 step=0 dir=0 mask=3D target=14,0 sounds=8 length=1 cursor=14,0 changes=13,0:0=82>83 14,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=00001 step=1 dir=0 mask=3B target=15,0 sounds=8 length=2 cursor=15,0 changes=14,0:0=08>09 15,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=00001 step=2 dir=0 mask=3F target=16,0 sounds=8 length=3 cursor=16,0 changes=15,0:0=08>09 16,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=00001 step=3 dir=0 mask=3C target=17,0 sounds=4 length=3 cursor=16,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=00001 outcome=STEP-REFUSED view1=04 length=3 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=00 step=0 dir=0 mask=0F target=21,0 sounds=8 length=1 cursor=21,0 changes=20,0:0=B0>B1 21,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=00 step=1 dir=0 mask=2F target=22,0 sounds=2 END length=0 cursor=22,0 changes=21,0:0=08>09 22,0:0=80>88
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=00 outcome=BUILT view1=04 length=0 roadchanges=20,0:0=B0>B1 21,0:0=00>09 22,0:0=80>88 items=1:3=30>31 1:4=30>31 1:24=00>18 1:25=00>01 1:27=00>23 1:3c=00>18 4:3=00>08 4:4=00>08 4:30=00>46 4:33=00>23
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=1000 step=0 dir=1 mask=3C target=17,0 sounds=4 length=0 cursor=16,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=1000 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=2223 step=0 dir=2 mask=39 target=19,31 sounds=4 length=0 cursor=19,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=2223 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=54 step=0 dir=5 mask=0E target=20,31 sounds=4 length=0 cursor=20,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=54 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=223 step=0 dir=2 mask=3F target=21,31 sounds=8 length=1 cursor=21,31 changes=21,30:0=80>84 21,31:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=223 step=1 dir=2 mask=33 target=21,0 sounds=4 length=1 cursor=21,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=223 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=00 step=0 dir=0 mask=39 target=20,30 sounds=8 length=1 cursor=20,30 changes=19,30:0=82>83 20,30:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=00 step=1 dir=0 mask=3B target=21,30 sounds=2 END length=0 cursor=21,30 changes=20,30:0=08>09 21,30:0=80>88
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=00 outcome=BUILT view1=04 length=0 roadchanges=19,30:0=82>83 20,30:0=00>09 21,30:0=80>88 items=5:3=02>03 5:4=02>03 5:24=00>A4 5:25=00>01 5:27=00>23 5:3c=00>18 6:3=00>08 6:4=00>08 6:30=00>5E 6:31=00>01 6:33=00>23
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=0555 step=0 dir=0 mask=27 target=19,1 sounds=8 length=1 cursor=19,1 changes=18,1:0=98>99 19,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=0555 step=1 dir=5 mask=3F target=19,0 sounds=8 length=2 cursor=19,0 changes=19,0:0=00>04 19,1:0=08>28
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=0555 step=2 dir=5 mask=0F target=19,31 sounds=4 length=2 cursor=19,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=0555 outcome=STEP-REFUSED view1=04 length=2 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=10000 step=0 dir=1 mask=3D target=14,1 sounds=4 length=0 cursor=13,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=10000 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=45 step=0 dir=4 mask=37 target=21,31 sounds=8 length=1 cursor=21,31 changes=22,0:0=88>98 21,31:0=00>02
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=45 step=1 dir=5 mask=23 target=21,30 sounds=2 END length=0 cursor=21,30 changes=21,30:0=88>8C 21,31:0=02>22
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=45 outcome=BUILT view1=04 length=0 roadchanges=22,0:0=88>98 21,30:0=88>8C 21,31:0=00>22 items=4:3=08>18 4:4=08>18 4:34=00>A4 4:35=00>01 4:37=00>23 4:40=00>10 6:3=08>0C 6:4=08>0C 6:2c=00>18 6:2d=00>01 6:2f=00>23 6:3e=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=33 step=0 dir=3 mask=27 target=21,0 sounds=4 length=0 cursor=22,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=33 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=4333 step=0 dir=4 mask=0E target=19,31 sounds=4 length=0 cursor=20,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=4333 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=3222 step=0 dir=3 mask=38 target=18,30 sounds=8 length=1 cursor=18,30 changes=18,30:0=00>01 19,30:0=83>8B
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=3222 step=1 dir=2 mask=39 target=18,31 sounds=4 length=1 cursor=18,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=3222 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=2333 step=0 dir=2 mask=3C target=16,0 sounds=8 length=1 cursor=16,0 changes=16,0:0=00>20 16,31:0=81>85
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=2333 step=1 dir=3 mask=3C target=15,0 sounds=8 length=2 cursor=15,0 changes=15,0:0=00>01 16,0:0=20>28
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=2333 step=2 dir=3 mask=3F target=14,0 sounds=8 length=3 cursor=14,0 changes=14,0:0=00>01 15,0:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=2333 step=3 dir=3 mask=3B target=13,0 sounds=2 END length=0 cursor=13,0 changes=13,0:0=82>83 14,0:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=2333 outcome=BUILT view1=04 length=0 roadchanges=13,0:0=82>83 14,0:0=00>09 15,0:0=00>09 16,0:0=00>28 16,31:0=81>85 items=2:3=01>05 2:4=01>05 2:8=00>10 2:2c=00>D2 2:2f=00>23 3:3=02>03 3:4=02>03 3:6=00>10 3:24=00>8C 3:27=00>23 3:3c=00>10
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=055 step=0 dir=0 mask=0E target=21,0 sounds=4 length=0 cursor=20,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=055 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=44 step=0 dir=4 mask=27 target=17,0 sounds=4 length=0 cursor=18,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=44 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=0005 step=0 dir=0 mask=3C target=14,0 sounds=4 length=0 cursor=13,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=0005 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=11 step=0 dir=1 mask=38 target=17,0 sounds=4 length=0 cursor=16,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=11 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=500 step=0 dir=5 mask=27 target=18,0 sounds=8 length=1 cursor=18,0 changes=18,0:0=00>04 18,1:0=98>B8
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=500 step=1 dir=0 mask=07 target=19,0 sounds=8 length=2 cursor=19,0 changes=18,0:0=04>05 19,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=500 step=2 dir=0 mask=0F target=20,0 sounds=2 END length=0 cursor=20,0 changes=19,0:0=08>09 20,0:0=B1>B9
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=500 outcome=BUILT view1=04 length=0 roadchanges=18,0:0=00>05 19,0:0=00>09 20,0:0=B1>B9 18,1:0=98>B8 items=0:3=08>28 0:4=48>68 0:38=00>46 0:3b=00>23 0:41=00>18 1:3=31>39 1:4=31>39 1:33=00>23 1:3f=00>28
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=50000 step=0 dir=5 mask=07 target=18,0 sounds=4 length=0 cursor=18,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=50000 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=344 step=0 dir=3 mask=27 target=21,0 sounds=4 length=0 cursor=22,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=344 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=332 step=0 dir=3 mask=06 target=19,0 sounds=4 length=0 cursor=20,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=332 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=0343543 step=0 dir=0 mask=27 target=23,0 sounds=8 length=1 cursor=23,0 changes=22,0:0=98>99 23,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=0343543 step=1 dir=3 mask=3E target=22,0 sounds=8 length=0 cursor=22,0 changes=22,0:0=99>98 23,0:0=08>00
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=0343543 step=2 dir=4 mask=27 target=21,31 sounds=4 length=0 cursor=22,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=0343543 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=34055 step=0 dir=3 mask=3C target=12,0 sounds=8 length=1 cursor=12,0 changes=12,0:0=00>01 13,0:0=83>8B
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=34055 step=1 dir=4 mask=3F target=11,31 sounds=8 length=2 cursor=11,31 changes=12,0:0=01>11 11,31:0=00>02
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=34055 step=2 dir=0 mask=3F target=12,31 sounds=8 length=3 cursor=12,31 changes=11,31:0=02>03 12,31:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=34055 step=3 dir=5 mask=3B target=12,30 sounds=8 length=4 cursor=12,30 changes=12,30:0=00>04 12,31:0=08>28
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=34055 step=4 dir=5 mask=3F target=12,29 sounds=8 length=5 cursor=12,29 changes=12,29:0=00>04 12,30:0=04>24
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=34055 outcome=CANCELLED view1=04 length=5 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=52 step=0 dir=5 mask=07 target=18,0 sounds=4 length=0 cursor=18,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=52 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=535 step=0 dir=5 mask=38 target=16,30 sounds=8 length=1 cursor=16,30 changes=16,30:0=00>04 16,31:0=85>A5
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=535 step=1 dir=3 mask=3D target=15,30 sounds=8 length=2 cursor=15,30 changes=15,30:0=00>01 16,30:0=04>0C
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=535 step=2 dir=5 mask=3F target=15,29 sounds=8 length=3 cursor=15,29 changes=15,29:0=00>04 15,30:0=01>21
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=535 outcome=CANCELLED view1=04 length=3 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=2 step=0 dir=2 mask=38 target=16,0 sounds=4 length=0 cursor=16,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=2 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=224 step=0 dir=2 mask=06 target=20,1 sounds=8 length=1 cursor=20,1 changes=20,0:0=B9>BD 20,1:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=224 step=1 dir=2 mask=2F target=20,2 sounds=8 length=2 cursor=20,2 changes=20,1:0=20>24 20,2:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=224 step=2 dir=4 mask=3F target=19,1 sounds=8 length=3 cursor=19,1 changes=19,1:0=00>02 20,2:0=20>30
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=224 outcome=CANCELLED view1=04 length=3 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=4103304 step=0 dir=4 mask=27 target=21,31 sounds=4 length=0 cursor=22,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=4103304 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=53 step=0 dir=5 mask=07 target=18,0 sounds=4 length=0 cursor=18,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=53 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=1404 step=0 dir=1 mask=07 target=19,2 sounds=8 length=1 cursor=19,2 changes=18,1:0=B8>BA 19,2:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=1404 step=1 dir=4 mask=3F target=18,1 sounds=8 length=0 cursor=18,1 changes=18,1:0=BA>B8 19,2:0=10>00
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=1404 step=2 dir=0 mask=07 target=19,1 sounds=8 length=1 cursor=19,1 changes=18,1:0=B8>B9 19,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=1404 step=3 dir=4 mask=0F target=18,0 sounds=4 length=1 cursor=19,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=1404 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=05 step=0 dir=0 mask=06 target=21,0 sounds=4 length=0 cursor=20,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=20,0 dirs=05 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=3 step=0 dir=3 mask=38 target=15,31 sounds=8 length=1 cursor=15,31 changes=15,31:0=00>01 16,31:0=85>8D
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=3 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=2455 step=0 dir=2 mask=38 target=16,0 sounds=4 length=0 cursor=16,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=2455 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=32122 step=0 dir=3 mask=07 target=17,1 sounds=4 length=0 cursor=18,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=32122 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=5311 step=0 dir=5 mask=3C target=13,31 sounds=8 length=1 cursor=13,31 changes=13,0:0=83>A3 13,31:0=00>04
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=5311 step=1 dir=3 mask=3D target=12,31 sounds=8 length=2 cursor=12,31 changes=12,31:0=00>01 13,31:0=04>0C
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=5311 step=2 dir=1 mask=3F target=13,0 sounds=2 END length=0 cursor=13,0 changes=13,0:0=A3>B3 12,31:0=01>03
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=5311 outcome=BUILT view1=04 length=0 roadchanges=13,0:0=83>B3 12,31:0=00>03 13,31:0=00>0C items=3:3=03>33 3:4=03>33 3:34=00>D2 3:37=00>23 3:38=00>D2 3:3b=00>23 3:40=00>28 3:41=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=21151 step=0 dir=2 mask=0C target=13,1 sounds=8 length=1 cursor=13,1 changes=13,0:0=B3>B7 13,1:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=21151 step=1 dir=1 mask=3E target=14,2 sounds=8 length=2 cursor=14,2 changes=13,1:0=20>22 14,2:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=21151 step=2 dir=1 mask=1F target=15,3 sounds=8 length=3 cursor=15,3 changes=14,2:0=10>12 15,3:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=21151 step=3 dir=5 mask=3F target=15,2 sounds=8 length=4 cursor=15,2 changes=15,2:0=00>04 15,3:0=10>30
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=21151 step=4 dir=1 mask=2F target=16,3 sounds=8 length=5 cursor=16,3 changes=15,2:0=04>06 16,3:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=21151 outcome=CANCELLED view1=04 length=5 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=2 step=0 dir=2 mask=27 target=22,1 sounds=8 length=1 cursor=22,1 changes=22,0:0=98>9C 22,1:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=2 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=2110401 step=0 dir=2 mask=33 target=21,31 sounds=4 length=0 cursor=21,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=2110401 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=2 step=0 dir=2 mask=27 target=22,1 sounds=8 length=1 cursor=22,1 changes=22,0:0=98>9C 22,1:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=2 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=10252 step=0 dir=1 mask=27 target=23,1 sounds=8 length=1 cursor=23,1 changes=22,0:0=98>9A 23,1:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=10252 step=1 dir=0 mask=3F target=24,1 sounds=8 length=2 cursor=24,1 changes=23,1:0=10>11 24,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=10252 step=2 dir=2 mask=1F target=24,2 sounds=8 length=3 cursor=24,2 changes=24,1:0=08>0C 24,2:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=10252 step=3 dir=5 mask=2F target=24,1 sounds=8 length=2 cursor=24,1 changes=24,1:0=0C>08 24,2:0=20>00
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=10252 step=4 dir=2 mask=1F target=24,2 sounds=8 length=3 cursor=24,2 changes=24,1:0=08>0C 24,2:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=10252 outcome=CANCELLED view1=04 length=3 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=1 step=0 dir=1 mask=38 target=20,31 sounds=4 length=0 cursor=19,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=1 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=43352 step=0 dir=4 mask=33 target=20,29 sounds=8 length=1 cursor=20,29 changes=20,29:0=00>02 21,30:0=8C>9C
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=43352 step=1 dir=3 mask=3B target=19,29 sounds=8 length=2 cursor=19,29 changes=19,29:0=00>01 20,29:0=02>0A
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=43352 step=2 dir=3 mask=3D target=18,29 sounds=8 length=3 cursor=18,29 changes=18,29:0=00>01 19,29:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=43352 step=3 dir=5 mask=3F target=18,28 sounds=8 length=4 cursor=18,28 changes=18,28:0=00>04 18,29:0=01>21
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=43352 step=4 dir=2 mask=3D target=18,29 sounds=8 length=3 cursor=18,29 changes=18,28:0=04>00 18,29:0=21>01
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=43352 outcome=CANCELLED view1=04 length=3 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=351324 step=0 dir=3 mask=38 target=15,31 sounds=8 length=1 cursor=15,31 changes=15,31:0=00>01 16,31:0=85>8D
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=351324 step=1 dir=5 mask=3D target=15,30 sounds=8 length=2 cursor=15,30 changes=15,30:0=00>04 15,31:0=01>21
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=351324 step=2 dir=1 mask=3F target=16,31 sounds=2 END length=0 cursor=16,31 changes=15,30:0=04>06 16,31:0=8D>9D
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=351324 outcome=BUILT view1=04 length=0 roadchanges=15,30:0=00>06 15,31:0=00>21 16,31:0=85>9D items=2:3=05>1D 2:4=05>1D 2:30=00>8C 2:33=00>23 2:34=00>8C 2:37=00>23 2:3f=00>20 2:40=00>18
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=2 step=0 dir=2 mask=33 target=21,31 sounds=4 length=0 cursor=21,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=21,30 dirs=2 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=4553515 step=0 dir=4 mask=20 target=15,30 sounds=4 length=0 cursor=16,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=4553515 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=20505 step=0 dir=2 mask=20 target=16,0 sounds=4 length=0 cursor=16,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=16,31 dirs=20505 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=42 step=0 dir=4 mask=07 target=17,0 sounds=4 length=0 cursor=18,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=18,1 dirs=42 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=11 step=0 dir=1 mask=0C target=14,1 sounds=4 length=0 cursor=13,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=11 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=0444 step=0 dir=0 mask=0C target=14,0 sounds=4 length=0 cursor=13,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=13,0 dirs=0444 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=033 step=0 dir=0 mask=38 target=20,30 sounds=4 length=0 cursor=19,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=19,30 dirs=033 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=3 step=0 dir=3 mask=27 target=21,0 sounds=4 length=0 cursor=22,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 start=22,0 dirs=3 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road-flag size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=27,30 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=0,30 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=2,31 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=3,0 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=25,0 PLACED
+road-flag size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=28,4 PLACED
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=0 step=0 dir=0 mask=2F target=31,1 sounds=8 length=1 cursor=31,1 changes=30,1:0=90>91 31,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=0 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=03 step=0 dir=0 mask=2F target=31,1 sounds=8 length=1 cursor=31,1 changes=30,1:0=90>91 31,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=03 step=1 dir=3 mask=3F target=30,1 sounds=8 length=0 cursor=30,1 changes=30,1:0=91>90 31,1:0=08>00
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=03 outcome=CANCELLED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=033 step=0 dir=0 mask=2F target=31,1 sounds=8 length=1 cursor=31,1 changes=30,1:0=90>91 31,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=033 step=1 dir=3 mask=3F target=30,1 sounds=8 length=0 cursor=30,1 changes=30,1:0=91>90 31,1:0=08>00
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=033 step=2 dir=3 mask=2F target=29,1 sounds=8 length=1 cursor=29,1 changes=29,1:0=00>01 30,1:0=90>98
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=033 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=29,0 dirs=0 START-REFUSED kind=0
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,5 dirs=0 START-REFUSED kind=7
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=55500 step=0 dir=5 mask=3F target=28,3 sounds=8 length=1 cursor=28,3 changes=28,3:0=00>04 28,4:0=80>A0
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=55500 step=1 dir=5 mask=3F target=28,2 sounds=8 length=2 cursor=28,2 changes=28,2:0=00>04 28,3:0=04>24
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=55500 step=2 dir=5 mask=3F target=28,1 sounds=8 length=3 cursor=28,1 changes=28,1:0=00>04 28,2:0=04>24
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=55500 step=3 dir=0 mask=2F target=29,1 sounds=8 length=4 cursor=29,1 changes=28,1:0=04>05 29,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=55500 step=4 dir=0 mask=1F target=30,1 sounds=2 END length=0 cursor=30,1 changes=29,1:0=08>09 30,1:0=90>98
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=55500 outcome=BUILT view1=04 length=0 roadchanges=28,1:0=00>05 29,1:0=00>09 30,1:0=90>98 28,2:0=00>24 28,3:0=00>24 28,4:0=80>A0 items=0:3=00>08 0:4=40>48 0:9=00>10 0:30=00>A4 0:31=00>01 0:33=00>23 0:3f=00>28 6:3=00>20 6:4=00>20 6:b=00>10 6:3b=00>23 6:41=00>18
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=33222 step=0 dir=3 mask=3F target=31,30 sounds=8 length=1 cursor=31,30 changes=0,30:0=80>88 31,30:0=00>01
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=33222 step=1 dir=3 mask=3F target=30,30 sounds=8 length=2 cursor=30,30 changes=30,30:0=00>01 31,30:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=33222 step=2 dir=2 mask=3F target=30,31 sounds=8 length=3 cursor=30,31 changes=30,30:0=01>05 30,31:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=33222 step=3 dir=2 mask=3F target=30,0 sounds=8 length=4 cursor=30,0 changes=30,0:0=00>20 30,31:0=20>24
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=33222 step=4 dir=2 mask=37 target=30,1 sounds=2 END length=0 cursor=30,1 changes=30,0:0=20>24 30,1:0=98>B8
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=33222 outcome=BUILT view1=04 length=0 roadchanges=30,0:0=00>24 30,1:0=98>B8 0,30:0=80>88 30,30:0=00>05 31,30:0=00>09 30,31:0=00>24 items=0:3=08>28 0:4=48>68 0:b=00>10 0:38=00>8C 0:3b=00>23 0:41=00>18 2:3=00>08 2:4=00>08 2:9=00>10 2:33=00>23 2:3f=00>28
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=0055 step=0 dir=0 mask=17 target=26,0 sounds=8 length=1 cursor=26,0 changes=25,0:0=80>81 26,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=0055 step=1 dir=0 mask=2E target=27,0 sounds=4 length=1 cursor=26,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=0055 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=00000 step=0 dir=0 mask=3F target=28,30 sounds=8 length=1 cursor=28,30 changes=27,30:0=80>81 28,30:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=00000 step=1 dir=0 mask=3F target=29,30 sounds=8 length=2 cursor=29,30 changes=28,30:0=08>09 29,30:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=00000 step=2 dir=0 mask=3D target=30,30 sounds=4 length=2 cursor=29,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=00000 outcome=STEP-REFUSED view1=04 length=2 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=00001 step=0 dir=0 mask=17 target=26,0 sounds=8 length=1 cursor=26,0 changes=25,0:0=80>81 26,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=00001 step=1 dir=0 mask=2E target=27,0 sounds=4 length=1 cursor=26,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=00001 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=33334 step=0 dir=3 mask=07 target=29,1 sounds=4 length=0 cursor=30,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=33334 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=43 step=0 dir=4 mask=3F target=1,30 sounds=8 length=1 cursor=1,30 changes=1,30:0=00>02 2,31:0=80>90
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=43 step=1 dir=3 mask=3F target=0,30 sounds=2 END length=0 cursor=0,30 changes=0,30:0=88>89 1,30:0=02>0A
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=43 outcome=BUILT view1=04 length=0 roadchanges=0,30:0=88>89 1,30:0=00>0A 2,31:0=80>90 items=2:3=08>09 2:4=08>09 2:24=00>D2 2:27=00>23 2:3c=00>20 3:3=00>10 3:4=00>10 3:34=00>8C 3:37=00>23
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=01 step=0 dir=0 mask=36 target=1,30 sounds=4 length=0 cursor=0,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=01 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=00555 step=0 dir=0 mask=07 target=31,1 sounds=8 length=1 cursor=31,1 changes=30,1:0=B8>B9 31,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=00555 step=1 dir=0 mask=2F target=0,1 sounds=8 length=2 cursor=0,1 changes=0,1:0=00>08 31,1:0=08>09
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=00555 step=2 dir=5 mask=3F target=0,0 sounds=8 length=3 cursor=0,0 changes=0,0:0=00>04 0,1:0=08>28
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=00555 step=3 dir=5 mask=3F target=0,31 sounds=8 length=4 cursor=0,31 changes=0,0:0=04>24 0,31:0=00>04
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=00555 step=4 dir=5 mask=2F target=0,30 sounds=2 END length=0 cursor=0,30 changes=0,30:0=89>8D 0,31:0=04>24
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=00555 outcome=BUILT view1=04 length=0 roadchanges=0,0:0=00>24 0,1:0=00>28 30,1:0=B8>B9 31,1:0=00>09 0,30:0=89>8D 0,31:0=00>24 items=0:3=28>29 0:4=68>69 0:6=00>10 0:24=00>8C 0:27=00>23 0:3c=00>10 2:3=09>0D 2:4=09>0D 2:8=00>10 2:2f=00>23
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=1112 step=0 dir=1 mask=17 target=26,1 sounds=8 length=1 cursor=26,1 changes=25,0:0=80>82 26,1:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=1112 step=1 dir=1 mask=3F target=27,2 sounds=8 length=2 cursor=27,2 changes=26,1:0=10>12 27,2:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=1112 step=2 dir=1 mask=3D target=28,3 sounds=4 length=2 cursor=27,2 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=1112 outcome=STEP-REFUSED view1=04 length=2 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=10 step=0 dir=1 mask=32 target=1,31 sounds=8 length=1 cursor=1,31 changes=0,30:0=8D>8F 1,31:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=10 step=1 dir=0 mask=17 target=2,31 sounds=2 END length=0 cursor=2,31 changes=1,31:0=10>11 2,31:0=90>98
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=10 outcome=BUILT view1=04 length=0 roadchanges=0,30:0=8D>8F 1,31:0=00>11 2,31:0=90>98 items=2:3=0D>0F 2:4=0D>0F 2:28=00>D2 2:2b=00>23 2:3d=00>18 3:3=10>18 3:4=10>18 3:30=00>8C 3:33=00>23 3:3f=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=10000 step=0 dir=1 mask=17 target=26,1 sounds=8 length=1 cursor=26,1 changes=25,0:0=80>82 26,1:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=10000 step=1 dir=0 mask=3F target=27,1 sounds=8 length=2 cursor=27,1 changes=26,1:0=10>11 27,1:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=10000 step=2 dir=0 mask=1E target=28,1 sounds=4 length=2 cursor=27,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=10000 outcome=STEP-REFUSED view1=04 length=2 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=4445 step=0 dir=4 mask=1F target=27,3 sounds=8 length=1 cursor=27,3 changes=27,3:0=00>02 28,4:0=A0>B0
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=4445 step=1 dir=4 mask=3E target=26,2 sounds=8 length=2 cursor=26,2 changes=26,2:0=00>02 27,3:0=02>12
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=4445 step=2 dir=4 mask=3F target=25,1 sounds=8 length=3 cursor=25,1 changes=25,1:0=00>02 26,2:0=02>12
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=4445 step=3 dir=5 mask=2F target=25,0 sounds=2 END length=0 cursor=25,0 changes=25,0:0=80>84 25,1:0=02>22
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=4445 outcome=BUILT view1=04 length=0 roadchanges=25,0:0=80>84 25,1:0=00>22 26,2:0=00>12 27,3:0=00>12 28,4:0=A0>B0 items=5:3=00>04 5:4=00>04 5:8=00>10 5:2c=00>A4 5:2d=00>01 5:2f=00>23 5:3e=00>20 6:3=20>30 6:4=20>30 6:a=00>10 6:34=00>5E 6:35=00>01 6:37=00>23 6:40=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=3322 step=0 dir=3 mask=3F target=26,30 sounds=8 length=1 cursor=26,30 changes=26,30:0=00>01 27,30:0=80>88
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=3322 step=1 dir=3 mask=3F target=25,30 sounds=8 length=2 cursor=25,30 changes=25,30:0=00>01 26,30:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=3322 step=2 dir=2 mask=3B target=25,31 sounds=4 length=2 cursor=25,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=3322 outcome=STEP-REFUSED view1=04 length=2 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=5444 step=0 dir=5 mask=0F target=28,3 sounds=4 length=0 cursor=28,4 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=5444 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=443 step=0 dir=4 mask=3F target=2,31 sounds=2 END length=0 cursor=2,31 changes=3,0:0=80>90 2,31:0=98>9A
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=443 outcome=BUILT view1=04 length=0 roadchanges=3,0:0=80>90 2,31:0=98>9A items=3:3=18>1A 3:4=18>1A 3:28=00>18 3:29=00>01 3:2b=00>23 3:3d=00>20 4:3=00>10 4:4=00>10 4:34=00>D2 4:37=00>23 4:40=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=33333 step=0 dir=3 mask=30 target=31,30 sounds=4 length=0 cursor=0,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=33333 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=444 step=0 dir=4 mask=06 target=29,0 sounds=4 length=0 cursor=30,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=444 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=2233 step=0 dir=2 mask=3F target=27,31 sounds=8 length=1 cursor=27,31 changes=27,30:0=80>84 27,31:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=2233 step=1 dir=2 mask=3B target=27,0 sounds=4 length=1 cursor=27,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=2233 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=33222 step=0 dir=3 mask=06 target=29,1 sounds=4 length=0 cursor=30,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=33222 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=110 step=0 dir=1 mask=30 target=1,31 sounds=4 length=0 cursor=0,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=110 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=55500 step=0 dir=5 mask=06 target=30,0 sounds=4 length=0 cursor=30,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=55500 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=5500 step=0 dir=5 mask=13 target=25,31 sounds=4 length=0 cursor=25,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=5500 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=22233 step=0 dir=2 mask=06 target=30,2 sounds=8 length=1 cursor=30,2 changes=30,1:0=B9>BD 30,2:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=22233 step=1 dir=2 mask=2F target=30,3 sounds=8 length=2 cursor=30,3 changes=30,2:0=20>24 30,3:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=22233 step=2 dir=2 mask=3F target=30,4 sounds=8 length=3 cursor=30,4 changes=30,3:0=20>24 30,4:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=22233 step=3 dir=3 mask=3F target=29,4 sounds=8 length=4 cursor=29,4 changes=29,4:0=00>01 30,4:0=20>28
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=22233 step=4 dir=3 mask=2F target=28,4 sounds=2 END length=0 cursor=28,4 changes=28,4:0=B0>B1 29,4:0=01>09
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=22233 outcome=BUILT view1=04 length=0 roadchanges=30,1:0=B9>BD 30,2:0=00>24 30,3:0=00>24 28,4:0=B0>B1 29,4:0=00>09 30,4:0=00>28 items=0:3=29>2D 0:4=69>6D 0:8=00>10 0:2c=00>A4 0:2d=00>01 0:2f=00>23 6:3=30>31 6:4=30>31 6:6=00>10 6:27=00>23 6:3c=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=4 step=0 dir=4 mask=3F target=2,31 sounds=8 length=65535 cursor=2,31 changes=3,0:0=90>80 2,31:0=9A>98
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=4 outcome=CORRUPTED view1=C4 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=00555 step=0 dir=0 mask=0E target=29,4 sounds=4 length=0 cursor=28,4 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=00555 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=2111 step=0 dir=2 mask=13 target=25,1 sounds=4 length=0 cursor=25,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=2111 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=43333 step=0 dir=4 mask=02 target=29,0 sounds=4 length=0 cursor=30,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=43333 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=344 step=0 dir=3 mask=3F target=2,0 sounds=8 length=1 cursor=2,0 changes=2,0:0=00>01 3,0:0=90>98
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=344 step=1 dir=4 mask=2F target=1,31 sounds=4 length=1 cursor=2,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=344 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=111 step=0 dir=1 mask=3F target=28,31 sounds=8 length=1 cursor=28,31 changes=27,30:0=80>82 28,31:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=111 step=1 dir=1 mask=3D target=29,0 sounds=4 length=1 cursor=28,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=111 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=34 step=0 dir=3 mask=0E target=27,4 sounds=8 length=1 cursor=27,4 changes=27,4:0=00>01 28,4:0=B1>B9
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=34 step=1 dir=4 mask=1F target=26,3 sounds=8 length=2 cursor=26,3 changes=26,3:0=00>02 27,4:0=01>11
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=34 outcome=CANCELLED view1=04 length=2 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=5235 step=0 dir=5 mask=3F target=3,31 sounds=8 length=1 cursor=3,31 changes=3,0:0=90>B0 3,31:0=00>04
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=5235 step=1 dir=2 mask=3F target=3,0 sounds=8 length=0 cursor=3,0 changes=3,0:0=B0>90 3,31:0=04>00
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=5235 step=2 dir=3 mask=3F target=2,0 sounds=8 length=1 cursor=2,0 changes=2,0:0=00>01 3,0:0=90>98
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=5235 step=3 dir=5 mask=2F target=2,31 sounds=2 END length=0 cursor=2,31 changes=2,0:0=01>21 2,31:0=9A>9E
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=5235 outcome=BUILT view1=04 length=0 roadchanges=2,0:0=00>21 3,0:0=90>98 2,31:0=9A>9E items=3:3=1A>1E 3:4=1A>1E 3:2c=00>18 3:2d=00>01 3:2f=00>23 3:3e=00>18 4:3=10>18 4:4=10>18 4:30=00>D2 4:33=00>23 4:3f=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=024525 step=0 dir=0 mask=30 target=1,30 sounds=4 length=0 cursor=0,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=024525 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=45135 step=0 dir=4 mask=23 target=1,30 sounds=4 length=0 cursor=2,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=45135 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=4121 step=0 dir=4 mask=13 target=24,31 sounds=8 length=1 cursor=24,31 changes=25,0:0=84>94 24,31:0=00>02
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=4121 step=1 dir=1 mask=3A target=25,0 sounds=8 length=0 cursor=25,0 changes=25,0:0=94>84 24,31:0=02>00
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=4121 step=2 dir=2 mask=13 target=25,1 sounds=4 length=0 cursor=25,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=4121 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=22232 step=0 dir=2 mask=3F target=27,31 sounds=8 length=1 cursor=27,31 changes=27,30:0=80>84 27,31:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=22232 step=1 dir=2 mask=3B target=27,0 sounds=4 length=1 cursor=27,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=22232 outcome=STEP-REFUSED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=314 step=0 dir=3 mask=37 target=2,0 sounds=4 length=0 cursor=3,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=314 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=14115 step=0 dir=1 mask=23 target=3,0 sounds=8 length=65535 cursor=3,0 changes=3,0:0=98>88 2,31:0=9E>9C
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=14115 outcome=CORRUPTED view1=C4 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=03 step=0 dir=0 mask=30 target=1,30 sounds=4 length=0 cursor=0,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=03 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=330530 step=0 dir=3 mask=13 target=24,0 sounds=4 length=0 cursor=25,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=330530 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=35 step=0 dir=3 mask=3F target=26,30 sounds=8 length=1 cursor=26,30 changes=26,30:0=00>01 27,30:0=80>88
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=35 step=1 dir=5 mask=3F target=26,29 sounds=8 length=2 cursor=26,29 changes=26,29:0=00>04 26,30:0=01>21
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=35 outcome=CANCELLED view1=04 length=2 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=5215 step=0 dir=5 mask=0E target=28,3 sounds=4 length=0 cursor=28,4 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=5215 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=221552 step=0 dir=2 mask=23 target=2,0 sounds=4 length=0 cursor=2,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=221552 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=515415 step=0 dir=5 mask=37 target=3,31 sounds=8 length=1 cursor=3,31 changes=3,0:0=98>B8 3,31:0=00>04
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=515415 step=1 dir=1 mask=3F target=4,0 sounds=8 length=2 cursor=4,0 changes=4,0:0=00>10 3,31:0=04>06
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=515415 step=2 dir=5 mask=3F target=4,31 sounds=8 length=3 cursor=4,31 changes=4,0:0=10>30 4,31:0=00>04
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=515415 step=3 dir=4 mask=16 target=3,30 sounds=8 length=4 cursor=3,30 changes=3,30:0=00>02 4,31:0=04>14
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=515415 step=4 dir=1 mask=1A target=4,31 sounds=8 length=3 cursor=4,31 changes=3,30:0=02>00 4,31:0=14>04
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=515415 step=5 dir=5 mask=16 target=4,30 sounds=4 length=3 cursor=4,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=515415 outcome=STEP-REFUSED view1=04 length=3 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=40 step=0 dir=4 mask=23 target=1,30 sounds=4 length=0 cursor=2,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=40 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=402454 step=0 dir=4 mask=37 target=2,31 sounds=8 length=65535 cursor=2,31 changes=3,0:0=98>88 2,31:0=9E>9C
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=402454 outcome=CORRUPTED view1=C4 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=21 step=0 dir=2 mask=30 target=0,31 sounds=4 length=0 cursor=0,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=21 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=5401103 step=0 dir=5 mask=3F target=27,29 sounds=8 length=1 cursor=27,29 changes=27,29:0=00>04 27,30:0=80>A0
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=5401103 step=1 dir=4 mask=3F target=26,28 sounds=8 length=2 cursor=26,28 changes=26,28:0=00>02 27,29:0=04>14
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=5401103 step=2 dir=0 mask=3F target=27,28 sounds=8 length=3 cursor=27,28 changes=26,28:0=02>03 27,28:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=5401103 step=3 dir=1 mask=3B target=28,29 sounds=8 length=4 cursor=28,29 changes=27,28:0=08>0A 28,29:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=5401103 step=4 dir=1 mask=37 target=29,30 sounds=8 length=5 cursor=29,30 changes=28,29:0=10>12 29,30:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=5401103 step=5 dir=0 mask=3D target=30,30 sounds=4 length=5 cursor=29,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=27,30 dirs=5401103 outcome=STEP-REFUSED view1=04 length=5 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=44503 step=0 dir=4 mask=13 target=24,31 sounds=8 length=1 cursor=24,31 changes=25,0:0=84>94 24,31:0=00>02
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=44503 step=1 dir=4 mask=3A target=23,30 sounds=8 length=2 cursor=23,30 changes=23,30:0=00>02 24,31:0=02>12
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=44503 step=2 dir=5 mask=3F target=23,29 sounds=8 length=3 cursor=23,29 changes=23,29:0=00>04 23,30:0=02>22
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=44503 step=3 dir=0 mask=3F target=24,29 sounds=8 length=4 cursor=24,29 changes=23,29:0=04>05 24,29:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=44503 step=4 dir=3 mask=3F target=23,29 sounds=8 length=3 cursor=23,29 changes=23,29:0=05>04 24,29:0=08>00
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=44503 outcome=CANCELLED view1=04 length=3 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=504 step=0 dir=5 mask=0E target=28,3 sounds=4 length=0 cursor=28,4 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=504 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=20 step=0 dir=2 mask=02 target=30,2 sounds=4 length=0 cursor=30,1 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=30,1 dirs=20 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=244 step=0 dir=2 mask=23 target=2,0 sounds=4 length=0 cursor=2,31 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=2,31 dirs=244 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=3 step=0 dir=3 mask=13 target=24,0 sounds=4 length=0 cursor=25,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=25,0 dirs=3 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=002 step=0 dir=0 mask=37 target=4,0 sounds=8 length=1 cursor=4,0 changes=3,0:0=98>99 4,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=002 step=1 dir=0 mask=3F target=5,0 sounds=8 length=2 cursor=5,0 changes=4,0:0=08>09 5,0:0=00>08
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=002 step=2 dir=2 mask=1C target=5,1 sounds=8 length=3 cursor=5,1 changes=5,0:0=08>0C 5,1:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=002 outcome=CANCELLED view1=04 length=3 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=34 step=0 dir=3 mask=30 target=31,30 sounds=4 length=0 cursor=0,30 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=0,30 dirs=34 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=31512 step=0 dir=3 mask=37 target=2,0 sounds=4 length=0 cursor=3,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=31512 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=3 step=0 dir=3 mask=0E target=27,4 sounds=8 length=1 cursor=27,4 changes=27,4:0=00>01 28,4:0=B1>B9
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=3 outcome=CANCELLED view1=04 length=1 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=151235 step=0 dir=1 mask=37 target=4,1 sounds=8 length=1 cursor=4,1 changes=3,0:0=98>9A 4,1:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=151235 step=1 dir=5 mask=3F target=4,0 sounds=8 length=2 cursor=4,0 changes=4,0:0=00>04 4,1:0=10>30
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=151235 step=2 dir=1 mask=3F target=5,1 sounds=8 length=3 cursor=5,1 changes=4,0:0=04>06 5,1:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=151235 step=3 dir=2 mask=34 target=5,2 sounds=8 length=4 cursor=5,2 changes=5,1:0=10>14 5,2:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=151235 step=4 dir=3 mask=2C target=4,2 sounds=8 length=5 cursor=4,2 changes=4,2:0=00>01 5,2:0=20>28
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=151235 step=5 dir=5 mask=1F target=4,1 sounds=4 length=5 cursor=4,2 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=151235 outcome=STEP-REFUSED view1=04 length=5 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=1234121 step=0 dir=1 mask=0E target=29,5 sounds=8 length=1 cursor=29,5 changes=28,4:0=B1>B3 29,5:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=1234121 step=1 dir=2 mask=1F target=29,6 sounds=8 length=2 cursor=29,6 changes=29,5:0=10>14 29,6:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=1234121 step=2 dir=3 mask=3F target=28,6 sounds=8 length=3 cursor=28,6 changes=28,6:0=00>01 29,6:0=20>28
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=1234121 step=3 dir=4 mask=3F target=27,5 sounds=8 length=4 cursor=27,5 changes=27,5:0=00>02 28,6:0=01>11
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=1234121 step=4 dir=1 mask=3F target=28,6 sounds=8 length=3 cursor=28,6 changes=27,5:0=02>00 28,6:0=11>01
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=1234121 step=5 dir=2 mask=3F target=28,7 sounds=8 length=4 cursor=28,7 changes=28,6:0=01>05 28,7:0=00>20
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=1234121 step=6 dir=1 mask=33 target=29,8 sounds=8 length=5 cursor=29,8 changes=28,7:0=20>22 29,8:0=00>10
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=28,4 dirs=1234121 outcome=CANCELLED view1=04 length=5 roadchanges= items=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=315 step=0 dir=3 mask=37 target=2,0 sounds=4 length=0 cursor=3,0 changes=
+road size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 start=3,0 dirs=315 outcome=STEP-REFUSED view1=04 length=0 roadchanges= items=

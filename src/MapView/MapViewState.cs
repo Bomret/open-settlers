@@ -27,6 +27,9 @@ public sealed class MapViewState
     /// <summary>The size value last applied.</summary>
     public int SizeValue { get; private set; }
 
+    /// <summary>The start stock level of the human player of a game on the applied seed (<see cref="StartStock.LevelOf"/>).</summary>
+    public int StockLevel => StartStock.LevelOf(_applied);
+
     /// <summary>The map of <see cref="SeedText"/> and <see cref="SizeValue"/>; null when the opening seed or size was refused.</summary>
     public Map? Map { get; private set; }
 

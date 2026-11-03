@@ -14,7 +14,9 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed class ObjectGraphics
 {
-    /// <summary>The number of sprite entries: those of codes 8 to 127.</summary>
+    /// <summary>
+    /// The number of object sprite entries: those of codes 8 to 127. The castle's sprite follows them, then the flag's, the hut's, and the 32 goods'.
+    /// </summary>
     public const int EntryCount = ObjectSprites.LastCode - ObjectSprites.FirstCode + 1;
 
     /// <summary>The palette of entry 3 as <see cref="PaletteTexture.Rgba"/>.</summary>
@@ -26,11 +28,22 @@ public sealed class ObjectGraphics
     /// <summary>The tallest sprite; the height of every layer.</summary>
     public required int LayerHeight { get; init; }
 
-    /// <summary>One image per entry from <see cref="ObjectSprites.FirstEntry"/> on, each padded to the layer size in its pixel arrays.</summary>
+    /// <summary>
+    /// One image per entry from <see cref="ObjectSprites.FirstEntry"/> on, then the castle's
+    /// (<see cref="ObjectSprites.CastleEntry"/>), the flag's (<see cref="ObjectSprites.FlagEntry"/>), the hut's, and the
+    /// goods' (<see cref="ObjectSprites.GoodsCount"/> from <see cref="ObjectSprites.GoodsFirstEntry"/>), each padded to
+    /// the layer size in its pixel arrays.
+    /// </summary>
     public required IReadOnlyList<ObjectImage> Images { get; init; }
 
-    /// <summary>The layer of a sprite entry.</summary>
-    public static int Layer(int entry) => entry - ObjectSprites.FirstEntry;
+    /// <summary>The layer of a sprite entry: the object entries in order, then the castle's, the flag's, the hut's, and the goods'.</summary>
+    public static int Layer(int entry) =>
+        entry == ObjectSprites.CastleEntry ? EntryCount
+        : entry == ObjectSprites.FlagEntry ? EntryCount + 1
+        : entry == ObjectSprites.WoodcutterEntry ? EntryCount + 2
+        : entry is >= ObjectSprites.GoodsFirstEntry and < ObjectSprites.GoodsFirstEntry + ObjectSprites.GoodsCount
+            ? EntryCount + 3 + entry - ObjectSprites.GoodsFirstEntry
+        : entry - ObjectSprites.FirstEntry;
 
     /// <summary>
     /// Reads the sprites from the install. Throws <see cref="FileNotFoundException"/> for a missing archive and
@@ -59,6 +72,52 @@ public sealed class ObjectGraphics
             );
         }
 
+        images.Add(
+            archive[ObjectSprites.CastleEntry].State == EntryState.Absent
+                ? ObjectImage.Empty
+                : Read(
+                    archive,
+                    ObjectSprites.CastleEntry,
+                    "the castle sprite",
+                    data => ObjectImage.From(SpriteFile.Read(data))
+                )
+        );
+
+        images.Add(
+            archive[ObjectSprites.FlagEntry].State == EntryState.Absent
+                ? ObjectImage.Empty
+                : Read(
+                    archive,
+                    ObjectSprites.FlagEntry,
+                    "the flag sprite",
+                    data => ObjectImage.From(SpriteFile.Read(data))
+                )
+        );
+
+        images.Add(
+            archive[ObjectSprites.WoodcutterEntry].State == EntryState.Absent
+                ? ObjectImage.Empty
+                : Read(
+                    archive,
+                    ObjectSprites.WoodcutterEntry,
+                    "the woodcutter's hut sprite",
+                    data => ObjectImage.From(SpriteFile.Read(data))
+                )
+        );
+
+        for (
+            var entry = ObjectSprites.GoodsFirstEntry;
+            entry < ObjectSprites.GoodsFirstEntry + ObjectSprites.GoodsCount;
+            entry++
+        )
+        {
+            images.Add(
+                archive[entry].State == EntryState.Absent
+                    ? ObjectImage.Empty
+                    : Read(archive, entry, "the good's sprite", data => ObjectImage.From(SpriteFile.Read(data)))
+            );
+        }
+
         var width = images.Max(image => image.Width);
         var height = images.Max(image => image.Height);
         if (width == 0 || height == 0)
@@ -80,7 +139,7 @@ public sealed class ObjectGraphics
     }
 
     // The pixel arrays grow to the layer size at the top left; Width and Height stay the sprite's own.
-    static ObjectImage Pad(ObjectImage image, int width, int height)
+    internal static ObjectImage Pad(ObjectImage image, int width, int height)
     {
         var indices = new byte[width * height];
         var coverage = new byte[width * height];

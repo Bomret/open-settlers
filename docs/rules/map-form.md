@@ -60,7 +60,7 @@ order: the tile in column `x` and row `y` is entry `y * columns + x`. The layers
 | Number | Layer | Source in the original |
 | --- | --- | --- |
 | 0 | `flags` | byte 0 of record A; bit 6 marks the middle of a lake |
-| 1 | `height` | byte 1 of record A |
+| 1 | `height` | byte 1 of record A; the low 5 bits are the height, and the top 3 bits stay 0 through the generation (a castle sets them, [Castle](castle.md)) |
 | 2 | `terrain` | byte 2 of record A; the upper triangle in the high nibble, the lower in the low nibble |
 | 3 | `lake` | byte 0 of record B; a draw from 0 to 7 where a lake has its middle |
 | 4 | `object` | byte 3 of record A; the low 7 bits are the object code (0 for none), bit 7 marks a tile with a water triangle |

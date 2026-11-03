@@ -72,6 +72,14 @@ mise run map
 
 A valid seed, applied with Enter, or a new size regenerates and redraws the map. A new size keeps the last applied seed. An invalid seed shows its reason and keeps the last map. The arrow keys and a mouse drag move the view, which wraps at the map's edges. A two-finger touchpad swipe also moves the view. The mouse wheel and a touchpad pinch zoom in and out around the pointer, and the `+` and `-` keys zoom around the middle of the view. The zoom goes from 1/4 to 4 times, and a view never shows more than two maps across. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
 
+The game view is the map view with a game on the shown map that ticks at the original's normal speed. It shows the tick count and the castle's log count, and a new map starts a new game:
+
+```sh
+mise exec -- <godot> --path . -- --game-view [--seed <seed>] [--size <1|2|3>]
+```
+
+It takes `--seed` and `--size` as the map view does, and it has the map view's exit codes.
+
 Seed info prints the digests and counts of the map of one seed and size. It is headless and needs no install and no `SIEDLER_DIR`:
 
 ```sh
@@ -125,7 +133,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 
 - `OpenSettlers.csproj`, `project.godot`: the Godot project.
 - `mise.toml`: the pinned development tools and the tasks.
-- `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `Simulation/` the random generator, the seed, and the map generator, `MapView/` the terrain and object drawing plans and the camera, and `Viewer/` the asset browser, the map view, and their shaders.
+- `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `Simulation/` the random generator, the seed, the map generator, and the game with its commands, roads, settlers, carriers, goods, woodcutting, and removal, `MapView/` the terrain, object, road, and settler drawing plans, the click handling, and the camera, and `Viewer/` the asset browser, the map view (`MapViewControl.cs`, which also shows the game view), the play driver, and the shaders.
 - `play/`: the checked-in play scripts ("Run a play script").
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.

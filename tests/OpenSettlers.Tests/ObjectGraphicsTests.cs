@@ -16,14 +16,31 @@ public sealed class ObjectGraphicsTests
     static byte[] Sprite(short offsetX = -1, short offsetY = -2) =>
         GraphicFileTests.Entry(1, 0, 3, 1, offsetX, offsetY, [1, 2, 0, 7, 0, 0]);
 
-    static Dictionary<int, byte[]> Payloads() =>
-        new()
+    static Dictionary<int, byte[]> Payloads(bool flag = false)
+    {
+        var payloads = new Dictionary<int, byte[]>
         {
             [3] = new byte[768],
             [1250] = Sprite(),
             [1251] = GraphicFileTests.Entry(1, 0, 2, 2, 5, 6, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]),
             [1369] = Sprite(),
+            [ObjectSprites.CastleEntry] = GraphicFileTests.Entry(1, 0, 2, 2, 7, 8, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]),
         };
+        if (flag)
+        {
+            payloads[ObjectSprites.FlagEntry] = GraphicFileTests.Entry(
+                1,
+                0,
+                2,
+                2,
+                9,
+                4,
+                [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
+            );
+        }
+
+        return payloads;
+    }
 
     static OpenSettlers.Assets.Install Open(FakeInstall fake)
     {
@@ -39,7 +56,7 @@ public sealed class ObjectGraphicsTests
     }
 
     static FakeInstall Install(Dictionary<int, byte[]> payloads) =>
-        new FakeInstall().Put(Archive, ArchiveBytes.Build(1400, payloads));
+        new FakeInstall().Put(Archive, ArchiveBytes.Build(1500, payloads));
 
     [TestMethod]
     public void TheCoverageOfAnImageIsKeptApartFromItsPaletteIndices()
@@ -59,7 +76,7 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.HasCount(ObjectGraphics.EntryCount, graphics.Images);
+        Assert.HasCount(ObjectGraphics.EntryCount + 3 + ObjectSprites.GoodsCount, graphics.Images);
         Assert.AreEqual(3, graphics.LayerWidth);
         Assert.AreEqual(2, graphics.LayerHeight);
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
@@ -68,6 +85,78 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(3 * 2, graphics.Images[0].Coverage.Length);
         Assert.AreEqual(0, ObjectGraphics.Layer(1250));
         Assert.AreEqual(119, ObjectGraphics.Layer(1369));
+    }
+
+    [TestMethod]
+    public void TheCastleSpriteIsTheLayerAfterTheObjectSprites()
+    {
+        using var fake = Install(Payloads());
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        // Emulator: peek:44fd2f:4 prints 66B8B200, the stub of the building type 0xe0 loading the object number 0xB2
+        // (178); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
+        Assert.AreEqual(1428, ObjectSprites.CastleEntry);
+        Assert.AreEqual(ObjectGraphics.EntryCount, ObjectGraphics.Layer(ObjectSprites.CastleEntry));
+        Assert.AreEqual(7, graphics.Images[ObjectGraphics.Layer(ObjectSprites.CastleEntry)].OffsetX);
+    }
+
+    [TestMethod]
+    public void TheFlagSpriteIsTheLayerAfterTheCastlesAndItsImageIsRead()
+    {
+        using var fake = Install(Payloads(flag: true));
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        Assert.AreEqual(ObjectGraphics.EntryCount + 1, ObjectGraphics.Layer(ObjectSprites.FlagEntry));
+        Assert.AreEqual(9, graphics.Images[ObjectGraphics.Layer(ObjectSprites.FlagEntry)].OffsetX);
+    }
+
+    [TestMethod]
+    public void TheGoodsSpritesAreTheLayersAfterTheHutsAndTheLogsImageIsRead()
+    {
+        var payloads = Payloads();
+        payloads[ObjectSprites.GoodEntry(7)] = GraphicFileTests.Entry(
+            1,
+            0,
+            2,
+            2,
+            3,
+            1,
+            [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
+        );
+        using var fake = Install(payloads);
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        Assert.AreEqual(ObjectGraphics.EntryCount + 3, ObjectGraphics.Layer(ObjectSprites.GoodEntry(0)));
+        Assert.AreEqual(ObjectGraphics.EntryCount + 10, ObjectGraphics.Layer(ObjectSprites.GoodEntry(7)));
+        Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(ObjectSprites.GoodEntry(7))].OffsetX);
+        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32, graphics.Images.Count);
+    }
+
+    [TestMethod]
+    public void TheHutSpriteIsTheLayerAfterTheFlagsAndItsImageIsRead()
+    {
+        var payloads = Payloads();
+        payloads[ObjectSprites.WoodcutterEntry] = GraphicFileTests.Entry(
+            1,
+            0,
+            2,
+            2,
+            11,
+            3,
+            [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
+        );
+        using var fake = Install(payloads);
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        // Emulator: peek:44e63b:4 prints 66B8A800, the stub the jump table at 0x44e3aa reaches for the building type 2 (the
+        // woodcutter's hut) loading the object number 0xA8 (168); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
+        Assert.AreEqual(1418, ObjectSprites.WoodcutterEntry);
+        Assert.AreEqual(ObjectGraphics.EntryCount + 2, ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry));
+        Assert.AreEqual(11, graphics.Images[ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry)].OffsetX);
     }
 
     [TestMethod]

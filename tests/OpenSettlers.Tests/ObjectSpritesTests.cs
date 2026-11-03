@@ -14,6 +14,16 @@ public sealed class ObjectSpritesTests
         Assert.IsNull(ObjectSprites.Entry(128));
     }
 
+    // Emulator: 0x44db26 hands 0x44da4d the object number 0x80 for a flag (docs/rules/flags.md); 0x44da4d adds 1250.
+    [TestMethod]
+    public void AFlagTakesTheEntryOfObjectNumber0x80AndTheOtherBuildingCodesHaveNoSprite()
+    {
+        Assert.AreEqual(1378, ObjectSprites.Entry(1));
+        Assert.AreEqual(ObjectSprites.FlagEntry, ObjectSprites.Entry(ObjectSprites.FlagCode));
+        Assert.IsNull(ObjectSprites.Entry(2));
+        Assert.IsNull(ObjectSprites.Entry(4));
+    }
+
     [TestMethod]
     public void AStaticCodeTakesTheEntryOfItsCodeMinusEightPlus1250()
     {

@@ -103,6 +103,16 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    public void TheStockLevelIsThatOfTheAppliedSeed()
+    {
+        var state = MapViewState.Open(Seed, 1);
+
+        // The screen seed 1234567812345678 is the free-game seed 3905,0577,7739, whose level the emulator gave as 2
+        // (opponents:3905,0577,7739).
+        Assert.AreEqual(2, state.StockLevel);
+    }
+
+    [TestMethod]
     public void OpeningWithAnInvalidSeedHasNoMapAndAReason()
     {
         var state = MapViewState.Open("0000000000000000", 1);

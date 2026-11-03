@@ -245,13 +245,44 @@ entries per phase (see "Item tables").
 | --- | --- | --- | --- | --- | --- |
 | `0x4291c2` | `Sim_StepPhase` | Advances `Sim_Phase`; phases 0 to 31 run the per-player update for player `phase & 3`, later phases draw from the random generator and dispatch through a table. | confirmed | game | Called by `Main_Loop`; tables at `0x4292ee` and `0x42923c`. |
 | `0x474da3` | `Ai_UpdatePlayer` | Per-player update for players whose block marks them active and computer-controlled. | inferred | game | Reached from `Sim_StepPhase`; calls `Rng_Step`. |
-| `0x46414d` | — | Processes the phase's slice of `Table70`. | unknown | game | Called by `Main_Loop`. |
-| `0x42cb2d` | — | Processes the phase's slice of `Table18`; counts down each entry's timer by the clock units since its last turn. | unknown | game | Called by `Main_Loop`. |
-| `0x42f3d9` | — | Processes the phase's slice of `Table16`, dispatching each entry on its type byte through `0x42fc81`. | unknown | game | Called by `Main_Loop`. |
-| `0x42f4f1` | — | For each view, gathers the objects on the shown tiles and dispatches them through `0x42fc81`. | unknown | game | Called by `Main_Loop`. |
+| `0x46414d` | `Table70_Pass` | Processes the phase's slice of `Table70` (the flags whose slot divided by 32 is the phase, phases 0 to 31): for each flag in use, its goods (not read), then through `0x464c36` its roads. | confirmed | game | Called by `Main_Loop`. [Carriers](carriers.md#the-flag-pass). |
+| `0x464c36` | `Flag_VisitRoads` | The part of `0x46414d` after a flag's goods: for each direction from north to east that holds a road, sets the flag status bit of a road that holds a carrier, and asks `0x42b455` for a carrier for a road whose byte shows none, unless the flag's status bit 7 says a request found none since the retry scan. | confirmed | game | Called by `0x46414d`. [Carriers](carriers.md#the-flag-pass). |
+| `0x42cb2d` | `Table18_Pass` | Processes the phase's slice of `Table18` (slots `32 * phase` on, in groups of 32 every 1024): a finished building goes to its type's handler through the table at `0x42cd1d`, a building under construction to the countdown. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
+| `0x42f3d9` | `Table16_Pass` | Processes the phase's slice of `Table16`: the slots whose number is the phase modulo 16 plus a multiple of 16, each through `0x42fc81`. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
+| `0x42f4f1` | — | For each view, gathers the settlers on the shown tiles, runs their turn through `0x42fc81` once more, and builds their draw records (`0x42f512`, `0x43f537`). So a settler in view acts every pass, others every 16th. | inferred | game | Called by `Main_Loop`. |
 | `0x4286d8` | — | Runs `0x428728`, `Sound_RunAmbient`, and `0x428d10`, then `0x428a75` for each player block. | unknown | game | Called by `Main_Loop`. |
-| `0x428728` | — | Clears one flag bit per entry of `Table18` and `Table70`, a limited number per pass. | unknown | game | Called by `0x4286d8`. |
-| `0x428d10` | — | Every 20 clock units, steps a cursor across the map and changes tiles with the random generator. | unknown | game | Called by `0x4286d8`; calls `Rng_Step`. |
+| `0x428728` | `Sim_ClearRetryBits` | Each pass clears bit 2 of the status of a window of `Table18` buildings from a cursor (`+0x54`, the window `+0x52`, stops after 10 set bits), and bit 7 of the flag status of a window of `Table70` (cursor `+0x56`). | confirmed | game | Called by `0x4286d8`. [Settlers](settlers.md#the-retry-scan). |
+| `0x42be63` | `Building_RequestWorker` | A building asks the storages for a settler of the job in the registers: a search over the flags from the building's flag; at a storage flag it takes the waiting settler of the job (state 15, mode 255, target the building's flag) or makes one of a jobless settler and a tool. | confirmed | game | Called by the building handlers (`0x42e0b8` and its siblings through `0x42cd1d`). [Settlers](settlers.md#the-request). |
+| `0x42b455` | `Road_RequestCarrier` | A land road asks the storages for a carrier: the search of `0x42be63` started at both ends of the road marks every flag with the end it was reached from; at a storage's flag it takes the waiting settler of job 0, or makes one of a waiting settler of job 21 (no tool), sends it (state 15, mode the direction of the road at the end the storage's flag was reached from, target that end's flag), and sets bit 7 of the road byte at both ends. | confirmed | game | Called by `0x464c36`. [Carriers](carriers.md#the-request). |
+| `0x42b4bc` | `Road_RequestBoatman` | The same search for a water road (the flag item's `+4` bit of the direction clear): it asks for a settler of job 1 and, failing that, for a settler of job 21 and a unit of good 8 (the count at `+0x16` of the storage item). Not ported. | inferred | game | Called by `0x464c36`. [Carriers](carriers.md#the-request). |
+| `0x43ad78` | `Settler_WalkRoad` | State 3: a carrier on its road. When the timer has run out it steps from a flag in the direction of its heading or from a road node in the road's other direction, through `0x43b788` and its siblings (the entries of the table at `0x43b508`); a step that would end at a flag is its last, and a carrier that carries a good, or finds a good waiting for its road at that flag, steps onto the flag. On a flag it delivers a good it carries to the flag's own destination (`0x43c45e`, state 0xe) or swaps goods with the flag (`0x43af07`). | confirmed | game | Entry 3 of `0x42fca1`. [Carriers](carriers.md#the-carriers-walk), [Goods at a flag](goods.md#the-carriers-exchange-at-a-flag). |
+| `0x43c4ea` | `Settler_DeliverGood` | State 0xe (entered at `0x43c45e`): the carrier on a building's flag. When the timer has run out, a good carried gains `0x0f` in byte 8 or 9 of the building's item and, on a carry out of the byte, one in the building's storage word for the good (at most 50000); then the frame is turned round and, at the next run-out, the carrier takes state 3 again. | confirmed | game | Entry 0xe of `0x42fca1`. [Goods at a flag](goods.md#the-delivery-into-the-castle). |
+| `0x43b788` | `Settler_StepRoadEast` | The step east of `Settler_WalkRoad` (the siblings `0x43b9eb`, `0x43bda1`, `0x43c008`, `0x43c156`, `0x43c29c` step south-east, south, west, north-west, north): the carrier next to the flag at the end of its road takes state 0x42; a free node is stepped to as in state 2; an occupied one is marked in the heading (the direction less 6) and tried again, or swapped with a settler coming the other way (not ported). | confirmed | game | Entries of the table at `0x43b508`. [Carriers](carriers.md#the-carriers-walk). |
+| `0x42ff81` | `Settler_CarrierWaits` | State 0x42: a carrier waits next to a flag at the end of its road. A good waiting at the near flag or at the far end of the road sends the carrier on (state 0x43, which `0x43001a` runs at once, then state 3); else the item does not change. | confirmed | game | Entry 0x42 of `0x42fca1`. [Carriers](carriers.md#the-carriers-walk), [Goods at a flag](goods.md#the-carrier-told-to-fetch). |
+| `0x42ca7a` | `Route_NextGeneration` | Counts the generation (`+0x26e`) that marks the flags a search has reached; when it wraps, clears the mark of every `Table70` item. | confirmed | game | Called by the searches and by `0x42965c`, `0x45d3ea`, `0x46414d`. |
+| `0x42fc81` | `Settler_Dispatch` | Runs the turn of the settler at the item pointer: jumps through the table at `0x42fca1` (8 bytes an entry) by the state byte (item `+0xa`). | confirmed | game | Called by `0x42f3d9` and `0x42f512`. |
+| `0x438eeb` | `Settler_WaitInStorage` | State 1: a settler in a storage enters its slot in the storage's list of waiting settlers by its job (`+0x42` plus twice the job); the knights' jobs take their own branches. | confirmed | game | Entry 1 of `0x42fca1`. |
+| `0x43f17a` | `Settler_StandByCastle` | State 10: the first settler of the castle adds the elapsed units times 128 to the castle's build progress (`+0xc`); when it wraps the castle stands (type byte bit 7 off) and the settler takes state 12. | confirmed | game | Entry 10 of `0x42fca1`. |
+| `0x43dd4a` | `Settler_LeaveBuilding` | State 15: a settler of a storage steps south-east onto the building's flag when that node and the door node are free, takes the time of the step times the door's speed, and waits it out in state 5. | confirmed | game | Entry 15 of `0x42fca1`. |
+| `0x43dceb` | `Settler_WaitStep` | State 5: takes the elapsed units off the timer (`+2`) and goes to the state in `+0xf` when they were more than the time left. | confirmed | game | Entry 5 of `0x42fca1`. |
+| `0x4398ea` | `Settler_Walk` | State 2: when the timer has run out, chooses the next direction (the road's other direction on a road node, the route search's first direction on a flag), steps through `0x43a64c` and its five siblings, and enters the building at the flag it walks to. | confirmed | game | Entry 2 of `0x42fca1`. [Settlers](settlers.md#the-walk). |
+| `0x43a64c` | `Settler_StepEast` | The step east of `Settler_Walk` (the siblings `0x43a7fd`, `0x43a9b0`, `0x43ab63`, `0x43abf9`, `0x43ac8b` step south-east, south, west, north-west, north) with the rest of the walk's turn merged in. | confirmed | game | Entries of the table at `0x43a2d8` and `0x43a3bd`. |
+| `0x43c96b` | `Settler_PassDoor` | State 4: waits out the step through a building's door, then runs the job's start routine through the table at `0x43ca54` (8 bytes an entry) when the building's status bit 5 is clear; else the settler takes state 0x19. | confirmed | game | Entry 4 of `0x42fca1`. [Woodcutting](woodcutting.md#the-start-at-the-hut). |
+| `0x43cf15` | `Woodcutter_Start` | The start routine of job 5, entry 5 of `0x43ca54`: where the settler is not sent home (mode `0xfe`) it leaves the hut's node and takes state 0x12; sent home, it goes back into the storage's list (state 1). | confirmed | game | Entry of `0x43ca54` for job 5. |
+| `0x438b8c` | `Woodcutter_SearchTree` | State 0x12: when the timer has run out, draws a node of the spiral table's entries 1 to 128 around the hut until an object code from 8 to 0x17 stands on it, adding 400 to the timer for each miss until that wraps; on a hit sets the vector to the tree and steps to the flag as state 7 does. | confirmed | game | Entry 0x12 of `0x42fca1`; draws through `0x44257a`. |
+| `0x43e036` | `Settler_StepToFlag` | State 7: the step from a building's node onto its flag (south-east) when the nodes are free; the time of the step is scaled by the door's speed and the settler waits it out in state 5. | confirmed | game | Entry 7 of `0x42fca1`. |
+| `0x436c38` | `Settler_FreeWalk` | State 0x10: the walk along a vector of east and south steps kept in bytes 11 and 12 of the settler item; each step takes the first direction of the row `0x4388ff` names for the vector's heading class, and the arrival (vector 0, byte 15 equal 8) goes to `0x437ddd`. | confirmed | game | Entry 0x10 of `0x42fca1`. |
+| `0x4388ff` | `Settler_WalkRows` | Data: 8 bytes for each heading class of the free walk, the directions to try in order, each as 4 times its number plus 4. | confirmed | game | Read by `0x436c38`. |
+| `0x437ddd` | `Settler_FreeWalkArrived` | The arrival of the free walk: jumps by the job to the job's end of the walk; for job 5 to `0x437f53` (at the tree: start cutting; back at the flag: put the log on the flag and enter the hut). | confirmed | game | Reached from `0x436c38`. |
+| `0x438a9e` | `Woodcutter_Cut` | State 0x11: each time the timer runs out writes the next code of the felled tree (`0x5d` to `0x66`) into the object byte and sets the frame; after the fifth the settler walks back with the log (byte 13 = `0x80`, state 0x10). | confirmed | game | Entry 0x11 of `0x42fca1`. |
+| `0x436b46` | `Flag_PutGood` | Puts a good (the byte in the first register) on the first empty one of the 8 places of the flag the settler stands on (item bytes `0xc` to `0x13`), clears the place's word at `0x14` plus twice the place, sets bit 7 of byte 4 of the flag item, and counts the good up in the player block. | confirmed | game | Called by `0x437ffd`. |
+| `0x43cd06` | `Settler_EnterStorage` | The routine the job entries of `0x43ca54` (all but those of the jobs 4 and 21) go on at for the mode `0xfe`: clears the node's settler word and puts the settler into the storage of the building it stands in (state 1, mode 0, word 12 0, storage slot as bytes 14 and 15). | confirmed | game | Jump target of the job entries of `0x43ca54`. [Settlers](settlers.md#walking-home). |
+| `0x45d09b` | `Storage_Pick` | The walk home's choice of a storage: a breadth-first search over the flags (directions 5 to 0), from the flag a settler stands on, for the nearest flag whose item has bit 7 in byte `0x42`; the result is the word at 6 of the building at that flag (its flag slot), or -1. | confirmed | game | Called by `Settler_Walk` (`0x4398ea`) at `0x439b75`. [Settlers](settlers.md#walking-home). |
+| `0x43c7c2` | `Settler_EnterBuilding` | The step from a flag into the building north-west of it, and the turn of state 6 (`0x43c7ca`): takes the node when no settler stands on it, the step's time as timer, the part of it the door's speed leaves in word 12, and state 4; else frame `0x55` and state 6. | confirmed | game | Entry 6 of `0x42fca1`. |
+| `0x42d945` | `Building_HandleType2` | The handler of the building type 2, the woodcutter's hut: asks for a settler of job 5 when bits 2, 6, and 7 of its status are clear. | confirmed | game | Entry 2 of `0x42cd1d`. |
+| `0x42e0b8` | `Building_HandleType1` | The handler of the building type 1: asks for a settler of job 11, whose work (`0x433f71`, state 0x1f) looks for a node with no object and no road by the water. | confirmed | game | Entry 1 of `0x42cd1d`. |
+| `0x44257a` | `Rng_StepSettler` | The draw the settlers' routines use: the same step as `0x466ade`, the new first word left in item word `+0x14` of the EDI block. | confirmed | game | Called by `0x438b8c` and the other searches. |
+| `0x428d10` | `Map_ObjectPass` | Every 20 clock units takes the next nodes of a cursor that moves 23 columns on (a row down where it wraps), as many as the map's size gives (`+0x21c`): a lake node with detail may move its detail (one draw); an object code from `0x53` goes through the table at `0x428eb8`, 8 bytes an entry: `0x53` vanishes when a draw's low two bits are 0, `0x5d` to `0x66` become `0x53`, the codes from `0x67` grow or decay. | confirmed | game | Called by `0x4286d8`; draws through `0x466ade`. [Woodcutting](woodcutting.md#the-object-pass). |
 | `0x428a75` | — | Counts down three timers of a player block; the timer at `+0x120` repeats its work once per period that has elapsed. | unknown | game | Called by `0x4286d8`. |
 | `0x42a74a` | — | Copies `Clock_ElapsedTotal` and resets it, then calls `0x42a7ac` for each player block. | unknown | game | Reached from the phase table of `Sim_StepPhase`. |
 
@@ -350,6 +381,78 @@ The 15 object scatter passes `0x424175`, `0x4241e3`, `0x424247`, `0x4242ab`, `0x
 Sites:
 
 - `0x424ad8`: `MapGen_PlaceDeposits` tests the resource layer one byte past the tile it writes.
+
+### Castle and build sites
+
+How the program judges a node for a flag, a building, or the first castle, and what placing the castle writes.
+The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x41f1f4` | `Castle_PlaceAtStart` | For one player: when the start position is not negative, copies it to the player block, centers the view, judges the node, and calls `Castle_Place`. Skips every player of a free game. | confirmed | game | Called by `0x41eeeb` once for each player; start positions at state `+0x1e6` to `+0x1ed`. |
+| `0x41f6a5` | `Map_BuildNeighborOffsets` | Turns the spiral table into the masked node offsets at state `+0xc4`, 295 of them. | confirmed | game | Called by `Game_Start` and `Game_ResumeLoaded`. |
+| `0x442630` | `Castle_PlaceFromClick` | The click action for the castle: judges the node under the cursor and places the castle where the node state is 7 and the site is 5, else asks for the error sound. | confirmed | game | Called by `0x440d23` for build action 5. |
+| `0x442704` | `Castle_Place` | Takes the first slots of the storage, building, and flag tables, writes the castle, its flag, the heights, and the start stock, and calls `Castle_CreateSettlers`. | confirmed | game | Called by `Castle_PlaceAtStart`. |
+| `0x442f0c` | `Castle_CreateSettlers` | Creates the castle's 20 first settlers one by one and takes their tools from the storage item. | inferred | game | Called by `Castle_Place`. |
+| `0x44333d` | `Settler_TakeFromStorage` | Creates one settler of a player from the storage item that holds the fewest. | inferred | game | Called by `Castle_CreateSettlers` and `0x428a75`. |
+| `0x442244` | `Flag_PlaceFromButton` | The flag button: judges the node under the cursor and, where the site is not 0 and the node state is 4, 6, or 7, goes on to `Flag_Place`, else to the error report (`0x44c768`). | confirmed | game | Called by `0x440d23`. |
+| `0x4422c5` | `Flag_Place` | Takes the first free slot of the flag table, writes the flag bit and the flag object on the node, moves the node's deposit to its neighbors, and stores the slot as the node's link. | confirmed | game | Called by `Flag_PlaceFromButton` and `0x440c24`. |
+| `0x45d7ad` | `Table70_Allocate` | Takes the first free slot of the flag table, clears the item, and leaves the slot number in the registers; reports a full table. | confirmed | game | Called by `Flag_Place`, `Castle_Place`, `0x421530`, and `0x449a63`. |
+| `0x449f58` | `Flag_MoveDeposit` | Moves the resource deposit of a node that is about to hold a flag to the nodes around it. | confirmed | game | Called by `Flag_Place` and `0x449a63`. |
+| `0x44a0aa` | `Deposit_MergeInto` | Adds a deposit to the byte of one node: into an empty byte, or into one of the same type up to 31, carrying the rest on. | confirmed | game | Called by `Flag_MoveDeposit`. |
+| `0x44db26` | `Render_DrawFlag` | Draws a flag (object code 1): the flag sprite, then the road stubs and goods that wait at it. | inferred | game | Called by `Render_DrawRowTiles` for object code 1. |
+| `0x4617fd` | `Building_Remove` | Takes a building down: marks it (it burns, `0x42cb2d`), clears the marks of the building on its node and its flag, sends its worker home, releases what waits for it (`0x4312ed`), and takes its flag down where no road leaves it. The castle, the military buildings, and the storage's settlers have branches of their own. Not a placement. | confirmed | game | Called by `0x45ed5f` and `0x4615cf`. See [Removal](removal.md). |
+| `0x4615cf` | `Click_Remove` | The remove click: runs the check `0x44b6e6` on the node, takes a flag down through `0x462153` where the check says class 2, a building through `0x4617fd` where it says class 3, and asks for the error sound otherwise. | confirmed | game | Called by the click handler `0x440d23`. See [Removal](removal.md). |
+| `0x462d88` | `Click_RemoveRoad` | The click that takes a road down: the check must say class 4 (a node of a road that is no flag), then `0x462e1d` runs; else the error sound. | confirmed | game | Called by the click handler `0x440d23`. See [Removal](removal.md). |
+| `0x462153` | `Flag_TakeDown` | Takes a flag down: a flag with two roads joins them into one between the flags at their far ends; the flag then goes as one with no road does (settlers walking to it go home, its goods are counted lost, its slot is freed). | confirmed | game | Called by `0x45ed5f`, `0x4615cf`, and `0x4617fd`. |
+| `0x462c8d` | `Good_CountLost` | Counts a lost good back: the goods 14 and 15 against the total of resource 1, and a good with a kind against the byte of the fill of the building at its destination flag. | confirmed | game | Called by `0x462153`, `0x4617fd`, `0x46385b`, and `0x466719`. |
+| `0x462bbc`, `0x462bf8`, `0x462ad5` | `Flag_ClearPlayerRequests`, `Player_ClearRequestWords`, `Building_ClearPlayerRequests` | Clear, in the player blocks, the request words that name the flag or building being taken down. Not ported (the engine keeps no player block). | confirmed | game | Called by `0x462153` and `0x4617fd`. |
+| `0x4312ed` | `Flag_ReleaseGoods` | Releases what waits for the building at a flag: settlers on their way to it go home, a carrier's good for it loses its destination, goods on any flag headed for it lose destination and direction, and the storage items' request fields are cleared (not ported). | confirmed | game | Called by `0x4617fd`. |
+| `0x42cf9d` | `Building_Free` | The end of a burning building: clears the marks of its node, its object and link, and frees its slot; a building with a territory also gives the territory back (not ported). | inferred | game | Called by `0x42cb2d`. |
+| `0x45d974`, `0x45dc0d`, `0x45e273`, `0x45e012` | `Table70_Free`, `Table18_Free`, `Table16_Free`, `Table120_Free` | Free a slot of the flag, building, settler, and storage tables: clear the slot's bit in the table's bitmap and, at the end of the table, let the count fall past the free slots. | confirmed | game | Called by the teardown routines. |
+| `0x43007b` | `Settler_StateDismissed` | State `0x44`: a carrier sent home from where it waited takes its node when no settler stands on it, and goes on as state `0x19`. | confirmed | game | State table entry. |
+| `0x4300f1` | `Settler_StateRejoined` | State `0x45`: a carrier that waited at the end of a road that was joined takes state `0x43` with the highest road direction of its node as its heading, and runs it. | confirmed | game | State table entry. |
+| `0x43bc52` | `Carrier_WaitAtEnd` | The end of a carrier's road: with a road that holds two carriers the carrier counts its turns and after four leaves the road; with a good waiting at the far end it does nothing; else it takes state `0x42`. | confirmed | game | Called by the step routines of `0x43ad78` (`0x43b788` and siblings). |
+| `0x44b6e6` | `BuildSite_Evaluate` | Judges the node in the player block (`+0xfc`, `+0xfe`) and leaves the node state, the site, and the height at `+0x100` to `+0x102`. | confirmed | game | Called by the click handlers, `Castle_PlaceAtStart`, and the build marker. |
+| `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | A copy of the judgment from the south-east node on, also entered from `0x44b63a`. | inferred | game | Called by `BuildSite_Evaluate` and `0x44b63a`. |
+| `0x44bd72` | `BuildSite_EvaluateBuilding` | The judgment for a node that holds a building, with its own copy of the conditions. | inferred | game | Called by `BuildSite_Evaluate` and `BuildSite_EvaluateFromSouthEast`. |
+| `0x44be72` | `BuildSite_SortTriangle` | Sorts one terrain code into plain land, mountain, or other kind. | confirmed | game | Called by `BuildSite_EvaluateBuilding`. |
+| `0x45e375` | `Territory_Update` | Claims the territory around the new building and updates the border marks. | inferred | game | Called by `Castle_Place`. |
+| `0x442e8a` | `Castle_StartStockRows` | Five rows of 26 start stock numbers, for the levels 0, 10, 20, 30, and 40. | confirmed | game | Read by `Castle_Place` through `+0x162` of the player block. |
+
+Sites:
+
+- `0x44e329` draws a finished building by its type through the jump table at `0x44e3aa`. The type `0xe0` of a
+  castle reaches the stub at `0x44fd2f`, which stores the object number 178; its sprite is entry 1428.
+- `0x45f402` sets two border bits of the new flag from the owners around it; not ported.
+- `0x41f2d2`: places a group of 3, 6, or 12 settlers on the start node of a mission start; not recovered further.
+
+### Roads
+
+How the player draws a road between two flags, what the commit writes, and how a road is drawn. The rules are in
+[Roads](roads.md).
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x440c24` | `View_HandleClick` | The click handler of a game view: routes a click on the map or on a panel; in road mode the click on a node runs the step at `0x443f62`. | inferred | game | Called by `0x440b01`. |
+| `0x440d23` | `View_RunButtonAction` | Runs the action of the button a click hit: the road button (action `0x18`) starts road mode, the flag and castle buttons place theirs. | inferred | game | Called by `0x440c24`. |
+| `0x443f62` | `Road_ClickStep` | The click on a node in road mode, inside `0x440c24`: works out the direction from the end of the road to the node, checks it against the mask of allowed directions, takes a step back, extends the road, or ends it at a flag. | confirmed | game | Entered by jumps inside `0x440c24`; returns at `0x44477f`. |
+| `0x44b6ce` | `Road_UpdateCursor` | In road mode, leaves at `+0xd0` of the view the mask of the directions in which the road's end may go on, and at `+0xaa` the cursor code for each of the six. | confirmed | game | Called by `0x440b01`. |
+| `0x444e68` | `Road_Commit` | Walks the drawn road from the flag it ends at back to the one it started at, checks the owner of every node and that the triangles beside the road are all land or all water, and joins the two flags' items. | confirmed | game | Called at `0x444534` by the step. |
+| `0x4454e7` | `Road_LengthClass` | Turns a road's length into a class 0 to 7 (steps up at 4, 6, 7, 10, 13, 18, and 24) that the commit stores for each end. | confirmed | game | Called by `Road_Commit`. |
+| `0x442002` | `Road_Cancel` | Leaves road mode and takes the road drawn so far off the map, from the road's end back, one bit pair for each step counted at `+0xce`. | confirmed | game | Called by `0x440d23`, `0x444534`. |
+| `0x462e1d` | `Road_TakeDown` | Takes a road down from a node of it: the two road bits of the node, each followed by `0x463204` to a flag. | confirmed | game | Called by `0x45ed5f` and `0x462d88`. See [Removal](removal.md). |
+| `0x463204` | `Road_TakeDownWalk` | Walks from a node along one direction to the flag at the road's end, clearing the road's bits; settlers on the road go home (`0x46385b`), waiting carriers are dismissed (`0x463ef9`), and the flag at the end loses the road. | confirmed | game | Called by `0x462e1d`. |
+| `0x46385b` | `Settler_DismissFromRoad` | Sends a settler on a road home (state `0x19`): one on its way to a building or a road frees what it was to take, one that carries a good counts it lost. | confirmed | game | Called by `0x463204`. |
+| `0x463a40` | `Road_GatherSettlers` | Walks a road from a flag to the flag at its end, counts its steps, and takes the settlers on it into a list (a waiting carrier takes state `0x45`). | confirmed | game | Called by `0x462153`. |
+| `0x463ef9` | `Carrier_DismissWaiting` | Sends the carriers that wait on a node (states `0x42`, `0x43`, `0x45`) home as state `0x44`. | confirmed | game | Called by `0x463204` and `0x463a40`. |
+| `0x464008` | `Carrier_TakeWaiting` | A piece of the flag pass that finds a carrier waiting on a node and gives it state `0x45`. | inferred | game | Called by `0x463a40`. |
+| `0x444b29` | `Road_WalkEnds` | Finds the two directions of a node's road and runs `0x444c61` on each: a walk of the road to its ends, which the cursor update calls for a road under the cursor when a start-up option is set. | inferred | game | Called by `Road_UpdateCursor` and `Road_TakeDown`. |
+| `0x427c09` | `Render_DrawRoadsAndBorders` | For each pair of rows, the passes that draw the roads (and the territory borders where no road lies) of the view's window of nodes. | confirmed | game | Called at `0x427133`. |
+| `0x428008` | `Render_DrawRoadEast` | Draws the strip of the road that leaves a node east: the mask 234 plus the height difference, the road texture from the slope and the terrain. | confirmed | game | Called by `0x427d3e`. |
+| `0x428105` | `Render_DrawRoadSouthEast` | The same for the road leaving south-east: the mask 243 plus the height difference. | confirmed | game | Called by `0x427e3a`. |
+| `0x4281cc` | `Render_DrawRoadSouth` | The same for the road leaving south: the mask 252 plus the height difference. | confirmed | game | Called by `0x427f1f`. |
+| `0x428389` | — | Where no road lies and the owners of two neighbors differ, draws the border between them (east); with `0x42846d` and `0x428528` for the other two directions. | inferred | game | Called by `0x427d3e`, `0x427e3a`, `0x427f1f`. |
 
 ### Save and load
 
@@ -644,7 +747,9 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x41ee3b` | `FreeGame_NewSeed` | confirmed | Random generator and map start |
 | `0x41ee84` | `Game_Start` | confirmed | Program start and game flow |
 | `0x41eeeb` | — | unknown | Program start and game flow |
+| `0x41f1f4` | `Castle_PlaceAtStart` | confirmed | Castle and build sites |
 | `0x41f4d7` | `Game_ResumeLoaded` | inferred | Program start and game flow |
+| `0x41f6a5` | `Map_BuildNeighborOffsets` | confirmed | Castle and build sites |
 | `0x42055e` | — | unknown | Program start and game flow |
 | `0x421530` | `MapGen_InitParams` | inferred | Map generation |
 | `0x4216e9` | `MapGen_Generate` | confirmed | Map generation |
@@ -704,29 +809,90 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x426abe` | `Main_HandleKeys` | inferred | Main loop |
 | `0x426dfc` | `Main_ComputeElapsed` | confirmed | Main loop |
 | `0x427062` | `Input_ApplyPointerMotion` | confirmed | Input |
+| `0x427c09` | `Render_DrawRoadsAndBorders` | confirmed | Roads |
+| `0x428008` | `Render_DrawRoadEast` | confirmed | Roads |
+| `0x428105` | `Render_DrawRoadSouthEast` | confirmed | Roads |
+| `0x4281cc` | `Render_DrawRoadSouth` | confirmed | Roads |
+| `0x428389` | — | inferred | Roads |
 | `0x4286d8` | — | unknown | Simulation |
-| `0x428728` | — | unknown | Simulation |
+| `0x428728` | `Sim_ClearRetryBits` | confirmed | Simulation |
 | `0x428964` | `Sound_RunAmbient` | inferred | Sound |
 | `0x428a75` | — | unknown | Simulation |
-| `0x428d10` | — | unknown | Simulation |
+| `0x428d10` | `Map_ObjectPass` | confirmed | Simulation |
 | `0x4291c2` | `Sim_StepPhase` | confirmed | Simulation |
 | `0x42a74a` | — | unknown | Simulation |
-| `0x42cb2d` | — | unknown | Simulation |
-| `0x42f3d9` | — | unknown | Simulation |
-| `0x42f4f1` | — | unknown | Simulation |
+| `0x42b455` | `Road_RequestCarrier` | confirmed | Simulation |
+| `0x42b4bc` | `Road_RequestBoatman` | inferred | Simulation |
+| `0x42be63` | `Building_RequestWorker` | confirmed | Simulation |
+| `0x42ca7a` | `Route_NextGeneration` | confirmed | Simulation |
+| `0x42cb2d` | `Table18_Pass` | confirmed | Simulation |
+| `0x42cf9d` | `Building_Free` | inferred | Castle and build sites |
+| `0x42d945` | `Building_HandleType2` | confirmed | Simulation |
+| `0x42e0b8` | `Building_HandleType1` | confirmed | Simulation |
+| `0x42f3d9` | `Table16_Pass` | confirmed | Simulation |
+| `0x42f4f1` | — | inferred | Simulation |
+| `0x42fc81` | `Settler_Dispatch` | confirmed | Simulation |
+| `0x42ff81` | `Settler_CarrierWaits` | confirmed | Simulation |
+| `0x43007b` | `Settler_StateDismissed` | confirmed | Castle and build sites |
+| `0x4300f1` | `Settler_StateRejoined` | confirmed | Castle and build sites |
 | `0x430ee9` | `Player_SwapInSecondView` | confirmed | Input |
 | `0x430fd3` | `Player_SwapOutSecondView` | confirmed | Input |
+| `0x4312ed` | `Flag_ReleaseGoods` | confirmed | Castle and build sites |
 | `0x431c31` | `Msg_Post` | confirmed | Main loop |
+| `0x436b46` | `Flag_PutGood` | confirmed | Simulation |
+| `0x436c38` | `Settler_FreeWalk` | confirmed | Simulation |
+| `0x437ddd` | `Settler_FreeWalkArrived` | confirmed | Simulation |
+| `0x4388ff` | `Settler_WalkRows` | confirmed | Simulation |
+| `0x438a9e` | `Woodcutter_Cut` | confirmed | Simulation |
+| `0x438b8c` | `Woodcutter_SearchTree` | confirmed | Simulation |
+| `0x438eeb` | `Settler_WaitInStorage` | confirmed | Simulation |
+| `0x4398ea` | `Settler_Walk` | confirmed | Simulation |
+| `0x43a64c` | `Settler_StepEast` | confirmed | Simulation |
+| `0x43ad78` | `Settler_WalkRoad` | confirmed | Simulation |
+| `0x43b788` | `Settler_StepRoadEast` | confirmed | Simulation |
+| `0x43bc52` | `Carrier_WaitAtEnd` | confirmed | Castle and build sites |
+| `0x43c4ea` | `Settler_DeliverGood` | confirmed | Simulation |
+| `0x43c7c2` | `Settler_EnterBuilding` | confirmed | Simulation |
+| `0x43c96b` | `Settler_PassDoor` | confirmed | Simulation |
+| `0x43cd06` | `Settler_EnterStorage` | confirmed | Simulation |
+| `0x43cf15` | `Woodcutter_Start` | confirmed | Simulation |
+| `0x43dceb` | `Settler_WaitStep` | confirmed | Simulation |
+| `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
+| `0x43e036` | `Settler_StepToFlag` | confirmed | Simulation |
+| `0x43f17a` | `Settler_StandByCastle` | confirmed | Simulation |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
+| `0x440c24` | `View_HandleClick` | inferred | Roads |
+| `0x440d23` | `View_RunButtonAction` | inferred | Roads |
+| `0x442002` | `Road_Cancel` | confirmed | Roads |
+| `0x442244` | `Flag_PlaceFromButton` | confirmed | Castle and build sites |
+| `0x4422c5` | `Flag_Place` | confirmed | Castle and build sites |
+| `0x44257a` | `Rng_StepSettler` | confirmed | Simulation |
+| `0x442630` | `Castle_PlaceFromClick` | confirmed | Castle and build sites |
+| `0x442704` | `Castle_Place` | confirmed | Castle and build sites |
+| `0x442e8a` | `Castle_StartStockRows` | confirmed | Castle and build sites |
+| `0x442f0c` | `Castle_CreateSettlers` | inferred | Castle and build sites |
+| `0x44333d` | `Settler_TakeFromStorage` | inferred | Castle and build sites |
+| `0x443f62` | `Road_ClickStep` | confirmed | Roads |
+| `0x444b29` | `Road_WalkEnds` | inferred | Roads |
+| `0x444e68` | `Road_Commit` | confirmed | Roads |
+| `0x4454e7` | `Road_LengthClass` | confirmed | Roads |
 | `0x44591d` | `Panel_HandleClick` | inferred | Views, panels, and drawing |
 | `0x448418` | `Game_ConfirmEnd` | inferred | Program start and game flow |
 | `0x448436` | `Game_EndToStartScreen` | confirmed | Program start and game flow |
+| `0x449f58` | `Flag_MoveDeposit` | confirmed | Castle and build sites |
+| `0x44a0aa` | `Deposit_MergeInto` | confirmed | Castle and build sites |
+| `0x44b6ce` | `Road_UpdateCursor` | confirmed | Roads |
+| `0x44b6e6` | `BuildSite_Evaluate` | confirmed | Castle and build sites |
+| `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | inferred | Castle and build sites |
+| `0x44bd72` | `BuildSite_EvaluateBuilding` | inferred | Castle and build sites |
+| `0x44be72` | `BuildSite_SortTriangle` | confirmed | Castle and build sites |
 | `0x44cb6e` | `Msg_RunTimers` | confirmed | Main loop |
 | `0x44d2fc` | — | unknown | Views, panels, and drawing |
 | `0x44d38d` | `Render_DrawMapView` | inferred | Views, panels, and drawing |
 | `0x44d3ae` | `Render_DrawViewRows` | confirmed | Views, panels, and drawing |
 | `0x44d5b4` | `Render_DrawRowTiles` | confirmed | Views, panels, and drawing |
 | `0x44da4d` | `Gfx_DrawObjectSprite` | confirmed | Graphics images |
+| `0x44db26` | `Render_DrawFlag` | inferred | Castle and build sites |
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
 | `0x44ff59` | `Gfx_DrawPhaseSprite` | confirmed | Graphics images |
@@ -737,7 +903,14 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x45772e` | `Game_Pause` | confirmed | Timing |
 | `0x457751` | `Game_Resume` | confirmed | Timing |
 | `0x45ce5a` | `Panel_CopyToScreen` | inferred | Views, panels, and drawing |
+| `0x45d09b` | `Storage_Pick` | confirmed | Simulation |
 | `0x45d718` | `Frame_WaitAndPresent` | confirmed | Main loop |
+| `0x45d7ad` | `Table70_Allocate` | confirmed | Castle and build sites |
+| `0x45d974` | `Table70_Free` | confirmed | Castle and build sites |
+| `0x45dc0d` | `Table18_Free` | confirmed | Castle and build sites |
+| `0x45e012` | `Table120_Free` | confirmed | Castle and build sites |
+| `0x45e273` | `Table16_Free` | confirmed | Castle and build sites |
+| `0x45e375` | `Territory_Update` | inferred | Castle and build sites |
 | `0x45f755` | `Save_WriteArchiveIndex` | confirmed | Save and load |
 | `0x45f7ab` | `Load_LoadSlot` | confirmed | Save and load |
 | `0x45fa13` | `Save_WriteGame` | confirmed | Save and load |
@@ -761,7 +934,22 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4613e7` | `Table_ToPointers18` | confirmed | Save and load |
 | `0x4614c3` | `Table_ToOffsets16` | confirmed | Save and load |
 | `0x461548` | `Table_ToPointers16` | confirmed | Save and load |
-| `0x46414d` | — | unknown | Simulation |
+| `0x4615cf` | `Click_Remove` | confirmed | Castle and build sites |
+| `0x4617fd` | `Building_Remove` | confirmed | Castle and build sites |
+| `0x462153` | `Flag_TakeDown` | confirmed | Castle and build sites |
+| `0x462ad5` | `Building_ClearPlayerRequests` | confirmed | Castle and build sites |
+| `0x462bbc` | `Flag_ClearPlayerRequests` | confirmed | Castle and build sites |
+| `0x462bf8` | `Player_ClearRequestWords` | confirmed | Castle and build sites |
+| `0x462c8d` | `Good_CountLost` | confirmed | Castle and build sites |
+| `0x462d88` | `Click_RemoveRoad` | confirmed | Castle and build sites |
+| `0x462e1d` | `Road_TakeDown` | confirmed | Roads |
+| `0x463204` | `Road_TakeDownWalk` | confirmed | Roads |
+| `0x46385b` | `Settler_DismissFromRoad` | confirmed | Roads |
+| `0x463a40` | `Road_GatherSettlers` | confirmed | Roads |
+| `0x463ef9` | `Carrier_DismissWaiting` | confirmed | Roads |
+| `0x464008` | `Carrier_TakeWaiting` | inferred | Roads |
+| `0x46414d` | `Table70_Pass` | confirmed | Simulation |
+| `0x464c36` | `Flag_VisitRoads` | confirmed | Simulation |
 | `0x466ade` | `Rng_Step` | confirmed | Random generator and map start |
 | `0x466b94` | `StartScreen_SwitchPage` | confirmed | Program start and game flow |
 | `0x467c03` | `StartScreen_HandleClick` | inferred | Program start and game flow |
@@ -794,7 +982,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 131 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 105 confirmed, 26 inferred, 14 unknown.
+Coverage: the index names 220 routines of the 471 functions in the dump's game code band and lists 10 more without a name: 181 confirmed, 41 inferred, 8 unknown.
 <!-- coverage:end -->
 
 Open anchors:

@@ -16,16 +16,20 @@ public enum LaunchMode
     /// <summary>The map view: a generated map drawn from the install's terrain graphics.</summary>
     Map,
 
+    /// <summary>The game view: a game on a generated map that ticks at the original's normal speed.</summary>
+    GameView,
+
     /// <summary>Seed info: the headless run that prints the digests and counts of one seed and size.</summary>
     SeedInfo,
 }
 
 /// <summary>
 /// The user arguments after <c>--</c>, read once. <c>--check</c> selects <see cref="LaunchMode.Check"/>, <c>--map</c>
-/// selects <see cref="LaunchMode.Map"/>, <c>--seed-info</c> selects <see cref="LaunchMode.SeedInfo"/>. No mode flag
+/// selects <see cref="LaunchMode.Map"/>, <c>--game-view</c> selects <see cref="LaunchMode.GameView"/>, <c>--seed-info</c>
+/// selects <see cref="LaunchMode.SeedInfo"/>. No mode flag
 /// selects <see cref="LaunchMode.Browser"/>. <c>--game &lt;dir&gt;</c> names the install and wins over the
 /// <c>SIEDLER_DIR</c> value. <c>--seed &lt;seed&gt;</c> (every form <see cref="Seed.TryParse"/> takes, quoted when
-/// it holds spaces) and <c>--size &lt;1|2|3&gt;</c> belong to <c>--map</c> and <c>--seed-info</c> only.
+/// it holds spaces) and <c>--size &lt;1|2|3&gt;</c> belong to <c>--map</c>, <c>--game-view</c>, and <c>--seed-info</c> only.
 /// <para>
 /// Every bad argument is a line in <see cref="Problems"/> and the launch exits with <see cref="BadArgumentExitCode"/>
 /// before it opens the install or a window, so that code wins over the exit code 2 of a missing install. The bad
@@ -49,6 +53,9 @@ public sealed class LaunchArgs
 
     /// <summary>The flag that selects the map view.</summary>
     public const string MapFlag = "--map";
+
+    /// <summary>The flag that selects the game view.</summary>
+    public const string GameViewFlag = "--game-view";
 
     /// <summary>The flag that selects seed info.</summary>
     public const string SeedInfoFlag = "--seed-info";
@@ -175,7 +182,7 @@ public sealed class LaunchArgs
                     }
                 }
             }
-            else if (flag is CheckFlag or MapFlag or SeedInfoFlag)
+            else if (flag is CheckFlag or MapFlag or GameViewFlag or SeedInfoFlag)
             {
                 if (modeFlag is null)
                 {
@@ -184,6 +191,7 @@ public sealed class LaunchArgs
                     {
                         CheckFlag => LaunchMode.Check,
                         MapFlag => LaunchMode.Map,
+                        GameViewFlag => LaunchMode.GameView,
                         _ => LaunchMode.SeedInfo,
                     };
                 }

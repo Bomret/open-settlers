@@ -132,9 +132,20 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
-    public void TheSeedAndSizeFlagsGiveTheMapsSeedAndSize()
+    public void TheGameViewFlagSelectsTheGame()
     {
-        var args = LaunchArgs.Parse(["--map", "--seed", "1234567812345678", "--size", "2"], null);
+        var args = LaunchArgs.Parse(["--game-view", "--game", "/siedler"], null);
+
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--game-view")]
+    public void TheSeedAndSizeFlagsGiveTheMapsSeedAndSize(string mode)
+    {
+        var args = LaunchArgs.Parse([mode, "--seed", "1234567812345678", "--size", "2"], null);
 
         Assert.IsEmpty(args.Problems);
         Assert.AreEqual("1234567812345678", args.SeedText);
@@ -169,6 +180,19 @@ public sealed class LaunchArgsTests
 
         Assert.AreEqual(LaunchMode.SeedInfo, args.Mode);
         Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--check")]
+    public void TheGameViewFlagWithAnotherModeFlagIsAProblemAndSelectsNoMode(string other)
+    {
+        var args = LaunchArgs.Parse(["--game-view", other], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--game-view");
+        StringAssert.Contains(args.Problems[0], other);
+        Assert.AreEqual(LaunchMode.Browser, args.Mode);
     }
 
     [TestMethod]

@@ -45,6 +45,9 @@ offsets of its left and top edges from that position (`Gfx_BlitSprite`, `0x40559
 layout a node lies at `x = 32 * column - 16 * row`, `y = 20 * row` minus 4 per unit of height, so an object is
 drawn at its node plus 16 east and 8 south, then moved by the sprite's offsets. The alignment of that layout with
 the program's two-row stepping is inferred from the picture the draw gives, in which trees stand on their tiles.
+The castle's entry (1428) is emulated (`peek:44fd2f:4` prints `66B8B200`, the stub loading the object number 178);
+its draw position, the node plus 16 east and 8 south, is **inferred** from the objects' offsets: no emulator or
+debugger run of the draw confirms it for the castle.
 
 Before the sprite, the routine draws the shadow mask of the entry plus 1500 through `Gfx_DrawShadow` (`0x4061a0`),
 which stores one fixed palette index on the covered pixels. **Stand-in:** the engine draws no shadow.
@@ -66,4 +69,4 @@ pixel of index 0 shows color 0 of the palette.
 over the terrain of all nine copies. Resources (`Map.Deposits`) are never drawn. **Inferred:** the tile routine
 `0x44d5b4` reads the flag, height, and object bytes of record A and, at the tile's record-B offset (the state
 `+0x36`), byte 1, none of which is the resource byte (byte 0 of record B). The engine departs from the program in three places: it
-draws no shadow, it draws the objects of every row after the terrain, and it draws no object of code 1 to 7.
+draws no shadow, it draws the objects of every row after the terrain, and it draws no object of code 2 to 7 from the map (a flag, code 1, is drawn: [Flags](flags.md#how-a-flag-is-drawn); the castle and the woodcutter's hut are drawn from the game's buildings, the hut with the entry 1417: [Settlers](settlers.md#drawing-the-walk-leads)).

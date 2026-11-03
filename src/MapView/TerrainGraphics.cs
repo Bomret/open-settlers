@@ -94,7 +94,7 @@ public sealed class TerrainGraphics
         };
     }
 
-    static T Entry<T>(Archive archive, int number, string what, Func<ReadOnlyMemory<byte>, T> read)
+    internal static T Entry<T>(Archive archive, int number, string what, Func<ReadOnlyMemory<byte>, T> read)
     {
         try
         {
@@ -112,7 +112,7 @@ public sealed class TerrainGraphics
         }
     }
 
-    static MaskImage ToLayer(Mask mask)
+    internal static MaskImage ToLayer(Mask mask)
     {
         if (mask.Width > LayerWidth || mask.Height > MaskLayerHeight)
         {
@@ -133,7 +133,7 @@ public sealed class TerrainGraphics
         return new MaskImage(mask.Width, mask.Height, mask.Header.OffsetX, mask.Header.OffsetY, layer);
     }
 
-    static byte[] ToTexture(RawImage image)
+    internal static byte[] ToTexture(RawImage image)
     {
         if (image.Header.Width != LayerWidth || image.Header.Height != TextureHeight)
         {

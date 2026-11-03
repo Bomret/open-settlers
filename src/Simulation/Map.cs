@@ -13,6 +13,9 @@ public sealed class Map
     private const ulong FnvOffset = 0xcbf29ce484222325;
     private const ulong FnvPrime = 0x100000001b3;
 
+    /// <summary>The bits of a height byte that hold the height; the top 3 bits hold the owner.</summary>
+    public const int HeightMask = 0x1f;
+
     private readonly byte[][] _layers;
 
     internal Map(MapSize size)
@@ -22,6 +25,12 @@ public sealed class Map
         // The original keeps the lake detail and the resource deposit in one byte of each tile.
         _layers[(int)MapLayer.Resource] = _layers[(int)MapLayer.Lake];
     }
+
+    /// <summary>
+    /// The random generator as the generation leaves it. The game's random generator continues from it, as the
+    /// original's does (<c>docs/rules/woodcutting.md</c>). A map made by hand has the generator of all zeros.
+    /// </summary>
+    internal RandomGenerator Generator { get; set; }
 
     /// <summary>The sum of the amounts of resource type 1 (<c>MapGen_CountResource1</c>); 0 before that pass.</summary>
     public int Resource1Total { get; internal set; }
@@ -72,4 +81,7 @@ public sealed class Map
     }
 
     internal byte[] Bytes(MapLayer layer) => _layers[(int)layer];
+
+    /// <summary>The index of a node in a layer; the column and the row wrap at the edges.</summary>
+    internal int Index(int x, int y) => (y & (Size.Height - 1)) * Size.Width + (x & (Size.Width - 1));
 }

@@ -66,7 +66,7 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        if (args.Mode == LaunchMode.Map)
+        if (args.Mode is LaunchMode.Map or LaunchMode.GameView)
         {
             RunMap(args);
 
@@ -143,7 +143,8 @@ public partial class AssetBrowserView : Control
         var view = new MapViewControl(
             install,
             args.SeedText ?? MapViewState.DefaultSeed,
-            args.Size?.Value ?? MapSize.Offered[0].Value
+            args.Size?.Value ?? MapSize.Offered[0].Value,
+            args.Mode == LaunchMode.GameView
         );
         AddChild(view);
         if (script is not null)
