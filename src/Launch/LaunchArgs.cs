@@ -171,6 +171,11 @@ public sealed class LaunchArgs
             problems.Add($"{modeFlag} and {conflictFlag} are different modes, give only one");
         }
 
+        if (modeFlag == SeedInfoFlag && conflictFlag is null && !seedGiven)
+        {
+            problems.Add($"{SeedInfoFlag} needs {SeedFlag}");
+        }
+
         if (modeFlag is null or CheckFlag)
         {
             var where = modeFlag is null ? "the asset browser" : CheckFlag;

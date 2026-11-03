@@ -172,6 +172,15 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
+    public void SeedInfoWithoutASeedIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--seed-info", "--size", "2"], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--seed-info needs --seed");
+    }
+
+    [TestMethod]
     [DataRow("--seed")]
     [DataRow("--size")]
     [DataRow("--game")]
