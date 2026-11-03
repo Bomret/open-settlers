@@ -20,7 +20,9 @@ internal static class TestProgram
 
     /// <summary>
     /// Tables of made-up values, no restatement of the original's: every object code has class 0, so no object
-    /// blocks a site, and the start stock rows count up from the row number.
+    /// blocks a site, and the start stock rows count up from the row number. With every class 0 no object is large, so
+    /// a map generated with these tables keeps every object and is not the original's map; tests that compare with the
+    /// original's data use <see cref="Tables"/>.
     /// </summary>
     public static ProgramTables Made() =>
         new(

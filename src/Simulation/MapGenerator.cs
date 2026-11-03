@@ -957,10 +957,9 @@ public static class MapGenerator
             } while (--count != 0);
         }
 
-        // MapGen_ResolveObjectOverlap (0x424c57): a large object, one whose byte in the class table (0x41e640) is above 1
-        // unsigned, stays only where the tiles to its west,
-        // north-west, and north carry no object mark (flag bit 6); it then sets its own mark. Otherwise the
-        // object code is removed and the water bit stays.
+        // MapGen_ResolveObjectOverlap (0x424c57): a large object, one whose byte in the class table (0x41e640) is
+        // above 1 unsigned, stays only where the tiles to its west, north-west, and north carry no object mark (flag
+        // bit 6); it then sets its own mark. Otherwise the object code is removed and the water bit stays.
         private void ResolveObjectOverlap()
         {
             for (var tile = 0; tile < Tiles; tile++)
