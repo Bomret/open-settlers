@@ -219,6 +219,28 @@ public sealed class MapPickingTests
     }
 
     [TestMethod]
+    [DynamicData(nameof(Views))]
+    public void TheAimedPointIsTheSinglePrecisionPointAClickSends(
+        double scale,
+        double cameraX,
+        double cameraY,
+        double width,
+        double height
+    )
+    {
+        for (var row = 0; row < Map.Size.Height; row++)
+        {
+            for (var column = 0; column < Map.Size.Width; column++)
+            {
+                if (Aim((cameraX + 0.1, cameraY + 0.3), scale, width, height, column, row, out var at) is not null)
+                    continue;
+
+                Assert.AreEqual(((double)(float)at.X, (double)(float)at.Y), at, $"tile {column},{row}");
+            }
+        }
+    }
+
+    [TestMethod]
     public void EveryTileOfAMapThatFillsTheViewIsAimedAtExceptOneDrawnOnTheSamePointAsAnother()
     {
         for (var row = 0; row < Map.Size.Height; row++)

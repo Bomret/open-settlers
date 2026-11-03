@@ -136,6 +136,7 @@ public partial class PlayDriver : Node
             view.Zoom,
             size.X,
             size.Y,
+            // The button bar is taken to be the only thing above the canvas, so the canvas's offset is its height.
             _view.Canvas.GlobalPosition.Y,
             tile.Column,
             tile.Row,

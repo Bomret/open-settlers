@@ -73,7 +73,7 @@ public static class MapPicking
     /// and <paramref name="screenY"/> when the click there picks the node; else the problem, with the point at 0: a
     /// node outside the map, a node with no copy on the view (<paramref name="barHeight"/> screen pixels above the view
     /// are under the button bar, which the problem names), or a node drawn on the same point as another, which the
-    /// pick takes instead.
+    /// pick takes instead. The point is rounded to single precision, as a click sends it.
     /// </summary>
     public static string? Aim(
         Map map,
@@ -122,9 +122,11 @@ public static class MapPicking
             }
         }
 
-        if (best is not { } at)
+        if (best is not { } nearest)
             return underBar ? $"tile {column},{row} is under the button bar" : $"tile {column},{row} is not on screen";
 
+        // A click sends the point in single precision, so the pick is checked at that rounded point.
+        (double X, double Y) at = ((float)nearest.X, (float)nearest.Y);
         var picked = Pick(map, cameraX, cameraY, scale, viewWidth, viewHeight, at.X, at.Y);
         if (picked != (column, row))
             return $"tile {column},{row} is drawn on the same point as tile {picked.X},{picked.Y}";
