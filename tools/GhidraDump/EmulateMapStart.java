@@ -72,6 +72,12 @@
 //                            0x428d10 after 0x428728, as the main loop 0x4286d8 does, the hut node and its flag take the marks the castle leaves, and a line per pass also lists the object
 //                            bytes that changed (o=x,y:old>new;...), the flag items of slots 0 to 15 that changed (f<slot>=), and
 //                            the random generator's words (rng=) when they moved. A building of type 2 is the woodcutter's hut.
+//   goods:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PASS,PLACE,GOOD]]]
+//                            wood: in a game that starts as the original's game start leaves its tables: flag slot 0 is the
+//                            dummy the allocator 0x45d7ad takes at the end of MapGen_InitParams (0x421530), so the castle's
+//                            flag is slot 1 (wood: has it in slot 0, where a destination word 0 means none, and no good ever
+//                            leaves a flag). The last field lays a good on a place of the hut's flag by hand before a pass,
+//                            as the put of 0x436b46 lays it (docs/rules/goods.md)
 //   carrier:N:S0,S1,S2:L:cx,cy:x,y;...:sx,sy,D;...:PASSES[:sx,sy,D;...:AT]
 //                            the passes of worker (docs/rules/carriers.md) on a game with a castle, flags, and roads and no
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
@@ -134,6 +140,10 @@ public class EmulateMapStart extends GhidraScript {
                     case "roaddraw" -> roaddraw(rest);
                     case "worker" -> worker(rest, false);
                     case "wood" -> worker(rest, true);
+                    case "goods" -> {
+                        reserveFlagZero = true;
+                        worker(rest, true);
+                    }
                     case "carrier" -> carrier(rest);
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
@@ -910,6 +920,9 @@ public class EmulateMapStart extends GhidraScript {
             println("EMU " + label + " castle=" + parts[3] + " REFUSED");
             return null;
         }
+        if (reserveFlagZero) {
+            call(0x45d7ad);
+        }
         call(0x442704);
         emu.writeMemory(toAddr(RECORD), new byte[0x100]);
         putInt(RECORD + 0x82, player);
@@ -1084,11 +1097,20 @@ public class EmulateMapStart extends GhidraScript {
             println("EMU " + label + " pass=start rng=" + hex4(getWord(STATE + RNG_0)) + "," + hex4(getWord(STATE + RNG_1))
                     + "," + hex4(getWord(STATE + RNG_2)));
         }
+        String[] put = parts.length > 11 ? parts[11].split(",") : null;
         for (int pass = 0; pass < passes; pass++) {
             if (pass == lateAt && !late.isEmpty()) {
                 for (String road : late.split(";")) {
                     println("EMU " + label + " late-road=" + road + (silentRoad(width, road) ? " BUILT" : " REFUSED"));
                 }
+            }
+            if (put != null && pass == Integer.parseInt(put[0])) {
+                // A good laid on the hut's flag by hand, as the put of 0x436b46 lays it: the good on a place, the place's
+                // destination word cleared, and bit 7 of the flag's byte 4 set (the woodcutter's own put is not waited for).
+                int place = Integer.parseInt(put[1]);
+                emu.writeMemory(toAddr(flag + 0xc + place), new byte[] {(byte) Integer.parseInt(put[2])});
+                putWord(flag + 0x14 + 2 * place, 0);
+                emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x80)});
             }
             clock += 8;
             int phase = simulationPass(clock);
@@ -1229,6 +1251,12 @@ public class EmulateMapStart extends GhidraScript {
      * clock (+0x206) is the 16-bit whole clock units after this pass. Returns the phase the slices ran with.
      */
     private boolean objectPass;
+
+    /**
+     * Whether startWorld takes flag slot 0 for the dummy the original's game start takes (the allocator 0x45d7ad that
+     * ends MapGen_InitParams, 0x421530), so the first flag is slot 1 as in a real game.
+     */
+    private boolean reserveFlagZero;
 
     private int simulationPass(int clock) throws Exception {
         putWord(STATE + CLOCK, clock);
