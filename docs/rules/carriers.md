@@ -90,8 +90,13 @@ a later cycle: with two roads at the castle's flag, the road in the higher direc
   its node: its timer takes 0x3f, its frame `0x6e` plus its heading, the low byte of its stamp the heading less 6, its mode the
   direction in which the road leaves that flag (the heading before it) and the dword at 12 a pointer to that flag's item (the
   engine keeps the slot as the target); the node's settler word is cleared, so the carrier does not hold the node against
-  others; and it takes **state 0x42**. At a road that already holds two carriers the original counts the carrier's turns in byte 15 and after
-  four of them may send it on (**not ported**: the port leaves the carrier where it is).
+  others; and it takes **state 0x42**. At a road that already holds two carriers (the road's byte, low nibble; two come about where two
+  roads are joined, [Removal](removal.md#taking-a-flag-down)) the carrier does not wait: its timer takes 0x3f, its frame is the heading's,
+  its heading goes down by 6 as for any step that is tried again, and it counts the turn in byte 15 (the next state). At the fourth turn the count
+  starts again, and if the road still holds two the carrier leaves it: both ends' road bytes count one carrier less and byte 15 takes `0xff`
+  (`0x43bc52`). With a good waiting at the flag at the far end the carrier does nothing more than set the timer, frame, and heading.
+  **Emulated** for the two carriers of a joined road (the game `join`, [Removal](removal.md)); the fourth turn and the far end's
+  waiting good are read from the code (**inferred**).
 - **State 0x42** (`0x42ff81`): the item does not change while no good waits to go along the carrier's road (in over 20 turns of the
   emulator, 350 passes). With a good at either end of the road the carrier is told to fetch it and takes state 3 again:
   [Goods at a flag](goods.md#the-carrier-told-to-fetch).
@@ -115,8 +120,8 @@ sequences.
   storage handover: it is the player block's per-turn warning check (it posts messages 10 and 11 through `Msg_Post` from
   counters at `+0x14` and `+0x18` of a 120-byte item).
 - The boatman of a water road (`0x42b4bc`, job 1, good 8) and the settlers' search level count (`+0x10a` of the player block).
-- The passing of two settlers on a road (ported: [Settlers](settlers.md#walking-home)), and a carrier that goes home (`0x4312ed` releases the settlers of a road
-  that goes away: slice 09).
+- The passing of two settlers on a road (ported: [Settlers](settlers.md#walking-home)), and a carrier that goes home when its road goes
+  away (ported: [Removal](removal.md#taking-a-road-down)).
 - Which flags' carriers a flag pass of a player with a computer opponent sees: the phase count (33) is inferred.
 
 ## In the engine

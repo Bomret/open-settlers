@@ -59,8 +59,10 @@ The placement sets **no border bits.** `0x45f402` (the two border bits of a new 
 runs from the castle placement only (`0x442704`); the flag button's path never reaches it, and the emulated map
 bytes show no change to a neighbor's flag byte. The castle's flag keeps the bits 0x90 as [Castle](castle.md) states.
 
-`0x4617fd` is not a placement. It takes a building or a flag down: it clears the building's bits on its node and the
-flag bit on the neighbor, releases the slots, and counts the goods back. The slices that demolish use it.
+`0x4617fd` is not a placement. It takes a building down: it clears the building's bits on its node and the
+flag's, sends the worker home, releases what waits for it, and takes the flag down where no road leaves it
+([Removal](removal.md#taking-a-building-down)); a flag is taken down by `0x462153`
+([Removal](removal.md#taking-a-flag-down)).
 
 `0x4422c5` has a second caller, the in-game click handler (`0x440c24`), which this slice does not recover: the
 handler may place a flag without the button's check. Open lead.

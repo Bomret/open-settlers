@@ -235,8 +235,11 @@ slot 0 and has no dummy; the engine treats every building on the node as a build
   `0x4617fd`, `0x462153`, `0x46385b`) counts it back: for the goods 14 and 15 the player's counter at `+0x4c` goes down,
   and where the good's class byte (the table at `0x462d6d`) is not negative the building at the flag it was destined for
   (its slot is the good's destination word) loses one in byte 8 (class 0) or byte 9 (other) of its item, unless that
-  building is the castle (type `0x18`) or of the type `0xa`. Read from the code; no run reaches it (**inferred**). The teardown's
-  setters are the next stage.
+  building is the castle (type `0x18`) or of the type `0xa`. **Emulated** for a log lying on a flag that is taken down with the
+  castle as its destination (the castle that is still built is not of the type `0x18`, so its byte 9 falls); the other cases are read
+  from the code (**inferred**). The teardown's setters are in [Removal](removal.md): `0x4617fd` sends the worker home (state `0x19` or `0x1c`),
+  `0x46385b` a settler on a road that goes away (state `0x19`), and a carrier that waited next to a flag takes state `0x44` and then `0x19`.
+  **Emulated:** a carrier and a worker go home from the states `0x44` and `0x19` and `0x1c`.
 
 **Not ported:** the commands that tear down, the boatman's state `0x1a` (`0x4350f8`; water roads are not ported), state `0x35`
 of the knights, the arrivals of the jobs 7, 8, 11, 14, and 20 where they do not walk home, the entry of the jobs 4 and 21 into
@@ -253,6 +256,8 @@ reaches them: the scenarios find a node in the first ring), the ring masks of th
 - The castle's handler of type 0x18, the settler creation of `0x428a75`, and the goods part of the flag pass `0x46414d`.
 - The count of blocked turns (10 on a flag, 50 elsewhere) and the step against a chain of blocked settlers (`0x439985`): no
   run reaches them.
+- A worker that is outside a hut that is taken down, and the settlers of the castle, the military buildings, and the storage that the
+  teardown `0x4617fd` handles in branches of its own: [Removal](removal.md#taking-a-building-down).
 - That the phase count is 33 for the game of one player with no computer opponent (`0x42055e`).
 - The hut's object code and its site rule (no run places a building).
 - The knights' idle turns draw from the game's generator, which continues from the map's generator: ported
