@@ -58,6 +58,9 @@ public sealed class LaunchArgs
     /// <summary>The flag that gives the size value of the map.</summary>
     public const string SizeFlag = "--size";
 
+    /// <summary>The flag that gives the play script of a play run.</summary>
+    public const string PlayFlag = "--play";
+
     /// <summary>The environment variable that stands in for <see cref="GameFlag"/>.</summary>
     public const string GameVariable = "SIEDLER_DIR";
 
@@ -76,16 +79,21 @@ public sealed class LaunchArgs
     /// <summary>The size the size flag gave; null when no valid size flag was given.</summary>
     public MapSize? Size { get; init; }
 
+    /// <summary>The play script path as given; null when no valid play flag was given.</summary>
+    public string? Play { get; init; }
+
     /// <summary>One line per bad argument; empty when the arguments are good.</summary>
     public IReadOnlyList<string> Problems { get; init; } = [];
 
     /// <summary>
     /// Reads <c>args</c>, the arguments after <c>--</c>. <c>siedlerDir</c> is the value of the
     /// <c>SIEDLER_DIR</c> environment variable, null or empty when unset; it is used only when the game flag is
-    /// absent. Never throws. A stray argument that is no flag and no flag's value is ignored.
+    /// absent. <c>movieMaker</c> tells whether Godot runs under Movie Maker, which <c>--play</c> needs. Never throws. A stray argument that is no flag and no flag's value is ignored.
     /// </summary>
-    public static LaunchArgs Parse(string[] args, string? siedlerDir)
+    public static LaunchArgs Parse(string[] args, string? siedlerDir, bool movieMaker = false)
     {
+        string? play = null;
+        var playGiven = false;
         var problems = new List<string>();
         string? game = null;
         var gameGiven = false;
@@ -99,7 +107,7 @@ public sealed class LaunchArgs
         for (var i = 0; i < args.Length; i++)
         {
             var flag = args[i];
-            if (flag is GameFlag or SeedFlag or SizeFlag)
+            if (flag is GameFlag or SeedFlag or SizeFlag or PlayFlag)
             {
                 // The value is the next argument unless it is missing or another flag; it is not consumed
                 // then, so a mode flag after the flag still selects its mode.
@@ -107,6 +115,7 @@ public sealed class LaunchArgs
                 {
                     problems.Add($"{flag} needs a value");
                     gameGiven |= flag == GameFlag;
+                    playGiven |= flag == PlayFlag;
 
                     continue;
                 }
@@ -124,6 +133,11 @@ public sealed class LaunchArgs
                     }
 
                     gameGiven = true;
+                }
+                else if (flag == PlayFlag && !playGiven)
+                {
+                    playGiven = true;
+                    play = value;
                 }
                 else if (flag == SeedFlag && !seedGiven)
                 {
@@ -185,8 +199,19 @@ public sealed class LaunchArgs
             }
         }
 
+        if (playGiven && modeFlag != MapFlag)
+        {
+            problems.Add($"{PlayFlag} needs {MapFlag}");
+        }
+
+        if (playGiven && !movieMaker)
+        {
+            problems.Add($"{PlayFlag} needs Movie Maker: start with --write-movie and --fixed-fps");
+        }
+
         return new LaunchArgs
         {
+            Play = play,
             Mode = conflictFlag is not null
                 ? LaunchMode.Browser
                 : modeFlag switch
