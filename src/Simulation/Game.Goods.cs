@@ -56,7 +56,7 @@ public sealed partial class Game
     }
 
     // The flag at the other end of the road that leaves a flag in a direction, or -1 where none does.
-    private int Neighbour(int flag, int direction) =>
+    private int FlagNeighbour(int flag, int direction) =>
         RoadAt(flag, direction) is { } road ? FarEnd(road, flag, direction).Flag : -1;
 
     // The turn of a flag's goods (0x46414d, from the thermometer at 0x46427c to the places' loop ending at 0x4650b9). It runs
@@ -122,10 +122,10 @@ public sealed partial class Game
     private void Destine(int flag, int place)
     {
         var found = StorageSearch(flag);
+        _goodsBit[flag] = true;
         if (found >= 0)
         {
             _goodsDestination[flag][place] = (ushort)(found + 1);
-            _goodsBit[flag] = true;
 
             return;
         }
@@ -133,7 +133,6 @@ public sealed partial class Game
         // No storage is reached over the roads that hold a carrier: the good waits and the flag is asked again at its next
         // turn. **Not ported:** where some road of the flag holds a carrier, the original gives the good a direction at
         // once, chosen from what its registers hold (0x464539); the engine lets it wait as it does with none.
-        _goodsBit[flag] = true;
     }
 
     // 0x45d3ea: the search from a flag over the roads that hold a carrier (the bits of the status byte, from north to east) for
@@ -155,7 +154,7 @@ public sealed partial class Game
             {
                 if (
                     (_flagStatus[flag] >> direction & 1) == 0
-                    || Neighbour(flag, direction) is not (>= 0 and var next)
+                    || FlagNeighbour(flag, direction) is not (>= 0 and var next)
                     || marked[next]
                 )
                 {
@@ -198,7 +197,7 @@ public sealed partial class Game
                 }
 
                 carried &= ~(1 << direction);
-                if (Neighbour(flag, direction) is >= 0 and var next && !marked[next])
+                if (FlagNeighbour(flag, direction) is >= 0 and var next && !marked[next])
                 {
                     marked[next] = true;
                     label[next] = direction;
@@ -235,7 +234,7 @@ public sealed partial class Game
                 {
                     if (
                         (_flagStatus[current] >> direction & 1) != 0
-                        && Neighbour(current, direction) is >= 0 and var other
+                        && FlagNeighbour(current, direction) is >= 0 and var other
                         && !marked[other]
                     )
                     {
@@ -288,7 +287,7 @@ public sealed partial class Game
         }
         else
         {
-            if ((_directionBytes[Neighbour(settler.Target, direction)][(waiting & 0x38) >> 3] & 0x80) == 0)
+            if ((_directionBytes[FlagNeighbour(settler.Target, direction)][(waiting & 0x38) >> 3] & 0x80) == 0)
             {
                 return;
             }
@@ -436,11 +435,9 @@ public sealed partial class Game
                 settler.Mode = 0;
                 if (BuildingAt(node) is { } building && (building.Status & 0x20) == 0)
                 {
-                    var high = good >= 9 ? good != 13 : good == 7;
-                    var sum = (high ? (building.Fill >> 8) : (building.Fill & 0xff)) + 0x0f;
-                    building.Fill = high
-                        ? (ushort)((building.Fill & 0xff) | ((sum & 0xff) << 8))
-                        : (ushort)((building.Fill & 0xff00) | (sum & 0xff));
+                    var shift = (good >= 9 ? good != 13 : good == 7) ? 8 : 0;
+                    var sum = ((building.Fill >> shift) & 0xff) + 0x0f;
+                    building.Fill = (ushort)((building.Fill & ~(0xff << shift)) | ((sum & 0xff) << shift));
                     if (sum > 0xff)
                     {
                         building.Fill = 0xffff;
@@ -466,12 +463,7 @@ public sealed partial class Game
 
     private void AddToStock(int good)
     {
-        var stock = new int[Stock.Count];
-        for (var i = 0; i < stock.Length; i++)
-        {
-            stock[i] = Stock[i];
-        }
-
+        int[] stock = [.. Stock];
         stock[good] = Math.Min(stock[good] + 1, 50000);
         Stock = stock;
     }

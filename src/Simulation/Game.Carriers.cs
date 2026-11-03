@@ -380,7 +380,7 @@ public sealed partial class Game
         settler.Timer = 0x3f;
         settler.Frame = (byte)(settler.Heading + 0x6e);
         settler.Heading -= 6;
-        var far = Neighbour(flag, back);
+        var far = FlagNeighbour(flag, back);
         var farDirection = (_directionBytes[flag][back] & 0x38) >> 3;
         if ((_roadBytes[flag][back] & 0xf) >= 2)
         {

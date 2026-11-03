@@ -38,6 +38,7 @@ public sealed class SettlerFigures
 
     /// <summary>The palette index of a player's colour.</summary>
     public static int ColourOf(int player) => ColourBase + ColourStep * player;
+
     private const int StatesWalking = 2;
     private const int StatesWaiting = 5;
 
@@ -131,7 +132,8 @@ public sealed class SettlerFigures
     /// </summary>
     public IEnumerable<(int Entry, int Colour)> Sprites(int job, int colour, int carriedGood = 0)
     {
-        var add = job == Settler.CarrierJob && carriedGood > 0 && carriedGood < _carried.Length ? _carried[carriedGood] : 0;
+        var add =
+            job == Settler.CarrierJob && carriedGood > 0 && carriedGood < _carried.Length ? _carried[carriedGood] : 0;
         var starts = new HashSet<int>();
         for (var frame = 0; frame < Sequences && _data.Length >= TableEnd; frame++)
         {

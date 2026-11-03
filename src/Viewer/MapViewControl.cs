@@ -33,7 +33,7 @@ public partial class MapViewControl : Control
     readonly Install _install;
     readonly bool _play;
     Game? _game;
-    double _tickCarry;
+    readonly TickPacer _pacer = new();
     Label _ticks = null!;
     Label _logs = null!;
     Button _flagButton = null!;
@@ -326,7 +326,7 @@ public partial class MapViewControl : Control
             _removeButton.ButtonPressed = false;
             _revisionDrawn = 0;
             DrawPreview();
-            _tickCarry = 0;
+            _pacer.Reset();
         }
     }
 
@@ -336,8 +336,7 @@ public partial class MapViewControl : Control
         if (_game is not null)
         {
             // The frame rate does not set the tick rate: whole ticks are due, the fraction carries.
-            _tickCarry += delta * Game.TicksPerSecond;
-            for (; _tickCarry >= 1; _tickCarry--)
+            for (var due = _pacer.Due(delta); due > 0; due--)
             {
                 _game.Tick();
             }
