@@ -167,8 +167,13 @@ timer less the clock units since the settler's turn, so the animation moves with
 the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)) and 11 in every wrap copy, rebuilt after each tick. **Inferred, with no emulator run of the draw:** that the
 sequence offsets count from the byte after the entry's first dword, that a sequence runs to the next one's offset, that
 the triple index is the time left shifted right 3, the figure's position (the node lifted by its height,
-plus the triple's dx and dy, as an object), that the second figure takes no offset, the colour overlay filled with the
-palette index 0x40 plus 4 for the player, and the job's variants for figure bytes from 0x80 (not read). The original draws a
+plus the triple's dx and dy, as an object), the colour overlay filled with the
+palette index 0x40 plus 4 for the player, and the job's variants for figure bytes from 0x80 (not read).
+**Confirmed** from `0x406610`: the overlay of the figure 1850 + i is the entry 2500 + i, the second figure moves by the
+header bytes 0 and 1 of the figure 1850 + i read as signed bytes (`0x4066d2`, `0x4066e4`) while the figure and the overlay
+stay where they are, and a settler draws its figure, then its overlay, then its second figure. The engine keeps that order
+within a row. A figure entry that is absent or no sprite, an overlay with no drawn pixel, or a job with no second figure
+draws what is left. The original draws a
 settler in view from the turn it acts every pass; the engine takes the time left from the clock instead.
 
 ## Walking home

@@ -25,6 +25,7 @@ public sealed class SettlerGraphicsTests
 
         Assert.IsGreaterThan(0, graphics.Images.Count);
         Assert.IsLessThan(2048, graphics.Images.Count);
+        Assert.IsTrue(graphics.Shifts.Values.Any(shift => shift != (0, 0)), "the figures shift their second figures");
     }
 
     // The original draws the overlay of the figure 1850 + i from the entry 2500 + i (0x406610, docs/rules/graphics-images.md).

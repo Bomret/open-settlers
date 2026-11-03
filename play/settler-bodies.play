@@ -1,0 +1,55 @@
+# The carrier and the woodcutter walk as whole figures: the first loop of play/first-loop.play, then shots while they
+# walk, zoomed in and out, and with the view panned once around the map so the settlers show on its wrapped copy.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   --game-view --seed 1234567812345678 --size 1 --play play/settler-bodies.play
+expect seed = 1234567812345678
+expect size = 1
+wait 0.3
+click-tile 21 4
+wait 0.3
+button Flag
+click-tile 27 5
+button Flag
+wait 0.3
+button Road
+click-tile 22 5
+click-tile 23 5
+click-tile 24 5
+click-tile 25 5
+click-tile 26 5
+click-tile 27 5
+button Road
+wait 0.3
+button Woodcutter
+click-tile 26 4
+button Woodcutter
+wait 0.3
+
+# The carrier walks to its road and the woodcutter out to a tree.
+wait 6
+shot walk-1
+wait 1.5
+shot walk-2
+scroll up 3 450 300
+wait 0.3
+dump zoomed-in
+shot zoomed-in
+wait 2
+shot zoomed-in-2
+scroll down 5 450 300
+wait 0.3
+dump zoomed-out
+shot zoomed-out
+
+# 32 columns away the settlers come round again on the map's wrapped copy.
+scroll up 2 450 300
+wait 0.3
+hold Right 3
+wait 0.3
+dump wrapped
+shot wrapped
+hold Right 3
+wait 0.3
+dump wrapped-2
+shot wrapped-2
+expect ticks > 10

@@ -31,6 +31,9 @@ public sealed class SettlerGraphics
 
     public required SettlerFigures Figures { get; init; }
 
+    /// <summary>The header bytes 0 and 1 of each figure entry (1850 to 2499) that loaded: the shift of its second figure.</summary>
+    public required IReadOnlyDictionary<int, (int X, int Y)> Shifts { get; init; }
+
     /// <summary>Reads the sprites the sequences of <paramref name="jobs"/> use; sprites past the layer limit are left out.</summary>
     public static SettlerGraphics Load(Install install, ProgramTables tables, params int[] jobs)
     {
@@ -40,6 +43,7 @@ public sealed class SettlerGraphics
         var figures = new SettlerFigures(tables.FigureBases, tables.FigureOffsets, sequences, tables.CarriedFigures);
         var images = new List<ObjectImage>();
         var layers = new Dictionary<(int Entry, int Colour), int>();
+        var shifts = new Dictionary<int, (int X, int Y)>();
         foreach (
             var (entry, colour) in jobs.SelectMany(job =>
                 figures.Sprites(job, SettlerFigures.ColourOf(0), Game.GoodLog)
@@ -57,15 +61,21 @@ public sealed class SettlerGraphics
                 continue;
             }
 
-            ObjectImage image;
+            Sprite sprite;
             try
             {
-                image = ObjectImage.From(SpriteFile.Read(archive.Data(archive[entry])));
+                sprite = SpriteFile.Read(archive.Data(archive[entry]));
             }
             catch (InvalidDataException)
             {
                 // Likewise an entry that is no sprite: a figure byte of another job's sequences reaches it.
                 continue;
+            }
+
+            var image = ObjectImage.From(sprite);
+            if (colour < 0 && entry < 2500)
+            {
+                shifts[entry] = (sprite.Header.First, sprite.Header.Second);
             }
 
             if (colour >= 0)
@@ -88,6 +98,7 @@ public sealed class SettlerGraphics
             Images = [.. images.Select(image => ObjectGraphics.Pad(image, width, height))],
             Layers = layers,
             Figures = figures,
+            Shifts = shifts,
         };
     }
 

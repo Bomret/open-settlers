@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
@@ -243,5 +244,60 @@ public sealed class SettlerFiguresTests
         var draws = new SettlerFigures(bases, offsets, Sequences()).Draws(Map(), [Walker(7, 0)], 0);
 
         CollectionAssert.AreEqual(new[] { (1897, -1), (2547, 0x40) }, draws.Select(d => (d.Entry, d.Colour)).ToArray());
+    }
+
+    // The second figure moves by the header bytes 0 and 1 of the figure 1850 + i, read as signed bytes (0x4066d2, 0x4066e4);
+    // the figure and the overlay stay where they are.
+    [TestMethod]
+    public void TheSecondFigureIsShiftedByTheFiguresHeaderBytesAndANegativeByteMovesItBack()
+    {
+        var plain = Figures().Draws(Map(), [Walker(7, 0)], 0);
+        var shifted = Figures()
+            .Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)> { [1953] = (3, -2) });
+
+        CollectionAssert.AreEqual(plain.Take(2).ToArray(), shifted.Take(2).ToArray());
+        Assert.AreEqual((plain[2].X + 3, plain[2].Y - 2), (shifted[2].X, shifted[2].Y));
+    }
+
+    [TestMethod]
+    public void AFigureWithNoHeaderLeavesTheSecondFigureUnshifted()
+    {
+        var plain = Figures().Draws(Map(), [Walker(7, 0)], 0);
+        var shifted = Figures().Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)>());
+
+        CollectionAssert.AreEqual(plain, shifted);
+    }
+
+    // 0x406610 draws the figure, then the overlay over it, then the second figure over both; the row order of the settlers
+    // keeps that order within each settler.
+    [TestMethod]
+    public void EachSettlerDrawsItsFigureThenItsOverlayThenItsSecondFigureWithSeveralSettlersOnARow()
+    {
+        var settlers = Enumerable.Range(0, 40).Select(_ => Walker(7, 0)).ToArray();
+
+        var entries = Figures().Draws(Map(), settlers, 0).Select(d => d.Entry).ToArray();
+
+        CollectionAssert.AreEqual(
+            Enumerable.Range(0, 40).SelectMany(_ => new[] { 1953, 2603, 3201 }).ToArray(),
+            entries
+        );
+    }
+
+    [TestMethod]
+    public void AJobWithNoSecondFigureDrawsItsFigureAndOverlay()
+    {
+        var draws = Figures()
+            .Draws(Map(), [Carrier(mode: 0)], 0, new Dictionary<int, (int X, int Y)> { [1953] = (3, 3) });
+
+        CollectionAssert.AreEqual(new[] { 1953, 2603 }, draws.Select(d => d.Entry).ToArray());
+    }
+
+    [TestMethod]
+    public void AFigureByteOutsideTheTablesDrawsNothing()
+    {
+        var bases = new short[32 * 8];
+        bases[11 * 8 + 1] = -1;
+
+        Assert.IsEmpty(new SettlerFigures(bases, new short[4], Sequences()).Draws(Map(), [Walker(7, 0)], 0));
     }
 }
