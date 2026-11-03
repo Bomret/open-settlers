@@ -183,6 +183,16 @@ public sealed class PlayScriptTests
     }
 
     [TestMethod]
+    public void AnExpectStepReadsTheGameFields()
+    {
+        var script = Parse("expect ticks >= 10\nexpect logs = 0");
+
+        Assert.IsEmpty(script.Problems);
+        Assert.AreEqual("ticks", ((ExpectStep)script.Steps[0]).Field);
+        Assert.AreEqual("logs", ((ExpectStep)script.Steps[1]).Field);
+    }
+
+    [TestMethod]
     [DataRow("expect zoom", "takes a field, an operator, and a value")]
     [DataRow("expect height = 3", "unknown field 'height'")]
     [DataRow("expect zoom == 3", "unknown operator '=='")]

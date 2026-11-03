@@ -231,9 +231,9 @@ public sealed class LaunchArgs
             }
         }
 
-        if (playGiven && modeFlag != MapFlag)
+        if (playGiven && modeFlag is not (MapFlag or GameViewFlag))
         {
-            problems.Add($"{PlayFlag} needs {MapFlag}");
+            problems.Add($"{PlayFlag} needs {MapFlag} or {GameViewFlag}");
         }
 
         if (playGiven && !movieMaker)

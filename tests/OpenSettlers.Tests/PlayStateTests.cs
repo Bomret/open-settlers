@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
+using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
@@ -46,6 +47,98 @@ public sealed class PlayStateTests
         var problem = State.Check(Expect("camera-x", ">", "200"));
 
         Assert.AreEqual("expect camera-x > 200 failed: actual 120", problem);
+    }
+
+    static readonly PlayState GameState = State with { Ticks = 300, Logs = 4 };
+
+    [TestMethod]
+    public void AGameViewDumpAddsTheTicksAndLogsAfterTheMapViewFields()
+    {
+        var expected = "camera-x=120\ncamera-y=40\nzoom=1.2500\nseed=1234567812345678\nsize=2\nticks=300\nlogs=4\n";
+
+        Assert.AreEqual(expected, GameState.Dump());
+    }
+
+    [TestMethod]
+    [DataRow("ticks", "<", "301", true)]
+    [DataRow("ticks", "<", "300", false)]
+    [DataRow("ticks", "<=", "300", true)]
+    [DataRow("ticks", "<=", "299", false)]
+    [DataRow("ticks", "=", "300", true)]
+    [DataRow("ticks", "=", "301", false)]
+    [DataRow("ticks", ">=", "300", true)]
+    [DataRow("ticks", ">=", "301", false)]
+    [DataRow("ticks", ">", "299", true)]
+    [DataRow("ticks", ">", "300", false)]
+    [DataRow("logs", "<", "5", true)]
+    [DataRow("logs", "<", "4", false)]
+    [DataRow("logs", "<=", "4", true)]
+    [DataRow("logs", "<=", "3", false)]
+    [DataRow("logs", "=", "4", true)]
+    [DataRow("logs", "=", "3", false)]
+    [DataRow("logs", ">=", "4", true)]
+    [DataRow("logs", ">=", "5", false)]
+    [DataRow("logs", ">", "3", true)]
+    [DataRow("logs", ">", "4", false)]
+    public void AGameViewExpectOnTicksOrLogsComparesWithEveryOperator(string field, string op, string value, bool holds)
+    {
+        var problem = GameState.Check(Expect(field, op, value));
+
+        Assert.AreEqual(holds, problem is null, problem);
+    }
+
+    [TestMethod]
+    public void AFailedLogsExpectStatesTheActualCount()
+    {
+        var problem = GameState.Check(Expect("logs", ">", "9"));
+
+        Assert.AreEqual("expect logs > 9 failed: actual 4", problem);
+    }
+
+    [TestMethod]
+    [DataRow("ticks")]
+    [DataRow("logs")]
+    public void AMapViewExpectOnAGameFieldFails(string field)
+    {
+        var problem = State.Check(Expect(field, ">=", "0"));
+
+        Assert.IsNotNull(problem);
+        StringAssert.Contains(problem, field);
+        StringAssert.Contains(problem, "map view");
+    }
+
+    [TestMethod]
+    public void TheSameStepsOnTheSameSeedAndSizeGiveEqualGameViewDumps()
+    {
+        static string Dump()
+        {
+            var game = new Game(
+                TestProgram.Made(),
+                MapGenerator.Generate(new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+            );
+            game.Enqueue(new Command(3, 0, CommandKind.PlaceCastle, 17, 0));
+            for (var i = 0; i < 400; i++)
+            {
+                game.Tick();
+            }
+
+            return (State with { Ticks = game.TickCount, Logs = game.CastleLogs }).Dump();
+        }
+
+        Assert.AreEqual(Dump(), Dump());
+    }
+
+    [TestMethod]
+    public void AGameWithNoCastleHoldsNoLogs()
+    {
+        var game = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+        );
+        game.Tick();
+        var state = State with { Ticks = game.TickCount, Logs = game.CastleLogs };
+
+        Assert.IsNull(state.Check(Expect("logs", "=", "0")));
     }
 
     [TestMethod]

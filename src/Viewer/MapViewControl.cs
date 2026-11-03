@@ -95,7 +95,16 @@ public partial class MapViewControl : Control
     public Control Canvas => _canvas;
 
     /// <summary>What a play run observes of the view now.</summary>
-    public PlayState Snapshot() => new(_camera.X, _camera.Y, _zoom.Scale, _state.SeedText, _state.SizeValue);
+    public PlayState Snapshot() =>
+        new(
+            _camera.X,
+            _camera.Y,
+            _zoom.Scale,
+            _state.SeedText,
+            _state.SizeValue,
+            _gameView ? _game?.TickCount ?? 0 : null,
+            _gameView ? _game?.CastleLogs ?? 0 : null
+        );
 
     /// <inheritdoc/>
     public override void _Ready()
