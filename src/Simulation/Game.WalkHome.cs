@@ -127,7 +127,8 @@ public sealed partial class Game
     // The random choice where no flag is near (0x43560c): the draw of the generator gives two offsets, its low byte and
     // its high byte each masked and less a half, for ten tries around the settler (a mask of 15), then twenty each (masks 31 and
     // 63); a node is taken that holds no object (object code 0) and a height not 0, and in the three rings of the
-    // settler's own player. After the three rings any such node is taken. Returns the offsets, wrapped to bytes as the
+    // settler's own player. After the three rings any such node is taken. **Inferred:** the second and third rings and the
+    // last phase (no emulator run reaches them; the first ring is matched). Returns the offsets, wrapped to bytes as the
     // vector holds them.
     private (int Dx, int Dy) HomeNode(Settler settler)
     {

@@ -48,7 +48,7 @@ public sealed class Settler
     /// <summary>The state (byte 10): 1 waits in the castle, 15 leaves it, 5 waits out a step, 2 walks, 3 walks along a road, 4 enters a door, 6 enters the building north-west of a flag, 7 steps from a hut onto its flag, 0x10 walks free along a vector, 0x11 cuts a tree, 0x12 looks for a tree, 0x19 looks for the nearest flag on the way home, 0x1c claims its node to start the way home, 0x42 waits next to a flag. Walking home ends in state 2 with the mode 0xfe, the walk to the castle, which ends in state 1.</summary>
     public int State { get; internal set; }
 
-    /// <summary>What the settler walks to (byte 11): 255 is the building at the flag of <see cref="Target"/>, 0 to 5 the road that leaves that flag in that direction; in state 0x42 the direction of the road at the flag it waits next to.</summary>
+    /// <summary>What the settler walks to (byte 11): 255 is the building at the flag of <see cref="Target"/>, 254 the walk home to a storage (target 0 until the storage is picked), 0 to 5 the road that leaves that flag in that direction; in state 0x42 the direction of the road at the flag it waits next to.</summary>
     public int Mode { get; internal set; }
 
     /// <summary>The slot of the flag the settler walks to (word at 12); in state 4 the time the door step has left; in state 0x42 the flag it waits next to (the original holds a pointer to its item there).</summary>
