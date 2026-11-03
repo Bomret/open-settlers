@@ -107,7 +107,8 @@ left open:
 - The settler's drawing is written from the figure tables at `0x4501a1` and `0x4503c5` and the walk sequences of entry 2 of the
   graphics archive, but no emulator or debugger run of the draw (`0x43f537`, `0x43fed8`, `0x44fff3`, `0x406610`) confirms the
   details listed as inferred in [Settlers](../rules/settlers.md#drawing-the-walk-leads): the sequence offsets, the triple index,
-  the position, the second figure, the colour overlay, and the variants from figure byte 0x80. Lead: run `0x43f537` in the
+  the position, the overlay's fill colour, and the variants from figure byte 0x80. The overlay entry, the shift of the second figure,
+  and the draw order are confirmed from `0x406610`. Lead: run `0x43f537` in the
   emulator with a settler record and read the draw record it writes.
 - The castle's own handler (building type 0x18, `0x42e7e0`) and the settlers the castle makes later (`0x428a75`), and the ambient
   sounds of each view (`0x428964`): they may draw from the random generator; the port draws nothing for them. The knights' idle

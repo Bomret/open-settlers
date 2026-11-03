@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
@@ -73,8 +74,8 @@ public sealed class SettlerFiguresTests
     {
         var draws = Figures().Draws(Map(), [Walker(7, 0)], 0);
 
-        // Figure byte 3 at the end of the step: entry 1850 + 100 + 3, the colour overlay 2500 on, the second 3150 + 50 + 1.
-        CollectionAssert.AreEqual(new[] { 1953, 4453, 3201 }, draws.Select(d => d.Entry).ToArray());
+        // Figure byte 3 at the end of the step: entry 1850 + 100 + 3, the colour overlay 2500 + 100 + 3, the second 3150 + 50 + 1.
+        CollectionAssert.AreEqual(new[] { 1953, 2603, 3201 }, draws.Select(d => d.Entry).ToArray());
         Assert.AreEqual(-1, draws[0].Colour);
         Assert.AreEqual(0x40, draws[1].Colour, "the player's colour: 0x40 plus 4 for each player");
     }
@@ -183,7 +184,7 @@ public sealed class SettlerFiguresTests
         var sprites = Figures().Sprites(11, 0x40).OrderBy(s => s.Entry).ToArray();
 
         CollectionAssert.AreEqual(
-            new[] { (1953, -1), (1954, -1), (1955, -1), (3201, -1), (4453, 0x40), (4454, 0x40), (4455, 0x40) },
+            new[] { (1953, -1), (1954, -1), (1955, -1), (2603, 0x40), (2604, 0x40), (2605, 0x40), (3201, -1) },
             sprites.Distinct().ToArray()
         );
     }
@@ -202,8 +203,8 @@ public sealed class SettlerFiguresTests
     {
         var draws = Figures().Draws(Map(), [Carrier(mode: 7)], 0);
 
-        // Figure byte 3 plus 10: entry 1850 + 100 + 13, and the colour overlay 2500 on; the job has no second figure here.
-        CollectionAssert.AreEqual(new[] { 1963, 4463 }, draws.Select(d => d.Entry).ToArray());
+        // Figure byte 3 plus 10: entry 1850 + 100 + 13, and the colour overlay 2500 + 100 + 13; the job has no second figure here.
+        CollectionAssert.AreEqual(new[] { 1963, 2613 }, draws.Select(d => d.Entry).ToArray());
     }
 
     [TestMethod]
@@ -211,7 +212,7 @@ public sealed class SettlerFiguresTests
     {
         var draws = Figures().Draws(Map(), [Carrier(mode: 0)], 0);
 
-        CollectionAssert.AreEqual(new[] { 1953, 4453 }, draws.Select(d => d.Entry).ToArray());
+        CollectionAssert.AreEqual(new[] { 1953, 2603 }, draws.Select(d => d.Entry).ToArray());
     }
 
     [TestMethod]
@@ -227,6 +228,88 @@ public sealed class SettlerFiguresTests
     {
         var entries = Figures().Sprites(0, 0x40, carriedGood: 7).Select(s => s.Entry).Distinct().ToArray();
 
-        CollectionAssert.IsSubsetOf(new[] { 1963, 1964, 1965, 4463 }, entries);
+        CollectionAssert.IsSubsetOf(new[] { 1963, 1964, 1965, 2613 }, entries);
+    }
+
+    // The original draws the overlay of the figure 1850 + i from 2500 + i (0x406610), not from the figure's entry plus 2500.
+    [TestMethod]
+    public void TheColourOverlayOfTheFigureOneEightFiftyPlusIIsTwentyFiveHundredPlusI()
+    {
+        var bases = new short[32 * 8];
+        bases[11 * 8] = 40;
+        bases[11 * 8 + 1] = -1;
+        var offsets = new short[512];
+        offsets[2 * 3] = 7;
+
+        var draws = new SettlerFigures(bases, offsets, Sequences()).Draws(Map(), [Walker(7, 0)], 0);
+
+        CollectionAssert.AreEqual(new[] { (1897, -1), (2547, 0x40) }, draws.Select(d => (d.Entry, d.Colour)).ToArray());
+    }
+
+    // The second figure moves by the header bytes 0 and 1 of the figure 1850 + i, read as signed bytes (0x4066d2, 0x4066e4);
+    // the figure and the overlay stay where they are.
+    [TestMethod]
+    public void TheSecondFigureIsShiftedByTheFiguresHeaderBytesAndANegativeByteMovesItBack()
+    {
+        var plain = Figures().Draws(Map(), [Walker(7, 0)], 0);
+        var shifted = Figures()
+            .Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)> { [1953] = (3, -2) });
+
+        CollectionAssert.AreEqual(plain.Take(2).ToArray(), shifted.Take(2).ToArray());
+        Assert.AreEqual((plain[2].X + 3, plain[2].Y - 2), (shifted[2].X, shifted[2].Y));
+    }
+
+    [TestMethod]
+    public void AFigureWithNoHeaderLeavesTheSecondFigureUnshifted()
+    {
+        var plain = Figures().Draws(Map(), [Walker(7, 0)], 0);
+        var shifted = Figures().Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)>());
+
+        CollectionAssert.AreEqual(plain, shifted);
+    }
+
+    [TestMethod]
+    public void AShiftsMapThatLacksTheFiguresEntryLeavesTheSecondFigureUnshifted()
+    {
+        var plain = Figures().Draws(Map(), [Walker(7, 0)], 0);
+        var others = Figures()
+            .Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)> { [1954] = (3, -2) });
+        var own = Figures().Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)> { [1953] = (3, -2) });
+
+        CollectionAssert.AreEqual(plain, others);
+        CollectionAssert.AreNotEqual(plain, own);
+    }
+
+    // 0x406610 draws the figure, then the overlay over it, then the second figure over both; the row order of the settlers
+    // keeps that order within each settler.
+    [TestMethod]
+    public void EachSettlerDrawsItsFigureThenItsOverlayThenItsSecondFigureWithSeveralSettlersOnARow()
+    {
+        var settlers = Enumerable.Range(0, 40).Select(_ => Walker(7, 0)).ToArray();
+
+        var entries = Figures().Draws(Map(), settlers, 0).Select(d => d.Entry).ToArray();
+
+        CollectionAssert.AreEqual(
+            Enumerable.Range(0, 40).SelectMany(_ => new[] { 1953, 2603, 3201 }).ToArray(),
+            entries
+        );
+    }
+
+    [TestMethod]
+    public void AJobWithNoSecondFigureDrawsItsFigureAndOverlay()
+    {
+        var draws = Figures()
+            .Draws(Map(), [Carrier(mode: 0)], 0, new Dictionary<int, (int X, int Y)> { [1953] = (3, 3) });
+
+        CollectionAssert.AreEqual(new[] { 1953, 2603 }, draws.Select(d => d.Entry).ToArray());
+    }
+
+    [TestMethod]
+    public void AFigureByteOutsideTheTablesDrawsNothing()
+    {
+        var bases = new short[32 * 8];
+        bases[11 * 8 + 1] = -1;
+
+        Assert.IsEmpty(new SettlerFigures(bases, new short[4], Sequences()).Draws(Map(), [Walker(7, 0)], 0));
     }
 }

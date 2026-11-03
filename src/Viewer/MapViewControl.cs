@@ -710,7 +710,9 @@ public partial class MapViewControl : Control
         }
 
         var quads = new System.Collections.Generic.List<(int X, int Y, int Width, int Height, Color Color)>();
-        foreach (var draw in _settlerGraphics.Figures.Draws(_state.Map, _game.Settlers, _game.Clock))
+        foreach (
+            var draw in _settlerGraphics.Figures.Draws(_state.Map, _game.Settlers, _game.Clock, _settlerGraphics.Shifts)
+        )
         {
             if (_settlerGraphics.Layers.TryGetValue((draw.Entry, draw.Colour), out var layer))
             {

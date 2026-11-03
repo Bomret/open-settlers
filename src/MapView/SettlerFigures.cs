@@ -15,17 +15,22 @@ public readonly record struct SettlerDraw(int Row, int Entry, int Colour, int X,
 /// (the shape of its step, which holds the direction) picks a sequence of (figure byte, dx, dy) triples from entry 2 of the
 /// graphics archive; the time left of the step, in ticks (8 clock units), picks the triple. The tables of the program turn
 /// the job and the figure byte into the entries: the figure, its overlay in the player's colour, and a second figure.
-/// <b>Inferred:</b> that the sequence offsets count from the byte after the first dword of the entry (as
+/// <b>Confirmed</b> (<c>0x406610</c>): the figure 1850 + i takes its overlay from 2500 + i; the second figure moves by the
+/// header bytes 0 and 1 of the figure, read as signed bytes; a settler draws its figure, then the overlay, then the second
+/// figure. <b>Inferred:</b> that the sequence offsets count from the byte after the first dword of the entry (as
 /// <c>0x41e8e0</c> keeps its table), that the triple index is the time left shifted right 3, that the time left falls
-/// with the clock between the settler's turns (the original draws a settler in view as it acts every pass), the draw
-/// position (the node lifted by its height, as an object), and that the second figure takes no offset.
+/// with the clock between the settler's turns (the original draws a settler in view as it acts every pass), and the draw
+/// position (the node lifted by its height, as an object).
 /// </summary>
 public sealed class SettlerFigures
 {
-    // The sprite entry of the figures, of the second figures, and the distance of a colour overlay (0x406610).
+    // The sprite entry of the figures, of their colour overlays, and of the second figures (0x406610): the figure 1850 + i
+    // has the overlay 2500 + i.
     private const int FigureBase = 1850;
+
+    /// <summary>The sprite entry of the first colour overlay; the figures lie below it.</summary>
+    public const int OverlayBase = 2500;
     private const int SecondBase = 3150;
-    private const int OverlayDistance = 2500;
 
     // The palette index of the first player's colour, and the step between players (0x406610).
     private const int ColourBase = 0x40;
@@ -82,8 +87,17 @@ public sealed class SettlerFigures
         _data = sequences;
     }
 
-    /// <summary>The sprites of the settlers that walk, in the order of their rows; the clock is the game's (16 bits).</summary>
-    public List<SettlerDraw> Draws(Map map, IReadOnlyList<Settler> settlers, ushort clock)
+    /// <summary>
+    /// The sprites of the settlers that walk, in the order of their rows, each settler's figure, overlay, and second figure in
+    /// that order; the clock is the game's (16 bits). <paramref name="shifts"/> holds the header bytes 0 and 1 of a figure
+    /// entry, the shift of its second figure; a figure it leaves out shifts nothing.
+    /// </summary>
+    public List<SettlerDraw> Draws(
+        Map map,
+        IReadOnlyList<Settler> settlers,
+        ushort clock,
+        IReadOnlyDictionary<int, (int X, int Y)>? shifts = null
+    )
     {
         var draws = new List<SettlerDraw>();
         foreach (var settler in settlers)
@@ -115,15 +129,16 @@ public sealed class SettlerFigures
             var height = map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & Map.HeightMask;
             x += dx;
             y += dy - height * TerrainTriangles.HeightStep;
-            foreach (var (entry, colour) in Entries(settler.Job, figure, ColourOf(settler.Player)))
+            // The figure comes first; the overlay and the second figure follow it, and only the second figure is shifted.
+            foreach (var (entry, colour, shiftedBy) in Entries(settler.Job, figure, ColourOf(settler.Player)))
             {
-                draws.Add(new SettlerDraw(settler.Y, entry, colour, x, y));
+                var shift = shiftedBy >= 0 && shifts is not null ? shifts.GetValueOrDefault(shiftedBy) : default;
+                draws.Add(new SettlerDraw(settler.Y, entry, colour, x + shift.X, y + shift.Y));
             }
         }
 
-        draws.Sort((a, b) => a.Row.CompareTo(b.Row));
-
-        return draws;
+        // A stable sort: the sprites of one settler keep their order.
+        return [.. draws.OrderBy(draw => draw.Row)];
     }
 
     /// <summary>
@@ -152,9 +167,9 @@ public sealed class SettlerFigures
             {
                 foreach (var figure in add == 0 ? new int[] { _data[at] } : new int[] { _data[at], _data[at] + add })
                 {
-                    foreach (var sprite in Entries(job, figure, colour))
+                    foreach (var (entry, fill, _) in Entries(job, figure, colour))
                     {
-                        yield return sprite;
+                        yield return (entry, fill);
                     }
                 }
             }
@@ -170,8 +185,9 @@ public sealed class SettlerFigures
     }
 
     // The sprites of a figure byte of a job: the figure, its colour overlay filled with the colour, and the second figure
-    // where the job has one (-1 where a sprite has no fill). None where the figure byte lies outside the offsets table.
-    private IEnumerable<(int Entry, int Colour)> Entries(int job, int figure, int colour)
+    // where the job has one (-1 where a sprite has no fill), each with the figure entry whose header shifts it (-1 for none:
+    // only the second figure is shifted). None where the figure byte lies outside the offsets table.
+    private IEnumerable<(int Entry, int Colour, int ShiftedBy)> Entries(int job, int figure, int colour)
     {
         if (figure >= _offsets.Length / 2)
         {
@@ -179,11 +195,11 @@ public sealed class SettlerFigures
         }
 
         var first = _bases[job * 8] + _offsets[2 * figure];
-        yield return (FigureBase + first, -1);
-        yield return (FigureBase + first + OverlayDistance, colour);
+        yield return (FigureBase + first, -1, -1);
+        yield return (OverlayBase + first, colour, -1);
         if (_bases[job * 8 + 1] >= 0)
         {
-            yield return (SecondBase + _bases[job * 8 + 1] + _offsets[2 * figure + 1], -1);
+            yield return (SecondBase + _bases[job * 8 + 1] + _offsets[2 * figure + 1], -1, FigureBase + first);
         }
     }
 
