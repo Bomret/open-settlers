@@ -130,4 +130,140 @@ public sealed class LaunchArgsTests
         Assert.AreEqual(LaunchMode.Browser, args.Mode);
         Assert.AreEqual("/siedler/--map", args.Game);
     }
+
+    [TestMethod]
+    public void TheSeedAndSizeFlagsGiveTheMapsSeedAndSize()
+    {
+        var args = LaunchArgs.Parse(["--map", "--seed", "1234567812345678", "--size", "2"], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual("1234567812345678", args.SeedText);
+        Assert.AreEqual(2, args.Size?.Value);
+        Assert.IsNotNull(args.Seed);
+    }
+
+    [TestMethod]
+    public void BothSpellingsOfOneSeedParseToTheSameSeed()
+    {
+        var plain = LaunchArgs.Parse(["--map", "--seed", "1234567812345678"], null);
+        var grouped = LaunchArgs.Parse(["--map", "--seed", "1234 5678 1234 5678"], null);
+
+        Assert.IsEmpty(grouped.Problems);
+        Assert.AreEqual(plain.Seed, grouped.Seed);
+    }
+
+    [TestMethod]
+    public void WithoutSeedAndSizeFlagsTheyAreNull()
+    {
+        var args = LaunchArgs.Parse(["--map"], null);
+
+        Assert.IsNull(args.Seed);
+        Assert.IsNull(args.SeedText);
+        Assert.IsNull(args.Size);
+    }
+
+    [TestMethod]
+    public void TheSeedInfoFlagSelectsTheSeedInfoMode()
+    {
+        var args = LaunchArgs.Parse(["--seed-info", "--seed", "1234567812345678", "--size", "3"], null);
+
+        Assert.AreEqual(LaunchMode.SeedInfo, args.Mode);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    [DataRow("--seed")]
+    [DataRow("--size")]
+    [DataRow("--game")]
+    public void AFlagWithoutAValueIsAProblem(string flag)
+    {
+        var args = LaunchArgs.Parse(["--map", flag], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], flag);
+    }
+
+    [TestMethod]
+    public void AFlagBeforeAnotherFlagHasNoValue()
+    {
+        var args = LaunchArgs.Parse(["--map", "--seed", "--size", "2"], null);
+
+        Assert.HasCount(1, args.Problems);
+        Assert.AreEqual(2, args.Size?.Value);
+    }
+
+    [TestMethod]
+    public void AnUnknownFlagIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--map", "--bogus"], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--bogus");
+    }
+
+    [TestMethod]
+    [DataRow("1234")]
+    [DataRow("")]
+    [DataRow("1234567812345679")]
+    [DataRow("abcdefghabcdefgh")]
+    public void ABadSeedIsAProblem(string seed)
+    {
+        var args = LaunchArgs.Parse(["--map", "--seed", seed], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--seed");
+        Assert.IsNull(args.Seed);
+    }
+
+    [TestMethod]
+    public void AnUnquotedFourGroupSeedIsOneProblemAboutTheSeed()
+    {
+        var args = LaunchArgs.Parse(["--map", "--seed", "1234", "5678", "1234", "5678"], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--seed");
+    }
+
+    [TestMethod]
+    [DataRow("-1")]
+    [DataRow("0")]
+    [DataRow("4")]
+    [DataRow("2.0")]
+    [DataRow("abc")]
+    [DataRow("99999999999999999999")]
+    public void ABadSizeIsAProblem(string size)
+    {
+        var args = LaunchArgs.Parse(["--map", "--size", size], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--size");
+        Assert.IsNull(args.Size);
+    }
+
+    [TestMethod]
+    [DataRow("--check", "--map")]
+    [DataRow("--map", "--seed-info")]
+    [DataRow("--seed-info", "--check")]
+    public void TwoDifferentModeFlagsAreAProblemAndSelectNoMode(string first, string second)
+    {
+        var args = LaunchArgs.Parse([first, second], null);
+
+        Assert.HasCount(1, args.Problems);
+        Assert.AreEqual(LaunchMode.Browser, args.Mode);
+    }
+
+    [TestMethod]
+    [DataRow("--check")]
+    [DataRow("")]
+    public void SeedAndSizeWithTheCheckOrTheBrowserAreProblems(string mode)
+    {
+        string[] flags = mode.Length > 0 ? [mode] : [];
+        var seedArgs = LaunchArgs.Parse([.. flags, "--seed", "1234567812345678"], null);
+        var sizeArgs = LaunchArgs.Parse([.. flags, "--size", "2"], null);
+
+        Assert.HasCount(1, seedArgs.Problems);
+        StringAssert.Contains(seedArgs.Problems[0], "--seed");
+        Assert.HasCount(1, sizeArgs.Problems);
+        StringAssert.Contains(sizeArgs.Problems[0], "--size");
+    }
 }

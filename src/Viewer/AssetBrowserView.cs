@@ -2,6 +2,8 @@ using System;
 using Godot;
 using OpenSettlers.Assets;
 using OpenSettlers.Launch;
+using OpenSettlers.MapView;
+using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Viewer;
 
@@ -12,7 +14,9 @@ namespace OpenSettlers.Viewer;
 ///   godot --headless --path . -- --check --game &lt;install&gt;
 ///   godot --path . -- --game &lt;install&gt;
 ///   godot --path . -- --map --game &lt;install&gt;   (the map view, <see cref="MapViewControl"/>)
-/// <c>SIEDLER_DIR</c> stands in for <c>--game</c>.
+///   godot --path . -- --map --seed 1234567812345678 --size 2 --game &lt;install&gt;
+/// <c>SIEDLER_DIR</c> stands in for <c>--game</c>. A bad argument prints its problem and quits with exit code 4
+/// before the install is opened.
 /// </summary>
 public partial class AssetBrowserView : Control
 {
@@ -29,6 +33,15 @@ public partial class AssetBrowserView : Control
             OS.GetCmdlineUserArgs(),
             System.Environment.GetEnvironmentVariable(LaunchArgs.GameVariable)
         );
+        if (args.Problems.Count > 0)
+        {
+            // A bad argument wins over a missing install, and no window opens for it.
+            GD.PrintErr($"ERROR {string.Join("; ", args.Problems)}");
+            GetTree().Quit(LaunchArgs.BadArgumentExitCode);
+
+            return;
+        }
+
         var kinds = AssetKind.Discover();
         if (args.Mode == LaunchMode.Check)
         {
@@ -96,7 +109,13 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        AddChild(new MapViewControl(install));
+        AddChild(
+            new MapViewControl(
+                install,
+                args.SeedText ?? MapViewState.DefaultSeed,
+                args.Size?.Value ?? MapSize.Offered[0].Value
+            )
+        );
     }
 
     // A Godot callback exception does not set the exit code, so the check owns it.

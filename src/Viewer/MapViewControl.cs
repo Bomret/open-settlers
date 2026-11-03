@@ -31,6 +31,8 @@ public partial class MapViewControl : Control
     const int MaxArrayLayers = 256;
 
     readonly Install _install;
+    readonly string _openSeed;
+    readonly int _openSize;
     MapViewState _state = null!;
     Camera _camera = null!;
     readonly Zoom _zoom = new();
@@ -49,10 +51,15 @@ public partial class MapViewControl : Control
     Vector2 _keyCarry;
     Vector2 _dragCarry;
 
-    /// <summary>The view of the map of this install's graphics.</summary>
-    public MapViewControl(Install install)
+    /// <summary>
+    /// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
+    /// seed field shows the seed and the size picker selects the size.
+    /// </summary>
+    public MapViewControl(Install install, string seedText, int sizeValue)
     {
         _install = install;
+        _openSeed = seedText;
+        _openSize = sizeValue;
     }
 
     /// <inheritdoc/>
@@ -68,7 +75,7 @@ public partial class MapViewControl : Control
         bar.AddChild(new Label { Text = "Seed" });
         _seed = new LineEdit
         {
-            Text = MapViewState.DefaultSeed,
+            Text = _openSeed,
             MaxLength = 19,
             CustomMinimumSize = new Vector2(240, 0),
         };
@@ -83,6 +90,7 @@ public partial class MapViewControl : Control
 
         // A size change keeps the applied seed; text typed but not submitted with Enter stays unapplied.
         _size.ItemSelected += _ => Apply(_state.SeedText);
+        _size.Select(_size.GetItemIndex(_openSize));
         bar.AddChild(_size);
         _message = new Label
         {
@@ -126,7 +134,7 @@ public partial class MapViewControl : Control
             GD.PrintErr($"map view: {e.Message}");
         }
 
-        _state = MapViewState.Open(_seed.Text, _size.GetItemId(0));
+        _state = MapViewState.Open(_seed.Text, _openSize);
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         Redraw();
         ShowMessage();

@@ -9,7 +9,7 @@ namespace OpenSettlers.Assets;
 /// <summary>The asset check's outcome: the process exit code and the report, one line each.</summary>
 public sealed record CheckReport
 {
-    /// <summary>0 when every entry was read, 1 when an entry cannot be read or a listed file is missing, 2 when there is no usable install, 3 when two kinds share a name.</summary>
+    /// <summary>0 when every entry was read, 1 when an entry cannot be read or a listed file is missing, 2 when there is no usable install, 3 when two kinds share a name, 4 when a launch argument is bad.</summary>
     public required int ExitCode { get; init; }
 
     /// <summary>The report lines, in the order the check wrote them.</summary>
@@ -25,14 +25,23 @@ public sealed record CheckReport
 public static class AssetCheck
 {
     /// <summary>
-    /// Runs the check of <c>kinds</c> over the install the launch arguments name. Exit code 2 (no install given,
-    /// folder missing, no program in it, or a launch problem) wins over 1; exit code 3 (two kinds of one name) stops
+    /// Runs the check of <c>kinds</c> over the install the launch arguments name. Exit code 4 (a bad launch argument) wins over all;
+    /// exit code 2 (no install given, folder missing, or no program in it) wins over 1; exit code 3 (two kinds of one name) stops
     /// the check before it reads. A kind or an asset that throws <c>IOException</c>, <c>InvalidDataException</c> or
     /// <c>UnauthorizedAccessException</c> fails only itself; the check goes on with the rest. Any other exception
     /// propagates to the caller. A file that fails as a whole is reported once, however many kinds list it.
     /// </summary>
     public static CheckReport Run(LaunchArgs args, IEnumerable<AssetKind> kinds)
     {
+        if (args.Problems.Count > 0)
+        {
+            return new CheckReport
+            {
+                ExitCode = LaunchArgs.BadArgumentExitCode,
+                Lines = [$"ERROR {string.Join("; ", args.Problems)}"],
+            };
+        }
+
         if (!Install.TryOpen(args, out var install, out var problem))
         {
             return new CheckReport { ExitCode = 2, Lines = [$"ERROR {problem}"] };
