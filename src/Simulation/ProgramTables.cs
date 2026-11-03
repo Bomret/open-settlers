@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 
 namespace OpenSettlers.Simulation;
 
@@ -25,9 +26,9 @@ public sealed class ProgramTables
     /// <summary>Creates tables from their contents; <see cref="Read"/> creates them from the program.</summary>
     public ProgramTables(byte[] classes, byte[][] startStock)
     {
-        if (classes.Length != ClassCount || startStock.Length != StartStockRows)
+        if (classes.Length != ClassCount || startStock.Length != StartStockRows || startStock.Any(row => row.Length != Simulation.StartStock.Goods))
         {
-            throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows.");
+            throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows of 26.");
         }
 
         Classes = classes;

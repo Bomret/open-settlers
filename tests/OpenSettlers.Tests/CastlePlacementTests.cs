@@ -57,7 +57,7 @@ public sealed class CastlePlacementTests
     [TestMethod]
     public void ARefusedPlacementChangesNoState()
     {
-        var game = new Game(TestProgram.Tables(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
         var before = game.Digest();
 
         // The node 0,0 is a node state 7, site 0: no castle goes there (emulator: site:1:1234,5678,9ABC).
@@ -70,7 +70,7 @@ public sealed class CastlePlacementTests
         Assert.IsNull(game.Castle);
         Assert.IsEmpty(game.Stock);
         Assert.AreEqual(before, tick);
-        var fresh = new Game(TestProgram.Tables(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var fresh = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
         fresh.Tick();
         fresh.Tick();
         Assert.AreEqual(fresh.Digest(), game.Digest());
@@ -79,8 +79,8 @@ public sealed class CastlePlacementTests
     [TestMethod]
     public void ACommandOtherThanThePlacementIsRefusedBeforeTheCastleStands()
     {
-        var game = new Game(TestProgram.Tables(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
-        var fresh = new Game(TestProgram.Tables(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var fresh = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
 
         game.Enqueue(new Command(0, 0, 2, 15, 5));
         game.Enqueue(new Command(0, 0, 3, 15, 5));
@@ -93,7 +93,7 @@ public sealed class CastlePlacementTests
     [TestMethod]
     public void APlacementOutsideTheMapOrForAnotherPlayerIsRefused()
     {
-        var game = new Game(TestProgram.Tables(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
 
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, -1, 5));
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 32));
@@ -106,7 +106,7 @@ public sealed class CastlePlacementTests
     [TestMethod]
     public void OnlyOneCastleIsPlaced()
     {
-        var game = new Game(TestProgram.Tables(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
 
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Enqueue(new Command(1, 0, CommandKind.PlaceCastle, 9, 7));
@@ -121,14 +121,14 @@ public sealed class CastlePlacementTests
     {
         static Game Run()
         {
-            var game = new Game(TestProgram.Tables(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]), 7);
+            var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]), 7);
             game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
             game.Tick();
 
             return game;
         }
 
-        var fresh = new Game(TestProgram.Tables(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]), 7);
+        var fresh = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]), 7);
         fresh.Tick();
 
         Assert.AreEqual(Run().Digest(), Run().Digest());

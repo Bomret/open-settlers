@@ -79,6 +79,16 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    public void TablesOfTheWrongRowLengthsAreRefused()
+    {
+        var rows = Enumerable.Range(0, ProgramTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
+        rows[2] = new byte[StartStock.Goods - 1];
+
+        Assert.ThrowsExactly<ArgumentException>(() => new ProgramTables(new byte[ProgramTables.ClassCount], rows));
+        Assert.ThrowsExactly<ArgumentException>(() => new ProgramTables(new byte[ProgramTables.ClassCount - 1], rows));
+    }
+
+    [TestMethod]
     public void TheTablesOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();

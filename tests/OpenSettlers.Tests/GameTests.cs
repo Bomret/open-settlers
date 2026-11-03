@@ -13,7 +13,7 @@ public sealed class GameTests
 
     static Game Run(params Command[] commands)
     {
-        var game = new Game(TestProgram.Tables(), MapGenerator.Generate(new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0]));
+        var game = new Game(TestProgram.Made(), MapGenerator.Generate(new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0]));
         foreach (var command in commands)
         {
             game.Enqueue(command);

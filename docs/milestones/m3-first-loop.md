@@ -49,6 +49,10 @@ settled: [Item tables](../rules/item-tables.md). What is left open:
   holds the result of the claim, not the routines.
 - `0x41f2d2`: places a group of 3, 6, or 12 settlers of one job on the start node of a mission start. guess
 - `0x42055e`: known. Fills the player blocks of a new game.
+- The castle's draw position (the node plus 16 east and 8 south, `docs/rules/map-objects.md`): open lead, inferred.
+  The castle is a building drawn through `0x44db26` from a `Table70`-style record, and the emulator verbs run no view
+  record, drawing surface, or building record, so no verb reaches the blit call. Lead: build the record in the
+  emulator (or run the original under a debugger in Windows) and read the position `0x44db26` hands the blit.
 - `0x42abed`: watches the counts of the player's `Table120` item and posts message 10 when they run out.
   guess
 

@@ -67,14 +67,14 @@ public sealed class BuildSiteTests
     public void TheCastlesOwnNodeIsNoCastleSiteOnceTheCastleStands()
     {
         var map = MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]);
-        var site = BuildSite.Evaluate(TestProgram.Tables(), map, 15, 5, 0, hasCastle: false);
+        var site = BuildSite.Evaluate(TestProgram.Made(), map, 15, 5, 0, hasCastle: false);
 
-        var game = new Game(TestProgram.Tables(), map);
+        var game = new Game(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
         Assert.IsTrue(site.IsCastleSite);
-        Assert.IsFalse(BuildSite.Evaluate(TestProgram.Tables(), map, 15, 5, 0, hasCastle: true).IsCastleSite);
+        Assert.IsFalse(BuildSite.Evaluate(TestProgram.Made(), map, 15, 5, 0, hasCastle: true).IsCastleSite);
     }
 
     // flag-verdicts.txt holds the output of the emulator verb flag: and, after a castle, castle-flags: (tools/GhidraDump,

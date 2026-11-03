@@ -49,6 +49,7 @@ public partial class MapViewControl : Control
     System.Collections.Generic.IReadOnlyList<MaskImage> _masks = [];
     string? _graphicsProblem;
     string? _objectsProblem;
+    string? _tablesProblem;
     bool _dragging;
     readonly ClickGesture _gesture = new();
     (int X, int Y, float Scale, float Width, float Height) _pressView;
@@ -148,7 +149,7 @@ public partial class MapViewControl : Control
             }
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
-                _objectsProblem = $"the program's tables: {e.Message}";
+                _tablesProblem = e.Message;
                 GD.PrintErr($"map view: {e.Message}");
             }
         }
@@ -164,7 +165,7 @@ public partial class MapViewControl : Control
     {
         if (_play && _state.Map is not null && _tables is not null)
         {
-            _game = new Game(_tables!, _state.Map, _state.StockLevel);
+            _game = new Game(_tables, _state.Map, _state.StockLevel);
             _castleDrawn = false;
             _tickCarry = 0;
         }
@@ -335,7 +336,9 @@ public partial class MapViewControl : Control
     {
         _message.Text = _graphicsProblem is not null
             ? $"Cannot draw the map: {_graphicsProblem}"
-            : _state.Problem ?? (_objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}" : "");
+            : _state.Problem
+                ?? (_tablesProblem is not null ? $"Cannot start the game, the program's rule tables are unreadable: {_tablesProblem}"
+                : _objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}" : "");
         _message.Modulate = new Color(1, 0.4f, 0.4f);
     }
 

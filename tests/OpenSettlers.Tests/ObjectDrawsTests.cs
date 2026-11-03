@@ -40,7 +40,7 @@ public sealed class ObjectDrawsTests
     {
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15.
         var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Tables(), map);
+        var game = new Game(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
