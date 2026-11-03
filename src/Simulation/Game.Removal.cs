@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace OpenSettlers.Simulation;
 
@@ -123,17 +124,6 @@ public sealed partial class Game
     private static bool HeadsTo(Settler settler) =>
         settler.State is 2 or 0xf || (settler.State is 5 or 7 && settler.Next == 2);
 
-    private static int LowestBit(int bits)
-    {
-        var bit = 0;
-        while (bit < 8 && (bits >> bit & 1) == 0)
-        {
-            bit++;
-        }
-
-        return bit;
-    }
-
     private bool RemoveFlagAt(int x, int y)
     {
         var index = Map.Index(x, y);
@@ -176,7 +166,7 @@ public sealed partial class Game
 
         // The take-down walks from the node along its first two road bits (0x462e1d); a second bit found at 4 with bit 5 set
         // is taken for 5.
-        var first = LowestBit(bits);
+        var first = BitOperations.TrailingZeroCount(bits);
         var second = first + 1;
         while ((bits >> second & 1) == 0)
         {
@@ -245,7 +235,7 @@ public sealed partial class Game
                 return;
             }
 
-            direction = LowestBit(rest);
+            direction = BitOperations.TrailingZeroCount(rest);
             DismissWaiting(index);
             standing = Occupant(index);
             if (standing != 0 && _settlers[standing].State is 2 or 3)
@@ -298,6 +288,8 @@ public sealed partial class Game
     // 0x46385b (the boatman's state 0x1a is not ported): a settler on a road that goes is dismissed. One on its way to a building
     // at a flag frees the building's wait for a worker; one on its way to a road frees the road's carrier-on-the-way bits; one
     // that carries a good counts it lost. It then looks for the nearest flag on the way home (state 0x19).
+    // **Inferred:** the carrier dismissed while it carries a good is read from the code; no emulator or debugger run reaches
+    // this. Open lead in docs/milestones/m3-first-loop.md (a carrier carrying a good on a road that goes).
     private void Dismiss(Settler settler)
     {
         if (settler.State == 2)
@@ -489,7 +481,7 @@ public sealed partial class Game
                 return new Walked(steps, settlers, Map.Layer(MapLayer.Resource)[index], back);
             }
 
-            direction = LowestBit(rest);
+            direction = BitOperations.TrailingZeroCount(rest);
             if (TakeWaiting(index) is var waiting and >= 0)
             {
                 settlers.Add(waiting);
@@ -562,10 +554,12 @@ public sealed partial class Game
     // The join of the two roads of a flag (0x462153): one road of the summed length between the flags at the far ends. The
     // settlers on the old roads count on the new one up to the number its length class holds (the table 0x462acd); the others
     // are marked to go (the next state 0xff) and a good they carry is lost.
+    // **Inferred:** the case of more settlers than the length class holds (the mark 0xff) is read from the code; no emulator or
+    // debugger run reaches it. Open lead in docs/milestones/m3-first-loop.md (more settlers on a joined road than its class holds).
     private void JoinRoads(int index, int slot)
     {
         var bits = Map.Layer(MapLayer.Flags)[index] & 0x3f;
-        var first = LowestBit(bits);
+        var first = BitOperations.TrailingZeroCount(bits);
         var last = 5;
         while ((bits >> last & 1) == 0)
         {

@@ -367,6 +367,8 @@ public sealed partial class Game
     // node holds no settler for the others to wait for) and takes state 0x42 with the flag and the direction of the road at
     // that flag as its target. The dword at 12 holds a pointer to the flag's item in the original; the engine keeps the slot in
     // the target. **Not ported:** the work at the flag in state 0x42 (the goods of the next slice).
+    // **Inferred:** the fourth turn at a road that holds two carriers is read from the code; no emulator or debugger run reaches
+    // it. Open lead in docs/milestones/m3-first-loop.md (the fourth turn of a carrier at the end of a road that holds two).
     private void Wait(Settler settler, int back, int flag)
     {
         settler.Timer = 0x3f;
@@ -379,13 +381,9 @@ public sealed partial class Game
             settler.Next = (settler.Next + 1) & 0xff;
             if (settler.Next >= 4)
             {
-                settler.Next = 0;
-                if ((_roadBytes[flag][back] & 0xf) >= 2)
-                {
-                    _roadBytes[flag][back]--;
-                    _roadBytes[far][farDirection]--;
-                    settler.Next = 0xff;
-                }
+                _roadBytes[flag][back]--;
+                _roadBytes[far][farDirection]--;
+                settler.Next = 0xff;
             }
 
             return;

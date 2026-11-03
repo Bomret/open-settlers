@@ -168,6 +168,8 @@ public sealed class RemovalLogicTests
         Assert.AreNotEqual(0, game.Map.Layer(MapLayer.Flags)[game.Map.Index(18, 6)] & 0x28, "the road passes the node");
     }
 
+    // **Inferred:** the test runs on this file's made-up tables (Made), and no emulator or debugger run reaches more settlers on
+    // a joined road than its length class holds. Open lead in docs/milestones/m3-first-loop.md.
     [TestMethod]
     public void AJoinedRoadHoldsAsManyCarriersAsItsLengthClassAllowsAndTheOthersAreSentAway()
     {
