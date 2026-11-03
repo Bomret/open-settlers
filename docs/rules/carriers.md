@@ -110,11 +110,10 @@ sequences.
 
 ## Open leads
 
-- What a carrier does in state 3 and later with a good to fetch, and the castle's handover (slice 08, next stage). `0x42abed` is no
+- The second carrier of a busy road (`0x462acd`) is read and not ported. The goods part of `0x46414d`, the carrier's turns in
+  state 0x42 and 3 with a good, and the castle's handover (state 0xe) are in [Goods at a flag](goods.md). `0x42abed` is no
   storage handover: it is the player block's per-turn warning check (it posts messages 10 and 11 through `Msg_Post` from
-  counters at `+0x14` and `+0x18` of a 120-byte item), so the castle's log count is not raised there. The goods part of
-  `0x46414d` and the carrier's turn in state 0x42 are in [Goods at a flag](goods.md); the second carrier of a busy road
-  (`0x462acd`) is read and not ported.
+  counters at `+0x14` and `+0x18` of a 120-byte item).
 - The boatman of a water road (`0x42b4bc`, job 1, good 8) and the settlers' search level count (`+0x10a` of the player block).
 - The passing of two settlers on a road (not ported), and a carrier that goes home (`0x4312ed` releases the settlers of a road
   that goes away: slice 09).

@@ -72,12 +72,15 @@
 //                            0x428d10 after 0x428728, as the main loop 0x4286d8 does, the hut node and its flag take the marks the castle leaves, and a line per pass also lists the object
 //                            bytes that changed (o=x,y:old>new;...), the flag items of slots 0 to 15 that changed (f<slot>=), and
 //                            the random generator's words (rng=) when they moved. A building of type 2 is the woodcutter's hut.
-//   goods:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PASS,PLACE,GOOD]]]
+//   goods:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PUT;PUT...]]]
 //                            wood: in a game that starts as the original's game start leaves its tables: flag slot 0 is the
 //                            dummy the allocator 0x45d7ad takes at the end of MapGen_InitParams (0x421530), so the castle's
 //                            flag is slot 1 (wood: has it in slot 0, where a destination word 0 means none, and no good ever
-//                            leaves a flag). The last field lays a good on a place of the hut's flag by hand before a pass,
-//                            as the put of 0x436b46 lays it (docs/rules/goods.md)
+//                            leaves a flag). The last field lays goods on the places of a flag by hand before a pass,
+//                            as the put of 0x436b46 lays them (docs/rules/goods.md): each PUT is PASS,PLACE,GOOD for the hut's
+//                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The lines also list the castle's item
+//                            (c=) where it changed, and the start lines the castle's item and the transport priorities
+//                            (prio=, 32 bytes for the goods 0 to 31) that the flag exchange reads (0x43b054)
 //   carrier:N:S0,S1,S2:L:cx,cy:x,y;...:sx,sy,D;...:PASSES[:sx,sy,D;...:AT]
 //                            the passes of worker (docs/rules/carriers.md) on a game with a castle, flags, and roads and no
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass

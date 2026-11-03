@@ -14,9 +14,14 @@ left open:
   `+0x42` to `+0x45` are open (no building asks for a good yet). The status at `+5` and the road bytes at `+6` to `+0xb` are
   settled as far as the carriers read them: [Carriers](../rules/carriers.md#the-flag-pass). likely
 - `Table120`: the stock words and the counters of the storage item besides `+0x42` and `+0x4a`; player `+0x108`
-  indexes it. guess
-- `Table16`: the states other than 1 to 6, 10, 12, 15, and 0x42, and the fields they use (state 3 and 0x42 are settled for a
-  carrier with no goods: [Carriers](../rules/carriers.md#the-carriers-walk)). guess
+  indexes it. The stock word of a good at `+4 + 2 * good` is settled for a log delivered to the castle
+  ([Goods at a flag](../rules/goods.md#the-delivery-into-the-castle)). likely
+- `Table16`: the states other than 1 to 6, 10, 12, 15, 0xe, 0x42, and 0x43, and the fields they use (state 3 and 0x42 are
+  settled for a carrier, with and without goods: [Carriers](../rules/carriers.md#the-carriers-walk),
+  [Goods at a flag](../rules/goods.md)). The code between `0x43013b` and `0x4312ed` is the handler of state 0x28 (a soldier at a
+  military building), not carrier code. guess
+- The player block's transport priority table (`+good - 0x55` from the pointer at `+0x64` of the state): it reads 0 in the verb
+  `goods:`, so a second good that waits for a road never takes the road's byte again, **inferred**. Open lead.
 
 ## Tick
 

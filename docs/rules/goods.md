@@ -1,10 +1,10 @@
 # Goods at a flag
 
 How a good that lies on a flag gets its destination and its direction, and how the carrier who waits next to the flag is told
-to fetch it. Addresses and routine names are in the [Program index](program-index.md#simulation); the flag item's fields are
-in [Item tables](item-tables.md); the carrier's walk to its road is in [Carriers](carriers.md); the woodcutter's put of a log is
-in [Woodcutting](woodcutting.md#the-log). What a carrier does from state 3 on with a good to fetch (it lifts it, carries it to
-the next flag, and hands it over) is not read yet: the next stage of slice 08.
+to fetch it, how it lifts the good, swaps goods with each flag on its road, and delivers it into the castle. Addresses and
+routine names are in the [Program index](program-index.md#simulation); the flag item's fields are in
+[Item tables](item-tables.md); the carrier's walk to its road is in [Carriers](carriers.md); the woodcutter's put of a log is in
+[Woodcutting](woodcutting.md#the-log).
 
 **Emulated.** The harness verb `goods:` (`tools/GhidraDump/emulate.py`) is `wood:` in a game that starts as the original's game
 start leaves its tables. `MapGen_InitParams` (`0x421530`) ends by taking the first slot of the flag table (`0x45d7ad`), of the
@@ -94,22 +94,81 @@ the node at the first turn (pass 169), and the carrier takes it at the next (185
 carrier holds in bytes 12 to 15 while it waits keeps its low word through state 0x43 and state 3 (the engine keeps the slot);
 byte 14 is the heading and byte 15 is 0.
 
-**Not read** (stage 2 of slice 08): state 3 with mode 0 does here what it does for a carrier with no goods in the engine
-(the walk along the road, and the stop next to the end flag), which is not the original's: in the emulated run the carrier is
-blocked once by a settler (timer `0x7f`, frame 0x54), steps on, and takes mode 7 and a target of 1 at the end of its walk,
-states the next stage reads. The goods' lifting, the carrying, and the castle's handover are in `0x42fca1` to `0x4312ed`, code
-the dump has no function for.
+What follows in state 3 is below. The bytes `0x42fca1` to `0x42fef9` are the table of eight-byte jumps that the state byte
+indexes (`0x42fc88`), and `0x43013b` to `0x4312ed` is the handler of state 0x28 (a soldier's work at a military building), so
+neither holds carrier code; the carrier's states are `0x42`, `0x43`, 3 and 0xe.
+
+## The carrier's exchange at a flag
+
+**Status:** confirmed for a log carried over a road of three flags to the castle, and for the order two logs at one flag leave in;
+the swap and the drop are read and checked on made-up tables only (`ExchangeTests`), since no emulated game has a good that
+goes the way a carrier came.
+
+State 3 (`0x43ad78`) on a flag, when the carrier's timer has run out. The carrier's byte 11 is the good it carries (0 for none),
+the word at 12 the destination of that good (the destination words of the flag's places are numbered as above, the slot plus
+one), and the heading (byte 14) the direction of the road it works, as seen from this flag: the direction it came in turned
+round. The order is:
+
+1. Byte 15 negative: the carrier is sent home (`0x43aea4`, **not ported**).
+2. A good carried and its destination the flag the carrier stands on: state 0xe, the delivery below.
+3. Else the exchange (`0x43af07`) with byte `0x3c + heading` of the flag, then a step out of the flag along the heading:
+   - **Bit 7 set** (a good waits to go along this road, in the place of bits 0 to 2): byte 15 is 0. A carrier that carries a good
+     leaves it in that place (the byte as it is, so the place's direction bits are 0), sets bit 7 of the flag's byte 4, and takes
+     the good that was there (the low 5 bits of its byte) and, swapped with its own, its destination word. A carrier that carries
+     nothing takes the good and the word and empties the place. The road's byte then loses bit 7 and the place (`& 0x78`), and
+     the places are scanned from 0 to 7: the good whose direction bits are the heading plus one and whose transport priority is
+     greater than every one before it in the scan (a priority of 0 is never greater than the start value 0) takes the road's
+     byte again, bit 7 and its place.
+   - **Bit 7 clear:** a carrier that carries a good puts it, with its destination word, on the first empty place and sets bit 7 of
+     the flag's byte 4; with all eight places full it keeps the good. A carrier that carries nothing does nothing.
+   - The carrier then steps along the heading as on the road. A carrier that carries nothing and comes to a flag whose byte for
+     its road has bit 7 set does not stop next to the flag (state 0x42) but steps onto it, and so takes the good there.
+
+The order two goods leave a flag in follows from the places the flag's turn gives the road's byte: it visits the places from the
+last to the first, and only a place that finds the road's byte free takes it, so with two logs on the places 0 and 1 the one on
+place 1 goes first. The other waits, with its direction, until something sets the road's byte again, and the exchange does that
+only through the transport priorities, which read 0 in the verb `goods:` (**inferred**: the table of the player block, `+good -
+0x55` from the pointer at `+0x64` of the state, holds bytes that are all 0 after the game's start in the harness; the original
+may fill it later, an open lead). In the emulated game the second log therefore stays on its place for good, and the engine does
+the same.
+
+## The delivery into the castle
+
+**Status:** confirmed. The log counts into the stock word once for each log delivered; the **inferred** rule of the castle's bytes
+(8 and 9 hold `0xffff` all along) is settled by the emulator.
+
+State 0xe (`0x43c4ea`, entered at `0x43c45e`) with the carrier on the flag of the building it carries a good to, which is
+north-west of the flag. The step into the building has the frame the height difference plus `0x5d` and takes its time from the
+step table, as a step on the road does; the turn goes on at once when the timer did not wrap. When the timer has run out:
+
+- **First half** (byte 15 is 0): a good carried is taken into the building unless bit 5 of the building's status is set (inferred:
+  a building that takes no goods). Byte 9 of the building's item gains `0x0f` for a log (the good 7) and for every good from 9 on
+  but 13; byte 8 gains it for the others. A carry out of the byte makes both bytes `0xffff` and adds one to the building's storage
+  word for the good (offset `4 + 2 * good` of the storage item the building points to at `+0xe`: `0x12` for a log), where it
+  stays at 50000 at most. The castle's bytes are `0xffff` from its placement (they read so before the first pass, and the
+  delivered logs leave them so), so every good delivered to it counts: in the emulated game the castle's log word rises from 0 to 1
+  at the pass of the carrier's second turn in state 0xe, and to 2 with the next log. The carrier turns the frame round (`0x0d`
+  less the height difference), sets byte 15 to `0xff`, and adds half the time of that step to its timer.
+- **Second half** (byte 15 not 0): byte 15 is 0, state 3, and the exchange runs again at the flag with the heading as it was (the
+  carrier now carries nothing, so it may take a good for its road at once), then the carrier steps out.
 
 ## Open leads
 
 - The request words at `0x42` to `0x45` of a flag item and the priority bytes: no building asks for a good yet (milestone 4).
-- The player block's priority table (`+good - 0x55`), and the counter the put adds to (`+good - 0x6f`).
+- The player block's priority table (`+good - 0x55`), and the counter the put adds to (`+good - 0x6f`). Who fills the table after
+  the game's start, and with what, decides which good a carrier takes next from a flag with several goods for one road.
 - What the original does with some road holding a carrier and no storage reached (`0x464539`).
-- The state 3 walk with a good, and state 0x44 and later (`0x43007b`, `0x4300f1`): the next stage.
+- A carrier sent home (byte 15 negative, `0x43aea4`), and state 0x44 and later (`0x43007b`, `0x4300f1`).
+- The passing of two settlers that come the other way at a flag (the emulated game of several carriers shows it at a flag where
+  a carrier with a log and a carrier that is to fetch one meet): not ported, so the scenarios keep the roads' carriers from
+  meeting head on.
 
 ## In the engine
 
 `Game.Goods.cs`: `GoodsTurn`, `Destine`, `StorageSearch`, `Direct`, `Fetch` and `Claim` port the above; `LayGood` is the put.
+`Exchange` and `WaitForRoad` are the carrier's exchange at a flag, `Deliver` and `Handover` state 0xe, `AddToStock` the castle's
+count (`Game.CastleLogs` reads the log's). A carrier's byte 11 is `Settler.Mode` and its word at 12 `Settler.Target` (the
+destination as the original numbers the flags while it carries a good). `Building.Fill` holds bytes 8 and 9.
 `Game.FlagGoods(flag)` holds the places' bytes (the direction in bits 5 to 7), `FlagGoodsBit`, `FlagDestinations` (the slot plus
 one, as the original numbers the flags, 0 for none), and `FlagDirectionBytes` read the other fields. `Game.Digest` holds all
 of them.

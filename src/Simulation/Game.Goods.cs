@@ -320,8 +320,7 @@ public sealed partial class Game
     }
 
     // The good on a place waits for the road that leaves the flag in a direction: bit 7 and the place go into the road's byte.
-    internal void WaitForRoad(int flag, int way, int place) =>
-        _directionBytes[flag][way] |= (byte)(0x80 | place);
+    internal void WaitForRoad(int flag, int way, int place) => _directionBytes[flag][way] |= (byte)(0x80 | place);
 
     // A carrier on a flag (state 3, 0x43af07 to 0x43b410): with the heading it came in, the road it works, it swaps goods with the
     // flag. Where a good waits for that road (byte 0x3c + heading, bit 7) the carrier takes it, and leaves the good it carries
@@ -359,7 +358,11 @@ public sealed partial class Game
             var found = -1;
             for (var i = 0; i < goods.Length; i++)
             {
-                if (goods[i] != 0 && (goods[i] & 0xe0) == (way + 1) << DirectionShift && TransportPriority(goods[i] & 0x1f) > best)
+                if (
+                    goods[i] != 0
+                    && (goods[i] & 0xe0) == (way + 1) << DirectionShift
+                    && TransportPriority(goods[i] & 0x1f) > best
+                )
                 {
                     best = TransportPriority(goods[i] & 0x1f);
                     found = i;

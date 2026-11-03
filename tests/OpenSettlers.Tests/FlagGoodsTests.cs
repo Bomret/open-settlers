@@ -120,7 +120,9 @@ public sealed class FlagGoodsTests
                 ? parts[12]
                     .Split(';')
                     .Select(text => text.Split(',').Select(int.Parse).ToArray())
-                    .Select(put => (Pass: put[0], Place: put[1], Good: put[2], Flag: put.Length > 3 ? put[3] - 1 : hutFlag))
+                    .Select(put =>
+                        (Pass: put[0], Place: put[1], Good: put[2], Flag: put.Length > 3 ? put[3] - 1 : hutFlag)
+                    )
                     .ToList()
                 : [];
 

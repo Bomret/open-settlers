@@ -8,9 +8,11 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
-// The lines of wood-walks.txt are the output of the emulator verb wood (tools/GhidraDump/emulate.py, ADR 0008): the
+// The lines of wood-walks.txt are the output of the emulator verb goods (tools/GhidraDump/emulate.py, ADR 0008): the
 // original's passes over the item tables and the map's object pass (0x428728, 0x428d10, 0x46414d, 0x42cb2d, 0x42f3d9)
-// on a game started as the road verb starts one, with a finished woodcutter's hut (type 2) at a flag. Each scenario
+// on a game started as the original's game start leaves its tables, with a finished woodcutter's hut (type 2) at a flag, and
+// the carriers that carry the logs to the castle (the whole run is checked, with the carriers' walks in the woodcutter's
+// way). Each scenario
 // starts with a "#" line that names its verb command; the lines after it give, for a pass, the 16 bytes of the castle's
 // woodcutter (slot 10, s10=) where it entered a new state or node (and at the checkpoints), the 18 bytes of the hut
 // (b=) where they changed, the object bytes that changed (o=x,y:old>new;...), the flag's byte 4 and goods bytes (g=)
@@ -28,18 +30,6 @@ public sealed class WoodcutterTests
     private const string Fixture = "wood-walks.txt";
     private const int WorkerSlot = 10;
     private const int HutSlot = 1;
-
-    // The verb wood keeps the castle's flag in flag slot 0, where a good's destination word 0 means none: no good ever leaves
-    // a flag in it, and the goods lines (g=) hold from the pass the first log is laid. In the engine, and in the original
-    // after the game start's dummy flag (the verb goods, FlagGoodsTests), the flag's turn at pass 1385 gives the log its
-    // direction. The goods that leave the flag are checked in FlagGoodsTests; the walks and the object bytes of this fixture
-    // do not depend on them.
-    private const int GoodsLeaveFrom = 1385;
-
-    // The engine's carrier fetches the log from pass 1390 on but does not carry it yet (the next stage), while the carrier of
-    // the verb wood never moves; the woodcutter's walk back from a tree at pass 4200 meets the carrier's node and differs.
-    // The checks stop before it.
-    private const int CarrierFreeUntil = 4199;
 
     private sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
 
@@ -83,6 +73,23 @@ public sealed class WoodcutterTests
                 .Where(index => now[index] != before[index])
                 .Select(index => $"{index % width},{index / width}:{before[index]:X2}>{now[index]:X2}")
         );
+    }
+
+    // The verb goods numbers the flags one higher than the engine (the dummy of the original's game start, docs/rules/goods.md).
+    // The word of the bytes at the hex offset holds the hut's flag in the settler's states that walk to a flag (2, 5, 6, 0xf)
+    // and in the hut's item; there it is the engine's slot less one. The word of a settler in another state is no flag.
+    private static string InEngineNumbers(string bytes, int offset, int hutFlag)
+    {
+        var isFlagWord = offset == 12 || Convert.ToInt32(bytes[20..22], 16) is 2 or 5 or 6 or 0xf;
+        var word = Convert.ToInt32(string.Concat(bytes.AsSpan(offset + 2, 2), bytes.AsSpan(offset, 2)), 16);
+
+        return isFlagWord && word == hutFlag + 1
+            ? string.Concat(
+                bytes.AsSpan(0, offset),
+                hutFlag.ToString("X2", CultureInfo.InvariantCulture),
+                bytes.AsSpan(offset + 2)
+            )
+            : bytes;
     }
 
     private static Game Start(string command, out Map map, out int hutFlag, out int passes)
@@ -133,7 +140,7 @@ public sealed class WoodcutterTests
         var width = map.Size.Width;
         var last = scenario.Lines.Max(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
 
-        for (var pass = 0; pass <= Math.Min(Math.Min(last, passes - 1), CarrierFreeUntil); pass++)
+        for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
         {
             var before = map.Layer(MapLayer.Object).ToArray();
             game.Tick();
@@ -158,8 +165,9 @@ public sealed class WoodcutterTests
 
             if (line.TryGetValue("s10", out var worker))
             {
+                // The word at 12 holds the hut's flag while the worker walks to it or from it.
                 Assert.AreEqual(
-                    worker,
+                    InEngineNumbers(worker, 24, hutFlag),
                     WorkerWalkTests.Hex(game.Settlers[WorkerSlot], width),
                     $"{name}: the worker after pass {pass}"
                 );
@@ -168,20 +176,20 @@ public sealed class WoodcutterTests
             if (line.TryGetValue("b", out var hut))
             {
                 Assert.AreEqual(
-                    hut,
+                    InEngineNumbers(hut, 12, hutFlag),
                     WorkerWalkTests.Hex(game.Buildings[HutSlot], width),
                     $"{name}: the hut after pass {pass}"
                 );
             }
 
-            if (pass < GoodsLeaveFrom && line.TryGetValue("g", out var goods))
+            if (line.TryGetValue("g", out var goods))
             {
                 var places = game.FlagGoods(hutFlag);
                 var bytes = string.Concat(places.Select(good => good.ToString("X2")));
                 Assert.AreEqual(goods.Split('/')[1], bytes, $"{name}: the goods on the hut's flag after pass {pass}");
                 Assert.AreEqual(
                     Convert.ToInt32(goods.Split('/')[0], 16) >> 7,
-                    places.Any(good => good != 0) ? 1 : 0,
+                    game.FlagGoodsBit(hutFlag) ? 1 : 0,
                     $"{name}: the flag's goods bit after pass {pass}"
                 );
             }

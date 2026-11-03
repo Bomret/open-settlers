@@ -10,7 +10,8 @@ items are in [Flags](flags.md) and [Item tables](item-tables.md); the carriers t
 roads, a finished building of type 2 at a flag) and runs the program's own routines for each pass: `0x428728`, the object pass
 `0x428d10`, the phase step, `0x46414d`, `0x42cb2d`, and `0x42f3d9`. The engine runs the same commands and matches the worker's
 item and the hut's after every state or node change, every object byte that changes, the goods on the hut's flag, and the
-generator's words, in two games (`tests/OpenSettlers.Tests/wood-walks.txt`): a hut among trees for 4700 passes (three cuts, the
+generator's words, in two games (`tests/OpenSettlers.Tests/wood-walks.txt`, run with the verb `goods:`, so that the logs the
+woodcutter lays are carried to the castle, [Goods at a flag](goods.md)): a hut among trees for 4700 passes (three cuts, the
 first felled tree gone from the map) and a hut with no tree in its reach for 2500 passes.
 
 ## The hut and the job
