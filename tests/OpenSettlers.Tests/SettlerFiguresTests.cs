@@ -274,8 +274,7 @@ public sealed class SettlerFiguresTests
         var plain = Figures().Draws(Map(), [Walker(7, 0)], 0);
         var others = Figures()
             .Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)> { [1954] = (3, -2) });
-        var own = Figures()
-            .Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)> { [1953] = (3, -2) });
+        var own = Figures().Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)> { [1953] = (3, -2) });
 
         CollectionAssert.AreEqual(plain, others);
         CollectionAssert.AreNotEqual(plain, own);

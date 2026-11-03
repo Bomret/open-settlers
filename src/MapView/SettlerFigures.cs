@@ -27,6 +27,7 @@ public sealed class SettlerFigures
     // The sprite entry of the figures, of their colour overlays, and of the second figures (0x406610): the figure 1850 + i
     // has the overlay 2500 + i.
     private const int FigureBase = 1850;
+
     /// <summary>The sprite entry of the first colour overlay; the figures lie below it.</summary>
     public const int OverlayBase = 2500;
     private const int SecondBase = 3150;
