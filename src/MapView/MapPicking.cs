@@ -9,12 +9,13 @@ namespace OpenSettlers.MapView;
 /// <see cref="Camera.Copies"/>. A node (column, row) is drawn at <see cref="Camera.NodePosition"/> lifted by
 /// <see cref="TerrainTriangles.HeightStep"/> pixels for each unit of its height. The nodes of the copies are the
 /// nodes of the map at columns and rows beyond its edges, so the pick wraps them back. The pick takes the node whose
-/// drawn point lies nearest to the click, a stand-in for the original's own cursor rule, which is not recovered.
+/// drawn point lies nearest to the click. Stand-in: the original's own cursor rule is not recovered, so a click near
+/// the edge of a triangle may pick another node than the original does.
 /// </summary>
 public static class MapPicking
 {
-    // The tallest lift of a node: height 31 at 4 pixels a unit.
-    private const int MaxLift = 31 * TerrainTriangles.HeightStep;
+    // The tallest lift of a node: the greatest height at 4 pixels a unit.
+    private const int MaxLift = Map.HeightMask * TerrainTriangles.HeightStep;
 
     /// <summary>
     /// The node under a click. <paramref name="cameraX"/> and <paramref name="cameraY"/> are the camera position
@@ -52,7 +53,7 @@ public static class MapPicking
                 var wrappedColumn = ((column % width) + width) % width;
                 var wrappedRow = ((row % rows) + rows) % rows;
                 var (x, y) = Camera.NodePosition(column, row);
-                y -= (heights[wrappedRow * width + wrappedColumn] & 31) * TerrainTriangles.HeightStep;
+                y -= (heights[wrappedRow * width + wrappedColumn] & Map.HeightMask) * TerrainTriangles.HeightStep;
                 var distance = (x - pointX) * (x - pointX) + (y - pointY) * (y - pointY);
                 if (distance < bestDistance)
                 {

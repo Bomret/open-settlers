@@ -38,10 +38,6 @@ public readonly record struct BuildSiteResult(int Node, int Site, int Height)
 /// </summary>
 public static class BuildSite
 {
-    // The class of an object code: the size byte of the program's table (0x41e640). 1 is a flag, 2 to 4 are
-    // buildings (4 is the castle), the trees and stones are 1 and 2, 127 marks a border.
-    private static readonly byte[] Classes = BuildClasses();
-
     // The spiral entries that the evaluator reads: the node itself and rings 1, 2, and 3.
     private const int Nodes = 37;
 
@@ -51,7 +47,7 @@ public static class BuildSite
     /// A node whose object is a flag or a building gives the result 0, 0, 0: the original judges those from its
     /// flag and building tables, which this port does not hold yet.
     /// </summary>
-    public static BuildSiteResult Evaluate(Map map, int x, int y, int player, bool hasCastle)
+    public static BuildSiteResult Evaluate(ProgramTables tables, Map map, int x, int y, int player, bool hasCastle)
     {
         var width = map.Size.Width;
         var flags = map.Bytes(MapLayer.Flags);
@@ -67,9 +63,10 @@ public static class BuildSite
             p[i] = map.Index(x + dx, y + dy);
         }
 
-        int Class(int i) => Classes[objects[p[i]] & 0x7f];
+        var classes = tables.Classes;
+        int Class(int i) => classes[objects[p[i]] & 0x7f];
         int Terrain(int i) => terrain[p[i]];
-        int Height(int i) => heights[p[i]] & 0x1f;
+        int Height(int i) => heights[p[i]] & Map.HeightMask;
 
         if ((heights[p[0]] & 0xe0) != owner)
             return default;
@@ -237,36 +234,10 @@ public static class BuildSite
         return new(node, hasCastle ? 4 : 5, level);
     }
 
-    /// <summary>The class of the object in a tile's object byte (the low 7 bits are the code).</summary>
-    internal static int ObjectClass(byte objectByte) => Classes[objectByte & 0x7f];
-
-    private static byte[] BuildClasses()
-    {
-        var classes = new byte[128];
-        foreach (
-            var (first, last, value) in new (int, int, byte)[]
-            {
-                (1, 1, 3),
-                (2, 2, 4),
-                (3, 3, 5),
-                (4, 4, 6),
-                (8, 27, 1),
-                (28, 31, 2),
-                (72, 81, 2),
-                (82, 82, 1),
-                (88, 89, 2),
-                (90, 96, 1),
-                (98, 101, 1),
-                (103, 104, 1),
-                (105, 110, 2),
-                (121, 126, 2),
-                (127, 127, 255),
-            }
-        )
-        {
-            Array.Fill(classes, value, first, last - first + 1);
-        }
-
-        return classes;
-    }
+    /// <summary>
+    /// The class of the object in a tile's object byte (the low 7 bits are the code): the size byte of the program's
+    /// table (<c>0x41e640</c>). 1 and 2 are the trees and stones, 3 is a flag, 4 to 6 are buildings (6 is the
+    /// castle), 255 marks a border.
+    /// </summary>
+    internal static int ObjectClass(ProgramTables tables, byte objectByte) => tables.Classes[objectByte & 0x7f];
 }

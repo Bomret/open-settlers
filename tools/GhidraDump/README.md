@@ -120,5 +120,6 @@ layer digests of the canonical map form after each pass (`docs/rules/map-form.md
 seconds to a few minutes, the longer for the larger sizes. The commands `site`, `castle`, `stockrows`,
 `opponents`, and `peek` run the build-site evaluator, the castle placement, the start stock table, the free-game
 opponent settings, and a byte dump: their forms are in the header of `EmulateMapStart.java`, and the rules they
-check are in `docs/rules/build-sites.md` and `docs/rules/castle.md`. The `tables:x` command prints the digest of the
+check are in `docs/rules/build-sites.md` and `docs/rules/castle.md`. The `flag` command runs the flag button (`0x442244`) on every tile and counts, per pair of node state and site,
+the tiles that put a flag; `castle` with sites adds the same count after the castle stands. The `tables:x` command prints the digest of the
 spiral table and the object codes of the large objects.

@@ -51,7 +51,8 @@ public partial class MapViewControl : Control
     string? _objectsProblem;
     bool _dragging;
     readonly ClickGesture _gesture = new();
-    (int X, int Y) _pressCamera;
+    (int X, int Y, float Scale, float Width, float Height) _pressView;
+    ProgramTables? _tables;
     bool _castleDrawn;
     Vector2 _keyCarry;
     Vector2 _dragCarry;
@@ -139,6 +140,19 @@ public partial class MapViewControl : Control
             GD.PrintErr($"map view: {e.Message}");
         }
 
+        if (_play)
+        {
+            try
+            {
+                _tables = ProgramTables.Read(_install.ReadAll(Install.Program));
+            }
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                _objectsProblem = $"the program's tables: {e.Message}";
+                GD.PrintErr($"map view: {e.Message}");
+            }
+        }
+
         _state = MapViewState.Open(_seed.Text, _size.GetItemId(0));
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
@@ -148,9 +162,9 @@ public partial class MapViewControl : Control
 
     void StartGame()
     {
-        if (_play && _state.Map is not null)
+        if (_play && _state.Map is not null && _tables is not null)
         {
-            _game = new Game(_state.Map, _state.StockLevel);
+            _game = new Game(_tables!, _state.Map, _state.StockLevel);
             _castleDrawn = false;
             _tickCarry = 0;
         }
@@ -240,7 +254,7 @@ public partial class MapViewControl : Control
                 if (button.Pressed)
                 {
                     _gesture.Press(button.Position.X, button.Position.Y);
-                    _pressCamera = (_camera.X, _camera.Y);
+                    _pressView = (_camera.X, _camera.Y, _zoom.Scale, _canvas.Size.X, _canvas.Size.Y);
                 }
                 else if (_gesture.Release(out var x, out var y))
                 {
@@ -269,7 +283,8 @@ public partial class MapViewControl : Control
     }
 
     // A click asks the game for the castle on the node under it. The node is picked against the view as it was
-    // drawn when the button went down: a hand that strays within the slop of a click still pans the view a little.
+    // drawn when the button went down (camera, zoom scale, and canvas size): a hand that strays within the slop of a
+    // click still pans the view a little, and a zoom or a resize during the press changes none of the three.
     void PlaceCastleAt(double screenX, double screenY)
     {
         if (_game is null || _state.Map is null)
@@ -279,11 +294,11 @@ public partial class MapViewControl : Control
 
         var (x, y) = MapPicking.Pick(
             _state.Map,
-            _pressCamera.X,
-            _pressCamera.Y,
-            _zoom.Scale,
-            _canvas.Size.X,
-            _canvas.Size.Y,
+            _pressView.X,
+            _pressView.Y,
+            _pressView.Scale,
+            _pressView.Width,
+            _pressView.Height,
             screenX,
             screenY
         );

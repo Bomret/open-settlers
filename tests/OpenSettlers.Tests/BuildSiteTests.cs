@@ -53,7 +53,7 @@ public sealed class BuildSiteTests
         MapSize.TryFromValue(int.Parse(fields["size"], CultureInfo.InvariantCulture), out var size, out _);
         var map = MapGenerator.Generate(ParseSeed(fields["seed"]), size!);
         var tile = fields["tile"].Split(',').Select(int.Parse).ToArray();
-        var game = new Game(map);
+        var game = new Game(TestProgram.Tables(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, tile[0], tile[1]));
         game.Tick();
 
@@ -67,24 +67,44 @@ public sealed class BuildSiteTests
     public void TheCastlesOwnNodeIsNoCastleSiteOnceTheCastleStands()
     {
         var map = MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]);
-        var site = BuildSite.Evaluate(map, 15, 5, 0, hasCastle: false);
+        var site = BuildSite.Evaluate(TestProgram.Tables(), map, 15, 5, 0, hasCastle: false);
 
-        var game = new Game(map);
+        var game = new Game(TestProgram.Tables(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
         Assert.IsTrue(site.IsCastleSite);
-        Assert.IsFalse(BuildSite.Evaluate(map, 15, 5, 0, hasCastle: true).IsCastleSite);
+        Assert.IsFalse(BuildSite.Evaluate(TestProgram.Tables(), map, 15, 5, 0, hasCastle: true).IsCastleSite);
     }
 
+    // flag-verdicts.txt holds the output of the emulator verb flag: and, after a castle, castle-flags: (tools/GhidraDump,
+    // ADR 0008), which run the flag button (0x442244) on every tile and count, per pair (node state, site) the
+    // evaluator left, the tiles where the routine goes on to put a flag. Each pair puts a flag on all its tiles or
+    // on none. No pair of the node states 4 and 5 occurs on these maps, so no verdict is pinned for them.
+    public static IEnumerable<object[]> FlagLines =>
+        File.ReadAllLines("flag-verdicts.txt").Select(line => new object[] { line });
+
     [TestMethod]
-    public void AFlagIsAllowedWhereTheNodeStateIs4Or6Or7AndASiteExists()
+    [DynamicData(nameof(FlagLines))]
+    public void TheFlagIsAllowedWhereTheEmulatorsFlagButtonPutsOne(string expected)
     {
-        Assert.IsTrue(new BuildSiteResult(7, 1, 0).AllowsFlag);
-        Assert.IsTrue(new BuildSiteResult(6, 3, 0).AllowsFlag);
-        Assert.IsTrue(new BuildSiteResult(4, 1, 0).AllowsFlag);
-        Assert.IsFalse(new BuildSiteResult(5, 1, 0).AllowsFlag);
-        Assert.IsFalse(new BuildSiteResult(7, 0, 0).AllowsFlag);
+        var pairs = expected[(expected.IndexOf("pairs=", StringComparison.Ordinal) + "pairs=".Length)..].Split(' ');
+
+        foreach (var pair in pairs)
+        {
+            var kind = pair.Split(':')[0].Split('.');
+            var counts = pair.Split(':')[1].Split('/');
+            var flagged = int.Parse(counts[0], CultureInfo.InvariantCulture);
+            var judged = int.Parse(counts[1], CultureInfo.InvariantCulture);
+            Assert.IsTrue(flagged == 0 || flagged == judged, $"the emulator splits the pair {pair}");
+            var result = new BuildSiteResult(
+                int.Parse(kind[0], CultureInfo.InvariantCulture),
+                int.Parse(kind[1], CultureInfo.InvariantCulture),
+                0
+            );
+
+            Assert.AreEqual(flagged == judged, result.AllowsFlag, $"pair {pair}");
+        }
     }
 
     // The judgment of every node whose object has a class below 3, as the harness line states it. Without a castle
@@ -102,13 +122,13 @@ public sealed class BuildSiteTests
         {
             for (var x = 0; x < width; x++)
             {
-                if (BuildSite.ObjectClass(map.Layer(MapLayer.Object)[y * width + x]) >= 3)
+                if (BuildSite.ObjectClass(TestProgram.Tables(), map.Layer(MapLayer.Object)[y * width + x]) >= 3)
                 {
                     skipped++;
                     continue;
                 }
 
-                var result = BuildSite.Evaluate(map, x, y, 0, hasCastle);
+                var result = BuildSite.Evaluate(TestProgram.Tables(), map, x, y, 0, hasCastle);
                 foreach (var value in new[] { result.Node, result.Site, result.Height & 0xff, result.Height >> 8 })
                 {
                     hash = (hash ^ (byte)value) * FnvPrime;

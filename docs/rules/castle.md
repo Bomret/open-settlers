@@ -23,7 +23,7 @@ changes nothing else. After the check it holds the same placement as `0x442704`:
 they do for the view and the sound.
 
 Until the castle stands, every other build action is out of reach: the evaluator holds a player without a
-castle to the unowned nodes, and the flag button (`0x442244`) places a flag only where the site is not 0. The
+castle to the unowned nodes, and the flag button (`0x442244`) places a flag only where the site is not 0 (emulated: `flag-verdicts.txt`). The
 engine refuses every command but `CommandKind.PlaceCastle` before the castle stands, and refuses a second castle.
 
 ## What the placement writes
@@ -61,13 +61,15 @@ stock at the levels 0, 10, 20, 30, and 40. A player's start stock level (player 
 the two rows around it (rows 3 and 4 at the levels from 30, and row 4 twice from 40) and a weight of the tenths
 of the level times 0x199a out of 65536. Each count is the lower row's value plus the product of the difference
 and the weight divided by 65536, one more where the fraction of that division is above one half, all in
-16-bit arithmetic. The engine holds the five rows (`StartStock`; they are game data, and the harness verb
-`stockrows` prints them).
+16-bit arithmetic. The engine reads the five rows from the install's `Siedler1.exe` at run time, at `0x442e8a`
+through the section headers of the executable (`ProgramTables`); it holds no copy (the harness verb `stockrows`
+prints them, and `ProgramTablesTests` compares a digest of the rows read with the emulator's).
 
 The placement then takes from the result what the castle's own construction and the 20 settlers use: 7 of good 7,
 2 of good 9, 1 of good 15, 4 of good 16, 1 each of goods 17 and 20, 2 of good 21, 3 of good 22, and 3 each of goods 24
-and 25. **Emulated:** at the levels 0, 5, 9, 10, 25, 40, and 49 the stock the emulator leaves is the interpolated row
-less this; the levels from 40 give one stock.
+and 25. **Inferred:** the vector is the difference between the interpolated rows and the stock the emulator leaves,
+not read from the subtractions of `0x442704` and its callees. **Emulated:** at the levels 0, 5, 9, 10, 25, 40, and 49
+the stock the emulator leaves is the interpolated row less this; the levels from 40 give one stock.
 
 The mission start applies more changes by mission number (`+0x354`); the free game applies none.
 
@@ -82,8 +84,13 @@ the screen. **Emulated:** the harness (`opponents:S0,S1,S2`) gave the level for 
 
 ## In the engine
 
-`Game` takes the map and a start stock level (`MapViewState.StockLevel` from the seed). `CommandKind.PlaceCastle`
+`Game` takes the program's tables (`ProgramTables`), the map, and a start stock level (`MapViewState.StockLevel`
+from the seed). `CommandKind.PlaceCastle`
 with the node in `Command.X` and `Command.Y` places the castle through `BuildSite.Evaluate` and
 `CastlePlacement.Apply`; `Game.Castle` and `Game.Stock` hold the result. The game changes the map's layers it was
 given. The digest holds the castle and the stock. Departures: the settlers, the three item tables' fields, the
 player's flag bits, and the mission changes are not held.
+
+**Stand-in:** the map view picks the node of a click as the node whose drawn point (lifted by its height) lies
+nearest to the click (`MapPicking`). The rule of the original's cursor is not recovered, so a click near the edge
+of a triangle may pick another node than the original does.

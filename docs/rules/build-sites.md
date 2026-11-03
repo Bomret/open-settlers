@@ -29,7 +29,7 @@ Each node holds, among others, these bytes: the flag byte (record A byte 0), the
 bits are the height, the top 3 the owner), the terrain byte (byte 2: the upper triangle in the high nibble, the
 lower in the low nibble), and the object byte (byte 3: the low 7 bits are the object code). The owner of a node
 is the player's number plus 4, or 0 for a node nobody owns. The class of an object code is the size byte of
-the program's table (`0x41e640`): the code 1 is a flag (class 3), the codes 2 to 4 are buildings (classes 4, 5,
+the program's table (`0x41e640`, read from `Siedler1.exe` at run time by `ProgramTables`): the code 1 is a flag (class 3), the codes 2 to 4 are buildings (classes 4, 5,
 and 6, the castle), the generated trees and stones are classes 1 and 2, and no other object is a class 3 or more.
 
 ## The node state
@@ -54,7 +54,9 @@ A node whose own object is a tree or a stone (class 1 or 2) ends here with the s
 ## The site
 
 **Status:** confirmed for the conditions; the meaning of the site values is **inferred** from where they are
-used (`0x442244` puts a flag where the site is not 0 and the node state is 4, 6, or 7; `0x442630` puts the first
+used (`0x442244` puts a flag where the site is not 0 and the node state is 4, 6, or 7: **emulated** by the harness verbs
+`flag` and `castle` with sites on the pairs 6.0, 6.1, 7.0, 7.1 to 7.5 and 0.0, none of the node states 4 and 5 occurs
+on those maps, so those two are read from the routine only; `0x442630` puts the first
 castle where the node state is 7 and the site is 5).
 
 The conditions follow one another, and the judgment ends, with the values reached so far, at the first one that

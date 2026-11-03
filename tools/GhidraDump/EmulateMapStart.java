@@ -31,7 +31,12 @@
 //                            the evaluator judged it, for the start stock levels L (decimal, comma separated): the
 //                            26 stock words, a digest of each byte of a tile's two records, the tiles that
 //                            changed, and the first bytes of the new settlers; with sites also the evaluator's
-//                            sweep (as site) for the player who owns the territory
+//                            sweep (as site) for the player who owns the territory, and the flag button's
+//                            verdicts on it (as flag)
+//   flag:N:S0,S1,S2          the flag button (0x442244, docs/rules/build-sites.md) on every tile of the map gen makes
+//                            whose object has a size byte below 3, for a player without a castle: for each pair
+//                            (node state, site) the evaluator leaves, how many tiles put a flag (the routine goes to
+//                            0x4422c5) and how many refuse it (it goes to 0x44c768)
 //   stockrows:x              the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -83,6 +88,7 @@ public class EmulateMapStart extends GhidraScript {
                     case "gen" -> gen(rest);
                     case "site" -> site(rest);
                     case "castle" -> castle(rest);
+                    case "flag" -> flag(rest);
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
                     case "opponents" -> opponents(rest);
@@ -443,6 +449,66 @@ public class EmulateMapStart extends GhidraScript {
                 + first.toString().trim();
     }
 
+    private static final long RECORD = 0x24000000L;
+
+    /**
+     * The flag button (0x442244) on every tile whose object has a size byte below 3, for a player without a
+     * castle. The command is flag:N:S0,S1,S2 (the arguments of gen). The routine reads the tile record through the
+     * pointer at +0x20 of its state and the player through the pointer at +0x82 of that record; it runs the
+     * evaluator and then goes to 0x4422c5 (the flag is put) or to 0x44c768 (it is refused). The run stops at
+     * either, so that the placing routines do not run. The line gives, per pair (node state, site) the evaluator
+     * left, the tiles that put a flag over the tiles judged.
+     */
+    private void flag(String rest) throws Exception {
+        int[] size = generate(rest, false);
+        int width = size[1];
+        int height = size[2];
+        putInt(STATE + OFFSETS_POINTER, OFFSETS);
+        putInt(STATE + TABLE18_BASE, TABLE18);
+        call(0x41f6a5);
+        println("EMU flag size=" + size[0] + " width=" + width + " height=" + height
+                + flagSweep(width, height, PLAYER, true));
+    }
+
+    /**
+     * Runs the flag button on every tile whose object has a size byte below 3 and counts, per pair (node state,
+     * site) the evaluator left, the tiles that put a flag over the tiles judged. With fresh the player block is
+     * cleared before each tile, otherwise it is left as it is apart from the position.
+     */
+    private String flagSweep(int width, int height, long player, boolean fresh) throws Exception {
+        byte[] sizes = emu.readMemory(toAddr(OBJECT_SIZES), 128);
+        java.util.TreeMap<String, int[]> pairs = new java.util.TreeMap<>();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int object = emu.readMemory(toAddr(MAP + y * 8L * width + x * 4L + 3), 1)[0] & 0x7f;
+                if ((sizes[object] & 0xff) >= 3) {
+                    continue;
+                }
+                if (fresh) {
+                    emu.writeMemory(toAddr(player), new byte[0x200]);
+                }
+                emu.writeMemory(toAddr(RECORD), new byte[0x100]);
+                putInt(RECORD + 0x82, player);
+                putInt(REGISTERS + 0x20, RECORD);
+                putInt(REGISTERS + 0x30, player);
+                putWord(player + 0xfc, x);
+                putWord(player + 0xfe, y);
+                long esp = emu.readRegister("ESP").longValue() - 4;
+                emu.writeRegister("ESP", esp);
+                putInt(esp, RETURN);
+                long stop = runTo(0x442244, 0x4422c5, 0x44c768);
+                emu.writeRegister("ESP", esp + 4);
+                byte[] result = emu.readMemory(toAddr(player + 0x100), 2);
+                String key = (result[0] & 0xff) + "." + (result[1] & 0xff);
+                pairs.computeIfAbsent(key, k -> new int[2])[stop == 0x4422c5 ? 0 : 1]++;
+            }
+        }
+        StringBuilder text = new StringBuilder();
+        pairs.forEach((key, counts) -> text.append(" ").append(key).append(":").append(counts[0]).append("/")
+                .append(counts[0] + counts[1]));
+        return " pairs=" + text.toString().trim();
+    }
+
     /** peek:ADDRESS:COUNT prints COUNT bytes of the program at the address, for an investigation at the console. */
     private void peek(String rest) throws Exception {
         String[] parts = rest.split(":");
@@ -599,6 +665,7 @@ public class EmulateMapStart extends GhidraScript {
             if (parts.length > 4) {
                 // The evaluator for the player now that the castle stands, on every tile (site 4 is a large building).
                 println("EMU castle-sites tile=" + x + "," + y + " level=" + level + sweep(width, height, player, false, 4));
+                println("EMU castle-flags tile=" + x + "," + y + " level=" + level + flagSweep(width, height, player, false));
             }
             StringBuilder settlers = new StringBuilder();
             int created = getWord(STATE + 0x262);

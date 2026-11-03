@@ -45,6 +45,9 @@ offsets of its left and top edges from that position (`Gfx_BlitSprite`, `0x40559
 layout a node lies at `x = 32 * column - 16 * row`, `y = 20 * row` minus 4 per unit of height, so an object is
 drawn at its node plus 16 east and 8 south, then moved by the sprite's offsets. The alignment of that layout with
 the program's two-row stepping is inferred from the picture the draw gives, in which trees stand on their tiles.
+The castle's entry (1428) is emulated (`peek:44fd2f:4` prints `66B8B200`, the stub loading the object number 178);
+its draw position, the node plus 16 east and 8 south, is **inferred** from the objects' offsets: no emulator or
+debugger run of the draw confirms it for the castle.
 
 Before the sprite, the routine draws the shadow mask of the entry plus 1500 through `Gfx_DrawShadow` (`0x4061a0`),
 which stores one fixed palette index on the covered pixels. **Stand-in:** the engine draws no shadow.

@@ -13,18 +13,11 @@ public static class StartStock
     /// <summary>The number of goods the castle counts.</summary>
     public const int Goods = 26;
 
-    // The five rows of the original's table (0x442e8a): the stock at the levels 0, 10, 20, 30, and 40.
-    private static readonly int[][] Rows =
-    [
-        [0, 0, 0, 0, 0, 0, 0, 7, 0, 2, 0, 0, 0, 0, 0, 1, 6, 1, 0, 0, 1, 2, 3, 0, 10, 10],
-        [2, 1, 1, 3, 2, 1, 0, 25, 1, 8, 4, 3, 8, 2, 1, 3, 12, 2, 1, 1, 2, 3, 4, 1, 30, 30],
-        [3, 2, 2, 10, 3, 1, 0, 40, 2, 20, 12, 8, 20, 4, 2, 5, 20, 3, 1, 2, 3, 4, 6, 2, 60, 60],
-        [8, 4, 6, 20, 7, 5, 3, 80, 5, 40, 20, 40, 50, 8, 4, 10, 30, 5, 2, 4, 6, 6, 12, 4, 100, 100],
-        [30, 10, 30, 50, 10, 30, 10, 200, 10, 100, 30, 150, 100, 10, 5, 20, 50, 10, 5, 10, 20, 20, 50, 10, 200, 200],
-    ];
-
     // What the castle's construction and its 20 first settlers take from the stock, by good: the planks and
-    // stones the castle's own site uses (goods 7 and 9) and the tools the settlers carry out.
+    // stones the castle's own site uses (goods 7 and 9) and the tools the settlers carry out. inferred: the
+    // vector is the difference between the interpolated rows and the castle stock of the emulator (castle:, 7 start
+    // stock levels in castle-placements.txt), not read from the routine's own subtractions; docs/rules/castle.md
+    // states its origin. Upgrade path: read the subtractions of 0x442704 and its callees.
     private static readonly (int Good, int Count)[] Taken =
     [
         (7, 7),
@@ -41,9 +34,10 @@ public static class StartStock
 
     /// <summary>
     /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40). Each count steps from
-    /// its value in the lower row towards the higher row by the tenths of the level, rounded as the original rounds.
+    /// its value in the lower row towards the higher row of the program's table (<see cref="ProgramTables.StartStock"/>)
+    /// by the tenths of the level, rounded as the original rounds.
     /// </summary>
-    public static IReadOnlyList<int> At(int level)
+    public static IReadOnlyList<int> At(ProgramTables tables, int level)
     {
         var low =
             level < 10 ? 0
@@ -53,11 +47,12 @@ public static class StartStock
             : 4;
         var high = low == 4 ? 4 : low + 1;
         var weight = (level - 10 * low) * 0x199a & 0xffff;
+        var rows = tables.StartStock;
         var stock = new int[Goods];
         for (var good = 0; good < Goods; good++)
         {
-            var from = Rows[low][good];
-            var difference = (ushort)(Rows[high][good] - from);
+            var from = rows[low][good];
+            var difference = (ushort)(rows[high][good] - from);
             var product = (uint)difference * (uint)weight;
             var rounded = (product & 0xffff) > 0x7fff ? 1 : 0;
             stock[good] = (ushort)(from + rounded + (int)(product >> 16));

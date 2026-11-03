@@ -13,6 +13,9 @@ public sealed class Map
     private const ulong FnvOffset = 0xcbf29ce484222325;
     private const ulong FnvPrime = 0x100000001b3;
 
+    /// <summary>The bits of a height byte that hold the height; the top 3 bits hold the owner.</summary>
+    public const int HeightMask = 0x1f;
+
     private readonly byte[][] _layers;
 
     internal Map(MapSize size)

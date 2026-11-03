@@ -34,7 +34,7 @@ public static class ObjectDraws
             }
 
             var (x, y) = Camera.NodePosition(item.X, item.Y);
-            var height = heights[item.Y * width + item.X] & 31;
+            var height = heights[item.Y * width + item.X] & Map.HeightMask;
             draws.Add(new ObjectDraw(item.Y, entry, x + OffsetX, y - height * TerrainTriangles.HeightStep + OffsetY));
         }
 
@@ -44,7 +44,7 @@ public static class ObjectDraws
             // the objects of its row. inferred: its alignment to the node is that of an object, which the sprite's own
             // header offsets then adjust.
             var (x, y) = Camera.NodePosition(placed.X, placed.Y);
-            var height = heights[placed.Y * width + placed.X] & 31;
+            var height = heights[placed.Y * width + placed.X] & Map.HeightMask;
             var index = draws.FindIndex(draw => draw.Row > placed.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,

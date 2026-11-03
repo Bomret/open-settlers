@@ -19,16 +19,19 @@ public sealed class Game
     private const ulong FnvPrime = 0x100000001b3;
 
     private readonly SortedSet<Command> _queue = new(Comparer<Command>.Create(Compare));
+    private readonly ProgramTables _tables;
     private readonly int _stockLevel;
     private ulong _applied = FnvOffset;
 
     /// <summary>
-    /// A game on <paramref name="map"/>, at tick 0 with no command queued and no castle. The castle will hold the
-    /// stock of <paramref name="stockLevel"/> (<see cref="StartStock.At"/>). The game changes the map it is given:
+    /// A game on <paramref name="map"/> with the rule tables of <paramref name="tables"/> (read from the install's
+    /// program), at tick 0 with no command queued and no castle. The castle will hold the stock of
+    /// <paramref name="stockLevel"/> (<see cref="StartStock.At"/>). The game changes the map it is given:
     /// placing the castle writes the castle, its flag, the heights, and the territory into the map's layers.
     /// </summary>
-    public Game(Map map, int stockLevel = 0)
+    public Game(ProgramTables tables, Map map, int stockLevel = 0)
     {
+        _tables = tables;
         Map = map;
         _stockLevel = stockLevel;
     }
@@ -109,14 +112,14 @@ public sealed class Game
             return false;
         }
 
-        var site = BuildSite.Evaluate(Map, command.X, command.Y, 0, hasCastle: false);
+        var site = BuildSite.Evaluate(_tables, Map, command.X, command.Y, 0, hasCastle: false);
         if (!site.IsCastleSite)
         {
             return false;
         }
 
         Castle = new Castle(command.X, command.Y, site.Height);
-        Stock = StartStock.At(_stockLevel);
+        Stock = StartStock.At(_tables, _stockLevel);
         CastlePlacement.Apply(Map, command.X, command.Y, site.Height, 0);
 
         return true;
