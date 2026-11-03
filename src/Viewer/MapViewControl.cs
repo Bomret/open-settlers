@@ -53,6 +53,8 @@ public partial class MapViewControl : Control
     RoadGraphics? _roadGraphics;
     ShaderMaterial? _roadMaterial;
     string? _roadsProblem;
+    readonly string _openSeed;
+    readonly int _openSize;
     MapViewState _state = null!;
     Camera _camera = null!;
     readonly Zoom _zoom = new();
@@ -77,14 +79,23 @@ public partial class MapViewControl : Control
     Vector2 _dragCarry;
 
     /// <summary>
-    /// The view of the map of this install's graphics. With <paramref name="play"/> a <see cref="Game"/> on the
-    /// shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
+    /// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
+    /// seed field shows the seed and the size picker selects the size. With <paramref name="play"/> a
+    /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
     /// </summary>
-    public MapViewControl(Install install, bool play = false)
+    public MapViewControl(Install install, string seedText, int sizeValue, bool play = false)
     {
         _install = install;
+        _openSeed = seedText;
+        _openSize = sizeValue;
         _play = play;
     }
+
+    /// <summary>The area the map is drawn in and the mouse acts on; a play run aims its input at it.</summary>
+    public Control Canvas => _canvas;
+
+    /// <summary>What a play run observes of the view now.</summary>
+    public PlayState Snapshot() => new(_camera.X, _camera.Y, _zoom.Scale, _state.SeedText, _state.SizeValue);
 
     /// <inheritdoc/>
     public override void _Ready()
@@ -99,7 +110,7 @@ public partial class MapViewControl : Control
         bar.AddChild(new Label { Text = "Seed" });
         _seed = new LineEdit
         {
-            Text = MapViewState.DefaultSeed,
+            Text = _openSeed,
             MaxLength = 19,
             CustomMinimumSize = new Vector2(240, 0),
         };
@@ -114,6 +125,7 @@ public partial class MapViewControl : Control
 
         // A size change keeps the applied seed; text typed but not submitted with Enter stays unapplied.
         _size.ItemSelected += _ => Apply(_state.SeedText);
+        _size.Select(_size.GetItemIndex(_openSize));
         bar.AddChild(_size);
         _message = new Label
         {
@@ -302,7 +314,7 @@ public partial class MapViewControl : Control
             }
         }
 
-        _state = MapViewState.Open(_seed.Text, _size.GetItemId(0));
+        _state = MapViewState.Open(_seed.Text, _openSize);
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
         Redraw();
@@ -393,7 +405,8 @@ public partial class MapViewControl : Control
     /// <inheritdoc/>
     public override void _UnhandledKeyInput(InputEvent input)
     {
-        if (input is not InputEventKey { Pressed: true } key || _seed.HasFocus())
+        // An echo is a repeat of a held key (a play run re-presses a hold after a focus loss), not a new zoom step.
+        if (input is not InputEventKey { Pressed: true, Echo: false } key || _seed.HasFocus())
         {
             return;
         }

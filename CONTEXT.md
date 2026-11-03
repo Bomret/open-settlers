@@ -45,6 +45,21 @@ A value or check that the engine supplies itself because the install does not de
 confirm it.
 _Avoid_: default, placeholder
 
+**Seed info**
+The engine's headless mode that generates the map of one seed and size and prints its layer digests and
+its counts of terrain, objects, and deposits. It needs no install.
+_Avoid_: map summary, map dump
+
+**Play script**
+A text file of steps, one per line, that drive the map view through its own input handlers, take
+screenshots, and check its state.
+_Avoid_: test script, macro
+
+**Play run**
+One run of the map view under Godot's Movie Maker that executes a play script on a fixed frame rate and
+quits after its last step.
+_Avoid_: replay, recording
+
 ## Game rules
 
 **Rule**

@@ -1,0 +1,28 @@
+# Zooms the map view in with the wheel and a key, then pans it with a key and a drag.
+# Run it as the README's "Run a play script" shows: --map --play play/zoom-pan.play.
+# Each shot comes after a wait, because a step takes effect in the frame after it.
+wait 0.3
+expect zoom = 1
+dump start
+shot start
+
+# Three wheel notches and the plus key: 1.25 to the fourth power.
+scroll up 3
+press Plus
+wait 0.2
+expect zoom = 2.4414
+dump zoomed
+shot zoomed
+
+# The right arrow key moves the view east and the down arrow key south, at the zoom's screen speed.
+hold Right 0.5
+hold Down 0.5
+wait 0.2
+dump panned
+shot panned
+
+# A drag moves the map with the mouse.
+drag 600 300 400 200
+wait 0.2
+dump dragged
+shot dragged

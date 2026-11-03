@@ -49,7 +49,7 @@ C# style rules in `docs/agents/CODING.md`; the patterns this repo uses in `docs/
 .NET SDK 10 (net8.0), Godot 4.7.2 .NET, CSharpier 1.3.0, pinned in `mise.toml`. See `docs/agents/toolchain.md`.
 
 ### Verification
-Full: format check, unit tests, and build; focused: unit tests. See `docs/agents/verification.md`.
+Full: format check, unit tests, and build; focused: unit tests; map view behavior: a play run. See `docs/agents/verification.md`.
 
 ### Deployment
 Posture `manual`, no targets yet. See `docs/agents/deployment.md`.

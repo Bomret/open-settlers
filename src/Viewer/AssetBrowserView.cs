@@ -2,6 +2,8 @@ using System;
 using Godot;
 using OpenSettlers.Assets;
 using OpenSettlers.Launch;
+using OpenSettlers.MapView;
+using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Viewer;
 
@@ -12,7 +14,11 @@ namespace OpenSettlers.Viewer;
 ///   godot --headless --path . -- --check --game &lt;install&gt;
 ///   godot --path . -- --game &lt;install&gt;
 ///   godot --path . -- --map --game &lt;install&gt;   (the map view, <see cref="MapViewControl"/>)
-/// <c>SIEDLER_DIR</c> stands in for <c>--game</c>.
+///   godot --path . -- --map --seed 1234567812345678 --size 2 --game &lt;install&gt;
+///   godot --path . --write-movie play-out/&lt;stem&gt;/frame.png --fixed-fps 30 -- --map --play &lt;script&gt;
+///   (a play run, <see cref="PlayDriver"/>)
+/// <c>SIEDLER_DIR</c> stands in for <c>--game</c>. A bad argument prints its problem and quits with exit code 4
+/// before the install is opened.
 /// </summary>
 public partial class AssetBrowserView : Control
 {
@@ -27,8 +33,31 @@ public partial class AssetBrowserView : Control
     {
         var args = LaunchArgs.Parse(
             OS.GetCmdlineUserArgs(),
-            System.Environment.GetEnvironmentVariable(LaunchArgs.GameVariable)
+            System.Environment.GetEnvironmentVariable(LaunchArgs.GameVariable),
+            movieMaker: !string.IsNullOrEmpty(Engine.GetWriteMoviePath())
         );
+        if (args.Problems.Count > 0)
+        {
+            // A bad argument wins over a missing install, and no window opens for it.
+            GD.PrintErr($"ERROR {string.Join("; ", args.Problems)}");
+            GetTree().Quit(LaunchArgs.BadArgumentExitCode);
+
+            return;
+        }
+
+        if (args.Mode == LaunchMode.SeedInfo)
+        {
+            // Seed info needs no install. A Godot callback exception does not set the exit code, so this owns it.
+            var code = SeedInfo.Run(args.SeedText!, args.Seed!.Value, args.Size ?? MapSize.Offered[0], out var text);
+            if (code == 0)
+                GD.Print(text.TrimEnd('\n'));
+            else
+                GD.PrintErr($"ERROR {text}");
+            GetTree().Quit(code);
+
+            return;
+        }
+
         var kinds = AssetKind.Discover();
         if (args.Mode == LaunchMode.Check)
         {
@@ -96,7 +125,33 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        AddChild(new MapViewControl(install, args.Mode == LaunchMode.Play));
+        // A play script that cannot be read or has a bad line exits 1 and names the line, before the view opens.
+        PlayScript? script = null;
+        if (args.Play is not null)
+        {
+            var path = System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), args.Play);
+            script = PlayScript.Read(path);
+            if (script.Problems.Count > 0)
+            {
+                GD.PrintErr($"ERROR {string.Join("; ", script.Problems)}");
+                GetTree().Quit(PlayRun.FailedExitCode);
+
+                return;
+            }
+        }
+
+        var view = new MapViewControl(
+            install,
+            args.SeedText ?? MapViewState.DefaultSeed,
+            args.Size?.Value ?? MapSize.Offered[0].Value,
+            args.Mode == LaunchMode.Play
+        );
+        AddChild(view);
+        if (script is not null)
+        {
+            var folder = System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), "play-out", script.Stem);
+            AddChild(new PlayDriver(view, script, folder));
+        }
     }
 
     // A Godot callback exception does not set the exit code, so the check owns it.
