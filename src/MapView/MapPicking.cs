@@ -15,9 +15,6 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public static class MapPicking
 {
-    // The object code of a flag.
-    private const int FlagCode = 1;
-
     // The tallest lift of a node: the greatest height at 4 pixels a unit.
     private const int MaxLift = Map.HeightMask * TerrainTriangles.HeightStep;
 
@@ -27,7 +24,7 @@ public static class MapPicking
     /// the screen pixels per map pixel, and the click is at (<paramref name="screenX"/>, <paramref name="screenY"/>)
     /// in a view of <paramref name="viewWidth"/> by <paramref name="viewHeight"/> screen pixels. With
     /// <paramref name="flag"/>, the flag's sprite, a click inside the sprite of a flag on the map picks that flag's node;
-    /// of two flags drawn there, the one drawn last, in the southern row.
+    /// of two flags drawn there, the one drawn last: the one in the southern row, and within a row the eastern one.
     /// </summary>
     public static (int X, int Y) Pick(
         Map map,
@@ -54,6 +51,7 @@ public static class MapPicking
         (int X, int Y)? onFlag = null;
         var best = (X: 0, Y: 0);
         var bestDistance = double.MaxValue;
+        var pickFlag = flag is { Width: > 0 };
         for (var row = firstRow; row <= lastRow; row++)
         {
             var nearestColumn = (int)Math.Floor((pointX + Camera.RowLean * row) / Camera.NodeSpacing);
@@ -64,9 +62,9 @@ public static class MapPicking
                 var (x, y) = Camera.NodePosition(column, row);
                 y -= (heights[wrappedRow * width + wrappedColumn] & Map.HeightMask) * TerrainTriangles.HeightStep;
                 if (
-                    flag is { Width: > 0 }
-                    && (objects[wrappedRow * width + wrappedColumn] & 0x7f) == FlagCode
-                    && pointX >= x + flag.OffsetX
+                    pickFlag
+                    && (objects[wrappedRow * width + wrappedColumn] & 0x7f) == ObjectSprites.FlagCode
+                    && pointX >= x + flag!.OffsetX
                     && pointX < x + flag.OffsetX + flag.Width
                     && pointY >= y + flag.OffsetY
                     && pointY < y + flag.OffsetY + flag.Height

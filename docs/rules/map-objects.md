@@ -44,7 +44,7 @@ unit of the tile's height (the low 5 bits of byte 1 of record A) plus 8. The spr
 offsets of its left and top edges from that position (`Gfx_BlitSprite`, `0x405590`). In the engine's screen
 layout a node lies at `x = 32 * column - 16 * row`, `y = 20 * row` minus 4 per unit of height, the point where the
 terrain's triangles and the roads meet, and an object is drawn at that point, then moved by the sprite's offsets.
-The program's 16 and 8 bring its tile field to the same point: a screenshot of the original shows the roads meeting
+The program's 16 and 8 bring its tile field to the same point: screenshots of the original's running game, held outside the repository (INV-0001), show the roads meeting
 at the foot of each flag's pole, which a draw 16 east and 8 south of the engine's node would miss by those pixels.
 That alignment is **inferred** from the picture; no emulator or debugger run of the terrain or the road draw
 confirms where the program's road pass puts a node. The castle's entry (1428) is emulated (`peek:44fd2f:4` prints
