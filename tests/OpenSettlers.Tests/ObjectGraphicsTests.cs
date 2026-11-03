@@ -76,7 +76,7 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.HasCount(ObjectGraphics.EntryCount + 2, graphics.Images);
+        Assert.HasCount(ObjectGraphics.EntryCount + 3, graphics.Images);
         Assert.AreEqual(3, graphics.LayerWidth);
         Assert.AreEqual(2, graphics.LayerHeight);
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
@@ -110,6 +110,22 @@ public sealed class ObjectGraphicsTests
 
         Assert.AreEqual(ObjectGraphics.EntryCount + 1, ObjectGraphics.Layer(ObjectSprites.FlagEntry));
         Assert.AreEqual(9, graphics.Images[ObjectGraphics.Layer(ObjectSprites.FlagEntry)].OffsetX);
+    }
+
+    [TestMethod]
+    public void TheHutSpriteIsTheLayerAfterTheFlagsAndItsImageIsRead()
+    {
+        var payloads = Payloads();
+        payloads[ObjectSprites.WoodcutterEntry] = GraphicFileTests.Entry(1, 0, 2, 2, 11, 3, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]);
+        using var fake = Install(payloads);
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        // Emulator: peek:44e62a:20 shows the stub the jump table at 0x44e3aa reaches for the building type 1
+        // (0x44e62b) loading the object number 0xA7 (167); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
+        Assert.AreEqual(1417, ObjectSprites.WoodcutterEntry);
+        Assert.AreEqual(ObjectGraphics.EntryCount + 2, ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry));
+        Assert.AreEqual(11, graphics.Images[ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry)].OffsetX);
     }
 
     [TestMethod]

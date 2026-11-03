@@ -39,6 +39,7 @@ public sealed class ObjectGraphics
     public static int Layer(int entry) =>
         entry == ObjectSprites.CastleEntry ? EntryCount
         : entry == ObjectSprites.FlagEntry ? EntryCount + 1
+        : entry == ObjectSprites.WoodcutterEntry ? EntryCount + 2
         : entry - ObjectSprites.FirstEntry;
 
     /// <summary>
@@ -86,6 +87,17 @@ public sealed class ObjectGraphics
                     archive,
                     ObjectSprites.FlagEntry,
                     "the flag sprite",
+                    data => ObjectImage.From(SpriteFile.Read(data))
+                )
+        );
+
+        images.Add(
+            archive[ObjectSprites.WoodcutterEntry].State == EntryState.Absent
+                ? ObjectImage.Empty
+                : Read(
+                    archive,
+                    ObjectSprites.WoodcutterEntry,
+                    "the woodcutter's hut sprite",
                     data => ObjectImage.From(SpriteFile.Read(data))
                 )
         );

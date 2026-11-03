@@ -58,6 +58,32 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
+    public void AHutIsDrawnLikeTheCastleAtItsNodeWithTheHutEntry()
+    {
+        // The hut at 16,2 stands tied to the flag at 17,3 (the road test world of HutTests); its node's height is read from
+        // the map: x = 16 * 32 - 2 * 16 + 16, y = 2 * 20 - height * 4 + 8.
+        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var classes = new byte[ProgramTables.ClassCount];
+        classes[1] = 3;
+        var game = new Game(new ProgramTables(classes, TestProgram.Made().StartStock), map);
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Tick();
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Tick();
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
+        game.Tick();
+        var height = map.Layer(MapLayer.Height)[map.Index(16, 2)] & Map.HeightMask;
+
+        var draws = ObjectDraws.Of(map, game.Castle, game.Buildings);
+
+        Assert.AreEqual(new ObjectDraw(2, ObjectSprites.WoodcutterEntry, 496, 48 - height * 4), draws.Single(draw => draw.Entry == ObjectSprites.WoodcutterEntry));
+        CollectionAssert.AreEqual(
+            draws.Select(draw => draw.Row).Order().ToList(),
+            draws.Select(draw => draw.Row).ToList()
+        );
+    }
+
+    [TestMethod]
     public void AFlagIsDrawnLikeAnObjectWithTheFlagEntry()
     {
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15; its flag stands at 16,6 on height 15:

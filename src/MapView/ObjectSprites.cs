@@ -32,6 +32,13 @@ public static class ObjectSprites
     /// </summary>
     public const int FlagEntry = FirstEntry + 0x80;
 
+    /// <summary>
+    /// The sprite entry of the finished building of type 1, the woodcutter's hut (<c>docs/rules/settlers.md</c>): the
+    /// draw routine of the type (<c>0x44e329</c>, the jump table at <c>0x44e3aa</c>, the stub at <c>0x44e62b</c>)
+    /// stores the object number 167, plus the 1250. <b>Inferred:</b> that type 1 is the woodcutter's hut; no run draws it.
+    /// </summary>
+    public const int WoodcutterEntry = FirstEntry + 167;
+
     /// <summary>The object code of a flag.</summary>
     public const int FlagCode = 1;
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -19,9 +20,10 @@ public static class ObjectDraws
     /// The objects of a map in row-major order, which is the order the original paints them. A draw sits at its
     /// tile's node with the node's height taken off, moved by <see cref="OffsetX"/> and <see cref="OffsetY"/>; the
     /// sprite's own header offsets apply where the sprite is drawn. A code without a sprite is left out. Resources
-    /// are no objects and are never drawn. With a <paramref name="castle"/>, its sprite is drawn at its node.
+    /// are no objects and are never drawn. With a <paramref name="castle"/>, its sprite is drawn at its node, and each
+    /// woodcutter's hut of <paramref name="buildings"/> likewise.
     /// </summary>
-    public static List<ObjectDraw> Of(Map map, Castle? castle = null)
+    public static List<ObjectDraw> Of(Map map, Castle? castle = null, IReadOnlyList<Building>? buildings = null)
     {
         var heights = map.Layer(MapLayer.Height);
         var width = map.Size.Width;
@@ -51,6 +53,24 @@ public static class ObjectDraws
                 new ObjectDraw(
                     placed.Y,
                     ObjectSprites.CastleEntry,
+                    x + OffsetX,
+                    y - height * TerrainTriangles.HeightStep + OffsetY
+                )
+            );
+        }
+
+        foreach (var hut in buildings?.Where(building => building.Type == Building.WoodcutterType) ?? [])
+        {
+            // A hut is drawn like the castle: at its node in the order of its row. inferred: the alignment is that of an
+            // object, as for the castle.
+            var (x, y) = Camera.NodePosition(hut.X, hut.Y);
+            var height = heights[hut.Y * width + hut.X] & Map.HeightMask;
+            var index = draws.FindIndex(draw => draw.Row > hut.Y);
+            draws.Insert(
+                index < 0 ? draws.Count : index,
+                new ObjectDraw(
+                    hut.Y,
+                    ObjectSprites.WoodcutterEntry,
                     x + OffsetX,
                     y - height * TerrainTriangles.HeightStep + OffsetY
                 )

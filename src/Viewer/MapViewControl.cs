@@ -37,7 +37,9 @@ public partial class MapViewControl : Control
     Label _ticks = null!;
     Button _flagButton = null!;
     Button _roadButton = null!;
+    Button _woodcutterButton = null!;
     int _flagsDrawn;
+    int _buildingsDrawn;
     int _roadsDrawn;
     RoadDrawing? _drawing;
     Node2D _preview = null!;
@@ -138,6 +140,7 @@ public partial class MapViewControl : Control
             if (pressed)
             {
                 _flagButton.ButtonPressed = false;
+                _woodcutterButton.ButtonPressed = false;
             }
             else
             {
@@ -149,9 +152,28 @@ public partial class MapViewControl : Control
             if (pressed)
             {
                 _roadButton.ButtonPressed = false;
+                _woodcutterButton.ButtonPressed = false;
             }
         };
         bar.AddChild(_roadButton);
+        // Stand-in for the original's build panel: while it is pressed a click asks for a woodcutter's hut on the node
+        // under it, tied to the flag south-east of it. The hut stands finished at once (M4 builds it).
+        _woodcutterButton = new Button
+        {
+            Text = "Woodcutter",
+            ToggleMode = true,
+            Visible = _play,
+            FocusMode = FocusModeEnum.None,
+        };
+        _woodcutterButton.Toggled += pressed =>
+        {
+            if (pressed)
+            {
+                _flagButton.ButtonPressed = false;
+                _roadButton.ButtonPressed = false;
+            }
+        };
+        bar.AddChild(_woodcutterButton);
 
         _canvas = new Control
         {
@@ -230,8 +252,10 @@ public partial class MapViewControl : Control
             _castleDrawn = false;
             _flagsDrawn = 0;
             _roadsDrawn = 0;
+            _buildingsDrawn = 0;
             _flagButton.ButtonPressed = false;
             _roadButton.ButtonPressed = false;
+            _woodcutterButton.ButtonPressed = false;
             DrawPreview();
             _tickCarry = 0;
         }
@@ -254,12 +278,14 @@ public partial class MapViewControl : Control
                 (_game.Castle is not null && !_castleDrawn)
                 || _game.Flags.Count != _flagsDrawn
                 || _game.Roads.Count != _roadsDrawn
+                || _game.Buildings.Count != _buildingsDrawn
             )
             {
-                // The castle stands, a flag went up, or a road was built: draw it.
+                // The castle stands, a flag went up, a road was built, or a hut stands: draw it.
                 _castleDrawn = _game.Castle is not null;
                 _flagsDrawn = _game.Flags.Count;
                 _roadsDrawn = _game.Roads.Count;
+                _buildingsDrawn = _game.Buildings.Count;
                 Redraw();
             }
         }
@@ -397,7 +423,9 @@ public partial class MapViewControl : Control
             return;
         }
 
-        var kind = _flagButton.ButtonPressed ? CommandKind.PlaceFlag : CommandKind.PlaceCastle;
+        var kind = _flagButton.ButtonPressed ? CommandKind.PlaceFlag
+            : _woodcutterButton.ButtonPressed ? CommandKind.PlaceBuilding
+            : CommandKind.PlaceCastle;
         _game.Enqueue(new Command(_game.TickCount, 0, kind, x, y));
     }
 
@@ -741,7 +769,7 @@ public partial class MapViewControl : Control
 
         foreach (
             var band in ObjectQuads.Bands(
-                ObjectDraws.Of(map, _game?.Castle),
+                ObjectDraws.Of(map, _game?.Castle, _game?.Buildings),
                 _objects.Images,
                 map.Size.Height,
                 BandRows
