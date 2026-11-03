@@ -119,7 +119,8 @@ in `tests/OpenSettlers.Tests/map-digests.txt`: the castle's placement draws noth
 reach the words in the first 5000 passes are those of the object pass above and of the knights waiting in the castle: a settler of
 job 22 to 25 draws when its timer has run out until a draw is below 4000, 2000, 1000, or 500, which promotes it to the next job (and
 moves its entry in the castle's list), adding 6000 to its timer for each draw above (`0x43910b`, `0x4391eb`, `0x4392cb`, `0x4393ab`);
-job 26 only waits. The engine takes these draws too, so the woodcutter's choice follows the original's. **Departures:** the original
+job 26 only waits. The engine takes these draws too, so the woodcutter's choice follows the original's. The forest scenario of
+`wood-walks.txt` holds one promotion (the knight of slot 7 at pass 1507, job 22 to 23), and its 16 bytes are checked against the verb. **Departures:** the original
 draws also for the ambient sounds of each view (`0x428964`, `0x428985`) and in `0x428a75` (the castle's later settlers), which the
 simulation must not depend on or does not port, so a real game's tree choices differ from the verb's by those draws.
 
@@ -128,8 +129,12 @@ simulation must not depend on or does not port, so a real game's tree choices di
 **Status:** the trees and the stumps are drawn from the map like any object (the codes 0x5d to 0x66 and 0x53 as the still sprites
 `1250 + code - 8`); the woodcutter is drawn as the walking settlers are ([Settlers](settlers.md#drawing-the-walk-leads)) with the
 figure row of job 5 in the states 4, 0x10, and 0x11. **Inferred:** that the frames 0x74 to 0x78 of the cut name the cutting sequences;
-no run of the draw confirms them. The log on the flag is not drawn: `0x44db26` draws a flag's goods (the first four places by their
-good); the engine draws the flag only.
+no run of the draw confirms them. The goods on a flag are drawn by `0x44db26` (read from the decompile): for each of the 8 places
+of the flag item (bytes `0xc` to `0x13`) holding a good, `0x44de9a` draws the sprite 320 plus the good's low 5 bits at the flag's draw
+position moved by (6, -4), (10, -2), (-4, -4) for the places 0 to 2 (before the flag's sprite) and (10, 2), (-8, -2), (6, 4), (-8, 2),
+(-4, 4) for the places 3 to 7 (after it), plus the 16 east and 8 south of an object. A log (good 7) is the sprite entry 327, drawn in
+every wrap copy. **Inferred:** no emulator or debugger run of the draw confirms the offsets or the entry (the sprite of a good is
+read from the registers the decompile shows); an open lead.
 
 ## Open leads
 

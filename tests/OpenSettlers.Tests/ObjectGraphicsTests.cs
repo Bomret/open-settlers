@@ -76,7 +76,7 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.HasCount(ObjectGraphics.EntryCount + 3, graphics.Images);
+        Assert.HasCount(ObjectGraphics.EntryCount + 3 + ObjectSprites.GoodsCount, graphics.Images);
         Assert.AreEqual(3, graphics.LayerWidth);
         Assert.AreEqual(2, graphics.LayerHeight);
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
@@ -110,6 +110,29 @@ public sealed class ObjectGraphicsTests
 
         Assert.AreEqual(ObjectGraphics.EntryCount + 1, ObjectGraphics.Layer(ObjectSprites.FlagEntry));
         Assert.AreEqual(9, graphics.Images[ObjectGraphics.Layer(ObjectSprites.FlagEntry)].OffsetX);
+    }
+
+    [TestMethod]
+    public void TheGoodsSpritesAreTheLayersAfterTheHutsAndTheLogsImageIsRead()
+    {
+        var payloads = Payloads();
+        payloads[ObjectSprites.GoodEntry(7)] = GraphicFileTests.Entry(
+            1,
+            0,
+            2,
+            2,
+            3,
+            1,
+            [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
+        );
+        using var fake = Install(payloads);
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        Assert.AreEqual(ObjectGraphics.EntryCount + 3, ObjectGraphics.Layer(ObjectSprites.GoodEntry(0)));
+        Assert.AreEqual(ObjectGraphics.EntryCount + 10, ObjectGraphics.Layer(ObjectSprites.GoodEntry(7)));
+        Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(ObjectSprites.GoodEntry(7))].OffsetX);
+        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32, graphics.Images.Count);
     }
 
     [TestMethod]

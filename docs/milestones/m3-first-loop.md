@@ -102,6 +102,11 @@ left open:
 - The woodcutter sent home (mode `0xfe`), the free walk's passing of settlers and its check of a node marked solid, the way back with
   a negative count (`0x4385ab`), and the handlers of the object codes from `0x67` (`0x428eb8`): likely, not ported
   ([Woodcutting](../rules/woodcutting.md#open-leads)).
+- The drawing of the goods on a flag (`0x44db26`, `0x44de9a`): the place offsets and the sprite entry 320 plus the good (a log is
+  entry 327) are read from the decompile and **inferred**; no emulator or debugger run of the draw confirms them. Lead: run `0x44db26`
+  in the emulator with a flag that holds a log and read the position and entry `0x44de9a` hands the blit.
+- The hut's node and flag marks (`0x42`, `0x10`) that the `wood` verb writes by hand are **inferred** (above); the expected walk of
+  the woodcutter in `wood-walks.txt` depends on them.
 - The phase count of a game with one player and no computer opponent (33, inferred from `0x42055e`).
 - The passing of two settlers going opposite ways (the original swaps them; no run of the games here swaps) and the walk
   home (mode 254). A blocked step is settled: the settler tries it again ([Settlers](../rules/settlers.md#the-walk)).

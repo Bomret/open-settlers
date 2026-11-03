@@ -14,8 +14,14 @@ namespace OpenSettlers.Tests;
 // starts with a "#" line that names its verb command; the lines after it give, for a pass, the 16 bytes of the castle's
 // woodcutter (slot 10, s10=) where it entered a new state or node (and at the checkpoints), the 18 bytes of the hut
 // (b=) where they changed, the object bytes that changed (o=x,y:old>new;...), the flag's byte 4 and goods bytes (g=)
-// where they changed, and the generator's words (rng=) where they moved. The engine runs the same commands and must
-// hold the same values at each listed pass, and no object byte may change at any other pass.
+// where they changed, the generator's words (rng=) where they moved, and the 16 bytes of a castle knight (s6= to s8=) at
+// the pass that promoted it. The engine runs the same commands and must hold the same values at each listed pass, and no
+// object byte may change at any other pass.
+//
+// **Inferred input:** the verb writes the marks 0x42 on the hut's node and 0x10 on its flag's node by hand, to match the
+// engine's stand-in for the castle's placement marks (docs/rules/settlers.md): no emulator run of the original's own placement
+// backs them. The expected walk of the woodcutter depends on them (it avoids a node marked 0x40). Open lead in
+// docs/milestones/m3-first-loop.md.
 [TestClass]
 public sealed class WoodcutterTests
 {
@@ -166,6 +172,19 @@ public sealed class WoodcutterTests
                     places.Any(good => good != 0) ? 1 : 0,
                     $"{name}: the flag's goods bit after pass {pass}"
                 );
+            }
+
+            // A knight of the castle (slots 6 to 8) where it was promoted: the bytes after its job went up by one.
+            foreach (var knight in new[] { 6, 7, 8 })
+            {
+                if (line.TryGetValue($"s{knight}", out var bytes))
+                {
+                    Assert.AreEqual(
+                        bytes,
+                        WorkerWalkTests.Hex(game.Settlers[knight], width),
+                        $"{name}: the knight of slot {knight} after pass {pass}"
+                    );
+                }
             }
 
             if (line.TryGetValue("rng", out var rng))

@@ -154,14 +154,34 @@ public sealed class WoodcuttingTests
     }
 
     [TestMethod]
+    public void TheObjectLayerWatchReportsEveryTickThatChangesTheObjectLayerOrTheGoodsOnAFlag()
+    {
+        var game = World(true, out var map);
+        var watch = new OpenSettlers.MapView.ObjectLayerWatch();
+        Assert.IsTrue(watch.Changed(game), "the first look is a change: nothing was drawn yet");
+        var objects = map.Layer(MapLayer.Object).ToArray();
+        var goods = game.FlagGoods(HutFlag).ToArray();
+        var changes = 0;
+
+        for (var tick = 0; tick < 6000 && !game.FlagGoods(HutFlag).Contains(7); tick++)
+        {
+            game.Tick();
+            var now = map.Layer(MapLayer.Object).ToArray();
+            var moved = !now.SequenceEqual(objects) || !game.FlagGoods(HutFlag).SequenceEqual(goods);
+            Assert.AreEqual(moved, watch.Changed(game), $"tick {game.TickCount}");
+            changes += moved ? 1 : 0;
+            objects = now;
+            goods = game.FlagGoods(HutFlag).ToArray();
+        }
+
+        Assert.IsGreaterThan(1, changes, "a tree is cut and a log laid");
+    }
+
+    [TestMethod]
     public void WithNoTreeInReachTheWorkerWaitsInItsHutAndTheGameKeepsTicking()
     {
         var game = World(false, out var map);
-        var unchanged = map.Layer(MapLayer.Object)
-            .ToArray()
-            .Select(code => code & 0x7f)
-            .Where(code => code is >= 8 and < 0x18)
-            .ToArray();
+        var objects = map.Layer(MapLayer.Object).ToArray();
 
         for (var tick = 0; tick < 3000; tick++)
         {
@@ -177,10 +197,10 @@ public sealed class WoodcuttingTests
         Assert.IsFalse(game.FlagGoods(HutFlag).Any(good => good != 0));
         Assert.AreEqual(ticks + 1, game.TickCount);
         Assert.AreNotEqual(digest, game.Digest(), "the game state moves on");
-        Assert.AreEqual(0, unchanged.Length, "the map holds no tree");
-        Assert.IsFalse(
-            map.Layer(MapLayer.Object).ToArray().Any(code => (code & 0x7f) is >= 0x5d and <= 0x66),
-            "no tree was cut"
+        var after = map.Layer(MapLayer.Object).ToArray();
+        Assert.IsTrue(
+            objects.Zip(after).All(pair => pair.First == pair.Second || (pair.First & 0x7f) == 0x53),
+            "the object pass changes only stumps"
         );
     }
 

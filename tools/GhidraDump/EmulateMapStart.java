@@ -1060,7 +1060,9 @@ public class EmulateMapStart extends GhidraScript {
         emu.writeMemory(toAddr(layerA + node + 3), new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | 2)});
         if (wood) {
             // The marks the castle's placement leaves at its node and its flag (docs/rules/settlers.md): the woodcutter's
-            // walk avoids a node marked 0x40, so the hut's node is one it may not step onto.
+            // walk avoids a node marked 0x40, so the hut's node is one it may not step onto. **Inferred:** these two writes
+            // are made by hand to match the engine's stand-in, not by the original's placement code; no run backs the marks
+            // (open lead in docs/milestones/m3-first-loop.md).
             emu.writeMemory(toAddr(layerA + node), new byte[] {(byte) (emu.readMemory(toAddr(layerA + node), 1)[0] | 0x42)});
             emu.writeMemory(toAddr(layerA + fnode), new byte[] {(byte) (emu.readMemory(toAddr(layerA + fnode), 1)[0] | 0x10)});
         }

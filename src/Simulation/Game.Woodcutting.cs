@@ -92,6 +92,8 @@ public sealed partial class Game
         if (link != 0 && link < _buildings.Count && (_buildings[link].Status & 0x20) == 0)
         {
             settler.Timer = (ushort)settler.Target;
+            // Mode is byte 11, which the free walk also holds the steps east in (StepsEast): at the door the walk's vector is
+            // 0, so a value of 0xfe is the original's send-home mark and no walk's -2 east. The original shares the byte.
             if (settler.Job == WoodcutterJob && settler.Mode != 0xfe)
             {
                 // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree. **Not ported:** a settler that
@@ -269,7 +271,7 @@ public sealed partial class Game
                     continue;
                 }
 
-                var delta = 5 - candidate - 3;
+                var delta = 2 - candidate;
                 if (delta < 0)
                 {
                     var sum = settler.Next + (-delta << 4);

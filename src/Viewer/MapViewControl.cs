@@ -42,6 +42,7 @@ public partial class MapViewControl : Control
     ShaderMaterial? _settlerMaterial;
     readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
     int _flagsDrawn;
+    ObjectLayerWatch _objectWatch = new();
     int _buildingsDrawn;
     int _roadsDrawn;
     RoadDrawing? _drawing;
@@ -288,6 +289,7 @@ public partial class MapViewControl : Control
             _drawing = new RoadDrawing(_game);
             _castleDrawn = false;
             _flagsDrawn = 0;
+            _objectWatch = new();
             _roadsDrawn = 0;
             _buildingsDrawn = 0;
             _flagButton.ButtonPressed = false;
@@ -312,14 +314,17 @@ public partial class MapViewControl : Control
 
             _ticks.Text = $"Tick {_game.TickCount}";
             UpdateSettlers();
+            // Evaluated each frame, so the watch sees every change.
+            var objectsChanged = _objectWatch.Changed(_game);
             if (
-                (_game.Castle is not null && !_castleDrawn)
+                objectsChanged
+                || (_game.Castle is not null && !_castleDrawn)
                 || _game.Flags.Count != _flagsDrawn
                 || _game.Roads.Count != _roadsDrawn
                 || _game.Buildings.Count != _buildingsDrawn
             )
             {
-                // The castle stands, a flag went up, a road was built, or a hut stands: draw it.
+                // The castle stands, a flag went up, a road was built, a hut stands, or an object or a good on a flag changed: draw it.
                 _castleDrawn = _game.Castle is not null;
                 _flagsDrawn = _game.Flags.Count;
                 _roadsDrawn = _game.Roads.Count;
@@ -860,7 +865,12 @@ public partial class MapViewControl : Control
 
         foreach (
             var band in ObjectQuads.Bands(
-                ObjectDraws.Of(map, _game?.Castle, _game?.Buildings),
+                ObjectDraws.Of(
+                    map,
+                    _game?.Castle,
+                    _game?.Buildings,
+                    _game is null ? null : ObjectDraws.FlagGoodsOf(_game)
+                ),
                 _objects.Images,
                 map.Size.Height,
                 BandRows
