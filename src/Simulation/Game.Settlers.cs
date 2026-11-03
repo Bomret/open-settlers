@@ -258,6 +258,12 @@ public sealed partial class Game
                 }
 
                 break;
+            case 0x42:
+                Fetch(slot, settler);
+                break;
+            case 0x43:
+                Claim(slot, settler);
+                break;
             case 4:
                 Door(settler);
                 break;

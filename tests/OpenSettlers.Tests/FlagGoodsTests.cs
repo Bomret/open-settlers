@@ -1,0 +1,190 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// The lines of flag-goods.txt are the output of the emulator verb goods (tools/GhidraDump/emulate.py, ADR 0008): the original's
+// passes over the item tables (0x428728, 0x428d10, 0x46414d, 0x42cb2d, 0x42f3d9) on a game that starts as the original's game
+// start leaves its tables (flag slot 0 is a dummy, so the castle's flag is slot 1 and the hut's flag slot 2), with a finished
+// woodcutter's hut at a flag. Each scenario starts with a "#" line that names its verb command. The lines after it give, for a
+// pass, the flags' goods fields where they changed (f<slot>= : byte 4 and the status byte at 5, the 8 goods at 0xc, the 8
+// destination words at 0x14, and the 6 direction bytes at 0x3c) and the 16 bytes of the castle's carrier (s5=, from the pass
+// where it first waits next to its flag). The engine runs the same commands and must hold the same fields after each pass,
+// which tests when a good gets its destination and its direction, and when the waiting carrier is told to fetch it. A
+// pass-5 put in the command (the last field) is the put of 0x436b46 by hand, before that pass.
+//
+// The emulator numbers the flags one higher than the engine (the dummy), and so do the destination words. Byte 4 holds more
+// than bit 7 (bit 6 marks the hut): the engine keeps bit 7 only. The carrier's bytes at 12 to 15 hold the pointer to its flag's
+// item that the original keeps while it waits (docs/rules/carriers.md); the engine keeps the slot.
+[TestClass]
+public sealed class FlagGoodsTests
+{
+    private const string Fixture = "flag-goods.txt";
+
+    private sealed record Scenario(
+        string Name,
+        string Command,
+        List<(int Pass, Dictionary<string, string> Values)> Lines
+    );
+
+    public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
+
+    private static List<Scenario> Load()
+    {
+        var scenarios = new List<Scenario>();
+        foreach (var line in File.ReadAllLines(Fixture))
+        {
+            if (line.StartsWith("# ", StringComparison.Ordinal))
+            {
+                var parts = line[2..].Split(' ', 2);
+                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                continue;
+            }
+
+            var fields = line.Split(' ').Select(field => field.Split('=')).ToDictionary(p => p[0], p => p[1]);
+            var pass = int.Parse(fields["pass"], CultureInfo.InvariantCulture);
+            fields.Remove("pass");
+            scenarios[^1].Lines.Add((pass, fields));
+        }
+
+        return scenarios;
+    }
+
+    private static List<int[]> Points(string list) =>
+        list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
+
+    // A flag's goods fields in the order of the fixture's f fields.
+    private static string Fields(Game game, int flag) =>
+        Convert.ToHexString([
+            .. new[] { (byte)(game.FlagGoodsBit(flag) ? 0x80 : 0), game.FlagStatus(flag) },
+            .. game.FlagGoods(flag).Select(good => (byte)good),
+            .. game.FlagDestinations(flag).SelectMany(word => BitConverter.GetBytes((ushort)word)),
+            .. game.FlagDirectionBytes(flag).Select(value => (byte)value),
+        ]);
+
+    private static string Expected(string fields) =>
+        string.Concat((Convert.ToByte(fields[..2], 16) & 0x80).ToString("X2"), fields[2..]);
+
+    // The carrier's 16 bytes as the original's item holds them while it waits and the turn it fetches a good.
+    private static string Carrier(Settler s, int width)
+    {
+        var bytes = new List<byte> { (byte)(s.Job << 2 | s.Player), (byte)s.Frame };
+        bytes.AddRange(BitConverter.GetBytes(s.Timer));
+        bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
+        bytes.AddRange(BitConverter.GetBytes(s.Stamp));
+        bytes.AddRange([(byte)s.State, (byte)s.Mode]);
+        var pointer = 0x23000000 + 0x46 * (s.Target + 1);
+        bytes.AddRange(BitConverter.GetBytes((ushort)pointer));
+        bytes.Add((byte)s.Heading);
+        bytes.Add(s.State is 0x42 or 0x43 ? (byte)(pointer >> 24) : (byte)s.Next);
+
+        return Convert.ToHexString([.. bytes]);
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(Scenarios))]
+    public void AGoodGetsItsDestinationAndDirectionAndTheWaitingCarrierFetchesItAsTheOriginalsPassesDoIt(string name)
+    {
+        var scenario = Load().Single(candidate => candidate.Name == name);
+        // goods:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PASS,PLACE,GOOD]]]
+        var parts = scenario.Command.Split(':');
+        MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
+        var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
+        var map = MapGenerator.Generate(new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var castle = Points(parts[4]).Single();
+        var flags = Points(parts[5]);
+        var hut = parts[7].Split(',').Select(int.Parse).ToArray();
+        var passes = int.Parse(parts[8], CultureInfo.InvariantCulture);
+        var put = parts.Length > 12 ? parts[12].Split(',').Select(int.Parse).ToArray() : null;
+        var hutFlag = flags.FindIndex(flag => flag[0] == hut[0] && flag[1] == hut[1]) + 1;
+
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        foreach (var flag in flags)
+        {
+            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+        }
+
+        foreach (var road in parts[6].Split(';').Select(text => text.Split(',')))
+        {
+            game.Enqueue(
+                new Command(
+                    0,
+                    0,
+                    CommandKind.BuildRoad,
+                    int.Parse(road[0]),
+                    int.Parse(road[1]),
+                    [.. road[2].Select(c => c - '0')]
+                )
+            );
+        }
+
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceBuilding, hut[0] - 1, hut[1] - 1));
+        var known = new Dictionary<string, string>();
+        for (var pass = 0; pass < passes; pass++)
+        {
+            if (put is not null && pass == put[0])
+            {
+                game.LayGood(hutFlag, put[1], put[2]);
+            }
+
+            game.Tick();
+            foreach (var line in scenario.Lines.Where(line => line.Pass == pass))
+            {
+                foreach (var (key, value) in line.Values)
+                {
+                    known[key] = value;
+                }
+            }
+
+            foreach (var (key, value) in known)
+            {
+                if (key == "s5")
+                {
+                    Assert.AreEqual(
+                        value,
+                        Carrier(game.Settlers[5], map.Size.Width),
+                        $"{name}: the carrier after pass {pass}"
+                    );
+                }
+                else
+                {
+                    var flag = int.Parse(key[1..], CultureInfo.InvariantCulture) - 1;
+                    Assert.AreEqual(Expected(value), Fields(game, flag), $"{name}: flag {flag} after pass {pass}");
+                }
+            }
+        }
+    }
+
+    // Tests of the game's own goods logic, on made-up tables (no install): a good waits where no road holds a carrier, and
+    // the digest holds the goods' new fields.
+    [TestMethod]
+    public void AGoodOnAFlagWithNoCarrierWaitsAndTheFlagAsksAgainAtEachTurn()
+    {
+        var game = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+        );
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Tick();
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 6));
+        game.Tick();
+        game.LayGood(1, 0, 7);
+        var before = game.Digest();
+
+        for (var tick = 0; tick < 70; tick++)
+        {
+            game.Tick();
+        }
+
+        Assert.AreEqual(7, game.FlagGoods(1)[0], "the good has no direction");
+        Assert.IsTrue(game.FlagGoodsBit(1), "the flag asks again at its next turn");
+        Assert.AreEqual(0, game.FlagDestinations(1)[0]);
+        Assert.AreNotEqual(before, game.Digest(), "the digest holds the new fields");
+    }
+}

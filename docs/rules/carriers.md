@@ -24,7 +24,7 @@ request clears the job bits (`0x42bbea`, `& 0x83`) and no tool is taken from the
 
 ## The flag pass
 
-**Status:** confirmed for a flag with no goods; the goods part of `0x46414d` is not read.
+**Status:** confirmed for the road loop; the goods part of `0x46414d` is in [Goods at a flag](goods.md).
 
 `0x46414d` runs once for each pass in the phases 0 to 31, after the phase step and before the building pass. It handles the
 flags in use whose slot divided by 32 is the phase, in the order of their slots, so a flag is handled once for each cycle of 33
@@ -42,8 +42,8 @@ reaches `0x464c36`, which looks at each direction from north (5) to east (0) tha
   of the table: the window is the buildings' (16, 30, or 55 by map size), the scan stops after 10 flags that had the bit set.
   It is the building scan of [Settlers](settlers.md#the-retry-scan) with the flag table's items (70 bytes) and bit 7.
 
-**Not read:** with goods at the flag the status byte also takes the bits of the directions that have goods, and a busy road
-asks for a second carrier (a table at `0x462acd` by the length class, **inferred** to give how many carriers a road wants). The next slice reads it.
+The goods part of `0x46414d` (a good's destination and direction, the second carrier of a busy road) is in
+[Goods at a flag](goods.md); it runs before this road loop at the flag's turn.
 
 ## The request
 
@@ -92,8 +92,9 @@ a later cycle: with two roads at the castle's flag, the road in the higher direc
   engine keeps the slot as the target); the node's settler word is cleared, so the carrier does not hold the node against
   others; and it takes **state 0x42**. At a road that already holds two carriers the original counts the carrier's turns in byte 15 and after
   four of them may send it on (**not ported**: the port leaves the carrier where it is).
-- **State 0x42** (`0x42ff81`): the item does not change in over 20 turns of the emulator (350 passes). The carrier's work at the flag
-  (the goods that wait, the walk to the other end) is not read: the next slice.
+- **State 0x42** (`0x42ff81`): the item does not change while no good waits to go along the carrier's road (in over 20 turns of the
+  emulator, 350 passes). With a good at either end of the road the carrier is told to fetch it and takes state 3 again:
+  [Goods at a flag](goods.md#the-carrier-told-to-fetch).
 
 So the carrier of a road stands on the node of the road next to the flag at the road's far end, the end its storage's flag was
 not marked from, however long the road.
@@ -109,15 +110,11 @@ sequences.
 
 ## Open leads
 
-- The goods part of `0x46414d`, the second carrier of a busy road (`0x462acd`), and what a carrier in state 0x42 does
-  (slice 08).
-  Read so far (slice 08, not yet ported): `0x42abed` is no storage handover. It is the player block's per-turn warning check
-  (it posts messages 10 and 11 through `Msg_Post` from counters at `+0x14` and `+0x18` of a 120-byte item), so the castle's
-  log count is not raised there. In the `wood:` emulator run the hut flag's log stays on its first place with the flag's
-  byte 4 bit 7 set for over 1000 passes and the destination word at `+0x14` stays 0; the goods part of `0x46414d` takes its
-  request path for a log (the first byte of the goods table at `0x464117` is not negative) and falls back to the storage
-  search `0x45d3ea` only when no building requests it. State 0x42 (`0x42ff81`) reads byte `0x3c + direction` of the flag
-  (bit 7: a good waits to go that way, bits 0 to 2: its place, bits 3 to 5: read for the far end) and sets state 0x43.
+- What a carrier does in state 3 and later with a good to fetch, and the castle's handover (slice 08, next stage). `0x42abed` is no
+  storage handover: it is the player block's per-turn warning check (it posts messages 10 and 11 through `Msg_Post` from
+  counters at `+0x14` and `+0x18` of a 120-byte item), so the castle's log count is not raised there. The goods part of
+  `0x46414d` and the carrier's turn in state 0x42 are in [Goods at a flag](goods.md); the second carrier of a busy road
+  (`0x462acd`) is read and not ported.
 - The boatman of a water road (`0x42b4bc`, job 1, good 8) and the settlers' search level count (`+0x10a` of the player block).
 - The passing of two settlers on a road (not ported), and a carrier that goes home (`0x4312ed` releases the settlers of a road
   that goes away: slice 09).

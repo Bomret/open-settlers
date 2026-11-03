@@ -89,7 +89,8 @@ Back at the flag (the vector 0, byte 13 = 0x80) the branch at `0x437ffd` lays a 
 twice the place, sets bit 7 of byte 4 of the flag item, and counts the good up in the player block. A flag with no empty place takes
 nothing and the settler goes on: no check. Then `0x43c7c2` takes the settler from the flag into the hut (the building north-west of
 it) as the walk to the hut does ([Settlers](settlers.md#the-walk)), with state 6 while the hut's node is busy; byte 11 is 0, so the
-start routine of state 4 sends it to look for the next tree. The carriers take the log on from the flag: the next slice.
+start routine of state 4 sends it to look for the next tree. The log gets its destination and its direction at the flag's next turns,
+and the waiting carrier is told to fetch it: [Goods at a flag](goods.md).
 
 ## The object pass
 

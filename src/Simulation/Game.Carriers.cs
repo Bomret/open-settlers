@@ -40,6 +40,9 @@ public sealed partial class Game
         _flagStatus.Add(0);
         _roadBytes.Add(new byte[6]);
         _flagGoods.Add(new byte[8]);
+        _goodsBit.Add(false);
+        _goodsDestination.Add(new ushort[8]);
+        _directionBytes.Add(new byte[6]);
     }
 
     // The length class of a road (0x4454e7), kept in bits 4 to 6 of the road bytes of both its ends.
@@ -65,6 +68,7 @@ public sealed partial class Game
         var length = LengthClass(road.Directions.Count);
         _roadBytes[road.FromSlot][road.FromDirection] = length;
         _roadBytes[road.ToSlot][road.ToDirection] = length;
+        SetDirectionBytes(road);
     }
 
     // The road that leaves a flag in a direction, or null.
@@ -121,13 +125,15 @@ public sealed partial class Game
         }
     }
 
-    // 0x46414d, the part of the flag table's pass that asks for carriers: the flags whose slot divided by 32 is the phase
-    // each get their turn, once for each cycle of 33 passes. **Not ported:** the flag's goods and the second carrier of a
-    // busy road, which need goods at the flags (the next slice).
+    // 0x46414d, the flag table's pass: the flags whose slot divided by 32 is the phase each get their turn, once for each
+    // cycle of 33 passes: the turn of the flag's goods (docs/rules/goods.md), then the road loop that asks for carriers.
+    // **Not ported:** the second carrier of a road with 3 goods waiting to go one way (table 0x462acd), and the loss of
+    // the roads' carrier bits at a flag with 7 goods.
     private void FlagPass()
     {
         for (var slot = _phase * 32; slot < Math.Min(_flags.Count, _phase * 32 + 32); slot++)
         {
+            GoodsTurn(slot);
             VisitFlag(slot);
         }
     }

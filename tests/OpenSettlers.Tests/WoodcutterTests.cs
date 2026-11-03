@@ -29,6 +29,18 @@ public sealed class WoodcutterTests
     private const int WorkerSlot = 10;
     private const int HutSlot = 1;
 
+    // The verb wood keeps the castle's flag in flag slot 0, where a good's destination word 0 means none: no good ever leaves
+    // a flag in it, and the goods lines (g=) hold from the pass the first log is laid. In the engine, and in the original
+    // after the game start's dummy flag (the verb goods, FlagGoodsTests), the flag's turn at pass 1385 gives the log its
+    // direction. The goods that leave the flag are checked in FlagGoodsTests; the walks and the object bytes of this fixture
+    // do not depend on them.
+    private const int GoodsLeaveFrom = 1385;
+
+    // The engine's carrier fetches the log from pass 1390 on but does not carry it yet (the next stage), while the carrier of
+    // the verb wood never moves; the woodcutter's walk back from a tree at pass 4200 meets the carrier's node and differs.
+    // The checks stop before it.
+    private const int CarrierFreeUntil = 4199;
+
     private sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
@@ -121,7 +133,7 @@ public sealed class WoodcutterTests
         var width = map.Size.Width;
         var last = scenario.Lines.Max(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
 
-        for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
+        for (var pass = 0; pass <= Math.Min(Math.Min(last, passes - 1), CarrierFreeUntil); pass++)
         {
             var before = map.Layer(MapLayer.Object).ToArray();
             game.Tick();
@@ -162,7 +174,7 @@ public sealed class WoodcutterTests
                 );
             }
 
-            if (line.TryGetValue("g", out var goods))
+            if (pass < GoodsLeaveFrom && line.TryGetValue("g", out var goods))
             {
                 var places = game.FlagGoods(hutFlag);
                 var bytes = string.Concat(places.Select(good => good.ToString("X2")));
