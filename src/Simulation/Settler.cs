@@ -7,6 +7,9 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class Settler
 {
+    /// <summary>The job of a carrier, who takes a road and waits on it (<c>docs/rules/carriers.md</c>).</summary>
+    public const int CarrierJob = 0;
+
     internal Settler(int job, int player, int x, int y, ushort stamp, int state, int home)
     {
         Job = job;

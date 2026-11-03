@@ -109,10 +109,16 @@ public sealed partial class Game
             hash = Mix(hash, count);
         }
 
-        foreach (var flag in _flags)
+        for (var slot = 0; slot < _flags.Count; slot++)
         {
-            hash = Mix(hash, flag.X * 65536L + flag.Y);
+            hash = Mix(Mix(hash, _flags[slot].X * 65536L + _flags[slot].Y), _flagStatus[slot]);
+            foreach (var value in _roadBytes[slot])
+            {
+                hash = Mix(hash, value);
+            }
         }
+
+        hash = Mix(hash, _flagCursor);
 
         foreach (var road in _roads)
         {
@@ -183,6 +189,7 @@ public sealed partial class Game
         }
 
         _roads.Add(road!);
+        SetRoadBytes(road!);
 
         return true;
     }
@@ -204,7 +211,7 @@ public sealed partial class Game
         Stock = StartStock.At(_tables, _stockLevel);
         CastlePlacement.Apply(Map, x, y, site.Height, 0);
         // The castle's flag stands south-east of it and takes the first slot of the flag table.
-        _flags.Add(new Flag((x + 1) & (Map.Size.Width - 1), (y + 1) & (Map.Size.Height - 1)));
+        AddFlag(new Flag((x + 1) & (Map.Size.Width - 1), (y + 1) & (Map.Size.Height - 1)));
         CreateCastleSettlers(x, y);
 
         return true;
@@ -225,7 +232,7 @@ public sealed partial class Game
         }
 
         FlagPlacement.Apply(Map, x, y, _flags.Count);
-        _flags.Add(new Flag(x, y));
+        AddFlag(new Flag(x, y));
 
         return true;
     }

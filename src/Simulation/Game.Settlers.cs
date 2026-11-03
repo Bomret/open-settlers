@@ -64,12 +64,14 @@ public sealed partial class Game
     {
         _clock = (ushort)(_clock + ClockStep);
         ClearRetryBits();
+        ClearFlagRetryBits();
         _phase = (_phase + 1) % PhaseCount;
         if (_phase >= TablePhases)
         {
             return;
         }
 
+        FlagPass();
         for (var slot = 0; slot < _buildings.Count; slot++)
         {
             if (slot / 32 % 32 == _phase)
@@ -246,6 +248,13 @@ public sealed partial class Game
             case 2:
                 Walk(slot, settler);
                 break;
+            case 3:
+                if (TimerRan(settler))
+                {
+                    WalkRoad(slot, settler);
+                }
+
+                break;
         }
     }
 
@@ -370,11 +379,16 @@ public sealed partial class Game
 
         var flags = Map.Layer(MapLayer.Flags);
         var links = Map.Layer(MapLayer.Resource);
-        while (settler.Heading >= 0)
+        while (true)
         {
             var here = Map.Index(settler.X, settler.Y);
             int direction;
-            if ((flags[here] & 0x80) == 0)
+            if (settler.Heading < 0)
+            {
+                // A step that was blocked: the heading holds the direction less 6, tried again.
+                direction = settler.Heading + 6;
+            }
+            else if ((flags[here] & 0x80) == 0)
             {
                 // A node of a road: the road's other direction than the one the settler came by.
                 var rest = flags[here] & 0x3f & ~(1 << settler.Heading);
@@ -391,6 +405,10 @@ public sealed partial class Game
                 if (settler.Mode == 0xff)
                 {
                     Enter(slot, settler);
+                }
+                else if (settler.Mode <= 5)
+                {
+                    EnterRoad(slot, settler);
                 }
 
                 return;
@@ -429,10 +447,11 @@ public sealed partial class Game
         if (Occupant(next) != 0)
         {
             // Another settler stands there. The original lets a settler that comes the other way pass; this port
-            // does not and waits (0x43a64c and its siblings).
+            // does not and waits (0x43a64c and its siblings). The settler marks the direction it tried in its heading
+            // (the direction less 6) and tries it again when its timer of 0x7f has run out.
             settler.Timer = 0x7f;
-            settler.Frame = 0x51;
-            settler.Heading = -6;
+            settler.Frame = (byte)(0x51 + direction);
+            settler.Heading = direction - 6;
 
             return false;
         }
