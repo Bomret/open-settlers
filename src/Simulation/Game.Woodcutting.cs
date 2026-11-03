@@ -18,7 +18,7 @@ public sealed partial class Game
     private const int EndFirstTrees = 0x10;
 
     // The good of a log (the byte 7 the settler writes onto the flag, 0x438011).
-    private const int GoodLog = 7;
+    internal const int GoodLog = 7;
 
     // The first code the object pass handles, the felled tree that waits to vanish, and the codes of a tree being cut:
     // the cut writes 0x5d to 0x66, the pass turns each of them into 0x53, and 0x53 vanishes by chance (0x428eb8).
@@ -62,7 +62,8 @@ public sealed partial class Game
 
     /// <summary>
     /// The goods that lie on a flag, 8 places in the order of the flag item's bytes <c>0xc</c> to <c>0x13</c>: 0 for an
-    /// empty place, else the good (7 is a log). The woodcutter lays a log on the first empty place of its hut's flag.
+    /// empty place, else the good in the low 5 bits (7 is a log) and, in bits 5 to 7, the direction the good was given plus
+    /// one (<c>docs/rules/goods.md</c>). The woodcutter lays a log on the first empty place of its hut's flag.
     /// </summary>
     public IReadOnlyList<int> FlagGoods(int flag) => [.. _flagGoods[flag]];
 
@@ -491,11 +492,11 @@ public sealed partial class Game
     // The settler lays a good on the first empty place of the flag it stands on (0x436b46).
     private void PutGood(Settler settler, int good)
     {
-        var goods = _flagGoods[Map.Layer(MapLayer.Resource)[Map.Index(settler.X, settler.Y)]];
-        var place = Array.IndexOf(goods, (byte)0);
+        var flag = Map.Layer(MapLayer.Resource)[Map.Index(settler.X, settler.Y)];
+        var place = Array.IndexOf(_flagGoods[flag], (byte)0);
         if (place >= 0)
         {
-            goods[place] = (byte)good;
+            LayGood(flag, place, good);
         }
     }
 
@@ -620,6 +621,7 @@ public sealed partial class Game
 
     private void MixWoodcutting(ref ulong hash)
     {
+        MixGoods(ref hash);
         hash = Mix(Mix(Mix(hash, _random.W0), _random.W1), _random.W2);
         hash = Mix(Mix(Mix(Mix(hash, _objectStamp), _objectTimer), _objectX), _objectY);
         foreach (var goods in _flagGoods)

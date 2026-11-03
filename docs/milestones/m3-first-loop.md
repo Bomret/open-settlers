@@ -9,21 +9,33 @@ settled: [Item tables](../rules/item-tables.md). The fields of a settler, a buil
 waiting settlers are settled as far as the first walk reads them: [Settlers](../rules/settlers.md#the-items). What is
 left open:
 
-- `Table70`: the flag items' own fields: the per-direction bytes at `+0xc` to `+0x13` and `+0x3c` to `+0x41` (the goods
-  that wait at a flag, and the goods' bits of `+0x3c`). The status at `+5` and the road bytes at `+6` to `+0xb` are
+- `Table70`: the flag items' own fields: the goods at `+0xc` to `+0x13`, their destination words at `+0x14`, the direction bytes
+  at `+0x3c` to `+0x41`, and bit 7 of byte 4 are settled: [Goods at a flag](../rules/goods.md#the-fields). The request words at
+  `+0x42` to `+0x45` are open (no building asks for a good yet). The status at `+5` and the road bytes at `+6` to `+0xb` are
   settled as far as the carriers read them: [Carriers](../rules/carriers.md#the-flag-pass). likely
 - `Table120`: the stock words and the counters of the storage item besides `+0x42` and `+0x4a`; player `+0x108`
-  indexes it. guess
-- `Table16`: the states other than 1 to 6, 10, 12, 15, and 0x42, and the fields they use (state 3 and 0x42 are settled for a
-  carrier with no goods: [Carriers](../rules/carriers.md#the-carriers-walk)). guess
+  indexes it. The stock word of a good at `+4 + 2 * good` is settled for a log delivered to the castle
+  ([Goods at a flag](../rules/goods.md#the-delivery-into-the-castle)). likely
+- `Table16`: the states other than 1 to 6, 10, 12, 15, 0xe, 0x42, and 0x43, and the fields they use (state 3 and 0x42 are
+  settled for a carrier, with and without goods: [Carriers](../rules/carriers.md#the-carriers-walk),
+  [Goods at a flag](../rules/goods.md)). The code between `0x43013b` and `0x4312ed` is the handler of state 0x28 (a soldier at a
+  military building), not carrier code. guess
+- The player block's transport priority table (`+good - 0x55` from the pointer at `+0x64` of the state): it reads 0 in the verb
+  `goods:`, so a second good that waits for a road never takes the road's byte again, **inferred**. Open lead.
+- A carrier carrying a log is drawn with the figure byte plus a word of the table at `0x43f4b8` (the program's load names
+  `0x43f4b7`), **inferred**: no emulator run of the draw `0x43f537` confirms the table's start, the sum, or the sprite
+  ([Goods at a flag](../rules/goods.md#drawing-a-carrier-with-a-good)). Open lead: run `0x43f537` with a carrier record holding a log.
 
 ## Tick
 
 - `0x4286d8` and its callees `0x428d10` and `0x428a75`: known (Simulation); the tick loop is in
   [Timing](../rules/timing.md#in-the-engine). `0x428728` is settled: [Settlers](../rules/settlers.md#the-retry-scan).
-- `0x46414d`: known for a flag with no goods. The phase's slice of `Table70`. Its per-item worker is `0x464c36`, which
-  asks for carriers: [Carriers](../rules/carriers.md#the-flag-pass). Open lead: its goods part, with the helpers
-  `0x464bb2` and `0x45d3ea` (the next slice). likely
+- `0x46414d`: known. The phase's slice of `Table70`. Its road loop asks for carriers
+  ([Carriers](../rules/carriers.md#the-flag-pass)); its goods part (destination by `0x45d3ea`, direction by `0x464aa8`,
+  `0x464bb2`, `0x464c36`) is in [Goods at a flag](../rules/goods.md), confirmed against the emulator for a log at a flag with one
+  storage. Open leads: the request words of a building, the second carrier of a busy road (`0x462acd`, read, not ported), and the
+  priority table of the player's block. The harness verb `wood:` leaves flag slot 0 to the castle's flag, where no good ever
+  leaves; `goods:` takes the dummy slot as the original's game start does.
 - `0x42cb2d`, `0x42f3d9`: known. The slices of `Table18` and `Table16`: [Settlers](../rules/settlers.md#the-pass).
 - `0x42f4f1`: runs the turn of each settler in view once more; the engine does not (the simulation must not depend on the
   view). likely

@@ -51,12 +51,15 @@ public sealed class SettlerFigures
     private readonly short[] _bases;
     private readonly short[] _offsets;
     private readonly byte[] _data;
+    private readonly short[] _carried;
 
     /// <param name="bases">Eight words for each job: the figure base, the second figure base (negative for none), and more.</param>
     /// <param name="offsets">Two words for each figure byte: what it adds to the figure and to the second figure.</param>
     /// <param name="sequences">The bytes of entry 2 of the graphics archive.</param>
-    public SettlerFigures(short[] bases, short[] offsets, byte[] sequences)
+    /// <param name="carried">For each good the word a carrier carrying it adds to its figure byte.</param>
+    public SettlerFigures(short[] bases, short[] offsets, byte[] sequences, short[]? carried = null)
     {
+        _carried = carried ?? [];
         _bases = bases;
         _offsets = offsets;
         _data = sequences;
@@ -85,7 +88,12 @@ public sealed class SettlerFigures
                 continue;
             }
 
-            var (figure, dx, dy) = triple;
+            var (walkFigure, dx, dy) = triple;
+            var figure = walkFigure + CarriedFigure(settler);
+            if (figure >= _offsets.Length / 2)
+            {
+                continue;
+            }
 
             var (x, y) = Camera.NodePosition(settler.X, settler.Y);
             var height = map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & Map.HeightMask;
@@ -120,8 +128,9 @@ public sealed class SettlerFigures
     /// Every sprite the sequences of a job can draw: the entry and the colour of its fill (-1 where none). A sequence
     /// runs from its offset to the next sequence's, or to the end of the entry.
     /// </summary>
-    public IEnumerable<(int Entry, int Colour)> Sprites(int job, int colour)
+    public IEnumerable<(int Entry, int Colour)> Sprites(int job, int colour, int carriedGood = 0)
     {
+        var add = job == Settler.CarrierJob && carriedGood > 0 && carriedGood < _carried.Length ? _carried[carriedGood] : 0;
         var end = 4 + 4 * Sequences;
         var starts = new SortedSet<int>();
         for (var frame = 0; frame < Sequences && _data.Length >= end; frame++)
@@ -140,16 +149,32 @@ public sealed class SettlerFigures
             var stop = i + 1 < list.Count ? list[i + 1] : _data.Length;
             for (var at = list[i]; at + 3 <= stop; at += 3)
             {
-                var first = _bases[job * 8] + _offsets[2 * _data[at]];
-                yield return (FigureBase + first, -1);
-                yield return (FigureBase + first + OverlayDistance, colour);
-                if (_bases[job * 8 + 1] >= 0)
+                foreach (var figure in add == 0 ? new int[] { _data[at] } : new int[] { _data[at], _data[at] + add })
                 {
-                    yield return (SecondBase + _bases[job * 8 + 1] + _offsets[2 * _data[at] + 1], -1);
+                    if (figure >= _offsets.Length / 2)
+                    {
+                        continue;
+                    }
+
+                    var first = _bases[job * 8] + _offsets[2 * figure];
+                    yield return (FigureBase + first, -1);
+                    yield return (FigureBase + first + OverlayDistance, colour);
+                    if (_bases[job * 8 + 1] >= 0)
+                    {
+                        yield return (SecondBase + _bases[job * 8 + 1] + _offsets[2 * figure + 1], -1);
+                    }
                 }
             }
         }
     }
+
+    // The word a carrier on its road adds to its figure byte for the good it carries (byte 11, at 0x43f8ae; the same routine
+    // serves state 0xe, which is not drawn). **Inferred:** see ProgramTables.CarriedFigureAddress. In state 0x42 byte 11 is
+    // the road direction, no good.
+    private int CarriedFigure(Settler settler) =>
+        settler is { Job: Settler.CarrierJob, State: StatesOnRoad, Mode: > 0 } && settler.Mode < _carried.Length
+            ? _carried[settler.Mode]
+            : 0;
 
     // The triple of the settler's sequence for the time it has left, or null where there is none.
     private (int Figure, int Dx, int Dy)? Triple(Settler settler, ushort clock)

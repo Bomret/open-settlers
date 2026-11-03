@@ -258,6 +258,19 @@ public sealed partial class Game
                 }
 
                 break;
+            case 0x42:
+                Fetch(slot, settler);
+                break;
+            case 0x43:
+                Claim(slot, settler);
+                break;
+            case 0xe:
+                if (TimerRan(settler))
+                {
+                    Handover(slot, settler);
+                }
+
+                break;
             case 4:
                 Door(settler);
                 break;
@@ -584,7 +597,7 @@ public sealed partial class Game
     // while the castle is built. Their time stamp is the clock of the placement.
     private void CreateCastleSettlers(int x, int y)
     {
-        _buildings.Add(new Building(Building.CastleType, x, y, 0, constructing: true) { Status = 0x50 });
+        _buildings.Add(new Building(Building.CastleType, x, y, 0, constructing: true) { Status = 0x50, Fill = 0xffff });
         foreach (var job in CastleJobs)
         {
             _settlers.Add(new Settler(job, 0, x, y, _clock, job == BuilderJob ? 10 : 1, 0));
@@ -633,6 +646,7 @@ public sealed partial class Game
                     building.Status,
                     building.Worker,
                     building.Progress,
+                    building.Fill,
                 }
             )
             {
