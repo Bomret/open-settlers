@@ -166,7 +166,7 @@ frame's sequence names for the time it has left, read from the install's archive
 timer less the clock units since the settler's turn, so the animation moves with the game's ticks. The view draws
 the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)) and 11 in every wrap copy, rebuilt after each tick. **Inferred, with no emulator run of the draw:** that the
 sequence offsets count from the byte after the entry's first dword, that a sequence runs to the next one's offset, that
-the triple index is the time left shifted right 3, the figure's position (the node plus 16 and 8, lifted by its height,
+the triple index is the time left shifted right 3, the figure's position (the node lifted by its height,
 plus the triple's dx and dy, as an object), that the second figure takes no offset, the colour overlay filled with the
 palette index 0x40 plus 4 for the player, and the job's variants for figure bytes from 0x80 (not read). The original draws a
 settler in view from the turn it acts every pass; the engine takes the time left from the clock instead.

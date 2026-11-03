@@ -134,7 +134,7 @@ figure row of job 5 in the states 4, 0x10, and 0x11. **Inferred:** that the fram
 no run of the draw confirms them. The goods on a flag are drawn by `0x44db26` (read from the decompile): for each of the 8 places
 of the flag item (bytes `0xc` to `0x13`) holding a good, `0x44de9a` draws the sprite 320 plus the good's low 5 bits at the flag's draw
 position moved by (6, -4), (10, -2), (-4, -4) for the places 0 to 2 (before the flag's sprite) and (10, 2), (-8, -2), (6, 4), (-8, 2),
-(-4, 4) for the places 3 to 7 (after it), plus the 16 east and 8 south of an object. A log (good 7) is the sprite entry 327, drawn in
+(-4, 4) for the places 3 to 7 (after it), from the flag's draw at its node. A log (good 7) is the sprite entry 327, drawn in
 every wrap copy. **Inferred:** no emulator or debugger run of the draw confirms the offsets or the entry (the sprite of a good is
 read from the registers the decompile shows); an open lead.
 

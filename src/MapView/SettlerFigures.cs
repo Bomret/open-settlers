@@ -18,7 +18,7 @@ public readonly record struct SettlerDraw(int Row, int Entry, int Colour, int X,
 /// <b>Inferred:</b> that the sequence offsets count from the byte after the first dword of the entry (as
 /// <c>0x41e8e0</c> keeps its table), that the triple index is the time left shifted right 3, that the time left falls
 /// with the clock between the settler's turns (the original draws a settler in view as it acts every pass), the draw
-/// position (the node plus 16 and 8, lifted by its height, as an object), and that the second figure takes no offset.
+/// position (the node lifted by its height, as an object), and that the second figure takes no offset.
 /// </summary>
 public sealed class SettlerFigures
 {
@@ -113,8 +113,8 @@ public sealed class SettlerFigures
             var figure = walkFigure + CarriedFigure(settler);
             var (x, y) = Camera.NodePosition(settler.X, settler.Y);
             var height = map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & Map.HeightMask;
-            x += ObjectDraws.OffsetX + dx;
-            y += ObjectDraws.OffsetY - height * TerrainTriangles.HeightStep + dy;
+            x += dx;
+            y += dy - height * TerrainTriangles.HeightStep;
             foreach (var (entry, colour) in Entries(settler.Job, figure, ColourOf(settler.Player)))
             {
                 draws.Add(new SettlerDraw(settler.Y, entry, colour, x, y));

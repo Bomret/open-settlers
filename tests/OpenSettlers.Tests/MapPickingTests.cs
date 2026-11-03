@@ -321,4 +321,38 @@ public sealed class MapPickingTests
 
         StringAssert.Contains(problem, "under the button bar");
     }
+
+    // A flag's sprite of 16 by 19 pixels stands on its node: its left edge 2 west of the node, its top 19 above it.
+    private static readonly ObjectImage FlagImage = new(16, 19, -2, -19, new byte[16 * 19], new byte[16 * 19]);
+
+    [TestMethod]
+    [DynamicData(nameof(Scales))]
+    public void AClickOnAFlagAsItIsDrawnPicksTheFlagsNode(double scale)
+    {
+        var map = MapViewState.Open("1234567812345678", 1).Map!;
+        var (column, row) = (12, 9);
+        map.Bytes(MapLayer.Object)[map.Index(column, row)] = 1;
+        var (x, y) = DrawnPoint(column, row);
+        var camera = ((double)x, (double)y);
+
+        // The top of the cloth, 17 above the node and 10 east of it: nearer the point of another node than its own.
+        var (screenX, screenY) = (ViewWidth / 2 + 10 * scale, ViewHeight / 2 - 17 * scale);
+        var picked = MapPicking.Pick(
+            map,
+            camera.Item1,
+            camera.Item2,
+            scale,
+            ViewWidth,
+            ViewHeight,
+            screenX,
+            screenY,
+            FlagImage
+        );
+
+        Assert.AreNotEqual(
+            (column, row),
+            MapPicking.Pick(map, camera.Item1, camera.Item2, scale, ViewWidth, ViewHeight, screenX, screenY)
+        );
+        Assert.AreEqual((column, row), picked);
+    }
 }

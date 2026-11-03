@@ -77,7 +77,7 @@ handler may place a flag without the button's check. Open lead.
 The row routine (`0x44d5b4`) hands an object of code 1 to `Render_DrawFlag` (`0x44db26`). It draws the flag with
 the object number 0x80, plus the animation frame (the frame counter shifted right by 3, 2 bits), plus the node's
 object byte masked with 0xc0 and shifted right by 4; `Gfx_DrawObjectSprite` (`0x44da4d`) adds 1250 and draws
-through the same position rule as every object (16 east and 8 south of the node). With frame 0 and the top bits
+through the same position rule as every object ([Map objects](map-objects.md#where-the-sprite-sits)). With frame 0 and the top bits
 clear the entry is 1378, a sprite of 16 by 19 pixels in the install's `loca/SPAD.PA`. The routine also draws, per
 road direction, the goods that wait (the bytes at `+0xc` to `+0x13` of the flag's item); the road itself is a strip
 drawn with the terrain ([Roads](roads.md#how-a-road-is-drawn)).

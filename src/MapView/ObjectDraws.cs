@@ -10,14 +10,8 @@ public readonly record struct ObjectDraw(int Row, int Entry, int X, int Y);
 /// <summary>Where each generated object lies on the map (<c>docs/rules/map-objects.md</c>).</summary>
 public static class ObjectDraws
 {
-    /// <summary>Pixels east of its node an object is drawn (<c>0x44da4d</c> adds 16 to the position).</summary>
-    public const int OffsetX = 16;
-
-    /// <summary>Pixels south of its node an object is drawn (<c>0x44da4d</c> adds 8 to the position).</summary>
-    public const int OffsetY = 8;
-
     // The places of a flag's goods (bytes 0xc to 0x13 of the flag item) and where each is drawn, in pixels from the flag's
-    // draw position (0x44db26 adds them to the node's x and y; 0x44de9a adds the 16 and 8 of an object and draws the sprite
+    // draw position (0x44db26 adds them to the node's x and y; 0x44de9a draws at the object's position the sprite
     // 320 plus the good). The places 0 to 2 are drawn before the flag, the others after it.
     private static readonly (int X, int Y)[] GoodPlaces =
     [
@@ -42,7 +36,7 @@ public static class ObjectDraws
 
     /// <summary>
     /// The objects of a map in row-major order, which is the order the original paints them. A draw sits at its
-    /// tile's node with the node's height taken off, moved by <see cref="OffsetX"/> and <see cref="OffsetY"/>; the
+    /// tile's node with the node's height taken off, where its roads meet (<c>docs/rules/map-objects.md</c>); the
     /// sprite's own header offsets apply where the sprite is drawn. A code without a sprite is left out. Resources
     /// are no objects and are never drawn. With a <paramref name="castle"/>, its sprite is drawn at its node, and each
     /// woodcutter's hut of <paramref name="buildings"/> likewise.
@@ -66,14 +60,14 @@ public static class ObjectDraws
 
             var (x, y) = Camera.NodePosition(item.X, item.Y);
             var height = heights[item.Y * width + item.X] & Map.HeightMask;
-            var top = y - height * TerrainTriangles.HeightStep + OffsetY;
+            var top = y - height * TerrainTriangles.HeightStep;
             var goods =
                 item.Code == ObjectSprites.FlagCode && flagGoods is not null
                     ? flagGoods.GetValueOrDefault((item.X, item.Y))
                     : null;
-            AddGoods(draws, goods, item.Y, x + OffsetX, top, 0, GoodsBeforeFlag);
-            draws.Add(new ObjectDraw(item.Y, entry, x + OffsetX, top));
-            AddGoods(draws, goods, item.Y, x + OffsetX, top, GoodsBeforeFlag, GoodPlaces.Length);
+            AddGoods(draws, goods, item.Y, x, top, 0, GoodsBeforeFlag);
+            draws.Add(new ObjectDraw(item.Y, entry, x, top));
+            AddGoods(draws, goods, item.Y, x, top, GoodsBeforeFlag, GoodPlaces.Length);
         }
 
         if (castle is { } placed)
@@ -86,12 +80,7 @@ public static class ObjectDraws
             var index = draws.FindIndex(draw => draw.Row > placed.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,
-                new ObjectDraw(
-                    placed.Y,
-                    ObjectSprites.CastleEntry,
-                    x + OffsetX,
-                    y - height * TerrainTriangles.HeightStep + OffsetY
-                )
+                new ObjectDraw(placed.Y, ObjectSprites.CastleEntry, x, y - height * TerrainTriangles.HeightStep)
             );
         }
 
@@ -108,12 +97,7 @@ public static class ObjectDraws
             var index = draws.FindIndex(draw => draw.Row > hut.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,
-                new ObjectDraw(
-                    hut.Y,
-                    ObjectSprites.WoodcutterEntry,
-                    x + OffsetX,
-                    y - height * TerrainTriangles.HeightStep + OffsetY
-                )
+                new ObjectDraw(hut.Y, ObjectSprites.WoodcutterEntry, x, y - height * TerrainTriangles.HeightStep)
             );
         }
 
