@@ -16,7 +16,7 @@ namespace OpenSettlers.Viewer;
 ///   godot --path . -- --map --game &lt;install&gt;   (the map view, <see cref="MapViewControl"/>)
 ///   godot --path . -- --map --seed 1234567812345678 --size 2 --game &lt;install&gt;
 ///   godot --path . --write-movie play-out/&lt;stem&gt;/frame.png --fixed-fps 30 -- --map --play &lt;script&gt;
-///   (a play run, <see cref="PlayDriver"/>)
+///   (a play run, <see cref="PlayDriver"/>; <c>--game-view</c> in place of <c>--map</c> runs it on the game view)
 /// <c>SIEDLER_DIR</c> stands in for <c>--game</c>. A bad argument prints its problem and quits with exit code 4
 /// before the install is opened.
 /// </summary>
