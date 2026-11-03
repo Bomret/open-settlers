@@ -99,6 +99,21 @@
 //                            state byte and mode byte (+0xb) instead of 0x1c, to reach a branch the teardown does not (state 0x19 with
 //                            mode 1 searches the spiral from its far end). With WATCH (a settler slot) the lines also list that
 //                            settler's 16 bytes (o=) when they changed, for a settler the walk meets (a carrier on the road).
+//   remove:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
+//                            the removal clicks (docs/rules/removal.md) in a game that starts as the original's start leaves its
+//                            tables (the dummies of the flag and building tables are taken, as for goods): a castle at cx,cy, the
+//                            flags, the roads, and the finished huts HUTS (fx,fy,T;..., the building of type T north-west of
+//                            the flag fx,fy, with the marks the castle leaves as wood does). The passes of wood run; before the
+//                            pass AT the CLICKS run in order, each the click handler's routine on a node: f:x,y the remove click
+//                            0x4615cf (a flag by 0x462153, a building by 0x4617fd, anything else refused), r:x,y the road click
+//                            0x462d88 (road take-down 0x462e1d), c:x,y only the classification 0x44b6e6 (the class at +0x100 and
+//                            +0x101 of the player), and s:0,0 the classification of every tile of the territory. The sound
+//                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
+//                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
+//                            before that pass, as goods does, with the destination word DEST. A line per click and per pass lists
+//                            what changed: the map bytes of flags, object, and link (m=x,y:i=old>new), the settlers (s<slot>=, 16
+//                            bytes), the flag items (f<slot>=, 70 bytes), the building items (b<slot>=, 18 bytes), the storage item
+//                            (st=), the counts of the tables (c=), the total of resource 1 (r1=), and the generator (rng=).
 //   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -164,6 +179,11 @@ public class EmulateMapStart extends GhidraScript {
                     case "home" -> {
                         reserveBuildingZero = true;
                         home(rest);
+                    }
+                    case "remove" -> {
+                        reserveFlagZero = true;
+                        reserveBuildingZero = true;
+                        remove(rest);
                     }
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
@@ -1211,6 +1231,258 @@ public class EmulateMapStart extends GhidraScript {
                 storage = snow.clone();
             }
             println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + line);
+        }
+    }
+
+    /** The routines a click may reach that need no emulation: the sound request and the error message of a refusal. */
+    private static final long[] CLICK_SKIPS = {0x44fd5fL, 0x44c768L};
+
+    /**
+     * Runs a click routine (0x4615cf, 0x462d88) to its return, skipping the calls of the sound request and of the error
+     * message as a ret does. Returns the sound the first request asked for, or -1 where none was asked.
+     */
+    private int runClick(long entry) throws Exception {
+        long esp = emu.readRegister("ESP").longValue() - 4;
+        emu.writeRegister("ESP", esp);
+        putInt(esp, RETURN);
+        emu.writeRegister(emu.getPCRegister(), entry);
+        emu.setBreakpoint(toAddr(RETURN));
+        for (long skip : CLICK_SKIPS) {
+            emu.setBreakpoint(toAddr(skip));
+        }
+        int first = -1;
+        try {
+            while (true) {
+                emu.run(monitor);
+                if (emu.getLastError() != null) {
+                    throw new IllegalStateException("emulation failed: " + emu.getLastError());
+                }
+                long pc = emu.readRegister(emu.getPCRegister()).longValue();
+                if (pc == RETURN) {
+                    break;
+                }
+                if (pc == 0x44fd5fL && first < 0) {
+                    first = emu.readMemory(toAddr(REGISTERS), 1)[0] & 0xff;
+                }
+                long sp = emu.readRegister("ESP").longValue();
+                emu.writeRegister("ESP", sp + 4);
+                emu.writeRegister(emu.getPCRegister(), getInt(sp));
+            }
+        } finally {
+            emu.clearBreakpoint(toAddr(RETURN));
+            for (long skip : CLICK_SKIPS) {
+                emu.clearBreakpoint(toAddr(skip));
+            }
+        }
+        emu.writeRegister("ESP", esp + 4);
+        return first;
+    }
+
+    /** What the removal lines compare: the map, the item tables, the counts, and the generator. */
+    private static final class Snapshot {
+        byte[] map;
+        byte[] settlers;
+        byte[] flags;
+        byte[] buildings;
+        byte[] storage;
+        String counts;
+        String rng;
+    }
+
+    private Snapshot snapshot(int width, int height) throws Exception {
+        Snapshot s = new Snapshot();
+        s.map = emu.readMemory(toAddr(MAP), 8 * width * height).clone();
+        s.settlers = emu.readMemory(toAddr(TABLES + 0x40000), 16 * 64).clone();
+        s.flags = emu.readMemory(toAddr(TABLES), ITEM_SIZE * 16).clone();
+        s.buildings = emu.readMemory(toAddr(getInt(STATE + 0x9c)), 0x12 * 8).clone();
+        s.storage = emu.readMemory(toAddr(TABLES + 0x60000), 120).clone();
+        s.counts = hex4(getWord(STATE + 0x25e)) + "," + hex4(getWord(STATE + 0x260)) + "," + hex4(getWord(STATE + 0x262))
+                + "," + Long.toHexString(getInt(STATE + RESOURCE_TOTAL));
+        s.rng = hex4(getWord(STATE + RNG_0)) + "," + hex4(getWord(STATE + RNG_1)) + "," + hex4(getWord(STATE + RNG_2));
+        return s;
+    }
+
+    private static String chunks(String prefix, byte[] before, byte[] after, int size) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i + size <= after.length; i += size) {
+            if (!java.util.Arrays.equals(java.util.Arrays.copyOfRange(before, i, i + size),
+                    java.util.Arrays.copyOfRange(after, i, i + size))) {
+                out.append(" ").append(prefix).append(i / size).append("=");
+                for (int k = 0; k < size; k++) {
+                    out.append(String.format("%02X", after[i + k] & 0xff));
+                }
+            }
+        }
+        return out.toString();
+    }
+
+    /** The difference of two snapshots as the removal lines print it; only the flag, object, and link bytes of the map. */
+    private static String difference(Snapshot before, Snapshot after, int width, int height) {
+        StringBuilder line = new StringBuilder();
+        StringBuilder map = new StringBuilder();
+        for (int ty = 0; ty < height; ty++) {
+            for (int tx = 0; tx < width; tx++) {
+                int a = ty * 8 * width + tx * 4;
+                int b = a + 4 * width;
+                StringBuilder diff = new StringBuilder();
+                for (int i : new int[] {0, 3, 4}) {
+                    int at = (i < 4 ? a : b) + (i & 3);
+                    if (after.map[at] != before.map[at]) {
+                        diff.append("/").append(i).append("=").append(String.format("%02X>%02X", before.map[at] & 0xff,
+                                after.map[at] & 0xff));
+                    }
+                }
+                if (diff.length() > 0) {
+                    map.append(map.length() == 0 ? "" : ";").append(tx).append(",").append(ty).append(":")
+                            .append(diff.substring(1));
+                }
+            }
+        }
+        if (map.length() > 0) {
+            line.append(" m=").append(map);
+        }
+        line.append(chunks("s", before.settlers, after.settlers, 16));
+        line.append(chunks("f", before.flags, after.flags, ITEM_SIZE));
+        line.append(chunks("b", before.buildings, after.buildings, 0x12));
+        if (!java.util.Arrays.equals(before.storage, after.storage)) {
+            line.append(" st=");
+            for (byte v : after.storage) {
+                line.append(String.format("%02X", v & 0xff));
+            }
+        }
+        if (!before.counts.equals(after.counts)) {
+            line.append(" c=").append(after.counts);
+        }
+        if (!before.rng.equals(after.rng)) {
+            line.append(" rng=").append(after.rng);
+        }
+        return line.toString();
+    }
+
+    /**
+     * remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]: see the header. The huts stand before the first pass, so
+     * their workers walk in the passes before AT.
+     */
+    private void remove(String rest) throws Exception {
+        objectPass = true;
+        String[] parts = rest.split(":");
+        String label = "remove size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
+        int[] size = startWorld(parts, label);
+        if (size == null) {
+            return;
+        }
+        int width = size[1];
+        int height = size[2];
+        long player = PLAYERS + 0x1000;
+        if (!parts[5].isEmpty()) {
+            for (String road : parts[5].split(";")) {
+                println("EMU " + label + " road=" + road + (silentRoad(width, road) ? " BUILT" : " REFUSED"));
+            }
+        }
+        putWord(STATE + PHASE, 0);
+        int bits = getWord(STATE + 0x30);
+        long layerA = getInt(STATE + MAP_BUFFER);
+        int layerB = getWord(STATE + 0x36);
+        if (!parts[6].isEmpty()) {
+            for (String hut : parts[6].split(";")) {
+                String[] b = hut.split(",");
+                int fx = Integer.parseInt(b[0]);
+                int fy = Integer.parseInt(b[1]);
+                int type = Integer.parseInt(b[2]);
+                long node = ((((long) ((fy - 1) & (height - 1))) << bits) + ((fx - 1) & (width - 1))) * 4;
+                long fnode = (((long) fy << bits) + fx) * 4;
+                int flagSlot = getWord(layerA + layerB + fnode);
+                long flag = TABLES + (long) ITEM_SIZE * flagSlot;
+                putInt(REGISTERS + 0x20, 0);
+                call(0x45da8f);
+                int slot = getWord(REGISTERS + 0x1c);
+                long item = getInt(REGISTERS + 0x24);
+                emu.writeMemory(toAddr(item), new byte[0x12]);
+                putInt(item, node);
+                emu.writeMemory(toAddr(item + 4), new byte[] {(byte) (type << 2)});
+                putWord(item + 6, flagSlot);
+                putInt(flag + 0x34, item);
+                emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x40)});
+                putWord(layerA + layerB + node, slot);
+                emu.writeMemory(toAddr(layerA + node + 3),
+                        new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | 2)});
+                emu.writeMemory(toAddr(layerA + node),
+                        new byte[] {(byte) (emu.readMemory(toAddr(layerA + node), 1)[0] | 0x42)});
+                emu.writeMemory(toAddr(layerA + fnode),
+                        new byte[] {(byte) (emu.readMemory(toAddr(layerA + fnode), 1)[0] | 0x10)});
+                println("EMU " + label + " hut slot=" + slot + " flagslot=" + flagSlot + " item=" + hex(item, 0x12));
+            }
+        }
+        int at = Integer.parseInt(parts[7]);
+        int passes = Integer.parseInt(parts[8]);
+        String[] puts = parts.length > 10 && !parts[10].isEmpty() ? parts[10].split(";") : new String[0];
+        Snapshot seen = snapshot(width, height);
+        println("EMU " + label + " start c=" + seen.counts + " rng=" + seen.rng + " st=" + hex(TABLES + 0x60000, 120));
+        int clock = 0;
+        for (int pass = 0; pass < passes; pass++) {
+            if (pass == at) {
+                for (String click : parts[9].split(";")) {
+                    String kind = click.substring(0, 1);
+                    String[] xy = click.substring(2).split(",");
+                    int x = Integer.parseInt(xy[0]);
+                    int y = Integer.parseInt(xy[1]);
+                    putInt(REGISTERS + 0x30, player);
+                    putInt(REGISTERS + 0x20, RECORD);
+                    putInt(RECORD + 0x82, player);
+                    emu.writeMemory(toAddr(RECORD), new byte[0x100]);
+                    putInt(RECORD + 0x82, player);
+                    if (kind.equals("s")) {
+                        StringBuilder classes = new StringBuilder();
+                        for (int ty = 0; ty < height; ty++) {
+                            for (int tx = 0; tx < width; tx++) {
+                                putWord(player + 0xfc, tx);
+                                putWord(player + 0xfe, ty);
+                                emu.writeMemory(toAddr(player + 0x100), new byte[4]);
+                                call(0x44b6e6);
+                                int[] c = {emu.readMemory(toAddr(player + 0x100), 1)[0] & 0xff,
+                                        emu.readMemory(toAddr(player + 0x101), 1)[0] & 0xff};
+                                if (c[0] != 0) {
+                                    classes.append(classes.length() == 0 ? "" : ";").append(tx).append(",").append(ty)
+                                            .append(":").append(c[0]).append("/").append(c[1]);
+                                }
+                            }
+                        }
+                        println("EMU " + label + " classes=" + classes);
+                        continue;
+                    }
+                    putWord(player + 0xfc, x);
+                    putWord(player + 0xfe, y);
+                    emu.writeMemory(toAddr(player + 0x100), new byte[4]);
+                    if (kind.equals("c")) {
+                        call(0x44b6e6);
+                        println("EMU " + label + " class@" + x + "," + y + "=" + (emu.readMemory(toAddr(player + 0x100), 1)[0] & 0xff)
+                                + "/" + (emu.readMemory(toAddr(player + 0x101), 1)[0] & 0xff));
+                        continue;
+                    }
+                    int sound = runClick(kind.equals("f") ? 0x4615cfL : 0x462d88L);
+                    Snapshot now = snapshot(width, height);
+                    println("EMU " + label + " click=" + kind + "@" + x + "," + y + " class="
+                            + (emu.readMemory(toAddr(player + 0x100), 1)[0] & 0xff) + " sound=" + sound
+                            + difference(seen, now, width, height));
+                    seen = now;
+                }
+            }
+            for (String text : puts) {
+                String[] put = text.split(",");
+                if (pass != Integer.parseInt(put[0])) {
+                    continue;
+                }
+                long target = TABLES + (long) ITEM_SIZE * Integer.parseInt(put[1]);
+                int place = Integer.parseInt(put[2]);
+                emu.writeMemory(toAddr(target + 0xc + place), new byte[] {(byte) Integer.parseInt(put[3])});
+                putWord(target + 0x14 + 2 * place, Integer.parseInt(put[4]));
+                emu.writeMemory(toAddr(target + 4), new byte[] {(byte) (emu.readMemory(toAddr(target + 4), 1)[0] | 0x80)});
+            }
+            clock += 8;
+            int phase = simulationPass(clock);
+            Snapshot now = snapshot(width, height);
+            println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + difference(seen, now, width, height));
+            seen = now;
         }
     }
 

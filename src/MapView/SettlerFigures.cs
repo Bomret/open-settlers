@@ -41,6 +41,11 @@ public sealed class SettlerFigures
     private const int StatesOnRoad = 3;
     private const int StatesIdle = 0x42;
 
+    // A carrier whose road was taken down or joined (states 0x44 and 0x45, docs/rules/removal.md) still stands next to the flag
+    // and is drawn as the carrier that waits. **Inferred:** no draw run confirms it.
+    private const int StatesDismissed = 0x44;
+    private const int StatesRejoined = 0x45;
+
     // A woodcutter that steps through its door (state 4), walks free along its vector (0x10), or cuts (0x11) is drawn with
     // the frame and the timer it holds as a walking settler is (docs/rules/woodcutting.md). **Inferred:** the cut's
     // frames 0x74 to 0x78 name the cutting sequences, which no draw run confirms.
@@ -83,6 +88,8 @@ public sealed class SettlerFigures
                         or StatesWaiting
                         or StatesOnRoad
                         or StatesIdle
+                        or StatesDismissed
+                        or StatesRejoined
                         or StatesDoor
                         or StatesFreeWalk
                         or StatesCutting

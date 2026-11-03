@@ -33,4 +33,26 @@ public static class CommandKind
     /// at once: a stand-in for the construction (M4), not a rule of the original. Later slices add the other types.
     /// </summary>
     public const int PlaceBuilding = 4;
+
+    /// <summary>
+    /// Take down the flag on the node, where the original's remove click allows it (<c>0x4615cf</c> with the check
+    /// <c>0x44b6e6</c>, <c>docs/rules/removal.md</c>): a flag with no road is freed, a flag with two roads to different flags
+    /// joins them into one road. Refused, with no change, for a flag a building stands at, a flag with one road or more than two,
+    /// and any node that is no flag of the player's.
+    /// </summary>
+    public const int RemoveFlag = 5;
+
+    /// <summary>
+    /// Take down the building on the node (<c>0x4617fd</c>): its worker walks home, the goods it waits for lose their
+    /// destination, and its flag is freed where no road leaves it. Refused for a node that holds no building of the player's
+    /// that stands, and for the castle.
+    /// </summary>
+    public const int RemoveBuilding = 6;
+
+    /// <summary>
+    /// Take down the road that passes the node (<c>0x462d88</c> with <c>0x462e1d</c>): the road's carrier walks home and the
+    /// goods that were to go along it lose their direction. Refused for a node that is no node of a road, a flag, or a node the
+    /// player does not own.
+    /// </summary>
+    public const int RemoveRoad = 7;
 }

@@ -80,7 +80,16 @@ public sealed partial class Game
         FlagPass();
         for (var slot = 0; slot < _buildings.Count; slot++)
         {
-            if (slot / 32 % 32 == _phase)
+            if (slot / 32 % 32 != _phase || _buildings[slot].IsFree)
+            {
+                continue;
+            }
+
+            if (_buildings[slot].IsDemolishing)
+            {
+                Burn(slot, _buildings[slot]);
+            }
+            else
             {
                 HandleBuilding(_buildings[slot]);
             }
@@ -267,6 +276,12 @@ public sealed partial class Game
             case 0x43:
                 Claim(slot, settler);
                 break;
+            case 0x44:
+                Dismissed(slot, settler);
+                break;
+            case 0x45:
+                Rejoined(slot, settler);
+                break;
             case 0xe:
                 if (TimerRan(settler))
                 {
@@ -398,7 +413,10 @@ public sealed partial class Game
     {
         var slot = Map.Layer(MapLayer.Resource)[index];
 
-        return slot < _buildings.Count && Map.Index(_buildings[slot].X, _buildings[slot].Y) == index
+        return
+            slot < _buildings.Count
+            && !_buildings[slot].IsFree
+            && Map.Index(_buildings[slot].X, _buildings[slot].Y) == index
             ? _buildings[slot]
             : null;
     }
@@ -692,20 +710,34 @@ public sealed partial class Game
         var flag = _flags.FindIndex(f => f.X == flagX && f.Y == flagY);
         var site = Castle is null ? default : BuildSite.Evaluate(_tables, Map, x, y, 0, hasCastle: true);
         // **Inferred:** a small hut needs the site of a small or a large building (3 or 4) and the flag already standing.
-        if (flag < 0 || _buildings.Any(b => b.Flag == flag) || site.Node != 5 || site.Site < 3)
+        if (flag < 0 || BuildingOfFlag(flag) is not null || site.Node != 5 || site.Site < 3)
         {
             return false;
         }
 
         var node = Map.Index(x, y);
+        var slot = _buildings.FindIndex(building => building.IsFree);
+        slot = slot < 0 ? _buildings.Count : slot;
         Map.Bytes(MapLayer.Flags)[node] |= 0x42;
         Map.Bytes(MapLayer.Flags)[Map.Index(flagX, flagY)] |= 0x10;
         Map.Bytes(MapLayer.Object)[node] = (byte)((Map.Layer(MapLayer.Object)[node] & 0x80) | 2);
-        Map.Bytes(MapLayer.Resource)[node] = (byte)_buildings.Count;
-        _buildings.Add(new Building(Building.WoodcutterType, x, y, flag));
+        Map.Bytes(MapLayer.Resource)[node] = (byte)slot;
+        var hut = new Building(Building.WoodcutterType, x, y, flag);
+        if (slot == _buildings.Count)
+        {
+            _buildings.Add(hut);
+        }
+        else
+        {
+            _buildings[slot] = hut;
+        }
 
         return true;
     }
+
+    // The building a flag is tied to: the one that stands at it, not one that burns (0x4617fd takes the pointer from the flag's item).
+    private Building? BuildingOfFlag(int flag) =>
+        _buildings.FirstOrDefault(building => !building.IsFree && !building.IsDemolishing && building.Flag == flag);
 
     private void MixSettlers(ref ulong hash)
     {
@@ -723,6 +755,7 @@ public sealed partial class Game
                     building.Worker,
                     building.Progress,
                     building.Fill,
+                    building.Stamp,
                 }
             )
             {

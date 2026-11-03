@@ -46,11 +46,12 @@ public sealed partial class Game
         _directionBytes[road.ToSlot][road.ToDirection] = (byte)(road.FromDirection << 3);
     }
 
-    // A good put on the first empty place of a flag (0x436b46): the place's destination is cleared and the flag's bit set.
-    internal void LayGood(int flag, int place, int good)
+    // A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that
+    // lays a good with a destination) and the flag's bit set.
+    internal void LayGood(int flag, int place, int good, int destination = NoDestination)
     {
         _flagGoods[flag][place] = (byte)good;
-        _goodsDestination[flag][place] = NoDestination;
+        _goodsDestination[flag][place] = (ushort)destination;
         _goodsBit[flag] = true;
     }
 

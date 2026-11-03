@@ -34,15 +34,56 @@ public sealed partial class Game
     /// </summary>
     public byte RoadByte(int flag, int direction) => _roadBytes[flag][direction];
 
+    // The slot the next flag takes: the first one a taken-down flag left free, else the end of the table (the allocator 0x45d7ad).
+    private int NextFlagSlot()
+    {
+        var free = _flags.FindIndex(flag => flag.IsFree);
+
+        return free >= 0 ? free : _flags.Count;
+    }
+
+    // Puts a flag in the next slot; the item of the slot starts as zeros (the allocator clears it).
     private void AddFlag(Flag flag)
     {
-        _flags.Add(flag);
-        _flagStatus.Add(0);
-        _roadBytes.Add(new byte[6]);
-        _flagGoods.Add(new byte[8]);
-        _goodsBit.Add(false);
-        _goodsDestination.Add(new ushort[8]);
-        _directionBytes.Add(new byte[6]);
+        var slot = NextFlagSlot();
+        if (slot == _flags.Count)
+        {
+            _flags.Add(flag);
+            _flagStatus.Add(0);
+            _roadBytes.Add(new byte[6]);
+            _flagGoods.Add(new byte[8]);
+            _goodsBit.Add(false);
+            _goodsDestination.Add(new ushort[8]);
+            _directionBytes.Add(new byte[6]);
+
+            return;
+        }
+
+        _flags[slot] = flag;
+        _flagStatus[slot] = 0;
+        _roadBytes[slot] = new byte[6];
+        _flagGoods[slot] = new byte[8];
+        _goodsBit[slot] = false;
+        _goodsDestination[slot] = new ushort[8];
+        _directionBytes[slot] = new byte[6];
+    }
+
+    // Frees a flag's slot (0x45d974): the item keeps its bytes until a new flag takes the slot; the table's count falls past the
+    // free slots at its end.
+    private void FreeFlagSlot(int slot)
+    {
+        _flags[slot] = Flag.Free;
+        while (_flags.Count > 0 && _flags[^1].IsFree)
+        {
+            var last = _flags.Count - 1;
+            _flags.RemoveAt(last);
+            _flagStatus.RemoveAt(last);
+            _roadBytes.RemoveAt(last);
+            _flagGoods.RemoveAt(last);
+            _goodsBit.RemoveAt(last);
+            _goodsDestination.RemoveAt(last);
+            _directionBytes.RemoveAt(last);
+        }
     }
 
     // The length class of a road (0x4454e7), kept in bits 4 to 6 of the road bytes of both its ends.
@@ -133,6 +174,11 @@ public sealed partial class Game
     {
         for (var slot = _phase * 32; slot < Math.Min(_flags.Count, _phase * 32 + 32); slot++)
         {
+            if (_flags[slot].IsFree)
+            {
+                continue;
+            }
+
             GoodsTurn(slot);
             VisitFlag(slot);
         }
@@ -298,7 +344,7 @@ public sealed partial class Game
             if (
                 (flags[next] & 0x80) != 0
                 && settler.Mode == 0
-                && settler.Next >= 0
+                && (sbyte)settler.Next >= 0
                 && (_directionBytes[Map.Layer(MapLayer.Resource)[next]][(direction + 3) % 6] & 0x80) == 0
             )
             {
@@ -313,21 +359,44 @@ public sealed partial class Game
         }
     }
 
-    // The carrier next to the flag at the end of its road (0x43b788 and its siblings): its timer takes 0x3f, its frame the
-    // idle frame of the heading, it leaves the node (the node holds no settler for the others to wait for), and it takes
-    // state 0x42 with the flag and the direction of the road at that flag as its target. The dword at 12 holds a pointer to
-    // the flag's item in the original; the engine keeps the slot in the target. **Not ported:** a road that already holds
-    // two carriers, and the work at the flag in state 0x42 (the goods of the next slice).
+    // The carrier next to the flag at the end of its road (0x43b788 and its siblings, then 0x43bc52): its timer takes 0x3f, its
+    // frame the idle frame of the heading, and its heading goes down by 6 (the marker of a step that is tried again at its next
+    // turn). With a road that already holds two carriers it counts the tries in the byte after the state; at the fourth it
+    // leaves the road (both ends count one carrier less) and takes the next state 0xff, which the flag's walk reads as a carrier
+    // that was sent away. With a good that waits at the flag at the far end it does nothing more. Else it leaves the node (the
+    // node holds no settler for the others to wait for) and takes state 0x42 with the flag and the direction of the road at
+    // that flag as its target. The dword at 12 holds a pointer to the flag's item in the original; the engine keeps the slot in
+    // the target. **Not ported:** the work at the flag in state 0x42 (the goods of the next slice).
     private void Wait(Settler settler, int back, int flag)
     {
+        settler.Timer = 0x3f;
+        settler.Frame = (byte)(settler.Heading + 0x6e);
+        settler.Heading -= 6;
+        var far = Neighbour(flag, back);
+        var farDirection = (_directionBytes[flag][back] & 0x38) >> 3;
         if ((_roadBytes[flag][back] & 0xf) >= 2)
+        {
+            settler.Next = (settler.Next + 1) & 0xff;
+            if (settler.Next >= 4)
+            {
+                settler.Next = 0;
+                if ((_roadBytes[flag][back] & 0xf) >= 2)
+                {
+                    _roadBytes[flag][back]--;
+                    _roadBytes[far][farDirection]--;
+                    settler.Next = 0xff;
+                }
+            }
+
+            return;
+        }
+
+        if ((_directionBytes[far][farDirection] & 0x80) != 0)
         {
             return;
         }
 
-        settler.Timer = 0x3f;
-        settler.Frame = (byte)(settler.Heading + 0x6e);
-        settler.Stamp = (ushort)((settler.Stamp & 0xff00) | (byte)(settler.Heading - 6));
+        settler.Stamp = (ushort)((settler.Stamp & 0xff00) | (byte)settler.Heading);
         settler.Mode = back;
         settler.Target = flag;
         settler.Heading = 0;

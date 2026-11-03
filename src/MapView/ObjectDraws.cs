@@ -37,7 +37,7 @@ public static class ObjectDraws
     public static Dictionary<(int X, int Y), IReadOnlyList<int>> FlagGoodsOf(Game game) =>
         game
             .Flags.Select((flag, slot) => (flag, goods: game.FlagGoods(slot)))
-            .Where(entry => entry.goods.Any(good => good != 0))
+            .Where(entry => !entry.flag.IsFree && entry.goods.Any(good => good != 0))
             .ToDictionary(entry => (entry.flag.X, entry.flag.Y), entry => entry.goods);
 
     /// <summary>
@@ -95,7 +95,11 @@ public static class ObjectDraws
             );
         }
 
-        foreach (var hut in buildings?.Where(building => building.Type == Building.WoodcutterType) ?? [])
+        // A hut that was taken down burns (docs/rules/removal.md); the burning is not drawn (the sprites of the fire are not read).
+        foreach (
+            var hut in buildings?.Where(building => building.Type == Building.WoodcutterType && !building.IsDemolishing)
+                ?? []
+        )
         {
             // A hut is drawn like the castle: at its node in the order of its row. inferred: the alignment is that of an
             // object, as for the castle.

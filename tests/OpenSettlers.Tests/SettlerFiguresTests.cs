@@ -141,6 +141,20 @@ public sealed class SettlerFiguresTests
         Assert.HasCount(3, Figures().Draws(Map(), [Walker(7, 0, state: state)], 0));
     }
 
+    // Inferred: a carrier whose road was taken down or joined (0x44, 0x45) still stands next to the flag and is drawn as the carrier
+    // that waits (0x42); no draw run confirms it.
+    [TestMethod]
+    [DataRow(0x44)]
+    [DataRow(0x45)]
+    public void ADismissedCarrierIsDrawnAsTheCarrierThatWaitsIs(int state)
+    {
+        var waiting = Figures().Draws(Map(), [Carrier(mode: 7, state: 0x42)], 0);
+        var dismissed = Figures().Draws(Map(), [Carrier(mode: 7, state: state)], 0);
+
+        Assert.HasCount(waiting.Count, dismissed);
+        Assert.AreEqual(waiting[0].Entry, dismissed[0].Entry);
+    }
+
     [TestMethod]
     public void ACarrierOnItsRoadIsDrawnAsAWalkingSettlerIs()
     {

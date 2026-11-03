@@ -17,10 +17,10 @@ public sealed class ProgramTablesTests
     private const ulong FnvPrime = 0x100000001b3;
     private const int ImageBase = 0x400000;
     private const int SectionStart = 0x1e000;
-    private const int SectionSize = 0x40000;
+    private const int SectionSize = 0x50000;
     private const int RawStart = 0x200;
 
-    // A PE32 file with one section that holds the addresses 0x41e000 to 0x44e000 at the file offset 0x200.
+    // A PE32 file with one section that holds the addresses 0x41e000 to 0x46e000 at the file offset 0x200.
     private static byte[] Executable(Action<byte[]> fill, int sectionAt = SectionStart)
     {
         var exe = new byte[RawStart + SectionSize];
@@ -73,7 +73,7 @@ public sealed class ProgramTablesTests
     [TestMethod]
     public void ATableOutsideEverySectionIsRefused()
     {
-        var exe = Executable(_ => { }, sectionAt: SectionStart + 0x40000);
+        var exe = Executable(_ => { }, sectionAt: SectionStart + SectionSize);
 
         Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
     }
@@ -208,6 +208,38 @@ public sealed class ProgramTablesTests
 
         // peek:4388ff:192 (24 rows of 8 bytes).
         Assert.AreEqual(0x6EFEA098351E0AF5UL, Fnv(tables.WalkRows));
+    }
+
+    [TestMethod]
+    public void TheTablesOfTheRemovalAreFoundByTheirAddress()
+    {
+        var exe = Executable(bytes =>
+        {
+            for (var good = 0; good < ProgramTables.GoodKindCount; good++)
+            {
+                bytes[FileOffset(ProgramTables.GoodKindAddress) + good] = (byte)(good + 3);
+            }
+
+            for (var length = 0; length < ProgramTables.RoadCapacityCount; length++)
+            {
+                bytes[FileOffset(ProgramTables.RoadCapacityAddress) + length] = (byte)(length * 2);
+            }
+        });
+
+        var tables = ProgramTables.Read(exe);
+
+        Assert.AreEqual((byte)(9 + 3), tables.GoodKinds[9]);
+        Assert.AreEqual((byte)(5 * 2), tables.RoadCapacities[5]);
+    }
+
+    [TestMethod]
+    public void TheTablesOfTheRemovalOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:462d6d:32 (a byte for each of 32 goods) and peek:462acd:8 (a count for each of 8 length classes).
+        Assert.AreEqual(0x1C7E05E97572CBCBUL, Fnv(tables.GoodKinds));
+        Assert.AreEqual(0x6FC87DA442D34B9DUL, Fnv(tables.RoadCapacities));
     }
 
     private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);

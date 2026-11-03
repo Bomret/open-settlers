@@ -39,12 +39,14 @@ public partial class MapViewControl : Control
     Button _flagButton = null!;
     Button _roadButton = null!;
     Button _woodcutterButton = null!;
+    Button _removeButton = null!;
     SettlerGraphics? _settlerGraphics;
     ShaderMaterial? _settlerMaterial;
     readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
     int _flagsDrawn;
     ObjectLayerWatch _objectWatch = new();
     int _buildingsDrawn;
+    int _revisionDrawn;
     int _roadsDrawn;
     RoadDrawing? _drawing;
     Node2D _preview = null!;
@@ -148,6 +150,7 @@ public partial class MapViewControl : Control
             {
                 _flagButton.ButtonPressed = false;
                 _woodcutterButton.ButtonPressed = false;
+                _removeButton.ButtonPressed = false;
             }
             else
             {
@@ -160,6 +163,7 @@ public partial class MapViewControl : Control
             {
                 _roadButton.ButtonPressed = false;
                 _woodcutterButton.ButtonPressed = false;
+                _removeButton.ButtonPressed = false;
             }
         };
         bar.AddChild(_roadButton);
@@ -178,9 +182,29 @@ public partial class MapViewControl : Control
             {
                 _flagButton.ButtonPressed = false;
                 _roadButton.ButtonPressed = false;
+                _removeButton.ButtonPressed = false;
             }
         };
         bar.AddChild(_woodcutterButton);
+        // Stand-in for the original's remove click (0x4615cf for a flag or a building, 0x462d88 for a road): while it is pressed
+        // a click on a node takes down the flag, the building, or the road the original's check lets it (docs/rules/removal.md).
+        _removeButton = new Button
+        {
+            Text = "Remove",
+            ToggleMode = true,
+            Visible = _play,
+            FocusMode = FocusModeEnum.None,
+        };
+        _removeButton.Toggled += pressed =>
+        {
+            if (pressed)
+            {
+                _flagButton.ButtonPressed = false;
+                _roadButton.ButtonPressed = false;
+                _woodcutterButton.ButtonPressed = false;
+            }
+        };
+        bar.AddChild(_removeButton);
 
         _canvas = new Control
         {
@@ -298,6 +322,8 @@ public partial class MapViewControl : Control
             _flagButton.ButtonPressed = false;
             _roadButton.ButtonPressed = false;
             _woodcutterButton.ButtonPressed = false;
+            _removeButton.ButtonPressed = false;
+            _revisionDrawn = 0;
             DrawPreview();
             _tickCarry = 0;
         }
@@ -326,9 +352,12 @@ public partial class MapViewControl : Control
                 || _game.Flags.Count != _flagsDrawn
                 || _game.Roads.Count != _roadsDrawn
                 || _game.Buildings.Count != _buildingsDrawn
+                || _game.Revision != _revisionDrawn
             )
             {
-                // The castle stands, a flag went up, a road was built, a hut stands, or an object or a good on a flag changed: draw it.
+                // The castle stands, a flag went up, a road was built, a hut stands, something was taken down, or an object or a good
+                // on a flag changed: draw it.
+                _revisionDrawn = _game.Revision;
                 _castleDrawn = _game.Castle is not null;
                 _flagsDrawn = _game.Flags.Count;
                 _roadsDrawn = _game.Roads.Count;
@@ -467,6 +496,17 @@ public partial class MapViewControl : Control
             }
 
             DrawPreview();
+            return;
+        }
+
+        if (_removeButton.ButtonPressed)
+        {
+            // The check decides what the click takes down; a click it refuses asks for nothing.
+            if (_game.RemovalAt(x, y) is { } removal)
+            {
+                _game.Enqueue(new Command(_game.TickCount, 0, removal, x, y));
+            }
+
             return;
         }
 
