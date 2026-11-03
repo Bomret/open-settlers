@@ -33,7 +33,7 @@ code writes `Table70` and `Table18` as their own records and turns their links i
   them into offsets), so it is the graph that roads join.
 - `Table18` holds the buildings: each item keeps a countdown of clock units that its routine reduces by
   the units since the item's last turn.
-- `Table16` holds the settlers: the routine dispatches each item on a type byte.
+- `Table16` holds the settlers: the routine dispatches each item on its state byte ([Settlers](settlers.md#the-items)).
 - `Table120` holds the storage inventories. No routine of the tick walks it.
 
 The per-field layout of the items is not settled; the milestone scope file keeps those leads.
@@ -48,13 +48,16 @@ current phase and works a slice of its table:
 
 - `Table70` and `Table18`: 32 slots, from slot `phase * 32`. A routine stops at the high-water mark of
   its table, so slots past it get no turn. A slot with a clear bit is skipped.
-- `Table16`: the phase modulo 16 picks the first slot of the slice, and each set slot is dispatched on
-  its type byte through `0x42fc81`. **Inferred:** how far the slice reaches is not settled.
+- `Table16`: the phase modulo 16 picks the first slot of the slice, which then takes every 16th slot up to the
+  high-water mark; each set slot is dispatched on its state byte through `0x42fc81`. **Emulated:** a settler's
+  turns lie 16 or 17 passes apart (`worker-walks.txt`).
 
-Phases 32 and above call none of these routines. A table slot therefore gets one turn per phase cycle,
-and a cycle is 33 or 49 passes long.
+Phases 32 and above call none of these routines. A `Table70` or `Table18` slot therefore gets one turn per phase
+cycle, a `Table16` slot two, and a cycle is 33 or 49 passes long.
 
 ## In the engine
 
-`OpenSettlers.Simulation.Game` runs the tick (ADR 0005). It holds no item table yet: the slices that
-add flags, roads, buildings, and settlers add them.
+`OpenSettlers.Simulation.Game` runs the tick (ADR 0005). It holds the flags, roads, buildings, and settlers
+as lists whose index is the slot, and the castle's list of waiting settlers; the storage item and the flag items'
+other fields are not held. The pass walks the building and settler lists as the phase says
+([Settlers](settlers.md#the-pass)); the flag table has no pass yet.

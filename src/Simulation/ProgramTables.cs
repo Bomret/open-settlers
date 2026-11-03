@@ -23,17 +23,98 @@ public sealed class ProgramTables
     /// <summary>The number of rows of the start stock table (the levels 0, 10, 20, 30, and 40).</summary>
     public const int StartStockRows = 5;
 
-    /// <summary>Creates tables from their contents; <see cref="Read"/> creates them from the program.</summary>
-    public ProgramTables(byte[] classes, byte[][] startStock)
+    /// <summary>The address of the step time table: 16-bit words, one for each step shape (<c>0x43f248</c>).</summary>
+    public const int StepTimeAddress = 0x43f248;
+
+    /// <summary>
+    /// The first index of <see cref="StepTimes"/> the table holds: a step into a node much lower than its start
+    /// reads the program bytes before the table, as the original does.
+    /// </summary>
+    public const int StepTimeFirst = -32;
+
+    /// <summary>The number of words of <see cref="StepTimes"/> (the indices <see cref="StepTimeFirst"/> to 127).</summary>
+    public const int StepTimeCount = 160;
+
+    /// <summary>The address of the door speed table: one byte for each building type (<c>0x43c92b</c>).</summary>
+    public const int DoorSpeedAddress = 0x43c92b;
+
+    /// <summary>The number of building types the door speed table covers.</summary>
+    public const int DoorSpeedCount = 64;
+
+    /// <summary>The address of the table of scan windows: 16-bit words, one for each map size (<c>0x421d28</c>).</summary>
+    public const int ScanWindowAddress = 0x421d28;
+
+    /// <summary>The address of the figure bases: 8 words for each job (<c>0x4501a1</c>, 256 words).</summary>
+    public const int FigureBaseAddress = 0x4501a1;
+
+    /// <summary>The address of the figure offsets: 2 words for each figure byte (<c>0x4503c5</c>, 512 words).</summary>
+    public const int FigureOffsetAddress = 0x4503c5;
+
+    /// <summary>The number of words of <see cref="ScanWindows"/>.</summary>
+    public const int ScanWindowCount = 8;
+
+    /// <summary>
+    /// Creates tables from their contents; <see cref="Read"/> creates them from the program. The tables of the
+    /// settlers' walk (<paramref name="stepTimes"/>, <paramref name="doorSpeeds"/>, <paramref name="scanWindows"/>) are
+    /// empty where a test needs none; the walk then reads them as zeros.
+    /// </summary>
+    public ProgramTables(
+        byte[] classes,
+        byte[][] startStock,
+        ushort[]? stepTimes = null,
+        byte[]? doorSpeeds = null,
+        ushort[]? scanWindows = null,
+        short[]? figureBases = null,
+        short[]? figureOffsets = null
+    )
     {
-        if (classes.Length != ClassCount || startStock.Length != StartStockRows || startStock.Any(row => row.Length != Simulation.StartStock.Goods))
+        if (
+            classes.Length != ClassCount
+            || startStock.Length != StartStockRows
+            || startStock.Any(row => row.Length != Simulation.StartStock.Goods)
+        )
         {
             throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows of 26.");
         }
 
         Classes = classes;
         StartStock = startStock;
+        StepTimes = stepTimes ?? new ushort[StepTimeCount];
+        DoorSpeeds = doorSpeeds ?? new byte[DoorSpeedCount];
+        ScanWindows = scanWindows ?? new ushort[ScanWindowCount];
+        FigureBases = figureBases ?? new short[256];
+        FigureOffsets = figureOffsets ?? new short[512];
     }
+
+    /// <summary>For each job 8 words; the first two are the figure base and the second figure base (negative: none).</summary>
+    public short[] FigureBases { get; }
+
+    /// <summary>For each figure byte 2 words: what it adds to the figure and to the second figure.</summary>
+    public short[] FigureOffsets { get; }
+
+    /// <summary>
+    /// The time in clock units of a step, by step shape: <c>4 + 9 * direction + (height of the node reached minus
+    /// height of the node left)</c>, with the directions east 0 to north 5 (<c>docs/rules/settlers.md</c>). Index with
+    /// <see cref="StepTime"/>.
+    /// </summary>
+    public ushort[] StepTimes { get; }
+
+    /// <summary>The time of the step shape <paramref name="shape"/>; a shape outside the table reads as 0.</summary>
+    public ushort StepTime(int shape)
+    {
+        var index = shape - StepTimeFirst;
+
+        return index >= 0 && index < StepTimes.Length ? StepTimes[index] : (ushort)0;
+    }
+
+    /// <summary>The speed of the door of each building type, in 32nds of a step time.</summary>
+    public byte[] DoorSpeeds { get; }
+
+    /// <summary>
+    /// The number of buildings the retry scan clears in one pass, by map size value (<c>0x428728</c>, set by
+    /// <c>0x42195c</c> from the table at <c>0x421d28</c>).
+    /// </summary>
+    public ushort[] ScanWindows { get; }
 
     /// <summary>The class of each object code: 1 and 2 are the trees and stones, 3 a flag, 4 to 6 buildings.</summary>
     public byte[] Classes { get; }
@@ -51,11 +132,29 @@ public sealed class ProgramTables
         var startStock = new byte[StartStockRows][];
         for (var row = 0; row < StartStockRows; row++)
         {
-            startStock[row] = Slice(exe, StartStockAddress + row * Simulation.StartStock.Goods, Simulation.StartStock.Goods);
+            startStock[row] = Slice(
+                exe,
+                StartStockAddress + row * Simulation.StartStock.Goods,
+                Simulation.StartStock.Goods
+            );
         }
 
-        return new ProgramTables(classes, startStock);
+        var steps = Slice(exe, StepTimeAddress + 2 * StepTimeFirst, 2 * StepTimeCount);
+        var windows = Slice(exe, ScanWindowAddress, 2 * ScanWindowCount);
+
+        return new ProgramTables(
+            classes,
+            startStock,
+            [.. Enumerable.Range(0, StepTimeCount).Select(i => BitConverter.ToUInt16(steps, 2 * i))],
+            Slice(exe, DoorSpeedAddress, DoorSpeedCount),
+            [.. Enumerable.Range(0, ScanWindowCount).Select(i => BitConverter.ToUInt16(windows, 2 * i))],
+            Words(Slice(exe, FigureBaseAddress, 512)),
+            Words(Slice(exe, FigureOffsetAddress, 1024))
+        );
     }
+
+    private static short[] Words(byte[] bytes) =>
+        [.. Enumerable.Range(0, bytes.Length / 2).Select(i => BitConverter.ToInt16(bytes, 2 * i))];
 
     // The bytes at a program address, found through the section that holds it (PE32: e_lfanew at 0x3c, the file
     // header 4 bytes after it, the image base at +28 of the optional header, 40 bytes for each section header).

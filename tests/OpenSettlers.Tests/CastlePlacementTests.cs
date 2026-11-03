@@ -70,7 +70,10 @@ public sealed class CastlePlacementTests
         Assert.IsNull(game.Castle);
         Assert.IsEmpty(game.Stock);
         Assert.AreEqual(before, tick);
-        var fresh = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var fresh = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+        );
         fresh.Tick();
         fresh.Tick();
         Assert.AreEqual(fresh.Digest(), game.Digest());
@@ -80,7 +83,10 @@ public sealed class CastlePlacementTests
     public void ACommandOtherThanThePlacementIsRefusedBeforeTheCastleStands()
     {
         var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
-        var fresh = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var fresh = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+        );
 
         game.Enqueue(new Command(0, 0, 2, 15, 5));
         game.Enqueue(new Command(0, 0, 3, 15, 5));
@@ -121,14 +127,22 @@ public sealed class CastlePlacementTests
     {
         static Game Run()
         {
-            var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]), 7);
+            var game = new Game(
+                TestProgram.Made(),
+                MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]),
+                7
+            );
             game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
             game.Tick();
 
             return game;
         }
 
-        var fresh = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]), 7);
+        var fresh = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]),
+            7
+        );
         fresh.Tick();
 
         Assert.AreEqual(Run().Digest(), Run().Digest());

@@ -12,7 +12,7 @@ namespace OpenSettlers.Simulation;
 /// flags (<c>docs/rules/roads.md</c>); every other command is refused. A refused command changes nothing, not even the
 /// digest. The game draws no randomness.
 /// </summary>
-public sealed class Game
+public sealed partial class Game
 {
     /// <summary>Ticks in a second at normal speed: 4 timer calls of 20 milliseconds make one tick.</summary>
     public const double TicksPerSecond = 12.5;
@@ -92,6 +92,7 @@ public sealed class Game
             }
         }
 
+        Pass();
         TickCount++;
     }
 
@@ -126,6 +127,7 @@ public sealed class Game
         }
 
         hash = Mix(hash, Map.Resource1Total);
+        MixSettlers(ref hash);
 
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
@@ -154,6 +156,7 @@ public sealed class Game
             CommandKind.PlaceCastle => PlaceCastle(command.X, command.Y),
             CommandKind.PlaceFlag => PlaceFlag(command.X, command.Y),
             CommandKind.BuildRoad => BuildRoad(command),
+            CommandKind.PlaceBuilding => PlaceBuilding(command.X, command.Y),
             _ => false,
         };
     }
@@ -202,6 +205,7 @@ public sealed class Game
         CastlePlacement.Apply(Map, x, y, site.Height, 0);
         // The castle's flag stands south-east of it and takes the first slot of the flag table.
         _flags.Add(new Flag((x + 1) & (Map.Size.Width - 1), (y + 1) & (Map.Size.Height - 1)));
+        CreateCastleSettlers(x, y);
 
         return true;
     }

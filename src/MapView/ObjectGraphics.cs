@@ -39,6 +39,7 @@ public sealed class ObjectGraphics
     public static int Layer(int entry) =>
         entry == ObjectSprites.CastleEntry ? EntryCount
         : entry == ObjectSprites.FlagEntry ? EntryCount + 1
+        : entry == ObjectSprites.WoodcutterEntry ? EntryCount + 2
         : entry - ObjectSprites.FirstEntry;
 
     /// <summary>
@@ -90,6 +91,17 @@ public sealed class ObjectGraphics
                 )
         );
 
+        images.Add(
+            archive[ObjectSprites.WoodcutterEntry].State == EntryState.Absent
+                ? ObjectImage.Empty
+                : Read(
+                    archive,
+                    ObjectSprites.WoodcutterEntry,
+                    "the woodcutter's hut sprite",
+                    data => ObjectImage.From(SpriteFile.Read(data))
+                )
+        );
+
         var width = images.Max(image => image.Width);
         var height = images.Max(image => image.Height);
         if (width == 0 || height == 0)
@@ -111,7 +123,7 @@ public sealed class ObjectGraphics
     }
 
     // The pixel arrays grow to the layer size at the top left; Width and Height stay the sprite's own.
-    static ObjectImage Pad(ObjectImage image, int width, int height)
+    internal static ObjectImage Pad(ObjectImage image, int width, int height)
     {
         var indices = new byte[width * height];
         var coverage = new byte[width * height];

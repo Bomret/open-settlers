@@ -60,6 +60,13 @@
 //                            a direction, a row position and a column position, and the height and the terrain byte of the
 //                            node, its north, east, south, south-east, and west neighbours. Each line gives the inputs and what
 //                            the routine hands to the textured fill (0x406120): the position, the mask entry, and the texture entry.
+//   worker:N:S0,S1,S2:L:cx,cy:x,y;...:sx,sy,D;...:fx,fy,T:PASSES[:WARM[:sx,sy,D;...:AT]]
+//                            the item tables' passes (docs/rules/settlers.md) on a game started as road starts it (castle at
+//                            cx,cy, the flags, the roads), with a finished building of type T standing at the flag fx,fy on the
+//                            node north-west of it. A pass is the retry scan 0x428728, the phase step, the building slice
+//                            0x42cb2d, and the settler slice 0x42f3d9, with the clock 8 units on. A line per pass lists the
+//                            settlers, the building, and the storage item whose bytes changed (s<slot>=, b=, st=, in hex).
+//                            WARM passes run before the building is placed; the roads after AT are built before pass AT.
 //   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -115,6 +122,7 @@ public class EmulateMapStart extends GhidraScript {
                     case "flagput" -> flagput(rest);
                     case "road" -> road(rest);
                     case "roaddraw" -> roaddraw(rest);
+                    case "worker" -> worker(rest);
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
                     case "opponents" -> opponents(rest);
@@ -838,6 +846,273 @@ public class EmulateMapStart extends GhidraScript {
                     emu.readMemory(toAddr(RECORD + 1), 1)[0] & 0xff) + " length=" + getWord(RECORD + 0xce)
                     + " roadchanges=" + changes(mapAtStart, mapNow, width, height) + " items=" + items.toString().trim());
         }
+    }
+
+
+    private static final int CLOCK = 0x206;
+    private static final int ELAPSED = 0x284;
+    private static final int PHASE = 0x26c;
+    private static final int PHASE_COUNT = 33;
+
+    /** Starts a game as road does: the map, the item tables, the castle, and the flags; returns width, height. */
+    private int[] startWorld(String[] parts, String label) throws Exception {
+        int[] size = generate(parts[0] + ":" + parts[1], false);
+        putInt(STATE + OFFSETS_POINTER, OFFSETS);
+        call(0x41f6a5);
+        putInt(STATE + 0x352, 2);
+        putInt(STATE + 0x64, PLAYERS + 0x1000);
+        putInt(STATE + 0x68, PLAYERS + 0x3000);
+        putInt(STATE + 0x6c, PLAYERS + 0x5000);
+        putInt(STATE + 0x70, PLAYERS + 0x7000);
+        putInt(STATE + 0x78, PLAYERS + 0x9000);
+        putInt(STATE + 0x7c, PLAYERS + 0x9400);
+        putInt(STATE + 0x98, TABLES);
+        putInt(STATE + 0xa4, TABLES + 0x10000);
+        putInt(STATE + 0x9c, TABLES + 0x20000);
+        putInt(STATE + 0xa8, TABLES + 0x30000);
+        putInt(STATE + 0xa0, TABLES + 0x40000);
+        putInt(STATE + 0xac, TABLES + 0x50000);
+        putInt(STATE + 0xf0, TABLES + 0x60000);
+        putInt(STATE + 0xf4, TABLES + 0x70000);
+        zero(PLAYERS, 0xa000);
+        zero(TABLES, 0x80000);
+        for (int i = 0; i < 4; i++) {
+            putWord(PLAYERS + 0x1000 + 0x2000 * i, i);
+        }
+        putWord(STATE + 0x258, 100);
+        putWord(STATE + 0x25a, 100);
+        putWord(STATE + 0x25c, 100);
+        putWord(STATE + 0x264, 100);
+        for (int offset : new int[] {0x25e, 0x260, 0x262, 0x266}) {
+            putWord(STATE + offset, 0);
+        }
+        long player = PLAYERS + 0x1000;
+        putInt(REGISTERS + 0x30, player);
+        String[] centre = parts[3].split(",");
+        putWord(player + 0xfc, Integer.parseInt(centre[0]));
+        putWord(player + 0xfe, Integer.parseInt(centre[1]));
+        emu.writeMemory(toAddr(player + LEVEL), new byte[] {(byte) Integer.parseInt(parts[2])});
+        call(0x44b6e6);
+        byte[] first = emu.readMemory(toAddr(player + 0x100), 2);
+        if ((first[0] & 0xff) != 7 || (first[1] & 0xff) != 5) {
+            println("EMU " + label + " castle=" + parts[3] + " REFUSED");
+            return null;
+        }
+        call(0x442704);
+        emu.writeMemory(toAddr(RECORD), new byte[0x100]);
+        putInt(RECORD + 0x82, player);
+        putInt(REGISTERS + 0x20, RECORD);
+        if (!parts[4].isEmpty()) {
+            for (String tile : parts[4].split(";")) {
+                String[] xy = tile.split(",");
+                putWord(player + 0xfc, Integer.parseInt(xy[0]));
+                putWord(player + 0xfe, Integer.parseInt(xy[1]));
+                emu.writeMemory(toAddr(player + 0x100), new byte[4]);
+                long esp = emu.readRegister("ESP").longValue() - 4;
+                emu.writeRegister("ESP", esp);
+                putInt(esp, RETURN);
+                runTo(0x442244, RETURN, 0x44c768);
+                emu.writeRegister("ESP", esp + 4);
+            }
+        }
+        return size;
+    }
+
+    /** Draws one road as road does, silently: a start flag and its directions; returns whether it was built. */
+    private boolean silentRoad(int width, String road) throws Exception {
+        long player = PLAYERS + 0x1000;
+        putInt(REGISTERS + 0x30, player);
+        putInt(REGISTERS + 0x20, RECORD);
+        String[] fields = road.split(",");
+        putWord(player + 0xfc, Integer.parseInt(fields[0]));
+        putWord(player + 0xfe, Integer.parseInt(fields[1]));
+        emu.writeMemory(toAddr(player + 0x100), new byte[4]);
+        call(0x44b6e6);
+        int kind = emu.readMemory(toAddr(player + 0x100), 1)[0] & 0xff;
+        if (kind != 1 && kind != 2) {
+            println("EMU road-start-refused kind=" + kind);
+            return false;
+        }
+        emu.writeMemory(toAddr(RECORD + 1), new byte[] {(byte) 0xc4});
+        putWord(RECORD + 0xce, 0);
+        int[][] delta = {{1, 0}, {1, 1}, {0, 1}, {-1, 0}, {-1, -1}, {0, -1}};
+        int height = getWord(STATE + HEIGHT);
+        boolean built = false;
+        for (int i = 0; i < fields[2].length() && !built; i++) {
+            int dir = fields[2].charAt(i) - '0';
+            call(0x44b6ce);
+            int cx = getWord(player + 0xfc);
+            int cy = getWord(player + 0xfe);
+            putWord(REGISTERS + 8, (cx + delta[dir][0]) & (width - 1));
+            putWord(REGISTERS + 0xc, (cy + delta[dir][1]) & (height - 1));
+            long esp = emu.readRegister("ESP").longValue() - 4;
+            emu.writeRegister("ESP", esp);
+            putInt(esp, RETURN);
+            emu.writeRegister(emu.getPCRegister(), ROAD_STEP);
+            emu.setBreakpoint(toAddr(RETURN));
+            emu.setBreakpoint(toAddr(ROAD_DRAW_CALL));
+            for (long call : ROAD_SOUND_CALLS) {
+                emu.setBreakpoint(toAddr(call));
+            }
+            emu.setBreakpoint(toAddr(0x444534));
+            StringBuilder sounds = new StringBuilder();
+            while (true) {
+                emu.run(monitor);
+                if (emu.getLastError() != null) {
+                    throw new IllegalStateException("emulation failed: " + emu.getLastError());
+                }
+                long pc = emu.readRegister(emu.getPCRegister()).longValue();
+                if (pc == RETURN) {
+                    break;
+                }
+                if (pc == 0x444534) {
+                    built = true;
+                    emu.step(monitor);
+                } else if (pc == ROAD_DRAW_CALL) {
+                    emu.writeRegister(emu.getPCRegister(), pc + 5);
+                } else {
+                    sounds.append((int) (emu.readMemory(toAddr(REGISTERS), 4)[0] & 0xff));
+                    emu.writeRegister(emu.getPCRegister(), pc + 5);
+                }
+            }
+            emu.writeRegister("ESP", esp + 4);
+            built = built && sounds.toString().endsWith("2");
+        }
+        return built;
+    }
+
+    private String hex(long address, int length) throws Exception {
+        byte[] bytes = emu.readMemory(toAddr(address), length);
+        StringBuilder out = new StringBuilder();
+        for (byte b : bytes) {
+            out.append(String.format("%02X", b & 0xff));
+        }
+        return out.toString();
+    }
+
+    /**
+     * worker:N:SEED:L:cx,cy:x,y;...:sx,sy,D;...:fx,fy,T:PASSES[:K] runs the original's building and settler passes
+     * (0x42cb2d and 0x42f3d9, one call each per pass, the flags' pass 0x46414d left out) on a game started as road
+     * starts it (castle at cx,cy, the flags, the roads), with a finished building of type T (the type byte is T
+     * shifted left by 2) standing at the flag fx,fy, on the node north-west of the flag. Each pass advances the clock
+     * (+0x206) by 8 units and the phase (+0x26c) by one, as 0x4291c2 does. A line per pass lists the settlers and
+     * the building whose bytes changed since the pass before, as hexadecimal bytes; PASSES is the number of passes.
+     */
+    private void worker(String rest) throws Exception {
+        String[] parts = rest.split(":");
+        String label = "worker size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
+        int[] size = startWorld(parts, label);
+        if (size == null) {
+            return;
+        }
+        int width = size[1];
+        int height = size[2];
+        long player = PLAYERS + 0x1000;
+        if (!parts[5].isEmpty()) {
+            for (String road : parts[5].split(";")) {
+                println("EMU " + label + " road=" + road + (silentRoad(width, road) ? " BUILT" : " REFUSED"));
+            }
+        }
+        int clock = 0;
+        putWord(STATE + PHASE, 0);
+        int warm = parts.length > 8 ? Integer.parseInt(parts[8]) : 0;
+        for (int pass = 0; pass < warm; pass++) {
+            clock += 8;
+            simulationPass(clock);
+        }
+        String[] b = parts[6].split(",");
+        int fx = Integer.parseInt(b[0]);
+        int fy = Integer.parseInt(b[1]);
+        int type = Integer.parseInt(b[2]);
+        int bits = getWord(STATE + 0x30);
+        int nx = (fx - 1) & (width - 1);
+        int ny = (fy - 1) & (height - 1);
+        long node = (((long) ny << bits) + nx) * 4;
+        long layerA = getInt(STATE + MAP_BUFFER);
+        int layerB = getWord(STATE + 0x36);
+        long fnode = (((long) fy << bits) + fx) * 4;
+        int flagSlot = getWord(layerA + layerB + fnode);
+        long flag = TABLES + (long) ITEM_SIZE * flagSlot;
+        putInt(REGISTERS + 0x20, 0);
+        call(0x45da8f);
+        int slot = getWord(REGISTERS + 0x1c);
+        long item = getInt(REGISTERS + 0x24);
+        emu.writeMemory(toAddr(item), new byte[0x12]);
+        putInt(item, node);
+        emu.writeMemory(toAddr(item + 4), new byte[] {(byte) (type << 2)});
+        putWord(item + 6, flagSlot);
+        putInt(flag + 0x34, item);
+        emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x40)});
+        putWord(layerA + layerB + node, slot);
+        emu.writeMemory(toAddr(layerA + node + 3), new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | 2)});
+        println("EMU " + label + " building slot=" + slot + " item=" + hex(item, 0x12) + " flagslot=" + flagSlot
+                + " flag=" + hex(flag, ITEM_SIZE));
+        int passes = Integer.parseInt(parts[7]);
+        byte[] settlers = emu.readMemory(toAddr(TABLES + 0x40000), 16 * 64).clone();
+        byte[] building = emu.readMemory(toAddr(item), 0x12).clone();
+        byte[] storage = emu.readMemory(toAddr(TABLES + 0x60000), 120).clone();
+        println("EMU " + label + " pass=start settlers=" + getWord(STATE + 0x262) + " s15=" + hex(TABLES + 0x40000 + 15 * 16, 16)
+                + " b=" + hex(item, 0x12) + " storage=" + hex(TABLES + 0x60000, 120));
+        String late = parts.length > 9 ? parts[9] : "";
+        int lateAt = parts.length > 10 ? Integer.parseInt(parts[10]) : -1;
+        for (int pass = 0; pass < passes; pass++) {
+            if (pass == lateAt && !late.isEmpty()) {
+                for (String road : late.split(";")) {
+                    println("EMU " + label + " late-road=" + road + (silentRoad(width, road) ? " BUILT" : " REFUSED"));
+                }
+            }
+            clock += 8;
+            int phase = simulationPass(clock);
+            StringBuilder line = new StringBuilder();
+            byte[] now = emu.readMemory(toAddr(TABLES + 0x40000), 16 * 64);
+            for (int s = 0; s < 64; s++) {
+                boolean changed = false;
+                for (int i = 0; i < 16; i++) {
+                    changed |= now[16 * s + i] != settlers[16 * s + i];
+                }
+                if (changed) {
+                    StringBuilder h = new StringBuilder();
+                    for (int i = 0; i < 16; i++) {
+                        h.append(String.format("%02X", now[16 * s + i] & 0xff));
+                    }
+                    line.append(" s").append(s).append("=").append(h);
+                }
+            }
+            settlers = now.clone();
+            byte[] bnow = emu.readMemory(toAddr(item), 0x12);
+            if (!java.util.Arrays.equals(bnow, building)) {
+                line.append(" b=").append(hex(item, 0x12));
+                building = bnow.clone();
+            }
+            byte[] snow = emu.readMemory(toAddr(TABLES + 0x60000), 120);
+            if (!java.util.Arrays.equals(snow, storage)) {
+                line.append(" st=").append(hex(TABLES + 0x60000, 120));
+                storage = snow.clone();
+            }
+            println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + line);
+        }
+    }
+
+    /**
+     * One pass of the main loop for the item tables as 0x425a10 runs them, without the parts the walk does not
+     * touch: the building scan that clears the retry bit (0x428728), the phase step (0x4291c2: one more, wrapped at
+     * the phase count), then the building slice (0x42cb2d) and the settler slice (0x42f3d9). The clock (+0x206)
+     * is the 16-bit whole clock units after this pass. Returns the phase the slices ran with.
+     */
+    private int simulationPass(int clock) throws Exception {
+        putWord(STATE + CLOCK, clock);
+        putInt(STATE + ELAPSED, 8);
+        call(0x428728);
+        int phase = (getWord(STATE + PHASE) + 1) % PHASE_COUNT;
+        putWord(STATE + PHASE, phase);
+        call(0x42cb2d);
+        call(0x42f3d9);
+        return phase;
+    }
+
+    private long getInt(long address) throws Exception {
+        byte[] bytes = emu.readMemory(toAddr(address), 4);
+        return (bytes[0] & 0xffL) | ((bytes[1] & 0xffL) << 8) | ((bytes[2] & 0xffL) << 16) | ((bytes[3] & 0xffL) << 24);
     }
 
     private static final long[] ROAD_DRAW_ROUTINES = {0x428008L, 0x428105L, 0x4281ccL};

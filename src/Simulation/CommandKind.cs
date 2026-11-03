@@ -27,4 +27,10 @@ public static class CommandKind
     /// the same as a road the player cancels.
     /// </summary>
     public const int BuildRoad = 3;
+
+    /// <summary>
+    /// Places a woodcutter's hut on the node of the command, tied to the flag south-east of it. The hut stands finished
+    /// at once: a stand-in for the construction (M4), not a rule of the original. Later slices add the other types.
+    /// </summary>
+    public const int PlaceBuilding = 4;
 }
