@@ -157,7 +157,7 @@ triples (figure byte, dx, dy) that is indexed by the timer shifted right 3, so t
 remaining time in ticks and the offsets carry the settler along the step. The figure word is the job times
 1024 plus the figure byte; the tables at `0x4501a1` (8 words for each job: the base entry of the figure in the entries from
 1850 and of a second figure from 3150) and `0x4503c5` (two words for each figure byte) turn it into the sprite entries,
-and the player's colour overlay is the entry plus 2500. The frame's index is the shape of the step: `4 + 9 * direction`
+and the overlay in the player's colour of the figure 1850 + i is the entry 2500 + i (`0x406610`). The frame's index is the shape of the step: `4 + 9 * direction`
 plus the height difference, so the facing is the direction of the step.
 
 **In the engine** (`SettlerFigures`, `SettlerGraphics`, `src/MapView`): a settler in state 2, 3, 5, or 0x42 is drawn with the sprites its

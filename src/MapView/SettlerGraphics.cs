@@ -16,7 +16,7 @@ namespace OpenSettlers.MapView;
 public sealed class SettlerGraphics
 {
     // The layers an array texture holds in the view.
-    private const int MaxLayers = 256;
+    private const int MaxLayers = 2048;
 
     public required byte[] PaletteRgba { get; init; }
 
@@ -70,7 +70,7 @@ public sealed class SettlerGraphics
 
             if (colour >= 0)
             {
-                image = image with { Indices = Array.ConvertAll(image.Indices, _ => (byte)colour) };
+                image = Fill(image, colour);
             }
 
             layers[(entry, colour)] = images.Count;
@@ -90,4 +90,14 @@ public sealed class SettlerGraphics
             Figures = figures,
         };
     }
+
+    /// <summary>
+    /// A colour overlay drawn in one colour: every pixel takes the colour, and the coverage stays, so the pixels the
+    /// overlay leaves transparent stay transparent (0x405880 skips them).
+    /// </summary>
+    public static ObjectImage Fill(ObjectImage overlay, int colour) =>
+        overlay with
+        {
+            Indices = Array.ConvertAll(overlay.Indices, _ => (byte)colour),
+        };
 }

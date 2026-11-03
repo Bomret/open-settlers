@@ -22,10 +22,11 @@ public readonly record struct SettlerDraw(int Row, int Entry, int Colour, int X,
 /// </summary>
 public sealed class SettlerFigures
 {
-    // The sprite entry of the figures, of the second figures, and the distance of a colour overlay (0x406610).
+    // The sprite entry of the figures, of their colour overlays, and of the second figures (0x406610): the figure 1850 + i
+    // has the overlay 2500 + i.
     private const int FigureBase = 1850;
+    private const int OverlayBase = 2500;
     private const int SecondBase = 3150;
-    private const int OverlayDistance = 2500;
 
     // The palette index of the first player's colour, and the step between players (0x406610).
     private const int ColourBase = 0x40;
@@ -180,7 +181,7 @@ public sealed class SettlerFigures
 
         var first = _bases[job * 8] + _offsets[2 * figure];
         yield return (FigureBase + first, -1);
-        yield return (FigureBase + first + OverlayDistance, colour);
+        yield return (OverlayBase + first, colour);
         if (_bases[job * 8 + 1] >= 0)
         {
             yield return (SecondBase + _bases[job * 8 + 1] + _offsets[2 * figure + 1], -1);

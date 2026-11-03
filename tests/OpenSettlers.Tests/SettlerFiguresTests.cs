@@ -73,8 +73,8 @@ public sealed class SettlerFiguresTests
     {
         var draws = Figures().Draws(Map(), [Walker(7, 0)], 0);
 
-        // Figure byte 3 at the end of the step: entry 1850 + 100 + 3, the colour overlay 2500 on, the second 3150 + 50 + 1.
-        CollectionAssert.AreEqual(new[] { 1953, 4453, 3201 }, draws.Select(d => d.Entry).ToArray());
+        // Figure byte 3 at the end of the step: entry 1850 + 100 + 3, the colour overlay 2500 + 100 + 3, the second 3150 + 50 + 1.
+        CollectionAssert.AreEqual(new[] { 1953, 2603, 3201 }, draws.Select(d => d.Entry).ToArray());
         Assert.AreEqual(-1, draws[0].Colour);
         Assert.AreEqual(0x40, draws[1].Colour, "the player's colour: 0x40 plus 4 for each player");
     }
@@ -183,7 +183,7 @@ public sealed class SettlerFiguresTests
         var sprites = Figures().Sprites(11, 0x40).OrderBy(s => s.Entry).ToArray();
 
         CollectionAssert.AreEqual(
-            new[] { (1953, -1), (1954, -1), (1955, -1), (3201, -1), (4453, 0x40), (4454, 0x40), (4455, 0x40) },
+            new[] { (1953, -1), (1954, -1), (1955, -1), (2603, 0x40), (2604, 0x40), (2605, 0x40), (3201, -1) },
             sprites.Distinct().ToArray()
         );
     }
@@ -202,8 +202,8 @@ public sealed class SettlerFiguresTests
     {
         var draws = Figures().Draws(Map(), [Carrier(mode: 7)], 0);
 
-        // Figure byte 3 plus 10: entry 1850 + 100 + 13, and the colour overlay 2500 on; the job has no second figure here.
-        CollectionAssert.AreEqual(new[] { 1963, 4463 }, draws.Select(d => d.Entry).ToArray());
+        // Figure byte 3 plus 10: entry 1850 + 100 + 13, and the colour overlay 2500 + 100 + 13; the job has no second figure here.
+        CollectionAssert.AreEqual(new[] { 1963, 2613 }, draws.Select(d => d.Entry).ToArray());
     }
 
     [TestMethod]
@@ -211,7 +211,7 @@ public sealed class SettlerFiguresTests
     {
         var draws = Figures().Draws(Map(), [Carrier(mode: 0)], 0);
 
-        CollectionAssert.AreEqual(new[] { 1953, 4453 }, draws.Select(d => d.Entry).ToArray());
+        CollectionAssert.AreEqual(new[] { 1953, 2603 }, draws.Select(d => d.Entry).ToArray());
     }
 
     [TestMethod]
@@ -227,6 +227,21 @@ public sealed class SettlerFiguresTests
     {
         var entries = Figures().Sprites(0, 0x40, carriedGood: 7).Select(s => s.Entry).Distinct().ToArray();
 
-        CollectionAssert.IsSubsetOf(new[] { 1963, 1964, 1965, 4463 }, entries);
+        CollectionAssert.IsSubsetOf(new[] { 1963, 1964, 1965, 2613 }, entries);
+    }
+
+    // The original draws the overlay of the figure 1850 + i from 2500 + i (0x406610), not from the figure's entry plus 2500.
+    [TestMethod]
+    public void TheColourOverlayOfTheFigureOneEightFiftyPlusIIsTwentyFiveHundredPlusI()
+    {
+        var bases = new short[32 * 8];
+        bases[11 * 8] = 40;
+        bases[11 * 8 + 1] = -1;
+        var offsets = new short[512];
+        offsets[2 * 3] = 7;
+
+        var draws = new SettlerFigures(bases, offsets, Sequences()).Draws(Map(), [Walker(7, 0)], 0);
+
+        CollectionAssert.AreEqual(new[] { (1897, -1), (2547, 0x40) }, draws.Select(d => (d.Entry, d.Colour)).ToArray());
     }
 }
