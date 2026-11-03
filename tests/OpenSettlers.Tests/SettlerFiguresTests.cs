@@ -1,0 +1,128 @@
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.MapView;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// The selection of a walking settler's sprites on made-up tables and a made-up walk sequence (no install). The shape of
+// the sequences (entry 2 of the graphics archive), the tables, and the use of the timer follow docs/rules/settlers.md;
+// the values are made up here, and the rule's own details are marked inferred there.
+[TestClass]
+public sealed class SettlerFiguresTests
+{
+    // Entry 2: a dword, then 200 big-endian offsets from the first byte after that dword. The sequence of frame 7 holds
+    // three triples (figure byte, dx, dy): (3, 1, 2), (4, -1, 0), (5, 0, 0).
+    private static byte[] Sequences()
+    {
+        var data = new byte[4 + 200 * 4 + 9];
+        var at = 4 + 200 * 4;
+        for (var i = 0; i < 9; i++)
+        {
+            data[at + i] = new byte[] { 3, 1, 2, 4, 0xff, 0, 5, 0, 0 }[i];
+        }
+
+        var offset = at - 4;
+        data[4 + 7 * 4 + 2] = (byte)(offset >> 8);
+        data[4 + 7 * 4 + 3] = (byte)offset;
+
+        return data;
+    }
+
+    // Job 11: the figure base 100 and the second base 50; each figure byte adds its own number and, to the second, 1.
+    private static SettlerFigures Figures()
+    {
+        var bases = new short[32 * 8];
+        bases[11 * 8] = 100;
+        bases[11 * 8 + 1] = 50;
+        var offsets = new short[512];
+        for (var b = 0; b < 256; b++)
+        {
+            offsets[2 * b] = (short)b;
+            offsets[2 * b + 1] = 1;
+        }
+
+        return new SettlerFigures(bases, offsets, Sequences());
+    }
+
+    private static Map Map() => MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+
+    private static Settler Walker(int frame, int timer, int state = 2) =>
+        new(11, 0, 4, 3, 0, state, 0)
+        {
+            Frame = frame,
+            Timer = (ushort)timer,
+            Stamp = 0,
+        };
+
+    [TestMethod]
+    public void AWalkingSettlerIsDrawnAsItsFigureItsColourOverlayAndItsSecondFigure()
+    {
+        var draws = Figures().Draws(Map(), [Walker(7, 0)], 0);
+
+        // Figure byte 3 at the end of the step: entry 1850 + 100 + 3, the colour overlay 2500 on, the second 3150 + 50 + 1.
+        CollectionAssert.AreEqual(new[] { 1953, 4453, 3201 }, draws.Select(d => d.Entry).ToArray());
+        Assert.AreEqual(-1, draws[0].Colour);
+        Assert.AreEqual(0x40, draws[1].Colour, "the player's colour: 0x40 plus 4 for each player");
+    }
+
+    [TestMethod]
+    public void TheSequenceAdvancesOneTripleForEachEightClockUnitsOfTimeLeft()
+    {
+        var figures = Figures();
+
+        var entries = new[] { 0, 8, 16 }
+            .Select(timer => figures.Draws(Map(), [Walker(7, timer)], 0)[0].Entry)
+            .ToArray();
+
+        CollectionAssert.AreEqual(new[] { 1953, 1954, 1955 }, entries);
+    }
+
+    [TestMethod]
+    public void TheOffsetsOfATripleMoveTheFigureAlongTheStep()
+    {
+        var figures = Figures();
+
+        var first = figures.Draws(Map(), [Walker(7, 0)], 0)[0];
+        var second = figures.Draws(Map(), [Walker(7, 8)], 0)[0];
+
+        Assert.AreEqual(-2, second.X - first.X, "the dx of the triples are 1 and -1");
+        Assert.AreEqual(-2, second.Y - first.Y);
+    }
+
+    [TestMethod]
+    public void TheTimeLeftRunsDownWithTheClockBetweenTheSettlersTurns()
+    {
+        var figures = Figures();
+
+        var drawn = figures.Draws(Map(), [Walker(7, 16)], 8)[0].Entry;
+
+        Assert.AreEqual(1954, drawn, "16 units left at the settler's turn, 8 gone since: the second triple");
+    }
+
+    [TestMethod]
+    public void OnlyASettlerOnTheRoadIsDrawn()
+    {
+        var figures = Figures();
+
+        Assert.IsEmpty(figures.Draws(Map(), [Walker(7, 0, state: 1), Walker(7, 0, state: 4)], 0));
+        Assert.HasCount(3, figures.Draws(Map(), [Walker(7, 0, state: 5)], 0));
+    }
+
+    [TestMethod]
+    public void TheSpritesOfAJobAreThoseOfEveryTripleOfItsSequences()
+    {
+        var sprites = Figures().Sprites(11, 0x40).OrderBy(s => s.Entry).ToArray();
+
+        CollectionAssert.AreEqual(
+            new[] { (1953, -1), (1954, -1), (1955, -1), (3201, -1), (4453, 0x40), (4454, 0x40), (4455, 0x40) },
+            sprites.Distinct().ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void AFrameWithNoSequenceDrawsNothing()
+    {
+        Assert.IsEmpty(Figures().Draws(Map(), [Walker(9, 0)], 0));
+    }
+}

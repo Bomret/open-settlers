@@ -44,6 +44,12 @@ public sealed class ProgramTables
     /// <summary>The address of the table of scan windows: 16-bit words, one for each map size (<c>0x421d28</c>).</summary>
     public const int ScanWindowAddress = 0x421d28;
 
+    /// <summary>The address of the figure bases: 8 words for each job (<c>0x4501a1</c>, 256 words).</summary>
+    public const int FigureBaseAddress = 0x4501a1;
+
+    /// <summary>The address of the figure offsets: 2 words for each figure byte (<c>0x4503c5</c>, 512 words).</summary>
+    public const int FigureOffsetAddress = 0x4503c5;
+
     /// <summary>The number of words of <see cref="ScanWindows"/>.</summary>
     public const int ScanWindowCount = 8;
 
@@ -57,7 +63,9 @@ public sealed class ProgramTables
         byte[][] startStock,
         ushort[]? stepTimes = null,
         byte[]? doorSpeeds = null,
-        ushort[]? scanWindows = null
+        ushort[]? scanWindows = null,
+        short[]? figureBases = null,
+        short[]? figureOffsets = null
     )
     {
         if (
@@ -74,7 +82,15 @@ public sealed class ProgramTables
         StepTimes = stepTimes ?? new ushort[StepTimeCount];
         DoorSpeeds = doorSpeeds ?? new byte[DoorSpeedCount];
         ScanWindows = scanWindows ?? new ushort[ScanWindowCount];
+        FigureBases = figureBases ?? new short[256];
+        FigureOffsets = figureOffsets ?? new short[512];
     }
+
+    /// <summary>For each job 8 words; the first two are the figure base and the second figure base (negative: none).</summary>
+    public short[] FigureBases { get; }
+
+    /// <summary>For each figure byte 2 words: what it adds to the figure and to the second figure.</summary>
+    public short[] FigureOffsets { get; }
 
     /// <summary>
     /// The time in clock units of a step, by step shape: <c>4 + 9 * direction + (height of the node reached minus
@@ -131,9 +147,14 @@ public sealed class ProgramTables
             startStock,
             [.. Enumerable.Range(0, StepTimeCount).Select(i => BitConverter.ToUInt16(steps, 2 * i))],
             Slice(exe, DoorSpeedAddress, DoorSpeedCount),
-            [.. Enumerable.Range(0, ScanWindowCount).Select(i => BitConverter.ToUInt16(windows, 2 * i))]
+            [.. Enumerable.Range(0, ScanWindowCount).Select(i => BitConverter.ToUInt16(windows, 2 * i))],
+            Words(Slice(exe, FigureBaseAddress, 512)),
+            Words(Slice(exe, FigureOffsetAddress, 1024))
         );
     }
+
+    private static short[] Words(byte[] bytes) =>
+        [.. Enumerable.Range(0, bytes.Length / 2).Select(i => BitConverter.ToInt16(bytes, 2 * i))];
 
     // The bytes at a program address, found through the section that holds it (PE32: e_lfanew at 0x3c, the file
     // header 4 bytes after it, the image base at +28 of the optional header, 40 bytes for each section header).

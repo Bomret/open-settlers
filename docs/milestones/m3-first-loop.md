@@ -84,8 +84,11 @@ left open:
 - The building type of the woodcutter's hut (type 1, job 11, tool of good 17), its object code (2), its site rule
   (node state 5, site 3 or 4), and its sprite (entry 1417): inferred; no run places or draws a building. Lead: the
   building placement routine (the click handler `0x440c24` reaches it) and a Windows run that places a hut.
-- The settler's drawing: the figure tables at `0x4501a1` and `0x4503c5` and the walk sequences of entry 2 of the graphics
-  archive, read by `0x43f537` and the job's figure routine `0x43fed8`: [Settlers](../rules/settlers.md#drawing-the-walk-leads).
+- The settler's drawing is written from the figure tables at `0x4501a1` and `0x4503c5` and the walk sequences of entry 2 of the
+  graphics archive, but no emulator or debugger run of the draw (`0x43f537`, `0x43fed8`, `0x44fff3`, `0x406610`) confirms the
+  details listed as inferred in [Settlers](../rules/settlers.md#drawing-the-walk-leads): the sequence offsets, the triple index,
+  the position, the second figure, the colour overlay, and the variants from figure byte 0x80. Lead: run `0x43f537` in the
+  emulator with a settler record and read the draw record it writes.
 - The castle's own handler (building type 0x18, `0x42e7e0`), the knights (jobs 22 to 26), and the settlers the castle
   makes later (`0x428a75`): they draw from the random generator; the port draws nothing yet.
 - The phase count of a game with one player and no computer opponent (33, inferred from `0x42055e`).

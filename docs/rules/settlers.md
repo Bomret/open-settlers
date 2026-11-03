@@ -142,8 +142,8 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
 
 ## Drawing the walk: leads
 
-**Status:** open. The engine draws the hut (entry 1417 of the archive, **inferred** as the type's sprite, drawn like the
-castle) and no settler. What the program does, read from `0x42f512`, `0x43f537`, the job's figure routine (`0x43fed8` for
+**Status:** inferred (below). The engine draws the hut (entry 1417 of the archive, **inferred** as the type's sprite, drawn like the
+castle) and the walking settlers. What the program does, read from `0x42f512`, `0x43f537`, the job's figure routine (`0x43fed8` for
 job 11), `0x44fff3`, and `0x406610`: the draw record of a settler takes the frame (byte 1) to pick a sequence from
 a table the program loads from entry 2 of the graphics archive at start-up (`0x41e8e0`): 200 big-endian offsets, each to a run of
 triples (figure byte, dx, dy) that is indexed by the timer shifted right 3, so the animation follows the step's
@@ -151,7 +151,18 @@ remaining time in ticks and the offsets carry the settler along the step. The fi
 1024 plus the figure byte; the tables at `0x4501a1` (8 words for each job: the base entry of the figure in the entries from
 1850 and of a second figure from 3150) and `0x4503c5` (two words for each figure byte) turn it into the sprite entries,
 and the player's colour overlay is the entry plus 2500. The frame's index is the shape of the step: `4 + 9 * direction`
-plus the height difference, so the facing is the direction of the step. Not yet written into the engine.
+plus the height difference, so the facing is the direction of the step.
+
+**In the engine** (`SettlerFigures`, `SettlerGraphics`, `src/MapView`): a settler in state 2 or 5 is drawn with the sprites its
+frame's sequence names for the time it has left, read from the install's archive at run time and the tables from the program
+(`ProgramTables.FigureBases`, `FigureOffsets`, matched by digest with the emulator's `peek`). The time left is the
+timer less the clock units since the settler's turn, so the animation moves with the game's ticks. The view draws
+the settlers of job 11 in every wrap copy, rebuilt after each tick. **Inferred, with no emulator run of the draw:** that the
+sequence offsets count from the byte after the entry's first dword, that a sequence runs to the next one's offset, that
+the triple index is the time left shifted right 3, the figure's position (the node plus 16 and 8, lifted by its height,
+plus the triple's dx and dy, as an object), that the second figure takes no offset, the colour overlay filled with the
+palette index 0x40 plus 4 for the player, and the job's variants for figure bytes from 0x80 (not read). The original draws a
+settler in view from the turn it acts every pass; the engine takes the time left from the clock instead.
 
 ## Open leads
 

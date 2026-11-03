@@ -1,0 +1,80 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using OpenSettlers.Assets;
+using OpenSettlers.Formats;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.MapView;
+
+/// <summary>
+/// The sprites of the settlers of one job, as array texture layers like <see cref="ObjectGraphics"/>: the figures, the
+/// colour overlays filled with the player's colour (player 0's: the game has one player), and the second figures that the
+/// job's walk sequences name, and the <see cref="SettlerFigures"/> that picks them (<c>docs/rules/settlers.md</c>).
+/// </summary>
+public sealed class SettlerGraphics
+{
+    // The layers an array texture holds in the view.
+    private const int MaxLayers = 256;
+
+    public required byte[] PaletteRgba { get; init; }
+
+    public required int LayerWidth { get; init; }
+
+    public required int LayerHeight { get; init; }
+
+    public required IReadOnlyList<ObjectImage> Images { get; init; }
+
+    /// <summary>The layer of a sprite entry, by the colour of its fill (-1 for a sprite drawn as it is).</summary>
+    public required IReadOnlyDictionary<(int Entry, int Colour), int> Layers { get; init; }
+
+    public required SettlerFigures Figures { get; init; }
+
+    /// <summary>Reads the sprites the sequences of <paramref name="job"/> use; sprites past the layer limit are left out.</summary>
+    public static SettlerGraphics Load(Install install, ProgramTables tables, int job)
+    {
+        var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
+        var palette = PaletteFile.Read(archive.Data(archive[3]).Span);
+        var sequences = archive.Data(archive[2]).ToArray();
+        var figures = new SettlerFigures(tables.FigureBases, tables.FigureOffsets, sequences);
+        var images = new List<ObjectImage>();
+        var layers = new Dictionary<(int Entry, int Colour), int>();
+        foreach (var (entry, colour) in figures.Sprites(job, ColourOf(0)))
+        {
+            if (images.Count >= MaxLayers || layers.ContainsKey((entry, colour)))
+            {
+                continue;
+            }
+
+            if (archive[entry].State == EntryState.Absent)
+            {
+                continue;
+            }
+
+            var image = ObjectImage.From(SpriteFile.Read(archive.Data(archive[entry])));
+            if (colour >= 0)
+            {
+                image = image with { Indices = Array.ConvertAll(image.Indices, _ => (byte)colour) };
+            }
+
+            layers[(entry, colour)] = images.Count;
+            images.Add(image);
+        }
+
+        var width = Math.Max(images.Max(image => image.Width), 1);
+        var height = Math.Max(images.Max(image => image.Height), 1);
+
+        return new SettlerGraphics
+        {
+            PaletteRgba = PaletteTexture.Rgba(palette),
+            LayerWidth = width,
+            LayerHeight = height,
+            Images = [.. images.Select(image => ObjectGraphics.Pad(image, width, height))],
+            Layers = layers,
+            Figures = figures,
+        };
+    }
+
+    // The palette index of a player's colour.
+    private static int ColourOf(int player) => 0x40 + 4 * player;
+}

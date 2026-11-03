@@ -23,9 +23,13 @@ internal static class TestProgram
     /// blocks a site, and the start stock rows count up from the row number.
     /// </summary>
     public static ProgramTables Made() =>
-        new(new byte[ProgramTables.ClassCount], Enumerable.Range(0, ProgramTables.StartStockRows)
-            .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
-            .ToArray());
+        new(
+            new byte[ProgramTables.ClassCount],
+            Enumerable
+                .Range(0, ProgramTables.StartStockRows)
+                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
+                .ToArray()
+        );
 
     public static ProgramTables Tables()
     {

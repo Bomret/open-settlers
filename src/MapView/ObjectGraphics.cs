@@ -123,7 +123,7 @@ public sealed class ObjectGraphics
     }
 
     // The pixel arrays grow to the layer size at the top left; Width and Height stay the sprite's own.
-    static ObjectImage Pad(ObjectImage image, int width, int height)
+    internal static ObjectImage Pad(ObjectImage image, int width, int height)
     {
         var indices = new byte[width * height];
         var coverage = new byte[width * height];

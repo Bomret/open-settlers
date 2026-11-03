@@ -38,6 +38,9 @@ public partial class MapViewControl : Control
     Button _flagButton = null!;
     Button _roadButton = null!;
     Button _woodcutterButton = null!;
+    SettlerGraphics? _settlerGraphics;
+    ShaderMaterial? _settlerMaterial;
+    readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
     int _flagsDrawn;
     int _buildingsDrawn;
     int _roadsDrawn;
@@ -234,6 +237,35 @@ public partial class MapViewControl : Control
                 _tablesProblem = e.Message;
                 GD.PrintErr($"map view: {e.Message}");
             }
+
+            try
+            {
+                if (_tables is not null)
+                {
+                    // The woodcutter's sprites: the only job whose settlers walk so far.
+                    _settlerGraphics = SettlerGraphics.Load(_install, _tables, 11);
+                    _settlerMaterial = BuildObjectMaterial(
+                        new ObjectGraphics
+                        {
+                            PaletteRgba = _settlerGraphics.PaletteRgba,
+                            LayerWidth = _settlerGraphics.LayerWidth,
+                            LayerHeight = _settlerGraphics.LayerHeight,
+                            Images = _settlerGraphics.Images,
+                        }
+                    );
+                }
+            }
+            catch (Exception e)
+                when (e
+                        is IOException
+                            or InvalidDataException
+                            or UnauthorizedAccessException
+                            or InvalidOperationException
+                )
+            {
+                _settlerGraphics = null;
+                GD.PrintErr($"map view: the settlers' sprites: {e.Message}");
+            }
         }
 
         _state = MapViewState.Open(_seed.Text, _size.GetItemId(0));
@@ -274,6 +306,7 @@ public partial class MapViewControl : Control
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
+            UpdateSettlers();
             if (
                 (_game.Castle is not null && !_castleDrawn)
                 || _game.Flags.Count != _flagsDrawn
@@ -533,6 +566,7 @@ public partial class MapViewControl : Control
         var meshes = BuildMeshes(TerrainTriangles.Of(_state.Map), _state.Map.Size);
         var roadMesh = BuildRoadMesh(_state.Map);
         var objectMeshes = BuildObjectMeshes(_state.Map);
+        _settlerMeshes.Clear();
         foreach (var (x, y) in _camera.Copies())
         {
             var copy = new Node2D { Position = new Vector2(x, y) };
@@ -561,10 +595,61 @@ public partial class MapViewControl : Control
                 );
             }
 
+            // The settlers walk over the objects of every wrap copy; their mesh is rebuilt after each tick.
+            if (_settlerMaterial is not null)
+            {
+                var settlers = new MeshInstance2D
+                {
+                    Material = _settlerMaterial,
+                    ZAsRelative = false,
+                    ZIndex = 2,
+                };
+                copy.AddChild(settlers);
+                _settlerMeshes.Add(settlers);
+            }
+
             _world.AddChild(copy);
         }
 
+        UpdateSettlers();
         DrawPreview();
+    }
+
+    // The walking settlers as one mesh of quads, the same in every wrap copy: the frame and the animation step come from
+    // the game's settlers and clock, not from the frame time.
+    void UpdateSettlers()
+    {
+        if (_game is null || _settlerGraphics is null || _state.Map is null || _settlerMeshes.Count == 0)
+        {
+            return;
+        }
+
+        var quads = new System.Collections.Generic.List<(int X, int Y, int Width, int Height, Color Color)>();
+        foreach (var draw in _settlerGraphics.Figures.Draws(_state.Map, _game.Settlers, _game.Clock))
+        {
+            if (_settlerGraphics.Layers.TryGetValue((draw.Entry, draw.Colour), out var layer))
+            {
+                var image = _settlerGraphics.Images[layer];
+                if (image.Width > 0 && image.Height > 0)
+                {
+                    quads.Add(
+                        (
+                            draw.X + image.OffsetX,
+                            draw.Y + image.OffsetY,
+                            image.Width,
+                            image.Height,
+                            new Color(layer / 255f, 0, 0, 1)
+                        )
+                    );
+                }
+            }
+        }
+
+        var mesh = quads.Count > 0 ? BuildQuadMesh(quads) : null;
+        foreach (var node in _settlerMeshes)
+        {
+            node.Mesh = mesh;
+        }
     }
 
     // One mesh of every road strip of the map, or null where there is none or the road graphics did not load.

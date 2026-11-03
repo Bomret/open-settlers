@@ -17,7 +17,7 @@ public sealed class ProgramTablesTests
     private const ulong FnvPrime = 0x100000001b3;
     private const int ImageBase = 0x400000;
     private const int SectionStart = 0x1e000;
-    private const int SectionSize = 0x30000;
+    private const int SectionSize = 0x40000;
     private const int RawStart = 0x200;
 
     // A PE32 file with one section that holds the addresses 0x41e000 to 0x44e000 at the file offset 0x200.
@@ -148,6 +148,16 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(0x05BF5D4714B4FBADUL, Fnv(tables.StepTimes.SelectMany(BitConverter.GetBytes).ToArray()));
         Assert.AreEqual(0x993304FEA7F369C8UL, Fnv(tables.DoorSpeeds));
         Assert.AreEqual(0x5AC52FC0C8AECD88UL, Fnv(tables.ScanWindows.SelectMany(BitConverter.GetBytes).ToArray()));
+    }
+
+    [TestMethod]
+    public void TheFigureTablesOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:4501a1:512 (256 words, 8 for each job) and peek:4503c5:1024 (512 words, 2 for each figure byte).
+        Assert.AreEqual(0x25D56F6459E7D367UL, Fnv(tables.FigureBases.SelectMany(BitConverter.GetBytes).ToArray()));
+        Assert.AreEqual(0x9074A7BD864B08BDUL, Fnv(tables.FigureOffsets.SelectMany(BitConverter.GetBytes).ToArray()));
     }
 
     private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);

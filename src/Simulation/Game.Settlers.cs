@@ -51,6 +51,9 @@ public sealed partial class Game
     /// <summary>The buildings in the order of their slots: the castle first, then each placed building.</summary>
     public IReadOnlyList<Building> Buildings => _buildings;
 
+    /// <summary>The game clock in clock units (16 bits, 8 for each tick): the settlers' timers and stamps count in it.</summary>
+    public ushort Clock => _clock;
+
     /// <summary>The settlers in the order of their slots: the castle's first 20, then each created one.</summary>
     public IReadOnlyList<Settler> Settlers => _settlers;
 
