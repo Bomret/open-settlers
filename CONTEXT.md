@@ -47,7 +47,7 @@ _Avoid_: default, placeholder
 
 **Seed info**
 The engine's headless mode that generates the map of one seed and size and prints its layer digests and
-its counts of terrain, objects, and deposits. It needs no install.
+its counts of terrain, objects, and deposits. It needs the install, whose program tables say which objects are large.
 _Avoid_: map summary, map dump
 
 **Play script**

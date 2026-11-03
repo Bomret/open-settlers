@@ -70,7 +70,7 @@ mise run map
 
 `--seed <seed>` and `--size <1|2|3>` open the view on that map (`-- --map --seed 1234567812345678 --size 2`): the seed field shows the seed, the size picker selects the size, and the next Apply keeps both. The seed takes the 16-digit form or four groups in one quoted argument (`--seed "1234 5678 1234 5678"`); unquoted groups are a bad seed. Without `--seed` the view opens on its default seed, without `--size` on size 1.
 
-[Controls](docs/controls.md) describes how to use the map view and the game view. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
+[Controls](docs/controls.md) describes how to use the map view and the game view. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. An unreadable `Siedler1.exe` shows an error in the view and draws no map: the map generation reads which objects are large from it. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
 
 The game view is the map view with a game on the shown map that ticks at the original's normal speed:
 
@@ -80,7 +80,7 @@ mise exec -- <godot> --path . -- --game-view [--seed <seed>] [--size <1|2|3>]
 
 It takes `--seed` and `--size` as the map view does, and it has the map view's exit codes.
 
-Seed info prints the digests and counts of the map of one seed and size. It is headless and needs no install and no `SIEDLER_DIR`:
+Seed info prints the digests and counts of the map of one seed and size. It is headless and needs the install (`--game` or `SIEDLER_DIR`): the map generation reads which objects are large from its `Siedler1.exe`.
 
 ```sh
 mise run seed-info -- --seed 1234567812345678 --size 3
@@ -94,7 +94,7 @@ mise run seed-info -- --seed 1234567812345678 --size 3
 - `Objects`: `<code>: <count>` for each object code present, ascending.
 - `Deposits`: `<type>: <n> tiles, amount <total>` for each resource type present, ascending. The type 1 total equals the generator's `Resource1Total`.
 
-Exit codes: 0 on a printed report, 4 for a bad argument or a missing `--seed`, 1 with `ERROR no map for this seed: ...` on stderr when the seed's map cannot be generated (no land mass covers a quarter of the map).
+Exit codes: 0 on a printed report, 4 for a bad argument or a missing `--seed`, 2 with `ERROR` and the problem on stderr and no map when the install is missing or its `Siedler1.exe` cannot be read, 1 with `ERROR no map for this seed: ...` on stderr when the seed's map cannot be generated (no land mass covers a quarter of the map).
 
 ### Run a play script
 

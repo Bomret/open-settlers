@@ -222,8 +222,8 @@ position wraps at both edges.
     byte, so the test holds and the engine leaves it out.
 30. **`MapGen_ResolveObjectOverlap`.** For each tile whose object is large, in row-major order: if the flag
     bit 6 is clear on the west, north-west, and north tiles, set it on the tile; otherwise clear the object
-    code and keep bit 7. The large codes are those whose size byte in the program's table (`0x41e640`) is
-    above 1: 1 to 4, 28 to 31, 72 to 81, 88 and 89, 105 to 110, and 121 to 127. No draw.
+    code and keep bit 7. A large object is one whose class byte in the program's table (`0x41e640`), read
+    from the install's `Siedler1.exe` at run time by `ProgramTables`, is above 1, compared unsigned. No draw.
 31. **`MapGen_MarkWaterAdjacent`.** Sets bit 7 of the object byte on each tile whose upper terrain nibble or
     lower terrain nibble is below 4. No draw.
 32. **`MapGen_CountResource1`.** Sums the amounts of the deposits of resource type 1 into the total at state
