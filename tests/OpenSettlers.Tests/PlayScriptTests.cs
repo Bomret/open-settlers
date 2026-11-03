@@ -151,6 +151,8 @@ public sealed class PlayScriptTests
     [DataRow("shot", "takes 1 argument")]
     [DataRow("shot a/b", "no file name")]
     [DataRow("dump ..", "no file name")]
+    [DataRow("shot ../x", "no file name")]
+    [DataRow("dump ../x", "no file name")]
     public void ABadInputStepIsAProblemNamingItsLine(string line, string reason)
     {
         var script = Parse("wait 1\n" + line);

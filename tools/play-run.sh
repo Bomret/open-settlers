@@ -25,7 +25,7 @@ usage() {
 stem=$1
 shift
 case "$stem" in
-  "" | */* | *..* | -*) usage "bad stem: $stem" ;;
+  "" | */* | *..* | -* | .*) usage "bad stem: $stem" ;;
 esac
 
 seed=

@@ -40,7 +40,7 @@ failed `expect` or a problem in the script.
 
 - The wrapper stores the result under a hash of the run's inputs in `play-out/.cache/<hash>/` and reuses
   it on the next call whose inputs hash the same: no Godot run, the stored dumps and screenshots copied
-  back into `play-out/<stem>/`, the stored `WARN`/`ERROR` lines printed under a `reused` line that ends
+  back into `play-out/<stem>/` (no Movie Maker frames: the store leaves them out, and `--fresh` writes them again), the stored `WARN`/`ERROR` lines printed under a `reused` line that ends
   with the stored exit status, which the wrapper exits with. Only a run that exits 0 or 1 is stored. `--fresh` always runs and replaces the
   stored result.
 - The hash covers every tracked or untracked, not ignored file under `src/` and `scenes/` (content and

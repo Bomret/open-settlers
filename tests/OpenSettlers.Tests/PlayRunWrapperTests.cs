@@ -92,6 +92,7 @@ public class PlayRunWrapperTests
         Write("OpenSettlers.csproj", "<Project />");
         Write("global.json", "{}");
         Write("play/demo.play", "wait 1");
+        Write("play/.cache.play", "wait 1");
         Write("README.md", "readme");
         Write("tests/T.cs", "class T {}");
         Write(".gitignore", "play-out/\nsrc/ignored.txt\n");
@@ -418,6 +419,8 @@ public class PlayRunWrapperTests
     [DataRow("text size", "demo", "--size", "big", "--fps", "10")]
     [DataRow("slash stem", "play/demo", "--fps", "10")]
     [DataRow("dots stem", "..", "--fps", "10")]
+    [DataRow("parent stem", "../x", "--fps", "10")]
+    [DataRow("hidden stem", ".cache", "--fps", "10")]
     [DataRow("missing script", "nothing", "--fps", "10")]
     [DataRow("unknown flag", "demo", "--fps", "10", "--fast")]
     [DataRow("no args")]
