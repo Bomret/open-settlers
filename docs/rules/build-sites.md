@@ -97,4 +97,4 @@ sets two bits of the player's flags that tell the screen where to draw its marke
 
 `OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Simulation/BuildSite.cs`). The engine departs from the program
 in two places: a node with a flag or a building object gives 0, 0, 0, and the code 3 height term is left out
-(above). The flag result for the slices that place flags is `BuildSiteResult.AllowsFlag`.
+(above). `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md).
