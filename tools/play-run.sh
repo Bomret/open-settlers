@@ -71,8 +71,18 @@ godot() {
 version=$(godot --version 2>/dev/null) || usage "cannot read the Godot version"
 
 # One call per stem at a time, locked before the hash so a waiting call hashes the inputs it runs on. The lock
-# holds the owner's pid; a lock whose pid is dead is taken over.
+# holds the owner's pid; a lock whose pid is dead is taken over, and so is a lock with no pid after a grace of
+# 5 seconds (its owner was killed between creating it and writing the pid).
 lock=play-out/.lock-$stem
+stale() {
+  p=$(cat "$lock/pid" 2>/dev/null)
+  if [ -n "$p" ]; then
+    ! kill -0 "$p" 2>/dev/null
+  else
+    m=$(stat -c %Y "$lock" 2>/dev/null || stat -f %m "$lock" 2>/dev/null) || return 1
+    [ $(($(date +%s) - m)) -gt 5 ]
+  fi
+}
 waited=
 mkdir -p play-out 2>/dev/null
 until mkdir "$lock" 2>/dev/null; do
@@ -80,13 +90,11 @@ until mkdir "$lock" 2>/dev/null; do
     echo "play-run.sh: cannot write play-out/" >&2
     exit 2
   fi
-  pid=$(cat "$lock/pid" 2>/dev/null)
-  if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
-    # Only the holder of the takeover mutex removes a lock, after reading its pid again while holding it. No
+  if stale; then
+    # Only the holder of the takeover mutex removes a lock, after judging it stale again while holding it. No
     # other call can create the lock path while the stale lock still stands there.
     if mkdir "$lock.takeover" 2>/dev/null; then
-      pid=$(cat "$lock/pid" 2>/dev/null)
-      if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$lock"; fi
+      if stale; then rm -rf "$lock"; fi
       rmdir "$lock.takeover"
       continue
     fi
@@ -131,9 +139,9 @@ mkdir -p "$out"
 if [ -z "$fresh" ] && [ -f "$entry/status" ]; then
   how=reused
   cp -R "$entry/out/." "$out/"
-  echo "play-run.sh: reused $hash"
-  cat "$entry/summary"
   status=$(cat "$entry/status")
+  echo "play-run.sh: reused $hash exit $status"
+  cat "$entry/summary"
 else
   how=run
   log=$(mktemp)

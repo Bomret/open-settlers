@@ -54,7 +54,7 @@ public static class SeedInfo
 
     /// <summary>
     /// Generates the map of a seed and size and reports it. Returns 0 with the report in <c>text</c>, or
-    /// <see cref="NoMapExitCode"/> with a message where the generator refuses the seed (no land mass).
+    /// <see cref="NoMapExitCode"/> with a message where the generator refuses the seed (no land mass) or fails in any other way, so the run always ends with a code.
     /// <c>generate</c> replaces the generator; null uses <see cref="MapGenerator.Generate"/>.
     /// </summary>
     public static int Run(
@@ -71,7 +71,7 @@ public static class SeedInfo
 
             return 0;
         }
-        catch (InvalidOperationException e)
+        catch (Exception e)
         {
             text = $"no map for this seed: {e.Message}";
 

@@ -306,6 +306,19 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
+    [DataRow("--seed", "1", "9")]
+    [DataRow("--seed", "1", "bad")]
+    [DataRow("--size", "1", "2")]
+    [DataRow("--size", "1", "9")]
+    [DataRow("--play", "play/a.play", "play/b.play")]
+    public void ARepeatedValueFlagIsAProblem(string flag, string first, string second)
+    {
+        var args = LaunchArgs.Parse(["--map", flag, first, flag, second], null, movieMaker: true);
+
+        StringAssert.Contains(string.Join("; ", args.Problems), $"repeated {flag}");
+    }
+
+    [TestMethod]
     public void ThePlayFlagWithoutMovieMakerIsAProblem()
     {
         var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null);

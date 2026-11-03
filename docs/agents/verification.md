@@ -40,8 +40,8 @@ failed `expect` or a problem in the script.
 
 - The wrapper stores the result under a hash of the run's inputs in `play-out/.cache/<hash>/` and reuses
   it on the next call whose inputs hash the same: no Godot run, the stored dumps and screenshots copied
-  back into `play-out/<stem>/`, the stored `WARN`/`ERROR` lines printed under a `reused` line, and the
-  stored exit status. Only a run that exits 0 or 1 is stored. `--fresh` always runs and replaces the
+  back into `play-out/<stem>/`, the stored `WARN`/`ERROR` lines printed under a `reused` line that ends
+  with the stored exit status, which the wrapper exits with. Only a run that exits 0 or 1 is stored. `--fresh` always runs and replaces the
   stored result.
 - The hash covers every tracked or untracked, not ignored file under `src/` and `scenes/` (content and
   path), `project.godot`, `OpenSettlers.csproj`, `global.json`, the play script, the seed, the size, the
@@ -56,4 +56,4 @@ failed `expect` or a problem in the script.
 - Calls for one stem run one at a time: a second call waits on the lock directory
   `play-out/.lock-<stem>`, says so once on stderr, then hashes its inputs and reuses what the first
   stored. Other stems run in parallel. The lock holds its owner's pid, and a call takes over the lock of
-  a dead owner. Remove a lock by hand only when no run is live.
+  a dead owner, and of a lock with no pid older than 5 seconds. Remove a lock by hand only when no run is live.

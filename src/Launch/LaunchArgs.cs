@@ -32,7 +32,8 @@ public enum LaunchMode
 /// arguments: a flag that needs a value and has none, at the end or before another flag (its value is never read
 /// as a path); an unknown flag; a bad seed (an unquoted four-group seed is one); a bad size (anything but an
 /// integer the original offers); two different mode flags, which select no mode (the browser); <c>--seed</c> or
-/// <c>--size</c> with <c>--check</c> or without a mode flag.
+/// <c>--size</c> with <c>--check</c> or without a mode flag; a repeated <c>--seed</c>, <c>--size</c>, or
+/// <c>--play</c> (a repeated <c>--game</c> keeps the first).
 /// </para>
 /// </summary>
 public sealed class LaunchArgs
@@ -99,6 +100,7 @@ public sealed class LaunchArgs
         var gameGiven = false;
         string? modeFlag = null;
         string? conflictFlag = null;
+        LaunchMode? mode = null;
         string? seedText = null;
         Seed? seed = null;
         MapSize? size = null;
@@ -134,12 +136,20 @@ public sealed class LaunchArgs
 
                     gameGiven = true;
                 }
-                else if (flag == PlayFlag && !playGiven)
+                else if (
+                    flag == PlayFlag && playGiven
+                    || flag == SeedFlag && seedGiven
+                    || flag == SizeFlag && sizeGiven
+                )
+                {
+                    problems.Add($"repeated {flag}");
+                }
+                else if (flag == PlayFlag)
                 {
                     playGiven = true;
                     play = value;
                 }
-                else if (flag == SeedFlag && !seedGiven)
+                else if (flag == SeedFlag)
                 {
                     seedGiven = true;
                     if (Simulation.Seed.TryParse(value, out var parsed, out var reason))
@@ -152,7 +162,7 @@ public sealed class LaunchArgs
                         problems.Add($"bad {SeedFlag} '{value}': {reason}");
                     }
                 }
-                else if (flag == SizeFlag && !sizeGiven)
+                else if (flag == SizeFlag)
                 {
                     sizeGiven = true;
                     if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var number))
@@ -167,12 +177,21 @@ public sealed class LaunchArgs
             }
             else if (flag is CheckFlag or MapFlag or SeedInfoFlag)
             {
-                if (modeFlag is not null && modeFlag != flag)
+                if (modeFlag is null)
+                {
+                    modeFlag = flag;
+                    mode = flag switch
+                    {
+                        CheckFlag => LaunchMode.Check,
+                        MapFlag => LaunchMode.Map,
+                        _ => LaunchMode.SeedInfo,
+                    };
+                }
+                else if (modeFlag != flag)
                 {
                     conflictFlag ??= flag;
+                    mode = LaunchMode.Browser;
                 }
-
-                modeFlag ??= flag;
             }
             else if (flag.StartsWith("--"))
             {
@@ -217,15 +236,7 @@ public sealed class LaunchArgs
         return new LaunchArgs
         {
             Play = play,
-            Mode = conflictFlag is not null
-                ? LaunchMode.Browser
-                : modeFlag switch
-                {
-                    CheckFlag => LaunchMode.Check,
-                    MapFlag => LaunchMode.Map,
-                    SeedInfoFlag => LaunchMode.SeedInfo,
-                    _ => LaunchMode.Browser,
-                },
+            Mode = mode ?? LaunchMode.Browser,
             Game =
                 gameGiven ? game
                 : string.IsNullOrEmpty(siedlerDir) ? null

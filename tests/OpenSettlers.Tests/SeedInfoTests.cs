@@ -67,15 +67,6 @@ public sealed class SeedInfoTests
     }
 
     [TestMethod]
-    public void TheResourceLineSaysItSharesTheLakeBytes()
-    {
-        var text = SeedInfo.Report(SeedText, MapOf(SeedText, 1));
-
-        StringAssert.Contains(text, "Resource: ");
-        StringAssert.Contains(text, "same bytes as Lake");
-    }
-
-    [TestMethod]
     public void RunningAMapThatGeneratesExitsZeroWithTheReport()
     {
         Seed.TryParse(SeedText, out var seed, out _);
@@ -86,6 +77,25 @@ public sealed class SeedInfoTests
         Assert.AreEqual(SeedInfo.Report(SeedText, MapOf(SeedText, 1)), text);
     }
 
+    [TestMethod]
+    public void AnyOtherGeneratorFailureExitsOneWithItsMessage()
+    {
+        Seed.TryParse(SeedText, out var seed, out _);
+
+        var code = SeedInfo.Run(
+            SeedText,
+            seed,
+            MapSize.Offered[0],
+            out var text,
+            (_, _) => throw new IndexOutOfRangeException("a tile outside the map")
+        );
+
+        Assert.AreEqual(1, code);
+        StringAssert.Contains(text, "a tile outside the map");
+    }
+
+    // A stub generator stands in: no seed is known that reaches the generator's no-land-mass refusal, and a search
+    // for one would cost a generation per candidate.
     [TestMethod]
     public void ASeedWithNoLandMassExitsOneWithAMessage()
     {

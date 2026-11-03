@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -203,6 +204,7 @@ public class PlayRunWrapperTests
         Assert.AreEqual(1, Calls);
         Assert.AreEqual(status, second);
         StringAssert.Contains(stdout, "reused");
+        StringAssert.Matches(stdout, new Regex($@"reused \S+ exit {status}\b"));
         StringAssert.Contains(stdout, "WARN: a warning");
         StringAssert.Contains(stdout, "ERROR: an error");
         Assert.IsFalse(stdout.Contains("plain output"));
@@ -486,6 +488,16 @@ public class PlayRunWrapperTests
         using var gone = Process.Start("true")!;
         gone.WaitForExit();
         HoldLock(gone.Id);
+
+        Assert.AreEqual(0, Run(Args).Status);
+        Assert.AreEqual(1, Calls);
+    }
+
+    [TestMethod]
+    public void ALockWithNoPidOlderThanTheGraceIsTakenOver()
+    {
+        Directory.CreateDirectory(Out(".lock-demo"));
+        Directory.SetLastWriteTimeUtc(Out(".lock-demo"), DateTime.UtcNow.AddMinutes(-5));
 
         Assert.AreEqual(0, Run(Args).Status);
         Assert.AreEqual(1, Calls);

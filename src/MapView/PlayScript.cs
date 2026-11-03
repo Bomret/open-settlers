@@ -190,7 +190,7 @@ public sealed class PlayScript
             case "wait":
                 if (args.Length != 1)
                     return Wrong(words[0], "1 argument", args.Length);
-                if (!Number(args[0], out var seconds) || seconds < 0)
+                if (!Seconds(args[0], out var seconds))
                     return (null, $"'{args[0]}' is not a number of seconds of zero or more");
 
                 return (new WaitStep { Line = number, Seconds = seconds }, null);
@@ -206,7 +206,7 @@ public sealed class PlayScript
                     return Wrong(words[0], "2 arguments", args.Length);
                 if (KeyProblem(args[0]) is { } badKey)
                     return (null, badKey);
-                if (!Number(args[1], out var held) || held < 0)
+                if (!Seconds(args[1], out var held))
                     return (null, $"'{args[1]}' is not a number of seconds of zero or more");
 
                 return (
@@ -382,6 +382,8 @@ public sealed class PlayScript
 
     static (PlayStep?, string?) Wrong(string step, string want, int got) =>
         (null, $"'{step}' takes {want}, found {got}");
+
+    static bool Seconds(string text, out double value) => Number(text, out value) && value >= 0;
 
     static bool Number(string text, out double value) =>
         double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value) && double.IsFinite(value);
