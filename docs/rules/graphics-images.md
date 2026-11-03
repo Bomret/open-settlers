@@ -255,7 +255,7 @@ Entry ranges, in all three archives, with the routine that reads them:
 | 1675 to 1693 | shadow | Objects 175 to 177, 179 to 187, and 193 come from the 24-entry table that the call at `0x44fcac` indexes at `0x44fc87` (an index of 1 to 23 that the stores from `0x44f933` to `0x44fa5d` set); 178 and 192 are stored before the call at `0x44f928` and the jump at `0x44ec2a`; 188 to 191 are 188 plus 0 to 3 at `0x44f3a8` (jump at `0x44f3ae`). Confirmed. The same table values are also drawn through the second shadow routine at `0x406210`, which `0x44ff2a` calls with the number plus 1500. That call is reached for 152 to 171, 174, 188, and 192 from `0x44fcd0` through the table at `0x44fd16`, for 178 from `0x44fd2f` (reached by the jump at `0x44e56a`), and by a third path that reads the table at `0x44fcfe` (at `0x44fc4f`) after the call at `0x44fc21` and jumps to `0x44fee2` at `0x44fc70` |
 | 60 to 140 | textured fill | `Gfx_DrawTexturedFill`, called at `0x4279a9`: the mask is 60 plus an index from the heights of three neighbouring nodes, `(h1 + 4 - h2) + 9 x (h1 + 4 - h3)` (formed at `0x4278be`), which indexes the 81-entry tables of 9 x 9 combinations. The range assumes the height difference to a neighbour is at most 4 either way, which the 9 x 9 tables encode and the code does not check. Confirmed routine, inferred bound |
 | 141 to 221 | textured fill | the same call and index at `0x427a25` (call at `0x427b0d`) with 141 added in place of 60 |
-| 230 to 256 | textured fill | the three routines at `0x428008`, `0x428105`, and `0x4281cc` (called at `0x427dc7`, `0x427eb3`, and `0x427f98`) form a mask number from a base (234, 243, and 252) plus the difference of two 5-bit heights, and all three draw through the call at `0x428363`. With the same bound of 4 either way the three bases give 230 to 238, 239 to 247, and 248 to 256. Confirmed routine, inferred bound. Under the inferred bound of 4, entries 222 to 229 are reached by none of the five sites and are left unclaimed (the arithmetic alone reaches 203 to 283, so a larger real bound would reach them) |
+| 230 to 256 | textured fill | the strips of the roads ([Roads](roads.md)): the three routines at `0x428008`, `0x428105`, and `0x4281cc` (called at `0x427dc7`, `0x427eb3`, and `0x427f98`) form a mask number from a base (234, 243, and 252) plus the difference of two 5-bit heights, and all three draw through the call at `0x428363`. With the same bound of 4 either way the three bases give 230 to 238, 239 to 247, and 248 to 256. Confirmed routine, inferred bound. Under the inferred bound of 4, entries 222 to 229 are reached by none of the five sites and are left unclaimed (the arithmetic alone reaches 203 to 283, so a larger real bound would reach them) |
 | 260 to 292, 300 to 309 | texture of the fill | the texture number at the same call sites: 260 plus a table value of 0 to 32 at `0x4279a9` and `0x427b0d`, and 300 to 302 plus 0, 3, or 6, or 309, at `0x428363`. Confirmed |
 
 The mask entries of the reference install all decode with this layout and consume exactly their size: no run
@@ -287,9 +287,11 @@ Screen layout (**inferred**): a node (column, row) is at x = 32 x column - 16 x 
 drawn with its left edge 16 pixels west of its anchor node (the apex) and its top at the anchor's y plus the header's
 vertical offset.
 
-Not drawn: the edge-blend masks 230 to 256 and the textures 300 to 309 (edges between terrains, `0x428008` and after). The
-map view (`src/Viewer/MapViewControl.cs`, with `src/MapView/TerrainQuads.cs` planning each band's rectangles) paints
-the fill masks 60 to 221 and the fill textures 260 to 292 only; the edge blend is not part of it.
+The masks 230 to 256 and the textures 300 to 309 are the strips of the roads, not the edges between terrains
+(`0x428008` and after; [Roads](roads.md#how-a-road-is-drawn)). The map view (`src/Viewer/MapViewControl.cs`, with
+`src/MapView/TerrainQuads.cs` planning each band's rectangles) paints the fill masks 60 to 221 and the fill textures
+260 to 292 as the terrain, and the road strips over it (`src/MapView/RoadDraws.cs`). Not drawn: the borders of the
+territories that the routines `0x428389`, `0x42846d`, and `0x428528` draw where no road lies (inferred).
 
 ### Corrupt masks
 

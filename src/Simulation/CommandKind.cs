@@ -19,4 +19,12 @@ public static class CommandKind
     /// another player, and where the node holds a flag, a building, or an object that blocks it.
     /// </summary>
     public const int PlaceFlag = 2;
+
+    /// <summary>
+    /// Build a road from the flag on the node (<see cref="Command.X"/>, <see cref="Command.Y"/>) along
+    /// <see cref="Command.Directions"/>, one step each. Built only when every step is allowed where the original's road
+    /// drawing allows it and the last step reaches a flag (<see cref="RoadBuilding"/>); otherwise nothing changes,
+    /// the same as a road the player cancels.
+    /// </summary>
+    public const int BuildRoad = 3;
 }

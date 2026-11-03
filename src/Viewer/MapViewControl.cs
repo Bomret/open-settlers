@@ -36,7 +36,14 @@ public partial class MapViewControl : Control
     double _tickCarry;
     Label _ticks = null!;
     Button _flagButton = null!;
+    Button _roadButton = null!;
     int _flagsDrawn;
+    int _roadsDrawn;
+    RoadDrawing? _drawing;
+    Node2D _preview = null!;
+    RoadGraphics? _roadGraphics;
+    ShaderMaterial? _roadMaterial;
+    string? _roadsProblem;
     MapViewState _state = null!;
     Camera _camera = null!;
     readonly Zoom _zoom = new();
@@ -117,6 +124,34 @@ public partial class MapViewControl : Control
             FocusMode = FocusModeEnum.None,
         };
         bar.AddChild(_flagButton);
+        // Stand-in for the original's road button (0x440d23, action 0x18): while it is pressed the clicks draw a road,
+        // from a flag a node at a time to the flag it ends on; Escape, a right click, or the button again cancels it.
+        _roadButton = new Button
+        {
+            Text = "Road",
+            ToggleMode = true,
+            Visible = _play,
+            FocusMode = FocusModeEnum.None,
+        };
+        _roadButton.Toggled += pressed =>
+        {
+            if (pressed)
+            {
+                _flagButton.ButtonPressed = false;
+            }
+            else
+            {
+                CancelRoad();
+            }
+        };
+        _flagButton.Toggled += pressed =>
+        {
+            if (pressed)
+            {
+                _roadButton.ButtonPressed = false;
+            }
+        };
+        bar.AddChild(_roadButton);
 
         _canvas = new Control
         {
@@ -128,12 +163,25 @@ public partial class MapViewControl : Control
         column.AddChild(_canvas);
         _world = new Node2D();
         _canvas.AddChild(_world);
+        _preview = new Node2D { ZAsRelative = false, ZIndex = 2 };
+        _world.AddChild(_preview);
 
         try
         {
             var graphics = TerrainGraphics.Load(_install);
             _material = BuildMaterial(graphics);
             _masks = graphics.Masks;
+            try
+            {
+                _roadGraphics = RoadGraphics.Load(_install);
+                _roadMaterial = BuildRoadMaterial(_roadGraphics, graphics.PaletteRgba);
+            }
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                _roadGraphics = null;
+                _roadsProblem = e.Message;
+                GD.PrintErr($"map view: {e.Message}");
+            }
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -178,9 +226,13 @@ public partial class MapViewControl : Control
         if (_play && _state.Map is not null && _tables is not null)
         {
             _game = new Game(_tables, _state.Map, _state.StockLevel);
+            _drawing = new RoadDrawing(_game);
             _castleDrawn = false;
             _flagsDrawn = 0;
+            _roadsDrawn = 0;
             _flagButton.ButtonPressed = false;
+            _roadButton.ButtonPressed = false;
+            DrawPreview();
             _tickCarry = 0;
         }
     }
@@ -198,11 +250,16 @@ public partial class MapViewControl : Control
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
-            if ((_game.Castle is not null && !_castleDrawn) || _game.Flags.Count != _flagsDrawn)
+            if (
+                (_game.Castle is not null && !_castleDrawn)
+                || _game.Flags.Count != _flagsDrawn
+                || _game.Roads.Count != _roadsDrawn
+            )
             {
-                // The castle stands or a flag went up: draw it with the objects.
+                // The castle stands, a flag went up, or a road was built: draw it.
                 _castleDrawn = _game.Castle is not null;
                 _flagsDrawn = _game.Flags.Count;
+                _roadsDrawn = _game.Roads.Count;
                 Redraw();
             }
         }
@@ -236,6 +293,13 @@ public partial class MapViewControl : Control
     {
         if (input is not InputEventKey { Pressed: true } key || _seed.HasFocus())
         {
+            return;
+        }
+
+        if (key.Keycode == Key.Escape)
+        {
+            _roadButton.ButtonPressed = false;
+            CancelRoad();
             return;
         }
 
@@ -278,6 +342,9 @@ public partial class MapViewControl : Control
                 }
 
                 break;
+            case InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true }:
+                CancelRoad();
+                break;
             case InputEventMouseButton
             {
                 ButtonIndex: MouseButton.WheelUp or MouseButton.WheelDown,
@@ -318,8 +385,64 @@ public partial class MapViewControl : Control
             screenX,
             screenY
         );
+        if (_roadButton.ButtonPressed && _drawing is not null)
+        {
+            // The road is drawn outside the game, a node at a time, and one command builds it where it reaches a flag.
+            if (_drawing.Click(x, y) is { } build)
+            {
+                _game.Enqueue(build);
+            }
+
+            DrawPreview();
+            return;
+        }
+
         var kind = _flagButton.ButtonPressed ? CommandKind.PlaceFlag : CommandKind.PlaceCastle;
         _game.Enqueue(new Command(_game.TickCount, 0, kind, x, y));
+    }
+
+    // Drops the road being drawn: nothing was built, so nothing is left behind.
+    void CancelRoad()
+    {
+        _drawing?.Cancel();
+        DrawPreview();
+    }
+
+    // The road being drawn as a line over the nodes it passes, in every copy of the map: a stand-in, where the original
+    // draws the road's strips into the map as it is drawn.
+    void DrawPreview()
+    {
+        foreach (var child in _preview.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        if (_drawing is not { Active: true } || _state?.Map is not { } map)
+        {
+            return;
+        }
+
+        var heights = map.Layer(MapLayer.Height).ToArray();
+        var points = _drawing
+            .Nodes.Select(node =>
+            {
+                var (px, py) = Camera.NodePosition(node.X, node.Y);
+                var height = heights[map.Index(node.X, node.Y)] & Map.HeightMask;
+
+                return new Vector2(px, py - height * TerrainTriangles.HeightStep);
+            })
+            .ToArray();
+        foreach (var (x, y) in _camera.Copies())
+        {
+            var line = new Line2D
+            {
+                Points = points,
+                Width = 3,
+                DefaultColor = new Color(1, 1, 1),
+                Position = new Vector2(x, y),
+            };
+            _preview.AddChild(line);
+        }
     }
 
     // Moves the view by a distance in screen pixels.
@@ -357,6 +480,7 @@ public partial class MapViewControl : Control
                     _tablesProblem is not null
                         ? $"Cannot start the game, the program's rule tables are unreadable: {_tablesProblem}"
                     : _objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}"
+                    : _roadsProblem is not null ? $"Cannot draw the roads: {_roadsProblem}"
                     : ""
                 );
         _message.Modulate = new Color(1, 0.4f, 0.4f);
@@ -366,7 +490,10 @@ public partial class MapViewControl : Control
     {
         foreach (var child in _world.GetChildren())
         {
-            child.QueueFree();
+            if (child != _preview)
+            {
+                child.QueueFree();
+            }
         }
 
         if (_state.Map is null || _material is null)
@@ -375,6 +502,7 @@ public partial class MapViewControl : Control
         }
 
         var meshes = BuildMeshes(TerrainTriangles.Of(_state.Map), _state.Map.Size);
+        var roadMesh = BuildRoadMesh(_state.Map);
         var objectMeshes = BuildObjectMeshes(_state.Map);
         foreach (var (x, y) in _camera.Copies())
         {
@@ -382,6 +510,12 @@ public partial class MapViewControl : Control
             foreach (var mesh in meshes)
             {
                 copy.AddChild(new MeshInstance2D { Mesh = mesh, Material = _material });
+            }
+
+            // The roads are strips over the terrain of the whole map and under the objects.
+            if (roadMesh is not null)
+            {
+                copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = _roadMaterial });
             }
 
             // Objects paint over the terrain of every copy: an absolute z index above the terrain's 0.
@@ -400,6 +534,73 @@ public partial class MapViewControl : Control
 
             _world.AddChild(copy);
         }
+
+        DrawPreview();
+    }
+
+    // One mesh of every road strip of the map, or null where there is none or the road graphics did not load.
+    ArrayMesh? BuildRoadMesh(Map map)
+    {
+        if (_roadGraphics is null)
+        {
+            return null;
+        }
+
+        var quads = _roadGraphics.Quads(RoadDraws.Of(map));
+
+        return quads.Count == 0
+            ? null
+            : BuildQuadMesh(
+                quads.Select(q =>
+                    (q.X, q.Y, q.Width, q.Height, new Color(q.MaskLayer / 255f, q.TextureLayer / 255f, 0, 1))
+                )
+            );
+    }
+
+    // The terrain's shader with the road masks and textures in place of the terrain's, and the terrain's palette.
+    ShaderMaterial BuildRoadMaterial(RoadGraphics graphics, byte[] paletteRgba)
+    {
+        var masks = new Godot.Collections.Array<Image>();
+        foreach (var mask in graphics.Masks)
+        {
+            masks.Add(
+                Image.CreateFromData(
+                    TerrainGraphics.LayerWidth,
+                    TerrainGraphics.MaskLayerHeight,
+                    false,
+                    Image.Format.R8,
+                    mask.Layer
+                )
+            );
+        }
+
+        var textures = new Godot.Collections.Array<Image>();
+        foreach (var texture in graphics.Textures)
+        {
+            textures.Add(
+                Image.CreateFromData(
+                    TerrainGraphics.LayerWidth,
+                    TerrainGraphics.TextureHeight,
+                    false,
+                    Image.Format.R8,
+                    texture
+                )
+            );
+        }
+
+        var maskArray = new Texture2DArray();
+        maskArray.CreateFromImages(masks);
+        var textureArray = new Texture2DArray();
+        textureArray.CreateFromImages(textures);
+        var palette = ImageTexture.CreateFromImage(
+            Image.CreateFromData(256, 1, false, Image.Format.Rgba8, paletteRgba)
+        );
+        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Terrain.gdshader") };
+        material.SetShaderParameter("masks", maskArray);
+        material.SetShaderParameter("textures", textureArray);
+        material.SetShaderParameter("palette", palette);
+
+        return material;
     }
 
     ShaderMaterial BuildMaterial(TerrainGraphics graphics)

@@ -385,6 +385,28 @@ Sites:
 - `0x45f402` sets two border bits of the new flag from the owners around it; not ported.
 - `0x41f2d2`: places a group of 3, 6, or 12 settlers on the start node of a mission start; not recovered further.
 
+### Roads
+
+How the player draws a road between two flags, what the commit writes, and how a road is drawn. The rules are in
+[Roads](roads.md).
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x440c24` | `View_HandleClick` | The click handler of a game view: routes a click on the map or on a panel; in road mode the click on a node runs the step at `0x443f62`. | inferred | game | Called by `0x440b01`. |
+| `0x440d23` | `View_RunButtonAction` | Runs the action of the button a click hit: the road button (action `0x18`) starts road mode, the flag and castle buttons place theirs. | inferred | game | Called by `0x440c24`. |
+| `0x443f62` | `Road_ClickStep` | The click on a node in road mode, inside `0x440c24`: works out the direction from the end of the road to the node, checks it against the mask of allowed directions, takes a step back, extends the road, or ends it at a flag. | confirmed | game | Entered by jumps inside `0x440c24`; returns at `0x44477f`. |
+| `0x44b6ce` | `Road_UpdateCursor` | In road mode, leaves at `+0xd0` of the view the mask of the directions in which the road's end may go on, and at `+0xaa` the cursor code for each of the six. | confirmed | game | Called by `0x440b01`. |
+| `0x444e68` | `Road_Commit` | Walks the drawn road from the flag it ends at back to the one it started at, checks the owner of every node and that the triangles beside the road are all land or all water, and joins the two flags' items. | confirmed | game | Called at `0x444534` by the step. |
+| `0x4454e7` | `Road_LengthClass` | Turns a road's length into a class 0 to 7 (steps up at 4, 6, 7, 10, 13, 18, and 24) that the commit stores for each end. | confirmed | game | Called by `Road_Commit`. |
+| `0x442002` | `Road_Cancel` | Leaves road mode and takes the road drawn so far off the map, from the road's end back, one bit pair for each step counted at `+0xce`. | confirmed | game | Called by `0x440d23`, `0x444534`. |
+| `0x462e1d` | `Road_TakeDown` | Walks a road from a node along its bits to both of its flags; called by the code that removes a flag or a road, not by the drawing. | inferred | game | Called by `0x45ed5f` and `0x462d88`. |
+| `0x444b29` | `Road_WalkEnds` | Finds the two directions of a node's road and runs `0x444c61` on each: a walk of the road to its ends, which the cursor update calls for a road under the cursor when a start-up option is set. | inferred | game | Called by `Road_UpdateCursor` and `Road_TakeDown`. |
+| `0x427c09` | `Render_DrawRoadsAndBorders` | For each pair of rows, the passes that draw the roads (and the territory borders where no road lies) of the view's window of nodes. | confirmed | game | Called at `0x427133`. |
+| `0x428008` | `Render_DrawRoadEast` | Draws the strip of the road that leaves a node east: the mask 234 plus the height difference, the road texture from the slope and the terrain. | confirmed | game | Called by `0x427d3e`. |
+| `0x428105` | `Render_DrawRoadSouthEast` | The same for the road leaving south-east: the mask 243 plus the height difference. | confirmed | game | Called by `0x427e3a`. |
+| `0x4281cc` | `Render_DrawRoadSouth` | The same for the road leaving south: the mask 252 plus the height difference. | confirmed | game | Called by `0x427f1f`. |
+| `0x428389` | — | Where no road lies and the owners of two neighbors differ, draws the border between them (east); with `0x42846d` and `0x428528` for the other two directions. | inferred | game | Called by `0x427d3e`, `0x427e3a`, `0x427f1f`. |
+
 ### Save and load
 
 The save game format is in "Save format".
@@ -740,6 +762,11 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x426abe` | `Main_HandleKeys` | inferred | Main loop |
 | `0x426dfc` | `Main_ComputeElapsed` | confirmed | Main loop |
 | `0x427062` | `Input_ApplyPointerMotion` | confirmed | Input |
+| `0x427c09` | `Render_DrawRoadsAndBorders` | confirmed | Roads |
+| `0x428008` | `Render_DrawRoadEast` | confirmed | Roads |
+| `0x428105` | `Render_DrawRoadSouthEast` | confirmed | Roads |
+| `0x4281cc` | `Render_DrawRoadSouth` | confirmed | Roads |
+| `0x428389` | — | inferred | Roads |
 | `0x4286d8` | — | unknown | Simulation |
 | `0x428728` | — | unknown | Simulation |
 | `0x428964` | `Sound_RunAmbient` | inferred | Sound |
@@ -754,6 +781,9 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x430fd3` | `Player_SwapOutSecondView` | confirmed | Input |
 | `0x431c31` | `Msg_Post` | confirmed | Main loop |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
+| `0x440c24` | `View_HandleClick` | inferred | Roads |
+| `0x440d23` | `View_RunButtonAction` | inferred | Roads |
+| `0x442002` | `Road_Cancel` | confirmed | Roads |
 | `0x442244` | `Flag_PlaceFromButton` | confirmed | Castle and build sites |
 | `0x4422c5` | `Flag_Place` | confirmed | Castle and build sites |
 | `0x442630` | `Castle_PlaceFromClick` | confirmed | Castle and build sites |
@@ -761,11 +791,16 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x442e8a` | `Castle_StartStockRows` | confirmed | Castle and build sites |
 | `0x442f0c` | `Castle_CreateSettlers` | inferred | Castle and build sites |
 | `0x44333d` | `Settler_TakeFromStorage` | inferred | Castle and build sites |
+| `0x443f62` | `Road_ClickStep` | confirmed | Roads |
+| `0x444b29` | `Road_WalkEnds` | inferred | Roads |
+| `0x444e68` | `Road_Commit` | confirmed | Roads |
+| `0x4454e7` | `Road_LengthClass` | confirmed | Roads |
 | `0x44591d` | `Panel_HandleClick` | inferred | Views, panels, and drawing |
 | `0x448418` | `Game_ConfirmEnd` | inferred | Program start and game flow |
 | `0x448436` | `Game_EndToStartScreen` | confirmed | Program start and game flow |
 | `0x449f58` | `Flag_MoveDeposit` | confirmed | Castle and build sites |
 | `0x44a0aa` | `Deposit_MergeInto` | confirmed | Castle and build sites |
+| `0x44b6ce` | `Road_UpdateCursor` | confirmed | Roads |
 | `0x44b6e6` | `BuildSite_Evaluate` | confirmed | Castle and build sites |
 | `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | inferred | Castle and build sites |
 | `0x44bd72` | `BuildSite_EvaluateBuilding` | inferred | Castle and build sites |
@@ -814,6 +849,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4614c3` | `Table_ToOffsets16` | confirmed | Save and load |
 | `0x461548` | `Table_ToPointers16` | confirmed | Save and load |
 | `0x4617fd` | `Building_Remove` | inferred | Castle and build sites |
+| `0x462e1d` | `Road_TakeDown` | inferred | Roads |
 | `0x46414d` | — | unknown | Simulation |
 | `0x466ade` | `Rng_Step` | confirmed | Random generator and map start |
 | `0x466b94` | `StartScreen_SwitchPage` | confirmed | Program start and game flow |
@@ -847,7 +883,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 150 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 116 confirmed, 34 inferred, 14 unknown.
+Coverage: the index names 163 routines of the 471 functions in the dump's game code band and lists 15 more without a name: 125 confirmed, 39 inferred, 14 unknown.
 <!-- coverage:end -->
 
 Open anchors:

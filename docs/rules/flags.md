@@ -49,8 +49,8 @@ For a node the evaluator allowed:
    of type 1. A lake detail is a byte of type 0, so it merges with another type-0 byte in the same way.
 4. The slot number is stored as the node's link, in the byte the resource layer shares (the same byte as step 3).
 
-The flag table's item is cleared to zero and the placement fills no field of it; the later slices that join flags
-by roads fill the links. **Inferred (not read from the allocator's limit):** the table has a slot limit (state
+The flag table's item is cleared to zero and the placement fills no field of it; the road commit ([Roads](roads.md))
+fills the road bits and the links to the other flags. **Inferred (not read from the allocator's limit):** the table has a slot limit (state
 `+0x258`) that `Game_Init` (`0x41dbea`) computes from a division of a value it reads at start-up. It is not
 recovered, and the harness sets 100. The engine holds 256 flags, the most a one-byte link names. A flag past that
 is refused (`simplicity:` ceiling).
@@ -74,7 +74,8 @@ the object number 0x80, plus the animation frame (the frame counter shifted righ
 object byte masked with 0xc0 and shifted right by 4; `Gfx_DrawObjectSprite` (`0x44da4d`) adds 1250 and draws
 through the same position rule as every object (16 east and 8 south of the node). With frame 0 and the top bits
 clear the entry is 1378, a sprite of 16 by 19 pixels in the install's `loca/SPAD.PA`. The routine also draws, per
-road direction, the stub of a road and the goods that wait; no road exists before the road slices.
+road direction, the goods that wait (the bytes at `+0xc` to `+0x13` of the flag's item); the road itself is a strip
+drawn with the terrain ([Roads](roads.md#how-a-road-is-drawn)).
 
 **Inferred:** the top bits of the object byte pick the colour of the flag. A flag on a node whose object byte has
 bit 7 set (a water triangle) would draw entry 1386 in the original; the engine always draws 1378.
@@ -87,4 +88,4 @@ bit 7 set (a water triangle) would draw entry 1386 in the original; the engine a
 castle's flag is the first. The digest holds the flags and the total of resource 1. A refused command changes no
 state. The map view's stand-in flag button (`src/Viewer/MapViewControl.cs`) turns a click into `PlaceFlag`;
 `ObjectSprites.FlagEntry` and `ObjectDraws` draw the flags with the objects. Departures: the table limit, the
-border bits that are not set anyway, the colour bits, the refusal before the castle, and the road stubs.
+border bits that are not set anyway, the colour bits, the refusal before the castle, and the goods that wait.

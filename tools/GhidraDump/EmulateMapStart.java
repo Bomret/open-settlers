@@ -42,7 +42,25 @@
 //                            castle at cx,cy (0x442704), on each tile in turn without resetting between them: the
 //                            outcome (PLACED or REFUSED), the evaluator's pair, the link word the node holds, the
 //                            total of resource 1 (+0x4c), and the bytes the tile's attempt changed
-//   stockrows:x              the five rows of start stock numbers the placement interpolates (0x442e8a)
+//   road:N:S0,S1,S2:L:cx,cy:x,y;x,y;...:sx,sy,D;sx,sy,D;...
+//                            road drawing (docs/rules/roads.md) on that map after a castle at cx,cy (0x442704) and the
+//                            flags the flag button (0x442244) puts on the listed tiles. Each road is a start flag sx,sy and
+//                            a string D of directions 0 to 5 (east, south-east, south, west, north-west, north). The road
+//                            button's check (0x44b6e6 must say 1 or 2 on the start) and then, per direction, the cursor
+//                            update (0x44b6ce, which leaves the mask of allowed directions at +0xd0 of the view) and the
+//                            click step (0x443f62 to 0x44477f of the click handler 0x440c24, with the click on the node
+//                            that direction leads to): the mask, the sound the step asks for (8 a step, 4 a refusal, 2 the
+//                            finished road), the cursor, the length (+0xce), and the map bytes the step changed. A finished
+//                            road also lists the bytes it changed in the flag table. The roads run one after the other on
+//                            the same map. Directions after the road reached a flag are not run. A road whose first step goes
+//                            back along a road that already leaves the start flag is CORRUPTED (the original tears the old
+//                            road's bits off the map and counts the length to -1): the run restores the state before it.
+//   roaddraw:SEED:COUNT      the three routines that draw a road's strip (0x428008 east, 0x428105 south-east, 0x4281cc
+//                            south, docs/rules/roads.md) on COUNT cases drawn from a Java random generator seeded with SEED:
+//                            a direction, a row position and a column position, and the height and the terrain byte of the
+//                            node, its north, east, south, south-east, and west neighbours. Each line gives the inputs and what
+//                            the routine hands to the textured fill (0x406120): the position, the mask entry, and the texture entry.
+//   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
 //
@@ -95,6 +113,8 @@ public class EmulateMapStart extends GhidraScript {
                     case "castle" -> castle(rest);
                     case "flag" -> flag(rest);
                     case "flagput" -> flagput(rest);
+                    case "road" -> road(rest);
+                    case "roaddraw" -> roaddraw(rest);
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
                     case "opponents" -> opponents(rest);
@@ -614,6 +634,286 @@ public class EmulateMapStart extends GhidraScript {
                     + (result[1] & 0xff) + " link=" + ((after[b] & 0xff) | ((after[b + 1] & 0xff) << 8))
                     + " resource1=" + getWord(STATE + RESOURCE_TOTAL) + " changes=" + changed.toString().trim());
         }
+    }
+
+    /** The sound requests inside the click step 0x443f62 to 0x44477f (the calls of 0x44fd5f) and the call of 0x42f7ea. */
+    private static final long[] ROAD_SOUND_CALLS = {0x444079, 0x44439b, 0x444544, 0x4445b6, 0x444608, 0x444657,
+            0x4446cb, 0x4446f6, 0x444716, 0x444743};
+    private static final long ROAD_STEP = 0x443f62L;
+    private static final long ROAD_DRAW_CALL = 0x4445a8L;
+    private static final int ROAD_ITEMS = 64;
+    private static final int ITEM_SIZE = 0x46;
+
+    /**
+     * road:N:S0,S1,S2:L:cx,cy:x,y;x,y;...:sx,sy,D;sx,sy,D;... runs road drawing (see the header). Prints, per road, a
+     * line per step and a line for the outcome.
+     */
+    private void road(String rest) throws Exception {
+        String[] parts = rest.split(":");
+        int[] size = generate(parts[0] + ":" + parts[1], false);
+        int width = size[1];
+        int height = size[2];
+        int bytes = height * 8 * width;
+        putInt(STATE + OFFSETS_POINTER, OFFSETS);
+        call(0x41f6a5);
+        putInt(STATE + 0x352, 2);
+        putInt(STATE + 0x64, PLAYERS + 0x1000);
+        putInt(STATE + 0x68, PLAYERS + 0x3000);
+        putInt(STATE + 0x6c, PLAYERS + 0x5000);
+        putInt(STATE + 0x70, PLAYERS + 0x7000);
+        putInt(STATE + 0x78, PLAYERS + 0x9000);
+        putInt(STATE + 0x7c, PLAYERS + 0x9400);
+        putInt(STATE + 0x98, TABLES);
+        putInt(STATE + 0xa4, TABLES + 0x10000);
+        putInt(STATE + 0x9c, TABLES + 0x20000);
+        putInt(STATE + 0xa8, TABLES + 0x30000);
+        putInt(STATE + 0xa0, TABLES + 0x40000);
+        putInt(STATE + 0xac, TABLES + 0x50000);
+        putInt(STATE + 0xf0, TABLES + 0x60000);
+        putInt(STATE + 0xf4, TABLES + 0x70000);
+        zero(PLAYERS, 0xa000);
+        zero(TABLES, 0x80000);
+        for (int i = 0; i < 4; i++) {
+            putWord(PLAYERS + 0x1000 + 0x2000 * i, i);
+        }
+        putWord(STATE + 0x258, 100);
+        putWord(STATE + 0x25a, 100);
+        putWord(STATE + 0x25c, 100);
+        putWord(STATE + 0x264, 100);
+        for (int offset : new int[] {0x25e, 0x260, 0x262, 0x266}) {
+            putWord(STATE + offset, 0);
+        }
+        long player = PLAYERS + 0x1000;
+        putInt(REGISTERS + 0x30, player);
+        String[] centre = parts[3].split(",");
+        putWord(player + 0xfc, Integer.parseInt(centre[0]));
+        putWord(player + 0xfe, Integer.parseInt(centre[1]));
+        emu.writeMemory(toAddr(player + LEVEL), new byte[] {(byte) Integer.parseInt(parts[2])});
+        call(0x44b6e6);
+        byte[] first = emu.readMemory(toAddr(player + 0x100), 2);
+        if ((first[0] & 0xff) != 7 || (first[1] & 0xff) != 5) {
+            println("EMU road castle=" + parts[3] + " REFUSED");
+            return;
+        }
+        call(0x442704);
+        emu.writeMemory(toAddr(RECORD), new byte[0x100]);
+        putInt(RECORD + 0x82, player);
+        putInt(REGISTERS + 0x20, RECORD);
+        if (!parts[4].isEmpty()) {
+            for (String tile : parts[4].split(";")) {
+                String[] xy = tile.split(",");
+                putWord(player + 0xfc, Integer.parseInt(xy[0]));
+                putWord(player + 0xfe, Integer.parseInt(xy[1]));
+                emu.writeMemory(toAddr(player + 0x100), new byte[4]);
+                long esp = emu.readRegister("ESP").longValue() - 4;
+                emu.writeRegister("ESP", esp);
+                putInt(esp, RETURN);
+                long stop = runTo(0x442244, RETURN, 0x44c768);
+                emu.writeRegister("ESP", esp + 4);
+                println("EMU road-flag size=" + size[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2]
+                        + " tile=" + tile + (stop == RETURN ? " PLACED" : " REFUSED"));
+            }
+        }
+
+        for (String road : parts[5].split(";")) {
+            String[] fields = road.split(",");
+            int sx = Integer.parseInt(fields[0]);
+            int sy = Integer.parseInt(fields[1]);
+            String dirs = fields[2];
+            String label = "EMU road size=" + size[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2]
+                    + " start=" + sx + "," + sy + " dirs=" + dirs;
+            putWord(player + 0xfc, sx);
+            putWord(player + 0xfe, sy);
+            emu.writeMemory(toAddr(player + 0x100), new byte[4]);
+            call(0x44b6e6);
+            int kind = emu.readMemory(toAddr(player + 0x100), 1)[0] & 0xff;
+            if (kind != 1 && kind != 2) {
+                println(label + " START-REFUSED kind=" + kind);
+                continue;
+            }
+            // The road button (0x440d23, action 0x18): road mode, the length starts at 0.
+            emu.writeMemory(toAddr(RECORD + 1), new byte[] {(byte) 0xc4});
+            putWord(RECORD + 0xce, 0);
+            byte[] tablesBefore = emu.readMemory(toAddr(TABLES), ROAD_ITEMS * ITEM_SIZE).clone();
+            byte[] mapAtStart = emu.readMemory(toAddr(MAP), bytes).clone();
+            byte[] allPlayers = emu.readMemory(toAddr(PLAYERS), 0xa000).clone();
+            byte[] allTables = emu.readMemory(toAddr(TABLES), 0x80000).clone();
+            byte[] allState = emu.readMemory(toAddr(STATE), 0x1000).clone();
+            byte[] allView = emu.readMemory(toAddr(RECORD), 0x100).clone();
+            String outcome = "OPEN";
+            for (int i = 0; i < dirs.length() && outcome.equals("OPEN"); i++) {
+                int dir = dirs.charAt(i) - '0';
+                call(0x44b6ce);
+                int mask = emu.readMemory(toAddr(RECORD + 0xd0), 1)[0] & 0xff;
+                int cx = getWord(player + 0xfc);
+                int cy = getWord(player + 0xfe);
+                int[][] delta = {{1, 0}, {1, 1}, {0, 1}, {-1, 0}, {-1, -1}, {0, -1}};
+                int tx = (cx + delta[dir][0]) & (width - 1);
+                int ty = (cy + delta[dir][1]) & (height - 1);
+                putWord(REGISTERS + 8, tx);
+                putWord(REGISTERS + 0xc, ty);
+                byte[] before = emu.readMemory(toAddr(MAP), bytes).clone();
+                StringBuilder sounds = new StringBuilder();
+                boolean ended = false;
+                long esp = emu.readRegister("ESP").longValue() - 4;
+                emu.writeRegister("ESP", esp);
+                putInt(esp, RETURN);
+                emu.writeRegister(emu.getPCRegister(), ROAD_STEP);
+                emu.setBreakpoint(toAddr(RETURN));
+                emu.setBreakpoint(toAddr(ROAD_DRAW_CALL));
+                for (long call : ROAD_SOUND_CALLS) {
+                    emu.setBreakpoint(toAddr(call));
+                }
+                emu.setBreakpoint(toAddr(0x444534));
+                while (true) {
+                    emu.run(monitor);
+                    if (emu.getLastError() != null) {
+                        throw new IllegalStateException("emulation failed: " + emu.getLastError());
+                    }
+                    long pc = emu.readRegister(emu.getPCRegister()).longValue();
+                    if (pc == RETURN) {
+                        break;
+                    }
+                    if (pc == 0x444534) {
+                        ended = true;
+                        emu.step(monitor);
+                    } else if (pc == ROAD_DRAW_CALL) {
+                        emu.writeRegister(emu.getPCRegister(), pc + 5);
+                    } else {
+                        sounds.append(sounds.length() == 0 ? "" : "+").append(
+                                (int) (emu.readMemory(toAddr(REGISTERS), 4)[0] & 0xff));
+                        emu.writeRegister(emu.getPCRegister(), pc + 5);
+                    }
+                }
+                emu.writeRegister("ESP", esp + 4);
+                byte[] after = emu.readMemory(toAddr(MAP), bytes);
+                println(label + " step=" + i + " dir=" + dir + " mask=" + String.format("%02X", mask) + " target=" + tx
+                        + "," + ty + " sounds=" + sounds + (ended ? " END" : "") + " length=" + getWord(RECORD + 0xce)
+                        + " cursor=" + getWord(player + 0xfc) + "," + getWord(player + 0xfe) + " changes="
+                        + changes(before, after, width, height));
+                if (getWord(RECORD + 0xce) == 0xffff) {
+                    // A step back along a road that already leaves the start flag, before any step of this road:
+                    // the original takes the existing road's bits off the map and counts the length down to -1
+                    // (docs/rules/roads.md). The run goes on from the state before the road.
+                    outcome = "CORRUPTED";
+                } else if (ended) {
+                    outcome = sounds.toString().endsWith("2") ? "BUILT" : "REFUSED-AT-END";
+                } else if (sounds.toString().equals("4")) {
+                    outcome = "STEP-REFUSED";
+                }
+            }
+            if (outcome.equals("CORRUPTED")) {
+                emu.writeMemory(toAddr(MAP), mapAtStart);
+                emu.writeMemory(toAddr(PLAYERS), allPlayers);
+                emu.writeMemory(toAddr(TABLES), allTables);
+                emu.writeMemory(toAddr(STATE), allState);
+                emu.writeMemory(toAddr(RECORD), allView);
+            } else if (!outcome.equals("BUILT")) {
+                // The road is still open, or a step was refused and left it open: the stand-in cancels it with the
+                // road button again (0x440d23 calls 0x442002 in road mode).
+                long esp = emu.readRegister("ESP").longValue() - 4;
+                emu.writeRegister("ESP", esp);
+                putInt(esp, RETURN);
+                emu.setBreakpoint(toAddr(RETURN));
+                emu.writeRegister(emu.getPCRegister(), 0x442002);
+                emu.run(monitor);
+                if (emu.getLastError() != null) {
+                    throw new IllegalStateException("emulation failed: " + emu.getLastError());
+                }
+                emu.writeRegister("ESP", esp + 4);
+                if (outcome.equals("OPEN")) {
+                    outcome = "CANCELLED";
+                }
+            }
+            byte[] tablesAfter = emu.readMemory(toAddr(TABLES), ROAD_ITEMS * ITEM_SIZE);
+            StringBuilder items = new StringBuilder();
+            for (int i = 0; i < ROAD_ITEMS * ITEM_SIZE; i++) {
+                if (tablesAfter[i] != tablesBefore[i]) {
+                    items.append(" ").append(i / ITEM_SIZE).append(":").append(Integer.toHexString(i % ITEM_SIZE))
+                            .append("=").append(String.format("%02X>%02X", tablesBefore[i] & 0xff, tablesAfter[i] & 0xff));
+                }
+            }
+            byte[] mapNow = emu.readMemory(toAddr(MAP), bytes);
+            println(label + " outcome=" + outcome + " view1=" + String.format("%02X",
+                    emu.readMemory(toAddr(RECORD + 1), 1)[0] & 0xff) + " length=" + getWord(RECORD + 0xce)
+                    + " roadchanges=" + changes(mapAtStart, mapNow, width, height) + " items=" + items.toString().trim());
+        }
+    }
+
+    private static final long[] ROAD_DRAW_ROUTINES = {0x428008L, 0x428105L, 0x4281ccL};
+    private static final long ROAD_LIST = 0x25000000L;
+    private static final long ROAD_NODES = 0x25100000L;
+
+    /**
+     * roaddraw:SEED:COUNT runs the road strip routines on random cases (see the header). The routines read their node
+     * and its neighbours through a list of node pointers at +0x28 of the register block: the node at the list
+     * pointer, its east neighbour at +4, its south neighbour at +0x52, its south-east neighbour at +0x56, its north
+     * neighbour at -0x52, its west neighbour at -4 (the list of the row pass 0x427c09). The pass routines
+     * (0x427d3e, 0x427e3a, 0x427f1f) load the height words of the node and of the neighbour the road leads to into
+     * +0x18 and +0x1c of the register block before the call; this does the same.
+     */
+    private void roaddraw(String rest) throws Exception {
+        String[] parts = rest.split(":");
+        java.util.Random random = new java.util.Random(Long.parseLong(parts[0]));
+        int count = Integer.parseInt(parts[1]);
+        String[] names = {"a", "n", "e", "s", "se", "w"};
+        // The list entry offsets of the node and its north, east, south, south-east, and west neighbours.
+        int[] offsets = {0, -0x52, 4, 0x52, 0x56, -4};
+        long list = ROAD_LIST + 0x200;
+        for (int i = 0; i < count; i++) {
+            prepare();
+            int direction = random.nextInt(3);
+            int row = 100 + random.nextInt(300);
+            int column = random.nextInt(600);
+            int[] height = new int[6];
+            int[] terrain = new int[6];
+            int base = 6 + random.nextInt(14);
+            for (int k = 0; k < 6; k++) {
+                height[k] = Math.max(0, Math.min(31, base + random.nextInt(11) - 5));
+                terrain[k] = random.nextInt(256);
+                long node = ROAD_NODES + 16L * k;
+                emu.writeMemory(toAddr(node), new byte[] {0, (byte) height[k], (byte) terrain[k], 0});
+                putInt(list + offsets[k], node);
+            }
+            putInt(REGISTERS + 0x28, list);
+            // The word of the node and of the neighbour the road leads to: the flag byte high, the height byte low.
+            int target = direction == 0 ? 2 : direction == 1 ? 4 : 3;
+            putWord(REGISTERS + 0x18, height[0]);
+            putWord(REGISTERS + 0x1c, height[target]);
+            putWord(REGISTERS, row);
+            putWord(REGISTERS + 4, column);
+            runTo(ROAD_DRAW_ROUTINES[direction], 0x406120);
+            StringBuilder line = new StringBuilder("EMU roaddraw dir=" + direction + " row=" + row + " column=" + column);
+            for (int k = 0; k < 6; k++) {
+                line.append(" ").append(names[k]).append("=").append(height[k]).append(",").append(terrain[k]);
+            }
+            line.append(" x=").append((short) getWord(REGISTERS)).append(" y=").append((short) getWord(REGISTERS + 4))
+                    .append(" mask=").append(getWord(REGISTERS + 8)).append(" texture=").append(getWord(REGISTERS + 0xc));
+            println(line.toString());
+        }
+    }
+
+    /** The bytes that differ between two copies of the map: "x,y:index=old>new/..." for each tile, as flagput prints. */
+    private static String changes(byte[] before, byte[] after, int width, int height) {
+        StringBuilder changed = new StringBuilder();
+        for (int ty = 0; ty < height; ty++) {
+            for (int tx = 0; tx < width; tx++) {
+                int a = ty * 8 * width + tx * 4;
+                int b = a + 4 * width;
+                StringBuilder diff = new StringBuilder();
+                for (int i = 0; i < 8; i++) {
+                    int at = (i < 4 ? a : b) + (i & 3);
+                    if (after[at] != before[at]) {
+                        diff.append("/").append(i).append("=").append(String.format("%02X>%02X", before[at] & 0xff,
+                                after[at] & 0xff));
+                    }
+                }
+                if (diff.length() > 0) {
+                    changed.append(" ").append(tx).append(",").append(ty).append(":").append(diff.substring(1));
+                }
+            }
+        }
+        return changed.toString().trim();
     }
 
     /** peek:ADDRESS:COUNT prints COUNT bytes of the program at the address, for an investigation at the console. */

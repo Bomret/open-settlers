@@ -121,5 +121,5 @@ seconds to a few minutes, the longer for the larger sizes. The commands `site`, 
 `opponents`, and `peek` run the build-site evaluator, the castle placement, the start stock table, the free-game
 opponent settings, and a byte dump: their forms are in the header of `EmulateMapStart.java`, and the rules they
 check are in `docs/rules/build-sites.md` and `docs/rules/castle.md`. The `flag` command runs the flag button (`0x442244`) on every tile and counts, per pair of node state and site,
-the tiles that put a flag; `castle` with sites adds the same count after the castle stands. The `tables:x` command prints the digest of the
+the tiles that put a flag; `castle` with sites adds the same count after the castle stands. The `flagput` command places flags with the button after a castle; `road` draws roads between those flags with the original's cursor update, click step, and commit, and `roaddraw` runs the three strip routines that draw a road (`docs/rules/roads.md`). The `tables:x` command prints the digest of the
 spiral table and the object codes of the large objects.

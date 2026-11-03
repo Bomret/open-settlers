@@ -29,12 +29,18 @@ settled: [Item tables](../rules/item-tables.md). What is left open:
 - The flag table's slot limit (state `+0x258`, set by `0x41dbea` from a start-up value): open lead, inferred. The
   engine holds 256 flags.
 - The flag's colour bits in the object byte (`0x44db26`): open lead, inferred. The engine draws entry 1378 always.
-- `0x442002`: sets up the road-drawing state with six direction slots in the view record. guess
+- `0x442002`, `0x44b6ce`, the click step `0x443f62` to `0x44477f` of `0x440c24`, the commit `0x444e68`, and the road
+  strips `0x428008`, `0x428105`, and `0x4281cc`: known. Drawing a road, what it writes, and how it is drawn:
+  [Roads](../rules/roads.md). Open leads there: view `+1` bit 3 (a click on a road node places a flag), state `+0x37e`
+  bit 6 (the cursor update walks the road under a node), a flag put on a road node (does the road split?), and what
+  the clear `+4` bit of a water road's items means. The items' bytes at `+5` and the lengths at `+6` are written by the
+  commit; no slice reads them yet.
 - `0x4617fd`: takes a building or flag item down, not a placement: clears the bits on its node and neighbor, releases
   its slots, and counts the goods back. likely
 - `0x462153`: tears down a `Table70` item and branches on its type. guess
-- `0x462e1d` with `0x463204`, `0x46385b`, `0x463a40`, `0x463ef9`: walks a road or path from a map
-  position. guess
+- `0x462e1d` with `0x463204`, `0x46385b`, `0x463a40`, `0x463ef9`: walks a road from a map node along its bits to
+  both of its flags, called by the code that takes a road or a flag down (`0x45ed5f`, `0x462d88`); the drawing does not
+  use it. likely
 - `0x42b4bc` (entry variant `0x42b455`): route search over the `Table70` graph with a work queue at
   `+0xb4` and `+0xb8`. likely
 - `0x42ca7a`: advances the search generation at `+0x26e` and clears the mark of every `Table70` item when
@@ -63,7 +69,7 @@ settled: [Item tables](../rules/item-tables.md). What is left open:
 ## Build interface
 
 - `0x440b01`: routes a view's clicks to the start screen or the game handlers. likely
-- `0x440c24`: in-game click handler; tests map against panel. likely
+- `0x440c24`: in-game click handler; tests map against panel; its road step is known ([Roads](../rules/roads.md)). likely
 - `0x440d23`: dispatches road, flag, and build actions and plays the error sounds. likely
 - `0x44c768`, `0x44c8cf`: write a button list into view `+0x60`, perhaps the build menu. guess
 - `0x44b6e6`: known. The build-site evaluator behind every click: [Build sites](../rules/build-sites.md).
