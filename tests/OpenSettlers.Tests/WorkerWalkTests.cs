@@ -11,8 +11,8 @@ namespace OpenSettlers.Tests;
 // The lines of worker-walks.txt are the output of the emulator verb worker (tools/GhidraDump/emulate.py, ADR 0008): the
 // original's passes over the item tables (0x428728, 0x42cb2d, 0x42f3d9) on a game started as the road verb starts one,
 // with a finished woodcutter's hut at a flag. Each scenario starts with a "#" line that names its verb command; the
-// lines after it give, for the passes where the bytes changed, the 16 bytes of the castle's woodcutter (slot 15 of the
-// settler table, s15=) and the 18 bytes of the hut (building slot 1, b=), as hexadecimal. A scenario's lines end with
+// lines after it give, for the passes where the bytes changed, the 16 bytes of the castle's woodcutter (slot 10 of the
+// settler table, s10=) and the 18 bytes of the hut (building slot 1, b=), as hexadecimal. A scenario's lines end with
 // the pass at which the worker's first turn in state 4 (stepping through the hut's door) left its bytes; what the
 // original does next belongs to the woodcutter's work. The engine runs the same commands and must hold the same bytes
 // after each pass, which tests the route search, the retry scan, the request, the step times and the door speeds.
@@ -20,7 +20,7 @@ namespace OpenSettlers.Tests;
 public sealed class WorkerWalkTests
 {
     private const string Fixture = "worker-walks.txt";
-    private const int WorkerSlot = 15;
+    private const int WorkerSlot = 10;
     private const int HutSlot = 1;
 
     private sealed record Scenario(string Name, string Command, List<(int Pass, string? Worker, string? Hut)> Lines);
@@ -43,7 +43,7 @@ public sealed class WorkerWalkTests
                 .Select(field => field.Split('='))
                 .ToDictionary(pair => pair[0], pair => pair[1]);
             var pass = fields["pass"] == "start" ? -1 : int.Parse(fields["pass"], CultureInfo.InvariantCulture);
-            scenarios[^1].Lines.Add((pass, fields.GetValueOrDefault("s15"), fields.GetValueOrDefault("b")));
+            scenarios[^1].Lines.Add((pass, fields.GetValueOrDefault("s10"), fields.GetValueOrDefault("b")));
         }
 
         return scenarios;
@@ -52,7 +52,7 @@ public sealed class WorkerWalkTests
     // The settler's 16 bytes as the original's item holds them (Table16): the job and player, the frame, the timer, the
     // node's offset (four bytes for each node, and the original's row holds the two records of its nodes, so a row is
     // twice the map's width), the stamp, the state, the mode, the target, the heading, and the next state.
-    private static string Hex(Settler s, int width)
+    internal static string Hex(Settler s, int width)
     {
         var bytes = new List<byte> { (byte)(s.Job << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
@@ -67,7 +67,7 @@ public sealed class WorkerWalkTests
 
     // The hut's 18 bytes (Table18): the node's offset, the type byte, the status, the flag slot, bytes 8 and 9, the worker's
     // slot, the progress, and the pointer to a storage item, which a hut has none.
-    private static string Hex(Building b, int width)
+    internal static string Hex(Building b, int width)
     {
         var bytes = new List<byte>();
         bytes.AddRange(BitConverter.GetBytes((b.Y * 2 * width + b.X) * 4));

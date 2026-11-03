@@ -160,5 +160,31 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(0x9074A7BD864B08BDUL, Fnv(tables.FigureOffsets.SelectMany(BitConverter.GetBytes).ToArray()));
     }
 
+    [TestMethod]
+    public void TheWalkRowsAreFoundByTheirAddress()
+    {
+        var exe = Executable(bytes =>
+        {
+            for (var i = 0; i < ProgramTables.WalkRowCount * ProgramTables.WalkRowSize; i++)
+            {
+                bytes[FileOffset(ProgramTables.WalkRowAddress) + i] = (byte)(i * 7);
+            }
+        });
+
+        var tables = ProgramTables.Read(exe);
+
+        Assert.AreEqual(ProgramTables.WalkRowCount * ProgramTables.WalkRowSize, tables.WalkRows.Length);
+        Assert.AreEqual((byte)(19 * 7), tables.WalkRows[19]);
+    }
+
+    [TestMethod]
+    public void TheWalkRowsOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:4388ff:192 (24 rows of 8 bytes).
+        Assert.AreEqual(0x6EFEA098351E0AF5UL, Fnv(tables.WalkRows));
+    }
+
     private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
 }

@@ -35,13 +35,13 @@ public sealed class RoadBuildingTests
         var castle = header["castle"].Split(',').Select(int.Parse).ToArray();
         var game = new Game(TestProgram.Tables(), map, int.Parse(header["level"], CultureInfo.InvariantCulture));
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
-        game.Tick();
+        game.ApplyCommands();
 
         foreach (var line in lines.Where(line => line.StartsWith("road-flag ", StringComparison.Ordinal)))
         {
             var tile = Fields(line)["tile"].Split(',').Select(int.Parse).ToArray();
             game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, tile[0], tile[1]));
-            game.Tick();
+            game.ApplyCommands();
         }
 
         foreach (var attempt in Attempts(lines))
@@ -97,7 +97,7 @@ public sealed class RoadBuildingTests
 
             var built = outcome.Contains(" outcome=BUILT ", StringComparison.Ordinal);
             game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, start[0], start[1], directions));
-            game.Tick();
+            game.ApplyCommands();
 
             Assert.AreEqual(built ? roads + 1 : roads, game.Roads.Count, label);
             // No state behind where the road is not built: the changes the harness lists are empty.

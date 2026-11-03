@@ -105,8 +105,17 @@ public sealed class SettlerFiguresTests
     {
         var figures = Figures();
 
-        Assert.IsEmpty(figures.Draws(Map(), [Walker(7, 0, state: 1), Walker(7, 0, state: 4)], 0));
+        Assert.IsEmpty(figures.Draws(Map(), [Walker(7, 0, state: 1), Walker(7, 0, state: 0x12)], 0));
         Assert.HasCount(3, figures.Draws(Map(), [Walker(7, 0, state: 5)], 0));
+    }
+
+    [TestMethod]
+    [DataRow(4)]
+    [DataRow(0x10)]
+    [DataRow(0x11)]
+    public void AWoodcutterStepsThroughItsDoorWalksFreeAndCutsDrawnAsAWalkingSettlerIs(int state)
+    {
+        Assert.HasCount(3, Figures().Draws(Map(), [Walker(7, 0, state: state)], 0));
     }
 
     [TestMethod]

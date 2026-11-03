@@ -13,11 +13,11 @@ public sealed class Building
     public const int CastleType = 0x18;
 
     /// <summary>
-    /// The type of the woodcutter's hut. **Inferred:** the type whose handler asks for job 11 and the tool of good
-    /// 17; no run names the hut, so the type is the lead that the first of the types of small buildings is the
-    /// woodcutter's (<c>docs/milestones/m3-first-loop.md</c>).
+    /// The type of the woodcutter's hut: the handler of the type 2 (<c>0x42d945</c>) asks for job 5, whose work is to cut
+    /// trees (<c>docs/rules/woodcutting.md</c>), and its sprite is the object 0xa8 (<c>0x44e63b</c>). The type 1
+    /// asks for job 11, whose work looks for a free node by the water.
     /// </summary>
-    public const int WoodcutterType = 1;
+    public const int WoodcutterType = 2;
 
     internal Building(int type, int x, int y, int flag, bool constructing = false)
     {

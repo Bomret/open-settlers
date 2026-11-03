@@ -53,6 +53,15 @@ public sealed class ProgramTables
     /// <summary>The number of words of <see cref="ScanWindows"/>.</summary>
     public const int ScanWindowCount = 8;
 
+    /// <summary>The address of the walk rows: 8 bytes for each row of the free walk's direction choice (<c>0x4388ff</c>).</summary>
+    public const int WalkRowAddress = 0x4388ff;
+
+    /// <summary>The number of rows the free walk's direction choice reads (a row for each value of its heading class, 0 to 23).</summary>
+    public const int WalkRowCount = 24;
+
+    /// <summary>The bytes of one walk row: the directions the walker tries in order, each as 4 times its number plus 4.</summary>
+    public const int WalkRowSize = 8;
+
     /// <summary>
     /// Creates tables from their contents; <see cref="Read"/> creates them from the program. The tables of the
     /// settlers' walk (<paramref name="stepTimes"/>, <paramref name="doorSpeeds"/>, <paramref name="scanWindows"/>) are
@@ -65,7 +74,8 @@ public sealed class ProgramTables
         byte[]? doorSpeeds = null,
         ushort[]? scanWindows = null,
         short[]? figureBases = null,
-        short[]? figureOffsets = null
+        short[]? figureOffsets = null,
+        byte[]? walkRows = null
     )
     {
         if (
@@ -84,7 +94,16 @@ public sealed class ProgramTables
         ScanWindows = scanWindows ?? new ushort[ScanWindowCount];
         FigureBases = figureBases ?? new short[256];
         FigureOffsets = figureOffsets ?? new short[512];
+        WalkRows = walkRows ?? new byte[WalkRowCount * WalkRowSize];
     }
+
+    /// <summary>
+    /// The rows of the free walk's direction choice, <see cref="WalkRowSize"/> bytes each: the directions to try, best
+    /// first, each as the offset of the step in the program's list of neighbours (4 east, 8 south-east, 12 south, 16 west,
+    /// 20 north-west, 24 north). A row is picked by the heading class of the vector left to walk
+    /// (<c>docs/rules/woodcutting.md</c>).
+    /// </summary>
+    public byte[] WalkRows { get; }
 
     /// <summary>For each job 8 words; the first two are the figure base and the second figure base (negative: none).</summary>
     public short[] FigureBases { get; }
@@ -149,7 +168,8 @@ public sealed class ProgramTables
             Slice(exe, DoorSpeedAddress, DoorSpeedCount),
             [.. Enumerable.Range(0, ScanWindowCount).Select(i => BitConverter.ToUInt16(windows, 2 * i))],
             Words(Slice(exe, FigureBaseAddress, 512)),
-            Words(Slice(exe, FigureOffsetAddress, 1024))
+            Words(Slice(exe, FigureOffsetAddress, 1024)),
+            Slice(exe, WalkRowAddress, WalkRowCount * WalkRowSize)
         );
     }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using OpenSettlers.Assets;
 using OpenSettlers.Formats;
@@ -52,7 +53,17 @@ public sealed class SettlerGraphics
                 continue;
             }
 
-            var image = ObjectImage.From(SpriteFile.Read(archive.Data(archive[entry])));
+            ObjectImage image;
+            try
+            {
+                image = ObjectImage.From(SpriteFile.Read(archive.Data(archive[entry])));
+            }
+            catch (InvalidDataException)
+            {
+                // Likewise an entry that is no sprite: a figure byte of another job's sequences reaches it.
+                continue;
+            }
+
             if (colour >= 0)
             {
                 image = image with { Indices = Array.ConvertAll(image.Indices, _ => (byte)colour) };

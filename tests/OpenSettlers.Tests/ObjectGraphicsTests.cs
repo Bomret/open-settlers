@@ -129,9 +129,9 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        // Emulator: peek:44e62a:20 shows the stub the jump table at 0x44e3aa reaches for the building type 1
-        // (0x44e62b) loading the object number 0xA7 (167); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
-        Assert.AreEqual(1417, ObjectSprites.WoodcutterEntry);
+        // Emulator: peek:44e63b:4 prints 66B8A800, the stub the jump table at 0x44e3aa reaches for the building type 2 (the
+        // woodcutter's hut) loading the object number 0xA8 (168); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
+        Assert.AreEqual(1418, ObjectSprites.WoodcutterEntry);
         Assert.AreEqual(ObjectGraphics.EntryCount + 2, ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry));
         Assert.AreEqual(11, graphics.Images[ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry)].OffsetX);
     }

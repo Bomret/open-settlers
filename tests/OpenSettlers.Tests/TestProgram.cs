@@ -31,6 +31,18 @@ internal static class TestProgram
                 .ToArray()
         );
 
+    /// <summary>The reference install named by <c>SIEDLER_DIR</c>; the test is inconclusive without it.</summary>
+    public static Install OpenInstall()
+    {
+        var args = LaunchArgs.Parse([], Environment.GetEnvironmentVariable(LaunchArgs.GameVariable));
+        if (!Install.TryOpen(args, out var install, out var problem))
+        {
+            Assert.Inconclusive($"The emulator values need the reference install: {problem}");
+        }
+
+        return install;
+    }
+
     public static ProgramTables Tables()
     {
         if (_tables is not null)
@@ -38,11 +50,7 @@ internal static class TestProgram
             return _tables;
         }
 
-        var args = LaunchArgs.Parse([], Environment.GetEnvironmentVariable(LaunchArgs.GameVariable));
-        if (!Install.TryOpen(args, out var install, out var problem))
-        {
-            Assert.Inconclusive($"The emulator values need the reference install: {problem}");
-        }
+        var install = OpenInstall();
 
         try
         {

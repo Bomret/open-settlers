@@ -34,7 +34,18 @@ public sealed class HutTests
     // The castle, the three flags (slots 1 to 3), and the roads between the flags 0 and 1 and between 1 and 2.
     private static Game World()
     {
-        var game = new Game(Made(), MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]));
+        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var objects = map.Bytes(MapLayer.Object);
+        for (var index = 0; index < objects.Length; index++)
+        {
+            // No tree stands anywhere, so the worker waits in its hut (WoodcuttingTests holds the work).
+            if ((objects[index] & 0x7f) is >= 8 and < 0x18)
+            {
+                objects[index] &= 0x80;
+            }
+        }
+
+        var game = new Game(Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in Flags)
@@ -76,7 +87,7 @@ public sealed class HutTests
 
         Assert.AreEqual(1, game.Buildings.Count);
         Assert.AreEqual(20, game.Settlers.Count);
-        Assert.AreEqual(11, game.Settlers[15].Job);
+        Assert.AreEqual(Settler.WoodcutterJob, game.Settlers[10].Job);
         Assert.IsTrue(game.Settlers.Skip(1).All(settler => settler.State == 1 && settler.X == 15 && settler.Y == 5));
     }
 
@@ -163,10 +174,10 @@ public sealed class HutTests
 
         Run(game, 1200);
 
-        var worker = game.Settlers[15];
-        Assert.AreEqual(4, worker.State, "stepping through the door");
+        var worker = game.Settlers[10];
+        Assert.AreEqual(0x12, worker.State, "inside the hut, looking for a tree");
         Assert.AreEqual((16, 2), (worker.X, worker.Y));
-        Assert.AreEqual(15, game.Buildings[1].Worker);
+        Assert.AreEqual(10, game.Buildings[1].Worker);
         Assert.AreEqual(0x40, game.Buildings[1].Status & 0xc0, "the worker is inside, and no longer on the way");
     }
 
@@ -177,15 +188,15 @@ public sealed class HutTests
         PlaceHut(game);
 
         Run(game, 300);
-        var idle = game.Settlers[15];
+        var idle = game.Settlers[10];
         Assert.AreEqual(1, idle.State, "the worker waits in the castle");
         Assert.AreEqual(0, game.Buildings[1].Status & 0x80);
 
         Build(game, 17, 3, 0, 1);
         Run(game, 1200);
 
-        Assert.AreEqual(4, game.Settlers[15].State);
-        Assert.AreEqual(15, game.Buildings[1].Worker);
+        Assert.AreEqual(0x12, game.Settlers[10].State);
+        Assert.AreEqual(10, game.Buildings[1].Worker);
     }
 
     [TestMethod]
@@ -217,7 +228,7 @@ public sealed class HutTests
         Run(other, 100);
         Assert.AreEqual(game.Digest(), other.Digest());
 
-        other.Settlers[15].X++;
+        other.Settlers[10].X++;
 
         Assert.AreNotEqual(game.Digest(), other.Digest());
     }

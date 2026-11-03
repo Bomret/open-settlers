@@ -10,7 +10,7 @@ namespace OpenSettlers.Simulation;
 /// flag: <see cref="CommandKind.PlaceCastle"/> and <see cref="CommandKind.PlaceFlag"/> put them where the original
 /// allows (<c>docs/rules/castle.md</c>, <c>docs/rules/flags.md</c>), and <see cref="CommandKind.BuildRoad"/> joins two
 /// flags (<c>docs/rules/roads.md</c>); every other command is refused. A refused command changes nothing, not even the
-/// digest. The game draws no randomness.
+/// digest. The game's randomness is one seeded generator that continues from the map's generation (INV-0002).
 /// </summary>
 public sealed partial class Game
 {
@@ -39,6 +39,7 @@ public sealed partial class Game
         _tables = tables;
         Map = map;
         _stockLevel = stockLevel;
+        _random = map.Generator;
     }
 
     /// <summary>The map the game is played on.</summary>
@@ -72,8 +73,18 @@ public sealed partial class Game
         _queue.Add(command);
     }
 
-    /// <summary>Applies the commands due at this tick, then advances the tick count by one.</summary>
+    /// <summary>Applies the commands due at this tick, then runs the tick's pass and advances the tick count by one.</summary>
     public void Tick()
+    {
+        ApplyCommands();
+        Pass();
+        TickCount++;
+    }
+
+    // Applies the commands due at this tick and nothing else: the tests that compare a command's own effect with the
+    // emulator's (the verbs of castle, flag, and road run no pass) apply a command without the pass that moves the
+    // map's lake details and the settlers.
+    internal void ApplyCommands()
     {
         while (_queue.Count > 0 && _queue.Min.Tick == TickCount)
         {
@@ -91,9 +102,6 @@ public sealed partial class Game
                 }
             }
         }
-
-        Pass();
-        TickCount++;
     }
 
     /// <summary>
@@ -134,6 +142,7 @@ public sealed partial class Game
 
         hash = Mix(hash, Map.Resource1Total);
         MixSettlers(ref hash);
+        MixWoodcutting(ref hash);
 
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
