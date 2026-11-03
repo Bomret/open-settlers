@@ -97,6 +97,8 @@ rm -rf play-out/zoom-pan && mkdir -p play-out/zoom-pan
 mise exec -- <godot> --path . --write-movie play-out/zoom-pan/frame.png --fixed-fps 30 -- --map [--seed <seed>] [--size <n>] --play play/zoom-pan.play
 ```
 
+`sh tools/play-run.sh <stem> [--seed <s>] [--size <n>] --fps <n> [--fresh]` (or `mise run play -- <stem> ...`) does the same from `play/<stem>.play` with `SIEDLER_DIR` as `--game`: it clears `play-out/<stem>/`, builds `OpenSettlers.csproj` (a failed build exits 3 and runs no Godot), stores the result under a hash of the run's inputs, reuses it while they are unchanged, and logs each call to `play-out/runs.log`. `docs/agents/verification.md` describes it.
+
 `--play <file>` needs `--map` and Movie Maker (`--write-movie` with `--fixed-fps`); without them, or without a file, it is a bad argument and exits with code 4. The script path resolves against the project folder. `play-out/<script name>/` holds the frames and every `shot` and `dump` of the run; the script name is the script's file name without its extension. Git ignores `play-out/`. The run pins the window to 1280 x 720, so frames and the view's fit do not depend on the display. Two runs of the same script, seed, and size give equal dumps and frames. `play/zoom-pan.play` is an example that zooms and pans.
 
 A play script has one step per line. Blank lines and lines that start with `#` are skipped. A problem in the script (an unknown step, a bad argument, an unreadable file) or a failed `expect` prints one `ERROR` that names the script and the line and exits with code 1; a failed `expect` states the expectation and the actual value. After the last step the run exits with code 0. Steps:
@@ -130,6 +132,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 - `docs/roadmap.md`: the milestone plan.
 - `docs/rules/`: the rules recovered from the game's program, each with its address as evidence.
 - `docs/agents/`: instructions for coding agents.
+- `tools/play-run.sh`: the play-run wrapper ("Run a play script").
 - `tools/GhidraDump/`: Ghidra scripts that build a local Ghidra project and write a searchable dump of the game's program, and the emulator harness that runs the original's map-start code for reference values.
 - `tools/WindowsCheck/`: the procedure that confirms the emulator's values by running the original in Windows.
 

@@ -83,6 +83,10 @@ description = "Print the digests and counts of one seed's map (no install needed
 depends = ["build"]
 run = "{{ env.GODOT }} --headless --path . -- --seed-info"
 
+[tasks.play]
+description = "Run a play script under Movie Maker, reusing a stored result (needs SIEDLER_DIR): <stem> [--seed <s>] [--size <n>] --fps <n> [--fresh]"
+run = "sh tools/play-run.sh"
+
 [tasks.editor]
 description = "Open the project in the Godot editor"
 depends = ["build"]
