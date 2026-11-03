@@ -16,8 +16,9 @@ public sealed class ObjectGraphicsTests
     static byte[] Sprite(short offsetX = -1, short offsetY = -2) =>
         GraphicFileTests.Entry(1, 0, 3, 1, offsetX, offsetY, [1, 2, 0, 7, 0, 0]);
 
-    static Dictionary<int, byte[]> Payloads() =>
-        new()
+    static Dictionary<int, byte[]> Payloads(bool flag = false)
+    {
+        var payloads = new Dictionary<int, byte[]>
         {
             [3] = new byte[768],
             [1250] = Sprite(),
@@ -25,6 +26,21 @@ public sealed class ObjectGraphicsTests
             [1369] = Sprite(),
             [ObjectSprites.CastleEntry] = GraphicFileTests.Entry(1, 0, 2, 2, 7, 8, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]),
         };
+        if (flag)
+        {
+            payloads[ObjectSprites.FlagEntry] = GraphicFileTests.Entry(
+                1,
+                0,
+                2,
+                2,
+                9,
+                4,
+                [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
+            );
+        }
+
+        return payloads;
+    }
 
     static OpenSettlers.Assets.Install Open(FakeInstall fake)
     {
@@ -60,7 +76,7 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.HasCount(ObjectGraphics.EntryCount + 1, graphics.Images);
+        Assert.HasCount(ObjectGraphics.EntryCount + 2, graphics.Images);
         Assert.AreEqual(3, graphics.LayerWidth);
         Assert.AreEqual(2, graphics.LayerHeight);
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
@@ -83,6 +99,17 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(1428, ObjectSprites.CastleEntry);
         Assert.AreEqual(ObjectGraphics.EntryCount, ObjectGraphics.Layer(ObjectSprites.CastleEntry));
         Assert.AreEqual(7, graphics.Images[ObjectGraphics.Layer(ObjectSprites.CastleEntry)].OffsetX);
+    }
+
+    [TestMethod]
+    public void TheFlagSpriteIsTheLayerAfterTheCastlesAndItsImageIsRead()
+    {
+        using var fake = Install(Payloads(flag: true));
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        Assert.AreEqual(ObjectGraphics.EntryCount + 1, ObjectGraphics.Layer(ObjectSprites.FlagEntry));
+        Assert.AreEqual(9, graphics.Images[ObjectGraphics.Layer(ObjectSprites.FlagEntry)].OffsetX);
     }
 
     [TestMethod]

@@ -14,7 +14,9 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed class ObjectGraphics
 {
-    /// <summary>The number of object sprite entries: those of codes 8 to 127. The castle's sprite follows them.</summary>
+    /// <summary>
+    /// The number of object sprite entries: those of codes 8 to 127. The castle's sprite follows them, then the flag's.
+    /// </summary>
     public const int EntryCount = ObjectSprites.LastCode - ObjectSprites.FirstCode + 1;
 
     /// <summary>The palette of entry 3 as <see cref="PaletteTexture.Rgba"/>.</summary>
@@ -28,13 +30,16 @@ public sealed class ObjectGraphics
 
     /// <summary>
     /// One image per entry from <see cref="ObjectSprites.FirstEntry"/> on, then the castle's
-    /// (<see cref="ObjectSprites.CastleEntry"/>), each padded to the layer size in its pixel arrays.
+    /// (<see cref="ObjectSprites.CastleEntry"/>) and the flag's (<see cref="ObjectSprites.FlagEntry"/>), each padded to
+    /// the layer size in its pixel arrays.
     /// </summary>
     public required IReadOnlyList<ObjectImage> Images { get; init; }
 
-    /// <summary>The layer of a sprite entry: the object entries in order, then the castle's.</summary>
+    /// <summary>The layer of a sprite entry: the object entries in order, then the castle's, then the flag's.</summary>
     public static int Layer(int entry) =>
-        entry == ObjectSprites.CastleEntry ? EntryCount : entry - ObjectSprites.FirstEntry;
+        entry == ObjectSprites.CastleEntry ? EntryCount
+        : entry == ObjectSprites.FlagEntry ? EntryCount + 1
+        : entry - ObjectSprites.FirstEntry;
 
     /// <summary>
     /// Reads the sprites from the install. Throws <see cref="FileNotFoundException"/> for a missing archive and
@@ -70,6 +75,17 @@ public sealed class ObjectGraphics
                     archive,
                     ObjectSprites.CastleEntry,
                     "the castle sprite",
+                    data => ObjectImage.From(SpriteFile.Read(data))
+                )
+        );
+
+        images.Add(
+            archive[ObjectSprites.FlagEntry].State == EntryState.Absent
+                ? ObjectImage.Empty
+                : Read(
+                    archive,
+                    ObjectSprites.FlagEntry,
+                    "the flag sprite",
                     data => ObjectImage.From(SpriteFile.Read(data))
                 )
         );

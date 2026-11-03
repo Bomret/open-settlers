@@ -58,6 +58,21 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
+    public void AFlagIsDrawnLikeAnObjectWithTheFlagEntry()
+    {
+        // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15; its flag stands at 16,6 on height 15:
+        // x = 16 * 32 - 6 * 16 + 16, y = 6 * 20 - 15 * 4 + 8.
+        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var game = new Game(TestProgram.Made(), map);
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Tick();
+
+        var draws = ObjectDraws.Of(map, game.Castle);
+
+        CollectionAssert.Contains(draws, new ObjectDraw(6, ObjectSprites.FlagEntry, 432, 68));
+    }
+
+    [TestMethod]
     public void AResourceIsNeverDrawn()
     {
         var map = Generated();
