@@ -1,0 +1,26 @@
+# A road across the map's wrapping edge, on raised ground, that starts on the castle's flag.
+# Run it on the game view with seed 1234567812345678 and size 1 (a 32 x 32 map):
+#   --game-view --seed 1234567812345678 --size 1 --play play/road-wrap.play
+# The castle goes to 31,10, so its flag is at 0,11, across the edge between columns 31 and 0. A flag goes to 30,12.
+click-tile 31 10
+button Flag
+click-tile 30 12
+button Flag
+wait 0.3
+shot flags
+
+scroll up 2 450 540
+wait 0.3
+button Road
+click-tile 0 11
+click-tile 31 11
+wait 0.3
+shot wrap-drawn
+click-tile 31 12
+click-tile 30 12
+button Road
+wait 0.3
+shot wrap-built
+wait 2
+expect ticks > 10
+dump built
