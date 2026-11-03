@@ -67,6 +67,11 @@
 //                            the building slice 0x42cb2d, and the settler slice 0x42f3d9, with the clock 8 units on. A line per pass lists the
 //                            settlers, the building, and the storage item whose bytes changed (s<slot>=, b=, st=, in hex).
 //                            WARM passes run before the building is placed; the roads after AT are built before pass AT.
+//   wood:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT]]
+//                            worker for the woodcutter (docs/rules/woodcutting.md): the passes also run the map object pass
+//                            0x428d10 after 0x428728, as the main loop 0x4286d8 does, the hut node and its flag take the marks the castle leaves, and a line per pass also lists the object
+//                            bytes that changed (o=x,y:old>new;...), the flag items of slots 0 to 15 that changed (f<slot>=), and
+//                            the random generator's words (rng=) when they moved. A building of type 2 is the woodcutter's hut.
 //   carrier:N:S0,S1,S2:L:cx,cy:x,y;...:sx,sy,D;...:PASSES[:sx,sy,D;...:AT]
 //                            the passes of worker (docs/rules/carriers.md) on a game with a castle, flags, and roads and no
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
@@ -127,7 +132,8 @@ public class EmulateMapStart extends GhidraScript {
                     case "flagput" -> flagput(rest);
                     case "road" -> road(rest);
                     case "roaddraw" -> roaddraw(rest);
-                    case "worker" -> worker(rest);
+                    case "worker" -> worker(rest, false);
+                    case "wood" -> worker(rest, true);
                     case "carrier" -> carrier(rest);
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
@@ -1004,7 +1010,8 @@ public class EmulateMapStart extends GhidraScript {
      * (+0x206) by 8 units and the phase (+0x26c) by one, as 0x4291c2 does. A line per pass lists the settlers and
      * the building whose bytes changed since the pass before, as hexadecimal bytes; PASSES is the number of passes.
      */
-    private void worker(String rest) throws Exception {
+    private void worker(String rest, boolean wood) throws Exception {
+        objectPass = wood;
         String[] parts = rest.split(":");
         String label = "worker size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
         int[] size = startWorld(parts, label);
@@ -1051,6 +1058,12 @@ public class EmulateMapStart extends GhidraScript {
         emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x40)});
         putWord(layerA + layerB + node, slot);
         emu.writeMemory(toAddr(layerA + node + 3), new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | 2)});
+        if (wood) {
+            // The marks the castle's placement leaves at its node and its flag (docs/rules/settlers.md): the woodcutter's
+            // walk avoids a node marked 0x40, so the hut's node is one it may not step onto.
+            emu.writeMemory(toAddr(layerA + node), new byte[] {(byte) (emu.readMemory(toAddr(layerA + node), 1)[0] | 0x42)});
+            emu.writeMemory(toAddr(layerA + fnode), new byte[] {(byte) (emu.readMemory(toAddr(layerA + fnode), 1)[0] | 0x10)});
+        }
         println("EMU " + label + " building slot=" + slot + " item=" + hex(item, 0x12) + " flagslot=" + flagSlot
                 + " flag=" + hex(flag, ITEM_SIZE));
         int passes = Integer.parseInt(parts[7]);
@@ -1061,6 +1074,14 @@ public class EmulateMapStart extends GhidraScript {
                 + " b=" + hex(item, 0x12) + " storage=" + hex(TABLES + 0x60000, 120));
         String late = parts.length > 9 ? parts[9] : "";
         int lateAt = parts.length > 10 ? Integer.parseInt(parts[10]) : -1;
+        int mapBytes = 8 * width * height;
+        byte[] mapSeen = emu.readMemory(toAddr(MAP), mapBytes).clone();
+        byte[] flagsSeen = emu.readMemory(toAddr(TABLES), ITEM_SIZE * 16).clone();
+        String rngSeen = "";
+        if (wood) {
+            println("EMU " + label + " pass=start rng=" + hex4(getWord(STATE + RNG_0)) + "," + hex4(getWord(STATE + RNG_1))
+                    + "," + hex4(getWord(STATE + RNG_2)));
+        }
         for (int pass = 0; pass < passes; pass++) {
             if (pass == lateAt && !late.isEmpty()) {
                 for (String road : late.split(";")) {
@@ -1070,6 +1091,37 @@ public class EmulateMapStart extends GhidraScript {
             clock += 8;
             int phase = simulationPass(clock);
             StringBuilder line = new StringBuilder();
+            if (wood) {
+                byte[] mapNow = emu.readMemory(toAddr(MAP), mapBytes);
+                StringBuilder objects = new StringBuilder();
+                for (int ty = 0; ty < height; ty++) {
+                    for (int tx = 0; tx < width; tx++) {
+                        int at = ty * 8 * width + tx * 4 + 3;
+                        if (mapNow[at] != mapSeen[at]) {
+                            objects.append(objects.length() == 0 ? "" : ";").append(tx).append(",").append(ty).append(":")
+                                    .append(String.format("%02X>%02X", mapSeen[at] & 0xff, mapNow[at] & 0xff));
+                        }
+                    }
+                }
+                if (objects.length() > 0) {
+                    line.append(" o=").append(objects);
+                }
+                mapSeen = mapNow.clone();
+                byte[] flagsNow = emu.readMemory(toAddr(TABLES), ITEM_SIZE * 16);
+                for (int f = 0; f < 16; f++) {
+                    if (!java.util.Arrays.equals(java.util.Arrays.copyOfRange(flagsNow, ITEM_SIZE * f, ITEM_SIZE * f + ITEM_SIZE),
+                            java.util.Arrays.copyOfRange(flagsSeen, ITEM_SIZE * f, ITEM_SIZE * f + ITEM_SIZE))) {
+                        line.append(" f").append(f).append("=").append(hex(TABLES + (long) ITEM_SIZE * f, ITEM_SIZE));
+                    }
+                }
+                flagsSeen = flagsNow.clone();
+                String rngNow = hex4(getWord(STATE + RNG_0)) + "," + hex4(getWord(STATE + RNG_1)) + ","
+                        + hex4(getWord(STATE + RNG_2));
+                if (!rngNow.equals(rngSeen)) {
+                    line.append(" rng=").append(rngNow);
+                    rngSeen = rngNow;
+                }
+            }
             byte[] now = emu.readMemory(toAddr(TABLES + 0x40000), 16 * 64);
             for (int s = 0; s < 64; s++) {
                 boolean changed = false;
@@ -1105,6 +1157,7 @@ public class EmulateMapStart extends GhidraScript {
      * slots), the flags (the first 16 slots), and the storage item.
      */
     private void carrier(String rest) throws Exception {
+        objectPass = false;
         String[] parts = rest.split(":");
         String label = "carrier size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
         int[] size = startWorld(parts, label);
@@ -1173,10 +1226,15 @@ public class EmulateMapStart extends GhidraScript {
      * count), then the flag slice (0x46414d), the building slice (0x42cb2d), and the settler slice (0x42f3d9). The
      * clock (+0x206) is the 16-bit whole clock units after this pass. Returns the phase the slices ran with.
      */
+    private boolean objectPass;
+
     private int simulationPass(int clock) throws Exception {
         putWord(STATE + CLOCK, clock);
         putInt(STATE + ELAPSED, 8);
         call(0x428728);
+        if (objectPass) {
+            call(0x428d10);
+        }
         int phase = (getWord(STATE + PHASE) + 1) % PHASE_COUNT;
         putWord(STATE + PHASE, phase);
         call(0x46414d);

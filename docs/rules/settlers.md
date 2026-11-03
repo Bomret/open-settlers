@@ -22,7 +22,7 @@ the frame of the walk; the word at 2 the timer; the dword at 4 the node (the nod
 4); the word at 8 the clock at the settler's last turn; byte 10 the state; byte 11 the mode; the word at 12 the target;
 byte 14 the storage slot while the settler waits in one and the direction back along the road while it walks; byte 15
 the state that follows. The castle's 20 first settlers hold the jobs of [Castle](castle.md#what-the-placement-writes)
-in the order of their slots (the woodcutter is slot 15, job 11).
+in the order of their slots (the woodcutter is slot 10, job 5: [Woodcutting](woodcutting.md#the-hut-and-the-job)).
 
 A building is an 18-byte item of `Table18`: the dword at 0 the node; byte 4 the type in bits 2 to 7 (bit 7 while the
 building is built: the castle starts as `0xe0`) and the player in bits 0 and 1; byte 5 the status (bit 2 a request
@@ -68,8 +68,8 @@ clears bit 7 of the status of a window of flags the same way, which the carriers
 
 **Status:** confirmed for the first way; **not ported** for the second.
 
-A building of the woodcutter's type asks, at its turn when bits 2, 6, and 7 of its status are clear (`0xc4`), for a
-settler of job 11 (`0x42be63`). The search starts at the building's flag and runs over the roads breadth first (below).
+A building of the woodcutter's type (2) asks, at its turn when bits 2, 6, and 7 of its status are clear (`0xc4`), for a
+settler of job 5 (`0x42be63`). The search starts at the building's flag and runs over the roads breadth first (below).
 At a storage's flag it looks at the storage's list of waiting settlers:
 
 1. A settler of the job waits: the storage clears its entry, the settler takes state 15, mode 255, and the building's
@@ -79,8 +79,9 @@ At a storage's flag it looks at the storage's list of waiting settlers:
 
 If the search reaches no storage, or the storage has neither, the request fails and the building sets bit 2.
 
-The type of the woodcutter's hut is **inferred**: type 1 asks for job 11 and the tool of good 17, and the castle holds
-one settler of job 11 (whose tool the castle took from the stock when it made him: good 17); no run names the hut. The engine's stand-in command
+The type of the woodcutter's hut is 2: its handler (`0x42d945`) asks for job 5, whose work is cutting trees, and the castle holds
+one settler of job 5 ([Woodcutting](woodcutting.md#the-hut-and-the-job)). The first walk of this note was read with the type 1 and
+job 11 as the woodcutter's, which are another hut's and worker's; the walk is the same for either. The engine's stand-in command
 `CommandKind.PlaceBuilding` places a hut of that type finished at once, on a node whose south-east neighbor holds a
 flag and whose site is small or large (**inferred**: node state 5, site 3 or 4; no run places a building). The hut is
 a **stand-in** for the construction slice (M4), not a rule of the original. It marks the map as the castle does: the
@@ -133,21 +134,22 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
   timer and the part of it that the door's speed leaves (time times the door speed, divided by 32) as its target, and
   takes state 4. The door's node being busy keeps the settler on the flag in state 6 (not ported).
 - **State 4, through the door** (`0x43c96b`): waits out the step and runs the job's routine (`0x43ca54`): the woodcutter's
-  work starts here (state 31). Not ported: the next slice's. The test files end with the first turn in state 4.
+  work starts here ([Woodcutting](woodcutting.md#the-start-at-the-hut)). The test files of the walk end with the first turn in state 4.
 - **State 1, waiting in the castle** (`0x438eeb`): the settler enters its slot in the storage's list of waiting settlers
-  every turn (jobs 22 to 26 and 10 take other branches: not ported).
+  every turn (job 10 takes another branch: not ported; the knights, jobs 22 to 26, draw too:
+  [Woodcutting](woodcutting.md#the-random-generator)).
 - **State 10, the castle's builder** (`0x43f17a`): the settler with the job 4, slot 0, adds the elapsed units times 128 to
   the castle's build progress each turn; when that wraps (about 64 passes after the castle is placed) the castle
   stands: bit 7 of its type goes out, which changes the door speed index from 0x38 to 0x18, and the settler takes state 12.
 - **A blocked step:** where the next node holds a settler, the timer is 0x7f, the frame `0x51 + direction`, and the heading
   the direction less 6; at the next turn after the timer the settler tries the same direction again.
 - **Not ported:** the passing of two settlers going opposite ways (the original swaps them; the port waits), the walk
-  home when no route is left (mode 254), the knights (jobs 22 to 26 and the castle's handler, which draw from the random
-  generator), and the settlers the castle makes later (`0x428a75`).
+  home when no route is left (mode 254), the castle's own handler (`0x42e7e0`), and the settlers the castle makes later
+  (`0x428a75`).
 
 ## Drawing the walk: leads
 
-**Status:** inferred (below). The engine draws the hut (entry 1417 of the archive, **inferred** as the type's sprite, drawn like the
+**Status:** inferred (below). The engine draws the hut (entry 1418 of the archive, the object of the type 2's draw stub, drawn like the
 castle) and the walking settlers. What the program does, read from `0x42f512`, `0x43f537`, the job's figure routine (`0x43fed8` for
 job 11), `0x44fff3`, and `0x406610`: the draw record of a settler takes the frame (byte 1) to pick a sequence from
 a table the program loads from entry 2 of the graphics archive at start-up (`0x41e8e0`): 200 big-endian offsets, each to a run of
@@ -173,13 +175,13 @@ settler in view from the turn it acts every pass; the engine takes the time left
 
 - The second way of the request for a worker (a jobless settler and a tool); the carriers' request has it without the tool
   ([Carriers](carriers.md#the-request)).
-- The settler's state 4 and the woodcutter's work (the next slice), the states 6, 12, 25, and the walk home (mode 254).
-- The knights and the castle's handler of type 0x18, the settler creation of `0x428a75`, and the goods part of the flag pass `0x46414d`.
+- The states 12 and 25 and the walk home (mode 254); the states 4, 6, 7, 0x10, 0x11, and 0x12 are in [Woodcutting](woodcutting.md).
+- The castle's handler of type 0x18, the settler creation of `0x428a75`, and the goods part of the flag pass `0x46414d`.
 - The passing of two settlers going opposite ways.
 - That the phase count is 33 for the game of one player with no computer opponent (`0x42055e`).
-- The building type of the woodcutter's hut, the hut's object code, and its site rule (no run places a building).
-- The game's random generator continues from the map's generator in the original, and the knights' idle turns draw
-  from it; the port does not draw yet.
+- The hut's object code and its site rule (no run places a building).
+- The knights' idle turns draw from the game's generator, which continues from the map's generator: ported
+  ([Woodcutting](woodcutting.md#the-random-generator)).
 
 ## In the engine
 
@@ -188,4 +190,5 @@ request, the route search, and the walk are in `src/Simulation/Game.Settlers.cs`
 times, the door speeds, and the scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`,
 `ScanWindows`). `Game.Digest` holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's
 waiting list, and the settlers' places. The carriers' part is in `src/Simulation/Game.Carriers.cs`
-([Carriers](carriers.md#in-the-engine)).
+([Carriers](carriers.md#in-the-engine)), the woodcutter's and the map's object pass in `src/Simulation/Game.Woodcutting.cs`
+([Woodcutting](woodcutting.md#in-the-engine)).
