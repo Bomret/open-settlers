@@ -30,8 +30,8 @@ public sealed class SettlerGraphics
 
     public required SettlerFigures Figures { get; init; }
 
-    /// <summary>Reads the sprites the sequences of <paramref name="job"/> use; sprites past the layer limit are left out.</summary>
-    public static SettlerGraphics Load(Install install, ProgramTables tables, int job)
+    /// <summary>Reads the sprites the sequences of <paramref name="jobs"/> use; sprites past the layer limit are left out.</summary>
+    public static SettlerGraphics Load(Install install, ProgramTables tables, params int[] jobs)
     {
         var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var palette = PaletteFile.Read(archive.Data(archive[3]).Span);
@@ -39,14 +39,15 @@ public sealed class SettlerGraphics
         var figures = new SettlerFigures(tables.FigureBases, tables.FigureOffsets, sequences);
         var images = new List<ObjectImage>();
         var layers = new Dictionary<(int Entry, int Colour), int>();
-        foreach (var (entry, colour) in figures.Sprites(job, ColourOf(0)))
+        foreach (var (entry, colour) in jobs.SelectMany(job => figures.Sprites(job, ColourOf(0))))
         {
             if (images.Count >= MaxLayers || layers.ContainsKey((entry, colour)))
             {
                 continue;
             }
 
-            if (archive[entry].State == EntryState.Absent)
+            // A sequence names figures for every job; the ones a job has no sprite for lie outside the archive or are absent.
+            if (entry < 1 || entry >= archive.RowCount || archive[entry].State == EntryState.Absent)
             {
                 continue;
             }

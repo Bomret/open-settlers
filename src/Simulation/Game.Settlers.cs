@@ -58,18 +58,21 @@ public sealed partial class Game
     public IReadOnlyList<Settler> Settlers => _settlers;
 
     // One pass of the main loop for the item tables: the scan that clears the retry bits (0x428728), the phase step
-    // (0x4291c2), then the slices of the building table (0x42cb2d) and the settler table (0x42f3d9). The original's
-    // other passes (the flag table, the players' timers, the sound) are not ported.
+    // (0x4291c2), then the slices of the flag table (0x46414d, the carriers' requests only), the building table
+    // (0x42cb2d), and the settler table (0x42f3d9). The original's other passes (the players' timers, the sound) are not
+    // ported.
     private void Pass()
     {
         _clock = (ushort)(_clock + ClockStep);
         ClearRetryBits();
+        ClearFlagRetryBits();
         _phase = (_phase + 1) % PhaseCount;
         if (_phase >= TablePhases)
         {
             return;
         }
 
+        FlagPass();
         for (var slot = 0; slot < _buildings.Count; slot++)
         {
             if (slot / 32 % 32 == _phase)
@@ -246,6 +249,13 @@ public sealed partial class Game
             case 2:
                 Walk(slot, settler);
                 break;
+            case 3:
+                if (TimerRan(settler))
+                {
+                    WalkRoad(slot, settler);
+                }
+
+                break;
         }
     }
 
@@ -359,8 +369,9 @@ public sealed partial class Game
     // out it chooses a direction (on a node of a road the one the road goes on, on a flag the first direction of the
     // route to the flag it walks to), steps, and adds the step's time to its timer. The sum wraps while the step
     // was over already, and the settler then goes on at once; else it waits out the rest. At the flag it walks to
-    // it enters the building there. **Not ported:** a blocked step (another settler on the node, which the original
-    // may swap past), the walk home, and the states the original reaches from here for other modes.
+    // it enters the building there, or, as a carrier, the road. A step onto a node another settler stands on is tried
+    // again after the timer of 0x7f. **Not ported:** the swap with a settler that comes the other way, the walk home,
+    // and the states the original reaches from here for other modes.
     private void Walk(int slot, Settler settler)
     {
         if (!TimerRan(settler))
@@ -370,11 +381,16 @@ public sealed partial class Game
 
         var flags = Map.Layer(MapLayer.Flags);
         var links = Map.Layer(MapLayer.Resource);
-        while (settler.Heading >= 0)
+        while (true)
         {
             var here = Map.Index(settler.X, settler.Y);
             int direction;
-            if ((flags[here] & 0x80) == 0)
+            if (settler.Heading < 0)
+            {
+                // A step that was blocked: the heading holds the direction less 6, tried again.
+                direction = settler.Heading + 6;
+            }
+            else if ((flags[here] & 0x80) == 0)
             {
                 // A node of a road: the road's other direction than the one the settler came by.
                 var rest = flags[here] & 0x3f & ~(1 << settler.Heading);
@@ -391,6 +407,10 @@ public sealed partial class Game
                 if (settler.Mode == 0xff)
                 {
                     Enter(slot, settler);
+                }
+                else if (settler.Mode <= 5)
+                {
+                    EnterRoad(slot, settler);
                 }
 
                 return;
@@ -429,10 +449,11 @@ public sealed partial class Game
         if (Occupant(next) != 0)
         {
             // Another settler stands there. The original lets a settler that comes the other way pass; this port
-            // does not and waits (0x43a64c and its siblings).
+            // does not and waits (0x43a64c and its siblings). The settler marks the direction it tried in its heading
+            // (the direction less 6) and tries it again when its timer of 0x7f has run out.
             settler.Timer = 0x7f;
-            settler.Frame = 0x51;
-            settler.Heading = -6;
+            settler.Frame = (byte)(0x51 + direction);
+            settler.Heading = direction - 6;
 
             return false;
         }
