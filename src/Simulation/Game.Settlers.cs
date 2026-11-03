@@ -249,7 +249,12 @@ public sealed partial class Game
                 settler.Next = 0;
                 break;
             case 2:
-                Walk(slot, settler);
+                // **Not ported:** the walk to a storage (mode 0xfe), which a settler on its way home takes at the flag.
+                if (settler.Mode != StorageWalk)
+                {
+                    Walk(slot, settler);
+                }
+
                 break;
             case 3:
                 if (TimerRan(settler))
@@ -288,6 +293,12 @@ public sealed partial class Game
                 break;
             case 0x12:
                 SearchTree(slot, settler);
+                break;
+            case 0x19:
+                HomeSearch(settler);
+                break;
+            case 0x1c:
+                HomeClaim(slot, settler);
                 break;
         }
     }

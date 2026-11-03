@@ -86,6 +86,16 @@
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
 //                            lists the settlers, the flags (f<slot>=, 70 bytes), and the storage item that changed, in hex. The
 //                            roads after AT are built before pass AT.
+//   home:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE]
+//                            the passes of wood: (docs/rules/settlers.md) on a game with a castle, flags, and roads and no
+//                            building, where before pass AT the settler of the slot SLOT is sent home as the teardown of a
+//                            building sends the settlers inside it (0x461b77): its state byte (+0xa) is set to 0x1c and nothing else
+//                            changes; with @x,y the settler's node (+4) is first set to that node, a stand-in for a settler out in
+//                            the world (the original's teardown reaches settlers that stand on the building's node only). A line per
+//                            pass lists the settler's 16 bytes (s=) when they changed, the node's settler word at the settler's
+//                            node (n=), and the random generator's words (rng=) when they moved. With STATE,MODE the settler takes that
+//                            state byte and mode byte (+0xb) instead of 0x1c, to reach a branch the teardown does not (state 0x19 with
+//                            mode 1 searches the spiral from its far end).
 //   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -148,6 +158,7 @@ public class EmulateMapStart extends GhidraScript {
                         worker(rest, true);
                     }
                     case "carrier" -> carrier(rest);
+                    case "home" -> home(rest);
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
                     case "opponents" -> opponents(rest);
@@ -1188,6 +1199,73 @@ public class EmulateMapStart extends GhidraScript {
             if (!java.util.Arrays.equals(snow, storage)) {
                 line.append(" st=").append(hex(TABLES + 0x60000, 120));
                 storage = snow.clone();
+            }
+            println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + line);
+        }
+    }
+
+    /** home:N:SEED:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE]: see the header; the last field forces that state and mode byte. */
+    private void home(String rest) throws Exception {
+        objectPass = true;
+        String[] parts = rest.split(":");
+        String label = "home size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
+        int[] size = startWorld(parts, label);
+        if (size == null) {
+            return;
+        }
+        int width = size[1];
+        int height = size[2];
+        if (!parts[5].isEmpty()) {
+            for (String road : parts[5].split(";")) {
+                println("EMU " + label + " road=" + road + (silentRoad(width, road) ? " BUILT" : " REFUSED"));
+            }
+        }
+        putWord(STATE + PHASE, 0);
+        String[] who = parts[6].split("@");
+        long settler = TABLES + 0x40000 + 16L * Integer.parseInt(who[0]);
+        int at = Integer.parseInt(parts[7]);
+        int passes = Integer.parseInt(parts[8]);
+        int bits = getWord(STATE + 0x30);
+        long layerA = getInt(STATE + MAP_BUFFER);
+        int layerB = getWord(STATE + 0x36);
+        byte[] seen = null;
+        String nodeSeen = "";
+        String rngSeen = "";
+        int clock = 0;
+        for (int pass = 0; pass < passes; pass++) {
+            if (pass == at) {
+                if (who.length > 1) {
+                    String[] xy = who[1].split(",");
+                    putInt(settler + 4, ((((long) Integer.parseInt(xy[1])) << bits) + Integer.parseInt(xy[0])) * 4);
+                }
+                emu.writeMemory(toAddr(settler + 0xa), new byte[] {0x1c});
+                if (parts.length > 9) {
+                    // STATE,MODE: the state byte and the mode byte (+0xb) the settler takes instead, to reach a branch the
+                    // teardown does not (the walk home of a settler that failed to find its storage has mode 1).
+                    String[] force = parts[9].split(",");
+                    emu.writeMemory(toAddr(settler + 0xa),
+                            new byte[] {(byte) Integer.parseInt(force[0]), (byte) Integer.parseInt(force[1])});
+                }
+            }
+            clock += 8;
+            int phase = simulationPass(clock);
+            StringBuilder line = new StringBuilder();
+            byte[] now = emu.readMemory(toAddr(settler), 16).clone();
+            if (seen == null || !java.util.Arrays.equals(now, seen)) {
+                line.append(" s=").append(hex(settler, 16));
+                seen = now;
+            }
+            long node = getInt(settler + 4);
+            String nodeNow = hex(layerA + layerB + node + 2, 2);
+            if (!nodeNow.equals(nodeSeen)) {
+                line.append(" n=").append(nodeNow);
+                nodeSeen = nodeNow;
+            }
+            String rngNow = hex4(getWord(STATE + RNG_0)) + "," + hex4(getWord(STATE + RNG_1)) + ","
+                    + hex4(getWord(STATE + RNG_2));
+            if (!rngNow.equals(rngSeen)) {
+                line.append(" rng=").append(rngNow);
+                rngSeen = rngNow;
             }
             println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + line);
         }

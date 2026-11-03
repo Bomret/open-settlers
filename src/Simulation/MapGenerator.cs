@@ -51,15 +51,21 @@ public static class MapGenerator
     }
 
     /// <summary>The column and row offsets around a tile in rings: the tile itself, then rings of 6, 12, and on.</summary>
-    internal static IReadOnlyList<(int Dx, int Dy)> SpiralOffsets { get; } = BuildSpiral();
+    internal static IReadOnlyList<(int Dx, int Dy)> SpiralOffsets { get; } = BuildSpiral(256);
+
+    /// <summary>
+    /// The same table to its entry 258, which the search for the nearest flag reads (0x4353ef walks entries 1 to 258 from
+    /// either end); entries 256 to 258 are the last rotations of the group of six that entry 253 starts.
+    /// </summary>
+    internal static IReadOnlyList<(int Dx, int Dy)> SearchOffsets { get; } = BuildSpiral(259);
 
     // The original builds the table at start-up (0x41e726) from a seed offset for each group of six: the six
     // rotations (x, y) -> (x - y, x) of the seed. Ring r holds the seeds (r, j) for j from 1 to r - 1, nearest
     // to the middle of the ring first (ties: the lower j), then (r, 0). The passes index at most 255.
-    private static List<(int Dx, int Dy)> BuildSpiral()
+    private static List<(int Dx, int Dy)> BuildSpiral(int count)
     {
         var table = new List<(int Dx, int Dy)> { (0, 0) };
-        for (var ring = 1; table.Count < 256; ring++)
+        for (var ring = 1; table.Count < count; ring++)
         {
             var seeds = Enumerable.Range(1, ring - 1).OrderBy(j => Math.Abs(2 * j - ring)).ThenBy(j => j).Append(0);
             foreach (var j in seeds)
@@ -73,7 +79,7 @@ public static class MapGenerator
             }
         }
 
-        table.RemoveRange(256, table.Count - 256);
+        table.RemoveRange(count, table.Count - count);
 
         return table;
     }

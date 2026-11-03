@@ -411,11 +411,24 @@ public sealed partial class Game
     // flag on the way back it lays the log it carries onto the flag and goes into the hut.
     private void Arrive(int slot, Settler settler)
     {
+        if (settler.Job != WoodcutterJob)
+        {
+            // **Not ported:** the arrival of the jobs 7, 8, 11, 14, and 20 where they are not walking home (0x437ddd).
+            if (ArrivesHome(settler.Job) || (Mark(settler) == 0x80 && settler.Heading < 0))
+            {
+                ArriveHome(settler);
+            }
+
+            return;
+        }
+
         if (Mark(settler) == 0x80)
         {
-            // **Not ported:** a negative count (0x4385ab).
+            // A negative count marks the walk home (0x4385ab).
             if (settler.Heading < 0)
             {
+                ArriveHome(settler);
+
                 return;
             }
 
