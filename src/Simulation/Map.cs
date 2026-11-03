@@ -13,6 +13,9 @@ public sealed class Map
     private const ulong FnvOffset = 0xcbf29ce484222325;
     private const ulong FnvPrime = 0x100000001b3;
 
+    /// <summary>The bits of a height byte that hold the height; the top 3 bits hold the owner.</summary>
+    public const int HeightMask = 0x1f;
+
     private readonly byte[][] _layers;
 
     internal Map(MapSize size)
@@ -72,4 +75,7 @@ public sealed class Map
     }
 
     internal byte[] Bytes(MapLayer layer) => _layers[(int)layer];
+
+    /// <summary>The index of a node in a layer; the column and the row wrap at the edges.</summary>
+    internal int Index(int x, int y) => (y & (Size.Height - 1)) * Size.Width + (x & (Size.Width - 1));
 }

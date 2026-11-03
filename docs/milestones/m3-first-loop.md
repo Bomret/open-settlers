@@ -41,12 +41,18 @@ settled: [Item tables](../rules/item-tables.md). What is left open:
 ## Castle and start
 
 - `0x41eeeb`: known. Calls `0x41f1f4` and `0x41f2d2` for each player.
-- `0x41f1f4`: copies a player's start position to player `+0xfc` and `+0xfe` and centers the view.
-  likely
-- `0x41f2d2`: places the start objects of a player: the castle and its contents. likely
-- `0x442704` with `0x442f0c` and `0x44333d`: places a player's first building and adds to player
-  `+0x116`. guess
+- `0x41f1f4`, `0x442704`, `0x442630`: known. The castle's placement, its start stock, and the click that
+  places it in a free game: [Castle](../rules/castle.md).
+- `0x442f0c` with `0x44333d`: known. The castle's 20 first settlers and the tools they take from the stock; the
+  engine does not create them yet: [Castle](../rules/castle.md#what-the-placement-writes).
+- `0x45e375` with `0x45f402`: likely. The territory claim and the border bits of the castle's flag; the engine
+  holds the result of the claim, not the routines.
+- `0x41f2d2`: places a group of 3, 6, or 12 settlers of one job on the start node of a mission start. guess
 - `0x42055e`: known. Fills the player blocks of a new game.
+- The castle's draw position (the node plus 16 east and 8 south, `docs/rules/map-objects.md`): open lead, inferred.
+  The castle is a building drawn through `0x44db26` from a `Table70`-style record, and the emulator verbs run no view
+  record, drawing surface, or building record, so no verb reaches the blit call. Lead: build the record in the
+  emulator (or run the original under a debugger in Windows) and read the position `0x44db26` hands the blit.
 - `0x42abed`: watches the counts of the player's `Table120` item and posts message 10 when they run out.
   guess
 
@@ -56,7 +62,9 @@ settled: [Item tables](../rules/item-tables.md). What is left open:
 - `0x440c24`: in-game click handler; tests map against panel. likely
 - `0x440d23`: dispatches road, flag, and build actions and plays the error sounds. likely
 - `0x44c768`, `0x44c8cf`: write a button list into view `+0x60`, perhaps the build menu. guess
-- `0x442244`, `0x442630`: click actions that reevaluate the build marker. guess
+- `0x44b6e6`: known. The build-site evaluator behind every click: [Build sites](../rules/build-sites.md).
+- `0x442244`: the flag button. It places a flag where the evaluator's site is not 0 and its node state is 4, 6,
+  or 7. likely
 
 ## Open questions
 

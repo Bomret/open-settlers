@@ -351,6 +351,33 @@ Sites:
 
 - `0x424ad8`: `MapGen_PlaceDeposits` tests the resource layer one byte past the tile it writes.
 
+### Castle and build sites
+
+How the program judges a node for a flag, a building, or the first castle, and what placing the castle writes.
+The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
+
+| Address | Name | Role | Status | Layer | Anchor |
+| --- | --- | --- | --- | --- | --- |
+| `0x41f1f4` | `Castle_PlaceAtStart` | For one player: when the start position is not negative, copies it to the player block, centers the view, judges the node, and calls `Castle_Place`. Skips every player of a free game. | confirmed | game | Called by `0x41eeeb` once for each player; start positions at state `+0x1e6` to `+0x1ed`. |
+| `0x41f6a5` | `Map_BuildNeighborOffsets` | Turns the spiral table into the masked node offsets at state `+0xc4`, 295 of them. | confirmed | game | Called by `Game_Start` and `Game_ResumeLoaded`. |
+| `0x442630` | `Castle_PlaceFromClick` | The click action for the castle: judges the node under the cursor and places the castle where the node state is 7 and the site is 5, else asks for the error sound. | confirmed | game | Called by `0x440d23` for build action 5. |
+| `0x442704` | `Castle_Place` | Takes the first slots of the storage, building, and flag tables, writes the castle, its flag, the heights, and the start stock, and calls `Castle_CreateSettlers`. | confirmed | game | Called by `Castle_PlaceAtStart`. |
+| `0x442f0c` | `Castle_CreateSettlers` | Creates the castle's 20 first settlers one by one and takes their tools from the storage item. | inferred | game | Called by `Castle_Place`. |
+| `0x44333d` | `Settler_TakeFromStorage` | Creates one settler of a player from the storage item that holds the fewest. | inferred | game | Called by `Castle_CreateSettlers` and `0x428a75`. |
+| `0x44b6e6` | `BuildSite_Evaluate` | Judges the node in the player block (`+0xfc`, `+0xfe`) and leaves the node state, the site, and the height at `+0x100` to `+0x102`. | confirmed | game | Called by the click handlers, `Castle_PlaceAtStart`, and the build marker. |
+| `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | A copy of the judgment from the south-east node on, also entered from `0x44b63a`. | inferred | game | Called by `BuildSite_Evaluate` and `0x44b63a`. |
+| `0x44bd72` | `BuildSite_EvaluateBuilding` | The judgment for a node that holds a building, with its own copy of the conditions. | inferred | game | Called by `BuildSite_Evaluate` and `BuildSite_EvaluateFromSouthEast`. |
+| `0x44be72` | `BuildSite_SortTriangle` | Sorts one terrain code into plain land, mountain, or other kind. | confirmed | game | Called by `BuildSite_EvaluateBuilding`. |
+| `0x45e375` | `Territory_Update` | Claims the territory around the new building and updates the border marks. | inferred | game | Called by `Castle_Place`. |
+| `0x442e8a` | `Castle_StartStockRows` | Five rows of 26 start stock numbers, for the levels 0, 10, 20, 30, and 40. | confirmed | game | Read by `Castle_Place` through `+0x162` of the player block. |
+
+Sites:
+
+- `0x44e329` draws a finished building by its type through the jump table at `0x44e3aa`. The type `0xe0` of a
+  castle reaches the stub at `0x44fd2f`, which stores the object number 178; its sprite is entry 1428.
+- `0x45f402` sets two border bits of the new flag from the owners around it; not ported.
+- `0x41f2d2`: places a group of 3, 6, or 12 settlers on the start node of a mission start; not recovered further.
+
 ### Save and load
 
 The save game format is in "Save format".
@@ -644,7 +671,9 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x41ee3b` | `FreeGame_NewSeed` | confirmed | Random generator and map start |
 | `0x41ee84` | `Game_Start` | confirmed | Program start and game flow |
 | `0x41eeeb` | — | unknown | Program start and game flow |
+| `0x41f1f4` | `Castle_PlaceAtStart` | confirmed | Castle and build sites |
 | `0x41f4d7` | `Game_ResumeLoaded` | inferred | Program start and game flow |
+| `0x41f6a5` | `Map_BuildNeighborOffsets` | confirmed | Castle and build sites |
 | `0x42055e` | — | unknown | Program start and game flow |
 | `0x421530` | `MapGen_InitParams` | inferred | Map generation |
 | `0x4216e9` | `MapGen_Generate` | confirmed | Map generation |
@@ -718,9 +747,18 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x430fd3` | `Player_SwapOutSecondView` | confirmed | Input |
 | `0x431c31` | `Msg_Post` | confirmed | Main loop |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
+| `0x442630` | `Castle_PlaceFromClick` | confirmed | Castle and build sites |
+| `0x442704` | `Castle_Place` | confirmed | Castle and build sites |
+| `0x442e8a` | `Castle_StartStockRows` | confirmed | Castle and build sites |
+| `0x442f0c` | `Castle_CreateSettlers` | inferred | Castle and build sites |
+| `0x44333d` | `Settler_TakeFromStorage` | inferred | Castle and build sites |
 | `0x44591d` | `Panel_HandleClick` | inferred | Views, panels, and drawing |
 | `0x448418` | `Game_ConfirmEnd` | inferred | Program start and game flow |
 | `0x448436` | `Game_EndToStartScreen` | confirmed | Program start and game flow |
+| `0x44b6e6` | `BuildSite_Evaluate` | confirmed | Castle and build sites |
+| `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | inferred | Castle and build sites |
+| `0x44bd72` | `BuildSite_EvaluateBuilding` | inferred | Castle and build sites |
+| `0x44be72` | `BuildSite_SortTriangle` | confirmed | Castle and build sites |
 | `0x44cb6e` | `Msg_RunTimers` | confirmed | Main loop |
 | `0x44d2fc` | — | unknown | Views, panels, and drawing |
 | `0x44d38d` | `Render_DrawMapView` | inferred | Views, panels, and drawing |
@@ -738,6 +776,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x457751` | `Game_Resume` | confirmed | Timing |
 | `0x45ce5a` | `Panel_CopyToScreen` | inferred | Views, panels, and drawing |
 | `0x45d718` | `Frame_WaitAndPresent` | confirmed | Main loop |
+| `0x45e375` | `Territory_Update` | inferred | Castle and build sites |
 | `0x45f755` | `Save_WriteArchiveIndex` | confirmed | Save and load |
 | `0x45f7ab` | `Load_LoadSlot` | confirmed | Save and load |
 | `0x45fa13` | `Save_WriteGame` | confirmed | Save and load |
@@ -794,7 +833,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 131 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 105 confirmed, 26 inferred, 14 unknown.
+Coverage: the index names 143 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 111 confirmed, 32 inferred, 14 unknown.
 <!-- coverage:end -->
 
 Open anchors:

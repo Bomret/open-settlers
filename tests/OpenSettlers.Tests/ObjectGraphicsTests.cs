@@ -23,6 +23,7 @@ public sealed class ObjectGraphicsTests
             [1250] = Sprite(),
             [1251] = GraphicFileTests.Entry(1, 0, 2, 2, 5, 6, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]),
             [1369] = Sprite(),
+            [ObjectSprites.CastleEntry] = GraphicFileTests.Entry(1, 0, 2, 2, 7, 8, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]),
         };
 
     static OpenSettlers.Assets.Install Open(FakeInstall fake)
@@ -39,7 +40,7 @@ public sealed class ObjectGraphicsTests
     }
 
     static FakeInstall Install(Dictionary<int, byte[]> payloads) =>
-        new FakeInstall().Put(Archive, ArchiveBytes.Build(1400, payloads));
+        new FakeInstall().Put(Archive, ArchiveBytes.Build(1500, payloads));
 
     [TestMethod]
     public void TheCoverageOfAnImageIsKeptApartFromItsPaletteIndices()
@@ -59,7 +60,7 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.HasCount(ObjectGraphics.EntryCount, graphics.Images);
+        Assert.HasCount(ObjectGraphics.EntryCount + 1, graphics.Images);
         Assert.AreEqual(3, graphics.LayerWidth);
         Assert.AreEqual(2, graphics.LayerHeight);
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
@@ -68,6 +69,20 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(3 * 2, graphics.Images[0].Coverage.Length);
         Assert.AreEqual(0, ObjectGraphics.Layer(1250));
         Assert.AreEqual(119, ObjectGraphics.Layer(1369));
+    }
+
+    [TestMethod]
+    public void TheCastleSpriteIsTheLayerAfterTheObjectSprites()
+    {
+        using var fake = Install(Payloads());
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        // Emulator: peek:44fd2f:4 prints 66B8B200, the stub of the building type 0xe0 loading the object number 0xB2
+        // (178); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
+        Assert.AreEqual(1428, ObjectSprites.CastleEntry);
+        Assert.AreEqual(ObjectGraphics.EntryCount, ObjectGraphics.Layer(ObjectSprites.CastleEntry));
+        Assert.AreEqual(7, graphics.Images[ObjectGraphics.Layer(ObjectSprites.CastleEntry)].OffsetX);
     }
 
     [TestMethod]

@@ -1,0 +1,7 @@
+flag size=1 seed=1234,5678,9ABC pairs=7.0:0/870 7.5:154/154
+flag size=1 seed=6359,A0D2,B4FA pairs=7.0:0/760 7.5:264/264
+castle-flags size=1 seed=1234,5678,9ABC tile=15,5 level=0 pairs=0.0:0/807 6.1:1/1 7.0:0/27 7.1:71/71 7.2:34/34 7.3:59/59 7.4:23/23
+castle-flags size=1 seed=6359,A0D2,B4FA tile=17,0 level=7 pairs=0.0:0/807 6.1:1/1 7.0:0/31 7.1:60/60 7.2:25/25 7.3:24/24 7.4:74/74
+castle-flags size=1 seed=6359,A0D2,B4FA tile=29,0 level=7 pairs=0.0:0/807 6.1:1/1 7.0:0/68 7.1:92/92 7.3:25/25 7.4:29/29
+castle-flags size=2 seed=1234,5678,9ABC tile=0,0 level=22 pairs=0.0:0/1831 6.1:1/1 7.0:0/20 7.1:93/93 7.2:15/15 7.3:50/50 7.4:36/36
+castle-flags size=3 seed=FFFF,0001,8001 tile=2,0 level=3 pairs=0.0:0/3879 6.0:0/1 7.0:0/65 7.1:70/70 7.2:16/16 7.3:30/30 7.4:33/33

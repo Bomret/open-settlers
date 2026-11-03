@@ -17,6 +17,13 @@ public static class ObjectSprites
     public const int FirstEntry = 1250;
 
     /// <summary>
+    /// The sprite entry of a finished castle (<c>docs/rules/castle.md</c>): the object number 178, which the draw
+    /// routine of the building type <c>0xe0</c> (<c>0x44e329</c>, through the jump table at <c>0x44e3aa</c> and the
+    /// stub at <c>0x44fd2f</c>) stores, plus the 1250 that <c>0x44da4d</c> adds to an object number.
+    /// </summary>
+    public const int CastleEntry = FirstEntry + 178;
+
+    /// <summary>
     /// The sprite entry of a code, or null where the view draws none (a code below 8 or above 127). The view
     /// draws the frame of the program's frame counter 0 (state <c>+0x206</c>); the animation rule is in
     /// <c>docs/rules/map-objects.md</c>. At counter 0 indexes 0 to 15 (codes 8 to 23) take the first frame of

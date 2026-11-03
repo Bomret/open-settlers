@@ -16,5 +16,9 @@
   <ItemGroup>
     <None Include="map-digests.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="windows-run.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="build-sites.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="castle-placements.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="castle-sites.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="flag-verdicts.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

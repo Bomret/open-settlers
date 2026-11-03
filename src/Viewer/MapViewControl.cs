@@ -49,7 +49,12 @@ public partial class MapViewControl : Control
     System.Collections.Generic.IReadOnlyList<MaskImage> _masks = [];
     string? _graphicsProblem;
     string? _objectsProblem;
+    string? _tablesProblem;
     bool _dragging;
+    readonly ClickGesture _gesture = new();
+    (int X, int Y, float Scale, float Width, float Height) _pressView;
+    ProgramTables? _tables;
+    bool _castleDrawn;
     Vector2 _keyCarry;
     Vector2 _dragCarry;
 
@@ -136,6 +141,19 @@ public partial class MapViewControl : Control
             GD.PrintErr($"map view: {e.Message}");
         }
 
+        if (_play)
+        {
+            try
+            {
+                _tables = ProgramTables.Read(_install.ReadAll(Install.Program));
+            }
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                _tablesProblem = e.Message;
+                GD.PrintErr($"map view: {e.Message}");
+            }
+        }
+
         _state = MapViewState.Open(_seed.Text, _size.GetItemId(0));
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
@@ -145,9 +163,10 @@ public partial class MapViewControl : Control
 
     void StartGame()
     {
-        if (_play && _state.Map is not null)
+        if (_play && _state.Map is not null && _tables is not null)
         {
-            _game = new Game(_state.Map);
+            _game = new Game(_tables, _state.Map, _state.StockLevel);
+            _castleDrawn = false;
             _tickCarry = 0;
         }
     }
@@ -165,6 +184,12 @@ public partial class MapViewControl : Control
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
+            if (_game.Castle is not null && !_castleDrawn)
+            {
+                // The castle stands: draw it with the objects.
+                _castleDrawn = true;
+                Redraw();
+            }
         }
 
         // The keys move the view at the same screen speed at every zoom.
@@ -227,6 +252,16 @@ public partial class MapViewControl : Control
             case InputEventMouseButton { ButtonIndex: MouseButton.Left } button:
                 _dragging = button.Pressed;
                 _canvas.GrabFocus();
+                if (button.Pressed)
+                {
+                    _gesture.Press(button.Position.X, button.Position.Y);
+                    _pressView = (_camera.X, _camera.Y, _zoom.Scale, _canvas.Size.X, _canvas.Size.Y);
+                }
+                else if (_gesture.Release(out var x, out var y))
+                {
+                    PlaceCastleAt(x, y);
+                }
+
                 break;
             case InputEventMouseButton
             {
@@ -242,9 +277,33 @@ public partial class MapViewControl : Control
                 Pan(swipe.Delta * PanGestureSpeed);
                 break;
             case InputEventMouseMotion motion when _dragging:
+                _gesture.Move(motion.Position.X, motion.Position.Y);
                 Pan(-motion.Relative);
                 break;
         }
+    }
+
+    // A click asks the game for the castle on the node under it. The node is picked against the view as it was
+    // drawn when the button went down (camera, zoom scale, and canvas size): a hand that strays within the slop of a
+    // click still pans the view a little, and a zoom or a resize during the press changes none of the three.
+    void PlaceCastleAt(double screenX, double screenY)
+    {
+        if (_game is null || _state.Map is null)
+        {
+            return;
+        }
+
+        var (x, y) = MapPicking.Pick(
+            _state.Map,
+            _pressView.X,
+            _pressView.Y,
+            _pressView.Scale,
+            _pressView.Width,
+            _pressView.Height,
+            screenX,
+            screenY
+        );
+        _game.Enqueue(new Command(_game.TickCount, 0, CommandKind.PlaceCastle, x, y));
     }
 
     // Moves the view by a distance in screen pixels.
@@ -277,7 +336,9 @@ public partial class MapViewControl : Control
     {
         _message.Text = _graphicsProblem is not null
             ? $"Cannot draw the map: {_graphicsProblem}"
-            : _state.Problem ?? (_objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}" : "");
+            : _state.Problem
+                ?? (_tablesProblem is not null ? $"Cannot start the game, the program's rule tables are unreadable: {_tablesProblem}"
+                : _objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}" : "");
         _message.Modulate = new Color(1, 0.4f, 0.4f);
     }
 
@@ -457,7 +518,14 @@ public partial class MapViewControl : Control
             return meshes;
         }
 
-        foreach (var band in ObjectQuads.Bands(ObjectDraws.Of(map), _objects.Images, map.Size.Height, BandRows))
+        foreach (
+            var band in ObjectQuads.Bands(
+                ObjectDraws.Of(map, _game?.Castle),
+                _objects.Images,
+                map.Size.Height,
+                BandRows
+            )
+        )
         {
             meshes.Add(
                 BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, new Color(q.Layer / 255f, 0, 0, 1))))

@@ -22,7 +22,24 @@
 //                            generator words and one FNV-1a 64-bit digest per layer of the canonical map form
 //                            (docs/rules/map-form.md); after MapGen_CountResource1 also the total
 //   tables:x                 the digest of the first 256 spiral table entries, the seeds of its groups of six,
-//                            and the object codes whose size byte is above 1
+//                            and the object codes whose size byte is above 1, then the size byte of every code as runs
+//   site:N:S0,S1,S2          the build-site evaluator (0x44b6e6, docs/rules/build-sites.md) on every tile of the
+//                            map gen:N:S0,S1,S2 makes, for a player without a castle: a digest of the results,
+//                            the count of each (node state, site) pair, and the first castle sites with their height
+//   castle:N:S0,S1,S2:L:x,y;x,y;...[:sites]
+//                            the castle placement (0x442704, docs/rules/castle.md) on that map at each tile after
+//                            the evaluator judged it, for the start stock levels L (decimal, comma separated): the
+//                            26 stock words, a digest of each byte of a tile's two records, the tiles that
+//                            changed, and the first bytes of the new settlers; with sites also the evaluator's
+//                            sweep (as site) for the player who owns the territory, and the flag button's
+//                            verdicts on it (as flag)
+//   flag:N:S0,S1,S2          the flag button (0x442244, docs/rules/build-sites.md) on every tile of the map gen makes
+//                            whose object has a size byte below 3, for a player without a castle: for each pair
+//                            (node state, site) the evaluator leaves, how many tiles put a flag (the routine goes to
+//                            0x4422c5) and how many refuse it (it goes to 0x44c768)
+//   stockrows:x              the five rows of start stock numbers the placement interpolates (0x442e8a)
+//   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
+//   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
 //
 // Output lines start with "EMU " so that the caller can tell them from Ghidra's log.
 //@category OpenSettlers
@@ -69,6 +86,12 @@ public class EmulateMapStart extends GhidraScript {
                     case "show" -> show(rest);
                     case "mask" -> mask(rest);
                     case "gen" -> gen(rest);
+                    case "site" -> site(rest);
+                    case "castle" -> castle(rest);
+                    case "flag" -> flag(rest);
+                    case "stockrows" -> stockrows();
+                    case "peek" -> peek(rest);
+                    case "opponents" -> opponents(rest);
                     case "tables" -> tables();
                     default -> throw new IllegalArgumentException("unknown command " + command);
                 }
@@ -242,6 +265,11 @@ public class EmulateMapStart extends GhidraScript {
     private static final int RESOURCE_TOTAL = 0x4c;
 
     private void gen(String rest) throws Exception {
+        generate(rest, true);
+    }
+
+    /** Runs the map generation; with report it prints the digest lines, and it returns the width and height. */
+    private int[] generate(String rest, boolean report) throws Exception {
         String[] parts = rest.split(":");
         int size = Integer.parseInt(parts[0]);
         int[] seed = words(parts[1]);
@@ -263,8 +291,11 @@ public class EmulateMapStart extends GhidraScript {
         for (int i = 0; i < 3; i++) {
             putWord(STATE + MAP_SEED_WORDS + 2 * i, seed[i]);
         }
-        println("EMU gen size=" + size + " width=" + width + " height=" + height + " bits="
-                + getWord(STATE + 0x30) + " colmask=" + getWord(STATE + 0x32) + " rowmask=" + getWord(STATE + 0x34));
+        if (report) {
+            println("EMU gen size=" + size + " width=" + width + " height=" + height + " bits="
+                    + getWord(STATE + 0x30) + " colmask=" + getWord(STATE + 0x32) + " rowmask="
+                    + getWord(STATE + 0x34));
+        }
         emu.writeRegister(emu.getPCRegister(), 0x4216e9);
         for (long address : SKIP_CALL) {
             emu.setBreakpoint(toAddr(address));
@@ -280,7 +311,9 @@ public class EmulateMapStart extends GhidraScript {
             }
             long pc = emu.readRegister(emu.getPCRegister()).longValue();
             if (pc == END_ADDRESS[recorded]) {
-                digest(END_NAME[recorded], size, width, height);
+                if (report) {
+                    digest(END_NAME[recorded], size, width, height);
+                }
                 recorded++;
                 if (recorded < END_ADDRESS.length) {
                     emu.step(monitor);
@@ -289,6 +322,7 @@ public class EmulateMapStart extends GhidraScript {
                 emu.writeRegister(emu.getPCRegister(), pc + 5);
             }
         }
+        return new int[] {size, width, height};
     }
 
     /** Runs the function at entry to its return: pushes a return address on the machine stack and stops there. */
@@ -334,6 +368,318 @@ public class EmulateMapStart extends GhidraScript {
                 + total);
     }
 
+    private static final long PLAYER = 0x22000000L;
+    private static final long OFFSETS = 0x21800000L;
+    private static final long TABLE18 = 0x23000000L;
+    private static final int OFFSETS_POINTER = 0xc4;
+    private static final int TABLE18_BASE = 0x9c;
+
+    /**
+     * The build-site evaluator (0x44b6e6) for a player without a castle on every tile of a generated map. The
+     * command is site:N:S0,S1,S2 (the arguments of gen). A tile whose object has a size byte of 3 or more is
+     * counted as skipped: the evaluator then reads the building and flag tables, which hold nothing here. The
+     * other tiles give the triple the evaluator leaves in the player block (+0x100, +0x101, +0x102); the line
+     * prints their FNV-1a digest in row-major order, the number of each (kind, site) pair, and the first valid
+     * castle sites (kind 7, site 5) with the height the evaluator hands on.
+     */
+    private void site(String rest) throws Exception {
+        int[] size = generate(rest, false);
+        int width = size[1];
+        int height = size[2];
+        putInt(STATE + OFFSETS_POINTER, OFFSETS);
+        putInt(STATE + TABLE18_BASE, TABLE18);
+        call(0x41f6a5);
+        putInt(REGISTERS + 0x30, PLAYER);
+        println("EMU site size=" + size[0] + " width=" + width + " height=" + height + sweep(width, height, PLAYER, true, 5));
+    }
+
+    /**
+     * Runs the evaluator (0x44b6e6) on every tile whose object has a size byte below 3 and describes the results:
+     * the count of tiles judged and skipped, the number with the site value validSite (the first 16 are listed
+     * with their height), the FNV-1a digest of the results in row-major order, and the count of each pair. With
+     * fresh the player block is cleared before each tile (a player without a castle); otherwise it is left as
+     * it is, apart from the position.
+     */
+    private String sweep(int width, int height, long player, boolean fresh, int validSite) throws Exception {
+        byte[] sizes = emu.readMemory(toAddr(OBJECT_SIZES), 128);
+        long hash = 0xcbf29ce484222325L;
+        int evaluated = 0;
+        int skipped = 0;
+        int valid = 0;
+        java.util.TreeMap<String, Integer> kinds = new java.util.TreeMap<>();
+        StringBuilder first = new StringBuilder();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int object = emu.readMemory(toAddr(MAP + y * 8L * width + x * 4L + 3), 1)[0] & 0x7f;
+                if ((sizes[object] & 0xff) >= 3) {
+                    skipped++;
+                    continue;
+                }
+                if (fresh) {
+                    emu.writeMemory(toAddr(player), new byte[0x200]);
+                }
+                putWord(player + 0xfc, x);
+                putWord(player + 0xfe, y);
+                call(0x44b6e6);
+                byte[] result = emu.readMemory(toAddr(player + 0x100), 4);
+                int kind = result[0] & 0xff;
+                int site = result[1] & 0xff;
+                int level = (result[2] & 0xff) | ((result[3] & 0xff) << 8);
+                if (site < 4) {
+                    // The evaluator writes +0x102 only for the sites 4 and 5; an older value stays there.
+                    level = 0;
+                }
+                for (int b : new int[] {kind, site, level & 0xff, level >> 8}) {
+                    hash = (hash ^ b) * 0x100000001b3L;
+                }
+                evaluated++;
+                kinds.merge(kind + "." + site, 1, Integer::sum);
+                if (site == validSite && (kind == 7 || !fresh)) {
+                    if (valid < 16) {
+                        first.append(" ").append(x).append(",").append(y).append(",").append(level);
+                    }
+                    valid++;
+                }
+            }
+        }
+        StringBuilder histogram = new StringBuilder();
+        kinds.forEach((key, count) -> histogram.append(" ").append(key).append(":").append(count));
+        return " evaluated=" + evaluated + " skipped=" + skipped + " valid=" + valid
+                + String.format(" digest=%016X", hash) + " kinds=" + histogram.toString().trim() + " first="
+                + first.toString().trim();
+    }
+
+    private static final long RECORD = 0x24000000L;
+
+    /**
+     * The flag button (0x442244) on every tile whose object has a size byte below 3, for a player without a
+     * castle. The command is flag:N:S0,S1,S2 (the arguments of gen). The routine reads the tile record through the
+     * pointer at +0x20 of its state and the player through the pointer at +0x82 of that record; it runs the
+     * evaluator and then goes to 0x4422c5 (the flag is put) or to 0x44c768 (it is refused). The run stops at
+     * either, so that the placing routines do not run. The line gives, per pair (node state, site) the evaluator
+     * left, the tiles that put a flag over the tiles judged.
+     */
+    private void flag(String rest) throws Exception {
+        int[] size = generate(rest, false);
+        int width = size[1];
+        int height = size[2];
+        putInt(STATE + OFFSETS_POINTER, OFFSETS);
+        putInt(STATE + TABLE18_BASE, TABLE18);
+        call(0x41f6a5);
+        println("EMU flag size=" + size[0] + " width=" + width + " height=" + height
+                + flagSweep(width, height, PLAYER, true));
+    }
+
+    /**
+     * Runs the flag button on every tile whose object has a size byte below 3 and counts, per pair (node state,
+     * site) the evaluator left, the tiles that put a flag over the tiles judged. With fresh the player block is
+     * cleared before each tile, otherwise it is left as it is apart from the position.
+     */
+    private String flagSweep(int width, int height, long player, boolean fresh) throws Exception {
+        byte[] sizes = emu.readMemory(toAddr(OBJECT_SIZES), 128);
+        java.util.TreeMap<String, int[]> pairs = new java.util.TreeMap<>();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int object = emu.readMemory(toAddr(MAP + y * 8L * width + x * 4L + 3), 1)[0] & 0x7f;
+                if ((sizes[object] & 0xff) >= 3) {
+                    continue;
+                }
+                if (fresh) {
+                    emu.writeMemory(toAddr(player), new byte[0x200]);
+                }
+                emu.writeMemory(toAddr(RECORD), new byte[0x100]);
+                putInt(RECORD + 0x82, player);
+                putInt(REGISTERS + 0x20, RECORD);
+                putInt(REGISTERS + 0x30, player);
+                putWord(player + 0xfc, x);
+                putWord(player + 0xfe, y);
+                long esp = emu.readRegister("ESP").longValue() - 4;
+                emu.writeRegister("ESP", esp);
+                putInt(esp, RETURN);
+                long stop = runTo(0x442244, 0x4422c5, 0x44c768);
+                emu.writeRegister("ESP", esp + 4);
+                byte[] result = emu.readMemory(toAddr(player + 0x100), 2);
+                String key = (result[0] & 0xff) + "." + (result[1] & 0xff);
+                pairs.computeIfAbsent(key, k -> new int[2])[stop == 0x4422c5 ? 0 : 1]++;
+            }
+        }
+        StringBuilder text = new StringBuilder();
+        pairs.forEach((key, counts) -> text.append(" ").append(key).append(":").append(counts[0]).append("/")
+                .append(counts[0] + counts[1]));
+        return " pairs=" + text.toString().trim();
+    }
+
+    /** peek:ADDRESS:COUNT prints COUNT bytes of the program at the address, for an investigation at the console. */
+    private void peek(String rest) throws Exception {
+        String[] parts = rest.split(":");
+        long address = Long.parseLong(parts[0], 16);
+        StringBuilder values = new StringBuilder();
+        for (byte v : emu.readMemory(toAddr(address), Integer.parseInt(parts[1]))) {
+            values.append(String.format("%02X", v & 0xff));
+        }
+        println("EMU peek " + parts[0] + " " + values);
+    }
+
+    /** The five rows of 26 start stock values that the castle placement interpolates between (0x442e8a). */
+    private void stockrows() throws Exception {
+        for (int row = 0; row < 5; row++) {
+            StringBuilder values = new StringBuilder();
+            for (byte v : emu.readMemory(toAddr(0x442e8aL + 26 * row), 26)) {
+                values.append(values.length() == 0 ? "" : ",").append(v & 0xff);
+            }
+            println("EMU stockrows row=" + row + " values=" + values);
+        }
+    }
+
+    /**
+     * FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed (the three words at +0x364): prints the 20
+     * setting bytes it writes at +0x36a to +0x37d. The human player's start stock level is the byte at +0x37a.
+     */
+    private void opponents(String rest) throws Exception {
+        int[] seed = words(rest);
+        putSeed(seed);
+        call(0x4692d4);
+        StringBuilder values = new StringBuilder();
+        for (byte v : emu.readMemory(toAddr(STATE + 0x36a), 20)) {
+            values.append(values.length() == 0 ? "" : ",").append(v & 0xff);
+        }
+        println("EMU opponents seed=" + rest.toUpperCase() + " settings=" + values);
+    }
+
+    private static final long PLAYERS = 0x22000000L;
+    private static final long TABLES = 0x23000000L;
+    private static final int LEVEL = 0x162;
+
+    private void zero(long address, int length) throws Exception {
+        emu.writeMemory(toAddr(address), new byte[length]);
+    }
+
+    /**
+     * The castle placement (0x442704, the routine of the mission start that the click handler 0x442630 repeats
+     * after its check) for a player without a castle. The command is castle:N:S0,S1,S2:L:x,y;x,y;... with the
+     * arguments of gen, the start stock level L (player byte +0x162, decimal) and the tiles to try, each from
+     * the generated map alone. Per tile it runs the evaluator (0x44b6e6); a tile it does not give the pair
+     * (7, 5) is REFUSED and nothing else runs. Otherwise it runs the placement and prints the 26 stock words of
+     * the storage item, and the FNV-1a digests of the map bytes by position in the two records of a tile, and the
+     * tiles whose bytes changed with their old and new values.
+     */
+    private void castle(String rest) throws Exception {
+        String[] parts = rest.split(":");
+        int[] size = generate(parts[0] + ":" + parts[1], false);
+        int width = size[1];
+        int height = size[2];
+        int bytes = height * 8 * width;
+        byte[] before = emu.readMemory(toAddr(MAP), bytes).clone();
+        putInt(STATE + OFFSETS_POINTER, OFFSETS);
+        call(0x41f6a5);
+        putInt(STATE + 0x352, 2);
+        putInt(STATE + 0x64, PLAYERS + 0x1000);
+        putInt(STATE + 0x68, PLAYERS + 0x3000);
+        putInt(STATE + 0x6c, PLAYERS + 0x5000);
+        putInt(STATE + 0x70, PLAYERS + 0x7000);
+        putInt(STATE + 0x78, PLAYERS + 0x9000);
+        putInt(STATE + 0x7c, PLAYERS + 0x9400);
+        putInt(STATE + 0x98, TABLES);
+        putInt(STATE + 0xa4, TABLES + 0x10000);
+        putInt(STATE + 0x9c, TABLES + 0x20000);
+        putInt(STATE + 0xa8, TABLES + 0x30000);
+        putInt(STATE + 0xa0, TABLES + 0x40000);
+        putInt(STATE + 0xac, TABLES + 0x50000);
+        putInt(STATE + 0xf0, TABLES + 0x60000);
+        putInt(STATE + 0xf4, TABLES + 0x70000);
+        putInt(REGISTERS + 0x30, PLAYERS + 0x1000);
+        byte[] stateBefore = emu.readMemory(toAddr(STATE), 0x1000).clone();
+        for (String levelText : parts[2].split(",")) {
+        int level = Integer.parseInt(levelText);
+        for (String tile : parts[3].split(";")) {
+            String[] xy = tile.split(",");
+            int x = Integer.parseInt(xy[0]);
+            int y = Integer.parseInt(xy[1]);
+            emu.writeMemory(toAddr(STATE), stateBefore.clone());
+            emu.writeMemory(toAddr(MAP), before.clone());
+            zero(PLAYERS, 0xa000);
+            zero(TABLES, 0x80000);
+            for (int i = 0; i < 4; i++) {
+                putWord(PLAYERS + 0x1000 + 0x2000 * i, i);
+            }
+            putWord(STATE + 0x258, 100);
+            putWord(STATE + 0x25a, 100);
+            putWord(STATE + 0x25c, 100);
+            putWord(STATE + 0x264, 100);
+            for (int offset : new int[] {0x25e, 0x260, 0x262, 0x266}) {
+                putWord(STATE + offset, 0);
+            }
+            long player = PLAYERS + 0x1000;
+            putWord(player + 0xfc, x);
+            putWord(player + 0xfe, y);
+            emu.writeMemory(toAddr(player + LEVEL), new byte[] {(byte) level});
+            call(0x44b6e6);
+            byte[] result = emu.readMemory(toAddr(player + 0x100), 4);
+            int kind = result[0] & 0xff;
+            int site = result[1] & 0xff;
+            int found = (result[2] & 0xff) | ((result[3] & 0xff) << 8);
+            if (kind != 7 || site != 5) {
+                println("EMU castle size=" + size[0] + " tile=" + x + "," + y + " level=" + level + " evaluator="
+                        + kind + "." + site + "." + found + " REFUSED");
+                continue;
+            }
+            call(0x442704);
+            StringBuilder stock = new StringBuilder();
+            long item120 = TABLES + 0x60000;
+            for (int i = 0; i < 26; i++) {
+                stock.append(i == 0 ? "" : ",").append(getWord(item120 + 6 + 2 * i));
+            }
+            byte[] after = emu.readMemory(toAddr(MAP), bytes).clone();
+            long[] hash = new long[8];
+            java.util.Arrays.fill(hash, 0xcbf29ce484222325L);
+            StringBuilder changed = new StringBuilder();
+            int changes = 0;
+            for (int ty = 0; ty < height; ty++) {
+                for (int tx = 0; tx < width; tx++) {
+                    int a = ty * 8 * width + tx * 4;
+                    int b = a + 4 * width;
+                    StringBuilder diff = new StringBuilder();
+                    for (int i = 0; i < 8; i++) {
+                        int at = (i < 4 ? a : b) + (i & 3);
+                        hash[i] = (hash[i] ^ (after[at] & 0xff)) * 0x100000001b3L;
+                        if (after[at] != before[at]) {
+                            diff.append(" ").append(i).append("=").append(String.format("%02X>%02X",
+                                    before[at] & 0xff, after[at] & 0xff));
+                        }
+                    }
+                    if (diff.length() > 0) {
+                        changes++;
+                        changed.append(" ").append(tx).append(",").append(ty).append(":").append(diff.toString()
+                                .trim().replace(" ", "/"));
+                    }
+                }
+            }
+            StringBuilder digests = new StringBuilder();
+            for (int i = 0; i < 8; i++) {
+                digests.append(String.format(" %016X", hash[i]));
+            }
+            println("EMU castle size=" + size[0] + " tile=" + x + "," + y + " level=" + level + " evaluator="
+                    + kind + "." + site + "." + found + " stock=" + stock + " layers=" + digests.toString().trim()
+                    + " changes=" + changes);
+            println("EMU castle-changes tile=" + x + "," + y + changed);
+            if (parts.length > 4) {
+                // The evaluator for the player now that the castle stands, on every tile (site 4 is a large building).
+                println("EMU castle-sites tile=" + x + "," + y + " level=" + level + sweep(width, height, player, false, 4));
+                println("EMU castle-flags tile=" + x + "," + y + " level=" + level + flagSweep(width, height, player, false));
+            }
+            StringBuilder settlers = new StringBuilder();
+            int created = getWord(STATE + 0x262);
+            for (int i = 0; i < created; i++) {
+                settlers.append(" ").append(String.format("%02X", emu.readMemory(toAddr(TABLES + 0x40000 + 16L * i), 1)[0] & 0xff));
+            }
+            println("EMU castle-settlers tile=" + x + "," + y + " level=" + level + " count=" + created
+                    + " first-bytes=" + settlers.toString().trim() + " player=" + String.format("b2=%02X b3=%02X p108=%d p116=%d",
+                    emu.readMemory(toAddr(player + 2), 1)[0] & 0xff, emu.readMemory(toAddr(player + 3), 1)[0] & 0xff,
+                    getWord(player + 0x108), getWord(player + 0x116)));
+            }
+        }
+    }
+
     /** Builds the spiral table and prints its entries and the object size table (a small view, not the bytes). */
     private void tables() throws Exception {
         prepare();
@@ -365,5 +711,15 @@ public class EmulateMapStart extends GhidraScript {
             }
         }
         println("EMU tables large=" + large);
+        StringBuilder runs = new StringBuilder();
+        for (int first = 0; first < 128; ) {
+            int last = first;
+            while (last + 1 < 128 && sizes[last + 1] == sizes[first]) {
+                last++;
+            }
+            runs.append(" ").append(first).append("-").append(last).append("=").append(sizes[first] & 0xff);
+            first = last + 1;
+        }
+        println("EMU tables sizeruns=" + runs.toString().trim());
     }
 }

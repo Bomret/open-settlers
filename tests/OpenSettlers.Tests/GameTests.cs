@@ -1,18 +1,19 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
+// The map of the map seed 6359,A0D2,B4FA at size 1 has castle sites at 17,0 and 18,0 (emulator: site:1:6359,A0D2,B4FA).
 [TestClass]
 public sealed class GameTests
 {
-    const string Seed = "1234567812345678";
     const int Ticks = 40;
+
+    static Command Place(long tick, int x, int y, int player = 0) => new(tick, player, CommandKind.PlaceCastle, x, y);
 
     static Game Run(params Command[] commands)
     {
-        var game = new Game(MapViewState.Open(Seed, 1).Map!);
+        var game = new Game(TestProgram.Made(), MapGenerator.Generate(new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0]));
         foreach (var command in commands)
         {
             game.Enqueue(command);
@@ -29,7 +30,7 @@ public sealed class GameTests
     [TestMethod]
     public void TheSameSeedAndCommandsGiveTheSameDigest()
     {
-        var commands = new[] { new Command(3, 0, 1, 4, 5), new Command(10, 0, 2, 6, 7) };
+        var commands = new[] { Place(3, 17, 0), Place(10, 18, 0) };
 
         Assert.AreEqual(Run(commands).Digest(), Run(commands).Digest());
     }
@@ -37,14 +38,14 @@ public sealed class GameTests
     [TestMethod]
     public void ACommandAtAnotherTickGivesAnotherDigest()
     {
-        Assert.AreNotEqual(Run(new Command(3, 0, 1, 4, 5)).Digest(), Run(new Command(4, 0, 1, 4, 5)).Digest());
+        Assert.AreNotEqual(Run(Place(3, 17, 0)).Digest(), Run(Place(4, 17, 0)).Digest());
     }
 
     [TestMethod]
     public void TheOrderOfEnqueueingCommandsOfOneTickDoesNotChangeTheDigest()
     {
-        var a = new Command(5, 0, 1, 1, 1);
-        var b = new Command(5, 1, 1, 2, 2);
+        var a = Place(5, 17, 0);
+        var b = Place(5, 18, 0);
 
         Assert.AreEqual(Run(a, b).Digest(), Run(b, a).Digest());
     }
@@ -60,12 +61,12 @@ public sealed class GameTests
     {
         var game = Run();
 
-        Assert.ThrowsExactly<System.ArgumentOutOfRangeException>(() => game.Enqueue(new Command(0, 0, 1, 1, 1)));
+        Assert.ThrowsExactly<System.ArgumentOutOfRangeException>(() => game.Enqueue(Place(0, 17, 0)));
     }
 
     [TestMethod]
     public void ACommandBeyondTheRunIsNotApplied()
     {
-        Assert.AreEqual(Run().Digest(), Run(new Command(Ticks, 0, 1, 1, 1)).Digest());
+        Assert.AreEqual(Run().Digest(), Run(Place(Ticks, 17, 0)).Digest());
     }
 }
