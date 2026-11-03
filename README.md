@@ -98,16 +98,18 @@ Exit codes: 0 on a printed report, 4 for a bad argument or a missing `--seed`, 1
 
 ### Run a play script
 
-A play run opens the map view, runs the steps of a play script in file order on simulated time, and quits after the last step. It runs under Godot's Movie Maker, which writes a PNG per frame and one WAV and forces a fixed time step. Create the output folder first: Movie Maker writes into it from the first frame, and the run deletes nothing there.
+A play run opens the map view or the game view, runs the steps of a play script in file order on simulated time, and quits after the last step. It runs under Godot's Movie Maker, which writes a PNG per frame and one WAV and forces a fixed time step. Create the output folder first: Movie Maker writes into it from the first frame, and the run deletes nothing there.
 
 ```sh
 rm -rf play-out/zoom-pan && mkdir -p play-out/zoom-pan
 mise exec -- <godot> --path . --write-movie play-out/zoom-pan/frame.png --fixed-fps 30 -- --map [--seed <seed>] [--size <n>] --play play/zoom-pan.play
 ```
 
-`sh tools/play-run.sh <stem> [--seed <s>] [--size <n>] --fps <n> [--fresh]` (or `mise run play -- <stem> ...`) does the same from `play/<stem>.play` with `SIEDLER_DIR` as `--game`: it clears `play-out/<stem>/`, builds `OpenSettlers.csproj` (a failed build exits 3 and runs no Godot), stores the result under a hash of the run's inputs, reuses it while they are unchanged, and logs each call to `play-out/runs.log`. `docs/agents/verification.md` describes it.
+Give `--game-view` in place of `--map` to run the script on the game view.
 
-`--play <file>` needs `--map` and Movie Maker (`--write-movie` with `--fixed-fps`); without them, or without a file, it is a bad argument and exits with code 4. The script path resolves against the project folder. `play-out/<script name>/` holds the frames and every `shot` and `dump` of the run (a result `tools/play-run.sh` reuses holds no frames; `--fresh` runs again and writes them); the script name is the script's file name without its extension. Git ignores `play-out/`. The run pins the window to 1280 x 720, so frames and the view's fit do not depend on the display. Two runs of the same script, seed, and size give equal dumps and frames. `play/zoom-pan.play` is an example that zooms and pans.
+`sh tools/play-run.sh <stem> [--seed <s>] [--size <n>] --fps <n> [--fresh]` (or `mise run play -- <stem> ...`) does the same on the map view from `play/<stem>.play` with `SIEDLER_DIR` as `--game`: it clears `play-out/<stem>/`, builds `OpenSettlers.csproj` (a failed build exits 3 and runs no Godot), stores the result under a hash of the run's inputs, reuses it while they are unchanged, and logs each call to `play-out/runs.log`. `docs/agents/verification.md` describes it.
+
+`--play <file>` needs `--map` or `--game-view`, and Movie Maker (`--write-movie` with `--fixed-fps`); without them, or without a file, it is a bad argument and exits with code 4. The script path resolves against the project folder. `play-out/<script name>/` holds the frames and every `shot` and `dump` of the run (a result `tools/play-run.sh` reuses holds no frames; `--fresh` runs again and writes them); the script name is the script's file name without its extension. Git ignores `play-out/`. The run pins the window to 1280 x 720, so frames and the view's fit do not depend on the display. Two runs of the same script, seed, and size give equal dumps and frames. `play/zoom-pan.play` is an example that zooms and pans.
 
 A play script has one step per line. Blank lines and lines that start with `#` are skipped. A problem in the script (an unknown step, a bad argument, an unreadable file) or a failed `expect` prints one `ERROR` that names the script and the line and exits with code 1; a failed `expect` states the expectation and the actual value. After the last step the run exits with code 0. Steps:
 
@@ -117,9 +119,11 @@ A play script has one step per line. Blank lines and lines that start with `#` a
 - `scroll <up|down> [count [x y]]` turns the mouse wheel by `count` notches (default 1) at the canvas point `x y` (default the middle of the canvas).
 - `drag <x1> <y1> <x2> <y2>` drags with the left button between two canvas points.
 - `pinch <factor>` and `swipe <dx> <dy>` send a touchpad pinch and a two-finger swipe at the middle of the canvas.
+- `click-tile <column> <row>` clicks the map tile where it shows on the canvas at that moment, as a player's click on it does. Of the tile's wrapped copies on the canvas it takes the one nearest the canvas's middle. A tile outside the map, not on the canvas, under the button bar, or drawn on the same point as another tile fails the run; the view does not move.
+- `button <name>` clicks the shown game-view button whose label is exactly `name` (`Flag`, `Road`, `Woodcutter`, `Remove`); an on/off button flips. A name not shown, and every name in the map view, fails the run and lists the shown names.
 - `shot <name>` writes the last drawn frame to `play-out/<script name>/<name>.png`. A step takes effect in the frame after it, so put a `wait` before the shot.
-- `dump <name>` writes `play-out/<script name>/<name>.txt`: one `field=value` line each for `camera-x` and `camera-y` (the camera's wrapped position in whole pixels), `zoom` (four decimals), `seed`, and `size`.
-- `expect <field> <op> <value>` checks one of those fields. The operators are `<`, `<=`, `=`, `>=`, and `>`; `seed` takes only `=`. `zoom` compares at four decimals.
+- `dump <name>` writes `play-out/<script name>/<name>.txt`: one `field=value` line each for `camera-x` and `camera-y` (the camera's wrapped position in whole pixels), `zoom` (four decimals), `seed`, and `size`. In the game view `ticks` (the game's tick count) and `logs` (the castle's log count, 0 before a castle stands) follow.
+- `expect <field> <op> <value>` checks one of those fields. An `expect` on `ticks` or `logs` in the map view fails. The operators are `<`, `<=`, `=`, `>=`, and `>`; `seed` takes only `=`. `zoom` compares at four decimals.
 
 Every input step reaches the view's own handlers as a Godot input event at canvas coordinates, whose origin is the canvas's top-left corner below the seed bar; nothing calls the camera or the zoom. Keyboard steps act even when the seed field has focus at the start: the run releases its focus first.
 

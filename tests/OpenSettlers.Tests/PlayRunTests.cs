@@ -173,4 +173,31 @@ public sealed class PlayRunTests
 
         StringAssert.StartsWith(run.Problems[0], "play/t.play line 1: ");
     }
+
+    [TestMethod]
+    public void AClickStepTheInputRefusesEndsTheRunNamingItsLine()
+    {
+        var run = Run(
+            "wait 0\nclick-tile 40 3\npress A",
+            step => step is ClickTileStep ? "tile 40,3 is outside the map" : null
+        );
+
+        Frames(run, 2);
+
+        Assert.IsTrue(run.Finished);
+        Assert.HasCount(1, run.Problems);
+        Assert.AreEqual("play/t.play line 2: tile 40,3 is outside the map", run.Problems[0]);
+    }
+
+    [TestMethod]
+    public void TheClickStepsGoToTheInput()
+    {
+        var run = Run("click-tile 1 2\nbutton Road");
+
+        Frames(run, 1);
+
+        Assert.HasCount(2, _sent);
+        Assert.IsInstanceOfType<ClickTileStep>(_sent[0]);
+        Assert.IsInstanceOfType<ButtonStep>(_sent[1]);
+    }
 }

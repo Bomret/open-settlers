@@ -65,4 +65,74 @@ public static class MapPicking
 
         return best;
     }
+
+    /// <summary>
+    /// The screen point a click on a node aims at, the inverse of <see cref="Pick"/> for the same view: the node's
+    /// drawn point, lifted by its height, in the copy of <see cref="Camera.Copies"/> that lies on the view and nearest
+    /// its middle; of copies equally near, the first in that order. Null with the point in <paramref name="screenX"/>
+    /// and <paramref name="screenY"/> when the click there picks the node; else the problem, with the point at 0: a
+    /// node outside the map, a node with no copy on the view (<paramref name="barHeight"/> screen pixels above the view
+    /// are under the button bar, which the problem names), or a node drawn on the same point as another, which the
+    /// pick takes instead. The point is rounded to single precision, as a click sends it.
+    /// </summary>
+    public static string? Aim(
+        Map map,
+        double cameraX,
+        double cameraY,
+        double scale,
+        double viewWidth,
+        double viewHeight,
+        double barHeight,
+        int column,
+        int row,
+        out double screenX,
+        out double screenY
+    )
+    {
+        (screenX, screenY) = (0, 0);
+        var width = map.Size.Width;
+        var rows = map.Size.Height;
+        if (column < 0 || column >= width || row < 0 || row >= rows)
+            return $"tile {column},{row} is outside the map of {width} by {rows} tiles";
+
+        var (x, y) = Camera.NodePosition(column, row);
+        y -= (map.Layer(MapLayer.Height)[row * width + column] & Map.HeightMask) * TerrainTriangles.HeightStep;
+        (double X, double Y)? best = null;
+        var bestDistance = double.MaxValue;
+        var underBar = false;
+        foreach (var (copyX, copyY) in new Camera(map.Size).Copies())
+        {
+            var pointX = (x + copyX - cameraX) * scale + viewWidth / 2;
+            var pointY = (y + copyY - cameraY) * scale + viewHeight / 2;
+            if (pointX < 0 || pointX >= viewWidth)
+                continue;
+            if (pointY < 0 || pointY >= viewHeight)
+            {
+                underBar |= pointY < 0 && pointY >= -barHeight;
+                continue;
+            }
+
+            var distance =
+                (pointX - viewWidth / 2) * (pointX - viewWidth / 2)
+                + (pointY - viewHeight / 2) * (pointY - viewHeight / 2);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = (pointX, pointY);
+            }
+        }
+
+        if (best is not { } nearest)
+            return underBar ? $"tile {column},{row} is under the button bar" : $"tile {column},{row} is not on screen";
+
+        // A click sends the point in single precision, so the pick is checked at that rounded point.
+        (double X, double Y) at = ((float)nearest.X, (float)nearest.Y);
+        var picked = Pick(map, cameraX, cameraY, scale, viewWidth, viewHeight, at.X, at.Y);
+        if (picked != (column, row))
+            return $"tile {column},{row} is drawn on the same point as tile {picked.X},{picked.Y}";
+
+        (screenX, screenY) = at;
+
+        return null;
+    }
 }

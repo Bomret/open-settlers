@@ -310,13 +310,50 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
-    public void ThePlayFlagWithoutTheMapFlagIsAProblem()
+    public void ThePlayFlagWithTheGameViewFlagGivesTheGameViewAndTheScriptPath()
     {
-        var args = LaunchArgs.Parse(["--play", "play/zoom.play"], null, movieMaker: true);
+        var args = LaunchArgs.Parse(["--game-view", "--play", "play/loop.play"], null, movieMaker: true);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
+        Assert.AreEqual("play/loop.play", args.Play);
+    }
+
+    [TestMethod]
+    public void ThePlayFlagWithTheGameViewFlagKeepsTheSeedAndSize()
+    {
+        var args = LaunchArgs.Parse(
+            ["--game-view", "--play", "play/loop.play", "--seed", "1234567812345678", "--size", "2"],
+            null,
+            movieMaker: true
+        );
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual("1234567812345678", args.SeedText);
+        Assert.AreEqual(2, args.Size!.Value);
+    }
+
+    [TestMethod]
+    [DataRow(new string[] { "--play", "play/zoom.play" })]
+    [DataRow(new string[] { "--check", "--play", "play/zoom.play" })]
+    [DataRow(new string[] { "--seed-info", "--seed", "1234567812345678", "--play", "play/zoom.play" })]
+    public void ThePlayFlagWithoutTheMapOrGameViewFlagIsAProblemNamingBoth(string[] given)
+    {
+        var args = LaunchArgs.Parse(given, null, movieMaker: true);
 
         Assert.HasCount(1, args.Problems);
         StringAssert.Contains(args.Problems[0], "--play");
         StringAssert.Contains(args.Problems[0], "--map");
+        StringAssert.Contains(args.Problems[0], "--game-view");
+    }
+
+    [TestMethod]
+    public void ThePlayFlagWithTheGameViewFlagWithoutMovieMakerIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--play", "play/loop.play"], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--write-movie");
     }
 
     [TestMethod]

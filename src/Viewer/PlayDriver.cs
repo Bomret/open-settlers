@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Godot;
 using OpenSettlers.MapView;
 
 namespace OpenSettlers.Viewer;
 
 /// <summary>
-/// Feeds each frame's time to a <see cref="PlayRun"/> of the map view and quits the tree when it ends: exit code 0
+/// Feeds each frame's time to a <see cref="PlayRun"/> of the map view or the game view and quits the tree when it ends: exit code 0
 /// for a run that finished its last step, 1 after printing each problem otherwise. Under Movie Maker every frame's
 /// delta is the fixed time step, so the run is on simulated time. Every input step reaches the view as a Godot input
 /// event through the view's own handlers (<c>OnCanvasInput</c>, <c>_UnhandledKeyInput</c>, the polled
@@ -108,11 +109,62 @@ public partial class PlayDriver : Node
                 );
 
                 return null;
+            case ClickTileStep tile:
+                return ClickTile(tile);
+            case ButtonStep button:
+                return ClickButton(button);
             case ShotStep shot:
                 return Shot(shot.Name);
             default:
                 return $"step '{step.GetType().Name}' is no input step";
         }
+    }
+
+    // A press and release on one point, which the view's click gesture reads as a click on the tile drawn there. The
+    // strip above the canvas is the button bar.
+    string? ClickTile(ClickTileStep tile)
+    {
+        if (_view.Map is not { } map)
+            return $"tile {tile.Column},{tile.Row}: no map is shown";
+
+        var view = _view.Snapshot();
+        var size = _view.Canvas.Size;
+        var problem = MapPicking.Aim(
+            map,
+            view.CameraX,
+            view.CameraY,
+            view.Zoom,
+            size.X,
+            size.Y,
+            // The button bar is taken to be the only thing above the canvas, so the canvas's offset is its height.
+            _view.Canvas.GlobalPosition.Y,
+            tile.Column,
+            tile.Row,
+            out var x,
+            out var y
+        );
+        if (problem is not null)
+            return problem;
+
+        var at = Canvas(new Vector2((float)x, (float)y));
+        Send(Button(MouseButton.Left, at, true));
+        Send(Button(MouseButton.Left, at, false));
+
+        return null;
+    }
+
+    // A press and release at the middle of the button, as a mouse click; a toggle button flips.
+    string? ClickButton(ButtonStep step)
+    {
+        var shown = _view.ShownButtons;
+        if (step.Missing([.. shown.Select(b => b.Text)]) is { } problem)
+            return problem;
+
+        var at = shown.First(b => b.Text == step.Name).GetGlobalRect().GetCenter();
+        Send(Button(MouseButton.Left, at, true));
+        Send(Button(MouseButton.Left, at, false));
+
+        return null;
     }
 
     // A canvas point as the viewport coordinates the view's handlers receive it in.

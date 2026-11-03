@@ -144,4 +144,181 @@ public sealed class MapPickingTests
 
         Assert.AreEqual(DrawnPoint(12, 14), DrawnPoint(picked.X, picked.Y));
     }
+
+    private static string? Aim(
+        (double X, double Y) camera,
+        double scale,
+        int column,
+        int row,
+        out (double X, double Y) at
+    ) => Aim(camera, scale, ViewWidth, ViewHeight, column, row, out at);
+
+    private static string? Aim(
+        (double X, double Y) camera,
+        double scale,
+        double width,
+        double height,
+        int column,
+        int row,
+        out (double X, double Y) at
+    )
+    {
+        var problem = MapPicking.Aim(
+            Map,
+            camera.X,
+            camera.Y,
+            scale,
+            width,
+            height,
+            40,
+            column,
+            row,
+            out var x,
+            out var y
+        );
+        at = (x, y);
+
+        return problem;
+    }
+
+    public static IEnumerable<object[]> Views =>
+        from scale in new[] { 0.25, 1, 2.5 }
+        from camera in new[] { (0.0, 0.0), (300.0, 200.0), (1000.0, 630.0) }
+        from size in new[] { (800.0, 600.0), (1280.0, 680.0), (320.0, 200.0) }
+        select new object[] { scale, camera.Item1, camera.Item2, size.Item1, size.Item2 };
+
+    [TestMethod]
+    [DynamicData(nameof(Views))]
+    public void ThePointATileIsAimedAtPicksThatTile(
+        double scale,
+        double cameraX,
+        double cameraY,
+        double width,
+        double height
+    )
+    {
+        var aimed = 0;
+        for (var row = 0; row < Map.Size.Height; row++)
+        {
+            for (var column = 0; column < Map.Size.Width; column++)
+            {
+                if (Aim((cameraX, cameraY), scale, width, height, column, row, out var at) is { } problem)
+                {
+                    StringAssert.Contains(problem, $"{column},{row}");
+                    continue;
+                }
+
+                aimed++;
+                Assert.IsTrue(at.X >= 0 && at.X < width && at.Y >= 0 && at.Y < height, $"{at} is off the view");
+                var picked = MapPicking.Pick(Map, cameraX, cameraY, scale, width, height, at.X, at.Y);
+                Assert.AreEqual((column, row), picked, $"tile {column},{row} at scale {scale}");
+            }
+        }
+
+        Assert.IsGreaterThan(0, aimed);
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(Views))]
+    public void TheAimedPointIsTheSinglePrecisionPointAClickSends(
+        double scale,
+        double cameraX,
+        double cameraY,
+        double width,
+        double height
+    )
+    {
+        for (var row = 0; row < Map.Size.Height; row++)
+        {
+            for (var column = 0; column < Map.Size.Width; column++)
+            {
+                if (Aim((cameraX + 0.1, cameraY + 0.3), scale, width, height, column, row, out var at) is not null)
+                    continue;
+
+                Assert.AreEqual(((double)(float)at.X, (double)(float)at.Y), at, $"tile {column},{row}");
+            }
+        }
+    }
+
+    [TestMethod]
+    public void EveryTileOfAMapThatFillsTheViewIsAimedAtExceptOneDrawnOnTheSamePointAsAnother()
+    {
+        for (var row = 0; row < Map.Size.Height; row++)
+        {
+            for (var column = 0; column < Map.Size.Width; column++)
+            {
+                if (Aim((512, 320), 0.5, 1280, 680, column, row, out _) is { } problem)
+                    StringAssert.Contains(problem, "same point");
+            }
+        }
+    }
+
+    [TestMethod]
+    public void ARaisedTileIsAimedAtWhereItIsDrawn()
+    {
+        var heights = Map.Layer(MapLayer.Height).ToArray();
+        var raised = Enumerable.Range(0, heights.Length).First(node => (heights[node] & 31) >= 8);
+        var (column, row) = (raised % Map.Size.Width, raised / Map.Size.Width);
+        var camera = Camera.NodePosition(column, row);
+
+        Assert.IsNull(Aim((camera.X, camera.Y), 1, column, row, out var at));
+        Assert.AreEqual(Screen(column, row, (0, 0), (camera.X, camera.Y), 1), at);
+    }
+
+    [TestMethod]
+    public void TheSameViewAndTileAlwaysGiveTheSamePoint()
+    {
+        Assert.IsNull(Aim((300, 200), 0.25, 5, 7, out var first));
+        Assert.IsNull(Aim((300, 200), 0.25, 5, 7, out var second));
+
+        Assert.AreEqual(first, second);
+    }
+
+    [TestMethod]
+    public void OfTheCopiesOnScreenTheOneNearestTheMiddleIsAimedAt()
+    {
+        // At scale 0.25 the 800 by 600 view shows the map's 1024 by 640 pixels three times across.
+        Assert.IsNull(Aim((300, 200), 0.25, 5, 7, out var at));
+
+        var nearest = new Camera(Map.Size)
+            .Copies()
+            .Select(copy => Screen(5, 7, copy, (300, 200), 0.25))
+            .Where(p => p.X >= 0 && p.X < ViewWidth && p.Y >= 0 && p.Y < ViewHeight)
+            .MinBy(p =>
+                (p.X - ViewWidth / 2) * (p.X - ViewWidth / 2) + (p.Y - ViewHeight / 2) * (p.Y - ViewHeight / 2)
+            );
+        Assert.AreEqual(nearest, at);
+    }
+
+    [TestMethod]
+    [DataRow(-1, 0)]
+    [DataRow(0, -1)]
+    [DataRow(32, 0)]
+    [DataRow(0, 32)]
+    public void ATileOutsideTheMapIsAProblem(int column, int row)
+    {
+        var problem = Aim((300, 200), 1, column, row, out _);
+
+        StringAssert.Contains(problem, "outside the map");
+    }
+
+    [TestMethod]
+    public void ATileWithNoCopyOnScreenIsAProblem()
+    {
+        var problem = Aim((300, 200), 4, 20, 20, out _);
+
+        StringAssert.Contains(problem, "not on screen");
+    }
+
+    [TestMethod]
+    public void ATileJustAboveTheViewIsUnderTheButtonBar()
+    {
+        // The node lies 10 screen pixels above the view's top edge, inside the 40 pixels of the bar.
+        var (x, y) = DrawnPoint(10, 10);
+        var camera = (x, y + ViewHeight / 2 / 4 + 10 / 4.0);
+
+        var problem = Aim(camera, 4, 10, 10, out _);
+
+        StringAssert.Contains(problem, "under the button bar");
+    }
 }

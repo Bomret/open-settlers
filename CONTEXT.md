@@ -51,12 +51,13 @@ its counts of terrain, objects, and deposits. It needs no install.
 _Avoid_: map summary, map dump
 
 **Play script**
-A text file of steps, one per line, that drive the map view through its own input handlers, take
-screenshots, and check its state.
+A text file of steps, one per line, that drive the map view or the game view through its own input
+handlers (keys, the mouse, a click on a tile by `click-tile`, a click on a button by `button`), take
+screenshots, and check its state (in the game view also the tick count and the castle's log count).
 _Avoid_: test script, macro
 
 **Play run**
-One run of the map view under Godot's Movie Maker that executes a play script on a fixed frame rate and
+One run of the map view or the game view under Godot's Movie Maker that executes a play script on a fixed frame rate and
 quits after its last step.
 _Avoid_: replay, recording
 

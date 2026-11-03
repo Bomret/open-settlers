@@ -183,6 +183,68 @@ public sealed class PlayScriptTests
     }
 
     [TestMethod]
+    public void TheClickStepsReadTheirTileAndName()
+    {
+        var script = Parse("click-tile 3 17\nbutton Road");
+
+        Assert.IsEmpty(script.Problems);
+        Assert.AreEqual(
+            new ClickTileStep
+            {
+                Line = 1,
+                Column = 3,
+                Row = 17,
+            },
+            script.Steps[0]
+        );
+        Assert.AreEqual(new ButtonStep { Line = 2, Name = "Road" }, script.Steps[1]);
+    }
+
+    [TestMethod]
+    [DataRow("click-tile 3", "takes 2 arguments")]
+    [DataRow("click-tile 3 4 5", "takes 2 arguments")]
+    [DataRow("click-tile x 4", "not a whole number of zero or more")]
+    [DataRow("click-tile 3 -1", "not a whole number of zero or more")]
+    [DataRow("click-tile 3.5 4", "not a whole number of zero or more")]
+    [DataRow("button", "takes 1 argument")]
+    [DataRow("button Road Flag", "takes 1 argument")]
+    public void ABadClickStepIsAProblemNamingItsLine(string line, string reason)
+    {
+        var script = Parse("wait 1\n" + line);
+
+        Assert.HasCount(1, script.Problems);
+        StringAssert.StartsWith(script.Problems[0], "play/t.play line 2: ");
+        StringAssert.Contains(script.Problems[0], reason);
+    }
+
+    [TestMethod]
+    public void AButtonStepFindsAShownLabelExactly()
+    {
+        var step = new ButtonStep { Line = 4, Name = "Road" };
+
+        Assert.IsNull(step.Missing(["Flag", "Road"]));
+        StringAssert.Contains(step.Missing(["Flag", "road"]), "shown: Flag, road");
+    }
+
+    [TestMethod]
+    public void AButtonStepWithNoButtonShownSaysSo()
+    {
+        var step = new ButtonStep { Line = 4, Name = "Road" };
+
+        StringAssert.Contains(step.Missing([]), "no button is shown");
+    }
+
+    [TestMethod]
+    public void AnExpectStepReadsTheGameFields()
+    {
+        var script = Parse("expect ticks >= 10\nexpect logs = 0");
+
+        Assert.IsEmpty(script.Problems);
+        Assert.AreEqual("ticks", ((ExpectStep)script.Steps[0]).Field);
+        Assert.AreEqual("logs", ((ExpectStep)script.Steps[1]).Field);
+    }
+
+    [TestMethod]
     [DataRow("expect zoom", "takes a field, an operator, and a value")]
     [DataRow("expect height = 3", "unknown field 'height'")]
     [DataRow("expect zoom == 3", "unknown operator '=='")]

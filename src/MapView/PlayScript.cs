@@ -97,6 +97,29 @@ public sealed record ShotStep : PlayStep
     public required string Name { get; init; }
 }
 
+/// <summary><c>click-tile &lt;column&gt; &lt;row&gt;</c>: a left click on the map tile where it shows on the canvas.</summary>
+public sealed record ClickTileStep : PlayStep
+{
+    /// <summary>The tile's column; zero or more.</summary>
+    public required int Column { get; init; }
+
+    /// <summary>The tile's row; zero or more.</summary>
+    public required int Row { get; init; }
+}
+
+/// <summary><c>button &lt;name&gt;</c>: a left click on the shown game-view button whose label is the name.</summary>
+public sealed record ButtonStep : PlayStep
+{
+    /// <summary>The button's label, matched exactly, case included.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>Null when <paramref name="shown"/>, the labels of the shown buttons, holds the name; else the problem, listing them.</summary>
+    public string? Missing(IReadOnlyList<string> shown) =>
+        shown.Contains(Name) ? null
+        : shown.Count == 0 ? $"no button '{Name}': no button is shown"
+        : $"no button '{Name}', shown: {string.Join(", ", shown)}";
+}
+
 /// <summary><c>dump &lt;name&gt;</c>: writes the view's state to <c>&lt;name&gt;.txt</c> of the output folder.</summary>
 public sealed record DumpStep : PlayStep
 {
@@ -262,6 +285,29 @@ public sealed class PlayScript
                     },
                     null
                 );
+            case "click-tile":
+                if (args.Length != 2)
+                    return Wrong(words[0], "2 arguments", args.Length);
+                foreach (var arg in args)
+                {
+                    if (!int.TryParse(arg, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+                        return (null, $"'{arg}' is not a whole number of zero or more");
+                }
+
+                return (
+                    new ClickTileStep
+                    {
+                        Line = number,
+                        Column = int.Parse(args[0], CultureInfo.InvariantCulture),
+                        Row = int.Parse(args[1], CultureInfo.InvariantCulture),
+                    },
+                    null
+                );
+            case "button":
+                if (args.Length != 1)
+                    return Wrong(words[0], "1 argument", args.Length);
+
+                return (new ButtonStep { Line = number, Name = args[0] }, null);
             case "expect":
                 return ParseExpect(args, number);
             case "shot" or "dump":
@@ -288,8 +334,8 @@ public sealed class PlayScript
     {
         if (args.Length < 3)
             return (null, $"'expect' takes a field, an operator, and a value, found {args.Length} arguments");
-        if (!PlayFields.All.Contains(args[0]))
-            return (null, $"unknown field '{args[0]}', use {string.Join(", ", PlayFields.All)}");
+        if (!PlayFields.Known.Contains(args[0]))
+            return (null, $"unknown field '{args[0]}', use {string.Join(", ", PlayFields.Known)}");
         if (!Ops.Contains(args[1]))
             return (null, $"unknown operator '{args[1]}', use one of {string.Join(" ", Ops)}");
 
