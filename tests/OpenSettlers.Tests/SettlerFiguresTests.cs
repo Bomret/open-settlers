@@ -164,6 +164,8 @@ public sealed class SettlerFiguresTests
         Assert.AreEqual(1954, figures.Draws(Map(), [Walker(7, 16, state: 3)], 8)[0].Entry);
     }
 
+    // Inferred: that the original draws a carrier that waits next to a flag (state 0x42) with the timer it holds; no draw
+    // run confirms it (open lead in docs/milestones/m3-first-loop.md).
     [TestMethod]
     public void AWaitingCarrierIsDrawnWithTheTimerItHoldsAndTheClockDoesNotRunItDown()
     {

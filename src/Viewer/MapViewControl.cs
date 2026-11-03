@@ -14,9 +14,9 @@ namespace OpenSettlers.Viewer;
 /// textures of palette indices, and <c>Terrain.gdshader</c> looking each index up in a palette texture. The
 /// generated objects are quads of sprite layers (<c>Objects.gdshader</c>: the indices and the coverage in their own
 /// array textures) drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
-/// wraps at the map's edges; the copies of <see cref="Camera.Copies"/> tile the plane around it. The mouse wheel, and the plus and
-/// minus keys, and a touchpad pinch change the <see cref="Zoom"/>; the wheel and the pinch keep the map point under
-/// the pointer in place. A two-finger touchpad swipe moves the camera.
+/// wraps at the map's edges; the copies of <see cref="Camera.Copies"/> tile the plane around it. The mouse wheel,
+/// and the plus and minus keys, and a touchpad pinch change the <see cref="Zoom"/>; the wheel and the pinch keep
+/// the map point under the pointer in place. A two-finger touchpad swipe moves the camera.
 /// </summary>
 public partial class MapViewControl : Control
 {
@@ -186,8 +186,9 @@ public partial class MapViewControl : Control
             }
         };
         bar.AddChild(_woodcutterButton);
-        // Stand-in for the original's remove click (0x4615cf for a flag or a building, 0x462d88 for a road): while it is pressed
-        // a click on a node takes down the flag, the building, or the road the original's check lets it (docs/rules/removal.md).
+        // Stand-in for the original's remove click (0x4615cf for a flag or a building, 0x462d88 for a road): while it is
+        // pressed a click on a node takes down the flag, the building, or the road the original's check lets it
+        // (docs/rules/removal.md).
         _removeButton = new Button
         {
             Text = "Remove",
@@ -355,8 +356,8 @@ public partial class MapViewControl : Control
                 || _game.Revision != _revisionDrawn
             )
             {
-                // The castle stands, a flag went up, a road was built, a hut stands, something was taken down, or an object or a good
-                // on a flag changed: draw it.
+                // The castle stands, a flag went up, a road was built, a hut stands, something was taken down, or an object or a
+                // good on a flag changed: draw it.
                 _revisionDrawn = _game.Revision;
                 _castleDrawn = _game.Castle is not null;
                 _flagsDrawn = _game.Flags.Count;
@@ -467,8 +468,8 @@ public partial class MapViewControl : Control
         }
     }
 
-    // A click asks the game for the castle, or with the flag button pressed a flag, on the node under it. The node is picked against the view as it was
-    // drawn when the button went down (camera, zoom scale, and canvas size): a hand that strays within the slop of a
+    // A click asks the game for the castle, or with the flag button pressed a flag, on the node under it. The node is picked against the view
+    // as it was drawn when the button went down (camera, zoom scale, and canvas size): a hand that strays within the slop of a
     // click still pans the view a little, and a zoom or a resize during the press changes none of the three.
     void PlaceAt(double screenX, double screenY)
     {

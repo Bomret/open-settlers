@@ -40,7 +40,7 @@ public sealed class SettlerGraphics
         var figures = new SettlerFigures(tables.FigureBases, tables.FigureOffsets, sequences, tables.CarriedFigures);
         var images = new List<ObjectImage>();
         var layers = new Dictionary<(int Entry, int Colour), int>();
-        foreach (var (entry, colour) in jobs.SelectMany(job => figures.Sprites(job, ColourOf(0), Game.GoodLog)))
+        foreach (var (entry, colour) in jobs.SelectMany(job => figures.Sprites(job, SettlerFigures.ColourOf(0), Game.GoodLog)))
         {
             if (images.Count >= MaxLayers || layers.ContainsKey((entry, colour)))
             {
@@ -86,7 +86,4 @@ public sealed class SettlerGraphics
             Figures = figures,
         };
     }
-
-    // The palette index of a player's colour.
-    private static int ColourOf(int player) => 0x40 + 4 * player;
 }

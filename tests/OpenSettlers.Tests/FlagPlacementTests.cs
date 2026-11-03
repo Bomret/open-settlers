@@ -146,6 +146,55 @@ public sealed class FlagPlacementTests
         Assert.AreEqual(1, game.Map.Layer(MapLayer.Object)[y * width + x] & 0x7f);
     }
 
+    [TestMethod]
+    public void The257thFlagIsRefusedWhereTheNodeAllowsIt()
+    {
+        var game = GameWithCastle();
+        var width = game.Map.Size.Width;
+        for (var pass = 0; pass < 3; pass++)
+        {
+            for (var node = 0; node < width * game.Map.Size.Height; node++)
+            {
+                game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, node % width, node / width));
+            }
+
+            game.Tick();
+        }
+
+        var (x, y) = FirstFlagSite(game);
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+        game.Tick();
+
+        Assert.AreEqual(256, game.Flags.Count);
+    }
+
+    [TestMethod]
+    public void ADepositOfZeroAmountWithTypeBitsMovesToTheFirstEmptyNeighbour()
+    {
+        // Read from 0x449f58 and 0x44a0aa (no emulator run backs it): the first neighbour is offered the deposit
+        // even when its amount is 0, so the type bits move and the amount 0 with them.
+        var map = new Map(MapSize.Offered[0]);
+        map.Bytes(MapLayer.Resource)[map.Index(5, 5)] = 0x20;
+
+        FlagPlacement.Apply(map, 5, 5, 3);
+
+        Assert.AreEqual(0x20, map.Layer(MapLayer.Resource)[map.Index(6, 5)]);
+    }
+
+    [TestMethod]
+    public void ADepositMovesAcrossTheColumnWrap()
+    {
+        // Read from 0x449f58 (no emulator run backs it): the first neighbour is east, which wraps from the last
+        // column to the first.
+        var map = new Map(MapSize.Offered[0]);
+        var last = map.Size.Width - 1;
+        map.Bytes(MapLayer.Resource)[map.Index(last, 5)] = 0x23;
+
+        FlagPlacement.Apply(map, last, 5, 3);
+
+        Assert.AreEqual(0x23, map.Layer(MapLayer.Resource)[map.Index(0, 5)]);
+    }
+
     private static Game GameWithCastle(int x = 15, int y = 5, string seed = "1234,5678,9ABC")
     {
         var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed(seed), MapSize.Offered[0]));

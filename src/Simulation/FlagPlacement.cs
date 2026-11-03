@@ -9,7 +9,7 @@ namespace OpenSettlers.Simulation;
 internal static class FlagPlacement
 {
     // The object code of a flag.
-    private const int FlagCode = 1;
+    internal const int FlagCode = 1;
 
     // The nodes that take the node's deposit, in the order 0x449f58 offers it: east, north-east, north, the node
     // itself (it holds the flag object by then, so it takes nothing), south, and south-east.

@@ -32,6 +32,12 @@ public sealed class SettlerFigures
     private const int ColourStep = 4;
 
     private const int Sequences = 200;
+
+    // The end of the table of sequence offsets in the sequences' entry: a count word, then a dword for each sequence.
+    private const int TableEnd = 4 + 4 * Sequences;
+
+    /// <summary>The palette index of a player's colour.</summary>
+    public static int ColourOf(int player) => ColourBase + ColourStep * player;
     private const int StatesWalking = 2;
     private const int StatesWaiting = 5;
 
@@ -104,32 +110,13 @@ public sealed class SettlerFigures
 
             var (walkFigure, dx, dy) = triple;
             var figure = walkFigure + CarriedFigure(settler);
-            if (figure >= _offsets.Length / 2)
-            {
-                continue;
-            }
-
             var (x, y) = Camera.NodePosition(settler.X, settler.Y);
             var height = map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & Map.HeightMask;
             x += ObjectDraws.OffsetX + dx;
             y += ObjectDraws.OffsetY - height * TerrainTriangles.HeightStep + dy;
-            var baseIndex = settler.Job * 8;
-            var first = _bases[baseIndex] + _offsets[2 * figure];
-            draws.Add(new SettlerDraw(settler.Y, FigureBase + first, -1, x, y));
-            draws.Add(
-                new SettlerDraw(
-                    settler.Y,
-                    FigureBase + first + OverlayDistance,
-                    ColourBase + ColourStep * settler.Player,
-                    x,
-                    y
-                )
-            );
-            if (_bases[baseIndex + 1] >= 0)
+            foreach (var (entry, colour) in Entries(settler.Job, figure, ColourOf(settler.Player)))
             {
-                draws.Add(
-                    new SettlerDraw(settler.Y, SecondBase + _bases[baseIndex + 1] + _offsets[2 * figure + 1], -1, x, y)
-                );
+                draws.Add(new SettlerDraw(settler.Y, entry, colour, x, y));
             }
         }
 
@@ -145,19 +132,17 @@ public sealed class SettlerFigures
     public IEnumerable<(int Entry, int Colour)> Sprites(int job, int colour, int carriedGood = 0)
     {
         var add = job == Settler.CarrierJob && carriedGood > 0 && carriedGood < _carried.Length ? _carried[carriedGood] : 0;
-        var end = 4 + 4 * Sequences;
-        var starts = new SortedSet<int>();
-        for (var frame = 0; frame < Sequences && _data.Length >= end; frame++)
+        var starts = new HashSet<int>();
+        for (var frame = 0; frame < Sequences && _data.Length >= TableEnd; frame++)
         {
-            var slot = 4 + 4 * frame;
-            var start = 4 + ((_data[slot] << 24) | (_data[slot + 1] << 16) | (_data[slot + 2] << 8) | _data[slot + 3]);
-            if (start > end - 4)
+            var start = SequenceStart(frame);
+            if (start > TableEnd - 4)
             {
                 starts.Add(start);
             }
         }
 
-        var list = starts.ToList();
+        var list = starts.Order().ToList();
         for (var i = 0; i < list.Count; i++)
         {
             var stop = i + 1 < list.Count ? list[i + 1] : _data.Length;
@@ -165,20 +150,38 @@ public sealed class SettlerFigures
             {
                 foreach (var figure in add == 0 ? new int[] { _data[at] } : new int[] { _data[at], _data[at] + add })
                 {
-                    if (figure >= _offsets.Length / 2)
+                    foreach (var sprite in Entries(job, figure, colour))
                     {
-                        continue;
-                    }
-
-                    var first = _bases[job * 8] + _offsets[2 * figure];
-                    yield return (FigureBase + first, -1);
-                    yield return (FigureBase + first + OverlayDistance, colour);
-                    if (_bases[job * 8 + 1] >= 0)
-                    {
-                        yield return (SecondBase + _bases[job * 8 + 1] + _offsets[2 * figure + 1], -1);
+                        yield return sprite;
                     }
                 }
             }
+        }
+    }
+
+    // The offset in the sequences' entry at which the sequence of a frame starts.
+    private int SequenceStart(int frame)
+    {
+        var slot = 4 + 4 * frame;
+
+        return 4 + ((_data[slot] << 24) | (_data[slot + 1] << 16) | (_data[slot + 2] << 8) | _data[slot + 3]);
+    }
+
+    // The sprites of a figure byte of a job: the figure, its colour overlay filled with the colour, and the second figure
+    // where the job has one (-1 where a sprite has no fill). None where the figure byte lies outside the offsets table.
+    private IEnumerable<(int Entry, int Colour)> Entries(int job, int figure, int colour)
+    {
+        if (figure >= _offsets.Length / 2)
+        {
+            yield break;
+        }
+
+        var first = _bases[job * 8] + _offsets[2 * figure];
+        yield return (FigureBase + first, -1);
+        yield return (FigureBase + first + OverlayDistance, colour);
+        if (_bases[job * 8 + 1] >= 0)
+        {
+            yield return (SecondBase + _bases[job * 8 + 1] + _offsets[2 * figure + 1], -1);
         }
     }
 
@@ -193,17 +196,16 @@ public sealed class SettlerFigures
     // The triple of the settler's sequence for the time it has left, or null where there is none.
     private (int Figure, int Dx, int Dy)? Triple(Settler settler, ushort clock)
     {
-        if (settler.Frame is < 0 or >= Sequences || _data.Length < 4 + 4 * Sequences)
+        if (settler.Frame is < 0 or >= Sequences || _data.Length < TableEnd)
         {
             return null;
         }
 
-        var slot = 4 + 4 * settler.Frame;
-        var start = 4 + ((_data[slot] << 24) | (_data[slot + 1] << 16) | (_data[slot + 2] << 8) | _data[slot + 3]);
+        var start = SequenceStart(settler.Frame);
         var elapsed = settler.State == StatesIdle ? (ushort)0 : (ushort)(clock - settler.Stamp);
         var left = settler.Timer >= elapsed ? settler.Timer - elapsed : 0;
         var at = start + 3 * (left >> 3);
-        if (start <= 4 + 4 * Sequences - 4 || at + 3 > _data.Length)
+        if (start <= TableEnd - 4 || at + 3 > _data.Length)
         {
             return null;
         }

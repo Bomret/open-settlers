@@ -10,10 +10,20 @@ namespace OpenSettlers.MapView;
 public sealed class ObjectLayerWatch
 {
     private ulong? _last;
+    private long _tick = -1;
 
-    /// <summary>True when the object layer or a flag's goods differ from the last call (the first call is a change).</summary>
+    /// <summary>
+    /// True when the object layer or a flag's goods differ from the last look (the first call is a change). Only a
+    /// tick changes them, so the layers are read once for each tick count and a call at the same count is no change.
+    /// </summary>
     public bool Changed(Game game)
     {
+        if (_last is not null && game.TickCount == _tick)
+        {
+            return false;
+        }
+
+        _tick = game.TickCount;
         var hash = game.Map.Digest(MapLayer.Object);
         for (var slot = 0; slot < game.Flags.Count; slot++)
         {

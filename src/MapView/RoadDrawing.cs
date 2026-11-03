@@ -88,8 +88,7 @@ public sealed class RoadDrawing(Game game)
                     _directions.Add(direction);
                     break;
                 case RoadStatus.Complete:
-                    _start = null;
-                    _directions.Clear();
+                    Cancel();
 
                     return new Command(game.TickCount, 0, CommandKind.BuildRoad, start.X, start.Y, next);
             }

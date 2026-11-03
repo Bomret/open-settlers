@@ -178,6 +178,19 @@ public sealed class WoodcuttingTests
     }
 
     [TestMethod]
+    public void TheObjectLayerWatchLooksOnlyAfterATickRan()
+    {
+        var game = World(true, out var map);
+        var watch = new OpenSettlers.MapView.ObjectLayerWatch();
+        Assert.IsTrue(watch.Changed(game));
+
+        // Only a tick changes the game, so a look between two ticks does not read the layers again.
+        map.Bytes(MapLayer.Object)[0] ^= 0x7f;
+
+        Assert.IsFalse(watch.Changed(game));
+    }
+
+    [TestMethod]
     public void WithNoTreeInReachTheWorkerWaitsInItsHutAndTheGameKeepsTicking()
     {
         var game = World(false, out var map);

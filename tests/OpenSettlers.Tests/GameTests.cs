@@ -54,6 +54,31 @@ public sealed class GameTests
     }
 
     [TestMethod]
+    public void ACallerChangingTheDirectionsOfAQueuedCommandChangesNothing()
+    {
+        var directions = new[] { 1, 2 };
+        var game = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+        );
+        game.Enqueue(Place(0, 17, 0) with { Directions = directions });
+        directions[0] = 5;
+        game.Tick();
+
+        Assert.AreEqual(Run(Place(0, 17, 0) with { Directions = new[] { 1, 2 } }).Digest(), RunOn(game).Digest());
+    }
+
+    static Game RunOn(Game game)
+    {
+        while (game.TickCount < Ticks)
+        {
+            game.Tick();
+        }
+
+        return game;
+    }
+
+    [TestMethod]
     public void EachTickAdvancesTheTickCountByOne()
     {
         Assert.AreEqual(Ticks, Run().TickCount);

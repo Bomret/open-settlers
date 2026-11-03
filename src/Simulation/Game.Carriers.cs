@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Numerics;
 
 namespace OpenSettlers.Simulation;
 
@@ -8,8 +8,7 @@ namespace OpenSettlers.Simulation;
 // road without one, and the carrier's walk from the castle to its road and along it (docs/rules/carriers.md).
 public sealed partial class Game
 {
-    // The job of a carrier: a settler of job 21 that has no job yet becomes one when a road asks for it.
-    private const int CarrierJob = Settler.CarrierJob;
+    // A settler of job 21 that has no job yet becomes a carrier when a road asks for it.
     private const int JoblessJob = 21;
 
     // The state of a carrier that waits on its road next to the flag at the road's far end.
@@ -225,7 +224,7 @@ public sealed partial class Game
     {
         var (far, farDirection) = FarEnd(road, slot, direction);
         var end = StorageEnd(slot, far);
-        var job = _waiting[CarrierJob] != 0 ? CarrierJob : JoblessJob;
+        var job = _waiting[Settler.CarrierJob] != 0 ? Settler.CarrierJob : JoblessJob;
         if (end < 0 || _waiting[job] == 0)
         {
             return false;
@@ -233,7 +232,7 @@ public sealed partial class Game
 
         var settler = _settlers[_waiting[job]];
         _waiting[job] = 0;
-        settler.Job = CarrierJob;
+        settler.Job = Settler.CarrierJob;
         var (flag, flagDirection) = end == 0 ? (slot, direction) : (far, farDirection);
         settler.Mode = flagDirection;
         settler.Target = flag;
@@ -301,6 +300,15 @@ public sealed partial class Game
         WalkRoad(slot, settler);
     }
 
+    // On a node of a road, the one direction of the road other than the one the settler came by (its heading); -1
+    // where the road has none or has more than one.
+    private static int RoadContinuation(byte flagsByte, int heading)
+    {
+        var rest = flagsByte & 0x3f & ~(1 << heading);
+
+        return rest == 0 || (rest & (rest - 1)) != 0 ? -1 : BitOperations.TrailingZeroCount(rest);
+    }
+
     // State 3, a carrier on its road (0x43ad78 and the step routines of 0x43b508): when its timer has run out it steps along
     // the road as a settler does in state 2, from a flag in the direction of its heading, from a node of the road in the
     // direction the road goes on. A step that would end at a flag is its last: the carrier stays on the node and waits.
@@ -317,14 +325,12 @@ public sealed partial class Game
             }
             else if ((flags[here] & 0x80) == 0)
             {
-                var rest = flags[here] & 0x3f & ~(1 << settler.Heading);
-                if (rest == 0 || (rest & (rest - 1)) != 0)
+                direction = RoadContinuation(flags[here], settler.Heading);
+                if (direction < 0)
                 {
                     settler.Timer = 0;
                     return;
                 }
-
-                direction = Enumerable.Range(0, 6).First(d => (rest >> d & 1) != 0);
             }
             else
             {

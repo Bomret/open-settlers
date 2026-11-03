@@ -510,14 +510,12 @@ public sealed partial class Game
             else if ((flags[here] & 0x80) == 0)
             {
                 // A node of a road: the road's other direction than the one the settler came by.
-                var rest = flags[here] & 0x3f & ~(1 << settler.Heading);
-                if (rest == 0 || (rest & (rest - 1)) != 0)
+                direction = RoadContinuation(flags[here], settler.Heading);
+                if (direction < 0)
                 {
                     settler.Timer = 0;
                     return;
                 }
-
-                direction = Enumerable.Range(0, 6).First(d => (rest >> d & 1) != 0);
             }
             else
             {

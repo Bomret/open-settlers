@@ -9,8 +9,7 @@ internal static class CastlePlacement
     // The territory is the castle's node and every node within 8 steps: the first 217 entries of the spiral.
     private const int TerritoryNodes = 217;
 
-    // The object codes the placement writes: a flag and the castle.
-    private const int FlagCode = 1;
+    // The object code of the castle; the flag's is FlagPlacement.FlagCode.
     private const int CastleCode = 4;
 
     /// <summary>
@@ -32,7 +31,7 @@ internal static class CastlePlacement
 
         var flag = map.Index(x + 1, y + 1);
         flags[flag] |= 0x90;
-        objects[flag] = (byte)((objects[flag] & 0x80) | FlagCode);
+        objects[flag] = (byte)((objects[flag] & 0x80) | FlagPlacement.FlagCode);
         links[flag] = 0;
 
         // The node and its six neighbors, the first seven entries of the spiral, all take the site's height.

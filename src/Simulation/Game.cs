@@ -1,18 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace OpenSettlers.Simulation;
 
 /// <summary>
-/// A game: a <see cref="Map"/> and a queue of <see cref="Command"/>s, advanced one tick (ADR 0005) at a time.
-/// <see cref="Tick"/> applies the commands due at the tick in a total order (player, kind, column, row), so the
-/// order of <see cref="Enqueue"/> calls does not change the game (INV-0002). The rules so far are the castle and the
-/// flag: <see cref="CommandKind.PlaceCastle"/> and <see cref="CommandKind.PlaceFlag"/> put them where the original
-/// allows (<c>docs/rules/castle.md</c>, <c>docs/rules/flags.md</c>), <see cref="CommandKind.BuildRoad"/> joins two
-/// flags (<c>docs/rules/roads.md</c>), and <see cref="CommandKind.RemoveFlag"/>, <see cref="CommandKind.RemoveBuilding"/>,
-/// and <see cref="CommandKind.RemoveRoad"/> take them down (<c>docs/rules/removal.md</c>); every other command is refused.
-/// A refused command changes nothing, not even the
-/// digest. The game's randomness is one seeded generator that continues from the map's generation (INV-0002).
+/// A game: a <see cref="Map"/> and a queue of <see cref="Command"/>s, advanced one tick (ADR 0005) at a time, the
+/// commands due at a tick applied in a total order so that the order of <see cref="Enqueue"/> calls does not change
+/// the game (INV-0002).
 /// </summary>
 public sealed partial class Game
 {
@@ -63,8 +58,8 @@ public sealed partial class Game
     public IReadOnlyList<Road> Roads => _roads;
 
     /// <summary>
-    /// The number of commands applied so far. A view that draws the flags, roads, and buildings redraws when it changes: a
-    /// taken-down flag leaves the lists as long as they were.
+    /// The number of commands applied so far. A view that draws the flags, roads, and buildings redraws when it
+    /// changes: a taken-down flag leaves the lists as long as they were.
     /// </summary>
     public int Revision { get; private set; }
 
@@ -78,7 +73,7 @@ public sealed partial class Game
     public void Enqueue(Command command)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(command.Tick, TickCount);
-        _queue.Add(command);
+        _queue.Add(command with { Directions = command.Directions?.ToArray() });
     }
 
     /// <summary>Applies the commands due at this tick, then runs the tick's pass and advances the tick count by one.</summary>
@@ -114,8 +109,9 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// The FNV-1a 64-bit fingerprint of the whole game state: the tick, the commands applied, the castle and its stock,
-    /// the flags, the total of resource 1, and every map layer.
+    /// The FNV-1a 64-bit fingerprint of the game state the ticks have produced (a command still queued is no part of
+    /// it): the tick, the commands applied, the castle and its stock, the flags, the total of resource 1, and every
+    /// map layer.
     /// </summary>
     public ulong Digest()
     {
@@ -260,11 +256,7 @@ public sealed partial class Game
 
     private static int Compare(Command a, Command b)
     {
-        var order = a.Tick.CompareTo(b.Tick);
-        order = order != 0 ? order : a.Player.CompareTo(b.Player);
-        order = order != 0 ? order : a.Kind.CompareTo(b.Kind);
-        order = order != 0 ? order : a.X.CompareTo(b.X);
-        order = order != 0 ? order : a.Y.CompareTo(b.Y);
+        var order = (a.Tick, a.Player, a.Kind, a.X, a.Y).CompareTo((b.Tick, b.Player, b.Kind, b.X, b.Y));
 
         // The directions of a road, compared one by one, the shorter first where one is the start of the other.
         var (da, db) = (a.Directions ?? [], b.Directions ?? []);
