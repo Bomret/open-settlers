@@ -108,6 +108,33 @@ public sealed class PlayScriptTests
     }
 
     [TestMethod]
+    public void AnExpectStepReadsItsFieldOperatorAndValue()
+    {
+        var script = Parse("expect camera-x >= 10\nexpect zoom = 1.25\nexpect seed = 1234 5678 1234 5678");
+
+        Assert.IsEmpty(script.Problems);
+        Assert.AreEqual(new ExpectStep { Line = 1, Field = "camera-x", Op = ">=", Value = "10" }, script.Steps[0]);
+        Assert.AreEqual("1.25", ((ExpectStep)script.Steps[1]).Value);
+        Assert.AreEqual("1234 5678 1234 5678", ((ExpectStep)script.Steps[2]).Value);
+    }
+
+    [TestMethod]
+    [DataRow("expect zoom", "takes a field, an operator, and a value")]
+    [DataRow("expect height = 3", "unknown field 'height'")]
+    [DataRow("expect zoom == 3", "unknown operator '=='")]
+    [DataRow("expect zoom = big", "not a number")]
+    [DataRow("expect zoom = 1 2", "not a number")]
+    [DataRow("expect seed < 3", "takes only '='")]
+    public void ABadExpectIsAProblemNamingItsLine(string line, string reason)
+    {
+        var script = Parse("wait 1\n" + line);
+
+        Assert.HasCount(1, script.Problems);
+        StringAssert.StartsWith(script.Problems[0], "play/t.play line 2: ");
+        StringAssert.Contains(script.Problems[0], reason);
+    }
+
+    [TestMethod]
     public void AMissingFileIsOneProblem()
     {
         var script = PlayScript.Read("/no/such/dir/x.play");

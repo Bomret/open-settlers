@@ -104,6 +104,19 @@ public sealed record DumpStep : PlayStep
     public required string Name { get; init; }
 }
 
+/// <summary><c>expect &lt;field&gt; &lt;op&gt; &lt;value&gt;</c>: checks one field of the <see cref="PlayState"/>.</summary>
+public sealed record ExpectStep : PlayStep
+{
+    /// <summary>A name of <see cref="PlayFields"/>.</summary>
+    public required string Field { get; init; }
+
+    /// <summary>One of <c>&lt;</c>, <c>&lt;=</c>, <c>=</c>, <c>&gt;=</c>, <c>&gt;</c>; the seed takes only <c>=</c>.</summary>
+    public required string Op { get; init; }
+
+    /// <summary>The value as written: a number, or the seed's words joined by single spaces.</summary>
+    public required string Value { get; init; }
+}
+
 /// <summary>
 /// A play script (<c>CONTEXT.md</c>): a text file with one step per line, run in file order. Blank lines and lines
 /// that start with <c>#</c> are skipped. A line that cannot be read is a problem naming the script and the line and
@@ -233,6 +246,8 @@ public sealed class PlayScript
                     return (null, $"'{notNumber}' is not a number");
 
                 return (new SwipeStep { Line = number, Dx = delta[0], Dy = delta[1] }, null);
+            case "expect":
+                return ParseExpect(args, number);
             case "shot" or "dump":
                 if (args.Length != 1)
                     return Wrong(words[0], "1 argument", args.Length);
@@ -248,6 +263,41 @@ public sealed class PlayScript
             default:
                 return (null, $"unknown step '{words[0]}'");
         }
+    }
+
+    static readonly string[] Ops = ["<", "<=", "=", ">=", ">"];
+
+    // expect <field> <op> <value>; the value of the seed is every word after the operator.
+    static (PlayStep?, string?) ParseExpect(string[] args, int number)
+    {
+        if (args.Length < 3)
+            return (null, $"'expect' takes a field, an operator, and a value, found {args.Length} arguments");
+        if (!PlayFields.All.Contains(args[0]))
+            return (null, $"unknown field '{args[0]}', use {string.Join(", ", PlayFields.All)}");
+        if (!Ops.Contains(args[1]))
+            return (null, $"unknown operator '{args[1]}', use one of {string.Join(" ", Ops)}");
+
+        var value = string.Join(' ', args[2..]);
+        if (!PlayFields.IsNumeric(args[0]))
+        {
+            if (args[1] != "=")
+                return (null, $"'{args[0]}' takes only '=', not '{args[1]}'");
+        }
+        else if (args.Length != 3 || !Number(value, out _))
+        {
+            return (null, $"'{value}' is not a number");
+        }
+
+        return (
+            new ExpectStep
+            {
+                Line = number,
+                Field = args[0],
+                Op = args[1],
+                Value = value,
+            },
+            null
+        );
     }
 
     // scroll <up|down> [count [x y]]
