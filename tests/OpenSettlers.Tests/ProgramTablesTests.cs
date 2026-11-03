@@ -102,9 +102,15 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
         {
-            for (var shape = ProgramTables.StepTimeFirst; shape < ProgramTables.StepTimeFirst + ProgramTables.StepTimeCount; shape++)
+            for (
+                var shape = ProgramTables.StepTimeFirst;
+                shape < ProgramTables.StepTimeFirst + ProgramTables.StepTimeCount;
+                shape++
+            )
             {
-                BitConverter.GetBytes((ushort)(1000 + shape)).CopyTo(bytes, FileOffset(ProgramTables.StepTimeAddress) + 2 * shape);
+                BitConverter
+                    .GetBytes((ushort)(1000 + shape))
+                    .CopyTo(bytes, FileOffset(ProgramTables.StepTimeAddress) + 2 * shape);
             }
 
             for (var type = 0; type < ProgramTables.DoorSpeedCount; type++)
@@ -114,14 +120,20 @@ public sealed class ProgramTablesTests
 
             for (var size = 0; size < ProgramTables.ScanWindowCount; size++)
             {
-                BitConverter.GetBytes((ushort)(size * 5)).CopyTo(bytes, FileOffset(ProgramTables.ScanWindowAddress) + 2 * size);
+                BitConverter
+                    .GetBytes((ushort)(size * 5))
+                    .CopyTo(bytes, FileOffset(ProgramTables.ScanWindowAddress) + 2 * size);
             }
         });
 
         var tables = ProgramTables.Read(exe);
 
         Assert.AreEqual((ushort)1013, tables.StepTime(13));
-        Assert.AreEqual((ushort)(1000 - 32), tables.StepTime(-32), "a step shape below the table reads the bytes before it");
+        Assert.AreEqual(
+            (ushort)(1000 - 32),
+            tables.StepTime(-32),
+            "a step shape below the table reads the bytes before it"
+        );
         Assert.AreEqual((ushort)0, tables.StepTime(500), "a shape outside the table reads as 0");
         Assert.AreEqual((byte)(24 + 7), tables.DoorSpeeds[24]);
         Assert.AreEqual((ushort)(3 * 5), tables.ScanWindows[3]);

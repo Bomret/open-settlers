@@ -423,7 +423,8 @@ public partial class MapViewControl : Control
             return;
         }
 
-        var kind = _flagButton.ButtonPressed ? CommandKind.PlaceFlag
+        var kind =
+            _flagButton.ButtonPressed ? CommandKind.PlaceFlag
             : _woodcutterButton.ButtonPressed ? CommandKind.PlaceBuilding
             : CommandKind.PlaceCastle;
         _game.Enqueue(new Command(_game.TickCount, 0, kind, x, y));

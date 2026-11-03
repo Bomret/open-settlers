@@ -60,7 +60,11 @@ public sealed class ProgramTables
         ushort[]? scanWindows = null
     )
     {
-        if (classes.Length != ClassCount || startStock.Length != StartStockRows || startStock.Any(row => row.Length != Simulation.StartStock.Goods))
+        if (
+            classes.Length != ClassCount
+            || startStock.Length != StartStockRows
+            || startStock.Any(row => row.Length != Simulation.StartStock.Goods)
+        )
         {
             throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows of 26.");
         }
@@ -112,7 +116,11 @@ public sealed class ProgramTables
         var startStock = new byte[StartStockRows][];
         for (var row = 0; row < StartStockRows; row++)
         {
-            startStock[row] = Slice(exe, StartStockAddress + row * Simulation.StartStock.Goods, Simulation.StartStock.Goods);
+            startStock[row] = Slice(
+                exe,
+                StartStockAddress + row * Simulation.StartStock.Goods,
+                Simulation.StartStock.Goods
+            );
         }
 
         var steps = Slice(exe, StepTimeAddress + 2 * StepTimeFirst, 2 * StepTimeCount);

@@ -117,7 +117,11 @@ public sealed partial class Game
     // handler (0x42e7e0, knights and defence) is not ported.
     private void HandleBuilding(Building building)
     {
-        if (building.Type == Building.WoodcutterType && (building.Status & 0xc4) == 0 && !RequestWorker(building, WoodcutterJob))
+        if (
+            building.Type == Building.WoodcutterType
+            && (building.Status & 0xc4) == 0
+            && !RequestWorker(building, WoodcutterJob)
+        )
         {
             building.Status |= 4;
         }
@@ -293,7 +297,9 @@ public sealed partial class Game
     {
         var slot = Map.Layer(MapLayer.Resource)[index];
 
-        return slot < _buildings.Count && Map.Index(_buildings[slot].X, _buildings[slot].Y) == index ? _buildings[slot] : null;
+        return slot < _buildings.Count && Map.Index(_buildings[slot].X, _buildings[slot].Y) == index
+            ? _buildings[slot]
+            : null;
     }
 
     // The index of the node a step in a direction leads to, and the settler's new column and row.
@@ -314,7 +320,11 @@ public sealed partial class Game
         var here = Map.Index(settler.X, settler.Y);
         var (x, y, next) = Neighbour(settler, 1);
         var target = settler.Mode == 0xff ? _buildings.FirstOrDefault(b => b.Flag == settler.Target) : null;
-        if (Occupant(here) != 0 || Occupant(next) != 0 || (target is not null && Occupant(Map.Index(target.X, target.Y)) != 0))
+        if (
+            Occupant(here) != 0
+            || Occupant(next) != 0
+            || (target is not null && Occupant(Map.Index(target.X, target.Y)) != 0)
+        )
         {
             settler.Frame = 0x52;
             settler.Timer = 0;
@@ -523,7 +533,18 @@ public sealed partial class Game
         hash = Mix(Mix(Mix(Mix(hash, _clock), _phase), _scanCursor), _leaving);
         foreach (var building in _buildings)
         {
-            foreach (var value in new[] { building.TypeIndex, building.X, building.Y, building.Flag, building.Status, building.Worker, building.Progress })
+            foreach (
+                var value in new[]
+                {
+                    building.TypeIndex,
+                    building.X,
+                    building.Y,
+                    building.Flag,
+                    building.Status,
+                    building.Worker,
+                    building.Progress,
+                }
+            )
             {
                 hash = Mix(hash, value);
             }
@@ -531,11 +552,23 @@ public sealed partial class Game
 
         foreach (var settler in _settlers)
         {
-            foreach (var value in new[]
-            {
-                settler.Job, settler.Player, settler.Frame, settler.Timer, settler.X, settler.Y, settler.Stamp,
-                settler.State, settler.Mode, settler.Target, settler.Heading, settler.Next,
-            })
+            foreach (
+                var value in new[]
+                {
+                    settler.Job,
+                    settler.Player,
+                    settler.Frame,
+                    settler.Timer,
+                    settler.X,
+                    settler.Y,
+                    settler.Stamp,
+                    settler.State,
+                    settler.Mode,
+                    settler.Target,
+                    settler.Heading,
+                    settler.Next,
+                }
+            )
             {
                 hash = Mix(hash, value);
             }

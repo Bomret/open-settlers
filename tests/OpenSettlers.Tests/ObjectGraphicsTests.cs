@@ -116,7 +116,15 @@ public sealed class ObjectGraphicsTests
     public void TheHutSpriteIsTheLayerAfterTheFlagsAndItsImageIsRead()
     {
         var payloads = Payloads();
-        payloads[ObjectSprites.WoodcutterEntry] = GraphicFileTests.Entry(1, 0, 2, 2, 11, 3, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]);
+        payloads[ObjectSprites.WoodcutterEntry] = GraphicFileTests.Entry(
+            1,
+            0,
+            2,
+            2,
+            11,
+            3,
+            [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
+        );
         using var fake = Install(payloads);
 
         var graphics = ObjectGraphics.Load(Open(fake));

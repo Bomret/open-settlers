@@ -39,7 +39,9 @@ public sealed class WorkerWalkTests
                 continue;
             }
 
-            var fields = line.Split(' ').Select(field => field.Split('=')).ToDictionary(pair => pair[0], pair => pair[1]);
+            var fields = line.Split(' ')
+                .Select(field => field.Split('='))
+                .ToDictionary(pair => pair[0], pair => pair[1]);
             var pass = fields["pass"] == "start" ? -1 : int.Parse(fields["pass"], CultureInfo.InvariantCulture);
             scenarios[^1].Lines.Add((pass, fields.GetValueOrDefault("s15"), fields.GetValueOrDefault("b")));
         }
@@ -107,7 +109,16 @@ public sealed class WorkerWalkTests
 
         foreach (var road in parts[6].Split(';').Select(text => text.Split(',')))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.BuildRoad, int.Parse(road[0]), int.Parse(road[1]), [.. road[2].Select(c => c - '0')]));
+            game.Enqueue(
+                new Command(
+                    0,
+                    0,
+                    CommandKind.BuildRoad,
+                    int.Parse(road[0]),
+                    int.Parse(road[1]),
+                    [.. road[2].Select(c => c - '0')]
+                )
+            );
         }
 
         game.Enqueue(new Command(0, 0, CommandKind.PlaceBuilding, hut[0] - 1, hut[1] - 1));
@@ -115,7 +126,16 @@ public sealed class WorkerWalkTests
         {
             foreach (var road in late.Split(';').Select(text => text.Split(',')))
             {
-                game.Enqueue(new Command(lateAt, 0, CommandKind.BuildRoad, int.Parse(road[0]), int.Parse(road[1]), [.. road[2].Select(c => c - '0')]));
+                game.Enqueue(
+                    new Command(
+                        lateAt,
+                        0,
+                        CommandKind.BuildRoad,
+                        int.Parse(road[0]),
+                        int.Parse(road[1]),
+                        [.. road[2].Select(c => c - '0')]
+                    )
+                );
             }
         }
 
@@ -132,8 +152,16 @@ public sealed class WorkerWalkTests
                 building = line.Hut ?? building;
             }
 
-            Assert.AreEqual(worker, Hex(game.Settlers[WorkerSlot], map.Size.Width), $"{name}: the worker after pass {pass}");
-            Assert.AreEqual(building, Hex(game.Buildings[HutSlot], map.Size.Width), $"{name}: the hut after pass {pass}");
+            Assert.AreEqual(
+                worker,
+                Hex(game.Settlers[WorkerSlot], map.Size.Width),
+                $"{name}: the worker after pass {pass}"
+            );
+            Assert.AreEqual(
+                building,
+                Hex(game.Buildings[HutSlot], map.Size.Width),
+                $"{name}: the hut after pass {pass}"
+            );
         }
     }
 }

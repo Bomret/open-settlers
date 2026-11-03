@@ -49,8 +49,9 @@ every time (`tests/OpenSettlers.Tests/castle-placements.txt`).
   player owns is not reached by this slice, which has one player.
 - 20 settlers are created in the castle, one of each of these jobs: 1 of job byte 0x10, 5 of 0x54, 3 of 0x58, and
   one each of 0x48, 0x14, 0x18, 0x1c, 0x08, 0x0c, 0x2c, 0x50, 0x50, 0x24, 0x24 (as the emulator listed the first byte of
-  each new item of the settler table). **Not ported:** no settler table exists yet; the slices that send a carrier
-  or a worker out of the castle take the job bytes from here. The tools they carry are taken from the stock below.
+  each new item of the settler table, in the order of their slots). The engine creates them in that order with the
+  state 1 (the first with the state 10), the castle's node, and the clock of the placement
+  ([Settlers](settlers.md)); the tools they carry are taken from the stock below.
 
 ## The start stock
 
@@ -88,8 +89,9 @@ the screen. **Emulated:** the harness (`opponents:S0,S1,S2`) gave the level for 
 from the seed). `CommandKind.PlaceCastle`
 with the node in `Command.X` and `Command.Y` places the castle through `BuildSite.Evaluate` and
 `CastlePlacement.Apply`; `Game.Castle` and `Game.Stock` hold the result. The game changes the map's layers it was
-given. The digest holds the castle and the stock. Departures: the settlers, the three item tables' fields, the
-player's flag bits, and the mission changes are not held.
+given. The placement also adds the castle as building slot 0 and the 20 settlers (`Game.Buildings`, `Game.Settlers`).
+The digest holds the castle, the stock, the buildings, and the settlers. Departures: the storage item and the
+item tables' other fields, the player's flag bits, and the mission changes are not held.
 
 **Stand-in:** the map view picks the node of a click as the node whose drawn point (lifted by its height) lies
 nearest to the click (`MapPicking`). The rule of the original's cursor is not recovered, so a click near the edge

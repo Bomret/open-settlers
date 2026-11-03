@@ -76,7 +76,10 @@ public sealed class ObjectDrawsTests
 
         var draws = ObjectDraws.Of(map, game.Castle, game.Buildings);
 
-        Assert.AreEqual(new ObjectDraw(2, ObjectSprites.WoodcutterEntry, 496, 48 - height * 4), draws.Single(draw => draw.Entry == ObjectSprites.WoodcutterEntry));
+        Assert.AreEqual(
+            new ObjectDraw(2, ObjectSprites.WoodcutterEntry, 496, 48 - height * 4),
+            draws.Single(draw => draw.Entry == ObjectSprites.WoodcutterEntry)
+        );
         CollectionAssert.AreEqual(
             draws.Select(draw => draw.Row).Order().ToList(),
             draws.Select(draw => draw.Row).ToList()
