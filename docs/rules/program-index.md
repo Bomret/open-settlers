@@ -364,6 +364,13 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x442704` | `Castle_Place` | Takes the first slots of the storage, building, and flag tables, writes the castle, its flag, the heights, and the start stock, and calls `Castle_CreateSettlers`. | confirmed | game | Called by `Castle_PlaceAtStart`. |
 | `0x442f0c` | `Castle_CreateSettlers` | Creates the castle's 20 first settlers one by one and takes their tools from the storage item. | inferred | game | Called by `Castle_Place`. |
 | `0x44333d` | `Settler_TakeFromStorage` | Creates one settler of a player from the storage item that holds the fewest. | inferred | game | Called by `Castle_CreateSettlers` and `0x428a75`. |
+| `0x442244` | `Flag_PlaceFromButton` | The flag button: judges the node under the cursor and, where the site is not 0 and the node state is 4, 6, or 7, goes on to `Flag_Place`, else to the error report (`0x44c768`). | confirmed | game | Called by `0x440d23`. |
+| `0x4422c5` | `Flag_Place` | Takes the first free slot of the flag table, writes the flag bit and the flag object on the node, moves the node's deposit to its neighbors, and stores the slot as the node's link. | confirmed | game | Called by `Flag_PlaceFromButton` and `0x440c24`. |
+| `0x45d7ad` | `Table70_Allocate` | Takes the first free slot of the flag table, clears the item, and leaves the slot number in the registers; reports a full table. | confirmed | game | Called by `Flag_Place`, `Castle_Place`, `0x421530`, and `0x449a63`. |
+| `0x449f58` | `Flag_MoveDeposit` | Moves the resource deposit of a node that is about to hold a flag to the nodes around it. | confirmed | game | Called by `Flag_Place` and `0x449a63`. |
+| `0x44a0aa` | `Deposit_MergeInto` | Adds a deposit to the byte of one node: into an empty byte, or into one of the same type up to 31, carrying the rest on. | confirmed | game | Called by `Flag_MoveDeposit`. |
+| `0x44db26` | `Render_DrawFlag` | Draws a flag (object code 1): the flag sprite, then the road stubs and goods that wait at it. | inferred | game | Called by `Render_DrawRowTiles` for object code 1. |
+| `0x4617fd` | `Building_Remove` | Takes a building or flag item down: clears its bits on the node and its neighbor, releases its slots, and counts its goods back. Not a placement. | inferred | game | Called by `0x45ed5f` and `0x4615cf`. |
 | `0x44b6e6` | `BuildSite_Evaluate` | Judges the node in the player block (`+0xfc`, `+0xfe`) and leaves the node state, the site, and the height at `+0x100` to `+0x102`. | confirmed | game | Called by the click handlers, `Castle_PlaceAtStart`, and the build marker. |
 | `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | A copy of the judgment from the south-east node on, also entered from `0x44b63a`. | inferred | game | Called by `BuildSite_Evaluate` and `0x44b63a`. |
 | `0x44bd72` | `BuildSite_EvaluateBuilding` | The judgment for a node that holds a building, with its own copy of the conditions. | inferred | game | Called by `BuildSite_Evaluate` and `BuildSite_EvaluateFromSouthEast`. |
@@ -747,6 +754,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x430fd3` | `Player_SwapOutSecondView` | confirmed | Input |
 | `0x431c31` | `Msg_Post` | confirmed | Main loop |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
+| `0x442244` | `Flag_PlaceFromButton` | confirmed | Castle and build sites |
+| `0x4422c5` | `Flag_Place` | confirmed | Castle and build sites |
 | `0x442630` | `Castle_PlaceFromClick` | confirmed | Castle and build sites |
 | `0x442704` | `Castle_Place` | confirmed | Castle and build sites |
 | `0x442e8a` | `Castle_StartStockRows` | confirmed | Castle and build sites |
@@ -755,6 +764,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44591d` | `Panel_HandleClick` | inferred | Views, panels, and drawing |
 | `0x448418` | `Game_ConfirmEnd` | inferred | Program start and game flow |
 | `0x448436` | `Game_EndToStartScreen` | confirmed | Program start and game flow |
+| `0x449f58` | `Flag_MoveDeposit` | confirmed | Castle and build sites |
+| `0x44a0aa` | `Deposit_MergeInto` | confirmed | Castle and build sites |
 | `0x44b6e6` | `BuildSite_Evaluate` | confirmed | Castle and build sites |
 | `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | inferred | Castle and build sites |
 | `0x44bd72` | `BuildSite_EvaluateBuilding` | inferred | Castle and build sites |
@@ -765,6 +776,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44d3ae` | `Render_DrawViewRows` | confirmed | Views, panels, and drawing |
 | `0x44d5b4` | `Render_DrawRowTiles` | confirmed | Views, panels, and drawing |
 | `0x44da4d` | `Gfx_DrawObjectSprite` | confirmed | Graphics images |
+| `0x44db26` | `Render_DrawFlag` | inferred | Castle and build sites |
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
 | `0x44ff59` | `Gfx_DrawPhaseSprite` | confirmed | Graphics images |
@@ -776,6 +788,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x457751` | `Game_Resume` | confirmed | Timing |
 | `0x45ce5a` | `Panel_CopyToScreen` | inferred | Views, panels, and drawing |
 | `0x45d718` | `Frame_WaitAndPresent` | confirmed | Main loop |
+| `0x45d7ad` | `Table70_Allocate` | confirmed | Castle and build sites |
 | `0x45e375` | `Territory_Update` | inferred | Castle and build sites |
 | `0x45f755` | `Save_WriteArchiveIndex` | confirmed | Save and load |
 | `0x45f7ab` | `Load_LoadSlot` | confirmed | Save and load |
@@ -800,6 +813,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4613e7` | `Table_ToPointers18` | confirmed | Save and load |
 | `0x4614c3` | `Table_ToOffsets16` | confirmed | Save and load |
 | `0x461548` | `Table_ToPointers16` | confirmed | Save and load |
+| `0x4617fd` | `Building_Remove` | inferred | Castle and build sites |
 | `0x46414d` | — | unknown | Simulation |
 | `0x466ade` | `Rng_Step` | confirmed | Random generator and map start |
 | `0x466b94` | `StartScreen_SwitchPage` | confirmed | Program start and game flow |
@@ -833,7 +847,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 143 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 111 confirmed, 32 inferred, 14 unknown.
+Coverage: the index names 150 routines of the 471 functions in the dump's game code band and lists 14 more without a name: 116 confirmed, 34 inferred, 14 unknown.
 <!-- coverage:end -->
 
 Open anchors:

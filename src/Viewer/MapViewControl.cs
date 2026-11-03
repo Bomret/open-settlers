@@ -35,6 +35,8 @@ public partial class MapViewControl : Control
     Game? _game;
     double _tickCarry;
     Label _ticks = null!;
+    Button _flagButton = null!;
+    int _flagsDrawn;
     MapViewState _state = null!;
     Camera _camera = null!;
     readonly Zoom _zoom = new();
@@ -105,6 +107,16 @@ public partial class MapViewControl : Control
         bar.AddChild(_message);
         _ticks = new Label { Visible = _play };
         bar.AddChild(_ticks);
+        // Stand-in for the original's flag button (0x442244): while it is pressed a click asks for a flag on the node
+        // under it instead of the castle. The original's build panel is a later slice's.
+        _flagButton = new Button
+        {
+            Text = "Flag",
+            ToggleMode = true,
+            Visible = _play,
+            FocusMode = FocusModeEnum.None,
+        };
+        bar.AddChild(_flagButton);
 
         _canvas = new Control
         {
@@ -167,6 +179,8 @@ public partial class MapViewControl : Control
         {
             _game = new Game(_tables, _state.Map, _state.StockLevel);
             _castleDrawn = false;
+            _flagsDrawn = 0;
+            _flagButton.ButtonPressed = false;
             _tickCarry = 0;
         }
     }
@@ -184,10 +198,11 @@ public partial class MapViewControl : Control
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
-            if (_game.Castle is not null && !_castleDrawn)
+            if ((_game.Castle is not null && !_castleDrawn) || _game.Flags.Count != _flagsDrawn)
             {
-                // The castle stands: draw it with the objects.
-                _castleDrawn = true;
+                // The castle stands or a flag went up: draw it with the objects.
+                _castleDrawn = _game.Castle is not null;
+                _flagsDrawn = _game.Flags.Count;
                 Redraw();
             }
         }
@@ -259,7 +274,7 @@ public partial class MapViewControl : Control
                 }
                 else if (_gesture.Release(out var x, out var y))
                 {
-                    PlaceCastleAt(x, y);
+                    PlaceAt(x, y);
                 }
 
                 break;
@@ -283,10 +298,10 @@ public partial class MapViewControl : Control
         }
     }
 
-    // A click asks the game for the castle on the node under it. The node is picked against the view as it was
+    // A click asks the game for the castle, or with the flag button pressed a flag, on the node under it. The node is picked against the view as it was
     // drawn when the button went down (camera, zoom scale, and canvas size): a hand that strays within the slop of a
     // click still pans the view a little, and a zoom or a resize during the press changes none of the three.
-    void PlaceCastleAt(double screenX, double screenY)
+    void PlaceAt(double screenX, double screenY)
     {
         if (_game is null || _state.Map is null)
         {
@@ -303,7 +318,8 @@ public partial class MapViewControl : Control
             screenX,
             screenY
         );
-        _game.Enqueue(new Command(_game.TickCount, 0, CommandKind.PlaceCastle, x, y));
+        var kind = _flagButton.ButtonPressed ? CommandKind.PlaceFlag : CommandKind.PlaceCastle;
+        _game.Enqueue(new Command(_game.TickCount, 0, kind, x, y));
     }
 
     // Moves the view by a distance in screen pixels.
@@ -337,8 +353,12 @@ public partial class MapViewControl : Control
         _message.Text = _graphicsProblem is not null
             ? $"Cannot draw the map: {_graphicsProblem}"
             : _state.Problem
-                ?? (_tablesProblem is not null ? $"Cannot start the game, the program's rule tables are unreadable: {_tablesProblem}"
-                : _objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}" : "");
+                ?? (
+                    _tablesProblem is not null
+                        ? $"Cannot start the game, the program's rule tables are unreadable: {_tablesProblem}"
+                    : _objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}"
+                    : ""
+                );
         _message.Modulate = new Color(1, 0.4f, 0.4f);
     }
 

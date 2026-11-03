@@ -24,10 +24,14 @@ settled: [Item tables](../rules/item-tables.md). What is left open:
 
 ## Flags, roads, and routes
 
-- `0x4422c5`: places a flag on the tile under the cursor. likely
+- `0x4422c5`: known. Places a flag on the node the evaluator judged; with `0x45d7ad`, `0x449f58`, and `0x44a0aa`:
+  [Flags](../rules/flags.md). Its second caller `0x440c24` (the click handler) is not recovered: open lead.
+- The flag table's slot limit (state `+0x258`, set by `0x41dbea` from a start-up value): open lead, inferred. The
+  engine holds 256 flags.
+- The flag's colour bits in the object byte (`0x44db26`): open lead, inferred. The engine draws entry 1378 always.
 - `0x442002`: sets up the road-drawing state with six direction slots in the view record. guess
-- `0x4617fd`: creates and connects objects, such as flags, roads, and building sites; it uses the table
-  allocators. guess
+- `0x4617fd`: takes a building or flag item down, not a placement: clears the bits on its node and neighbor, releases
+  its slots, and counts the goods back. likely
 - `0x462153`: tears down a `Table70` item and branches on its type. guess
 - `0x462e1d` with `0x463204`, `0x46385b`, `0x463a40`, `0x463ef9`: walks a road or path from a map
   position. guess
@@ -63,8 +67,8 @@ settled: [Item tables](../rules/item-tables.md). What is left open:
 - `0x440d23`: dispatches road, flag, and build actions and plays the error sounds. likely
 - `0x44c768`, `0x44c8cf`: write a button list into view `+0x60`, perhaps the build menu. guess
 - `0x44b6e6`: known. The build-site evaluator behind every click: [Build sites](../rules/build-sites.md).
-- `0x442244`: the flag button. It places a flag where the evaluator's site is not 0 and its node state is 4, 6,
-  or 7. likely
+- `0x442244`: known. The flag button. It places a flag where the evaluator's site is not 0 and its node state is
+  4, 6, or 7: [Flags](../rules/flags.md).
 
 ## Open questions
 

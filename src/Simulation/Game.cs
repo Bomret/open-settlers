@@ -6,21 +6,23 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// A game: a <see cref="Map"/> and a queue of <see cref="Command"/>s, advanced one tick (ADR 0005) at a time.
 /// <see cref="Tick"/> applies the commands due at the tick in a total order (player, kind, column, row), so the
-/// order of <see cref="Enqueue"/> calls does not change the game (INV-0002). The only rule so far is the castle:
-/// <see cref="CommandKind.PlaceCastle"/> puts it where the original allows (<c>docs/rules/castle.md</c>), and every
-/// other command is refused. A refused command changes nothing, not even the digest. The game draws no randomness.
+/// order of <see cref="Enqueue"/> calls does not change the game (INV-0002). The rules so far are the castle and the
+/// flag: <see cref="CommandKind.PlaceCastle"/> and <see cref="CommandKind.PlaceFlag"/> put them where the original
+/// allows (<c>docs/rules/castle.md</c>, <c>docs/rules/flags.md</c>), and every other command is refused. A refused command changes nothing, not even the digest. The game draws no randomness.
 /// </summary>
 public sealed class Game
 {
     /// <summary>Ticks in a second at normal speed: 4 timer calls of 20 milliseconds make one tick.</summary>
     public const double TicksPerSecond = 12.5;
 
+    private const int MaxFlags = 256;
     private const ulong FnvOffset = 0xcbf29ce484222325;
     private const ulong FnvPrime = 0x100000001b3;
 
     private readonly SortedSet<Command> _queue = new(Comparer<Command>.Create(Compare));
     private readonly ProgramTables _tables;
     private readonly int _stockLevel;
+    private readonly List<Flag> _flags = [];
     private ulong _applied = FnvOffset;
 
     /// <summary>
@@ -44,6 +46,12 @@ public sealed class Game
 
     /// <summary>The goods in the castle, <see cref="StartStock.Goods"/> counts; empty before the castle is placed.</summary>
     public IReadOnlyList<int> Stock { get; private set; } = [];
+
+    /// <summary>
+    /// The flags in the order of their slots in the flag table: the castle's flag first, then each placed flag. Empty
+    /// before the castle is placed.
+    /// </summary>
+    public IReadOnlyList<Flag> Flags => _flags;
 
     /// <summary>The number of ticks run so far; the next <see cref="Tick"/> is the tick with this number.</summary>
     public long TickCount { get; private set; }
@@ -79,7 +87,7 @@ public sealed class Game
 
     /// <summary>
     /// The FNV-1a 64-bit fingerprint of the whole game state: the tick, the commands applied, the castle and its stock,
-    /// and every map layer.
+    /// the flags, the total of resource 1, and every map layer.
     /// </summary>
     public ulong Digest()
     {
@@ -89,6 +97,13 @@ public sealed class Game
         {
             hash = Mix(hash, count);
         }
+
+        foreach (var flag in _flags)
+        {
+            hash = Mix(hash, flag.X * 65536L + flag.Y);
+        }
+
+        hash = Mix(hash, Map.Resource1Total);
 
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
@@ -101,7 +116,7 @@ public sealed class Game
     // Applies a command if its rule allows it and tells whether it did.
     private bool Apply(Command command)
     {
-        if (command is not { Kind: CommandKind.PlaceCastle, Player: 0 } || Castle is not null)
+        if (command.Player != 0)
         {
             return false;
         }
@@ -112,15 +127,52 @@ public sealed class Game
             return false;
         }
 
-        var site = BuildSite.Evaluate(_tables, Map, command.X, command.Y, 0, hasCastle: false);
+        return command.Kind switch
+        {
+            CommandKind.PlaceCastle => PlaceCastle(command.X, command.Y),
+            CommandKind.PlaceFlag => PlaceFlag(command.X, command.Y),
+            _ => false,
+        };
+    }
+
+    private bool PlaceCastle(int x, int y)
+    {
+        if (Castle is not null)
+        {
+            return false;
+        }
+
+        var site = BuildSite.Evaluate(_tables, Map, x, y, 0, hasCastle: false);
         if (!site.IsCastleSite)
         {
             return false;
         }
 
-        Castle = new Castle(command.X, command.Y, site.Height);
+        Castle = new Castle(x, y, site.Height);
         Stock = StartStock.At(_tables, _stockLevel);
-        CastlePlacement.Apply(Map, command.X, command.Y, site.Height, 0);
+        CastlePlacement.Apply(Map, x, y, site.Height, 0);
+        // The castle's flag stands south-east of it and takes the first slot of the flag table.
+        _flags.Add(new Flag((x + 1) & (Map.Size.Width - 1), (y + 1) & (Map.Size.Height - 1)));
+
+        return true;
+    }
+
+    private bool PlaceFlag(int x, int y)
+    {
+        // simplicity: the link keeps the slot in one byte, so a flag table holds 256 flags. The original's limit is
+        // set from the machine's memory at start-up and is not recovered (docs/rules/flags.md).
+        if (Castle is null || _flags.Count >= MaxFlags)
+        {
+            return false;
+        }
+
+        if (!BuildSite.Evaluate(_tables, Map, x, y, 0, hasCastle: true).AllowsFlag)
+        {
+            return false;
+        }
+
+        FlagPlacement.Apply(Map, x, y, _flags.Count);
+        _flags.Add(new Flag(x, y));
 
         return true;
     }
