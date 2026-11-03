@@ -63,6 +63,18 @@ public sealed class ProgramTables
     /// <summary>The number of words of <see cref="ScanWindows"/>.</summary>
     public const int ScanWindowCount = 8;
 
+    /// <summary>The address of the table that gives a lost good the byte of its destination's fill it counts against (<c>0x462d6d</c>).</summary>
+    public const int GoodKindAddress = 0x462d6d;
+
+    /// <summary>The number of goods the kind table covers.</summary>
+    public const int GoodKindCount = 32;
+
+    /// <summary>The address of the table of the carriers a road of each length class holds at most (<c>0x462acd</c>).</summary>
+    public const int RoadCapacityAddress = 0x462acd;
+
+    /// <summary>The number of length classes of a road.</summary>
+    public const int RoadCapacityCount = 8;
+
     /// <summary>The address of the walk rows: 8 bytes for each row of the free walk's direction choice (<c>0x4388ff</c>).</summary>
     public const int WalkRowAddress = 0x4388ff;
 
@@ -86,7 +98,9 @@ public sealed class ProgramTables
         short[]? figureBases = null,
         short[]? figureOffsets = null,
         byte[]? walkRows = null,
-        short[]? carriedFigures = null
+        short[]? carriedFigures = null,
+        byte[]? goodKinds = null,
+        byte[]? roadCapacities = null
     )
     {
         if (
@@ -107,7 +121,18 @@ public sealed class ProgramTables
         FigureOffsets = figureOffsets ?? new short[512];
         WalkRows = walkRows ?? new byte[WalkRowCount * WalkRowSize];
         CarriedFigures = carriedFigures ?? new short[CarriedFigureCount];
+        GoodKinds = goodKinds ?? new byte[GoodKindCount];
+        RoadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
     }
+
+    /// <summary>
+    /// For each good which byte of a building's fill a lost good counts against: 0 the byte at 8, 1 the byte at 9, 0xff none
+    /// (<c>0x462c8d</c>, <c>docs/rules/removal.md</c>).
+    /// </summary>
+    public byte[] GoodKinds { get; }
+
+    /// <summary>For each length class of a road (<c>0x4454e7</c>) the number of carriers the road holds at most (<c>0x462acd</c>).</summary>
+    public byte[] RoadCapacities { get; }
 
     /// <summary>
     /// The rows of the free walk's direction choice, <see cref="WalkRowSize"/> bytes each: the directions to try, best
@@ -185,7 +210,9 @@ public sealed class ProgramTables
             Words(Slice(exe, FigureBaseAddress, 512)),
             Words(Slice(exe, FigureOffsetAddress, 1024)),
             Slice(exe, WalkRowAddress, WalkRowCount * WalkRowSize),
-            Words(Slice(exe, CarriedFigureAddress, 2 * CarriedFigureCount))
+            Words(Slice(exe, CarriedFigureAddress, 2 * CarriedFigureCount)),
+            Slice(exe, GoodKindAddress, GoodKindCount),
+            Slice(exe, RoadCapacityAddress, RoadCapacityCount)
         );
     }
 

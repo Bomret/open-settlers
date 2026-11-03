@@ -173,8 +173,8 @@ the figure byte the figure tables take, and that the log's words are drawn with 
 - What the original does with some road holding a carrier and no storage reached (`0x464539`).
 - A carrier sent home (byte 15 negative, `0x43aea4`), and state 0x44 and later (`0x43007b`, `0x4300f1`).
 - The passing of two settlers that come the other way at a flag (the emulated game of several carriers shows it at a flag where
-  a carrier with a log and a carrier that is to fetch one meet): not ported, so the scenarios keep the roads' carriers from
-  meeting head on.
+  a carrier with a log and a carrier that is to fetch one meet): the swap of a step east, south-east, or south is ported with the
+  walk home ([Settlers](settlers.md#walking-home)); the carriers' own scenarios keep the roads' carriers from meeting head on.
 
 ## In the engine
 

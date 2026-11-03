@@ -8,8 +8,10 @@ namespace OpenSettlers.Simulation;
 /// <see cref="Tick"/> applies the commands due at the tick in a total order (player, kind, column, row), so the
 /// order of <see cref="Enqueue"/> calls does not change the game (INV-0002). The rules so far are the castle and the
 /// flag: <see cref="CommandKind.PlaceCastle"/> and <see cref="CommandKind.PlaceFlag"/> put them where the original
-/// allows (<c>docs/rules/castle.md</c>, <c>docs/rules/flags.md</c>), and <see cref="CommandKind.BuildRoad"/> joins two
-/// flags (<c>docs/rules/roads.md</c>); every other command is refused. A refused command changes nothing, not even the
+/// allows (<c>docs/rules/castle.md</c>, <c>docs/rules/flags.md</c>), <see cref="CommandKind.BuildRoad"/> joins two
+/// flags (<c>docs/rules/roads.md</c>), and <see cref="CommandKind.RemoveFlag"/>, <see cref="CommandKind.RemoveBuilding"/>,
+/// and <see cref="CommandKind.RemoveRoad"/> take them down (<c>docs/rules/removal.md</c>); every other command is refused.
+/// A refused command changes nothing, not even the
 /// digest. The game's randomness is one seeded generator that continues from the map's generation (INV-0002).
 /// </summary>
 public sealed partial class Game
@@ -60,6 +62,12 @@ public sealed partial class Game
     /// <summary>The finished roads in the order they were built.</summary>
     public IReadOnlyList<Road> Roads => _roads;
 
+    /// <summary>
+    /// The number of commands applied so far. A view that draws the flags, roads, and buildings redraws when it changes: a
+    /// taken-down flag leaves the lists as long as they were.
+    /// </summary>
+    public int Revision { get; private set; }
+
     /// <summary>The number of ticks run so far; the next <see cref="Tick"/> is the tick with this number.</summary>
     public long TickCount { get; private set; }
 
@@ -92,6 +100,7 @@ public sealed partial class Game
             _queue.Remove(command);
             if (Apply(command))
             {
+                Revision++;
                 _applied = Mix(
                     Mix(Mix(Mix(Mix(_applied, command.Tick), command.Player), command.Kind), command.X),
                     command.Y
@@ -172,6 +181,9 @@ public sealed partial class Game
             CommandKind.PlaceFlag => PlaceFlag(command.X, command.Y),
             CommandKind.BuildRoad => BuildRoad(command),
             CommandKind.PlaceBuilding => PlaceBuilding(command.X, command.Y),
+            CommandKind.RemoveFlag => RemoveFlagAt(command.X, command.Y),
+            CommandKind.RemoveBuilding => RemoveBuildingAt(command.X, command.Y),
+            CommandKind.RemoveRoad => RemoveRoadAt(command.X, command.Y),
             _ => false,
         };
     }
@@ -230,7 +242,7 @@ public sealed partial class Game
     {
         // simplicity: the link keeps the slot in one byte, so a flag table holds 256 flags. The original's limit is
         // set from the machine's memory at start-up and is not recovered (docs/rules/flags.md).
-        if (Castle is null || _flags.Count >= MaxFlags)
+        if (Castle is null || NextFlagSlot() >= MaxFlags)
         {
             return false;
         }
@@ -240,7 +252,7 @@ public sealed partial class Game
             return false;
         }
 
-        FlagPlacement.Apply(Map, x, y, _flags.Count);
+        FlagPlacement.Apply(Map, x, y, NextFlagSlot());
         AddFlag(new Flag(x, y));
 
         return true;

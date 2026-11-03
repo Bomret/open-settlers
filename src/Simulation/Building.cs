@@ -19,6 +19,12 @@ public sealed class Building
     /// </summary>
     public const int WoodcutterType = 2;
 
+    /// <summary>The bit of <see cref="Status"/> that marks a building taken down: it burns until its countdown ends.</summary>
+    public const int Demolishing = 0x20;
+
+    /// <summary>The content of a slot no building holds (type -1).</summary>
+    internal static Building Free() => new(-1, -1, -1, -1);
+
     internal Building(int type, int x, int y, int flag, bool constructing = false)
     {
         Type = type;
@@ -52,8 +58,20 @@ public sealed class Building
     /// </summary>
     public int Status { get; internal set; }
 
-    /// <summary>The slot of the worker inside (word at 10), 0 for none.</summary>
+    /// <summary>
+    /// The slot of the worker inside (word at 10), 0 for none. A building taken down holds the countdown of its burning here
+    /// (<c>0x7ff</c> clock units at the start, <c>docs/rules/removal.md</c>).
+    /// </summary>
     public int Worker { get; internal set; }
+
+    /// <summary>The clock (16 bits) at the last turn of a building that burns (word at 14); 0 until it is taken down.</summary>
+    public ushort Stamp { get; internal set; }
+
+    /// <summary>Whether the slot holds no building: a building that burned down left it.</summary>
+    public bool IsFree => Type < 0;
+
+    /// <summary>Whether the building was taken down and burns (<see cref="Demolishing"/>).</summary>
+    public bool IsDemolishing => (Status & Demolishing) != 0;
 
     /// <summary>
     /// Bytes 8 and 9 of the building's item: the fill counters of the goods it takes in. A delivery adds 0x0f to the byte of its

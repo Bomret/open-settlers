@@ -16,7 +16,7 @@ left open:
 - `Table120`: the stock words and the counters of the storage item besides `+0x42` and `+0x4a`; player `+0x108`
   indexes it. The stock word of a good at `+4 + 2 * good` is settled for a log delivered to the castle
   ([Goods at a flag](../rules/goods.md#the-delivery-into-the-castle)). likely
-- `Table16`: the states other than 1 to 6, 10, 12, 15, 0xe, 0x42, and 0x43, and the fields they use (state 3 and 0x42 are
+- `Table16`: the states other than 1 to 6, 10, 12, 15, 0xe, 0x42 to 0x45, 0x19, 0x1c, and the fields they use (state 3 and 0x42 are
   settled for a carrier, with and without goods: [Carriers](../rules/carriers.md#the-carriers-walk),
   [Goods at a flag](../rules/goods.md)). The code between `0x43013b` and `0x4312ed` is the handler of state 0x28 (a soldier at a
   military building), not carrier code. guess
@@ -53,19 +53,20 @@ left open:
   bit 6 (the cursor update walks the road under a node), a flag put on a road node (does the road split?), and what
   the clear `+4` bit of a water road's items means. The items' bytes at `+5` and the lengths at `+6` are written by the
   commit; no slice reads them yet.
-- `0x4617fd`: takes a building or flag item down, not a placement: clears the bits on its node and neighbor, releases
-  its slots, and counts the goods back. likely
-- `0x462153`: tears down a `Table70` item and branches on its type. guess
-- `0x462e1d` with `0x463204`, `0x46385b`, `0x463a40`, `0x463ef9`: walks a road from a map node along its bits to
-  both of its flags, called by the code that takes a road or a flag down (`0x45ed5f`, `0x462d88`); the drawing does not
-  use it. likely
+- `0x4615cf`, `0x462d88`, `0x4617fd`, `0x462153`, `0x462e1d` with `0x463204`, `0x46385b`, `0x463a40`, `0x463ef9`, `0x4312ed`,
+  `0x462c8d`, and `0x42cf9d`: known and ported for a flag, a road, and the woodcutter's hut, and the engine matches the emulator
+  (the verb `remove`): [Removal](../rules/removal.md). Open leads (inferred, not run): a carrier carrying a good on a road that goes, a
+  worker or carrier on its way to a road or a hut that goes, more settlers on a joined road than its length class holds, the fourth
+  turn of a carrier at the end of a road that holds two, the castle's and the military buildings' branches of `0x4617fd` (the
+  territory `0x45e375`, the storage's settlers), the storage items' request fields and the player blocks' request words
+  (`0x462bbc`, `0x462ad5`, `0x4312ed`), a worker that is outside a hut that goes, and the sprites of a burning house.
 - `0x42be63`, `0x42ca7a`, and the search in the settler's walk: known. The route search and the request for a worker:
   [Settlers](../rules/settlers.md#the-route-search). `0x42b455` is the same search for a carrier, started at both ends of
   a land road: known, with the second way of the request (a jobless settler, no tool):
   [Carriers](../rules/carriers.md#the-request). Open lead: `0x42b4bc`, the boatman of a water road, and the second way of
   the request for a worker with a tool. likely
-- `0x4312ed`: releases the settlers tied to a link value, by job type, when a flag or road goes away.
-  likely
+- `0x4312ed` (`Flag_ReleaseGoods`): releases what waits for the building at a flag when the building goes; known
+  ([Removal](../rules/removal.md#taking-a-building-down)).
 
 ## Castle and start
 
@@ -111,21 +112,31 @@ left open:
 - The castle's own handler (building type 0x18, `0x42e7e0`) and the settlers the castle makes later (`0x428a75`), and the ambient
   sounds of each view (`0x428964`): they may draw from the random generator; the port draws nothing for them. The knights' idle
   turns (jobs 22 to 26) are known and ported ([Woodcutting](../rules/woodcutting.md#the-random-generator)).
-- The woodcutter sent home (mode `0xfe`), the free walk's passing of settlers and its check of a node marked solid, the way back with
-  a negative count (`0x4385ab`), and the handlers of the object codes from `0x67` (`0x428eb8`): likely, not ported
-  ([Woodcutting](../rules/woodcutting.md#open-leads)).
+- The walk home is known into the castle: the claim `0x434946`, the search `0x4353ef`, the arrival `0x4385ab`, the walk to the
+  storage (state 2, mode `0xfe`, with the pick `0x45d09b`), the entry through the door (state 4, `0x43cd06`), and the swap of two
+  settlers that meet on a road are ported and match the emulator ([Settlers](../rules/settlers.md#walking-home)). Open
+  (**inferred**): the count of blocked turns of a walking settler, the step against a chain of blocked settlers, the second and
+  third rings and the last phase of the random search. The counting back of a good (`0x462c8d`) is ported and matches the emulator for
+  a log with the castle as its destination ([Removal](../rules/removal.md#a-good-that-is-lost)). The free walk's passing of
+  settlers and its check of a node marked solid, and the handlers of the object codes from
+  `0x67` (`0x428eb8`): likely, not ported ([Woodcutting](../rules/woodcutting.md#open-leads)). The boatman's walk home (state `0x1a`)
+  stays unported with the water roads.
+- The drawing of the states `0x19` and `0x1c` (frame `0x52`, drawn as a waiting settler) is **inferred**; no run of the draw confirms
+  it. Lead: the same as for the walk's draw.
 - The drawing of the goods on a flag (`0x44db26`, `0x44de9a`): the place offsets and the sprite entry 320 plus the good (a log is
   entry 327) are read from the decompile and **inferred**; no emulator or debugger run of the draw confirms them. Lead: run `0x44db26`
   in the emulator with a flag that holds a log and read the position and entry `0x44de9a` hands the blit.
 - The hut's node and flag marks (`0x42`, `0x10`) that the `wood` verb writes by hand are **inferred** (above); the expected walk of
   the woodcutter in `wood-walks.txt` depends on them.
 - The phase count of a game with one player and no computer opponent (33, inferred from `0x42055e`).
-- The passing of two settlers going opposite ways (the original swaps them; no run of the games here swaps) and the walk
-  home (mode 254). A blocked step is settled: the settler tries it again ([Settlers](../rules/settlers.md#the-walk)).
+- The passing of two settlers going opposite ways and the walk home (mode 254) are known and ported
+  ([Settlers](../rules/settlers.md#walking-home)). A blocked step is settled: the settler tries it again
+  ([Settlers](../rules/settlers.md#the-walk)).
 - The carrier's idle sprites (**inferred**: frames `0x6e` to `0x73`, the timer it holds) and the figure row of job 0 (base 0);
   no run of the draw confirms them. Lead: the same as for the walk's draw.
-- A road that already holds two carriers (the original counts the carrier's turns at the road's end and may send it on; the
-  port leaves it where it is), the settlers' search level count (`+0x10a` of the player block, which only matters with several storages), and
+- A road that already holds two carriers (ported with the removal: the carrier counts its turns at the road's end and may leave the
+  road, [Carriers](../rules/carriers.md#the-carriers-walk); the two carriers of a joined road are emulated, the fourth turn is
+  **inferred**), the settlers' search level count (`+0x10a` of the player block, which only matters with several storages), and
   the storage's settler count (`+0x40`), which the request lowers and the engine does not keep.
 
 ## Open questions

@@ -1,0 +1,317 @@
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// Tests of the game's own removal logic, on made-up tables (no install): every object class is 0 except that of the flag, code
+// 1, which is 3, and that of the hut, code 2, which is 4; every step takes 100 clock units, the doors have one speed, a road of
+// any length class holds up to `capacity` carriers, and the log counts against byte 9 of a building's fill. The values the
+// original gives are in RemovalTests. The map of the seed 1234,5678,9ABC has its castle at 15,5 with its flag at 16,6 (slot 0);
+// the flags at 18,6 (slot 1), 19,4 (slot 2), and 17,3 (slot 3) stand on it, with the roads 16,6 to 18,6, 18,6 to 19,4, and 17,3 to
+// 19,4, and a hut stands north-west of the flag at 17,3 (16,2).
+[TestClass]
+public sealed class RemovalLogicTests
+{
+    private static ProgramTables Made(byte capacity = 8)
+    {
+        var classes = new byte[ProgramTables.ClassCount];
+        classes[1] = 3;
+        classes[2] = 4;
+        var kinds = Enumerable.Repeat((byte)0xff, ProgramTables.GoodKindCount).ToArray();
+        kinds[Game.GoodLog] = 1;
+
+        return new ProgramTables(
+            classes,
+            Enumerable
+                .Range(0, ProgramTables.StartStockRows)
+                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
+                .ToArray(),
+            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray(),
+            goodKinds: kinds,
+            roadCapacities: Enumerable.Repeat(capacity, ProgramTables.RoadCapacityCount).ToArray()
+        );
+    }
+
+    private static Game World(byte capacity = 8, bool hut = true)
+    {
+        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var objects = map.Bytes(MapLayer.Object);
+        for (var index = 0; index < objects.Length; index++)
+        {
+            // No tree stands anywhere, so the worker waits in its hut.
+            if ((objects[index] & 0x7f) is >= 8 and < 0x18)
+            {
+                objects[index] &= 0x80;
+            }
+        }
+
+        var game = new Game(Made(capacity), map);
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Tick();
+        foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
+        {
+            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+            game.Tick();
+        }
+
+        Build(game, 16, 6, 0, 0);
+        Build(game, 18, 6, 5, 5, 0);
+        Build(game, 17, 3, 0, 1);
+        if (hut)
+        {
+            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
+            game.Tick();
+        }
+
+        return game;
+    }
+
+    private static void Build(Game game, int x, int y, params int[] directions)
+    {
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
+        game.Tick();
+    }
+
+    private static void Run(Game game, int ticks)
+    {
+        for (var i = 0; i < ticks; i++)
+        {
+            game.Tick();
+        }
+    }
+
+    private static bool Applied(Game game, int kind, int x, int y)
+    {
+        var digest = game.Digest();
+        game.Enqueue(new Command(game.TickCount, 0, kind, x, y));
+        game.ApplyCommands();
+
+        return digest != game.Digest();
+    }
+
+    [TestMethod]
+    public void AFlagTakenDownLeavesItsSlotToTheNextFlagPlaced()
+    {
+        var game = World(hut: false);
+        Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4), "a flag with no road");
+        Assert.AreEqual(5, game.Flags.Count);
+        Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 7));
+        Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));
+        Assert.IsTrue(game.Flags[4].IsFree, "the slot is free");
+        Assert.AreEqual(6, game.Flags.Count, "a slot that is not the last leaves the count");
+        Assert.AreEqual(0, game.Map.Layer(MapLayer.Resource)[game.Map.Index(13, 4)], "the node holds no link");
+        Assert.AreEqual(0, game.Map.Layer(MapLayer.Object)[game.Map.Index(13, 4)] & 0x7f, "or object");
+        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[game.Map.Index(13, 4)] & 0x80, "or flag bit");
+
+        Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
+        Assert.AreEqual(new Flag(13, 4), game.Flags[4], "the next flag takes the free slot");
+        Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));
+        Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 7));
+        Assert.AreEqual(4, game.Flags.Count, "the count falls past the free slots at its end");
+    }
+
+    [TestMethod]
+    public void TheClickOnAFlagWithABuildingOrOneRoadOrOnTheCastleIsRefused()
+    {
+        var game = World();
+        Assert.IsFalse(Applied(game, CommandKind.RemoveFlag, 17, 3), "a flag with a hut and a road");
+        Assert.IsFalse(Applied(game, CommandKind.RemoveFlag, 16, 6), "the castle's flag");
+        Assert.IsFalse(Applied(game, CommandKind.RemoveBuilding, 15, 5), "the castle");
+        Assert.IsFalse(Applied(game, CommandKind.RemoveRoad, 16, 6), "a flag is no node of a road");
+        Assert.IsFalse(Applied(game, CommandKind.RemoveFlag, 1, 1), "a node the player does not own");
+        Assert.IsNull(game.RemovalAt(16, 6));
+        Assert.AreEqual(CommandKind.RemoveFlag, game.RemovalAt(18, 6));
+        Assert.AreEqual(CommandKind.RemoveBuilding, game.RemovalAt(16, 2));
+        Assert.AreEqual(CommandKind.RemoveRoad, game.RemovalAt(17, 6));
+    }
+
+    [TestMethod]
+    public void ARoadTakenDownLosesItsBitsAndItsFlagsLoseTheRoad()
+    {
+        var game = World();
+        Assert.IsTrue(Applied(game, CommandKind.RemoveRoad, 17, 6));
+
+        Assert.AreEqual(2, game.Roads.Count);
+        Assert.AreEqual(
+            0,
+            game.Map.Layer(MapLayer.Flags)[game.Map.Index(17, 6)] & 0x3f,
+            "the node of the road is bare"
+        );
+        Assert.AreEqual(
+            0,
+            game.Map.Layer(MapLayer.Flags)[game.Map.Index(16, 6)] & 0x01,
+            "the castle's flag holds no east road bit"
+        );
+        Assert.AreEqual(
+            0,
+            game.Map.Layer(MapLayer.Flags)[game.Map.Index(18, 6)] & 0x08,
+            "nor the flag at the other end a west bit"
+        );
+        Assert.IsNull(game.RemovalAt(16, 6), "the castle's flag is still refused");
+    }
+
+    [TestMethod]
+    public void AFlagWithTwoRoadsJoinsThemIntoOneRoadOfTheSummedLength()
+    {
+        var game = World();
+        Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 18, 6));
+
+        Assert.AreEqual(2, game.Roads.Count);
+        var joined = game.Roads.Single(road => road.FromSlot == 0);
+        Assert.AreEqual(5, joined.Directions.Count, "2 steps and 3 steps");
+        Assert.AreEqual(2, joined.ToSlot, "from the castle's flag to the flag at 19,4");
+        Assert.IsTrue(game.Flags[1].IsFree);
+        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[game.Map.Index(18, 6)] & 0x80, "the flag bit is gone");
+        Assert.AreNotEqual(0, game.Map.Layer(MapLayer.Flags)[game.Map.Index(18, 6)] & 0x28, "the road passes the node");
+    }
+
+    // **Inferred:** the test runs on this file's made-up tables (Made), and no emulator or debugger run reaches more settlers on
+    // a joined road than its length class holds. Open lead in docs/milestones/m3-first-loop.md.
+    [TestMethod]
+    public void AJoinedRoadHoldsAsManyCarriersAsItsLengthClassAllowsAndTheOthersAreSentAway()
+    {
+        var game = World(capacity: 1, hut: false);
+        for (var tick = 0; tick < 4000 && game.Settlers.Count(settler => settler.State == 0x42) < 3; tick++)
+        {
+            game.Tick();
+        }
+
+        Assert.AreEqual(
+            3,
+            game.Settlers.Count(settler => settler.State == 0x42),
+            "a carrier waits on each of the roads"
+        );
+        Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 18, 6));
+
+        var states = game
+            .Settlers.Where(settler => settler.Job == Settler.CarrierJob)
+            .Select(settler => settler.State)
+            .Order()
+            .ToArray();
+        CollectionAssert.AreEqual(
+            new[] { 0x42, 0x44, 0x45 },
+            states,
+            "the third road's carrier waits on; the joined road keeps one carrier and the other goes home"
+        );
+        Assert.AreEqual(
+            1,
+            game.RoadByte(0, 0) & 0xf,
+            "the joined road counts one carrier at its end at the castle's flag"
+        );
+    }
+
+    [TestMethod]
+    public void AGoodLostWithAFlagIsCountedAgainstTheBuildingItWasToGoTo()
+    {
+        var game = World();
+        Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
+        var lost = game.Flags.Count - 1;
+        game.LayGood(lost, 0, Game.GoodLog, 4);
+        var hut = game.Buildings[1];
+        Assert.AreEqual(0, hut.Fill >> 8);
+
+        Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));
+
+        Assert.AreEqual(0xff, hut.Fill >> 8, "the byte of the log's kind counts one less (the byte wraps)");
+        Assert.AreEqual(0, hut.Fill & 0xff);
+    }
+
+    [TestMethod]
+    public void ABuildingTakenDownBurnsAndThenLeavesItsNodeAndItsSlotFree()
+    {
+        var game = World();
+        var hut = game.Buildings[1];
+        var node = game.Map.Index(16, 2);
+        Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
+
+        Assert.IsTrue(hut.IsDemolishing);
+        Assert.AreEqual(0x7ff, hut.Worker, "it burns for 0x7ff clock units");
+        Assert.AreEqual(2, game.Map.Layer(MapLayer.Object)[node] & 0x7f, "its object stays while it burns");
+        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[node] & 0x02, "its node lost the mark of a building");
+        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[game.Map.Index(17, 3)] & 0x10, "and its flag too");
+
+        Run(game, 400);
+
+        Assert.AreEqual(1, game.Buildings.Count, "the castle only");
+        Assert.AreEqual(0, game.Map.Layer(MapLayer.Object)[node] & 0x7f);
+        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[node] & 0x40);
+        Assert.IsTrue(Applied(game, CommandKind.PlaceBuilding, 16, 2), "a hut may stand there again");
+    }
+
+    // Acceptance: a removal changes nothing else. The terrain and the heights, the stock, and the second road with its flags, the
+    // same before and after the road next to it is taken down. (The hut is no part of it: its worker may walk the road that goes,
+    // and then the hut's status changes, as the original's dismissal of the worker does.)
+    [TestMethod]
+    public void ARemovalLeavesAnUnrelatedPartOfTheGameAsItWas()
+    {
+        var game = World(hut: false);
+        Run(game, 100);
+        string Part() =>
+            string.Join(
+                ' ',
+                game.Map.Digest(MapLayer.Terrain),
+                game.Map.Digest(MapLayer.Height),
+                game.Roads.Single(road => road.FromSlot == 3 && road.ToSlot == 2).Directions.Sum(),
+                string.Concat(
+                    Enumerable
+                        .Range(2, 2)
+                        .Select(flag => $"{game.FlagStatus(flag)}{game.RoadByte(flag, 0)}{game.RoadByte(flag, 5)}")
+                ),
+                string.Concat(game.Stock)
+            );
+        var before = Part();
+        var whole = game.Digest();
+
+        Assert.IsTrue(Applied(game, CommandKind.RemoveRoad, 17, 6));
+
+        Assert.AreEqual(before, Part());
+        Assert.AreNotEqual(whole, game.Digest(), "the digest of the whole game notes the removal");
+    }
+
+    // The view: the goods of the flags that were taken down are not drawn (their slots hold the bytes they had), and a hut that
+    // burns is not drawn.
+    [TestMethod]
+    public void TheViewDrawsNeitherAFreeFlagsGoodsNorAHutThatBurns()
+    {
+        var game = World();
+        foreach (var (x, y) in new[] { (13, 4), (13, 7), (14, 8) })
+        {
+            Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, x, y));
+            game.LayGood(game.Flags.Count - 1, 0, Game.GoodLog);
+        }
+
+        Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));
+        Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 7));
+
+        var goods = OpenSettlers.MapView.ObjectDraws.FlagGoodsOf(game);
+        CollectionAssert.AreEqual(new[] { (14, 8) }, goods.Keys.ToArray());
+
+        int Huts() =>
+            OpenSettlers
+                .MapView.ObjectDraws.Of(game.Map, game.Castle, game.Buildings)
+                .Count(draw => draw.Entry == OpenSettlers.MapView.ObjectSprites.WoodcutterEntry);
+        Assert.AreEqual(1, Huts());
+        Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
+        Assert.AreEqual(0, Huts());
+    }
+
+    [TestMethod]
+    public void TheDigestHoldsWhatARemovalChanges()
+    {
+        var first = World();
+        var second = World();
+        Assert.AreEqual(first.Digest(), second.Digest());
+
+        Assert.IsTrue(Applied(first, CommandKind.RemoveBuilding, 16, 2));
+        Assert.AreNotEqual(first.Digest(), second.Digest(), "a building taken down");
+        Run(first, 10);
+        Run(second, 10);
+        Assert.IsTrue(Applied(second, CommandKind.RemoveBuilding, 16, 2));
+        Run(first, 2);
+        Run(second, 2);
+        Assert.AreNotEqual(first.Digest(), second.Digest(), "the countdown of the burning building is in the digest");
+    }
+}

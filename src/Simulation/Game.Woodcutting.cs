@@ -89,16 +89,19 @@ public sealed partial class Game
         }
 
         var node = Map.Index(settler.X, settler.Y);
-        var link = Map.Layer(MapLayer.Resource)[node];
-        if (link != 0 && link < _buildings.Count && (_buildings[link].Status & 0x20) == 0)
+        var building = BuildingAt(node);
+        if (building is not null && (building.Status & 0x20) == 0)
         {
             settler.Timer = (ushort)settler.Target;
             // Mode is byte 11, which the free walk also holds the steps east in (StepsEast): at the door the walk's vector is
             // 0, so a value of 0xfe is the original's send-home mark and no walk's -2 east. The original shares the byte.
-            if (settler.Job == WoodcutterJob && settler.Mode != 0xfe)
+            if (settler.Mode == StorageWalk)
             {
-                // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree. **Not ported:** a settler that
-                // is sent home (mode 0xfe) goes back to the castle.
+                EnterStorage(node, settler);
+            }
+            else if (settler.Job == WoodcutterJob)
+            {
+                // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree.
                 _occupant.Remove(node);
                 settler.State = 0x12;
             }
@@ -411,11 +414,24 @@ public sealed partial class Game
     // flag on the way back it lays the log it carries onto the flag and goes into the hut.
     private void Arrive(int slot, Settler settler)
     {
+        if (settler.Job != WoodcutterJob)
+        {
+            // **Not ported:** the arrival of the jobs 7, 8, 11, 14, and 20 where they are not walking home (0x437ddd).
+            if (ArrivesHome(settler.Job) || (Mark(settler) == 0x80 && settler.Heading < 0))
+            {
+                ArriveHome(settler);
+            }
+
+            return;
+        }
+
         if (Mark(settler) == 0x80)
         {
-            // **Not ported:** a negative count (0x4385ab).
+            // A negative count marks the walk home (0x4385ab).
             if (settler.Heading < 0)
             {
+                ArriveHome(settler);
+
                 return;
             }
 

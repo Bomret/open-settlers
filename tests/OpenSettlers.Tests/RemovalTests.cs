@@ -1,0 +1,413 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// The lines of removals.txt are the output of the emulator verb remove (tools/GhidraDump/emulate.py, ADR 0008): the original's
+// click routines for the remove click (0x4615cf: a flag by 0x462153, a building by 0x4617fd) and for the road click (0x462d88,
+// the take-down 0x462e1d) run on a node of a game with a castle, flags, roads, and a woodcutter's hut, in the passes of the
+// original's main loop. A scenario starts with a "#" line that names its verb command. The lines after it give, for the click
+// and then for each pass where something changed, the class the check 0x44b6e6 gave the node and the sound the routine asked
+// for, the map bytes (flag, object, and link) that changed, the settlers (s<slot>), the flag items (f<slot>), the building items
+// (b<slot>), the counts of the tables (c=), and the generator (rng=). The verb takes the dummies of the flag table and of the
+// building table that a real game's start takes, so its slot numbers are the engine's plus one. The engine runs the same
+// commands in the same passes and must hold the same bytes after the click and after each pass.
+[TestClass]
+public sealed class RemovalTests
+{
+    private const string Fixture = "removals.txt";
+
+    private sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
+
+    public static IEnumerable<object[]> Scenarios =>
+        Load()
+            .Where(scenario => !scenario.Name.StartsWith("sweep", StringComparison.Ordinal))
+            .Select(scenario => new object[] { scenario.Name });
+
+    public static IEnumerable<object[]> Sweeps =>
+        Load()
+            .Where(scenario => scenario.Name.StartsWith("sweep", StringComparison.Ordinal))
+            .Select(scenario => new object[] { scenario.Name });
+
+    private static List<Scenario> Load()
+    {
+        var scenarios = new List<Scenario>();
+        foreach (var line in File.ReadAllLines(Fixture))
+        {
+            if (line.StartsWith("# ", StringComparison.Ordinal))
+            {
+                var parts = line[2..].Split(' ', 2);
+                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                continue;
+            }
+
+            scenarios[^1]
+                .Lines.Add(
+                    line.Split(' ')
+                        .Select(field => field.Split('=', 2))
+                        .ToDictionary(pair => pair[0], pair => pair.Length > 1 ? pair[1] : "")
+                );
+        }
+
+        return scenarios;
+    }
+
+    private static List<int[]> Points(string list) =>
+        list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
+
+    // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]: the game before the first pass.
+    private static Game Started(string[] parts, Map map)
+    {
+        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var castle = Points(parts[4]).Single();
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        foreach (var flag in Points(parts[5]))
+        {
+            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+        }
+
+        foreach (var road in parts[6].Split(';').Where(text => text.Length > 0).Select(text => text.Split(',')))
+        {
+            game.Enqueue(
+                new Command(
+                    0,
+                    0,
+                    CommandKind.BuildRoad,
+                    int.Parse(road[0], CultureInfo.InvariantCulture),
+                    int.Parse(road[1], CultureInfo.InvariantCulture),
+                    [.. road[2].Select(c => c - '0')]
+                )
+            );
+        }
+
+        foreach (var hut in Points(parts[7]))
+        {
+            game.Enqueue(new Command(0, 0, CommandKind.PlaceBuilding, hut[0] - 1, hut[1] - 1));
+        }
+
+        return game;
+    }
+
+    private static Map MapOf(string[] parts)
+    {
+        MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
+        var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
+
+        return MapGenerator.Generate(new MapSeed(seed[0], seed[1], seed[2]), size!);
+    }
+
+    // The class the check 0x44b6e6 gives each node, for the classes 1 to 4 that the remove click and the road click act on
+    // (a flag the click refuses, a flag it takes down, a building, a node of a road); the engine says 0 for the other nodes.
+    [TestMethod]
+    [DynamicData(nameof(Sweeps))]
+    public void TheClickClassOfEachNodeIsTheOriginals(string name)
+    {
+        var scenario = Load().Single(candidate => candidate.Name == name);
+        var parts = scenario.Command.Split(':');
+        var map = MapOf(parts);
+        var game = Started(parts, map);
+        for (var pass = 0; pass < int.Parse(parts[8], CultureInfo.InvariantCulture); pass++)
+        {
+            game.Tick();
+        }
+
+        var expected = scenario
+            .Lines[0]["classes"]
+            .Split(';')
+            .Select(entry => entry.Split(':'))
+            .ToDictionary(entry => entry[0], entry => int.Parse(entry[1].Split('/')[0], CultureInfo.InvariantCulture));
+        for (var y = 0; y < map.Size.Height; y++)
+        {
+            for (var x = 0; x < map.Size.Width; x++)
+            {
+                Assert.AreEqual(
+                    expected.GetValueOrDefault($"{x},{y}"),
+                    game.ClickClass(x, y),
+                    $"{name}: the class of the node {x},{y}"
+                );
+            }
+        }
+    }
+
+    // The settler's 16 bytes as the original's item holds them (Table16, WorkerWalkTests.Hex), where the engine keeps the same
+    // bytes: the word at 12 holds the flag a settler walks to in the original's numbering (one more than the engine's, the
+    // dummy of the flag table) and a pointer to a flag's item in the carriers' waiting states, which the engine keeps in its
+    // own numbering and nothing reads; those words are left out, except where the original's walk home sets the target to 0.
+    //
+    // The walk home (state 2, mode 0xfe) holds the storage's flag there once it picked it: the castle's flag, slot 1 in the
+    // original and 0 in the engine, where 0 is also the target before the pick. A settler that was a carrier waiting next to a
+    // flag and went home (state 0x19 with the bytes 14 and 15 of the pointer, 0 and 0x23) keeps the pointer there until its
+    // search for a flag writes the vector.
+    private static string Masked(string expected, string actual)
+    {
+        var state = Convert.ToByte(expected[20..22], 16);
+        var mode = Convert.ToByte(expected[22..24], 16);
+        var residue = state == 0x19 && expected[28..32] == "0023";
+        var flagWord = state switch
+        {
+            0x42 or 0x43 or 0x44 or 0x45 => true,
+            2 or 5 or 7 or 0xf => mode != 0xfe,
+            3 => mode == 0,
+            _ => false,
+        };
+        if (state == 2 && mode == 0xfe && expected[24..28] == "0100" && actual[24..28] == "0000")
+        {
+            return string.Concat(actual[..24], "0100", actual[28..]);
+        }
+
+        return flagWord || residue ? string.Concat(actual[..24], expected[24..32]) : actual;
+    }
+
+    // The flag item's fields the engine holds, in the order of the verb's 70 bytes: byte 4 bit 7, the status, the road bytes, the
+    // goods and their destination words, and the bytes of the directions (0x3c to 0x41).
+    private static string FlagFields(Game game, int slot) =>
+        Convert.ToHexString([
+            (byte)(game.FlagGoodsBit(slot) ? 0x80 : 0),
+            game.FlagStatus(slot),
+            .. Enumerable.Range(0, 6).Select(direction => game.RoadByte(slot, direction)),
+            .. game.FlagGoods(slot).Select(good => (byte)good),
+            .. game.FlagDestinations(slot).SelectMany(word => BitConverter.GetBytes((ushort)word)),
+            .. game.FlagDirectionBytes(slot).Select(value => (byte)value),
+        ]);
+
+    private static string Fields(string item) =>
+        string.Concat(
+            (Convert.ToByte(item[8..10], 16) & 0x80).ToString("X2", CultureInfo.InvariantCulture),
+            item[10..24],
+            item[24..72],
+            item[120..132]
+        );
+
+    // The building's bytes as the item holds them: the node's offset, the type byte, the status, the flag's slot (one more than
+    // the engine's), the two bytes of the fill, the worker, the progress, and the word at 14 that a building taken down keeps its
+    // clock in. The castle's bytes from 14 hold a pointer to its storage, which the engine does not keep.
+    private static string BuildingBytes(Building building, int width)
+    {
+        var bytes = new List<byte>();
+        bytes.AddRange(BitConverter.GetBytes((building.Y * 2 * width + building.X) * 4));
+        bytes.AddRange([(byte)(building.TypeIndex << 2), (byte)building.Status]);
+        bytes.AddRange(BitConverter.GetBytes((ushort)(building.Flag + 1)));
+        bytes.AddRange(BitConverter.GetBytes(building.Fill));
+        bytes.AddRange(BitConverter.GetBytes((ushort)building.Worker));
+        bytes.AddRange(BitConverter.GetBytes(building.Progress));
+        bytes.AddRange(BitConverter.GetBytes(building.Stamp));
+        bytes.AddRange([0, 0]);
+
+        return Convert.ToHexString([.. bytes]);
+    }
+
+    // The map bytes of the flag, object, and link layers that a step changed, as the verb lists them: "x,y:0=old>new/3=old>new/4=old>new".
+    private static string MapChanges(byte[][] before, Map map)
+    {
+        var width = map.Size.Width;
+        var layers = new[] { (0, MapLayer.Flags), (3, MapLayer.Object), (4, MapLayer.Resource) };
+        var changed = new List<string>();
+        for (var index = 0; index < width * map.Size.Height; index++)
+        {
+            // The link byte of a flag or a building holds the slot, one less than the verb's (the dummies of the tables).
+            static int Link(int value, int code) => value != 0 && code is 1 or 2 ? value + 1 : value;
+            var parts = layers
+                .Where(layer => map.Layer(layer.Item2)[index] != before[layer.Item1][index])
+                .Select(layer =>
+                    layer.Item1 == 4
+                        ? string.Create(
+                            CultureInfo.InvariantCulture,
+                            $"4={Link(before[4][index], before[3][index] & 0x7f):X2}>{Link(map.Layer(MapLayer.Resource)[index], map.Layer(MapLayer.Object)[index] & 0x7f):X2}"
+                        )
+                        : string.Create(
+                            CultureInfo.InvariantCulture,
+                            $"{layer.Item1}={before[layer.Item1][index]:X2}>{map.Layer(layer.Item2)[index]:X2}"
+                        )
+                );
+            var text = string.Join('/', parts);
+            if (text.Length > 0)
+            {
+                changed.Add($"{index % width},{index / width}:{text}");
+            }
+        }
+
+        return string.Join(';', changed);
+    }
+
+    private static byte[][] Snapshot(Map map) =>
+        [
+            map.Layer(MapLayer.Flags).ToArray(),
+            [],
+            [],
+            map.Layer(MapLayer.Object).ToArray(),
+            map.Layer(MapLayer.Resource).ToArray(),
+        ];
+
+    [TestMethod]
+    [DynamicData(nameof(Scenarios))]
+    public void ARemovalChangesTheGameAsTheOriginalsRoutinesDo(string name)
+    {
+        var scenario = Load().Single(candidate => candidate.Name == name);
+        // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
+        var parts = scenario.Command.Split(':');
+        var map = MapOf(parts);
+        var width = map.Size.Width;
+        var game = Started(parts, map);
+        var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
+        var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
+        var clicks = parts[10]
+            .Split(';')
+            .Select(text => (Kind: text[0], Node: text[2..].Split(',').Select(int.Parse).ToArray()))
+            .ToList();
+        var puts =
+            parts.Length > 11 && parts[11].Length > 0
+                ? parts[11].Split(';').Select(text => text.Split(',').Select(int.Parse).ToArray()).ToList()
+                : [];
+        var clickLines = scenario.Lines.Where(line => line.ContainsKey("click")).ToList();
+        var passLines = scenario
+            .Lines.Where(line => line.ContainsKey("pass"))
+            .ToDictionary(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
+
+        var settlers = new Dictionary<int, string>();
+        var flags = new Dictionary<int, string>();
+        var buildings = new Dictionary<int, string>();
+        string? rng = null;
+        string? counts = null;
+
+        void Take(Dictionary<string, string> line)
+        {
+            foreach (var (key, value) in line)
+            {
+                switch (key[0], key.Length > 1 && char.IsDigit(key[1]))
+                {
+                    case ('s', true):
+                        settlers[int.Parse(key[1..], CultureInfo.InvariantCulture)] = value;
+                        break;
+                    case ('f', true):
+                        flags[int.Parse(key[1..], CultureInfo.InvariantCulture)] = value;
+                        break;
+                    case ('b', true):
+                        buildings[int.Parse(key[1..], CultureInfo.InvariantCulture)] = value;
+                        break;
+                }
+            }
+
+            rng = line.GetValueOrDefault("rng") ?? rng;
+            counts = line.GetValueOrDefault("c") ?? counts;
+        }
+
+        void Check(string when, Dictionary<string, string> line, byte[][] before)
+        {
+            Assert.AreEqual(
+                line.GetValueOrDefault("m") ?? "",
+                MapChanges(before, map),
+                $"{name}: the map bytes that changed {when}"
+            );
+            foreach (var (slot, expected) in settlers)
+            {
+                if (slot < game.Settlers.Count)
+                {
+                    Assert.AreEqual(
+                        Masked(expected, expected),
+                        Masked(expected, WorkerWalkTests.Hex(game.Settlers[slot], width)),
+                        $"{name}: settler {slot} {when}"
+                    );
+                }
+            }
+
+            foreach (var (slot, expected) in flags)
+            {
+                if (slot - 1 < game.Flags.Count)
+                {
+                    Assert.AreEqual(Fields(expected), FlagFields(game, slot - 1), $"{name}: flag {slot} {when}");
+                }
+            }
+
+            foreach (var (slot, expected) in buildings)
+            {
+                if (slot - 1 < game.Buildings.Count && !game.Buildings[slot - 1].IsFree)
+                {
+                    var length = game.Buildings[slot - 1].Type == Building.CastleType ? 28 : 36;
+                    Assert.AreEqual(
+                        expected[..length],
+                        BuildingBytes(game.Buildings[slot - 1], width)[..length],
+                        $"{name}: building {slot} {when}"
+                    );
+                }
+            }
+
+            if (rng is not null)
+            {
+                var words = game.Random;
+                Assert.AreEqual(rng, $"{words.W0:X4},{words.W1:X4},{words.W2:X4}", $"{name}: the generator {when}");
+            }
+
+            if (counts is not null)
+            {
+                var items = counts.Split(',');
+                Assert.AreEqual(
+                    $"{game.Flags.Count + 1:X4},{game.Buildings.Count + 1:X4},{game.Settlers.Count:X4},{game.Map.Resource1Total:x}",
+                    $"{items[0]},{items[1]},{items[2]},{items[3]}",
+                    $"{name}: the counts of the tables {when}"
+                );
+            }
+        }
+
+        var clickIndex = 0;
+        for (var pass = 0; pass < passes; pass++)
+        {
+            var before = Snapshot(map);
+            if (pass == at)
+            {
+                foreach (var click in clicks)
+                {
+                    var line = clickLines[clickIndex++];
+                    var node = click.Node;
+                    var expectedClass = int.Parse(line["class"], CultureInfo.InvariantCulture);
+                    Assert.AreEqual(
+                        expectedClass is >= 1 and <= 4 ? expectedClass : 0,
+                        game.ClickClass(node[0], node[1]),
+                        $"{name}: the class of the click on {node[0]},{node[1]}"
+                    );
+                    var kinds =
+                        click.Kind == 'r' ? new[] { CommandKind.RemoveRoad }
+                        : expectedClass == 2 ? new[] { CommandKind.RemoveFlag }
+                        : expectedClass == 3 ? new[] { CommandKind.RemoveBuilding }
+                        : new[] { CommandKind.RemoveFlag, CommandKind.RemoveBuilding };
+                    var digest = game.Digest();
+                    foreach (var kind in kinds)
+                    {
+                        game.Enqueue(new Command(game.TickCount, 0, kind, node[0], node[1]));
+                    }
+
+                    game.ApplyCommands();
+                    if (line["sound"] == "4")
+                    {
+                        Assert.AreEqual(digest, game.Digest(), $"{name}: a refused click changes nothing");
+                    }
+                    else
+                    {
+                        Assert.AreNotEqual(digest, game.Digest(), $"{name}: the click takes something down");
+                    }
+
+                    Take(line);
+                    Check($"after the click on {node[0]},{node[1]}", line, before);
+                    before = Snapshot(map);
+                }
+            }
+
+            foreach (var put in puts.Where(candidate => candidate[0] == pass))
+            {
+                game.LayGood(put[1] - 1, put[2], put[3], put[4]);
+            }
+
+            game.Tick();
+            if (pass >= at)
+            {
+                var line = passLines.GetValueOrDefault(pass) ?? [];
+                Take(line);
+                Check($"after pass {pass}", line, before);
+            }
+        }
+    }
+}
