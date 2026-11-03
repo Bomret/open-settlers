@@ -42,8 +42,21 @@ public sealed class SettlerFiguresTests
             offsets[2 * b + 1] = 1;
         }
 
-        return new SettlerFigures(bases, offsets, Sequences());
+        bases[0] = 100;
+        bases[1] = -1;
+        var carried = new short[27];
+        carried[7] = 10;
+
+        return new SettlerFigures(bases, offsets, Sequences(), carried);
     }
+
+    private static Settler Carrier(int mode, int state = 3) =>
+        new(0, 0, 4, 3, 0, state, 0)
+        {
+            Frame = 7,
+            Timer = 0,
+            Mode = mode,
+        };
 
     private static Map Map() => MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
@@ -153,5 +166,41 @@ public sealed class SettlerFiguresTests
     public void AFrameWithNoSequenceDrawsNothing()
     {
         Assert.IsEmpty(Figures().Draws(Map(), [Walker(9, 0)], 0));
+    }
+
+    // The carried good's figure byte is the walking figure byte plus the table's word for the good (0x43f8ae to 0x43f92a).
+    // Inferred: that the table's words start at 0x43f4b8 (the program's load names 0x43f4b7), and that the carrier's job
+    // (0) with a good in byte 11 in state 3 is the only one drawn so; no emulator run of the draw confirms it.
+    [TestMethod]
+    public void ACarrierCarryingALogIsDrawnWithTheFigureByteOfTheLogAdded()
+    {
+        var draws = Figures().Draws(Map(), [Carrier(mode: 7)], 0);
+
+        // Figure byte 3 plus 10: entry 1850 + 100 + 13, and the colour overlay 2500 on; the job has no second figure here.
+        CollectionAssert.AreEqual(new[] { 1963, 4463 }, draws.Select(d => d.Entry).ToArray());
+    }
+
+    [TestMethod]
+    public void ACarrierWithNoGoodIsDrawnAsBefore()
+    {
+        var draws = Figures().Draws(Map(), [Carrier(mode: 0)], 0);
+
+        CollectionAssert.AreEqual(new[] { 1953, 4453 }, draws.Select(d => d.Entry).ToArray());
+    }
+
+    [TestMethod]
+    public void AWaitingCarrierDoesNotCarryItsDirectionAsAGood()
+    {
+        var draws = Figures().Draws(Map(), [Carrier(mode: 7, state: 0x42)], 0);
+
+        Assert.AreEqual(1953, draws[0].Entry, "in state 0x42 byte 11 is the road direction");
+    }
+
+    [TestMethod]
+    public void TheSpritesOfTheCarrierIncludeThoseItCarriesALog()
+    {
+        var entries = Figures().Sprites(0, 0x40, carriedGood: 7).Select(s => s.Entry).Distinct().ToArray();
+
+        CollectionAssert.IsSubsetOf(new[] { 1963, 1964, 1965, 4463 }, entries);
     }
 }

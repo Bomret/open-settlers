@@ -35,6 +35,7 @@ public partial class MapViewControl : Control
     Game? _game;
     double _tickCarry;
     Label _ticks = null!;
+    Label _logs = null!;
     Button _flagButton = null!;
     Button _roadButton = null!;
     Button _woodcutterButton = null!;
@@ -120,6 +121,8 @@ public partial class MapViewControl : Control
         bar.AddChild(_message);
         _ticks = new Label { Visible = _play };
         bar.AddChild(_ticks);
+        _logs = new Label { Visible = _play };
+        bar.AddChild(_logs);
         // Stand-in for the original's flag button (0x442244): while it is pressed a click asks for a flag on the node
         // under it instead of the castle. The original's build panel is a later slice's.
         _flagButton = new Button
@@ -313,6 +316,7 @@ public partial class MapViewControl : Control
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
+            _logs.Text = CastleReadout.Text(_game.CastleLogs);
             UpdateSettlers();
             // Evaluated each frame, so the watch sees every change.
             var objectsChanged = _objectWatch.Changed(_game);

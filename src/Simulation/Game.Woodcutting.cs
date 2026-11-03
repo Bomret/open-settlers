@@ -18,7 +18,7 @@ public sealed partial class Game
     private const int EndFirstTrees = 0x10;
 
     // The good of a log (the byte 7 the settler writes onto the flag, 0x438011).
-    private const int GoodLog = 7;
+    internal const int GoodLog = 7;
 
     // The first code the object pass handles, the felled tree that waits to vanish, and the codes of a tree being cut:
     // the cut writes 0x5d to 0x66, the pass turns each of them into 0x53, and 0x53 vanishes by chance (0x428eb8).

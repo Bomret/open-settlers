@@ -161,6 +161,30 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    public void TheCarriedGoodFiguresOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:43f4b8:54, the 27 words one for each good (inferred: the program's load names 0x43f4b7, see docs/rules/goods.md).
+        CollectionAssert.AreEqual(
+            new short[]
+            {
+                0x00, 0x30, 0x35, 0x3B, 0x41, 0x46, 0x4B, 0x14, 0x07, 0x51, 0x08, 0x1C, 0x1D, 0x1E,
+                0x1A, 0x1B, 0x68, 0x6D, 0x65, 0x67, 0x6B, 0x6A, 0x66, 0x69, 0x6C, 0x57, 0x56,
+            },
+            tables.CarriedFigures
+        );
+    }
+
+    [TestMethod]
+    public void TheCarriedGoodFiguresAreFoundByTheirAddress()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.CarriedFigureAddress) + 14] = 0x2a);
+
+        Assert.AreEqual(0x2a, ProgramTables.Read(exe).CarriedFigures[7]);
+    }
+
+    [TestMethod]
     public void TheWalkRowsAreFoundByTheirAddress()
     {
         var exe = Executable(bytes =>

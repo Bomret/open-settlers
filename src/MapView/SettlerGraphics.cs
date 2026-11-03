@@ -37,10 +37,10 @@ public sealed class SettlerGraphics
         var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var palette = PaletteFile.Read(archive.Data(archive[3]).Span);
         var sequences = archive.Data(archive[2]).ToArray();
-        var figures = new SettlerFigures(tables.FigureBases, tables.FigureOffsets, sequences);
+        var figures = new SettlerFigures(tables.FigureBases, tables.FigureOffsets, sequences, tables.CarriedFigures);
         var images = new List<ObjectImage>();
         var layers = new Dictionary<(int Entry, int Colour), int>();
-        foreach (var (entry, colour) in jobs.SelectMany(job => figures.Sprites(job, ColourOf(0))))
+        foreach (var (entry, colour) in jobs.SelectMany(job => figures.Sprites(job, ColourOf(0), Game.GoodLog)))
         {
             if (images.Count >= MaxLayers || layers.ContainsKey((entry, colour)))
             {

@@ -50,6 +50,16 @@ public sealed class ProgramTables
     /// <summary>The address of the figure offsets: 2 words for each figure byte (<c>0x4503c5</c>, 512 words).</summary>
     public const int FigureOffsetAddress = 0x4503c5;
 
+    /// <summary>
+    /// The address of the carried goods' figure words: 27 words, one for each good (<c>0x43f4b8</c>). **Inferred:** the
+    /// program's load of the table (<c>0x43f904</c>) names <c>0x43f4b7</c>, one byte before; read from there the words
+    /// are no figure bytes, so the table is taken to start at <c>0x43f4b8</c> ( <c>docs/rules/goods.md</c>).
+    /// </summary>
+    public const int CarriedFigureAddress = 0x43f4b8;
+
+    /// <summary>The number of goods the carried figure table covers.</summary>
+    public const int CarriedFigureCount = 27;
+
     /// <summary>The number of words of <see cref="ScanWindows"/>.</summary>
     public const int ScanWindowCount = 8;
 
@@ -75,7 +85,8 @@ public sealed class ProgramTables
         ushort[]? scanWindows = null,
         short[]? figureBases = null,
         short[]? figureOffsets = null,
-        byte[]? walkRows = null
+        byte[]? walkRows = null,
+        short[]? carriedFigures = null
     )
     {
         if (
@@ -95,6 +106,7 @@ public sealed class ProgramTables
         FigureBases = figureBases ?? new short[256];
         FigureOffsets = figureOffsets ?? new short[512];
         WalkRows = walkRows ?? new byte[WalkRowCount * WalkRowSize];
+        CarriedFigures = carriedFigures ?? new short[CarriedFigureCount];
     }
 
     /// <summary>
@@ -104,6 +116,9 @@ public sealed class ProgramTables
     /// (<c>docs/rules/woodcutting.md</c>).
     /// </summary>
     public byte[] WalkRows { get; }
+
+    /// <summary>For each good a word that a carrier carrying it adds to its figure byte (<c>0x43f8ae</c>).</summary>
+    public short[] CarriedFigures { get; }
 
     /// <summary>For each job 8 words; the first two are the figure base and the second figure base (negative: none).</summary>
     public short[] FigureBases { get; }
@@ -169,7 +184,8 @@ public sealed class ProgramTables
             [.. Enumerable.Range(0, ScanWindowCount).Select(i => BitConverter.ToUInt16(windows, 2 * i))],
             Words(Slice(exe, FigureBaseAddress, 512)),
             Words(Slice(exe, FigureOffsetAddress, 1024)),
-            Slice(exe, WalkRowAddress, WalkRowCount * WalkRowSize)
+            Slice(exe, WalkRowAddress, WalkRowCount * WalkRowSize),
+            Words(Slice(exe, CarriedFigureAddress, 2 * CarriedFigureCount))
         );
     }
 

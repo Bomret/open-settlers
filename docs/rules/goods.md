@@ -152,11 +152,24 @@ step table, as a step on the road does; the turn goes on at once when the timer 
 - **Second half** (byte 15 not 0): byte 15 is 0, state 3, and the exchange runs again at the flag with the heading as it was (the
   carrier now carries nothing, so it may take a good for its road at once), then the carrier steps out.
 
+## Drawing a carrier with a good
+
+**Status:** inferred. The draw routine for job 0 (`0x43f8ae`, reached from `0x43f537`) adds to the figure byte of a carrier in
+state 3 or 0xe that carries a good (byte 11, not 0) a word of a table of 27 words, one for each good, loaded at
+`0x43f4b7` (`0x43f904`). The figure byte then picks the sprites through the tables of [Settlers](settlers.md#drawing-the-walk-leads)
+as the walking carrier's does. The words read as figure bytes only where the table starts at `0x43f4b8` (the emulator's `peek`
+shows `00 00 30 00 35 00 3b 00 ...` from there; the log, good 7, has `0x14`), so the port reads from `0x43f4b8`
+(`ProgramTables.CarriedFigures`). **Inferred, no emulator run of the draw:** that one byte of the load address, that the sum is
+the figure byte the figure tables take, and that the log's words are drawn with the walking sequences of the carrier's frame.
+`SettlerFigures` draws a carrier on its road (state 3) with a good so, in every wrap copy of the view; state 0xe is not drawn.
+
 ## Open leads
 
 - The request words at `0x42` to `0x45` of a flag item and the priority bytes: no building asks for a good yet (milestone 4).
 - The player block's priority table (`+good - 0x55`), and the counter the put adds to (`+good - 0x6f`). Who fills the table after
   the game's start, and with what, decides which good a carrier takes next from a flag with several goods for one road.
+- The draw of a carrier with a good (above): run `0x43f537` in the emulator with a carrier record holding a log and read the
+  draw record it writes.
 - What the original does with some road holding a carrier and no storage reached (`0x464539`).
 - A carrier sent home (byte 15 negative, `0x43aea4`), and state 0x44 and later (`0x43007b`, `0x4300f1`).
 - The passing of two settlers that come the other way at a flag (the emulated game of several carriers shows it at a flag where
