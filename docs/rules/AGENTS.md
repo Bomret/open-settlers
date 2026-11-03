@@ -104,3 +104,14 @@ When the dump is missing, build it before you investigate.
 - [Graphics images](graphics-images.md): the palette entries, the 10-byte header of a graphics entry, the
   raw images the program draws opaque, the transparent sprites, the sprites over color 8, the masks, the
   textured fill, and the corrupt entries.
+- [Item tables](item-tables.md): the four tables of fixed-size records in the game state block and how the
+  program allocates a slot.
+- [Build sites](build-sites.md): how the program judges a node for a flag, a building, or the first castle.
+- [Castle](castle.md): how the program places the first castle and what the castle holds.
+- [Flags](flags.md): where a flag may stand, what the placement writes, and how a flag is drawn.
+- [Roads](roads.md): how the player draws a road between two flags, what it writes, and how it is drawn.
+- [Carriers](carriers.md): how a road gets its carrier, its walk from the castle, and where it waits.
+- [Settlers](settlers.md): how a building asks for a worker, the route search, and the worker's walk.
+- [Goods](goods.md): how a good on a flag gets its destination, and how carriers lift, hand over, and deliver it.
+- [Woodcutting](woodcutting.md): the woodcutter's work cycle and how a felled tree leaves the map.
+- [Removal](removal.md): what taking down a flag, a road, or a building does.
