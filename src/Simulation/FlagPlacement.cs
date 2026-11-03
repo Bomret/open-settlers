@@ -32,6 +32,8 @@ internal static class FlagPlacement
         links[node] = (byte)slot;
     }
 
+    // **Inferred:** a deposit of amount 0 that keeps type bits still moves to the first empty neighbour, and the move
+    // crosses the column wrap; both are read from 0x449f58 and no emulator run backs them.
     // The link replaces the byte that holds the node's resource deposit (or lake detail). The deposit moves to the
     // nodes around, which add it to theirs where it has the same type; what no node takes is lost, and the total of
     // resource 1 falls by it.

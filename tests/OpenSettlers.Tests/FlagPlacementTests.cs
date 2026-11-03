@@ -171,8 +171,9 @@ public sealed class FlagPlacementTests
     [TestMethod]
     public void ADepositOfZeroAmountWithTypeBitsMovesToTheFirstEmptyNeighbour()
     {
-        // Read from 0x449f58 and 0x44a0aa (no emulator run backs it): the first neighbour is offered the deposit
-        // even when its amount is 0, so the type bits move and the amount 0 with them.
+        // Inferred: read from 0x449f58 and 0x44a0aa, no emulator run backs it (open lead in
+        // docs/milestones/m3-first-loop.md). The first neighbour is offered the deposit even when its amount is 0, so
+        // the type bits move and the amount 0 with them.
         var map = new Map(MapSize.Offered[0]);
         map.Bytes(MapLayer.Resource)[map.Index(5, 5)] = 0x20;
 
@@ -184,8 +185,8 @@ public sealed class FlagPlacementTests
     [TestMethod]
     public void ADepositMovesAcrossTheColumnWrap()
     {
-        // Read from 0x449f58 (no emulator run backs it): the first neighbour is east, which wraps from the last
-        // column to the first.
+        // Inferred: read from 0x449f58, no emulator run backs it (open lead in docs/milestones/m3-first-loop.md). The
+        // first neighbour is east, which wraps from the last column to the first.
         var map = new Map(MapSize.Offered[0]);
         var last = map.Size.Width - 1;
         map.Bytes(MapLayer.Resource)[map.Index(last, 5)] = 0x23;

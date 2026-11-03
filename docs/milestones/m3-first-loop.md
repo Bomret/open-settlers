@@ -128,6 +128,15 @@ left open:
   in the emulator with a flag that holds a log and read the position and entry `0x44de9a` hands the blit.
 - The hut's node and flag marks (`0x42`, `0x10`) that the `wood` verb writes by hand are **inferred** (above); the expected walk of
   the woodcutter in `wood-walks.txt` depends on them.
+- The flag's deposit move (`0x449f58`): a byte with type bits and amount 0 moving to the first empty neighbour, and the move across
+  the column wrap, are **inferred** from the decompile. Lead: an emulator verb that sets a map byte before `flagput`, then a case
+  for each (`FlagPlacementTests` pins both).
+- Test gaps that need harness capability the repository lacks (open leads, each with the exact reason):
+  the equal-length route tie-break (`Game.Route`) needs an emulator scenario with two equal-hop routes to a hut flag, and on the
+  `1234,5678,9ABC` map every second road found crosses the hut's node or a road node, so a map or verb that lays the roads is
+  needed; a carrier that turns at the end of a road already holding two carriers (`Wait`) needs a road with two carriers, which
+  no command produces; a water road skipped by `VisitFlag` and `StorageEnd` needs a map with a road across water. (The carrier
+  request with no job-0 or job-21 settler is tested by emptying the castle's table of waiting settlers through reflection.)
 - The phase count of a game with one player and no computer opponent (33, inferred from `0x42055e`).
 - The passing of two settlers going opposite ways and the walk home (mode 254) are known and ported
   ([Settlers](../rules/settlers.md#walking-home)). A blocked step is settled: the settler tries it again

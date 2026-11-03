@@ -139,6 +139,33 @@ public sealed class CarrierTests
     }
 
     [TestMethod]
+    public void ARoadGetsNoCarrierWhereTheCastleHoldsNoSettlerOfJob0Or21()
+    {
+        var game = World();
+        // The castle's five settlers without a job are used up: the table of waiting settlers is emptied (it has no
+        // setter; a road to ask for a sixth would need flags the map's territory does not offer here).
+        var waiting = (ushort[])
+            typeof(Game)
+                .GetField(
+                    "_waiting",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+                )!
+                .GetValue(game)!;
+        Build(game, 16, 6, 0, 0);
+
+        // The settlers enter the table as their turns come, so it is emptied before every tick.
+        for (var tick = 0; tick < 40; tick++)
+        {
+            waiting[Settler.CarrierJob] = 0;
+            waiting[21] = 0;
+            game.Tick();
+        }
+
+        Assert.AreEqual(0, Carriers(game).Length);
+        Assert.AreEqual(0, game.RoadByte(0, 0) & 0x8f, "no carrier is on the road or on the way");
+    }
+
+    [TestMethod]
     public void TheCarriersStateGoesIntoTheDigest()
     {
         var a = World();

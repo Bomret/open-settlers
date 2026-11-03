@@ -186,9 +186,9 @@ public partial class MapViewControl : Control
             }
         };
         bar.AddChild(_woodcutterButton);
-        // Stand-in for the original's remove click (0x4615cf for a flag or a building, 0x462d88 for a road): while it is
-        // pressed a click on a node takes down the flag, the building, or the road the original's check lets it
-        // (docs/rules/removal.md).
+        // Stand-in for the original's remove click (0x4615cf for a flag or a building, 0x462d88 for a road): while
+        // it is pressed a click on a node takes down the flag, the building, or the road the original's check lets
+        // it (docs/rules/removal.md).
         _removeButton = new Button
         {
             Text = "Remove",
@@ -355,8 +355,8 @@ public partial class MapViewControl : Control
                 || _game.Revision != _revisionDrawn
             )
             {
-                // The castle stands, a flag went up, a road was built, a hut stands, something was taken down, or an object or a
-                // good on a flag changed: draw it.
+                // The castle stands, a flag went up, a road was built, a hut stands, something was taken
+                // down, or an object or a good on a flag changed: draw it.
                 _revisionDrawn = _game.Revision;
                 _castleDrawn = _game.Castle is not null;
                 _flagsDrawn = _game.Flags.Count;
@@ -467,9 +467,9 @@ public partial class MapViewControl : Control
         }
     }
 
-    // A click asks the game for the castle, or with the flag button pressed a flag, on the node under it. The node is picked against the view
-    // as it was drawn when the button went down (camera, zoom scale, and canvas size): a hand that strays within the slop of a
-    // click still pans the view a little, and a zoom or a resize during the press changes none of the three.
+    // A click asks the game for the castle, or with the flag button pressed a flag, on the node under it. The node is
+    // picked against the view as it was drawn when the button went down (camera, zoom scale, and canvas size): a hand
+    // that strays within the slop of a click still pans the view a little, and a zoom or a resize during the press changes none of the three.
     void PlaceAt(double screenX, double screenY)
     {
         if (_game is null || _state.Map is null)

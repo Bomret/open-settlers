@@ -47,6 +47,9 @@ For a node the evaluator allowed:
    the same type (the top 3 bits) adds the amount up to 31 and passes the rest on; a byte of another type is
    skipped. What no node takes is lost, and the total of resource 1 (state `+0x4c`) falls by it when the deposit is
    of type 1. A lake detail is a byte of type 0, so it merges with another type-0 byte in the same way.
+   **Inferred:** a byte with type bits and amount 0 still moves to the first empty neighbour (the first call of
+   `0x44a0aa` runs with a carry of 0), and the move crosses the column wrap; both are read from the decompile, no
+   emulator run backs them.
 4. The slot number is stored as the node's link, in the byte the resource layer shares (the same byte as step 3).
 
 The flag table's item is cleared to zero and the placement fills no field of it; the road commit ([Roads](roads.md))

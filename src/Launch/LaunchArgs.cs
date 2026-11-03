@@ -21,7 +21,8 @@ public enum LaunchMode
 /// <summary>
 /// The user arguments after <c>--</c>, read once. <c>--check</c> selects <see cref="LaunchMode.Check"/>, <c>--map</c>
 /// selects <see cref="LaunchMode.Map"/>, <c>--play</c> selects <see cref="LaunchMode.Play"/>; the first mode flag
-/// selects its mode, and a later different mode flag is a problem. No mode flag selects <see cref="LaunchMode.Browser"/>. <c>--game &lt;dir&gt;</c> names the install and wins over the
+/// selects its mode, and a later different mode flag is a problem. No mode flag selects
+/// <see cref="LaunchMode.Browser"/>. <c>--game &lt;dir&gt;</c> names the install and wins over the
 /// <c>SIEDLER_DIR</c> value. A flag that needs a value and has none, at the end or before another flag, is a
 /// problem and its value is never read as a path.
 /// </summary>
