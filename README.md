@@ -72,6 +72,14 @@ mise run map
 
 A valid seed, applied with Enter, or a new size regenerates and redraws the map. A new size keeps the last applied seed. An invalid seed shows its reason and keeps the last map. The arrow keys and a mouse drag move the view, which wraps at the map's edges. A two-finger touchpad swipe also moves the view. The mouse wheel and a touchpad pinch zoom in and out around the pointer, and the `+` and `-` keys zoom around the middle of the view. The zoom goes from 1/4 to 4 times, and a view never shows more than two maps across. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
 
+The game view is the map view with a game on the shown map that ticks at the original's normal speed. It shows the tick count and the castle's log count, and a new map starts a new game:
+
+```sh
+mise exec -- <godot> --path . -- --game-view [--seed <seed>] [--size <1|2|3>]
+```
+
+It takes `--seed` and `--size` as the map view does, and it has the map view's exit codes.
+
 Seed info prints the digests and counts of the map of one seed and size. It is headless and needs no install and no `SIEDLER_DIR`:
 
 ```sh

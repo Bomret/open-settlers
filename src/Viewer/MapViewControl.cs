@@ -31,7 +31,7 @@ public partial class MapViewControl : Control
     const int MaxArrayLayers = 256;
 
     readonly Install _install;
-    readonly bool _play;
+    readonly bool _gameView;
     Game? _game;
     readonly TickPacer _pacer = new();
     Label _ticks = null!;
@@ -80,15 +80,15 @@ public partial class MapViewControl : Control
 
     /// <summary>
     /// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
-    /// seed field shows the seed and the size picker selects the size. With <paramref name="play"/> a
+    /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
     /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
     /// </summary>
-    public MapViewControl(Install install, string seedText, int sizeValue, bool play = false)
+    public MapViewControl(Install install, string seedText, int sizeValue, bool gameView = false)
     {
         _install = install;
         _openSeed = seedText;
         _openSize = sizeValue;
-        _play = play;
+        _gameView = gameView;
     }
 
     /// <summary>The area the map is drawn in and the mouse acts on; a play run aims its input at it.</summary>
@@ -133,9 +133,9 @@ public partial class MapViewControl : Control
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
         };
         bar.AddChild(_message);
-        _ticks = new Label { Visible = _play };
+        _ticks = new Label { Visible = _gameView };
         bar.AddChild(_ticks);
-        _logs = new Label { Visible = _play };
+        _logs = new Label { Visible = _gameView };
         bar.AddChild(_logs);
         // Stand-in for the original's flag button (0x442244): while it is pressed a click asks for a flag on the node
         // under it instead of the castle. The original's build panel is a later slice's.
@@ -143,7 +143,7 @@ public partial class MapViewControl : Control
         {
             Text = "Flag",
             ToggleMode = true,
-            Visible = _play,
+            Visible = _gameView,
             FocusMode = FocusModeEnum.None,
         };
         bar.AddChild(_flagButton);
@@ -153,7 +153,7 @@ public partial class MapViewControl : Control
         {
             Text = "Road",
             ToggleMode = true,
-            Visible = _play,
+            Visible = _gameView,
             FocusMode = FocusModeEnum.None,
         };
         _roadButton.Toggled += pressed =>
@@ -185,7 +185,7 @@ public partial class MapViewControl : Control
         {
             Text = "Woodcutter",
             ToggleMode = true,
-            Visible = _play,
+            Visible = _gameView,
             FocusMode = FocusModeEnum.None,
         };
         _woodcutterButton.Toggled += pressed =>
@@ -205,7 +205,7 @@ public partial class MapViewControl : Control
         {
             Text = "Remove",
             ToggleMode = true,
-            Visible = _play,
+            Visible = _gameView,
             FocusMode = FocusModeEnum.None,
         };
         _removeButton.Toggled += pressed =>
@@ -267,7 +267,7 @@ public partial class MapViewControl : Control
             GD.PrintErr($"map view: {e.Message}");
         }
 
-        if (_play)
+        if (_gameView)
         {
             try
             {
@@ -323,7 +323,7 @@ public partial class MapViewControl : Control
 
     void StartGame()
     {
-        if (_play && _state.Map is not null && _tables is not null)
+        if (_gameView && _state.Map is not null && _tables is not null)
         {
             _game = new Game(_tables, _state.Map, _state.StockLevel);
             _drawing = new RoadDrawing(_game);

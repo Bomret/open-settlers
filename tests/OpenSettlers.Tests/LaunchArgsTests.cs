@@ -136,14 +136,16 @@ public sealed class LaunchArgsTests
     {
         var args = LaunchArgs.Parse(["--game-view", "--game", "/siedler"], null);
 
-        Assert.AreEqual(LaunchMode.Play, args.Mode);
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
         Assert.IsEmpty(args.Problems);
     }
 
     [TestMethod]
-    public void TheSeedAndSizeFlagsGiveTheMapsSeedAndSize()
+    [DataRow("--map")]
+    [DataRow("--game-view")]
+    public void TheSeedAndSizeFlagsGiveTheMapsSeedAndSize(string mode)
     {
-        var args = LaunchArgs.Parse(["--map", "--seed", "1234567812345678", "--size", "2"], null);
+        var args = LaunchArgs.Parse([mode, "--seed", "1234567812345678", "--size", "2"], null);
 
         Assert.IsEmpty(args.Problems);
         Assert.AreEqual("1234567812345678", args.SeedText);
