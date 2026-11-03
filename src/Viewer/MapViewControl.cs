@@ -242,8 +242,8 @@ public partial class MapViewControl : Control
             {
                 if (_tables is not null)
                 {
-                    // The woodcutter's sprites: the only job whose settlers walk so far.
-                    _settlerGraphics = SettlerGraphics.Load(_install, _tables, 11);
+                    // The sprites of the jobs whose settlers walk so far: the carrier and the woodcutter.
+                    _settlerGraphics = SettlerGraphics.Load(_install, _tables, Settler.CarrierJob, 11);
                     _settlerMaterial = BuildObjectMaterial(
                         new ObjectGraphics
                         {

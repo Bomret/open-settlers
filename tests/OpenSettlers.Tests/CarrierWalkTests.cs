@@ -24,7 +24,11 @@ public sealed class CarrierWalkTests
     private const string Fixture = "carrier-walks.txt";
     private const string NoFlagBytes = "00000000000000";
 
-    private sealed record Scenario(string Name, string Command, List<(int Pass, Dictionary<string, string> Values)> Lines);
+    private sealed record Scenario(
+        string Name,
+        string Command,
+        List<(int Pass, Dictionary<string, string> Values)> Lines
+    );
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
@@ -40,7 +44,9 @@ public sealed class CarrierWalkTests
                 continue;
             }
 
-            var fields = line.Split(' ').Select(field => field.Split('=')).ToDictionary(pair => pair[0], pair => pair[1]);
+            var fields = line.Split(' ')
+                .Select(field => field.Split('='))
+                .ToDictionary(pair => pair[0], pair => pair[1]);
             var pass = fields["pass"] == "start" ? -1 : int.Parse(fields["pass"], CultureInfo.InvariantCulture);
             fields.Remove("pass");
             scenarios[^1].Lines.Add((pass, fields));
@@ -71,7 +77,10 @@ public sealed class CarrierWalkTests
     }
 
     private static string Hex(Game game, int flag) =>
-        Convert.ToHexString([game.FlagStatus(flag), .. Enumerable.Range(0, 6).Select(direction => game.RoadByte(flag, direction))]);
+        Convert.ToHexString([
+            game.FlagStatus(flag),
+            .. Enumerable.Range(0, 6).Select(direction => game.RoadByte(flag, direction)),
+        ]);
 
     private static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
@@ -149,12 +158,24 @@ public sealed class CarrierWalkTests
             {
                 if (known.TryGetValue($"s{slot}", out var expected))
                 {
-                    Assert.AreEqual(expected, Hex(game.Settlers[slot], map.Size.Width), $"{name}: settler {slot} after pass {pass}");
+                    Assert.AreEqual(
+                        expected,
+                        Hex(game.Settlers[slot], map.Size.Width),
+                        $"{name}: settler {slot} after pass {pass}"
+                    );
                 }
                 else
                 {
-                    Assert.AreEqual(21, game.Settlers[slot].Job, $"{name}: settler {slot} still waits in the castle after pass {pass}");
-                    Assert.AreEqual(1, game.Settlers[slot].State, $"{name}: settler {slot} still waits in the castle after pass {pass}");
+                    Assert.AreEqual(
+                        21,
+                        game.Settlers[slot].Job,
+                        $"{name}: settler {slot} still waits in the castle after pass {pass}"
+                    );
+                    Assert.AreEqual(
+                        1,
+                        game.Settlers[slot].State,
+                        $"{name}: settler {slot} still waits in the castle after pass {pass}"
+                    );
                 }
             }
 

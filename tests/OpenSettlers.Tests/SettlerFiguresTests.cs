@@ -110,6 +110,26 @@ public sealed class SettlerFiguresTests
     }
 
     [TestMethod]
+    public void ACarrierOnItsRoadIsDrawnAsAWalkingSettlerIs()
+    {
+        var figures = Figures();
+
+        Assert.HasCount(3, figures.Draws(Map(), [Walker(7, 0, state: 3)], 0));
+        Assert.AreEqual(1954, figures.Draws(Map(), [Walker(7, 16, state: 3)], 8)[0].Entry);
+    }
+
+    [TestMethod]
+    public void AWaitingCarrierIsDrawnWithTheTimerItHoldsAndTheClockDoesNotRunItDown()
+    {
+        var figures = Figures();
+
+        var drawn = figures.Draws(Map(), [Walker(7, 8, state: 0x42)], 800);
+
+        Assert.HasCount(3, drawn);
+        Assert.AreEqual(1954, drawn[0].Entry, "the second triple: 8 units left, however much clock has passed");
+    }
+
+    [TestMethod]
     public void TheSpritesOfAJobAreThoseOfEveryTripleOfItsSequences()
     {
         var sprites = Figures().Sprites(11, 0x40).OrderBy(s => s.Entry).ToArray();

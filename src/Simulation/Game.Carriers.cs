@@ -149,7 +149,12 @@ public sealed partial class Game
             {
                 status |= (byte)(1 << direction);
             }
-            else if ((value & 0x80) == 0 && (status & 0x80) == 0 && !road.Water && !RequestCarrier(slot, direction, road))
+            else if (
+                (value & 0x80) == 0
+                && (status & 0x80) == 0
+                && !road.Water
+                && !RequestCarrier(slot, direction, road)
+            )
             {
                 status |= 0x80;
             }
@@ -207,7 +212,11 @@ public sealed partial class Game
 
             for (var direction = 5; direction >= 0; direction--)
             {
-                if (RoadAt(flag, direction) is { Water: false } road && FarEnd(road, flag, direction).Flag is var next && marks[next] < 0)
+                if (
+                    RoadAt(flag, direction) is { Water: false } road
+                    && FarEnd(road, flag, direction).Flag is var next
+                    && marks[next] < 0
+                )
                 {
                     marks[next] = marks[flag];
                     queue.Enqueue(next);

@@ -35,6 +35,12 @@ public sealed class SettlerFigures
     private const int StatesWalking = 2;
     private const int StatesWaiting = 5;
 
+    // A carrier on its road (state 3) walks as a settler does. A carrier that waits next to a flag (state 0x42) is drawn
+    // with the timer it holds: the original does not run it down. **Inferred:** the idle frames 0x6e to 0x73 name the
+    // sequences of the waiting carrier, which no draw run confirms.
+    private const int StatesOnRoad = 3;
+    private const int StatesIdle = 0x42;
+
     private readonly short[] _bases;
     private readonly short[] _offsets;
     private readonly byte[] _data;
@@ -55,7 +61,10 @@ public sealed class SettlerFigures
         var draws = new List<SettlerDraw>();
         foreach (var settler in settlers)
         {
-            if (settler.State is not (StatesWalking or StatesWaiting) || Triple(settler, clock) is not { } triple)
+            if (
+                settler.State is not (StatesWalking or StatesWaiting or StatesOnRoad or StatesIdle)
+                || Triple(settler, clock) is not { } triple
+            )
             {
                 continue;
             }
@@ -136,7 +145,7 @@ public sealed class SettlerFigures
 
         var slot = 4 + 4 * settler.Frame;
         var start = 4 + ((_data[slot] << 24) | (_data[slot + 1] << 16) | (_data[slot + 2] << 8) | _data[slot + 3]);
-        var elapsed = (ushort)(clock - settler.Stamp);
+        var elapsed = settler.State == StatesIdle ? (ushort)0 : (ushort)(clock - settler.Stamp);
         var left = settler.Timer >= elapsed ? settler.Timer - elapsed : 0;
         var at = start + 3 * (left >> 3);
         if (start <= 4 + 4 * Sequences - 4 || at + 3 > _data.Length)
