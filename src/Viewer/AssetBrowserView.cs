@@ -42,6 +42,19 @@ public partial class AssetBrowserView : Control
             return;
         }
 
+        if (args.Mode == LaunchMode.SeedInfo)
+        {
+            // Seed info needs no install. A Godot callback exception does not set the exit code, so this owns it.
+            var code = SeedInfo.Run(args.SeedText!, args.Seed!.Value, args.Size ?? MapSize.Offered[0], out var text);
+            if (code == 0)
+                GD.Print(text.TrimEnd('\n'));
+            else
+                GD.PrintErr($"ERROR {text}");
+            GetTree().Quit(code);
+
+            return;
+        }
+
         var kinds = AssetKind.Discover();
         if (args.Mode == LaunchMode.Check)
         {
