@@ -133,7 +133,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 
 - `OpenSettlers.csproj`, `project.godot`: the Godot project.
 - `mise.toml`: the pinned development tools and the tasks.
-- `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `Simulation/` the random generator, the seed, the map generator, and the game with its commands, roads, settlers, carriers, goods, and woodcutting, `MapView/` the terrain, object, road, and settler drawing plans, the click handling, and the camera, and `Viewer/` the asset browser, the map view, the game view, and their shaders.
+- `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `Simulation/` the random generator, the seed, the map generator, and the game with its commands, roads, settlers, carriers, goods, woodcutting, and removal, `MapView/` the terrain, object, road, and settler drawing plans, the click handling, and the camera, and `Viewer/` the asset browser, the map view (`MapViewControl.cs`, which also shows the game view), the play driver, and the shaders.
 - `play/`: the checked-in play scripts ("Run a play script").
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
