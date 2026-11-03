@@ -23,7 +23,19 @@ public sealed class PlayRunTests
     }
 
     PlayRun Run(string script, Func<PlayStep, string?>? input = null) =>
-        new(PlayScript.Parse(script, "play/t.play"), () => _state, _out, input ?? (step => { _sent.Add(step); return null; }));
+        new(
+            PlayScript.Parse(script, "play/t.play"),
+            () => _state,
+            _out,
+            input
+                ?? (
+                    step =>
+                    {
+                        _sent.Add(step);
+                        return null;
+                    }
+                )
+        );
 
     static void Frames(PlayRun run, int count)
     {

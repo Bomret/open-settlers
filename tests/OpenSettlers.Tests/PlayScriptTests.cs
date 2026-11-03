@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 
@@ -69,13 +71,64 @@ public sealed class PlayScriptTests
 
         Assert.IsEmpty(script.Problems);
         Assert.AreEqual(new PressStep { Line = 1, Key = "Shift+Equal" }, script.Steps[0]);
-        Assert.AreEqual(new HoldStep { Line = 2, Key = "Right", Seconds = 0.5 }, script.Steps[1]);
-        Assert.AreEqual(new ScrollStep { Line = 3, Up = true, Count = 1 }, script.Steps[2]);
-        Assert.AreEqual(new ScrollStep { Line = 4, Up = false, Count = 3 }, script.Steps[3]);
-        Assert.AreEqual(new ScrollStep { Line = 5, Up = true, Count = 2, At = (100, 50) }, script.Steps[4]);
-        Assert.AreEqual(new DragStep { Line = 6, FromX = 1, FromY = 2, ToX = 30, ToY = 40 }, script.Steps[5]);
+        Assert.AreEqual(
+            new HoldStep
+            {
+                Line = 2,
+                Key = "Right",
+                Seconds = 0.5,
+            },
+            script.Steps[1]
+        );
+        Assert.AreEqual(
+            new ScrollStep
+            {
+                Line = 3,
+                Up = true,
+                Count = 1,
+            },
+            script.Steps[2]
+        );
+        Assert.AreEqual(
+            new ScrollStep
+            {
+                Line = 4,
+                Up = false,
+                Count = 3,
+            },
+            script.Steps[3]
+        );
+        Assert.AreEqual(
+            new ScrollStep
+            {
+                Line = 5,
+                Up = true,
+                Count = 2,
+                At = (100, 50),
+            },
+            script.Steps[4]
+        );
+        Assert.AreEqual(
+            new DragStep
+            {
+                Line = 6,
+                FromX = 1,
+                FromY = 2,
+                ToX = 30,
+                ToY = 40,
+            },
+            script.Steps[5]
+        );
         Assert.AreEqual(new PinchStep { Line = 7, Factor = 1.5f }, script.Steps[6]);
-        Assert.AreEqual(new SwipeStep { Line = 8, Dx = -2, Dy = 3.5f }, script.Steps[7]);
+        Assert.AreEqual(
+            new SwipeStep
+            {
+                Line = 8,
+                Dx = -2,
+                Dy = 3.5f,
+            },
+            script.Steps[7]
+        );
         Assert.AreEqual(new ShotStep { Line = 9, Name = "a" }, script.Steps[8]);
         Assert.AreEqual(new DumpStep { Line = 10, Name = "b" }, script.Steps[9]);
     }
@@ -113,7 +166,16 @@ public sealed class PlayScriptTests
         var script = Parse("expect camera-x >= 10\nexpect zoom = 1.25\nexpect seed = 1234 5678 1234 5678");
 
         Assert.IsEmpty(script.Problems);
-        Assert.AreEqual(new ExpectStep { Line = 1, Field = "camera-x", Op = ">=", Value = "10" }, script.Steps[0]);
+        Assert.AreEqual(
+            new ExpectStep
+            {
+                Line = 1,
+                Field = "camera-x",
+                Op = ">=",
+                Value = "10",
+            },
+            script.Steps[0]
+        );
         Assert.AreEqual("1.25", ((ExpectStep)script.Steps[1]).Value);
         Assert.AreEqual("1234 5678 1234 5678", ((ExpectStep)script.Steps[2]).Value);
     }
@@ -132,6 +194,24 @@ public sealed class PlayScriptTests
         Assert.HasCount(1, script.Problems);
         StringAssert.StartsWith(script.Problems[0], "play/t.play line 2: ");
         StringAssert.Contains(script.Problems[0], reason);
+    }
+
+    [TestMethod]
+    public void EveryCheckedInScriptReadsWithoutProblems()
+    {
+        var folder = new DirectoryInfo(AppContext.BaseDirectory);
+        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
+            folder = folder.Parent;
+        var scripts = Directory.GetFiles(Path.Combine(folder!.FullName, "play"), "*.play");
+
+        Assert.IsNotEmpty(scripts);
+        foreach (var path in scripts)
+        {
+            var script = PlayScript.Read(path);
+
+            Assert.IsEmpty(script.Problems, string.Join("; ", script.Problems));
+            Assert.IsNotEmpty(script.Steps);
+        }
     }
 
     [TestMethod]

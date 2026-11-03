@@ -209,7 +209,15 @@ public sealed class PlayScript
                 if (!Number(args[1], out var held) || held < 0)
                     return (null, $"'{args[1]}' is not a number of seconds of zero or more");
 
-                return (new HoldStep { Line = number, Key = args[0], Seconds = held }, null);
+                return (
+                    new HoldStep
+                    {
+                        Line = number,
+                        Key = args[0],
+                        Seconds = held,
+                    },
+                    null
+                );
             case "scroll":
                 return ParseScroll(args, number);
             case "drag":
@@ -245,7 +253,15 @@ public sealed class PlayScript
                 if (delta is null)
                     return (null, $"'{notNumber}' is not a number");
 
-                return (new SwipeStep { Line = number, Dx = delta[0], Dy = delta[1] }, null);
+                return (
+                    new SwipeStep
+                    {
+                        Line = number,
+                        Dx = delta[0],
+                        Dy = delta[1],
+                    },
+                    null
+                );
             case "expect":
                 return ParseExpect(args, number);
             case "shot" or "dump":

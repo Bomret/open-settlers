@@ -72,6 +72,31 @@ mise run map
 
 A valid seed, applied with Enter, or a new size regenerates and redraws the map. A new size keeps the last applied seed. An invalid seed shows its reason and keeps the last map. The arrow keys and a mouse drag move the view, which wraps at the map's edges. A two-finger touchpad swipe also moves the view. The mouse wheel and a touchpad pinch zoom in and out around the pointer, and the `+` and `-` keys zoom around the middle of the view. The zoom goes from 1/4 to 4 times, and a view never shows more than two maps across. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
 
+### Run a play script
+
+A play run opens the map view, runs the steps of a play script in file order on simulated time, and quits after the last step. It runs under Godot's Movie Maker, which writes a PNG per frame and one WAV and forces a fixed time step. Create the output folder first: Movie Maker writes into it from the first frame, and the run deletes nothing there.
+
+```sh
+rm -rf play-out/zoom-pan && mkdir -p play-out/zoom-pan
+mise exec -- <godot> --path . --write-movie play-out/zoom-pan/frame.png --fixed-fps 30 -- --map [--seed <seed>] [--size <n>] --play play/zoom-pan.play
+```
+
+`--play <file>` needs `--map` and Movie Maker (`--write-movie` with `--fixed-fps`); without them, or without a file, it is a bad argument and exits with code 4. The script path resolves against the project folder. `play-out/<script name>/` holds the frames and every `shot` and `dump` of the run; the script name is the script's file name without its extension. Git ignores `play-out/`. The run pins the window to 1280 x 720, so frames and the view's fit do not depend on the display. Two runs of the same script, seed, and size give equal dumps and frames. `play/zoom-pan.play` is an example that zooms and pans.
+
+A play script has one step per line. Blank lines and lines that start with `#` are skipped. A problem in the script (an unknown step, a bad argument, an unreadable file) or a failed `expect` prints one `ERROR` that names the script and the line and exits with code 1; a failed `expect` states the expectation and the actual value. After the last step the run exits with code 0. Steps:
+
+- `wait <seconds>` lets that much simulated time pass.
+- `press <key>` presses and releases a key. A key is named as Godot names it (`Left`, `Plus`, `Escape`, `A`); a chord names its modifiers first, joined with `+` (`Shift+Equal`).
+- `hold <key> <seconds>` presses a key, lets the time pass as a `wait` does, and releases it. A held arrow key moves the view for as long as it stays down.
+- `scroll <up|down> [count [x y]]` turns the mouse wheel by `count` notches (default 1) at the canvas point `x y` (default the middle of the canvas).
+- `drag <x1> <y1> <x2> <y2>` drags with the left button between two canvas points.
+- `pinch <factor>` and `swipe <dx> <dy>` send a touchpad pinch and a two-finger swipe at the middle of the canvas.
+- `shot <name>` writes the last drawn frame to `play-out/<script name>/<name>.png`. A step takes effect in the frame after it, so put a `wait` before the shot.
+- `dump <name>` writes `play-out/<script name>/<name>.txt`: one `field=value` line each for `camera-x` and `camera-y` (the camera's wrapped position in whole pixels), `zoom` (four decimals), `seed`, and `size`.
+- `expect <field> <op> <value>` checks one of those fields. The operators are `<`, `<=`, `=`, `>=`, and `>`; `seed` takes only `=`. `zoom` compares at four decimals.
+
+Every input step reaches the view's own handlers as a Godot input event at canvas coordinates, whose origin is the canvas's top-left corner below the seed bar; nothing calls the camera or the zoom. Keyboard steps act even when the seed field has focus at the start: the run releases its focus first.
+
 A programming error in the browser does not close it. When the browser fails while it selects a kind or an asset, or while it draws a preview, it shows `<file or kind>: crashed: <Type>: <message>` in the preview pane and keeps the lists usable. A crash while the window opens shows that text in place of the window. Each crash also goes to stderr as `asset browser crashed`. A crash is a bug in the engine. A corrupt file is shown as a failure of that file, not as a crash.
 
 No mode writes to the install.
@@ -83,6 +108,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 - `OpenSettlers.csproj`, `project.godot`: the Godot project.
 - `mise.toml`: the pinned development tools and the tasks.
 - `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `Simulation/` the random generator, the seed, and the map generator, `MapView/` the terrain and object drawing plans and the camera, and `Viewer/` the asset browser, the map view, and their shaders.
+- `play/`: the checked-in play scripts ("Run a play script").
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.

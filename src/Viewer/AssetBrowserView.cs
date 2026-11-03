@@ -15,6 +15,8 @@ namespace OpenSettlers.Viewer;
 ///   godot --path . -- --game &lt;install&gt;
 ///   godot --path . -- --map --game &lt;install&gt;   (the map view, <see cref="MapViewControl"/>)
 ///   godot --path . -- --map --seed 1234567812345678 --size 2 --game &lt;install&gt;
+///   godot --path . --write-movie play-out/&lt;stem&gt;/frame.png --fixed-fps 30 -- --map --play &lt;script&gt;
+///   (a play run, <see cref="PlayDriver"/>)
 /// <c>SIEDLER_DIR</c> stands in for <c>--game</c>. A bad argument prints its problem and quits with exit code 4
 /// before the install is opened.
 /// </summary>
@@ -31,7 +33,8 @@ public partial class AssetBrowserView : Control
     {
         var args = LaunchArgs.Parse(
             OS.GetCmdlineUserArgs(),
-            System.Environment.GetEnvironmentVariable(LaunchArgs.GameVariable)
+            System.Environment.GetEnvironmentVariable(LaunchArgs.GameVariable),
+            movieMaker: !string.IsNullOrEmpty(Engine.GetWriteMoviePath())
         );
         if (args.Problems.Count > 0)
         {
@@ -109,13 +112,32 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        AddChild(
-            new MapViewControl(
-                install,
-                args.SeedText ?? MapViewState.DefaultSeed,
-                args.Size?.Value ?? MapSize.Offered[0].Value
-            )
+        // A play script that cannot be read or has a bad line exits 1 and names the line, before the view opens.
+        PlayScript? script = null;
+        if (args.Play is not null)
+        {
+            var path = System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), args.Play);
+            script = PlayScript.Read(path);
+            if (script.Problems.Count > 0)
+            {
+                GD.PrintErr($"ERROR {string.Join("; ", script.Problems)}");
+                GetTree().Quit(PlayRun.FailedExitCode);
+
+                return;
+            }
+        }
+
+        var view = new MapViewControl(
+            install,
+            args.SeedText ?? MapViewState.DefaultSeed,
+            args.Size?.Value ?? MapSize.Offered[0].Value
         );
+        AddChild(view);
+        if (script is not null)
+        {
+            var folder = System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), "play-out", script.Stem);
+            AddChild(new PlayDriver(view, script, folder));
+        }
     }
 
     // A Godot callback exception does not set the exit code, so the check owns it.
