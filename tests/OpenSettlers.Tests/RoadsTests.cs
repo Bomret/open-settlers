@@ -27,7 +27,7 @@ public sealed class RoadsTests
         );
     }
 
-    private static Game TwoFlags()
+    internal static Game TwoFlags()
     {
         var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = new Game(Made(), map);
