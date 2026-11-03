@@ -8,7 +8,9 @@ namespace OpenSettlers.Simulation;
 /// <see cref="Tick"/> applies the commands due at the tick in a total order (player, kind, column, row), so the
 /// order of <see cref="Enqueue"/> calls does not change the game (INV-0002). The rules so far are the castle and the
 /// flag: <see cref="CommandKind.PlaceCastle"/> and <see cref="CommandKind.PlaceFlag"/> put them where the original
-/// allows (<c>docs/rules/castle.md</c>, <c>docs/rules/flags.md</c>), and every other command is refused. A refused command changes nothing, not even the digest. The game draws no randomness.
+/// allows (<c>docs/rules/castle.md</c>, <c>docs/rules/flags.md</c>), and <see cref="CommandKind.BuildRoad"/> joins two
+/// flags (<c>docs/rules/roads.md</c>); every other command is refused. A refused command changes nothing, not even the
+/// digest. The game draws no randomness.
 /// </summary>
 public sealed class Game
 {
@@ -23,6 +25,7 @@ public sealed class Game
     private readonly ProgramTables _tables;
     private readonly int _stockLevel;
     private readonly List<Flag> _flags = [];
+    private readonly List<Road> _roads = [];
     private ulong _applied = FnvOffset;
 
     /// <summary>
@@ -53,6 +56,9 @@ public sealed class Game
     /// </summary>
     public IReadOnlyList<Flag> Flags => _flags;
 
+    /// <summary>The finished roads in the order they were built.</summary>
+    public IReadOnlyList<Road> Roads => _roads;
+
     /// <summary>The number of ticks run so far; the next <see cref="Tick"/> is the tick with this number.</summary>
     public long TickCount { get; private set; }
 
@@ -79,6 +85,10 @@ public sealed class Game
                     Mix(Mix(Mix(Mix(_applied, command.Tick), command.Player), command.Kind), command.X),
                     command.Y
                 );
+                foreach (var direction in command.Directions ?? [])
+                {
+                    _applied = Mix(_applied, direction);
+                }
             }
         }
 
@@ -101,6 +111,18 @@ public sealed class Game
         foreach (var flag in _flags)
         {
             hash = Mix(hash, flag.X * 65536L + flag.Y);
+        }
+
+        foreach (var road in _roads)
+        {
+            hash = Mix(
+                Mix(Mix(Mix(Mix(hash, road.FromSlot), road.FromDirection), road.ToSlot), road.ToDirection),
+                road.Water ? 1 : 0
+            );
+            foreach (var direction in road.Directions)
+            {
+                hash = Mix(hash, direction);
+            }
         }
 
         hash = Mix(hash, Map.Resource1Total);
@@ -131,8 +153,35 @@ public sealed class Game
         {
             CommandKind.PlaceCastle => PlaceCastle(command.X, command.Y),
             CommandKind.PlaceFlag => PlaceFlag(command.X, command.Y),
+            CommandKind.BuildRoad => BuildRoad(command),
             _ => false,
         };
+    }
+
+    /// <summary>
+    /// Where a road would stand if the player drew it from the flag on the node along the directions, as the original's
+    /// road drawing judges it (<see cref="RoadBuilding"/>): refused, still open, or reaching a flag and accepted.
+    /// Changes nothing, so an interface can call it after each step it draws.
+    /// </summary>
+    public RoadStatus CheckRoad(int x, int y, IReadOnlyList<int> directions) =>
+        Castle is null ? RoadStatus.Refused : RoadBuilding.Walk(_tables, Map, x, y, directions, keep: false).Status;
+
+    private bool BuildRoad(Command command)
+    {
+        if (Castle is null || command.Directions is null)
+        {
+            return false;
+        }
+
+        var (status, road) = RoadBuilding.Walk(_tables, Map, command.X, command.Y, command.Directions, keep: true);
+        if (status != RoadStatus.Complete)
+        {
+            return false;
+        }
+
+        _roads.Add(road!);
+
+        return true;
     }
 
     private bool PlaceCastle(int x, int y)
@@ -183,8 +232,16 @@ public sealed class Game
         order = order != 0 ? order : a.Player.CompareTo(b.Player);
         order = order != 0 ? order : a.Kind.CompareTo(b.Kind);
         order = order != 0 ? order : a.X.CompareTo(b.X);
+        order = order != 0 ? order : a.Y.CompareTo(b.Y);
 
-        return order != 0 ? order : a.Y.CompareTo(b.Y);
+        // The directions of a road, compared one by one, the shorter first where one is the start of the other.
+        var (da, db) = (a.Directions ?? [], b.Directions ?? []);
+        for (var i = 0; order == 0 && i < Math.Min(da.Count, db.Count); i++)
+        {
+            order = da[i].CompareTo(db[i]);
+        }
+
+        return order != 0 ? order : da.Count.CompareTo(db.Count);
     }
 
     private static ulong Mix(ulong hash, long value)
