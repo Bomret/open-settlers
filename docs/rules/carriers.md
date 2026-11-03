@@ -111,6 +111,13 @@ sequences.
 
 - The goods part of `0x46414d`, the second carrier of a busy road (`0x462acd`), and what a carrier in state 0x42 does
   (slice 08).
+  Read so far (slice 08, not yet ported): `0x42abed` is no storage handover. It is the player block's per-turn warning check
+  (it posts messages 10 and 11 through `Msg_Post` from counters at `+0x14` and `+0x18` of a 120-byte item), so the castle's
+  log count is not raised there. In the `wood:` emulator run the hut flag's log stays on its first place with the flag's
+  byte 4 bit 7 set for over 1000 passes and the destination word at `+0x14` stays 0; the goods part of `0x46414d` takes its
+  request path for a log (the first byte of the goods table at `0x464117` is not negative) and falls back to the storage
+  search `0x45d3ea` only when no building requests it. State 0x42 (`0x42ff81`) reads byte `0x3c + direction` of the flag
+  (bit 7: a good waits to go that way, bits 0 to 2: its place, bits 3 to 5: read for the far end) and sets state 0x43.
 - The boatman of a water road (`0x42b4bc`, job 1, good 8) and the settlers' search level count (`+0x10a` of the player block).
 - The passing of two settlers on a road (not ported), and a carrier that goes home (`0x4312ed` releases the settlers of a road
   that goes away: slice 09).
