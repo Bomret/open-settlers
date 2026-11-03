@@ -34,7 +34,7 @@ public sealed class HutTests
     // The castle, the three flags (slots 1 to 3), and the roads between the flags 0 and 1 and between 1 and 2.
     private static Game World()
     {
-        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var objects = map.Bytes(MapLayer.Object);
         for (var index = 0; index < objects.Length; index++)
         {
@@ -136,7 +136,10 @@ public sealed class HutTests
     [TestMethod]
     public void NothingCanBePlacedBeforeTheCastleStands()
     {
-        var game = new Game(Made(), MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]));
+        var game = new Game(
+            Made(),
+            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+        );
 
         PlaceHut(game);
 

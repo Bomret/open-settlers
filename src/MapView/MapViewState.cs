@@ -5,15 +5,20 @@ namespace OpenSettlers.MapView;
 /// <summary>
 /// The map view's model: the seed and size last applied, the map they generated, and the reason the last change was
 /// refused. A valid change replaces the map; an invalid seed or size leaves the last map and the last applied seed
-/// and size in place and sets <see cref="Problem"/>.
+/// and size in place and sets <see cref="Problem"/>. Without the program's rule tables no map generates.
 /// </summary>
 public sealed class MapViewState
 {
     /// <summary>The seed the view opens with, in the original's screen form.</summary>
     public const string DefaultSeed = "1234567812345678";
 
-    MapViewState(string seedText, int sizeValue)
+    readonly ProgramTables? _tables;
+    readonly string? _tablesProblem;
+
+    MapViewState(ProgramTables? tables, string? tablesProblem, string seedText, int sizeValue)
     {
+        _tables = tables;
+        _tablesProblem = tablesProblem;
         SeedText = seedText;
         SizeValue = sizeValue;
     }
@@ -36,10 +41,14 @@ public sealed class MapViewState
     /// <summary>Why the last change was refused; null after a change that was accepted.</summary>
     public string? Problem { get; private set; }
 
-    /// <summary>Opens the state on a seed and size, generating their map unless one is refused.</summary>
-    public static MapViewState Open(string seedText, int sizeValue)
+    /// <summary>
+    /// Opens the state on the program's rule tables, a seed, and a size, generating their map unless one is refused.
+    /// Null <paramref name="tables"/> generate no map, and <see cref="Problem"/> names
+    /// <paramref name="tablesProblem"/>, why they could not be read.
+    /// </summary>
+    public static MapViewState Open(ProgramTables? tables, string seedText, int sizeValue, string? tablesProblem = null)
     {
-        var state = new MapViewState(seedText, sizeValue);
+        var state = new MapViewState(tables, tablesProblem, seedText, sizeValue);
         state.Apply(seedText, sizeValue);
 
         return state;
@@ -51,6 +60,13 @@ public sealed class MapViewState
     /// </summary>
     public bool Apply(string seedText, int sizeValue)
     {
+        if (_tables is null)
+        {
+            Problem = $"Cannot generate the map, the program's rule tables are unreadable: {_tablesProblem}";
+
+            return false;
+        }
+
         if (!Seed.TryParse(seedText, out var seed, out var problem))
         {
             Problem = problem;
@@ -67,7 +83,7 @@ public sealed class MapViewState
 
         try
         {
-            if (!MapGenerator.TryGenerate(seed.ToMapSeed(), sizeValue, null, out var map, out problem))
+            if (!MapGenerator.TryGenerate(_tables, seed.ToMapSeed(), sizeValue, null, out var map, out problem))
             {
                 Problem = problem;
 

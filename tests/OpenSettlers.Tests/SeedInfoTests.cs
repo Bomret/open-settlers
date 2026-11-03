@@ -15,7 +15,7 @@ public sealed class SeedInfoTests
         Seed.TryParse(seedText, out var seed, out _);
         MapSize.TryFromValue(sizeValue, out var size, out _);
 
-        return MapGenerator.Generate(seed.ToMapSeed(), size!);
+        return MapGenerator.Generate(TestProgram.Tables(), seed.ToMapSeed(), size!);
     }
 
     [TestMethod]
@@ -71,7 +71,7 @@ public sealed class SeedInfoTests
     {
         Seed.TryParse(SeedText, out var seed, out _);
 
-        var code = SeedInfo.Run(SeedText, seed, MapSize.Offered[0], out var text);
+        var code = SeedInfo.Run(TestProgram.Tables, SeedText, seed, MapSize.Offered[0], out var text);
 
         Assert.AreEqual(0, code);
         Assert.AreEqual(SeedInfo.Report(SeedText, MapOf(SeedText, 1)), text);
@@ -83,6 +83,7 @@ public sealed class SeedInfoTests
         Seed.TryParse(SeedText, out var seed, out _);
 
         var code = SeedInfo.Run(
+            TestProgram.Made,
             SeedText,
             seed,
             MapSize.Offered[0],
@@ -94,6 +95,41 @@ public sealed class SeedInfoTests
         StringAssert.Contains(text, "a tile outside the map");
     }
 
+    [TestMethod]
+    [DataRow("io")]
+    [DataRow("data")]
+    [DataRow("access")]
+    public void UnreadableTablesExitTwoWithTheProblemAndNoMap(string failure)
+    {
+        Seed.TryParse(SeedText, out var seed, out _);
+        var generated = false;
+
+        var code = SeedInfo.Run(
+            () =>
+                throw (
+                    failure switch
+                    {
+                        "io" => new System.IO.IOException("no install"),
+                        "data" => new System.IO.InvalidDataException("no install"),
+                        _ => (Exception)new UnauthorizedAccessException("no install"),
+                    }
+                ),
+            SeedText,
+            seed,
+            MapSize.Offered[0],
+            out var text,
+            (_, _) =>
+            {
+                generated = true;
+                throw new InvalidOperationException();
+            }
+        );
+
+        Assert.AreEqual(2, code);
+        Assert.AreEqual("no install", text);
+        Assert.IsFalse(generated);
+    }
+
     // A stub generator stands in: no seed is known that reaches the generator's no-land-mass refusal, and a search
     // for one would cost a generation per candidate.
     [TestMethod]
@@ -102,6 +138,7 @@ public sealed class SeedInfoTests
         Seed.TryParse(SeedText, out var seed, out _);
 
         var code = SeedInfo.Run(
+            TestProgram.Made,
             SeedText,
             seed,
             MapSize.Offered[0],

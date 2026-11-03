@@ -31,7 +31,7 @@ public sealed class BuildSiteTests
         var seedText = expected.Split(' ')[0]["seed=".Length..];
         var sizeValue = int.Parse(expected.Split(' ')[1]["size=".Length..], CultureInfo.InvariantCulture);
         MapSize.TryFromValue(sizeValue, out var size, out _);
-        var map = MapGenerator.Generate(ParseSeed(seedText), size!);
+        var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(seedText), size!);
 
         Assert.AreEqual(
             expected,
@@ -51,7 +51,7 @@ public sealed class BuildSiteTests
             .Take(4)
             .ToDictionary(field => field.Split('=')[0], field => field.Split('=')[1]);
         MapSize.TryFromValue(int.Parse(fields["size"], CultureInfo.InvariantCulture), out var size, out _);
-        var map = MapGenerator.Generate(ParseSeed(fields["seed"]), size!);
+        var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(fields["seed"]), size!);
         var tile = fields["tile"].Split(',').Select(int.Parse).ToArray();
         var game = new Game(TestProgram.Tables(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, tile[0], tile[1]));
@@ -66,7 +66,7 @@ public sealed class BuildSiteTests
     [TestMethod]
     public void TheCastlesOwnNodeIsNoCastleSiteOnceTheCastleStands()
     {
-        var map = MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]);
         var site = BuildSite.Evaluate(TestProgram.Made(), map, 15, 5, 0, hasCastle: false);
 
         var game = new Game(TestProgram.Made(), map);

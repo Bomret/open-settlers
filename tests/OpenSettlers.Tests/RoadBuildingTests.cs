@@ -31,7 +31,7 @@ public sealed class RoadBuildingTests
         var lines = File.ReadAllLines(Fixture).Where(line => Run(line) == run).ToArray();
         var header = Fields(lines[0]);
         MapSize.TryFromValue(int.Parse(header["size"], CultureInfo.InvariantCulture), out var size, out _);
-        var map = MapGenerator.Generate(ParseSeed(header["seed"]), size!);
+        var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(header["seed"]), size!);
         var castle = header["castle"].Split(',').Select(int.Parse).ToArray();
         var game = new Game(TestProgram.Tables(), map, int.Parse(header["level"], CultureInfo.InvariantCulture));
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));

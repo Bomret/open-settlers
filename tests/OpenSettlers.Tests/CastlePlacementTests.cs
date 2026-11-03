@@ -30,7 +30,7 @@ public sealed class CastlePlacementTests
     {
         var fields = Fields(expected);
         MapSize.TryFromValue(int.Parse(fields["size"], CultureInfo.InvariantCulture), out var size, out _);
-        var map = MapGenerator.Generate(ParseSeed(fields["seed"]), size!);
+        var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(fields["seed"]), size!);
         var before = Snapshot(map);
         var tile = fields["tile"].Split(',').Select(int.Parse).ToArray();
         var game = new Game(TestProgram.Tables(), map, int.Parse(fields["level"], CultureInfo.InvariantCulture));
@@ -40,7 +40,7 @@ public sealed class CastlePlacementTests
 
         var site = BuildSite.Evaluate(
             TestProgram.Tables(),
-            MapGenerator.Generate(ParseSeed(fields["seed"]), size!),
+            MapGenerator.Generate(TestProgram.Tables(), ParseSeed(fields["seed"]), size!),
             tile[0],
             tile[1],
             0,
@@ -57,7 +57,10 @@ public sealed class CastlePlacementTests
     [TestMethod]
     public void ARefusedPlacementChangesNoState()
     {
-        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var game = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+        );
         var before = game.Digest();
 
         // The node 0,0 is a node state 7, site 0: no castle goes there (emulator: site:1:1234,5678,9ABC).
@@ -72,7 +75,7 @@ public sealed class CastlePlacementTests
         Assert.AreEqual(before, tick);
         var fresh = new Game(
             TestProgram.Made(),
-            MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
         fresh.Tick();
         fresh.Tick();
@@ -82,10 +85,13 @@ public sealed class CastlePlacementTests
     [TestMethod]
     public void ACommandOtherThanThePlacementIsRefusedBeforeTheCastleStands()
     {
-        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var game = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+        );
         var fresh = new Game(
             TestProgram.Made(),
-            MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
 
         game.Enqueue(new Command(0, 0, 2, 15, 5));
@@ -99,7 +105,10 @@ public sealed class CastlePlacementTests
     [TestMethod]
     public void APlacementOutsideTheMapOrForAnotherPlayerIsRefused()
     {
-        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var game = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+        );
 
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, -1, 5));
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 32));
@@ -112,7 +121,10 @@ public sealed class CastlePlacementTests
     [TestMethod]
     public void OnlyOneCastleIsPlaced()
     {
-        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var game = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+        );
 
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Enqueue(new Command(1, 0, CommandKind.PlaceCastle, 9, 7));
@@ -129,7 +141,7 @@ public sealed class CastlePlacementTests
         {
             var game = new Game(
                 TestProgram.Made(),
-                MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]),
+                MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]),
                 7
             );
             game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
@@ -140,7 +152,7 @@ public sealed class CastlePlacementTests
 
         var fresh = new Game(
             TestProgram.Made(),
-            MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]),
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]),
             7
         );
         fresh.Tick();

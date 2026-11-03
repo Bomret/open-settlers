@@ -283,18 +283,18 @@ public partial class MapViewControl : Control
             GD.PrintErr($"map view: {e.Message}");
         }
 
+        try
+        {
+            _tables = ProgramTables.Read(_install.ReadAll(Install.Program));
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _tablesProblem = e.Message;
+            GD.PrintErr($"map view: {e.Message}");
+        }
+
         if (_gameView)
         {
-            try
-            {
-                _tables = ProgramTables.Read(_install.ReadAll(Install.Program));
-            }
-            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-            {
-                _tablesProblem = e.Message;
-                GD.PrintErr($"map view: {e.Message}");
-            }
-
             try
             {
                 if (_tables is not null)
@@ -330,7 +330,7 @@ public partial class MapViewControl : Control
             }
         }
 
-        _state = MapViewState.Open(_seed.Text, _openSize);
+        _state = MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem);
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
         Redraw();
@@ -624,9 +624,7 @@ public partial class MapViewControl : Control
             ? $"Cannot draw the map: {_graphicsProblem}"
             : _state.Problem
                 ?? (
-                    _tablesProblem is not null
-                        ? $"Cannot start the game, the program's rule tables are unreadable: {_tablesProblem}"
-                    : _objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}"
+                    _objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}"
                     : _roadsProblem is not null ? $"Cannot draw the roads: {_roadsProblem}"
                     : ""
                 );

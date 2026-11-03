@@ -59,7 +59,8 @@ public sealed class SettlerFiguresTests
             Mode = mode,
         };
 
-    private static Map Map() => MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+    private static Map Map() =>
+        MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
     private static Settler Walker(int frame, int timer, int state = 2) =>
         new(11, 0, 4, 3, 0, state, 0)

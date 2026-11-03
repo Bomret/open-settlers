@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ObjectDrawsTests
 {
-    static Map Generated() => MapViewState.Open("1234567812345678", 1).Map!;
+    static Map Generated() => MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
 
     [TestMethod]
     public void EveryGeneratedObjectIsDrawnInRowMajorOrderWithTheEntryOfItsCode()
@@ -40,7 +40,7 @@ public sealed class ObjectDrawsTests
     public void TheCastleIsDrawnAtItsNodeInTheOrderOfItsRowAndLoweredByItsHeight()
     {
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15.
-        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = new Game(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
@@ -63,7 +63,7 @@ public sealed class ObjectDrawsTests
     {
         // The hut at 16,2 stands tied to the flag at 17,3 (the road test world of HutTests); its node's height is read from
         // the map: x = 16 * 32 - 2 * 16, y = 2 * 20 - height * 4.
-        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var classes = new byte[ProgramTables.ClassCount];
         classes[1] = 3;
         var game = new Game(new ProgramTables(classes, TestProgram.Made().StartStock), map);
@@ -92,7 +92,7 @@ public sealed class ObjectDrawsTests
     {
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15; its flag stands at 16,6 on height 15:
         // x = 16 * 32 - 6 * 16, y = 6 * 20 - 15 * 4.
-        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = new Game(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
@@ -107,7 +107,7 @@ public sealed class ObjectDrawsTests
     {
         // In the original's picture the roads meet at the foot of a flag's pole. Roads and the pick use the node's
         // point, Camera.NodePosition lifted by the node's height, so the flag's draw position is that point.
-        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = new Game(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
@@ -124,7 +124,7 @@ public sealed class ObjectDrawsTests
     // The castle's flag stands at 16,6 on height 15 and is drawn at 416,60 (AFlagIsDrawnLikeAnObjectWithTheFlagEntry).
     static List<ObjectDraw> FlagDrawsWith(params int[] goods)
     {
-        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = new Game(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();

@@ -13,7 +13,7 @@ public sealed class MapPickingTests
     private const double ViewWidth = 800;
     private const double ViewHeight = 600;
 
-    private static readonly Map Map = MapViewState.Open("1234567812345678", 1).Map!;
+    private static readonly Map Map = MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
 
     public static IEnumerable<object[]> Scales =>
         new[] { 0.25, 0.8, 1, 2.5, 4 }.Select(scale => new object[] { scale });
@@ -329,7 +329,7 @@ public sealed class MapPickingTests
     [DynamicData(nameof(Scales))]
     public void AClickOnAFlagAsItIsDrawnPicksTheFlagsNode(double scale)
     {
-        var map = MapViewState.Open("1234567812345678", 1).Map!;
+        var map = MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
         var (column, row) = (12, 9);
         map.Bytes(MapLayer.Object)[map.Index(column, row)] = 1;
         var (x, y) = DrawnPoint(column, row);
