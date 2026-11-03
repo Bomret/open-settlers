@@ -245,15 +245,19 @@ entries per phase (see "Item tables").
 | --- | --- | --- | --- | --- | --- |
 | `0x4291c2` | `Sim_StepPhase` | Advances `Sim_Phase`; phases 0 to 31 run the per-player update for player `phase & 3`, later phases draw from the random generator and dispatch through a table. | confirmed | game | Called by `Main_Loop`; tables at `0x4292ee` and `0x42923c`. |
 | `0x474da3` | `Ai_UpdatePlayer` | Per-player update for players whose block marks them active and computer-controlled. | inferred | game | Reached from `Sim_StepPhase`; calls `Rng_Step`. |
-| `0x46414d` | — | Processes the phase's slice of `Table70`. | unknown | game | Called by `Main_Loop`. |
+| `0x46414d` | `Table70_Pass` | Processes the phase's slice of `Table70` (the flags whose slot divided by 32 is the phase, phases 0 to 31): for each flag in use, its goods (not read), then through `0x464c36` its roads. | confirmed | game | Called by `Main_Loop`. [Carriers](carriers.md#the-flag-pass). |
+| `0x464c36` | `Flag_VisitRoads` | The part of `0x46414d` after a flag's goods: for each direction from north to east that holds a road, sets the flag status bit of a road that holds a carrier, and asks `0x42b455` for a carrier for a road whose byte shows none, unless the flag's status bit 7 says a request found none since the retry scan. | confirmed | game | Called by `0x46414d`. [Carriers](carriers.md#the-flag-pass). |
 | `0x42cb2d` | `Table18_Pass` | Processes the phase's slice of `Table18` (slots `32 * phase` on, in groups of 32 every 1024): a finished building goes to its type's handler through the table at `0x42cd1d`, a building under construction to the countdown. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
 | `0x42f3d9` | `Table16_Pass` | Processes the phase's slice of `Table16`: the slots whose number is the phase modulo 16 plus a multiple of 16, each through `0x42fc81`. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
 | `0x42f4f1` | — | For each view, gathers the settlers on the shown tiles, runs their turn through `0x42fc81` once more, and builds their draw records (`0x42f512`, `0x43f537`). So a settler in view acts every pass, others every 16th. | inferred | game | Called by `Main_Loop`. |
 | `0x4286d8` | — | Runs `0x428728`, `Sound_RunAmbient`, and `0x428d10`, then `0x428a75` for each player block. | unknown | game | Called by `Main_Loop`. |
 | `0x428728` | `Sim_ClearRetryBits` | Each pass clears bit 2 of the status of a window of `Table18` buildings from a cursor (`+0x54`, the window `+0x52`, stops after 10 set bits), and bit 7 of the flag status of a window of `Table70` (cursor `+0x56`). | confirmed | game | Called by `0x4286d8`. [Settlers](settlers.md#the-retry-scan). |
 | `0x42be63` | `Building_RequestWorker` | A building asks the storages for a settler of the job in the registers: a search over the flags from the building's flag; at a storage flag it takes the waiting settler of the job (state 15, mode 255, target the building's flag) or makes one of a jobless settler and a tool. | confirmed | game | Called by the building handlers (`0x42e0b8` and its siblings through `0x42cd1d`). [Settlers](settlers.md#the-request). |
-| `0x42b455` | — | The search of `0x42b4bc` with its first mode: asks a storage for a carrier for a road. | inferred | game | Called by `0x464c36`. |
-| `0x42b4bc` | `Road_RequestCarrier` | The search of `0x42be63` started at a road: seeds the flag at each end, marks every flag with the end it was reached from, and takes a carrier from the first storage that holds one. | inferred | game | Called by `0x464c36`. [Settlers](settlers.md#the-route-search). |
+| `0x42b455` | `Road_RequestCarrier` | A land road asks the storages for a carrier: the search of `0x42be63` started at both ends of the road marks every flag with the end it was reached from; at a storage's flag it takes the waiting settler of job 0, or makes one of a waiting settler of job 21 (no tool), sends it (state 15, mode the direction of the road at the end the storage's flag was reached from, target that end's flag), and sets bit 7 of the road byte at both ends. | confirmed | game | Called by `0x464c36`. [Carriers](carriers.md#the-request). |
+| `0x42b4bc` | `Road_RequestBoatman` | The same search for a water road (the flag item's `+4` bit of the direction clear): it asks for a settler of job 1 and, failing that, for a settler of job 21 and a unit of good 8 (the count at `+0x16` of the storage item). Not ported. | inferred | game | Called by `0x464c36`. [Carriers](carriers.md#the-request). |
+| `0x43ad78` | `Settler_WalkRoad` | State 3: a carrier on its road. When the timer has run out it steps from a flag in the direction of its heading or from a road node in the road's other direction, through `0x43b788` and its siblings (the entries of the table at `0x43b508`), which also carry its goods (not read); a step that would end at a flag is its last. | confirmed | game | Entry 3 of `0x42fca1`. [Carriers](carriers.md#the-carriers-walk). |
+| `0x43b788` | `Settler_StepRoadEast` | The step east of `Settler_WalkRoad` (the siblings `0x43b9eb`, `0x43bda1`, `0x43c008`, `0x43c156`, `0x43c29c` step south-east, south, west, north-west, north): the carrier next to the flag at the end of its road takes state 0x42; a free node is stepped to as in state 2; an occupied one is marked in the heading (the direction less 6) and tried again, or swapped with a settler coming the other way (not ported). | confirmed | game | Entries of the table at `0x43b508`. [Carriers](carriers.md#the-carriers-walk). |
+| `0x42ff81` | `Settler_CarrierWaits` | State 0x42: a carrier waits next to a flag at the end of its road. Observed: the item does not change in over 20 turns. Its work (taking the goods that wait) is not read. | inferred | game | Entry 0x42 of `0x42fca1`. [Carriers](carriers.md#the-carriers-walk). |
 | `0x42ca7a` | `Route_NextGeneration` | Counts the generation (`+0x26e`) that marks the flags a search has reached; when it wraps, clears the mark of every `Table70` item. | confirmed | game | Called by the searches and by `0x42965c`, `0x45d3ea`, `0x46414d`. |
 | `0x42fc81` | `Settler_Dispatch` | Runs the turn of the settler at the item pointer: jumps through the table at `0x42fca1` (8 bytes an entry) by the state byte (item `+0xa`). | confirmed | game | Called by `0x42f3d9` and `0x42f512`. |
 | `0x438eeb` | `Settler_WaitInStorage` | State 1: a settler in a storage enters its slot in the storage's list of waiting settlers by its job (`+0x42` plus twice the job); the knights' jobs take their own branches. | confirmed | game | Entry 1 of `0x42fca1`. |
@@ -780,18 +784,33 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4281cc` | `Render_DrawRoadSouth` | confirmed | Roads |
 | `0x428389` | — | inferred | Roads |
 | `0x4286d8` | — | unknown | Simulation |
-| `0x428728` | — | unknown | Simulation |
+| `0x428728` | `Sim_ClearRetryBits` | confirmed | Simulation |
 | `0x428964` | `Sound_RunAmbient` | inferred | Sound |
 | `0x428a75` | — | unknown | Simulation |
 | `0x428d10` | — | unknown | Simulation |
 | `0x4291c2` | `Sim_StepPhase` | confirmed | Simulation |
 | `0x42a74a` | — | unknown | Simulation |
-| `0x42cb2d` | — | unknown | Simulation |
-| `0x42f3d9` | — | unknown | Simulation |
-| `0x42f4f1` | — | unknown | Simulation |
+| `0x42b455` | `Road_RequestCarrier` | confirmed | Simulation |
+| `0x42b4bc` | `Road_RequestBoatman` | inferred | Simulation |
+| `0x42be63` | `Building_RequestWorker` | confirmed | Simulation |
+| `0x42ca7a` | `Route_NextGeneration` | confirmed | Simulation |
+| `0x42cb2d` | `Table18_Pass` | confirmed | Simulation |
+| `0x42f3d9` | `Table16_Pass` | confirmed | Simulation |
+| `0x42f4f1` | — | inferred | Simulation |
+| `0x42fc81` | `Settler_Dispatch` | confirmed | Simulation |
+| `0x42ff81` | `Settler_CarrierWaits` | inferred | Simulation |
 | `0x430ee9` | `Player_SwapInSecondView` | confirmed | Input |
 | `0x430fd3` | `Player_SwapOutSecondView` | confirmed | Input |
 | `0x431c31` | `Msg_Post` | confirmed | Main loop |
+| `0x438eeb` | `Settler_WaitInStorage` | confirmed | Simulation |
+| `0x4398ea` | `Settler_Walk` | confirmed | Simulation |
+| `0x43a64c` | `Settler_StepEast` | confirmed | Simulation |
+| `0x43ad78` | `Settler_WalkRoad` | confirmed | Simulation |
+| `0x43b788` | `Settler_StepRoadEast` | confirmed | Simulation |
+| `0x43c96b` | `Settler_PassDoor` | inferred | Simulation |
+| `0x43dceb` | `Settler_WaitStep` | confirmed | Simulation |
+| `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
+| `0x43f17a` | `Settler_StandByCastle` | confirmed | Simulation |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
 | `0x440c24` | `View_HandleClick` | inferred | Roads |
 | `0x440d23` | `View_RunButtonAction` | inferred | Roads |
@@ -862,7 +881,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x461548` | `Table_ToPointers16` | confirmed | Save and load |
 | `0x4617fd` | `Building_Remove` | inferred | Castle and build sites |
 | `0x462e1d` | `Road_TakeDown` | inferred | Roads |
-| `0x46414d` | — | unknown | Simulation |
+| `0x46414d` | `Table70_Pass` | confirmed | Simulation |
+| `0x464c36` | `Flag_VisitRoads` | confirmed | Simulation |
 | `0x466ade` | `Rng_Step` | confirmed | Random generator and map start |
 | `0x466b94` | `StartScreen_SwitchPage` | confirmed | Program start and game flow |
 | `0x467c03` | `StartScreen_HandleClick` | inferred | Program start and game flow |
@@ -895,7 +915,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 163 routines of the 471 functions in the dump's game code band and lists 15 more without a name: 125 confirmed, 39 inferred, 14 unknown.
+Coverage: the index names 183 routines of the 471 functions in the dump's game code band and lists 11 more without a name: 142 confirmed, 43 inferred, 9 unknown.
 <!-- coverage:end -->
 
 Open anchors:

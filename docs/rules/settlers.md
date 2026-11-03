@@ -7,10 +7,11 @@ roads are in [Flags](flags.md) and [Roads](roads.md); the castle's first settler
 
 **Emulated.** The harness verb `worker:` (`tools/GhidraDump/emulate.py`) starts a game as the `road` verb does
 (castle, flags, roads), places a finished building on the node north-west of a flag, and runs the program's own
-routines for each pass: `0x428728`, the phase step, `0x42cb2d`, and `0x42f3d9`. The engine runs the same commands
-and matches the bytes of the worker's item and of the hut's item after every pass until the worker's first turn in
+routines for each pass: `0x428728`, the phase step, `0x46414d`, `0x42cb2d`, and `0x42f3d9`. The engine runs the same
+commands and matches the bytes of the worker's item and of the hut's item after every pass until the worker's first turn in
 state 4, in three games (`tests/OpenSettlers.Tests/worker-walks.txt`): a hut one road from the castle, a hut three
-flags away over four roads, and a hut that gets a road only at pass 100.
+flags away over four roads, and a hut that gets a road only at pass 100. The flag pass sends a carrier to each road
+([Carriers](carriers.md)), so the worker walks among carriers and waits where one stands on its way.
 
 ## The items
 
@@ -39,7 +40,8 @@ in the storage, 0 for none (`+0x42 + 2 * job`); and at `+0x4a` the number of set
 
 The main loop calls, in this order for each pass: `0x428728` (the retry scan, below), the phase step `0x4291c2` (one
 more, back to 0 at the phase count), the flag pass `0x46414d`, the building pass `0x42cb2d`, and the settler pass
-`0x42f3d9`. The engine runs one pass for each tick (8 clock units) and leaves out the flag pass.
+`0x42f3d9`. The engine runs one pass for each tick (8 clock units) and runs the flag pass for the carriers only
+([Carriers](carriers.md#the-flag-pass)).
 
 - The building pass handles the buildings whose slot divided by 32, modulo 32, is the phase, so a building is
   handled once for each cycle of 33 passes. A finished building goes to the handler of its type (the table at
@@ -58,8 +60,9 @@ more, back to 0 at the phase count), the flag pass `0x46414d`, the building pass
 size (`+0x52`, which `0x42195c` takes from the table at `0x421d28` by the map size: 16, 30, or 55 buildings for the sizes
 1, 2, 3), starts at the cursor (`+0x54`, which goes back to 0 when it is at the end), clears the bit, and stops
 after 10 buildings that had it set. A request that found no worker sets the bit, and a building whose bit is set asks
-for no worker; so the request is made again at the building's next turn, once the scan has been past it. (The
-original's scan also clears bit 7 of the status of a window of flags, which this port does not use.)
+for no worker; so the request is made again at the building's next turn, once the scan has been past it. The scan also
+clears bit 7 of the status of a window of flags the same way, which the carriers' requests use
+([Carriers](carriers.md#the-flag-pass)).
 
 ## The request
 
@@ -86,8 +89,8 @@ building), and the building's slot in the node's link byte.
 
 ## The route search
 
-**Status:** confirmed for the search in the walk and in `0x42be63`; **inferred** that `0x42b455` and `0x42b4bc` (the
-carriers' request) are the same search from a road. The flags are the nodes, the roads are the links; a flag has one
+**Status:** confirmed for the search in the walk and in `0x42be63`; `0x42b455` (the carriers' request) is the same search
+from both ends of a road ([Carriers](carriers.md#the-request)). The flags are the nodes, the roads are the links; a flag has one
 link for each of the six directions (east 0 to north 5), and a building at its north-west.
 
 The search takes a generation number (`0x42ca7a`), marks the flag it starts from, and seeds a queue with the flag at
@@ -136,7 +139,9 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
 - **State 10, the castle's builder** (`0x43f17a`): the settler with the job 4, slot 0, adds the elapsed units times 128 to
   the castle's build progress each turn; when that wraps (about 64 passes after the castle is placed) the castle
   stands: bit 7 of its type goes out, which changes the door speed index from 0x38 to 0x18, and the settler takes state 12.
-- **Not ported:** a blocked step (the original lets two settlers going opposite ways pass; the port waits), the walk
+- **A blocked step:** where the next node holds a settler, the timer is 0x7f, the frame `0x51 + direction`, and the heading
+  the direction less 6; at the next turn after the timer the settler tries the same direction again.
+- **Not ported:** the passing of two settlers going opposite ways (the original swaps them; the port waits), the walk
   home when no route is left (mode 254), the knights (jobs 22 to 26 and the castle's handler, which draw from the random
   generator), and the settlers the castle makes later (`0x428a75`).
 
@@ -153,11 +158,11 @@ remaining time in ticks and the offsets carry the settler along the step. The fi
 and the player's colour overlay is the entry plus 2500. The frame's index is the shape of the step: `4 + 9 * direction`
 plus the height difference, so the facing is the direction of the step.
 
-**In the engine** (`SettlerFigures`, `SettlerGraphics`, `src/MapView`): a settler in state 2 or 5 is drawn with the sprites its
+**In the engine** (`SettlerFigures`, `SettlerGraphics`, `src/MapView`): a settler in state 2, 3, 5, or 0x42 is drawn with the sprites its
 frame's sequence names for the time it has left, read from the install's archive at run time and the tables from the program
 (`ProgramTables.FigureBases`, `FigureOffsets`, matched by digest with the emulator's `peek`). The time left is the
 timer less the clock units since the settler's turn, so the animation moves with the game's ticks. The view draws
-the settlers of job 11 in every wrap copy, rebuilt after each tick. **Inferred, with no emulator run of the draw:** that the
+the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)) and 11 in every wrap copy, rebuilt after each tick. **Inferred, with no emulator run of the draw:** that the
 sequence offsets count from the byte after the entry's first dword, that a sequence runs to the next one's offset, that
 the triple index is the time left shifted right 3, the figure's position (the node plus 16 and 8, lifted by its height,
 plus the triple's dx and dy, as an object), that the second figure takes no offset, the colour overlay filled with the
@@ -166,10 +171,11 @@ settler in view from the turn it acts every pass; the engine takes the time left
 
 ## Open leads
 
-- The second way of the request (a jobless settler and a tool), which the carriers' request shares (`0x42b4bc`).
+- The second way of the request for a worker (a jobless settler and a tool); the carriers' request has it without the tool
+  ([Carriers](carriers.md#the-request)).
 - The settler's state 4 and the woodcutter's work (the next slice), the states 6, 12, 25, and the walk home (mode 254).
-- The knights and the castle's handler of type 0x18, the settler creation of `0x428a75`, and the flag pass `0x46414d`.
-- A blocked step and the passing of two settlers going opposite ways.
+- The knights and the castle's handler of type 0x18, the settler creation of `0x428a75`, and the goods part of the flag pass `0x46414d`.
+- The passing of two settlers going opposite ways.
 - That the phase count is 33 for the game of one player with no computer opponent (`0x42055e`).
 - The building type of the woodcutter's hut, the hut's object code, and its site rule (no run places a building).
 - The game's random generator continues from the map's generator in the original, and the knights' idle turns draw
@@ -181,4 +187,5 @@ settler in view from the turn it acts every pass; the engine takes the time left
 request, the route search, and the walk are in `src/Simulation/Game.Settlers.cs`. `ProgramTables` reads the step
 times, the door speeds, and the scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`,
 `ScanWindows`). `Game.Digest` holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's
-waiting list, and the settlers' places.
+waiting list, and the settlers' places. The carriers' part is in `src/Simulation/Game.Carriers.cs`
+([Carriers](carriers.md#in-the-engine)).

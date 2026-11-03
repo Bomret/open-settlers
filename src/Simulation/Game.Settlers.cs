@@ -58,8 +58,9 @@ public sealed partial class Game
     public IReadOnlyList<Settler> Settlers => _settlers;
 
     // One pass of the main loop for the item tables: the scan that clears the retry bits (0x428728), the phase step
-    // (0x4291c2), then the slices of the building table (0x42cb2d) and the settler table (0x42f3d9). The original's
-    // other passes (the flag table, the players' timers, the sound) are not ported.
+    // (0x4291c2), then the slices of the flag table (0x46414d, the carriers' requests only), the building table
+    // (0x42cb2d), and the settler table (0x42f3d9). The original's other passes (the players' timers, the sound) are not
+    // ported.
     private void Pass()
     {
         _clock = (ushort)(_clock + ClockStep);
@@ -368,8 +369,9 @@ public sealed partial class Game
     // out it chooses a direction (on a node of a road the one the road goes on, on a flag the first direction of the
     // route to the flag it walks to), steps, and adds the step's time to its timer. The sum wraps while the step
     // was over already, and the settler then goes on at once; else it waits out the rest. At the flag it walks to
-    // it enters the building there. **Not ported:** a blocked step (another settler on the node, which the original
-    // may swap past), the walk home, and the states the original reaches from here for other modes.
+    // it enters the building there, or, as a carrier, the road. A step onto a node another settler stands on is tried
+    // again after the timer of 0x7f. **Not ported:** the swap with a settler that comes the other way, the walk home,
+    // and the states the original reaches from here for other modes.
     private void Walk(int slot, Settler settler)
     {
         if (!TimerRan(settler))
