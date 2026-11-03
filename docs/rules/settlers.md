@@ -171,11 +171,44 @@ plus the triple's dx and dy, as an object), that the second figure takes no offs
 palette index 0x40 plus 4 for the player, and the job's variants for figure bytes from 0x80 (not read). The original draws a
 settler in view from the turn it acts every pass; the engine takes the time left from the clock instead.
 
+## Walking home
+
+A settler whose work is taken away (the teardown of a building sends the settlers inside it, `0x461b77`: it sets the state
+byte to `0x1c` and nothing else) walks to the nearest own flag with a road and from there to a storage. The state table's
+stubs lie at `0x42fca1` plus 8 times the state, so `0x1c` is `0x434946` and `0x19` is `0x4353ef`.
+
+**Emulated.** The harness verb `home:` runs the passes of `wood:` and, before one pass, sends a chosen castle settler home
+(optionally moved to another node first, or put into another state and mode byte); the engine matches the settler's 16 bytes
+and the generator's words after every pass until the settler reaches state 2 with mode `0xfe`, in four games
+(`tests/OpenSettlers.Tests/home-walks.txt`): a settler of job 7 and the woodcutter from the castle, a settler 11 nodes away
+whose search finds no flag and walks by random nodes (670 passes), and a settler in state `0x19` with mode 1.
+
+- **State `0x1c`.** When no settler stands on the node (the node's settler word is 0) the settler writes its slot there, takes
+  the frame `0x52`, timer 0, mode 0, the stamp of the clock, and state `0x19`; else it waits.
+- **State `0x19`.** After its timer ran out it searches the spiral table (entries 1 to 258) from the near end, or from the
+  far end where the mode byte is not 0, for the first node that holds a flag (node bit 7), whose flag item's byte 4 has a
+  road bit (low six bits) and whose owner bits (the top three bits of the height byte) are the settler's player plus 4. The
+  table's offset becomes the vector of the free walk (bytes 11 and 12), byte 13 is `0x80`, byte 14 `0xff`, byte 15 0, the timer 0,
+  and the state `0x10` (`0x35` for the jobs 22 to 26). The mode of a settler that failed to find its storage is 1, so it
+  walks to the farthest such flag.
+- **No flag found.** The settler draws random offsets: ten tries with the generator's low and high byte masked with 15 and
+  less 8, twenty with 31 and 16, twenty with 63 and 32, then without end with 15 and 8. A node with no object and a height
+  not 0 is taken where it carries the settler's owner bits (always in the last phase). The offsets become the vector as above.
+- **Arrival (`0x4385ab`, from `0x437ddd`).** The free walk ends at a vector of 0. The jobs 0 to 4, 6, 9, 10, 12, 13, 15 to 19,
+  and 21 take `0x4385ab` at once; the jobs 5, 7, 8, 11, 14, and 20 take it where byte 13 is `0x80` and byte 14 negative (the
+  knights, 22 to 26, where byte 13 is `0x80`). On an own flag with a road the settler takes state 2 with mode `0xfe`, bytes 12
+  to 15 and the timer 0; anywhere else it takes state `0x19` with mode 0 and timer 0, and searches again.
+
+**Not ported:** the walk to the storage (state 2 with mode `0xfe`, `0x4398ea`), entering the castle, the commands that tear down, the
+boatman's state `0x1a` (`0x4350f8`; water roads are not ported), state `0x35` of the knights, and the arrivals of the jobs 7, 8, 11,
+14, and 20 where they do not walk home. **Inferred:** the drawing of the states `0x19` and `0x1c` (frame `0x52`, as a waiting
+settler).
+
 ## Open leads
 
 - The second way of the request for a worker (a jobless settler and a tool); the carriers' request has it without the tool
   ([Carriers](carriers.md#the-request)).
-- The states 12 and 25 and the walk home (mode 254); the states 4, 6, 7, 0x10, 0x11, and 0x12 are in [Woodcutting](woodcutting.md).
+- The states 12 and 25 and the walk to the storage (state 2, mode 254); the states 4, 6, 7, 0x10, 0x11, and 0x12 are in [Woodcutting](woodcutting.md).
 - The castle's handler of type 0x18, the settler creation of `0x428a75`, and the goods part of the flag pass `0x46414d`.
 - The passing of two settlers going opposite ways.
 - That the phase count is 33 for the game of one player with no computer opponent (`0x42055e`).

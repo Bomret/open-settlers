@@ -131,6 +131,16 @@ public sealed class SettlerFiguresTests
         Assert.HasCount(3, Figures().Draws(Map(), [Walker(7, 0, state: state)], 0));
     }
 
+    // Inferred: a settler that claims its node (0x1c) or searches for the nearest flag (0x19) stands with the frame 0x52 the
+    // claim sets and is drawn as a waiting settler is; no draw run confirms it.
+    [TestMethod]
+    [DataRow(0x19)]
+    [DataRow(0x1c)]
+    public void ASettlerOnItsWayHomeIsDrawnAsAWalkingSettlerIs(int state)
+    {
+        Assert.HasCount(3, Figures().Draws(Map(), [Walker(7, 0, state: state)], 0));
+    }
+
     [TestMethod]
     public void ACarrierOnItsRoadIsDrawnAsAWalkingSettlerIs()
     {

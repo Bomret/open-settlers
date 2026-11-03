@@ -111,9 +111,13 @@ left open:
 - The castle's own handler (building type 0x18, `0x42e7e0`) and the settlers the castle makes later (`0x428a75`), and the ambient
   sounds of each view (`0x428964`): they may draw from the random generator; the port draws nothing for them. The knights' idle
   turns (jobs 22 to 26) are known and ported ([Woodcutting](../rules/woodcutting.md#the-random-generator)).
-- The woodcutter sent home (mode `0xfe`), the free walk's passing of settlers and its check of a node marked solid, the way back with
-  a negative count (`0x4385ab`), and the handlers of the object codes from `0x67` (`0x428eb8`): likely, not ported
-  ([Woodcutting](../rules/woodcutting.md#open-leads)).
+- The walk home is known up to the flag: the claim `0x434946`, the search `0x4353ef`, and the arrival `0x4385ab` are ported and match
+  the emulator ([Settlers](../rules/settlers.md#walking-home)); its walk to the storage (state 2, mode `0xfe`) is open until the
+  next stage. The free walk's passing of settlers and its check of a node marked solid, and the handlers of the object codes from
+  `0x67` (`0x428eb8`): likely, not ported ([Woodcutting](../rules/woodcutting.md#open-leads)). The boatman's walk home (state `0x1a`)
+  stays unported with the water roads.
+- The drawing of the states `0x19` and `0x1c` (frame `0x52`, drawn as a waiting settler) is **inferred**; no run of the draw confirms
+  it. Lead: the same as for the walk's draw.
 - The drawing of the goods on a flag (`0x44db26`, `0x44de9a`): the place offsets and the sprite entry 320 plus the good (a log is
   entry 327) are read from the decompile and **inferred**; no emulator or debugger run of the draw confirms them. Lead: run `0x44db26`
   in the emulator with a flag that holds a log and read the position and entry `0x44de9a` hands the blit.

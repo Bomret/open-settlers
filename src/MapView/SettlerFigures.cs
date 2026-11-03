@@ -48,6 +48,11 @@ public sealed class SettlerFigures
     private const int StatesFreeWalk = 0x10;
     private const int StatesCutting = 0x11;
 
+    // A settler that claims its node (0x1c) or searches for the nearest flag (0x19) on its way home stands with the frame
+    // 0x52 the claim sets. **Inferred:** it is drawn as a waiting settler is; no draw run confirms it.
+    private const int StatesClaiming = 0x1c;
+    private const int StatesSearching = 0x19;
+
     private readonly short[] _bases;
     private readonly short[] _offsets;
     private readonly byte[] _data;
@@ -81,6 +86,8 @@ public sealed class SettlerFigures
                         or StatesDoor
                         or StatesFreeWalk
                         or StatesCutting
+                        or StatesClaiming
+                        or StatesSearching
                     )
                 || Triple(settler, clock) is not { } triple
             )

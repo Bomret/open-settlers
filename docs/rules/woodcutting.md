@@ -140,8 +140,9 @@ read from the registers the decompile shows); an open lead.
 
 ## Open leads
 
-- The woodcutter sent home (mode 0xfe), the way back with a negative count (`0x4385ab`), the free walk's other directions and the
-  passing of settlers, and the handlers of the codes 0x67 and up. likely
+- The woodcutter's walk to the storage (mode 0xfe); the way back with a negative count (`0x4385ab`) is the walk home and is
+  ported up to the flag ([Settlers](settlers.md#walking-home)). The free walk's other directions and the passing of settlers,
+  and the handlers of the codes 0x67 and up. likely
 - The tool for a second woodcutter (the request's second way, [Settlers](settlers.md#the-request)): the castle holds one worker of
   job 5. guess
 - The player block's counters of goods on flags (`0x436b46` counts the good up at `+good - 0x6f` of the player block). guess
