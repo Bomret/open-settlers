@@ -18,6 +18,18 @@ namespace OpenSettlers.Tests;
 // which tests when a good gets its destination and its direction, and when the waiting carrier is told to fetch it. A
 // pass-5 put in the command (the last field) is the put of 0x436b46 by hand, before that pass.
 //
+// The scenarios chain-log and several-goods run a road of three flags between the hut and the castle's flag (the flags 5, 7, 6,
+// and 1 of the emulator's numbering). Their f lines keep to the flags that change: each is checked at every pass. Their s lines
+// (a carrier's 16 bytes, at the pass it takes a new state or a new good, and at every twelfth change), the l lines (the logs in
+// the castle) and the c lines (bytes 8 and 9 of the castle's item) are checked at the pass they are listed at. They give the
+// carrier's lifting of a good, its drop at a flag where no good waits for its road, its delivery into the castle in state 0xe,
+// and the castle's count of logs rising by one for each delivery. several-goods lays 2 logs on the hut's flag (the one on the
+// higher place goes first: the flag's turn visits the places from the last) and one on the flag 6 at pass 5, so that two
+// carriers work at once. The transport priorities that choose the next good to wait for a road are all 0 in the verb's game
+// (docs/rules/goods.md), so the second log of the hut's flag stays there: the engine does the same. The exchange of a good for
+// a good at a flag needs a good that goes the way the carrier came, which no good does while the castle is the only
+// destination: ExchangeTests covers it with made-up tables.
+//
 // The emulator numbers the flags one higher than the engine (the dummy), and so do the destination words. Byte 4 holds more
 // than bit 7 (bit 6 marks the hut): the engine keeps bit 7 only. The carrier's bytes at 12 to 15 hold the pointer to its flag's
 // item that the original keeps while it waits (docs/rules/carriers.md); the engine keeps the slot.
@@ -79,7 +91,7 @@ public sealed class FlagGoodsTests
         bytes.AddRange(BitConverter.GetBytes(s.Stamp));
         bytes.AddRange([(byte)s.State, (byte)s.Mode]);
         var pointer = 0x23000000 + 0x46 * (s.Target + 1);
-        bytes.AddRange(BitConverter.GetBytes((ushort)pointer));
+        bytes.AddRange(BitConverter.GetBytes((ushort)(s.State is 0x42 or 0x43 ? pointer : s.Target)));
         bytes.Add((byte)s.Heading);
         bytes.Add(s.State is 0x42 or 0x43 ? (byte)(pointer >> 24) : (byte)s.Next);
 
@@ -101,8 +113,16 @@ public sealed class FlagGoodsTests
         var flags = Points(parts[5]);
         var hut = parts[7].Split(',').Select(int.Parse).ToArray();
         var passes = int.Parse(parts[8], CultureInfo.InvariantCulture);
-        var put = parts.Length > 12 ? parts[12].Split(',').Select(int.Parse).ToArray() : null;
         var hutFlag = flags.FindIndex(flag => flag[0] == hut[0] && flag[1] == hut[1]) + 1;
+        // Each put is PASS,PLACE,GOOD for the hut's flag, or PASS,PLACE,GOOD,SLOT for a flag of the emulator's numbering.
+        var puts =
+            parts.Length > 12
+                ? parts[12]
+                    .Split(';')
+                    .Select(text => text.Split(',').Select(int.Parse).ToArray())
+                    .Select(put => (Pass: put[0], Place: put[1], Good: put[2], Flag: put.Length > 3 ? put[3] - 1 : hutFlag))
+                    .ToList()
+                : [];
 
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         foreach (var flag in flags)
@@ -128,15 +148,16 @@ public sealed class FlagGoodsTests
         var known = new Dictionary<string, string>();
         for (var pass = 0; pass < passes; pass++)
         {
-            if (put is not null && pass == put[0])
+            foreach (var put in puts.Where(put => put.Pass == pass))
             {
-                game.LayGood(hutFlag, put[1], put[2]);
+                game.LayGood(put.Flag, put.Place, put.Good);
             }
 
             game.Tick();
-            foreach (var line in scenario.Lines.Where(line => line.Pass == pass))
+            var checkpoint = scenario.Lines.Where(line => line.Pass == pass).SelectMany(line => line.Values).ToList();
+            foreach (var (key, value) in checkpoint)
             {
-                foreach (var (key, value) in line.Values)
+                if (key[0] == 'f')
                 {
                     known[key] = value;
                 }
@@ -144,21 +165,53 @@ public sealed class FlagGoodsTests
 
             foreach (var (key, value) in known)
             {
-                if (key == "s5")
+                var flag = int.Parse(key[1..], CultureInfo.InvariantCulture) - 1;
+                Assert.AreEqual(Expected(value), Fields(game, flag), $"{name}: flag {flag} after pass {pass}");
+            }
+
+            // The carriers (s), the castle's log count (l), and the castle's bytes 8 and 9 (c) are checked at the passes a line
+            // lists them.
+            foreach (var (key, value) in checkpoint)
+            {
+                switch (key[0])
                 {
-                    Assert.AreEqual(
-                        value,
-                        Carrier(game.Settlers[5], map.Size.Width),
-                        $"{name}: the carrier after pass {pass}"
-                    );
-                }
-                else
-                {
-                    var flag = int.Parse(key[1..], CultureInfo.InvariantCulture) - 1;
-                    Assert.AreEqual(Expected(value), Fields(game, flag), $"{name}: flag {flag} after pass {pass}");
+                    case 's':
+                        var settler = game.Settlers[int.Parse(key[1..], CultureInfo.InvariantCulture)];
+                        Assert.AreEqual(
+                            Masked(value, value),
+                            Masked(value, Carrier(settler, map.Size.Width)),
+                            $"{name}: the carrier {key} after pass {pass}"
+                        );
+                        break;
+                    case 'l':
+                        Assert.AreEqual(
+                            int.Parse(value, CultureInfo.InvariantCulture),
+                            game.CastleLogs,
+                            $"{name}: the logs in the castle after pass {pass}"
+                        );
+                        break;
+                    case 'c':
+                        Assert.AreEqual(
+                            value,
+                            Convert.ToHexString(BitConverter.GetBytes(game.Buildings[0].Fill)),
+                            $"{name}: bytes 8 and 9 of the castle after pass {pass}"
+                        );
+                        break;
                 }
             }
         }
+    }
+
+    // The word at 12 of a carrier holds the pointer to the flag's item in states 0x42 and 0x43, the destination in state 0xe and
+    // in state 3 while the carrier carries a good (its byte 11 is not 0), and else the flag it walks to or what it held last,
+    // which the engine keeps in its own numbering and nothing reads: only the first three are compared. The fixture's bytes
+    // say which: the state at 10 and the good at 11.
+    private static string Masked(string expected, string bytes)
+    {
+        var state = Convert.ToByte(expected[20..22], 16);
+        var carrying = state == 3 && Convert.ToByte(expected[22..24], 16) != 0;
+
+        return state is 0x42 or 0x43 or 0xe || carrying ? bytes : string.Concat(bytes[..24], "0000", bytes[28..]);
     }
 
     // Tests of the game's own goods logic, on made-up tables (no install): a good waits where no road holds a carrier, and

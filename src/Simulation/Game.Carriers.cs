@@ -282,11 +282,25 @@ public sealed partial class Game
             }
             else
             {
+                // A carrier on a flag: with a good for the building at this flag it goes in, else it swaps goods with the flag and
+                // goes on along the road it came by.
+                if (settler.Mode != 0 && settler.Target == Map.Layer(MapLayer.Resource)[here] + 1)
+                {
+                    Deliver(slot, settler);
+                    return;
+                }
+
+                Exchange(settler, Map.Layer(MapLayer.Resource)[here]);
                 direction = settler.Heading;
             }
 
             var (_, _, next) = Neighbour(settler, direction);
-            if ((flags[next] & 0x80) != 0 && settler.Mode == 0 && settler.Next >= 0)
+            if (
+                (flags[next] & 0x80) != 0
+                && settler.Mode == 0
+                && settler.Next >= 0
+                && (_directionBytes[Map.Layer(MapLayer.Resource)[next]][(direction + 3) % 6] & 0x80) == 0
+            )
             {
                 Wait(settler, (direction + 3) % 6, Map.Layer(MapLayer.Resource)[next]);
                 return;

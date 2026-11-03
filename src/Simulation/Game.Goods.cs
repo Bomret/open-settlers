@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace OpenSettlers.Simulation;
@@ -26,6 +27,9 @@ public sealed partial class Game
     // Bytes 0x3c to 0x41 of each flag's item, one for each direction: bit 7 a good waits to go that way, bits 0 to 2 its place,
     // bits 3 to 5 the direction in which the road leaves the flag at its far end (written when the road is made).
     private readonly List<byte[]> _directionBytes = [];
+
+    /// <summary>The logs the castle holds: the count of its storage item for the good 7.</summary>
+    public int CastleLogs => Stock.Count > GoodLog ? Stock[GoodLog] : 0;
 
     /// <summary>Whether a flag's item has byte 4 bit 7 set: goods wait for their next turn at the flag pass.</summary>
     public bool FlagGoodsBit(int flag) => _goodsBit[flag];
@@ -258,10 +262,9 @@ public sealed partial class Game
         }
 
         var way = label[destination];
-        var waiting = _directionBytes[flag][way];
-        if ((waiting & 0x80) == 0)
+        if ((_directionBytes[flag][way] & 0x80) == 0)
         {
-            _directionBytes[flag][way] = (byte)(waiting | place | 0x80);
+            WaitForRoad(flag, way, place);
         }
 
         // **Not ported:** a good that waits for the same direction is replaced by this one where its priority is higher
@@ -314,6 +317,159 @@ public sealed partial class Game
         settler.Timer = 0;
         settler.Mode = 0;
         settler.Next = 0;
+    }
+
+    // The good on a place waits for the road that leaves the flag in a direction: bit 7 and the place go into the road's byte.
+    internal void WaitForRoad(int flag, int way, int place) =>
+        _directionBytes[flag][way] |= (byte)(0x80 | place);
+
+    // A carrier on a flag (state 3, 0x43af07 to 0x43b410): with the heading it came in, the road it works, it swaps goods with the
+    // flag. Where a good waits for that road (byte 0x3c + heading, bit 7) the carrier takes it, and leaves the good it carries
+    // in the same place, destination word and all; where none waits and the carrier carries one, the good goes on the first
+    // empty place. A flag where something was laid is asked again by its next turn (byte 4, bit 7). The byte of the road is
+    // then made again: the good of the greatest transport priority that was given the road's direction waits for it next.
+    internal void Exchange(Settler settler, int flag)
+    {
+        var way = settler.Heading;
+        var goods = _flagGoods[flag];
+        var waiting = _directionBytes[flag][way];
+        if ((waiting & 0x80) != 0)
+        {
+            var place = waiting & 7;
+            settler.Next = 0;
+            if (settler.Mode != 0)
+            {
+                _goodsBit[flag] = true;
+                var good = goods[place];
+                var destination = _goodsDestination[flag][place];
+                goods[place] = (byte)settler.Mode;
+                _goodsDestination[flag][place] = (ushort)settler.Target;
+                settler.Mode = good & 0x1f;
+                settler.Target = destination;
+            }
+            else
+            {
+                settler.Mode = goods[place] & 0x1f;
+                settler.Target = _goodsDestination[flag][place];
+                goods[place] = 0;
+            }
+
+            _directionBytes[flag][way] = (byte)(waiting & 0x78);
+            var best = 0;
+            var found = -1;
+            for (var i = 0; i < goods.Length; i++)
+            {
+                if (goods[i] != 0 && (goods[i] & 0xe0) == (way + 1) << DirectionShift && TransportPriority(goods[i] & 0x1f) > best)
+                {
+                    best = TransportPriority(goods[i] & 0x1f);
+                    found = i;
+                }
+            }
+
+            if (found >= 0)
+            {
+                WaitForRoad(flag, way, found);
+            }
+        }
+        else if (settler.Mode != 0)
+        {
+            var place = Array.IndexOf(goods, (byte)0);
+            if (place >= 0)
+            {
+                _goodsBit[flag] = true;
+                goods[place] = (byte)settler.Mode;
+                settler.Mode = 0;
+                _goodsDestination[flag][place] = (ushort)settler.Target;
+            }
+        }
+    }
+
+    // The transport priority of a good (a byte of the table in the player's block, +good - 0x55 from the pointer +0x64 + 4 *
+    // player, read at 0x43b054). **Inferred:** 0 for every good. The verb goods runs the game's start without whatever fills the
+    // table, and all its bytes read 0 there, so a good that waits behind another for a road is never chosen at an exchange (the
+    // flag's turn does not choose it either: it has its direction already). Open lead: who fills the table.
+    private static int TransportPriority(int good) => 0;
+
+    // A carrier on the flag it carries a good to (0x43c45e): it turns to the building north-west of the flag, state 0xe, with the
+    // step's frame from the heights and its time on the timer, and goes on at once where the timer has not run out.
+    private void Deliver(int slot, Settler settler)
+    {
+        var here = Map.Index(settler.X, settler.Y);
+        var (_, _, node) = Neighbour(settler, 4);
+        settler.State = 0xe;
+        settler.Next = 0;
+        settler.Frame = (byte)(Height(node) - Height(here) + 0x5d);
+        var old = settler.Timer;
+        settler.Timer = (ushort)(old + _tables.StepTime(settler.Frame));
+        if (settler.Timer >= old)
+        {
+            Handover(slot, settler);
+        }
+    }
+
+    // State 0xe (0x43c4ea) when its timer has run out. The first time the good goes into the building: its byte 8 or 9 (the log
+    // and the goods from 9 on but 13 count in byte 9, the others in byte 8) gains 0x0f, and where that carries out of the byte the
+    // word of both bytes becomes 0xffff and the good is counted in the building's storage, up to 50000. The castle's bytes are
+    // 0xffff, so each good delivered to it counts. The carrier then turns the frame round, takes the other half of the step's
+    // time, and the second time goes on in state 3 at the flag, where the exchange runs again.
+    private void Handover(int slot, Settler settler)
+    {
+        while (true)
+        {
+            if (settler.Next != 0)
+            {
+                settler.Next = 0;
+                settler.State = 3;
+                WalkRoad(slot, settler);
+
+                return;
+            }
+
+            var (_, _, node) = Neighbour(settler, 4);
+            var good = settler.Mode;
+            if (good != 0)
+            {
+                settler.Mode = 0;
+                if (BuildingAt(node) is { } building && (building.Status & 0x20) == 0)
+                {
+                    var high = good >= 9 ? good != 13 : good == 7;
+                    var sum = (high ? (building.Fill >> 8) : (building.Fill & 0xff)) + 0x0f;
+                    building.Fill = high
+                        ? (ushort)((building.Fill & 0xff) | ((sum & 0xff) << 8))
+                        : (ushort)((building.Fill & 0xff00) | (sum & 0xff));
+                    if (sum > 0xff)
+                    {
+                        building.Fill = 0xffff;
+                        if (building.Type == Building.CastleType)
+                        {
+                            AddToStock(good);
+                        }
+                    }
+                }
+            }
+
+            var shape = 0x0d - (settler.Frame - 0x5d);
+            settler.Frame = (byte)shape;
+            settler.Next = 0xff;
+            var old = settler.Timer;
+            settler.Timer = (ushort)(old + (_tables.StepTime(shape) >> 1));
+            if (settler.Timer < old)
+            {
+                return;
+            }
+        }
+    }
+
+    private void AddToStock(int good)
+    {
+        var stock = new int[Stock.Count];
+        for (var i = 0; i < stock.Length; i++)
+        {
+            stock[i] = Stock[i];
+        }
+
+        stock[good] = Math.Min(stock[good] + 1, 50000);
+        Stock = stock;
     }
 
     private void MixGoods(ref ulong hash)

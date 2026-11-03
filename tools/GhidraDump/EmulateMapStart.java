@@ -1086,7 +1086,7 @@ public class EmulateMapStart extends GhidraScript {
         byte[] building = emu.readMemory(toAddr(item), 0x12).clone();
         byte[] storage = emu.readMemory(toAddr(TABLES + 0x60000), 120).clone();
         println("EMU " + label + " pass=start settlers=" + getWord(STATE + 0x262) + " s15=" + hex(TABLES + 0x40000 + 15 * 16, 16)
-                + " b=" + hex(item, 0x12) + " storage=" + hex(TABLES + 0x60000, 120));
+                + " b=" + hex(item, 0x12) + " c=" + hex(item - 0x12, 0x12) + " storage=" + hex(TABLES + 0x60000, 120));
         String late = parts.length > 9 ? parts[9] : "";
         int lateAt = parts.length > 10 ? Integer.parseInt(parts[10]) : -1;
         int mapBytes = 8 * width * height;
@@ -1096,21 +1096,31 @@ public class EmulateMapStart extends GhidraScript {
         if (wood) {
             println("EMU " + label + " pass=start rng=" + hex4(getWord(STATE + RNG_0)) + "," + hex4(getWord(STATE + RNG_1))
                     + "," + hex4(getWord(STATE + RNG_2)));
+            // The transport priorities the flag exchange reads (0x43b054: the player's pointer at +0x64, less 0x55, indexed
+            // by the good): the 32 bytes for the goods 0 to 31.
+            println("EMU " + label + " prio=" + hex(getInt(STATE + 0x64) - 0x55, 32) + " at=" + Long.toHexString(getInt(STATE + 0x64)));
         }
-        String[] put = parts.length > 11 ? parts[11].split(",") : null;
+        String[] puts = parts.length > 11 ? parts[11].split(";") : new String[0];
+        byte[] castle = emu.readMemory(toAddr(item - 0x12), 0x12).clone();
         for (int pass = 0; pass < passes; pass++) {
             if (pass == lateAt && !late.isEmpty()) {
                 for (String road : late.split(";")) {
                     println("EMU " + label + " late-road=" + road + (silentRoad(width, road) ? " BUILT" : " REFUSED"));
                 }
             }
-            if (put != null && pass == Integer.parseInt(put[0])) {
-                // A good laid on the hut's flag by hand, as the put of 0x436b46 lays it: the good on a place, the place's
-                // destination word cleared, and bit 7 of the flag's byte 4 set (the woodcutter's own put is not waited for).
+            for (String text : puts) {
+                // A good laid on a flag by hand, as the put of 0x436b46 lays it: the good on a place, the place's
+                // destination word cleared, and bit 7 of the flag's byte 4 set (the woodcutter's own put is not waited
+                // for). The put is PASS,PLACE,GOOD for the hut's flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot.
+                String[] put = text.split(",");
+                if (pass != Integer.parseInt(put[0])) {
+                    continue;
+                }
+                long target = put.length > 3 ? TABLES + (long) ITEM_SIZE * Integer.parseInt(put[3]) : flag;
                 int place = Integer.parseInt(put[1]);
-                emu.writeMemory(toAddr(flag + 0xc + place), new byte[] {(byte) Integer.parseInt(put[2])});
-                putWord(flag + 0x14 + 2 * place, 0);
-                emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x80)});
+                emu.writeMemory(toAddr(target + 0xc + place), new byte[] {(byte) Integer.parseInt(put[2])});
+                putWord(target + 0x14 + 2 * place, 0);
+                emu.writeMemory(toAddr(target + 4), new byte[] {(byte) (emu.readMemory(toAddr(target + 4), 1)[0] | 0x80)});
             }
             clock += 8;
             int phase = simulationPass(clock);
@@ -1165,6 +1175,11 @@ public class EmulateMapStart extends GhidraScript {
             if (!java.util.Arrays.equals(bnow, building)) {
                 line.append(" b=").append(hex(item, 0x12));
                 building = bnow.clone();
+            }
+            byte[] cnow = emu.readMemory(toAddr(item - 0x12), 0x12);
+            if (!java.util.Arrays.equals(cnow, castle)) {
+                line.append(" c=").append(hex(item - 0x12, 0x12));
+                castle = cnow.clone();
             }
             byte[] snow = emu.readMemory(toAddr(TABLES + 0x60000), 120);
             if (!java.util.Arrays.equals(snow, storage)) {

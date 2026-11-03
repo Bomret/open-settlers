@@ -55,6 +55,12 @@ public sealed class Building
     /// <summary>The slot of the worker inside (word at 10), 0 for none.</summary>
     public int Worker { get; internal set; }
 
+    /// <summary>
+    /// Bytes 8 and 9 of the building's item: the fill counters of the goods it takes in. A delivery adds 0x0f to the byte of its
+    /// kind of good, and only a carry out of the byte counts the good into the building's storage (<c>docs/rules/goods.md</c>).
+    /// </summary>
+    public ushort Fill { get; internal set; }
+
     /// <summary>The castle's build progress (word at 12): the builder's turns add to it until it wraps.</summary>
     public ushort Progress { get; internal set; }
 }
