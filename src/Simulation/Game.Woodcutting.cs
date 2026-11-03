@@ -89,16 +89,19 @@ public sealed partial class Game
         }
 
         var node = Map.Index(settler.X, settler.Y);
-        var link = Map.Layer(MapLayer.Resource)[node];
-        if (link != 0 && link < _buildings.Count && (_buildings[link].Status & 0x20) == 0)
+        var building = BuildingAt(node);
+        if (building is not null && (building.Status & 0x20) == 0)
         {
             settler.Timer = (ushort)settler.Target;
             // Mode is byte 11, which the free walk also holds the steps east in (StepsEast): at the door the walk's vector is
             // 0, so a value of 0xfe is the original's send-home mark and no walk's -2 east. The original shares the byte.
-            if (settler.Job == WoodcutterJob && settler.Mode != 0xfe)
+            if (settler.Mode == StorageWalk)
             {
-                // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree. **Not ported:** a settler that
-                // is sent home (mode 0xfe) goes back to the castle.
+                EnterStorage(node, settler);
+            }
+            else if (settler.Job == WoodcutterJob)
+            {
+                // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree.
                 _occupant.Remove(node);
                 settler.State = 0x12;
             }

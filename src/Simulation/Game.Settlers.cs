@@ -38,6 +38,9 @@ public sealed partial class Game
     // times the job of the storage item), 0 for none.
     private readonly ushort[] _waiting = new ushort[32];
 
+    // The slot of the settler that waits in the castle's list for a job, 0 for none.
+    internal int Waiting(int job) => _waiting[job];
+
     // The settlers a request has sent out that have not left the castle yet (word at 0x4a of the storage item).
     private int _leaving;
 
@@ -249,12 +252,7 @@ public sealed partial class Game
                 settler.Next = 0;
                 break;
             case 2:
-                // **Not ported:** the walk to a storage (mode 0xfe), which a settler on its way home takes at the flag.
-                if (settler.Mode != StorageWalk)
-                {
-                    Walk(slot, settler);
-                }
-
+                Walk(slot, settler);
                 break;
             case 3:
                 if (TimerRan(settler))
@@ -460,8 +458,9 @@ public sealed partial class Game
     // route to the flag it walks to), steps, and adds the step's time to its timer. The sum wraps while the step
     // was over already, and the settler then goes on at once; else it waits out the rest. At the flag it walks to
     // it enters the building there, or, as a carrier, the road. A step onto a node another settler stands on is tried
-    // again after the timer of 0x7f. **Not ported:** the swap with a settler that comes the other way, the walk home,
-    // and the states the original reaches from here for other modes.
+    // again after the timer of 0x7f. The mode 0xfe is the walk home to a storage: the storage is picked at the first flag
+    // (StorageFlag), and at its flag the settler enters it as a worker enters its hut. **Not ported:** the swap with a
+    // settler that comes the other way and the states the original reaches from here for other modes.
     private void Walk(int slot, Settler settler)
     {
         if (!TimerRan(settler))
@@ -477,7 +476,17 @@ public sealed partial class Game
             int direction;
             if (settler.Heading < 0)
             {
-                // A step that was blocked: the heading holds the direction less 6, tried again.
+                // A step that was blocked: the heading holds the direction less 6, tried again. Each try counts in byte 15;
+                // at 10 tries on a flag and 50 elsewhere the original follows the chain of settlers that wait for one another
+                // (0x439985) and counts from 0 again. **Not ported:** that the chain, where it comes back to the settler,
+                // makes the settler step against it and pass the settler there (as for the swap of Step); every other chain
+                // ends with the count at 0 and the same direction tried again.
+                settler.Next++;
+                if (settler.Next >= ((flags[here] & 0x80) != 0 ? 10 : 50))
+                {
+                    settler.Next = 0;
+                }
+
                 direction = settler.Heading + 6;
             }
             else if ((flags[here] & 0x80) == 0)
@@ -492,25 +501,52 @@ public sealed partial class Game
 
                 direction = Enumerable.Range(0, 6).First(d => (rest >> d & 1) != 0);
             }
-            else if (settler.Target == links[here])
-            {
-                if (settler.Mode == 0xff)
-                {
-                    Enter(slot, settler);
-                }
-                else if (settler.Mode <= 5)
-                {
-                    EnterRoad(slot, settler);
-                }
-
-                return;
-            }
             else
             {
+                if (settler.Mode == StorageWalk && settler.Target == 0)
+                {
+                    // No storage chosen yet (0x45d09b); none a road leads to sends the settler to look for a flag again,
+                    // from the far end of the search.
+                    var storage = StorageFlag(links[here]);
+                    if (storage < 0)
+                    {
+                        settler.State = 0x19;
+                        settler.Mode = 1;
+                        settler.Timer = 0;
+                        return;
+                    }
+
+                    settler.Target = storage;
+                }
+
+                if (settler.Target == links[here])
+                {
+                    // A negative mode (a byte of 0x80 or more) enters the building north-west of the flag.
+                    if (settler.Mode >= 0x80)
+                    {
+                        Enter(slot, settler);
+                    }
+                    else if (settler.Mode <= 5)
+                    {
+                        EnterRoad(slot, settler);
+                    }
+
+                    return;
+                }
+
                 direction = Route(links[here], settler.Target);
+                if (direction < 0 && settler.Mode is >= 0x80 and < 0xff)
+                {
+                    // 0x43a24e: a settler on its way to a storage that finds no road leads on looks for a flag again.
+                    settler.State = 0x19;
+                    settler.Mode = 1;
+                    settler.Timer = 0;
+                    return;
+                }
+
                 if (direction < 0)
                 {
-                    // No road leads on. The worker is not coming any more; it turns to go home, which is not ported.
+                    // No road leads on. The worker is not coming any more; it turns to go home (the mode 0xfe walk).
                     var hut = _buildings.FirstOrDefault(b => b.Flag == settler.Target);
                     if (hut is not null)
                     {
@@ -536,11 +572,43 @@ public sealed partial class Game
     {
         var here = Map.Index(settler.X, settler.Y);
         var (x, y, next) = Neighbour(settler, direction);
-        if (Occupant(next) != 0)
+        int shape;
+        var other = Occupant(next);
+        if (other == 0)
         {
-            // Another settler stands there. The original lets a settler that comes the other way pass; this port
-            // does not and waits (0x43a64c and its siblings). The settler marks the direction it tried in its heading
-            // (the direction less 6) and tries it again when its timer of 0x7f has run out.
+            shape = 4 + 9 * direction + Height(next) - Height(here);
+            settler.Heading = (direction + 3) % 6;
+            Move(slot, settler, x, y, next);
+        }
+        else if (
+            direction <= 2
+            && _settlers[other] is { State: 2 or 3 } passer
+            && passer.Heading == (direction + 3) % 6 - 6
+        )
+        {
+            // A step east, south-east, or south onto a settler that walks (state 2 or 3) and is blocked on this very node (its
+            // heading holds the opposite direction less 6): the two pass, each taking the node of the other (0x43a6c1 and its
+            // siblings; the steps west, north-west, and north have no such branch). The settler goes on with the shape of its
+            // swap step (the shapes 4 + 9 * (direction + 6) and up), the other on with the one of its opposite step, and its
+            // timer is that step's time.
+            var rise = Height(next) - Height(here);
+            var back = 4 + 9 * ((direction + 3) % 6) - rise;
+            passer.X = settler.X;
+            passer.Y = settler.Y;
+            _occupant[here] = other;
+            passer.Heading = direction;
+            passer.Frame = (byte)back;
+            passer.Timer = _tables.StepTime(back);
+            shape = 4 + 9 * (direction + 6) + rise;
+            settler.Heading = (direction + 3) % 6;
+            settler.X = x;
+            settler.Y = y;
+            _occupant[next] = slot;
+        }
+        else
+        {
+            // The settler there waits, or waits for this node. The settler marks the direction it tried in its heading
+            // (the direction less 6) and tries it again when its timer of 0x7f has run out (0x43a791).
             settler.Timer = 0x7f;
             settler.Frame = (byte)(0x51 + direction);
             settler.Heading = direction - 6;
@@ -548,9 +616,6 @@ public sealed partial class Game
             return false;
         }
 
-        var shape = 4 + 9 * direction + Height(next) - Height(here);
-        settler.Heading = (direction + 3) % 6;
-        Move(slot, settler, x, y, next);
         settler.Next = 0;
         var old = settler.Timer;
         settler.Timer = (ushort)(old + _tables.StepTime(shape));

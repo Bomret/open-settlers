@@ -115,7 +115,7 @@ sequences.
   storage handover: it is the player block's per-turn warning check (it posts messages 10 and 11 through `Msg_Post` from
   counters at `+0x14` and `+0x18` of a 120-byte item).
 - The boatman of a water road (`0x42b4bc`, job 1, good 8) and the settlers' search level count (`+0x10a` of the player block).
-- The passing of two settlers on a road (not ported), and a carrier that goes home (`0x4312ed` releases the settlers of a road
+- The passing of two settlers on a road (ported: [Settlers](settlers.md#walking-home)), and a carrier that goes home (`0x4312ed` releases the settlers of a road
   that goes away: slice 09).
 - Which flags' carriers a flag pass of a player with a computer opponent sees: the phase count (33) is inferred.
 

@@ -12,16 +12,26 @@ namespace OpenSettlers.Tests;
 // original's passes over the item tables on a game with a castle, flags, and roads and no building, where before one pass a
 // settler is sent home as the teardown of a building sends the settlers in it (0x461b77: state 0x1c). Each scenario starts
 // with a "#" line that names its verb command; the lines after it give, for the passes where they changed, the 16 bytes of
-// the settler (s=) and the random generator's words (rng=). The engine runs the same commands, sends the same settler home
-// in the same pass, and must hold the same bytes after each pass until the settler reaches state 2 with the mode 0xfe, the
-// walk to the storage that the next slice ports. That tests the claim of the node (0x434946), the search for the nearest own
-// flag with a road (0x4353ef) with its random fallback, the free walk, and the arrival (0x4385ab).
+// the settler (s=), the random generator's words (rng=), and the word of the castle's list of waiting settlers that belongs to
+// the settler's job (w=), and the bytes of a second settler the walk meets (o=, a carrier on the road). The game takes the building table's dummy first, as a real game's start does, so the castle is
+// building slot 1. The engine runs the same commands, sends the same settler home in the same pass, and must hold the same
+// bytes after each pass until the last: the settler is in state 1 in the castle and its slot is in the list. That tests the
+// claim of the node (0x434946), the search for the nearest own flag with a road (0x4353ef) with its random fallback, the free
+// walk, the arrival (0x4385ab), the walk to the storage (state 2 with the mode 0xfe, 0x4398ea with the pick 0x45d09b), the
+// entry into the castle (0x43c7c2), the door (state 4, 0x43c96b), and the job's entry into the storage (0x43cd06).
 [TestClass]
 public sealed class HomeWalkTests
 {
     private const string Fixture = "home-walks.txt";
 
-    private sealed record Scenario(string Name, string Command, List<(int Pass, string? Settler, string? Rng)> Lines);
+    // The scenario of a settler on a flag no road leads from to the castle: it looks for another flag (state 0x19, mode 1).
+    private const string NoStorage = "no-storage-road";
+
+    private sealed record Scenario(
+        string Name,
+        string Command,
+        List<(int Pass, string? Settler, string? Rng, string? Waiting, string? Other)> Lines
+    );
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
@@ -45,7 +55,9 @@ public sealed class HomeWalkTests
                     (
                         int.Parse(fields["pass"], CultureInfo.InvariantCulture),
                         fields.GetValueOrDefault("s"),
-                        fields.GetValueOrDefault("rng")
+                        fields.GetValueOrDefault("rng"),
+                        fields.GetValueOrDefault("w"),
+                        fields.GetValueOrDefault("o")
                     )
                 );
         }
@@ -55,9 +67,6 @@ public sealed class HomeWalkTests
 
     private static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
-
-    // The walk to the storage: state 2 with the mode 0xfe (bytes 10 and 11 of the item).
-    private static bool AtStorageWalk(string settler) => settler[20..24] == "02FE";
 
     private static Game CastleWithRoad()
     {
@@ -131,7 +140,7 @@ public sealed class HomeWalkTests
     public void ASettlerSentHomeWalksAsTheOriginalsPassesMoveIt(string name)
     {
         var scenario = Load().Single(candidate => candidate.Name == name);
-        // home:N:SEED:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE]
+        // home:N:SEED:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE[:WATCH]]
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
@@ -165,6 +174,9 @@ public sealed class HomeWalkTests
 
         string? settler = null;
         string? rng = null;
+        string? waiting = null;
+        string? other = null;
+        var watched = parts.Length > 11 ? int.Parse(parts[11], CultureInfo.InvariantCulture) : -1;
         for (var pass = 0; pass < passes; pass++)
         {
             if (pass == at)
@@ -191,6 +203,8 @@ public sealed class HomeWalkTests
             {
                 settler = line.Settler ?? settler;
                 rng = line.Rng ?? rng;
+                waiting = line.Waiting ?? waiting;
+                other = line.Other ?? other;
             }
 
             var words = game.Random;
@@ -204,12 +218,33 @@ public sealed class HomeWalkTests
                 WorkerWalkTests.Hex(game.Settlers[slot], map.Size.Width),
                 $"{name}: the settler after pass {pass}"
             );
-            if (AtStorageWalk(settler!))
+            // A carrier in state 0x42 holds a pointer to the flag's item in its last four bytes, where the engine keeps the slot.
+            if (watched >= 0 && other![20..22] != "42")
             {
-                return;
+                Assert.AreEqual(
+                    other,
+                    WorkerWalkTests.Hex(game.Settlers[watched], map.Size.Width),
+                    $"{name}: the settler it meets after pass {pass}"
+                );
             }
+
+            var listed = game.Waiting(game.Settlers[slot].Job);
+            Assert.AreEqual(
+                $"{listed & 0xff:X2}{listed >> 8:X2}",
+                waiting,
+                $"{name}: the castle's list after pass {pass}"
+            );
         }
 
-        Assert.Fail($"{name}: the settler never reached the walk to the storage");
+        // The settler has walked into the castle and is in its list; the settler that finds no road to a storage does not.
+        if (name != NoStorage)
+        {
+            Assert.AreEqual(1, game.Settlers[slot].State, $"{name}: the settler waits in the castle");
+            Assert.AreEqual(
+                slot,
+                game.Waiting(game.Settlers[slot].Job),
+                $"{name}: the settler is in the castle's list"
+            );
+        }
     }
 }

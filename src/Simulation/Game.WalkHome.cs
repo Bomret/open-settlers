@@ -5,9 +5,9 @@ namespace OpenSettlers.Simulation;
 // The walk home of a settler whose work was taken away, as the teardown of a building sends it (0x461b77 sets state 0x1c;
 // docs/rules/settlers.md, "Walking home"): the claim of the node it stands on (state 0x1c), the search for the nearest
 // flag of its player that a road leaves (state 0x19), the free walk to it (state 0x10, FreeWalk), and the arrival (0x4385ab),
-// which starts the walk along the roads to a storage (state 2 with the mode 0xfe). **Not ported:** that walk (the next
-// slice), the boatman's own state 0x1a (water roads are not ported), and the arrival of the jobs whose branch of 0x437ddd
-// is not the generic one (see ArrivesHome).
+// which starts the walk along the roads to a storage (state 2 with the mode 0xfe, Walk), and the entry into the castle
+// (EnterStorage). **Not ported:** the boatman's own state 0x1a (water roads are not ported), the arrival of the jobs whose
+// branch of 0x437ddd is not the generic one (see ArrivesHome), and the entry of the jobs 4 and 21 into a storage.
 public sealed partial class Game
 {
     // The mode of state 2 that walks to a storage along the roads (byte 11 = 0xfe).
@@ -37,6 +37,35 @@ public sealed partial class Game
         settler.Stamp = _clock;
     }
 
+    // The storage the walk home goes to (0x45d09b): the nearest by roads of the flags that hold a storage's request bytes.
+    // The castle is the only storage, so it is the castle's flag where that flag is the flag the settler stands on or a road
+    // leads to it, else -1.
+    private int StorageFlag(int flag)
+    {
+        var castle = _buildings[0].Flag;
+
+        return flag == castle || Route(flag, castle) >= 0 ? castle : -1;
+    }
+
+    // The settler's job takes it into the storage (0x43cd06 for the jobs whose routine of the table at 0x43ca54 begins with the
+    // test of the mode 0xfe, which is all but the jobs 4 and 21): the node it stands on is free again, and it waits in the
+    // storage's list (state 1, mode 0, the storage's slot as heading, no target); the turn of state 1 enters it in the list.
+    // The castle is storage 0.
+    private void EnterStorage(int node, Settler settler)
+    {
+        if (settler.Job is 4 or 21)
+        {
+            return;
+        }
+
+        _occupant.Remove(node);
+        settler.State = 1;
+        settler.Mode = 0;
+        settler.Target = 0;
+        settler.Heading = 0;
+        settler.Next = 0;
+    }
+
     // The owner bits a node of the settler's player holds in its height byte (0x4354b8: the player plus 4, in the top three bits).
     private static int OwnerBits(Settler settler) => ((settler.Player & 3) + 4) << 5;
 
@@ -45,7 +74,10 @@ public sealed partial class Game
     private bool HomeFlag(Settler settler, int x, int y)
     {
         var index = Map.Index(x, y);
-        if ((Map.Layer(MapLayer.Flags)[index] & 0x80) == 0 || (Map.Layer(MapLayer.Height)[index] & 0xe0) != OwnerBits(settler))
+        if (
+            (Map.Layer(MapLayer.Flags)[index] & 0x80) == 0
+            || (Map.Layer(MapLayer.Height)[index] & 0xe0) != OwnerBits(settler)
+        )
         {
             return false;
         }
@@ -135,7 +167,11 @@ public sealed partial class Game
             var dx = (draw & 0xff & mask) - half;
             var dy = (draw >> 8 & mask) - half;
             var index = Map.Index((settler.X + dx) & width, (settler.Y + dy) & height);
-            if ((objects[index] & 0x7f) == 0 && (heights[index] & 0x1f) != 0 && (anywhere || (heights[index] & 0xe0) == owner))
+            if (
+                (objects[index] & 0x7f) == 0
+                && (heights[index] & 0x1f) != 0
+                && (anywhere || (heights[index] & 0xe0) == owner)
+            )
             {
                 return ((sbyte)dx, (sbyte)dy);
             }

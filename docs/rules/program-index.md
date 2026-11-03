@@ -276,6 +276,8 @@ entries per phase (see "Item tables").
 | `0x437ddd` | `Settler_FreeWalkArrived` | The arrival of the free walk: jumps by the job to the job's end of the walk; for job 5 to `0x437f53` (at the tree: start cutting; back at the flag: put the log on the flag and enter the hut). | confirmed | game | Reached from `0x436c38`. |
 | `0x438a9e` | `Woodcutter_Cut` | State 0x11: each time the timer runs out writes the next code of the felled tree (`0x5d` to `0x66`) into the object byte and sets the frame; after the fifth the settler walks back with the log (byte 13 = `0x80`, state 0x10). | confirmed | game | Entry 0x11 of `0x42fca1`. |
 | `0x436b46` | `Flag_PutGood` | Puts a good (the byte in the first register) on the first empty one of the 8 places of the flag the settler stands on (item bytes `0xc` to `0x13`), clears the place's word at `0x14` plus twice the place, sets bit 7 of byte 4 of the flag item, and counts the good up in the player block. | confirmed | game | Called by `0x437ffd`. |
+| `0x43cd06` | `Settler_EnterStorage` | The routine the job entries of `0x43ca54` (all but those of the jobs 4 and 21) go on at for the mode `0xfe`: clears the node's settler word and puts the settler into the storage of the building it stands in (state 1, mode 0, word 12 0, storage slot as bytes 14 and 15). | confirmed | game | Jump target of the job entries of `0x43ca54`. [Settlers](settlers.md#walking-home). |
+| `0x45d09b` | `Storage_Pick` | The walk home's choice of a storage: a breadth-first search over the flags (directions 5 to 0), from the flag a settler stands on, for the nearest flag whose item has bit 7 in byte `0x42`; the result is the word at 6 of the building at that flag (its flag slot), or -1. | confirmed | game | Called by `Settler_Walk` (`0x4398ea`) at `0x439b75`. [Settlers](settlers.md#walking-home). |
 | `0x43c7c2` | `Settler_EnterBuilding` | The step from a flag into the building north-west of it, and the turn of state 6 (`0x43c7ca`): takes the node when no settler stands on it, the step's time as timer, the part of it the door's speed leaves in word 12, and state 4; else frame `0x55` and state 6. | confirmed | game | Entry 6 of `0x42fca1`. |
 | `0x42d945` | `Building_HandleType2` | The handler of the building type 2, the woodcutter's hut: asks for a settler of job 5 when bits 2, 6, and 7 of its status are clear. | confirmed | game | Entry 2 of `0x42cd1d`. |
 | `0x42e0b8` | `Building_HandleType1` | The handler of the building type 1: asks for a settler of job 11, whose work (`0x433f71`, state 0x1f) looks for a node with no object and no road by the water. | confirmed | game | Entry 1 of `0x42cd1d`. |
@@ -830,6 +832,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43b788` | `Settler_StepRoadEast` | confirmed | Simulation |
 | `0x43c7c2` | `Settler_EnterBuilding` | confirmed | Simulation |
 | `0x43c96b` | `Settler_PassDoor` | confirmed | Simulation |
+| `0x43cd06` | `Settler_EnterStorage` | confirmed | Simulation |
+| `0x45d09b` | `Storage_Pick` | confirmed | Simulation |
 | `0x43cf15` | `Woodcutter_Start` | confirmed | Simulation |
 | `0x43dceb` | `Settler_WaitStep` | confirmed | Simulation |
 | `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |

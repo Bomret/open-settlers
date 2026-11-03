@@ -143,9 +143,9 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
   stands: bit 7 of its type goes out, which changes the door speed index from 0x38 to 0x18, and the settler takes state 12.
 - **A blocked step:** where the next node holds a settler, the timer is 0x7f, the frame `0x51 + direction`, and the heading
   the direction less 6; at the next turn after the timer the settler tries the same direction again.
-- **Not ported:** the passing of two settlers going opposite ways (the original swaps them; the port waits), the walk
-  home when no route is left (mode 254), the castle's own handler (`0x42e7e0`), and the settlers the castle makes later
-  (`0x428a75`).
+- **Passing:** see [Walking home](#walking-home).
+- **Not ported:** the chain of blocked settlers that ends in a step against the chain ([Walking home](#walking-home)), the
+  castle's own handler (`0x42e7e0`), and the settlers the castle makes later (`0x428a75`).
 
 ## Drawing the walk: leads
 
@@ -179,9 +179,14 @@ stubs lie at `0x42fca1` plus 8 times the state, so `0x1c` is `0x434946` and `0x1
 
 **Emulated.** The harness verb `home:` runs the passes of `wood:` and, before one pass, sends a chosen castle settler home
 (optionally moved to another node first, or put into another state and mode byte); the engine matches the settler's 16 bytes
-and the generator's words after every pass until the settler reaches state 2 with mode `0xfe`, in four games
-(`tests/OpenSettlers.Tests/home-walks.txt`): a settler of job 7 and the woodcutter from the castle, a settler 11 nodes away
-whose search finds no flag and walks by random nodes (670 passes), and a settler in state `0x19` with mode 1.
+and the generator's words after every pass, and the word of its job in the castle's list of waiting settlers, until the
+settler waits in the castle in state 1, in six games (`tests/OpenSettlers.Tests/home-walks.txt`): settlers of the jobs 7, 2, and
+5 (the woodcutter) from the castle, a settler 11 nodes away whose search finds no flag and walks by random nodes (about 700
+passes), a settler in state `0x19` with mode 1 that meets the road's carrier and passes it, and a settler on a flag no road
+leads from to the castle, which takes state `0x19` with mode 1. The game takes the building table's dummy first, as a real
+game's start does (`0x45da8f` at the end of `0x421530`), so the castle is building slot 1: a settler that enters a building
+whose link is 0 takes state `0x19`, so with the castle in slot 0 no settler would ever stay in it. The engine's castle is
+slot 0 and has no dummy; the engine treats every building on the node as a building.
 
 - **State `0x1c`.** When no settler stands on the node (the node's settler word is 0) the settler writes its slot there, takes
   the frame `0x52`, timer 0, mode 0, the stamp of the clock, and state `0x19`; else it waits.
@@ -199,18 +204,55 @@ whose search finds no flag and walks by random nodes (670 passes), and a settler
   knights, 22 to 26, where byte 13 is `0x80`). On an own flag with a road the settler takes state 2 with mode `0xfe`, bytes 12
   to 15 and the timer 0; anywhere else it takes state `0x19` with mode 0 and timer 0, and searches again.
 
-**Not ported:** the walk to the storage (state 2 with mode `0xfe`, `0x4398ea`), entering the castle, the commands that tear down, the
-boatman's state `0x1a` (`0x4350f8`; water roads are not ported), state `0x35` of the knights, and the arrivals of the jobs 7, 8, 11,
-14, and 20 where they do not walk home. **Inferred:** the drawing of the states `0x19` and `0x1c` (frame `0x52`, as a waiting
-settler).
+- **The walk to the storage (state 2 with mode `0xfe`, `0x4398ea`).** A byte of 0x80 or more in the mode (the mode `0xff` of a
+  worker to its hut is one) enters the building north-west of the flag it walks to; the mode `0xfe` has no target yet (word 12
+  is 0), so at the first flag the settler picks its storage (`0x45d09b`): a breadth-first search over the flags, six
+  directions from north to east, for the nearest flag whose item has bit 7 in byte `0x42` (the castle's flag does from the
+  start of the game); the storage's flag is the building's word at 6. The castle is the only storage, so the pick is the
+  castle's flag where a road leads to it, or where the settler stands on it. A pick that fails sends the settler to state
+  `0x19` with mode 1 and timer 0, as does a route search that finds no road on (`0x43a24e`: for the modes `0x80` to
+  `0xfe`). The walk is the walk of a worker to its hut: it steps along the route, at the castle's flag enters the castle
+  (`0x43c7c2`), and takes state 4.
+- **Passing (`0x43a6c1`).** A step east, south-east, or south onto a node that a walking settler (state 2 or 3) holds, and
+  that settler is blocked on the node of this one (its byte 14 is the opposite direction less 6), swaps the two: each takes
+  the node of the other, the stepping settler the shape `4 + 9 * (direction + 6) + rise` and the byte 14 `(direction + 3) mod
+  6`, the other the shape `4 + 9 * ((direction + 3) mod 6) - rise`, byte 14 the direction, and as timer that shape's time.
+  Every other occupied node blocks (timer `0x7f`, frame `0x51 + direction`, byte 14 the direction less 6); the steps west,
+  north-west, and north have no swap. A carrier's steps (`0x43b788` and its siblings) are the same. **Emulated:** the settler
+  meets the road's carrier, which waits for it north-west of the flag in the second game above, and passes it.
+- **Blocked steps (`0x4398ea`).** A settler whose byte 14 is negative counts its turns in byte 15; at the tenth on a flag, and
+  the fiftieth elsewhere, the original follows the chain of settlers that wait for one another (100 hops at most; no draw
+  is made) and counts from 0 again; a chain that comes back to the settler makes it step against the chain and so pass.
+  **Inferred:** the count (no run blocks a settler for 10 turns; the scenarios never hold a settler for a second turn), and
+  **not ported:** the chain's step against the chain.
+- **State 4, entering a storage (`0x43c96b`, then `0x43cd06`).** At the castle's door the settler does what the job's routine
+  of `0x43ca54` does; every routine but those of the jobs 4 and 21 begins with a test of the mode `0xfe` and for that
+  mode goes on at `0x43cd06`: the node's settler word is cleared, the settler takes the building's storage as byte 14 and
+  15 (the castle: 0), word 12 0, mode 0, and state 1. The turn of state 1 enters it in the castle's list. **Emulated:**
+  the jobs 7, 2, and 5 reach state 1 and the list holds their slot.
+- **A good carried home.** The settler on the walk home holds no good: its mode byte is `0xfe` where a carrier holds the
+  good code. A good that a settler carried is not carried into the castle; `0x462c8d` (called by the teardown routines
+  `0x4617fd`, `0x462153`, `0x46385b`) counts it back: for the goods 14 and 15 the player's counter at `+0x4c` goes down,
+  and where the good's class byte (the table at `0x462d6d`) is not negative the building at the flag it was destined for
+  (its slot is the good's destination word) loses one in byte 8 (class 0) or byte 9 (other) of its item, unless that
+  building is the castle (type `0x18`) or of the type `0xa`. Read from the code; no run reaches it (**inferred**). The teardown's
+  setters are the next stage.
+
+**Not ported:** the commands that tear down, the boatman's state `0x1a` (`0x4350f8`; water roads are not ported), state `0x35`
+of the knights, the arrivals of the jobs 7, 8, 11, 14, and 20 where they do not walk home, the entry of the jobs 4 and 21 into
+a storage (`0x43ceea`, and `0x43cc5f`, which also counts the settler in the word `0x40` of the storage item), the chain of
+blocked settlers, and a storage other than the castle. **Inferred:** the drawing of the states `0x19` and `0x1c` (frame
+`0x52`, as a waiting settler); the second and third rings of the random search and its last phase without end (no run
+reaches them: the scenarios find a node in the first ring), the ring masks of those phases are read from the code only.
 
 ## Open leads
 
 - The second way of the request for a worker (a jobless settler and a tool); the carriers' request has it without the tool
   ([Carriers](carriers.md#the-request)).
-- The states 12 and 25 and the walk to the storage (state 2, mode 254); the states 4, 6, 7, 0x10, 0x11, and 0x12 are in [Woodcutting](woodcutting.md).
+- The states 12 and 25; the states 4, 6, 7, 0x10, 0x11, and 0x12 are in [Woodcutting](woodcutting.md).
 - The castle's handler of type 0x18, the settler creation of `0x428a75`, and the goods part of the flag pass `0x46414d`.
-- The passing of two settlers going opposite ways.
+- The count of blocked turns (10 on a flag, 50 elsewhere) and the step against a chain of blocked settlers (`0x439985`): no
+  run reaches them.
 - That the phase count is 33 for the game of one player with no computer opponent (`0x42055e`).
 - The hut's object code and its site rule (no run places a building).
 - The knights' idle turns draw from the game's generator, which continues from the map's generator: ported

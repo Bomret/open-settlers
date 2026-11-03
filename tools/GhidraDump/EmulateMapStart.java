@@ -86,16 +86,19 @@
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
 //                            lists the settlers, the flags (f<slot>=, 70 bytes), and the storage item that changed, in hex. The
 //                            roads after AT are built before pass AT.
-//   home:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE]
+//   home:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE[:WATCH]]
 //                            the passes of wood: (docs/rules/settlers.md) on a game with a castle, flags, and roads and no
 //                            building, where before pass AT the settler of the slot SLOT is sent home as the teardown of a
 //                            building sends the settlers inside it (0x461b77): its state byte (+0xa) is set to 0x1c and nothing else
 //                            changes; with @x,y the settler's node (+4) is first set to that node, a stand-in for a settler out in
 //                            the world (the original's teardown reaches settlers that stand on the building's node only). A line per
 //                            pass lists the settler's 16 bytes (s=) when they changed, the node's settler word at the settler's
-//                            node (n=), and the random generator's words (rng=) when they moved. With STATE,MODE the settler takes that
+//                            node (n=), the random generator's words (rng=) when they moved, and the castle storage's list of waiting
+//                            settlers (w=, the word of the settler's job, a settler slot or 0) when it changed. The game takes the building table's dummy
+//                            first, as a real game's start does, so the castle is building slot 1. With STATE,MODE the settler takes that
 //                            state byte and mode byte (+0xb) instead of 0x1c, to reach a branch the teardown does not (state 0x19 with
-//                            mode 1 searches the spiral from its far end).
+//                            mode 1 searches the spiral from its far end). With WATCH (a settler slot) the lines also list that
+//                            settler's 16 bytes (o=) when they changed, for a settler the walk meets (a carrier on the road).
 //   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -158,7 +161,10 @@ public class EmulateMapStart extends GhidraScript {
                         worker(rest, true);
                     }
                     case "carrier" -> carrier(rest);
-                    case "home" -> home(rest);
+                    case "home" -> {
+                        reserveBuildingZero = true;
+                        home(rest);
+                    }
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
                     case "opponents" -> opponents(rest);
@@ -937,6 +943,10 @@ public class EmulateMapStart extends GhidraScript {
         if (reserveFlagZero) {
             call(0x45d7ad);
         }
+        if (reserveBuildingZero) {
+            putInt(REGISTERS + 0x20, 0);
+            call(0x45da8f);
+        }
         call(0x442704);
         emu.writeMemory(toAddr(RECORD), new byte[0x100]);
         putInt(RECORD + 0x82, player);
@@ -1204,7 +1214,7 @@ public class EmulateMapStart extends GhidraScript {
         }
     }
 
-    /** home:N:SEED:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE]: see the header; the last field forces that state and mode byte. */
+    /** home:N:SEED:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE[:WATCH]]: see the header. */
     private void home(String rest) throws Exception {
         objectPass = true;
         String[] parts = rest.split(":");
@@ -1231,6 +1241,11 @@ public class EmulateMapStart extends GhidraScript {
         byte[] seen = null;
         String nodeSeen = "";
         String rngSeen = "";
+        String waitingSeen = "";
+        // WATCH: the slot of a second settler whose 16 bytes the lines list (o=) when they changed, as the settler of the
+        // slot sets them in a pass.
+        long watched = parts.length > 10 ? TABLES + 0x40000 + 16L * Integer.parseInt(parts[10]) : -1;
+        byte[] watchedSeen = null;
         int clock = 0;
         for (int pass = 0; pass < passes; pass++) {
             if (pass == at) {
@@ -1255,6 +1270,13 @@ public class EmulateMapStart extends GhidraScript {
                 line.append(" s=").append(hex(settler, 16));
                 seen = now;
             }
+            if (watched >= 0) {
+                byte[] otherNow = emu.readMemory(toAddr(watched), 16).clone();
+                if (watchedSeen == null || !java.util.Arrays.equals(otherNow, watchedSeen)) {
+                    line.append(" o=").append(hex(watched, 16));
+                    watchedSeen = otherNow;
+                }
+            }
             long node = getInt(settler + 4);
             String nodeNow = hex(layerA + layerB + node + 2, 2);
             if (!nodeNow.equals(nodeSeen)) {
@@ -1266,6 +1288,14 @@ public class EmulateMapStart extends GhidraScript {
             if (!rngNow.equals(rngSeen)) {
                 line.append(" rng=").append(rngNow);
                 rngSeen = rngNow;
+            }
+            // The storage's list of waiting settlers holds a word for each job at +0x42, the slot of the settler waiting in
+            // state 1; the line lists the word of the job of the settler that was sent home.
+            int job = (emu.readMemory(toAddr(settler), 1)[0] & 0x7c) >> 2;
+            String waitingNow = hex(TABLES + 0x60000 + 0x42 + 2L * job, 2);
+            if (!waitingNow.equals(waitingSeen)) {
+                line.append(" w=").append(waitingNow);
+                waitingSeen = waitingNow;
             }
             println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + line);
         }
@@ -1353,6 +1383,13 @@ public class EmulateMapStart extends GhidraScript {
      * ends MapGen_InitParams, 0x421530), so the first flag is slot 1 as in a real game.
      */
     private boolean reserveFlagZero;
+
+    /**
+     * Whether startWorld takes building slot 0 for the dummy the original's game start takes (the allocator 0x45da8f at the
+     * end of MapGen_InitParams), so the castle is building slot 1 as in a real game: a settler that enters a building whose
+     * link is 0 takes state 0x19 (0x43c9cf), so a castle in slot 0 never takes a settler home.
+     */
+    private boolean reserveBuildingZero;
 
     private int simulationPass(int clock) throws Exception {
         putWord(STATE + CLOCK, clock);

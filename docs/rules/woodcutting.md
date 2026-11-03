@@ -65,7 +65,7 @@ of the shape `4 + 9 * direction + (height reached - height left)`; the walk goes
 walk's step does.
 
 **Not ported:** the other directions of a row when the first is taken, the heading memory the original keeps in the low bits of byte
-15, and the passing of settlers; a step that cannot be made waits 0x7f units with the frame 0x52.
+15, and the passing of settlers on the free walk; a step that cannot be made waits 0x7f units with the frame 0x52.
 
 ## The cut
 
@@ -140,8 +140,8 @@ read from the registers the decompile shows); an open lead.
 
 ## Open leads
 
-- The woodcutter's walk to the storage (mode 0xfe); the way back with a negative count (`0x4385ab`) is the walk home and is
-  ported up to the flag ([Settlers](settlers.md#walking-home)). The free walk's other directions and the passing of settlers,
+- The woodcutter's walk to the storage (mode 0xfe) is ported with the walk home ([Settlers](settlers.md#walking-home)). The free
+  walk's other directions and the passing of settlers,
   and the handlers of the codes 0x67 and up. likely
 - The tool for a second woodcutter (the request's second way, [Settlers](settlers.md#the-request)): the castle holds one worker of
   job 5. guess

@@ -111,9 +111,12 @@ left open:
 - The castle's own handler (building type 0x18, `0x42e7e0`) and the settlers the castle makes later (`0x428a75`), and the ambient
   sounds of each view (`0x428964`): they may draw from the random generator; the port draws nothing for them. The knights' idle
   turns (jobs 22 to 26) are known and ported ([Woodcutting](../rules/woodcutting.md#the-random-generator)).
-- The walk home is known up to the flag: the claim `0x434946`, the search `0x4353ef`, and the arrival `0x4385ab` are ported and match
-  the emulator ([Settlers](../rules/settlers.md#walking-home)); its walk to the storage (state 2, mode `0xfe`) is open until the
-  next stage. The free walk's passing of settlers and its check of a node marked solid, and the handlers of the object codes from
+- The walk home is known into the castle: the claim `0x434946`, the search `0x4353ef`, the arrival `0x4385ab`, the walk to the
+  storage (state 2, mode `0xfe`, with the pick `0x45d09b`), the entry through the door (state 4, `0x43cd06`), and the swap of two
+  settlers that meet on a road are ported and match the emulator ([Settlers](../rules/settlers.md#walking-home)). Open
+  (**inferred**): the count of blocked turns of a walking settler, the step against a chain of blocked settlers, the second and
+  third rings and the last phase of the random search, and the counting back of a good (`0x462c8d`). The free walk's passing of
+  settlers and its check of a node marked solid, and the handlers of the object codes from
   `0x67` (`0x428eb8`): likely, not ported ([Woodcutting](../rules/woodcutting.md#open-leads)). The boatman's walk home (state `0x1a`)
   stays unported with the water roads.
 - The drawing of the states `0x19` and `0x1c` (frame `0x52`, drawn as a waiting settler) is **inferred**; no run of the draw confirms
@@ -124,8 +127,9 @@ left open:
 - The hut's node and flag marks (`0x42`, `0x10`) that the `wood` verb writes by hand are **inferred** (above); the expected walk of
   the woodcutter in `wood-walks.txt` depends on them.
 - The phase count of a game with one player and no computer opponent (33, inferred from `0x42055e`).
-- The passing of two settlers going opposite ways (the original swaps them; no run of the games here swaps) and the walk
-  home (mode 254). A blocked step is settled: the settler tries it again ([Settlers](../rules/settlers.md#the-walk)).
+- The passing of two settlers going opposite ways and the walk home (mode 254) are known and ported
+  ([Settlers](../rules/settlers.md#walking-home)). A blocked step is settled: the settler tries it again
+  ([Settlers](../rules/settlers.md#the-walk)).
 - The carrier's idle sprites (**inferred**: frames `0x6e` to `0x73`, the timer it holds) and the figure row of job 0 (base 0);
   no run of the draw confirms them. Lead: the same as for the walk's draw.
 - A road that already holds two carriers (the original counts the carrier's turns at the road's end and may send it on; the
