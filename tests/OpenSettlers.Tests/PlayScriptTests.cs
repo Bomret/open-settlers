@@ -60,6 +60,54 @@ public sealed class PlayScriptTests
     }
 
     [TestMethod]
+    public void TheInputStepsReadTheirArguments()
+    {
+        var script = Parse(
+            "press Shift+Equal\nhold Right 0.5\nscroll up\nscroll down 3\nscroll up 2 100 50\n"
+                + "drag 1 2 30 40\npinch 1.5\nswipe -2 3.5\nshot a\ndump b"
+        );
+
+        Assert.IsEmpty(script.Problems);
+        Assert.AreEqual(new PressStep { Line = 1, Key = "Shift+Equal" }, script.Steps[0]);
+        Assert.AreEqual(new HoldStep { Line = 2, Key = "Right", Seconds = 0.5 }, script.Steps[1]);
+        Assert.AreEqual(new ScrollStep { Line = 3, Up = true, Count = 1 }, script.Steps[2]);
+        Assert.AreEqual(new ScrollStep { Line = 4, Up = false, Count = 3 }, script.Steps[3]);
+        Assert.AreEqual(new ScrollStep { Line = 5, Up = true, Count = 2, At = (100, 50) }, script.Steps[4]);
+        Assert.AreEqual(new DragStep { Line = 6, FromX = 1, FromY = 2, ToX = 30, ToY = 40 }, script.Steps[5]);
+        Assert.AreEqual(new PinchStep { Line = 7, Factor = 1.5f }, script.Steps[6]);
+        Assert.AreEqual(new SwipeStep { Line = 8, Dx = -2, Dy = 3.5f }, script.Steps[7]);
+        Assert.AreEqual(new ShotStep { Line = 9, Name = "a" }, script.Steps[8]);
+        Assert.AreEqual(new DumpStep { Line = 10, Name = "b" }, script.Steps[9]);
+    }
+
+    [TestMethod]
+    [DataRow("press", "takes 1 argument")]
+    [DataRow("press Control+A", "modifier")]
+    [DataRow("press +", "key")]
+    [DataRow("hold Left", "takes 2 arguments")]
+    [DataRow("hold Left x", "not a number of seconds")]
+    [DataRow("scroll sideways", "up or down")]
+    [DataRow("scroll up 0", "whole number")]
+    [DataRow("scroll up 1 5", "takes 1 to 4")]
+    [DataRow("scroll up 1 a b", "not a number")]
+    [DataRow("drag 1 2 3", "takes 4 arguments")]
+    [DataRow("drag 1 2 3 x", "not a number")]
+    [DataRow("pinch 0", "positive")]
+    [DataRow("pinch big", "positive")]
+    [DataRow("swipe 1", "takes 2 arguments")]
+    [DataRow("shot", "takes 1 argument")]
+    [DataRow("shot a/b", "no file name")]
+    [DataRow("dump ..", "no file name")]
+    public void ABadInputStepIsAProblemNamingItsLine(string line, string reason)
+    {
+        var script = Parse("wait 1\n" + line);
+
+        Assert.HasCount(1, script.Problems);
+        StringAssert.StartsWith(script.Problems[0], "play/t.play line 2: ");
+        StringAssert.Contains(script.Problems[0], reason);
+    }
+
+    [TestMethod]
     public void AMissingFileIsOneProblem()
     {
         var script = PlayScript.Read("/no/such/dir/x.play");
