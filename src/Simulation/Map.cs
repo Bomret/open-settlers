@@ -26,6 +26,12 @@ public sealed class Map
         _layers[(int)MapLayer.Resource] = _layers[(int)MapLayer.Lake];
     }
 
+    /// <summary>
+    /// The random generator as the generation leaves it. The game's random generator continues from it, as the
+    /// original's does (<c>docs/rules/woodcutting.md</c>). A map made by hand has the generator of all zeros.
+    /// </summary>
+    internal RandomGenerator Generator { get; set; }
+
     /// <summary>The sum of the amounts of resource type 1 (<c>MapGen_CountResource1</c>); 0 before that pass.</summary>
     public int Resource1Total { get; internal set; }
 

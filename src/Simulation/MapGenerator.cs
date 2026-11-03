@@ -230,6 +230,7 @@ public static class MapGenerator
             Report(MapPass.MarkWaterAdjacent);
             CountResource1();
             Report(MapPass.CountResource1);
+            _map.Generator = _generator;
 
             return _map;
         }

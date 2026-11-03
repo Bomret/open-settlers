@@ -41,6 +41,13 @@ public sealed class SettlerFigures
     private const int StatesOnRoad = 3;
     private const int StatesIdle = 0x42;
 
+    // A woodcutter that steps through its door (state 4), walks free along its vector (0x10), or cuts (0x11) is drawn with
+    // the frame and the timer it holds as a walking settler is (docs/rules/woodcutting.md). **Inferred:** the cut's
+    // frames 0x74 to 0x78 name the cutting sequences, which no draw run confirms.
+    private const int StatesDoor = 4;
+    private const int StatesFreeWalk = 0x10;
+    private const int StatesCutting = 0x11;
+
     private readonly short[] _bases;
     private readonly short[] _offsets;
     private readonly byte[] _data;
@@ -62,7 +69,16 @@ public sealed class SettlerFigures
         foreach (var settler in settlers)
         {
             if (
-                settler.State is not (StatesWalking or StatesWaiting or StatesOnRoad or StatesIdle)
+                settler.State
+                    is not (
+                        StatesWalking
+                        or StatesWaiting
+                        or StatesOnRoad
+                        or StatesIdle
+                        or StatesDoor
+                        or StatesFreeWalk
+                        or StatesCutting
+                    )
                 || Triple(settler, clock) is not { } triple
             )
             {

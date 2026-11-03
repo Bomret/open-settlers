@@ -85,16 +85,28 @@ left open:
 
 ## The first walk (open leads, inferred values)
 
-- The building type of the woodcutter's hut (type 1, job 11, tool of good 17), its object code (2), its site rule
-  (node state 5, site 3 or 4), and its sprite (entry 1417): inferred; no run places or draws a building. Lead: the
-  building placement routine (the click handler `0x440c24` reaches it) and a Windows run that places a hut.
+- The woodcutter's hut is the building type 2 and its worker job 5 (known: [Woodcutting](../rules/woodcutting.md#the-hut-and-the-job)),
+  its sprite entry 1418 (known: the draw stub `0x44e63b`). Its object code (2), its site rule (node state 5, site 3 or 4), and the
+  marks on its node (flag bits `0x42`, and `0x10` on its flag's node) are inferred; no run places a building. Lead: the
+  building placement routine (the click handler `0x440c24` reaches it) and a Windows run that places a hut. The type 1 and job 11 that
+  the first walk was read with are another hut's and worker's (the work at `0x433f71`: a node with no object by the water, likely a
+  fisherman's).
 - The settler's drawing is written from the figure tables at `0x4501a1` and `0x4503c5` and the walk sequences of entry 2 of the
   graphics archive, but no emulator or debugger run of the draw (`0x43f537`, `0x43fed8`, `0x44fff3`, `0x406610`) confirms the
   details listed as inferred in [Settlers](../rules/settlers.md#drawing-the-walk-leads): the sequence offsets, the triple index,
   the position, the second figure, the colour overlay, and the variants from figure byte 0x80. Lead: run `0x43f537` in the
   emulator with a settler record and read the draw record it writes.
-- The castle's own handler (building type 0x18, `0x42e7e0`), the knights (jobs 22 to 26), and the settlers the castle
-  makes later (`0x428a75`): they draw from the random generator; the port draws nothing yet.
+- The castle's own handler (building type 0x18, `0x42e7e0`) and the settlers the castle makes later (`0x428a75`), and the ambient
+  sounds of each view (`0x428964`): they may draw from the random generator; the port draws nothing for them. The knights' idle
+  turns (jobs 22 to 26) are known and ported ([Woodcutting](../rules/woodcutting.md#the-random-generator)).
+- The woodcutter sent home (mode `0xfe`), the free walk's passing of settlers and its check of a node marked solid, the way back with
+  a negative count (`0x4385ab`), and the handlers of the object codes from `0x67` (`0x428eb8`): likely, not ported
+  ([Woodcutting](../rules/woodcutting.md#open-leads)).
+- The drawing of the goods on a flag (`0x44db26`, `0x44de9a`): the place offsets and the sprite entry 320 plus the good (a log is
+  entry 327) are read from the decompile and **inferred**; no emulator or debugger run of the draw confirms them. Lead: run `0x44db26`
+  in the emulator with a flag that holds a log and read the position and entry `0x44de9a` hands the blit.
+- The hut's node and flag marks (`0x42`, `0x10`) that the `wood` verb writes by hand are **inferred** (above); the expected walk of
+  the woodcutter in `wood-walks.txt` depends on them.
 - The phase count of a game with one player and no computer opponent (33, inferred from `0x42055e`).
 - The passing of two settlers going opposite ways (the original swaps them; no run of the games here swaps) and the walk
   home (mode 254). A blocked step is settled: the settler tries it again ([Settlers](../rules/settlers.md#the-walk)).
@@ -108,5 +120,6 @@ left open:
 
 - Where does a carrier hand a good over at a flag? (The carrier's job is settled: job 0, from a settler of job 21:
   [Carriers](../rules/carriers.md#the-job).)
-- Where is the woodcutter's work cycle? The object dispatch `0x42fc81` and the jump at `0x43f742`
-  enumerate the object types. The job's first routine after the door is `0x43ca54` plus 8 bytes for each job.
+- Where is the woodcutter's work cycle? Known: [Woodcutting](../rules/woodcutting.md). The jump at `0x43f742` follows the settler
+  drawing `0x43f537` (likely its job table), not the work: the work is the state routines `0x438b8c`, `0x436c38`, and `0x438a9e` that the job's
+  start `0x43cf15` reaches.

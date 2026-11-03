@@ -76,7 +76,7 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.HasCount(ObjectGraphics.EntryCount + 3, graphics.Images);
+        Assert.HasCount(ObjectGraphics.EntryCount + 3 + ObjectSprites.GoodsCount, graphics.Images);
         Assert.AreEqual(3, graphics.LayerWidth);
         Assert.AreEqual(2, graphics.LayerHeight);
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
@@ -113,6 +113,29 @@ public sealed class ObjectGraphicsTests
     }
 
     [TestMethod]
+    public void TheGoodsSpritesAreTheLayersAfterTheHutsAndTheLogsImageIsRead()
+    {
+        var payloads = Payloads();
+        payloads[ObjectSprites.GoodEntry(7)] = GraphicFileTests.Entry(
+            1,
+            0,
+            2,
+            2,
+            3,
+            1,
+            [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
+        );
+        using var fake = Install(payloads);
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        Assert.AreEqual(ObjectGraphics.EntryCount + 3, ObjectGraphics.Layer(ObjectSprites.GoodEntry(0)));
+        Assert.AreEqual(ObjectGraphics.EntryCount + 10, ObjectGraphics.Layer(ObjectSprites.GoodEntry(7)));
+        Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(ObjectSprites.GoodEntry(7))].OffsetX);
+        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32, graphics.Images.Count);
+    }
+
+    [TestMethod]
     public void TheHutSpriteIsTheLayerAfterTheFlagsAndItsImageIsRead()
     {
         var payloads = Payloads();
@@ -129,9 +152,9 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        // Emulator: peek:44e62a:20 shows the stub the jump table at 0x44e3aa reaches for the building type 1
-        // (0x44e62b) loading the object number 0xA7 (167); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
-        Assert.AreEqual(1417, ObjectSprites.WoodcutterEntry);
+        // Emulator: peek:44e63b:4 prints 66B8A800, the stub the jump table at 0x44e3aa reaches for the building type 2 (the
+        // woodcutter's hut) loading the object number 0xA8 (168); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
+        Assert.AreEqual(1418, ObjectSprites.WoodcutterEntry);
         Assert.AreEqual(ObjectGraphics.EntryCount + 2, ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry));
         Assert.AreEqual(11, graphics.Images[ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry)].OffsetX);
     }

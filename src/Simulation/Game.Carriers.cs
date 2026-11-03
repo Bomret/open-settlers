@@ -39,6 +39,7 @@ public sealed partial class Game
         _flags.Add(flag);
         _flagStatus.Add(0);
         _roadBytes.Add(new byte[6]);
+        _flagGoods.Add(new byte[8]);
     }
 
     // The length class of a road (0x4454e7), kept in bits 4 to 6 of the road bytes of both its ends.

@@ -36,7 +36,7 @@ public sealed class FlagPlacementTests
         var castle = header["castle"].Split(',').Select(int.Parse).ToArray();
         var game = new Game(TestProgram.Tables(), map, int.Parse(header["level"], CultureInfo.InvariantCulture));
         game.Enqueue(new Command(CastleTick, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
-        game.Tick();
+        game.ApplyCommands();
 
         foreach (var line in lines)
         {
@@ -46,7 +46,7 @@ public sealed class FlagPlacementTests
             var flags = game.Flags.Count;
 
             game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, tile[0], tile[1]));
-            game.Tick();
+            game.ApplyCommands();
 
             var placed = game.Flags.Count > flags;
             var actual =

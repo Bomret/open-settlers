@@ -266,8 +266,20 @@ entries per phase (see "Item tables").
 | `0x43dceb` | `Settler_WaitStep` | State 5: takes the elapsed units off the timer (`+2`) and goes to the state in `+0xf` when they were more than the time left. | confirmed | game | Entry 5 of `0x42fca1`. |
 | `0x4398ea` | `Settler_Walk` | State 2: when the timer has run out, chooses the next direction (the road's other direction on a road node, the route search's first direction on a flag), steps through `0x43a64c` and its five siblings, and enters the building at the flag it walks to. | confirmed | game | Entry 2 of `0x42fca1`. [Settlers](settlers.md#the-walk). |
 | `0x43a64c` | `Settler_StepEast` | The step east of `Settler_Walk` (the siblings `0x43a7fd`, `0x43a9b0`, `0x43ab63`, `0x43abf9`, `0x43ac8b` step south-east, south, west, north-west, north) with the rest of the walk's turn merged in. | confirmed | game | Entries of the table at `0x43a2d8` and `0x43a3bd`. |
-| `0x43c96b` | `Settler_PassDoor` | State 4: waits out the step through a building's door, then runs the job's routine at `0x43ca54`. Not ported. | inferred | game | Entry 4 of `0x42fca1`. |
-| `0x428d10` | — | Every 20 clock units, steps a cursor across the map and changes tiles with the random generator. | unknown | game | Called by `0x4286d8`; calls `Rng_Step`. |
+| `0x43c96b` | `Settler_PassDoor` | State 4: waits out the step through a building's door, then runs the job's start routine through the table at `0x43ca54` (8 bytes an entry) when the building's status bit 5 is clear; else the settler takes state 0x19. | confirmed | game | Entry 4 of `0x42fca1`. [Woodcutting](woodcutting.md#the-start-at-the-hut). |
+| `0x43cf15` | `Woodcutter_Start` | The start routine of job 5, entry 5 of `0x43ca54`: where the settler is not sent home (mode `0xfe`) it leaves the hut's node and takes state 0x12; sent home, it goes back into the storage's list (state 1). | confirmed | game | Entry of `0x43ca54` for job 5. |
+| `0x438b8c` | `Woodcutter_SearchTree` | State 0x12: when the timer has run out, draws a node of the spiral table's entries 1 to 128 around the hut until an object code from 8 to 0x17 stands on it, adding 400 to the timer for each miss until that wraps; on a hit sets the vector to the tree and steps to the flag as state 7 does. | confirmed | game | Entry 0x12 of `0x42fca1`; draws through `0x44257a`. |
+| `0x43e036` | `Settler_StepToFlag` | State 7: the step from a building's node onto its flag (south-east) when the nodes are free; the time of the step is scaled by the door's speed and the settler waits it out in state 5. | confirmed | game | Entry 7 of `0x42fca1`. |
+| `0x436c38` | `Settler_FreeWalk` | State 0x10: the walk along a vector of east and south steps kept in bytes 11 and 12 of the settler item; each step takes the first direction of the row `0x4388ff` names for the vector's heading class, and the arrival (vector 0, byte 15 equal 8) goes to `0x437ddd`. | confirmed | game | Entry 0x10 of `0x42fca1`. |
+| `0x4388ff` | `Settler_WalkRows` | Data: 8 bytes for each heading class of the free walk, the directions to try in order, each as 4 times its number plus 4. | confirmed | game | Read by `0x436c38`. |
+| `0x437ddd` | `Settler_FreeWalkArrived` | The arrival of the free walk: jumps by the job to the job's end of the walk; for job 5 to `0x437f53` (at the tree: start cutting; back at the flag: put the log on the flag and enter the hut). | confirmed | game | Reached from `0x436c38`. |
+| `0x438a9e` | `Woodcutter_Cut` | State 0x11: each time the timer runs out writes the next code of the felled tree (`0x5d` to `0x66`) into the object byte and sets the frame; after the fifth the settler walks back with the log (byte 13 = `0x80`, state 0x10). | confirmed | game | Entry 0x11 of `0x42fca1`. |
+| `0x436b46` | `Flag_PutGood` | Puts a good (the byte in the first register) on the first empty one of the 8 places of the flag the settler stands on (item bytes `0xc` to `0x13`), clears the place's word at `0x14` plus twice the place, sets bit 7 of byte 4 of the flag item, and counts the good up in the player block. | confirmed | game | Called by `0x437ffd`. |
+| `0x43c7c2` | `Settler_EnterBuilding` | The step from a flag into the building north-west of it, and the turn of state 6 (`0x43c7ca`): takes the node when no settler stands on it, the step's time as timer, the part of it the door's speed leaves in word 12, and state 4; else frame `0x55` and state 6. | confirmed | game | Entry 6 of `0x42fca1`. |
+| `0x42d945` | `Building_HandleType2` | The handler of the building type 2, the woodcutter's hut: asks for a settler of job 5 when bits 2, 6, and 7 of its status are clear. | confirmed | game | Entry 2 of `0x42cd1d`. |
+| `0x42e0b8` | `Building_HandleType1` | The handler of the building type 1: asks for a settler of job 11, whose work (`0x433f71`, state 0x1f) looks for a node with no object and no road by the water. | confirmed | game | Entry 1 of `0x42cd1d`. |
+| `0x44257a` | `Rng_StepSettler` | The draw the settlers' routines use: the same step as `0x466ade`, the new first word left in item word `+0x14` of the EDI block. | confirmed | game | Called by `0x438b8c` and the other searches. |
+| `0x428d10` | `Map_ObjectPass` | Every 20 clock units takes the next nodes of a cursor that moves 23 columns on (a row down where it wraps), as many as the map's size gives (`+0x21c`): a lake node with detail may move its detail (one draw); an object code from `0x53` goes through the table at `0x428eb8`, 8 bytes an entry: `0x53` vanishes when a draw's low two bits are 0, `0x5d` to `0x66` become `0x53`, the codes from `0x67` grow or decay. | confirmed | game | Called by `0x4286d8`; draws through `0x466ade`. [Woodcutting](woodcutting.md#the-object-pass). |
 | `0x428a75` | — | Counts down three timers of a player block; the timer at `+0x120` repeats its work once per period that has elapsed. | unknown | game | Called by `0x4286d8`. |
 | `0x42a74a` | — | Copies `Clock_ElapsedTotal` and resets it, then calls `0x42a7ac` for each player block. | unknown | game | Reached from the phase table of `Sim_StepPhase`. |
 
@@ -787,7 +799,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x428728` | `Sim_ClearRetryBits` | confirmed | Simulation |
 | `0x428964` | `Sound_RunAmbient` | inferred | Sound |
 | `0x428a75` | — | unknown | Simulation |
-| `0x428d10` | — | unknown | Simulation |
+| `0x428d10` | `Map_ObjectPass` | confirmed | Simulation |
 | `0x4291c2` | `Sim_StepPhase` | confirmed | Simulation |
 | `0x42a74a` | — | unknown | Simulation |
 | `0x42b455` | `Road_RequestCarrier` | confirmed | Simulation |
@@ -795,6 +807,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42be63` | `Building_RequestWorker` | confirmed | Simulation |
 | `0x42ca7a` | `Route_NextGeneration` | confirmed | Simulation |
 | `0x42cb2d` | `Table18_Pass` | confirmed | Simulation |
+| `0x42d945` | `Building_HandleType2` | confirmed | Simulation |
+| `0x42e0b8` | `Building_HandleType1` | confirmed | Simulation |
 | `0x42f3d9` | `Table16_Pass` | confirmed | Simulation |
 | `0x42f4f1` | — | inferred | Simulation |
 | `0x42fc81` | `Settler_Dispatch` | confirmed | Simulation |
@@ -802,14 +816,23 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x430ee9` | `Player_SwapInSecondView` | confirmed | Input |
 | `0x430fd3` | `Player_SwapOutSecondView` | confirmed | Input |
 | `0x431c31` | `Msg_Post` | confirmed | Main loop |
+| `0x436b46` | `Flag_PutGood` | confirmed | Simulation |
+| `0x436c38` | `Settler_FreeWalk` | confirmed | Simulation |
+| `0x437ddd` | `Settler_FreeWalkArrived` | confirmed | Simulation |
+| `0x4388ff` | `Settler_WalkRows` | confirmed | Simulation |
+| `0x438a9e` | `Woodcutter_Cut` | confirmed | Simulation |
+| `0x438b8c` | `Woodcutter_SearchTree` | confirmed | Simulation |
 | `0x438eeb` | `Settler_WaitInStorage` | confirmed | Simulation |
 | `0x4398ea` | `Settler_Walk` | confirmed | Simulation |
 | `0x43a64c` | `Settler_StepEast` | confirmed | Simulation |
 | `0x43ad78` | `Settler_WalkRoad` | confirmed | Simulation |
 | `0x43b788` | `Settler_StepRoadEast` | confirmed | Simulation |
-| `0x43c96b` | `Settler_PassDoor` | inferred | Simulation |
+| `0x43c7c2` | `Settler_EnterBuilding` | confirmed | Simulation |
+| `0x43c96b` | `Settler_PassDoor` | confirmed | Simulation |
+| `0x43cf15` | `Woodcutter_Start` | confirmed | Simulation |
 | `0x43dceb` | `Settler_WaitStep` | confirmed | Simulation |
 | `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
+| `0x43e036` | `Settler_StepToFlag` | confirmed | Simulation |
 | `0x43f17a` | `Settler_StandByCastle` | confirmed | Simulation |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
 | `0x440c24` | `View_HandleClick` | inferred | Roads |
@@ -817,6 +840,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x442002` | `Road_Cancel` | confirmed | Roads |
 | `0x442244` | `Flag_PlaceFromButton` | confirmed | Castle and build sites |
 | `0x4422c5` | `Flag_Place` | confirmed | Castle and build sites |
+| `0x44257a` | `Rng_StepSettler` | confirmed | Simulation |
 | `0x442630` | `Castle_PlaceFromClick` | confirmed | Castle and build sites |
 | `0x442704` | `Castle_Place` | confirmed | Castle and build sites |
 | `0x442e8a` | `Castle_StartStockRows` | confirmed | Castle and build sites |
@@ -915,7 +939,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 183 routines of the 471 functions in the dump's game code band and lists 11 more without a name: 142 confirmed, 43 inferred, 9 unknown.
+Coverage: the index names 196 routines of the 471 functions in the dump's game code band and lists 10 more without a name: 156 confirmed, 42 inferred, 8 unknown.
 <!-- coverage:end -->
 
 Open anchors:

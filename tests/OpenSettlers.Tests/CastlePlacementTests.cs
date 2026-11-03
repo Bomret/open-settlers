@@ -36,7 +36,7 @@ public sealed class CastlePlacementTests
         var game = new Game(TestProgram.Tables(), map, int.Parse(fields["level"], CultureInfo.InvariantCulture));
 
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, tile[0], tile[1]));
-        game.Tick();
+        game.ApplyCommands();
 
         var site = BuildSite.Evaluate(
             TestProgram.Tables(),

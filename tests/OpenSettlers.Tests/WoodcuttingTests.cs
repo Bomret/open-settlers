@@ -1,0 +1,240 @@
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// Tests of the woodcutter's own logic on made-up tables (no install): every step takes 100 clock units, the doors have one
+// speed, every object class is 0 but the flag's, and the walk's direction rows hold, as their first direction, a step that
+// takes a vector nearer to 0. The values the original gives are in WoodcutterTests. The map of the seed
+// 1234,5678,9ABC has its castle at 15,5 with its flag at 16,6; the hut stands north-west of the flag at 17,3 (16,2), and
+// roads run from the castle's flag east to 18,6, from there north and east to 19,4, and from 17,3 east and south-east to 19,4.
+[TestClass]
+public sealed class WoodcuttingTests
+{
+    private const int HutFlag = 3;
+
+    // The direction each heading class (0x437072) takes first, as 4 times its number plus 4: a step that cuts the vector
+    // the class describes. The classes 12 to 15 point west and north, 16 and 17 west and south, 18 to 21 east and south,
+    // 22 and 23 east and north.
+    private static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
+
+    private static ProgramTables Made()
+    {
+        var classes = new byte[ProgramTables.ClassCount];
+        classes[1] = 3;
+        var rows = new byte[ProgramTables.WalkRowCount * ProgramTables.WalkRowSize];
+        for (var row = 0; row < ProgramTables.WalkRowCount; row++)
+        {
+            // The six directions, the heading class's own first and the others after it.
+            var first = row < 12 ? (byte)4 : FirstDirections[row - 12];
+            var order = new[] { first }.Concat(new byte[] { 4, 8, 12, 16, 20, 24 }.Where(code => code != first));
+            order.ToArray().CopyTo(rows, row * ProgramTables.WalkRowSize);
+        }
+
+        return new ProgramTables(
+            classes,
+            Enumerable
+                .Range(0, ProgramTables.StartStockRows)
+                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
+                .ToArray(),
+            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray(),
+            walkRows: rows
+        );
+    }
+
+    // The 128 nodes around the hut the worker draws from, as the spiral gives them.
+    private static (int X, int Y)[] Reach() =>
+        [
+            .. Enumerable
+                .Range(1, 128)
+                .Select(entry => (16 + MapGenerator.SpiralOffsets[entry].Dx, 2 + MapGenerator.SpiralOffsets[entry].Dy)),
+        ];
+
+    private static bool IsTree(Map map, (int X, int Y) node) =>
+        (map.Layer(MapLayer.Object)[map.Index(node.X & 31, node.Y & 31)] & 0x7f) is >= 8 and < 0x18;
+
+    // The castle, the flags, the roads, and the hut; a tree stands on every node of the hut's reach where trees is true,
+    // and the generated trees are gone from the whole map.
+    private static Game World(bool trees, out Map map)
+    {
+        map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var objects = map.Bytes(MapLayer.Object);
+        for (var index = 0; index < objects.Length; index++)
+        {
+            if ((objects[index] & 0x7f) is >= 8 and < 0x18)
+            {
+                objects[index] &= 0x80;
+            }
+        }
+
+        if (trees)
+        {
+            foreach (var (x, y) in Reach())
+            {
+                var index = map.Index(x & 31, y & 31);
+                if ((objects[index] & 0x7f) == 0)
+                {
+                    objects[index] = 8;
+                }
+            }
+        }
+
+        var game = new Game(Made(), map);
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Tick();
+        foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
+        {
+            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+            game.Tick();
+        }
+
+        foreach (
+            var (x, y, directions) in new[]
+            {
+                (16, 6, new[] { 0, 0 }),
+                (18, 6, new[] { 5, 5, 0 }),
+                (17, 3, new[] { 0, 1 }),
+            }
+        )
+        {
+            game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
+            game.Tick();
+        }
+
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
+        game.Tick();
+
+        return game;
+    }
+
+    [TestMethod]
+    public void AWorkerCutsATreeOfItsReachAndLaysALogOnTheHutsFlag()
+    {
+        var game = World(true, out var map);
+        var reach = Reach();
+        var before = reach.Count(node => IsTree(map, node));
+
+        for (var tick = 0; tick < 6000 && !game.FlagGoods(HutFlag).Contains(7); tick++)
+        {
+            game.Tick();
+        }
+
+        Assert.AreEqual(7, game.FlagGoods(HutFlag)[0], "the log lies on the first place of the flag");
+        Assert.AreEqual(8, game.FlagGoods(HutFlag).Count);
+        Assert.AreEqual(before - 1, reach.Count(node => IsTree(map, node)), "one tree is felled");
+    }
+
+    [TestMethod]
+    public void AFelledTreeIsGoneFromTheMapInTheEnd()
+    {
+        var game = World(true, out var map);
+        var reach = Reach();
+        (int X, int Y)? felled = null;
+
+        for (var tick = 0; tick < 60000; tick++)
+        {
+            game.Tick();
+            felled ??= reach
+                .Cast<(int X, int Y)?>()
+                .FirstOrDefault(node =>
+                    (map.Layer(MapLayer.Object)[map.Index(node!.Value.X & 31, node.Value.Y & 31)] & 0x7f)
+                        is >= 0x5d
+                            and <= 0x66
+                );
+            if (felled is { } node && (map.Layer(MapLayer.Object)[map.Index(node.X & 31, node.Y & 31)] & 0x7f) == 0)
+            {
+                return;
+            }
+        }
+
+        Assert.Fail("the felled tree still stands on the map");
+    }
+
+    [TestMethod]
+    public void TheObjectLayerWatchReportsEveryTickThatChangesTheObjectLayerOrTheGoodsOnAFlag()
+    {
+        var game = World(true, out var map);
+        var watch = new OpenSettlers.MapView.ObjectLayerWatch();
+        Assert.IsTrue(watch.Changed(game), "the first look is a change: nothing was drawn yet");
+        var objects = map.Layer(MapLayer.Object).ToArray();
+        var goods = game.FlagGoods(HutFlag).ToArray();
+        var changes = 0;
+
+        for (var tick = 0; tick < 6000 && !game.FlagGoods(HutFlag).Contains(7); tick++)
+        {
+            game.Tick();
+            var now = map.Layer(MapLayer.Object).ToArray();
+            var moved = !now.SequenceEqual(objects) || !game.FlagGoods(HutFlag).SequenceEqual(goods);
+            Assert.AreEqual(moved, watch.Changed(game), $"tick {game.TickCount}");
+            changes += moved ? 1 : 0;
+            objects = now;
+            goods = game.FlagGoods(HutFlag).ToArray();
+        }
+
+        Assert.IsGreaterThan(1, changes, "a tree is cut and a log laid");
+    }
+
+    [TestMethod]
+    public void WithNoTreeInReachTheWorkerWaitsInItsHutAndTheGameKeepsTicking()
+    {
+        var game = World(false, out var map);
+        var objects = map.Layer(MapLayer.Object).ToArray();
+
+        for (var tick = 0; tick < 3000; tick++)
+        {
+            game.Tick();
+        }
+
+        var digest = game.Digest();
+        var ticks = game.TickCount;
+        game.Tick();
+
+        Assert.AreEqual(0x12, game.Settlers[10].State, "the worker looks for a tree inside the hut");
+        Assert.AreEqual((16, 2), (game.Settlers[10].X, game.Settlers[10].Y));
+        Assert.IsFalse(game.FlagGoods(HutFlag).Any(good => good != 0));
+        Assert.AreEqual(ticks + 1, game.TickCount);
+        Assert.AreNotEqual(digest, game.Digest(), "the game state moves on");
+        var after = map.Layer(MapLayer.Object).ToArray();
+        Assert.IsTrue(
+            objects.Zip(after).All(pair => pair.First == pair.Second || (pair.First & 0x7f) == 0x53),
+            "the object pass changes only stumps"
+        );
+    }
+
+    [TestMethod]
+    public void TheWorkersDrawsComeFromTheGamesGeneratorAndShowInTheDigest()
+    {
+        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var game = new Game(Made(), map);
+        Assert.AreEqual(map.Generator, game.Random, "the game's generator starts where the map's generation ended");
+        var same = new Game(Made(), MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]));
+        Assert.AreEqual(game.Digest(), same.Digest());
+
+        var other = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        other.Generator = other.Generator.Step();
+
+        Assert.AreNotEqual(game.Digest(), new Game(Made(), other).Digest());
+    }
+
+    [TestMethod]
+    public void TwoGamesWithTheSameCommandsCutTheSameTrees()
+    {
+        var first = World(true, out var firstMap);
+        var second = World(true, out var secondMap);
+
+        for (var tick = 0; tick < 3000; tick++)
+        {
+            first.Tick();
+            second.Tick();
+        }
+
+        Assert.AreEqual(first.Digest(), second.Digest());
+        CollectionAssert.AreEqual(
+            firstMap.Layer(MapLayer.Object).ToArray(),
+            secondMap.Layer(MapLayer.Object).ToArray()
+        );
+    }
+}

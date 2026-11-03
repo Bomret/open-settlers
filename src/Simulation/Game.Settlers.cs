@@ -23,9 +23,10 @@ public sealed partial class Game
     // byte 0 of the original's item shifted right by 2.
     private static readonly int[] CastleJobs = [4, 21, 21, 21, 21, 21, 22, 22, 22, 18, 5, 6, 7, 2, 3, 11, 20, 20, 9, 9];
 
-    // The job of the settler that stands by while the castle is built, and the job of the woodcutter.
+    // The job of the settler that stands by while the castle is built, and the job of the woodcutter (the job the handler
+    // 0x42d945 of the building type 2 asks for, whose work is to cut trees: docs/rules/woodcutting.md).
     private const int BuilderJob = 4;
-    private const int WoodcutterJob = 11;
+    private const int WoodcutterJob = Settler.WoodcutterJob;
 
     // The first job of the knights. Knights and the castle's own handler are not ported.
     private const int FirstKnightJob = 22;
@@ -66,6 +67,7 @@ public sealed partial class Game
         _clock = (ushort)(_clock + ClockStep);
         ClearRetryBits();
         ClearFlagRetryBits();
+        ObjectPass();
         _phase = (_phase + 1) % PhaseCount;
         if (_phase >= TablePhases)
         {
@@ -256,17 +258,81 @@ public sealed partial class Game
                 }
 
                 break;
+            case 4:
+                Door(settler);
+                break;
+            case 6:
+                EnterHut(slot, settler);
+                break;
+            case 7:
+                StepOut(slot, settler);
+                break;
+            case 0x10:
+                FreeWalk(slot, settler);
+                break;
+            case 0x11:
+                Cut(settler);
+                break;
+            case 0x12:
+                SearchTree(slot, settler);
+                break;
         }
     }
 
     // State 1, a settler waiting in the castle (0x438eeb): it enters its slot in the castle's list of waiting settlers
-    // each turn. The jobs 10 and 22 to 26 take other branches (the knights; not ported).
+    // each turn. The job 10 takes another branch (not ported); the knights, the jobs 22 to 26, also draw
+    // (docs/rules/woodcutting.md, "The random generator").
     private void Idle(int slot, Settler settler)
     {
-        if (settler.Job != 10 && settler.Job < FirstKnightJob)
+        if (settler.Job >= FirstKnightJob)
+        {
+            KnightIdle(slot, settler);
+        }
+        else if (settler.Job != 10)
         {
             _waiting[settler.Job] = (ushort)slot;
         }
+    }
+
+    // The draws below which a knight of the level 0 to 3 (the jobs 22 to 25) is made a knight of the next level
+    // (0x43910b, 0x4391eb, 0x4392cb, 0x4393ab).
+    private static readonly int[] PromotionLimits = [4000, 2000, 1000, 500];
+
+    // A knight waiting in the castle (0x43910b and its three siblings). When its timer has run out it draws until a draw is
+    // below its level's limit, which promotes it (job plus one, timer 6000, and its entry in the castle's list moves to
+    // the new job), adding 6000 to the timer for each draw above it until that wraps. The last level only waits.
+    private void KnightIdle(int slot, Settler settler)
+    {
+        var level = settler.Job - FirstKnightJob;
+        if (level < PromotionLimits.Length)
+        {
+            var delta = (ushort)(_clock - settler.Stamp);
+            settler.Stamp = _clock;
+            var old = settler.Timer;
+            settler.Timer = (ushort)(old - delta);
+            if (delta > old)
+            {
+                while (true)
+                {
+                    if (Draw() < PromotionLimits[level])
+                    {
+                        _waiting[settler.Job] = 0;
+                        settler.Job++;
+                        settler.Timer = 6000;
+                        break;
+                    }
+
+                    var timer = settler.Timer;
+                    settler.Timer = (ushort)(timer + 6000);
+                    if (timer >= 0xe890)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        _waiting[settler.Job] = (ushort)slot;
     }
 
     // State 10, the settler that stands by while the castle is built (0x43f17a): each turn adds the elapsed units

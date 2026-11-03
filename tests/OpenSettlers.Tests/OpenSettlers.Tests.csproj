@@ -25,5 +25,6 @@
     <None Include="road-strips.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="worker-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="carrier-walks.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="wood-walks.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

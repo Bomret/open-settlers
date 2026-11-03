@@ -16,6 +16,30 @@ public static class ObjectDraws
     /// <summary>Pixels south of its node an object is drawn (<c>0x44da4d</c> adds 8 to the position).</summary>
     public const int OffsetY = 8;
 
+    // The places of a flag's goods (bytes 0xc to 0x13 of the flag item) and where each is drawn, in pixels from the flag's
+    // draw position (0x44db26 adds them to the node's x and y; 0x44de9a adds the 16 and 8 of an object and draws the sprite
+    // 320 plus the good). The places 0 to 2 are drawn before the flag, the others after it.
+    private static readonly (int X, int Y)[] GoodPlaces =
+    [
+        (6, -4),
+        (10, -2),
+        (-4, -4),
+        (10, 2),
+        (-8, -2),
+        (6, 4),
+        (-8, 2),
+        (-4, 4),
+    ];
+
+    private const int GoodsBeforeFlag = 3;
+
+    /// <summary>The goods that lie on the flags of a game, by the flag's node; a flag with no good is left out.</summary>
+    public static Dictionary<(int X, int Y), IReadOnlyList<int>> FlagGoodsOf(Game game) =>
+        game
+            .Flags.Select((flag, slot) => (flag, goods: game.FlagGoods(slot)))
+            .Where(entry => entry.goods.Any(good => good != 0))
+            .ToDictionary(entry => (entry.flag.X, entry.flag.Y), entry => entry.goods);
+
     /// <summary>
     /// The objects of a map in row-major order, which is the order the original paints them. A draw sits at its
     /// tile's node with the node's height taken off, moved by <see cref="OffsetX"/> and <see cref="OffsetY"/>; the
@@ -23,7 +47,12 @@ public static class ObjectDraws
     /// are no objects and are never drawn. With a <paramref name="castle"/>, its sprite is drawn at its node, and each
     /// woodcutter's hut of <paramref name="buildings"/> likewise.
     /// </summary>
-    public static List<ObjectDraw> Of(Map map, Castle? castle = null, IReadOnlyList<Building>? buildings = null)
+    public static List<ObjectDraw> Of(
+        Map map,
+        Castle? castle = null,
+        IReadOnlyList<Building>? buildings = null,
+        IReadOnlyDictionary<(int X, int Y), IReadOnlyList<int>>? flagGoods = null
+    )
     {
         var heights = map.Layer(MapLayer.Height);
         var width = map.Size.Width;
@@ -37,7 +66,14 @@ public static class ObjectDraws
 
             var (x, y) = Camera.NodePosition(item.X, item.Y);
             var height = heights[item.Y * width + item.X] & Map.HeightMask;
-            draws.Add(new ObjectDraw(item.Y, entry, x + OffsetX, y - height * TerrainTriangles.HeightStep + OffsetY));
+            var top = y - height * TerrainTriangles.HeightStep + OffsetY;
+            var goods =
+                item.Code == ObjectSprites.FlagCode && flagGoods is not null
+                    ? flagGoods.GetValueOrDefault((item.X, item.Y))
+                    : null;
+            AddGoods(draws, goods, item.Y, x + OffsetX, top, 0, GoodsBeforeFlag);
+            draws.Add(new ObjectDraw(item.Y, entry, x + OffsetX, top));
+            AddGoods(draws, goods, item.Y, x + OffsetX, top, GoodsBeforeFlag, GoodPlaces.Length);
         }
 
         if (castle is { } placed)
@@ -78,5 +114,31 @@ public static class ObjectDraws
         }
 
         return draws;
+    }
+
+    private static void AddGoods(
+        List<ObjectDraw> draws,
+        IReadOnlyList<int>? goods,
+        int row,
+        int x,
+        int y,
+        int from,
+        int to
+    )
+    {
+        for (var place = from; place < to && goods is not null && place < goods.Count; place++)
+        {
+            if (goods[place] != 0)
+            {
+                draws.Add(
+                    new ObjectDraw(
+                        row,
+                        ObjectSprites.GoodEntry(goods[place]),
+                        x + GoodPlaces[place].X,
+                        y + GoodPlaces[place].Y
+                    )
+                );
+            }
+        }
     }
 }

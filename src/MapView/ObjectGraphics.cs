@@ -15,7 +15,7 @@ namespace OpenSettlers.MapView;
 public sealed class ObjectGraphics
 {
     /// <summary>
-    /// The number of object sprite entries: those of codes 8 to 127. The castle's sprite follows them, then the flag's.
+    /// The number of object sprite entries: those of codes 8 to 127. The castle's sprite follows them, then the flag's, the hut's, and the 32 goods'.
     /// </summary>
     public const int EntryCount = ObjectSprites.LastCode - ObjectSprites.FirstCode + 1;
 
@@ -30,16 +30,19 @@ public sealed class ObjectGraphics
 
     /// <summary>
     /// One image per entry from <see cref="ObjectSprites.FirstEntry"/> on, then the castle's
-    /// (<see cref="ObjectSprites.CastleEntry"/>) and the flag's (<see cref="ObjectSprites.FlagEntry"/>), each padded to
+    /// (<see cref="ObjectSprites.CastleEntry"/>), the flag's (<see cref="ObjectSprites.FlagEntry"/>), the hut's, and the
+    /// goods' (<see cref="ObjectSprites.GoodsCount"/> from <see cref="ObjectSprites.GoodsFirstEntry"/>), each padded to
     /// the layer size in its pixel arrays.
     /// </summary>
     public required IReadOnlyList<ObjectImage> Images { get; init; }
 
-    /// <summary>The layer of a sprite entry: the object entries in order, then the castle's, then the flag's.</summary>
+    /// <summary>The layer of a sprite entry: the object entries in order, then the castle's, the flag's, the hut's, and the goods'.</summary>
     public static int Layer(int entry) =>
         entry == ObjectSprites.CastleEntry ? EntryCount
         : entry == ObjectSprites.FlagEntry ? EntryCount + 1
         : entry == ObjectSprites.WoodcutterEntry ? EntryCount + 2
+        : entry is >= ObjectSprites.GoodsFirstEntry and < ObjectSprites.GoodsFirstEntry + ObjectSprites.GoodsCount
+            ? EntryCount + 3 + entry - ObjectSprites.GoodsFirstEntry
         : entry - ObjectSprites.FirstEntry;
 
     /// <summary>
@@ -101,6 +104,19 @@ public sealed class ObjectGraphics
                     data => ObjectImage.From(SpriteFile.Read(data))
                 )
         );
+
+        for (
+            var entry = ObjectSprites.GoodsFirstEntry;
+            entry < ObjectSprites.GoodsFirstEntry + ObjectSprites.GoodsCount;
+            entry++
+        )
+        {
+            images.Add(
+                archive[entry].State == EntryState.Absent
+                    ? ObjectImage.Empty
+                    : Read(archive, entry, "the good's sprite", data => ObjectImage.From(SpriteFile.Read(data)))
+            );
+        }
 
         var width = images.Max(image => image.Width);
         var height = images.Max(image => image.Height);
