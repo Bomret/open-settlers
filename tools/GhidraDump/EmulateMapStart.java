@@ -55,7 +55,12 @@
 //                            the same map. Directions after the road reached a flag are not run. A road whose first step goes
 //                            back along a road that already leaves the start flag is CORRUPTED (the original tears the old
 //                            road's bits off the map and counts the length to -1): the run restores the state before it.
-//   stockrows:x              the five rows of start stock numbers the placement interpolates (0x442e8a)
+//   roaddraw:SEED:COUNT      the three routines that draw a road's strip (0x428008 east, 0x428105 south-east, 0x4281cc
+//                            south, docs/rules/roads.md) on COUNT cases drawn from a Java random generator seeded with SEED:
+//                            a direction, a row position and a column position, and the height and the terrain byte of the
+//                            node, its north, east, south, south-east, and west neighbours. Each line gives the inputs and what
+//                            the routine hands to the textured fill (0x406120): the position, the mask entry, and the texture entry.
+//   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
 //
@@ -109,6 +114,7 @@ public class EmulateMapStart extends GhidraScript {
                     case "flag" -> flag(rest);
                     case "flagput" -> flagput(rest);
                     case "road" -> road(rest);
+                    case "roaddraw" -> roaddraw(rest);
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
                     case "opponents" -> opponents(rest);
@@ -831,6 +837,59 @@ public class EmulateMapStart extends GhidraScript {
             println(label + " outcome=" + outcome + " view1=" + String.format("%02X",
                     emu.readMemory(toAddr(RECORD + 1), 1)[0] & 0xff) + " length=" + getWord(RECORD + 0xce)
                     + " roadchanges=" + changes(mapAtStart, mapNow, width, height) + " items=" + items.toString().trim());
+        }
+    }
+
+    private static final long[] ROAD_DRAW_ROUTINES = {0x428008L, 0x428105L, 0x4281ccL};
+    private static final long ROAD_LIST = 0x25000000L;
+    private static final long ROAD_NODES = 0x25100000L;
+
+    /**
+     * roaddraw:SEED:COUNT runs the road strip routines on random cases (see the header). The routines read their node
+     * and its neighbours through a list of node pointers at +0x28 of the register block: the node at the list
+     * pointer, its east neighbour at +4, its south neighbour at +0x52, its south-east neighbour at +0x56, its north
+     * neighbour at -0x52, its west neighbour at -4 (the list of the row pass 0x427c09). The pass routines
+     * (0x427d3e, 0x427e3a, 0x427f1f) load the height words of the node and of the neighbour the road leads to into
+     * +0x18 and +0x1c of the register block before the call; this does the same.
+     */
+    private void roaddraw(String rest) throws Exception {
+        String[] parts = rest.split(":");
+        java.util.Random random = new java.util.Random(Long.parseLong(parts[0]));
+        int count = Integer.parseInt(parts[1]);
+        String[] names = {"a", "n", "e", "s", "se", "w"};
+        // The list entry offsets of the node and its north, east, south, south-east, and west neighbours.
+        int[] offsets = {0, -0x52, 4, 0x52, 0x56, -4};
+        long list = ROAD_LIST + 0x200;
+        for (int i = 0; i < count; i++) {
+            prepare();
+            int direction = random.nextInt(3);
+            int row = 100 + random.nextInt(300);
+            int column = random.nextInt(600);
+            int[] height = new int[6];
+            int[] terrain = new int[6];
+            int base = 6 + random.nextInt(14);
+            for (int k = 0; k < 6; k++) {
+                height[k] = Math.max(0, Math.min(31, base + random.nextInt(11) - 5));
+                terrain[k] = random.nextInt(256);
+                long node = ROAD_NODES + 16L * k;
+                emu.writeMemory(toAddr(node), new byte[] {0, (byte) height[k], (byte) terrain[k], 0});
+                putInt(list + offsets[k], node);
+            }
+            putInt(REGISTERS + 0x28, list);
+            // The word of the node and of the neighbour the road leads to: the flag byte high, the height byte low.
+            int target = direction == 0 ? 2 : direction == 1 ? 4 : 3;
+            putWord(REGISTERS + 0x18, height[0]);
+            putWord(REGISTERS + 0x1c, height[target]);
+            putWord(REGISTERS, row);
+            putWord(REGISTERS + 4, column);
+            runTo(ROAD_DRAW_ROUTINES[direction], 0x406120);
+            StringBuilder line = new StringBuilder("EMU roaddraw dir=" + direction + " row=" + row + " column=" + column);
+            for (int k = 0; k < 6; k++) {
+                line.append(" ").append(names[k]).append("=").append(height[k]).append(",").append(terrain[k]);
+            }
+            line.append(" x=").append((short) getWord(REGISTERS)).append(" y=").append((short) getWord(REGISTERS + 4))
+                    .append(" mask=").append(getWord(REGISTERS + 8)).append(" texture=").append(getWord(REGISTERS + 0xc));
+            println(line.toString());
         }
     }
 

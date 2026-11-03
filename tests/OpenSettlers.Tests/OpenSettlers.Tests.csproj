@@ -22,5 +22,6 @@
     <None Include="flag-verdicts.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="flag-placements.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="road-builds.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="road-strips.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
