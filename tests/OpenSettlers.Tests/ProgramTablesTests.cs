@@ -97,5 +97,46 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(0x5495C7981E661835UL, Fnv(tables.StartStock.SelectMany(row => row).ToArray()));
     }
 
+    [TestMethod]
+    public void TheTablesOfTheWalkAreFoundByTheirAddress()
+    {
+        var exe = Executable(bytes =>
+        {
+            for (var shape = ProgramTables.StepTimeFirst; shape < ProgramTables.StepTimeFirst + ProgramTables.StepTimeCount; shape++)
+            {
+                BitConverter.GetBytes((ushort)(1000 + shape)).CopyTo(bytes, FileOffset(ProgramTables.StepTimeAddress) + 2 * shape);
+            }
+
+            for (var type = 0; type < ProgramTables.DoorSpeedCount; type++)
+            {
+                bytes[FileOffset(ProgramTables.DoorSpeedAddress) + type] = (byte)(type + 7);
+            }
+
+            for (var size = 0; size < ProgramTables.ScanWindowCount; size++)
+            {
+                BitConverter.GetBytes((ushort)(size * 5)).CopyTo(bytes, FileOffset(ProgramTables.ScanWindowAddress) + 2 * size);
+            }
+        });
+
+        var tables = ProgramTables.Read(exe);
+
+        Assert.AreEqual((ushort)1013, tables.StepTime(13));
+        Assert.AreEqual((ushort)(1000 - 32), tables.StepTime(-32), "a step shape below the table reads the bytes before it");
+        Assert.AreEqual((ushort)0, tables.StepTime(500), "a shape outside the table reads as 0");
+        Assert.AreEqual((byte)(24 + 7), tables.DoorSpeeds[24]);
+        Assert.AreEqual((ushort)(3 * 5), tables.ScanWindows[3]);
+    }
+
+    [TestMethod]
+    public void TheTablesOfTheWalkOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:43f208:320 (the 160 words from the step shape -32), peek:43c92b:64, and peek:421d28:16.
+        Assert.AreEqual(0x05BF5D4714B4FBADUL, Fnv(tables.StepTimes.SelectMany(BitConverter.GetBytes).ToArray()));
+        Assert.AreEqual(0x993304FEA7F369C8UL, Fnv(tables.DoorSpeeds));
+        Assert.AreEqual(0x5AC52FC0C8AECD88UL, Fnv(tables.ScanWindows.SelectMany(BitConverter.GetBytes).ToArray()));
+    }
+
     private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
 }
