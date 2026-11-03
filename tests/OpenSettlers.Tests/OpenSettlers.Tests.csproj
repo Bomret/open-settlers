@@ -20,5 +20,6 @@
     <None Include="castle-placements.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="castle-sites.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="flag-verdicts.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="flag-placements.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

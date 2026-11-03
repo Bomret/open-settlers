@@ -37,6 +37,11 @@
 //                            whose object has a size byte below 3, for a player without a castle: for each pair
 //                            (node state, site) the evaluator leaves, how many tiles put a flag (the routine goes to
 //                            0x4422c5) and how many refuse it (it goes to 0x44c768)
+//   flagput:N:S0,S1,S2:L:cx,cy:x,y;x,y;...
+//                            the flag button (0x442244 with the placement 0x4422c5 to its end) on that map after a
+//                            castle at cx,cy (0x442704), on each tile in turn without resetting between them: the
+//                            outcome (PLACED or REFUSED), the evaluator's pair, the link word the node holds, the
+//                            total of resource 1 (+0x4c), and the bytes the tile's attempt changed
 //   stockrows:x              the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -89,6 +94,7 @@ public class EmulateMapStart extends GhidraScript {
                     case "site" -> site(rest);
                     case "castle" -> castle(rest);
                     case "flag" -> flag(rest);
+                    case "flagput" -> flagput(rest);
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
                     case "opponents" -> opponents(rest);
@@ -507,6 +513,107 @@ public class EmulateMapStart extends GhidraScript {
         pairs.forEach((key, counts) -> text.append(" ").append(key).append(":").append(counts[0]).append("/")
                 .append(counts[0] + counts[1]));
         return " pairs=" + text.toString().trim();
+    }
+
+    /**
+     * The flag button with the placement behind it (flagput:N:S0,S1,S2:L:cx,cy:x,y;x,y;...). It sets the game up as
+     * castle: does, places the castle at cx,cy, and then runs the flag button (0x442244) for the player on each
+     * tile in turn, keeping the map and the tables between tiles, so a later tile sees the flags of the earlier
+     * ones. A tile the button hands to 0x44c768 (the error report) is REFUSED and changes nothing; otherwise the
+     * placement runs to its end. Per tile it prints the evaluator's pair, the link word of the node, the total of
+     * resource 1 (+0x4c), and the map bytes the attempt changed (the positions as castle-changes gives them).
+     */
+    private void flagput(String rest) throws Exception {
+        String[] parts = rest.split(":");
+        int[] size = generate(parts[0] + ":" + parts[1], false);
+        int width = size[1];
+        int height = size[2];
+        int bytes = height * 8 * width;
+        putInt(STATE + OFFSETS_POINTER, OFFSETS);
+        call(0x41f6a5);
+        putInt(STATE + 0x352, 2);
+        putInt(STATE + 0x64, PLAYERS + 0x1000);
+        putInt(STATE + 0x68, PLAYERS + 0x3000);
+        putInt(STATE + 0x6c, PLAYERS + 0x5000);
+        putInt(STATE + 0x70, PLAYERS + 0x7000);
+        putInt(STATE + 0x78, PLAYERS + 0x9000);
+        putInt(STATE + 0x7c, PLAYERS + 0x9400);
+        putInt(STATE + 0x98, TABLES);
+        putInt(STATE + 0xa4, TABLES + 0x10000);
+        putInt(STATE + 0x9c, TABLES + 0x20000);
+        putInt(STATE + 0xa8, TABLES + 0x30000);
+        putInt(STATE + 0xa0, TABLES + 0x40000);
+        putInt(STATE + 0xac, TABLES + 0x50000);
+        putInt(STATE + 0xf0, TABLES + 0x60000);
+        putInt(STATE + 0xf4, TABLES + 0x70000);
+        zero(PLAYERS, 0xa000);
+        zero(TABLES, 0x80000);
+        for (int i = 0; i < 4; i++) {
+            putWord(PLAYERS + 0x1000 + 0x2000 * i, i);
+        }
+        putWord(STATE + 0x258, 100);
+        putWord(STATE + 0x25a, 100);
+        putWord(STATE + 0x25c, 100);
+        putWord(STATE + 0x264, 100);
+        for (int offset : new int[] {0x25e, 0x260, 0x262, 0x266}) {
+            putWord(STATE + offset, 0);
+        }
+        long player = PLAYERS + 0x1000;
+        putInt(REGISTERS + 0x30, player);
+        String[] centre = parts[3].split(",");
+        putWord(player + 0xfc, Integer.parseInt(centre[0]));
+        putWord(player + 0xfe, Integer.parseInt(centre[1]));
+        emu.writeMemory(toAddr(player + LEVEL), new byte[] {(byte) Integer.parseInt(parts[2])});
+        call(0x44b6e6);
+        byte[] first = emu.readMemory(toAddr(player + 0x100), 2);
+        if ((first[0] & 0xff) != 7 || (first[1] & 0xff) != 5) {
+            println("EMU flagput castle=" + parts[3] + " REFUSED");
+            return;
+        }
+        call(0x442704);
+        for (String tile : parts[4].split(";")) {
+            String[] xy = tile.split(",");
+            int x = Integer.parseInt(xy[0]);
+            int y = Integer.parseInt(xy[1]);
+            byte[] before = emu.readMemory(toAddr(MAP), bytes).clone();
+            emu.writeMemory(toAddr(RECORD), new byte[0x100]);
+            putInt(RECORD + 0x82, player);
+            putInt(REGISTERS + 0x20, RECORD);
+            putInt(REGISTERS + 0x30, player);
+            putWord(player + 0xfc, x);
+            putWord(player + 0xfe, y);
+            emu.writeMemory(toAddr(player + 0x100), new byte[4]);
+            long esp = emu.readRegister("ESP").longValue() - 4;
+            emu.writeRegister("ESP", esp);
+            putInt(esp, RETURN);
+            long stop = runTo(0x442244, RETURN, 0x44c768);
+            emu.writeRegister("ESP", esp + 4);
+            byte[] result = emu.readMemory(toAddr(player + 0x100), 2);
+            byte[] after = emu.readMemory(toAddr(MAP), bytes);
+            StringBuilder changed = new StringBuilder();
+            for (int ty = 0; ty < height; ty++) {
+                for (int tx = 0; tx < width; tx++) {
+                    int a = ty * 8 * width + tx * 4;
+                    int b = a + 4 * width;
+                    StringBuilder diff = new StringBuilder();
+                    for (int i = 0; i < 8; i++) {
+                        int at = (i < 4 ? a : b) + (i & 3);
+                        if (after[at] != before[at]) {
+                            diff.append("/").append(i).append("=").append(String.format("%02X>%02X",
+                                    before[at] & 0xff, after[at] & 0xff));
+                        }
+                    }
+                    if (diff.length() > 0) {
+                        changed.append(" ").append(tx).append(",").append(ty).append(":").append(diff.substring(1));
+                    }
+                }
+            }
+            int b = y * 8 * width + 4 * width + x * 4;
+            println("EMU flagput size=" + size[0] + " castle=" + parts[3] + " level=" + parts[2] + " tile=" + x + ","
+                    + y + (stop == RETURN ? " PLACED" : " REFUSED") + " evaluator=" + (result[0] & 0xff) + "."
+                    + (result[1] & 0xff) + " link=" + ((after[b] & 0xff) | ((after[b + 1] & 0xff) << 8))
+                    + " resource1=" + getWord(STATE + RESOURCE_TOTAL) + " changes=" + changed.toString().trim());
+        }
     }
 
     /** peek:ADDRESS:COUNT prints COUNT bytes of the program at the address, for an investigation at the console. */

@@ -12,4 +12,11 @@ public static class CommandKind
     /// until then.
     /// </summary>
     public const int PlaceCastle = 1;
+
+    /// <summary>
+    /// Put a flag on the node (<see cref="Command.X"/>, <see cref="Command.Y"/>) where the flag button of the original
+    /// allows it (<see cref="BuildSiteResult.AllowsFlag"/>). Refused before the castle stands, outside the map, for
+    /// another player, and where the node holds a flag, a building, or an object that blocks it.
+    /// </summary>
+    public const int PlaceFlag = 2;
 }

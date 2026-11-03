@@ -1,0 +1,329 @@
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=25,30 outcome=PLACED evaluator=7.3 link=1 resource1=476 changes=25,30:0=00>80/3=00>01/4=00>01
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=26,30 outcome=PLACED evaluator=7.4 link=2 resource1=476 changes=26,30:0=00>80/3=00>01/4=00>02
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=27,30 outcome=PLACED evaluator=7.3 link=3 resource1=476 changes=27,30:0=00>80/3=00>01/4=00>03
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=28,30 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=29,30 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=30,30 outcome=PLACED evaluator=7.1 link=4 resource1=476 changes=30,30:0=00>80/3=00>01/4=00>04
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=31,30 outcome=PLACED evaluator=7.4 link=5 resource1=476 changes=31,30:0=00>80/3=00>01/4=00>05
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=0,30 outcome=PLACED evaluator=7.4 link=6 resource1=476 changes=0,30:0=00>80/3=00>01/4=00>06
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=1,30 outcome=PLACED evaluator=7.4 link=7 resource1=476 changes=1,30:0=00>80/3=00>01/4=00>07
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=2,30 outcome=PLACED evaluator=7.3 link=8 resource1=476 changes=2,30:0=00>80/3=00>01/4=24>08 3,30:4=28>2C
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=3,30 outcome=REFUSED evaluator=7.0 link=44 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=25,31 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=26,31 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=27,31 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=28,31 outcome=REFUSED evaluator=6.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=29,31 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=30,31 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=31,31 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=0,31 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=1,31 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=2,31 outcome=PLACED evaluator=7.4 link=9 resource1=476 changes=2,31:0=00>80/3=00>01/4=00>09
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=3,31 outcome=PLACED evaluator=7.3 link=10 resource1=476 changes=3,31:0=00>80/3=00>01/4=24>0A 4,31:4=28>2C
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=25,0 outcome=PLACED evaluator=7.1 link=11 resource1=476 changes=25,0:0=00>80/3=00>01/4=00>0B
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=26,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=27,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=28,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=29,0 outcome=REFUSED evaluator=0.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=30,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=31,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=0,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=1,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=2,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=3,0 outcome=PLACED evaluator=7.3 link=12 resource1=476 changes=3,0:0=00>80/3=00>01/4=00>0C
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=25,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=26,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=27,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=28,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=29,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=30,1 outcome=REFUSED evaluator=1.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=31,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=0,1 outcome=PLACED evaluator=7.1 link=13 resource1=476 changes=0,1:0=00>80/3=00>01/4=00>0D
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=1,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=2,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=3,1 outcome=PLACED evaluator=7.3 link=14 resource1=476 changes=3,1:0=00>80/3=00>01/4=00>0E
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=25,2 outcome=PLACED evaluator=7.4 link=15 resource1=476 changes=25,2:0=00>80/3=00>01/4=00>0F
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=26,2 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=27,2 outcome=PLACED evaluator=7.1 link=16 resource1=476 changes=27,2:0=00>80/3=00>01/4=00>10
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=28,2 outcome=PLACED evaluator=7.4 link=17 resource1=476 changes=28,2:0=00>80/3=00>01/4=00>11
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=29,2 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=30,2 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=31,2 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=0,2 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=1,2 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=2,2 outcome=PLACED evaluator=7.1 link=18 resource1=476 changes=2,2:0=00>80/3=00>01/4=00>12
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=3,2 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=25,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=26,3 outcome=PLACED evaluator=7.4 link=19 resource1=476 changes=26,3:0=00>80/3=00>01/4=00>13
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=27,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=28,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=29,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=30,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=31,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=0,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=1,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=2,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=3,3 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=25,4 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=26,4 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=27,4 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=28,4 outcome=PLACED evaluator=7.4 link=20 resource1=476 changes=28,4:0=00>80/3=00>01/4=00>14
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=29,4 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=30,4 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=31,4 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=0,4 outcome=PLACED evaluator=7.4 link=21 resource1=476 changes=0,4:0=00>80/3=00>01/4=00>15
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=1,4 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=2,4 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=29,0 level=7 tile=3,4 outcome=PLACED evaluator=7.1 link=22 resource1=476 changes=3,4:0=00>80/3=00>01/4=00>16
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=10,1 outcome=PLACED evaluator=7.1 link=1 resource1=0 changes=10,1:0=00>80/3=00>01/4=68>01 11,1:4=68>70
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=11,1 outcome=PLACED evaluator=7.2 link=2 resource1=0 changes=11,1:0=00>80/3=00>01/4=70>02 12,1:4=68>78
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=12,1 outcome=PLACED evaluator=7.2 link=3 resource1=0 changes=12,1:0=00>80/3=00>01/4=78>03 13,1:4=64>7C
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,1 outcome=PLACED evaluator=7.3 link=4 resource1=0 changes=13,1:0=00>80/3=00>01/4=7C>04 14,1:4=00>7C
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,1 outcome=PLACED evaluator=7.3 link=5 resource1=0 changes=14,1:0=00>80/3=00>01/4=7C>05 15,1:4=00>7C
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=15,1 outcome=PLACED evaluator=7.3 link=6 resource1=0 changes=15,1:0=00>80/3=00>01/4=7C>06 16,1:4=00>7C
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=16,1 outcome=REFUSED evaluator=7.0 link=124 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,1 outcome=PLACED evaluator=7.1 link=7 resource1=0 changes=17,1:0=00>80/3=00>01/4=00>07
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,1 outcome=REFUSED evaluator=7.0 link=0 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,1 outcome=PLACED evaluator=7.1 link=8 resource1=0 changes=19,1:0=00>80/3=80>81/4=00>08
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=20,1 outcome=REFUSED evaluator=0.0 link=5 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=10,2 outcome=REFUSED evaluator=7.0 link=108 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=11,2 outcome=PLACED evaluator=7.2 link=9 resource1=0 changes=11,2:0=00>80/3=00>01/4=6C>09 12,2:4=6C>78
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=12,2 outcome=PLACED evaluator=7.2 link=10 resource1=0 changes=12,2:0=00>80/3=00>01/4=78>0A 13,2:4=68>7F 12,3:4=70>71
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,2 outcome=PLACED evaluator=7.2 link=11 resource1=0 changes=13,2:0=00>80/3=00>01/4=7F>0B 14,2:4=64>7F 13,3:4=6C>70
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,2 outcome=PLACED evaluator=7.3 link=12 resource1=0 changes=14,2:0=00>80/3=00>01/4=7F>0C 15,2:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=15,2 outcome=PLACED evaluator=7.3 link=13 resource1=0 changes=15,2:0=00>80/3=00>01/4=7F>0D 16,2:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=16,2 outcome=PLACED evaluator=7.3 link=14 resource1=0 changes=16,2:0=00>80/3=00>01/4=7F>0E 17,2:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,2 outcome=PLACED evaluator=7.3 link=15 resource1=0 changes=17,2:0=00>80/3=00>01/4=7F>0F 18,2:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,2 outcome=REFUSED evaluator=7.0 link=127 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,2 outcome=REFUSED evaluator=7.0 link=3 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=20,2 outcome=REFUSED evaluator=7.0 link=4 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=10,3 outcome=PLACED evaluator=7.1 link=16 resource1=0 changes=10,3:0=00>80/3=00>01/4=6C>10 11,3:4=70>7C
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=11,3 outcome=PLACED evaluator=7.2 link=17 resource1=0 changes=11,3:0=00>80/3=00>01/4=7C>11 12,3:4=71>7F 11,4:4=70>7E
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=12,3 outcome=PLACED evaluator=7.2 link=18 resource1=0 changes=12,3:0=00>80/3=00>01/4=7F>12 13,3:4=70>7F 12,4:4=74>7F 13,4:4=70>75
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,3 outcome=PLACED evaluator=7.2 link=19 resource1=0 changes=13,3:0=00>80/3=00>01/4=7F>13 14,3:4=68>7F 13,4:4=75>7D
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,3 outcome=REFUSED evaluator=7.0 link=127 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=15,3 outcome=REFUSED evaluator=7.0 link=100 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=16,3 outcome=PLACED evaluator=7.3 link=20 resource1=0 changes=16,3:0=00>80/3=00>01/4=00>14
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,3 outcome=PLACED evaluator=7.3 link=21 resource1=0 changes=17,3:0=00>80/3=00>01/4=00>15
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,3 outcome=REFUSED evaluator=7.0 link=0 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,3 outcome=PLACED evaluator=7.1 link=22 resource1=0 changes=19,3:0=00>80/3=80>81/4=00>16
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=20,3 outcome=REFUSED evaluator=7.0 link=0 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=10,4 outcome=PLACED evaluator=7.2 link=23 resource1=0 changes=10,4:0=00>80/3=00>01/4=50>17 10,5:4=50>5F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=11,4 outcome=PLACED evaluator=7.2 link=24 resource1=0 changes=11,4:0=00>80/3=00>01/4=7E>18 11,5:4=6C>7F 12,5:4=70>7B
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=12,4 outcome=PLACED evaluator=7.2 link=25 resource1=0 changes=12,4:0=00>80/3=00>01/4=7F>19 13,4:4=7D>7F 12,5:4=7B>7F 13,5:4=70>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,4 outcome=PLACED evaluator=7.2 link=26 resource1=0 changes=13,4:0=00>80/3=00>01/4=7F>1A 14,4:4=6C>7F 14,5:4=6C>78
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,4 outcome=REFUSED evaluator=6.0 link=127 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=15,4 outcome=REFUSED evaluator=7.0 link=104 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=16,4 outcome=REFUSED evaluator=7.0 link=100 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,4 outcome=PLACED evaluator=7.3 link=27 resource1=0 changes=17,4:0=00>80/3=00>01/4=00>1B
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,4 outcome=PLACED evaluator=7.3 link=28 resource1=0 changes=18,4:0=00>80/3=00>01/4=00>1C
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,4 outcome=REFUSED evaluator=7.0 link=0 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=20,4 outcome=REFUSED evaluator=7.0 link=7 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=10,5 outcome=REFUSED evaluator=7.0 link=95 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=11,5 outcome=PLACED evaluator=7.2 link=29 resource1=0 changes=11,5:0=00>80/3=00>01/4=7F>1D 12,6:4=6C>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=12,5 outcome=PLACED evaluator=7.2 link=30 resource1=0 changes=12,5:0=00>80/3=00>01/4=7F>1E 13,6:4=6C>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,5 outcome=PLACED evaluator=7.2 link=31 resource1=0 changes=13,5:0=00>80/3=00>01/4=7F>1F 14,5:4=78>7F 14,6:4=6C>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,5 outcome=REFUSED evaluator=7.0 link=127 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=15,5 outcome=REFUSED evaluator=0.0 link=0 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=16,5 outcome=REFUSED evaluator=7.0 link=100 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,5 outcome=PLACED evaluator=7.3 link=32 resource1=0 changes=17,5:0=00>80/3=00>01/4=00>20
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,5 outcome=PLACED evaluator=7.3 link=33 resource1=0 changes=18,5:0=00>80/3=00>01/4=00>21
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,5 outcome=PLACED evaluator=7.3 link=34 resource1=0 changes=19,5:0=00>80/3=00>01/4=00>22
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=20,5 outcome=REFUSED evaluator=7.0 link=0 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=10,6 outcome=REFUSED evaluator=7.0 link=76 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=11,6 outcome=REFUSED evaluator=7.0 link=76 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=12,6 outcome=PLACED evaluator=7.3 link=35 resource1=0 changes=12,6:0=00>80/3=00>01/4=7F>23 12,7:4=68>7F 13,7:4=68>70
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,6 outcome=PLACED evaluator=7.2 link=36 resource1=0 changes=13,6:0=00>80/3=00>01/4=7F>24 13,7:4=70>7F 14,7:4=68>78
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,6 outcome=PLACED evaluator=7.2 link=37 resource1=0 changes=14,6:0=00>80/3=00>01/4=7F>25 15,6:4=68>7F 14,7:4=78>7F 15,7:4=68>69
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=15,6 outcome=REFUSED evaluator=7.0 link=127 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=16,6 outcome=REFUSED evaluator=1.0 link=0 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,6 outcome=PLACED evaluator=7.3 link=38 resource1=0 changes=17,6:0=00>80/3=00>01/4=00>26
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,6 outcome=PLACED evaluator=7.3 link=39 resource1=0 changes=18,6:0=00>80/3=00>01/4=00>27
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,6 outcome=PLACED evaluator=7.3 link=40 resource1=0 changes=19,6:0=00>80/3=00>01/4=00>28
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=20,6 outcome=PLACED evaluator=7.3 link=41 resource1=0 changes=20,6:0=00>80/3=00>01/4=00>29
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=10,7 outcome=REFUSED evaluator=7.0 link=72 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=11,7 outcome=PLACED evaluator=7.4 link=42 resource1=0 changes=11,6:4=4C>54 11,7:0=00>80/3=00>01/4=48>2A
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=12,7 outcome=PLACED evaluator=7.4 link=43 resource1=0 changes=12,7:0=00>80/3=00>01/4=7F>2B 12,8:4=64>7F 13,8:4=64>68
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,7 outcome=PLACED evaluator=7.4 link=44 resource1=0 changes=13,7:0=00>80/3=00>01/4=7F>2C 13,8:4=68>7F 14,8:4=64>6C
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,7 outcome=PLACED evaluator=7.2 link=45 resource1=0 changes=14,7:0=00>80/3=00>01/4=7F>2D 15,7:4=69>7F 14,8:4=6C>75
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=15,7 outcome=PLACED evaluator=7.2 link=46 resource1=0 changes=15,7:0=00>80/3=00>01/4=7F>2E 16,7:4=64>7F 15,8:4=64>68
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=16,7 outcome=PLACED evaluator=7.3 link=47 resource1=0 changes=16,7:0=00>80/3=00>01/4=7F>2F 17,7:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,7 outcome=PLACED evaluator=7.3 link=48 resource1=0 changes=17,7:0=00>80/3=00>01/4=7F>30 18,7:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,7 outcome=PLACED evaluator=7.4 link=49 resource1=0 changes=18,7:0=00>80/3=00>01/4=7F>31 19,7:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,7 outcome=PLACED evaluator=7.3 link=50 resource1=0 changes=19,7:0=00>80/3=00>01/4=7F>32 20,7:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=20,7 outcome=PLACED evaluator=7.3 link=51 resource1=0 changes=20,7:0=00>80/3=00>01/4=7F>33 21,7:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=10,8 outcome=PLACED evaluator=7.1 link=52 resource1=0 changes=10,8:0=00>80/3=00>01/4=44>34 11,8:4=44>48
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=11,8 outcome=REFUSED evaluator=7.0 link=72 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=12,8 outcome=PLACED evaluator=7.4 link=53 resource1=0 changes=12,8:0=00>80/3=00>01/4=7F>35 12,9:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,8 outcome=PLACED evaluator=7.4 link=54 resource1=0 changes=13,8:0=00>80/3=00>01/4=7F>36 14,8:4=75>7F 13,9:4=00>75
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,8 outcome=PLACED evaluator=7.4 link=55 resource1=0 changes=14,8:0=00>80/3=00>01/4=7F>37 15,8:4=68>7F 14,9:4=00>68
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=15,8 outcome=PLACED evaluator=7.4 link=56 resource1=0 changes=15,8:0=00>80/3=00>01/4=7F>38 16,8:4=64>7F 15,9:4=00>64
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=16,8 outcome=PLACED evaluator=7.3 link=57 resource1=0 changes=16,8:0=00>80/3=00>01/4=7F>39 17,8:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,8 outcome=PLACED evaluator=7.3 link=58 resource1=0 changes=17,8:0=00>80/3=00>01/4=7F>3A 18,8:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,8 outcome=REFUSED evaluator=7.0 link=127 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,8 outcome=PLACED evaluator=7.4 link=59 resource1=0 changes=19,8:0=00>80/3=00>01/4=00>3B
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=20,8 outcome=PLACED evaluator=7.3 link=60 resource1=0 changes=20,8:0=00>80/3=00>01/4=00>3C
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=10,9 outcome=REFUSED evaluator=0.0 link=0 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=11,9 outcome=REFUSED evaluator=7.0 link=0 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=12,9 outcome=PLACED evaluator=7.4 link=61 resource1=0 changes=12,9:0=00>80/3=00>01/4=7F>3D 13,9:4=75>7F 12,10:4=00>75
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=13,9 outcome=PLACED evaluator=7.4 link=62 resource1=0 changes=13,9:0=00>80/3=00>01/4=7F>3E 14,9:4=68>7F 13,10:4=00>68
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=14,9 outcome=PLACED evaluator=7.4 link=63 resource1=0 changes=14,9:0=00>80/3=00>01/4=7F>3F 15,9:4=64>7F 14,10:4=64>68
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=15,9 outcome=PLACED evaluator=7.3 link=64 resource1=0 changes=15,9:0=00>80/3=00>01/4=7F>40 16,9:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=16,9 outcome=PLACED evaluator=7.3 link=65 resource1=0 changes=16,9:0=00>80/3=00>01/4=7F>41 17,9:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=17,9 outcome=PLACED evaluator=7.3 link=66 resource1=0 changes=17,9:0=00>80/3=00>01/4=7F>42 18,9:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=18,9 outcome=PLACED evaluator=7.4 link=67 resource1=0 changes=18,9:0=00>80/3=00>01/4=7F>43 19,9:4=00>7F
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=19,9 outcome=REFUSED evaluator=7.0 link=127 resource1=0 changes=
+size=1 seed=1234,5678,9ABC castle=15,5 level=0 tile=20,9 outcome=PLACED evaluator=7.3 link=68 resource1=0 changes=20,9:0=00>80/3=00>01/4=00>44
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=60,28 outcome=PLACED evaluator=7.4 link=1 resource1=712 changes=60,28:0=00>80/3=00>01/4=00>01
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=61,28 outcome=PLACED evaluator=7.4 link=2 resource1=712 changes=61,28:0=00>80/3=00>01/4=00>02
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=62,28 outcome=PLACED evaluator=7.4 link=3 resource1=712 changes=62,28:0=00>80/3=00>01/4=00>03
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=63,28 outcome=PLACED evaluator=7.4 link=4 resource1=712 changes=63,28:0=00>80/3=55>01/4=00>04
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=0,28 outcome=PLACED evaluator=7.4 link=5 resource1=712 changes=0,28:0=00>80/3=00>01/4=00>05
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=1,28 outcome=PLACED evaluator=7.3 link=6 resource1=712 changes=1,28:0=00>80/3=00>01/4=00>06
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=2,28 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=3,28 outcome=PLACED evaluator=7.3 link=7 resource1=712 changes=3,28:0=00>80/3=54>01/4=00>07
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=4,28 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=60,29 outcome=PLACED evaluator=7.4 link=8 resource1=712 changes=60,29:0=00>80/3=00>01/4=00>08
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=61,29 outcome=PLACED evaluator=7.4 link=9 resource1=712 changes=61,29:0=00>80/3=00>01/4=00>09
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=62,29 outcome=PLACED evaluator=7.4 link=10 resource1=712 changes=62,29:0=00>80/3=00>01/4=00>0A
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=63,29 outcome=PLACED evaluator=7.4 link=11 resource1=712 changes=63,29:0=00>80/3=00>01/4=00>0B
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=0,29 outcome=PLACED evaluator=7.4 link=12 resource1=712 changes=0,29:0=00>80/3=00>01/4=00>0C
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=1,29 outcome=PLACED evaluator=7.4 link=13 resource1=712 changes=1,29:0=00>80/3=00>01/4=00>0D
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=2,29 outcome=PLACED evaluator=7.3 link=14 resource1=712 changes=2,29:0=00>80/3=00>01/4=00>0E
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=3,29 outcome=PLACED evaluator=7.3 link=15 resource1=712 changes=3,29:0=00>80/3=00>01/4=00>0F
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=4,29 outcome=PLACED evaluator=7.3 link=16 resource1=712 changes=4,29:0=00>80/3=00>01/4=00>10
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=60,30 outcome=PLACED evaluator=7.3 link=17 resource1=712 changes=60,30:0=00>80/3=00>01/4=00>11
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=61,30 outcome=PLACED evaluator=7.4 link=18 resource1=712 changes=61,30:0=00>80/3=00>01/4=00>12
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=62,30 outcome=PLACED evaluator=7.3 link=19 resource1=712 changes=62,30:0=00>80/3=00>01/4=00>13
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=63,30 outcome=PLACED evaluator=7.3 link=20 resource1=712 changes=63,30:0=00>80/3=00>01/4=00>14
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=0,30 outcome=PLACED evaluator=7.3 link=21 resource1=712 changes=0,30:0=00>80/3=00>01/4=00>15
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=1,30 outcome=PLACED evaluator=7.3 link=22 resource1=712 changes=1,30:0=00>80/3=00>01/4=00>16
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=2,30 outcome=PLACED evaluator=7.3 link=23 resource1=712 changes=2,30:0=00>80/3=00>01/4=00>17
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=3,30 outcome=PLACED evaluator=7.3 link=24 resource1=712 changes=3,30:0=00>80/3=00>01/4=00>18
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=4,30 outcome=PLACED evaluator=7.2 link=25 resource1=712 changes=4,30:0=00>80/3=00>01/4=00>19
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=60,31 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=61,31 outcome=PLACED evaluator=7.3 link=26 resource1=712 changes=61,31:0=00>80/3=00>01/4=00>1A
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=62,31 outcome=PLACED evaluator=7.3 link=27 resource1=712 changes=62,31:0=00>80/3=00>01/4=00>1B
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=63,31 outcome=REFUSED evaluator=6.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=0,31 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=1,31 outcome=PLACED evaluator=7.3 link=28 resource1=712 changes=1,31:0=00>80/3=00>01/4=00>1C
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=2,31 outcome=PLACED evaluator=7.3 link=29 resource1=712 changes=2,31:0=00>80/3=00>01/4=00>1D
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=3,31 outcome=PLACED evaluator=7.3 link=30 resource1=712 changes=3,31:0=00>80/3=00>01/4=00>1E
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=4,31 outcome=PLACED evaluator=7.2 link=31 resource1=712 changes=4,31:0=00>80/3=00>01/4=00>1F
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=60,0 outcome=PLACED evaluator=7.1 link=32 resource1=712 changes=60,0:0=00>80/3=00>01/4=00>20
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=61,0 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=62,0 outcome=PLACED evaluator=7.3 link=33 resource1=712 changes=62,0:0=00>80/3=00>01/4=00>21
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=63,0 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=0,0 outcome=REFUSED evaluator=0.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=1,0 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=2,0 outcome=PLACED evaluator=7.3 link=34 resource1=712 changes=2,0:0=00>80/3=00>01/4=00>22
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=3,0 outcome=PLACED evaluator=7.3 link=35 resource1=712 changes=3,0:0=00>80/3=00>01/4=00>23
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=4,0 outcome=PLACED evaluator=7.2 link=36 resource1=712 changes=4,0:0=00>80/3=00>01/4=00>24
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=60,1 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=61,1 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=62,1 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=63,1 outcome=PLACED evaluator=7.3 link=37 resource1=712 changes=63,1:0=00>80/3=00>01/4=00>25
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=0,1 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=1,1 outcome=REFUSED evaluator=1.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=2,1 outcome=PLACED evaluator=7.3 link=38 resource1=712 changes=2,1:0=00>80/3=00>01/4=00>26
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=3,1 outcome=PLACED evaluator=7.3 link=39 resource1=712 changes=3,1:0=00>80/3=00>01/4=00>27
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=4,1 outcome=PLACED evaluator=7.3 link=40 resource1=712 changes=4,1:0=00>80/3=00>01/4=00>28
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=60,2 outcome=PLACED evaluator=7.1 link=41 resource1=712 changes=60,2:0=00>80/3=00>01/4=00>29
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=61,2 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=62,2 outcome=PLACED evaluator=7.1 link=42 resource1=712 changes=62,2:0=00>80/3=00>01/4=00>2A
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=63,2 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=0,2 outcome=PLACED evaluator=7.3 link=43 resource1=712 changes=0,2:0=00>80/3=00>01/4=00>2B
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=1,2 outcome=PLACED evaluator=7.3 link=44 resource1=712 changes=1,2:0=00>80/3=00>01/4=00>2C
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=2,2 outcome=PLACED evaluator=7.3 link=45 resource1=712 changes=2,2:0=00>80/3=00>01/4=00>2D
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=3,2 outcome=PLACED evaluator=7.3 link=46 resource1=712 changes=3,2:0=00>80/3=53>01/4=00>2E
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=4,2 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=60,3 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=61,3 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=62,3 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=63,3 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=0,3 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=1,3 outcome=PLACED evaluator=7.3 link=47 resource1=712 changes=1,3:0=00>80/3=00>01/4=00>2F
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=2,3 outcome=PLACED evaluator=7.3 link=48 resource1=712 changes=2,3:0=00>80/3=00>01/4=00>30
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=3,3 outcome=PLACED evaluator=7.3 link=49 resource1=712 changes=3,3:0=00>80/3=00>01/4=00>31
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=4,3 outcome=PLACED evaluator=7.3 link=50 resource1=712 changes=4,3:0=00>80/3=00>01/4=00>32
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=60,4 outcome=PLACED evaluator=7.1 link=51 resource1=712 changes=60,4:0=00>80/3=00>01/4=00>33
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=61,4 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=62,4 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=63,4 outcome=PLACED evaluator=7.1 link=52 resource1=712 changes=63,4:0=00>80/3=00>01/4=00>34
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=0,4 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=1,4 outcome=REFUSED evaluator=7.0 link=0 resource1=712 changes=
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=2,4 outcome=PLACED evaluator=7.3 link=53 resource1=712 changes=2,4:0=00>80/3=00>01/4=00>35
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=3,4 outcome=PLACED evaluator=7.3 link=54 resource1=712 changes=3,4:0=00>80/3=00>01/4=00>36
+size=2 seed=1234,5678,9ABC castle=0,0 level=22 tile=4,4 outcome=PLACED evaluator=7.3 link=55 resource1=712 changes=4,4:0=00>80/3=00>01/4=00>37
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=9,0 outcome=PLACED evaluator=7.1 link=1 resource1=476 changes=9,0:0=00>80/3=00>01/4=68>01 10,0:4=6C>74
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=10,0 outcome=REFUSED evaluator=7.0 link=116 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=11,0 outcome=PLACED evaluator=7.2 link=2 resource1=476 changes=11,0:0=00>80/3=00>01/4=70>02 12,0:4=74>7F 12,31:4=70>75
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=12,0 outcome=PLACED evaluator=7.2 link=3 resource1=476 changes=12,0:0=00>80/3=00>01/4=7F>03 13,0:4=70>7F 13,31:4=6C>7C
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=13,0 outcome=PLACED evaluator=7.2 link=4 resource1=476 changes=13,0:0=00>80/3=00>01/4=7F>04 14,0:4=6C>7F 14,31:4=68>74
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=14,0 outcome=PLACED evaluator=7.2 link=5 resource1=476 changes=14,0:0=00>80/3=00>01/4=7F>05 15,0:4=68>7F 15,31:4=64>6C
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=15,0 outcome=PLACED evaluator=7.3 link=6 resource1=476 changes=15,0:0=00>80/3=00>01/4=7F>06 16,0:4=64>7F 16,31:4=00>64
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=16,0 outcome=REFUSED evaluator=7.0 link=127 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=17,0 outcome=REFUSED evaluator=0.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=18,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=19,0 outcome=PLACED evaluator=7.1 link=7 resource1=476 changes=19,0:0=00>80/3=00>01/4=00>07
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=20,0 outcome=PLACED evaluator=7.4 link=8 resource1=476 changes=20,0:0=00>80/3=00>01/4=00>08
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=21,0 outcome=PLACED evaluator=7.4 link=9 resource1=476 changes=21,0:0=00>80/3=00>01/4=00>09
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=22,0 outcome=PLACED evaluator=7.4 link=10 resource1=476 changes=22,0:0=00>80/3=00>01/4=00>0A
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=23,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=24,0 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=25,0 outcome=PLACED evaluator=7.1 link=11 resource1=476 changes=25,0:0=00>80/3=00>01/4=00>0B
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=26,0 outcome=REFUSED evaluator=0.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=9,31 outcome=REFUSED evaluator=7.0 link=104 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=10,31 outcome=REFUSED evaluator=5.0 link=108 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=11,31 outcome=REFUSED evaluator=5.0 link=112 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=12,31 outcome=REFUSED evaluator=5.0 link=117 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=13,31 outcome=REFUSED evaluator=5.0 link=124 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=14,31 outcome=REFUSED evaluator=5.0 link=116 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=15,31 outcome=REFUSED evaluator=7.0 link=108 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=16,31 outcome=PLACED evaluator=6.1 link=12 resource1=476 changes=16,31:0=00>80/3=00>01/4=64>0C 17,31:4=00>64
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=17,31 outcome=REFUSED evaluator=7.0 link=100 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=18,31 outcome=REFUSED evaluator=5.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=19,31 outcome=REFUSED evaluator=5.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=20,31 outcome=REFUSED evaluator=5.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=21,31 outcome=REFUSED evaluator=5.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=22,31 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=23,31 outcome=PLACED evaluator=7.1 link=13 resource1=476 changes=23,31:0=00>80/3=00>01/4=00>0D
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=24,31 outcome=REFUSED evaluator=5.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=25,31 outcome=REFUSED evaluator=0.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=26,31 outcome=REFUSED evaluator=0.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=9,1 outcome=REFUSED evaluator=0.0 link=100 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=10,1 outcome=REFUSED evaluator=7.0 link=104 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=11,1 outcome=PLACED evaluator=7.2 link=14 resource1=476 changes=11,1:0=00>80/3=00>01/4=6C>0E 12,1:4=70>7C
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=12,1 outcome=PLACED evaluator=7.2 link=15 resource1=476 changes=12,1:0=00>80/3=00>01/4=7C>0F 13,1:4=70>7F 12,2:4=6C>79
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=13,1 outcome=PLACED evaluator=7.2 link=16 resource1=476 changes=13,1:0=00>80/3=00>01/4=7F>10 14,1:4=6C>7F 13,2:4=6C>78
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=14,1 outcome=PLACED evaluator=7.2 link=17 resource1=476 changes=14,1:0=00>80/3=00>01/4=7F>11 15,1:4=68>7F 14,2:4=6C>74
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=15,1 outcome=PLACED evaluator=7.3 link=18 resource1=476 changes=15,1:0=00>80/3=00>01/4=7F>12 16,1:4=64>7F 15,2:4=68>6C
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=16,1 outcome=PLACED evaluator=7.3 link=19 resource1=476 changes=16,1:0=00>80/3=00>01/4=7F>13 17,1:4=00>7F
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=17,1 outcome=REFUSED evaluator=7.0 link=127 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=18,1 outcome=REFUSED evaluator=1.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=19,1 outcome=PLACED evaluator=7.3 link=20 resource1=476 changes=19,1:0=00>80/3=00>01/4=00>14
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=20,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=21,1 outcome=PLACED evaluator=7.4 link=21 resource1=476 changes=21,1:0=00>80/3=00>01/4=00>15
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=22,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=23,1 outcome=PLACED evaluator=7.4 link=22 resource1=476 changes=23,1:0=00>80/3=00>01/4=00>16
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=24,1 outcome=PLACED evaluator=7.3 link=23 resource1=476 changes=24,1:0=00>80/3=00>01/4=00>17
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=25,1 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=26,1 outcome=REFUSED evaluator=0.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=9,30 outcome=PLACED evaluator=7.1 link=24 resource1=476 changes=9,30:0=00>80/3=00>01/4=68>18 10,30:4=6C>74
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=10,30 outcome=REFUSED evaluator=7.0 link=116 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=11,30 outcome=PLACED evaluator=7.1 link=25 resource1=476 changes=11,30:0=00>80/3=00>01/4=6C>19 12,30:4=6C>78
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=12,30 outcome=REFUSED evaluator=7.0 link=120 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=13,30 outcome=PLACED evaluator=7.1 link=26 resource1=476 changes=13,30:0=00>80/3=00>01/4=68>1A 14,30:4=64>6C
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=14,30 outcome=REFUSED evaluator=7.0 link=108 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=15,30 outcome=REFUSED evaluator=5.3 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=16,30 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=17,30 outcome=PLACED evaluator=7.1 link=27 resource1=476 changes=17,30:0=00>80/3=00>01/4=00>1B
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=18,30 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=19,30 outcome=PLACED evaluator=7.1 link=28 resource1=476 changes=19,30:0=00>80/3=00>01/4=00>1C
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=20,30 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=21,30 outcome=PLACED evaluator=7.1 link=29 resource1=476 changes=21,30:0=00>80/3=00>01/4=00>1D
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=22,30 outcome=REFUSED evaluator=5.4 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=23,30 outcome=REFUSED evaluator=7.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=24,30 outcome=REFUSED evaluator=0.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=25,30 outcome=REFUSED evaluator=0.0 link=0 resource1=476 changes=
+size=1 seed=6359,A0D2,B4FA castle=17,0 level=7 tile=26,30 outcome=REFUSED evaluator=0.0 link=0 resource1=476 changes=
