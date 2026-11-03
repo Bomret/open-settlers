@@ -41,6 +41,9 @@ public sealed partial class Game
     // The slot of the settler that waits in the castle's list for a job, 0 for none.
     internal int Waiting(int job) => _waiting[job];
 
+    // Empties the castle's list of the settlers that wait for a job (a test that has the castle run out of settlers).
+    internal void ClearWaiting(int job) => _waiting[job] = 0;
+
     // The settlers a request has sent out that have not left the castle yet (word at 0x4a of the storage item).
     private int _leaving;
 

@@ -469,7 +469,8 @@ public partial class MapViewControl : Control
 
     // A click asks the game for the castle, or with the flag button pressed a flag, on the node under it. The node is
     // picked against the view as it was drawn when the button went down (camera, zoom scale, and canvas size): a hand
-    // that strays within the slop of a click still pans the view a little, and a zoom or a resize during the press changes none of the three.
+    // that strays within the slop of a click still pans the view a little, and a zoom or a resize during the press
+    // changes none of the three.
     void PlaceAt(double screenX, double screenY)
     {
         if (_game is null || _state.Map is null)

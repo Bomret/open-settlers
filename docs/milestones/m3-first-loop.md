@@ -136,7 +136,7 @@ left open:
   `1234,5678,9ABC` map every second road found crosses the hut's node or a road node, so a map or verb that lays the roads is
   needed; a carrier that turns at the end of a road already holding two carriers (`Wait`) needs a road with two carriers, which
   no command produces; a water road skipped by `VisitFlag` and `StorageEnd` needs a map with a road across water. (The carrier
-  request with no job-0 or job-21 settler is tested by emptying the castle's table of waiting settlers through reflection.)
+  request with no job-0 or job-21 settler is tested by emptying the castle's table of waiting settlers through an internal seam.)
 - The phase count of a game with one player and no computer opponent (33, inferred from `0x42055e`).
 - The passing of two settlers going opposite ways and the walk home (mode 254) are known and ported
   ([Settlers](../rules/settlers.md#walking-home)). A blocked step is settled: the settler tries it again
