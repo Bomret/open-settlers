@@ -62,6 +62,12 @@ public partial class MapViewControl : Control
         _openSize = sizeValue;
     }
 
+    /// <summary>The area the map is drawn in and the mouse acts on; a play run aims its input at it.</summary>
+    public Control Canvas => _canvas;
+
+    /// <summary>What a play run observes of the view now.</summary>
+    public PlayState Snapshot() => new(_camera.X, _camera.Y, _zoom.Scale, _state.SeedText, _state.SizeValue);
+
     /// <inheritdoc/>
     public override void _Ready()
     {

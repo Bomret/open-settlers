@@ -275,4 +275,42 @@ public sealed class LaunchArgsTests
         Assert.HasCount(1, sizeArgs.Problems);
         StringAssert.Contains(sizeArgs.Problems[0], "--size");
     }
+
+    [TestMethod]
+    public void ThePlayFlagGivesTheScriptPath()
+    {
+        var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: true);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual("play/zoom.play", args.Play);
+    }
+
+    [TestMethod]
+    public void ThePlayFlagWithoutTheMapFlagIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--play", "play/zoom.play"], null, movieMaker: true);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--play");
+        StringAssert.Contains(args.Problems[0], "--map");
+    }
+
+    [TestMethod]
+    public void ThePlayFlagWithoutAValueIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--map", "--play"], null, movieMaker: true);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--play needs a value");
+        Assert.IsNull(args.Play);
+    }
+
+    [TestMethod]
+    public void ThePlayFlagWithoutMovieMakerIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--write-movie");
+    }
 }
