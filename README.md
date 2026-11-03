@@ -62,7 +62,7 @@ mise run browser
 
 It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. Its text and lists scale with the window. It shows a message instead when there is no usable install or two asset kinds share a name, and a notice when the selected kind lists no assets.
 
-The map view opens a window with a seed field (16 digits from 1 to 8, as the original's screen shows it) and a size picker above the terrain of the generated map:
+The map view opens a window with a seed field and a size picker above the terrain of the generated map:
 
 ```sh
 mise run map
@@ -70,9 +70,9 @@ mise run map
 
 `--seed <seed>` and `--size <1|2|3>` open the view on that map (`-- --map --seed 1234567812345678 --size 2`): the seed field shows the seed, the size picker selects the size, and the next Apply keeps both. The seed takes the 16-digit form or four groups in one quoted argument (`--seed "1234 5678 1234 5678"`); unquoted groups are a bad seed. Without `--seed` the view opens on its default seed, without `--size` on size 1.
 
-A valid seed, applied with Enter, or a new size regenerates and redraws the map. A new size keeps the last applied seed. An invalid seed shows its reason and keeps the last map. The arrow keys and a mouse drag move the view, which wraps at the map's edges. A two-finger touchpad swipe also moves the view. The mouse wheel and a touchpad pinch zoom in and out around the pointer, and the `+` and `-` keys zoom around the middle of the view. The zoom goes from 1/4 to 4 times, and a view never shows more than two maps across. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
+[Controls](docs/controls.md) describes how to use the map view and the game view. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
 
-The game view is the map view with a game on the shown map that ticks at the original's normal speed. It shows the tick count and the castle's log count, and a new map starts a new game:
+The game view is the map view with a game on the shown map that ticks at the original's normal speed:
 
 ```sh
 mise exec -- <godot> --path . -- --game-view [--seed <seed>] [--size <1|2|3>]
@@ -142,6 +142,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.
+- `docs/controls.md`: the controls of the map view and the game view.
 - `docs/rules/`: the rules recovered from the game's program, each with its address as evidence.
 - `docs/agents/`: instructions for coding agents.
 - `tools/play-run.sh`: the play-run wrapper ("Run a play script").

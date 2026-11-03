@@ -1,0 +1,47 @@
+# Roads drawn zoomed in and zoomed out, with a step back.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   --game-view --seed 1234567812345678 --size 1 --play play/road-reach.play
+# On that map the castle stands at 21,4, so its flag is at 22,5. Flags go to 27,5 and 29,7.
+click-tile 21 4
+button Flag
+click-tile 27 5
+click-tile 29 7
+button Flag
+wait 0.3
+shot flags
+
+# Zoomed in: a road from the castle's flag to 27,5.
+scroll up 2 320 380
+wait 0.3
+button Road
+click-tile 22 5
+click-tile 23 5
+click-tile 24 5
+click-tile 25 5
+click-tile 26 5
+wait 0.3
+shot zoom-in-drawn
+click-tile 27 5
+button Road
+wait 0.3
+shot zoom-in-built
+
+# Zoomed out: a road from 27,5 to 29,7, with a step back from 28,7 to 28,6.
+scroll down 4
+wait 0.3
+button Road
+click-tile 27 5
+click-tile 28 6
+click-tile 28 7
+wait 0.3
+shot zoom-out-drawn
+click-tile 28 6
+wait 0.3
+shot step-back
+click-tile 29 7
+button Road
+wait 0.3
+shot zoom-out-built
+wait 2
+expect ticks > 10
+dump built

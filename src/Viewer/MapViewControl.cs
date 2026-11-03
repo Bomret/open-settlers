@@ -515,7 +515,8 @@ public partial class MapViewControl : Control
             _pressView.Width,
             _pressView.Height,
             screenX,
-            screenY
+            screenY,
+            _objects?.Images[ObjectGraphics.Layer(ObjectSprites.FlagEntry)]
         );
         if (_roadButton.ButtonPressed && _drawing is not null)
         {

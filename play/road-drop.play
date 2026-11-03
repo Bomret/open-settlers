@@ -1,0 +1,61 @@
+# Unfinished roads that Escape, another button, the Road button again and a refused start drop, leaving nothing built.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   --game-view --seed 1234567812345678 --size 1 --play play/road-drop.play
+# On that map the castle stands at 21,4, so its flag is at 22,5. A flag goes to 27,5.
+click-tile 21 4
+button Flag
+click-tile 27 5
+button Flag
+wait 0.3
+dump start
+
+# Escape drops the road.
+button Road
+click-tile 22 5
+click-tile 23 5
+click-tile 24 5
+wait 0.3
+shot escape-drawn
+press Escape
+wait 0.3
+shot escape-dropped
+
+# Another button drops the road.
+button Road
+click-tile 22 5
+click-tile 23 5
+click-tile 24 5
+button Woodcutter
+wait 0.3
+shot button-dropped
+button Woodcutter
+
+# The Road button again drops the road.
+button Road
+click-tile 22 5
+click-tile 23 5
+button Road
+wait 0.3
+shot road-dropped
+
+# A road start off a flag is refused; the game keeps running.
+button Road
+click-tile 24 6
+wait 0.3
+shot start-refused
+button Road
+dump refused
+wait 2
+expect ticks > 0
+dump after
+shot after
+
+# A woodcutter on 24,4, which holds a tree, is refused; the game keeps running.
+button Woodcutter
+click-tile 24 4
+button Woodcutter
+wait 0.3
+shot hut-refused
+dump hut-refused
+wait 2
+dump hut-after
