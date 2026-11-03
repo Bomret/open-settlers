@@ -94,6 +94,13 @@ public partial class MapViewControl : Control
     /// <summary>The area the map is drawn in and the mouse acts on; a play run aims its input at it.</summary>
     public Control Canvas => _canvas;
 
+    /// <summary>The game-view buttons on show, in bar order; none in the map view. A play run's <c>button</c> step clicks one.</summary>
+    public System.Collections.Generic.IReadOnlyList<Button> ShownButtons =>
+        [.. new[] { _flagButton, _roadButton, _woodcutterButton, _removeButton }.Where(b => b.IsVisibleInTree())];
+
+    /// <summary>The map shown; null when the seed has none. A play run's <c>click-tile</c> step aims at its tiles.</summary>
+    public Map? Map => _state.Map;
+
     /// <summary>What a play run observes of the view now.</summary>
     public PlayState Snapshot() =>
         new(
