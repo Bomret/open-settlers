@@ -268,6 +268,19 @@ public sealed class SettlerFiguresTests
         CollectionAssert.AreEqual(plain, shifted);
     }
 
+    [TestMethod]
+    public void AShiftsMapThatLacksTheFiguresEntryLeavesTheSecondFigureUnshifted()
+    {
+        var plain = Figures().Draws(Map(), [Walker(7, 0)], 0);
+        var others = Figures()
+            .Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)> { [1954] = (3, -2) });
+        var own = Figures()
+            .Draws(Map(), [Walker(7, 0)], 0, new Dictionary<int, (int X, int Y)> { [1953] = (3, -2) });
+
+        CollectionAssert.AreEqual(plain, others);
+        CollectionAssert.AreNotEqual(plain, own);
+    }
+
     // 0x406610 draws the figure, then the overlay over it, then the second figure over both; the row order of the settlers
     // keeps that order within each settler.
     [TestMethod]

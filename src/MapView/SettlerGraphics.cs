@@ -15,7 +15,10 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed class SettlerGraphics
 {
-    // The layers an array texture holds in the view.
+    // The layers an array texture holds in the view. simplicity: a fixed cap, no query of the device. Vulkan guarantees
+    // only 256 array layers (maxImageArrayLayers); 2048 is the guaranteed minimum of Direct3D 11 and 12 and what desktop
+    // Vulkan and Metal drivers report, and the walk sequences of a job need more than 256. A device below 2048 fails to
+    // create the texture; the upgrade path is to cap against RenderingDevice.LimitMaxTextureArrayLayers in the view.
     private const int MaxLayers = 2048;
 
     public required byte[] PaletteRgba { get; init; }
@@ -73,7 +76,7 @@ public sealed class SettlerGraphics
             }
 
             var image = ObjectImage.From(sprite);
-            if (colour < 0 && entry < 2500)
+            if (colour < 0 && entry < SettlerFigures.OverlayBase)
             {
                 shifts[entry] = (sprite.Header.First, sprite.Header.Second);
             }
