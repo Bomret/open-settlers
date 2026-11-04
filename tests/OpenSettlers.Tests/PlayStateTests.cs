@@ -114,7 +114,7 @@ public sealed class PlayStateTests
         {
             var game = new Game(
                 TestProgram.Made(),
-                MapGenerator.Generate(new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+                MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
             );
             game.Enqueue(new Command(3, 0, CommandKind.PlaceCastle, 17, 0));
             for (var i = 0; i < 400; i++)
@@ -133,7 +133,7 @@ public sealed class PlayStateTests
     {
         var game = new Game(
             TestProgram.Made(),
-            MapGenerator.Generate(new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
         );
         game.Tick();
         var state = State with { Ticks = game.TickCount, Logs = game.CastleLogs };

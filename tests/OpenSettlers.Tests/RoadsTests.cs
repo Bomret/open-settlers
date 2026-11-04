@@ -29,7 +29,7 @@ public sealed class RoadsTests
 
     internal static Game TwoFlags()
     {
-        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = new Game(Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, CastleX, CastleY));
         game.Tick();
@@ -146,7 +146,10 @@ public sealed class RoadsTests
     {
         var game = TwoFlags();
         var same = TwoFlags();
-        var fresh = new Game(Made(), MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]));
+        var fresh = new Game(
+            Made(),
+            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+        );
 
         game.Enqueue(new Command(game.TickCount, 1, CommandKind.BuildRoad, 16, 6, [0, 0]));
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, -1, 6, [0, 0]));
@@ -157,7 +160,7 @@ public sealed class RoadsTests
         fresh.Tick();
         var freshSame = new Game(
             Made(),
-            MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );
         freshSame.Tick();
 

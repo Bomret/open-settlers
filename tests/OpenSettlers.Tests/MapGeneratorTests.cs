@@ -71,6 +71,7 @@ public sealed class MapGeneratorTests
         var passes = 0;
 
         var generated = MapGenerator.TryGenerate(
+            TestProgram.Made(),
             new MapSeed(1, 2, 3),
             4,
             (_, _, _) => passes++,
@@ -85,13 +86,60 @@ public sealed class MapGeneratorTests
     }
 
     [TestMethod]
+    [DataRow(-1, 0)]
+    [DataRow(-1, -1)]
+    [DataRow(0, -1)]
+    public void ALargeObjectNextToAnOccupiedTileIsRemovedAndKeepsTheWaterBit(int dx, int dy)
+    {
+        Assert.AreEqual(0x80, ObjectAfterOverlap(objectClass: 2, dx, dy));
+    }
+
+    [TestMethod]
+    public void AnObjectOfClassOneNextToAnOccupiedTileStays()
+    {
+        Assert.AreEqual(0x80 | MadeCode, ObjectAfterOverlap(objectClass: 1, -1, 0));
+    }
+
+    private const int MadeCode = 5;
+
+    // Generates with made tables that give MadeCode the class, puts that code with the water bit on one tile before the
+    // overlap pass and marks its neighbor at (dx, dy) as occupied, and returns the tile's object byte after the pass.
+    private static int ObjectAfterOverlap(int objectClass, int dx, int dy)
+    {
+        var made = TestProgram.Made();
+        var classes = new byte[ProgramTables.ClassCount];
+        classes[MadeCode] = (byte)objectClass;
+        var tables = new ProgramTables(classes, made.StartStock);
+        var tile = -1;
+
+        var map = MapGenerator.Generate(
+            tables,
+            new MapSeed(1, 2, 3),
+            MapSize.Offered[0],
+            (pass, map, _) =>
+            {
+                if (pass != MapPass.PlaceDeposits4)
+                {
+                    return;
+                }
+
+                tile = map.Index(10, 10);
+                map.Bytes(MapLayer.Object)[tile] = 0x80 | MadeCode;
+                map.Bytes(MapLayer.Flags)[map.Index(10 + dx, 10 + dy)] |= 0x40;
+            }
+        );
+
+        return map.Layer(MapLayer.Object)[tile];
+    }
+
+    [TestMethod]
     public void TheSameSeedAndSizeGiveTheSameMapEveryTime()
     {
         var seed = ParseSeed(Seeds[0]);
         var size = MapSize.Offered[1];
 
-        var first = MapGenerator.Generate(seed, size);
-        var second = MapGenerator.Generate(seed, size);
+        var first = MapGenerator.Generate(TestProgram.Made(), seed, size);
+        var second = MapGenerator.Generate(TestProgram.Made(), seed, size);
 
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
@@ -104,7 +152,12 @@ public sealed class MapGeneratorTests
     {
         var seen = new List<MapPass>();
 
-        MapGenerator.Generate(new MapSeed(1, 2, 3), MapSize.Offered[0], (pass, _, _) => seen.Add(pass));
+        MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed(1, 2, 3),
+            MapSize.Offered[0],
+            (pass, _, _) => seen.Add(pass)
+        );
 
         CollectionAssert.AreEqual(Enum.GetValues<MapPass>(), seen);
     }
@@ -122,6 +175,7 @@ public sealed class MapGeneratorTests
         var lakes = 0;
 
         MapGenerator.Generate(
+            TestProgram.Made(),
             ParseSeed(Seeds[0]),
             size,
             (pass, map, generator) =>
@@ -176,7 +230,7 @@ public sealed class MapGeneratorTests
         // emulator's, and pinned here as column, row, and object code or deposit type and amount.
         MapSize.TryFromValue(3, out var size, out _);
 
-        var map = MapGenerator.Generate(ParseSeed(Seeds[1]), size!);
+        var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(Seeds[1]), size!);
 
         Assert.AreEqual(552, map.Objects.Count);
         CollectionAssert.AreEqual(
@@ -213,6 +267,7 @@ public sealed class MapGeneratorTests
     {
         var lines = new List<ExpectedLine>();
         MapGenerator.Generate(
+            TestProgram.Tables(),
             seed,
             size,
             (pass, map, generator) =>

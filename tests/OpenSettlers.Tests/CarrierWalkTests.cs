@@ -111,7 +111,7 @@ public sealed class CarrierWalkTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
         var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var passes = int.Parse(parts[7], CultureInfo.InvariantCulture);

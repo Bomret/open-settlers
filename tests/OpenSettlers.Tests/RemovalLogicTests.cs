@@ -37,7 +37,7 @@ public sealed class RemovalLogicTests
 
     private static Game World(byte capacity = 8, bool hut = true)
     {
-        var map = MapGenerator.Generate(new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var objects = map.Bytes(MapLayer.Object);
         for (var index = 0; index < objects.Length; index++)
         {

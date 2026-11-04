@@ -16,14 +16,18 @@ public delegate void MapPassObserver(MapPass pass, Map map, RandomGenerator gene
 public static class MapGenerator
 {
     /// <summary>
-    /// Generates the map of a seed and size, reporting to the observer after the seeding and after each pass.
+    /// Generates the map of a seed and size, reporting to the observer after the seeding and after each pass. The
+    /// class table of <paramref name="tables"/> decides which objects are large.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="tables"/> is null.</exception>
     /// <exception cref="InvalidOperationException">
     /// No land mass covers a quarter of the map. The original searches for one without end.
     /// </exception>
-    public static Map Generate(MapSeed seed, MapSize size, MapPassObserver? observer = null)
+    public static Map Generate(ProgramTables tables, MapSeed seed, MapSize size, MapPassObserver? observer = null)
     {
-        return new Generation(seed, size, observer).Run();
+        ArgumentNullException.ThrowIfNull(tables);
+
+        return new Generation(tables, seed, size, observer).Run();
     }
 
     /// <summary>
@@ -31,6 +35,7 @@ public static class MapGenerator
     /// nothing, when the original offers no such size.
     /// </summary>
     public static bool TryGenerate(
+        ProgramTables tables,
         MapSeed seed,
         int sizeValue,
         MapPassObserver? observer,
@@ -38,13 +43,14 @@ public static class MapGenerator
         [NotNullWhen(false)] out string? problem
     )
     {
+        ArgumentNullException.ThrowIfNull(tables);
         map = null;
         if (!MapSize.TryFromValue(sizeValue, out var size, out problem))
         {
             return false;
         }
 
-        map = Generate(seed, size, observer);
+        map = Generate(tables, seed, size, observer);
         problem = null;
 
         return true;
@@ -93,7 +99,8 @@ public static class MapGenerator
         // The 15 object scatter passes (0x424175 to 0x4246f4), each the parameters it hands MapGen_ScatterObjects
         // (0x424755): clusters per patch count, the mask of the draw that picks a spiral offset, the terrain range
         // from low up to but not including high, the object code base and the mask of the draw added to it, and the
-        // objects tried in a cluster.
+        // objects tried in a cluster. The original writes these as immediates in its code (from 0x4241e3), not as a
+        // table.
         private static readonly Scatter[] ScatterPasses =
         [
             new(8, 0xff, 5, 7, 0x08, 0x0f, 10),
@@ -114,12 +121,9 @@ public static class MapGenerator
         ];
 
         // The deposit passes in the order they run (MapGen_PlaceDeposits3, 2, 1, and 4): deposits per patch count
-        // and resource type. All four place on terrain from 11 up to but not including 15.
+        // and resource type. All four place on terrain from 11 up to but not including 15. The original writes these as
+        // immediates in its code (from 0x424a03), not as a table.
         private static readonly Deposit[] DepositPasses = [new(9, 3), new(4, 2), new(2, 1), new(2, 4)];
-
-        // The object codes whose size byte in the original's table (0x41e640) is above 1: the large objects
-        // MapGen_ResolveObjectOverlap keeps only where the tiles to the west, north-west, and north are free.
-        private static readonly bool[] LargeObjects = BuildLargeObjects();
 
         private readonly record struct Scatter(
             int CountPerPatch,
@@ -133,17 +137,6 @@ public static class MapGenerator
 
         private readonly record struct Deposit(int CountPerPatch, int Type);
 
-        private static bool[] BuildLargeObjects()
-        {
-            var large = new bool[128];
-            foreach (var (first, last) in new[] { (1, 4), (28, 31), (72, 81), (88, 89), (105, 110), (121, 127) })
-            {
-                Array.Fill(large, true, first, last - first + 1);
-            }
-
-            return large;
-        }
-
         // The six neighbors of a tile in the order the passes visit them: east, south-east, south, west,
         // north-west, north (the offsets of the original's 0x04, 0x08, 0x0c, 0x10, 0x14, 0x18 steps).
         private static readonly (int Dx, int Dy)[] Neighbors = [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
@@ -151,6 +144,7 @@ public static class MapGenerator
         // The directions of the six sides of a ring around a tile, and the tile after each side.
         private static readonly (int Dx, int Dy)[] RingSides = [(0, 1), (-1, 0), (-1, -1), (0, -1), (1, 0), (1, 1)];
 
+        private readonly byte[] _classes;
         private readonly MapSeed _seed;
         private readonly MapPassObserver? _observer;
         private readonly Map _map;
@@ -164,8 +158,9 @@ public static class MapGenerator
         private readonly byte[] _resource;
         private RandomGenerator _generator;
 
-        public Generation(MapSeed seed, MapSize size, MapPassObserver? observer)
+        public Generation(ProgramTables tables, MapSeed seed, MapSize size, MapPassObserver? observer)
         {
+            _classes = tables.Classes;
             _seed = seed;
             _observer = observer;
             _map = new Map(size);
@@ -962,14 +957,14 @@ public static class MapGenerator
             } while (--count != 0);
         }
 
-        // MapGen_ResolveObjectOverlap (0x424c57): a large object stays only where the tiles to its west,
-        // north-west, and north carry no object mark (flag bit 6); it then sets its own mark. Otherwise the
-        // object code is removed and the water bit stays.
+        // MapGen_ResolveObjectOverlap (0x424c57): a large object, one whose byte in the class table (0x41e640) is
+        // above 1 unsigned, stays only where the tiles to its west, north-west, and north carry no object mark (flag
+        // bit 6); it then sets its own mark. Otherwise the object code is removed and the water bit stays.
         private void ResolveObjectOverlap()
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
-                if (!LargeObjects[_objects[tile] & 0x7f])
+                if (_classes[_objects[tile] & 0x7f] <= 1)
                 {
                     continue;
                 }

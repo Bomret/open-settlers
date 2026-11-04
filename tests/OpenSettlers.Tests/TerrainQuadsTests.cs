@@ -71,7 +71,7 @@ public sealed class TerrainQuadsTests
     [TestMethod]
     public void EveryTriangleOfAMapLandsInExactlyOneBand()
     {
-        var map = MapViewState.Open("1234567812345678", 1).Map;
+        var map = MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map;
         Assert.IsNotNull(map);
         var triangles = TerrainTriangles.Of(map);
 

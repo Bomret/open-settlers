@@ -98,7 +98,7 @@ public sealed class RemovalTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
 
-        return MapGenerator.Generate(new MapSeed(seed[0], seed[1], seed[2]), size!);
+        return MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
     }
 
     // The class the check 0x44b6e6 gives each node, for the classes 1 to 4 that the remove click and the road click act on

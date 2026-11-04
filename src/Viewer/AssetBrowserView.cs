@@ -47,8 +47,18 @@ public partial class AssetBrowserView : Control
 
         if (args.Mode == LaunchMode.SeedInfo)
         {
-            // Seed info needs no install. A Godot callback exception does not set the exit code, so this owns it.
-            var code = SeedInfo.Run(args.SeedText!, args.Seed!.Value, args.Size ?? MapSize.Offered[0], out var text);
+            // Seed info reads the large objects from the install's program. A Godot callback exception does not set
+            // the exit code, so this owns it.
+            var code = SeedInfo.Run(
+                () =>
+                    Install.TryOpen(args, out var install, out var problem)
+                        ? ProgramTables.Read(install.ReadAll(Install.Program))
+                        : throw new System.IO.IOException(problem),
+                args.SeedText!,
+                args.Seed!.Value,
+                args.Size ?? MapSize.Offered[0],
+                out var text
+            );
             if (code == 0)
                 GD.Print(text.TrimEnd('\n'));
             else

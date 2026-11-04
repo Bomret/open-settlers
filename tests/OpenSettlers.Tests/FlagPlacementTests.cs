@@ -32,7 +32,7 @@ public sealed class FlagPlacementTests
         var lines = File.ReadAllLines("flag-placements.txt").Where(line => line.StartsWith(run + ' ')).ToArray();
         var header = Fields(lines[0]);
         MapSize.TryFromValue(int.Parse(header["size"], CultureInfo.InvariantCulture), out var size, out _);
-        var map = MapGenerator.Generate(ParseSeed(header["seed"]), size!);
+        var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(header["seed"]), size!);
         var castle = header["castle"].Split(',').Select(int.Parse).ToArray();
         var game = new Game(TestProgram.Tables(), map, int.Parse(header["level"], CultureInfo.InvariantCulture));
         game.Enqueue(new Command(CastleTick, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
@@ -93,10 +93,13 @@ public sealed class FlagPlacementTests
     [TestMethod]
     public void AFlagIsRefusedBeforeTheCastleStandsAndOutsideTheMapAndForAnotherPlayer()
     {
-        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]));
+        var game = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+        );
         var fresh = new Game(
             TestProgram.Made(),
-            MapGenerator.Generate(ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
         game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, 15, 5));
         game.Tick();
@@ -198,7 +201,10 @@ public sealed class FlagPlacementTests
 
     private static Game GameWithCastle(int x = 15, int y = 5, string seed = "1234,5678,9ABC")
     {
-        var game = new Game(TestProgram.Made(), MapGenerator.Generate(ParseSeed(seed), MapSize.Offered[0]));
+        var game = new Game(
+            TestProgram.Made(),
+            MapGenerator.Generate(TestProgram.Made(), ParseSeed(seed), MapSize.Offered[0])
+        );
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, x, y));
         game.Tick();
 

@@ -48,7 +48,7 @@ public sealed class TerrainTests
     [TestMethod]
     public void EveryTileOfAGeneratedMapGivesTwoTrianglesOrNoMask()
     {
-        var map = MapGenerator.Generate(new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
 
         var triangles = TerrainTriangles.Of(map);
 
@@ -60,7 +60,7 @@ public sealed class TerrainTests
     [TestMethod]
     public void TrianglesFollowTheRowsFromNorthToSouthSoLaterOnesPaintOver()
     {
-        var map = MapGenerator.Generate(new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
 
         var rows = TerrainTriangles.Of(map).ConvertAll(t => t.Row);
 
@@ -74,7 +74,7 @@ public sealed class TerrainTests
     [TestMethod]
     public void TheUpperTriangleHangsFromItsNodeAndTheLowerRisesToTheNodeBelowEast()
     {
-        var map = MapGenerator.Generate(new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(TestProgram.Made(), new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
 
         var first = TerrainTriangles.Of(map)[0];
 
