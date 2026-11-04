@@ -31,16 +31,19 @@ public sealed class ObjectGraphics
     /// <summary>
     /// One image per entry from <see cref="ObjectSprites.FirstEntry"/> on, then the castle's
     /// (<see cref="ObjectSprites.CastleEntry"/>), the flag's (<see cref="ObjectSprites.FlagEntry"/>), the hut's, and the
-    /// goods' (<see cref="ObjectSprites.GoodsCount"/> from <see cref="ObjectSprites.GoodsFirstEntry"/>), each padded to
+    /// goods' (<see cref="ObjectSprites.GoodsCount"/> from <see cref="ObjectSprites.GoodsFirstEntry"/>), and the water's
+    /// (<see cref="ObjectSprites.WaterCount"/> from <see cref="ObjectSprites.WaterFirstEntry"/>), each padded to
     /// the layer size in its pixel arrays.
     /// </summary>
     public required IReadOnlyList<ObjectImage> Images { get; init; }
 
-    /// <summary>The layer of a sprite entry: the object entries in order, then the castle's, the flag's, the hut's, and the goods'.</summary>
+    /// <summary>The layer of a sprite entry: the object entries in order, then the castle's, the flag's, the hut's, the goods', and the water's.</summary>
     public static int Layer(int entry) =>
         entry == ObjectSprites.CastleEntry ? EntryCount
         : entry == ObjectSprites.FlagEntry ? EntryCount + 1
         : entry == ObjectSprites.WoodcutterEntry ? EntryCount + 2
+        : entry is >= ObjectSprites.WaterFirstEntry and < ObjectSprites.WaterFirstEntry + ObjectSprites.WaterCount
+            ? EntryCount + 3 + ObjectSprites.GoodsCount + entry - ObjectSprites.WaterFirstEntry
         : entry is >= ObjectSprites.GoodsFirstEntry and < ObjectSprites.GoodsFirstEntry + ObjectSprites.GoodsCount
             ? EntryCount + 3 + entry - ObjectSprites.GoodsFirstEntry
         : entry - ObjectSprites.FirstEntry;
@@ -115,6 +118,19 @@ public sealed class ObjectGraphics
                 archive[entry].State == EntryState.Absent
                     ? ObjectImage.Empty
                     : Read(archive, entry, "the good's sprite", data => ObjectImage.From(SpriteFile.Read(data)))
+            );
+        }
+
+        for (
+            var entry = ObjectSprites.WaterFirstEntry;
+            entry < ObjectSprites.WaterFirstEntry + ObjectSprites.WaterCount;
+            entry++
+        )
+        {
+            images.Add(
+                archive[entry].State == EntryState.Absent
+                    ? ObjectImage.Empty
+                    : Read(archive, entry, "the water sprite", data => ObjectImage.From(SpriteFile.Read(data)))
             );
         }
 

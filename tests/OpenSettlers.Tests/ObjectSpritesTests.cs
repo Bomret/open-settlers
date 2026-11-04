@@ -52,4 +52,46 @@ public sealed class ObjectSpritesTests
         Assert.AreEqual(1267, ObjectSprites.Entry(27));
         Assert.AreEqual(1271, ObjectSprites.Entry(28));
     }
+
+    // docs/rules/map-objects.md: the phase is (counter + index) >> 4 at 0x44d5b4.
+    [TestMethod]
+    public void AnEightFrameCodeStepsAFrameEverySixteenCounterUnitsAndWrapsAfterEight()
+    {
+        Assert.AreEqual(1251, ObjectSprites.Entry(8, 16));
+        Assert.AreEqual(1257, ObjectSprites.Entry(8, 112));
+        Assert.AreEqual(1250, ObjectSprites.Entry(8, 128));
+    }
+
+    [TestMethod]
+    public void TheLowBitsOfTheCodeOffsetThePhase()
+    {
+        Assert.AreEqual(1250, ObjectSprites.Entry(9, 14));
+        Assert.AreEqual(1251, ObjectSprites.Entry(9, 15));
+    }
+
+    [TestMethod]
+    public void AFourFrameCodeWrapsAfterFourFrames()
+    {
+        Assert.AreEqual(1269, ObjectSprites.Entry(24, 32));
+        Assert.AreEqual(1266, ObjectSprites.Entry(24, 48));
+    }
+
+    [TestMethod]
+    public void AStillCodeIgnoresTheCounter() => Assert.AreEqual(1274, ObjectSprites.Entry(32, 200));
+
+    // 0x44ff59: ((((tile * 4) & 0x3c) * 2 ^ 0xa8) + counter) >> 3 & 15, plus 630.
+    [TestMethod]
+    public void AWaterTileStepsOneOfSixteenFramesEveryEightCounterUnits()
+    {
+        Assert.AreEqual(630 + 5, ObjectSprites.WaterEntry(0, 0));
+        Assert.AreEqual(630 + 6, ObjectSprites.WaterEntry(0, 8));
+        Assert.AreEqual(630 + 5, ObjectSprites.WaterEntry(0, 128));
+    }
+
+    [TestMethod]
+    public void TheTileIndexOffsetsTheWaterPhaseAndRepeatsEverySixteenTiles()
+    {
+        Assert.AreEqual(630 + 4, ObjectSprites.WaterEntry(1, 0));
+        Assert.AreEqual(ObjectSprites.WaterEntry(1, 40), ObjectSprites.WaterEntry(17, 40));
+    }
 }

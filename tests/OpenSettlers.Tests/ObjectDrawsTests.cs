@@ -175,4 +175,28 @@ public sealed class ObjectDrawsTests
         Assert.IsNotEmpty(map.Deposits);
         Assert.HasCount(map.Objects.Count, ObjectDraws.Of(map));
     }
+
+    [TestMethod]
+    public void EveryWaterTileDrawsItsWaterFrame16PixelsWestOfItsNodeWithNoHeight()
+    {
+        var map = Generated();
+        var objects = map.Layer(MapLayer.Object).ToArray();
+        var width = map.Size.Width;
+        var tiles = Enumerable.Range(0, objects.Length).Where(tile => (objects[tile] & 0x80) != 0).ToList();
+
+        var draws = ObjectDraws.WaterOf(map, 40);
+
+        Assert.IsNotEmpty(tiles);
+        CollectionAssert.AreEqual(
+            tiles
+                .Select(tile => new ObjectDraw(
+                    tile / width,
+                    ObjectSprites.WaterEntry(tile, 40),
+                    Camera.NodePosition(tile % width, tile / width).X - 16,
+                    Camera.NodePosition(tile % width, tile / width).Y
+                ))
+                .ToList(),
+            draws
+        );
+    }
 }

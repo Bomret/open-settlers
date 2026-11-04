@@ -215,7 +215,7 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x406120` | `Gfx_DrawTexturedFill` | Sets the clip rectangle, finds the texture entry from the draw block's fourth field, and fills the mask of its third field with it. | confirmed | platform | Called at `0x4279a9`, `0x427b0d`, and `0x428363`, in the routines at `0x4278be`, `0x427a25`, and `0x428008`, `0x428105`, `0x4281cc`, which form the mask (60 plus an index, 141 plus an index, or a base of 234, 243, or 252 plus a height difference) and the texture (260 or 300 plus an offset). |
 | `0x406420` | `Gfx_DrawSpriteOverColor8` | Sets the clip rectangle from the target surface and draws the entry of the draw block through `Gfx_SpriteOverColor8`. | confirmed | platform | Called at `0x44ffcd`, in `0x44ff59`. |
 | `0x405d00` | `Gfx_SpriteOverColor8` | Passes the surface, the position, and the entry's address to `Gfx_BlitSpriteOverColor8`. | confirmed | platform | Called at `0x40647a`, in `Gfx_DrawSpriteOverColor8`. |
-| `0x44ff59` | `Gfx_DrawPhaseSprite` | Picks one of the 16 entries 630 to 645 from a value of the object and the counter at the game state block's `+0x206`, and draws it through `Gfx_DrawSpriteOverColor8`. | confirmed | game | Called by `0x44d5b4`; the add of 630 is at `0x44ffc7`. |
+| `0x44ff59` | `Gfx_DrawPhaseSprite` | Picks one of the 16 entries 630 to 645 from the tile record's address (`& 0x3c`, doubled, `^ 0xa8`) plus the counter at the game state block's `+0x206`, shifted right 3 and masked to 4 bits, and draws it through `Gfx_DrawSpriteOverColor8`. | confirmed | game | Called by `0x44d5b4`; the add of 630 is at `0x44ffc7`. See [Map objects](map-objects.md#water). |
 
 Note: [Graphics images](graphics-images.md).
 
