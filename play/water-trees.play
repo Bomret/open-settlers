@@ -1,0 +1,11 @@
+# Trees and water move: shots of one place a few frames apart, zoomed in.
+# Run it on the map view with seed 1234567812345678 and size 1:
+#   --map --seed 1234567812345678 --size 1 --play play/water-trees.play
+wait 0.3
+scroll up 3 450 300
+wait 0.3
+shot anim-1
+wait 0.16
+shot anim-2
+wait 0.5
+shot anim-3

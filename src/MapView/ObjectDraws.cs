@@ -39,13 +39,15 @@ public static class ObjectDraws
     /// tile's node with the node's height taken off, where its roads meet (<c>docs/rules/map-objects.md</c>); the
     /// sprite's own header offsets apply where the sprite is drawn. A code without a sprite is left out. Resources
     /// are no objects and are never drawn. With a <paramref name="castle"/>, its sprite is drawn at its node, and each
-    /// woodcutter's hut of <paramref name="buildings"/> likewise.
+    /// woodcutter's hut of <paramref name="buildings"/> likewise. An animated object draws its frame at the frame
+    /// counter <paramref name="counter"/>.
     /// </summary>
     public static List<ObjectDraw> Of(
         Map map,
         Castle? castle = null,
         IReadOnlyList<Building>? buildings = null,
-        IReadOnlyDictionary<(int X, int Y), IReadOnlyList<int>>? flagGoods = null
+        IReadOnlyDictionary<(int X, int Y), IReadOnlyList<int>>? flagGoods = null,
+        ushort counter = 0
     )
     {
         var heights = map.Layer(MapLayer.Height);
@@ -53,7 +55,7 @@ public static class ObjectDraws
         var draws = new List<ObjectDraw>(map.Objects.Count);
         foreach (var item in map.Objects)
         {
-            if (ObjectSprites.Entry(item.Code) is not { } entry)
+            if (ObjectSprites.Entry(item.Code, counter) is not { } entry)
             {
                 continue;
             }
@@ -99,6 +101,29 @@ public static class ObjectDraws
                 index < 0 ? draws.Count : index,
                 new ObjectDraw(hut.Y, ObjectSprites.WoodcutterEntry, x, y - height * TerrainTriangles.HeightStep)
             );
+        }
+
+        return draws;
+    }
+
+    /// <summary>
+    /// The water sprites of a map in row-major order: one on each tile whose object byte has bit 7 set (a tile with a
+    /// water triangle), drawn by <c>0x44ff59</c> at the tile's horizontal field times 8 and its row's top plus 8, with no
+    /// height. That is 16 pixels west of where an object of the tile at height 0 is drawn, so in the engine's layout the
+    /// node's position less 16 in x. <b>Inferred:</b> the alignment, as for the objects.
+    /// </summary>
+    public static List<ObjectDraw> WaterOf(Map map, ushort counter)
+    {
+        var objects = map.Layer(MapLayer.Object);
+        var width = map.Size.Width;
+        var draws = new List<ObjectDraw>();
+        for (var tile = 0; tile < objects.Length; tile++)
+        {
+            if ((objects[tile] & 0x80) != 0)
+            {
+                var (x, y) = Camera.NodePosition(tile % width, tile / width);
+                draws.Add(new ObjectDraw(tile / width, ObjectSprites.WaterEntry(tile, counter), x - 16, y));
+            }
         }
 
         return draws;

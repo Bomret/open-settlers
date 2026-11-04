@@ -34,6 +34,13 @@ public partial class MapViewControl : Control
     readonly bool _gameView;
     Game? _game;
     readonly TickPacer _pacer = new();
+
+    // The frame counter of the animated objects (the game state's +0x206): the game's clock in the game view; in the map
+    // view, a clock of its own that runs at the tick rate. The object meshes are rebuilt when it changes.
+    readonly TickPacer _framePacer = new();
+    ushort _frameCounter;
+    ushort _framesDrawn;
+    readonly System.Collections.Generic.List<System.Collections.Generic.List<MeshInstance2D>> _objectNodes = [];
     Label _ticks = null!;
     Label _logs = null!;
     Button _flagButton = null!;
@@ -65,6 +72,8 @@ public partial class MapViewControl : Control
     Node2D _world = null!;
     ShaderMaterial? _material;
     ShaderMaterial? _objectMaterial;
+    ShaderMaterial? _waterMaterial;
+    readonly System.Collections.Generic.List<MeshInstance2D> _waterNodes = [];
     ObjectGraphics? _objects;
     System.Collections.Generic.IReadOnlyList<MaskImage> _masks = [];
     string? _graphicsProblem;
@@ -275,6 +284,8 @@ public partial class MapViewControl : Control
         {
             _objects = ObjectGraphics.Load(_install);
             _objectMaterial = BuildObjectMaterial(_objects);
+            _waterMaterial = (ShaderMaterial)_objectMaterial.Duplicate();
+            _waterMaterial.Shader = GD.Load<Shader>("res://src/Viewer/Water.gdshader");
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -392,6 +403,20 @@ public partial class MapViewControl : Control
                 _buildingsDrawn = _game.Buildings.Count;
                 Redraw();
             }
+
+            _frameCounter = _game.Clock;
+        }
+        else
+        {
+            for (var due = _framePacer.Due(delta); due > 0; due--)
+            {
+                _frameCounter = (ushort)(_frameCounter + 8);
+            }
+        }
+
+        if (_frameCounter != _framesDrawn)
+        {
+            UpdateObjects();
         }
 
         // The keys move the view at the same screen speed at every zoom.
@@ -651,6 +676,10 @@ public partial class MapViewControl : Control
         var meshes = BuildMeshes(TerrainTriangles.Of(_state.Map), _state.Map.Size);
         var roadMesh = BuildRoadMesh(_state.Map);
         var objectMeshes = BuildObjectMeshes(_state.Map);
+        var waterMesh = BuildWaterMesh(_state.Map);
+        _framesDrawn = _frameCounter;
+        _objectNodes.Clear();
+        _waterNodes.Clear();
         _settlerMeshes.Clear();
         foreach (var (x, y) in _camera.Copies())
         {
@@ -666,19 +695,32 @@ public partial class MapViewControl : Control
                 copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = _roadMaterial });
             }
 
+            // The water sprites paint over the terrain and the roads of their copy where it shows palette index 8, so the
+            // screen is copied after this copy's terrain and roads are drawn.
+            if (_waterMaterial is not null)
+            {
+                copy.AddChild(new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Viewport });
+                var water = new MeshInstance2D { Mesh = waterMesh, Material = _waterMaterial };
+                copy.AddChild(water);
+                _waterNodes.Add(water);
+            }
+
             // Objects paint over the terrain of every copy: an absolute z index above the terrain's 0.
+            var objectNodes = new System.Collections.Generic.List<MeshInstance2D>();
             foreach (var mesh in objectMeshes)
             {
-                copy.AddChild(
-                    new MeshInstance2D
-                    {
-                        Mesh = mesh,
-                        Material = _objectMaterial,
-                        ZAsRelative = false,
-                        ZIndex = 1,
-                    }
-                );
+                var node = new MeshInstance2D
+                {
+                    Mesh = mesh,
+                    Material = _objectMaterial,
+                    ZAsRelative = false,
+                    ZIndex = 1,
+                };
+                copy.AddChild(node);
+                objectNodes.Add(node);
             }
+
+            _objectNodes.Add(objectNodes);
 
             // The settlers walk over the objects of every wrap copy; their mesh is rebuilt after each tick.
             if (_settlerMaterial is not null)
@@ -698,6 +740,37 @@ public partial class MapViewControl : Control
 
         UpdateSettlers();
         DrawPreview();
+    }
+
+    // The objects at the current frame counter, in the nodes Redraw made: an animated object shows its next frame.
+    void UpdateObjects()
+    {
+        _framesDrawn = _frameCounter;
+        if (_state.Map is null || _objectNodes.Count == 0)
+        {
+            return;
+        }
+
+        var waterMesh = BuildWaterMesh(_state.Map);
+        foreach (var node in _waterNodes)
+        {
+            node.Mesh = waterMesh;
+        }
+
+        var meshes = BuildObjectMeshes(_state.Map);
+        foreach (var nodes in _objectNodes)
+        {
+            if (nodes.Count != meshes.Count)
+            {
+                Redraw();
+                return;
+            }
+
+            for (var band = 0; band < meshes.Count; band++)
+            {
+                nodes[band].Mesh = meshes[band];
+            }
+        }
     }
 
     // The walking settlers as one mesh of quads, the same in every wrap copy: the frame and the animation step come from
@@ -931,6 +1004,23 @@ public partial class MapViewControl : Control
         return mesh;
     }
 
+    // One mesh of the water sprites of the whole map at the frame counter, the layer in COLOR; null for none.
+    ArrayMesh? BuildWaterMesh(Map map)
+    {
+        if (_objects is null)
+        {
+            return null;
+        }
+
+        var quads = ObjectQuads
+            .Bands(ObjectDraws.WaterOf(map, _frameCounter), _objects.Images, map.Size.Height, map.Size.Height)
+            .SelectMany(band => band)
+            .Select(q => (q.X, q.Y, q.Width, q.Height, new Color(q.Layer / 255f, 0, 0, 1)))
+            .ToList();
+
+        return quads.Count > 0 ? BuildQuadMesh(quads) : null;
+    }
+
     // One mesh per band of rows, one quad per object sprite: the layer in COLOR.
     System.Collections.Generic.List<ArrayMesh> BuildObjectMeshes(Map map)
     {
@@ -946,7 +1036,8 @@ public partial class MapViewControl : Control
                     map,
                     _game?.Castle,
                     _game?.Buildings,
-                    _game is null ? null : ObjectDraws.FlagGoodsOf(_game)
+                    _game is null ? null : ObjectDraws.FlagGoodsOf(_game),
+                    _frameCounter
                 ),
                 _objects.Images,
                 map.Size.Height,

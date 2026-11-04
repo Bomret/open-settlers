@@ -31,8 +31,28 @@ water sprite and is no object), and the low 7 bits are the object code.
   phase. Codes 24 to 27 take 1266 to 1269 and codes 28 to 31 take 1270 to 1273.
 - The routine also counts the objects it draws of indexes below 24 in the view (`+0x1b6`), which the engine leaves out.
 
-The engine's view draws the frame of counter 0: it takes no counter and does not compute the phase, and the rule
-above stays as recovered.
+The engine's view draws the frame of this rule (`ObjectSprites.Entry`). The counter is the game's clock in the game
+view and a clock of the view's own, 8 units per tick at the tick rate, in the map view. The view rebuilds the object
+meshes when the counter changes.
+
+## Water
+
+**Status:** confirmed for the entry and the position; **inferred** for the phase offset of a tile and for the screen
+test.
+
+A tile whose object byte has bit 7 set draws a water sprite before its object (`Gfx_DrawPhaseSprite`, `0x44ff59`).
+The routine takes the low word of the address of the tile's record, keeps bits 2 to 5 (`& 0x3c`), doubles it, flips
+it with `0xa8`, adds the counter at `+0x206`, shifts right 3, and keeps 4 bits: entry `630 + that`. A tile steps one
+frame every 8 counter units, one tick, through 16 frames. The record of a tile is 4 bytes, so the masked address is
+the tile index times 4 plus a constant of the table's start. The engine takes that constant as 0 (inferred): tiles
+16 apart share a phase, and the start only shifts which ones.
+
+The sprite sits at the tile's horizontal field times 8 and the row's top plus 8, with no height: 16 pixels west of
+where an object of the tile at height 0 sits, the node's position less 16 in x in the engine's layout. It is drawn
+only over pixels of palette index 8 ([Graphics images](graphics-images.md#sprites-drawn-over-color-8)). The engine's
+view (`src/Viewer/Water.gdshader`) draws a pixel where the screen under it has the color of palette index 8, from a
+copy of the screen taken after the terrain and the roads. Unlike the original, a water sprite does not see the
+pixels another water sprite of the same pass changed (inferred).
 
 ## Where the sprite sits
 

@@ -191,7 +191,7 @@ calls `0x47b4f9`, the last routine of the game code band. That routine reads the
 surface pixel already has the palette index 8. A drawn pixel over any other index is left as it is.
 
 The engine decodes them as the other sprites do (`SpriteFile.Read`, palette 3), in the kind `SpriteOverColor8Kind`.
-The preview shows every pixel of the stream, because the surface under it is not known; the summary says so.
+The preview shows every pixel of the stream, because the surface under it is not known; the summary says so. The map view draws them over the water ([Map objects](map-objects.md#water)).
 
 ### Corrupt sprites
 
