@@ -105,6 +105,11 @@ _Avoid_: edge, path, street
 A settler who walks one road and carries goods between its two flags.
 _Avoid_: porter, transporter, worker
 
+**Transport priority**
+A player's rank for each kind of good. Where several goods at one flag wait for the same road, the good
+with the highest rank goes next. A new game starts every player with the same default order.
+_Avoid_: goods priority, transport order
+
 ## Roadmap
 
 **Free-play release**
