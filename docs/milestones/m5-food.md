@@ -6,9 +6,11 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
 
 `0x42055e` (known) calls these routines when it fills the player blocks of a new game:
 
-- `0x445570`: fills an order of the 26 goods before the player block (player `-0x54`). likely
-- `0x445643`: fills a second order of the 26 goods at player `+0x60` to `+0x79`. One of the two is
-  likely the transport priority. likely
+- `0x445570`: writes the default transport priorities of the 26 goods before the player block
+  (player `-0x54`): `Player_SetTransportPriorities` in the
+  [program index](../rules/program-index.md#program-start-and-game-flow), ported
+  ([Goods](../rules/goods.md#transport-priorities)). known
+- `0x445643`: fills a second order of the 26 goods at player `+0x60` to `+0x79`. likely
 - `0x445716`, `0x445752`, `0x44579c`, `0x4457e6`: store default fractions at player `+0x140` to
   `+0x150` and around player `-0x80`, perhaps the distribution of food and other goods. likely
 

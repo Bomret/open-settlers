@@ -11,9 +11,12 @@ start leaves its tables. `MapGen_InitParams` (`0x421530`) ends by taking the fir
 building table (`0x45da8f`), and of the settler table (`0x45e121`) for a dummy, so the first flag of a game is slot 1. The verb
 `wood:` runs without the dummy: the castle's flag is slot 0 there, a good's destination word for it is 0, and 0 means none, so
 in `wood:` runs a log never leaves its flag (the flag pass looks for the castle again at every turn). `goods:` takes the flag
-slot's dummy only, the other tables keep the numbers the earlier verbs use. `tests/OpenSettlers.Tests/flag-goods.txt` holds the
-flags' goods fields and the carrier's bytes after the passes of two games, and the engine matches them
-(`FlagGoodsTests`): a log laid by the woodcutter, and a log laid by hand at pass 5 before any carrier is on the road.
+slot's dummy only, the other tables keep the numbers the earlier verbs use. `goods:` and `remove:` also run
+`Player_SetTransportPriorities` (`0x445570`) on the player block before the castle is placed, as `0x42055e` does at a new game,
+so the [transport priorities](#transport-priorities) are in place; their start line `prio=` lists the 32 bytes the exchange reads
+for the goods 0 to 31. `tests/OpenSettlers.Tests/flag-goods.txt` holds the flags' goods fields and the carriers' bytes after the
+passes of the verb's games, and the engine matches them (`FlagGoodsTests`): a log laid by the woodcutter, a log laid by hand at
+pass 5 before any carrier is on the road, and on a road of three flags logs and goods of different ranks laid by hand.
 
 ## The fields
 
@@ -100,7 +103,7 @@ neither holds carrier code; the carrier's states are `0x42`, `0x43`, 3 and 0xe.
 
 ## The carrier's exchange at a flag
 
-**Status:** confirmed for a log carried over a road of three flags to the castle, and for the order two logs at one flag leave in;
+**Status:** confirmed for a log carried over a road of three flags to the castle, and for the order goods at one flag leave in;
 the swap and the drop are read and checked on made-up tables only (`ExchangeTests`), since no emulated game has a good that
 goes the way a carrier came.
 
@@ -124,13 +127,32 @@ round. The order is:
    - The carrier then steps along the heading as on the road. A carrier that carries nothing and comes to a flag whose byte for
      its road has bit 7 set does not stop next to the flag (state 0x42) but steps onto it, and so takes the good there.
 
-The order two goods leave a flag in follows from the places the flag's turn gives the road's byte: it visits the places from the
-last to the first, and only a place that finds the road's byte free takes it, so with two logs on the places 0 and 1 the one on
-place 1 goes first. The other waits, with its direction, until something sets the road's byte again, and the exchange does that
-only through the transport priorities, which read 0 in the verb `goods:` (**inferred**: the table of the player block, `+good -
-0x55` from the pointer at `+0x64` of the state, holds bytes that are all 0 after the game's start in the harness; the original
-may fill it later, an open lead). In the emulated game the second log therefore stays on its place for good, and the engine does
-the same.
+The order goods leave a flag in follows from the places the flag's turn gives the road's byte and from the exchange. The turn
+visits the places from the last to the first, and only a place that finds the road's byte free takes it, so with two logs on the
+places 0 and 1 the one on place 1 goes first. The other waits with its direction. When the carrier takes the first, the exchange's
+scan lines up the good of the highest [transport priority](#transport-priorities) among those with the road's direction; of
+goods of equal rank the one on the lowest place wins. In the emulated games both logs of the hut's flag reach the castle, and
+with three goods on the places 0 to 2, the highest-ranked on place 2 and the lowest-ranked on place 1, the good on place 2 goes
+first and the good on place 0 waits next.
+
+## Transport priorities
+
+**Status:** confirmed. A new game sets each player's transport priorities to one default order: `0x42055e`, with the player's
+block at `+0x30` of the EDI block, calls `Player_SetTransportPriorities` (`0x445570`), which writes a rank for each good 1 to 26
+into the player block at `-0x55 + good`. The routine is 26 steps of 8 bytes, each a `mov al, imm8` followed by the store, so the
+rank of good g is the immediate byte at `0x445571 + 8 * (g - 1)`; the ranks are 1 to 26, each once. The emulator's `prio=` line
+shows these ranks after the routine runs.
+
+The carrier's exchange (`0x43b054`) and the direction step of the flag's turn (`0x46501a`) read the rank by the good's low 5 bits.
+For the goods 27 to 31 the read reaches past the table into two counters of the player block (`-0x3a` and `-0x36`) that
+`Castle_CreateSettlers` adds to; no good has those numbers. Good 0 is no good. A rank of 0 never wins the exchange's scan, which
+starts at 0 and takes only a greater rank.
+
+The port reads the ranks from the routine's instructions in the install's program (`ProgramTables.TransportPriorities`), never
+from source. It checks the opcode of every step and that the ranks are 1 to 26 each once; an install whose program fails either
+check is refused with a message naming the transport priority table, so the game never runs with every rank 0. `Game` gives the
+goods 0 and 27 to 31 the rank 0. **Not ported:** the player's panel that reorders the ranks, and one table per player (the engine
+runs one player).
 
 ## The delivery into the castle
 
@@ -166,8 +188,7 @@ the figure byte the figure tables take, and that the log's words are drawn with 
 ## Open leads
 
 - The request words at `0x42` to `0x45` of a flag item and the priority bytes: no building asks for a good yet (milestone 4).
-- The player block's priority table (`+good - 0x55`), and the counter the put adds to (`+good - 0x6f`). Who fills the table after
-  the game's start, and with what, decides which good a carrier takes next from a flag with several goods for one road.
+- The counter in the player block that the put adds to (`+good - 0x6f`).
 - The draw of a carrier with a good (above): run `0x43f537` in the emulator with a carrier record holding a log and read the
   draw record it writes.
 - What the original does with some road holding a carrier and no storage reached (`0x464539`).
@@ -179,7 +200,8 @@ the figure byte the figure tables take, and that the log's words are drawn with 
 ## In the engine
 
 `Game.Goods.cs`: `GoodsTurn`, `Destine`, `StorageSearch`, `Direct`, `Fetch` and `Claim` port the above; `LayGood` is the put.
-`Exchange` and `WaitForRoad` are the carrier's exchange at a flag, `Deliver` and `Handover` state 0xe, `AddToStock` the castle's
+`Exchange` and `WaitForRoad` are the carrier's exchange at a flag, `TransportPriority` reads a good's rank from
+`ProgramTables.TransportPriorities`, `Deliver` and `Handover` state 0xe, `AddToStock` the castle's
 count (`Game.CastleLogs` reads the log's). A carrier's byte 11 is `Settler.Mode` and its word at 12 `Settler.Target` (the
 destination as the original numbers the flags while it carries a good). `Building.Fill` holds bytes 8 and 9.
 `Game.FlagGoods(flag)` holds the places' bytes (the direction in bits 5 to 7), `FlagGoodsBit`, `FlagDestinations` (the slot plus

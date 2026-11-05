@@ -25,8 +25,11 @@ namespace OpenSettlers.Tests;
 // carrier's lifting of a good, its drop at a flag where no good waits for its road, its delivery into the castle in state 0xe,
 // and the castle's count of logs rising by one for each delivery. several-goods lays 2 logs on the hut's flag (the one on the
 // higher place goes first: the flag's turn visits the places from the last) and one on the flag 6 at pass 5, so that two
-// carriers work at once. The transport priorities that choose the next good to wait for a road are all 0 in the verb's game
-// (docs/rules/goods.md), so the second log of the hut's flag stays there: the engine does the same. The exchange of a good for
+// carriers work at once. The verb runs the original's default transport priorities at the game's start (0x445570), and the engine
+// reads the same ranks from the install's program: when the carrier takes the first log, the exchange lines up the second, so
+// both logs of the hut's flag reach the castle. ranked-goods lays three goods of different ranks on the hut's flag, the highest on
+// the last place: after the carrier takes it, the good of the higher rank of the other two waits next, not the one on the lower
+// place (docs/rules/goods.md, "Transport priorities"). The exchange of a good for
 // a good at a flag needs a good that goes the way the carrier came, which no good does while the castle is the only
 // destination: ExchangeTests covers it with made-up tables.
 //

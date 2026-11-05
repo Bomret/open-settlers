@@ -80,7 +80,9 @@
 //                            as the put of 0x436b46 lays them (docs/rules/goods.md): each PUT is PASS,PLACE,GOOD for the hut's
 //                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The lines also list the castle's item
 //                            (c=) where it changed, and the start lines the castle's item and the transport priorities
-//                            (prio=, 32 bytes for the goods 0 to 31) that the flag exchange reads (0x43b054)
+//                            (prio=, 32 bytes for the goods 0 to 31) that the flag exchange reads (0x43b054). Before the
+//                            castle the verb runs 0x445570 on the player block, as the player setup of a new game (0x42055e)
+//                            does, so the priorities hold the original's default ranks
 //   carrier:N:S0,S1,S2:L:cx,cy:x,y;...:sx,sy,D;...:PASSES[:sx,sy,D;...:AT]
 //                            the passes of worker (docs/rules/carriers.md) on a game with a castle, flags, and roads and no
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
@@ -101,7 +103,8 @@
 //                            settler's 16 bytes (o=) when they changed, for a settler the walk meets (a carrier on the road).
 //   remove:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
 //                            the removal clicks (docs/rules/removal.md) in a game that starts as the original's start leaves its
-//                            tables (the dummies of the flag and building tables are taken, as for goods): a castle at cx,cy, the
+//                            tables (the dummies of the flag and building tables are taken and the default transport priorities
+//                            written, as for goods, with the prio= start line): a castle at cx,cy, the
 //                            flags, the roads, and the finished huts HUTS (fx,fy,T;..., the building of type T north-west of
 //                            the flag fx,fy, with the marks the castle leaves as wood does). The passes of wood run; before the
 //                            pass AT the CLICKS run in order, each the click handler's routine on a node: f:x,y the remove click
@@ -173,6 +176,7 @@ public class EmulateMapStart extends GhidraScript {
                     case "wood" -> worker(rest, true);
                     case "goods" -> {
                         reserveFlagZero = true;
+                        defaultPriorities = true;
                         worker(rest, true);
                     }
                     case "carrier" -> carrier(rest);
@@ -182,6 +186,7 @@ public class EmulateMapStart extends GhidraScript {
                     }
                     case "remove" -> {
                         reserveFlagZero = true;
+                        defaultPriorities = true;
                         reserveBuildingZero = true;
                         remove(rest);
                     }
@@ -950,6 +955,9 @@ public class EmulateMapStart extends GhidraScript {
         }
         long player = PLAYERS + 0x1000;
         putInt(REGISTERS + 0x30, player);
+        if (defaultPriorities) {
+            call(0x445570);
+        }
         String[] centre = parts[3].split(",");
         putWord(player + 0xfc, Integer.parseInt(centre[0]));
         putWord(player + 0xfe, Integer.parseInt(centre[1]));
@@ -1418,6 +1426,8 @@ public class EmulateMapStart extends GhidraScript {
         String[] puts = parts.length > 10 && !parts[10].isEmpty() ? parts[10].split(";") : new String[0];
         Snapshot seen = snapshot(width, height);
         println("EMU " + label + " start c=" + seen.counts + " rng=" + seen.rng + " st=" + hex(TABLES + 0x60000, 120));
+        // The transport priorities the flag exchange and the removal's rescan read: the 32 bytes for the goods 0 to 31.
+        println("EMU " + label + " prio=" + hex(getInt(STATE + 0x64) - 0x55, 32));
         int clock = 0;
         for (int pass = 0; pass < passes; pass++) {
             if (pass == at) {
@@ -1655,6 +1665,12 @@ public class EmulateMapStart extends GhidraScript {
      * ends MapGen_InitParams, 0x421530), so the first flag is slot 1 as in a real game.
      */
     private boolean reserveFlagZero;
+
+    /**
+     * Whether startWorld runs the default transport priority routine 0x445570 on the player block, as the player setup of a new
+     * game (0x42055e) does: it writes the rank of each good 1 to 26 at the player's block -0x55 + good.
+     */
+    private boolean defaultPriorities;
 
     /**
      * Whether startWorld takes building slot 0 for the dummy the original's game start takes (the allocator 0x45da8f at the

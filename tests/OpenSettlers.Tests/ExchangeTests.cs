@@ -13,10 +13,12 @@ public sealed class ExchangeTests
     private const int Stone = 9;
     private const int Way = 3;
 
-    private static Game WithFlag()
+    private const int Board = 1;
+
+    private static Game WithFlag(byte[]? transportPriorities = null)
     {
         var game = new Game(
-            TestProgram.Made(),
+            TestProgram.Made(transportPriorities),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
@@ -71,6 +73,62 @@ public sealed class ExchangeTests
         Assert.AreEqual(0, carrier.Mode, "the carrier has nothing left");
         Assert.AreEqual(Stone, game.FlagGoods(0)[1]);
         Assert.AreEqual(1, game.FlagDestinations(0)[1]);
+    }
+
+    // Made-up ranks for the goods 1 to 26 (index good - 1): the stone ranks above the log, the board below it.
+    private static byte[] Ranks(int log, int stone, int board)
+    {
+        var ranks = new byte[StartStock.Goods];
+        ranks[Log - 1] = (byte)log;
+        ranks[Stone - 1] = (byte)stone;
+        ranks[Board - 1] = (byte)board;
+
+        return ranks;
+    }
+
+    // A good on a place that has been given the road's direction (bits 5 to 7 hold the direction plus one).
+    private static void LayDirected(Game game, int place, int good) => game.LayGood(0, place, good | (Way + 1) << 5);
+
+    [TestMethod]
+    public void AfterACarrierTakesAGoodTheGoodOfTheHighestTransportPriorityForTheSameRoadWaitsNext()
+    {
+        var game = WithFlag(Ranks(log: 5, stone: 9, board: 2));
+        LayDirected(game, 0, Board);
+        LayDirected(game, 1, Log);
+        LayDirected(game, 2, Stone);
+        LayDirected(game, 4, Log);
+        game.WaitForRoad(0, Way, 4);
+
+        game.Exchange(Carrier(0, 0), 0);
+
+        Assert.AreEqual(0x80 | 2, game.FlagDirectionBytes(0)[Way] & 0x87, "the stone waits next");
+    }
+
+    [TestMethod]
+    public void AmongGoodsOfEqualTransportPriorityTheOneOnTheLowestPlaceWaitsNext()
+    {
+        var game = WithFlag(Ranks(log: 5, stone: 5, board: 2));
+        LayDirected(game, 3, Stone);
+        LayDirected(game, 1, Log);
+        LayDirected(game, 6, Log);
+        game.WaitForRoad(0, Way, 6);
+
+        game.Exchange(Carrier(0, 0), 0);
+
+        Assert.AreEqual(0x80 | 1, game.FlagDirectionBytes(0)[Way] & 0x87);
+    }
+
+    [TestMethod]
+    public void AGoodWithNoTransportPriorityIsNeverLinedUp()
+    {
+        var game = WithFlag(Ranks(log: 0, stone: 0, board: 0));
+        LayDirected(game, 1, Log);
+        LayDirected(game, 6, Stone);
+        game.WaitForRoad(0, Way, 6);
+
+        game.Exchange(Carrier(0, 0), 0);
+
+        Assert.AreEqual(0, game.FlagDirectionBytes(0)[Way] & 0x80, "no good waits for the road");
     }
 
     [TestMethod]
