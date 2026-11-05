@@ -29,7 +29,9 @@ namespace OpenSettlers.Tests;
 // reads the same ranks from the install's program: when the carrier takes the first log, the exchange lines up the second, so
 // both logs of the hut's flag reach the castle. ranked-goods lays three goods of different ranks on the hut's flag, the highest on
 // the last place: after the carrier takes it, the good of the higher rank of the other two waits next, not the one on the lower
-// place (docs/rules/goods.md, "Transport priorities"). The exchange of a good for
+// place (docs/rules/goods.md, "Transport priorities"). push-out lays the same three goods with the lowest-ranked first and the
+// highest in the middle: the flag's turn gives the road to the last place's good, and the middle good, of a higher rank, takes
+// its place (0x46501a); the good pushed out keeps its direction and leaves after it. The exchange of a good for
 // a good at a flag needs a good that goes the way the carrier came, which no good does while the castle is the only
 // destination: ExchangeTests covers it with made-up tables.
 //

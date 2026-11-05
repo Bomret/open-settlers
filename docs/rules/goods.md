@@ -37,7 +37,8 @@ pass 5 before any carrier is on the road, and on a road of three flags logs and 
 
 ## The turn of a flag's goods
 
-**Status:** confirmed for a log at a flag with one storage (the castle), and for a good that waits with no carrier on the roads.
+**Status:** confirmed for a log at a flag with one storage (the castle), for a good that waits with no carrier on the roads,
+and for the push-out of a waiting good by one of a higher transport priority.
 
 `0x46414d` takes, for each pass in the phases 0 to 31, the flags whose slot divided by 32 is the phase. For a flag in use (the
 bitmap at `+0xa4` of the state) it first builds the load of its directions: for each place with a direction, bit `d` of byte
@@ -63,10 +64,12 @@ direction does one of two things:
    the queue marks the flags its carrier roads lead to with its own direction; when the destination is marked after a level, its
    mark is the good's direction `d`. A destination reached only through the flag itself (mark 6) or not at all gives the good up:
    the word is cleared (`0x462ca4` gives back a request, a storage counts none) and the bit set. With a direction `d`: where
-   byte `0x3c + d` has no bit 7, it takes the place and bit 7; where it has, the good in that place is replaced by the new
-   one when the new good's priority (a table in the player's block, `+good - 0x55` from the pointer `+0x64 + 4 * player`) is
-   higher, which the engine has no case for (one good). The good's byte takes `d + 1` in bits 5 to 7 either way. The word
-   keeps the destination, and the bit stays clear.
+   byte `0x3c + d` has no bit 7, it takes the place and bit 7. Where it has, the push-out (`0x46501a`) compares the
+   [transport priorities](#transport-priorities) of the good in that place and the new one (the table of the player that byte 3
+   of the flag names, read by each good's low 5 bits): only a strictly higher rank of the new good puts its place into the byte,
+   which keeps bit 7 and bits 3 to 5. At an equal or lower rank the byte stays. The good's byte takes `d + 1` in bits 5 to 7
+   either way, so a good that loses the place keeps its direction and waits on the flag until the exchange lines it up again.
+   The word keeps the destination, and the bit stays clear.
 
 The same pass then runs the road loop of [Carriers](carriers.md#the-flag-pass). With goods it also asks for a second carrier:
 a road whose carriers are fewer than the table at `0x462acd` gives for its length class (1, 2, 3, 4, 6, 8, 11, 15 for the

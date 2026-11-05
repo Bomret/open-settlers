@@ -261,14 +261,22 @@ public sealed partial class Game
             return;
         }
 
+        // Where no good waits for the road the good takes the road's byte. Where one waits, the good takes its place only with a
+        // higher transport priority (0x46501a): the byte keeps bit 7 and bits 3 to 5 and gets the new place, and the good that
+        // loses the place keeps its direction and waits until the exchange lines it up again.
         var way = label[destination];
-        if ((_directionBytes[flag][way] & 0x80) == 0)
+        var waiting = _directionBytes[flag][way];
+        if ((waiting & 0x80) == 0)
         {
             WaitForRoad(flag, way, place);
         }
+        else if (
+            TransportPriority(_flagGoods[flag][waiting & 7] & 0x1f) < TransportPriority(_flagGoods[flag][place] & 0x1f)
+        )
+        {
+            _directionBytes[flag][way] = (byte)((waiting & 0xf8) | place);
+        }
 
-        // **Not ported:** a good that waits for the same direction is replaced by this one where its priority is higher
-        // (0x46501a, the table in the player's block); the engine has one good and so never replaces.
         _flagGoods[flag][place] |= (byte)((way + 1) << DirectionShift);
     }
 
