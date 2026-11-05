@@ -334,8 +334,11 @@ public sealed class PlayScript
     {
         if (args.Length < 3)
             return (null, $"'expect' takes a field, an operator, and a value, found {args.Length} arguments");
-        if (!PlayFields.Known.Contains(args[0]))
-            return (null, $"unknown field '{args[0]}', use {string.Join(", ", PlayFields.Known)}");
+        if (!PlayFields.IsKnown(args[0]))
+            return (
+                null,
+                $"unknown field '{args[0]}', use {string.Join(", ", PlayFields.All.Concat(PlayFields.Game))}, {PlayFields.FlagGoods}<column>,<row>"
+            );
         if (!Ops.Contains(args[1]))
             return (null, $"unknown operator '{args[1]}', use one of {string.Join(" ", Ops)}");
 
