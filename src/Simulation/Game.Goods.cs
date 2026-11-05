@@ -262,7 +262,7 @@ public sealed partial class Game
         }
 
         // Where no good waits for the road the good takes the road's byte. Where one waits, the good takes its place only with a
-        // higher transport priority (0x46501a): the byte keeps bit 7 and bits 3 to 5 and gets the new place, and the good that
+        // higher transport priority (0x46501a): the byte keeps bit 7 and bits 3 to 6 and gets the new place, and the good that
         // loses the place keeps its direction and waits until the exchange lines it up again.
         var way = label[destination];
         var waiting = _directionBytes[flag][way];

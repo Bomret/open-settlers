@@ -67,7 +67,7 @@ direction does one of two things:
    byte `0x3c + d` has no bit 7, it takes the place and bit 7. Where it has, the push-out (`0x46501a`) compares the
    [transport priorities](#transport-priorities) of the good in that place and the new one (the table of the player that byte 3
    of the flag names, read by each good's low 5 bits): only a strictly higher rank of the new good puts its place into the byte,
-   which keeps bit 7 and bits 3 to 5. At an equal or lower rank the byte stays. The good's byte takes `d + 1` in bits 5 to 7
+   which keeps bit 7 and bits 3 to 6. At an equal or lower rank the byte stays. The good's byte takes `d + 1` in bits 5 to 7
    either way, so a good that loses the place keeps its direction and waits on the flag until the exchange lines it up again.
    The word keeps the destination, and the bit stays clear.
 
