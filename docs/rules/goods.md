@@ -142,8 +142,9 @@ first and the good on place 0 waits next.
 
 **Status:** confirmed. A new game sets each player's transport priorities to one default order: `0x42055e`, with the player's
 block at `+0x30` of the EDI block, calls `Player_SetTransportPriorities` (`0x445570`), which writes a rank for each good 1 to 26
-into the player block at `-0x55 + good`. The routine is 26 steps of 8 bytes, each a `mov al, imm8` followed by the store, so the
-rank of good g is the immediate byte at `0x445571 + 8 * (g - 1)`; the ranks are 1 to 26, each once. The emulator's `prio=` line
+into the player block at `-0x55 + good`. The routine is 26 steps of 8 bytes, one for each good in order; each loads its rank
+as a constant in the instruction and stores it, so the rank of good g is the byte at `0x445571 + 8 * (g - 1)`. The ranks are 1
+to 26, each once. The emulator's `prio=` line
 shows these ranks after the routine runs.
 
 The carrier's exchange (`0x43b054`) and the direction step of the flag's turn (`0x46501a`) read the rank by the good's low 5 bits.
@@ -152,7 +153,7 @@ For the goods 27 to 31 the read reaches past the table into two counters of the 
 starts at 0 and takes only a greater rank.
 
 The port reads the ranks from the routine's instructions in the install's program (`ProgramTables.TransportPriorities`), never
-from source. It checks the opcode of every step and that the ranks are 1 to 26 each once; an install whose program fails either
+from source. It checks that every step starts with the load of a constant and that the ranks are 1 to 26 each once; an install whose program fails either
 check is refused with a message naming the transport priority table, so the game never runs with every rank 0. `Game` gives the
 goods 0 and 27 to 31 the rank 0. **Not ported:** the player's panel that reorders the ranks, and one table per player (the engine
 runs one player).
