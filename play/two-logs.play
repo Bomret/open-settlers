@@ -86,6 +86,7 @@ wait 0.3
 # Two logs wait on the woodcutter's flag; none has reached the castle.
 wait 245
 expect logs = 4
+expect flag-goods:27,5 = 2
 dump two-logs
 shot two-logs
 
@@ -96,14 +97,22 @@ button Remove
 wait 0.3
 shot removed
 
-# The first log reaches the castle while the second still waits on the flag.
-wait 90
+# The carrier has lifted the first log; the second still waits on the flag.
+wait 50
+expect logs = 4
+expect flag-goods:27,5 = 1
+dump one-left
+shot one-left
+
+# The first log reaches the castle. The second still waits (a third the woodcutter cut may lie beside it).
+wait 40
 expect logs = 5
+expect flag-goods:27,5 >= 1
 dump first
 shot first
 
 # The second log reaches the castle.
-wait 80
-expect logs >= 6
+wait 50
+expect logs = 6
 dump second
 shot second
