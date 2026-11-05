@@ -5,8 +5,8 @@ using System.Linq;
 namespace OpenSettlers.Simulation;
 
 /// <summary>
-/// The tables of the original's program data that the rules read: the object class table and the start stock
-/// table. They are read from the install's <c>Siedler1.exe</c> at run time and never restated in source (INV-0001).
+/// The tables of the original's program data that the rules read: the object class table, the start stock
+/// table, and the others below. They are read from the install's <c>Siedler1.exe</c> at run time and never restated in source (INV-0001).
 /// <see cref="Read"/> finds each by its address in the program, through the section headers of the executable.
 /// </summary>
 public sealed class ProgramTables
@@ -85,6 +85,18 @@ public sealed class ProgramTables
     public const int WalkRowSize = 8;
 
     /// <summary>
+    /// The address of the routine that writes the default transport priorities into a player's block at a new game
+    /// (<c>0x445570</c>, called by <c>0x42055e</c>): one <c>mov al, imm8</c> and its store for each good 1 to 26.
+    /// </summary>
+    public const int TransportPriorityAddress = 0x445570;
+
+    /// <summary>The bytes of the routine for one good: the rank of good g is the immediate at <see cref="TransportPriorityAddress"/> + 8 * (g - 1) + 1.</summary>
+    public const int TransportPriorityStep = 8;
+
+    /// <summary>The opcode of <c>mov al, imm8</c>, which starts each good's step of the routine.</summary>
+    public const byte MovAlOpcode = 0xb0;
+
+    /// <summary>
     /// Creates tables from their contents; <see cref="Read"/> creates them from the program. The tables of the
     /// settlers' walk (<paramref name="stepTimes"/>, <paramref name="doorSpeeds"/>, <paramref name="scanWindows"/>) are
     /// empty where a test needs none; the walk then reads them as zeros.
@@ -100,7 +112,8 @@ public sealed class ProgramTables
         byte[]? walkRows = null,
         short[]? carriedFigures = null,
         byte[]? goodKinds = null,
-        byte[]? roadCapacities = null
+        byte[]? roadCapacities = null,
+        byte[]? transportPriorities = null
     )
     {
         if (
@@ -123,7 +136,14 @@ public sealed class ProgramTables
         CarriedFigures = carriedFigures ?? new short[CarriedFigureCount];
         GoodKinds = goodKinds ?? new byte[GoodKindCount];
         RoadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
+        TransportPriorities = transportPriorities ?? new byte[Simulation.StartStock.Goods];
     }
+
+    /// <summary>
+    /// The default transport priority of each good 1 to 26 (index good - 1): its rank, 1 to 26, each once; the carrier's
+    /// exchange lines up the good of the highest rank next (<c>docs/rules/goods.md</c>). All 0 where a test needs none.
+    /// </summary>
+    public byte[] TransportPriorities { get; }
 
     /// <summary>
     /// For each good which byte of a building's fill a lost good counts against: 0 the byte at 8, 1 the byte at 9, 0xff none
@@ -212,8 +232,39 @@ public sealed class ProgramTables
             Slice(exe, WalkRowAddress, WalkRowCount * WalkRowSize),
             Words(Slice(exe, CarriedFigureAddress, 2 * CarriedFigureCount)),
             Slice(exe, GoodKindAddress, GoodKindCount),
-            Slice(exe, RoadCapacityAddress, RoadCapacityCount)
+            Slice(exe, RoadCapacityAddress, RoadCapacityCount),
+            TransportPriorityRanks(exe)
         );
+    }
+
+    // The rank of each good from the routine's instructions. Each good's step must start with mov al, imm8, and the ranks
+    // must be 1 to 26 each once: else the routine is not where the table is expected, and the game would run with wrong
+    // priorities.
+    private static byte[] TransportPriorityRanks(byte[] exe)
+    {
+        var goods = Simulation.StartStock.Goods;
+        var code = Slice(exe, TransportPriorityAddress, TransportPriorityStep * goods);
+        var ranks = new byte[goods];
+        for (var good = 0; good < goods; good++)
+        {
+            if (code[TransportPriorityStep * good] != MovAlOpcode)
+            {
+                throw new InvalidDataException(
+                    $"Siedler1.exe holds no transport priority table at 0x{TransportPriorityAddress:x}: no mov al for good {good + 1}."
+                );
+            }
+
+            ranks[good] = code[TransportPriorityStep * good + 1];
+        }
+
+        if (!ranks.Order().SequenceEqual(Enumerable.Range(1, goods).Select(rank => (byte)rank)))
+        {
+            throw new InvalidDataException(
+                $"Siedler1.exe holds no transport priority table at 0x{TransportPriorityAddress:x}: the ranks are not 1 to {goods} each once."
+            );
+        }
+
+        return ranks;
     }
 
     private static short[] Words(byte[] bytes) =>

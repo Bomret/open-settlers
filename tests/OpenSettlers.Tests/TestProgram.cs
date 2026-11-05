@@ -22,15 +22,19 @@ internal static class TestProgram
     /// Tables of made-up values, no restatement of the original's: every object code has class 0, so no object
     /// blocks a site, and the start stock rows count up from the row number. With every class 0 no object is large, so
     /// a map generated with these tables keeps every object and is not the original's map; tests that compare with the
-    /// original's data use <see cref="Tables"/>.
+    /// original's data use <see cref="Tables"/>. The transport priorities are all 0.
     /// </summary>
-    public static ProgramTables Made() =>
+    public static ProgramTables Made() => Made(null);
+
+    /// <summary>The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1), or all 0 for none.</summary>
+    public static ProgramTables Made(byte[]? transportPriorities) =>
         new(
             new byte[ProgramTables.ClassCount],
             Enumerable
                 .Range(0, ProgramTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
-                .ToArray()
+                .ToArray(),
+            transportPriorities: transportPriorities
         );
 
     /// <summary>The reference install named by <c>SIEDLER_DIR</c>; the test is inconclusive without it.</summary>

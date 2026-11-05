@@ -119,7 +119,12 @@ public partial class MapViewControl : Control
             _state.SeedText,
             _state.SizeValue,
             _gameView ? _game?.TickCount ?? 0 : null,
-            _gameView ? _game?.CastleLogs ?? 0 : null
+            _gameView ? _game?.CastleLogs ?? 0 : null,
+            !_gameView ? null
+                : _game is null ? new System.Collections.Generic.Dictionary<(int X, int Y), int>()
+                : ObjectDraws
+                    .FlagGoodsOf(_game)
+                    .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0))
         );
 
     /// <inheritdoc/>

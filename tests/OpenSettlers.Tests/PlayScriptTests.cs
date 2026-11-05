@@ -237,16 +237,19 @@ public sealed class PlayScriptTests
     [TestMethod]
     public void AnExpectStepReadsTheGameFields()
     {
-        var script = Parse("expect ticks >= 10\nexpect logs = 0");
+        var script = Parse("expect ticks >= 10\nexpect logs = 0\nexpect flag-goods:27,5 >= 2");
 
         Assert.IsEmpty(script.Problems);
         Assert.AreEqual("ticks", ((ExpectStep)script.Steps[0]).Field);
         Assert.AreEqual("logs", ((ExpectStep)script.Steps[1]).Field);
+        Assert.AreEqual("flag-goods:27,5", ((ExpectStep)script.Steps[2]).Field);
     }
 
     [TestMethod]
     [DataRow("expect zoom", "takes a field, an operator, and a value")]
     [DataRow("expect height = 3", "unknown field 'height'")]
+    [DataRow("expect flag-goods:27 = 3", "unknown field 'flag-goods:27'")]
+    [DataRow("expect flag-goods:a,5 = 3", "unknown field 'flag-goods:a,5'")]
     [DataRow("expect zoom == 3", "unknown operator '=='")]
     [DataRow("expect zoom = big", "not a number")]
     [DataRow("expect zoom = 1 2", "not a number")]

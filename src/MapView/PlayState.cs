@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -7,8 +8,8 @@ namespace OpenSettlers.MapView;
 
 /// <summary>
 /// What a play run can observe of the map view: the camera's wrapped integer position, the zoom scale, and the seed
-/// and size last applied. In the game view it also holds the game's tick count and the castle's log count. A
-/// <c>dump</c> step writes it and an <c>expect</c> step checks one field of it.
+/// and size last applied. In the game view it also holds the game's tick count, the castle's log count, and the count of
+/// goods on each flag. A <c>dump</c> step writes it and an <c>expect</c> step checks one field of it.
 /// </summary>
 /// <param name="CameraX">The camera's west-east position in map pixels.</param>
 /// <param name="CameraY">The camera's north-south position in map pixels.</param>
@@ -17,6 +18,9 @@ namespace OpenSettlers.MapView;
 /// <param name="Size">The size value of the map.</param>
 /// <param name="Ticks">The game's tick count; null in the map view.</param>
 /// <param name="Logs">The castle's log count, 0 before a castle stands; null in the map view.</param>
+/// <param name="FlagGoods">
+/// The count of goods on each flag that holds some, by the flag's node; a flag left out holds none. Null in the map view.
+/// </param>
 public sealed record PlayState(
     int CameraX,
     int CameraY,
@@ -24,7 +28,8 @@ public sealed record PlayState(
     string Seed,
     int Size,
     long? Ticks = null,
-    int? Logs = null
+    int? Logs = null,
+    IReadOnlyDictionary<(int X, int Y), int>? FlagGoods = null
 )
 {
     /// <summary>The decimals zoom is written with and compared at.</summary>
@@ -32,7 +37,8 @@ public sealed record PlayState(
 
     /// <summary>
     /// The state as one <c>field=value</c> line per field, each ending in a newline: <see cref="PlayFields.All"/>, then
-    /// in the game view <see cref="PlayFields.Game"/>.
+    /// in the game view <see cref="PlayFields.Game"/> and a <see cref="PlayFields.FlagGoods"/> line for each flag that holds
+    /// goods, by row and then column.
     /// </summary>
     public string Dump()
     {
@@ -40,6 +46,15 @@ public sealed record PlayState(
         foreach (var field in Ticks is null ? PlayFields.All : [.. PlayFields.All, .. PlayFields.Game])
         {
             text.Append(field).Append('=').Append(Text(field)).Append('\n');
+        }
+
+        foreach (
+            var ((x, y), count) in (FlagGoods ?? new Dictionary<(int, int), int>())
+                .OrderBy(e => e.Key.Y)
+                .ThenBy(e => e.Key.X)
+        )
+        {
+            text.Append(PlayFields.FlagGoodsAt(x, y)).Append('=').Append(count).Append('\n');
         }
 
         return text.ToString();
@@ -51,7 +66,7 @@ public sealed record PlayState(
     /// </summary>
     public string? Check(ExpectStep expect)
     {
-        if (Ticks is null && PlayFields.Game.Contains(expect.Field))
+        if (Ticks is null && PlayFields.IsGame(expect.Field))
             return $"expect {expect.Field}: the map view has no {expect.Field}, use --game-view";
 
         var holds = PlayFields.IsNumeric(expect.Field)
@@ -70,6 +85,8 @@ public sealed record PlayState(
             PlayFields.Size => Size,
             PlayFields.Ticks => Ticks ?? throw new InvalidOperationException("the map view has no ticks"),
             PlayFields.Logs => Logs ?? throw new InvalidOperationException("the map view has no logs"),
+            _ when PlayFields.FlagNode(field) is { } node => FlagGoods?.GetValueOrDefault(node)
+                ?? throw new InvalidOperationException("the map view has no flag goods"),
             _ => throw new ArgumentOutOfRangeException(nameof(field), field, "no numeric play field"),
         };
 
@@ -127,8 +144,35 @@ public static class PlayFields
     /// <summary>The fields the game view dumps after <see cref="All"/>.</summary>
     public static readonly string[] Game = [Ticks, Logs];
 
-    /// <summary>Every field an <c>expect</c> step can name.</summary>
-    public static readonly string[] Known = [.. All, .. Game];
+    /// <summary>
+    /// The start of the field of a flag's goods, in the game view only: <c>flag-goods:&lt;column&gt;,&lt;row&gt;</c> is the
+    /// count of goods on the flag at that node, 0 where none lie there.
+    /// </summary>
+    public const string FlagGoods = "flag-goods:";
+
+    /// <summary>The field of the goods on the flag at the node.</summary>
+    public static string FlagGoodsAt(int x, int y) => $"{FlagGoods}{x},{y}";
+
+    /// <summary>The node a <see cref="FlagGoods"/> field names; null for any other field.</summary>
+    public static (int X, int Y)? FlagNode(string field)
+    {
+        if (!field.StartsWith(FlagGoods, StringComparison.Ordinal))
+            return null;
+
+        var parts = field[FlagGoods.Length..].Split(',');
+        return
+            parts.Length == 2
+            && int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var x)
+            && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var y)
+            ? (x, y)
+            : null;
+    }
+
+    /// <summary>Whether an <c>expect</c> step can name the field.</summary>
+    public static bool IsKnown(string field) => All.Contains(field) || IsGame(field);
+
+    /// <summary>Whether the field belongs to the game view only.</summary>
+    public static bool IsGame(string field) => Game.Contains(field) || FlagNode(field) is not null;
 
     /// <summary>Whether the field is a number; the seed is text and takes only <c>=</c>.</summary>
     public static bool IsNumeric(string field) => field != Seed;

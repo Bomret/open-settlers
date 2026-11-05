@@ -59,6 +59,32 @@ public sealed class PlayStateTests
         Assert.AreEqual(expected, GameState.Dump());
     }
 
+    static readonly PlayState FlagState = GameState with
+    {
+        FlagGoods = new System.Collections.Generic.Dictionary<(int X, int Y), int> { [(27, 5)] = 2, [(3, 1)] = 1 },
+    };
+
+    [TestMethod]
+    public void AGameViewDumpListsTheGoodsOfEachFlagThatHoldsSomeByRowThenColumn()
+    {
+        var expected =
+            "camera-x=120\ncamera-y=40\nzoom=1.2500\nseed=1234567812345678\nsize=2\nticks=300\nlogs=4\n"
+            + "flag-goods:3,1=1\nflag-goods:27,5=2\n";
+
+        Assert.AreEqual(expected, FlagState.Dump());
+    }
+
+    [TestMethod]
+    [DataRow("flag-goods:27,5", ">=", "2", true)]
+    [DataRow("flag-goods:27,5", "=", "1", false)]
+    [DataRow("flag-goods:22,5", "=", "0", true)]
+    public void AGameViewExpectOnAFlagsGoodsCountsTheGoodsOnThatNode(string field, string op, string value, bool holds)
+    {
+        var problem = FlagState.Check(Expect(field, op, value));
+
+        Assert.AreEqual(holds, problem is null, problem);
+    }
+
     [TestMethod]
     [DataRow("ticks", "<", "301", true)]
     [DataRow("ticks", "<", "300", false)]
@@ -98,6 +124,7 @@ public sealed class PlayStateTests
     [TestMethod]
     [DataRow("ticks")]
     [DataRow("logs")]
+    [DataRow("flag-goods:27,5")]
     public void AMapViewExpectOnAGameFieldFails(string field)
     {
         var problem = State.Check(Expect(field, ">=", "0"));
