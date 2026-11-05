@@ -1,0 +1,109 @@
+# A woodcutter's flag that holds two logs sends both to the castle, one after the other.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   --game-view --seed 1234567812345678 --size 1 --play play/two-logs.play
+# The castle starts with 5 settlers that can carry (2 carriers and 3 of job 21). Five short roads from the castle's flag
+# take them all, so the road from the woodcutter's flag to the castle gets no carrier and the logs wait on that flag.
+# Taking one of the five roads down sends its carrier home; the castle road then gets it, and the logs go one by one.
+# On that map the castle stands at 21,4, so its flag is at 22,5. The woodcutter goes to 26,4, its flag to 27,5.
+expect seed = 1234567812345678
+expect size = 1
+wait 0.3
+click-tile 21 4
+wait 0.3
+
+button Flag
+click-tile 20 3
+click-tile 22 3
+click-tile 20 5
+click-tile 20 6
+click-tile 20 7
+button Flag
+wait 0.3
+
+# The five roads that take the carriers.
+button Road
+click-tile 20 3
+click-tile 21 3
+click-tile 22 4
+click-tile 22 5
+button Road
+button Road
+click-tile 22 3
+click-tile 23 4
+click-tile 23 5
+click-tile 22 5
+button Road
+button Road
+click-tile 20 5
+click-tile 21 5
+click-tile 22 5
+button Road
+button Road
+click-tile 20 6
+click-tile 21 6
+click-tile 22 6
+click-tile 22 5
+button Road
+button Road
+click-tile 20 7
+click-tile 19 6
+click-tile 19 5
+click-tile 20 5
+button Road
+wait 24
+dump decoys
+shot decoys
+
+# The castle road, which finds no carrier, and the woodcutter. A road starts only on a flag that stands, so the
+# flag gets a wait before the road is drawn from it.
+button Flag
+click-tile 27 5
+button Flag
+wait 0.3
+button Road
+click-tile 27 5
+click-tile 27 6
+click-tile 26 6
+click-tile 25 6
+click-tile 24 6
+click-tile 23 6
+click-tile 22 5
+button Road
+wait 0.3
+shot castle-road
+button Woodcutter
+click-tile 26 4
+button Woodcutter
+wait 0.3
+expect logs = 4
+dump woodcutter
+shot woodcutter
+
+# Zoomed in on the woodcutter's flag, so the logs on it show.
+scroll up 2 405 395
+wait 0.3
+
+# Two logs wait on the woodcutter's flag; none has reached the castle.
+wait 245
+expect logs = 4
+dump two-logs
+shot two-logs
+
+# Taking the road from 20,5 to the castle's flag down frees its carrier for the castle road.
+button Remove
+click-tile 21 5
+button Remove
+wait 0.3
+shot removed
+
+# The first log reaches the castle while the second still waits on the flag.
+wait 90
+expect logs = 5
+dump first
+shot first
+
+# The second log reaches the castle.
+wait 80
+expect logs >= 6
+dump second
+shot second
