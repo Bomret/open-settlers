@@ -131,13 +131,17 @@ public partial class MapViewControl : Control
                 : ObjectDraws
                     .FlagGoodsOf(_game)
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0)),
-            MapObjectThings()
+            ListedThings()
         );
 
-    // The map view lists map objects only.
-    System.Collections.Generic.IReadOnlyList<Thing> MapObjectThings()
+    // The map view lists map objects only; the game view lists every kind of the game.
+    System.Collections.Generic.IReadOnlyList<Thing> ListedThings()
     {
         var names = _tables is null ? null : new NameTable(_tables);
+        if (_gameView && _game is not null)
+        {
+            return Thing.Of(_game, names);
+        }
 
         return [.. (_state.Map?.Objects ?? []).Select(o => Thing.Of(o, names))];
     }
