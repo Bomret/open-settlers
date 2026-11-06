@@ -271,6 +271,32 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    public void TheFrameRowsAreFoundByTheirAddress()
+    {
+        var exe = Executable(bytes =>
+        {
+            bytes[FileOffset(ProgramTables.FrameRowAddress) + 10] = 0xff;
+            bytes[FileOffset(ProgramTables.FrameRowAddress) + 11] = 2;
+        });
+
+        var tables = ProgramTables.Read(exe);
+
+        Assert.AreEqual(ProgramTables.FrameRowCount, tables.FrameRows.Length);
+        Assert.AreEqual(-1, tables.FrameRows[10], "a signed byte for the frame 10");
+        Assert.AreEqual(2, tables.FrameRows[11]);
+        Assert.AreEqual(0x43f402, ProgramTables.FrameRowAddress);
+    }
+
+    [TestMethod]
+    public void TheFrameRowsOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:43f402:181 (the bytes up to the carried goods' table at 0x43f4b7).
+        Assert.AreEqual(0x02AE63A4FDE36C2DUL, Fnv([.. tables.FrameRows.Select(row => (byte)row)]));
+    }
+
+    [TestMethod]
     public void TheTablesOfTheRemovalAreFoundByTheirAddress()
     {
         var exe = Executable(bytes =>

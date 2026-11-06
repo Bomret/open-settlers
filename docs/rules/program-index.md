@@ -208,6 +208,7 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x406590` | `Gfx_DrawSpriteNoOffset` | Draws a transparent sprite through `Gfx_BlitSprite` with the entry's two offsets set to 0 for the call and restored after; the entry is the base 1250 plus a script index. | confirmed | platform | Called at `0x44db12`. See [Graphics images](graphics-images.md). |
 | `0x406610` | `Gfx_DrawSettler` | Draws a settler: the figure from the base 1850 through `Gfx_BlitSprite`, the overlay of the same index plus 2500 through `Gfx_BlitSpriteOneColor` in the player color (40 hex plus four times the player), then, where a second figure is set, an entry from the base 3150 through `Gfx_BlitSprite`, moved by header bytes 0 and 1 of the first figure as signed offsets. | confirmed | platform | Called at `0x450189`. See [Graphics images](graphics-images.md). |
 | `0x44fff3` | `Gfx_DrawSettlerRecords` | Reads the draw records of an object (flags, figure word, position) and, for each, loads the pair of words at 4 times the high byte of the figure word from the figure bases at `0x4501a1` and the pair at 4 times its low byte from the figure offsets at `0x4503c5` (`lea` at `0x4500fb` and `0x450128`; both addresses odd, the words read unaligned), adds the offsets, and calls `Gfx_DrawSettler`. | confirmed | game | Called at `0x44d3ae`. See [Settlers](settlers.md#drawing-the-walk-leads). |
+| `0x44ffe7` | `Render_DrawRowSettlers` | Takes the next row list pointer of the view (`+0x92`, through `+0x2c` of the EDI block) and falls into `0x44fff3`, which draws the row's settler records. `0x44d3ae` calls it once for each row of the view, after the row's tiles. | confirmed | game | Called by `0x44d3ae`. Run by the `draw:` verb. |
 | `0x43f744` | `Settler_FigureStubs` | Data-like code: 8 bytes for each job (`jmp rel32`), reached by `0x43f537` from byte 0 bits 2 to 6; each jumps to the job's figure handler, which adds the job's constant to the figure byte. | confirmed | game | Stub 0 to `0x43f8ae` (carrier), stub 5 to `0x43fb6b` (woodcutter), stub 11 to `0x43fed8`. |
 | `0x43f8ae` | `Carrier_FigureWord` | The carrier's figure handler: in state 3 or 0xe with a good in byte 11 (not 0) it adds the 16-bit word at `0x43f4b7` plus 2 * good (`0x43f904`) to the figure word; it adds nothing else, so the word is the figure byte plus that word. | confirmed | game | Reached by the stub at `0x43f744`. The table at `0x43f4b7` has 27 words, the high byte the row of the figure bases (log: `0x1400`). [Drawing a carrier with a good](goods.md#drawing-a-carrier-with-a-good). |
 | `0x43fb6b` | `Woodcutter_FigureWord` | The woodcutter's figure handler: a figure byte below 0x80 gets `0x0b00` (`0x43fc16`), or `0x1000` (`0x43fc0b`) on the way back with the log (byte 13 0x80, byte 14 1, state 0x10); a byte from 0x80 gets `0x0e80` (`0x43fbe5`). | confirmed | game | Reached by the stub at `0x43f76c`. Screenshots of `play/woodcutter-figures.play`. |
@@ -254,7 +255,10 @@ entries per phase (see "Item tables").
 | `0x464c36` | `Flag_VisitRoads` | The part of `0x46414d` after a flag's goods: for each direction from north to east that holds a road, sets the flag status bit of a road that holds a carrier, and asks `0x42b455` for a carrier for a road whose byte shows none, unless the flag's status bit 7 says a request found none since the retry scan. The same Ghidra function holds the end of a good's direction step: at `0x46501a` a good given a road on which another good waits takes the waiting place only with a higher transport priority ([Goods](goods.md#the-turn-of-a-flags-goods)). | confirmed | game | Called by `0x46414d`. [Carriers](carriers.md#the-flag-pass). |
 | `0x42cb2d` | `Table18_Pass` | Processes the phase's slice of `Table18` (slots `32 * phase` on, in groups of 32 every 1024): a finished building goes to its type's handler through the table at `0x42cd1d`, a building under construction to the countdown. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
 | `0x42f3d9` | `Table16_Pass` | Processes the phase's slice of `Table16`: the slots whose number is the phase modulo 16 plus a multiple of 16, each through `0x42fc81`. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
-| `0x42f4f1` | — | For each view, gathers the settlers on the shown tiles, runs their turn through `0x42fc81` once more, and builds their draw records (`0x42f512`, `0x43f537`). So a settler in view acts every pass, others every 16th. | inferred | game | Called by `Main_Loop`. |
+| `0x42f4f1` | `View_BuildSettlerRecords` | For each view (the pointers at `+0x78` and `+0x7c` of the game state block), runs `0x42f512` with the view at `+0x20` of the EDI block. So a settler on a shown tile takes one more turn every pass, others every 16th, and gets a draw record. | confirmed | game | Called by `Main_Loop`. Run by the `draw:` verb ([Settlers](settlers.md#the-draw-path-emulated)). |
+| `0x42f512` | `View_ScanSettlers` | One view: returns for a hidden view (bit 0 of its byte 0); clears the row lists (`0x4409d5`); scans the nodes of the view row by row (two rows a step, the columns from the view's west edge) for the settler word of each node (`+2` of the second layer); for each settler runs its turn (`0x42fc81`) and builds its record (`0x43f537`); ends the row lists with `-1` (`0x440a53`). | confirmed | game | Called by `0x42f4f1`. |
+| `0x43f537` | `Settler_BuildRecord` | Builds the draw record of the settler at the item pointer: ends at once unless the node's settler word is the settler's slot; takes the view row (the view's `+0x4c` plus the node's row) plus the signed byte of the frame in the table at `0x43f402`, the position `(32 x - 16 y + view +0x9a, 20 y + view +0x90 - 4 * height - 2)`, the triple of the sequence of its frame (entry 2, through `+0xb0`) at 3 times the timer shifted right 3, and jumps to the job's handler (`0x43f744`), which appends (flags, figure word, x, y) to the row's list at `+0x92` of the view if the row is below the view's `+0x50`. | confirmed | game | Called by `0x42f512`. |
+| `0x43f402` | `Settler_FrameRows` | Data: 181 signed bytes, one for each frame of a settler (up to the table at `0x43f4b7`): what `0x43f537` adds to the row of the record; -1 for the frames 9 to 26, 63 to 80, 121 and 122, and 125 to 128, else 0. | confirmed | game | Read by `0x43f537`. `ProgramTables.FrameRows`. |
 | `0x4286d8` | — | Runs `0x428728`, `Sound_RunAmbient`, and `0x428d10`, then `0x428a75` for each player block. | unknown | game | Called by `Main_Loop`. |
 | `0x428728` | `Sim_ClearRetryBits` | Each pass clears bit 2 of the status of a window of `Table18` buildings from a cursor (`+0x54`, the window `+0x52`, stops after 10 set bits), and bit 7 of the flag status of a window of `Table70` (cursor `+0x56`). | confirmed | game | Called by `0x4286d8`. [Settlers](settlers.md#the-retry-scan). |
 | `0x42be63` | `Building_RequestWorker` | A building asks the storages for a settler of the job in the registers: a search over the flags from the building's flag; at a storage flag it takes the waiting settler of the job (state 15, mode 255, target the building's flag) or makes one of a jobless settler and a tool. | confirmed | game | Called by the building handlers (`0x42e0b8` and its siblings through `0x42cd1d`). [Settlers](settlers.md#the-request). |
@@ -839,7 +843,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42d945` | `Building_HandleType2` | confirmed | Simulation |
 | `0x42e0b8` | `Building_HandleType1` | confirmed | Simulation |
 | `0x42f3d9` | `Table16_Pass` | confirmed | Simulation |
-| `0x42f4f1` | — | inferred | Simulation |
+| `0x42f4f1` | `View_BuildSettlerRecords` | confirmed | Simulation |
+| `0x42f512` | `View_ScanSettlers` | confirmed | Simulation |
 | `0x42fc81` | `Settler_Dispatch` | confirmed | Simulation |
 | `0x42ff81` | `Settler_CarrierWaits` | confirmed | Simulation |
 | `0x43007b` | `Settler_StateDismissed` | confirmed | Castle and build sites |
@@ -869,6 +874,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
 | `0x43e036` | `Settler_StepToFlag` | confirmed | Simulation |
 | `0x43f17a` | `Settler_StandByCastle` | confirmed | Simulation |
+| `0x43f402` | `Settler_FrameRows` | confirmed | Simulation |
+| `0x43f537` | `Settler_BuildRecord` | confirmed | Simulation |
 | `0x43f744` | `Settler_FigureStubs` | confirmed | Graphics images |
 | `0x43f8ae` | `Carrier_FigureWord` | confirmed | Graphics images |
 | `0x43fb6b` | `Woodcutter_FigureWord` | confirmed | Graphics images |
@@ -909,6 +916,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
 | `0x44ff59` | `Gfx_DrawPhaseSprite` | confirmed | Graphics images |
+| `0x44ffe7` | `Render_DrawRowSettlers` | confirmed | Graphics images |
 | `0x44fff3` | `Gfx_DrawSettlerRecords` | confirmed | Graphics images |
 | `0x450609` | `Save_ConfirmSlot` | confirmed | Save and load |
 | `0x450a35` | `Render_DrawViewOverlay` | inferred | Views, panels, and drawing |
@@ -996,7 +1004,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 224 routines of the 471 functions in the dump's game code band and lists 10 more without a name: 185 confirmed, 41 inferred, 8 unknown.
+Coverage: the index names 230 routines of the 512 functions in the dump's game code band and lists 9 more without a name: 191 confirmed, 40 inferred, 8 unknown.
 <!-- coverage:end -->
 
 Open anchors:

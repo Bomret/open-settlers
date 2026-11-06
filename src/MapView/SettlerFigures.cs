@@ -17,12 +17,17 @@ public readonly record struct SettlerDraw(int Row, int Entry, int Colour, int X,
 /// (<c>0x43f744</c> plus 8 for each job) adds a constant to the figure byte to make the figure word; the high byte of the
 /// word picks a pair of words of the figure bases and the low byte a pair of the figure offsets, which give the entries:
 /// the figure, its overlay in the player's colour, and a second figure (<c>0x44fff3</c>, <c>docs/rules/settlers.md</c>).
-/// <b>Confirmed</b> (<c>0x406610</c>): the figure 1850 + i takes its overlay from 2500 + i; the second figure moves by the
-/// header bytes 0 and 1 of the figure, read as signed bytes; a settler draws its figure, then the overlay, then the second
-/// figure. <b>Inferred:</b> that the sequence offsets count from the byte after the first dword of the entry (as
-/// <c>0x41e8e0</c> keeps its table), that the triple index is the time left shifted right 3, that the time left falls
-/// with the clock between the settler's turns (the original draws a settler in view as it acts every pass), and the draw
-/// position (the node lifted by its height, as an object).
+/// <b>Confirmed</b> by the draw runs of <c>tests/OpenSettlers.Tests/settler-draws.txt</c> (the emulator verb <c>draw</c> runs
+/// <c>0x42f4f1</c>, <c>0x43f537</c>, <c>0x44ffe7</c>, and <c>0x406610</c>), which the engine matches pass for pass for the carrier
+/// and the woodcutter: the sequence offsets count from the byte after the first dword of the entry (as <c>0x41e8e0</c> keeps its
+/// table); the triple index is the time left shifted right 3; the time left falls with the clock between the settler's turns
+/// (the view pass gives a settler in view a turn every pass, which runs its timer down by the clock units since its stamp); the
+/// position is the node, lifted by 4 times its height and 2 more, plus the triple's offsets; the figure 1850 + i takes its
+/// overlay from 2500 + i, filled with the player's colour; the second figure moves by the header bytes 0 and 1 of the figure,
+/// read as signed bytes; a settler draws its figure, then the overlay, then the second figure; the record joins the row of the
+/// settler plus the byte of its frame's row (<c>0x43f402</c>), and the rows are drawn from the top; a carrier that waits next to
+/// a flag (state 0x42) has no record. <b>Inferred:</b> the order of the records of one row beyond the recorded cases (that
+/// the scan lists the nodes row by row), and every state the recordings hold no settler of.
 /// </summary>
 public sealed class SettlerFigures
 {
@@ -40,6 +45,9 @@ public sealed class SettlerFigures
 
     private const int Sequences = 200;
 
+    // The record builder lifts a settler 2 pixels above the node's height (0x43f537: the height times 4, then 2 more).
+    private const int SettlerLift = 2;
+
     // The end of the table of sequence offsets in the sequences' entry: a count word, then a dword for each sequence.
     private const int TableEnd = 4 + 4 * Sequences;
 
@@ -49,20 +57,19 @@ public sealed class SettlerFigures
     private const int StatesWalking = 2;
     private const int StatesWaiting = 5;
 
-    // A carrier on its road (state 3) walks as a settler does. A carrier that waits next to a flag (state 0x42) is drawn
-    // with the timer it holds: the original does not run it down. **Inferred:** the idle frames 0x6e to 0x73 name the
-    // sequences of the waiting carrier, which no draw run confirms.
+    // A carrier on its road (state 3) walks as a settler does. **Confirmed** (draw run, settler-draws.txt): a carrier that
+    // waits next to a flag (state 0x42) is not drawn at all: the carrier's figure handler (0x43f8ae) returns at once for it.
     private const int StatesOnRoad = 3;
-    private const int StatesIdle = 0x42;
 
-    // A carrier whose road was taken down or joined (states 0x44 and 0x45, docs/rules/removal.md) still stands next to the flag
-    // and is drawn as the carrier that waits. **Inferred:** no draw run confirms it.
+    // A carrier whose road was taken down or joined (states 0x44 and 0x45, docs/rules/removal.md) still stands next to the flag.
+    // **Inferred:** it is drawn with the timer it holds, no run of the draw confirms it (the handler skips only state 0x42).
     private const int StatesDismissed = 0x44;
     private const int StatesRejoined = 0x45;
 
     // A woodcutter that steps through its door (state 4), walks free along its vector (0x10), or cuts (0x11) is drawn with
-    // the frame and the timer it holds as a walking settler is (docs/rules/woodcutting.md). The cut's frame 0x74 names
-    // the felling sequence (a screenshot confirms it); **inferred:** that the frames 0x75 to 0x78 name the later ones.
+    // the frame and the timer it holds as a walking settler is (docs/rules/woodcutting.md). **Confirmed** (draw run): the
+    // cut's frames 0x74 to 0x78 are drawn through the same rule, the figure bytes from 0x80 in the row of the felling and the
+    // other bytes in the row of the walk.
     private const int StatesDoor = 4;
     private const int StatesFreeWalk = 0x10;
     private const int StatesCutting = 0x11;
@@ -77,6 +84,7 @@ public sealed class SettlerFigures
     private readonly byte[] _data;
     private readonly short[] _carried;
     private readonly FigureAdds _woodcutter;
+    private readonly sbyte[] _frameRows;
 
     // The woodcutter's handler (0x43fb6b) tests the figure byte for bit 7, and the settler's byte 13 (the high byte of the
     // target), byte 14 (the heading), and state for the way back with the log.
@@ -88,14 +96,17 @@ public sealed class SettlerFigures
     /// <param name="sequences">The bytes of entry 2 of the graphics archive.</param>
     /// <param name="carried">For each good the word a carrier carrying it adds to its figure byte.</param>
     /// <param name="woodcutter">What the woodcutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
+    /// <param name="frameRows">For each frame what the record builder adds to the row of the settler's record (<c>0x43f402</c>); none for no frame.</param>
     public SettlerFigures(
         short[] bases,
         short[] offsets,
         byte[] sequences,
         short[]? carried = null,
-        FigureAdds woodcutter = default
+        FigureAdds woodcutter = default,
+        sbyte[]? frameRows = null
     )
     {
+        _frameRows = frameRows ?? [];
         _woodcutter = woodcutter;
         _carried = carried ?? [];
         _bases = bases;
@@ -115,7 +126,7 @@ public sealed class SettlerFigures
         IReadOnlyDictionary<int, (int X, int Y)>? shifts = null
     )
     {
-        var draws = new List<SettlerDraw>();
+        var records = new List<(int Row, int Y, int X, List<SettlerDraw> Sprites)>();
         foreach (var settler in settlers)
         {
             if (
@@ -124,7 +135,6 @@ public sealed class SettlerFigures
                         StatesWalking
                         or StatesWaiting
                         or StatesOnRoad
-                        or StatesIdle
                         or StatesDismissed
                         or StatesRejoined
                         or StatesDoor
@@ -145,17 +155,30 @@ public sealed class SettlerFigures
             var (x, y) = Camera.NodePosition(settler.X, settler.Y);
             var height = map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & Map.HeightMask;
             x += dx;
-            y += dy - height * TerrainTriangles.HeightStep;
+            y += dy - height * TerrainTriangles.HeightStep - SettlerLift;
+            // The record joins the list of its row, which the frame moves (0x43f537); a list holds its records in the order
+            // the original scans the nodes, row by row and from the west, so the order of the records is the settlers'
+            // row, then their node's row and column.
+            var row = settler.Y + (settler.Frame < _frameRows.Length ? _frameRows[settler.Frame] : 0);
+            var sprites = new List<SettlerDraw>();
             // The figure comes first; the overlay and the second figure follow it, and only the second figure is shifted.
             foreach (var (entry, colour, shiftedBy) in Entries(word, ColourOf(settler.Player)))
             {
                 var shift = shiftedBy >= 0 && shifts is not null ? shifts.GetValueOrDefault(shiftedBy) : default;
-                draws.Add(new SettlerDraw(settler.Y, entry, colour, x + shift.X, y + shift.Y));
+                sprites.Add(new SettlerDraw(row, entry, colour, x + shift.X, y + shift.Y));
             }
+
+            records.Add((row, settler.Y, settler.X, sprites));
         }
 
-        // A stable sort: the sprites of one settler keep their order.
-        return [.. draws.OrderBy(draw => draw.Row)];
+        return
+        [
+            .. records
+                .OrderBy(record => record.Row)
+                .ThenBy(record => record.Y)
+                .ThenBy(record => record.X)
+                .SelectMany(record => record.Sprites),
+        ];
     }
 
     /// <summary>
@@ -267,8 +290,8 @@ public sealed class SettlerFigures
     }
 
     // The word a carrier on its road adds to its figure byte for the good it carries (byte 11, at 0x43f8ae; the same routine
-    // serves state 0xe, which is not drawn). In state 0x42 byte 11 is the road direction, no good. Sprites applies the
-    // same rule through Carried.
+    // serves state 0xe, which is not drawn). A carrier in state 0x42 has no record (byte 11 is the road direction there, no
+    // good). Sprites applies the same rule through Carried.
     private int CarriedFigure(Settler settler) =>
         settler is { Job: Settler.CarrierJob, State: StatesOnRoad } ? Carried(settler.Mode) : 0;
 
@@ -276,7 +299,9 @@ public sealed class SettlerFigures
     // carrier with no good (0) adds nothing; so does a good the table does not cover.
     private int Carried(int good) => good > 0 && good < _carried.Length ? _carried[good] : 0;
 
-    // The triple of the settler's sequence for the time it has left, or null where there is none.
+    // The triple of the settler's sequence for the time it has left (the timer less the clock units since the stamp, 0x43f537
+    // shifts the timer the view pass leaves right 3), or null where there is none. A settler of the states 0x44 and 0x45 holds
+    // its timer (inferred).
     private (int Figure, int Dx, int Dy)? Triple(Settler settler, ushort clock)
     {
         if (settler.Frame is < 0 or >= Sequences || _data.Length < TableEnd)
@@ -285,7 +310,7 @@ public sealed class SettlerFigures
         }
 
         var start = SequenceStart(settler.Frame);
-        var elapsed = settler.State == StatesIdle ? (ushort)0 : (ushort)(clock - settler.Stamp);
+        var elapsed = settler.State is StatesDismissed or StatesRejoined ? (ushort)0 : (ushort)(clock - settler.Stamp);
         var left = settler.Timer >= elapsed ? settler.Timer - elapsed : 0;
         var at = start + 3 * (left >> 3);
         if (start <= TableEnd - 4 || at + 3 > _data.Length)

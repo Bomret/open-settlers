@@ -39,7 +39,7 @@ public sealed class SettlerFiguresTests
 
     // The woodcutter: the figure base 100 and the second base 50 in the row 0x0b, 200 and none in the row 0x10, 300 and
     // none in the row 0x0f; each figure byte adds its own number and, to the second, 1. The carrier's row 0: 100, none.
-    private static SettlerFigures Figures()
+    private static SettlerFigures Figures(sbyte[]? frameRows = null)
     {
         var bases = new short[256];
         bases[2 * 0x0b] = 100;
@@ -62,7 +62,7 @@ public sealed class SettlerFiguresTests
         bases[2 * 0x0a] = 500;
         bases[2 * 0x0a + 1] = -1;
 
-        return new SettlerFigures(bases, offsets, Sequences(), carried, Adds);
+        return new SettlerFigures(bases, offsets, Sequences(), carried, Adds, frameRows);
     }
 
     private static Settler Carrier(int mode, int state = 3, int timer = 0) =>
@@ -157,18 +157,17 @@ public sealed class SettlerFiguresTests
         Assert.HasCount(3, Figures().Draws(Map(), [Walker(7, 0, state: state)], 0));
     }
 
-    // Inferred: a carrier whose road was taken down or joined (0x44, 0x45) still stands next to the flag and is drawn as the carrier
-    // that waits (0x42); no draw run confirms it.
+    // Inferred: a carrier whose road was taken down or joined (0x44, 0x45) still stands next to the flag and is drawn with
+    // the timer it holds, as the carrier's handler skips only state 0x42; no draw run confirms it (slice of the dismissed carriers).
     [TestMethod]
     [DataRow(0x44)]
     [DataRow(0x45)]
-    public void ADismissedCarrierIsDrawnAsTheCarrierThatWaitsIs(int state)
+    public void ADismissedCarrierIsDrawnWithTheTimerItHolds(int state)
     {
-        var waiting = Figures().Draws(Map(), [Carrier(mode: 7, state: 0x42)], 0);
-        var dismissed = Figures().Draws(Map(), [Carrier(mode: 7, state: state)], 0);
+        var dismissed = Figures().Draws(Map(), [Walker(7, 8, state: state)], 800);
 
-        Assert.HasCount(waiting.Count, dismissed);
-        Assert.AreEqual(waiting[0].Entry, dismissed[0].Entry);
+        Assert.HasCount(3, dismissed);
+        Assert.AreEqual(1954, dismissed[0].Entry, "the second triple: 8 units left, however much clock has passed");
     }
 
     [TestMethod]
@@ -180,17 +179,60 @@ public sealed class SettlerFiguresTests
         Assert.AreEqual(1954, figures.Draws(Map(), [Walker(7, 16, state: 3)], 8)[0].Entry);
     }
 
-    // Inferred: that the original draws a carrier that waits next to a flag (state 0x42) with the timer it holds; no draw
-    // run confirms it (open lead in docs/milestones/m3-first-loop.md).
+    // Confirmed by the draw run (settler-draws.txt): the carrier's handler returns at once for a carrier that waits next to a
+    // flag (state 0x42), so it has no record and is not drawn, whatever it carries or its frame names.
     [TestMethod]
-    public void AWaitingCarrierIsDrawnWithTheTimerItHoldsAndTheClockDoesNotRunItDown()
+    public void AWaitingCarrierIsNotDrawn()
     {
-        var figures = Figures();
+        Assert.IsEmpty(Figures().Draws(Map(), [Carrier(mode: 7, state: 0x42), Walker(7, 8, state: 0x42)], 800));
+    }
 
-        var drawn = figures.Draws(Map(), [Walker(7, 8, state: 0x42)], 800);
+    // The row of a record is the settler's row plus the byte of its frame's row (0x43f537); a list holds its records in the order
+    // of the original's scan of the nodes, which is the settlers' row, then column.
+    [TestMethod]
+    public void ARecordJoinsTheRowItsFramesByteMovesItTo()
+    {
+        var rows = new sbyte[16];
+        rows[8] = -2;
+        // The settler of the frame 8 (the felling) stands in row 4, the one of the frame 7 in row 3; the frame's byte
+        // puts the first in row 2, so it is drawn first.
+        var felling = Walker(8, 0, state: 0x11);
+        felling.Y = 4;
 
-        Assert.HasCount(3, drawn);
-        Assert.AreEqual(1954, drawn[0].Entry, "the second triple: 8 units left, however much clock has passed");
+        var draws = Figures(rows).Draws(Map(), [Walker(7, 0), felling], 0);
+
+        Assert.AreEqual(2151, draws[0].Entry, "the felling: 1850 + 300 + 1");
+        Assert.AreEqual(2, draws[0].Row);
+        Assert.AreEqual(3, draws[^1].Row);
+    }
+
+    [TestMethod]
+    public void TheRecordsOfOneRowAreInTheOrderOfTheNodesFromTheWest()
+    {
+        var east = Walker(7, 0);
+        east.X = 6;
+        var west = Walker(7, 0);
+        west.X = 2;
+
+        var draws = Figures().Draws(Map(), [east, west], 0);
+
+        Assert.IsLessThan(draws[3].X, draws[0].X, "the settler at column 2 first");
+    }
+
+    // 0x43f537: the figure is 4 times the node's height and 2 more pixels above the node, plus the triple's offsets.
+    [TestMethod]
+    public void ASettlerIsLiftedByTheHeightOfItsNodeAndTwoPixels()
+    {
+        var map = Map();
+        var settler = Walker(7, 0);
+        var height =
+            map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & OpenSettlers.Simulation.Map.HeightMask;
+        var (nodeX, nodeY) = Camera.NodePosition(settler.X, settler.Y);
+
+        var draw = Figures().Draws(map, [settler], 0)[0];
+
+        Assert.AreEqual(nodeX + 1, draw.X, "the triple's dx is 1");
+        Assert.AreEqual(nodeY + 2 - 4 * height - 2, draw.Y, "the triple's dy is 2");
     }
 
     [TestMethod]
@@ -305,14 +347,6 @@ public sealed class SettlerFiguresTests
         var draws = Figures().Draws(Map(), [Carrier(mode: 0)], 0);
 
         CollectionAssert.AreEqual(new[] { 1953, 2603 }, draws.Select(d => d.Entry).ToArray());
-    }
-
-    [TestMethod]
-    public void AWaitingCarrierDoesNotCarryItsDirectionAsAGood()
-    {
-        var draws = Figures().Draws(Map(), [Carrier(mode: 7, state: 0x42)], 0);
-
-        Assert.AreEqual(1953, draws[0].Entry, "in state 0x42 byte 11 is the road direction");
     }
 
     [TestMethod]

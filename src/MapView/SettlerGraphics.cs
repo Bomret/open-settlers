@@ -48,7 +48,8 @@ public sealed class SettlerGraphics
             tables.FigureOffsets,
             sequences,
             tables.CarriedFigures,
-            tables.WoodcutterFigureAdds
+            tables.WoodcutterFigureAdds,
+            tables.FrameRows
         );
         var images = new List<ObjectImage>();
         var layers = new Dictionary<(int Entry, int Colour), int>();

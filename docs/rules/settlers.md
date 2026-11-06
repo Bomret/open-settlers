@@ -149,8 +149,10 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
 
 ## Drawing the walk: leads
 
-**Status:** confirmed for the figure word and the two tables (program evidence below, and the screenshots of
-`play/woodcutter-figures.play`); inferred for the rest (marked). The engine draws the hut (entry 1418 of the archive, the object of the
+**Status:** confirmed for the carrier and the woodcutter by the emulator verb `draw:` ([Emulated](#the-draw-path-emulated), the
+recordings `tests/OpenSettlers.Tests/settler-draws.txt`, which the engine matches pass for pass); the figure word and the two tables
+are also confirmed by program evidence below and the screenshots of `play/woodcutter-figures.play`; inferred where marked, and for the
+jobs and states the recordings hold no settler of. The engine draws the hut (entry 1418 of the archive, the object of the
 type 2's draw stub, drawn like the castle) and the walking settlers. What the program does, read from `0x42f512`, `0x43f537`,
 the job's figure handler, `0x44fff3`, and `0x406610`: the draw record of a settler takes the frame (byte 1) to pick a sequence from
 a table the program loads from entry 2 of the graphics archive at start-up (`0x41e8e0`): 200 big-endian offsets, each to a run of
@@ -186,22 +188,64 @@ Screenshot evidence (`play/woodcutter-figures.play` on `layouts/woodcutter.jsonc
 fells, and walks back with a hat, an axe, and a log. Before the rule he was drawn with the carrier's figures and, at the cut, the ferry's rowing figure.
 
 **In the engine** (`SettlerFigures`, `SettlerGraphics`, `src/MapView`): a settler of the job 0 or 5 in state 2, 3, 5, 4, 0x10, 0x11, 0x19, 0x1c,
-or 0x42 is drawn with the sprites its frame's sequence names for the time it has left, read from the install's archive at run time and the
-tables from the program. The time left is the
+0x44, or 0x45 is drawn with the sprites its frame's sequence names for the time it has left, read from the install's archive at run time and the
+tables from the program; a carrier that waits next to a flag (state 0x42) is not drawn. The time left is the
 timer less the clock units since the settler's turn, so the animation moves with the game's ticks. The view draws
-the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)) and 5 in every wrap copy, rebuilt after each tick. A settler of another job is not drawn. **Inferred, with no emulator run of the draw:** that the
-sequence offsets count from the byte after the entry's first dword, that a sequence runs to the next one's offset, that
-the triple index is the time left shifted right 3, the figure's position (the node lifted by its height,
-plus the triple's dx and dy, as an object), and the colour overlay filled with the
-palette index 0x40 plus 4 for the player. The frames 0x74 to 0x78 of the cut hold the figure bytes 0x80 to 0x87 (0x74, 0x76, 0x77) and walking bytes (0x75, 0x78)
-(the frame is set by `0x438a9e`, [Woodcutting](woodcutting.md#the-cut)): the screenshot at the start of the cut (frame 0x74) shows
-the axe raised at the tree, so that frame is **confirmed** as the felling; frames 0x75 to 0x78 are **inferred**, with no screenshot.
-**Confirmed** from `0x406610`: the overlay of the figure 1850 + i is the entry 2500 + i, the second figure moves by the
-header bytes 0 and 1 of the figure 1850 + i read as signed bytes (`0x4066d2`, `0x4066e4`) while the figure and the overlay
-stay where they are, and a settler draws its figure, then its overlay, then its second figure. The engine keeps that order
-within a row. A figure entry that is absent or no sprite, an overlay with no drawn pixel, or a job with no second figure
-draws what is left. The original draws a
-settler in view from the turn it acts every pass; the engine takes the time left from the clock instead.
+the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)) and 5 in every wrap copy, rebuilt after each tick. A settler of another job is not drawn. The rules below are
+**confirmed** by the draw runs ([The draw path, emulated](#the-draw-path-emulated)) for the carrier in states 3 and 0x42 (with and without the log) and the woodcutter in
+states 2, 4, 5, 0x10, and 0x11, and the engine's draws equal the original's in every recorded pass:
+- the sequence offsets count from the byte after the entry's first dword (as `0x41e8e0` keeps its table), and a sequence runs to the next
+  one's offset;
+- the triple index is the time left shifted right 3;
+- the time left is the timer less the clock units since the stamp: the view pass gives a settler in view a turn every pass, which
+  runs the timer down by the clock units since its stamp and sets the stamp to the clock (the recordings hold each settler's timer and stamp
+  before that turn, and the engine's draw from them equals the original's);
+- the figure's position is the node (32 x - 16 y, 20 y), less 4 times its height byte, less 2 more, plus the triple's dx and dy (signed bytes),
+  and `0x44ffe7` adds 0x10 and 8 before the blit (the engine's positions are the record's, before that addition);
+- the overlay of the figure 1850 + i is the entry 2500 + i, filled with the palette index 0x40 for player 0 (the woodcutter's hat is that
+  overlay, the carrier's too: the draw path has no other colour for either, so the fill is the player's);
+- the second figure moves by the header bytes 0 and 1 of the figure 1850 + i read as signed bytes (`0x4066d2`, `0x4066e4`) while the figure and
+  the overlay stay where they are, and a settler draws its figure, then its overlay, then its second figure. A figure entry that is absent or
+  no sprite, an overlay with no drawn pixel, or a job with no second figure draws what is left;
+- the record joins the list of the view's row of the settler plus the signed byte of the frame in the table at `0x43f402` (181 bytes,
+  `ProgramTables.FrameRows`: the frames 9 to 26, 63 to 80, 121 and 122, and 125 to 128 hold -1 and move a record up one row, every other frame 0),
+  and the lists are drawn from the top row to the bottom, so a settler drawn up a row is drawn before the settlers of the row it stands in. Records
+  of one row come in the order of the original's scan (below);
+- the frames 0x74 to 0x78 of the cut hold the figure bytes 0x80 and up (felling: the row 0x0f, two sprites) in the frames 0x74, 0x76, and 0x77 and
+  walking bytes only in the frames 0x75 and 0x78 (the frame is set by `0x438a9e`, [Woodcutting](woodcutting.md#the-cut)); the frames 0x74,
+  0x76, and 0x77 also hold walking bytes for part of their time left (16 of the 128 recorded passes of the frame 0x74, 32 of 96 of the frames 0x76 and 0x77).
+
+**Inferred:** the order of the records of one row beyond the recorded cases. `0x42f512` scans the nodes of the view row by row, two rows
+a step, and appends a record as `0x43f537` builds it, so a list holds its records by the node's row, then the column from the view's west edge;
+the recordings hold two settlers in view at most and pin only the order by column (the engine sorts by row, node row, column). The draw
+of the states 0x44 and 0x45 (a dismissed carrier: the handler skips only the state 0x42, so the record is built from the frame and the timer
+the carrier holds), of the states 0x19 and 0x1c, and of every job other than 0 and 5 is inferred or not ported; no recording holds them.
+The player's colour index is `0x40` plus 4 times the player byte with 1 and 2 exchanged (`0x44ffe7` turns a player bits value of 1 into 2 and
+2 into 1 before the blit): read from the code, no recording holds another player than 0, and the engine does not exchange them.
+
+### The draw path, emulated
+
+The harness verb `draw:` (`tools/GhidraDump/emulate.py`, `EmulateDraw.java`; [the harness](../../tools/GhidraDump/README.md#emulator-harness)) runs
+the settler draw of the main loop (`0x425a10`) after the passes of a `carrier:`, `wood:`, or `goods:` game, on the reference install only. After the
+simulation's passes it runs the view pass `0x42f4f1` (for each view, `0x42f512`: it clears the row lists `0x4409d5`, scans the nodes of the
+view for settlers, gives each a turn through `0x42fc81`, builds its record through `0x43f537`, and ends the lists with `0x440a53`), then, for each row
+of the view, the row draw `0x44ffe7`, which draws each record of the row through `0x406610` and its blits `0x405590` (a sprite) and `0x405880`
+(a colour fill). The harness skips the shadow of each settler (`0x4061a0`, the mask entry 4) and the sound request of the felling bytes 0x85 and
+0x86 (`0x44fe13`). It records, for each pass of its windows and in drawing order, each settler's record: the slot and the sprites blitted, each
+as entry, fill colour (-1 for none), and position. The view is a stand-in the harness builds: the 640 by 480 view of `0x4200b6` (38 columns,
+28 rows) looking at a node, with a screen origin chosen so that a position is the node's map pixel. The graphics archive is read from the install and
+the rule data of its entry 2 is prepared as `0x41e8e0` does. The passes before the first window run without the view, so a game's first
+settlers walk as in the other recordings; from the first window on, each settler in view takes a turn every pass.
+
+**Recordings** (`tests/OpenSettlers.Tests/settler-draws.txt`, 613 passes from the History Edition's `Siedler1.exe`, SHA-256 in `docs/rules/AGENTS.md`):
+- `carrier`: a hut of the woodcutter with a road to the castle and a log laid on the hut's flag at pass 5 (`goods:`), the carrier walking
+  its road (state 3), waiting next to a flag (0x42: no record), and walking with the log (state 3, mode 7);
+- `woodcutter`: the same game without the log, the woodcutter walking to his door (state 2, 5), stepping through it (4), walking free
+  (0x10), felling (0x11, the frames 0x74 to 0x78), and walking back with the log (0x10, byte 13 0x80, byte 14 1) and through his door again.
+
+`SettlerDrawTests` gives the engine's `Draws` each pass's settlers, the heights of their nodes, and the clock, and compares the sprites, colours, and
+positions with the original's, in order; it names the first pass and settler that differ. The recordings were made on the reference install
+only, the tests skip where none is present, and a `draw:` run that reaches no pass of its windows, or whose pass draws no settler, fails and prints no recording.
 
 ## Walking home
 
