@@ -48,6 +48,7 @@ public sealed partial class Game
         if (slot == _flags.Count)
         {
             _flags.Add(flag);
+            Fill(_flagFills, slot);
             _flagStatus.Add(0);
             _roadBytes.Add(new byte[6]);
             _flagGoods.Add(new byte[8]);
@@ -59,6 +60,7 @@ public sealed partial class Game
         }
 
         _flags[slot] = flag;
+        Fill(_flagFills, slot);
         _flagStatus[slot] = 0;
         _roadBytes[slot] = new byte[6];
         _flagGoods[slot] = new byte[8];

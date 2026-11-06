@@ -78,4 +78,64 @@ public sealed class ThingHistoryTests
     {
         Assert.AreEqual(15684556580687199582UL,World().Digest());
     }
+
+    private static Game Castle()
+    {
+        var game = NewGame();
+        Do(game, CommandKind.PlaceCastle, 15, 5);
+
+        return game;
+    }
+
+    [TestMethod]
+    public void AFlagSlotFilledAgainGivesTheNewFlagTheNextFillCount()
+    {
+        var game = Castle();
+        Do(game, CommandKind.PlaceFlag, 18, 6);
+        Do(game, CommandKind.PlaceFlag, 19, 4);
+
+        Assert.AreEqual("flag#2.1", game.FlagId(2).ToString());
+
+        // The last slot: the list is trimmed at its end, and the count stays.
+        Do(game, CommandKind.RemoveFlag, 19, 4);
+        Assert.HasCount(2, game.Flags);
+        Do(game, CommandKind.PlaceFlag, 19, 4);
+        Assert.AreEqual("flag#2.2", game.FlagId(2).ToString());
+
+        // A slot in the middle of the list.
+        Do(game, CommandKind.RemoveFlag, 18, 6);
+        Do(game, CommandKind.PlaceFlag, 18, 6);
+        Assert.AreEqual("flag#1.2", game.FlagId(1).ToString());
+        Assert.AreEqual("flag#2.2", game.FlagId(2).ToString());
+    }
+
+    [TestMethod]
+    public void ABuildingSlotFilledAgainAfterTheListWasTrimmedGivesTheNextFillCount()
+    {
+        var game = Castle();
+        Do(game, CommandKind.PlaceFlag, 17, 3);
+        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Assert.AreEqual("building#0.1", game.BuildingId(0).ToString());
+        Assert.AreEqual("building#1.1", game.BuildingId(1).ToString());
+
+        Do(game, CommandKind.RemoveBuilding, 16, 2);
+        for (var i = 0; i < 3000 && game.Buildings.Count > 1; i++)
+        {
+            game.Tick();
+        }
+
+        Assert.HasCount(1, game.Buildings);
+        Do(game, CommandKind.PlaceFlag, 17, 3);
+        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Assert.AreEqual("building#1.2", game.BuildingId(1).ToString());
+    }
+
+    [TestMethod]
+    public void TheCastleSettlersTakeTheFirstFillOfTheirSlots()
+    {
+        var game = Castle();
+
+        Assert.AreEqual("settler#0.1", game.SettlerId(0).ToString());
+        Assert.AreEqual("settler#19.1", game.SettlerId(19).ToString());
+    }
 }

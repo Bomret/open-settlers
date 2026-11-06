@@ -693,9 +693,11 @@ public sealed partial class Game
     private void CreateCastleSettlers(int x, int y)
     {
         _buildings.Add(new Building(Building.CastleType, x, y, 0, constructing: true) { Status = 0x50, Fill = 0xffff });
+        Fill(_buildingFills, 0);
         foreach (var job in CastleJobs)
         {
             _settlers.Add(new Settler(job, 0, x, y, _clock, job == BuilderJob ? 10 : 1, 0));
+            Fill(_settlerFills, _settlers.Count - 1);
         }
     }
 
@@ -732,6 +734,8 @@ public sealed partial class Game
         {
             _buildings[slot] = hut;
         }
+
+        Fill(_buildingFills, slot);
 
         return true;
     }
