@@ -47,3 +47,11 @@ Concepts: Name table, Thing
 Statement: Every name shown for a map object code, settler job, settler state, or building type comes from a name-table entry that cites its evidence (ADR 0010). The raw value always shows beside the name, and a code with no entry shows only raw.
 Breaks: silently
 Check: `NameTableTests` checks that every entry carries its evidence and that a code with no entry gets no name. Reviewers check the evidence of each new entry.
+
+### INV-0007
+
+Class: architecture
+Concepts: Thing ID, Event, Simulation
+Statement: Recording never changes the game. The thing-ID counters and the event store stay out of `Game.Digest()`, and no rule reads them to decide anything. The same seed and commands give the same digest as before the feature, and every existing test passes unchanged.
+Breaks: silently
+Check: a test runs the same seed and commands and compares the digest with a value taken before recording existed; reviewers check that no rule reads the store or a counter.

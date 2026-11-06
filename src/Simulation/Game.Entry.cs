@@ -81,6 +81,9 @@ public sealed partial class Game
         settler.X = flag.X;
         settler.Y = flag.Y;
         Enter(slot, settler);
+        var hutSlot = _buildings.IndexOf(hut);
+        RecordSettler(slot, EventType.LayoutInHut, Cause.Layout, BuildingId(hutSlot).ToString());
+        RecordBuilding(hutSlot, EventType.LayoutInHut, Cause.Layout, SettlerId(slot).ToString());
 
         return null;
     }
@@ -138,6 +141,9 @@ public sealed partial class Game
         settler.State = WaitingState;
         _roadBytes[start][direction] = (byte)((_roadBytes[start][direction] & 0x7f) + 1);
         _roadBytes[far][farDirection] = (byte)((_roadBytes[far][farDirection] & 0x7f) + 1);
+        RecordSettler(slot, EventType.LayoutWaitingOnRoad, Cause.Layout, FlagId(waitFlag).ToString());
+        RecordFlag(start, EventType.LayoutWaitingOnRoad, Cause.Layout, FlagId(far).ToString());
+        RecordFlag(far, EventType.LayoutWaitingOnRoad, Cause.Layout, FlagId(start).ToString());
 
         return null;
     }
@@ -161,6 +167,7 @@ public sealed partial class Game
         }
 
         LayGood(flag, place, good);
+        RecordFlag(flag, EventType.LayoutGood, Cause.Layout);
 
         return null;
     }

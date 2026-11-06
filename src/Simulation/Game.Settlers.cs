@@ -51,6 +51,29 @@ public sealed partial class Game
     // reads as free, as in the original.
     private readonly Dictionary<int, int> _occupant = [];
 
+    // The command cause a placed building carries until its worker has entered, the worker turns away, or the building is
+    // freed: the events of the building and of the settler sent to it name the placing (history only; no rule reads it).
+    private readonly Dictionary<ThingId, Cause> _buildingCommand = [];
+
+    // The cause of a change to the building in the slot: the command that placed it while its worker is on the way, else the rule area.
+    private Cause BuildingCause(int slot) =>
+        _buildingCommand.TryGetValue(BuildingId(slot), out var command) ? command : RuleCause;
+
+    // The cause of a change the settler rules make on their own: the rules the layout runs while it builds its entries
+    // act for the layout, so inside a layout the cause is `layout` and not `settlers` (a deliberate choice: what a layout
+    // sets up is the layout's, whichever rule area runs it).
+    private Cause RuleCause => InLayout ? Cause.Layout : Cause.Settlers;
+
+    // The cause of a change the settler rules make to the settler in the slot: the walk home while it walks to a storage
+    // (a command cause it carries takes the place of either in RecordSettler), else the rule area's.
+    private Cause SettlerCause(int slot) => _walkingHome.Contains(slot) ? Cause.WalkHome : RuleCause;
+
+    private void RecordBuildingOf(Building building, string type, string? other = null)
+    {
+        var slot = _buildings.IndexOf(building);
+        RecordBuilding(slot, type, BuildingCause(slot), other);
+    }
+
     private ushort _clock;
     private int _phase;
     private int _scanCursor;
@@ -127,6 +150,11 @@ public sealed partial class Game
             var building = _buildings[_scanCursor];
             var had = (building.Status & 4) != 0;
             building.Status &= ~4;
+            if (had)
+            {
+                RecordBuilding(_scanCursor, EventType.RetryBitsCleared, BuildingCause(_scanCursor));
+            }
+
             if (had && --left == 0)
             {
                 return;
@@ -147,6 +175,7 @@ public sealed partial class Game
         )
         {
             building.Status |= 4;
+            RecordBuildingOf(building, EventType.BuildingHandled);
         }
     }
 
@@ -161,13 +190,29 @@ public sealed partial class Game
             return false;
         }
 
-        var settler = _settlers[_waiting[job]];
+        var slot = _waiting[job];
+        var settler = _settlers[slot];
         _waiting[job] = 0;
         settler.Mode = 0xff;
         settler.Target = building.Flag;
         settler.State = 0xf;
         building.Status |= 0x80;
         _leaving++;
+        var buildingSlot = _buildings.IndexOf(building);
+        var buildingId = BuildingId(buildingSlot);
+        EndCarry(slot);
+        if (_buildingCommand.TryGetValue(buildingId, out var command))
+        {
+            CarryCause(slot, command);
+        }
+
+        RecordSettler(slot, EventType.WorkerRequested, BuildingCause(buildingSlot), buildingId.ToString());
+        RecordBuilding(
+            buildingSlot,
+            EventType.WorkerRequested,
+            BuildingCause(buildingSlot),
+            SettlerId(slot).ToString()
+        );
 
         return true;
     }
@@ -248,20 +293,20 @@ public sealed partial class Game
                 Idle(slot, settler);
                 break;
             case 10:
-                Builder(settler);
+                Builder(slot, settler);
                 break;
             case 0xf:
                 Leave(slot, settler);
                 break;
             case 5:
-                if (!TimerRan(settler))
+                if (TimerRan(settler))
                 {
-                    break;
+                    settler.Timer = 0;
+                    settler.State = settler.Next;
+                    settler.Next = 0;
                 }
 
-                settler.Timer = 0;
-                settler.State = settler.Next;
-                settler.Next = 0;
+                RecordSettler(slot, EventType.Visited, RuleCause);
                 break;
             case 2:
                 Walk(slot, settler);
@@ -270,6 +315,10 @@ public sealed partial class Game
                 if (TimerRan(settler))
                 {
                     WalkRoad(slot, settler);
+                }
+                else
+                {
+                    RecordSettler(slot, EventType.Visited, RuleCause);
                 }
 
                 break;
@@ -290,10 +339,14 @@ public sealed partial class Game
                 {
                     Handover(slot, settler);
                 }
+                else
+                {
+                    RecordSettler(slot, EventType.Visited, RuleCause);
+                }
 
                 break;
             case 4:
-                Door(settler);
+                Door(slot, settler);
                 break;
             case 6:
                 EnterHut(slot, settler);
@@ -311,7 +364,7 @@ public sealed partial class Game
                 SearchTree(slot, settler);
                 break;
             case 0x19:
-                HomeSearch(settler);
+                HomeSearch(slot, settler);
                 break;
             case 0x1c:
                 HomeClaim(slot, settler);
@@ -370,6 +423,8 @@ public sealed partial class Game
                     }
                 }
             }
+
+            RecordSettler(slot, EventType.KnightIdled, RuleCause);
         }
 
         _waiting[settler.Job] = (ushort)slot;
@@ -378,7 +433,7 @@ public sealed partial class Game
     // State 10, the settler that stands by while the castle is built (0x43f17a): each turn adds the elapsed units
     // times 128 to the castle's building progress, and when it wraps past 65536 the castle stands. The settler then
     // takes state 12, which is not ported.
-    private void Builder(Settler settler)
+    private void Builder(int slot, Settler settler)
     {
         var delta = (ushort)(_clock - settler.Stamp);
         settler.Stamp = _clock;
@@ -392,6 +447,9 @@ public sealed partial class Game
             castle.Constructing = false;
             castle.Worker = 0;
         }
+
+        RecordSettler(slot, EventType.Builder, RuleCause, BuildingId(0).ToString());
+        RecordBuilding(0, EventType.Builder, BuildingCause(0), SettlerId(slot).ToString());
     }
 
     // The timer of the states that wait: the time since the settler's last turn comes off its timer; true where the
@@ -450,6 +508,7 @@ public sealed partial class Game
         {
             settler.Frame = 0x52;
             settler.Timer = 0;
+            RecordSettler(slot, EventType.Left, RuleCause);
             return;
         }
 
@@ -464,8 +523,11 @@ public sealed partial class Game
         settler.Timer = (ushort)((ushort)(_tables.StepTime(shape) * speed) >> 5);
         settler.Stamp = _clock;
         settler.State = 5;
+        RecordSettler(slot, EventType.Left, RuleCause);
     }
 
+    // The step onto a node. It records nothing: the rule that moves the settler records the change after it has applied all of
+    // it (a `moved` event here would show the settler on its new node with the rest of the change not yet made).
     private void Move(int slot, Settler settler, int x, int y, int index)
     {
         _occupant.Remove(Map.Index(settler.X, settler.Y));
@@ -483,6 +545,13 @@ public sealed partial class Game
     // (StorageFlag), and at its flag the settler enters it as a worker enters its hut. **Not ported:** the swap with a
     // settler that comes the other way and the states the original reaches from here for other modes.
     private void Walk(int slot, Settler settler)
+    {
+        // `walked` records the turn of state 2; a step or entry inside it records its own change first (`stepped`, `entered`).
+        WalkTurn(slot, settler);
+        RecordSettler(slot, EventType.Walked, SettlerCause(slot));
+    }
+
+    private void WalkTurn(int slot, Settler settler)
     {
         if (!TimerRan(settler))
         {
@@ -570,6 +639,8 @@ public sealed partial class Game
                     if (hut is not null)
                     {
                         hut.Status &= 0x7f;
+                        RecordBuildingOf(hut, EventType.Walked, SettlerId(slot).ToString());
+                        _buildingCommand.Remove(BuildingId(_buildings.IndexOf(hut)));
                     }
 
                     settler.Mode = 0xfe;
@@ -618,6 +689,7 @@ public sealed partial class Game
             passer.Heading = direction;
             passer.Frame = (byte)back;
             passer.Timer = _tables.StepTime(back);
+            RecordSettler(other, EventType.Stepped, SettlerCause(other), SettlerId(slot).ToString());
             shape = 4 + 9 * (direction + 6) + rise;
             settler.Heading = (direction + 3) % 6;
             settler.X = x;
@@ -631,6 +703,7 @@ public sealed partial class Game
             settler.Timer = 0x7f;
             settler.Frame = (byte)(0x51 + direction);
             settler.Heading = direction - 6;
+            RecordSettler(slot, EventType.Stepped, SettlerCause(slot));
 
             return false;
         }
@@ -638,14 +711,15 @@ public sealed partial class Game
         settler.Next = 0;
         var old = settler.Timer;
         settler.Timer = (ushort)(old + _tables.StepTime(shape));
-        if (settler.Timer < old)
+        var finished = settler.Timer < old;
+        if (finished)
         {
             settler.Frame = (byte)shape;
-
-            return false;
         }
 
-        return true;
+        RecordSettler(slot, EventType.Stepped, SettlerCause(slot));
+
+        return !finished;
     }
 
     // A settler at the flag it walks to goes on to the building north-west of the flag (0x4398ea): the building takes
@@ -670,11 +744,14 @@ public sealed partial class Game
             building.Worker = slot;
         }
 
+        var buildingId = BuildingId(_buildings.IndexOf(building));
+        RecordBuildingOf(building, EventType.Entered, SettlerId(slot).ToString());
         settler.State = 6;
         if (Occupant(node) != 0)
         {
             settler.Frame = 0x55;
             settler.Timer = 0;
+            RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());
             return;
         }
 
@@ -686,6 +763,8 @@ public sealed partial class Game
         settler.Target = (ushort)(time * _tables.DoorSpeeds[building.TypeIndex]) >> 5;
         settler.Stamp = _clock;
         settler.State = 4;
+        RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());
+        _buildingCommand.Remove(buildingId);
     }
 
     // The castle's 20 first settlers (0x442f0c with 0x44333d): all in the castle, in state 1 but the first, which stands by
@@ -693,9 +772,11 @@ public sealed partial class Game
     private void CreateCastleSettlers(int x, int y)
     {
         _buildings.Add(new Building(Building.CastleType, x, y, 0, constructing: true) { Status = 0x50, Fill = 0xffff });
+        Fill(_buildingFills, 0);
         foreach (var job in CastleJobs)
         {
             _settlers.Add(new Settler(job, 0, x, y, _clock, job == BuilderJob ? 10 : 1, 0));
+            Fill(_settlerFills, _settlers.Count - 1);
         }
     }
 
@@ -732,6 +813,15 @@ public sealed partial class Game
         {
             _buildings[slot] = hut;
         }
+
+        Fill(_buildingFills, slot);
+        var cause = CommandCause(BuildingId(slot));
+        if (cause.IsCommand)
+        {
+            _buildingCommand[BuildingId(slot)] = cause;
+        }
+
+        RecordBuilding(slot, EventType.PlaceBuilding, cause, FlagId(flag).ToString());
 
         return true;
     }

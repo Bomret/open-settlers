@@ -207,6 +207,15 @@ public sealed partial class Game
 
         _roads.Add(road!);
         SetRoadBytes(road!);
+        // The road's `placed` cause names the road's start flag (the flag the road was built from).
+        var cause = CommandCause(FlagId(road!.FromSlot));
+        if (cause.IsCommand)
+        {
+            _roadCauses[road] = cause;
+        }
+
+        RecordFlag(road.FromSlot, EventType.BuildRoad, cause, FlagId(road.ToSlot).ToString());
+        RecordFlag(road.ToSlot, EventType.BuildRoad, cause, FlagId(road.FromSlot).ToString());
 
         return true;
     }
@@ -230,6 +239,13 @@ public sealed partial class Game
         // The castle's flag stands south-east of it and takes the first slot of the flag table.
         AddFlag(new Flag((x + 1) & (Map.Size.Width - 1), (y + 1) & (Map.Size.Height - 1)));
         CreateCastleSettlers(x, y);
+        var cause = CommandCause(BuildingId(0));
+        RecordBuilding(0, EventType.PlaceCastle, cause, FlagId(0).ToString());
+        RecordFlag(0, EventType.PlaceCastle, cause);
+        for (var slot = 0; slot < _settlers.Count; slot++)
+        {
+            RecordSettler(slot, EventType.PlaceCastle, cause);
+        }
 
         return true;
     }
@@ -249,7 +265,8 @@ public sealed partial class Game
         }
 
         FlagPlacement.Apply(Map, x, y, NextFlagSlot());
-        AddFlag(new Flag(x, y));
+        var slot = AddFlag(new Flag(x, y));
+        RecordFlag(slot, EventType.PlaceFlag, CommandCause(FlagId(slot)));
 
         return true;
     }

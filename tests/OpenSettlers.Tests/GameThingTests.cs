@@ -76,7 +76,13 @@ public sealed class GameThingTests
         var lines = Lines(World());
 
         CollectionAssert.AreEquivalent(
-            new[] { "flag 16,6 slot=0", "flag 18,6 slot=1", "flag 19,4 slot=2", "flag 17,3 slot=3" },
+            new[]
+            {
+                "flag 16,6 slot=0 id=flag#0.1",
+                "flag 18,6 slot=1 id=flag#1.1",
+                "flag 19,4 slot=2 id=flag#2.1",
+                "flag 17,3 slot=3 id=flag#3.1",
+            },
             lines.Where(line => line.StartsWith("flag ", StringComparison.Ordinal)).ToArray()
         );
     }
@@ -142,7 +148,7 @@ public sealed class GameThingTests
             settlers.Contains(
                 $"settler {first.X},{first.Y} job={first.Job} state=0x{first.State:x2} player={first.Player} "
                     + $"mode=0x{first.Mode:x2} target={first.Target} next=0x{first.Next:x2} heading={first.Heading} "
-                    + $"frame={first.Frame} timer={first.Timer} stamp={first.Stamp} "
+                    + $"frame={first.Frame} timer={first.Timer} stamp={first.Stamp} id=settler#0.1 "
                     + $"{NameTable.JobName(first.Job)} {NameTable.StateName(first.State)}".TrimEnd()
             ),
             string.Join("\n", settlers.Take(3))
@@ -182,7 +188,7 @@ public sealed class GameThingTests
             .ToList();
 
         Assert.IsTrue(lines.Any(line => line.StartsWith("building 15,5 ", StringComparison.Ordinal)));
-        Assert.Contains("flag 16,6 slot=0", lines);
+        Assert.Contains("flag 16,6 slot=0 id=flag#0.1", lines);
         Assert.IsTrue(lines.Any(line => line.StartsWith("road 17,6 ", StringComparison.Ordinal)));
     }
 
@@ -220,7 +226,7 @@ public sealed class GameThingTests
         Assert.IsTrue(
             Lines(game)
                 .Contains(
-                    $"building 16,2 type=0x02 constructing=false status=0x{hut.Status:x2} flag=3 worker={hut.Worker} woodcutter-hut"
+                    $"building 16,2 type=0x02 constructing=false status=0x{hut.Status:x2} flag=3 worker={hut.Worker} id=building#1.1 flag-id=flag#3.1 woodcutter-hut"
                 )
         );
     }
