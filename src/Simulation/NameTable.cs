@@ -6,10 +6,18 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// Open Settlers' names for the original's bare codes: map object codes, settler jobs, settler states, and building
 /// types (ADR 0010, INV-0006). Each entry cites its evidence beside it. A code with no entry has no name and shows its
-/// raw value. A name several codes share (<c>tree</c>) resolves to all of them through <see cref="CodesNamed"/>.
+/// raw value. A name several codes share (<c>tree</c>) resolves to all of them through <see cref="CodesNamed"/>. The
+/// object names read the class table the engine loaded (<see cref="ProgramTables"/>): <c>stone</c> names a code the
+/// docs call a stone only where that table says class 2. The job, state, and building names need no table and are
+/// static.
 /// </summary>
-public static class NameTable
+public sealed class NameTable
 {
+    private readonly ProgramTables tables;
+
+    /// <summary>The names of the object codes as the class table <paramref name="tables"/> reads them.</summary>
+    public NameTable(ProgramTables tables) => this.tables = tables;
+
     // The object codes the engine and docs/rules/map-object-codes.md name; Game.Woodcutting reads the ranges from here.
     internal const int FirstTree = 8;
     internal const int EndTree = 0x18;
@@ -40,23 +48,25 @@ public static class NameTable
     internal readonly record struct Entry(CodeKind Kind, int Code, string Name, string Evidence);
 
     private const string TreeEvidence =
-        "Game.Woodcutting EndTree/EndFirstTrees; docs/rules/woodcutting.md (codes 8 to 0x17); class 1";
+        "the program compares a node's code with 8 and 0x18 (0x438c11, 0x437f8f); docs/rules/woodcutting.md (codes 8 to 0x17); class 1";
     private const string StoneEvidence =
-        "class 2 of ProgramTables.Classes (docs/rules/build-sites.md); docs/rules/map-object-codes.md (codes 0x48 to 0x4f)";
+        "docs/rules/map-object-codes.md (codes 0x48 to 0x4f are stone heaps); named only where class 2 of ProgramTables.Classes agrees (docs/rules/build-sites.md)";
 
-    /// <summary>Every entry of the table.</summary>
+    /// <summary>Every entry of the table. The <c>stone</c> entries hold only where the class table says class 2.</summary>
     internal static IReadOnlyList<Entry> Entries { get; } = Build();
 
-    /// <summary>The name of the object code, or null where the table has none.</summary>
-    public static string? ObjectName(byte code) => Find(CodeKind.Object, code);
+    private static readonly Dictionary<(CodeKind, int), string> Names = Entries.ToDictionary(
+        entry => (entry.Kind, entry.Code),
+        entry => entry.Name
+    );
 
     /// <summary>
-    /// The name of the object code as the class table <paramref name="tables"/> reads it: a <c>stone</c> only where the
-    /// table says class 2, null for a stone code the class table gives another class.
+    /// The name of the object code, or null where the table has none. The code's high bit is ignored, as the class
+    /// lookup ignores it. A stone code the class table does not call class 2 has no name.
     /// </summary>
-    public static string? ObjectName(byte code, ProgramTables tables)
+    public string? ObjectName(byte code)
     {
-        var name = ObjectName(code);
+        var name = Find(CodeKind.Object, code & 0x7f);
         return name == "stone" && tables.Classes[code & 0x7f] != StoneClass ? null : name;
     }
 
@@ -70,21 +80,13 @@ public static class NameTable
     public static string? BuildingName(int type) => Find(CodeKind.Building, type);
 
     /// <summary>The object codes the name stands for, in ascending order; empty for an unknown name.</summary>
-    public static IEnumerable<int> CodesNamed(string name) =>
-        Entries.Where(entry => entry.Kind == CodeKind.Object && entry.Name == name).Select(entry => entry.Code);
+    public IEnumerable<int> CodesNamed(string name) =>
+        Entries
+            .Where(entry => entry.Kind == CodeKind.Object && entry.Name == name)
+            .Select(entry => entry.Code)
+            .Where(code => ObjectName((byte)code) == name);
 
-    private static string? Find(CodeKind kind, int code)
-    {
-        foreach (var entry in Entries)
-        {
-            if (entry.Kind == kind && entry.Code == code)
-            {
-                return entry.Name;
-            }
-        }
-
-        return null;
-    }
+    private static string? Find(CodeKind kind, int code) => Names.GetValueOrDefault((kind, code));
 
     private static List<Entry> Build()
     {
@@ -98,8 +100,10 @@ public static class NameTable
             }
         }
 
+        void AddOne(CodeKind kind, int code, string name, string evidence) => Add(kind, code, code + 1, name, evidence);
+
         const string Map = "docs/rules/map-object-codes.md";
-        Add(CodeKind.Object, 1, 2, "flag", "FlagPlacement.FlagCode; class 3; docs/rules/flags.md");
+        AddOne(CodeKind.Object, 1, "flag", "FlagPlacement.FlagCode; class 3; docs/rules/flags.md");
         Add(
             CodeKind.Object,
             2,
@@ -111,78 +115,47 @@ public static class NameTable
         Add(CodeKind.Object, EndTree, 0x1c, "palm", $"{Map}: sprite; class 1; terrain 10 only");
         Add(CodeKind.Object, FirstStone, EndStone, "stone", StoneEvidence);
         Add(CodeKind.Object, EndStone, 0x52, "rock", $"{Map}: class 2; sprite");
-        Add(CodeKind.Object, 0x52, 0x53, "cross", $"{Map}: sprite; MapGen_MarkPeaks puts it on peaks");
-        Add(
+        AddOne(CodeKind.Object, 0x52, "cross", $"{Map}: sprite; MapGen_MarkPeaks puts it on peaks");
+        AddOne(
             CodeKind.Object,
             Stump,
-            Stump + 1,
             "stump",
-            "Game.Woodcutting FirstHandledObject; docs/rules/woodcutting.md"
+            "the object pass lets 0x53 vanish by chance (0x428eb8); docs/rules/woodcutting.md"
         );
         Add(CodeKind.Object, 0x5a, 0x5c, "cactus", $"{Map}: class 1; sprite; terrain 8 to 10");
-        Add(CodeKind.Object, 0x5c, 0x5d, "dead-tree", $"{Map}: class 1; sprite; docs/rules/woodcutting.md");
+        AddOne(CodeKind.Object, 0x5c, "dead-tree", $"{Map}: class 1; sprite; docs/rules/woodcutting.md");
         Add(
             CodeKind.Object,
             FirstCutObject,
             EndCutObject,
             "felled-tree",
-            "Game.Woodcutting FirstCutObject/EndCutObject; docs/rules/woodcutting.md (the cut writes 0x5d to 0x66)"
+            "docs/rules/woodcutting.md (the cut writes 0x5d to 0x66, the object pass turns each into 0x53, 0x428eb8)"
         );
 
-        Add(
-            CodeKind.Job,
-            Settler.CarrierJob,
-            Settler.CarrierJob + 1,
-            "carrier",
-            "Settler.CarrierJob; docs/rules/carriers.md"
-        );
-        Add(
-            CodeKind.Job,
-            BuilderJob,
-            BuilderJob + 1,
-            "builder",
-            "Game.Removal reads job 4 as the builder; docs/rules/settlers.md"
-        );
-        Add(
-            CodeKind.Job,
-            Settler.WoodcutterJob,
-            Settler.WoodcutterJob + 1,
-            "woodcutter",
-            "Settler.WoodcutterJob; docs/rules/woodcutting.md"
-        );
-        Add(CodeKind.Job, JoblessJob, JoblessJob + 1, "jobless", "Settler.Job doc: 21 is a settler without a job yet");
+        AddOne(CodeKind.Job, Settler.CarrierJob, "carrier", "Settler.CarrierJob; docs/rules/carriers.md");
+        AddOne(CodeKind.Job, BuilderJob, "builder", "Game.Removal reads job 4 as the builder; docs/rules/settlers.md");
+        AddOne(CodeKind.Job, Settler.WoodcutterJob, "woodcutter", "Settler.WoodcutterJob; docs/rules/woodcutting.md");
+        AddOne(CodeKind.Job, JoblessJob, "jobless", "Settler.Job doc: 21 is a settler without a job yet");
 
         const string State = "Settler.State doc";
-        Add(CodeKind.State, 1, 2, "waits-in-castle", State);
-        Add(CodeKind.State, 2, 3, "walks", State);
-        Add(CodeKind.State, 3, 4, "walks-along-road", State);
-        Add(CodeKind.State, 4, 5, "enters-door", State);
-        Add(CodeKind.State, 5, 6, "waits-out-step", State);
-        Add(CodeKind.State, 6, 7, "enters-building", State);
-        Add(CodeKind.State, 7, 8, "steps-onto-flag", State);
-        Add(CodeKind.State, 0xf, 0x10, "leaves-castle", State);
-        Add(CodeKind.State, 0x10, 0x11, "walks-free", State);
-        Add(CodeKind.State, 0x11, 0x12, "cuts-tree", State);
-        Add(CodeKind.State, 0x12, 0x13, "looks-for-tree", State);
-        Add(CodeKind.State, 0x19, 0x1a, "looks-for-flag-home", State);
-        Add(CodeKind.State, 0x1c, 0x1d, "claims-node-home", State);
-        Add(CodeKind.State, 0x42, 0x43, "waits-at-flag", State);
+        AddOne(CodeKind.State, 1, "waits-in-castle", State);
+        AddOne(CodeKind.State, 2, "walks", State);
+        AddOne(CodeKind.State, 3, "walks-along-road", State);
+        AddOne(CodeKind.State, 4, "enters-door", State);
+        AddOne(CodeKind.State, 5, "waits-out-step", State);
+        AddOne(CodeKind.State, 6, "enters-building", State);
+        AddOne(CodeKind.State, 7, "steps-onto-flag", State);
+        AddOne(CodeKind.State, 0xf, "leaves-castle", State);
+        AddOne(CodeKind.State, 0x10, "walks-free", State);
+        AddOne(CodeKind.State, 0x11, "cuts-tree", State);
+        AddOne(CodeKind.State, 0x12, "looks-for-tree", State);
+        AddOne(CodeKind.State, 0x19, "looks-for-flag-home", State);
+        AddOne(CodeKind.State, 0x1c, "claims-node-home", State);
+        AddOne(CodeKind.State, 0x42, "waits-at-flag", State);
 
-        Add(CodeKind.Building, Building.CastleType, Building.CastleType + 1, "castle", "Building.CastleType");
-        Add(
-            CodeKind.Building,
-            Building.WoodcutterType,
-            Building.WoodcutterType + 1,
-            "woodcutter-hut",
-            "Building.WoodcutterType"
-        );
-        Add(
-            CodeKind.Building,
-            StorehouseType,
-            StorehouseType + 1,
-            "storehouse",
-            "Game.Removal storage types: the castle and type 0xa"
-        );
+        AddOne(CodeKind.Building, Building.CastleType, "castle", "Building.CastleType");
+        AddOne(CodeKind.Building, Building.WoodcutterType, "woodcutter-hut", "Building.WoodcutterType");
+        AddOne(CodeKind.Building, StorehouseType, "storehouse", "Game.Removal storage types: the castle and type 0xa");
 
         return entries;
     }
