@@ -26,6 +26,9 @@ A routine row has these fields:
 - **Layer:** **game** inside the game code band, **platform** outside it.
 - **Anchor:** the string, save field, constant, import, or caller that leads to the routine.
 
+A data row's role starts with "Data:". The Ghidra project gives it a label, also for a table inside the
+code section (`ApplyIndexNames.java`).
+
 A site is an address inside a routine where a specific thing happens. Topics list sites. The address
 table lists only routines and data.
 
@@ -63,6 +66,8 @@ the quit request returns.
 | `0x42055e` | — | Sets up the player blocks at a new game and sets `Sim_PhaseCount`; with a player block at `+0x30` of the EDI block it calls `Player_SetTransportPriorities` among other routines that fill default orders. Its full role is unknown. | unknown | game | Called by `Game_Start`. |
 | `0x445570` | `Player_SetTransportPriorities` | Writes the default transport priority of each good 1 to 26 into the player block of `+0x30` of the EDI block, at `-0x55 + good`: for each good, in steps of 8 bytes, a load of the rank as a constant and its store, so the rank of good g is the byte at `0x445571 + 8 * (g - 1)`. The ranks are 1 to 26, each once ([Goods](goods.md#transport-priorities)). | confirmed | game | Called by `0x42055e`. |
 | `0x467c03` | `StartScreen_HandleClick` | Click handler of the start screens; dispatches 42 actions through the table at `0x468148`. | inferred | game | Called by `0x440b01`. |
+| `0x467547` | `StartScreen_ShowSeed` | Cuts the seed at `+0x364` to `+0x369` into four overlapping 12-bit groups and shows each through `StartScreen_FormatSeedGroup` ([Map start](map-start.md)). | confirmed | game | Only caller is `0x4679e2`. |
+| `0x4678c7` | `StartScreen_FormatSeedGroup` | Writes a 12-bit group as four digits, bits 11 to 9, 8 to 6, 5 to 3, and 2 to 0, each plus `1`, into the text at `0x674a27`. | confirmed | game | Called by `StartScreen_ShowSeed`. |
 | `0x466b94` | `StartScreen_SwitchPage` | Moves a requested start-screen page into the current page and runs its handler. | confirmed | game | `Main_Loop` while `Game_Flags` bit 4 is set. |
 | `0x4685bc` | `StartScreen_StartGame` | Action 38: sets the start parameters and the map size, then requests a new game. Entry inferred. | confirmed | game | Slot `0x468278` of the table at `0x468148`. |
 | `0x4684b6` | `StartScreen_ResumeLoaded` | Action 40: resets the countdowns and requests the resume of a loaded game. Entry inferred. | confirmed | game | Slot `0x468288`. |
@@ -70,6 +75,20 @@ the quit request returns.
 | `0x4694e0` | `Game_RequestQuit` | Action 11: requests the end of the main loop. Entry inferred. | confirmed | game | Slot `0x4681a0`. |
 | `0x448418` | `Game_ConfirmEnd` | Panel action 169: asks for confirmation while the countdown runs; otherwise ends the game. Entry inferred. | inferred | game | Slot `0x446bd4` of the table at `0x44668c`. |
 | `0x448436` | `Game_EndToStartScreen` | Panel action 171: advances the mission number in mission mode and requests the start screens. Entry inferred. | confirmed | game | Slot `0x446be4`. |
+| `0x41e958` | `StartScreen_PlayLogo` | Runs the start-up logo sequence: ten draw steps, each followed by a frame present and `StartScreen_WaitOrSkip`, and returns early when that reports input. | inferred | game | Called by `Game_InitSettings`; draws entries 40 and 41 in palette 3998. |
+| `0x41ea82` | `StartScreen_LogoStep1` | Draws entry 40 through `0x41ea59`, then entry 41 at 144,56. | confirmed | game | First step of `StartScreen_PlayLogo`. |
+| `0x41edea` | `StartScreen_LogoStepLast` | Redraws entry 40 alone by a call of `0x41ea59`. | confirmed | game | Last step of `StartScreen_PlayLogo`. |
+| `0x41edf0` | `StartScreen_DrawList` | Draws the list at `0x674824` (entry, x, y words, ended by a negative entry) to the surface record `0x6744b6` through `Gfx_DrawSprite`. | confirmed | game | Called by `Game_InitSettings`; entries 42 to 57. |
+| `0x445643` | `Player_SetGoodsOrder` | Writes a default order of the 26 goods into player `+0x60` to `+0x79`. | confirmed | game | Called by `0x42055e`. |
+| `0x445716` | `Player_SetDefaults1` | Writes default words into player `+0x140` to `+0x146`; their role is open. | confirmed | game | Called by `0x42055e`. |
+| `0x445752` | `Player_SetDefaults2` | Writes default words into player `+0x148` to `+0x150`; their role is open. | confirmed | game | Called by `0x42055e`. |
+| `0x44579c` | `Player_SetDefaults3` | Writes default words into player `+0x152` to `+0x15a`; their role is open. | confirmed | game | Called by `0x42055e`. |
+| `0x466cc7` | `StartScreen_BuildPage` | Builds the start and load screen pages. | inferred | game | Only caller is `0x4679e2`; calls `0x406730`, `0x467b9f`. |
+| `0x46736c` | — | Lays out part of the lists and text of the start screen. | unknown | game | Only caller is `StartScreen_ShowSeed`; calls `0x451111`. |
+| `0x4679a3` | — | Part of the start screen layout. | unknown | game | Only caller is `StartScreen_ShowSeed`. |
+| `0x468ba9` | — | Resets a start-screen page. | inferred | game | Called at `0x420452`, by `Load_LoadSlot`, `0x4692aa`, `0x4694f8`. |
+| `0x468c1c` | — | Resets a start-screen page. | inferred | game | Called by `Load_LoadSlot` and `0x4694f8`. |
+| `0x4694f8` | — | An action of the start screens; calls `0x468ba9` and `0x468c1c`. | inferred | game | Entry of the table at `0x468148`. |
 
 Sites:
 
@@ -78,6 +97,11 @@ Sites:
 - `0x468702`, `0x4484cf`, `0x468508`, `0x4694e3`: the actions set the request bits 1, 2, 3, and 0.
 - `0x46813a`: the start-screen action dispatch. `0x44667e`: the panel action dispatch (255 slots at
   `0x44668c`).
+- `0x467841`, `0x46786b`, `0x467899`, `0x4678c1`: the four calls that hand one 12-bit seed group each in EDI `+8` to `StartScreen_FormatSeedGroup` (in `StartScreen_ShowSeed`).
+- `0x467941`: the end of the four character stores (in `StartScreen_FormatSeedGroup`).
+- `0x467e12` to `0x467f39`: the parse of the 16 typed seed characters into the three seed words; `0x467f49`: the error exit for a character below `1` or above `8` (in `StartScreen_HandleClick`).
+- `0x4685cf`: the start of the map size loop; `0x4685da` to `0x468603`: doubles the columns, then the rows, then the columns for each step of the size value above 1; `0x468620`: the end of the doubling (in `StartScreen_StartGame`).
+- `0x468ba8`: the return after the seed mask code at `0x468b3d` stores `Map_Seed` (in `Game_SetStartParams`).
 
 ### Main loop
 
@@ -95,10 +119,21 @@ wait, and the key handling.
 | `0x45d718` | `Frame_WaitAndPresent` | Waits until `Timer_CallCount` is at least 4 above its value at the previous frame, then presents the frame. | confirmed | game | Called by `Main_Loop`. |
 | `0x406c60` | `Frame_Handshake` | Releases one semaphore and waits on another. | confirmed | platform | Imports `ReleaseSemaphore`, `WaitForSingleObject`. |
 | `0x406880` | `Frame_Present` | Hands the screen buffer to the platform output. | inferred | platform | Called by `Frame_WaitAndPresent`. |
+| `0x4080e0` | `Palette_Present` | Takes the palette from `Frame_Present` and shifts each packed color left by 2 bits, so a shown component is the 6-bit value times 4 ([Graphics images](graphics-images.md)). Not read in full. | inferred | platform | Called by `Frame_Present` and `0x4067e0`. |
 | `0x425cb9` | `Stats_RecordHistory` | Every 1500 clock units, records values for the four players in ring buffers. | inferred | game | Called by `Main_Loop`. |
 | `0x42639a` | — | Every 6000 clock units, advances the counter at `+0x32e`, which wraps after 120 values. | unknown | game | Called by `Stats_RecordHistory`. |
 | `0x44cb6e` | `Msg_RunTimers` | Counts down each player's timed messages by the elapsed units and posts the expired ones. | confirmed | game | Called by `Main_Loop` and the start routines. |
+| `0x44cb8f` | `Msg_RunPlayerTimers` | The part of `Msg_RunTimers` for one player: counts the timed messages down by the elapsed units and posts each that goes below zero ([Timing](timing.md)). | inferred | game | Only caller is `Msg_RunTimers`. |
 | `0x431c31` | `Msg_Post` | Writes a message into the first free of 64 slots of a player block. | confirmed | game | Called by `Main_ComputeElapsed`. |
+| `0x426350` | `Stats_SumRing` | Adds the 120 bytes of a ring buffer into a sum. | confirmed | game | Called by `Stats_RecordHistory`. |
+| `0x42637e` | — | Clears `+0x5e`, sets byte `+0x381` to `0xff`, and falls through into `0x42639a`. | confirmed | game | Called by `Stats_RecordHistory`. |
+| `0x426664` | `Stats_Scale` | Fixed-point scaling of a value by a factor derived from a halved word plus `0x800`; never returns 0 for a non-zero input. | inferred | game | Called by `Stats_RecordHistory`. |
+| `0x4266d7` | `Stats_ComputeShares` | Turns four values into their shares of the sum in percent (halving all while the sum exceeds `0xfffe`). | confirmed | game | Called by `Stats_RecordHistory`. |
+| `0x446f54` | — | Toggles a game state and restarts the map: calls the map start routines and both palette loads (`0x4471f9`, `0x447200`). | unknown | game | Only caller is `Main_HandleKeys`, so a key reaches it. |
+| `0x44d19c` | — | Short helper of the message timers. | unknown | game | Only caller is `Msg_RunPlayerTimers`; [M9](../milestones/m9-free-play-release.md). |
+| `0x44d1c0` | `Msg_DrawIcon` | Draws the message icon (raw images 1782 to 1785, site `0x44d24f`) through `Gfx_DrawSprite`. | inferred | game | Called by `Msg_RunPlayerTimers` and `Panel_HandleClick`. |
+| `0x44d263` | — | 13-byte helper of the message timers. | unknown | game | Only caller is `Msg_RunPlayerTimers`. |
+| `0x44d270` | `Msg_DrawIconAlt` | Draws the message icon (raw images 1782 to 1785, site `0x44d2e8`) through `Gfx_DrawSprite`; sibling of `Msg_DrawIcon`. | inferred | game | Only caller is `Msg_RunPlayerTimers`. |
 
 Sites:
 
@@ -134,6 +169,7 @@ Sites:
 
 - `0x4168c7`, `0x4168d5`: set the two speed-factor values that make the timer thread run without waiting.
 - `0x426adf`: the main loop's key handling calls the pause on the `P` key code.
+- `0x426f91`: the countdown of each view record fires when it reaches 0 or goes below (in `Main_ComputeElapsed`).
 
 ### Input
 
@@ -149,6 +185,7 @@ Note: [Timing](timing.md).
 | `0x406980` | `Key_ReadCode` | Takes the next key from the key buffer and writes its code to the EDI block. | confirmed | platform | Called by `Main_Loop`, `Main_HandleKeys`. |
 | `0x430ee9` | `Player_SwapInSecondView` | Swaps a second view's fields into player 1's block. | confirmed | game | Called by input and panel code when `+0x37e` bit 6 is set. |
 | `0x430fd3` | `Player_SwapOutSecondView` | The reverse of `Player_SwapInSecondView`. | confirmed | game | Same callers. |
+| `0x426b57` | `Input_BufferKey` | Puts a key code into the text buffer at `+0x23a` (count `+0x238`, size `+0x23e`); code `0xfc` deletes the last; with bit 2 of `+0x1ca` only the digits 1 to 8 are taken. | confirmed | game | Called by `Main_HandleKeys`. |
 
 ### Sound
 
@@ -170,6 +207,7 @@ Note: [Sound files](sound-files.md).
 | --- | --- | --- | --- | --- | --- |
 | `0x419a60` | `Music_ApplyOption` | When the music option changes, stops the player or reads `snd/music_1.midi` whole, loads it, and starts the stream. | confirmed | platform | String `snd/music_1.midi`; called by `Timer_ThreadMain`. |
 | `0x415130` | `Music_LoadFile` | Checks the header and track tags of the music file in memory and records the format, division, and each track's start and length. | confirmed | platform | Called by `Music_ApplyOption`. |
+| `0x415940` | `Music_ReadVarLen` | Reads a variable-length number of a track, 7 bits per byte while bit 7 is set; fails at the end of the track or on a finished track. | confirmed | platform | Called by `Music_LoadFile` and `0x415730`. |
 | `0x415390` | `Music_Stop` | Stops and closes the MIDI stream. | inferred | platform | Calls `midiStreamStop` and `midiStreamClose`. |
 | `0x415480` | `Music_SetVolume` | Caps the stored volume option at 100 and sends it, scaled to 127, to every MIDI channel as a volume controller message. | inferred | platform | Calls `midiOutShortMsg`; called at `0x419b7b`, in `Music_ApplyOption`, and at `0x406fa8`, in `Music_SetVolumeFromEdi`. |
 | `0x406fa0` | `Music_SetVolumeFromEdi` | Passes the first word of the EDI block to `Music_SetVolume` as the volume. | inferred | platform | Calls `Music_SetVolume` at `0x406fa8`; called at `0x425c89` and `0x452226`. |
@@ -207,18 +245,59 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x406350` | `Gfx_DrawSpriteGrowing` | Draws a transparent sprite through `Gfx_BlitSprite` with its top moved by a fraction of its height, which the EDI block holds, and the top clipped to the clip rectangle; the entry is the base 1250 plus a script index. | inferred | platform | Called at `0x44ff45`. See [Graphics images](graphics-images.md). |
 | `0x406590` | `Gfx_DrawSpriteNoOffset` | Draws a transparent sprite through `Gfx_BlitSprite` with the entry's two offsets set to 0 for the call and restored after; the entry is the base 1250 plus a script index. | confirmed | platform | Called at `0x44db12`. See [Graphics images](graphics-images.md). |
 | `0x406610` | `Gfx_DrawSettler` | Draws a settler: the figure from the base 1850 through `Gfx_BlitSprite`, the overlay of the same index plus 2500 through `Gfx_BlitSpriteOneColor` in the player color (40 hex plus four times the player), then, where a second figure is set, an entry from the base 3150 through `Gfx_BlitSprite`, moved by header bytes 0 and 1 of the first figure as signed offsets. | confirmed | platform | Called at `0x450189`. See [Graphics images](graphics-images.md). |
+| `0x44fff3` | `Render_DrawSettlerRecord` | Draws a settler's draw record: picks the figure from the sequence of the record's frame and hands it to `Gfx_DrawSettler` ([Settlers](settlers.md)). | inferred | game | Called by `Render_DrawViewRows`. |
+| `0x43f8ae` | `Settler_FigureCarrier` | The figure routine of job 0: adds the word of the carried good to the carrier's figure byte ([Settlers](settlers.md)). | inferred | game | Only caller is `0x43f744`, reached from `0x43f537`. |
 | `0x4511d5` | `Text_DrawGlyphs` | Draws a string of characters as one-color sprites: for each character, a shadow glyph (entry plus 809) in the shadow color when one is set, then the glyph (entry plus 749) in the text color; steps 8 pixels per character. | inferred | game | Entered by jumps at `0x45103e`, `0x4510a3`, `0x45110c`, `0x451171`, `0x4511d3`, the ends of the five sites that start at `0x450fde`, `0x451043`, `0x4510a8`, `0x451111`, `0x451173`; calls `Gfx_DrawSpriteOneColor`. |
 | `0x405b80` | `Gfx_BlitShadow` | Draws a mask to the surface, clipped, storing palette index `0x80` on every covered pixel with no blending. | confirmed | platform | Called at `0x4061fa`, in `Gfx_DrawShadow`, and at `0x4062c9`, in the second shadow routine at `0x406210`, which `0x44ff2a` calls with an object's number plus 1500 (reached from `0x44fcd0`, from `0x44fd2f` by the jump at `0x44e56a`, and by a third path that reads the table at `0x44fcfe` (at `0x44fc4f`) after the call at `0x44fc21` and jumps to `0x44fee2` at `0x44fc70`). |
 | `0x4061a0` | `Gfx_DrawShadow` | Sets the clip rectangle and draws the mask whose entry number is in the draw block's third field through `Gfx_BlitShadow`. | confirmed | platform | Called at `0x44daa4` (the entry is an object's number plus 1500, in `Gfx_DrawObjectSprite`, which about 38 sites reach) and at `0x45007d` (entry 4). |
 | `0x44da4d` | `Gfx_DrawObjectSprite` | Draws an object: scales the position field by 8 and moves the position by 16 and 8, draws the mask of the entry plus 1500 through `Gfx_DrawShadow`, then the sprite of the entry plus 1250 through `Gfx_DrawSpriteTransparent`. | confirmed | game | Called at `0x44d6e8` and `0x44dcad`, in the routines at `0x44d5b4` and `0x44db26`; a scan of the code band finds 38 call or jump sites, not all read. See [Graphics archives](graphics-archives.md). |
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | Moves the position by 16 and 8 and draws the sprite of the entry plus 320 through `Gfx_DrawSpriteTransparent`. | confirmed | game | 39 call or jump sites, listed with the entries they reach in [Graphics archives](graphics-archives.md#entries-no-routine-reads); four are tail jumps. |
+| `0x44fd4a` | `Gfx_DrawSpriteBase320Low` | Moves the position by 8 and 9 and draws the sprite of the entry plus 320 through `Gfx_DrawSpriteTransparent`. | confirmed | game | Only caller is `0x45b526`. |
 | `0x405b40` | `Gfx_FillTextured` | Hands the mask and the texture entry to `Gfx_BlitTextured`. | confirmed | platform | Called at `0x40618c`, in `Gfx_DrawTexturedFill`. |
 | `0x406120` | `Gfx_DrawTexturedFill` | Sets the clip rectangle, finds the texture entry from the draw block's fourth field, and fills the mask of its third field with it. | confirmed | platform | Called at `0x4279a9`, `0x427b0d`, and `0x428363`, in the routines at `0x4278be`, `0x427a25`, and `0x428008`, `0x428105`, `0x4281cc`, which form the mask (60 plus an index, 141 plus an index, or a base of 234, 243, or 252 plus a height difference) and the texture (260 or 300 plus an offset). |
+| `0x427642` | `Terrain_DrawTiles` | Draws the terrain triangles of the view rows with the routines at `0x4278be` and `0x427a25` and the tables of [Terrain drawing](graphics-images.md#terrain-drawing). | confirmed | game | Called by `0x4275d6`. |
+| `0x42f7ea` | — | Works out the screen position of the node at `+0xfc` and `+0xfe` of the view's record relative to the view origin, wrapping at the map size. Its full role is unknown. | unknown | game | Called by `View_HandleClick`, `0x427133`, and `0x440b01`. |
 | `0x406420` | `Gfx_DrawSpriteOverColor8` | Sets the clip rectangle from the target surface and draws the entry of the draw block through `Gfx_SpriteOverColor8`. | confirmed | platform | Called at `0x44ffcd`, in `0x44ff59`. |
 | `0x405d00` | `Gfx_SpriteOverColor8` | Passes the surface, the position, and the entry's address to `Gfx_BlitSpriteOverColor8`. | confirmed | platform | Called at `0x40647a`, in `Gfx_DrawSpriteOverColor8`. |
 | `0x44ff59` | `Gfx_DrawPhaseSprite` | Picks one of the 16 entries 630 to 645 from the tile record's address (`& 0x3c`, doubled, `^ 0xa8`) plus the counter at the game state block's `+0x206`, shifted right 3 and masked to 4 bits, and draws it through `Gfx_DrawSpriteOverColor8`. | confirmed | game | Called by `0x44d5b4`; the add of 630 is at `0x44ffc7`. See [Map objects](map-objects.md#water). |
+| `0x674824` | `StartScreen_SpriteList` | Data: a list of words (entry, x, y) ended by a negative entry, the images 42 to 57 that `0x41edf0` draws through `Gfx_DrawSprite`; game state `+0x782`. | confirmed | game | Read by `0x41edf0` (called at `0x424fca`). |
+
+| Address | Name | Role | Status | Layer |
+| --- | --- | --- | --- | --- |
+| `0x4279d4` | `Render_TriangleVariantsUpper` | Data: 81 bytes, by height-difference index, the texture variant (a multiple of 4, `0xff` none) of an upper triangle. | confirmed | game |
+| `0x427b38` | `Render_TriangleVariantsLower` | Data: the same 81 bytes for a lower triangle. | confirmed | game |
+| `0x427b89` | `Render_TerrainTextures` | Data: 128 bytes, 8 for each terrain code, the texture number minus 260 by variant. | confirmed | game |
+| `0x44e114` | `Gfx_SpriteLists` | Data: 25 inline sprite lists in the code band, entries 0 or 8, read by the site `0x44e0d1`. | inferred | game |
+| `0x44f225` | `Gfx_BuildingPairTable` | Data: 128 byte pairs inline in the code band (up to `0x44f325`); first bytes 162 to 173, read with an even index by the eight sites from `0x44ee56`. | confirmed | game |
+| `0x44fd16` | `Gfx_ObjectNumberTable` | Data: inline byte table in the code band of object numbers (152 to 193) for the shadow path through `0x44fcd0` to `0x44ff2a`; sibling of the table at `0x44fcfe`. | confirmed | game |
+| `0x4501a1` | `Settler_FigureBases` | Data: in the code band, 8 words for each job (137 pairs): the figure base in the entries from 1850 and a second figure from 3150. | confirmed | game |
+| `0x4503c5` | `Settler_FigureOffsets` | Data: in the code band, two words for each figure byte, added to both entry fields by `Render_DrawSettlerRecord` at `0x450128` to `0x45014c`. | confirmed | game |
 
 Note: [Graphics images](graphics-images.md).
+
+Sites:
+
+- `0x40669a`, `0x4066bf`, `0x4066d2`, `0x4066e4`: `add 0x9c4` forms the overlay entry (figure plus 2500); the call at `0x4066bf` draws it through `Gfx_BlitSpriteOneColor` in the player color; `0x4066d2` and `0x4066e4` read header bytes 0 and 1 of the figure as signed offsets for the second figure (in `Gfx_DrawSettler`).
+- `0x4075ac`: loads the palette of entry 3998 through `Palette_Load`, before the first screens (in `Platform_RunGame`).
+- `0x41ea7c`, `0x41eaaa`: draw entry 40 and entry 41 of the logo (in `0x41ea59` and `StartScreen_LogoStep1`).
+- `0x41ee33`: draws each entry of the list at `0x674824`, entries 42 to 57 (in `StartScreen_DrawList`).
+- `0x420d97`: the draw call of each list piece, entries 1780 to 1805 (in `View_DrawFrameList`).
+- `0x42105f` to `0x4213e9`: the draws of entries 600 to 603; `0x421251` to `0x42136d`: the draws of entries 3880 to 3882 (in `View_DrawFrameBorders`).
+- `0x421412` to `0x42152a`: the draws of entries 660 to 663 (in `View_DrawPanelFrames`).
+- `0x425926`: draws image 42 plus an index of 0 to 15 through `Gfx_DrawSprite`, in palette 3 (in a code piece after `Game_InitSettings` that it jumps out to and back from; no Ghidra function).
+- `0x44d157`: draws raw image 1750 plus a byte through `Gfx_DrawSprite` (in `Msg_RunPlayerTimers`).
+- `0x44d24f`: draws raw images 1782 to 1785 through `Gfx_DrawSprite` (in `Msg_DrawIcon`, `0x44d1c0`).
+- `0x44d2e8`: draws raw images 1782 to 1785 through `Gfx_DrawSprite` (in `Msg_DrawIconAlt`, `0x44d270`).
+- `0x44da9e`, `0x44dac8`: forms the shadow entry (index plus 1500), then the sprite entry (index plus 1250) (in `Gfx_DrawObjectSprite`).
+- `0x44dba2`, `0x44dbf2`, `0x44dc42`, `0x44dcfd`, `0x44dd4d`, `0x44dd9d`, `0x44dded`, `0x44de3d`: call `Gfx_DrawSpriteBase320` with an object byte masked to 0 to 31, entries 320 to 351 (in `Render_DrawFlag`).
+- `0x44de86`: draws raw image 870 plus a tile index through `Gfx_DrawSprite` (in `0x44de56`).
+- `0x44e0d1`: calls `Gfx_DrawSpriteBase320` with a sprite-list entry (0 or 8, from the 25 inline lists at `0x44e114`) plus a phase of 0 to 7 plus 136, entries 456 to 471. Lies in code after `Gfx_DrawSpriteBase320` and before `0x44e329` that no Ghidra function covers; the containing routine's entry was not established (REA rizin unavailable).
+- `0x44ff24`, `0x44ff3f`: forms the shadow entry (index plus 1500, drawn by `0x406210` at `0x44ff2a`), then the sprite entry (index plus 1250, drawn by `Gfx_DrawSpriteGrowing` at `0x44ff45`). Code not covered by a Ghidra function, between `Sound_Request` and `Gfx_DrawPhaseSprite`; entry `0x44fee2` (jumped to at `0x44fc70`) is a candidate routine, not verified.
+- `0x45006a`: stores shadow entry 4 for the call to `Gfx_DrawShadow` at `0x45007d`; `0x450128` to `0x45014c`: adds a word of the table `Settler_FigureOffsets` to both entry fields (in `Render_DrawSettlerRecord`).
+- `0x450ada` (in `0x450a8f`), `0x450f2f` (in `0x450d85`), `0x450fc5` (in `0x450f6e`): call `Gfx_DrawSpriteBase320` with a run-time list word or an object byte at `+0x101`; not bounded. The three routines are called from `Render_DrawViewOverlay` (`0x450a56`, `0x450ae7`) and lack rows.
+- `0x452394`, `0x452400`, `0x452443`: draw raw images 1, 5 to 11, and 15 to 21 through `Gfx_DrawSprite` under palette 3997 (title scene). Code not covered by a Ghidra function; containing routine not established.
+- `0x45cf10`: draws raw images 660 to 663; `0x45cf57` to `0x45d02c`: 670 to 677 (in `Panel_CopyViewToScreen`, `0x45ce7b`).
+- `0x467bd4`: draws the raw image of a tile index plus 870 through `Gfx_DrawSprite` (in `0x467ba4`).
 
 ### Views, panels, and drawing
 
@@ -236,6 +315,39 @@ Note: [Graphics images](graphics-images.md).
 | `0x424d87` | `Minimap_Build` | Writes one byte per tile from terrain and height to the buffer at `+0x8c`. | inferred | game | Called by `MapGen_Generate` and `Game_ResumeLoaded`. |
 | `0x406500` | `Gfx_CopyRect` | Copies a rectangle between two surfaces. | confirmed | platform | Called by panel and view code. |
 | `0x4060b0` | `Gfx_DrawSprite` | Finds a raw image by its entry number and draws it opaque to the surface through `Gfx_BlitRaw`. | confirmed | platform | 55 call sites in 13 callers. See [Graphics images](graphics-images.md). |
+| `0x420cc5` | `View_DrawFrameList` | Sets bit 0 of `+0x383`, picks one of the four piece lists of `View_FramePieceLists` by `Game_Flags` bit 7 and `Game_ModeFlags` bit 2 (surface record `0x674506` or `0x6744b6`), and draws each entry, x, y triple through `Gfx_DrawSprite` until a negative entry. | confirmed | game | Called by `0x41e6c0`, `Game_Start`, `0x41f4d7`, and `0x447200`; entries 1780 to 1805. |
+| `0x420d9f` | `View_FramePieceLists` | Data: four lists at `0x420d9f`, `0x420e19`, `0x420eab`, `0x420f25` of entry, x, y words ended by a negative entry; one view or two, each on either surface record. | confirmed | game | Selected by `View_DrawFrameList`. |
+| `0x421021` | `View_DrawFrameBorders` | Draws the screen frame pieces 600 to 603 at fixed positions, with a variant when `Game_Flags` bit 7 is set and extra pieces 3880 to 3882 when `Game_ModeFlags` bit 2 is clear. | confirmed | game | Called by `0x420fff`. |
+| `0x4213ef` | `View_DrawPanelFrames` | Draws pieces 660 to 663 into the surface records `0x67457e` and `0x674592`. | confirmed | game | Called by `0x420fff`. |
+| `0x43fed8` | `Settler_FigureJob11` | The figure routine of job 11. Entry inferred. | inferred | game | Job 11 entry of the table at `0x43f744` (jump at `0x43f79c`), reached from `0x43f537`. |
+| `0x441062` | `Msg_HandleOpenClick` | While the game runs, opens the current message (`0x4415c0`, then `0x441ba2`); on some panel screens (`0x17` to `0x1a`, `0x22`, `0x23`, `0x25`) asks for sound 4 instead. | inferred | game | Called by `View_HandleClick`. |
+| `0x44126d` | `Msg_StepNext` | Steps the player's message index (`+0x172`, up to `0x40`) and reads the next slot; sound 4 where a second view swap blocks it. | inferred | game | Called by `View_HandleClick`. |
+| `0x4415c0` | `Msg_Open` | Reads the first message slot of the player block (`+0x1df4`) and sets the view up by its type. | inferred | game | Called by `0x441062`. |
+| `0x441987` | `Panel_Reset` | Clears bit 6 of the view's byte 1, writes 10, 12, 14 into the list at view `+0x62`, sets bits 1 and 2, and sets the panel screen (`+0x72`) to 0. `0x441b31`, `0x441ba2`, `0x441d2e`, and `0x442509` are byte-identical copies. | confirmed | game | Called by `View_RunButtonAction` and `0x44362b`. |
+| `0x441b31` | — | Byte-identical copy of `Panel_Reset`. | confirmed | game | Called by `View_RunButtonAction`. |
+| `0x441ba2` | — | Byte-identical copy of `Panel_Reset`. | confirmed | game | Called by `View_RunButtonAction` and `0x441062`. |
+| `0x441d2e` | — | Byte-identical copy of `Panel_Reset`. | confirmed | game | Called by `View_RunButtonAction`. |
+| `0x442509` | — | Byte-identical copy of `Panel_Reset`. | confirmed | game | Called by `View_RunButtonAction`. |
+| `0x444780` | `Map_CountPlayerObjects` | Clears player `+0x12a` to `+0x130` and walks every node of the map through `0x444954`. | inferred | game | Called by `View_HandleClick`. |
+| `0x444954` | `Map_CountNodeObject` | For a node owned by the player (top bits of the height byte), counts objects of class 2 to 4 into the player's counters. | inferred | game | Called by `0x444780`. |
+| `0x44c8cf` | `Panel_WriteButtonList` | Writes a short button list through the EDI block's `+0x24` pointer (0, then 0x10 or 7 by bit 0 of byte 2 of the `+0x30` record) and stores 0x20 and 0x21 through the `+0x28` pointer. | confirmed | game | Only caller is `0x44c80f`; [M3](../milestones/m3-first-loop.md) guesses the build menu. |
+| `0x45080d` | `Render_MarkTwoDirty` | Sets bit 0x10 in the bytes that the game state block's `+0x78` and `+0x7c` pointers name, saving and restoring the EDI block's `+0x20`. Meaning of the bit unknown. | confirmed | game | Called by `Road_Cancel`, `Castle_Place`, and `Territory_Update`. |
+| `0x4513a8` | `Panel_UpdateView` | The part of `Panel_Update` for one view: runs the handler of the panel screen at view `+0x72`. | inferred | game | Only caller is `Panel_Update`. |
+| `0x45ac83` | `Minimap_DrawPanel` | Draws the minimap panel by calling sixteen layer routines from `0x45afcf` to `0x45ccc6`. | inferred | game | Only caller is `0x45591a`; [M9](../milestones/m9-free-play-release.md). |
+| `0x45ae45` | `Minimap_DrawTiles` | Part of the minimap panel; draws raw images through `0x44de56`. | inferred | game | Only caller is `0x45591a`. |
+| `0x45afcf` | — | First layer routine of `Minimap_DrawPanel`; calls `0x406790`. | unknown | game | Only caller is `Minimap_DrawPanel`. |
+| `0x45bb96` | — | A layer routine of `Minimap_DrawPanel`; calls `0x406790`. | unknown | game | Only caller is `Minimap_DrawPanel`. |
+| `0x45ce7b` | `Panel_CopyViewToScreen` | The part of `Panel_CopyToScreen` for one view: copies the panel through `Gfx_CopyRect` and draws raw images 660 to 677 through `Gfx_DrawSprite` (sites `0x45cf10`, `0x45cf57`, `0x45d02c`). | inferred | game | Only caller is `Panel_CopyToScreen`. |
+| `0x45f961` | `Panel_DrawStateImage` | Draws the raw image 25 plus the state word `+0x5c` at (8, 9) to the surface of the record at EDI `+0x20`, clears bit 1 of the record's byte 1, then runs `Panel_CopyToScreen` and `0x45d716`. Entry inferred. | confirmed | game | Called at `0x451841` and `0x451cd7`; Gfx_DrawSprite at `0x45f9ae`. |
+
+| Address | Name | Role | Status | Layer |
+| --- | --- | --- | --- | --- |
+| `0x43f4b8` | `Settler_CarriedFigures` | Data: 27 words, one for each good, added to a carrier's figure byte; the start one byte after the load address is inferred. | inferred | game |
+
+Sites:
+
+- `0x43f742`: jumps by job through the table of 8-byte jumps at `0x43f744` to the job's figure routine (in `0x43f537`).
+- `0x43f904`: loads the carried-goods table at `0x43f4b7`; `0x43f92a`: the jump out at the end (in `Settler_FigureCarrier`).
 
 ### Simulation
 
@@ -248,6 +360,9 @@ entries per phase (see "Item tables").
 | `0x474da3` | `Ai_UpdatePlayer` | Per-player update for players whose block marks them active and computer-controlled. | inferred | game | Reached from `Sim_StepPhase`; calls `Rng_Step`. |
 | `0x46414d` | `Table70_Pass` | Processes the phase's slice of `Table70` (the flags whose slot divided by 32 is the phase, phases 0 to 31): for each flag in use, its goods (not read), then through `0x464c36` its roads. | confirmed | game | Called by `Main_Loop`. [Carriers](carriers.md#the-flag-pass). |
 | `0x464c36` | `Flag_VisitRoads` | The part of `0x46414d` after a flag's goods: for each direction from north to east that holds a road, sets the flag status bit of a road that holds a carrier, and asks `0x42b455` for a carrier for a road whose byte shows none, unless the flag's status bit 7 says a request found none since the retry scan. The same Ghidra function holds the end of a good's direction step: at `0x46501a` a good given a road on which another good waits takes the waiting place only with a higher transport priority ([Goods](goods.md#the-turn-of-a-flags-goods)). | confirmed | game | Called by `0x46414d`. [Carriers](carriers.md#the-flag-pass). |
+| `0x464bb2` | `Flag_SeedRoadSearch` | Seeds the search for a good's direction with the flag's carrier roads, by the number of goods heading that way ([Goods](goods.md)). | confirmed | game | Called by `Table70_Pass`. |
+| `0x462ca4` | `Good_ReleaseRequest` | Gives back the request of a good that cannot reach its destination; a storage counts none ([Goods](goods.md)). | confirmed | game | Called by `Good_CountLost` and `Flag_VisitRoads`. |
+| `0x42abed` | `Player_CheckWarnings` | The player block's per-turn warning check: posts messages 10 and 11 through `Msg_Post` from the counters at `+0x14` and `+0x18` of a `Table120` item ([Carriers](carriers.md)). | confirmed | game | Only caller is `0x42abac`. |
 | `0x42cb2d` | `Table18_Pass` | Processes the phase's slice of `Table18` (slots `32 * phase` on, in groups of 32 every 1024): a finished building goes to its type's handler through the table at `0x42cd1d`, a building under construction to the countdown. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
 | `0x42f3d9` | `Table16_Pass` | Processes the phase's slice of `Table16`: the slots whose number is the phase modulo 16 plus a multiple of 16, each through `0x42fc81`. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
 | `0x42f4f1` | — | For each view, gathers the settlers on the shown tiles, runs their turn through `0x42fc81` once more, and builds their draw records (`0x42f512`, `0x43f537`). So a settler in view acts every pass, others every 16th. | inferred | game | Called by `Main_Loop`. |
@@ -286,6 +401,80 @@ entries per phase (see "Item tables").
 | `0x428d10` | `Map_ObjectPass` | Every 20 clock units takes the next nodes of a cursor that moves 23 columns on (a row down where it wraps), as many as the map's size gives (`+0x21c`): a lake node with detail may move its detail (one draw); an object code from `0x53` goes through the table at `0x428eb8`, 8 bytes an entry: `0x53` vanishes when a draw's low two bits are 0, `0x5d` to `0x66` become `0x53`, the codes from `0x67` grow or decay. | confirmed | game | Called by `0x4286d8`; draws through `0x466ade`. [Woodcutting](woodcutting.md#the-object-pass). |
 | `0x428a75` | — | Counts down three timers of a player block; the timer at `+0x120` repeats its work once per period that has elapsed. | unknown | game | Called by `0x4286d8`. |
 | `0x42a74a` | — | Copies `Clock_ElapsedTotal` and resets it, then calls `0x42a7ac` for each player block. | unknown | game | Reached from the phase table of `Sim_StepPhase`. |
+| `0x429580` | `Ai_PhaseUpdate` | Phase-table entry: runs `Ai_UpdatePlayer` when the player block at `+0x64` has bits 7 and 6 of byte 2 set. | confirmed | game | Entry of the phase table at `0x42923c`. |
+| `0x42a3f1` | — | Counts the player blocks with bit 6 of byte 2 set, sums their `+0x112`, compares the count with `+0x48`, then scales the sum and calls `0x42a567`. | unknown | game | Called by `0x42965c`. |
+| `0x42a567` | — | Scales a player's `+0x112` by `+0x4a` and adds `+0x58`; role open. | unknown | game | Called by `0x42a3f1`. |
+| `0x42b1ce` | — | Writes player `+0x188` (sum of `+0x17c` and `+0x180`, capped) and `+0x184` (a ratio to `+0x4c` scaled by `+0x5a`, plus `0x400`, adjusted by `+0x15e`). | unknown | game | Called by `0x42b18d`. |
+| `0x42e7e0` | `Building_HandleCastle` | The handler of the building type 0x18, the castle (knights and defence). Not ported. Entry inferred. | inferred | game | Entry 0x18 of `0x42cd1d` (jump at `0x42cddd`); follows a `ret`. |
+| `0x43013b` | — | A soldier's work at a military building (code to `0x4312ed`). Entry inferred. | inferred | game | Entry 0x34 of `0x42fca1` (jump at `0x42fe41`). |
+| `0x434946` | `Settler_ClaimNode` | State 0x1c: takes the node it stands on when no other settler stands there (frame `0x52`, no timer, mode 0) and goes on as state 0x19; else waits. Entry inferred. | confirmed | game | Entry 0x1c of `0x42fca1`. [Settlers](settlers.md#walking-home). |
+| `0x4350f8` | — | State 0x1a, the boatman's (water roads). Not ported. Entry inferred. | unknown | game | Entry 0x1a of `0x42fca1`. |
+| `0x4353ef` | `Settler_SearchFlag` | State 0x19: when the timer has run out, searches the spiral table (entries 1 to 258) for the nearest flag of the settler's player with a road and sets the vector to it; with none, a random offset. Entry inferred. | confirmed | game | Entry 0x19 of `0x42fca1`. [Settlers](settlers.md#walking-home). |
+| `0x4385ab` | `Settler_ArriveHome` | The generic arrival at the end of a free walk: on a flag of its player with a road the settler starts the walk to a storage (state 2, mode `0xfe`); elsewhere searches again (state 0x19). Entry inferred. | confirmed | game | Jumps from `Settler_ArrivalByJob` and the jobs' branches; follows a `ret`. [Settlers](settlers.md#walking-home). |
+| `0x43cc5f` | `Settler_EnterStorageJob21` | The mode `0xfe` entry of job 21 into a storage; also counts the settler in word `0x40` of the storage item. Not ported. Entry inferred. | inferred | game | Job 21 entry of `0x43ca54` (jump at `0x43cafc`); follows a `ret`. |
+| `0x43ceea` | `Settler_EnterStorageJob4` | The mode `0xfe` entry of job 4 into a storage. Not ported. Entry inferred. | inferred | game | Job 4 entry of `0x43ca54` (jump at `0x43ca74`); follows a `ret`. |
+| `0x4457e6` | — | Stores default fractions in the player block (around `+0x140` to `+0x150` and `-0x80`); last of four siblings `0x445716`, `0x445752`, `0x44579c`; perhaps the food and goods distribution. | unknown | game | Only caller is `0x42055e`, in `0x420545`; [M5](../milestones/m5-food.md). |
+| `0x462d6d` | `Good_Kinds` | Data: 32 bytes, for each good the byte of the destination building's fill a lost good counts against (0 byte 8, 1 byte 9). | confirmed | game | Read at `0x462cc2` (`Good_ReleaseRequest`); ported as `GoodKinds`. |
+| `0x464117` | `Good_DestinationClasses` | Data: two bytes for each good, a class and the offset of a request word; class `0xff` sends the good to storage at once. | confirmed | game | Read at `0x46440e` and `0x4644ab` in `Table70_Pass`. [Goods](goods.md). |
+| `0x475244` | `Ai_EvaluateAction` | The evaluator that the actions of `Ai_RunActions` share. | inferred | game | Called by eight of the nine actions of `0x4754b0`. |
+| `0x4754b0` | `Ai_RunActions` | Dispatches the nine computer-opponent actions `0x47556e`, `0x4756ed`, `0x475950`, `0x475a7e`, `0x475c95`, `0x475e14`, `0x475ef6`, `0x475fd5`, `0x4760b4`; calls `Ai_RecordGoal`. | inferred | game | Only caller is `Ai_UpdatePlayer`. |
+| `0x47556e` | — | An action of `Ai_RunActions`. | unknown | game | Only caller is `Ai_RunActions`; calls `Ai_EvaluateAction`. |
+| `0x4756ed` | — | An action of `Ai_RunActions`. | unknown | game | Only caller is `Ai_RunActions`; calls `Ai_EvaluateAction`. |
+| `0x475950` | — | An action of `Ai_RunActions`; the only one that does not call `Ai_EvaluateAction`. | unknown | game | Only caller is `Ai_RunActions`. |
+| `0x475a7e` | — | An action of `Ai_RunActions`. | unknown | game | Only caller is `Ai_RunActions`; calls `Ai_EvaluateAction`. |
+| `0x475c95` | — | An action of `Ai_RunActions`. | unknown | game | Only caller is `Ai_RunActions`; calls `Ai_EvaluateAction`. |
+| `0x475e14` | — | An action of `Ai_RunActions`. | unknown | game | Only caller is `Ai_RunActions`; calls `Ai_EvaluateAction`. |
+| `0x475ef6` | — | An action of `Ai_RunActions`. | unknown | game | Only caller is `Ai_RunActions`; calls `Ai_EvaluateAction`. |
+| `0x475fd5` | — | An action of `Ai_RunActions`. | unknown | game | Only caller is `Ai_RunActions`; calls `Ai_EvaluateAction`. |
+| `0x4760b4` | — | An action of `Ai_RunActions`. | unknown | game | Only caller is `Ai_RunActions`; calls `Ai_EvaluateAction`. |
+| `0x47619e` | `Ai_ChooseGoal` | Tests about 25 goal bits one by one through the goal conditions `0x476af1` to `0x47895d`, each hit recorded through `Ai_RecordGoal`; works on arrays at player `+0x1dc` to `+0x33c`. | inferred | game | Only caller is `Ai_UpdatePlayer`. |
+| `0x476529` | `Ai_RecordGoal` | Records the chosen goal. | inferred | game | Called by `Ai_ChooseGoal` and `Ai_RunActions`. |
+| `0x47661b` | — | An evaluator that eleven goal conditions of `Ai_ChooseGoal` share; clamps a value to 3999 at `0x47664e`. | unknown | game | Called by `0x4772f7`, `0x47872c`, and nine others. |
+| `0x476862` | — | An evaluator that five goal conditions of `Ai_ChooseGoal` share. | unknown | game | Called by `0x476b6b`, `0x476caf`, `0x476eb4`, `0x476f68`, `0x477b61`. |
+| `0x4769ed` | — | An evaluator that five goal conditions of `Ai_ChooseGoal` share. | unknown | game | Called by `0x477073`, `0x477114`, `0x4771b5`, `0x477256`, `0x478823`. |
+| `0x476af1` | — | The first goal condition of `Ai_ChooseGoal`. | unknown | game | Only caller is `Ai_ChooseGoal`. |
+| `0x47820f` | — | A goal condition of `Ai_ChooseGoal`; clamps a value to 3999 at `0x478294`. | unknown | game | Only caller is `Ai_ChooseGoal`. |
+| `0x47849d` | — | A goal condition of `Ai_ChooseGoal`. | unknown | game | Only caller is `Ai_ChooseGoal`. |
+| `0x47872c` | — | A goal condition of `Ai_ChooseGoal`. | unknown | game | Only caller is `Ai_ChooseGoal`; calls `0x47661b`. |
+| `0x47895d` | — | The last and largest goal condition of `Ai_ChooseGoal`. | unknown | game | Only caller is `Ai_ChooseGoal`. |
+| `0x478f2b` | `Ai_RunSearches` | Clears the scratch arrays and branches on the opponent kind at player `+0x101` to the map searches `0x479293` to `0x479ade`, handing them `Ai_ObjectWeights`. | inferred | game | Only caller is `Ai_UpdatePlayer`. |
+| `0x479213` | `Ai_ObjectWeights` | Data: 128 bytes, inferred one per map object code, that `Ai_RunSearches` puts at EDI `+0x30` before a map search. | inferred | game | Loaded at `0x479053`, `0x4790ac`, `0x479105`, `0x47914f`, `0x479196`, `0x4791ec`. |
+| `0x479293` | — | A map search of `Ai_RunSearches`; calls itself. | unknown | game | Called by `Ai_RunSearches`. |
+| `0x479403` | — | A map search of `Ai_RunSearches`; calls itself. | unknown | game | Called by `Ai_RunSearches`. |
+| `0x47958c` | — | A map search of `Ai_RunSearches`; calls itself. | unknown | game | Called by `Ai_RunSearches`. |
+| `0x4796f1` | — | A map search of `Ai_RunSearches`; calls itself. | unknown | game | Called by `Ai_RunSearches`. |
+| `0x47978c` | — | A map search of `Ai_RunSearches`; calls itself. | unknown | game | Called by `Ai_RunSearches` at `0x479066`. |
+| `0x4798e0` | — | A map search of `Ai_RunSearches`. | unknown | game | Called by `Ai_RunSearches`. |
+| `0x479a9a` | — | A short step (34 bytes) after a map search of `Ai_RunSearches`. | unknown | game | Called by `Ai_RunSearches` at `0x47906b`. |
+| `0x479abc` | — | A short step (34 bytes) of `Ai_RunSearches`. | unknown | game | Called by `Ai_RunSearches`. |
+| `0x479ade` | — | A map search of `Ai_RunSearches`. | unknown | game | Called by `Ai_RunSearches`. |
+
+| Address | Name | Role | Status | Layer |
+| --- | --- | --- | --- | --- |
+| `0x42a313` | — | Data: byte table of steps read by `0x42965c` (first of three, with `0x42a35d` and `0x42a3a7`). | inferred | game |
+| `0x42a35d` | — | Data: second byte table of steps read by `0x42965c`. | inferred | game |
+| `0x42a3a7` | — | Data: third byte table of steps read by `0x42965c`. | inferred | game |
+| `0x437dfb` | `Settler_ArrivalByJob` | Data: the 8-byte jumps by job to each job's end of the free walk. | confirmed | game |
+| `0x43c92b` | `Building_DoorSpeeds` | Data: one byte for each building type, the door speed (xor `0x1f` scales a step time). | confirmed | game |
+| `0x43f248` | `Settler_StepTimes` | Data: 16-bit words, the time of a step for each step shape. | confirmed | game |
+
+Sites:
+
+- `0x428d6e`: the lake detail of a node: one draw, may grow below 10, moves to a lake neighbour (in `Map_ObjectPass`).
+- `0x42bbea`: the request clears the job bits of a jobless settler (`& 0x83`) to make it a carrier; no tool taken (in the Ghidra function `0x42b4bc`, `Road_RequestBoatman`).
+- `0x42fc88`: the jump by the state byte into the table at `0x42fca1` (in `Settler_Dispatch`).
+- `0x4354b8`: forms the owner bits of the settler's player; `0x43560c`: the random choice where no flag is near; `0x435821`: a knight takes state 0x35 in place of the free walk (in `Settler_SearchFlag`, `0x4353ef`).
+- `0x436e96`: the step from the memory row; `0x437072`: the choice from the vector's heading class; `0x4375ee`: the try of the other five directions (in `Settler_FreeWalk`).
+- `0x437f8f`: the woodcutter at the end of its walk compares the node's object code with 8 and `0x18` (a tree); `0x438011`: puts the log (good 7) on the flag through `Flag_PutGood` (in `Settler_FreeWalkArrived`).
+- `0x438c11`: compares the drawn node's object code with 8 and `0x18` (in `Woodcutter_SearchTree`).
+- `0x43910b`, `0x4391eb`, `0x4392cb`, `0x4393ab`: the knights of the jobs 22 to 25 draw for promotion (limits 4000, 2000, 1000, 500), reached through the jumps by job at `0x43904b` (in `Settler_WaitInStorage`).
+- `0x439985`: the step against a chain of blocked settlers; `0x43a24e`: a settler bound for a storage that finds no road on takes state 0x19 (in `Settler_Walk`).
+- `0x43a6c1`: two settlers that block each other pass; `0x43a791`: a blocked step marks the heading and waits `0x7f` (in `Settler_StepEast`).
+- `0x43aea4`: a carrier with byte 15 negative is sent home (not ported); `0x43b410`: the end of the exchange of goods at a flag that starts at `0x43af07` (in `Settler_WalkRoad`).
+- `0x43c9cf`: a settler entering a building whose link is 0 takes state 0x19 (in `Settler_PassDoor`).
+- `0x46427c`, `0x464364` to `0x46444c`, `0x464539`, `0x464aa8`: in the goods part of a flag's turn, the thermometer of goods per direction (kept at `+0x218` to `+0x21b`); the destination of a good with none; the direction chosen from a register's leftover when some road holds a carrier and no storage was reached; the start of the direction search (in `Table70_Pass`).
+- `0x4650b9`: the end of the loop over a flag's places, the last instruction of the goods turn (in `Flag_VisitRoads`).
+- `0x47664e`: clamps a value to 3999 (`0xf9f`), which the code scales as a multiplier, not an archive entry (in `0x47661b`). The same clamp is at `0x478294` (in `0x47820f`).
 
 ### Random generator and map start
 
@@ -307,6 +496,7 @@ Sites:
 - `0x468b3d`: a free game masks the seed words into the map seed.
 - `0x4688f4`: a mission takes the map seed from its record.
 - `0x41eeb9`: the game start calls `MapGen_Generate`.
+- `0x466b93`: the return of `Rng_Step`; the harness runs one step to it.
 
 ### Map generation
 
@@ -374,6 +564,7 @@ nothing. The call order of `MapGen_Generate`:
 | `0x424c57` | `MapGen_ResolveObjectOverlap` | Keeps large objects only where their neighbors are free. | inferred | game | Called by `MapGen_PlaceTerrainAndObjects`. |
 | `0x4232ef` | `MapGen_MarkWaterAdjacent` | Marks tiles next to water. | confirmed | game | Pass. |
 | `0x421841` | `MapGen_CountResource1` | Sums the amounts of resource type 1. | confirmed | game | Pass. |
+| `0x421d28` | `Map_ScanWindowTable` | Data: 16-bit words, by map size value, the window of the retry scan (16, 30, 55 buildings for the sizes 1, 2, 3). | confirmed | game | `Map_SetGeometry` copies the entry into `+0x52`; read by `Sim_ClearRetryBits`; read from the executable by `ProgramTables`. |
 
 The 15 object scatter passes `0x424175`, `0x4241e3`, `0x424247`, `0x4242ab`, `0x42430f`, `0x424373`,
 `0x4243d7`, `0x42443b`, `0x42449f`, `0x424503`, `0x424567`, `0x4245cb`, `0x42462f`, `0x424693`, and
@@ -382,6 +573,10 @@ The 15 object scatter passes `0x424175`, `0x4241e3`, `0x424247`, `0x4242ab`, `0x
 Sites:
 
 - `0x424ad8`: `MapGen_PlaceDeposits` tests the resource layer one byte past the tile it writes.
+- `0x421546`: the end of the first two stores (water level, lake radius); the emulator harness stops here (in `MapGen_InitParams`).
+- `0x421749`, `0x421761`, `0x421774`, `0x421779`, `0x42178c`, `0x42179f`, `0x4217b2`, `0x4217c5`, `0x4217d8`, `0x4217eb`, `0x421803`, `0x421808`: the instructions after the seeding and after the calls of the passes `MapGen_ClearMap` to `MapGen_ScaleHeights`, `MapGen_MarkWaterAdjacent`, and `MapGen_CountResource1`, where the emulator harness and the Windows check read the state; `0x421808` ends the last pass. `0x421757`, `0x42176a`, `0x421782`, `0x421795`, `0x4217a8`, `0x4217bb`, `0x4217ce`, `0x4217e1`, `0x4217f4`: the calls of `MapGen_StepProgress` (in `MapGen_Generate`).
+- `0x423372`, `0x423385`, `0x423398`, `0x4233ab`, `0x4233be`, `0x4233d1`, `0x4233d6`, `0x4233e9`, `0x4233ee`, `0x423401`, `0x423406`, `0x423419`, `0x42341e`, `0x423423`, `0x423428`, `0x42343b`, `0x423440`, `0x423445`, `0x42344a`, `0x42344f`, `0x423462`, `0x423475`, `0x423488`, `0x42349b`: the instructions after each pass call, `MapGen_GradeWaterDepth` through the 15 scatter passes to `MapGen_PlaceDeposits4`, where the emulator harness records a step. `0x42337b`, `0x42338e`, `0x4233a1`, `0x4233b4`, `0x4233c7`, `0x4233df`, `0x4233f7`, `0x42340f`, `0x423431`, `0x423458`, `0x42346b`, `0x42347e`, `0x423491`: the calls of `MapGen_StepProgress` (in `MapGen_PlaceTerrainAndObjects`).
+- `0x4234a4`, `0x4234b7`: the last two calls of `MapGen_StepProgress`, each after a pass; `0x4234ae`: the instruction after the call of `0x424c57`, the last recorded step end of the emulator (in `MapGen_PlaceTerrainAndObjects`).
 
 ### Castle and build sites
 
@@ -399,6 +594,9 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x442244` | `Flag_PlaceFromButton` | The flag button: judges the node under the cursor and, where the site is not 0 and the node state is 4, 6, or 7, goes on to `Flag_Place`, else to the error report (`0x44c768`). | confirmed | game | Called by `0x440d23`. |
 | `0x4422c5` | `Flag_Place` | Takes the first free slot of the flag table, writes the flag bit and the flag object on the node, moves the node's deposit to its neighbors, and stores the slot as the node's link. | confirmed | game | Called by `Flag_PlaceFromButton` and `0x440c24`. |
 | `0x45d7ad` | `Table70_Allocate` | Takes the first free slot of the flag table, clears the item, and leaves the slot number in the registers; reports a full table. | confirmed | game | Called by `Flag_Place`, `Castle_Place`, `0x421530`, and `0x449a63`. |
+| `0x45da8f` | `Table18_Allocate` | Takes the first free slot of the building table ([Item tables](item-tables.md)). | confirmed | game | Called by `0x421530`, `Castle_Place`, and `0x449a63`. |
+| `0x45dd1c` | `Table120_Allocate` | Takes the first free slot of the storage table ([Item tables](item-tables.md)). | confirmed | game | Called by `Castle_Place`. |
+| `0x45e121` | `Table16_Allocate` | Takes the first free slot of the settler table ([Item tables](item-tables.md)). | confirmed | game | Called by `0x421530`, `Settler_TakeFromStorage`, and `0x41f2d2`. |
 | `0x449f58` | `Flag_MoveDeposit` | Moves the resource deposit of a node that is about to hold a flag to the nodes around it. | confirmed | game | Called by `Flag_Place` and `0x449a63`. |
 | `0x44a0aa` | `Deposit_MergeInto` | Adds a deposit to the byte of one node: into an empty byte, or into one of the same type up to 31, carrying the rest on. | confirmed | game | Called by `Flag_MoveDeposit`. |
 | `0x44db26` | `Render_DrawFlag` | Draws a flag (object code 1): the flag sprite, then the road stubs and goods that wait at it. | inferred | game | Called by `Render_DrawRowTiles` for object code 1. |
@@ -419,7 +617,14 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x44bd72` | `BuildSite_EvaluateBuilding` | The judgment for a node that holds a building, with its own copy of the conditions. | inferred | game | Called by `BuildSite_Evaluate` and `BuildSite_EvaluateFromSouthEast`. |
 | `0x44be72` | `BuildSite_SortTriangle` | Sorts one terrain code into plain land, mountain, or other kind. | confirmed | game | Called by `BuildSite_EvaluateBuilding`. |
 | `0x45e375` | `Territory_Update` | Claims the territory around the new building and updates the border marks. | inferred | game | Called by `Castle_Place`. |
-| `0x442e8a` | `Castle_StartStockRows` | Five rows of 26 start stock numbers, for the levels 0, 10, 20, 30, and 40. | confirmed | game | Read by `Castle_Place` through `+0x162` of the player block. |
+| `0x442e8a` | `Castle_StartStockRows` | Data: five rows of 26 start stock numbers, for the levels 0, 10, 20, 30, and 40. | confirmed | game | Read by `Castle_Place` through `+0x162` of the player block. |
+| `0x41e640` | `Map_ObjectClassTable` | Data: 128 bytes, the class (size) of each object code; code 1 is class 3 (flag), codes 2 to 4 are classes 4 to 6 (buildings, castle), generated trees and stones classes 1 and 2. | confirmed | game | Stored into `+0xc8` by `0x41dbea`; read from the executable by `ProgramTables`. |
+| `0x45e44b` | — | One of the five checks `Territory_Update` runs on the tiles around a position. | unknown | game | Only caller is `Territory_Update`. |
+| `0x45e4ca` | — | One of the five checks `Territory_Update` runs on the tiles around a position. | unknown | game | Only caller is `Territory_Update`. |
+| `0x45eb4c` | — | One of the five checks `Territory_Update` runs on the tiles around a position; calls `0x45ed5f`. | unknown | game | Only caller is `Territory_Update`. |
+| `0x45f154` | — | One of the five checks `Territory_Update` runs on the tiles around a position; reads the map geometry fields `+0x0` to `+0xc`. | unknown | game | Only caller is `Territory_Update`. |
+| `0x4662e2` | — | Reads the terrain class of a tile and searches a bit set through `0x466719`; placement or territory. | unknown | game | Called by `0x4422c5` and `0x449a63`; calls `0x463a40`, `0x466719`. |
+| `0x674a30` | `BuildSite_NeighborTiles` | Data: a list of tile pointers around a node; the build-site checks read the object byte of each; game state `+0x98e`. | inferred | game | Read by `BuildSite_EvaluateFromSouthEast`, `Road_UpdateCursor`, `BuildSite_Evaluate`, `0x44bd72`. |
 
 Sites:
 
@@ -427,6 +632,8 @@ Sites:
   castle reaches the stub at `0x44fd2f`, which stores the object number 178; its sprite is entry 1428.
 - `0x45f402` sets two border bits of the new flag from the owners around it; not ported.
 - `0x41f2d2`: places a group of 3, 6, or 12 settlers on the start node of a mission start; not recovered further.
+- `0x44e62b` to `0x44fd2f`: the building stubs that the jump table at `0x44e3aa` in `0x44e329` reaches; each stores an object number and jumps or calls into `Gfx_DrawObjectSprite` or `Gfx_DrawSpriteBase320`. `0x44e62b` stores object 0xa7 (entry 1417), `0x44e63b` object 0xa8 (entry 1418); `0x44e636` and on to `0x44f928` are the jumps into `Gfx_DrawObjectSprite` for objects 152 to 171 and 174; `0x44e653` tests object byte 9 before `0x44e6c5` draws byte 9 plus 174 plus 320; `0x44e720`, `0x44e86d`, `0x44e9ba`, `0x44eb07` and `0x44e781`, `0x44e8ce`, `0x44ea1b`, `0x44eb68` draw 152 and 153 plus 320; `0x44ecfc`, `0x44f6aa`, `0x44f79a`, `0x44f82d` draw entries 502 to 517; `0x44ee56`, `0x44eeda`, `0x44ef5e`, `0x44efd8`, `0x44f05c`, `0x44f0e0`, `0x44f160`, `0x44f1e3` draw the first byte of a pair of the table `0x44f225` plus 320 (data after the jump at `0x44f220`, code again at `0x44f325`); `0x44f42e` and `0x44f528`, `0x44f5c8`, `0x44f908` are tail jumps for 474 to 481 and 448 to 455; `0x44f3a8` forms 188 plus 0 to 3 and jumps at `0x44f3ae`; `0x44ec2a` jumps with 192; `0x44f933` to `0x44fa5d` store an index of 1 to 23 for the table that `0x44fc87` reads before the call at `0x44fcac`; `0x44fa74` jumps for object 144; `0x44faf3`, `0x44fba7` draw 330 and 328. Source: [Graphics archives](graphics-archives.md#entries-no-routine-reads), [Graphics images](graphics-images.md).
+- `0x461b77`: a settler inside the building is sent home: its state byte (`+0xa`) is set to `0x1c` and nothing else (in `Building_Remove`).
 
 ### Roads
 
@@ -454,6 +661,14 @@ How the player draws a road between two flags, what the commit writes, and how a
 | `0x428105` | `Render_DrawRoadSouthEast` | The same for the road leaving south-east: the mask 243 plus the height difference. | confirmed | game | Called by `0x427e3a`. |
 | `0x4281cc` | `Render_DrawRoadSouth` | The same for the road leaving south: the mask 252 plus the height difference. | confirmed | game | Called by `0x427f1f`. |
 | `0x428389` | — | Where no road lies and the owners of two neighbors differ, draws the border between them (east); with `0x42846d` and `0x428528` for the other two directions. | inferred | game | Called by `0x427d3e`, `0x427e3a`, `0x427f1f`. |
+| `0x444d24` | — | A step of the road walk: moves to the next node and returns 0 at an object code 1, else finds the road bits (`& 0x3f`) to go on. | inferred | game | Called by `0x444c74`; calls `0x444c61`. |
+| `0x462acd` | `Road_CarrierCapacities` | Data: 8 bytes, the number of carriers a road of each length class (`0x4454e7`) holds at most. | confirmed | game | Read at `0x46252a` (`Flag_TakeDown`), `0x465189` (`Flag_VisitRoads`), `0x466928`; ported as `RoadCapacities`. |
+
+Sites:
+
+- `0x427dc7`, `0x427eb3`, `0x427f98`: the calls of `Render_DrawRoadEast`, `Render_DrawRoadSouthEast`, and `Render_DrawRoadSouth` (in `0x427d3e`, `0x427e3a`, and `0x427f1f`).
+- `0x444079`, `0x44439b`, `0x444544`, `0x4445b6`, `0x444608`, `0x444657`, `0x4446cb`, `0x4446f6`, `0x444716`, `0x444743`: the sound requests (`Sound_Request`); `0x4445a8`: the call of `0x42f7ea` (in `Road_ClickStep`).
+- `0x46358c`: the walk reaches the flag at the road's end and turns the direction round (direction minus 3, modulo 6) for the flag's side; code after the computed jump at `0x463308` that Ghidra left outside the function (in `Road_TakeDownWalk`).
 
 ### Save and load
 
@@ -732,6 +947,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4077e0` | `File_Close` | confirmed | Save and load |
 | `0x407800` | `File_Write` | confirmed | Save and load |
 | `0x407870` | `File_Read` | confirmed | Save and load |
+| `0x4080e0` | `Palette_Present` | inferred | Main loop |
 | `0x40b8c0` | `Sound_CreateBuffer` | confirmed | Sound |
 | `0x410e30` | `Text_ReadFile` | confirmed | Text files |
 | `0x410f40` | `Text_ParseFile` | confirmed | Text files |
@@ -740,15 +956,21 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x415130` | `Music_LoadFile` | confirmed | Music |
 | `0x415390` | `Music_Stop` | inferred | Music |
 | `0x415480` | `Music_SetVolume` | inferred | Music |
+| `0x415940` | `Music_ReadVarLen` | confirmed | Music |
 | `0x417bb0` | `Platform_GameThreadMain` | confirmed | Program start and game flow |
 | `0x417c50` | `Platform_StartGameThread` | confirmed | Program start and game flow |
 | `0x419a60` | `Music_ApplyOption` | confirmed | Music |
 | `0x41da10` | `Game_Entry` | confirmed | Program start and game flow |
 | `0x41dbea` | — | unknown | Program start and game flow |
+| `0x41e640` | `Map_ObjectClassTable` | confirmed | Castle and build sites |
 | `0x41e6c0` | `Game_InitOnce` | confirmed | Program start and game flow |
 | `0x41e706` | `Game_Restart` | confirmed | Program start and game flow |
 | `0x41e710` | `Game_StartClock` | confirmed | Timing |
 | `0x41e8e0` | `RuleData_Load` | confirmed | Graphics archives |
+| `0x41e958` | `StartScreen_PlayLogo` | inferred | Program start and game flow |
+| `0x41ea82` | `StartScreen_LogoStep1` | confirmed | Program start and game flow |
+| `0x41edea` | `StartScreen_LogoStepLast` | confirmed | Program start and game flow |
+| `0x41edf0` | `StartScreen_DrawList` | confirmed | Program start and game flow |
 | `0x41ee3b` | `FreeGame_NewSeed` | confirmed | Random generator and map start |
 | `0x41ee84` | `Game_Start` | confirmed | Program start and game flow |
 | `0x41eeeb` | — | unknown | Program start and game flow |
@@ -756,12 +978,17 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x41f4d7` | `Game_ResumeLoaded` | inferred | Program start and game flow |
 | `0x41f6a5` | `Map_BuildNeighborOffsets` | confirmed | Castle and build sites |
 | `0x42055e` | — | unknown | Program start and game flow |
+| `0x420cc5` | `View_DrawFrameList` | confirmed | Views, panels, and drawing |
+| `0x420d9f` | `View_FramePieceLists` | confirmed | Views, panels, and drawing |
+| `0x421021` | `View_DrawFrameBorders` | confirmed | Views, panels, and drawing |
+| `0x4213ef` | `View_DrawPanelFrames` | confirmed | Views, panels, and drawing |
 | `0x421530` | `MapGen_InitParams` | inferred | Map generation |
 | `0x4216e9` | `MapGen_Generate` | confirmed | Map generation |
 | `0x421841` | `MapGen_CountResource1` | confirmed | Map generation |
 | `0x4218ca` | `MapGen_ResetProgress` | confirmed | Map generation |
 | `0x4218d8` | `MapGen_StepProgress` | inferred | Map generation |
 | `0x42195c` | `Map_SetGeometry` | confirmed | Map generation |
+| `0x421d28` | `Map_ScanWindowTable` | confirmed | Map generation |
 | `0x421d3a` | `MapGen_ClearMap` | confirmed | Map generation |
 | `0x421d71` | `MapGen_SeedHeights` | confirmed | Map generation |
 | `0x421e75` | `MapGen_SubdivideHeights` | confirmed | Map generation |
@@ -810,10 +1037,19 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x425a10` | `Main_Loop` | confirmed | Main loop |
 | `0x425c9c` | `Timer_WaitNextCall` | confirmed | Timing |
 | `0x425cb9` | `Stats_RecordHistory` | inferred | Main loop |
+| `0x426350` | `Stats_SumRing` | confirmed | Main loop |
+| `0x42637e` | — | confirmed | Main loop |
 | `0x42639a` | — | unknown | Main loop |
+| `0x426664` | `Stats_Scale` | inferred | Main loop |
+| `0x4266d7` | `Stats_ComputeShares` | confirmed | Main loop |
 | `0x426abe` | `Main_HandleKeys` | inferred | Main loop |
+| `0x426b57` | `Input_BufferKey` | confirmed | Input |
 | `0x426dfc` | `Main_ComputeElapsed` | confirmed | Main loop |
 | `0x427062` | `Input_ApplyPointerMotion` | confirmed | Input |
+| `0x427642` | `Terrain_DrawTiles` | confirmed | Graphics images |
+| `0x4279d4` | `Render_TriangleVariantsUpper` | confirmed | Graphics images |
+| `0x427b38` | `Render_TriangleVariantsLower` | confirmed | Graphics images |
+| `0x427b89` | `Render_TerrainTextures` | confirmed | Graphics images |
 | `0x427c09` | `Render_DrawRoadsAndBorders` | confirmed | Roads |
 | `0x428008` | `Render_DrawRoadEast` | confirmed | Roads |
 | `0x428105` | `Render_DrawRoadSouthEast` | confirmed | Roads |
@@ -825,7 +1061,15 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x428a75` | — | unknown | Simulation |
 | `0x428d10` | `Map_ObjectPass` | confirmed | Simulation |
 | `0x4291c2` | `Sim_StepPhase` | confirmed | Simulation |
+| `0x429580` | `Ai_PhaseUpdate` | confirmed | Simulation |
+| `0x42a313` | — | inferred | Simulation |
+| `0x42a35d` | — | inferred | Simulation |
+| `0x42a3a7` | — | inferred | Simulation |
+| `0x42a3f1` | — | unknown | Simulation |
+| `0x42a567` | — | unknown | Simulation |
 | `0x42a74a` | — | unknown | Simulation |
+| `0x42abed` | `Player_CheckWarnings` | confirmed | Simulation |
+| `0x42b1ce` | — | unknown | Simulation |
 | `0x42b455` | `Road_RequestCarrier` | confirmed | Simulation |
 | `0x42b4bc` | `Road_RequestBoatman` | inferred | Simulation |
 | `0x42be63` | `Building_RequestWorker` | confirmed | Simulation |
@@ -834,19 +1078,27 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42cf9d` | `Building_Free` | inferred | Castle and build sites |
 | `0x42d945` | `Building_HandleType2` | confirmed | Simulation |
 | `0x42e0b8` | `Building_HandleType1` | confirmed | Simulation |
+| `0x42e7e0` | `Building_HandleCastle` | inferred | Simulation |
 | `0x42f3d9` | `Table16_Pass` | confirmed | Simulation |
 | `0x42f4f1` | — | inferred | Simulation |
+| `0x42f7ea` | — | unknown | Graphics images |
 | `0x42fc81` | `Settler_Dispatch` | confirmed | Simulation |
 | `0x42ff81` | `Settler_CarrierWaits` | confirmed | Simulation |
 | `0x43007b` | `Settler_StateDismissed` | confirmed | Castle and build sites |
 | `0x4300f1` | `Settler_StateRejoined` | confirmed | Castle and build sites |
+| `0x43013b` | — | inferred | Simulation |
 | `0x430ee9` | `Player_SwapInSecondView` | confirmed | Input |
 | `0x430fd3` | `Player_SwapOutSecondView` | confirmed | Input |
 | `0x4312ed` | `Flag_ReleaseGoods` | confirmed | Castle and build sites |
 | `0x431c31` | `Msg_Post` | confirmed | Main loop |
+| `0x434946` | `Settler_ClaimNode` | confirmed | Simulation |
+| `0x4350f8` | — | unknown | Simulation |
+| `0x4353ef` | `Settler_SearchFlag` | confirmed | Simulation |
 | `0x436b46` | `Flag_PutGood` | confirmed | Simulation |
 | `0x436c38` | `Settler_FreeWalk` | confirmed | Simulation |
 | `0x437ddd` | `Settler_FreeWalkArrived` | confirmed | Simulation |
+| `0x437dfb` | `Settler_ArrivalByJob` | confirmed | Simulation |
+| `0x4385ab` | `Settler_ArriveHome` | confirmed | Simulation |
 | `0x4388ff` | `Settler_WalkRows` | confirmed | Simulation |
 | `0x438a9e` | `Woodcutter_Cut` | confirmed | Simulation |
 | `0x438b8c` | `Woodcutter_SearchTree` | confirmed | Simulation |
@@ -858,19 +1110,34 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43bc52` | `Carrier_WaitAtEnd` | confirmed | Castle and build sites |
 | `0x43c4ea` | `Settler_DeliverGood` | confirmed | Simulation |
 | `0x43c7c2` | `Settler_EnterBuilding` | confirmed | Simulation |
+| `0x43c92b` | `Building_DoorSpeeds` | confirmed | Simulation |
 | `0x43c96b` | `Settler_PassDoor` | confirmed | Simulation |
+| `0x43cc5f` | `Settler_EnterStorageJob21` | inferred | Simulation |
 | `0x43cd06` | `Settler_EnterStorage` | confirmed | Simulation |
+| `0x43ceea` | `Settler_EnterStorageJob4` | inferred | Simulation |
 | `0x43cf15` | `Woodcutter_Start` | confirmed | Simulation |
 | `0x43dceb` | `Settler_WaitStep` | confirmed | Simulation |
 | `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
 | `0x43e036` | `Settler_StepToFlag` | confirmed | Simulation |
 | `0x43f17a` | `Settler_StandByCastle` | confirmed | Simulation |
+| `0x43f248` | `Settler_StepTimes` | confirmed | Simulation |
+| `0x43f4b8` | `Settler_CarriedFigures` | inferred | Views, panels, and drawing |
+| `0x43f8ae` | `Settler_FigureCarrier` | inferred | Graphics images |
+| `0x43fed8` | `Settler_FigureJob11` | inferred | Views, panels, and drawing |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
 | `0x440c24` | `View_HandleClick` | inferred | Roads |
 | `0x440d23` | `View_RunButtonAction` | inferred | Roads |
+| `0x441062` | `Msg_HandleOpenClick` | inferred | Views, panels, and drawing |
+| `0x44126d` | `Msg_StepNext` | inferred | Views, panels, and drawing |
+| `0x4415c0` | `Msg_Open` | inferred | Views, panels, and drawing |
+| `0x441987` | `Panel_Reset` | confirmed | Views, panels, and drawing |
+| `0x441b31` | — | confirmed | Views, panels, and drawing |
+| `0x441ba2` | — | confirmed | Views, panels, and drawing |
+| `0x441d2e` | — | confirmed | Views, panels, and drawing |
 | `0x442002` | `Road_Cancel` | confirmed | Roads |
 | `0x442244` | `Flag_PlaceFromButton` | confirmed | Castle and build sites |
 | `0x4422c5` | `Flag_Place` | confirmed | Castle and build sites |
+| `0x442509` | — | confirmed | Views, panels, and drawing |
 | `0x44257a` | `Rng_StepSettler` | confirmed | Simulation |
 | `0x442630` | `Castle_PlaceFromClick` | confirmed | Castle and build sites |
 | `0x442704` | `Castle_Place` | confirmed | Castle and build sites |
@@ -878,11 +1145,20 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x442f0c` | `Castle_CreateSettlers` | inferred | Castle and build sites |
 | `0x44333d` | `Settler_TakeFromStorage` | inferred | Castle and build sites |
 | `0x443f62` | `Road_ClickStep` | confirmed | Roads |
+| `0x444780` | `Map_CountPlayerObjects` | inferred | Views, panels, and drawing |
+| `0x444954` | `Map_CountNodeObject` | inferred | Views, panels, and drawing |
 | `0x444b29` | `Road_WalkEnds` | inferred | Roads |
+| `0x444d24` | — | inferred | Roads |
 | `0x444e68` | `Road_Commit` | confirmed | Roads |
 | `0x4454e7` | `Road_LengthClass` | confirmed | Roads |
 | `0x445570` | `Player_SetTransportPriorities` | confirmed | Program start and game flow |
+| `0x445643` | `Player_SetGoodsOrder` | confirmed | Program start and game flow |
+| `0x445716` | `Player_SetDefaults1` | confirmed | Program start and game flow |
+| `0x445752` | `Player_SetDefaults2` | confirmed | Program start and game flow |
+| `0x44579c` | `Player_SetDefaults3` | confirmed | Program start and game flow |
+| `0x4457e6` | — | unknown | Simulation |
 | `0x44591d` | `Panel_HandleClick` | inferred | Views, panels, and drawing |
+| `0x446f54` | — | unknown | Main loop |
 | `0x448418` | `Game_ConfirmEnd` | inferred | Program start and game flow |
 | `0x448436` | `Game_EndToStartScreen` | confirmed | Program start and game flow |
 | `0x449f58` | `Flag_MoveDeposit` | confirmed | Castle and build sites |
@@ -892,7 +1168,13 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | inferred | Castle and build sites |
 | `0x44bd72` | `BuildSite_EvaluateBuilding` | inferred | Castle and build sites |
 | `0x44be72` | `BuildSite_SortTriangle` | confirmed | Castle and build sites |
+| `0x44c8cf` | `Panel_WriteButtonList` | confirmed | Views, panels, and drawing |
 | `0x44cb6e` | `Msg_RunTimers` | confirmed | Main loop |
+| `0x44cb8f` | `Msg_RunPlayerTimers` | inferred | Main loop |
+| `0x44d19c` | — | unknown | Main loop |
+| `0x44d1c0` | `Msg_DrawIcon` | inferred | Main loop |
+| `0x44d263` | — | unknown | Main loop |
+| `0x44d270` | `Msg_DrawIconAlt` | inferred | Main loop |
 | `0x44d2fc` | — | unknown | Views, panels, and drawing |
 | `0x44d38d` | `Render_DrawMapView` | inferred | Views, panels, and drawing |
 | `0x44d3ae` | `Render_DrawViewRows` | confirmed | Views, panels, and drawing |
@@ -900,25 +1182,47 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44da4d` | `Gfx_DrawObjectSprite` | confirmed | Graphics images |
 | `0x44db26` | `Render_DrawFlag` | inferred | Castle and build sites |
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
+| `0x44e114` | `Gfx_SpriteLists` | inferred | Graphics images |
+| `0x44f225` | `Gfx_BuildingPairTable` | confirmed | Graphics images |
+| `0x44fd16` | `Gfx_ObjectNumberTable` | confirmed | Graphics images |
+| `0x44fd4a` | `Gfx_DrawSpriteBase320Low` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
 | `0x44ff59` | `Gfx_DrawPhaseSprite` | confirmed | Graphics images |
+| `0x44fff3` | `Render_DrawSettlerRecord` | inferred | Graphics images |
+| `0x4501a1` | `Settler_FigureBases` | confirmed | Graphics images |
+| `0x4503c5` | `Settler_FigureOffsets` | confirmed | Graphics images |
 | `0x450609` | `Save_ConfirmSlot` | confirmed | Save and load |
+| `0x45080d` | `Render_MarkTwoDirty` | confirmed | Views, panels, and drawing |
 | `0x450a35` | `Render_DrawViewOverlay` | inferred | Views, panels, and drawing |
 | `0x4511d5` | `Text_DrawGlyphs` | inferred | Graphics images |
 | `0x451355` | `Panel_Update` | inferred | Views, panels, and drawing |
+| `0x4513a8` | `Panel_UpdateView` | inferred | Views, panels, and drawing |
 | `0x45772e` | `Game_Pause` | confirmed | Timing |
 | `0x457751` | `Game_Resume` | confirmed | Timing |
+| `0x45ac83` | `Minimap_DrawPanel` | inferred | Views, panels, and drawing |
+| `0x45ae45` | `Minimap_DrawTiles` | inferred | Views, panels, and drawing |
+| `0x45afcf` | — | unknown | Views, panels, and drawing |
+| `0x45bb96` | — | unknown | Views, panels, and drawing |
 | `0x45ce5a` | `Panel_CopyToScreen` | inferred | Views, panels, and drawing |
+| `0x45ce7b` | `Panel_CopyViewToScreen` | inferred | Views, panels, and drawing |
 | `0x45d09b` | `Storage_Pick` | confirmed | Simulation |
 | `0x45d718` | `Frame_WaitAndPresent` | confirmed | Main loop |
 | `0x45d7ad` | `Table70_Allocate` | confirmed | Castle and build sites |
 | `0x45d974` | `Table70_Free` | confirmed | Castle and build sites |
+| `0x45da8f` | `Table18_Allocate` | confirmed | Castle and build sites |
 | `0x45dc0d` | `Table18_Free` | confirmed | Castle and build sites |
+| `0x45dd1c` | `Table120_Allocate` | confirmed | Castle and build sites |
 | `0x45e012` | `Table120_Free` | confirmed | Castle and build sites |
+| `0x45e121` | `Table16_Allocate` | confirmed | Castle and build sites |
 | `0x45e273` | `Table16_Free` | confirmed | Castle and build sites |
 | `0x45e375` | `Territory_Update` | inferred | Castle and build sites |
+| `0x45e44b` | — | unknown | Castle and build sites |
+| `0x45e4ca` | — | unknown | Castle and build sites |
+| `0x45eb4c` | — | unknown | Castle and build sites |
+| `0x45f154` | — | unknown | Castle and build sites |
 | `0x45f755` | `Save_WriteArchiveIndex` | confirmed | Save and load |
 | `0x45f7ab` | `Load_LoadSlot` | confirmed | Save and load |
+| `0x45f961` | `Panel_DrawStateImage` | confirmed | Views, panels, and drawing |
 | `0x45fa13` | `Save_WriteGame` | confirmed | Save and load |
 | `0x4600a8` | `Save_WriteMap` | inferred | Save and load |
 | `0x46010d` | `Save_WriteTable16` | confirmed | Save and load |
@@ -943,10 +1247,13 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4615cf` | `Click_Remove` | confirmed | Castle and build sites |
 | `0x4617fd` | `Building_Remove` | confirmed | Castle and build sites |
 | `0x462153` | `Flag_TakeDown` | confirmed | Castle and build sites |
+| `0x462acd` | `Road_CarrierCapacities` | confirmed | Roads |
 | `0x462ad5` | `Building_ClearPlayerRequests` | confirmed | Castle and build sites |
 | `0x462bbc` | `Flag_ClearPlayerRequests` | confirmed | Castle and build sites |
 | `0x462bf8` | `Player_ClearRequestWords` | confirmed | Castle and build sites |
 | `0x462c8d` | `Good_CountLost` | confirmed | Castle and build sites |
+| `0x462ca4` | `Good_ReleaseRequest` | confirmed | Simulation |
+| `0x462d6d` | `Good_Kinds` | confirmed | Simulation |
 | `0x462d88` | `Click_RemoveRoad` | confirmed | Castle and build sites |
 | `0x462e1d` | `Road_TakeDown` | confirmed | Roads |
 | `0x463204` | `Road_TakeDownWalk` | confirmed | Roads |
@@ -954,19 +1261,62 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x463a40` | `Road_GatherSettlers` | confirmed | Roads |
 | `0x463ef9` | `Carrier_DismissWaiting` | confirmed | Roads |
 | `0x464008` | `Carrier_TakeWaiting` | inferred | Roads |
+| `0x464117` | `Good_DestinationClasses` | confirmed | Simulation |
 | `0x46414d` | `Table70_Pass` | confirmed | Simulation |
+| `0x464bb2` | `Flag_SeedRoadSearch` | confirmed | Simulation |
 | `0x464c36` | `Flag_VisitRoads` | confirmed | Simulation |
+| `0x4662e2` | — | unknown | Castle and build sites |
 | `0x466ade` | `Rng_Step` | confirmed | Random generator and map start |
 | `0x466b94` | `StartScreen_SwitchPage` | confirmed | Program start and game flow |
+| `0x466cc7` | `StartScreen_BuildPage` | inferred | Program start and game flow |
+| `0x46736c` | — | unknown | Program start and game flow |
+| `0x467547` | `StartScreen_ShowSeed` | confirmed | Program start and game flow |
+| `0x4678c7` | `StartScreen_FormatSeedGroup` | confirmed | Program start and game flow |
+| `0x4679a3` | — | unknown | Program start and game flow |
 | `0x467c03` | `StartScreen_HandleClick` | inferred | Program start and game flow |
 | `0x4684b6` | `StartScreen_ResumeLoaded` | confirmed | Program start and game flow |
 | `0x468577` | `StartScreen_OpenLoad` | inferred | Program start and game flow |
 | `0x4685bc` | `StartScreen_StartGame` | confirmed | Program start and game flow |
 | `0x468717` | `Game_SetStartParams` | confirmed | Program start and game flow |
+| `0x468ba9` | — | inferred | Program start and game flow |
+| `0x468c1c` | — | inferred | Program start and game flow |
 | `0x4692aa` | `FreeGame_OpenScreen` | inferred | Random generator and map start |
 | `0x4692d4` | `FreeGame_RandomizeOpponents` | confirmed | Random generator and map start |
 | `0x4694e0` | `Game_RequestQuit` | confirmed | Program start and game flow |
+| `0x4694f8` | — | inferred | Program start and game flow |
 | `0x474da3` | `Ai_UpdatePlayer` | inferred | Simulation |
+| `0x475244` | `Ai_EvaluateAction` | inferred | Simulation |
+| `0x4754b0` | `Ai_RunActions` | inferred | Simulation |
+| `0x47556e` | — | unknown | Simulation |
+| `0x4756ed` | — | unknown | Simulation |
+| `0x475950` | — | unknown | Simulation |
+| `0x475a7e` | — | unknown | Simulation |
+| `0x475c95` | — | unknown | Simulation |
+| `0x475e14` | — | unknown | Simulation |
+| `0x475ef6` | — | unknown | Simulation |
+| `0x475fd5` | — | unknown | Simulation |
+| `0x4760b4` | — | unknown | Simulation |
+| `0x47619e` | `Ai_ChooseGoal` | inferred | Simulation |
+| `0x476529` | `Ai_RecordGoal` | inferred | Simulation |
+| `0x47661b` | — | unknown | Simulation |
+| `0x476862` | — | unknown | Simulation |
+| `0x4769ed` | — | unknown | Simulation |
+| `0x476af1` | — | unknown | Simulation |
+| `0x47820f` | — | unknown | Simulation |
+| `0x47849d` | — | unknown | Simulation |
+| `0x47872c` | — | unknown | Simulation |
+| `0x47895d` | — | unknown | Simulation |
+| `0x478f2b` | `Ai_RunSearches` | inferred | Simulation |
+| `0x479213` | `Ai_ObjectWeights` | inferred | Simulation |
+| `0x479293` | — | unknown | Simulation |
+| `0x479403` | — | unknown | Simulation |
+| `0x47958c` | — | unknown | Simulation |
+| `0x4796f1` | — | unknown | Simulation |
+| `0x47978c` | — | unknown | Simulation |
+| `0x4798e0` | — | unknown | Simulation |
+| `0x479a9a` | — | unknown | Simulation |
+| `0x479abc` | — | unknown | Simulation |
+| `0x479ade` | — | unknown | Simulation |
 | `0x479cb2` | `Timer_GameEntry` | confirmed | Timing |
 | `0x479cc0` | `Timer_Handler` | confirmed | Timing |
 | `0x479e54` | `Sound_UpdateChannels` | inferred | Sound |
@@ -975,6 +1325,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x47b19c` | `Gfx_BlitTextured` | confirmed | Game code band |
 | `0x47b4f9` | `Gfx_BlitSpriteOverColor8` | confirmed | Game code band |
 | `0x674048` | `Speed_Factor` | confirmed | Timing |
+| `0x674824` | `StartScreen_SpriteList` | confirmed | Graphics images |
+| `0x674a30` | `BuildSite_NeighborTiles` | inferred | Castle and build sites |
 | `0x67d608` | `Timer_RateHz` | confirmed | Timing |
 | `0x67d614` | `Loca_FileTable` | inferred | Files and configuration |
 | `0x6812ec` | `Archive_Base` | confirmed | Graphics archives |
@@ -988,7 +1340,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 221 routines of the 471 functions in the dump's game code band and lists 10 more without a name: 182 confirmed, 41 inferred, 8 unknown.
+Coverage: the index names 297 routines of the 512 functions in the dump's game code band and lists 67 more without a name: 234 confirmed, 78 inferred, 52 unknown.
 <!-- coverage:end -->
 
 Open anchors:
