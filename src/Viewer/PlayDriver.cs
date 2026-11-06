@@ -114,7 +114,7 @@ public partial class PlayDriver : Node
             case ButtonStep button:
                 return ClickButton(button);
             case ShotStep shot:
-                return Shot(shot.Name);
+                return Shot(shot);
             default:
                 return $"step '{step.GetType().Name}' is no input step";
         }
@@ -244,14 +244,50 @@ public partial class PlayDriver : Node
     }
 
     // The viewport's last drawn frame; a step that changes the view takes effect in the frame after it, so a wait
-    // comes before the shot.
-    string? Shot(string name)
+    // comes before the shot. With a tile, the part of the frame around it (ShotCrop), enlarged by the scale with
+    // nearest sampling.
+    string? Shot(ShotStep shot)
     {
-        var file = Path.Combine(_outputFolder, name + ".png");
+        var file = Path.Combine(_outputFolder, shot.Name + ".png");
         try
         {
-            Directory.CreateDirectory(_outputFolder);
             var image = GetViewport().GetTexture().GetImage();
+            if (shot.Tile is { } tile)
+            {
+                if (_view.Map is not { } map)
+                    return $"tile {tile.Column},{tile.Row}: no map is shown";
+
+                var view = _view.Snapshot();
+                var size = _view.Canvas.Size;
+                var origin = _view.Canvas.GlobalPosition;
+                var problem = ShotCrop.Box(
+                    map,
+                    view.CameraX,
+                    view.CameraY,
+                    view.Zoom,
+                    size.X,
+                    size.Y,
+                    origin.X,
+                    // The button bar is taken to be the only thing above the canvas, as for click-tile.
+                    origin.Y,
+                    tile.Column,
+                    tile.Row,
+                    tile.Radius,
+                    _view.ObjectHeadroom,
+                    out var box
+                );
+                if (problem is not null)
+                    return problem;
+                if (ShotCrop.ScaleProblem(box, tile.Scale) is { } tooLarge)
+                    return tooLarge;
+
+                // Canvas units are image pixels: the play run pins the window to WindowSize, so the content scale is 1.
+                image = image.GetRegion(new Rect2I(box.X, box.Y, box.Width, box.Height));
+                if (tile.Scale > 1)
+                    image.Resize(box.Width * tile.Scale, box.Height * tile.Scale, Image.Interpolation.Nearest);
+            }
+
+            Directory.CreateDirectory(_outputFolder);
             var saved = image.SavePng(file);
 
             return saved == Error.Ok ? null : $"cannot write '{file}': {saved}";

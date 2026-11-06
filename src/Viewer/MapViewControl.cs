@@ -110,6 +110,12 @@ public partial class MapViewControl : Control
     /// <summary>The map shown; null when the seed has none. A play run's <c>click-tile</c> step aims at its tiles.</summary>
     public Map? Map => _state.Map;
 
+    /// <summary>
+    /// The height of the tallest object sprite in map pixels (<see cref="ObjectGraphics.LayerHeight"/>), 0 with no
+    /// object graphics loaded. A play run's cropped <c>shot</c> leaves this much room above its tiles.
+    /// </summary>
+    public int ObjectHeadroom => _objects?.LayerHeight ?? 0;
+
     /// <summary>What a play run observes of the view now.</summary>
     public PlayState Snapshot() =>
         new(

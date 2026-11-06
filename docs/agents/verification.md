@@ -57,3 +57,9 @@ failed `expect` or a problem in the script.
   `play-out/.lock-<stem>`, says so once on stderr, then hashes its inputs and reuses what the first
   stored. Other stems run in parallel. The lock holds its owner's pid, and a call takes over the lock of
   a dead owner, and of a lock with no pid older than 5 seconds. Remove a lock by hand only when no run is live.
+
+When a line is about one place, take a cropped shot, `shot <name> <column> <row> [radius] [scale]`, rather
+than the whole frame: it keeps the tiles within `radius` steps of the tile (default 1) and the room above them
+for the tallest object sprite, enlarged by the whole factor `scale` (default 1). The tile is placed as
+`click-tile` places it and fails with its messages; a crop is clipped to the canvas, and one over 16384 pixels
+on a side once enlarged fails the step. README.md's "Run a play script" lists every step.
