@@ -291,13 +291,17 @@ public partial class PlayDriver : Node
 
             Directory.CreateDirectory(_outputFolder);
             var saved = image.SavePng(file);
-            _view.ShotTaken();
 
             return saved == Error.Ok ? null : $"cannot write '{file}': {saved}";
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return $"cannot write '{file}': {e.Message}";
+        }
+        finally
+        {
+            // Every shot step releases a fast-forward's hold, a failed one too, so the run's later steps see the game run on.
+            _view.ShotTaken();
         }
     }
 }

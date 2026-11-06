@@ -1,6 +1,6 @@
 # Settlers and goods in a layout
 
-A layout ([ADR 0009](../adr/0009-layouts-set-up-a-game-by-a-hand-drawn-map-and-commands.md)) may start settlers and put
+A layout ([ADR 0009](../adr/0009-layouts-set-up-a-game-by-hand-drawn-map-and-commands.md)) may start settlers and put
 goods on flags. The original has no such start: every settler and good comes about in a run of its routines. The engine
 therefore starts a settler only in a state that one of the original's routines writes, an **entry state** (INV-0005), and
 puts a good as the original's put does. Addresses are in the [Program index](program-index.md#simulation) and refer to the

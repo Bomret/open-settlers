@@ -257,7 +257,7 @@ spiral table with the program's builder and points the object size table at the 
 ## A hand-drawn map
 
 **Status:** the engine's own form (a stand-in; the original has no hand-drawn maps). A layout file
-([ADR 0009](../adr/0009-layouts-set-up-a-game-by-a-hand-drawn-map-and-commands.md)) draws the Height, Terrain,
+([ADR 0009](../adr/0009-layouts-set-up-a-game-by-hand-drawn-map-and-commands.md)) draws the Height, Terrain,
 and Object layers, and `src/Simulation/Layout.cs` derives the bytes the generator derives from them. The map has
 one of the sizes above, written as its size value in the layout's `size`.
 

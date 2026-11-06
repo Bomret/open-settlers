@@ -70,7 +70,7 @@ on a side once enlarged fails the step. README.md's "Run a play script" lists ev
 
 ### Layouts: reach a moment without clicks
 
-Do not click a situation together in a play script. A layout (`layouts/*.jsonc`, [ADR 0009](../adr/0009-layouts-set-up-a-game-by-a-hand-drawn-map-and-commands.md))
+Do not click a situation together in a play script. A layout (`layouts/*.jsonc`, [ADR 0009](../adr/0009-layouts-set-up-a-game-by-hand-drawn-map-and-commands.md))
 draws the map and sets the game up, and the `fast-forward` step runs the game to the moment under test.
 **Reuse a layout before writing one:** `layouts/` holds them, and a new play script on an existing layout
 costs a script alone. Add a layout only where none of them holds the situation.
