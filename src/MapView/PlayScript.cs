@@ -160,6 +160,35 @@ public sealed record ExpectStep : PlayStep
 }
 
 /// <summary>
+/// <c>expect-at &lt;column&gt; &lt;row&gt; &lt;what&gt;</c>: checks that a thing matching <see cref="What"/> is at the node. The
+/// run checks the node against the map's size.
+/// </summary>
+public sealed record ExpectAtStep : PlayStep
+{
+    /// <summary>The node's column; zero or more.</summary>
+    public required int Column { get; init; }
+
+    /// <summary>The node's row; zero or more.</summary>
+    public required int Row { get; init; }
+
+    /// <summary>What a thing at the node must be.</summary>
+    public required ThingSelector What { get; init; }
+}
+
+/// <summary><c>expect-count &lt;what&gt; &lt;op&gt; &lt;n&gt;</c>: compares the number of things matching <see cref="What"/> with a count.</summary>
+public sealed record ExpectCountStep : PlayStep
+{
+    /// <summary>What a thing is counted for.</summary>
+    public required ThingSelector What { get; init; }
+
+    /// <summary>One of <c>&lt;</c>, <c>&lt;=</c>, <c>=</c>, <c>&gt;=</c>, <c>&gt;</c>.</summary>
+    public required string Op { get; init; }
+
+    /// <summary>The count to compare with; zero or more.</summary>
+    public required int Count { get; init; }
+}
+
+/// <summary>
 /// A play script (<c>CONTEXT.md</c>): a text file with one step per line, run in file order. Blank lines and lines
 /// that start with <c>#</c> are skipped. A line that cannot be read is a problem naming the script and the line and
 /// adds no step. Reading never throws for bad text; the play run reports the problems.
@@ -329,6 +358,10 @@ public sealed class PlayScript
                 return (new ButtonStep { Line = number, Name = args[0] }, null);
             case "expect":
                 return ParseExpect(args, number);
+            case "expect-at":
+                return ParseExpectAt(args, number);
+            case "expect-count":
+                return ParseExpectCount(args, number);
             case "shot":
                 if (args.Length is not (1 or 3 or 4 or 5))
                     return Wrong(words[0], "1, 3, 4, or 5 arguments", args.Length);
@@ -410,6 +443,59 @@ public sealed class PlayScript
                 Field = args[0],
                 Op = args[1],
                 Value = value,
+            },
+            null
+        );
+    }
+
+    // expect-at <column> <row> <what>; the node's place in the map is checked when the run reaches the step.
+    static (PlayStep?, string?) ParseExpectAt(string[] args, int number)
+    {
+        if (args.Length != 3)
+            return Wrong("expect-at", "3 arguments", args.Length);
+        foreach (var arg in args[..2])
+        {
+            if (!int.TryParse(arg, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+                return (null, $"'{arg}' is not a whole number of zero or more");
+        }
+
+        var (what, problem) = ThingSelector.Parse(args[2]);
+        if (what is null)
+            return (null, problem);
+
+        return (
+            new ExpectAtStep
+            {
+                Line = number,
+                Column = int.Parse(args[0], CultureInfo.InvariantCulture),
+                Row = int.Parse(args[1], CultureInfo.InvariantCulture),
+                What = what,
+            },
+            null
+        );
+    }
+
+    // expect-count <what> <op> <n>
+    static (PlayStep?, string?) ParseExpectCount(string[] args, int number)
+    {
+        if (args.Length != 3)
+            return Wrong("expect-count", "3 arguments", args.Length);
+
+        var (what, problem) = ThingSelector.Parse(args[0]);
+        if (what is null)
+            return (null, problem);
+        if (!Ops.Contains(args[1]))
+            return (null, $"unknown operator '{args[1]}', use one of {string.Join(" ", Ops)}");
+        if (!int.TryParse(args[2], NumberStyles.None, CultureInfo.InvariantCulture, out var count))
+            return (null, $"'{args[2]}' is not a whole number of zero or more");
+
+        return (
+            new ExpectCountStep
+            {
+                Line = number,
+                What = what,
+                Op = args[1],
+                Count = count,
             },
             null
         );
