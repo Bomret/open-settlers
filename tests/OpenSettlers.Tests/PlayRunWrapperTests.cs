@@ -492,14 +492,25 @@ public class PlayRunWrapperTests
     [DataRow("hidden stem", ".cache", "--fps", "10")]
     [DataRow("missing script", "nothing", "--fps", "10")]
     [DataRow("unknown flag", "demo", "--fps", "10", "--fast")]
-    [DataRow("layout with seed", "demo", "--layout", "play/a.layout", "--seed", "abc", "--fps", "10")]
-    [DataRow("layout with size", "demo", "--layout", "play/a.layout", "--size", "2", "--fps", "10")]
-    [DataRow("seed before layout", "demo", "--seed", "abc", "--layout", "play/a.layout", "--fps", "10")]
     [DataRow("missing layout", "demo", "--layout", "play/none.layout", "--fps", "10")]
     [DataRow("layout with no value", "demo", "--fps", "10", "--layout")]
+    [DataRow("empty layout", "demo", "--layout", "", "--fps", "10")]
     [DataRow("no args")]
     public void BadArgumentsExitTwoAndLeaveNoTrace(string reason, params string[] args) =>
         AssertUsageError(Run(args), reason);
+
+    [TestMethod]
+    [DataRow("layout with seed", "--layout", "play/a.layout", "--seed", "abc")]
+    [DataRow("layout with size", "--layout", "play/a.layout", "--size", "2")]
+    [DataRow("seed before layout", "--seed", "abc", "--layout", "play/a.layout")]
+    public void ALayoutWithSeedOrSizeExitsTwoAndLeavesNoTrace(string reason, params string[] args)
+    {
+        Write("play/a.layout", "layout");
+        var result = Run(["demo", .. args, "--fps", "10"]);
+
+        AssertUsageError(result, reason);
+        StringAssert.Contains(result.Stderr, "own seed and size", reason);
+    }
 
     [TestMethod]
     public void AnUnsetSiedlerDirExitsTwo() =>
