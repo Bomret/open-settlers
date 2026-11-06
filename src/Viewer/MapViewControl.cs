@@ -363,12 +363,13 @@ public partial class MapViewControl : Control
             {
                 if (_tables is not null)
                 {
-                    // The sprites of the jobs whose settlers walk so far: the carrier and the woodcutter.
+                    // The sprites of the jobs whose settlers walk so far: the carrier, the woodcutter, and the settler of the type 1 hut.
                     _settlerGraphics = SettlerGraphics.Load(
                         _install,
                         _tables,
                         Settler.CarrierJob,
-                        Settler.WoodcutterJob
+                        Settler.WoodcutterJob,
+                        ProgramTables.TypeOneHutJob
                     );
                     _settlerMaterial = BuildObjectMaterial(
                         new ObjectGraphics
@@ -854,21 +855,20 @@ public partial class MapViewControl : Control
             var draw in _settlerGraphics.Figures.Draws(_state.Map, _game.Settlers, _game.Clock, _settlerGraphics.Shifts)
         )
         {
-            if (_settlerGraphics.Layers.TryGetValue((draw.Entry, draw.Colour), out var layer))
+            // A sprite with no loaded layer fails (LayerOf), it is not skipped.
+            var layer = _settlerGraphics.LayerOf(draw);
+            var image = _settlerGraphics.Images[layer];
+            if (image.Width > 0 && image.Height > 0)
             {
-                var image = _settlerGraphics.Images[layer];
-                if (image.Width > 0 && image.Height > 0)
-                {
-                    quads.Add(
-                        (
-                            draw.X + image.OffsetX,
-                            draw.Y + image.OffsetY,
-                            image.Width,
-                            image.Height,
-                            new Color(layer / 255f, 0, 0, 1)
-                        )
-                    );
-                }
+                quads.Add(
+                    (
+                        draw.X + image.OffsetX,
+                        draw.Y + image.OffsetY,
+                        image.Width,
+                        image.Height,
+                        new Color(layer / 255f, 0, 0, 1)
+                    )
+                );
             }
         }
 

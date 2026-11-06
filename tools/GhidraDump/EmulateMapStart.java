@@ -89,7 +89,7 @@
 //                            lists the settlers, the flags (f<slot>=, 70 bytes), and the storage item that changed, in hex. The
 //                            roads after AT are built before pass AT.
 //   draw:WINDOWS:CX,CY:VERB...
-//                            the settler draw path (docs/rules/settlers.md) after the passes of carrier, wood, or goods in
+//                            the settler draw path (docs/rules/settlers.md) after the passes of carrier, wood, goods, home, or remove in
 //                            the windows, a verb of EmulateDraw.java (see its header); this script refuses it
 //   home:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE[:WATCH]]
 //                            the passes of wood: (docs/rules/settlers.md) on a game with a castle, flags, and roads and no
@@ -1376,7 +1376,7 @@ public class EmulateMapStart extends GhidraScript {
      * remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]: see the header. The huts stand before the first pass, so
      * their workers walk in the passes before AT.
      */
-    private void remove(String rest) throws Exception {
+    protected void remove(String rest) throws Exception {
         objectPass = true;
         String[] parts = rest.split(":");
         String label = "remove size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
@@ -1495,6 +1495,7 @@ public class EmulateMapStart extends GhidraScript {
             }
             clock += 8;
             int phase = simulationPass(clock);
+            afterPass(pass, clock);
             Snapshot now = snapshot(width, height);
             println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + difference(seen, now, width, height));
             seen = now;
@@ -1502,7 +1503,7 @@ public class EmulateMapStart extends GhidraScript {
     }
 
     /** home:N:SEED:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE[:WATCH]]: see the header. */
-    private void home(String rest) throws Exception {
+    protected void home(String rest) throws Exception {
         objectPass = true;
         String[] parts = rest.split(":");
         String label = "home size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
@@ -1551,6 +1552,7 @@ public class EmulateMapStart extends GhidraScript {
             }
             clock += 8;
             int phase = simulationPass(clock);
+            afterPass(pass, clock);
             StringBuilder line = new StringBuilder();
             byte[] now = emu.readMemory(toAddr(settler), 16).clone();
             if (seen == null || !java.util.Arrays.equals(now, seen)) {
@@ -1666,7 +1668,7 @@ public class EmulateMapStart extends GhidraScript {
      */
     private boolean objectPass;
 
-    /** Runs after each pass of worker and carrier, with the pass number and the clock; EmulateDraw overrides it. */
+    /** Runs after each pass of worker, carrier, remove, and home, with the pass number and the clock; EmulateDraw overrides it. */
     protected void afterPass(int pass, int clock) throws Exception {
     }
 
@@ -1692,7 +1694,7 @@ public class EmulateMapStart extends GhidraScript {
      * end of MapGen_InitParams), so the castle is building slot 1 as in a real game: a settler that enters a building whose
      * link is 0 takes state 0x19 (0x43c9cf), so a castle in slot 0 never takes a settler home.
      */
-    private boolean reserveBuildingZero;
+    protected boolean reserveBuildingZero;
 
     private int simulationPass(int clock) throws Exception {
         putWord(STATE + CLOCK, clock);

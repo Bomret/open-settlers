@@ -106,16 +106,16 @@ not marked from, however long the road.
 
 ## Drawing
 
-**Status:** confirmed for a carrier on its road (state 3, with no good and with a log) and a carrier waiting next to a flag (state
-0x42) by the draw run of the `carrier` recording ([Settlers](settlers.md#the-draw-path-emulated),
-`tests/OpenSettlers.Tests/settler-draws.txt`); inferred for the states 2, 5, 0x44, and 0x45 and the goods other than the log.
+**Status:** confirmed for a carrier on its road (state 3, with no good and with each of the goods 1 to 26), handing a good over (state 0xe), walking
+to its road (states 2 and 5), walking home (0x19, 0x10, and 2 after a road was taken down), and waiting next to a flag (state 0x42) or for its
+turn to go home (states 0x44 and 0x45) by the draw runs of the `carrier`, `goods`, `goods-alone`, `rejoined`, `dismissed`, and `dismissed-with-log`
+recordings ([Settlers](settlers.md#the-draw-path-emulated), `tests/OpenSettlers.Tests/settler-draws.txt`).
 
-The carrier is drawn as the walking worker is ([Settlers](settlers.md#drawing-the-walk-leads)) in states 3 (confirmed) and 2 and 5 (inferred), with the
-figure tables' row of job 0 (the figure base 0); a carrier that carries a good adds the good's word of the table at `0x43f4b7`,
-whose high byte is the row (the log's `0x1400`: [Goods at a flag](goods.md#drawing-a-carrier-with-a-good)). **Confirmed:** a carrier waiting
-in state 0x42 is not drawn: the carrier's figure handler (`0x43f8ae`) returns at once for that state, so the record builder
-adds no record, whatever the frame and the timer hold. A carrier whose road was taken down or joined (states 0x44 and 0x45) has a record
-built as any other state's is, from its frame and timer (**inferred**: no recording holds one).
+The carrier is drawn as the walking worker is ([Settlers](settlers.md#drawing-the-walk-leads)) in states 2, 3, 5, 0xe, 0x10, and 0x19, with the
+figure tables' row of job 0 (the figure base 0); a carrier in state 3 or 0xe that carries a good adds the good's word of the table at `0x43f4b7`,
+whose high byte is the row (the log's `0x1400`: [Goods at a flag](goods.md#drawing-a-carrier-with-a-good)). A carrier waiting
+in state 0x42, and a carrier whose road was taken down or joined and that has not yet gone home (states 0x44 and 0x45), is not drawn: the carrier's
+figure handler (`0x43f8ae`) returns at once for the state 0x42, and the recordings of the other two hold carriers in them that the original does not draw.
 
 ## Open leads
 

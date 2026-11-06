@@ -67,6 +67,12 @@ public sealed class ProgramTablesTests
         Add(ProgramTables.WoodcutterWalkAddress, 0x0b00);
         Add(ProgramTables.WoodcutterCarryingAddress, 0x1000);
         Add(ProgramTables.WoodcutterCuttingAddress, 0x0e80);
+        var hutStub = ProgramTables.JobStubAddress + ProgramTables.JobStubSize * ProgramTables.TypeOneHutJob;
+        Write(hutStub, [0xe9, .. BitConverter.GetBytes(ProgramTables.TypeOneHutHandlerAddress - (hutStub + 5))]);
+        Add(ProgramTables.TypeOneHutWalkAddress, 0x2c00);
+        Add(ProgramTables.TypeOneHutCarryingAddress, 0x2f00);
+        Add(ProgramTables.TypeOneHutHighAddress, 0x2c80);
+        Add(ProgramTables.TypeOneHutHighFacingAddress, 0x2d80);
     }
 
     private static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -399,6 +405,27 @@ public sealed class ProgramTablesTests
         var tables = ProgramTables.Read(Executable(_ => { }));
 
         Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), tables.WoodcutterFigureAdds);
+    }
+
+    [TestMethod]
+    public void TheFigureWordsOfTheSettlerOfTheTypeOneHutAreTheImmediatesOfHisHandler()
+    {
+        var tables = ProgramTables.Read(Executable(_ => { }));
+
+        Assert.AreEqual(new HutFigureAdds(0x2c00, 0x2f00, 0x2c80, 0x2d80), tables.TypeOneHutFigureAdds);
+    }
+
+    [TestMethod]
+    public void AStubOfTheTypeOneHutSettlerThatJumpsElsewhereIsRefused()
+    {
+        var exe = Executable(bytes =>
+            bytes[
+                FileOffset(ProgramTables.JobStubAddress + ProgramTables.JobStubSize * ProgramTables.TypeOneHutJob) + 1
+            ] ^= 1
+        );
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "figure");
     }
 
     [TestMethod]

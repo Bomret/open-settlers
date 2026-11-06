@@ -84,6 +84,24 @@ public sealed class ProgramTables
     /// <summary>The <c>add word [edi+8], imm16</c> of the handler for any other figure byte below 0x80 (the walk).</summary>
     public const int WoodcutterWalkAddress = 0x43fc16;
 
+    /// <summary>The job of the settler of the type 1 hut (<c>docs/rules/woodcutting.md</c>).</summary>
+    public const int TypeOneHutJob = 11;
+
+    /// <summary>The handler of the figure of the settler of the type 1 hut (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
+    public const int TypeOneHutHandlerAddress = 0x43fed8;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where the heading is not 1.</summary>
+    public const int TypeOneHutHighAddress = 0x43ff0f;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where the heading is 1.</summary>
+    public const int TypeOneHutHighFacingAddress = 0x43ff1a;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the way back with a load (state 0x10, byte 13 0x80, byte 14 1).</summary>
+    public const int TypeOneHutCarryingAddress = 0x43ff40;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int TypeOneHutWalkAddress = 0x43ff4b;
+
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
     private static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
@@ -164,7 +182,8 @@ public sealed class ProgramTables
         byte[]? roadCapacities = null,
         byte[]? transportPriorities = null,
         FigureAdds? woodcutterFigureAdds = null,
-        sbyte[]? frameRows = null
+        sbyte[]? frameRows = null,
+        HutFigureAdds? typeOneHutFigureAdds = null
     )
     {
         if (
@@ -190,6 +209,7 @@ public sealed class ProgramTables
         TransportPriorities = transportPriorities ?? new byte[Simulation.StartStock.Goods];
         WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
         FrameRows = frameRows ?? new sbyte[FrameRowCount];
+        TypeOneHutFigureAdds = typeOneHutFigureAdds ?? default;
     }
 
     /// <summary>
@@ -226,6 +246,9 @@ public sealed class ProgramTables
 
     /// <summary>What the woodcutter's handler adds to the figure byte to make the figure word.</summary>
     public FigureAdds WoodcutterFigureAdds { get; }
+
+    /// <summary>What the handler of the settler of the type 1 hut adds to the figure byte to make the figure word.</summary>
+    public HutFigureAdds TypeOneHutFigureAdds { get; }
 
     /// <summary>For each frame of a settler what the record builder adds to the row of its record's list (<see cref="FrameRowAddress"/>).</summary>
     public sbyte[] FrameRows { get; }
@@ -294,7 +317,8 @@ public sealed class ProgramTables
             Slice(exe, RoadCapacityAddress, RoadCapacityCount),
             TransportPriorityRanks(exe),
             WoodcutterAdds(exe),
-            [.. Slice(exe, FrameRowAddress, FrameRowCount).Select(row => (sbyte)row)]
+            [.. Slice(exe, FrameRowAddress, FrameRowCount).Select(row => (sbyte)row)],
+            TypeOneHutAdds(exe)
         );
     }
 
@@ -327,6 +351,26 @@ public sealed class ProgramTables
             Immediate(exe, WoodcutterWalkAddress),
             Immediate(exe, WoodcutterCarryingAddress),
             Immediate(exe, WoodcutterCuttingAddress)
+        );
+    }
+
+    // The adds of the handler of the settler of the type 1 hut, read as the woodcutter's are: the stub of job 11 must jump
+    // to the handler.
+    private static HutFigureAdds TypeOneHutAdds(byte[] exe)
+    {
+        var stub = JobStubAddress + JobStubSize * TypeOneHutJob;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(TypeOneHutHandlerAddress - (stub + 5))],
+            "jumps to the handler of the settler of the type 1 hut"
+        );
+
+        return new HutFigureAdds(
+            Immediate(exe, TypeOneHutWalkAddress),
+            Immediate(exe, TypeOneHutCarryingAddress),
+            Immediate(exe, TypeOneHutHighAddress),
+            Immediate(exe, TypeOneHutHighFacingAddress)
         );
     }
 
@@ -421,3 +465,10 @@ public sealed class ProgramTables
 /// or <paramref name="Carrying"/> on the way back with the log) and for one from 0x80 (<paramref name="Cutting"/>).
 /// </summary>
 public readonly record struct FigureAdds(ushort Walk, ushort Carrying, ushort Cutting);
+
+/// <summary>
+/// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <paramref name="Walk"/>
+/// (or <paramref name="Carrying"/> on the way back with a load), for one from 0x80 <paramref name="High"/>
+/// (<paramref name="HighFacing"/> where the settler's heading, byte 14, is 1).
+/// </summary>
+public readonly record struct HutFigureAdds(ushort Walk, ushort Carrying, ushort High, ushort HighFacing);

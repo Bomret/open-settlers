@@ -127,7 +127,7 @@ spiral table and the object codes of the large objects.
 ### The draw verb
 
 `draw:WINDOWS:CX,CY:VERB:ARGS...` runs the settler draw path of the original's main loop (`0x42f4f1`, then `0x44ffe7` for each row of the view)
-after the passes of a `carrier:`, `wood:`, or `goods:` game and prints, for each pass in `WINDOWS` (`FROM-TO,FROM-TO,...`, pass numbers from 0), the
+after the passes of a `carrier:`, `wood:`, `goods:`, `home:`, or `remove:` game and prints, for each pass in `WINDOWS` (`FROM-TO,FROM-TO,...`, pass numbers from 0), the
 settlers' bytes, and what the original blits for them: each settler's sprite entries, fill colour, and position, in drawing order
 (`docs/rules/settlers.md`, "The draw path, emulated"). It runs `EmulateDraw.java`, a script that extends `EmulateMapStart.java`, and `emulate.py`
 passes the install folder to it. It runs on the reference build of `Siedler1.exe` only (the SHA-256 in `docs/rules/AGENTS.md`), and exits non-zero and

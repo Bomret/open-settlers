@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -16,7 +17,8 @@ public sealed class SettlerGraphicsTests
             TestProgram.OpenInstall(),
             TestProgram.Tables(),
             Settler.CarrierJob,
-            Settler.WoodcutterJob
+            Settler.WoodcutterJob,
+            ProgramTables.TypeOneHutJob
         );
 
     private static Map Map() =>
@@ -115,6 +117,102 @@ public sealed class SettlerGraphicsTests
         }
 
         Assert.IsEmpty(missing, $"entries drawn and not loaded: {string.Join(", ", missing.Take(20))}");
+    }
+
+    // The carrier carries every good the carried table covers, on its road (state 3) and at the castle (state 0xe), in any
+    // frame the sequences hold.
+    [TestMethod]
+    public void EveryEntryACarrierCarryingAnyGoodIsDrawnWithIsAmongThoseLoaded()
+    {
+        var graphics = Load();
+        var map = Map();
+        var missing = new HashSet<(int, int)>();
+        foreach (var good in Enumerable.Range(1, ProgramTables.CarriedFigureCount - 1))
+        {
+            foreach (var state in new[] { 3, 0xe })
+            {
+                // The frames the simulation gives a carrier: the step shapes, the claim's, the handover's, and the waiting
+                // carrier's; frame 0 is a settler's before its first step.
+                foreach (var frame in Enumerable.Range(0, 0x79))
+                {
+                    foreach (var timer in Enumerable.Range(0, 128).Select(step => step * 8))
+                    {
+                        var carrier = new Settler(Settler.CarrierJob, 0, 4, 3, 0, state, 0)
+                        {
+                            Frame = frame,
+                            Timer = (ushort)timer,
+                            Mode = good,
+                        };
+                        foreach (var draw in graphics.Figures.Draws(map, [carrier], 0))
+                        {
+                            if (!graphics.Layers.ContainsKey((draw.Entry, draw.Colour)))
+                            {
+                                missing.Add((draw.Entry, draw.Colour));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.IsEmpty(missing, $"entries drawn and not loaded: {string.Join(", ", missing.Take(20))}");
+    }
+
+    // The settler of the type 1 hut walks to his hut (states 5, 2, 4) in the frames of the step shapes and the claim, and
+    // walks back with a load: his rows are those of his handler.
+    [TestMethod]
+    public void EveryEntryTheSettlerOfTheTypeOneHutIsDrawnWithIsAmongThoseLoaded()
+    {
+        var graphics = Load();
+        var map = Map();
+        var frames = Enumerable.Range(4, 55).Concat([0x51, 0x52]).Concat(Enumerable.Range(0x74, 5));
+        var missing = new HashSet<(int, int)>();
+        foreach (var frame in frames)
+        {
+            foreach (var timer in Enumerable.Range(0, 128).Select(step => step * 8))
+            {
+                foreach (var (state, mark, heading) in new[] { (2, 0, 0), (0x10, 0x80, 1), (0x11, 0, 1), (0x11, 0, 0) })
+                {
+                    var settler = new Settler(ProgramTables.TypeOneHutJob, 0, 4, 3, 0, state, 0)
+                    {
+                        Frame = frame,
+                        Timer = (ushort)timer,
+                        Target = mark << 8,
+                        Heading = heading,
+                    };
+                    foreach (var draw in graphics.Figures.Draws(map, [settler], 0))
+                    {
+                        if (!graphics.Layers.ContainsKey((draw.Entry, draw.Colour)))
+                        {
+                            missing.Add((draw.Entry, draw.Colour));
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.IsEmpty(missing, $"entries drawn and not loaded: {string.Join(", ", missing.Take(20))}");
+    }
+
+    // The view finds the layer of each sprite it draws through the graphics, and a sprite with none is a failure.
+    [TestMethod]
+    public void ADrawWhoseSpriteHasNoLoadedLayerFailsInsteadOfBeingSkipped()
+    {
+        var graphics = Load();
+
+        var failure = Assert.ThrowsExactly<InvalidOperationException>(() =>
+            graphics.LayerOf(new SettlerDraw(0, 1, 99, 0, 0))
+        );
+        StringAssert.Contains(failure.Message, "1/99");
+    }
+
+    [TestMethod]
+    public void ADrawWhoseSpriteIsLoadedHasItsLayer()
+    {
+        var graphics = Load();
+        var draw = graphics.Figures.Draws(Map(), [LoadedCarrier(4)], 0)[0];
+
+        Assert.AreEqual(graphics.Layers[(draw.Entry, draw.Colour)], graphics.LayerOf(draw));
     }
 
     // The sequences name figure bytes for every job; the woodcutter draws only those of the frames he takes: the step shapes

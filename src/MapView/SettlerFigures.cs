@@ -19,15 +19,16 @@ public readonly record struct SettlerDraw(int Row, int Entry, int Colour, int X,
 /// the figure, its overlay in the player's colour, and a second figure (<c>0x44fff3</c>, <c>docs/rules/settlers.md</c>).
 /// <b>Confirmed</b> by the draw runs of <c>tests/OpenSettlers.Tests/settler-draws.txt</c> (the emulator verb <c>draw</c> runs
 /// <c>0x42f4f1</c>, <c>0x43f537</c>, <c>0x44ffe7</c>, and <c>0x406610</c>), which the engine matches pass for pass for the carrier
-/// and the woodcutter: the sequence offsets count from the byte after the first dword of the entry (as <c>0x41e8e0</c> keeps its
+/// (with each good), the woodcutter, and the settler of the type 1 hut: the sequence offsets count from the byte after the first dword of the entry (as <c>0x41e8e0</c> keeps its
 /// table); the triple index is the time left shifted right 3; the time left falls with the clock between the settler's turns
 /// (the view pass gives a settler in view a turn every pass, which runs its timer down by the clock units since its stamp); the
 /// position is the node, lifted by 4 times its height and 2 more, plus the triple's offsets; the figure 1850 + i takes its
 /// overlay from 2500 + i, filled with the player's colour; the second figure moves by the header bytes 0 and 1 of the figure,
 /// read as signed bytes; a settler draws its figure, then the overlay, then the second figure; the record joins the row of the
 /// settler plus the byte of its frame's row (<c>0x43f402</c>), and the rows are drawn from the top; a carrier that waits next to
-/// a flag (state 0x42) has no record. <b>Inferred:</b> the order of the records of one row beyond the recorded cases (that
-/// the scan lists the nodes row by row), and every state the recordings hold no settler of.
+/// a flag (state 0x42), a carrier told to go home (0x44, 0x45), a settler that claims its node (0x1c), and a settler at work
+/// (0x12, 0x1f) have no record; the records of one row come in the order of the nodes, row by row and from the west.
+/// <b>Inferred:</b> every state the recordings hold no settler of.
 /// </summary>
 public sealed class SettlerFigures
 {
@@ -59,12 +60,14 @@ public sealed class SettlerFigures
 
     // A carrier on its road (state 3) walks as a settler does. **Confirmed** (draw run, settler-draws.txt): a carrier that
     // waits next to a flag (state 0x42) is not drawn at all: the carrier's figure handler (0x43f8ae) returns at once for it.
+    // **Confirmed** the same way: a carrier whose road was taken down or joined and that waits for its turn to go home
+    // (states 0x44 and 0x45, docs/rules/removal.md) is not drawn either, nor is a settler that claims its node (0x1c)
+    // on its way home, nor a settler at work (the woodcutter's 0x12, the state 0x1f of the settler of the type 1 hut).
     private const int StatesOnRoad = 3;
 
-    // A carrier whose road was taken down or joined (states 0x44 and 0x45, docs/rules/removal.md) still stands next to the flag.
-    // **Inferred:** it is drawn with the timer it holds, no run of the draw confirms it (the handler skips only state 0x42).
-    private const int StatesDismissed = 0x44;
-    private const int StatesRejoined = 0x45;
+    // A carrier hands the good it carries over to the castle in state 0xe (docs/rules/goods.md). **Confirmed** (draw run): it
+    // is drawn as one on its road is, with the good in its hands.
+    private const int StatesHandover = 0xe;
 
     // A woodcutter that steps through its door (state 4), walks free along its vector (0x10), or cuts (0x11) is drawn with
     // the frame and the timer it holds as a walking settler is (docs/rules/woodcutting.md). **Confirmed** (draw run): the
@@ -74,9 +77,8 @@ public sealed class SettlerFigures
     private const int StatesFreeWalk = 0x10;
     private const int StatesCutting = 0x11;
 
-    // A settler that claims its node (0x1c) or searches for the nearest flag (0x19) on its way home stands with the frame
-    // 0x52 the claim sets. **Inferred:** it is drawn as a waiting settler is; no draw run confirms it.
-    private const int StatesClaiming = 0x1c;
+    // A settler that searches for the nearest flag (0x19) on its way home is drawn with the frame 0x52 the claim sets, as a
+    // walking settler is. **Confirmed** (draw run, the woodcutter and the dismissed carrier).
     private const int StatesSearching = 0x19;
 
     private readonly short[] _bases;
@@ -85,6 +87,7 @@ public sealed class SettlerFigures
     private readonly short[] _carried;
     private readonly FigureAdds _woodcutter;
     private readonly sbyte[] _frameRows;
+    private readonly HutFigureAdds _typeOneHut;
 
     // The woodcutter's handler (0x43fb6b) tests the figure byte for bit 7, and the settler's byte 13 (the high byte of the
     // target), byte 14 (the heading), and state for the way back with the log.
@@ -97,15 +100,18 @@ public sealed class SettlerFigures
     /// <param name="carried">For each good the word a carrier carrying it adds to its figure byte.</param>
     /// <param name="woodcutter">What the woodcutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
     /// <param name="frameRows">For each frame what the record builder adds to the row of the settler's record (<c>0x43f402</c>); none for no frame.</param>
+    /// <param name="typeOneHut">What the handler of the settler of the type 1 hut adds to the figure byte (<c>0x43fed8</c>).</param>
     public SettlerFigures(
         short[] bases,
         short[] offsets,
         byte[] sequences,
         short[]? carried = null,
         FigureAdds woodcutter = default,
-        sbyte[]? frameRows = null
+        sbyte[]? frameRows = null,
+        HutFigureAdds typeOneHut = default
     )
     {
+        _typeOneHut = typeOneHut;
         _frameRows = frameRows ?? [];
         _woodcutter = woodcutter;
         _carried = carried ?? [];
@@ -135,15 +141,13 @@ public sealed class SettlerFigures
                         StatesWalking
                         or StatesWaiting
                         or StatesOnRoad
-                        or StatesDismissed
-                        or StatesRejoined
+                        or StatesHandover
                         or StatesDoor
                         or StatesFreeWalk
                         or StatesCutting
-                        or StatesClaiming
                         or StatesSearching
                     )
-                || settler.Job is not (Settler.CarrierJob or Settler.WoodcutterJob)
+                || settler.Job is not (Settler.CarrierJob or Settler.WoodcutterJob or ProgramTables.TypeOneHutJob)
                 || Triple(settler, clock) is not { } triple
             )
             {
@@ -236,6 +240,14 @@ public sealed class SettlerFigures
                 yield return figure + _woodcutter.Walk;
                 yield return figure + _woodcutter.Carrying;
                 break;
+            case ProgramTables.TypeOneHutJob when figure >= HighFigure:
+                yield return figure + _typeOneHut.High;
+                yield return figure + _typeOneHut.HighFacing;
+                break;
+            case ProgramTables.TypeOneHutJob:
+                yield return figure + _typeOneHut.Walk;
+                yield return figure + _typeOneHut.Carrying;
+                break;
         }
     }
 
@@ -249,15 +261,29 @@ public sealed class SettlerFigures
             return figure + CarriedFigure(settler);
         }
 
+        if (settler.Job == ProgramTables.TypeOneHutJob)
+        {
+            // The handler of the type 1 hut's settler (0x43fed8) adds by the heading for a figure byte from 0x80 and by the
+            // way back with a load, as the woodcutter's does, below it.
+            if (figure >= HighFigure)
+            {
+                return figure + (settler.Heading == 1 ? _typeOneHut.HighFacing : _typeOneHut.High);
+            }
+
+            return figure + (WayBackWithLoad(settler) ? _typeOneHut.Carrying : _typeOneHut.Walk);
+        }
+
         if (figure >= HighFigure)
         {
             return figure + _woodcutter.Cutting;
         }
 
-        var carrying = settler is { State: StatesFreeWalk, Heading: 1 } && settler.Target >> 8 == WayBackMark;
-
-        return figure + (carrying ? _woodcutter.Carrying : _woodcutter.Walk);
+        return figure + (WayBackWithLoad(settler) ? _woodcutter.Carrying : _woodcutter.Walk);
     }
+
+    // The way back with a load: byte 13 0x80, byte 14 1, and state 0x10 (0x43fc0b, 0x43ff40).
+    private static bool WayBackWithLoad(Settler settler) =>
+        settler is { State: StatesFreeWalk, Heading: 1 } && settler.Target >> 8 == WayBackMark;
 
     // The offset in the sequences' entry at which the sequence of a frame starts.
     private int SequenceStart(int frame)
@@ -289,19 +315,18 @@ public sealed class SettlerFigures
         }
     }
 
-    // The word a carrier on its road adds to its figure byte for the good it carries (byte 11, at 0x43f8ae; the same routine
-    // serves state 0xe, which is not drawn). A carrier in state 0x42 has no record (byte 11 is the road direction there, no
+    // The word a carrier on its road or handing a good over adds to its figure byte for the good it carries (byte 11, at
+    // 0x43f8ae, for the states 3 and 0xe). A carrier in state 0x42 has no record (byte 11 is the road direction there, no
     // good). Sprites applies the same rule through Carried.
     private int CarriedFigure(Settler settler) =>
-        settler is { Job: Settler.CarrierJob, State: StatesOnRoad } ? Carried(settler.Mode) : 0;
+        settler is { Job: Settler.CarrierJob, State: StatesOnRoad or StatesHandover } ? Carried(settler.Mode) : 0;
 
     // The word of the table at 0x43f4b7 for a good (2 * good bytes on): the row of the figure bases in its high byte. A
     // carrier with no good (0) adds nothing; so does a good the table does not cover.
     private int Carried(int good) => good > 0 && good < _carried.Length ? _carried[good] : 0;
 
     // The triple of the settler's sequence for the time it has left (the timer less the clock units since the stamp, 0x43f537
-    // shifts the timer the view pass leaves right 3), or null where there is none. A settler of the states 0x44 and 0x45 holds
-    // its timer (inferred).
+    // shifts the timer the view pass leaves right 3), or null where there is none.
     private (int Figure, int Dx, int Dy)? Triple(Settler settler, ushort clock)
     {
         if (settler.Frame is < 0 or >= Sequences || _data.Length < TableEnd)
@@ -310,7 +335,7 @@ public sealed class SettlerFigures
         }
 
         var start = SequenceStart(settler.Frame);
-        var elapsed = settler.State is StatesDismissed or StatesRejoined ? (ushort)0 : (ushort)(clock - settler.Stamp);
+        var elapsed = (ushort)(clock - settler.Stamp);
         var left = settler.Timer >= elapsed ? settler.Timer - elapsed : 0;
         var at = start + 3 * (left >> 3);
         if (start <= TableEnd - 4 || at + 3 > _data.Length)
