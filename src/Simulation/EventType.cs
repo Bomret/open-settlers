@@ -122,6 +122,24 @@ public static class EventType
     /// <summary>A flag's slot is freed: the event that ends the flag (removal).</summary>
     public const string FreeFlagSlot = "free-flag-slot";
 
+    /// <summary>A road asks the castle for a carrier: the settler sent, and the status and road bytes of the road's flags.</summary>
+    public const string CarrierRequested = "carrier-requested";
+
+    /// <summary>A flag's turn changes the status bits of its roads.</summary>
+    public const string VisitFlag = "visit-flag";
+
+    /// <summary>The retry scan clears a flag's bit for a request that found no carrier.</summary>
+    public const string ClearFlagRetryBits = "clear-flag-retry-bits";
+
+    /// <summary>A carrier takes the road it was sent to.</summary>
+    public const string EnterRoad = "enter-road";
+
+    /// <summary>A carrier on its road waits out a step at a node.</summary>
+    public const string WalkRoad = "walk-road";
+
+    /// <summary>A carrier next to the flag at the end of its road waits.</summary>
+    public const string Wait = "wait";
+
     /// <summary>Every type, for a check of a name.</summary>
     public static IReadOnlyList<string> All { get; } =
     [
@@ -163,5 +181,11 @@ public static class EventType
         Burn,
         FreeBuilding,
         FreeFlagSlot,
+        CarrierRequested,
+        VisitFlag,
+        ClearFlagRetryBits,
+        EnterRoad,
+        WalkRoad,
+        Wait,
     ];
 }
