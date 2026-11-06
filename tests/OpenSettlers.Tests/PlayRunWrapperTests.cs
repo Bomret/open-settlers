@@ -344,6 +344,75 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
+    public void GameViewGetsTheGameViewLaunchLineWithSeedAndSize()
+    {
+        Run([.. Args, "--game-view"]);
+
+        var args = File.ReadAllLines(Path.Combine(fake, "args"));
+        var movie = Array.IndexOf(args, "--write-movie");
+        CollectionAssert.AreEqual(
+            new[] { "--fixed-fps", "10", "--", "--game", Siedler, "--game-view", "--seed", "abc", "--size", "2" },
+            args[(movie + 2)..^2]
+        );
+    }
+
+    [TestMethod]
+    public void ALayoutGetsTheGameViewOnTheFileWithoutSeedAndSize()
+    {
+        Write("play/a.layout", "layout");
+
+        Run(["demo", "--layout", "play/a.layout", "--fps", "10"]);
+
+        var args = File.ReadAllLines(Path.Combine(fake, "args"));
+        var movie = Array.IndexOf(args, "--write-movie");
+        CollectionAssert.AreEqual(
+            new[] { "--fixed-fps", "10", "--", "--game", Siedler, "--game-view", "--layout", "play/a.layout" },
+            args[(movie + 2)..^2]
+        );
+    }
+
+    [TestMethod]
+    public void ALayoutByteChangeStartsGodotAgainAndTheSameLayoutReuses()
+    {
+        string[] layout = ["demo", "--layout", "play/a.layout", "--fps", "10"];
+        Write("play/a.layout", "layout");
+        Run(layout);
+        Run(layout);
+        Assert.AreEqual(1, Calls);
+
+        Write("play/a.layout", "layouu");
+        Run(layout);
+
+        Assert.AreEqual(2, Calls);
+    }
+
+    [TestMethod]
+    public void TheModeAndTheLayoutPathChangeTheHash()
+    {
+        Write("play/a.layout", "layout");
+        Write("play/b.layout", "layout");
+        Run(["demo", "--layout", "play/a.layout", "--fps", "10"]);
+        Run(["demo", "--layout", "play/b.layout", "--fps", "10"]);
+        Run(["demo", "--fps", "10"]);
+        Run(["demo", "--game-view", "--fps", "10"]);
+
+        Assert.AreEqual(4, Calls);
+    }
+
+    [TestMethod]
+    public void TheLogLineNamesTheModeAndTheLayout()
+    {
+        Write("play/a.layout", "layout");
+
+        Run(["demo", "--layout", "play/a.layout", "--fps", "10"]);
+        Run(["demo", "--game-view", "--fps", "10"]);
+
+        var lines = LogLines.Select(l => l.Split('\t')).ToArray();
+        CollectionAssert.AreEqual(new[] { "mode=game-view", "layout=play/a.layout" }, lines[0][5..7]);
+        CollectionAssert.AreEqual(new[] { "mode=game-view", "layout=" }, lines[1][5..7]);
+    }
+
+    [TestMethod]
     public void WithoutSeedAndSizeTheLaunchLineOmitsThem()
     {
         Run(["demo", "--fps", "10"]);
@@ -364,7 +433,7 @@ public class PlayRunWrapperTests
         StringAssert.Contains(stdout, "build output");
         Assert.AreEqual(0, Calls);
         Assert.IsFalse(Directory.Exists(Out(".cache")) && Directory.EnumerateFileSystemEntries(Out(".cache")).Any());
-        CollectionAssert.AreEqual(new[] { "exit=3", "build" }, LogLines.Single().Split('\t')[8..]);
+        CollectionAssert.AreEqual(new[] { "exit=3", "build" }, LogLines.Single().Split('\t')[10..]);
     }
 
     [TestMethod]
@@ -396,17 +465,17 @@ public class PlayRunWrapperTests
         git.WaitForExit();
 
         var first = lines[0].Split('\t');
-        Assert.AreEqual(10, first.Length, lines[0]);
+        Assert.AreEqual(12, first.Length, lines[0]);
         StringAssert.Matches(first[0], new System.Text.RegularExpressions.Regex(@"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$"));
         StringAssert.Matches(first[1], new System.Text.RegularExpressions.Regex("^[0-9a-f]{40}$"));
         CollectionAssert.AreEqual(
-            new[] { head, "clean", "demo", "seed=abc", "size=2", "fps=10", "exit=0", "run" },
+            new[] { head, "clean", "demo", "mode=map", "layout=", "seed=abc", "size=2", "fps=10", "exit=0", "run" },
             first[2..]
         );
         var second = lines[1].Split('\t');
         Assert.AreEqual(first[1], second[1]);
-        CollectionAssert.AreEqual(new[] { "dirty", "reused" }, new[] { second[3], second[9] });
-        CollectionAssert.AreEqual(new[] { "seed=", "size=" }, lines[2].Split('\t')[5..7]);
+        CollectionAssert.AreEqual(new[] { "dirty", "reused" }, new[] { second[3], second[11] });
+        CollectionAssert.AreEqual(new[] { "seed=", "size=" }, lines[2].Split('\t')[7..9]);
     }
 
     [TestMethod]
@@ -423,9 +492,25 @@ public class PlayRunWrapperTests
     [DataRow("hidden stem", ".cache", "--fps", "10")]
     [DataRow("missing script", "nothing", "--fps", "10")]
     [DataRow("unknown flag", "demo", "--fps", "10", "--fast")]
+    [DataRow("missing layout", "demo", "--layout", "play/none.layout", "--fps", "10")]
+    [DataRow("layout with no value", "demo", "--fps", "10", "--layout")]
+    [DataRow("empty layout", "demo", "--layout", "", "--fps", "10")]
     [DataRow("no args")]
     public void BadArgumentsExitTwoAndLeaveNoTrace(string reason, params string[] args) =>
         AssertUsageError(Run(args), reason);
+
+    [TestMethod]
+    [DataRow("layout with seed", "--layout", "play/a.layout", "--seed", "abc")]
+    [DataRow("layout with size", "--layout", "play/a.layout", "--size", "2")]
+    [DataRow("seed before layout", "--seed", "abc", "--layout", "play/a.layout")]
+    public void ALayoutWithSeedOrSizeExitsTwoAndLeavesNoTrace(string reason, params string[] args)
+    {
+        Write("play/a.layout", "layout");
+        var result = Run(["demo", .. args, "--fps", "10"]);
+
+        AssertUsageError(result, reason);
+        StringAssert.Contains(result.Stderr, "own seed and size", reason);
+    }
 
     [TestMethod]
     public void AnUnsetSiedlerDirExitsTwo() =>
