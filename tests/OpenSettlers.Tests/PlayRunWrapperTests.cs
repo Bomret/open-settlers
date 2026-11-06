@@ -398,7 +398,7 @@ public class PlayRunWrapperTests
         StringAssert.Contains(stdout, "build output");
         Assert.AreEqual(0, Calls);
         Assert.IsFalse(Directory.Exists(Out(".cache")) && Directory.EnumerateFileSystemEntries(Out(".cache")).Any());
-        CollectionAssert.AreEqual(new[] { "exit=3", "build" }, LogLines.Single().Split('\t')[8..]);
+        CollectionAssert.AreEqual(new[] { "exit=3", "build", "view=map" },LogLines.Single().Split('\t')[8..]);
     }
 
     [TestMethod]
