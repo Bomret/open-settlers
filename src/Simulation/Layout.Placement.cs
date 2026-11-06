@@ -100,7 +100,11 @@ public sealed partial class Layout
             return good;
         }
 
-        private bool ReadEntries(JsonProperty property, Func<string, JsonElement, List<Step>, bool> read, List<Step> steps)
+        private bool ReadEntries(
+            JsonProperty property,
+            Func<string, JsonElement, List<Step>, bool> read,
+            List<Step> steps
+        )
         {
             if (property.Value.ValueKind != JsonValueKind.Array)
             {
@@ -178,7 +182,9 @@ public sealed partial class Layout
                     name,
                     default,
                     "",
-                    woodcutter ? game => game.PlaceWoodcutterInHut(x, y) : game => game.PlaceCarrierOnRoad(x, y, direction)
+                    woodcutter
+                        ? game => game.PlaceWoodcutterInHut(x, y)
+                        : game => game.PlaceCarrierOnRoad(x, y, direction)
                 )
             );
 

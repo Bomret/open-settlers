@@ -23,10 +23,15 @@ public sealed class LayoutSettlersTests
     // straight on over open ground.
     static readonly (int X, int Y)[] Trees =
     [
-        .. MapGenerator.SpiralOffsets.Skip(1).Take(128).Select(o => (13 + o.Dx, 10 + o.Dy)).Where(n => n.Item1 >= 16 && n.Item2 is >= 10 and <= 12),
+        .. MapGenerator
+            .SpiralOffsets.Skip(1)
+            .Take(128)
+            .Select(o => (13 + o.Dx, 10 + o.Dy))
+            .Where(n => n.Item1 >= 16 && n.Item2 is >= 10 and <= 12),
     ];
 
-    static readonly string Tree = "[" + string.Join(", ", Trees.Select(n => $"{{\"x\": {n.X}, \"y\": {n.Y}, \"code\": 8}}")) + "]";
+    static readonly string Tree =
+        "[" + string.Join(", ", Trees.Select(n => $"{{\"x\": {n.X}, \"y\": {n.Y}, \"code\": 8}}")) + "]";
 
     static Layout Read(string extra, string objects = "[]")
     {
@@ -146,7 +151,9 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void ACarrierPlacedOnARoadCarriesAGoodFromTheFarFlagIntoTheCastle()
     {
-        var game = Applied(Built + $"\"settlers\": [{Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": 7}}]");
+        var game = Applied(
+            Built + $"\"settlers\": [{Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": 7}}]"
+        );
         var before = game.CastleLogs;
 
         Run(game, 3000);
@@ -185,7 +192,9 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void ASecondCarrierForTheSameRoadFailsTheLoad()
     {
-        Assert.IsTrue(Refused(Built + $"\"settlers\": [{Carrier}, {Carrier}]")!.StartsWith("test.jsonc: settlers[1]: "));
+        Assert.IsTrue(
+            Refused(Built + $"\"settlers\": [{Carrier}, {Carrier}]")!.StartsWith("test.jsonc: settlers[1]: ")
+        );
     }
 
     [TestMethod]
@@ -205,7 +214,8 @@ public sealed class LayoutSettlersTests
         )
         {
             Assert.IsTrue(
-                Problems(Built + $"\"settlers\": [{entry}]").Any(problem => problem.StartsWith("test.jsonc: settlers[0]: ")),
+                Problems(Built + $"\"settlers\": [{entry}]")
+                    .Any(problem => problem.StartsWith("test.jsonc: settlers[0]: ")),
                 entry
             );
         }
@@ -222,7 +232,9 @@ public sealed class LayoutSettlersTests
             );
         }
 
-        var taken = Built + "\"goods\": [{\"x\": 14, \"y\": 11, \"place\": 3, \"good\": 7}, {\"x\": 14, \"y\": 11, \"place\": 3, \"good\": 9}]";
+        var taken =
+            Built
+            + "\"goods\": [{\"x\": 14, \"y\": 11, \"place\": 3, \"good\": 7}, {\"x\": 14, \"y\": 11, \"place\": 3, \"good\": 9}]";
         var none = Built + "\"goods\": [{\"x\": 20, \"y\": 20, \"place\": 0, \"good\": 7}]";
 
         Assert.IsTrue(Refused(taken)!.StartsWith("test.jsonc: goods[1]: "));
