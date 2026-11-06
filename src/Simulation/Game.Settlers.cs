@@ -63,6 +63,10 @@ public sealed partial class Game
     // act for the layout.
     private Cause RuleCause => InLayout ? Cause.Layout : Cause.Settlers;
 
+    // The cause of a change the settler rules make to the settler in the slot: the walk home while it walks to a storage
+    // (a command cause it carries takes the place of either in RecordSettler), else the rule area's.
+    private Cause SettlerCause(int slot) => _walkingHome.Contains(slot) ? Cause.WalkHome : RuleCause;
+
     private void RecordBuildingOf(Building building, string type, string? other = null)
     {
         var slot = _buildings.IndexOf(building);
@@ -342,7 +346,7 @@ public sealed partial class Game
 
                 break;
             case 4:
-                Door(settler);
+                Door(slot, settler);
                 break;
             case 6:
                 EnterHut(slot, settler);
@@ -360,7 +364,7 @@ public sealed partial class Game
                 SearchTree(slot, settler);
                 break;
             case 0x19:
-                HomeSearch(settler);
+                HomeSearch(slot, settler);
                 break;
             case 0x1c:
                 HomeClaim(slot, settler);
@@ -532,7 +536,7 @@ public sealed partial class Game
         _occupant[index] = slot;
         if (record)
         {
-            RecordSettler(slot, EventType.Moved, RuleCause);
+            RecordSettler(slot, EventType.Moved, SettlerCause(slot));
         }
     }
 
@@ -547,7 +551,7 @@ public sealed partial class Game
     private void Walk(int slot, Settler settler)
     {
         WalkTurn(slot, settler);
-        RecordSettler(slot, EventType.Walked, RuleCause);
+        RecordSettler(slot, EventType.Walked, SettlerCause(slot));
     }
 
     private void WalkTurn(int slot, Settler settler)
@@ -687,7 +691,7 @@ public sealed partial class Game
             passer.Heading = direction;
             passer.Frame = (byte)back;
             passer.Timer = _tables.StepTime(back);
-            RecordSettler(other, EventType.Stepped, RuleCause, SettlerId(slot).ToString());
+            RecordSettler(other, EventType.Stepped, SettlerCause(other), SettlerId(slot).ToString());
             shape = 4 + 9 * (direction + 6) + rise;
             settler.Heading = (direction + 3) % 6;
             settler.X = x;
@@ -701,7 +705,7 @@ public sealed partial class Game
             settler.Timer = 0x7f;
             settler.Frame = (byte)(0x51 + direction);
             settler.Heading = direction - 6;
-            RecordSettler(slot, EventType.Stepped, RuleCause);
+            RecordSettler(slot, EventType.Stepped, SettlerCause(slot));
 
             return false;
         }
@@ -715,7 +719,7 @@ public sealed partial class Game
             settler.Frame = (byte)shape;
         }
 
-        RecordSettler(slot, EventType.Stepped, RuleCause);
+        RecordSettler(slot, EventType.Stepped, SettlerCause(slot));
 
         return !finished;
     }
@@ -748,7 +752,12 @@ public sealed partial class Game
         {
             settler.Frame = 0x55;
             settler.Timer = 0;
-            RecordSettler(slot, EventType.Entered, RuleCause, BuildingId(_buildings.IndexOf(building)).ToString());
+            RecordSettler(
+                slot,
+                EventType.Entered,
+                SettlerCause(slot),
+                BuildingId(_buildings.IndexOf(building)).ToString()
+            );
             return;
         }
 
@@ -761,7 +770,7 @@ public sealed partial class Game
         settler.Stamp = _clock;
         settler.State = 4;
         var buildingId = BuildingId(_buildings.IndexOf(building));
-        RecordSettler(slot, EventType.Entered, RuleCause, buildingId.ToString());
+        RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());
         _buildingCommand.Remove(buildingId);
     }
 

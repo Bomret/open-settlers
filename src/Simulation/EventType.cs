@@ -53,6 +53,18 @@ public static class EventType
     /// <summary>A settler's step from a flag into the building.</summary>
     public const string EnterHut = "enter-hut";
 
+    /// <summary>A settler sent home takes the node it stands on.</summary>
+    public const string ClaimedHome = "claimed-home";
+
+    /// <summary>A settler sent home searches for the nearest flag with a road.</summary>
+    public const string SearchedHome = "searched-home";
+
+    /// <summary>A settler on its way home ends its free walk; on a flag with a road it starts the walk to the storage.</summary>
+    public const string ArrivedHome = "arrived-home";
+
+    /// <summary>A settler on its way home enters the storage.</summary>
+    public const string EnteredStorage = "entered-storage";
+
     /// <summary>A building asks the castle for a worker and a waiting settler is sent out; the other thing is the one at the other end.</summary>
     public const string WorkerRequested = "worker-requested";
 
@@ -134,6 +146,24 @@ public static class EventType
     /// <summary>A flag's slot is freed: the event that ends the flag (removal).</summary>
     public const string FreeFlagSlot = "free-flag-slot";
 
+    /// <summary>A road asks the castle for a carrier: the settler sent, and the status and road bytes of the road's flags.</summary>
+    public const string CarrierRequested = "carrier-requested";
+
+    /// <summary>A flag's turn changes the status bits of its roads.</summary>
+    public const string VisitFlag = "visit-flag";
+
+    /// <summary>The retry scan clears a flag's bit for a request that found no carrier.</summary>
+    public const string ClearFlagRetryBits = "clear-flag-retry-bits";
+
+    /// <summary>A carrier takes the road it was sent to.</summary>
+    public const string EnterRoad = "enter-road";
+
+    /// <summary>A carrier on its road waits out a step at a node.</summary>
+    public const string WalkRoad = "walk-road";
+
+    /// <summary>A carrier next to the flag at the end of its road waits.</summary>
+    public const string Wait = "wait";
+
     /// <summary>Every type, for a check of a name.</summary>
     public static IReadOnlyList<string> All { get; } =
     [
@@ -144,6 +174,10 @@ public static class EventType
         LayoutInHut,
         LayoutWaitingOnRoad,
         LayoutGood,
+        ClaimedHome,
+        SearchedHome,
+        ArrivedHome,
+        EnteredStorage,
         WorkerRequested,
         BuildingHandled,
         RetryBitsCleared,
@@ -179,5 +213,11 @@ public static class EventType
         CutTree,
         PutGood,
         EnterHut,
+        CarrierRequested,
+        VisitFlag,
+        ClearFlagRetryBits,
+        EnterRoad,
+        WalkRoad,
+        Wait,
     ];
 }
