@@ -181,6 +181,7 @@ public sealed partial class Game
         TakeRoadDown(index, first);
         TakeRoadDown(index, second);
         _roads.Remove(road);
+        _roadCauses.Remove(road);
 
         return true;
     }
@@ -577,6 +578,8 @@ public sealed partial class Game
         path.AddRange(PathFrom(roadB, slot, last));
         _roads.Remove(roadA);
         _roads.Remove(roadB);
+        _roadCauses.Remove(roadA);
+        _roadCauses.Remove(roadB);
         _roads.Add(new Road(a.Far, a.FarDirection, b.Far, b.FarDirection, path, false));
 
         _directionBytes[a.Far][a.FarDirection] = (byte)(

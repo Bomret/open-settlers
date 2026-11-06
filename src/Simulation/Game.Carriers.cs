@@ -22,7 +22,7 @@ public sealed partial class Game
     private int _flagCursor;
 
     // The command cause of each road a command built: the carrier sent to it carries it on until it waits on its road. A road no
-    // command built (a layout's) has none.
+    // command built (a layout's) has none. The request of a carrier takes the entry.
     private readonly Dictionary<Road, Cause> _roadCauses = [];
 
     /// <summary>
@@ -260,14 +260,16 @@ public sealed partial class Game
         _roadBytes[far][farDirection] |= 0x80;
         var id = SettlerId(carrier);
         EndCarry(carrier);
-        if (_roadCauses.TryGetValue(road, out var placed))
+        var cause = Cause.Carriers;
+        if (_roadCauses.Remove(road, out var placed))
         {
             CarryCause(carrier, placed);
+            cause = placed;
         }
 
-        RecordSettler(carrier,EventType.CarrierRequested, Cause.Carriers, FlagId(flag).ToString());
-        RecordFlag(slot, EventType.CarrierRequested, Cause.Carriers, id.ToString());
-        RecordFlag(far, EventType.CarrierRequested, Cause.Carriers, id.ToString());
+        RecordSettler(carrier, EventType.CarrierRequested, Cause.Carriers, FlagId(flag).ToString());
+        RecordFlag(slot, EventType.CarrierRequested, cause, id.ToString());
+        RecordFlag(far, EventType.CarrierRequested, cause, id.ToString());
 
         return true;
     }
@@ -325,9 +327,10 @@ public sealed partial class Game
         settler.Heading = direction;
         settler.Mode = 0;
         settler.Next = 0;
+        var id = SettlerId(slot);
         RecordSettler(slot, EventType.EnterRoad, Cause.Carriers, FlagId(settler.Target).ToString());
-        RecordFlag(settler.Target, EventType.EnterRoad, Cause.Carriers, SettlerId(slot).ToString());
-        RecordFlag(far, EventType.EnterRoad, Cause.Carriers, SettlerId(slot).ToString());
+        RecordFlag(settler.Target, EventType.EnterRoad, Cause.Carriers, id.ToString());
+        RecordFlag(far, EventType.EnterRoad, Cause.Carriers, id.ToString());
         WalkRoad(slot, settler);
     }
 
@@ -422,8 +425,9 @@ public sealed partial class Game
                 _roadBytes[flag][back]--;
                 _roadBytes[far][farDirection]--;
                 settler.Next = 0xff;
-                RecordFlag(flag, EventType.Wait, Cause.Carriers, SettlerId(slot).ToString());
-                RecordFlag(far, EventType.Wait, Cause.Carriers, SettlerId(slot).ToString());
+                var id = SettlerId(slot);
+                RecordFlag(flag, EventType.Wait, Cause.Carriers, id.ToString());
+                RecordFlag(far, EventType.Wait, Cause.Carriers, id.ToString());
             }
 
             RecordSettler(slot, EventType.Wait, Cause.Carriers);
