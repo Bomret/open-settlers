@@ -344,6 +344,40 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
+    public void GameViewReplacesMapOnTheLaunchLine()
+    {
+        Run([.. Args, "--game-view"]);
+
+        var args = File.ReadAllLines(Path.Combine(fake, "args"));
+        CollectionAssert.Contains(args, "--game-view");
+        CollectionAssert.DoesNotContain(args, "--map");
+    }
+
+    [TestMethod]
+    public void AMapViewResultIsNeverReusedForTheGameViewAndBack()
+    {
+        Run(Args);
+        Run([.. Args, "--game-view"]);
+        Assert.AreEqual(2, Calls);
+
+        Run(Args);
+        Run([.. Args, "--game-view"]);
+        Assert.AreEqual(2, Calls);
+        Assert.AreEqual(2, Directory.GetDirectories(Out(".cache")).Length);
+    }
+
+    [TestMethod]
+    public void TheLogLineEndsWithTheView()
+    {
+        Run(Args);
+        Run([.. Args, "--game-view"]);
+
+        var lines = LogLines.Select(l => l.Split('\t')).ToArray();
+        CollectionAssert.AreEqual(new[] { "view=map", "view=game" }, lines.Select(l => l[^1]).ToArray());
+        Assert.AreNotEqual(lines[0][1], lines[1][1]);
+    }
+
+    [TestMethod]
     public void WithoutSeedAndSizeTheLaunchLineOmitsThem()
     {
         Run(["demo", "--fps", "10"]);
@@ -396,11 +430,11 @@ public class PlayRunWrapperTests
         git.WaitForExit();
 
         var first = lines[0].Split('\t');
-        Assert.AreEqual(10, first.Length, lines[0]);
+        Assert.AreEqual(11, first.Length, lines[0]);
         StringAssert.Matches(first[0], new System.Text.RegularExpressions.Regex(@"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$"));
         StringAssert.Matches(first[1], new System.Text.RegularExpressions.Regex("^[0-9a-f]{40}$"));
         CollectionAssert.AreEqual(
-            new[] { head, "clean", "demo", "seed=abc", "size=2", "fps=10", "exit=0", "run" },
+            new[] { head, "clean", "demo", "seed=abc", "size=2", "fps=10", "exit=0", "run", "view=map" },
             first[2..]
         );
         var second = lines[1].Split('\t');
