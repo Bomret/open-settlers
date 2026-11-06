@@ -98,6 +98,17 @@ public sealed class ProgramTables
     /// <summary>The number of goods the carried figure table covers.</summary>
     public const int CarriedFigureCount = 27;
 
+    /// <summary>
+    /// The address of the frame rows: one signed byte for each frame of a settler (<c>0x43f402</c>), 181 of them up to the carried
+    /// goods' table. The record builder (<c>0x43f537</c>) adds the byte of the settler's frame to the row of the view whose list
+    /// takes the settler's record, so the figure is drawn before or after the settlers of the row above or below
+    /// (<c>docs/rules/settlers.md</c>).
+    /// </summary>
+    public const int FrameRowAddress = 0x43f402;
+
+    /// <summary>The number of frames the frame row table covers.</summary>
+    public const int FrameRowCount = CarriedFigureAddress - FrameRowAddress;
+
     /// <summary>The number of words of <see cref="ScanWindows"/>.</summary>
     public const int ScanWindowCount = 8;
 
@@ -152,7 +163,8 @@ public sealed class ProgramTables
         byte[]? goodKinds = null,
         byte[]? roadCapacities = null,
         byte[]? transportPriorities = null,
-        FigureAdds? woodcutterFigureAdds = null
+        FigureAdds? woodcutterFigureAdds = null,
+        sbyte[]? frameRows = null
     )
     {
         if (
@@ -177,6 +189,7 @@ public sealed class ProgramTables
         RoadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
         TransportPriorities = transportPriorities ?? new byte[Simulation.StartStock.Goods];
         WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
+        FrameRows = frameRows ?? new sbyte[FrameRowCount];
     }
 
     /// <summary>
@@ -213,6 +226,9 @@ public sealed class ProgramTables
 
     /// <summary>What the woodcutter's handler adds to the figure byte to make the figure word.</summary>
     public FigureAdds WoodcutterFigureAdds { get; }
+
+    /// <summary>For each frame of a settler what the record builder adds to the row of its record's list (<see cref="FrameRowAddress"/>).</summary>
+    public sbyte[] FrameRows { get; }
 
     /// <summary>
     /// The time in clock units of a step, by step shape: <c>4 + 9 * direction + (height of the node reached minus
@@ -277,7 +293,8 @@ public sealed class ProgramTables
             Slice(exe, GoodKindAddress, GoodKindCount),
             Slice(exe, RoadCapacityAddress, RoadCapacityCount),
             TransportPriorityRanks(exe),
-            WoodcutterAdds(exe)
+            WoodcutterAdds(exe),
+            [.. Slice(exe, FrameRowAddress, FrameRowCount).Select(row => (sbyte)row)]
         );
     }
 
