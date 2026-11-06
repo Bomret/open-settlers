@@ -522,13 +522,18 @@ public sealed partial class Game
         RecordSettler(slot, EventType.Left, RuleCause);
     }
 
-    private void Move(int slot, Settler settler, int x, int y, int index)
+    // The step onto a node. It records `moved` unless the caller records the whole change itself (record false), as the
+    // woodcutting rules do with their own type and cause.
+    private void Move(int slot, Settler settler, int x, int y, int index, bool record = true)
     {
         _occupant.Remove(Map.Index(settler.X, settler.Y));
         settler.X = x;
         settler.Y = y;
         _occupant[index] = slot;
-        RecordSettler(slot, EventType.Moved, RuleCause);
+        if (record)
+        {
+            RecordSettler(slot, EventType.Moved, RuleCause);
+        }
     }
 
     // State 2, a settler on the road (0x4398ea with the step routines at 0x43a64c to 0x43ac8b). When its timer has run

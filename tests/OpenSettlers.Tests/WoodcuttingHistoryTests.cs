@@ -11,8 +11,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class WoodcuttingHistoryTests
 {
-    private static readonly int[] RuleStates = [4, 6, 7, 0x10, 0x11, 0x12];
-
     private static Game Laid()
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
@@ -63,12 +61,62 @@ public sealed class WoodcuttingHistoryTests
 
         var flag = game.FlagId(game.Flags.ToList().FindIndex(f => (f.X, f.Y) == (14, 11)));
         var put = game.Events.All.Where(e => e.Type == EventType.PutGood).ToList();
-        Assert.IsTrue(put.Any(e => e.Thing.Kind == ThingId.SettlerKind && e.Other == flag.ToString()));
+        Assert.IsFalse(put.Any(e => e.Thing.Kind == ThingId.SettlerKind));
         var onFlag = put.Single(e => e.Thing == flag);
         Assert.AreEqual(GameGoodLog, onFlag.State.Get("good0") & 0x1f);
     }
 
     private const int GameGoodLog = 7;
+
+    [TestMethod]
+    public void ATripRecordsNoMovedEventAndEveryWoodcuttingEventCarriesTheCauseWoodcutting()
+    {
+        var game = Laid();
+        var id = game.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob));
+        RunTrip(game);
+
+        // The layout's own setup (the settler entering its hut) comes before the first door turn.
+        var events = game.EventsOf(id).SkipWhile(e => e.Type != EventType.Door).ToList();
+        Assert.IsFalse(events.Any(e => e.Type == EventType.Moved));
+        string[] own = [EventType.Door, EventType.SearchTree, EventType.StepOut, EventType.FreeWalk, EventType.Arrive, EventType.CutTree, EventType.EnterHut];
+        Assert.IsTrue(events.Where(e => own.Contains(e.Type)).All(e => e.Cause == Cause.Woodcutting));
+        Assert.IsTrue(events.Any(e => e.Type == EventType.StepOut));
+        Assert.IsTrue(events.Any(e => e.Type == EventType.EnterHut));
+    }
+
+    [TestMethod]
+    public void ATurnRecordsEachRuleOnceForTheWoodcutter()
+    {
+        var game = Laid();
+        var id = game.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob));
+        RunTrip(game);
+
+        var twice = game
+            .EventsOf(id)
+            .GroupBy(e => (e.Tick, e.Type))
+            .Where(g => g.Count() > 1)
+            .Select(g => $"tick {g.Key.Tick} {g.Key.Type} x{g.Count()}")
+            .ToList();
+        Assert.AreEqual("", string.Join("\n", twice.Take(5)));
+    }
+
+    [TestMethod]
+    public void ADoorTurnOfAnotherJobRecordsTheSettlersCauseNotWoodcutting()
+    {
+        var game = Laid();
+        var slot = game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob);
+        var id = game.SettlerId(slot);
+        for (var i = 0; i < 4000 && Woodcutter(game).State != 4; i++)
+            game.Tick();
+        Assert.AreEqual(4, Woodcutter(game).State);
+        Woodcutter(game).Job = Settler.CarrierJob;
+        var before = game.EventsOf(id).Count;
+        for (var i = 0; i < 50 && !game.EventsOf(id).Skip(before).Any(e => e.Type == EventType.Door); i++)
+            game.Tick();
+
+        var door = game.EventsOf(id).Skip(before).First(e => e.Type == EventType.Door);
+        Assert.AreNotEqual(Cause.Woodcutting, door.Cause);
+    }
 
     [TestMethod]
     public void TheWoodcuttersStateAtEveryTickOfATripEqualsTheEnginesState()
@@ -77,24 +125,11 @@ public sealed class WoodcuttingHistoryTests
         var id = game.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob));
         var seen = new System.Collections.Generic.HashSet<int>();
         var wrong = new System.Collections.Generic.List<string>();
-        var stale = false;
-        var recorded = game.EventsOf(id).Count;
         RunTrip(
             game,
             () =>
             {
                 var s = Woodcutter(game);
-                // The generic settler step (state 5, a wait, and its end) records in Game.Settlers.cs; the check starts where
-                // a rule of Game.Woodcutting.cs has recorded since the settler left such a state.
-                var count = game.EventsOf(id).Count;
-                var checkedNow = RuleStates.Contains(s.State) && !(stale && count == recorded);
-                stale = !RuleStates.Contains(s.State) || (stale && count == recorded);
-                recorded = count;
-                if (!checkedNow)
-                {
-                    return;
-                }
-
                 seen.Add(s.State);
                 var (state, refusal) = game.StateAt(id, game.TickCount - 1);
                 var now = $"state={s.State} mode={s.Mode} target={s.Target} next={s.Next} heading={s.Heading} frame={s.Frame} "
@@ -108,6 +143,6 @@ public sealed class WoodcuttingHistoryTests
         );
 
         Assert.AreEqual("", string.Join("\n", wrong.Take(5)));
-        CollectionAssert.IsSubsetOf(new[] { 4, 0x10, 0x11, 0x12 }, seen.ToArray());
+        CollectionAssert.IsSubsetOf(new[] { 4, 5, 0x10, 0x11, 0x12 }, seen.ToArray());
     }
 }
