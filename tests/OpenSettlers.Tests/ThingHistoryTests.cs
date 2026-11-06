@@ -76,7 +76,7 @@ public sealed class ThingHistoryTests
     [TestMethod]
     public void TheDigestOfAFixedGameIsTheOneTakenBeforeThingHistory()
     {
-        Assert.AreEqual(15684556580687199582UL,World().Digest());
+        Assert.AreEqual(15684556580687199582UL, World().Digest());
     }
 
     private static Game Castle()
@@ -312,10 +312,7 @@ public sealed class ThingHistoryTests
     }
 
     private static string Text(Game game) =>
-        string.Join(
-            "\n",
-            game.Events.All.Select(e => $"{e.Tick} {e.Type} {e.Thing} [{e.State}] {e.Cause} {e.Other}")
-        );
+        string.Join("\n", game.Events.All.Select(e => $"{e.Tick} {e.Type} {e.Thing} [{e.State}] {e.Cause} {e.Other}"));
 
     [TestMethod]
     public void EveryLayoutEntryRecordsEventsWithTheCauseLayoutAndNamesThingsByTheirIds()
@@ -330,7 +327,11 @@ public sealed class ThingHistoryTests
         Assert.AreEqual(game.Settlers[inHut.Thing.Slot].State, inHut.State.Get("state"));
         var onRoad = game.Events.All.Where(e => e.Type == EventType.LayoutWaitingOnRoad).ToList();
         Assert.AreEqual(3, onRoad.Count, "the carrier and the flags at the two ends of its road");
-        Assert.IsTrue(onRoad.Any(e => e.Thing.Kind == ThingId.SettlerKind && e.Other!.StartsWith("flag#", StringComparison.Ordinal)));
+        Assert.IsTrue(
+            onRoad.Any(e =>
+                e.Thing.Kind == ThingId.SettlerKind && e.Other!.StartsWith("flag#", StringComparison.Ordinal)
+            )
+        );
         var good = game.Events.All.Single(e => e.Type == EventType.LayoutGood);
         Assert.AreEqual(7, good.State.Get("good0"));
     }
@@ -398,8 +399,14 @@ public sealed class ThingHistoryTests
         var line = Lines(game).Single(l => l.Contains($" id={game.SettlerId(carrier.slot)}", StringComparison.Ordinal));
 
         StringAssert.StartsWith(line, $"settler {carrier.s.X},{carrier.s.Y} job=0 ");
-        StringAssert.Contains(line, $"stamp={carrier.s.Stamp} id=settler#{carrier.slot}.1 flag-id={game.FlagId(carrier.s.Target)} ");
-        var waiting = Lines(game).Count(l => l.StartsWith("settler ", StringComparison.Ordinal) && l.Contains("flag-id=", StringComparison.Ordinal));
+        StringAssert.Contains(
+            line,
+            $"stamp={carrier.s.Stamp} id=settler#{carrier.slot}.1 flag-id={game.FlagId(carrier.s.Target)} "
+        );
+        var waiting = Lines(game)
+            .Count(l =>
+                l.StartsWith("settler ", StringComparison.Ordinal) && l.Contains("flag-id=", StringComparison.Ordinal)
+            );
         Assert.AreEqual(1, waiting, "a settler in the castle has no flag target");
     }
 }

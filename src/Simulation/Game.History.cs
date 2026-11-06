@@ -79,20 +79,18 @@ public sealed partial class Game
         Record(
             type,
             BuildingId(slot),
-            new ThingState(
-                [
-                    ("type", b.Type),
-                    ("constructing", b.Constructing ? 1 : 0),
-                    ("x", b.X),
-                    ("y", b.Y),
-                    ("flag", b.Flag),
-                    ("status", b.Status),
-                    ("worker", b.Worker),
-                    ("stamp", b.Stamp),
-                    ("fill", b.Fill),
-                    ("progress", b.Progress),
-                ]
-            ),
+            new ThingState([
+                ("type", b.Type),
+                ("constructing", b.Constructing ? 1 : 0),
+                ("x", b.X),
+                ("y", b.Y),
+                ("flag", b.Flag),
+                ("status", b.Status),
+                ("worker", b.Worker),
+                ("stamp", b.Stamp),
+                ("fill", b.Fill),
+                ("progress", b.Progress),
+            ]),
             cause,
             other
         );
@@ -101,7 +99,12 @@ public sealed partial class Game
     // Records the event of the flag in the slot: its node, status byte, road bytes, and the goods on it.
     internal void RecordFlag(int slot, string type, Cause cause, string? other = null)
     {
-        var fields = new List<(string, int)> { ("x", _flags[slot].X), ("y", _flags[slot].Y), ("status", _flagStatus[slot]) };
+        var fields = new List<(string, int)>
+        {
+            ("x", _flags[slot].X),
+            ("y", _flags[slot].Y),
+            ("status", _flagStatus[slot]),
+        };
         fields.AddRange(_roadBytes[slot].Select((value, direction) => ($"road{direction}", (int)value)));
         fields.AddRange(_flagGoods[slot].Select((value, place) => ($"good{place}", (int)value)));
         Record(type, FlagId(slot), new ThingState(fields), cause, other);
@@ -134,22 +137,20 @@ public sealed partial class Game
         Record(
             type,
             id,
-            new ThingState(
-                [
-                    ("job", s.Job),
-                    ("state", s.State),
-                    ("player", s.Player),
-                    ("mode", s.Mode),
-                    ("target", s.Target),
-                    ("next", s.Next),
-                    ("heading", s.Heading),
-                    ("frame", s.Frame),
-                    ("timer", s.Timer),
-                    ("stamp", s.Stamp),
-                    ("x", s.X),
-                    ("y", s.Y),
-                ]
-            ),
+            new ThingState([
+                ("job", s.Job),
+                ("state", s.State),
+                ("player", s.Player),
+                ("mode", s.Mode),
+                ("target", s.Target),
+                ("next", s.Next),
+                ("heading", s.Heading),
+                ("frame", s.Frame),
+                ("timer", s.Timer),
+                ("stamp", s.Stamp),
+                ("x", s.X),
+                ("y", s.Y),
+            ]),
             carried ? command! : cause,
             other
         );

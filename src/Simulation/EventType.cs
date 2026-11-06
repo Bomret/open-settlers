@@ -31,5 +31,5 @@ public static class EventType
 
     /// <summary>Every type, for a check of a name.</summary>
     public static IReadOnlyList<string> All { get; } =
-        [PlaceCastle, PlaceFlag, BuildRoad, PlaceBuilding, LayoutInHut, LayoutWaitingOnRoad, LayoutGood];
+    [PlaceCastle, PlaceFlag, BuildRoad, PlaceBuilding, LayoutInHut, LayoutWaitingOnRoad, LayoutGood];
 }

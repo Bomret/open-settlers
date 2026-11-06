@@ -105,7 +105,10 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     /// </summary>
     public static IReadOnlyList<Thing> Of(Game game, NameTable? names)
     {
-        var buildings = game.Buildings.Select((building, slot) => (building, slot)).Where(e => !e.building.IsFree).ToList();
+        var buildings = game
+            .Buildings.Select((building, slot) => (building, slot))
+            .Where(e => !e.building.IsFree)
+            .ToList();
         var flags = game.Flags.Select((flag, slot) => (flag, slot)).Where(entry => !entry.flag.IsFree).ToList();
         var taken = buildings
             .Select(e => (e.building.X, e.building.Y))
@@ -144,7 +147,10 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     static Thing Of(Game game, Settler settler, int slot)
     {
         var thing = Of(settler);
-        var flag = settler.State == 0x42 || (settler.State == 2 && settler.Mode != 0xfe) ? FlagLink(game, settler.Target) : null;
+        var flag =
+            settler.State == 0x42 || (settler.State == 2 && settler.Mode != 0xfe)
+                ? FlagLink(game, settler.Target)
+                : null;
 
         return thing with
         {
@@ -172,7 +178,9 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
                 .. thing.Values,
                 ("id", game.BuildingId(slot).ToString()),
                 .. flag is { } flagId ? [("flag-id", flagId)] : Array.Empty<(string, string)>(),
-                .. worker ? [("worker-id", game.SettlerId(building.Worker).ToString())] : Array.Empty<(string, string)>(),
+                .. worker
+                    ? [("worker-id", game.SettlerId(building.Worker).ToString())]
+                    : Array.Empty<(string, string)>(),
             ],
         };
     }

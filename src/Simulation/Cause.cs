@@ -45,7 +45,7 @@ public sealed record Cause(string Kind, ThingId? Thing = null)
 
     /// <summary>Every kind a cause has, for a check of a name.</summary>
     public static IReadOnlyList<string> Kinds { get; } =
-        [PlacedKind, RazedKind, "settlers", "carriers", "woodcutting", "walk-home", "goods", "removal", LayoutKind];
+    [PlacedKind, RazedKind, "settlers", "carriers", "woodcutting", "walk-home", "goods", "removal", LayoutKind];
 
     /// <summary>The cause of a place command for <paramref name="thing"/>.</summary>
     public static Cause Placed(ThingId thing) => new(PlacedKind, thing);
