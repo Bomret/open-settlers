@@ -26,9 +26,13 @@ public sealed record LayoutResult(Layout? Layout, IReadOnlyList<string> Problems
 /// <item><c>terrainLower</c> (optional): the same for the lower triangle; each tile defaults to its upper terrain.</item>
 /// <item><c>objects</c> (optional): a list of <c>{"x": column, "y": row, "code": 1 to 127}</c>, the original's object
 /// codes, at most one for each tile.</item>
+/// <item><c>castle</c> (optional): <c>{"x", "y"}</c>, the node of the castle; <c>flags</c> and <c>buildings</c>: lists of
+/// <c>{"x", "y"}</c>; <c>roads</c>: a list of <c>{"x", "y", "directions"}</c>, the flag the road starts at and one
+/// direction, 0 to 5, for each step. <see cref="Apply"/> builds these in the order the file lists them, key by key and
+/// entry by entry.</item>
 /// </list>
 /// </summary>
-public sealed class Layout
+public sealed partial class Layout
 {
     /// <summary>
     /// The terrain letters, in the order of the terrain codes 0 to 15 (<c>docs/rules/map-form.md</c>): the letter at
@@ -49,16 +53,22 @@ public sealed class Layout
     private readonly string[] _terrain;
     private readonly string[] _terrainLower;
     private readonly IReadOnlyList<MapObject> _objects;
+    private readonly IReadOnlyList<Step> _steps;
+    private readonly string _file;
 
     private Layout(
+        string file,
         MapSize size,
         Seed seed,
         string[] height,
         string[] terrain,
         string[] terrainLower,
-        IReadOnlyList<MapObject> objects
+        IReadOnlyList<MapObject> objects,
+        IReadOnlyList<Step> steps
     )
     {
+        _file = file;
+        _steps = steps;
         Size = size;
         Seed = seed;
         _height = height;
@@ -183,7 +193,7 @@ public sealed class Layout
     }
 
     // Reads one file's text and collects every problem it can find; entries that depend on a bad entry are skipped.
-    private sealed class Reader(string file)
+    private sealed partial class Reader(string file)
     {
         private readonly List<string> _problems = [];
 
@@ -221,7 +231,19 @@ public sealed class Layout
                         Fail(property.Name, "given twice");
                     }
                     else if (
-                        property.Name is not ("size" or "seed" or "height" or "terrain" or "terrainLower" or "objects")
+                        property.Name
+                        is not (
+                            "size"
+                            or "seed"
+                            or "height"
+                            or "terrain"
+                            or "terrainLower"
+                            or "objects"
+                            or "castle"
+                            or "flags"
+                            or "roads"
+                            or "buildings"
+                        )
                     )
                     {
                         Fail(property.Name, "unknown entry");
@@ -245,6 +267,7 @@ public sealed class Layout
                 var objects = entries.TryGetValue("objects", out var objectsEntry)
                     ? ReadObjects(objectsEntry, size)
                     : [];
+                var steps = ReadSteps(root);
 
                 return
                     size is null
@@ -253,8 +276,9 @@ public sealed class Layout
                     || terrain is null
                     || lower is null
                     || objects is null
+                    || steps is null
                     ? null
-                    : new Layout(size, seed.Value, height, terrain, lower, objects);
+                    : new Layout(file, size, seed.Value, height, terrain, lower, objects, steps);
 
                 string[]? ReadTerrain(string name) =>
                     entries.TryGetValue(name, out var entry)
