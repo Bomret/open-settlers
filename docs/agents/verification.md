@@ -62,6 +62,12 @@ failed `expect` or a problem in the script.
   stored. Other stems run in parallel. The lock holds its owner's pid, and a call takes over the lock of
   a dead owner, and of a lock with no pid older than 5 seconds. Remove a lock by hand only when no run is live.
 
+When a line is about one place, take a cropped shot, `shot <name> <column> <row> [radius] [scale]`, rather
+than the whole frame: it keeps the tiles within `radius` steps of the tile (default 1) and the room above them
+for the tallest object sprite, enlarged by the whole factor `scale` (default 1). The tile is placed as
+`click-tile` places it and fails with its messages; a crop is clipped to the canvas, and one over 16384 pixels
+on a side once enlarged fails the step. README.md's "Run a play script" lists every step.
+
 ### Layouts: reach a moment without clicks
 
 Do not click a situation together in a play script. A layout (`layouts/*.jsonc`, [ADR 0009](../adr/0009-layouts-set-up-a-game-by-a-hand-drawn-map-and-commands.md))

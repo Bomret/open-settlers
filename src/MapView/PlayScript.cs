@@ -90,12 +90,24 @@ public sealed record SwipeStep : PlayStep
     public required float Dy { get; init; }
 }
 
-/// <summary><c>shot &lt;name&gt;</c>: writes the last drawn frame to <c>&lt;name&gt;.png</c> of the output folder.</summary>
+/// <summary>
+/// <c>shot &lt;name&gt; [&lt;column&gt; &lt;row&gt; [radius] [scale]]</c>: writes the last drawn frame to
+/// <c>&lt;name&gt;.png</c> of the output folder; with a tile, only the part around it (<see cref="ShotCrop"/>).
+/// </summary>
 public sealed record ShotStep : PlayStep
 {
     /// <summary>The file stem; it holds no path separator.</summary>
     public required string Name { get; init; }
+
+    /// <summary>The tile to crop around; null for the whole frame.</summary>
+    public ShotTile? Tile { get; init; }
 }
+
+/// <summary>
+/// The tile a <see cref="ShotStep"/> crops around: its column and row, zero or more; the radius in steps, zero or
+/// more; and the whole factor that enlarges the crop, 1 or more.
+/// </summary>
+public sealed record ShotTile(int Column, int Row, int Radius, int Scale);
 
 /// <summary><c>click-tile &lt;column&gt; &lt;row&gt;</c>: a left click on the map tile where it shows on the canvas.</summary>
 public sealed record ClickTileStep : PlayStep
@@ -312,18 +324,42 @@ public sealed class PlayScript
                 return ParseFastForward(args, number);
             case "expect":
                 return ParseExpect(args, number);
-            case "shot" or "dump":
-                if (args.Length != 1)
-                    return Wrong(words[0], "1 argument", args.Length);
-                if (args[0] is "." or ".." || args[0].IndexOfAny(['/', '\\']) >= 0)
-                    return (null, $"'{args[0]}' is no file name");
+            case "shot":
+                if (args.Length is not (1 or 3 or 4 or 5))
+                    return Wrong(words[0], "1, 3, 4, or 5 arguments", args.Length);
+                if (FileNameProblem(args[0]) is { } badName)
+                    return (null, badName);
+                if (args.Length == 1)
+                    return (new ShotStep { Line = number, Name = args[0] }, null);
+
+                var whole = new int[4] { 0, 0, 1, 1 };
+                for (var i = 1; i < args.Length; i++)
+                {
+                    // The scale, the fifth argument, is 1 or more; the others are zero or more.
+                    var least = i == 4 ? 1 : 0;
+                    if (
+                        !int.TryParse(args[i], NumberStyles.None, CultureInfo.InvariantCulture, out whole[i - 1])
+                        || whole[i - 1] < least
+                    )
+                        return (null, $"'{args[i]}' is not a whole number of {(least == 0 ? "zero" : "1")} or more");
+                }
 
                 return (
-                    words[0] == "shot"
-                        ? new ShotStep { Line = number, Name = args[0] }
-                        : new DumpStep { Line = number, Name = args[0] },
+                    new ShotStep
+                    {
+                        Line = number,
+                        Name = args[0],
+                        Tile = new ShotTile(whole[0], whole[1], whole[2], whole[3]),
+                    },
                     null
                 );
+            case "dump":
+                if (args.Length != 1)
+                    return Wrong(words[0], "1 argument", args.Length);
+                if (FileNameProblem(args[0]) is { } badDump)
+                    return (null, badDump);
+
+                return (new DumpStep { Line = number, Name = args[0] }, null);
             default:
                 return (null, $"unknown step '{words[0]}'");
         }
@@ -473,6 +509,10 @@ public sealed class PlayScript
 
         return (numbers, "");
     }
+
+    // A file stem is a name of its own, with no path in it.
+    static string? FileNameProblem(string name) =>
+        name is "." or ".." || name.IndexOfAny(['/', '\\']) >= 0 ? $"'{name}' is no file name" : null;
 
     static (PlayStep?, string?) Wrong(string step, string want, int got) =>
         (null, $"'{step}' takes {want}, found {got}");
