@@ -77,7 +77,7 @@ public sealed partial class Game
 
     // State 4, a settler that stepped through a door (0x43c96b): once its timer is down to the time the door leaves it, it
     // runs the routine of its job when a building stands there that is not marked bit 5; else it is state 0x19.
-    private void Door(Settler settler)
+    private void Door(int slot, Settler settler)
     {
         var delta = (ushort)(_clock - settler.Stamp);
         settler.Stamp = _clock;
@@ -97,7 +97,7 @@ public sealed partial class Game
             // 0, so a value of 0xfe is the original's send-home mark and no walk's -2 east. The original shares the byte.
             if (settler.Mode == StorageWalk)
             {
-                EnterStorage(node, settler);
+                EnterStorage(slot, node, settler);
             }
             else if (settler.Job == WoodcutterJob)
             {
@@ -419,7 +419,7 @@ public sealed partial class Game
             // **Not ported:** the arrival of the jobs 7, 8, 11, 14, and 20 where they are not walking home (0x437ddd).
             if (ArrivesHome(settler.Job) || (Mark(settler) == 0x80 && settler.Heading < 0))
             {
-                ArriveHome(settler);
+                ArriveHome(slot, settler);
             }
 
             return;
@@ -430,7 +430,7 @@ public sealed partial class Game
             // A negative count marks the walk home (0x4385ab).
             if (settler.Heading < 0)
             {
-                ArriveHome(settler);
+                ArriveHome(slot, settler);
 
                 return;
             }
