@@ -29,7 +29,22 @@ public static class EventType
     /// <summary>The layout entry that puts a good on a flag.</summary>
     public const string LayoutGood = "layout-good";
 
+    /// <summary>A waiting carrier sees a good to fetch and turns toward it.</summary>
+    public const string Fetch = "fetch";
+
+    /// <summary>A carrier takes the node it stands on.</summary>
+    public const string Claim = "claim";
+
+    /// <summary>A carrier and a flag swap goods; also the flag's side of it.</summary>
+    public const string Exchange = "exchange";
+
+    /// <summary>A carrier turns to the building it brings a good to.</summary>
+    public const string Deliver = "deliver";
+
+    /// <summary>A carrier gives a good to a building, and the building's storage gains it.</summary>
+    public const string Handover = "handover";
+
     /// <summary>Every type, for a check of a name.</summary>
     public static IReadOnlyList<string> All { get; } =
-    [PlaceCastle, PlaceFlag, BuildRoad, PlaceBuilding, LayoutInHut, LayoutWaitingOnRoad, LayoutGood];
+    [PlaceCastle, PlaceFlag, BuildRoad, PlaceBuilding, LayoutInHut, LayoutWaitingOnRoad, LayoutGood, Fetch, Claim, Exchange, Deliver, Handover];
 }
