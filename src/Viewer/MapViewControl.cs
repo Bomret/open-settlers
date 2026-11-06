@@ -139,6 +139,27 @@ public partial class MapViewControl : Control
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0))
         );
 
+    /// <summary>
+    /// A play run's <c>fast-forward</c> step: ticks the game without drawing until the step's condition holds, then draws
+    /// once. The game then ticks no more until the next shot (<see cref="ShotTaken"/>). Null when it holds; else the problem.
+    /// </summary>
+    public string? FastForward(FastForwardStep step)
+    {
+        var problem = step.Apply(_game, _gameView, _pacer);
+        if (_game is null || !_gameView)
+            return problem;
+
+        _ticks.Text = $"Tick {_game.TickCount}";
+        _logs.Text = CastleReadout.Text(_game.CastleLogs);
+        UpdateSettlers();
+        Redraw();
+
+        return problem;
+    }
+
+    /// <summary>A play run has taken a shot: a game held by a fast-forward runs on.</summary>
+    public void ShotTaken() => _pacer.ShotTaken();
+
     /// <inheritdoc/>
     public override void _Ready()
     {

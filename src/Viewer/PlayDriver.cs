@@ -113,6 +113,8 @@ public partial class PlayDriver : Node
                 return ClickTile(tile);
             case ButtonStep button:
                 return ClickButton(button);
+            case FastForwardStep fastForward:
+                return _view.FastForward(fastForward);
             case ShotStep shot:
                 return Shot(shot.Name);
             default:
@@ -253,6 +255,7 @@ public partial class PlayDriver : Node
             Directory.CreateDirectory(_outputFolder);
             var image = GetViewport().GetTexture().GetImage();
             var saved = image.SavePng(file);
+            _view.ShotTaken();
 
             return saved == Error.Ok ? null : $"cannot write '{file}': {saved}";
         }

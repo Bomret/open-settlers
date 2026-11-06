@@ -9,16 +9,33 @@ namespace OpenSettlers.MapView;
 public sealed class TickPacer
 {
     private double _carry;
+    private bool _held;
 
     /// <summary>The whole ticks that fall due after a frame of <paramref name="seconds"/>.</summary>
     public int Due(double seconds)
     {
+        if (_held)
+            return 0;
+
         _carry += seconds * Game.TicksPerSecond;
         var ticks = (int)_carry;
         _carry -= ticks;
 
         return ticks;
     }
+
+    /// <summary>
+    /// Holds the game: no tick falls due, and the time of the frames is dropped, until <see cref="ShotTaken"/>. A play
+    /// run's fast-forward holds it so the next shot shows the tick it stopped at.
+    /// </summary>
+    public void Hold()
+    {
+        _held = true;
+        _carry = 0;
+    }
+
+    /// <summary>A shot has been taken: lets a held game run on.</summary>
+    public void ShotTaken() => _held = false;
 
     /// <summary>Drops the carry, as a new game starts.</summary>
     public void Reset() => _carry = 0;
