@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -35,6 +36,32 @@ public sealed partial class Game
 
     /// <summary>The ID of the flag in the slot of <see cref="Flags"/>; the fill count 0 for a slot never filled.</summary>
     public ThingId FlagId(int slot) => new(ThingId.FlagKind, slot, FillOf(_flagFills, slot));
+
+    /// <summary>
+    /// The state of the thing at the end of <paramref name="tick"/>: the state in its last event at or before that tick. A tick
+    /// before the thing's first event, and a tick that has not run, give no state and the reason in the second part.
+    /// </summary>
+    public (ThingState? State, string? Refusal) StateAt(ThingId thing, long tick)
+    {
+        var last = Math.Max(TickCount - 1, _events.LastTick);
+        if (tick > last)
+        {
+            return (null, $"tick {tick} has not run: the game ran up to tick {last}");
+        }
+
+        var events = _events.Of(thing);
+        if (events.Count == 0)
+        {
+            return (null, $"{thing} has no event");
+        }
+
+        if (tick < events[0].Tick)
+        {
+            return (null, $"{thing} first appears at tick {events[0].Tick}, after tick {tick}");
+        }
+
+        return (events.Last(e => e.Tick <= tick).State, null);
+    }
 
     // The cause of a change a player's command makes: the command, or the layout while a layout builds its entries.
     private Cause CommandCause(ThingId commanded) => InLayout ? Cause.Layout : Cause.Placed(commanded);

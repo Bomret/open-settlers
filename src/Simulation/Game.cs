@@ -207,6 +207,9 @@ public sealed partial class Game
 
         _roads.Add(road!);
         SetRoadBytes(road!);
+        var cause = CommandCause(FlagId(road!.FromSlot));
+        RecordFlag(road.FromSlot, EventType.BuildRoad, cause, FlagId(road.ToSlot).ToString());
+        RecordFlag(road.ToSlot, EventType.BuildRoad, cause, FlagId(road.FromSlot).ToString());
 
         return true;
     }

@@ -177,4 +177,69 @@ public sealed class ThingHistoryTests
         Assert.AreEqual("flag#1.1", hut.Other, "the hut names its flag by the ID the flag has now");
         Assert.AreEqual(2, hut.State.Get("type"));
     }
+
+    [TestMethod]
+    public void BuildingARoadRecordsAnEventForEachEndFlagNamingTheOtherEnd()
+    {
+        var game = Castle();
+        Do(game, CommandKind.PlaceFlag, 18, 6);
+        Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
+
+        var from = game.EventsOf(game.FlagId(0)).Last();
+        var to = game.EventsOf(game.FlagId(1)).Last();
+
+        Assert.AreEqual(EventType.BuildRoad, from.Type);
+        Assert.AreEqual(EventType.BuildRoad, to.Type);
+        Assert.AreEqual(Cause.Placed(game.FlagId(0)), from.Cause, "the command's node is the road's first flag");
+        Assert.AreEqual(Cause.Placed(game.FlagId(0)), to.Cause);
+        Assert.AreEqual("flag#1.1", from.Other);
+        Assert.AreEqual("flag#0.1", to.Other);
+        Assert.AreEqual(game.RoadByte(1, 3), to.State.Get("road3"));
+    }
+
+    [TestMethod]
+    public void TheStateOfAThingAtTheTickOfAnEventIsItsStateAtTheEndOfThatTick()
+    {
+        var game = World();
+        var flag = game.FlagId(1);
+        var placedAt = game.EventsOf(flag).First().Tick;
+
+        var (state, refusal) = game.StateAt(flag, placedAt);
+
+        Assert.IsNull(refusal);
+        Assert.AreEqual(game.EventsOf(flag).First().State, state);
+    }
+
+    [TestMethod]
+    public void SeveralEventsInOneTickResolveToTheLast()
+    {
+        var game = Castle();
+        game.Enqueue(new Command(1, 0, CommandKind.PlaceFlag, 18, 6));
+        game.Enqueue(new Command(1, 0, CommandKind.PlaceFlag, 19, 4));
+        game.Enqueue(new Command(1, 0, CommandKind.BuildRoad, 18, 6, [5, 5, 0]));
+        game.Tick();
+        var flag = game.FlagId(1);
+
+        var (state, _) = game.StateAt(flag, 1);
+
+        Assert.HasCount(2, game.EventsOf(flag));
+        Assert.AreEqual(game.EventsOf(flag)[1].State, state);
+        Assert.AreEqual(game.RoadByte(1, 5), state!.Get("road5"));
+    }
+
+    [TestMethod]
+    public void ATickBeforeTheThingExistedAndAFutureTickAreRefusedWithAReason()
+    {
+        var game = Castle();
+        Do(game, CommandKind.PlaceFlag, 18, 6);
+        game.Tick();
+
+        var (early, earlyReason) = game.StateAt(game.FlagId(1), 0);
+        var (late, lateReason) = game.StateAt(game.FlagId(1), 9);
+
+        Assert.IsNull(early);
+        StringAssert.Contains(earlyReason, "flag#1.1");
+        Assert.IsNull(late);
+        StringAssert.Contains(lateReason, "9");
+    }
 }
