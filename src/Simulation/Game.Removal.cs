@@ -306,6 +306,7 @@ public sealed partial class Game
                 {
                     settler.Mode = StorageWalk;
                     settler.Target = 0;
+                    _walkingHome.Add(walker);
                     Touch(walker, EventType.EndOfRoad, FlagId(slot).ToString());
                 }
             }
@@ -370,6 +371,7 @@ public sealed partial class Game
 
         settler.State = 0x19;
         settler.Mode = 0;
+        _walkingHome.Add(slot);
         Touch(slot, EventType.Dismiss);
     }
 
@@ -442,6 +444,7 @@ public sealed partial class Game
         settler.Timer = 0;
         settler.State = 0x19;
         settler.Mode = 0;
+        _walkingHome.Add(slot);
         Touch(slot, EventType.Dismissed);
     }
 
@@ -582,6 +585,7 @@ public sealed partial class Game
             else if (settler.State == 2 && (flags[index] & 0x3f) == 0)
             {
                 settler.State = 0x19;
+                _walkingHome.Add(standing);
                 Touch(standing, EventType.TookFlagDown);
             }
         }
@@ -599,6 +603,7 @@ public sealed partial class Game
             {
                 settler.Mode = StorageWalk;
                 settler.Target = 0;
+                _walkingHome.Add(walker);
                 Touch(walker, EventType.TookFlagDown, FlagId(slot).ToString());
             }
         }
@@ -722,6 +727,7 @@ public sealed partial class Game
             {
                 settler.Mode = StorageWalk;
                 settler.Target = 0;
+                _walkingHome.Add(walker);
                 Touch(walker, EventType.JoinRoads);
             }
         }
@@ -775,6 +781,7 @@ public sealed partial class Game
         {
             settler.State = 0x19;
             settler.Mode = 0;
+            _walkingHome.Add(slot);
         }
         else
         {
@@ -796,6 +803,7 @@ public sealed partial class Game
             {
                 settler.Mode = StorageWalk;
                 settler.Target = 0;
+                _walkingHome.Add(walker);
                 Touch(walker, EventType.ReleaseGoodsFor, FlagId(flag).ToString());
             }
             else if (settler.State == 3 && settler.Mode != 0 && settler.Target == flag + 1)
@@ -879,6 +887,7 @@ public sealed partial class Game
         // The event that ends the building, recorded while the slot still holds it.
         RecordBuilding(slot, EventType.FreeBuilding, RazedCauseOf(slot));
         _razedBuildings.Remove(BuildingId(slot));
+        _buildingCommand.Remove(BuildingId(slot));
         _buildings[slot] = Building.Free();
         while (_buildings.Count > 0 && _buildings[^1].IsFree)
         {

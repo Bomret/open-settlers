@@ -233,6 +233,9 @@ public sealed record ExpectThingStep : PlayStep
 
     /// <summary>The value as written: a number, a thing ID, or an alias.</summary>
     public required string Value { get; init; }
+
+    /// <summary>The value as a number, read when the script is parsed; 0 for a link field, whose value is no number.</summary>
+    public double Number { get; init; }
 }
 
 /// <summary><c>expect-event &lt;alias&gt; &lt;type&gt; [cause &lt;cause&gt;]</c>: checks that the thing has an event of the type, with the cause when given.</summary>
@@ -573,7 +576,7 @@ public sealed class PlayScript
     }
 
     // A whole number of zero or more, decimal or 0x hex.
-    static bool Whole(string text, out int value) =>
+    internal static bool Whole(string text, out int value) =>
         text.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
             ? int.TryParse(text[2..], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out value)
                 && value >= 0
@@ -683,14 +686,22 @@ public sealed class PlayScript
 
         if (!Ops.Contains(args[1]))
             return (null, $"unknown operator '{args[1]}', use one of {string.Join(" ", Ops)}");
+        var wanted = 0.0;
         if (NamedThings.IsLink(field))
         {
             if (args[1] != "=")
                 return (null, $"'{field}' takes only '=', not '{args[1]}'");
-            if (!declared.Aliases.Contains(args[2]) && !args[2].Contains('#') && !args[2].Contains('@'))
+            if (args[2].Contains('#'))
+            {
+                if (!NamedThings.IsThingId(args[2]))
+                    return (null, $"'{args[2]}' is not a thing ID like settler#12.3");
+            }
+            else if (!declared.Aliases.Contains(args[2]) && !args[2].Contains('@'))
+            {
                 return (null, $"unknown alias '{args[2]}'");
+            }
         }
-        else if (!NamedThings.Numeric(args[2], out _))
+        else if (!NamedThings.Numeric(args[2], out wanted))
         {
             return (null, $"'{args[2]}' is not a number");
         }
@@ -705,6 +716,7 @@ public sealed class PlayScript
                 Tick = tick,
                 Op = args[1],
                 Value = args[2],
+                Number = wanted,
             },
             null
         );

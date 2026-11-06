@@ -67,6 +67,60 @@ public sealed class PlayNamedThingTests
     }
 
     [TestMethod]
+    public void ALinkFieldComparesWithAnAliasOrAThingId()
+    {
+        var run = Run(
+            "name f 18 6 flag\nname g 18 6 flag\nname c 15 5 building\nexpect f.id = g\nexpect f.id = flag#1.1\nexpect c.flag-id = flag#0.1",
+            Castle()
+        );
+
+        Assert.AreEqual("", string.Join("\n", run.Problems));
+        Assert.IsTrue(run.Finished);
+    }
+
+    [TestMethod]
+    public void ALinkFieldThatDiffersFailsWithTheActualId()
+    {
+        var problem = Problem(Run("name f 18 6 flag\nexpect f.id = flag#9.9", Castle()));
+
+        StringAssert.Contains(problem, "actual flag#1.1");
+    }
+
+    [TestMethod]
+    public void ALinkFieldIsRefusedAtAMarkAndAtATick()
+    {
+        var game = Castle();
+        var first = game.EventsOf(game.FlagId(1))[0].Tick;
+
+        StringAssert.Contains(
+            Problem(Run("name f 18 6 flag\nmark m\nexpect f.id@m = flag#1.1", game)),
+            "shows only now"
+        );
+        StringAssert.Contains(
+            Problem(Run($"name f 18 6 flag\nexpect f.id@{first} = flag#1.1", game)),
+            "shows only now"
+        );
+    }
+
+    [TestMethod]
+    public void AMalformedThingIdIsAScriptProblemAtParseTime()
+    {
+        var problems = Parse(
+            string.Join(
+                "\n",
+                "name f 18 6 flag",
+                "expect f.id = foo#",
+                "expect f.id = flag#1",
+                "expect f.id = flag#1.1"
+            )
+        ).Problems;
+
+        Assert.HasCount(2, problems);
+        Assert.IsTrue(problems.Any(p => p.StartsWith("play/t.play line 2:")));
+        Assert.IsTrue(problems.Any(p => p.StartsWith("play/t.play line 3:")));
+    }
+
+    [TestMethod]
     public void NameWithNoMatchFailsAndListsTheNode()
     {
         var run = Run("name f 5 5 flag", Castle());
@@ -167,6 +221,24 @@ public sealed class PlayNamedThingTests
 
         StringAssert.Contains(Problem(run), $"gone at tick {last.Tick}");
         StringAssert.Contains(Problem(run), last.Cause.ToString());
+    }
+
+    [TestMethod]
+    public void ExpectEventReadsTheHistoryOfAGoneThing()
+    {
+        var game = Castle();
+        var run = new PlayRun(
+            Parse("name f 18 6 flag\nwait 1\nexpect-event f place-flag cause placed\nexpect-gone f"),
+            () => StateOf(game),
+            _out,
+            _ => null
+        );
+        run.Advance(0);
+        Do(game, CommandKind.RemoveFlag, 18, 6);
+        run.Advance(1.0);
+
+        Assert.AreEqual("", string.Join("\n", run.Problems));
+        Assert.IsTrue(run.Finished);
     }
 
     [TestMethod]

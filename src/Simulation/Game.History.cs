@@ -39,7 +39,9 @@ public sealed partial class Game
 
     /// <summary>
     /// The state of the thing at the end of <paramref name="tick"/>: the state in its last event at or before that tick. A tick
-    /// before the thing's first event, and a tick that has not run, give no state and the reason in the second part.
+    /// before the thing's first event, and a tick that has not run, give no state and the reason in the second part. The tick
+    /// <see cref="TickCount"/> counts as run where a command recorded an event at it: the state then is the state so far, and
+    /// the tick's own rules can still change it.
     /// </summary>
     public (ThingState? State, string? Refusal) StateAt(ThingId thing, long tick)
     {
@@ -60,7 +62,14 @@ public sealed partial class Game
             return (null, $"{thing} first appears at tick {events[0].Tick}, after tick {tick}");
         }
 
-        return (events.Last(e => e.Tick <= tick).State, null);
+        // The events are in time order: scan from the back for the last one at or before the tick.
+        for (var i = events.Count - 1; ; i--)
+        {
+            if (events[i].Tick <= tick)
+            {
+                return (events[i].State, null);
+            }
+        }
     }
 
     // The cause of a change a player's command makes: the command, or the layout while a layout builds its entries.
@@ -111,9 +120,10 @@ public sealed partial class Game
     }
 
     // Starts the settler carrying a command cause on: every event of the settler records it in place of its rule area's cause
-    // (RecordSettler) from the change that set a behaviour going, until the behaviour ends: the event that leaves the settler
-    // idle in storage (state 1) or waiting at a flag (state 0x42) is the last one that carries it, and a rule ends it with
-    // EndCarry before the event of a new job request. Throws for a cause no command made.
+    // (RecordSettler) from the change that set a behaviour going, until the behaviour ends. RecordSettler ends the carry by
+    // itself: the event that leaves the settler idle in storage (state 1) or waiting at a flag (state 0x42) is the last one that
+    // carries it. A rule can end it earlier with EndCarry, before the event of a new job request. Throws for a cause no command
+    // made.
     internal void CarryCause(int slot, Cause command)
     {
         if (!command.IsCommand)
@@ -128,7 +138,7 @@ public sealed partial class Game
     internal void EndCarry(int slot) => _carried.Remove(SettlerId(slot));
 
     // Records the event of the settler in the slot: its state now, with the command cause it carries (CarryCause) in place of the
-    // rule area's cause.
+    // rule area's cause. A carried cause ends here when the recorded state is 1 (idle in storage) or 0x42 (waiting at a flag).
     internal void RecordSettler(int slot, string type, Cause cause, string? other = null)
     {
         var s = _settlers[slot];

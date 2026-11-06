@@ -155,10 +155,8 @@ public sealed class CarrierEventsTests
         Assert.AreEqual(Cause.Carriers, wait.Cause);
     }
 
-    // The state of the carrier at every tick from its request to its wait, against the engine's. The ticks of its events are the
-    // ticks the carrier rules own: the state there equals the engine's in every field. Between them the settler's generic stepping
-    // (state 0xf to 5 to 2: Game.Settlers, slice 05 records it) changes the state, so only the fields the carrier rules set
-    // and nothing else changes (job, mode, target) are compared there.
+    // The state of the carrier at every tick from its request to its wait, against the engine's, in every field. The settler's
+    // generic stepping (state 0xf to 5 to 2: Game.Settlers) records its changes between the carrier rules' events.
     [TestMethod]
     public void TheStateOfTheCarrierAtEveryTickOfItsWalkEqualsTheEnginesStateThen()
     {
@@ -186,13 +184,14 @@ public sealed class CarrierEventsTests
             if (game.EventsOf(request.Thing).Any(e => e.Tick == tick))
             {
                 eventTicks++;
-                Assert.AreEqual(settler.State, state.Get("state"), $"state at tick {tick}");
-                Assert.AreEqual(settler.Next, state.Get("next"), $"next at tick {tick}");
-                Assert.AreEqual((int)settler.Timer, state.Get("timer"), $"timer at tick {tick}");
-                Assert.AreEqual(settler.Heading, state.Get("heading"), $"heading at tick {tick}");
-                Assert.AreEqual(settler.Frame, state.Get("frame"), $"frame at tick {tick}");
-                Assert.AreEqual((settler.X, settler.Y), (state.Get("x"), state.Get("y")), $"node at tick {tick}");
             }
+
+            Assert.AreEqual(settler.State, state.Get("state"), $"state at tick {tick}");
+            Assert.AreEqual(settler.Next, state.Get("next"), $"next at tick {tick}");
+            Assert.AreEqual((int)settler.Timer, state.Get("timer"), $"timer at tick {tick}");
+            Assert.AreEqual(settler.Heading, state.Get("heading"), $"heading at tick {tick}");
+            Assert.AreEqual(settler.Frame, state.Get("frame"), $"frame at tick {tick}");
+            Assert.AreEqual((settler.X, settler.Y), (state.Get("x"), state.Get("y")), $"node at tick {tick}");
 
             if (settler.State == 0x42)
             {

@@ -54,6 +54,10 @@ public sealed class NamedThings
     /// <summary>Whether the field holds a thing ID, which only <c>=</c> compares.</summary>
     public static bool IsLink(string field) => field is "id" or "flag-id" or "worker-id";
 
+    /// <summary>Whether the text is a thing ID as <c>ThingId.ToString()</c> writes it: <c>settler#12.3</c>, <c>building#…</c>, or <c>flag#…</c>.</summary>
+    public static bool IsThingId(string text) =>
+        System.Text.RegularExpressions.Regex.IsMatch(text, @"^(settler|building|flag)#[0-9]+\.[0-9]+$");
+
     /// <summary>Whether the text can be an alias: letters, digits, <c>-</c>, and <c>_</c>.</summary>
     public static bool IsAliasText(string text) =>
         text.Length > 0 && text.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_');
@@ -74,12 +78,7 @@ public sealed class NamedThings
 
         if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
-            var ok = long.TryParse(
-                text[2..],
-                NumberStyles.AllowHexSpecifier,
-                CultureInfo.InvariantCulture,
-                out var hex
-            );
+            var ok = PlayScript.Whole(text, out var hex);
             value = hex;
 
             return ok;
@@ -216,15 +215,7 @@ public sealed class NamedThings
         else
         {
             Numeric(actual, out var have);
-            Numeric(step.Value, out var want);
-            holds = step.Op switch
-            {
-                "<" => have < want,
-                "<=" => have <= want,
-                ">=" => have >= want,
-                ">" => have > want,
-                _ => have == want,
-            };
+            holds = PlayState.Compare(have, step.Number, step.Op);
         }
 
         return holds ? null : $"{text} failed: actual {actual}";

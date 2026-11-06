@@ -49,7 +49,10 @@ public sealed class WoodcuttingHistoryTests
         Assert.IsTrue(cuts.Count > 0);
         Assert.IsTrue(cuts.All(e => e.Cause == Cause.Woodcutting));
         var cut = cuts.First(e => e.State.Get("state") == 0x11 && e.State.Get("heading") == 1);
-        Assert.AreEqual(ThingId.OfObject("tree", cut.State.Get("x")!.Value, cut.State.Get("y")!.Value).ToString(), cut.Other);
+        Assert.AreEqual(
+            ThingId.OfObject("tree", cut.State.Get("x")!.Value, cut.State.Get("y")!.Value).ToString(),
+            cut.Other
+        );
         Assert.IsTrue(cut.Other!.StartsWith("tree@", StringComparison.Ordinal));
     }
 
@@ -78,7 +81,16 @@ public sealed class WoodcuttingHistoryTests
         // The layout's own setup (the settler entering its hut) comes before the first door turn.
         var events = game.EventsOf(id).SkipWhile(e => e.Type != EventType.Door).ToList();
         Assert.IsFalse(events.Any(e => e.Type == EventType.Moved));
-        string[] own = [EventType.Door, EventType.SearchTree, EventType.StepOut, EventType.FreeWalk, EventType.Arrive, EventType.CutTree, EventType.EnterHut];
+        string[] own =
+        [
+            EventType.Door,
+            EventType.SearchTree,
+            EventType.StepOut,
+            EventType.FreeWalk,
+            EventType.Arrive,
+            EventType.CutTree,
+            EventType.EnterHut,
+        ];
         Assert.IsTrue(events.Where(e => own.Contains(e.Type)).All(e => e.Cause == Cause.Woodcutting));
         Assert.IsTrue(events.Any(e => e.Type == EventType.StepOut));
         Assert.IsTrue(events.Any(e => e.Type == EventType.EnterHut));
@@ -91,8 +103,7 @@ public sealed class WoodcuttingHistoryTests
         var id = game.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob));
         RunTrip(game);
 
-        var twice = game
-            .EventsOf(id)
+        var twice = game.EventsOf(id)
             .GroupBy(e => (e.Tick, e.Type))
             .Where(g => g.Count() > 1)
             .Select(g => $"tick {g.Key.Tick} {g.Key.Type} x{g.Count()}")
@@ -132,9 +143,27 @@ public sealed class WoodcuttingHistoryTests
                 var s = Woodcutter(game);
                 seen.Add(s.State);
                 var (state, refusal) = game.StateAt(id, game.TickCount - 1);
-                var now = $"state={s.State} mode={s.Mode} target={s.Target} next={s.Next} heading={s.Heading} frame={s.Frame} "
+                var now =
+                    $"state={s.State} mode={s.Mode} target={s.Target} next={s.Next} heading={s.Heading} frame={s.Frame} "
                     + $"timer={s.Timer} stamp={s.Stamp} x={s.X} y={s.Y}";
-                var then = state is null ? refusal! : string.Join(" ", new[] { "state", "mode", "target", "next", "heading", "frame", "timer", "stamp", "x", "y" }.Select(f => $"{f}={state.Get(f)}"));
+                var then = state is null
+                    ? refusal!
+                    : string.Join(
+                        " ",
+                        new[]
+                        {
+                            "state",
+                            "mode",
+                            "target",
+                            "next",
+                            "heading",
+                            "frame",
+                            "timer",
+                            "stamp",
+                            "x",
+                            "y",
+                        }.Select(f => $"{f}={state.Get(f)}")
+                    );
                 if (now != then)
                 {
                     wrong.Add($"tick {game.TickCount - 1}: engine {now} / history {then}");
@@ -144,5 +173,53 @@ public sealed class WoodcuttingHistoryTests
 
         Assert.AreEqual("", string.Join("\n", wrong.Take(5)));
         CollectionAssert.IsSubsetOf(new[] { 4, 5, 0x10, 0x11, 0x12 }, seen.ToArray());
+    }
+
+    [TestMethod]
+    public void AWoodcutterOnTheWalkHomeRecordsItsWorkEventsWithTheCauseWalkHome()
+    {
+        var game = Laid();
+        var slot = game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob);
+        var id = game.SettlerId(slot);
+        for (var i = 0; i < 4000 && Woodcutter(game).State != 0x12; i++)
+            game.Tick();
+
+        Assert.AreEqual(0x12, Woodcutter(game).State);
+        // No command or removal rule sends a woodcutter home without a carried cause, so the walk-home set is filled directly.
+        var walkingHome = (System.Collections.Generic.HashSet<int>)
+            typeof(Game)
+                .GetField(
+                    "_walkingHome",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
+                )!
+                .GetValue(game)!;
+        walkingHome.Add(slot);
+        var before = game.EventsOf(id).Count;
+        for (var i = 0; i < 30; i++)
+            game.Tick();
+
+        var recorded = game.EventsOf(id).Skip(before).ToList();
+        Assert.IsNotEmpty(recorded);
+        Assert.IsTrue(
+            recorded.All(e => e.Cause == Cause.WalkHome),
+            string.Join(", ", recorded.Select(e => $"{e.Type}/{e.Cause}"))
+        );
+    }
+
+    [TestMethod]
+    public void AWoodcutterCarryingACommandCauseRecordsItsWorkEventsWithIt()
+    {
+        var game = Laid();
+        var slot = game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob);
+        var id = game.SettlerId(slot);
+        var command = Cause.Placed(game.BuildingId(1));
+        game.CarryCause(slot, command);
+        RunTrip(game);
+
+        var work = game.EventsOf(id)
+            .Where(e => e.Type is EventType.SearchTree or EventType.StepOut or EventType.CutTree)
+            .ToList();
+        Assert.IsNotEmpty(work);
+        Assert.IsTrue(work.All(e => e.Cause == command));
     }
 }

@@ -153,7 +153,7 @@ public sealed record PlayState(
         return Compare(actual, wanted, expect.Op);
     }
 
-    static bool Compare(double actual, double wanted, string op) =>
+    internal static bool Compare(double actual, double wanted, string op) =>
         op switch
         {
             "<" => actual < wanted,

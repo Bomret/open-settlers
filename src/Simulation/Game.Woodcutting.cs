@@ -124,15 +124,16 @@ public sealed partial class Game
     }
 
     // Records the change a rule of this file made to the settler in the slot (ADR 0011): its state now, the rule's type, and the
-    // rule's area where the settler carries no command cause: woodcutting for a woodcutter, the layout while one builds, and the
-    // settlers' rules for another job that passes through these states.
+    // rule's area where the settler carries no command cause: the layout while one builds, the walk home for a settler on it
+    // (a woodcutter walking home included), woodcutting for another woodcutter, and the settlers' rules for another job that
+    // passes through these states.
     private void RecordWork(int slot, string type, string? other = null) =>
         RecordSettler(
             slot,
             type,
-            InLayout ? Cause.Layout
-            : _settlers[slot].Job == WoodcutterJob ? Cause.Woodcutting
-            : SettlerCause(slot),
+            InLayout || _walkingHome.Contains(slot) || _settlers[slot].Job != WoodcutterJob
+                ? SettlerCause(slot)
+                : Cause.Woodcutting,
             other
         );
 
@@ -197,7 +198,7 @@ public sealed partial class Game
         {
             var door = BuildingAt(here);
             var shape = 0xd + Height(next) - Height(here);
-            Move(slot, settler, x, y, next, record: false);
+            Move(slot, settler, x, y, next);
             settler.Frame = (byte)shape;
             var speed = (byte)(_tables.DoorSpeeds[door?.TypeIndex ?? 0] ^ 0x1f);
             settler.Timer = (ushort)((ushort)(_tables.StepTime(shape) * speed) >> 5);
@@ -274,7 +275,7 @@ public sealed partial class Game
 
             var here = Map.Index(settler.X, settler.Y);
             var shape = 4 + 9 * direction + Height(next) - Height(here);
-            Move(slot, settler, x, y, next, record: false);
+            Move(slot, settler, x, y, next);
             var old = settler.Timer;
             settler.Timer = (ushort)(old + _tables.StepTime(shape));
             if (settler.Timer < old)
@@ -591,7 +592,7 @@ public sealed partial class Game
         }
 
         var shape = 0x28 + Height(node) - Height(here);
-        Move(slot, settler, x, y, node, record: false);
+        Move(slot, settler, x, y, node);
         settler.Frame = (byte)shape;
         var time = _tables.StepTime(shape);
         settler.Timer = time;

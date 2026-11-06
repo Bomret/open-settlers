@@ -60,13 +60,13 @@ public sealed partial class Game
     // The castle is storage 0.
     private void EnterStorage(int slot, int node, Settler settler)
     {
+        _walkingHome.Remove(slot);
         if (settler.Job is 4 or 21)
         {
             return;
         }
 
         _occupant.Remove(node);
-        _walkingHome.Remove(slot);
         settler.State = 1;
         settler.Mode = 0;
         settler.Target = 0;

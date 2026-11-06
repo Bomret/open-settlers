@@ -51,8 +51,8 @@ public sealed partial class Game
     // reads as free, as in the original.
     private readonly Dictionary<int, int> _occupant = [];
 
-    // The command cause a placed building carries until its worker has entered: the events of the building and of the settler
-    // sent to it name the placing (history only; no rule reads it).
+    // The command cause a placed building carries until its worker has entered, the worker turns away, or the building is
+    // freed: the events of the building and of the settler sent to it name the placing (history only; no rule reads it).
     private readonly Dictionary<ThingId, Cause> _buildingCommand = [];
 
     // The cause of a change to the building in the slot: the command that placed it while its worker is on the way, else the rule area.
@@ -60,7 +60,8 @@ public sealed partial class Game
         _buildingCommand.TryGetValue(BuildingId(slot), out var command) ? command : RuleCause;
 
     // The cause of a change the settler rules make on their own: the rules the layout runs while it builds its entries
-    // act for the layout.
+    // act for the layout, so inside a layout the cause is `layout` and not `settlers` (a deliberate choice: what a layout
+    // sets up is the layout's, whichever rule area runs it).
     private Cause RuleCause => InLayout ? Cause.Layout : Cause.Settlers;
 
     // The cause of a change the settler rules make to the settler in the slot: the walk home while it walks to a storage
@@ -198,13 +199,14 @@ public sealed partial class Game
         building.Status |= 0x80;
         _leaving++;
         var buildingSlot = _buildings.IndexOf(building);
+        var buildingId = BuildingId(buildingSlot);
         EndCarry(slot);
-        if (_buildingCommand.TryGetValue(BuildingId(buildingSlot), out var command))
+        if (_buildingCommand.TryGetValue(buildingId, out var command))
         {
             CarryCause(slot, command);
         }
 
-        RecordSettler(slot, EventType.WorkerRequested, RuleCause, BuildingId(buildingSlot).ToString());
+        RecordSettler(slot, EventType.WorkerRequested, RuleCause, buildingId.ToString());
         RecordBuilding(
             buildingSlot,
             EventType.WorkerRequested,
@@ -297,15 +299,13 @@ public sealed partial class Game
                 Leave(slot, settler);
                 break;
             case 5:
-                if (!TimerRan(settler))
+                if (TimerRan(settler))
                 {
-                    RecordSettler(slot, EventType.Visited, RuleCause);
-                    break;
+                    settler.Timer = 0;
+                    settler.State = settler.Next;
+                    settler.Next = 0;
                 }
 
-                settler.Timer = 0;
-                settler.State = settler.Next;
-                settler.Next = 0;
                 RecordSettler(slot, EventType.Visited, RuleCause);
                 break;
             case 2:
@@ -526,18 +526,14 @@ public sealed partial class Game
         RecordSettler(slot, EventType.Left, RuleCause);
     }
 
-    // The step onto a node. It records `moved` unless the caller records the whole change itself (record false), as the
-    // woodcutting rules do with their own type and cause.
-    private void Move(int slot, Settler settler, int x, int y, int index, bool record = true)
+    // The step onto a node. It records nothing: the rule that moves the settler records the change after it has applied all of
+    // it (a `moved` event here would show the settler on its new node with the rest of the change not yet made).
+    private void Move(int slot, Settler settler, int x, int y, int index)
     {
         _occupant.Remove(Map.Index(settler.X, settler.Y));
         settler.X = x;
         settler.Y = y;
         _occupant[index] = slot;
-        if (record)
-        {
-            RecordSettler(slot, EventType.Moved, SettlerCause(slot));
-        }
     }
 
     // State 2, a settler on the road (0x4398ea with the step routines at 0x43a64c to 0x43ac8b). When its timer has run
@@ -550,6 +546,7 @@ public sealed partial class Game
     // settler that comes the other way and the states the original reaches from here for other modes.
     private void Walk(int slot, Settler settler)
     {
+        // `walked` records the turn of state 2; a step or entry inside it records its own change first (`stepped`, `entered`).
         WalkTurn(slot, settler);
         RecordSettler(slot, EventType.Walked, SettlerCause(slot));
     }
@@ -643,6 +640,7 @@ public sealed partial class Game
                     {
                         hut.Status &= 0x7f;
                         RecordBuildingOf(hut, EventType.Walked, SettlerId(slot).ToString());
+                        _buildingCommand.Remove(BuildingId(_buildings.IndexOf(hut)));
                     }
 
                     settler.Mode = 0xfe;
@@ -746,18 +744,14 @@ public sealed partial class Game
             building.Worker = slot;
         }
 
+        var buildingId = BuildingId(_buildings.IndexOf(building));
         RecordBuildingOf(building, EventType.Entered, SettlerId(slot).ToString());
         settler.State = 6;
         if (Occupant(node) != 0)
         {
             settler.Frame = 0x55;
             settler.Timer = 0;
-            RecordSettler(
-                slot,
-                EventType.Entered,
-                SettlerCause(slot),
-                BuildingId(_buildings.IndexOf(building)).ToString()
-            );
+            RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());
             return;
         }
 
@@ -769,7 +763,6 @@ public sealed partial class Game
         settler.Target = (ushort)(time * _tables.DoorSpeeds[building.TypeIndex]) >> 5;
         settler.Stamp = _clock;
         settler.State = 4;
-        var buildingId = BuildingId(_buildings.IndexOf(building));
         RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());
         _buildingCommand.Remove(buildingId);
     }

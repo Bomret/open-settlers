@@ -207,6 +207,7 @@ public sealed partial class Game
 
         _roads.Add(road!);
         SetRoadBytes(road!);
+        // The road's `placed` cause names the road's start flag (the flag the road was built from).
         var cause = CommandCause(FlagId(road!.FromSlot));
         if (cause.IsCommand)
         {
