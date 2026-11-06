@@ -107,7 +107,7 @@ mise exec -- <godot> --path . --write-movie play-out/zoom-pan/frame.png --fixed-
 
 Give `--game-view` in place of `--map` to run the script on the game view.
 
-`sh tools/play-run.sh <stem> [--seed <s>] [--size <n>] --fps <n> [--fresh]` (or `mise run play -- <stem> ...`) does the same on the map view from `play/<stem>.play` with `SIEDLER_DIR` as `--game`: it clears `play-out/<stem>/`, builds `OpenSettlers.csproj` (a failed build exits 3 and runs no Godot), stores the result under a hash of the run's inputs, reuses it while they are unchanged, and logs each call to `play-out/runs.log`. `docs/agents/verification.md` describes it.
+`sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] --fps <n> [--fresh]` (or `mise run play -- <stem> ...`) does the same from `play/<stem>.play` with `SIEDLER_DIR` as `--game`, on the map view, on the game view with `--game-view`, or on a layout with `--layout` (which implies `--game-view` and takes no `--seed` or `--size`; "Layouts" below): it clears `play-out/<stem>/`, builds `OpenSettlers.csproj` (a failed build exits 3 and runs no Godot), stores the result under a hash of the run's inputs, reuses it while they are unchanged, and logs each call to `play-out/runs.log`. `docs/agents/verification.md` describes it.
 
 `--play <file>` needs `--map` or `--game-view`, and Movie Maker (`--write-movie` with `--fixed-fps`); without them, or without a file, it is a bad argument and exits with code 4. The script path resolves against the project folder. `play-out/<script name>/` holds the frames and every `shot` and `dump` of the run (a result `tools/play-run.sh` reuses holds no frames; `--fresh` runs again and writes them); the script name is the script's file name without its extension. Git ignores `play-out/`. The run pins the window to 1280 x 720, so frames and the view's fit do not depend on the display. Two runs of the same script, seed, and size give equal dumps and frames. `play/zoom-pan.play` is an example that zooms and pans.
 
@@ -126,6 +126,14 @@ A play script has one step per line. Blank lines and lines that start with `#` a
 - `dump <name>` writes `play-out/<script name>/<name>.txt`: one `field=value` line each for `camera-x` and `camera-y` (the camera's wrapped position in whole pixels), `zoom` (four decimals), `seed`, and `size`. In the game view `ticks` (the game's tick count) and `logs` (the castle's log count, 0 before a castle stands) follow, then one `flag-goods:<column>,<row>` line for each flag that holds goods (the count of goods on it), by row and then column.
 - `expect <field> <op> <value>` checks one of those fields. `flag-goods:<column>,<row>` names any node and is 0 where no goods lie on a flag there. An `expect` on `ticks`, `logs`, or a `flag-goods` field in the map view fails. The operators are `<`, `<=`, `=`, `>=`, and `>`; `seed` takes only `=`. `zoom` compares at four decimals.
 
+#### Layouts
+
+A layout (`layouts/*.jsonc`, [ADR 0009](docs/adr/0009-layouts-set-up-a-game-by-a-hand-drawn-map-and-commands.md)) is a JSONC file that sets up a game for the game view: `size`, `seed`, and the `height`, `terrain`, and `objects` that draw the map, then the `castle`, `flags`, `roads`, `buildings`, `settlers`, and `goods` entries, applied in the file's order. `--layout <file>` starts the game view on it, directly (`-- --game-view --layout <file>`, also with `--play`) or through the wrapper. A file that does not load, or an entry the game refuses, prints the file and the entry and exits with code 4. `layouts/woodcutter.jsonc` with `play/woodcutter-cut.play` shows a woodcutter at a tree he cuts, `layouts/carrier.jsonc` with `play/carrier-log.play` a carrier carrying a log toward the castle; each runs in seconds with the `fast-forward` step. Reuse a layout before writing one; `docs/agents/verification.md` has the format and `docs/rules/layouts.md` the settler and good entries.
+
+```sh
+sh tools/play-run.sh woodcutter-cut --layout layouts/woodcutter.jsonc --fps 10
+```
+
 Every input step reaches the view's own handlers as a Godot input event at canvas coordinates, whose origin is the canvas's top-left corner below the seed bar; nothing calls the camera or the zoom. Keyboard steps act even when the seed field has focus at the start: the run releases its focus first.
 
 A programming error in the browser does not close it. When the browser fails while it selects a kind or an asset, or while it draws a preview, it shows `<file or kind>: crashed: <Type>: <message>` in the preview pane and keeps the lists usable. A crash while the window opens shows that text in place of the window. Each crash also goes to stderr as `asset browser crashed`. A crash is a bug in the engine. A corrupt file is shown as a failure of that file, not as a crash.
@@ -140,6 +148,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 - `mise.toml`: the pinned development tools and the tasks.
 - `src/`: the engine code. `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `Simulation/` the random generator, the seed, the map generator, and the game with its commands, roads, settlers, carriers, goods, woodcutting, and removal, `MapView/` the terrain, object, road, and settler drawing plans, the click handling, and the camera, and `Viewer/` the asset browser, the map view (`MapViewControl.cs`, which also shows the game view), the play driver, and the shaders.
 - `play/`: the checked-in play scripts ("Run a play script").
+- `layouts/`: the checked-in layouts ("Layouts" under "Run a play script").
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.

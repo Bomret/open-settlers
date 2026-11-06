@@ -30,9 +30,12 @@ situation and takes named screenshots and dumps, then run it under Movie Maker t
 wrapper, from the repository root, with `SIEDLER_DIR` set:
 
 ```sh
-sh tools/play-run.sh <stem> [--seed <seed>] [--size <n>] --fps <fps>
+sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] --fps <fps>
 ```
 
+Without `--game-view` the wrapper runs the map view. `--game-view` runs the game view on `--seed` and
+`--size`. `--layout <file>` runs the game view on a layout and implies `--game-view`; a layout holds its own
+seed and size, so `--layout` with `--seed` or `--size`, an empty value, or a missing file exits 2.
 `mise run play -- <stem> ...` runs the same wrapper. The wrapper clears `play-out/<stem>/`, builds
 `OpenSettlers.csproj`, and runs the Godot command `README.md`'s "Run a play script" gives, through
 `mise exec`. Read the dumps and open the screenshots in `play-out/<stem>/`. Exit 0 is a finished run, 1 a
@@ -44,16 +47,49 @@ failed `expect` or a problem in the script.
   with the stored exit status, which the wrapper exits with. Only a run that exits 0 or 1 is stored. `--fresh` always runs and replaces the
   stored result.
 - The hash covers every tracked or untracked, not ignored file under `src/` and `scenes/` (content and
-  path), `project.godot`, `OpenSettlers.csproj`, `global.json`, the play script, the seed, the size, the
-  frame rate, the Godot version, and the `SIEDLER_DIR` path. It leaves out the install's content and
+  path), `project.godot`, `OpenSettlers.csproj`, `global.json`, the play script, the mode, the layout's path
+  and content, the seed, the size, the frame rate, the Godot version, and the `SIEDLER_DIR` path. It leaves out the install's content and
   `.godot/`. After a change to the install, run with `--fresh`.
 - A failed build prints the build output, starts no Godot, stores nothing, and exits 3. Bad arguments
   exit 2 with a message and run, store, and log nothing.
 - Each call appends one tab-separated line to `play-out/runs.log`: UTC time, input hash, `HEAD`, `clean`
-  or `dirty` (an untracked file counts), stem, `seed=<s>`, `size=<n>`, `fps=<n>`, `exit=<status>`, and
-  `run`, `reused`, or `build` (a failed build). A line proves a run at a tip when its `HEAD` equals the
+  or `dirty` (an untracked file counts), stem, `mode=<map|game-view>`, `layout=<file>` (empty without a
+  layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `exit=<status>`, and `run`, `reused`, or `build` (a failed
+  build): 12 fields. A line proves a run at a tip when its `HEAD` equals the
   tip and it reads `clean`.
 - Calls for one stem run one at a time: a second call waits on the lock directory
   `play-out/.lock-<stem>`, says so once on stderr, then hashes its inputs and reuses what the first
   stored. Other stems run in parallel. The lock holds its owner's pid, and a call takes over the lock of
   a dead owner, and of a lock with no pid older than 5 seconds. Remove a lock by hand only when no run is live.
+
+### Layouts: reach a moment without clicks
+
+Do not click a situation together in a play script. A layout (`layouts/*.jsonc`, [ADR 0009](../adr/0009-layouts-set-up-a-game-by-a-hand-drawn-map-and-commands.md))
+draws the map and sets the game up, and the `fast-forward` step runs the game to the moment under test.
+**Reuse a layout before writing one:** `layouts/` holds them, and a new play script on an existing layout
+costs a script alone. Add a layout only where none of them holds the situation.
+
+- `layouts/woodcutter.jsonc` and `play/woodcutter-cut.play`: a woodcutter in his hut beside trees,
+  fast-forwarded to the cut (state `0x11`).
+- `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
+  fast-forwarded to the carrier carrying a log.
+
+```sh
+sh tools/play-run.sh woodcutter-cut --layout layouts/woodcutter.jsonc --fps 10
+sh tools/play-run.sh carrier-log --layout layouts/carrier.jsonc --fps 10
+```
+
+Each run takes a few seconds once the build is warm. `CheckedInLayoutsTests` reads every `layouts/*.jsonc`
+and applies it to a game, so a layout that no longer loads fails the unit tests.
+
+**The format.** A layout is JSONC (comments allowed) with the keys `size` (1, 2, or 3), `seed`, `height`,
+`terrain`, optional `terrainLower`, and `objects` (`{"x","y","code"}`), which draw the map, and the entries
+applied in the file's order: `castle` (`{"x","y"}`), `flags`, `roads` (`{"x","y","directions"}`: the start
+flag and one direction for each step), `buildings` (a woodcutter's hut), `settlers` (a woodcutter in his
+hut or a carrier waiting on a road), and `goods` (`{"x","y","place","good"}` on a flag). A refused or
+repeated entry fails the load with `<file>: <entry>: <reason>`. The grid letters and the entry states
+are in [the map form](../rules/map-form.md#a-hand-drawn-map) and [the layout rules](../rules/layouts.md).
+
+**The step.** `fast-forward <job> state <n> max <ticks>` or `fast-forward <job> carrying max <ticks>`
+ticks the game without drawing until the condition holds, and the game then waits for the next `shot`
+(`README.md`'s "Run a play script"). Zoom in with `scroll` before the shot where the figures are small.
