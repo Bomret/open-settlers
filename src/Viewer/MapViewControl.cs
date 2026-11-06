@@ -62,6 +62,7 @@ public partial class MapViewControl : Control
     string? _roadsProblem;
     readonly string _openSeed;
     readonly int _openSize;
+    readonly Layout? _layout;
     MapViewState _state = null!;
     Camera _camera = null!;
     readonly Zoom _zoom = new();
@@ -91,9 +92,11 @@ public partial class MapViewControl : Control
     /// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
     /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
     /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
+    /// With a <paramref name="layout"/> the map is the one the layout draws and the seed and size cannot change.
     /// </summary>
-    public MapViewControl(Install install, string seedText, int sizeValue, bool gameView = false)
+    public MapViewControl(Install install, string seedText, int sizeValue, bool gameView = false, Layout? layout = null)
     {
+        _layout = layout;
         _install = install;
         _openSeed = seedText;
         _openSize = sizeValue;
@@ -346,7 +349,9 @@ public partial class MapViewControl : Control
             }
         }
 
-        _state = MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem);
+        _state = _layout is null
+            ? MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem)
+            : MapViewState.OpenLayout(_layout);
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
         Redraw();

@@ -11,7 +11,14 @@ public sealed class LayoutTests
 
     // A grid of 32 rows with one row replaced; rows[y] is the replacement text of row y.
     static string Grid(char fill, params (int Row, string Text)[] rows) =>
-        "[" + string.Join(", ", Enumerable.Range(0, 32).Select(y => $"\"{rows.FirstOrDefault(r => r.Row == y).Text ?? new string(fill, 32)}\"")) + "]";
+        "["
+        + string.Join(
+            ", ",
+            Enumerable
+                .Range(0, 32)
+                .Select(y => $"\"{rows.FirstOrDefault(r => r.Row == y).Text ?? new string(fill, 32)}\"")
+        )
+        + "]";
 
     static string Row(char fill, int at, char with) => new string(fill, at) + with + new string(fill, 31 - at);
 
@@ -25,16 +32,16 @@ public sealed class LayoutTests
         string extra = ""
     ) =>
         $$"""
-        // a drawn map
-        {
-          "size": {{size}},
-          "seed": {{seed}},
-          "height": {{height ?? Grid('1')}},
-          "terrain": {{terrain ?? Grid('g')}},
-          {{(lower is null ? "" : $"\"terrainLower\": {lower},")}}
-          "objects": {{objects}},{{extra}}
-        }
-        """;
+            // a drawn map
+            {
+              "size": {{size}},
+              "seed": {{seed}},
+              "height": {{height ?? Grid('1')}},
+              "terrain": {{terrain ?? Grid('g')}},
+              {{(lower is null ? "" : $"\"terrainLower\": {lower},")}}
+              "objects": {{objects}},{{extra}}
+            }
+            """;
 
     static Map Built(string text)
     {
@@ -63,7 +70,10 @@ public sealed class LayoutTests
         Assert.AreEqual(0, map.Layer(MapLayer.Height)[At(3, 10)]);
         Assert.AreEqual(0x55, map.Layer(MapLayer.Terrain)[At(0, 0)]);
         Assert.AreEqual(0x01, map.Layer(MapLayer.Terrain)[At(3, 10)]);
-        CollectionAssert.AreEqual(new[] { (7, 2, 8), (8, 2, 9) }, map.Objects.Select(o => (o.X, o.Y, (int)o.Code)).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { (7, 2, 8), (8, 2, 9) },
+            map.Objects.Select(o => (o.X, o.Y, (int)o.Code)).ToArray()
+        );
     }
 
     [TestMethod]
@@ -84,11 +94,14 @@ public sealed class LayoutTests
         // is the one byte the layout derives from the terrain that the generated map also holds.
         var generated = Enumerable
             .Range(1, 200)
-            .Select(word => MapGenerator.Generate(TestProgram.Made(), new MapSeed((ushort)word, 0xA0D2, 0xB4FA), MapSize.Offered[0]))
+            .Select(word =>
+                MapGenerator.Generate(TestProgram.Made(), new MapSeed((ushort)word, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+            )
             .First(map => map.Layer(MapLayer.Terrain).ToArray().Any(t => t >> 4 < 4));
         var heights = generated.Layer(MapLayer.Height).ToArray();
         var terrain = generated.Layer(MapLayer.Terrain).ToArray();
-        string RowOf(int y, System.Func<int, char> letter) => string.Concat(Enumerable.Range(0, 32).Select(x => letter(y * 32 + x)));
+        string RowOf(int y, System.Func<int, char> letter) =>
+            string.Concat(Enumerable.Range(0, 32).Select(x => letter(y * 32 + x)));
         string DrawnGrid(System.Func<int, char> letter) =>
             "[" + string.Join(", ", Enumerable.Range(0, 32).Select(y => $"\"{RowOf(y, letter)}\"")) + "]";
 
@@ -119,9 +132,18 @@ public sealed class LayoutTests
     [TestMethod]
     public void TheMiddleOfADrawnLakeCarriesTheLakeFlagAndItsShoreDoesNot()
     {
-        var water = Enumerable.Range(0, 32).Select(y => y is >= 10 and <= 14 ? new string('g', 10) + "wwwww" + new string('g', 17) : new string('g', 32));
-        var lakeHeights = Enumerable.Range(0, 32).Select(y => y is >= 10 and <= 14 ? new string('1', 10) + "00000" + new string('1', 17) : new string('1', 32));
-        string Json(System.Collections.Generic.IEnumerable<string> rows) => "[" + string.Join(", ", rows.Select(r => $"\"{r}\"")) + "]";
+        var water = Enumerable
+            .Range(0, 32)
+            .Select(y =>
+                y is >= 10 and <= 14 ? new string('g', 10) + "wwwww" + new string('g', 17) : new string('g', 32)
+            );
+        var lakeHeights = Enumerable
+            .Range(0, 32)
+            .Select(y =>
+                y is >= 10 and <= 14 ? new string('1', 10) + "00000" + new string('1', 17) : new string('1', 32)
+            );
+        string Json(System.Collections.Generic.IEnumerable<string> rows) =>
+            "[" + string.Join(", ", rows.Select(r => $"\"{r}\"")) + "]";
 
         var map = Built(Text(height: Json(lakeHeights), terrain: Json(water)));
 
@@ -202,7 +224,8 @@ public sealed class LayoutTests
         }
     }
 
-    static string Rows31 => "[" + string.Join(", ", Enumerable.Range(0, 31).Select(_ => $"\"{new string('1', 32)}\"")) + "]";
+    static string Rows31 =>
+        "[" + string.Join(", ", Enumerable.Range(0, 31).Select(_ => $"\"{new string('1', 32)}\"")) + "]";
 
     [TestMethod]
     public void AGoodLayoutWithCommentsAndTrailingCommasLoadsWithNoProblem()
@@ -215,7 +238,10 @@ public sealed class LayoutTests
 
     [DataTestMethod]
     [DataRow("{ \"size\": 1, ", "syntax")]
-    [DataRow("{ \"size\": 1, \"seed\": \"1234567812345678\", \"height\": [], \"terrain\": [], \"objects\": [], \"bogus\": 1 }", "bogus")]
+    [DataRow(
+        "{ \"size\": 1, \"seed\": \"1234567812345678\", \"height\": [], \"terrain\": [], \"objects\": [], \"bogus\": 1 }",
+        "bogus"
+    )]
     [DataRow("{ \"size\": 1, \"seed\": \"1234567812345678\", \"height\": [], \"objects\": [] }", "terrain")]
     [DataRow("{ \"seed\": \"1234567812345678\", \"height\": [], \"terrain\": [], \"objects\": [] }", "size")]
     [DataRow("[1]", "layout")]
@@ -254,13 +280,21 @@ public sealed class LayoutTests
             ["lower row too short", Text(lower: Grid('g', (5, "g"))), "terrainLower[5]"],
             ["lower letter unknown", Text(lower: Grid('g', (6, Row('g', 0, '?')))), "terrainLower[6]"],
             ["object outside the map", Text(objects: """[{"x": 32, "y": 0, "code": 8}]"""), "objects[0]"],
-            ["object below the map", Text(objects: """[{"x": 0, "y": 0, "code": 8}, {"x": 1, "y": -1, "code": 8}]"""), "objects[1]"],
+            [
+                "object below the map",
+                Text(objects: """[{"x": 0, "y": 0, "code": 8}, {"x": 1, "y": -1, "code": 8}]"""),
+                "objects[1]",
+            ],
             ["object code 0", Text(objects: """[{"x": 0, "y": 0, "code": 0}]"""), "objects[0]"],
             ["object code 128", Text(objects: """[{"x": 0, "y": 0, "code": 128}]"""), "objects[0]"],
             ["object has an unknown key", Text(objects: """[{"x": 0, "y": 0, "code": 8, "z": 1}]"""), "objects[0]"],
             ["object lacks its code", Text(objects: """[{"x": 0, "y": 0}]"""), "objects[0]"],
             ["object is no object", Text(objects: "[3]"), "objects[0]"],
-            ["two objects on one tile", Text(objects: """[{"x": 1, "y": 1, "code": 8}, {"x": 1, "y": 1, "code": 9}]"""), "objects[1]"],
+            [
+                "two objects on one tile",
+                Text(objects: """[{"x": 1, "y": 1, "code": 8}, {"x": 1, "y": 1, "code": 9}]"""),
+                "objects[1]",
+            ],
             ["a key twice", Text(extra: "").Replace("\"size\": 1,", "\"size\": 1, \"size\": 1,"), "size"],
         ];
 
@@ -272,7 +306,9 @@ public sealed class LayoutTests
 
         Assert.IsNull(read.Layout, name);
         Assert.IsTrue(
-            read.Problems.Any(p => p.StartsWith("layouts/broken.jsonc: " + entry) || p.StartsWith("layouts/broken.jsonc: " + entry + ":")),
+            read.Problems.Any(p =>
+                p.StartsWith("layouts/broken.jsonc: " + entry) || p.StartsWith("layouts/broken.jsonc: " + entry + ":")
+            ),
             name + ": " + string.Join("; ", read.Problems)
         );
     }

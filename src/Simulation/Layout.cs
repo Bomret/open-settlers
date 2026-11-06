@@ -235,13 +235,17 @@ public sealed class Layout
                     {
                         Fail(property.Name, "given twice");
                     }
-                    else if (property.Name is not ("size" or "seed" or "height" or "terrain" or "terrainLower" or "objects"))
+                    else if (
+                        property.Name is not ("size" or "seed" or "height" or "terrain" or "terrainLower" or "objects")
+                    )
                     {
                         Fail(property.Name, "unknown entry");
                     }
                 }
 
-                foreach (var name in new[] { "size", "seed", "height", "terrain" }.Where(name => !entries.ContainsKey(name)))
+                foreach (
+                    var name in new[] { "size", "seed", "height", "terrain" }.Where(name => !entries.ContainsKey(name))
+                )
                 {
                     Fail(name, "missing");
                 }
@@ -253,14 +257,34 @@ public sealed class Layout
                     ? ReadGrid("height", heightEntry, size, HeightCharacters, "a height character, 0-9 or a-v")
                     : null;
                 var terrain = entries.TryGetValue("terrain", out var terrainEntry)
-                    ? ReadGrid("terrain", terrainEntry, size, TerrainLetters, $"a terrain letter, one of {TerrainLetters}")
+                    ? ReadGrid(
+                        "terrain",
+                        terrainEntry,
+                        size,
+                        TerrainLetters,
+                        $"a terrain letter, one of {TerrainLetters}"
+                    )
                     : null;
                 var lower = entries.TryGetValue("terrainLower", out var lowerEntry)
-                    ? ReadGrid("terrainLower", lowerEntry, size, TerrainLetters, $"a terrain letter, one of {TerrainLetters}")
+                    ? ReadGrid(
+                        "terrainLower",
+                        lowerEntry,
+                        size,
+                        TerrainLetters,
+                        $"a terrain letter, one of {TerrainLetters}"
+                    )
                     : terrain;
-                var objects = entries.TryGetValue("objects", out var objectsEntry) ? ReadObjects(objectsEntry, size) : [];
+                var objects = entries.TryGetValue("objects", out var objectsEntry)
+                    ? ReadObjects(objectsEntry, size)
+                    : [];
 
-                return size is null || seed is null || height is null || terrain is null || lower is null || objects is null
+                return
+                    size is null
+                    || seed is null
+                    || height is null
+                    || terrain is null
+                    || lower is null
+                    || objects is null
                     ? null
                     : new Layout(size, seedText!, seed.Value, height, terrain, lower, objects);
             }
@@ -308,7 +332,10 @@ public sealed class Layout
         // A grid of one string for each row; the shape is checked against the size where the size is good.
         private string[]? ReadGrid(string name, JsonElement entry, MapSize? size, string alphabet, string expected)
         {
-            if (entry.ValueKind != JsonValueKind.Array || entry.EnumerateArray().Any(r => r.ValueKind != JsonValueKind.String))
+            if (
+                entry.ValueKind != JsonValueKind.Array
+                || entry.EnumerateArray().Any(r => r.ValueKind != JsonValueKind.String)
+            )
             {
                 Fail(name, "must be a list of strings, one for each row");
 
@@ -364,7 +391,10 @@ public sealed class Layout
                     continue;
                 }
 
-                var unknown = drawn.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => n is not ("x" or "y" or "code"));
+                var unknown = drawn
+                    .EnumerateObject()
+                    .Select(p => p.Name)
+                    .FirstOrDefault(n => n is not ("x" or "y" or "code"));
                 if (unknown is not null)
                 {
                     Fail(name, $"unknown key {unknown}, an object has x, y, and code");
@@ -373,7 +403,11 @@ public sealed class Layout
                     continue;
                 }
 
-                if (!Whole(drawn, "x", out var x) || !Whole(drawn, "y", out var y) || !Whole(drawn, "code", out var code))
+                if (
+                    !Whole(drawn, "x", out var x)
+                    || !Whole(drawn, "y", out var y)
+                    || !Whole(drawn, "code", out var code)
+                )
                 {
                     Fail(name, "x, y, and code must each be a whole number");
                     good = false;
