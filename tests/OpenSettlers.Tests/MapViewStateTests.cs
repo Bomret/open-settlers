@@ -122,6 +122,32 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    public void OpeningOnALayoutHoldsTheMapItDrawsAndItsSeed()
+    {
+        var layout = Layout.Read(LayoutTests.Text(objects: """[{"x": 7, "y": 2, "code": 8}]""")).Layout!;
+
+        var state = MapViewState.OpenLayout(layout);
+
+        Assert.AreEqual(layout.BuildMap().Digest(MapLayer.Object), state.Map!.Digest(MapLayer.Object));
+        Assert.AreEqual(Seed, state.SeedText);
+        Assert.AreEqual(1, state.SizeValue);
+        Assert.AreEqual(layout.StockLevel, state.StockLevel);
+        Assert.IsNull(state.Problem);
+    }
+
+    [TestMethod]
+    public void ALayoutStateRefusesANewSeedAndKeepsItsMap()
+    {
+        var state = MapViewState.OpenLayout(Layout.Read(LayoutTests.Text()).Layout!);
+        var map = state.Map;
+
+        Assert.IsFalse(state.Apply("8765432187654321", 2));
+
+        Assert.AreSame(map, state.Map);
+        StringAssert.Contains(state.Problem, "layout");
+    }
+
+    [TestMethod]
     public void WithoutTablesTheStateNamesTheProblemAndHoldsNoMap()
     {
         var state = MapViewState.Open(null, Seed, 1, "Siedler1.exe is missing");

@@ -15,7 +15,7 @@ public sealed class LayoutTests
 
     static string Row(char fill, int at, char with) => new string(fill, at) + with + new string(fill, 31 - at);
 
-    static string Text(
+    internal static string Text(
         string size = "1",
         string? height = null,
         string? terrain = null,
@@ -168,6 +168,38 @@ public sealed class LayoutTests
         var game = new Game(TestProgram.Made(), Built(Text()));
 
         Assert.AreEqual(new RandomGenerator(words.W0, words.W1, words.W2).Step().Step(), game.Random);
+    }
+
+    [TestMethod]
+    public void AMissingFileIsAProblemNamingTheFile()
+    {
+        var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "layout-tests-no-such-dir", "none.jsonc");
+
+        var read = Layout.ReadFile(path);
+
+        Assert.IsNull(read.Layout);
+        Assert.HasCount(1, read.Problems);
+        StringAssert.StartsWith(read.Problems[0], path + ": ");
+    }
+
+    [TestMethod]
+    public void AFileOnDiskLoadsAndItsProblemsNameItsPath()
+    {
+        var folder = System.IO.Directory.CreateTempSubdirectory("layout-tests").FullName;
+        try
+        {
+            var good = System.IO.Path.Combine(folder, "good.jsonc");
+            var bad = System.IO.Path.Combine(folder, "bad.jsonc");
+            System.IO.File.WriteAllText(good, Text());
+            System.IO.File.WriteAllText(bad, Text(size: "9"));
+
+            Assert.IsNotNull(Layout.ReadFile(good).Layout);
+            StringAssert.StartsWith(Layout.ReadFile(bad).Problems[0], bad + ": size: ");
+        }
+        finally
+        {
+            System.IO.Directory.Delete(folder, true);
+        }
     }
 
     static string Rows31 => "[" + string.Join(", ", Enumerable.Range(0, 31).Select(_ => $"\"{new string('1', 32)}\"")) + "]";

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 
@@ -92,6 +94,22 @@ public sealed class Layout
         return layout is not null && reader.Problems.Count == 0
             ? new LayoutResult(layout, [])
             : new LayoutResult(null, reader.Problems);
+    }
+
+    /// <summary>
+    /// Reads the layout file at <paramref name="path"/> like <see cref="Read"/>. A file that is missing or cannot be
+    /// read is a problem naming the path.
+    /// </summary>
+    public static LayoutResult ReadFile(string path)
+    {
+        try
+        {
+            return Read(File.ReadAllText(path), path);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return new LayoutResult(null, [$"{path}: file: cannot be read: {e.Message}"]);
+        }
     }
 
     /// <summary>
