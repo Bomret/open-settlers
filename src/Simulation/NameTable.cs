@@ -86,6 +86,9 @@ public sealed class NameTable
             .Select(entry => entry.Code)
             .Where(code => ObjectName((byte)code) == name);
 
+    /// <summary>Whether the table names an object, job, state, or building type <paramref name="name"/>.</summary>
+    public static bool IsName(string name) => Entries.Any(entry => entry.Name == name);
+
     private static string? Find(CodeKind kind, int code) => Names.GetValueOrDefault((kind, code));
 
     private static List<Entry> Build()
