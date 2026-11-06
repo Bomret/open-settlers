@@ -69,7 +69,8 @@ _Avoid_: entity, item, object (a map object is one kind of thing)
 
 **Name table**
 Open Settlers' own names for the original's bare codes: map object codes, settler jobs and states, and
-building types. Each entry cites its evidence; a code with no entry shows raw.
+building types. Each entry cites its evidence; a code with no entry shows raw. The object names read the loaded
+class table: `stone` names a code only where the table says class 2.
 _Avoid_: lookup, code map
 
 ## Game rules
