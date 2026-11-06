@@ -308,6 +308,8 @@ public sealed class PlayScript
                     return Wrong(words[0], "1 argument", args.Length);
 
                 return (new ButtonStep { Line = number, Name = args[0] }, null);
+            case "fast-forward":
+                return ParseFastForward(args, number);
             case "expect":
                 return ParseExpect(args, number);
             case "shot" or "dump":
@@ -326,6 +328,54 @@ public sealed class PlayScript
                 return (null, $"unknown step '{words[0]}'");
         }
     }
+
+    // fast-forward <job> state <n> max <ticks> | fast-forward <job> carrying max <ticks>; <n> is decimal or 0x hex.
+    static (PlayStep?, string?) ParseFastForward(string[] args, int number)
+    {
+        const string Usage = "'fast-forward' takes <job> state <n> max <ticks> or <job> carrying max <ticks>";
+        var carrying = args.Length == 4 && args[1] == "carrying" && args[2] == "max";
+        var state = args.Length == 5 && args[1] == "state" && args[3] == "max";
+        if (!carrying && !state)
+            return (null, Usage);
+
+        var job = args[0] switch
+        {
+            "woodcutter" => Simulation.Settler.WoodcutterJob,
+            "carrier" => Simulation.Settler.CarrierJob,
+            _ => -1,
+        };
+        if (job < 0)
+            return (null, $"'{args[0]}' is not woodcutter or carrier");
+
+        int? wanted = null;
+        if (state)
+        {
+            if (!Whole(args[2], out var n))
+                return (null, $"'{args[2]}' is not a whole number of zero or more");
+            wanted = n;
+        }
+
+        if (!Whole(args[^1], out var max))
+            return (null, $"'{args[^1]}' is not a whole number of zero or more");
+
+        return (
+            new FastForwardStep
+            {
+                Line = number,
+                Job = job,
+                State = wanted,
+                MaxTicks = max,
+            },
+            null
+        );
+    }
+
+    // A whole number of zero or more, decimal or 0x hex.
+    static bool Whole(string text, out int value) =>
+        text.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+            ? int.TryParse(text[2..], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out value)
+                && value >= 0
+            : int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out value);
 
     static readonly string[] Ops = ["<", "<=", "=", ">=", ">"];
 

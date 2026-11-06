@@ -138,6 +138,26 @@ public partial class MapViewControl : Control
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0))
         );
 
+    /// <summary>
+    /// A play run's <c>fast-forward</c> step: ticks the game without drawing until the step's condition holds, then draws
+    /// once. Null when it holds; else the problem. The map view has no game, so it refuses the step.
+    /// </summary>
+    public string? FastForward(FastForwardStep step)
+    {
+        if (!_gameView)
+            return "fast-forward needs the game view, use --game-view";
+        if (_game is null)
+            return "fast-forward: no game is running";
+
+        var problem = step.Run(_game);
+        _ticks.Text = $"Tick {_game.TickCount}";
+        _logs.Text = CastleReadout.Text(_game.CastleLogs);
+        UpdateSettlers();
+        Redraw();
+
+        return problem;
+    }
+
     /// <inheritdoc/>
     public override void _Ready()
     {

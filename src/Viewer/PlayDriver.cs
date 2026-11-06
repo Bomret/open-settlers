@@ -113,6 +113,8 @@ public partial class PlayDriver : Node
                 return ClickTile(tile);
             case ButtonStep button:
                 return ClickButton(button);
+            case FastForwardStep fastForward:
+                return _view.FastForward(fastForward);
             case ShotStep shot:
                 return Shot(shot.Name);
             default:
