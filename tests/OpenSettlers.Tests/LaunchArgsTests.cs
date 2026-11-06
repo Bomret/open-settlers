@@ -387,4 +387,92 @@ public sealed class LaunchArgsTests
         Assert.HasCount(1, args.Problems);
         StringAssert.Contains(args.Problems[0], "--write-movie");
     }
+
+    [TestMethod]
+    public void TheLayoutFlagSelectsTheGameViewAndNamesTheFile()
+    {
+        var args = LaunchArgs.Parse(["--layout", "layouts/a.jsonc", "--game", "/siedler"], null);
+
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
+        Assert.AreEqual("layouts/a.jsonc", args.Layout);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    public void TheLayoutFlagWithTheGameViewFlagGivesTheGameViewAndNoProblem()
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--layout", "a.jsonc"], null);
+
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    public void TheLayoutFlagWithAPlayScriptIsNoProblem()
+    {
+        var args = LaunchArgs.Parse(["--layout", "a.jsonc", "--play", "play/a.play"], null, movieMaker: true);
+
+        Assert.AreEqual("play/a.play", args.Play);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    public void TheGameViewFlagWithoutALayoutHasNoLayout()
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--seed", "1234567812345678"], null);
+
+        Assert.IsNull(args.Layout);
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    [DataRow("--seed", "1234567812345678")]
+    [DataRow("--size", "2")]
+    public void TheLayoutFlagWithTheSeedOrSizeFlagIsAProblem(string flag, string value)
+    {
+        var args = LaunchArgs.Parse(["--layout", "a.jsonc", flag, value], null);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], flag);
+        StringAssert.Contains(args.Problems[0], "--layout");
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--check")]
+    [DataRow("--seed-info")]
+    public void TheLayoutFlagWithAnotherModeFlagIsAProblem(string other)
+    {
+        var args = LaunchArgs.Parse(["--layout", "a.jsonc", other, "--seed", "1234567812345678"], null);
+
+        StringAssert.Contains(string.Join("; ", args.Problems), "--layout");
+        StringAssert.Contains(string.Join("; ", args.Problems), other);
+    }
+
+    [TestMethod]
+    public void ARepeatedLayoutFlagIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--layout", "a.jsonc", "--layout", "b.jsonc"], null);
+
+        StringAssert.Contains(string.Join("; ", args.Problems), "repeated --layout");
+    }
+
+    [TestMethod]
+    public void TheLayoutFlagAtTheEndWithoutAValueIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--layout"], null);
+
+        StringAssert.Contains(string.Join("; ", args.Problems), "--layout needs a value");
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--game-view")]
+    public void TheLayoutFlagBeforeAnotherFlagWithoutAValueIsAProblem(string next)
+    {
+        var args = LaunchArgs.Parse(["--layout", next], null);
+
+        StringAssert.Contains(string.Join("; ", args.Problems), "--layout needs a value");
+    }
 }
