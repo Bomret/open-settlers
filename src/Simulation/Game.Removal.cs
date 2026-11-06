@@ -133,6 +133,9 @@ public sealed partial class Game
 
     private Cause RazeCause => _raze ?? Cause.Removal;
 
+    // The cause the building at the slot was taken down with, removal for a building no raze took down.
+    private Cause RazedCauseOf(int slot) => _razedBuildings.GetValueOrDefault(BuildingId(slot), Cause.Removal);
+
     // Records the settler's event: it carries the raze command's cause on until it idles (CarryCause); a change ticks after the
     // command takes the cause the settler already carries, else removal.
     private void Touch(int slot, string type, string? other = null)
@@ -609,7 +612,8 @@ public sealed partial class Game
             }
         }
 
-        // The event that ends the flag, recorded while the slot still holds it.
+        // The event that ends the flag, recorded while the slot still holds it. Both events carry the same state: the spec records
+        // one event per rule change, and the second one is the end of the slot.
         TouchFlag(slot, EventType.TookFlagDown);
         TouchFlag(slot, EventType.FreeFlagSlot);
         FreeFlagSlot(slot);
@@ -854,8 +858,7 @@ public sealed partial class Game
         building.Stamp = _clock;
         var left = (ushort)building.Worker;
         building.Worker = (ushort)(left - elapsed);
-        var cause = _razedBuildings.GetValueOrDefault(BuildingId(slot), Cause.Removal);
-        RecordBuilding(slot, EventType.Burn, cause);
+        RecordBuilding(slot, EventType.Burn, RazedCauseOf(slot));
         if (left < elapsed)
         {
             FreeBuilding(slot, building);
@@ -871,9 +874,8 @@ public sealed partial class Game
         Map.Bytes(MapLayer.Object)[node] &= 0x80;
         Map.Bytes(MapLayer.Resource)[node] = 0;
         // The event that ends the building, recorded while the slot still holds it.
-        var id = BuildingId(slot);
-        RecordBuilding(slot, EventType.FreeBuilding, _razedBuildings.GetValueOrDefault(id, Cause.Removal));
-        _razedBuildings.Remove(id);
+        RecordBuilding(slot, EventType.FreeBuilding, RazedCauseOf(slot));
+        _razedBuildings.Remove(BuildingId(slot));
         _buildings[slot] = Building.Free();
         while (_buildings.Count > 0 && _buildings[^1].IsFree)
         {

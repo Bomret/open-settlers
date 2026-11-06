@@ -77,6 +77,7 @@ public sealed class ThingHistoryRemovalTests
     {
         var game = World();
         var flag = game.FlagId(1);
+        var carriers = Enumerable.Range(0, game.Settlers.Count).Where(slot => game.Settlers[slot].State == 0x42).ToList();
         var before = game.Events.Count;
 
         Do(game, CommandKind.RemoveFlag, 18, 6);
@@ -87,9 +88,11 @@ public sealed class ThingHistoryRemovalTests
         var own = game.EventsOf(flag).Skip(1).Select(e => e.Type).ToList();
         CollectionAssert.Contains(own, EventType.TookFlagDown);
         Assert.AreEqual(EventType.FreeFlagSlot, own[^1], "the flag's last event is the one that ends it");
+        var settlers = made.Where(e => e.Thing.Kind == ThingId.SettlerKind).ToList();
+        Assert.AreNotEqual(0, settlers.Count, "a settler of the flag's roads is touched:\n" + Text(game));
         Assert.IsTrue(
-            made.Any(e => e.Thing.Kind == ThingId.SettlerKind),
-            "a settler of the flag's roads is touched:\n" + Text(game)
+            settlers.All(e => carriers.Contains(e.Thing.Slot) && e.Type is EventType.TakeWaiting or EventType.JoinRoads),
+            "only carriers waiting on a road (state 0x42) are touched, by take-waiting and join-roads:\n" + Text(game)
         );
     }
 
@@ -98,6 +101,7 @@ public sealed class ThingHistoryRemovalTests
     {
         var game = World();
         var far = new[] { game.FlagId(0), game.FlagId(2) };
+        var before = game.Events.Count;
 
         Do(game, CommandKind.RemoveFlag, 18, 6);
 
@@ -106,6 +110,15 @@ public sealed class ThingHistoryRemovalTests
             var join = game.EventsOf(id).Last(e => e.Type == EventType.JoinRoads);
             Assert.AreEqual(other.ToString(), join.Other);
             Assert.AreEqual(Cause.Razed(game.FlagId(1)), join.Cause);
+        }
+
+        var carriers = game.Events.All.Skip(before).Where(e => e.Type == EventType.TakeWaiting).Select(e => e.Thing).ToList();
+        Assert.AreNotEqual(0, carriers.Count, "the carriers of the two roads wait at the flag:\n" + Text(game));
+        foreach (var carrier in carriers)
+        {
+            var join = game.EventsOf(carrier).Last(e => e.Type == EventType.JoinRoads);
+            Assert.AreEqual($"{far[0]} {far[1]}", join.Other, carrier.ToString());
+            Assert.AreEqual(Cause.Razed(game.FlagId(1)), join.Cause, carrier.ToString());
         }
     }
 
@@ -152,34 +165,40 @@ public sealed class ThingHistoryRemovalTests
         }
     }
 
+    // The settlers' states are compared at the raze tick only: what they do on later ticks (walking, waiting) belongs to the
+    // movement rules other slices record. The flags the raze touched are compared at every tick of the 15 after it; later their
+    // road bytes change as the carriers of the joined roads arrive, which the carrier rules of another slice record.
     [TestMethod]
-    public void AfterARazeTheStateOfEachFlagAndSettlerTheRazeTouchedEqualsTheEnginesStateAtTheRazeTick()
+    public void AfterARazeTheStateOfEachFlagAndSettlerTheRazeTouchedEqualsTheEnginesStateAndOfEachFlagAtEveryTickAfter()
     {
         var game = World();
         var before = game.Events.Count;
 
         Do(game, CommandKind.RemoveFlag, 18, 6);
 
-        var tick = game.TickCount - 1;
-        foreach (var thing in game.Events.All.Skip(before).Select(e => e.Thing).Distinct())
+        var razedFlag = game.FlagId(1);
+        var touched = game.Events.All.Skip(before).Select(e => e.Thing).Distinct().Where(t => t != razedFlag).ToList();
+        for (var i = 0; i < 15; i++)
         {
-            if (thing.Kind == ThingId.FlagKind && thing == game.FlagId(1))
+            var tick = game.TickCount - 1;
+            foreach (var thing in touched)
             {
-                continue;
+                if (thing.Kind == ThingId.FlagKind)
+                {
+                    var (flag, _) = game.StateAt(thing, tick);
+                    Assert.AreEqual(game.RoadByte(thing.Slot, 3), flag!.Get("road3"), $"{thing} tick {tick}");
+                    Assert.AreEqual(game.RoadByte(thing.Slot, 0), flag.Get("road0"), $"{thing} tick {tick}");
+                }
+                else if (i == 0)
+                {
+                    var (state, _) = game.StateAt(thing, tick);
+                    Assert.AreEqual(game.Settlers[thing.Slot].State, state!.Get("state"), thing.ToString());
+                    Assert.AreEqual(game.Settlers[thing.Slot].Mode, state.Get("mode"), thing.ToString());
+                    Assert.AreEqual(game.Settlers[thing.Slot].Target, state.Get("target"), thing.ToString());
+                }
             }
 
-            var (state, _) = game.StateAt(thing, tick);
-            if (thing.Kind == ThingId.SettlerKind)
-            {
-                Assert.AreEqual(game.Settlers[thing.Slot].State, state!.Get("state"), thing.ToString());
-                Assert.AreEqual(game.Settlers[thing.Slot].Mode, state.Get("mode"), thing.ToString());
-                Assert.AreEqual(game.Settlers[thing.Slot].Target, state.Get("target"), thing.ToString());
-            }
-            else
-            {
-                Assert.AreEqual(game.RoadByte(thing.Slot, 3), state!.Get("road3"), thing.ToString());
-                Assert.AreEqual(game.RoadByte(thing.Slot, 0), state.Get("road0"), thing.ToString());
-            }
+            game.Tick();
         }
     }
 }
