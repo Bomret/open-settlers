@@ -164,8 +164,7 @@ public sealed class SettlerFigures
     /// </summary>
     public IEnumerable<(int Entry, int Colour)> Sprites(int job, int colour, int carriedGood = 0)
     {
-        var add =
-            job == Settler.CarrierJob && carriedGood > 0 && carriedGood < _carried.Length ? _carried[carriedGood] : 0;
+        var add = job == Settler.CarrierJob ? Carried(carriedGood) : 0;
         var starts = new HashSet<int>();
         for (var frame = 0; frame < Sequences && _data.Length >= TableEnd; frame++)
         {
@@ -268,12 +267,14 @@ public sealed class SettlerFigures
     }
 
     // The word a carrier on its road adds to its figure byte for the good it carries (byte 11, at 0x43f8ae; the same routine
-    // serves state 0xe, which is not drawn). **Inferred:** see ProgramTables.CarriedFigureAddress. In state 0x42 byte 11 is
-    // the road direction, no good.
+    // serves state 0xe, which is not drawn). In state 0x42 byte 11 is the road direction, no good. Sprites applies the
+    // same rule through Carried.
     private int CarriedFigure(Settler settler) =>
-        settler is { Job: Settler.CarrierJob, State: StatesOnRoad, Mode: > 0 } && settler.Mode < _carried.Length
-            ? _carried[settler.Mode]
-            : 0;
+        settler is { Job: Settler.CarrierJob, State: StatesOnRoad } ? Carried(settler.Mode) : 0;
+
+    // The word of the table at 0x43f4b7 for a good (2 * good bytes on): the row of the figure bases in its high byte. A
+    // carrier with no good (0) adds nothing; so does a good the table does not cover.
+    private int Carried(int good) => good > 0 && good < _carried.Length ? _carried[good] : 0;
 
     // The triple of the settler's sequence for the time it has left, or null where there is none.
     private (int Figure, int Dx, int Dy)? Triple(Settler settler, ushort clock)

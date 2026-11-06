@@ -109,7 +109,8 @@ not marked from, however long the road.
 **Status:** inferred; no run of the draw confirms the details.
 
 The carrier is drawn as the walking worker is ([Settlers](settlers.md#drawing-the-walk-leads)) in states 2, 3, and 5, with the
-figure tables' row of job 0 (the figure base 0). A carrier waiting in state 0x42 is drawn with its frame `0x6e` to `0x73` and
+figure tables' row of job 0 (the figure base 0); a carrier that carries a good adds the good's word of the table at `0x43f4b7`,
+whose high byte is the row (the log's `0x1400`: [Goods at a flag](goods.md#drawing-a-carrier-with-a-good)). A carrier waiting in state 0x42 is drawn with its frame `0x6e` to `0x73` and
 the timer it holds, which the clock does not run down. **Inferred:** that the idle frames name the waiting carrier's
 sequences.
 
