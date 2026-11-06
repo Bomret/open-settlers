@@ -243,12 +243,14 @@ public sealed class LaunchArgs
                 problems.Add($"{LayoutFlag} starts the game view, it does not go with {modeFlag}");
             }
 
-            foreach (var (given, flag) in new[] { (seedGiven, SeedFlag), (sizeGiven, SizeFlag) })
+            if (seedGiven)
             {
-                if (given)
-                {
-                    problems.Add($"{flag} does not apply to {LayoutFlag}, the layout has its own");
-                }
+                problems.Add($"{SeedFlag} does not apply to {LayoutFlag}, the layout has its own");
+            }
+
+            if (sizeGiven)
+            {
+                problems.Add($"{SizeFlag} does not apply to {LayoutFlag}, the layout has its own");
             }
         }
 

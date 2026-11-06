@@ -291,9 +291,13 @@ bytes for a hand-drawn tile as for a generated tile of the same terrain:
 - Bit 7 of the Object layer on each tile with a water triangle (a terrain nibble below 4), the rule of
   `MapGen_MarkWaterAdjacent` (`0x4232ef`). The object code of the tile keeps its low 7 bits.
 - Bit 6 of the Flags layer on the middle of a lake, the mark `MapGen_FillLakes` (`0x422a0e`) sets.
-  **Inferred:** the generator's heights before the shift are not drawn, so a tile is a lake middle when its height
-  is 0, its two triangles are water, and its six neighbors have height 0. The shore ring of a drawn lake has
-  a neighbor above height 0 and stays unmarked.
+  The state the generator marks from is not drawn: its lake tiles, the ring around them, and the land
+  `MapGen_KeepMainLand` drops all end at height 0. A tile is a lake middle when its height is 0, its two
+  triangles are water, and its six neighbors have height 0. The shore ring of a drawn lake has a neighbor above
+  height 0 and stays unmarked. Against generated maps (150 seeds, redrawn from their heights and terrain, on the
+  tiles that hold no object) this marks every tile the generator marks, and also marks tiles at height 0 that the
+  generator leaves unmarked: the layout cannot draw what tells them apart, so such a tile carries the flag
+  where a generated tile of the same height and terrain does not.
 
 **Not derived.** The lake detail (layer 3) stays 0: the generator draws it, and a hand-drawn map leaves the
 game's random draws alone. Bit 6 of the Flags layer for a large object (`MapGen_ResolveObjectOverlap`) is not

@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Launch;
 
@@ -444,10 +445,12 @@ public sealed class LaunchArgsTests
     [DataRow("--seed-info")]
     public void TheLayoutFlagWithAnotherModeFlagIsAProblem(string other)
     {
-        var args = LaunchArgs.Parse(["--layout", "a.jsonc", other, "--seed", "1234567812345678"], null);
+        var args = LaunchArgs.Parse(["--layout", "a.jsonc", other], null);
 
-        StringAssert.Contains(string.Join("; ", args.Problems), "--layout");
-        StringAssert.Contains(string.Join("; ", args.Problems), other);
+        CollectionAssert.Contains(
+            args.Problems.ToList(),
+            $"--layout starts the game view, it does not go with {other}"
+        );
     }
 
     [TestMethod]

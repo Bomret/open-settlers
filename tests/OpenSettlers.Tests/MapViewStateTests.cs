@@ -129,9 +129,9 @@ public sealed class MapViewStateTests
         var state = MapViewState.OpenLayout(layout);
 
         Assert.AreEqual(layout.BuildMap().Digest(MapLayer.Object), state.Map!.Digest(MapLayer.Object));
-        Assert.AreEqual(Seed, state.SeedText);
+        Assert.AreEqual(layout.Seed.ToScreen(), state.SeedText);
         Assert.AreEqual(1, state.SizeValue);
-        Assert.AreEqual(layout.StockLevel, state.StockLevel);
+        Assert.AreEqual(StartStock.LevelOf(layout.Seed), state.StockLevel);
         Assert.IsNull(state.Problem);
     }
 

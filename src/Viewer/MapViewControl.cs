@@ -92,15 +92,23 @@ public partial class MapViewControl : Control
     /// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
     /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
     /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
-    /// With a <paramref name="layout"/> the map is the one the layout draws and the seed and size cannot change.
     /// </summary>
-    public MapViewControl(Install install, string seedText, int sizeValue, bool gameView = false, Layout? layout = null)
+    public MapViewControl(Install install, string seedText, int sizeValue, bool gameView = false)
     {
-        _layout = layout;
         _install = install;
         _openSeed = seedText;
         _openSize = sizeValue;
         _gameView = gameView;
+    }
+
+    /// <summary>
+    /// The game view on the map a <paramref name="layout"/> draws: the seed field shows the layout's seed and the
+    /// size picker its size, and neither can change.
+    /// </summary>
+    public MapViewControl(Install install, Layout layout)
+        : this(install, layout.Seed.ToScreen(), layout.Size.Value, true)
+    {
+        _layout = layout;
     }
 
     /// <summary>The area the map is drawn in and the mouse acts on; a play run aims its input at it.</summary>

@@ -61,7 +61,7 @@ public sealed class MapViewState
     /// </summary>
     public static MapViewState OpenLayout(Layout layout)
     {
-        return new MapViewState(null, null, layout.SeedText, layout.Size.Value)
+        return new MapViewState(null, null, layout.Seed.ToScreen(), layout.Size.Value)
         {
             _applied = layout.Seed,
             _layout = true,

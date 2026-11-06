@@ -132,16 +132,14 @@ public partial class AssetBrowserView : Control
         Layout? layout = null;
         if (args.Layout is not null)
         {
-            var read = Layout.ReadFile(args.Layout);
-            if (read.Layout is null)
+            var loadCode = LayoutLoad.Run(args.Layout, out layout, out var loadProblem);
+            if (loadCode != 0)
             {
-                GD.PrintErr($"ERROR {string.Join("; ", read.Problems)}");
-                GetTree().Quit(LaunchArgs.BadArgumentExitCode);
+                GD.Print(loadProblem);
+                GetTree().Quit(loadCode);
 
                 return;
             }
-
-            layout = read.Layout;
         }
 
         if (!Install.TryOpen(args, out var install, out var problem))
@@ -167,13 +165,14 @@ public partial class AssetBrowserView : Control
             }
         }
 
-        var view = new MapViewControl(
-            install,
-            layout?.SeedText ?? args.SeedText ?? MapViewState.DefaultSeed,
-            layout?.Size.Value ?? args.Size?.Value ?? MapSize.Offered[0].Value,
-            args.Mode == LaunchMode.GameView,
-            layout
-        );
+        var view = layout is not null
+            ? new MapViewControl(install, layout)
+            : new MapViewControl(
+                install,
+                args.SeedText ?? MapViewState.DefaultSeed,
+                args.Size?.Value ?? MapSize.Offered[0].Value,
+                args.Mode == LaunchMode.GameView
+            );
         AddChild(view);
         if (script is not null)
         {

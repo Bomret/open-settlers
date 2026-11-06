@@ -52,7 +52,6 @@ public sealed class Layout
 
     private Layout(
         MapSize size,
-        string seedText,
         Seed seed,
         string[] height,
         string[] terrain,
@@ -61,7 +60,6 @@ public sealed class Layout
     )
     {
         Size = size;
-        SeedText = seedText;
         Seed = seed;
         _height = height;
         _terrain = terrain;
@@ -72,14 +70,8 @@ public sealed class Layout
     /// <summary>The size of the map.</summary>
     public MapSize Size { get; }
 
-    /// <summary>The seed as written in the file, in the free-game screen form.</summary>
-    public string SeedText { get; }
-
     /// <summary>The seed of the game's random generator.</summary>
     public Seed Seed { get; }
-
-    /// <summary>The start stock level of the game's one player (<see cref="StartStock.LevelOf"/>) for the seed.</summary>
-    public int StockLevel => StartStock.LevelOf(Seed);
 
     /// <summary>
     /// Reads a layout from JSONC text (comments and trailing commas allowed). <paramref name="file"/> names the
@@ -118,8 +110,11 @@ public sealed class Layout
     /// Object layers hold what the layout draws, and these bytes are derived from them as the generator derives
     /// them:
     /// <list type="bullet">
-    /// <item>bit 7 of the Object layer on each tile with a water triangle (<c>MapGen_MarkWaterAdjacent</c>);</item>
-    /// <item>bit 6 of the Flags layer on the middle of a lake (<c>MapGen_FillLakes</c>, inferred from the heights).</item>
+    /// <item>bit 7 of the Object layer on each tile with a water triangle (<c>MapGen_MarkWaterAdjacent</c>, the
+    /// generator's own rule, <see cref="MapGenerator.MarkWaterAdjacentTiles"/>);</item>
+    /// <item>bit 6 of the Flags layer on the middle of a lake (<c>MapGen_FillLakes</c>), by the rule
+    /// <see cref="MarkLakeMiddles"/> states: every middle the generator marks is marked, and so is each water tile at
+    /// height 0 whose six neighbors are at height 0 that the generator leaves unmarked.</item>
     /// </list>
     /// Not derived: the lake detail byte stays 0 (the generator draws it from the random generator, and a drawn
     /// map keeps the game's draws its own), and bit 6 of the Flags layer for a large object
@@ -150,29 +145,19 @@ public sealed class Layout
             objects[map.Index(drawn.X, drawn.Y)] = drawn.Code;
         }
 
-        MarkWaterAdjacent(terrain, objects);
+        MapGenerator.MarkWaterAdjacentTiles(terrain, objects);
         MarkLakeMiddles(map);
 
         return map;
     }
 
-    // MapGen_MarkWaterAdjacent (0x4232ef), the same rule as the generator's: bit 7 of the object byte on each tile
-    // with a water triangle, a terrain nibble below 4.
-    private static void MarkWaterAdjacent(byte[] terrain, byte[] objects)
-    {
-        for (var tile = 0; tile < terrain.Length; tile++)
-        {
-            if ((terrain[tile] & 0xc0) == 0 || (terrain[tile] & 0x0c) == 0)
-            {
-                objects[tile] |= 0x80;
-            }
-        }
-    }
-
-    // MapGen_FillLakes (0x422a0e): the generator marks a lake's middle tiles with flag bit 6 and its edge tiles
-    // without. Its heights before the shift are not drawn, so the middle is inferred: a tile at height 0 whose two
-    // triangles are water and whose six neighbors, east, south-east, south, west, north-west, and north, are at
-    // height 0 too. The edge ring of a drawn lake has a neighbor that is not at height 0 and stays unmarked.
+    // MapGen_FillLakes (0x422a0e): the generator marks the tiles of a lake (those it reaches by growing from a tile
+    // whose six neighbors lie at or below the water level) with flag bit 6 and the ring around them without, and the
+    // lake tiles end at height 0 with two water triangles. The state the generator marks from is not drawn: the ring
+    // ends at height 0 as well, and MapGen_KeepMainLand drops land to height 0 without a mark. So the rule reads the
+    // drawn bytes: a tile at height 0 whose two triangles are water and whose six neighbors, east, south-east, south,
+    // west, north-west, and north, are at height 0 too. Against generated maps (LayoutTests) this marks every tile
+    // the generator marks, and also tiles at height 0 that it leaves unmarked.
     private static void MarkLakeMiddles(Map map)
     {
         var height = map.Bytes(MapLayer.Height);
@@ -251,29 +236,12 @@ public sealed class Layout
                 }
 
                 var size = entries.TryGetValue("size", out var sizeEntry) ? ReadSize(sizeEntry) : null;
-                string? seedText = null;
-                var seed = entries.TryGetValue("seed", out var seedEntry) ? ReadSeed(seedEntry, out seedText) : null;
+                var seed = entries.TryGetValue("seed", out var seedEntry) ? ReadSeed(seedEntry) : null;
                 var height = entries.TryGetValue("height", out var heightEntry)
                     ? ReadGrid("height", heightEntry, size, HeightCharacters, "a height character, 0-9 or a-v")
                     : null;
-                var terrain = entries.TryGetValue("terrain", out var terrainEntry)
-                    ? ReadGrid(
-                        "terrain",
-                        terrainEntry,
-                        size,
-                        TerrainLetters,
-                        $"a terrain letter, one of {TerrainLetters}"
-                    )
-                    : null;
-                var lower = entries.TryGetValue("terrainLower", out var lowerEntry)
-                    ? ReadGrid(
-                        "terrainLower",
-                        lowerEntry,
-                        size,
-                        TerrainLetters,
-                        $"a terrain letter, one of {TerrainLetters}"
-                    )
-                    : terrain;
+                var terrain = ReadTerrain("terrain");
+                var lower = entries.ContainsKey("terrainLower") ? ReadTerrain("terrainLower") : terrain;
                 var objects = entries.TryGetValue("objects", out var objectsEntry)
                     ? ReadObjects(objectsEntry, size)
                     : [];
@@ -286,7 +254,12 @@ public sealed class Layout
                     || lower is null
                     || objects is null
                     ? null
-                    : new Layout(size, seedText!, seed.Value, height, terrain, lower, objects);
+                    : new Layout(size, seed.Value, height, terrain, lower, objects);
+
+                string[]? ReadTerrain(string name) =>
+                    entries.TryGetValue(name, out var entry)
+                        ? ReadGrid(name, entry, size, TerrainLetters, $"a terrain letter, one of {TerrainLetters}")
+                        : null;
             }
         }
 
@@ -309,9 +282,9 @@ public sealed class Layout
             return size;
         }
 
-        private Seed? ReadSeed(JsonElement entry, out string? text)
+        private Seed? ReadSeed(JsonElement entry)
         {
-            text = entry.ValueKind == JsonValueKind.String ? entry.GetString() : null;
+            var text = entry.ValueKind == JsonValueKind.String ? entry.GetString() : null;
             if (text is null)
             {
                 Fail("seed", "must be a string of 16 digits from 1 to 8");

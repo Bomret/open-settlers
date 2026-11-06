@@ -87,17 +87,18 @@ public sealed class LayoutTests
     // The letters of docs/rules/map-form.md, in the order of the terrain codes 0 to 15.
     const string Letters = "wxyzbghijkpmnoqs";
 
-    [TestMethod]
-    public void ADrawnTileCarriesTheWaterMarkTheGeneratorGivesATileOfTheSameTerrain()
-    {
-        // The generated map's heights and terrain, drawn again: the object layer's bit 7 (MapGen_MarkWaterAdjacent)
-        // is the one byte the layout derives from the terrain that the generated map also holds.
-        var generated = Enumerable
-            .Range(1, 200)
+    // A generated 32 by 32 map of the first seed word at or after first that holds water.
+    static Map Generated(int first) =>
+        Enumerable
+            .Range(first, 200)
             .Select(word =>
                 MapGenerator.Generate(TestProgram.Made(), new MapSeed((ushort)word, 0xA0D2, 0xB4FA), MapSize.Offered[0])
             )
             .First(map => map.Layer(MapLayer.Terrain).ToArray().Any(t => t >> 4 < 4));
+
+    // The generated map's heights and terrain, drawn again as a layout and built.
+    static Map Redrawn(Map generated)
+    {
         var heights = generated.Layer(MapLayer.Height).ToArray();
         var terrain = generated.Layer(MapLayer.Terrain).ToArray();
         string RowOf(int y, System.Func<int, char> letter) =>
@@ -105,13 +106,62 @@ public sealed class LayoutTests
         string DrawnGrid(System.Func<int, char> letter) =>
             "[" + string.Join(", ", Enumerable.Range(0, 32).Select(y => $"\"{RowOf(y, letter)}\"")) + "]";
 
-        var map = Built(
+        return Built(
             Text(
                 height: DrawnGrid(tile => "0123456789abcdefghijklmnopqrstuv"[heights[tile] & 0x1f]),
                 terrain: DrawnGrid(tile => Letters[terrain[tile] >> 4]),
                 lower: DrawnGrid(tile => Letters[terrain[tile] & 0xf])
             )
         );
+    }
+
+    [TestMethod]
+    public void ADrawnTileCarriesTheLakeFlagTheGeneratorGivesATileOfTheSameHeightAndTerrain()
+    {
+        // Flags bit 6 also marks a large object (MapGen_ResolveObjectOverlap), which a layout does not derive, so
+        // the comparison covers the tiles that hold no object. The drawn rule is a superset of the generator's: a
+        // generated map also holds unmarked tiles at height 0 whose six neighbors are at height 0 (the state the
+        // generator marks from is not drawn), so the test pins every generated lake tile and leaves those tiles out
+        // (docs/rules/map-form.md).
+        var lakes = 0;
+        var missed = new System.Collections.Generic.List<string>();
+        foreach (var first in Enumerable.Range(1, 150))
+        {
+            var generated = Generated(first);
+            var map = Redrawn(generated);
+            for (var tile = 0; tile < 1024; tile++)
+            {
+                if ((generated.Layer(MapLayer.Object)[tile] & 0x7f) != 0)
+                {
+                    continue;
+                }
+
+                if ((generated.Layer(MapLayer.Flags)[tile] & 0x40) != 0)
+                {
+                    lakes++;
+                    if ((map.Layer(MapLayer.Flags)[tile] & 0x40) == 0)
+                    {
+                        missed.Add($"{first}:{tile % 32},{tile / 32}");
+                    }
+                }
+            }
+        }
+
+        Assert.IsTrue(lakes > 0, "the generated maps hold lakes");
+        Assert.AreEqual(
+            0,
+            missed.Count,
+            "generated lake tiles the drawn map does not mark: " + string.Join(" ", missed)
+        );
+    }
+
+    [TestMethod]
+    public void ADrawnTileCarriesTheWaterMarkTheGeneratorGivesATileOfTheSameTerrain()
+    {
+        // The generated map's heights and terrain, drawn again: the object layer's bit 7 (MapGen_MarkWaterAdjacent)
+        // is the one byte the layout derives from the terrain that the generated map also holds.
+        var generated = Generated(1);
+        var map = Redrawn(generated);
 
         var water = Enumerable.Range(0, 1024).Count(tile => (generated.Layer(MapLayer.Object)[tile] & 0x80) != 0);
         Assert.IsTrue(water > 0 && water < 1024, "the generated map holds water and land");
