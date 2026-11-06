@@ -83,7 +83,7 @@ Each run takes a few seconds once the build is warm. `CheckedInLayoutsTests` rea
 and applies it to a game, so a layout that no longer loads fails the unit tests.
 
 **The format.** A layout is JSONC (comments allowed) with the keys `size` (1, 2, or 3), `seed`, `height`,
-`terrain`, optional `terrainLower`, and `objects` (`{"x","y","code"}`), which draw the map, and the entries
+`terrain`, optional `terrainLower`, optional `lakes` (a grid of `.` and `L`: Flags bit 6, replacing the derived lake rule), and `objects` (`{"x","y","code"}`), which draw the map, and the entries
 applied in the file's order: `castle` (`{"x","y"}`), `flags`, `roads` (`{"x","y","directions"}`: the start
 flag and one direction for each step), `buildings` (a woodcutter's hut), `settlers` (a woodcutter in his
 hut or a carrier waiting on a road), and `goods` (`{"x","y","place","good"}` on a flag). A refused or

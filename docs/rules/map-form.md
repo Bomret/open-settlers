@@ -261,10 +261,15 @@ spiral table with the program's builder and points the object size table at the 
 and Object layers, and `src/Simulation/Layout.cs` derives the bytes the generator derives from them. The map has
 one of the sizes above, written as its size value in the layout's `size`.
 
-**The grids.** `height`, `terrain`, and `terrainLower` are lists of strings, one string for each row of the map
+**The grids.** `height`, `terrain`, `terrainLower`, and `lakes` are lists of strings, one string for each row of the map
 and one character for each tile, in row-major order as the layers are. The upper triangle of a tile is the
 high nibble of the terrain layer, the lower triangle the low nibble; a tile with no `terrainLower` draw has
 its lower triangle of the upper terrain.
+
+**Lake marks.** `lakes` (optional) is a grid of `.` and `L`: each `L` sets Flags bit 6 on its tile and each `.`
+leaves it clear, so a layout carries the generator's marks tile for tile, the lake tiles and the large objects
+of `MapGen_ResolveObjectOverlap` alike. Where `lakes` is present it replaces the derived rule below. Where it is
+absent the derived rule applies.
 
 **Height characters.** `0` to `9` draw the heights 0 to 9 and `a` to `v` the heights 10 to 31, the 32 values of the
 layer's low 5 bits.
@@ -290,18 +295,18 @@ bytes for a hand-drawn tile as for a generated tile of the same terrain:
 
 - Bit 7 of the Object layer on each tile with a water triangle (a terrain nibble below 4), the rule of
   `MapGen_MarkWaterAdjacent` (`0x4232ef`). The object code of the tile keeps its low 7 bits.
-- Bit 6 of the Flags layer on the middle of a lake, the mark `MapGen_FillLakes` (`0x422a0e`) sets.
-  The state the generator marks from is not drawn: its lake tiles, the ring around them, and the land
+- Bit 6 of the Flags layer on the middle of a lake, the mark `MapGen_FillLakes` (`0x422a0e`) sets, where the
+  layout has no `lakes` grid. The state the generator marks from is not drawn: its lake tiles, the ring around them, and the land
   `MapGen_KeepMainLand` drops all end at height 0. A tile is a lake middle when its height is 0, its two
   triangles are water, and its six neighbors have height 0. The shore ring of a drawn lake has a neighbor above
   height 0 and stays unmarked. Against generated maps (150 seeds, redrawn from their heights and terrain, on the
   tiles that hold no object) this marks every tile the generator marks, and also marks tiles at height 0 that the
   generator leaves unmarked: the layout cannot draw what tells them apart, so such a tile carries the flag
-  where a generated tile of the same height and terrain does not.
+  where a generated tile of the same height and terrain does not. The `lakes` grid is the way to match the generator exactly.
 
 **Not derived.** The lake detail (layer 3) stays 0: the generator draws it, and a hand-drawn map leaves the
 game's random draws alone. Bit 6 of the Flags layer for a large object (`MapGen_ResolveObjectOverlap`) is not
-set: it needs the program's class table, and no rule reads that bit yet. The Resource layer is empty, so the
+set by a rule: it needs the program's class table, and no rule reads that bit yet; a `lakes` grid marks it by hand. The Resource layer is empty, so the
 total of resource 1 is 0.
 
 **The random generator.** The layout's `seed` (the free-game screen form, as `--seed` takes it) sets the game's

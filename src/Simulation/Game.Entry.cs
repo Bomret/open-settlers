@@ -6,9 +6,16 @@ namespace OpenSettlers.Simulation;
 // of the castle, or a good, in the state the original's own routine leaves it in, and returns why it refused or null.
 public sealed partial class Game
 {
-    // The first of the castle's settlers of a job that waits in the castle (state 1), or -1.
+    // The settler the castle's list of waiting settlers names for a job (the dispatch takes that one, 0x42be63, 0x42b455), else
+    // the first of the castle's settlers of the job that waits in the castle (state 1), or -1.
     private int CastleSettler(int job)
     {
+        var listed = _waiting[job];
+        if (listed != 0 && _settlers[listed].Job == job && _settlers[listed].State == 1)
+        {
+            return listed;
+        }
+
         for (var slot = 1; slot < _settlers.Count; slot++)
         {
             if (_settlers[slot].Job == job && _settlers[slot].State == 1)
@@ -137,8 +144,8 @@ public sealed partial class Game
 
     /// <summary>
     /// Puts a good on a place of the flag on the node as the settler's put does (<c>0x436b46</c>, <see cref="LayGood"/>). The
-    /// original's put takes the first empty place and checks nothing: this refuses a node that holds no flag, a place
-    /// outside the flag's 8, and a place that holds a good.
+    /// original's put takes the first empty place and checks nothing: this refuses a node that holds no flag and a place
+    /// that holds a good. The place is 0 to 7, as the layout's read checks.
     /// </summary>
     internal string? PlaceGood(int x, int y, int place, int good)
     {
@@ -146,11 +153,6 @@ public sealed partial class Game
         if (flag < 0)
         {
             return "no flag stands on the node";
-        }
-
-        if (place is < 0 or > 7)
-        {
-            return "the flag has the places 0 to 7";
         }
 
         if (_flagGoods[flag][place] != 0)

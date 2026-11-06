@@ -13,13 +13,15 @@ public sealed class CheckedInLayoutsTests
 {
     static string LayoutsFolder()
     {
-        var dir = AppContext.BaseDirectory;
-        while (!Directory.Exists(Path.Combine(dir, "layouts")))
-        {
-            dir = Path.GetDirectoryName(dir) ?? throw new InvalidOperationException("layouts/ not found");
-        }
+        var folder = new DirectoryInfo(AppContext.BaseDirectory);
+        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
+            folder = folder.Parent;
 
-        return Path.Combine(dir, "layouts");
+        return Path.Combine(
+            folder?.FullName
+                ?? throw new InvalidOperationException("OpenSettlers.csproj not found above the test output"),
+            "layouts"
+        );
     }
 
     // The first problem of a layout's text, or null when it reads and every entry applies.

@@ -372,6 +372,21 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
+    public void AGameViewFlagWithALayoutPassesTheGameViewFlagOnceAndNoSeedOrSize()
+    {
+        Write("play/a.layout", "layout");
+
+        Run(["demo", "--game-view", "--layout", "play/a.layout", "--fps", "10"]);
+
+        var args = File.ReadAllLines(Path.Combine(fake, "args"));
+        var movie = Array.IndexOf(args, "--write-movie");
+        CollectionAssert.AreEqual(
+            new[] { "--fixed-fps", "10", "--", "--game", Siedler, "--game-view", "--layout", "play/a.layout" },
+            args[(movie + 2)..^2]
+        );
+    }
+
+    [TestMethod]
     public void ALayoutByteChangeStartsGodotAgainAndTheSameLayoutReuses()
     {
         string[] layout = ["demo", "--layout", "play/a.layout", "--fps", "10"];

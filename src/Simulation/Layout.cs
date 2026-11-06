@@ -24,6 +24,9 @@ public sealed record LayoutResult(Layout? Layout, IReadOnlyList<string> Problems
 /// <item><c>terrain</c> (required): rows like <c>height</c>, one terrain letter for the upper triangle of each tile
 /// (<see cref="TerrainLetters"/>).</item>
 /// <item><c>terrainLower</c> (optional): the same for the lower triangle; each tile defaults to its upper terrain.</item>
+/// <item><c>lakes</c> (optional): rows like <c>height</c>, one character for each tile, <c>.</c> or <c>L</c>; each <c>L</c> sets bit 6 of
+/// the Flags layer on its tile, the mark <c>MapGen_FillLakes</c> sets, and the grid then replaces the derived rule
+/// (<see cref="BuildMap"/>). A layout with no <c>lakes</c> gets the derived rule.</item>
 /// <item><c>objects</c> (optional): a list of <c>{"x": column, "y": row, "code": 1 to 127}</c>, the original's object
 /// codes, at most one for each tile.</item>
 /// <item><c>castle</c> (optional): <c>{"x", "y"}</c>, the node of the castle; <c>flags</c> and <c>buildings</c>: lists of
@@ -48,6 +51,9 @@ public sealed partial class Layout
     /// <summary>The height characters, in the order of the heights 0 to 31.</summary>
     public const string HeightCharacters = "0123456789abcdefghijklmnopqrstuv";
 
+    /// <summary>The characters of the <c>lakes</c> grid: <c>.</c> leaves Flags bit 6 clear, <c>L</c> sets it.</summary>
+    public const string LakeCharacters = ".L";
+
     private static readonly JsonDocumentOptions Options = new()
     {
         CommentHandling = JsonCommentHandling.Skip,
@@ -57,6 +63,7 @@ public sealed partial class Layout
     private readonly string[] _height;
     private readonly string[] _terrain;
     private readonly string[] _terrainLower;
+    private readonly string[]? _lakes;
     private readonly IReadOnlyList<MapObject> _objects;
     private readonly IReadOnlyList<Step> _steps;
     private readonly string _file;
@@ -68,6 +75,7 @@ public sealed partial class Layout
         string[] height,
         string[] terrain,
         string[] terrainLower,
+        string[]? lakes,
         IReadOnlyList<MapObject> objects,
         IReadOnlyList<Step> steps
     )
@@ -79,6 +87,7 @@ public sealed partial class Layout
         _height = height;
         _terrain = terrain;
         _terrainLower = terrainLower;
+        _lakes = lakes;
         _objects = objects;
     }
 
@@ -127,13 +136,16 @@ public sealed partial class Layout
     /// <list type="bullet">
     /// <item>bit 7 of the Object layer on each tile with a water triangle (<c>MapGen_MarkWaterAdjacent</c>, the
     /// generator's own rule, <see cref="MapGenerator.MarkWaterAdjacentTiles"/>);</item>
-    /// <item>bit 6 of the Flags layer on the middle of a lake (<c>MapGen_FillLakes</c>), by the rule
-    /// <see cref="MarkLakeMiddles"/> states: every middle the generator marks is marked, and so is each water tile at
-    /// height 0 whose six neighbors are at height 0 that the generator leaves unmarked.</item>
+    /// <item>bit 6 of the Flags layer (<c>MapGen_FillLakes</c>): where the layout draws a <c>lakes</c> grid, on each tile the
+    /// grid marks and on no other, so a layout matches the generator tile for tile; where it draws none, by the rule
+    /// <see cref="MarkLakeMiddles"/> states, a superset of the generator's marks: every middle the generator marks is
+    /// marked, and so is each water tile at height 0 whose six neighbors are at height 0 that the generator leaves
+    /// unmarked.</item>
     /// </list>
     /// Not derived: the lake detail byte stays 0 (the generator draws it from the random generator, and a drawn
     /// map keeps the game's draws its own), and bit 6 of the Flags layer for a large object
-    /// (<c>MapGen_ResolveObjectOverlap</c>), which needs the program's class table and which no rule reads yet.
+    /// (<c>MapGen_ResolveObjectOverlap</c>), which needs the program's class table and which no rule reads yet; a
+    /// <c>lakes</c> grid can mark it by hand.
     /// </summary>
     public Map BuildMap()
     {
@@ -161,7 +173,24 @@ public sealed partial class Layout
         }
 
         MapGenerator.MarkWaterAdjacentTiles(terrain, objects);
-        MarkLakeMiddles(map);
+        if (_lakes is null)
+        {
+            MarkLakeMiddles(map);
+        }
+        else
+        {
+            var flags = map.Bytes(MapLayer.Flags);
+            for (var y = 0; y < Size.Height; y++)
+            {
+                for (var x = 0; x < Size.Width; x++)
+                {
+                    if (_lakes[y][x] == 'L')
+                    {
+                        flags[map.Index(x, y)] |= 0x40;
+                    }
+                }
+            }
+        }
 
         return map;
     }
@@ -172,7 +201,8 @@ public sealed partial class Layout
     // ends at height 0 as well, and MapGen_KeepMainLand drops land to height 0 without a mark. So the rule reads the
     // drawn bytes: a tile at height 0 whose two triangles are water and whose six neighbors, east, south-east, south,
     // west, north-west, and north, are at height 0 too. Against generated maps (LayoutTests) this marks every tile
-    // the generator marks, and also tiles at height 0 that it leaves unmarked.
+    // the generator marks, and also tiles at height 0 that it leaves unmarked; a layout that draws the marks in its
+    // lakes grid has no need of the rule.
     private static void MarkLakeMiddles(Map map)
     {
         var height = map.Bytes(MapLayer.Height);
@@ -243,6 +273,7 @@ public sealed partial class Layout
                             or "height"
                             or "terrain"
                             or "terrainLower"
+                            or "lakes"
                             or "objects"
                             or "castle"
                             or "flags"
@@ -271,6 +302,9 @@ public sealed partial class Layout
                     : null;
                 var terrain = ReadTerrain("terrain");
                 var lower = entries.ContainsKey("terrainLower") ? ReadTerrain("terrainLower") : terrain;
+                var lakes = entries.TryGetValue("lakes", out var lakesEntry)
+                    ? ReadGrid("lakes", lakesEntry, size, LakeCharacters, "a lake character, . or L")
+                    : null;
                 var objects = entries.TryGetValue("objects", out var objectsEntry)
                     ? ReadObjects(objectsEntry, size)
                     : [];
@@ -282,10 +316,11 @@ public sealed partial class Layout
                     || height is null
                     || terrain is null
                     || lower is null
+                    || (lakes is null && entries.ContainsKey("lakes"))
                     || objects is null
                     || steps is null
                     ? null
-                    : new Layout(file, size, seed.Value, height, terrain, lower, objects, steps);
+                    : new Layout(file, size, seed.Value, height, terrain, lower, lakes, objects, steps);
 
                 string[]? ReadTerrain(string name) =>
                     entries.TryGetValue(name, out var entry)

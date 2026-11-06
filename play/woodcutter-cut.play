@@ -2,7 +2,7 @@
 # Run it on the layout: sh tools/play-run.sh woodcutter-cut --layout layouts/woodcutter.jsonc --fps 10
 wait 0.3
 fast-forward woodcutter state 0x11 max 20000
-scroll up 3 1056 520
+scroll up 6 1056 520
 wait 0.3
 dump cut
 shot cut

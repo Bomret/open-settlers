@@ -3,7 +3,7 @@
 # Run it on the layout: sh tools/play-run.sh carrier-log --layout layouts/carrier.jsonc --fps 10
 wait 0.3
 fast-forward carrier carrying max 20000
-scroll up 3 860 560
+scroll up 6 860 560
 wait 0.3
 dump carrying
 shot carrying

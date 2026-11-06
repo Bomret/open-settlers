@@ -26,4 +26,26 @@ public static class LayoutLoad
 
         return LaunchArgs.BadArgumentExitCode;
     }
+
+    /// <summary>
+    /// Starts <paramref name="game"/> from <paramref name="layout"/>: builds its entries (<see cref="Layout.Apply"/>).
+    /// Returns 0 and the game when every entry was built, or when there is no layout. Returns
+    /// <see cref="LaunchArgs.BadArgumentExitCode"/>, no game, and the message <c>ERROR file: entry: reason</c> when the
+    /// game refuses an entry: the run shows nothing of that game.
+    /// </summary>
+    public static int Start(Layout? layout, Game game, out Game? started, out string? message)
+    {
+        if (layout?.Apply(game) is { } problem)
+        {
+            started = null;
+            message = $"ERROR {problem}";
+
+            return LaunchArgs.BadArgumentExitCode;
+        }
+
+        started = game;
+        message = null;
+
+        return 0;
+    }
 }

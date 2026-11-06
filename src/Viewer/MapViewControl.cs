@@ -392,13 +392,17 @@ public partial class MapViewControl : Control
     {
         if (_gameView && _state.Map is not null && _tables is not null)
         {
-            _game = new Game(_tables, _state.Map, _state.StockLevel);
             // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
-            if (_layout?.Apply(_game) is { } layoutProblem)
+            var exit = LayoutLoad.Start(
+                _layout,
+                new Game(_tables, _state.Map, _state.StockLevel),
+                out _game,
+                out var layoutProblem
+            );
+            if (exit != 0)
             {
-                _game = null;
-                GD.Print($"ERROR {layoutProblem}");
-                GetTree().Quit(LaunchArgs.BadArgumentExitCode);
+                GD.Print(layoutProblem);
+                GetTree().Quit(exit);
 
                 return;
             }

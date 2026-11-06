@@ -27,6 +27,7 @@ public sealed class LayoutTests
         string? height = null,
         string? terrain = null,
         string? lower = null,
+        string? lakes = null,
         string objects = "[]",
         string seed = $"\"{Seed}\"",
         string extra = ""
@@ -39,6 +40,7 @@ public sealed class LayoutTests
               "height": {{height ?? Grid('1')}},
               "terrain": {{terrain ?? Grid('g')}},
               {{(lower is null ? "" : $"\"terrainLower\": {lower},")}}
+              {{(lakes is null ? "" : $"\"lakes\": {lakes},")}}
               "objects": {{objects}},{{extra}}
             }
             """;
@@ -97,7 +99,7 @@ public sealed class LayoutTests
             .First(map => map.Layer(MapLayer.Terrain).ToArray().Any(t => t >> 4 < 4));
 
     // The generated map's heights and terrain, drawn again as a layout and built.
-    static Map Redrawn(Map generated)
+    static Map Redrawn(Map generated, bool withLakes = false)
     {
         var heights = generated.Layer(MapLayer.Height).ToArray();
         var terrain = generated.Layer(MapLayer.Terrain).ToArray();
@@ -110,7 +112,10 @@ public sealed class LayoutTests
             Text(
                 height: DrawnGrid(tile => "0123456789abcdefghijklmnopqrstuv"[heights[tile] & 0x1f]),
                 terrain: DrawnGrid(tile => Letters[terrain[tile] >> 4]),
-                lower: DrawnGrid(tile => Letters[terrain[tile] & 0xf])
+                lower: DrawnGrid(tile => Letters[terrain[tile] & 0xf]),
+                lakes: withLakes
+                    ? DrawnGrid(tile => (generated.Layer(MapLayer.Flags)[tile] & 0x40) != 0 ? 'L' : '.')
+                    : null
             )
         );
     }
@@ -152,6 +157,61 @@ public sealed class LayoutTests
             0,
             missed.Count,
             "generated lake tiles the drawn map does not mark: " + string.Join(" ", missed)
+        );
+    }
+
+    [TestMethod]
+    public void ALakeGridSetsFlagsBit6OnEveryTileExactlyAsTheGeneratorDoes()
+    {
+        var marked = 0;
+        var wrong = new System.Collections.Generic.List<string>();
+        foreach (var first in Enumerable.Range(1, 150))
+        {
+            var generated = Generated(first);
+            var map = Redrawn(generated, withLakes: true);
+            for (var tile = 0; tile < 1024; tile++)
+            {
+                var want = generated.Layer(MapLayer.Flags)[tile] & 0x40;
+                marked += want != 0 ? 1 : 0;
+                if ((map.Layer(MapLayer.Flags)[tile] & 0x40) != want)
+                {
+                    wrong.Add($"{first}:{tile % 32},{tile / 32}");
+                }
+            }
+        }
+
+        Assert.IsTrue(marked > 0, "the generated maps hold marked tiles");
+        Assert.AreEqual(0, wrong.Count, "tiles whose Flags bit 6 differs: " + string.Join(" ", wrong));
+    }
+
+    [TestMethod]
+    public void ALakeGridReplacesTheDerivedRuleAndAnAbsentGridKeepsIt()
+    {
+        var flat = Grid('0');
+        var lakes = Grid('.', (12, Row('.', 3, 'L')));
+        var water = Grid('w');
+
+        var drawn = Built(Text(height: flat, terrain: water, lakes: lakes));
+        var derived = Built(Text(height: flat, terrain: water));
+
+        Assert.AreEqual(0x40, drawn.Layer(MapLayer.Flags)[At(3, 12)]);
+        Assert.AreEqual(0, drawn.Layer(MapLayer.Flags)[At(12, 12)]);
+        Assert.AreEqual(0x40, derived.Layer(MapLayer.Flags)[At(12, 12)]);
+    }
+
+    [TestMethod]
+    public void ALakeGridOfTheWrongShapeOrWithAnotherCharacterIsAProblemNamingTheFileAndTheEntry()
+    {
+        var read = Layout.Read(Text(lakes: Grid('.', (3, "..."), (4, Row('.', 5, 'x')))), "test.jsonc");
+
+        Assert.IsNull(read.Layout);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "test.jsonc: lakes[3]: has 3 characters, the map is 32 wide",
+                "test.jsonc: lakes[4]: column 5: 'x' is not a lake character, . or L",
+            },
+            read.Problems.ToArray()
         );
     }
 

@@ -7,10 +7,10 @@ namespace OpenSettlers.Simulation;
 
 public sealed partial class Layout
 {
-    // One entry of the file that a game takes as a command: its name in the file (flags[1]), the command, and why the
-    // original refuses that command, for the problem a refusal reports. A settler or good entry has no command: its Place
+    // One entry of the file that a game takes as a command: its name in the file (flags[1]) and the command; a refusal
+    // reports the reason Refusal gives for the command's kind. A settler or good entry has no command: its Place
     // puts it in the game directly (Game.Entry.cs) and returns why it refused, or null.
-    private sealed record Step(string Name, Command Command, string Refusal, Func<Game, string?>? Place = null);
+    private sealed record Step(string Name, Command Command, Func<Game, string?>? Place = null);
 
     /// <summary>
     /// Builds the castle, flags, roads, and buildings of the layout in the game, one entry at a time in the order the
@@ -38,12 +38,26 @@ public sealed partial class Layout
             game.ApplyCommands();
             if (game.Revision == revision)
             {
-                return $"{_file}: {step.Name}: {step.Refusal}";
+                return $"{_file}: {step.Name}: {Refusal(step.Command.Kind)}";
             }
         }
 
         return null;
     }
+
+    // Why the original refuses each kind of command (the documentation of the command kind).
+    private static string Refusal(int kind) =>
+        kind switch
+        {
+            CommandKind.PlaceCastle => "the node is no castle site, the original refuses it there",
+            CommandKind.PlaceFlag =>
+                "the original's flag button does not allow a flag on the node: the castle must stand, and the node "
+                    + "must hold no flag, no building, and no object that blocks it",
+            CommandKind.BuildRoad =>
+                "a step is not allowed where the original's road drawing allows it, or the last step reaches no "
+                    + "flag; list the flag at the end before the road",
+            _ => "the node is no site for a hut with the flag south-east of it standing and free",
+        };
 
     private sealed partial class Reader
     {
@@ -181,7 +195,6 @@ public sealed partial class Layout
                 new Step(
                     name,
                     default,
-                    "",
                     woodcutter
                         ? game => game.PlaceWoodcutterInHut(x, y)
                         : game => game.PlaceCarrierOnRoad(x, y, direction)
@@ -226,7 +239,7 @@ public sealed partial class Layout
                 return false;
             }
 
-            steps.Add(new Step(name, default, "", game => game.PlaceGood(x, y, place, good)));
+            steps.Add(new Step(name, default, game => game.PlaceGood(x, y, place, good)));
 
             return true;
         }
@@ -263,25 +276,9 @@ public sealed partial class Layout
             }
 
             int[]? directions = null;
-            if (
-                road
-                && (
-                    !entry.TryGetProperty("directions", out var list)
-                    || list.ValueKind != JsonValueKind.Array
-                    || list.GetArrayLength() == 0
-                    || list.EnumerateArray()
-                        .Any(d => d.ValueKind != JsonValueKind.Number || !d.TryGetInt32(out var v) || v is < 0 or > 5)
-                )
-            )
+            if (road && !ReadDirections(name, entry, out directions))
             {
-                Fail(name, "directions must be a list of one or more whole numbers from 0 to 5");
-
                 return false;
-            }
-
-            if (road)
-            {
-                directions = entry.GetProperty("directions").EnumerateArray().Select(d => d.GetInt32()).ToArray();
             }
 
             var command = new Command(0, 0, kind, x, y, directions);
@@ -293,23 +290,31 @@ public sealed partial class Layout
                 return false;
             }
 
-            steps.Add(new Step(name, command, Refusal(kind)));
+            steps.Add(new Step(name, command));
 
             return true;
         }
 
-        // Why the original refuses each kind (the documentation of the command kind).
-        private static string Refusal(int kind) =>
-            kind switch
+        // The directions of a road: one or more whole numbers from 0 to 5. A bad list is a problem naming the entry.
+        private bool ReadDirections(string name, JsonElement entry, out int[]? directions)
+        {
+            directions = null;
+            if (
+                !entry.TryGetProperty("directions", out var list)
+                || list.ValueKind != JsonValueKind.Array
+                || list.GetArrayLength() == 0
+                || list.EnumerateArray()
+                    .Any(d => d.ValueKind != JsonValueKind.Number || !d.TryGetInt32(out var v) || v is < 0 or > 5)
+            )
             {
-                CommandKind.PlaceCastle => "the node is no castle site, the original refuses it there",
-                CommandKind.PlaceFlag =>
-                    "the original's flag button does not allow a flag on the node: the castle must stand, and the node "
-                        + "must hold no flag, no building, and no object that blocks it",
-                CommandKind.BuildRoad =>
-                    "a step is not allowed where the original's road drawing allows it, or the last step reaches no "
-                        + "flag; list the flag at the end before the road",
-                _ => "the node is no site for a hut with the flag south-east of it standing and free",
-            };
+                Fail(name, "directions must be a list of one or more whole numbers from 0 to 5");
+
+                return false;
+            }
+
+            directions = list.EnumerateArray().Select(d => d.GetInt32()).ToArray();
+
+            return true;
+        }
     }
 }

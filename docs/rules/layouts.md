@@ -17,8 +17,9 @@ job the entry names. The request that sends a worker (`0x42be63`) and the one th
 castle's entry in its list of waiting settlers; a placed settler empties it the same way where it names him. The castle's
 counter of settlers sent out rises with the request and falls with the departure from the castle (`0x43dd4a`), so a placed
 settler leaves it as it was. A castle that holds no such settler refuses the entry: a second woodcutter is one the castle
-does not hold. **Stand-in:** the original sends the settler its list names, the one that last took its turn in state 1; at
-tick 0 no turn has run, so the engine takes the lowest slot of the job. For a carrier it takes a settler of job 0, else one
+does not hold. The original sends the settler its list names, the one that last took its turn in state 1. The engine takes that
+settler where the list names one. **Stand-in:** where the list names none (tick 0, no turn has run), the engine takes
+the lowest slot of the job. For a carrier it takes a settler of job 0, else one
 of job 21 made a carrier, as `0x42b455` does.
 
 ## Entry states

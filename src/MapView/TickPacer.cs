@@ -25,7 +25,7 @@ public sealed class TickPacer
     }
 
     /// <summary>
-    /// Holds the game: no tick falls due, and the time of the frames is dropped, until <see cref="ShotTaken"/>. A play
+    /// Holds the game: no tick falls due, and the time of the frames is dropped, until <see cref="ShotTaken"/> or <see cref="Reset"/>. A play
     /// run's fast-forward holds it so the next shot shows the tick it stopped at.
     /// </summary>
     public void Hold()
@@ -37,6 +37,10 @@ public sealed class TickPacer
     /// <summary>A shot has been taken: lets a held game run on.</summary>
     public void ShotTaken() => _held = false;
 
-    /// <summary>Drops the carry, as a new game starts.</summary>
-    public void Reset() => _carry = 0;
+    /// <summary>Drops the carry and releases a hold, as a new game starts.</summary>
+    public void Reset()
+    {
+        _carry = 0;
+        _held = false;
+    }
 }

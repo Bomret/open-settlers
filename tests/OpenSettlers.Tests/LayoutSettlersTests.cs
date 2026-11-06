@@ -116,6 +116,37 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
+    public void ACarrierPlacedOnARoadIsTheSettlerTheCastlesWaitingListNamesWhereItNamesOne()
+    {
+        const int jobless = 21;
+        var game = Applied("\"castle\": {\"x\": 10, \"y\": 10},");
+        Run(game, 3000);
+        foreach (
+            var (kind, x, directions) in new[]
+            {
+                (CommandKind.PlaceFlag, 14, (int[]?)null),
+                (CommandKind.BuildRoad, 11, [0, 0, 0]),
+            }
+        )
+        {
+            game.Enqueue(new Command(game.TickCount, 0, kind, x, 11, directions));
+            game.ApplyCommands();
+        }
+
+        var waiting = game.Waiting(jobless);
+        var lowest = game.Settlers.ToList().FindIndex(settler => settler.Job == jobless && settler.State == 1);
+        Assert.IsTrue(
+            waiting > lowest && lowest > 0,
+            $"the list names {waiting}, the lowest waiting settler is {lowest}"
+        );
+
+        Assert.IsNull(game.PlaceCarrierOnRoad(11, 11, 0));
+
+        Assert.AreEqual(0x42, game.Settlers[waiting].State);
+        Assert.AreEqual(1, game.Settlers[lowest].State);
+    }
+
+    [TestMethod]
     public void APlacedWoodcutterComesOutAndFellsATreeAndNoSecondWoodcutterLeavesForTheHut()
     {
         var game = Applied(Built + $"\"settlers\": [{Woodcutter}]", Tree);
@@ -156,7 +187,7 @@ public sealed class LayoutSettlersTests
         );
         var before = game.CastleLogs;
 
-        Run(game, 3000);
+        Run(game, 20000);
 
         Assert.AreEqual(before + 1, game.CastleLogs);
     }
