@@ -39,5 +39,5 @@ The decision has these consequences:
 - A new rule that changes a settler, building, or flag records its events, with their cause, when it is
   built.
 - Goods have no thing ID. Following one good needs its own ID carried through the goods rules.
-- The store grows with the game, at roughly 30 MB for an hour of play. A limit waits until a long run
+- The store grows with the game. A limit waits until a long run
   needs one.
