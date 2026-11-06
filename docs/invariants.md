@@ -46,4 +46,4 @@ Class: architecture
 Concepts: Name table, Thing
 Statement: Every name shown for a map object code, settler job, settler state, or building type comes from a name-table entry that cites its evidence (ADR 0010). The raw value always shows beside the name, and a code with no entry shows only raw.
 Breaks: silently
-Check: `NameTableTests` checks that every entry carries its evidence and that a code with no entry gets no name; reviewers check the evidence of each new entry.
+Check: `NameTableTests` checks that every entry carries its evidence and that a code with no entry gets no name. Reviewers check the evidence of each new entry.
