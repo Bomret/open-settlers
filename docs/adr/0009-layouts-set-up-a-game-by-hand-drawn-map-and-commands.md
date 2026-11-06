@@ -2,14 +2,14 @@
 
 **Status:** Accepted
 
-A layout is a JSONC file that sets up a game in the game view. It draws the whole map by hand: a height
-grid, an upper and a lower terrain grid, and the objects with their object codes, at one of the sizes the
-original offers. The loader writes the map layers and sets the bytes that the generator derives from
-others, such as the water bit of the object layer, from what the grids draw. The layout's seed starts the
-game's random generator. The castle, flags, roads, and buildings are commands the loader applies one by
-one in the file's order, through the path a click takes; a refused command fails the load. A layout
-places a settler or a good only in an entry state ([INV-0005](../invariants.md#inv-0005)), and a placed
-settler is one of the castle's own.
+A layout is a JSONC file that sets up a game in the game view. It draws the whole map by hand: a height grid, an upper
+and a lower terrain grid, and the objects with their object codes, at one of the sizes the original offers. The loader
+writes the map layers. It sets the bytes that the generator derives from others, such as the water bit of the object
+layer, from what the grids draw. The layout's seed starts the game's random generator.
+
+The castle, flags, roads, and buildings are commands. The loader applies them one by one in the file's order, through
+the path a click takes, and a refused command fails the load. A layout places a settler or a good only in an entry
+state ([INV-0005](../invariants.md#inv-0005)). A placed settler is one of the castle's own.
 
 ## Considered options
 
