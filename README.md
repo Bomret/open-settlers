@@ -78,7 +78,7 @@ The game view is the map view with a game on the shown map that ticks at the ori
 mise exec -- <godot> --path . -- --game-view [--seed <seed>] [--size <1|2|3>]
 ```
 
-It takes `--seed` and `--size` as the map view does, and it has the map view's exit codes.
+It takes `--seed` and `--size` as the map view does, and it has the map view's exit codes. `--layout <file>` in place of `--seed` and `--size` starts it on a layout ("Layouts" under "Run a play script").
 
 Seed info prints the digests and counts of the map of one seed and size. It is headless and needs the install (`--game` or `SIEDLER_DIR`): the map generation reads which objects are large from its `Siedler1.exe`.
 
