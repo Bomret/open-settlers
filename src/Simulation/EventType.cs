@@ -29,6 +29,30 @@ public static class EventType
     /// <summary>The layout entry that puts a good on a flag.</summary>
     public const string LayoutGood = "layout-good";
 
+    /// <summary>The woodcutter's turn at a door: the timer runs down, then he leaves the hut or goes on to his job.</summary>
+    public const string Door = "door";
+
+    /// <summary>The woodcutter's search for a tree.</summary>
+    public const string SearchTree = "search-tree";
+
+    /// <summary>The woodcutter's step from the hut onto its flag.</summary>
+    public const string StepOut = "step-out";
+
+    /// <summary>A step of a settler's free walk.</summary>
+    public const string FreeWalk = "free-walk";
+
+    /// <summary>A settler's arrival at the end of a free walk.</summary>
+    public const string Arrive = "arrive";
+
+    /// <summary>The woodcutter's cut; the other thing is the tree, named by its node.</summary>
+    public const string CutTree = "cut-tree";
+
+    /// <summary>A good put on a flag; the other thing is the flag on the settler's event and the settler on the flag's.</summary>
+    public const string PutGood = "put-good";
+
+    /// <summary>A settler's step from a flag into the building.</summary>
+    public const string EnterHut = "enter-hut";
+
     /// <summary>A settler sent home takes the node it stands on.</summary>
     public const string ClaimedHome = "claimed-home";
 
@@ -181,6 +205,14 @@ public static class EventType
         Burn,
         FreeBuilding,
         FreeFlagSlot,
+        Door,
+        SearchTree,
+        StepOut,
+        FreeWalk,
+        Arrive,
+        CutTree,
+        PutGood,
+        EnterHut,
         CarrierRequested,
         VisitFlag,
         ClearFlagRetryBits,
