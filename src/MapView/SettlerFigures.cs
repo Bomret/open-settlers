@@ -13,8 +13,10 @@ public readonly record struct SettlerDraw(int Row, int Entry, int Colour, int X,
 /// <summary>
 /// Which sprites a walking settler is drawn with (<c>docs/rules/settlers.md</c>, "Drawing the walk"). The settler's frame
 /// (the shape of its step, which holds the direction) picks a sequence of (figure byte, dx, dy) triples from entry 2 of the
-/// graphics archive; the time left of the step, in ticks (8 clock units), picks the triple. The tables of the program turn
-/// the job and the figure byte into the entries: the figure, its overlay in the player's colour, and a second figure.
+/// graphics archive; the time left of the step, in ticks (8 clock units), picks the triple. The job's handler
+/// (<c>0x43f744</c> plus 8 for each job) adds a constant to the figure byte to make the figure word; the high byte of the
+/// word picks a pair of words of the figure bases and the low byte a pair of the figure offsets, which give the entries:
+/// the figure, its overlay in the player's colour, and a second figure (<c>0x44fff3</c>, <c>docs/rules/settlers.md</c>).
 /// <b>Confirmed</b> (<c>0x406610</c>): the figure 1850 + i takes its overlay from 2500 + i; the second figure moves by the
 /// header bytes 0 and 1 of the figure, read as signed bytes; a settler draws its figure, then the overlay, then the second
 /// figure. <b>Inferred:</b> that the sequence offsets count from the byte after the first dword of the entry (as
@@ -74,13 +76,27 @@ public sealed class SettlerFigures
     private readonly short[] _offsets;
     private readonly byte[] _data;
     private readonly short[] _carried;
+    private readonly FigureAdds _woodcutter;
 
-    /// <param name="bases">Eight words for each job: the figure base, the second figure base (negative for none), and more.</param>
-    /// <param name="offsets">Two words for each figure byte: what it adds to the figure and to the second figure.</param>
+    // The woodcutter's handler (0x43fb6b) tests the figure byte for bit 7, and the settler's byte 13 (the high byte of the
+    // target), byte 14 (the heading), and state for the way back with the log.
+    private const int HighFigure = 0x80;
+    private const int WayBackMark = 0x80;
+
+    /// <param name="bases">Two words for each high byte of the figure word: the figure base and the second figure base (negative for none).</param>
+    /// <param name="offsets">Two words for each low byte of the figure word: what it adds to the figure and to the second figure.</param>
     /// <param name="sequences">The bytes of entry 2 of the graphics archive.</param>
     /// <param name="carried">For each good the word a carrier carrying it adds to its figure byte.</param>
-    public SettlerFigures(short[] bases, short[] offsets, byte[] sequences, short[]? carried = null)
+    /// <param name="woodcutter">What the woodcutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
+    public SettlerFigures(
+        short[] bases,
+        short[] offsets,
+        byte[] sequences,
+        short[]? carried = null,
+        FigureAdds woodcutter = default
+    )
     {
+        _woodcutter = woodcutter;
         _carried = carried ?? [];
         _bases = bases;
         _offsets = offsets;
@@ -117,6 +133,7 @@ public sealed class SettlerFigures
                         or StatesClaiming
                         or StatesSearching
                     )
+                || settler.Job is not (Settler.CarrierJob or Settler.WoodcutterJob)
                 || Triple(settler, clock) is not { } triple
             )
             {
@@ -124,13 +141,13 @@ public sealed class SettlerFigures
             }
 
             var (walkFigure, dx, dy) = triple;
-            var figure = walkFigure + CarriedFigure(settler);
+            var word = FigureWord(settler, walkFigure);
             var (x, y) = Camera.NodePosition(settler.X, settler.Y);
             var height = map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & Map.HeightMask;
             x += dx;
             y += dy - height * TerrainTriangles.HeightStep;
             // The figure comes first; the overlay and the second figure follow it, and only the second figure is shifted.
-            foreach (var (entry, colour, shiftedBy) in Entries(settler.Job, figure, ColourOf(settler.Player)))
+            foreach (var (entry, colour, shiftedBy) in Entries(word, ColourOf(settler.Player)))
             {
                 var shift = shiftedBy >= 0 && shifts is not null ? shifts.GetValueOrDefault(shiftedBy) : default;
                 draws.Add(new SettlerDraw(settler.Y, entry, colour, x + shift.X, y + shift.Y));
@@ -165,15 +182,59 @@ public sealed class SettlerFigures
             var stop = i + 1 < list.Count ? list[i + 1] : _data.Length;
             for (var at = list[i]; at + 3 <= stop; at += 3)
             {
-                foreach (var figure in add == 0 ? new int[] { _data[at] } : new int[] { _data[at], _data[at] + add })
+                foreach (var word in Words(job, _data[at], add))
                 {
-                    foreach (var (entry, fill, _) in Entries(job, figure, colour))
+                    foreach (var (entry, fill, _) in Entries(word, colour))
                     {
                         yield return (entry, fill);
                     }
                 }
             }
         }
+    }
+
+    // The figure words a job's handler can make of a figure byte of its sequences; a carrier carrying a good (add) makes
+    // both the plain word and the carried one. A job other than the carrier and the woodcutter has none.
+    private IEnumerable<int> Words(int job, int figure, int add)
+    {
+        switch (job)
+        {
+            case Settler.CarrierJob:
+                yield return figure;
+                if (add != 0)
+                {
+                    yield return figure + add;
+                }
+
+                break;
+            case Settler.WoodcutterJob when figure >= HighFigure:
+                yield return figure + _woodcutter.Cutting;
+                break;
+            case Settler.WoodcutterJob:
+                yield return figure + _woodcutter.Walk;
+                yield return figure + _woodcutter.Carrying;
+                break;
+        }
+    }
+
+    // The figure word of a settler's figure byte (0x43f8ae for the carrier, 0x43fb6b for the woodcutter): the carrier adds
+    // the word of the good it carries; the woodcutter adds the constant of the handler, the one of the way back with the
+    // log (byte 13 0x80, byte 14 1, state 0x10) for a figure byte below 0x80 on that way.
+    private int FigureWord(Settler settler, int figure)
+    {
+        if (settler.Job == Settler.CarrierJob)
+        {
+            return figure + CarriedFigure(settler);
+        }
+
+        if (figure >= HighFigure)
+        {
+            return figure + _woodcutter.Cutting;
+        }
+
+        var carrying = settler is { State: StatesFreeWalk, Heading: 1 } && settler.Target >> 8 == WayBackMark;
+
+        return figure + (carrying ? _woodcutter.Carrying : _woodcutter.Walk);
     }
 
     // The offset in the sequences' entry at which the sequence of a frame starts.
@@ -184,22 +245,25 @@ public sealed class SettlerFigures
         return 4 + ((_data[slot] << 24) | (_data[slot + 1] << 16) | (_data[slot + 2] << 8) | _data[slot + 3]);
     }
 
-    // The sprites of a figure byte of a job: the figure, its colour overlay filled with the colour, and the second figure
-    // where the job has one (-1 where a sprite has no fill), each with the figure entry whose header shifts it (-1 for none:
-    // only the second figure is shifted). None where the figure byte lies outside the offsets table.
-    private IEnumerable<(int Entry, int Colour, int ShiftedBy)> Entries(int job, int figure, int colour)
+    // The sprites of a figure word: the figure, its colour overlay filled with the colour, and the second figure where
+    // the base has one (-1 where a sprite has no fill), each with the figure entry whose header shifts it (-1 for none:
+    // only the second figure is shifted). The high byte of the word picks the pair of bases, the low byte the pair of
+    // offsets (0x44fff3). None where either lies outside the tables.
+    private IEnumerable<(int Entry, int Colour, int ShiftedBy)> Entries(int word, int colour)
     {
-        if (figure >= _offsets.Length / 2)
+        var row = (word >> 8) & 0xff;
+        var figure = word & 0xff;
+        if (2 * row + 1 >= _bases.Length || 2 * figure + 1 >= _offsets.Length)
         {
             yield break;
         }
 
-        var first = _bases[job * 8] + _offsets[2 * figure];
+        var first = _bases[2 * row] + _offsets[2 * figure];
         yield return (FigureBase + first, -1, -1);
         yield return (OverlayBase + first, colour, -1);
-        if (_bases[job * 8 + 1] >= 0)
+        if (_bases[2 * row + 1] >= 0)
         {
-            yield return (SecondBase + _bases[job * 8 + 1] + _offsets[2 * figure + 1], -1, FigureBase + first);
+            yield return (SecondBase + _bases[2 * row + 1] + _offsets[2 * figure + 1], -1, FigureBase + first);
         }
     }
 
