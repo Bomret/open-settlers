@@ -306,6 +306,7 @@ public sealed partial class Game
 
         settler.Heading = heading;
         settler.State = 0x43;
+        RecordSettler(slot, EventType.Fetch, Cause.Goods);
         Claim(slot, settler);
     }
 
@@ -325,6 +326,7 @@ public sealed partial class Game
         settler.Timer = 0;
         settler.Mode = 0;
         settler.Next = 0;
+        RecordSettler(slot, EventType.Claim, Cause.Goods);
     }
 
     // The good on a place waits for the road that leaves the flag in a direction: bit 7 and the place go into the road's byte.
@@ -335,15 +337,19 @@ public sealed partial class Game
     // in the same place, destination word and all; where none waits and the carrier carries one, the good goes on the first
     // empty place. A flag where something was laid is asked again by its next turn (byte 4, bit 7). The byte of the road is
     // then made again: the good of the greatest transport priority that was given the road's direction waits for it next.
-    internal void Exchange(Settler settler, int flag)
+    internal void Exchange(int slot, Settler settler, int flag)
     {
         var way = settler.Heading;
         var goods = _flagGoods[flag];
         var waiting = _directionBytes[flag][way];
+        var left = settler.Mode;
+        var took = 0;
+        var changed = false;
         if ((waiting & 0x80) != 0)
         {
             var place = waiting & 7;
             settler.Next = 0;
+            changed = true;
             if (settler.Mode != 0)
             {
                 _goodsBit[flag] = true;
@@ -361,6 +367,7 @@ public sealed partial class Game
                 goods[place] = 0;
             }
 
+            took = settler.Mode;
             _directionBytes[flag][way] = (byte)(waiting & 0x78);
             var best = 0;
             var found = -1;
@@ -391,7 +398,15 @@ public sealed partial class Game
                 goods[place] = (byte)settler.Mode;
                 settler.Mode = 0;
                 _goodsDestination[flag][place] = (ushort)settler.Target;
+                changed = true;
             }
+        }
+
+        if (changed)
+        {
+            var detail = $"took {took} left {left}";
+            RecordSettler(slot, EventType.Exchange, Cause.Goods, $"{FlagId(flag)} {detail}");
+            RecordFlag(flag, EventType.Exchange, Cause.Goods, $"{SettlerId(slot)} {detail}");
         }
     }
 
@@ -413,6 +428,7 @@ public sealed partial class Game
         settler.Frame = (byte)(Height(node) - Height(here) + 0x5d);
         var old = settler.Timer;
         settler.Timer = (ushort)(old + _tables.StepTime(settler.Frame));
+        RecordSettler(slot, EventType.Deliver, Cause.Goods);
         if (settler.Timer >= old)
         {
             Handover(slot, settler);
@@ -432,6 +448,7 @@ public sealed partial class Game
             {
                 settler.Next = 0;
                 settler.State = 3;
+                RecordSettler(slot, EventType.Handover, Cause.Goods);
                 WalkRoad(slot, settler);
 
                 return;
@@ -439,6 +456,7 @@ public sealed partial class Game
 
             var (_, _, node) = Neighbour(settler, 4);
             var good = settler.Mode;
+            var given = "";
             if (good != 0)
             {
                 settler.Mode = 0;
@@ -455,6 +473,10 @@ public sealed partial class Game
                             AddToStock(good);
                         }
                     }
+
+                    var buildingSlot = _buildings.IndexOf(building);
+                    RecordBuilding(buildingSlot, EventType.Handover, Cause.Goods, $"{SettlerId(slot)} good {good}");
+                    given = $"{BuildingId(buildingSlot)} good {good}";
                 }
             }
 
@@ -463,6 +485,7 @@ public sealed partial class Game
             settler.Next = 0xff;
             var old = settler.Timer;
             settler.Timer = (ushort)(old + (_tables.StepTime(shape) >> 1));
+            RecordSettler(slot, EventType.Handover, Cause.Goods, given.Length == 0 ? null : given);
             if (settler.Timer < old)
             {
                 return;

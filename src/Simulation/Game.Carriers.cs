@@ -377,7 +377,7 @@ public sealed partial class Game
                     return;
                 }
 
-                Exchange(settler, Map.Layer(MapLayer.Resource)[here]);
+                Exchange(slot, settler, Map.Layer(MapLayer.Resource)[here]);
                 direction = settler.Heading;
             }
 
