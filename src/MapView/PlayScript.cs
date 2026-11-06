@@ -420,12 +420,11 @@ public sealed class PlayScript
         if (!state && !(args.Length == 4 && args[1] == "carrying" && args[2] == "max"))
             return (null, Usage);
 
-        var job = args[0] switch
-        {
-            "woodcutter" => Simulation.Settler.WoodcutterJob,
-            "carrier" => Simulation.Settler.CarrierJob,
-            _ => -1,
-        };
+        // The job names are the name table's (ADR 0010); fast-forward watches only these two jobs.
+        var job = new[] { Simulation.Settler.WoodcutterJob, Simulation.Settler.CarrierJob }.FirstOrDefault(
+            code => Simulation.NameTable.JobName(code) == args[0],
+            -1
+        );
         if (job < 0)
             return (null, $"'{args[0]}' is not woodcutter or carrier");
 
