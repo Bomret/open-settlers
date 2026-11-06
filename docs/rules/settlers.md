@@ -161,7 +161,8 @@ plus the height difference, so the facing is the direction of the step.
 **The figure word** (confirmed: `0x43f537` jumps by byte 0 bits 2 to 6, the job, through the stubs at `0x43f744` plus 8 for each job,
 each a `jmp rel32` to the job's handler; the handler adds a constant to the figure byte and stores the word with the draw record, and
 `0x44fff3` reads it). The job does not index the tables: the constant does.
-- Job 0, the carrier (`0x43f8ae`): no constant, so the word is the figure byte, plus the carried good's word (inferred: [Carriers](carriers.md#drawing)).
+- Job 0, the carrier (`0x43f8ae`): no constant, so the word is the figure byte, plus the carried good's word, the 16-bit word at `0x43f4b7` plus 2 * good (`0x43f904`)
+  whose high byte is the row of the figure bases (the log adds `0x1400`; [Drawing a carrier with a good](goods.md#drawing-a-carrier-with-a-good)).
 - Job 5, the woodcutter (stub `0x43f76c`, handler `0x43fb6b`): a figure byte below 0x80 gets `0x0b00` (`0x43fc16`, the walk), or `0x1000`
   (`0x43fc0b`) where byte 13 is 0x80, byte 14 is 1, and the state is 0x10, which is the way back with the log
   ([Woodcutting](woodcutting.md#the-cut)); a figure byte from 0x80 gets `0x0e80` (`0x43fbe5`), so its word is `0x0f00` plus the byte less 0x80

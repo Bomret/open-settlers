@@ -22,9 +22,9 @@ left open:
   military building), not carrier code. guess
 - The player block's transport priority table (`+good - 0x55` from the pointer at `+0x64` of the state): it reads 0 in the verb
   `goods:`, so a second good that waits for a road never takes the road's byte again, **inferred**. Open lead.
-- A carrier carrying a log is drawn with the figure byte plus a word of the table at `0x43f4b8` (the program's load names
-  `0x43f4b7`), **inferred**: no emulator run of the draw `0x43f537` confirms the table's start, the sum, or the sprite
-  ([Goods at a flag](../rules/goods.md#drawing-a-carrier-with-a-good)). Open lead: run `0x43f537` with a carrier record holding a log.
+- A carrier carrying a log is drawn with the figure word plus the word of the table at `0x43f4b7` (`0x1400` for the log, a row of
+  the figure bases), read from the code of `0x43f8ae` and the table's bytes; a play run shows it
+  ([Goods at a flag](../rules/goods.md#drawing-a-carrier-with-a-good)). No emulator run of the draw `0x43f537` confirms it.
 
 ## Tick
 
