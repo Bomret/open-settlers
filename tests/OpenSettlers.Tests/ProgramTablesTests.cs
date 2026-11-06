@@ -194,37 +194,38 @@ public sealed class ProgramTablesTests
     {
         var tables = TestProgram.Tables();
 
-        // peek:43f4b8:54, the 27 words one for each good (inferred: the program's load names 0x43f4b7, see docs/rules/goods.md).
+        // The 27 words one for each good from 0x43f4b7 (the handler 0x43f8ae loads 0x43f4b7 and adds 2 * good, docs/rules/goods.md):
+        // each word is the row of the figure bases in its high byte.
         CollectionAssert.AreEqual(
             new short[]
             {
-                0x00,
-                0x30,
-                0x35,
-                0x3B,
-                0x41,
-                0x46,
-                0x4B,
-                0x14,
-                0x07,
-                0x51,
-                0x08,
-                0x1C,
-                0x1D,
-                0x1E,
-                0x1A,
-                0x1B,
-                0x68,
-                0x6D,
-                0x65,
-                0x67,
-                0x6B,
-                0x6A,
-                0x66,
-                0x69,
-                0x6C,
-                0x57,
-                0x56,
+                0x0000,
+                0x3000,
+                0x3500,
+                0x3B00,
+                0x4100,
+                0x4600,
+                0x4B00,
+                0x1400,
+                0x0700,
+                0x5100,
+                0x0800,
+                0x1C00,
+                0x1D00,
+                0x1E00,
+                0x1A00,
+                0x1B00,
+                0x6800,
+                0x6D00,
+                0x6500,
+                0x6700,
+                0x6B00,
+                0x6A00,
+                0x6600,
+                0x6900,
+                0x6C00,
+                0x5700,
+                0x5600,
             },
             tables.CarriedFigures
         );
@@ -233,9 +234,14 @@ public sealed class ProgramTablesTests
     [TestMethod]
     public void TheCarriedGoodFiguresAreFoundByTheirAddress()
     {
-        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.CarriedFigureAddress) + 14] = 0x2a);
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.CarriedFigureAddress) + 15] = 0x2a);
 
-        Assert.AreEqual(0x2a, ProgramTables.Read(exe).CarriedFigures[7]);
+        Assert.AreEqual(
+            0x2a00,
+            ProgramTables.Read(exe).CarriedFigures[7],
+            "the word of good 7 at the address plus 2 * 7"
+        );
+        Assert.AreEqual(0x43f4b7, ProgramTables.CarriedFigureAddress);
     }
 
     [TestMethod]

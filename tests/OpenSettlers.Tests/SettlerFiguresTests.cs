@@ -58,16 +58,18 @@ public sealed class SettlerFiguresTests
         bases[0] = 100;
         bases[1] = -1;
         var carried = new short[27];
-        carried[7] = 10;
+        carried[7] = 0x0a00;
+        bases[2 * 0x0a] = 500;
+        bases[2 * 0x0a + 1] = -1;
 
         return new SettlerFigures(bases, offsets, Sequences(), carried, Adds);
     }
 
-    private static Settler Carrier(int mode, int state = 3) =>
+    private static Settler Carrier(int mode, int state = 3, int timer = 0) =>
         new(0, 0, 4, 3, 0, state, 0)
         {
             Frame = 7,
-            Timer = 0,
+            Timer = (ushort)timer,
             Mode = mode,
         };
 
@@ -284,16 +286,17 @@ public sealed class SettlerFiguresTests
         Assert.IsEmpty(Figures().Draws(Map(), [Walker(9, 0)], 0));
     }
 
-    // The carried good's figure byte is the walking figure byte plus the table's word for the good (0x43f8ae to 0x43f92a).
-    // Inferred: that the table's words start at 0x43f4b8 (the program's load names 0x43f4b7), and that the carrier's job
-    // (0) with a good in byte 11 in state 3 is the only one drawn so; no emulator run of the draw confirms it.
+    // The carried good's figure word is the walking figure byte plus the table's word for the good (0x43f8ae to 0x43f92a):
+    // the table starts at 0x43f4b7 and its word holds the row in the high byte. **Inferred:** that the carrier's job (0)
+    // with a good in byte 11 in state 3 is the only one drawn so.
     [TestMethod]
     public void ACarrierCarryingALogIsDrawnWithTheFigureByteOfTheLogAdded()
     {
         var draws = Figures().Draws(Map(), [Carrier(mode: 7)], 0);
 
-        // Figure byte 3 plus 10: entry 1850 + 100 + 13, and the colour overlay 2500 + 100 + 13; the job has no second figure here.
-        CollectionAssert.AreEqual(new[] { 1963, 2613 }, draws.Select(d => d.Entry).ToArray());
+        // The word 0x0a00 adds the row 10 to the figure byte 3: entry 1850 + 500 + 3, and the colour overlay 2500 + 500 + 3;
+        // the row has no second figure here.
+        CollectionAssert.AreEqual(new[] { 2353, 3003 }, draws.Select(d => d.Entry).ToArray());
     }
 
     [TestMethod]
@@ -317,7 +320,22 @@ public sealed class SettlerFiguresTests
     {
         var entries = Figures().Sprites(0, 0x40, carriedGood: 7).Select(s => s.Entry).Distinct().ToArray();
 
-        CollectionAssert.IsSubsetOf(new[] { 1963, 1964, 1965, 2613 }, entries);
+        CollectionAssert.IsSubsetOf(new[] { 2353, 2354, 2355, 3003 }, entries);
+        CollectionAssert.Contains(entries, 2353);
+    }
+
+    // What the carrier is drawn with is among what Sprites loads: both apply the one rule, for every frame and timer.
+    [TestMethod]
+    public void EveryEntryACarrierCarryingALogIsDrawnWithIsAmongTheSpritesLoadedForIt()
+    {
+        var figures = Figures();
+        var loaded = figures.Sprites(Settler.CarrierJob, 0x40, carriedGood: 7).ToHashSet();
+        var drawn = new[] { 0, 8, 16 }
+            .SelectMany(timer => figures.Draws(Map(), [Carrier(7, timer: timer)], 0).Select(d => (d.Entry, d.Colour)))
+            .ToHashSet();
+
+        Assert.IsNotEmpty(drawn);
+        Assert.IsTrue(drawn.IsSubsetOf(loaded), string.Join(", ", drawn.Except(loaded)));
     }
 
     // The original draws the overlay of the figure 1850 + i from 2500 + i (0x406610), not from the figure's entry plus 2500.

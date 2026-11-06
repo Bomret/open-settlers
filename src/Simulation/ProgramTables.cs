@@ -88,11 +88,12 @@ public sealed class ProgramTables
     private static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
     /// <summary>
-    /// The address of the carried goods' figure words: 27 words, one for each good (<c>0x43f4b8</c>). **Inferred:** the
-    /// program's load of the table (<c>0x43f904</c>) names <c>0x43f4b7</c>, one byte before; read from there the words
-    /// are no figure bytes, so the table is taken to start at <c>0x43f4b8</c> ( <c>docs/rules/goods.md</c>).
+    /// The address of the carried goods' figure words: 27 words, one for each good (<c>0x43f4b7</c>). The carrier's draw
+    /// handler (<c>0x43f8ae</c>) loads this address at <c>0x43f904</c> and adds the word at 2 * good to the figure word
+    /// (<c>docs/rules/goods.md</c>). The high byte of a word is the row of the figure bases, so the log's <c>0x1400</c>
+    /// puts the figure byte in the row <c>0x14</c>.
     /// </summary>
-    public const int CarriedFigureAddress = 0x43f4b8;
+    public const int CarriedFigureAddress = 0x43f4b7;
 
     /// <summary>The number of goods the carried figure table covers.</summary>
     public const int CarriedFigureCount = 27;
@@ -201,7 +202,7 @@ public sealed class ProgramTables
     /// </summary>
     public byte[] WalkRows { get; }
 
-    /// <summary>For each good a word that a carrier carrying it adds to its figure byte (<c>0x43f8ae</c>).</summary>
+    /// <summary>For each good a word that a carrier carrying it adds to its figure byte: the row in the high byte (<c>0x43f8ae</c>).</summary>
     public short[] CarriedFigures { get; }
 
     /// <summary>For each high byte of the figure word 2 words: the figure base and the second figure base (negative: none).</summary>

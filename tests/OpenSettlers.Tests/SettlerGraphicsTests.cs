@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Assets;
+using OpenSettlers.Formats;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
 
@@ -47,6 +49,72 @@ public sealed class SettlerGraphicsTests
         CollectionAssert.AreEqual(new[] { 1905, 2555, 3204 }, walk.ToArray());
         CollectionAssert.AreEqual(new[] { 1905, 2555, 3210 }, back.ToArray());
         CollectionAssert.AreEqual(new[] { 2125, 2775 }, cut.ToArray());
+    }
+
+    private static Settler LoadedCarrier(int frame, int timer = 0) =>
+        new(Settler.CarrierJob, 0, 4, 3, 0, 3, 0)
+        {
+            Frame = frame,
+            Timer = (ushort)timer,
+            Mode = Game.GoodLog,
+        };
+
+    // The carried table at 0x43f4b7 holds 0x1400 for the log: the carrier's figure word is its figure byte in the row 0x14,
+    // so each of the six directions (the step shapes 4 + 9 * direction on level ground) is drawn with the figure of the byte
+    // the sequence gives in that row: 1850 + base + offset, the overlay 2500 + base + offset.
+    [TestMethod]
+    public void ACarrierCarryingALogIsDrawnInEachDirectionWithTheEntriesTheCarriedRowGives()
+    {
+        var install = TestProgram.OpenInstall();
+        var tables = TestProgram.Tables();
+        var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
+        var sequences = archive.Data(archive[2]).ToArray();
+        var figures = Load().Figures;
+        var map = Map();
+
+        Assert.AreEqual(0x1400, tables.CarriedFigures[Game.GoodLog]);
+        for (var direction = 0; direction < 6; direction++)
+        {
+            var frame = 4 + 9 * direction;
+            var start =
+                4
+                + (
+                    (sequences[4 + 4 * frame] << 24)
+                    | (sequences[5 + 4 * frame] << 16)
+                    | (sequences[6 + 4 * frame] << 8)
+                    | sequences[7 + 4 * frame]
+                );
+            var figure = sequences[start];
+            var first = tables.FigureBases[2 * 0x14] + tables.FigureOffsets[2 * figure];
+
+            var entries = figures.Draws(map, [LoadedCarrier(frame)], 0).Select(d => d.Entry).Take(2).ToArray();
+
+            CollectionAssert.AreEqual(new[] { 1850 + first, 2500 + first }, entries, $"direction {direction}");
+        }
+    }
+
+    // Draws and Sprites apply the one rule: every entry a carrier holding a log is drawn with was loaded.
+    [TestMethod]
+    public void EveryEntryACarrierCarryingALogIsDrawnWithIsAmongThoseLoaded()
+    {
+        var graphics = Load();
+        var map = Map();
+        var missing = new HashSet<(int, int)>();
+        foreach (var frame in Enumerable.Range(4, 55))
+        {
+            foreach (var timer in Enumerable.Range(0, 1024).Where(timer => timer % 8 == 0))
+            {
+                foreach (var draw in graphics.Figures.Draws(map, [LoadedCarrier(frame, timer)], 0))
+                {
+                    if (!graphics.Layers.ContainsKey((draw.Entry, draw.Colour)))
+                    {
+                        missing.Add((draw.Entry, draw.Colour));
+                    }
+                }
+            }
+        }
+
+        Assert.IsEmpty(missing, $"entries drawn and not loaded: {string.Join(", ", missing.Take(20))}");
     }
 
     // The sequences name figure bytes for every job; the woodcutter draws only those of the frames he takes: the step shapes
