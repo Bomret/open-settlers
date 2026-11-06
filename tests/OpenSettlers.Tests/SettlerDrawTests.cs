@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Assets;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
 
@@ -180,12 +181,18 @@ public sealed class SettlerDrawTests
     public void TheEnginesDrawsAreTheOriginalsPassForPass(string name)
     {
         var scenario = Load().Single(candidate => candidate.Name == name);
-        var graphics = SettlerGraphics.Load(
-            TestProgram.OpenInstall(),
-            TestProgram.Tables(),
-            Settler.CarrierJob,
-            Settler.WoodcutterJob
-        );
+        var install = TestProgram.OpenInstall();
+        if (
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(install.ReadAll(Install.Program)))
+            != ReferenceSha256.ToUpperInvariant()
+        )
+        {
+            Assert.Inconclusive(
+                "The recordings come from the History Edition's Siedler1.exe (ADR 0004); this install holds another build."
+            );
+        }
+
+        var graphics = SettlerGraphics.Load(install, TestProgram.Tables(), Settler.CarrierJob, Settler.WoodcutterJob);
         // draw:WINDOWS:CX,CY:VERB:N:SEED:...
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[4], CultureInfo.InvariantCulture), out var size, out _);

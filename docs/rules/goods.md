@@ -188,11 +188,13 @@ figure word, not to the figure byte alone: the figure word is the figure byte in
 the row of the figure bases (`0x44fff3`, [Settlers](settlers.md#drawing-the-walk-leads)), its low byte 0 for every good. The
 table's bytes from `0x43f4b7` are `00 00 | 00 30 | 00 35 | 00 3b | 00 41 | 00 46 | 00 4b | 00 14 | ...`, little-endian words
 `0x0000, 0x3000, 0x3500, 0x3b00, 0x4100, 0x4600, 0x4b00, 0x1400, ...`: the log (good 7) adds `0x1400`, so its figure byte is
-drawn in the row `0x14` of the figure bases. The carrier in state 0x42 (byte 11 the road direction) and a carrier with no good (byte 11 0) add nothing.
+drawn in the row `0x14` of the figure bases. A carrier in state 0x42 (byte 11 the road direction) is not drawn, and a carrier with no good (byte 11 0) adds nothing.
 `ProgramTables.CarriedFigures` reads the 27 words from `0x43f4b7`; `SettlerFigures` draws a carrier on its road (state 3) with
 a good so and loads the sprites of the same rule (`Sprites` and `Draws` share one function), in every wrap copy of the view;
 state 0xe is not drawn. A play run of `play/carrier-log.play` shows the carrier holding the log above his head and facing the
-way he walks. **Inferred:** that the sequences' figure bytes of the carrier's frame are the ones this row is drawn with.
+way he walks. **Confirmed** by the draw run of the `carrier` recording ([Settlers](settlers.md#the-draw-path-emulated)): the figure bytes of the sequences of the
+carrier's frame are the ones the log's row is drawn with: the original draws a carrier in state 3 with the log (mode 7) as the figure byte of its
+frame's triple in the row `0x14`, with its overlay and a second figure, in every recorded pass, and the engine's draws are the same. The other goods' rows are not recorded.
 
 ## Open leads
 

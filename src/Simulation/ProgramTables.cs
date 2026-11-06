@@ -91,7 +91,7 @@ public sealed class ProgramTables
     /// The address of the carried goods' figure words: 27 words, one for each good (<c>0x43f4b7</c>). The carrier's draw
     /// handler (<c>0x43f8ae</c>) loads this address at <c>0x43f904</c> and adds the word at 2 * good to the figure word
     /// (<c>docs/rules/goods.md</c>). The high byte of a word is the row of the figure bases, so the log's <c>0x1400</c>
-    /// puts the figure byte in the row <c>0x14</c>.
+    /// puts the figure byte in the row <c>0x14</c> (confirmed by the draw run of <c>settler-draws.txt</c>, the carrier carrying a log).
     /// </summary>
     public const int CarriedFigureAddress = 0x43f4b7;
 

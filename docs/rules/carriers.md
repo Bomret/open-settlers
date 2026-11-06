@@ -106,13 +106,16 @@ not marked from, however long the road.
 
 ## Drawing
 
-**Status:** inferred; no run of the draw confirms the details.
+**Status:** confirmed for a carrier on its road (state 3, with no good and with a log) and a carrier waiting next to a flag (state
+0x42) by the draw run of the `carrier` recording ([Settlers](settlers.md#the-draw-path-emulated),
+`tests/OpenSettlers.Tests/settler-draws.txt`); inferred for the states 2, 5, 0x44, and 0x45 and the goods other than the log.
 
-The carrier is drawn as the walking worker is ([Settlers](settlers.md#drawing-the-walk-leads)) in states 2, 3, and 5, with the
+The carrier is drawn as the walking worker is ([Settlers](settlers.md#drawing-the-walk-leads)) in states 3 (confirmed) and 2 and 5 (inferred), with the
 figure tables' row of job 0 (the figure base 0); a carrier that carries a good adds the good's word of the table at `0x43f4b7`,
-whose high byte is the row (the log's `0x1400`: [Goods at a flag](goods.md#drawing-a-carrier-with-a-good)). A carrier waiting in state 0x42 is drawn with its frame `0x6e` to `0x73` and
-the timer it holds, which the clock does not run down. **Inferred:** that the idle frames name the waiting carrier's
-sequences.
+whose high byte is the row (the log's `0x1400`: [Goods at a flag](goods.md#drawing-a-carrier-with-a-good)). **Confirmed:** a carrier waiting
+in state 0x42 is not drawn: the carrier's figure handler (`0x43f8ae`) returns at once for that state, so the record builder
+adds no record, whatever the frame and the timer hold. A carrier whose road was taken down or joined (states 0x44 and 0x45) has a record
+built as any other state's is, from its frame and timer (**inferred**: no recording holds one).
 
 ## Open leads
 
