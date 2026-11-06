@@ -61,10 +61,7 @@ public sealed class ProgramTablesTests
         Load(ProgramTables.FigureBaseLoadAddress, ProgramTables.FigureBaseAddress);
         Load(ProgramTables.FigureOffsetLoadAddress, ProgramTables.FigureOffsetAddress);
         var stub = ProgramTables.JobStubAddress + ProgramTables.JobStubSize * Settler.WoodcutterJob;
-        Write(
-            stub,
-            [0xe9, .. BitConverter.GetBytes(ProgramTables.WoodcutterHandlerAddress - (stub + 5))]
-        );
+        Write(stub, [0xe9, .. BitConverter.GetBytes(ProgramTables.WoodcutterHandlerAddress - (stub + 5))]);
         void Add(int at, int word) => Write(at, [0x66, 0x81, 0x47, 0x08, (byte)word, (byte)(word >> 8)]);
 
         Add(ProgramTables.WoodcutterWalkAddress, 0x0b00);

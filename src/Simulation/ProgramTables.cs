@@ -285,10 +285,25 @@ public sealed class ProgramTables
     // would be wrong.
     private static FigureAdds WoodcutterAdds(byte[] exe)
     {
-        Expect(exe, FigureBaseLoadAddress, [0x8d, 0x35, .. BitConverter.GetBytes(FigureBaseAddress)], "loads the figure bases");
-        Expect(exe, FigureOffsetLoadAddress, [0x8d, 0x35, .. BitConverter.GetBytes(FigureOffsetAddress)], "loads the figure offsets");
+        Expect(
+            exe,
+            FigureBaseLoadAddress,
+            [0x8d, 0x35, .. BitConverter.GetBytes(FigureBaseAddress)],
+            "loads the figure bases"
+        );
+        Expect(
+            exe,
+            FigureOffsetLoadAddress,
+            [0x8d, 0x35, .. BitConverter.GetBytes(FigureOffsetAddress)],
+            "loads the figure offsets"
+        );
         var stub = JobStubAddress + JobStubSize * Settler.WoodcutterJob;
-        Expect(exe, stub, [0xe9, .. BitConverter.GetBytes(WoodcutterHandlerAddress - (stub + 5))], "jumps to the woodcutter's handler");
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(WoodcutterHandlerAddress - (stub + 5))],
+            "jumps to the woodcutter's handler"
+        );
 
         return new FigureAdds(
             Immediate(exe, WoodcutterWalkAddress),

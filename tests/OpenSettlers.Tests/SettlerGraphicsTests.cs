@@ -62,7 +62,9 @@ public sealed class SettlerGraphicsTests
         {
             foreach (var timer in Enumerable.Range(0, 1024).Where(timer => timer % 8 == 0))
             {
-                foreach (var woodcutter in new[] { Woodcutter(frame, timer, 2), Woodcutter(frame, timer, 0x10, 0x80, 1) })
+                foreach (
+                    var woodcutter in new[] { Woodcutter(frame, timer, 2), Woodcutter(frame, timer, 0x10, 0x80, 1) }
+                )
                 {
                     foreach (var draw in graphics.Figures.Draws(map, [woodcutter], 0))
                     {

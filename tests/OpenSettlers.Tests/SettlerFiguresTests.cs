@@ -399,6 +399,8 @@ public sealed class SettlerFiguresTests
         var bases = new short[256];
         bases[2 * 0x0b + 1] = -1;
 
-        Assert.IsEmpty(new SettlerFigures(bases, new short[4], Sequences(), null, Adds).Draws(Map(), [Walker(7, 0)], 0));
+        Assert.IsEmpty(
+            new SettlerFigures(bases, new short[4], Sequences(), null, Adds).Draws(Map(), [Walker(7, 0)], 0)
+        );
     }
 }
