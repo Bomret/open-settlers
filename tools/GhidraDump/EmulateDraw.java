@@ -3,8 +3,8 @@
 // emulate.py (see README.md), which picks this script for draw: and passes the install folder in EMU_GAME.
 //
 //   draw:WINDOWS:CX,CY:VERB:ARGS...
-//                            VERB:ARGS is a command of carrier, wood, or goods (EmulateMapStart.java): the same game and the
-//                            same passes. After each pass from the first of WINDOWS (FROM-TO,FROM-TO,..., pass numbers from
+//                            VERB:ARGS is a command of carrier, wood, goods, home, or remove (EmulateMapStart.java): the same game
+//                            and the same passes. After each pass from the first of WINDOWS (FROM-TO,FROM-TO,..., pass numbers from
 //                            0, both ends included) the verb runs the original's settler draw path as the main loop 0x425a10
 //                            does after the simulation: the view pass 0x42f4f1 (each settler on a shown tile takes one
 //                            more turn, 0x42fc81, and its draw record is built by 0x42f512 and 0x43f537 through the job's
@@ -116,7 +116,17 @@ public class EmulateDraw extends EmulateMapStart {
                 defaultPriorities = true;
                 worker(args, true);
             }
-            default -> throw new IllegalArgumentException("draw: runs carrier, wood, or goods, not " + verb);
+            case "remove" -> {
+                reserveFlagZero = true;
+                defaultPriorities = true;
+                reserveBuildingZero = true;
+                remove(args);
+            }
+            case "home" -> {
+                reserveBuildingZero = true;
+                home(args);
+            }
+            default -> throw new IllegalArgumentException("draw: runs carrier, wood, goods, remove, or home, not " + verb);
         }
         for (String line : noise) {
             if (line.contains("REFUSED")) {
