@@ -267,7 +267,7 @@ public sealed partial class Game
             cause = placed;
         }
 
-        RecordSettler(carrier, EventType.CarrierRequested, Cause.Carriers, FlagId(flag).ToString());
+        RecordSettler(carrier, EventType.CarrierRequested, cause, FlagId(flag).ToString());
         RecordFlag(slot, EventType.CarrierRequested, cause, id.ToString());
         RecordFlag(far, EventType.CarrierRequested, cause, id.ToString());
 

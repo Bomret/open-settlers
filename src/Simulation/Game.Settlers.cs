@@ -206,7 +206,7 @@ public sealed partial class Game
             CarryCause(slot, command);
         }
 
-        RecordSettler(slot, EventType.WorkerRequested, RuleCause, buildingId.ToString());
+        RecordSettler(slot, EventType.WorkerRequested, BuildingCause(buildingSlot), buildingId.ToString());
         RecordBuilding(
             buildingSlot,
             EventType.WorkerRequested,

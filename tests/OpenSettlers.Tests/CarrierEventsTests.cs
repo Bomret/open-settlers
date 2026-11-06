@@ -128,7 +128,9 @@ public sealed class CarrierEventsTests
         var game = RoadWithACarrier();
         var carrier = game.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
 
-        var events = game.EventsOf(carrier).SkipWhile(e => e.Type != EventType.CarrierRequested).ToList();
+        // The window runs from the request to the first wait: the turn's `walked` and later goods work are other behaviours.
+        var history = game.EventsOf(carrier).SkipWhile(e => e.Type != EventType.CarrierRequested).ToList();
+        var events = history.Take(history.FindIndex(e => e.Type == EventType.Wait) + 1).ToList();
 
         Assert.IsTrue(events.Any(e => e.Type == EventType.EnterRoad), "the carrier enters the road");
         Assert.IsTrue(events.All(e => e.Cause == Cause.Placed(game.FlagId(0))), "the cause is carried up to the wait");

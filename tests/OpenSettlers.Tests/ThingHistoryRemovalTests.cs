@@ -146,7 +146,8 @@ public sealed class ThingHistoryRemovalTests
         }
 
         var razed = Cause.Razed(hut);
-        var events = game.EventsOf(hut).Skip(1).ToList();
+        // The window starts at the raze: the events before it (placement, worker request) are other behaviours.
+        var events = game.EventsOf(hut).SkipWhile(e => e.Type != EventType.TookBuildingDown).ToList();
         Assert.AreEqual(EventType.TookBuildingDown, events[0].Type);
         Assert.IsTrue(events.All(e => e.Cause == razed), Text(game));
         Assert.IsTrue(events.Any(e => e.Type == EventType.Burn && e.Tick > razedAt));
