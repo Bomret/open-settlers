@@ -65,4 +65,68 @@ public sealed class LayoutTests
         Assert.AreEqual(0x01, map.Layer(MapLayer.Terrain)[At(3, 10)]);
         CollectionAssert.AreEqual(new[] { (7, 2, 8), (8, 2, 9) }, map.Objects.Select(o => (o.X, o.Y, (int)o.Code)).ToArray());
     }
+
+    [TestMethod]
+    public void ALowerTerrainDefaultsToTheUpperTerrain()
+    {
+        var map = Built(Text(terrain: Grid('g', (0, Row('g', 0, 'm')))));
+
+        Assert.AreEqual(0xbb, map.Layer(MapLayer.Terrain)[At(0, 0)]);
+    }
+
+    // The letters of docs/rules/map-form.md, in the order of the terrain codes 0 to 15.
+    const string Letters = "wxyzbghijkpmnoqs";
+
+    [TestMethod]
+    public void ADrawnTileCarriesTheWaterMarkTheGeneratorGivesATileOfTheSameTerrain()
+    {
+        // The generated map's heights and terrain, drawn again: the object layer's bit 7 (MapGen_MarkWaterAdjacent)
+        // is the one byte the layout derives from the terrain that the generated map also holds.
+        var generated = Enumerable
+            .Range(1, 200)
+            .Select(word => MapGenerator.Generate(TestProgram.Made(), new MapSeed((ushort)word, 0xA0D2, 0xB4FA), MapSize.Offered[0]))
+            .First(map => map.Layer(MapLayer.Terrain).ToArray().Any(t => t >> 4 < 4));
+        var heights = generated.Layer(MapLayer.Height).ToArray();
+        var terrain = generated.Layer(MapLayer.Terrain).ToArray();
+        string RowOf(int y, System.Func<int, char> letter) => string.Concat(Enumerable.Range(0, 32).Select(x => letter(y * 32 + x)));
+        string DrawnGrid(System.Func<int, char> letter) =>
+            "[" + string.Join(", ", Enumerable.Range(0, 32).Select(y => $"\"{RowOf(y, letter)}\"")) + "]";
+
+        var map = Built(
+            Text(
+                height: DrawnGrid(tile => "0123456789abcdefghijklmnopqrstuv"[heights[tile] & 0x1f]),
+                terrain: DrawnGrid(tile => Letters[terrain[tile] >> 4]),
+                lower: DrawnGrid(tile => Letters[terrain[tile] & 0xf])
+            )
+        );
+
+        var water = Enumerable.Range(0, 1024).Count(tile => (generated.Layer(MapLayer.Object)[tile] & 0x80) != 0);
+        Assert.IsTrue(water > 0 && water < 1024, "the generated map holds water and land");
+        CollectionAssert.AreEqual(
+            Enumerable.Range(0, 1024).Select(tile => generated.Layer(MapLayer.Object)[tile] & 0x80).ToArray(),
+            Enumerable.Range(0, 1024).Select(tile => map.Layer(MapLayer.Object)[tile] & 0x80).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void AWaterTileKeepsTheWaterMarkBesideItsObjectCode()
+    {
+        var map = Built(Text(terrain: Grid('g', (2, Row('g', 2, 'z'))), objects: """[{"x": 2, "y": 2, "code": 8}]"""));
+
+        Assert.AreEqual(0x88, map.Layer(MapLayer.Object)[At(2, 2)]);
+    }
+
+    [TestMethod]
+    public void TheMiddleOfADrawnLakeCarriesTheLakeFlagAndItsShoreDoesNot()
+    {
+        var water = Enumerable.Range(0, 32).Select(y => y is >= 10 and <= 14 ? new string('g', 10) + "wwwww" + new string('g', 17) : new string('g', 32));
+        var lakeHeights = Enumerable.Range(0, 32).Select(y => y is >= 10 and <= 14 ? new string('1', 10) + "00000" + new string('1', 17) : new string('1', 32));
+        string Json(System.Collections.Generic.IEnumerable<string> rows) => "[" + string.Join(", ", rows.Select(r => $"\"{r}\"")) + "]";
+
+        var map = Built(Text(height: Json(lakeHeights), terrain: Json(water)));
+
+        Assert.AreEqual(0x40, map.Layer(MapLayer.Flags)[At(12, 12)]);
+        Assert.AreEqual(0, map.Layer(MapLayer.Flags)[At(10, 12)]);
+        Assert.AreEqual(0, map.Layer(MapLayer.Flags)[At(12, 10)]);
+    }
 }

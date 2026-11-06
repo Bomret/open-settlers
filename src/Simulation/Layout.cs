@@ -105,12 +105,57 @@ public sealed class Layout
             }
         }
 
+        var objects = map.Bytes(MapLayer.Object);
         foreach (var drawn in _objects)
         {
-            map.Bytes(MapLayer.Object)[map.Index(drawn.X, drawn.Y)] = drawn.Code;
+            objects[map.Index(drawn.X, drawn.Y)] = drawn.Code;
         }
 
+        MarkWaterAdjacent(terrain, objects);
+        MarkLakeMiddles(map);
+
         return map;
+    }
+
+    // MapGen_MarkWaterAdjacent (0x4232ef), the same rule as the generator's: bit 7 of the object byte on each tile
+    // with a water triangle, a terrain nibble below 4.
+    private static void MarkWaterAdjacent(byte[] terrain, byte[] objects)
+    {
+        for (var tile = 0; tile < terrain.Length; tile++)
+        {
+            if ((terrain[tile] & 0xc0) == 0 || (terrain[tile] & 0x0c) == 0)
+            {
+                objects[tile] |= 0x80;
+            }
+        }
+    }
+
+    // MapGen_FillLakes (0x422a0e): the generator marks a lake's middle tiles with flag bit 6 and its edge
+    // tiles without. Its heights before the shift are not drawn, so the middle is inferred: a tile at height 0 whose
+    // two triangles are water and whose six neighbors, east, south-east, south, west, north-west, and north, are at
+    // height 0 too. The edge ring of a drawn lake has a neighbor that is not at height 0 and stays unmarked.
+    private static void MarkLakeMiddles(Map map)
+    {
+        var height = map.Bytes(MapLayer.Height);
+        var terrain = map.Bytes(MapLayer.Terrain);
+        var flags = map.Bytes(MapLayer.Flags);
+        (int Dx, int Dy)[] around = [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
+        for (var y = 0; y < map.Size.Height; y++)
+        {
+            for (var x = 0; x < map.Size.Width; x++)
+            {
+                var tile = map.Index(x, y);
+                if (
+                    (height[tile] & Map.HeightMask) == 0
+                    && terrain[tile] >> 4 < 4
+                    && (terrain[tile] & 0xf) < 4
+                    && around.All(step => (height[map.Index(x + step.Dx, y + step.Dy)] & Map.HeightMask) == 0)
+                )
+                {
+                    flags[tile] |= 0x40;
+                }
+            }
+        }
     }
 
     private static string[] Rows(JsonElement grid) => [.. grid.EnumerateArray().Select(row => row.GetString()!)];
