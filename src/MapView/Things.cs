@@ -1,0 +1,205 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.MapView;
+
+/// <summary>
+/// A thing (<c>CONTEXT.md</c>) as a <c>list</c> step shows it: its kind, its node, the raw values the engine holds for
+/// it in the engine's form, and its name where the name table has one.
+/// </summary>
+/// <param name="Kind">The kind, such as <c>object</c>; a list orders by it first.</param>
+/// <param name="X">The node's column.</param>
+/// <param name="Y">The node's row.</param>
+/// <param name="Values">The raw values as a field name and its text, in the order a line shows them.</param>
+/// <param name="Name">The name from the name table; null where it has none.</param>
+public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Field, string Value)> Values, string? Name)
+{
+    /// <summary>The kind of a map object.</summary>
+    public const string ObjectKind = "object";
+
+    /// <summary>The map object as a thing: its code in hex, and its name where <paramref name="names"/> has one.</summary>
+    public static Thing Of(MapObject mapObject, NameTable? names) =>
+        new(
+            ObjectKind,
+            mapObject.X,
+            mapObject.Y,
+            [("code", $"0x{mapObject.Code:x2}")],
+            names?.ObjectName(mapObject.Code)
+        );
+
+    /// <summary>The kind of a settler.</summary>
+    public const string SettlerKind = "settler";
+
+    /// <summary>The kind of a building.</summary>
+    public const string BuildingKind = "building";
+
+    /// <summary>The kind of a flag.</summary>
+    public const string FlagKind = "flag";
+
+    /// <summary>The kind of a road node.</summary>
+    public const string RoadKind = "road";
+
+    static string Hex(int value) => $"0x{value:x2}";
+
+    /// <summary>The settler as a thing: every value the engine holds for it, and its job and state names where there are some.</summary>
+    public static Thing Of(Settler settler) =>
+        new(
+            SettlerKind,
+            settler.X,
+            settler.Y,
+            [
+                ("job", settler.Job.ToString(CultureInfo.InvariantCulture)),
+                ("state", Hex(settler.State)),
+                ("player", settler.Player.ToString(CultureInfo.InvariantCulture)),
+                ("mode", Hex(settler.Mode)),
+                ("target", settler.Target.ToString(CultureInfo.InvariantCulture)),
+                ("next", Hex(settler.Next)),
+                ("heading", settler.Heading.ToString(CultureInfo.InvariantCulture)),
+                ("frame", settler.Frame.ToString(CultureInfo.InvariantCulture)),
+                ("timer", settler.Timer.ToString(CultureInfo.InvariantCulture)),
+                ("stamp", settler.Stamp.ToString(CultureInfo.InvariantCulture)),
+            ],
+            SettlerName(settler)
+        );
+
+    static string? SettlerName(Settler settler)
+    {
+        var name = string.Join(
+            " ",
+            new[] { NameTable.JobName(settler.Job), NameTable.StateName(settler.State) }.OfType<string>()
+        );
+
+        return name.Length > 0 ? name : null;
+    }
+
+    /// <summary>The building as a thing: its raw type, never the walk's type index, and its raw status.</summary>
+    public static Thing Of(Building building) =>
+        new(
+            BuildingKind,
+            building.X,
+            building.Y,
+            [
+                ("type", Hex(building.Type)),
+                ("constructing", building.Constructing ? "true" : "false"),
+                ("status", Hex(building.Status)),
+                ("flag", building.Flag.ToString(CultureInfo.InvariantCulture)),
+                ("worker", building.Worker.ToString(CultureInfo.InvariantCulture)),
+            ],
+            NameTable.BuildingName(building.Type)
+        );
+
+    /// <summary>
+    /// The things a <c>list</c> step shows: every thing of <paramref name="game"/> in the game view once a game runs,
+    /// otherwise the map objects of <paramref name="map"/>; empty for no map.
+    /// </summary>
+    public static IReadOnlyList<Thing> Listed(bool gameView, Game? game, Map? map, NameTable? names) =>
+        gameView && game is not null ? Of(game, names) : [.. (map?.Objects ?? []).Select(o => Of(o, names))];
+
+    /// <summary>
+    /// Every thing of the game: the map objects off the flags' and buildings' nodes, the settlers, the buildings and
+    /// flags (a free slot shows none), and each road node once with the directions its roads leave in.
+    /// </summary>
+    public static IReadOnlyList<Thing> Of(Game game, NameTable? names)
+    {
+        var buildings = game.Buildings.Where(building => !building.IsFree).ToList();
+        var flags = game.Flags.Select((flag, slot) => (flag, slot)).Where(entry => !entry.flag.IsFree).ToList();
+        var taken = buildings
+            .Select(b => (b.X, b.Y))
+            .Concat(flags.Select(entry => (entry.flag.X, entry.flag.Y)))
+            .ToHashSet();
+
+        return
+        [
+            .. game.Map.Objects.Where(o => !taken.Contains((o.X, o.Y))).Select(o => Of(o, names)),
+            .. game.Settlers.Select(Of),
+            .. buildings.Select(Of),
+            .. flags.Select(entry => new Thing(
+                FlagKind,
+                entry.flag.X,
+                entry.flag.Y,
+                [("slot", entry.slot.ToString(CultureInfo.InvariantCulture))],
+                null
+            )),
+            .. RoadNodes(game)
+                .Select(node => new Thing(
+                    RoadKind,
+                    node.Key.X,
+                    node.Key.Y,
+                    [("dirs", string.Join(",", node.Value))],
+                    null
+                )),
+        ];
+    }
+
+    // The directions each road node's roads leave in: a road's steps run from its starting flag, each node holding the
+    // way on and the way back; the ending flag holds the way back only.
+    static Dictionary<(int X, int Y), SortedSet<int>> RoadNodes(Game game)
+    {
+        var nodes = new Dictionary<(int X, int Y), SortedSet<int>>();
+        void Add((int X, int Y) node, int direction)
+        {
+            if (!nodes.TryGetValue(node, out var directions))
+            {
+                nodes[node] = directions = [];
+            }
+
+            directions.Add(direction);
+        }
+
+        var size = game.Map.Size;
+        foreach (var road in game.Roads)
+        {
+            var flag = game.Flags[road.FromSlot];
+            var node = (flag.X, flag.Y);
+            foreach (var direction in road.Directions)
+            {
+                Add(node, direction);
+                var (dx, dy) = RoadBuilding.Steps[direction];
+                node = ((node.X + dx + size.Width) % size.Width, (node.Y + dy + size.Height) % size.Height);
+                Add(node, (direction + 3) % 6);
+            }
+        }
+
+        return nodes;
+    }
+
+    /// <summary>The line of the thing: <c>&lt;kind&gt; &lt;column&gt;,&lt;row&gt; &lt;field&gt;=&lt;raw&gt; ... &lt;name&gt;</c>, no newline.</summary>
+    public string Line()
+    {
+        var text = new StringBuilder();
+        text.Append(Kind)
+            .Append(' ')
+            .Append(X.ToString(CultureInfo.InvariantCulture))
+            .Append(',')
+            .Append(Y.ToString(CultureInfo.InvariantCulture));
+        foreach (var (field, value) in Values)
+        {
+            text.Append(' ').Append(field).Append('=').Append(value);
+        }
+
+        if (Name is not null)
+        {
+            text.Append(' ').Append(Name);
+        }
+
+        return text.ToString();
+    }
+
+    /// <summary>
+    /// The text of a <c>.things.txt</c> file: one line for each thing, each ending in a newline, by kind, then row, then
+    /// column, and by line text for things on one node; empty for no things.
+    /// </summary>
+    public static string File(IEnumerable<Thing> things) =>
+        string.Concat(
+            things
+                .OrderBy(t => t.Kind, StringComparer.Ordinal)
+                .ThenBy(t => t.Y)
+                .ThenBy(t => t.X)
+                .ThenBy(t => t.Line(), StringComparer.Ordinal)
+                .Select(t => t.Line() + "\n")
+        );
+}

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
 
@@ -21,6 +22,7 @@ namespace OpenSettlers.MapView;
 /// <param name="FlagGoods">
 /// The count of goods on each flag that holds some, by the flag's node; a flag left out holds none. Null in the map view.
 /// </param>
+/// <param name="Things">The things a <c>list</c> step writes; null lists none.</param>
 public sealed record PlayState(
     int CameraX,
     int CameraY,
@@ -29,7 +31,8 @@ public sealed record PlayState(
     int Size,
     long? Ticks = null,
     int? Logs = null,
-    IReadOnlyDictionary<(int X, int Y), int>? FlagGoods = null
+    IReadOnlyDictionary<(int X, int Y), int>? FlagGoods = null,
+    IReadOnlyList<Thing>? Things = null
 )
 {
     /// <summary>The decimals zoom is written with and compared at.</summary>
@@ -76,6 +79,48 @@ public sealed record PlayState(
         return holds ? null : $"expect {expect.Field} {expect.Op} {expect.Value} failed: actual {Text(expect.Field)}";
     }
 
+    /// <summary>
+    /// Checks an <c>expect-at</c> step; null when a thing at the node matches, else the problem. A node outside the map
+    /// and a kind the view cannot list are problems; a node that holds no match states what it holds.
+    /// </summary>
+    public string? Check(ExpectAtStep expect)
+    {
+        var step = $"expect-at {expect.Column} {expect.Row} {expect.What.Text}";
+        if (Unlisted(expect.What) is { } unlisted)
+            return $"{step}: {unlisted}";
+        if (!MapSize.TryFromValue(Size, out var map, out _))
+            return $"{step}: the map size {Size} is not one the original offers";
+        if (expect.Column >= map.Width || expect.Row >= map.Height)
+            return $"{step}: the node is outside the {map.Width} by {map.Height} map";
+
+        var here = (Things ?? []).Where(t => t.X == expect.Column && t.Y == expect.Row).ToList();
+
+        return here.Any(expect.What.Matches)
+            ? null
+            : $"{step} failed: the node holds {(here.Count == 0 ? "nothing" : string.Join("; ", here.Select(t => t.Line())))}";
+    }
+
+    /// <summary>
+    /// Checks an <c>expect-count</c> step; null when the count of matching things holds, else the problem with the
+    /// actual count. A kind the view cannot list is a problem.
+    /// </summary>
+    public string? Check(ExpectCountStep expect)
+    {
+        var step = $"expect-count {expect.What.Text} {expect.Op} {expect.Count}";
+        if (Unlisted(expect.What) is { } unlisted)
+            return $"{step}: {unlisted}";
+
+        var actual = (Things ?? []).Count(expect.What.Matches);
+
+        return Compare(actual, expect.Count, expect.Op) ? null : $"{step} failed: actual {actual}";
+    }
+
+    // The map view lists map objects only, so a count of any other kind would pass for the wrong reason.
+    string? Unlisted(ThingSelector what) =>
+        Ticks is null && what.UnlistedInMapView is { } kind
+            ? $"the map view cannot list {kind}, use --game-view"
+            : null;
+
     double Number(string field) =>
         field switch
         {
@@ -103,7 +148,11 @@ public sealed record PlayState(
         if (expect.Field == PlayFields.Zoom)
             wanted = Math.Round(wanted, ZoomDecimals);
 
-        return expect.Op switch
+        return Compare(actual, wanted, expect.Op);
+    }
+
+    static bool Compare(double actual, double wanted, string op) =>
+        op switch
         {
             "<" => actual < wanted,
             "<=" => actual <= wanted,
@@ -111,7 +160,6 @@ public sealed record PlayState(
             ">" => actual > wanted,
             _ => actual == wanted,
         };
-    }
 }
 
 /// <summary>The fields of a <see cref="PlayState"/>, as <c>dump</c> and <c>expect</c> name them.</summary>

@@ -25,7 +25,7 @@ public sealed partial class Game
 
     // The job of the settler that stands by while the castle is built, and the job of the woodcutter (the job the handler
     // 0x42d945 of the building type 2 asks for, whose work is to cut trees: docs/rules/woodcutting.md).
-    private const int BuilderJob = 4;
+    private const int BuilderJob = NameTable.BuilderJob;
     private const int WoodcutterJob = Settler.WoodcutterJob;
 
     // The first job of the knights. Knights and the castle's own handler are not ported.

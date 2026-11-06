@@ -139,6 +139,13 @@ public sealed record DumpStep : PlayStep
     public required string Name { get; init; }
 }
 
+/// <summary><c>list &lt;name&gt;</c>: writes the things the view shows to <c>&lt;name&gt;.things.txt</c> of the output folder.</summary>
+public sealed record ListStep : PlayStep
+{
+    /// <summary>The file stem; it holds no path separator.</summary>
+    public required string Name { get; init; }
+}
+
 /// <summary><c>expect &lt;field&gt; &lt;op&gt; &lt;value&gt;</c>: checks one field of the <see cref="PlayState"/>.</summary>
 public sealed record ExpectStep : PlayStep
 {
@@ -150,6 +157,35 @@ public sealed record ExpectStep : PlayStep
 
     /// <summary>The value as written: a number, or the seed's words joined by single spaces.</summary>
     public required string Value { get; init; }
+}
+
+/// <summary>
+/// <c>expect-at &lt;column&gt; &lt;row&gt; &lt;what&gt;</c>: checks that a thing matching <see cref="What"/> is at the node. The
+/// run checks the node against the map's size.
+/// </summary>
+public sealed record ExpectAtStep : PlayStep
+{
+    /// <summary>The node's column; zero or more.</summary>
+    public required int Column { get; init; }
+
+    /// <summary>The node's row; zero or more.</summary>
+    public required int Row { get; init; }
+
+    /// <summary>What a thing at the node must be.</summary>
+    public required ThingSelector What { get; init; }
+}
+
+/// <summary><c>expect-count &lt;what&gt; &lt;op&gt; &lt;n&gt;</c>: compares the number of things matching <see cref="What"/> with a count.</summary>
+public sealed record ExpectCountStep : PlayStep
+{
+    /// <summary>What a thing is counted for.</summary>
+    public required ThingSelector What { get; init; }
+
+    /// <summary>One of <c>&lt;</c>, <c>&lt;=</c>, <c>=</c>, <c>&gt;=</c>, <c>&gt;</c>.</summary>
+    public required string Op { get; init; }
+
+    /// <summary>The count to compare with; zero or more.</summary>
+    public required int Count { get; init; }
 }
 
 /// <summary>
@@ -322,6 +358,10 @@ public sealed class PlayScript
                 return (new ButtonStep { Line = number, Name = args[0] }, null);
             case "expect":
                 return ParseExpect(args, number);
+            case "expect-at":
+                return ParseExpectAt(args, number);
+            case "expect-count":
+                return ParseExpectCount(args, number);
             case "shot":
                 if (args.Length is not (1 or 3 or 4 or 5))
                     return Wrong(words[0], "1, 3, 4, or 5 arguments", args.Length);
@@ -358,6 +398,13 @@ public sealed class PlayScript
                     return (null, badDump);
 
                 return (new DumpStep { Line = number, Name = args[0] }, null);
+            case "list":
+                if (args.Length != 1)
+                    return Wrong(words[0], "1 argument", args.Length);
+                if (FileNameProblem(args[0]) is { } badList)
+                    return (null, badList);
+
+                return (new ListStep { Line = number, Name = args[0] }, null);
             default:
                 return (null, $"unknown step '{words[0]}'");
         }
@@ -396,6 +443,58 @@ public sealed class PlayScript
                 Field = args[0],
                 Op = args[1],
                 Value = value,
+            },
+            null
+        );
+    }
+
+    // expect-at <column> <row> <what>; the node's place in the map is checked when the run reaches the step.
+    static (PlayStep?, string?) ParseExpectAt(string[] args, int number)
+    {
+        if (args.Length != 3)
+            return Wrong("expect-at", "3 arguments", args.Length);
+        if (!int.TryParse(args[0], NumberStyles.None, CultureInfo.InvariantCulture, out var column))
+            return (null, $"'{args[0]}' is not a whole number of zero or more");
+        if (!int.TryParse(args[1], NumberStyles.None, CultureInfo.InvariantCulture, out var row))
+            return (null, $"'{args[1]}' is not a whole number of zero or more");
+
+        var (what, problem) = ThingSelector.Parse(args[2]);
+        if (what is null)
+            return (null, problem);
+
+        return (
+            new ExpectAtStep
+            {
+                Line = number,
+                Column = column,
+                Row = row,
+                What = what,
+            },
+            null
+        );
+    }
+
+    // expect-count <what> <op> <n>
+    static (PlayStep?, string?) ParseExpectCount(string[] args, int number)
+    {
+        if (args.Length != 3)
+            return Wrong("expect-count", "3 arguments", args.Length);
+
+        var (what, problem) = ThingSelector.Parse(args[0]);
+        if (what is null)
+            return (null, problem);
+        if (!Ops.Contains(args[1]))
+            return (null, $"unknown operator '{args[1]}', use one of {string.Join(" ", Ops)}");
+        if (!int.TryParse(args[2], NumberStyles.None, CultureInfo.InvariantCulture, out var count))
+            return (null, $"'{args[2]}' is not a whole number of zero or more");
+
+        return (
+            new ExpectCountStep
+            {
+                Line = number,
+                What = what,
+                Op = args[1],
+                Count = count,
             },
             null
         );

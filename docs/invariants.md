@@ -31,3 +31,11 @@ Concepts: Simulation
 Statement: The simulation code references no Godot type, so tests run its rules without Godot.
 Breaks: silently
 Check: the test build (`docs/agents/CODING_PATTERNS.md`, "Godot boundary").
+
+### INV-0006
+
+Class: architecture
+Concepts: Name table, Thing
+Statement: Every name shown for a map object code, settler job, settler state, or building type comes from a name-table entry that cites its evidence (ADR 0010). The raw value always shows beside the name, and a code with no entry shows only raw.
+Breaks: silently
+Check: `NameTableTests` checks that every entry carries its evidence and that a code with no entry gets no name; reviewers check the evidence of each new entry.

@@ -161,6 +161,11 @@ public sealed class PlayScriptTests
     [DataRow("dump ..", "no file name")]
     [DataRow("shot ../x", "no file name")]
     [DataRow("dump ../x", "no file name")]
+    [DataRow("list", "takes 1 argument")]
+    [DataRow("list a b", "takes 1 argument")]
+    [DataRow("list ..", "no file name")]
+    [DataRow("list a/b", "no file name")]
+    [DataRow("list a\\b", "no file name")]
     public void ABadInputStepIsAProblemNamingItsLine(string line, string reason)
     {
         var script = Parse("wait 1\n" + line);
@@ -168,6 +173,15 @@ public sealed class PlayScriptTests
         Assert.HasCount(1, script.Problems);
         StringAssert.StartsWith(script.Problems[0], "play/t.play line 2: ");
         StringAssert.Contains(script.Problems[0], reason);
+    }
+
+    [TestMethod]
+    public void AListStepReadsItsName()
+    {
+        var script = Parse("wait 1\nlist start");
+
+        Assert.IsEmpty(script.Problems);
+        Assert.AreEqual(new ListStep { Line = 2, Name = "start" }, script.Steps[1]);
     }
 
     [TestMethod]

@@ -17,7 +17,7 @@ public sealed partial class Game
     private const int PlayerOwner = 4 << 5;
 
     // The types whose item holds a storage (0x462c8d does not count a good against them): the castle and the type 0xa.
-    private const int StorehouseType = 0xa;
+    private const int StorehouseType = NameTable.StorehouseType;
 
     /// <summary>
     /// What the original's check <c>0x44b6e6</c> says a click on the node is, for the classes the removal acts on: 1 a flag the

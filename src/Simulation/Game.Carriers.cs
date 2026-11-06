@@ -9,7 +9,7 @@ namespace OpenSettlers.Simulation;
 public sealed partial class Game
 {
     // A settler of job 21 that has no job yet becomes a carrier when a road asks for it.
-    private const int JoblessJob = 21;
+    private const int JoblessJob = NameTable.JoblessJob;
 
     // The state of a carrier that waits on its road next to the flag at the road's far end.
     private const int WaitingState = 0x42;
