@@ -288,4 +288,57 @@ public sealed class ThingHistoryTests
 
         Assert.ThrowsExactly<ArgumentException>(() => game.CarryCause(5, Cause.Woodcutting));
     }
+
+    private const string Built = """
+        "castle": {"x": 10, "y": 10},
+        "flags": [{"x": 14, "y": 11}],
+        "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
+        "buildings": [{"x": 13, "y": 10}],
+        "settlers": [
+          {"job": "woodcutter", "state": "in-hut", "x": 13, "y": 10},
+          {"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}
+        ],
+        "goods": [{"x": 14, "y": 11, "place": 0, "good": 7}]
+        """;
+
+    private static Game Laid(string extra = Built)
+    {
+        var read = Layout.Read(LayoutTests.Text(extra: "\n" + extra), "test.jsonc");
+        Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
+        var game = LayoutSettlersTests.NewGame(read.Layout!);
+        Assert.IsNull(read.Layout!.Apply(game));
+
+        return game;
+    }
+
+    private static string Text(Game game) =>
+        string.Join(
+            "\n",
+            game.Events.All.Select(e => $"{e.Tick} {e.Type} {e.Thing} [{e.State}] {e.Cause} {e.Other}")
+        );
+
+    [TestMethod]
+    public void EveryLayoutEntryRecordsEventsWithTheCauseLayoutAndNamesThingsByTheirIds()
+    {
+        var game = Laid();
+
+        Assert.IsTrue(game.Events.All.All(e => e.Cause == Cause.Layout), Text(game));
+        var inHut = game.Events.All.Single(e => e.Type == EventType.LayoutInHut && e.Thing.Kind == ThingId.SettlerKind);
+        var hut = game.Events.All.Single(e => e.Type == EventType.LayoutInHut && e.Thing.Kind == ThingId.BuildingKind);
+        Assert.AreEqual(hut.Thing.ToString(), inHut.Other);
+        Assert.AreEqual(inHut.Thing.ToString(), hut.Other);
+        Assert.AreEqual(game.Settlers[inHut.Thing.Slot].State, inHut.State.Get("state"));
+        var onRoad = game.Events.All.Where(e => e.Type == EventType.LayoutWaitingOnRoad).ToList();
+        Assert.AreEqual(3, onRoad.Count, "the carrier and the flags at the two ends of its road");
+        Assert.IsTrue(onRoad.Any(e => e.Thing.Kind == ThingId.SettlerKind && e.Other!.StartsWith("flag#", StringComparison.Ordinal)));
+        var good = game.Events.All.Single(e => e.Type == EventType.LayoutGood);
+        Assert.AreEqual(7, good.State.Get("good0"));
+    }
+
+    [TestMethod]
+    public void TwoRunsOfTheSameLayoutAndOfTheSameCommandsGiveTheSameEvents()
+    {
+        Assert.AreEqual(Text(Laid()), Text(Laid()));
+        Assert.AreEqual(Text(World()), Text(World()));
+    }
 }
