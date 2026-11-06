@@ -115,6 +115,28 @@ public sealed class PlayRunTests
     }
 
     [TestMethod]
+    public void AListWritesTheThingsOfTheStateToItsFileInTheOutputFolder()
+    {
+        _state = _state with { Things = [new Thing("object", 3, 1, [("code", "0x0a")], "tree")] };
+        var run = Run("list here");
+
+        run.Advance(Frame);
+
+        Assert.AreEqual("object 3,1 code=0x0a tree\n", File.ReadAllText(Path.Combine(_out, "here.things.txt")));
+    }
+
+    [TestMethod]
+    public void AListOfNoThingsWritesAnEmptyFile()
+    {
+        var run = Run("list here");
+
+        run.Advance(Frame);
+
+        Assert.IsEmpty(run.Problems);
+        Assert.AreEqual("", File.ReadAllText(Path.Combine(_out, "here.things.txt")));
+    }
+
+    [TestMethod]
     public void AFailedExpectEndsTheRunNamingScriptLineExpectedAndActual()
     {
         var run = Run("wait 0.1\nexpect camera-x > 10\npress A");

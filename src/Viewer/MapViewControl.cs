@@ -130,8 +130,17 @@ public partial class MapViewControl : Control
                 : _game is null ? new System.Collections.Generic.Dictionary<(int X, int Y), int>()
                 : ObjectDraws
                     .FlagGoodsOf(_game)
-                    .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0))
+                    .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0)),
+            MapObjectThings()
         );
+
+    // The map view lists map objects only.
+    System.Collections.Generic.IReadOnlyList<Thing> MapObjectThings()
+    {
+        var names = _tables is null ? null : new NameTable(_tables);
+
+        return [.. (_state.Map?.Objects ?? []).Select(o => Thing.Of(o, names))];
+    }
 
     /// <inheritdoc/>
     public override void _Ready()
