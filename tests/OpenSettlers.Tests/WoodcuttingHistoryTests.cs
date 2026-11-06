@@ -80,7 +80,7 @@ public sealed class WoodcuttingHistoryTests
 
         // The layout's own setup (the settler entering its hut) comes before the first door turn.
         var events = game.EventsOf(id).SkipWhile(e => e.Type != EventType.Door).ToList();
-        Assert.IsFalse(events.Any(e => e.Type == EventType.Moved));
+        Assert.IsFalse(events.Any(e => e.Type == "moved"));
         string[] own =
         [
             EventType.Door,

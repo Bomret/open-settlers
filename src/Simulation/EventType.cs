@@ -86,9 +86,6 @@ public static class EventType
     /// <summary>A settler leaves the castle by its door, or waits for a busy node.</summary>
     public const string Left = "left";
 
-    /// <summary>A settler takes another node.</summary>
-    public const string Moved = "moved";
-
     /// <summary>A settler on the road chooses its way, or turns away from a flag no road leads on from.</summary>
     public const string Walked = "walked";
 
@@ -200,7 +197,6 @@ public static class EventType
         KnightIdled,
         Builder,
         Left,
-        Moved,
         Walked,
         Stepped,
         Entered,

@@ -228,6 +228,9 @@ public sealed class NamedThings
         if (Refusal(text, state) is { } refused)
             return refused;
 
+        if (Live(state, _ids[step.Alias]) is null)
+            return $"{text} failed: {step.Alias} ({_ids[step.Alias]}) is {Went(state, _ids[step.Alias])}";
+
         var events = state.Game!.EventsOf(ParseId(_ids[step.Alias]));
         if (events.Any(e => e.Type == step.Type && (step.Cause is null || e.Cause.Kind == step.Cause)))
             return null;

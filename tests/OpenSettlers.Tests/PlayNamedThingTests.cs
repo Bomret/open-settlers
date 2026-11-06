@@ -224,21 +224,45 @@ public sealed class PlayNamedThingTests
     }
 
     [TestMethod]
-    public void ExpectEventReadsTheHistoryOfAGoneThing()
+    public void ExpectEventOnAGoneThingFailsWithItsTickAndCause()
     {
         var game = Castle();
         var run = new PlayRun(
-            Parse("name f 18 6 flag\nwait 1\nexpect-event f place-flag cause placed\nexpect-gone f"),
+            Parse("name f 18 6 flag\nwait 1\nexpect-event f place-flag"),
             () => StateOf(game),
             _out,
             _ => null
         );
         run.Advance(0);
+        var id = game.FlagId(1);
+        Do(game, CommandKind.RemoveFlag, 18, 6);
+        var last = game.EventsOf(id).Last();
+        run.Advance(1.0);
+
+        StringAssert.Contains(Problem(run), $"gone at tick {last.Tick}");
+        StringAssert.Contains(Problem(run), last.Cause.ToString());
+    }
+
+    [TestMethod]
+    public void EventsOnAGoneThingStillWritesItsHistory()
+    {
+        var game = Castle();
+        var run = new PlayRun(Parse("name f 18 6 flag\nwait 1\nevents f gone"), () => StateOf(game), _out, _ => null);
+        run.Advance(0);
         Do(game, CommandKind.RemoveFlag, 18, 6);
         run.Advance(1.0);
 
         Assert.AreEqual("", string.Join("\n", run.Problems));
-        Assert.IsTrue(run.Finished);
+        StringAssert.Contains(File.ReadAllText(Path.Combine(_out, "gone.events.txt")), "type=place-flag");
+    }
+
+    [TestMethod]
+    public void MovedIsNoEventTypeAndExpectEventNamingItIsAScriptProblem()
+    {
+        var problems = Parse("name f 18 6 flag\nexpect-event f moved").Problems;
+
+        Assert.HasCount(1, problems);
+        Assert.IsTrue(problems[0].StartsWith("play/t.play line 2:"));
     }
 
     [TestMethod]
