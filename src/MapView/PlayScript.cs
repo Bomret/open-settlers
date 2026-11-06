@@ -139,6 +139,13 @@ public sealed record DumpStep : PlayStep
     public required string Name { get; init; }
 }
 
+/// <summary><c>list &lt;name&gt;</c>: writes the things the view shows to <c>&lt;name&gt;.things.txt</c> of the output folder.</summary>
+public sealed record ListStep : PlayStep
+{
+    /// <summary>The file stem; it holds no path separator.</summary>
+    public required string Name { get; init; }
+}
+
 /// <summary><c>expect &lt;field&gt; &lt;op&gt; &lt;value&gt;</c>: checks one field of the <see cref="PlayState"/>.</summary>
 public sealed record ExpectStep : PlayStep
 {
@@ -358,6 +365,13 @@ public sealed class PlayScript
                     return (null, badDump);
 
                 return (new DumpStep { Line = number, Name = args[0] }, null);
+            case "list":
+                if (args.Length != 1)
+                    return Wrong(words[0], "1 argument", args.Length);
+                if (FileNameProblem(args[0]) is { } badList)
+                    return (null, badList);
+
+                return (new ListStep { Line = number, Name = args[0] }, null);
             default:
                 return (null, $"unknown step '{words[0]}'");
         }

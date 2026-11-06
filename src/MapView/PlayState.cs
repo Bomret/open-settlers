@@ -21,6 +21,7 @@ namespace OpenSettlers.MapView;
 /// <param name="FlagGoods">
 /// The count of goods on each flag that holds some, by the flag's node; a flag left out holds none. Null in the map view.
 /// </param>
+/// <param name="Things">The things a <c>list</c> step writes; null lists none.</param>
 public sealed record PlayState(
     int CameraX,
     int CameraY,
@@ -29,7 +30,8 @@ public sealed record PlayState(
     int Size,
     long? Ticks = null,
     int? Logs = null,
-    IReadOnlyDictionary<(int X, int Y), int>? FlagGoods = null
+    IReadOnlyDictionary<(int X, int Y), int>? FlagGoods = null,
+    IReadOnlyList<Thing>? Things = null
 )
 {
     /// <summary>The decimals zoom is written with and compared at.</summary>

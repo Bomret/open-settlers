@@ -6,7 +6,7 @@ namespace OpenSettlers.MapView;
 
 /// <summary>
 /// A play run of a <see cref="PlayScript"/> (<c>CONTEXT.md</c>) on simulated time: the caller feeds each frame's time
-/// to <see cref="Advance"/> and the run executes every step that is due, in file order. <c>wait</c>, <c>dump</c>, and
+/// to <see cref="Advance"/> and the run executes every step that is due, in file order. <c>wait</c>, <c>dump</c>, <c>list</c>, and
 /// <c>expect</c> are the run's own; every other step goes to the <c>input</c> function, which sends it to the view.
 /// A step that fails or throws ends the run with a problem naming the script and the line. The run never logs and
 /// never throws for a step; the caller logs <see cref="Problems"/> and quits with the exit code.
@@ -96,6 +96,14 @@ public sealed class PlayRun(
             case DumpStep dump:
                 Directory.CreateDirectory(outputFolder);
                 File.WriteAllText(Path.Combine(outputFolder, dump.Name + ".txt"), state().Dump());
+
+                return null;
+            case ListStep list:
+                Directory.CreateDirectory(outputFolder);
+                File.WriteAllText(
+                    Path.Combine(outputFolder, list.Name + ".things.txt"),
+                    Thing.File(state().Things ?? [])
+                );
 
                 return null;
             case ExpectStep expect:
