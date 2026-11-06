@@ -139,6 +139,39 @@ public sealed class CarrierEventsTests
     }
 
     [TestMethod]
+    public void TheCarriedPlacedCauseEndsAtTheCarriersFirstWait()
+    {
+        var game = RoadWithACarrier();
+        var carrier = game.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
+
+        var history = game.EventsOf(carrier).ToList();
+        var after = history[history.FindIndex(e => e.Type == EventType.Wait) + 1];
+
+        Assert.AreEqual(Cause.Settlers, after.Cause, after.ToString());
+    }
+
+    [TestMethod]
+    public void TheEventStoreGrowsNoFasterThanLinearlyOverALongGame()
+    {
+        var game = RoadWithACarrier();
+        const int ticks = 2000;
+        var start = game.Events.Count;
+        for (var i = 0; i < ticks; i++)
+        {
+            game.Tick();
+        }
+
+        var first = game.Events.Count - start;
+        for (var i = 0; i < ticks; i++)
+        {
+            game.Tick();
+        }
+
+        var both = game.Events.Count - start;
+        Assert.IsLessThanOrEqualTo(first * 5 / 2, both, $"first {first}, both {both}");
+    }
+
+    [TestMethod]
     public void AWaitingCarrierAfterNoCommandRecordsTheWaitWithTheCauseCarriers()
     {
         var game = NewGame();
