@@ -243,6 +243,8 @@ public sealed partial class Layout
                             or "flags"
                             or "roads"
                             or "buildings"
+                            or "settlers"
+                            or "goods"
                         )
                     )
                     {
