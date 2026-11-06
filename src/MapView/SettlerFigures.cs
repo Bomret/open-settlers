@@ -61,8 +61,8 @@ public sealed class SettlerFigures
     private const int StatesRejoined = 0x45;
 
     // A woodcutter that steps through its door (state 4), walks free along its vector (0x10), or cuts (0x11) is drawn with
-    // the frame and the timer it holds as a walking settler is (docs/rules/woodcutting.md). **Inferred:** the cut's
-    // frames 0x74 to 0x78 name the cutting sequences, which no draw run confirms.
+    // the frame and the timer it holds as a walking settler is (docs/rules/woodcutting.md). The cut's frame 0x74 names
+    // the felling sequence (a screenshot confirms it); **inferred:** that the frames 0x75 to 0x78 name the later ones.
     private const int StatesDoor = 4;
     private const int StatesFreeWalk = 0x10;
     private const int StatesCutting = 0x11;

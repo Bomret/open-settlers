@@ -130,8 +130,7 @@ simulation must not depend on or does not port, so a real game's tree choices di
 
 **Status:** the trees and the stumps are drawn from the map like any object (the codes 0x5d to 0x66 and 0x53 as the still sprites
 `1250 + code - 8`); the woodcutter is drawn as the walking settlers are ([Settlers](settlers.md#drawing-the-walk-leads)) with the
-figure row of job 5 in the states 4, 0x10, and 0x11. **Inferred:** that the frames 0x74 to 0x78 of the cut name the cutting sequences;
-no run of the draw confirms them. The goods on a flag are drawn by `0x44db26` (read from the decompile): for each of the 8 places
+figure rows of job 5 in the states 4, 0x10, and 0x11: the walk, the way back with the log (byte 13 0x80, byte 14 1, state 0x10), and the felling at the cut (figure bytes from 0x80, frames `0x74` to `0x78`) ([Settlers](settlers.md#drawing-the-walk-leads)). The frame `0x74` names the felling sequence (**confirmed** by a screenshot of `play/woodcutter-figures.play`); **inferred:** that the frames `0x75` to `0x78` name the later cutting sequences, which no screenshot shows. The goods on a flag are drawn by `0x44db26` (read from the decompile): for each of the 8 places
 of the flag item (bytes `0xc` to `0x13`) holding a good, `0x44de9a` draws the sprite 320 plus the good's low 5 bits at the flag's draw
 position moved by (6, -4), (10, -2), (-4, -4) for the places 0 to 2 (before the flag's sprite) and (10, 2), (-8, -2), (6, 4), (-8, 2),
 (-4, 4) for the places 3 to 7 (after it), from the flag's draw at its node. A log (good 7) is the sprite entry 327, drawn in
