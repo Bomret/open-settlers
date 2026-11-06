@@ -42,12 +42,13 @@ public sealed partial class Game
     }
 
     // Puts a flag in the next slot; the item of the slot starts as zeros (the allocator clears it).
-    private void AddFlag(Flag flag)
+    private int AddFlag(Flag flag)
     {
         var slot = NextFlagSlot();
         if (slot == _flags.Count)
         {
             _flags.Add(flag);
+            Fill(_flagFills, slot);
             _flagStatus.Add(0);
             _roadBytes.Add(new byte[6]);
             _flagGoods.Add(new byte[8]);
@@ -55,16 +56,19 @@ public sealed partial class Game
             _goodsDestination.Add(new ushort[8]);
             _directionBytes.Add(new byte[6]);
 
-            return;
+            return slot;
         }
 
         _flags[slot] = flag;
+        Fill(_flagFills, slot);
         _flagStatus[slot] = 0;
         _roadBytes[slot] = new byte[6];
         _flagGoods[slot] = new byte[8];
         _goodsBit[slot] = false;
         _goodsDestination[slot] = new ushort[8];
         _directionBytes[slot] = new byte[6];
+
+        return slot;
     }
 
     // Frees a flag's slot (0x45d974): the item keeps its bytes until a new flag takes the slot; the table's count falls past the
