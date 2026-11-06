@@ -24,7 +24,7 @@ left open:
   `goods:`, so a second good that waits for a road never takes the road's byte again, **inferred**. Open lead.
 - A carrier carrying a log is drawn with the figure word plus the word of the table at `0x43f4b7` (`0x1400` for the log, a row of
   the figure bases), read from the code of `0x43f8ae` and the table's bytes; a play run shows it
-  ([Goods at a flag](../rules/goods.md#drawing-a-carrier-with-a-good)). No emulator run of the draw `0x43f537` confirms it.
+  ([Goods at a flag](../rules/goods.md#drawing-a-carrier-with-a-good)). The emulator's draw runs of `0x43f537` confirm it for each good.
 
 ## Tick
 
@@ -106,10 +106,10 @@ left open:
   fisherman's).
 - The settler's drawing follows the figure word and the tables at `0x4501a1` and `0x4503c5` ([Settlers](../rules/settlers.md#drawing-the-walk-leads)),
   confirmed from the code and, for the woodcutter, by screenshots; the sequence offsets, the triple index, the time left, the position, the
-  overlay's fill colour (player 0), the row order, and the carrier's and the woodcutter's draws are confirmed by the emulator verb `draw:`
-  ([Settlers](../rules/settlers.md#the-draw-path-emulated)). Open leads: the states and jobs no recording holds (the dismissed carriers,
-  the goods other than the log, the walk home), the colours of the other players, and the order of the records of one row with more
-  settlers in view.
+  overlay's fill colour (player 0), the row order, and the draws of the carrier (each good, dismissed, walking home), the woodcutter, and the
+  settler of the type 1 hut are confirmed by the emulator verb `draw:`
+  ([Settlers](../rules/settlers.md#the-draw-path-emulated)). Open leads: the states and jobs no recording holds, and the colours of the
+  other players.
 - The castle's own handler (building type 0x18, `0x42e7e0`) and the settlers the castle makes later (`0x428a75`), and the ambient
   sounds of each view (`0x428964`): they may draw from the random generator; the port draws nothing for them. The knights' idle
   turns (jobs 22 to 26) are known and ported ([Woodcutting](../rules/woodcutting.md#the-random-generator)).
@@ -122,8 +122,8 @@ left open:
   settlers and its check of a node marked solid, and the handlers of the object codes from
   `0x67` (`0x428eb8`): likely, not ported ([Woodcutting](../rules/woodcutting.md#open-leads)). The boatman's walk home (state `0x1a`)
   stays unported with the water roads.
-- The drawing of the states `0x19` and `0x1c` (frame `0x52`, drawn from the frame's sequence as any state a handler does not skip) is
-  **inferred**; no recording holds a settler in them. Lead: record the walk home with `draw:` ([Settlers](../rules/settlers.md#the-draw-path-emulated)).
+- The drawing of the walk home is confirmed by the `walk-home`, `dismissed`, and `dismissed-with-log` recordings: the state `0x19` is drawn
+  (frame `0x52`) and the state `0x1c` is not ([Settlers](../rules/settlers.md#the-draw-path-emulated)).
 - The drawing of the goods on a flag (`0x44db26`, `0x44de9a`): the place offsets and the sprite entry 320 plus the good (a log is
   entry 327) are read from the decompile and **inferred**; no emulator or debugger run of the draw confirms them. Lead: run `0x44db26`
   in the emulator with a flag that holds a log and read the position and entry `0x44de9a` hands the blit.
@@ -143,7 +143,7 @@ left open:
   ([Settlers](../rules/settlers.md#walking-home)). A blocked step is settled: the settler tries it again
   ([Settlers](../rules/settlers.md#the-walk)).
 - A carrier waiting in state 0x42 is not drawn, and the figure row of job 0 (base 0) is the walking carrier's: both confirmed by the
-  draw run ([Carriers](../rules/carriers.md#drawing)); the dismissed carriers' draw (states 0x44, 0x45) stays inferred.
+  draw run ([Carriers](../rules/carriers.md#drawing)); a dismissed carrier (states 0x44, 0x45) is not drawn either (the `rejoined` and `dismissed` recordings).
 - A road that already holds two carriers (ported with the removal: the carrier counts its turns at the road's end and may leave the
   road, [Carriers](../rules/carriers.md#the-carriers-walk); the two carriers of a joined road are emulated, the fourth turn is
   **inferred**), the settlers' search level count (`+0x10a` of the player block, which only matters with several storages), and

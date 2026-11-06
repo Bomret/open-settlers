@@ -192,7 +192,13 @@ public sealed class SettlerDrawTests
             );
         }
 
-        var graphics = SettlerGraphics.Load(install, TestProgram.Tables(), Settler.CarrierJob, Settler.WoodcutterJob);
+        var graphics = SettlerGraphics.Load(
+            install,
+            TestProgram.Tables(),
+            Settler.CarrierJob,
+            Settler.WoodcutterJob,
+            ProgramTables.TypeOneHutJob
+        );
         // draw:WINDOWS:CX,CY:VERB:N:SEED:...
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[4], CultureInfo.InvariantCulture), out var size, out _);
@@ -239,6 +245,14 @@ public sealed class SettlerDrawTests
             {
                 var settlers = state.Values.Select(bytes => FromBytes(bytes, width)).ToList();
                 var drawn = graphics.Figures.Draws(map, settlers, pass.Clock, graphics.Shifts);
+
+                // The view draws a sprite from the layers the graphics loaded: a draw with no layer is a failure, not a skip.
+                var unloaded = drawn.Where(draw => !graphics.Layers.ContainsKey((draw.Entry, draw.Colour))).ToList();
+                Assert.IsEmpty(
+                    unloaded,
+                    $"{where}: the engine draws sprites no layer holds: {string.Join(" ", unloaded.Select(draw => $"{draw.Entry}/{draw.Colour}"))}"
+                );
+
                 var actual = drawn
                     .Select(draw => new Sprite(draw.Entry, draw.Colour, draw.X + OffsetX, draw.Y + OffsetY))
                     .ToList();

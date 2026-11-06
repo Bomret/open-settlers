@@ -180,7 +180,7 @@ step table, as a step on the road does; the turn goes on at once when the timer 
 
 ## Drawing a carrier with a good
 
-**Status:** confirmed from the code and the table's bytes; no emulator run of the draw. The draw routine for job 0 (`0x43f8ae`,
+**Status:** confirmed from the code and the table's bytes and by the emulator's draw runs of the carrier with each of the goods 1 to 26. The draw routine for job 0 (`0x43f8ae`,
 reached from `0x43f537`) copies byte 11 (the good) of a carrier in state 3 or 0xe to the work register; where it is not 0, the
 routine doubles it, loads the address `0x43f4b7` (`0x43f904`), and adds the 16-bit word at that address plus 2 * good to the
 figure word. The table at `0x43f4b7` has 27 words, one for each good (good 0 never reads its word). The word is added to the whole
@@ -189,12 +189,12 @@ the row of the figure bases (`0x44fff3`, [Settlers](settlers.md#drawing-the-walk
 table's bytes from `0x43f4b7` are `00 00 | 00 30 | 00 35 | 00 3b | 00 41 | 00 46 | 00 4b | 00 14 | ...`, little-endian words
 `0x0000, 0x3000, 0x3500, 0x3b00, 0x4100, 0x4600, 0x4b00, 0x1400, ...`: the log (good 7) adds `0x1400`, so its figure byte is
 drawn in the row `0x14` of the figure bases. A carrier in state 0x42 (byte 11 the road direction) is not drawn, and a carrier with no good (byte 11 0) adds nothing.
-`ProgramTables.CarriedFigures` reads the 27 words from `0x43f4b7`; `SettlerFigures` draws a carrier on its road (state 3) with
-a good so and loads the sprites of the same rule (`Sprites` and `Draws` share one function), in every wrap copy of the view;
-state 0xe is not drawn. A play run of `play/carrier-log.play` shows the carrier holding the log above his head and facing the
-way he walks. **Confirmed** by the draw run of the `carrier` recording ([Settlers](settlers.md#the-draw-path-emulated)): the figure bytes of the sequences of the
-carrier's frame are the ones the log's row is drawn with: the original draws a carrier in state 3 with the log (mode 7) as the figure byte of its
-frame's triple in the row `0x14`, with its overlay and a second figure, in every recorded pass, and the engine's draws are the same. The other goods' rows are not recorded.
+`ProgramTables.CarriedFigures` reads the 27 words from `0x43f4b7`; `SettlerFigures` draws a carrier on its road (state 3) or handing
+a good over (state 0xe) with a good so and loads the sprites of the same rule for every good (`Sprites` and `Draws` share one function), in every wrap copy of the view.
+A play run of `play/carrier-log.play` shows the carrier holding the log above his head and facing the
+way he walks. **Confirmed** by the draw runs of the `carrier`, `goods`, and `goods-alone` recordings ([Settlers](settlers.md#the-draw-path-emulated)): the figure bytes of the sequences of the
+carrier's frame are the ones the good's row is drawn with: the original draws a carrier in state 3 or 0xe with the good (byte 11, the goods 1 to 26 each recorded, the
+log among them) as the figure byte of its frame's triple in the row the good's word picks, with its overlay and a second figure, in every recorded pass, and the engine's draws are the same.
 
 ## Open leads
 
