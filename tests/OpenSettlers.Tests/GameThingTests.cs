@@ -260,4 +260,55 @@ public sealed class GameThingTests
             objects
         );
     }
+
+    // Runs the checks of script over the things the game view lists of game; the problems they report, one a line.
+    private static string Checks(Game game, string script)
+    {
+        var things = Thing.Listed(true, game, game.Map, new NameTable(TestProgram.Made()));
+        var state = new PlayState(0, 0, 1f, "1", 1, Ticks: game.TickCount, Things: things);
+        var run = new PlayRun(PlayScript.Parse(script, "play/t.play"), () => state, "unused", _ => null);
+        for (var i = 0; i < 5; i++)
+        {
+            run.Advance(1.0 / 30);
+        }
+
+        return string.Join("\n", run.Problems);
+    }
+
+    [TestMethod]
+    public void ASettlerInANamedStateMatchesItsJobNameAndItsStateName()
+    {
+        var game = World();
+        for (var i = 0; i < 30; i++)
+        {
+            game.Tick();
+        }
+
+        var carrier = game.Settlers.First(s => s.Job == Settler.CarrierJob && NameTable.StateName(s.State) is not null);
+        var carriers = game.Settlers.Count(s => s.Job == Settler.CarrierJob);
+
+        Assert.AreEqual(
+            "",
+            Checks(
+                game,
+                $"expect-count carrier = {carriers}\n"
+                    + $"expect-at {carrier.X} {carrier.Y} carrier\n"
+                    + $"expect-at {carrier.X} {carrier.Y} {NameTable.StateName(carrier.State)}"
+            )
+        );
+    }
+
+    [TestMethod]
+    public void TheChecksCountTheGameViewsKinds()
+    {
+        var game = World();
+
+        Assert.AreEqual(
+            "",
+            Checks(
+                game,
+                "expect-count building = 2\nexpect-count flag = 4\nexpect-at 16 6 flag\nexpect-at 15 5 building"
+            )
+        );
+    }
 }

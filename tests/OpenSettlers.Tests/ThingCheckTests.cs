@@ -184,9 +184,20 @@ public sealed class ThingCheckTests
     [TestMethod]
     public void AKindTheGameViewListsIsCounted()
     {
-        var settler = new Thing("settler", 3, 3, [], "carrier");
+        var settler = new Thing("settler", 3, 3, [], null);
         _state = _state with { Ticks = 0, Things = [Tree, settler] };
 
-        Assert.IsEmpty(Problems("expect-count settler = 1\nexpect-count carrier = 1\nexpect-at 3 3 settler"));
+        Assert.IsEmpty(Problems("expect-count settler = 1\nexpect-at 3 3 settler"));
+    }
+
+    [TestMethod]
+    [DataRow("flag")]
+    [DataRow("building")]
+    public void InTheMapViewTheKindShadowsTheObjectNameAndTheRawCodeReachesTheObject(string word)
+    {
+        _state = _state with { Things = [new Thing("object", 5, 5, [("code", "0x01")], word)] };
+
+        StringAssert.Contains(Problems($"expect-count {word} = 1")[0], $"the map view cannot list {word}");
+        Assert.IsEmpty(Problems("expect-at 5 5 object:0x01"));
     }
 }

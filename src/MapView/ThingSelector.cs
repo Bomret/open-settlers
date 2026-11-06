@@ -56,7 +56,10 @@ public sealed record ThingSelector(string Text, int? RawCode)
     static string? UnlistedKind(string text) =>
         text != Thing.ObjectKind && (Array.IndexOf(Kinds, text) >= 0 || !NameTable.IsObjectName(text)) ? text : null;
 
-    /// <summary>Whether <paramref name="thing"/> is what the selector names.</summary>
+    /// <summary>
+    /// Whether <paramref name="thing"/> is what the selector names: its kind, or any one of its names (a settler's name
+    /// is its job name and its state name, joined by a space).
+    /// </summary>
     public bool Matches(Thing thing)
     {
         if (RawCode is { } code)
@@ -75,6 +78,6 @@ public sealed record ThingSelector(string Text, int? RawCode)
                 );
         }
 
-        return thing.Kind == Text || thing.Name == Text;
+        return thing.Kind == Text || (thing.Name?.Split(' ').Contains(Text) ?? false);
     }
 }
