@@ -11,8 +11,8 @@ public sealed partial class Game
 {
     // The object codes of the trees: the program compares the code of a node with 8 and 0x18 (0x438c11, 0x437f8f), and
     // the class table calls them class 1 (docs/rules/build-sites.md).
-    private const int FirstTree = 8;
-    private const int EndTree = 0x18;
+    private const int FirstTree = NameTable.FirstTree;
+    private const int EndTree = NameTable.EndTree;
 
     // The trees that take the second cutting variant (the animation with the byte 13 set): codes 8 to 15.
     private const int EndFirstTrees = 0x10;
@@ -22,9 +22,9 @@ public sealed partial class Game
 
     // The first code the object pass handles, the felled tree that waits to vanish, and the codes of a tree being cut:
     // the cut writes 0x5d to 0x66, the pass turns each of them into 0x53, and 0x53 vanishes by chance (0x428eb8).
-    private const int FirstHandledObject = 0x53;
-    private const int FirstCutObject = 0x5d;
-    private const int EndCutObject = 0x67;
+    private const int FirstHandledObject = NameTable.Stump;
+    private const int FirstCutObject = NameTable.FirstCutObject;
+    private const int EndCutObject = NameTable.EndCutObject;
 
     // The walk's remaining vector lives in the bytes of the settler item that the road walk uses otherwise: the east
     // steps in byte 11 (Settler.Mode), the south steps in byte 12 (the low byte of Settler.Target), byte 13 (the high

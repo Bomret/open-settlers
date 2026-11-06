@@ -387,6 +387,19 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
+    public void AMapViewResultIsNeverReusedForTheGameViewAndBack()
+    {
+        Run(Args);
+        Run([.. Args, "--game-view"]);
+        Assert.AreEqual(2, Calls);
+
+        Run(Args);
+        Run([.. Args, "--game-view"]);
+        Assert.AreEqual(2, Calls);
+        Assert.AreEqual(2, Directory.GetDirectories(Out(".cache")).Length);
+    }
+
+    [TestMethod]
     public void ALayoutByteChangeStartsGodotAgainAndTheSameLayoutReuses()
     {
         string[] layout = ["demo", "--layout", "play/a.layout", "--fps", "10"];

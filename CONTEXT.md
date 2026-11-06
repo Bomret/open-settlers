@@ -74,6 +74,17 @@ woodcutter inside his hut, a carrier on his road, or a good put on a flag. A lay
 goods only in these (INV-0005).
 _Avoid_: start state, initial state
 
+**Thing**
+Anything that stands on a map node: a map object, a settler, a building, a flag, or a node of a road. A thing
+has a kind, a node, the raw values the engine holds for it, and a name where the name table has one.
+_Avoid_: entity, item, object (a map object is one kind of thing)
+
+**Name table**
+A table of Open Settlers' own names for the original's bare codes: map object codes, settler jobs and states,
+and building types. Each entry cites its evidence. A code with no entry shows raw. The object names read the
+loaded class table, so `stone` names a code only where the table says class 2.
+_Avoid_: lookup, code map
+
 ## Game rules
 
 **Rule**
