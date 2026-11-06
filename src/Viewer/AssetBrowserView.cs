@@ -127,6 +127,21 @@ public partial class AssetBrowserView : Control
     // callback exception does not set the exit code, so this owns it.
     void RunMap(LaunchArgs args)
     {
+        // A layout that is missing or fails to load exits 4 and names the file and the entry, before the install is
+        // opened and before a window opens.
+        Layout? layout = null;
+        if (args.Layout is not null)
+        {
+            var loadCode = LayoutLoad.Run(args.Layout, out layout, out var loadProblem);
+            if (loadCode != 0)
+            {
+                GD.Print(loadProblem);
+                GetTree().Quit(loadCode);
+
+                return;
+            }
+        }
+
         if (!Install.TryOpen(args, out var install, out var problem))
         {
             GD.Print($"ERROR {problem}");
@@ -150,12 +165,14 @@ public partial class AssetBrowserView : Control
             }
         }
 
-        var view = new MapViewControl(
-            install,
-            args.SeedText ?? MapViewState.DefaultSeed,
-            args.Size?.Value ?? MapSize.Offered[0].Value,
-            args.Mode == LaunchMode.GameView
-        );
+        var view = layout is not null
+            ? new MapViewControl(install, layout)
+            : new MapViewControl(
+                install,
+                args.SeedText ?? MapViewState.DefaultSeed,
+                args.Size?.Value ?? MapSize.Offered[0].Value,
+                args.Mode == LaunchMode.GameView
+            );
         AddChild(view);
         if (script is not null)
         {

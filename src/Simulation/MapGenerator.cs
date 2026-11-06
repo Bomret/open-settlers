@@ -56,6 +56,21 @@ public static class MapGenerator
         return true;
     }
 
+    /// <summary>
+    /// <c>MapGen_MarkWaterAdjacent</c> (0x4232ef): sets bit 7 of the object byte on each tile with a water triangle (a
+    /// terrain nibble below 4). The generator and a drawn map (<see cref="Layout.BuildMap"/>) share this rule.
+    /// </summary>
+    internal static void MarkWaterAdjacentTiles(byte[] terrain, byte[] objects)
+    {
+        for (var tile = 0; tile < terrain.Length; tile++)
+        {
+            if ((terrain[tile] & 0xc0) == 0 || (terrain[tile] & 0x0c) == 0)
+            {
+                objects[tile] |= 0x80;
+            }
+        }
+    }
+
     /// <summary>The column and row offsets around a tile in rings: the tile itself, then rings of 6, 12, and on.</summary>
     internal static IReadOnlyList<(int Dx, int Dy)> SpiralOffsets { get; } = BuildSpiral(256);
 
@@ -986,16 +1001,7 @@ public static class MapGenerator
 
         // MapGen_MarkWaterAdjacent (0x4232ef): bit 7 of the object byte on each tile with a water triangle (a
         // terrain nibble below 4).
-        private void MarkWaterAdjacent()
-        {
-            for (var tile = 0; tile < Tiles; tile++)
-            {
-                if ((_terrain[tile] & 0xc0) == 0 || (_terrain[tile] & 0x0c) == 0)
-                {
-                    _objects[tile] |= 0x80;
-                }
-            }
-        }
+        private void MarkWaterAdjacent() => MarkWaterAdjacentTiles(_terrain, _objects);
 
         // MapGen_CountResource1 (0x421841): the sum of the amounts of the deposits of resource type 1.
         private void CountResource1()

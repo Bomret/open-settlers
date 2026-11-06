@@ -253,3 +253,57 @@ for the size value N and the map seed words from the original's size code throug
 `MapGen_CountResource1`, and prints the digest line after the seeding and after each pass. It skips the
 progress bar. It fills the buffer with a pattern first, so that `MapGen_ClearMap` is checked. It builds the
 spiral table with the program's builder and points the object size table at the program's data first.
+
+## A hand-drawn map
+
+**Status:** the engine's own form (a stand-in; the original has no hand-drawn maps). A layout file
+([ADR 0009](../adr/0009-layouts-set-up-a-game-by-a-hand-drawn-map-and-commands.md)) draws the Height, Terrain,
+and Object layers, and `src/Simulation/Layout.cs` derives the bytes the generator derives from them. The map has
+one of the sizes above, written as its size value in the layout's `size`.
+
+**The grids.** `height`, `terrain`, and `terrainLower` are lists of strings, one string for each row of the map
+and one character for each tile, in row-major order as the layers are. The upper triangle of a tile is the
+high nibble of the terrain layer, the lower triangle the low nibble; a tile with no `terrainLower` draw has
+its lower triangle of the upper terrain.
+
+**Height characters.** `0` to `9` draw the heights 0 to 9 and `a` to `v` the heights 10 to 31, the 32 values of the
+layer's low 5 bits.
+
+**Terrain letters.** One letter for each terrain code 0 to 15, in the order of the codes: `w x y z b g h i j k p
+m n o q s`. The letters are the engine's own labels (the original names no terrain in the program), chosen
+where this note and [Build sites](build-sites.md) give the code a role:
+
+| Letter | Code | Role |
+| --- | --- | --- |
+| `w`, `x`, `y`, `z` | 0 to 3 | water, from the deepest to the shallowest (`MapGen_GradeWaterDepth` grades 0 to 3 by the distance from land) |
+| `b` | 4 | shore (`MapGen_SetShoreTerrain`) |
+| `g`, `h` | 5, 6 | plain land; 5 is the plain meadow the generator and the building rules use |
+| `i`, `j`, `k` | 7, 8, 9 | the codes the patch passes hand through; `MapGen_ResetTypes7To9` turns 7 to 9 back to 5 |
+| `p` | 10 | the patch of `MapGen_PlacePatches` |
+| `m`, `n`, `o`, `q` | 11 to 14 | mountain |
+| `s` | 15 | the highest code, drawn for the highest sums of `MapGen_ClassifyTerrain` |
+
+**Objects.** `objects` lists `{x, y, code}`: the object code 1 to 127 at a tile, at most one for each tile.
+
+**Derived bytes.** The loader sets these as the generator does, so that a rule that reads them sees the same
+bytes for a hand-drawn tile as for a generated tile of the same terrain:
+
+- Bit 7 of the Object layer on each tile with a water triangle (a terrain nibble below 4), the rule of
+  `MapGen_MarkWaterAdjacent` (`0x4232ef`). The object code of the tile keeps its low 7 bits.
+- Bit 6 of the Flags layer on the middle of a lake, the mark `MapGen_FillLakes` (`0x422a0e`) sets.
+  The state the generator marks from is not drawn: its lake tiles, the ring around them, and the land
+  `MapGen_KeepMainLand` drops all end at height 0. A tile is a lake middle when its height is 0, its two
+  triangles are water, and its six neighbors have height 0. The shore ring of a drawn lake has a neighbor above
+  height 0 and stays unmarked. Against generated maps (150 seeds, redrawn from their heights and terrain, on the
+  tiles that hold no object) this marks every tile the generator marks, and also marks tiles at height 0 that the
+  generator leaves unmarked: the layout cannot draw what tells them apart, so such a tile carries the flag
+  where a generated tile of the same height and terrain does not.
+
+**Not derived.** The lake detail (layer 3) stays 0: the generator draws it, and a hand-drawn map leaves the
+game's random draws alone. Bit 6 of the Flags layer for a large object (`MapGen_ResolveObjectOverlap`) is not
+set: it needs the program's class table, and no rule reads that bit yet. The Resource layer is empty, so the
+total of resource 1 is 0.
+
+**The random generator.** The layout's `seed` (the free-game screen form, as `--seed` takes it) sets the game's
+random generator as `MapGen_Generate` sets it: the map seed words (`Seed.ToMapSeed`), stepped twice, as in the
+seeding step above. A hand-drawn map draws nothing from it, so the game starts from that state.

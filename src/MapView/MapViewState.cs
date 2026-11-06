@@ -14,6 +14,7 @@ public sealed class MapViewState
 
     readonly ProgramTables? _tables;
     readonly string? _tablesProblem;
+    bool _layout;
 
     MapViewState(ProgramTables? tables, string? tablesProblem, string seedText, int sizeValue)
     {
@@ -55,11 +56,32 @@ public sealed class MapViewState
     }
 
     /// <summary>
+    /// Opens the state on the map a layout draws. The seed and size are the layout's, and the state refuses every
+    /// change of them (<see cref="Apply"/>): the game runs on the layout's map.
+    /// </summary>
+    public static MapViewState OpenLayout(Layout layout)
+    {
+        return new MapViewState(null, null, layout.Seed.ToScreen(), layout.Size.Value)
+        {
+            _applied = layout.Seed,
+            _layout = true,
+            Map = layout.BuildMap(),
+        };
+    }
+
+    /// <summary>
     /// Applies a typed seed and a size. Returns true when a new map was generated, false when the change was refused
     /// (see <see cref="Problem"/>) or the seed, in any screen form, and size are the ones already applied.
     /// </summary>
     public bool Apply(string seedText, int sizeValue)
     {
+        if (_layout)
+        {
+            Problem = "The game runs on a layout: its seed and size cannot change.";
+
+            return false;
+        }
+
         if (_tables is null)
         {
             Problem = $"Cannot generate the map, the program's rule tables are unreadable: {_tablesProblem}";

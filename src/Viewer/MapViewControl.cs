@@ -62,6 +62,7 @@ public partial class MapViewControl : Control
     string? _roadsProblem;
     readonly string _openSeed;
     readonly int _openSize;
+    readonly Layout? _layout;
     MapViewState _state = null!;
     Camera _camera = null!;
     readonly Zoom _zoom = new();
@@ -98,6 +99,16 @@ public partial class MapViewControl : Control
         _openSeed = seedText;
         _openSize = sizeValue;
         _gameView = gameView;
+    }
+
+    /// <summary>
+    /// The game view on the map a <paramref name="layout"/> draws: the seed field shows the layout's seed and the
+    /// size picker its size, and neither can change.
+    /// </summary>
+    public MapViewControl(Install install, Layout layout)
+        : this(install, layout.Seed.ToScreen(), layout.Size.Value, true)
+    {
+        _layout = layout;
     }
 
     /// <summary>The area the map is drawn in and the mouse acts on; a play run aims its input at it.</summary>
@@ -346,7 +357,9 @@ public partial class MapViewControl : Control
             }
         }
 
-        _state = MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem);
+        _state = _layout is null
+            ? MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem)
+            : MapViewState.OpenLayout(_layout);
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
         Redraw();
