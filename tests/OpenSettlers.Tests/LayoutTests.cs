@@ -130,6 +130,46 @@ public sealed class LayoutTests
         Assert.AreEqual(0, map.Layer(MapLayer.Flags)[At(12, 10)]);
     }
 
+    static Game Played(string text, int ticks)
+    {
+        var game = new Game(TestProgram.Made(), Built(text));
+        for (var i = 0; i < ticks; i++)
+        {
+            game.Tick();
+        }
+
+        return game;
+    }
+
+    [TestMethod]
+    public void TwoLoadsOfOneLayoutGiveTheSameDigestAfterTheSameTicks()
+    {
+        var text = Text(objects: """[{"x": 7, "y": 2, "code": 8}]""");
+
+        Assert.AreEqual(Played(text, 25).Digest(), Played(text, 25).Digest());
+    }
+
+    [TestMethod]
+    public void AnotherSeedGivesAnotherGameStateAndRandomSequence()
+    {
+        var first = Played(Text(), 5);
+        var second = Played(Text(seed: "\"8765432187654321\""), 5);
+
+        Assert.AreNotEqual(first.Digest(), second.Digest());
+        Assert.AreNotEqual(first.Random, second.Random);
+    }
+
+    [TestMethod]
+    public void TheGamesRandomGeneratorStartsWhereTheMapGeneratorLeavesItForTheSeed()
+    {
+        OpenSettlers.Simulation.Seed.TryParse(Seed, out var seed, out _);
+        var words = seed.ToMapSeed();
+
+        var game = new Game(TestProgram.Made(), Built(Text()));
+
+        Assert.AreEqual(new RandomGenerator(words.W0, words.W1, words.W2).Step().Step(), game.Random);
+    }
+
     static string Rows31 => "[" + string.Join(", ", Enumerable.Range(0, 31).Select(_ => $"\"{new string('1', 32)}\"")) + "]";
 
     [TestMethod]
