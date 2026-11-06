@@ -37,7 +37,9 @@ public sealed class GoodsHistoryTests
     }
 
     private static ThingId Carrier(Game game) =>
-        game.Events.All.First(e => e.Thing.Kind == ThingId.SettlerKind && e.Type == EventType.LayoutWaitingOnRoad).Thing;
+        game
+            .Events.All.First(e => e.Thing.Kind == ThingId.SettlerKind && e.Type == EventType.LayoutWaitingOnRoad)
+            .Thing;
 
     [TestMethod]
     public void ACarrierThatPicksUpAndDeliversAGoodRecordsEachChangeNamingTheFlagAndTheBuilding()
@@ -46,7 +48,15 @@ public sealed class GoodsHistoryTests
         var events = game.EventsOf(Carrier(game));
         var types = events.Select(e => e.Type).ToHashSet();
 
-        Assert.IsTrue(types.IsSupersetOf([EventType.Fetch, EventType.Claim, EventType.Exchange, EventType.Deliver, EventType.Handover]));
+        Assert.IsTrue(
+            types.IsSupersetOf([
+                EventType.Fetch,
+                EventType.Claim,
+                EventType.Exchange,
+                EventType.Deliver,
+                EventType.Handover,
+            ])
+        );
         var picked = events.First(e => e.Type == EventType.Exchange);
         StringAssert.StartsWith(picked.Other, game.FlagId(1).ToString());
         Assert.AreEqual(7, picked.State.Get("mode"), "the log is in the carrier's hands");
@@ -59,10 +69,33 @@ public sealed class GoodsHistoryTests
     public void TheRulesOfTheGoodsCarryTheCauseGoods()
     {
         var game = Carried();
-        var ours = new[] { EventType.Fetch, EventType.Claim, EventType.Exchange, EventType.Deliver, EventType.Handover };
+        var ours = new[]
+        {
+            EventType.Fetch,
+            EventType.Claim,
+            EventType.Exchange,
+            EventType.Deliver,
+            EventType.Handover,
+        };
 
         Assert.IsTrue(game.Events.All.Where(e => ours.Contains(e.Type)).All(e => e.Cause == Cause.Goods));
     }
+
+    private static readonly string[] Fields =
+    [
+        "job",
+        "state",
+        "player",
+        "mode",
+        "target",
+        "next",
+        "heading",
+        "frame",
+        "timer",
+        "stamp",
+        "x",
+        "y",
+    ];
 
     [TestMethod]
     public void TheStateOfTheCarrierAtEveryTickOfTheCarryIsTheEnginesStateThen()
@@ -71,30 +104,54 @@ public sealed class GoodsHistoryTests
         var game = LayoutSettlersTests.NewGame(read.Layout!);
         Assert.IsNull(read.Layout!.Apply(game));
         var id = Carrier(game);
-        var slot = id.Slot;
-        var seen = new List<(long Tick, string Engine, string? Recorded)>();
+        var ticks = 0;
         for (var i = 0; i < 4000 && game.Events.All.All(e => e.Type != EventType.Handover); i++)
         {
             game.Tick();
-            var tick = game.TickCount - 1;
-            var s = game.Settlers[slot];
-            if (game.EventsOf(id).Any(e => e.Tick == tick && GoodsTypes.Contains(e.Type)))
-            {
-                var last = game.EventsOf(id).Last(e => e.Tick == tick);
-                // The walking that goes on in the same tick (frame, timer, heading) is the carry walk's events.
-                var engine = $"{s.State} {s.Mode} {s.Target}";
-                var state = last.State;
-                seen.Add((tick, engine, $"{state.Get("state")} {state.Get("mode")} {state.Get("target")}"));
-            }
+            var s = game.Settlers[id.Slot];
+            int[] engine =
+            [
+                s.Job,
+                s.State,
+                s.Player,
+                s.Mode,
+                s.Target,
+                s.Next,
+                s.Heading,
+                s.Frame,
+                s.Timer,
+                s.Stamp,
+                s.X,
+                s.Y,
+            ];
+            var (state, refusal) = game.StateAt(id, game.TickCount - 1);
+            Assert.IsNotNull(state, refusal);
+            CollectionAssert.AreEqual(
+                engine,
+                Fields.Select(f => state.Get(f)!.Value).ToArray(),
+                $"tick {game.TickCount - 1}"
+            );
+            ticks++;
         }
 
-        Assert.IsTrue(seen.Count >= 3, "pickup, exchange, and delivery each have a tick");
-        foreach (var (tick, engine, recorded) in seen)
-        {
-            Assert.AreEqual(engine, recorded, $"tick {tick}");
-        }
+        Assert.IsTrue(game.EventsOf(id).Any(e => e.Type == EventType.Handover), "the carry ended in a delivery");
+        Assert.IsGreaterThan(50, ticks, "the carry spans many ticks");
     }
 
-    private static readonly string[] GoodsTypes =
-        [EventType.Fetch, EventType.Claim, EventType.Exchange, EventType.Deliver, EventType.Handover];
+    [TestMethod]
+    public void ADeliveryRecordsTheHalfStepAndTheSecondTimeAtTheFlagAsTwoHandoverEventsOfTheCarrier()
+    {
+        var game = Carried();
+        var id = Carrier(game);
+        for (var i = 0; i < 4000 && game.EventsOf(id).Count(e => e.Type == EventType.Handover) < 2; i++)
+        {
+            game.Tick();
+        }
+
+        var handovers = game.EventsOf(id).Where(e => e.Type == EventType.Handover).ToList();
+
+        Assert.IsGreaterThanOrEqualTo(2, handovers.Count);
+        Assert.IsNotNull(handovers[0].Other, "the first names the building and the good");
+        Assert.IsNull(handovers[1].Other, "the second, with Next set, names none");
+    }
 }

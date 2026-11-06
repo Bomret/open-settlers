@@ -337,7 +337,7 @@ public sealed partial class Game
     // in the same place, destination word and all; where none waits and the carrier carries one, the good goes on the first
     // empty place. A flag where something was laid is asked again by its next turn (byte 4, bit 7). The byte of the road is
     // then made again: the good of the greatest transport priority that was given the road's direction waits for it next.
-    internal void Exchange(Settler settler, int flag)
+    internal void Exchange(int slot, Settler settler, int flag)
     {
         var way = settler.Heading;
         var goods = _flagGoods[flag];
@@ -404,18 +404,9 @@ public sealed partial class Game
 
         if (changed)
         {
-            // A settler outside the game's list (a test's) has no slot and no history.
-            var slot = _settlers.IndexOf(settler);
             var detail = $"took {took} left {left}";
-            if (slot >= 0)
-            {
-                RecordSettler(slot, EventType.Exchange, Cause.Goods, $"{FlagId(flag)} {detail}");
-                RecordFlag(flag, EventType.Exchange, Cause.Goods, $"{SettlerId(slot)} {detail}");
-            }
-            else
-            {
-                RecordFlag(flag, EventType.Exchange, Cause.Goods, detail);
-            }
+            RecordSettler(slot, EventType.Exchange, Cause.Goods, $"{FlagId(flag)} {detail}");
+            RecordFlag(flag, EventType.Exchange, Cause.Goods, $"{SettlerId(slot)} {detail}");
         }
     }
 
