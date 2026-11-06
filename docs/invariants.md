@@ -32,10 +32,18 @@ Statement: The simulation code references no Godot type, so tests run its rules 
 Breaks: silently
 Check: the test build (`docs/agents/CODING_PATTERNS.md`, "Godot boundary").
 
+### INV-0005
+
+Class: fidelity
+Concepts: Layout, Entry state, Settler
+Statement: A layout sets a settler or a good only in an entry state: a state some routine of the original writes at the start of a behaviour, named by its address. It never sets a settler in the middle of a behaviour (a walk, a cut, a step's timer). A settler a layout places is one of the castle's own.
+Breaks: silently
+Check: the layout loader's tests refuse every settler or good entry that names no supported entry state, and each supported entry state's documentation names its address.
+
 ### INV-0006
 
 Class: architecture
 Concepts: Name table, Thing
 Statement: Every name shown for a map object code, settler job, settler state, or building type comes from a name-table entry that cites its evidence (ADR 0010). The raw value always shows beside the name, and a code with no entry shows only raw.
 Breaks: silently
-Check: `NameTableTests` checks that every entry carries its evidence and that a code with no entry gets no name; reviewers check the evidence of each new entry.
+Check: `NameTableTests` checks that every entry carries its evidence and that a code with no entry gets no name. Reviewers check the evidence of each new entry.

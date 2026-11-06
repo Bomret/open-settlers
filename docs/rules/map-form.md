@@ -253,3 +253,66 @@ for the size value N and the map seed words from the original's size code throug
 `MapGen_CountResource1`, and prints the digest line after the seeding and after each pass. It skips the
 progress bar. It fills the buffer with a pattern first, so that `MapGen_ClearMap` is checked. It builds the
 spiral table with the program's builder and points the object size table at the program's data first.
+
+## A hand-drawn map
+
+**Status:** the engine's own form (a stand-in; the original has no hand-drawn maps). A layout file
+([ADR 0009](../adr/0009-layouts-set-up-a-game-by-hand-drawn-map-and-commands.md)) draws the height, terrain, and
+object layers. `src/Simulation/Layout.cs` derives from them the bytes the generator derives. The map has one of the
+sizes above, written as its size value in the layout's `size`.
+
+**The grids.** `height`, `terrain`, `terrainLower`, and `lakes` are lists of strings. One string is one row of the
+map and one character is one tile, in row-major order as the layers are. The upper triangle of a tile is the high
+nibble of the terrain layer and the lower triangle is the low nibble. A layout with no `terrainLower` grid gives each
+tile a lower triangle of the upper terrain.
+
+**Lake marks.** `lakes` is an optional grid of `.` and `L`. Each `L` sets Flags bit 6 on its tile and each `.` leaves
+it clear. A layout thus carries the generator's marks exactly, for the lake tiles and for the large objects of
+`MapGen_ResolveObjectOverlap` alike. Where `lakes` is present, it replaces the derived rule below. Where it is absent,
+the derived rule applies.
+
+**Height characters.** `0` to `9` draw the heights 0 to 9 and `a` to `v` the heights 10 to 31. These are the 32 values
+of the low 5 bits of the layer.
+
+**Terrain letters.** One letter stands for each terrain code 0 to 15, in the order of the codes: `w x y z b g h i j k p
+m n o q s`. The letters are the engine's own labels, because the original names no terrain in the program. They are
+chosen where this note and [Build sites](build-sites.md) give the code a role:
+
+| Letter | Code | Role |
+| --- | --- | --- |
+| `w`, `x`, `y`, `z` | 0 to 3 | water, from the deepest to the shallowest (`MapGen_GradeWaterDepth` grades 0 to 3 by the distance from land) |
+| `b` | 4 | shore (`MapGen_SetShoreTerrain`) |
+| `g`, `h` | 5, 6 | plain land; 5 is the plain meadow the generator and the building rules use |
+| `i`, `j`, `k` | 7, 8, 9 | the codes the patch passes hand through; `MapGen_ResetTypes7To9` turns 7 to 9 back to 5 |
+| `p` | 10 | the patch of `MapGen_PlacePatches` |
+| `m`, `n`, `o`, `q` | 11 to 14 | mountain |
+| `s` | 15 | the highest code, drawn for the highest sums of `MapGen_ClassifyTerrain` |
+
+**Objects.** `objects` lists `{x, y, code}`. The code is an object code from 1 to 127, and a tile holds at most one.
+
+**Derived bytes.** The loader sets these bytes as the generator does. A rule that reads them thus sees the same bytes
+for a hand-drawn tile as for a generated tile of the same terrain:
+
+- Bit 7 of the object layer on each tile with a water triangle (a terrain nibble below 4). This is the rule of
+  `MapGen_MarkWaterAdjacent` (`0x4232ef`). The object code of the tile keeps its low 7 bits.
+- Bit 6 of the flags layer on the middle of a lake, where the layout has no `lakes` grid. This is the mark
+  `MapGen_FillLakes` (`0x422a0e`) sets.
+
+The generator marks a lake middle from a state the layout does not draw. Its lake tiles, the ring around them, and
+the land `MapGen_KeepMainLand` drops all end at height 0. The loader therefore marks a tile when its height is 0, its
+two triangles are water, and its six neighbors have height 0. The shore ring of a drawn lake has a neighbor above
+height 0 and stays unmarked.
+
+The rule was checked against 150 generated maps, redrawn from their heights and terrain, on the tiles that hold no
+object. It marks every tile the generator marks. It also marks tiles at height 0 that the generator leaves unmarked,
+because the layout cannot draw what tells them apart. Such a tile carries the flag where a generated tile of the same
+height and terrain does not. The `lakes` grid matches the generator exactly.
+
+**Not derived.** The lake detail (layer 3) stays 0. The generator draws it, and a hand-drawn map leaves the game's
+random draws alone. Bit 6 of the flags layer for a large object (`MapGen_ResolveObjectOverlap`) is not set by a rule,
+because it needs the program's class table. A `lakes` grid marks it by hand. The resource layer is empty, so the total
+of resource 1 is 0.
+
+**The random generator.** The layout's `seed` is in the free-game screen form, as `--seed` takes it. It sets the
+game's random generator as `MapGen_Generate` sets it: the map seed words (`Seed.ToMapSeed`) stepped twice, as in the
+seeding step above. A hand-drawn map draws nothing from the generator, so the game starts from that state.

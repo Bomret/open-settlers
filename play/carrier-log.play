@@ -1,0 +1,11 @@
+# A carrier carries a log from the flag toward the castle: fast-forward to the carrier carrying, zoom in on the road, and
+# take a shot at the lift and one a moment later on the road.
+# Run it on the layout: sh tools/play-run.sh carrier-log --layout layouts/carrier.jsonc --fps 10
+wait 0.3
+fast-forward carrier carrying max 20000
+scroll up 6 860 560
+wait 0.3
+dump carrying
+shot carrying
+wait 2
+shot on-the-road

@@ -19,7 +19,7 @@ public sealed class WoodcuttingTests
     // 22 and 23 east and north.
     private static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
 
-    private static ProgramTables Made()
+    internal static ProgramTables Made()
     {
         var classes = new byte[ProgramTables.ClassCount];
         classes[1] = 3;
@@ -58,7 +58,7 @@ public sealed class WoodcuttingTests
 
     // The castle, the flags, the roads, and the hut; a tree stands on every node of the hut's reach where trees is true,
     // and the generated trees are gone from the whole map.
-    private static Game World(bool trees, out Map map)
+    internal static Game World(bool trees, out Map map)
     {
         map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var objects = map.Bytes(MapLayer.Object);

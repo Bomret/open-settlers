@@ -1,14 +1,15 @@
 #!/bin/sh
 # Runs a play script under Movie Maker, from the repository root, and reuses the stored result when its inputs
 # are unchanged:
-#   sh tools/play-run.sh <stem> [--game-view] [--seed <s>] [--size <n>] --fps <n> [--fresh]
-# The script is play/<stem>.play and the install is SIEDLER_DIR. The view is the map view, or the game view with
-# --game-view (Godot gets --game-view in place of --map). The input hash covers the content and path of
-# every tracked or untracked, not ignored file under src/ and scenes/. It also covers the project files, the
-# play script, the view, the seed, the size, the fps, the Godot version and the SIEDLER_DIR path. So a result of
-# one view is never reused for the other. A result is stored in play-out/.cache/<hash>/ only for exit status 0
-# or 1. Each call past the argument checks appends one line to play-out/runs.log. That line ends with view=map
-# or view=game. Bad arguments exit 2 and leave no trace.
+#   sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] --fps <n> [--fresh]
+# The script is play/<stem>.play and the install is SIEDLER_DIR. Without --game-view the map view runs;
+# --game-view runs the game view with --seed and --size; --layout runs the game view on the layout file and
+# implies --game-view (a layout holds its own seed and size, so --layout with --seed or --size exits 2, and so
+# does a missing layout file or an empty layout value). The input hash covers the mode, the layout's path and
+# content, the content and path of every tracked or untracked, not ignored file under src/ and scenes/, the project
+# files, the play script, the seed, the size, the fps, the Godot version and the SIEDLER_DIR path. A result is stored in
+# play-out/.cache/<hash>/ only for exit status 0 or 1. Each call past the argument checks appends one line to
+# play-out/runs.log; the line names the mode (map or game-view) and the layout. Bad arguments exit 2 and leave no trace.
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
 # call waits on a live owner, says so once on stderr, and takes over the lock of a dead one under the mutex
 # play-out/.lock-<stem>.takeover. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
@@ -19,7 +20,7 @@ set -u
 
 usage() {
   echo "play-run.sh: $1" >&2
-  echo "usage: sh tools/play-run.sh <stem> [--game-view] [--seed <s>] [--size <n>] --fps <n> [--fresh]" >&2
+  echo "usage: sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] --fps <n> [--fresh]" >&2
   exit 2
 }
 
@@ -34,21 +35,23 @@ seed=
 size=
 fps=
 fresh=
-view=map
+mode=map
+layout=
 while [ $# -gt 0 ]; do
   case "$1" in
-    --game-view)
-      view=game
-      shift
-      ;;
-    --seed | --size | --fps)
+    --seed | --size | --fps | --layout)
       [ $# -ge 2 ] || usage "$1 needs a value"
       case "$1" in
         --seed) seed=$2 ;;
         --size) size=$2 ;;
         --fps) fps=$2 ;;
+        --layout) [ -n "$2" ] || usage "--layout needs a file"; layout=$2 ;;
       esac
       shift 2
+      ;;
+    --game-view)
+      mode=game-view
+      shift
       ;;
     --fresh)
       fresh=1
@@ -64,6 +67,11 @@ esac
 case "$size" in
   0* | *[!0-9]*) usage "--size needs a positive whole number" ;;
 esac
+if [ -n "$layout" ]; then
+  mode=game-view
+  [ -z "$seed" ] && [ -z "$size" ] || usage "--layout holds its own seed and size: pass no --seed or --size"
+  [ -f "$layout" ] || usage "no layout file $layout"
+fi
 script=play/$stem.play
 [ -f "$script" ] || usage "no play script $script"
 [ -n "${SIEDLER_DIR:-}" ] || usage "set SIEDLER_DIR to a History Edition install"
@@ -129,7 +137,9 @@ hash=$(
       if [ -f "$f" ]; then echo "$f $(git hash-object -- "$f")"; else echo "$f missing"; fi
     done
     echo "script $(git hash-object -- "$script")"
-    echo "view $view"
+    echo "mode $mode"
+    echo "layout $layout"
+    [ -n "$layout" ] && echo "layout-content $(git hash-object -- "$layout")"
     echo "seed $seed"
     echo "size $size"
     echo "fps $fps"
@@ -159,9 +169,9 @@ else
     how=build
     status=3
   else
-    viewflag=--map
-    [ "$view" = game ] && viewflag=--game-view
-    set -- --path . --write-movie "$out/frame.png" --fixed-fps "$fps" -- --game "$SIEDLER_DIR" "$viewflag"
+    set -- --path . --write-movie "$out/frame.png" --fixed-fps "$fps" -- --game "$SIEDLER_DIR"
+    if [ "$mode" = game-view ]; then set -- "$@" --game-view; else set -- "$@" --map; fi
+    [ -n "$layout" ] && set -- "$@" --layout "$layout"
     [ -n "$seed" ] && set -- "$@" --seed "$seed"
     [ -n "$size" ] && set -- "$@" --size "$size"
     godot "$@" --play "$script" >"$log" 2>&1
@@ -190,6 +200,6 @@ fi
 
 head=$(git rev-parse HEAD 2>/dev/null || echo none)
 if [ -n "$(git status --porcelain)" ]; then dirty=dirty; else dirty=clean; fi
-printf '%s\t%s\t%s\t%s\t%s\tseed=%s\tsize=%s\tfps=%s\texit=%s\t%s\tview=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$hash" \
-  "$head" "$dirty" "$stem" "$seed" "$size" "$fps" "$status" "$how" "$view" >>play-out/runs.log
+printf '%s\t%s\t%s\t%s\t%s\tmode=%s\tlayout=%s\tseed=%s\tsize=%s\tfps=%s\texit=%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$hash" \
+  "$head" "$dirty" "$stem" "$mode" "$layout" "$seed" "$size" "$fps" "$status" "$how" >>play-out/runs.log
 exit "$status"

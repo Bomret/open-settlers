@@ -46,4 +46,15 @@ public sealed class TickPacerTests
 
         Assert.AreEqual(0, pacer.Due(0.07));
     }
+
+    [TestMethod]
+    public void ResetReleasesAHeldPacerSoANewGameTicks()
+    {
+        var pacer = new TickPacer();
+        pacer.Hold();
+
+        pacer.Reset();
+
+        Assert.AreEqual(25, pacer.Due(2));
+    }
 }

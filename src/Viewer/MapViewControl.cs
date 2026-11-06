@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
+using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
 
@@ -62,6 +63,7 @@ public partial class MapViewControl : Control
     string? _roadsProblem;
     readonly string _openSeed;
     readonly int _openSize;
+    readonly Layout? _layout;
     MapViewState _state = null!;
     Camera _camera = null!;
     readonly Zoom _zoom = new();
@@ -100,6 +102,16 @@ public partial class MapViewControl : Control
         _gameView = gameView;
     }
 
+    /// <summary>
+    /// The game view on the map a <paramref name="layout"/> draws: the seed field shows the layout's seed and the
+    /// size picker its size, and neither can change.
+    /// </summary>
+    public MapViewControl(Install install, Layout layout)
+        : this(install, layout.Seed.ToScreen(), layout.Size.Value, true)
+    {
+        _layout = layout;
+    }
+
     /// <summary>The area the map is drawn in and the mouse acts on; a play run aims its input at it.</summary>
     public Control Canvas => _canvas;
 
@@ -133,6 +145,27 @@ public partial class MapViewControl : Control
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0)),
             ListedThings()
         );
+
+    /// <summary>
+    /// A play run's <c>fast-forward</c> step: ticks the game without drawing until the step's condition holds, then draws
+    /// once. The game then ticks no more until the next shot (<see cref="ShotTaken"/>). Null when it holds; else the problem.
+    /// </summary>
+    public string? FastForward(FastForwardStep step)
+    {
+        var problem = step.Apply(_game, _gameView, _pacer);
+        if (_game is null || !_gameView)
+            return problem;
+
+        _ticks.Text = $"Tick {_game.TickCount}";
+        _logs.Text = CastleReadout.Text(_game.CastleLogs);
+        UpdateSettlers();
+        Redraw();
+
+        return problem;
+    }
+
+    /// <summary>A play run has taken a shot: a game held by a fast-forward runs on.</summary>
+    public void ShotTaken() => _pacer.ShotTaken();
 
     // The map view lists map objects only; the game view lists every kind of the game.
     System.Collections.Generic.IReadOnlyList<Thing> ListedThings()
@@ -361,7 +394,9 @@ public partial class MapViewControl : Control
             }
         }
 
-        _state = MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem);
+        _state = _layout is null
+            ? MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem)
+            : MapViewState.OpenLayout(_layout);
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
         Redraw();
@@ -372,7 +407,21 @@ public partial class MapViewControl : Control
     {
         if (_gameView && _state.Map is not null && _tables is not null)
         {
-            _game = new Game(_tables, _state.Map, _state.StockLevel);
+            // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
+            var exit = LayoutLoad.Start(
+                _layout,
+                new Game(_tables, _state.Map, _state.StockLevel),
+                out _game,
+                out var layoutProblem
+            );
+            if (exit != 0)
+            {
+                GD.Print(layoutProblem);
+                GetTree().Quit(exit);
+
+                return;
+            }
+
             _drawing = new RoadDrawing(_game);
             _castleDrawn = false;
             _flagsDrawn = 0;

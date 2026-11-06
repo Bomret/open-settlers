@@ -113,6 +113,8 @@ public partial class PlayDriver : Node
                 return ClickTile(tile);
             case ButtonStep button:
                 return ClickButton(button);
+            case FastForwardStep fastForward:
+                return _view.FastForward(fastForward);
             case ShotStep shot:
                 return Shot(shot);
             default:
@@ -295,6 +297,11 @@ public partial class PlayDriver : Node
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return $"cannot write '{file}': {e.Message}";
+        }
+        finally
+        {
+            // Every shot step releases a fast-forward's hold, a failed one too, so the run's later steps see the game run on.
+            _view.ShotTaken();
         }
     }
 }
