@@ -4,11 +4,11 @@
 #   sh tools/play-run.sh <stem> [--game-view] [--seed <s>] [--size <n>] --fps <n> [--fresh]
 # The script is play/<stem>.play and the install is SIEDLER_DIR. The view is the map view, or the game view with
 # --game-view (Godot gets --game-view in place of --map). The input hash covers the content and path of
-# every tracked or untracked, not ignored file under src/ and scenes/, the project files, the play script, the
-# view, the seed, the size, the fps, the Godot version and the SIEDLER_DIR path, so a result of one view is never
-# reused for the other. A result is stored in play-out/.cache/<hash>/ only for exit status 0 or 1. Each call
-# past the argument checks appends one line to play-out/runs.log, which ends with view=map or view=game. Bad
-# arguments exit 2 and leave no trace.
+# every tracked or untracked, not ignored file under src/ and scenes/. It also covers the project files, the
+# play script, the view, the seed, the size, the fps, the Godot version and the SIEDLER_DIR path. So a result of
+# one view is never reused for the other. A result is stored in play-out/.cache/<hash>/ only for exit status 0
+# or 1. Each call past the argument checks appends one line to play-out/runs.log. That line ends with view=map
+# or view=game. Bad arguments exit 2 and leave no trace.
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
 # call waits on a live owner, says so once on stderr, and takes over the lock of a dead one under the mutex
 # play-out/.lock-<stem>.takeover. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a

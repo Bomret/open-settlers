@@ -46,16 +46,17 @@ failed `expect` or a problem in the script.
   back into `play-out/<stem>/` (no Movie Maker frames: the store leaves them out, and `--fresh` writes them again), the stored `WARN`/`ERROR` lines printed under a `reused` line that ends
   with the stored exit status, which the wrapper exits with. Only a run that exits 0 or 1 is stored. `--fresh` always runs and replaces the
   stored result.
-- The hash covers every tracked or untracked, not ignored file under `src/` and `scenes/` (content and
-  path), `project.godot`, `OpenSettlers.csproj`, `global.json`, the play script, the view, the seed, the size, the
-  frame rate, the Godot version, and the `SIEDLER_DIR` path. It leaves out the install's content and
-  `.godot/`. After a change to the install, run with `--fresh`.
+- The hash covers every tracked or untracked, not ignored file under `src/` and `scenes/`, by content and
+  path. It also covers `project.godot`, `OpenSettlers.csproj`, `global.json`, and the play script. It covers
+  the view, the seed, the size, the frame rate, the Godot version, and the `SIEDLER_DIR` path. It leaves out
+  the install's content and `.godot/`. After a change to the install, run with `--fresh`.
 - A failed build prints the build output, starts no Godot, stores nothing, and exits 3. Bad arguments
   exit 2 with a message and run, store, and log nothing.
-- Each call appends one tab-separated line to `play-out/runs.log`: UTC time, input hash, `HEAD`, `clean`
-  or `dirty` (an untracked file counts), stem, `seed=<s>`, `size=<n>`, `fps=<n>`, `exit=<status>`,
-  `run`, `reused`, or `build` (a failed build), and `view=map` or `view=game`. A line proves a run at a tip when its `HEAD` equals the
-  tip and it reads `clean`.
+- Each call appends one tab-separated line to `play-out/runs.log`. It holds the UTC time, input hash, and
+  `HEAD`. Next comes `clean` or `dirty`, where an untracked file counts as dirty. Then come the stem,
+  `seed=<s>`, `size=<n>`, `fps=<n>`, and `exit=<status>`. Then comes `run`, `reused`, or `build`, where `build`
+  is a failed build. The line ends with `view=map` or `view=game`. A line proves a run at a tip when its `HEAD`
+  equals the tip and it reads `clean`.
 - Calls for one stem run one at a time: a second call waits on the lock directory
   `play-out/.lock-<stem>`, says so once on stderr, then hashes its inputs and reuses what the first
   stored. Other stems run in parallel. The lock holds its owner's pid, and a call takes over the lock of
