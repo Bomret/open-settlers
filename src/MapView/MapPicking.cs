@@ -106,9 +106,43 @@ public static class MapPicking
         int row,
         out double screenX,
         out double screenY
+    ) =>
+        Aim(
+            map,
+            cameraX,
+            cameraY,
+            scale,
+            viewWidth,
+            viewHeight,
+            barHeight,
+            column,
+            row,
+            out screenX,
+            out screenY,
+            out _
+        );
+
+    /// <summary>
+    /// <see cref="Aim(Map, double, double, double, double, double, double, int, int, out double, out double)"/>, which
+    /// also gives the offset of the copy the node is aimed in, (0, 0) on a problem.
+    /// </summary>
+    public static string? Aim(
+        Map map,
+        double cameraX,
+        double cameraY,
+        double scale,
+        double viewWidth,
+        double viewHeight,
+        double barHeight,
+        int column,
+        int row,
+        out double screenX,
+        out double screenY,
+        out (int X, int Y) copy
     )
     {
         (screenX, screenY) = (0, 0);
+        copy = (0, 0);
         var width = map.Size.Width;
         var rows = map.Size.Height;
         if (column < 0 || column >= width || row < 0 || row >= rows)
@@ -117,6 +151,7 @@ public static class MapPicking
         var (x, y) = Camera.NodePosition(column, row);
         y -= (map.Layer(MapLayer.Height)[row * width + column] & Map.HeightMask) * TerrainTriangles.HeightStep;
         (double X, double Y)? best = null;
+        var bestCopy = (X: 0, Y: 0);
         var bestDistance = double.MaxValue;
         var underBar = false;
         foreach (var (copyX, copyY) in new Camera(map.Size).Copies())
@@ -138,6 +173,7 @@ public static class MapPicking
             {
                 bestDistance = distance;
                 best = (pointX, pointY);
+                bestCopy = (copyX, copyY);
             }
         }
 
@@ -151,6 +187,7 @@ public static class MapPicking
             return $"tile {column},{row} is drawn on the same point as tile {picked.X},{picked.Y}";
 
         (screenX, screenY) = at;
+        copy = bestCopy;
 
         return null;
     }

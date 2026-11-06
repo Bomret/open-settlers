@@ -148,7 +148,15 @@ public sealed class PlayScriptTests
     [DataRow("pinch 0", "positive")]
     [DataRow("pinch big", "positive")]
     [DataRow("swipe 1", "takes 2 arguments")]
-    [DataRow("shot", "takes 1 argument")]
+    [DataRow("shot", "takes 1, 3, 4, or 5 arguments")]
+    [DataRow("shot a 1", "takes 1, 3, 4, or 5 arguments")]
+    [DataRow("shot a 1 2 3 4 5", "takes 1, 3, 4, or 5 arguments")]
+    [DataRow("shot a -1 2", "not a whole number of zero or more")]
+    [DataRow("shot a 1 2 x", "not a whole number of zero or more")]
+    [DataRow("shot a 1 2 1 0", "not a whole number of 1 or more")]
+    [DataRow("shot a 1 2 1 1.5", "not a whole number of 1 or more")]
+    [DataRow("shot a/b 1 2", "no file name")]
+    [DataRow("dump a 1 2", "takes 1 argument")]
     [DataRow("shot a/b", "no file name")]
     [DataRow("dump ..", "no file name")]
     [DataRow("shot ../x", "no file name")]
@@ -160,6 +168,41 @@ public sealed class PlayScriptTests
         Assert.HasCount(1, script.Problems);
         StringAssert.StartsWith(script.Problems[0], "play/t.play line 2: ");
         StringAssert.Contains(script.Problems[0], reason);
+    }
+
+    [TestMethod]
+    public void AShotStepAtATileReadsItsRadiusAndScaleWithTheirDefaults()
+    {
+        var script = Parse("shot a 3 4\nshot b 3 4 0\nshot c 3 4 2 3");
+
+        Assert.IsEmpty(script.Problems);
+        Assert.AreEqual(
+            new ShotStep
+            {
+                Line = 1,
+                Name = "a",
+                Tile = new ShotTile(3, 4, 1, 1),
+            },
+            script.Steps[0]
+        );
+        Assert.AreEqual(
+            new ShotStep
+            {
+                Line = 2,
+                Name = "b",
+                Tile = new ShotTile(3, 4, 0, 1),
+            },
+            script.Steps[1]
+        );
+        Assert.AreEqual(
+            new ShotStep
+            {
+                Line = 3,
+                Name = "c",
+                Tile = new ShotTile(3, 4, 2, 3),
+            },
+            script.Steps[2]
+        );
     }
 
     [TestMethod]

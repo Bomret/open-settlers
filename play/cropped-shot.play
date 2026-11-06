@@ -1,0 +1,9 @@
+# A shot cropped around one tile: tile 21,4 on the map view, with seed 1234567812345678 and size 1:
+#   --map --seed 1234567812345678 --size 1 --play play/cropped-shot.play
+# tile-whole is the whole frame; tile is the tiles within 2 steps of 21,4 and the room above them for the tallest
+# object sprite, enlarged twice.
+expect seed = 1234567812345678
+expect size = 1
+wait 0.3
+shot tile-whole
+shot tile 21 4 2 2
