@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
@@ -52,6 +53,7 @@ public sealed class FastForwardTests
                 Job = Settler.WoodcutterJob,
                 State = 0x11,
                 MaxTicks = 5000,
+                Text = "fast-forward woodcutter state 0x11 max 5000",
             },
             step
         );
@@ -69,15 +71,73 @@ public sealed class FastForwardTests
                 Job = Settler.CarrierJob,
                 State = null,
                 MaxTicks = 7,
+                Text = "fast-forward carrier carrying max 7",
             },
             step
         );
     }
 
     [TestMethod]
-    public void AStateTakesDecimalOrHex()
+    [DataRow("17")]
+    [DataRow("0x11")]
+    [DataRow("0X11")]
+    public void AStateTakesDecimalOrHex(string written)
     {
-        Assert.AreEqual(17, Step("fast-forward woodcutter state 17 max 1").State);
+        Assert.AreEqual(17, Step($"fast-forward woodcutter state {written} max 1").State);
+    }
+
+    [TestMethod]
+    public void AFailureNamesTheStepAsWritten()
+    {
+        var game = WoodcuttingTests.World(true, out _);
+
+        var problem = Step("fast-forward woodcutter state 17 max 0").Run(game);
+
+        Assert.AreEqual("fast-forward woodcutter state 17 max 0: not reached after 0 ticks", problem);
+    }
+
+    [TestMethod]
+    public void AfterAFastForwardNoTickIsDueUntilTheNextShotIsTaken()
+    {
+        var game = WoodcuttingTests.World(true, out _);
+        var pacer = new TickPacer();
+
+        var problem = Step("fast-forward woodcutter state 0x11 max 5000").Apply(game, true, pacer);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(0, pacer.Due(2), "the held game ticks no frame");
+        Assert.AreEqual(0, pacer.Due(2), "and no later frame either");
+        pacer.ShotTaken();
+        Assert.AreEqual(25, pacer.Due(2), "after the shot the game runs on, the held time not counted");
+    }
+
+    [TestMethod]
+    public void TheMapViewRefusesTheStepAndHoldsNothing()
+    {
+        var pacer = new TickPacer();
+        var run = new PlayRun(
+            PlayScript.Parse("fast-forward woodcutter carrying max 5", "play/t.play"),
+            () => new PlayState(5, 6, 1f, "1", 1),
+            Path.Combine(Path.GetTempPath(), "ff-unused"),
+            step => step is FastForwardStep f ? f.Apply(null, false, pacer) : null
+        );
+
+        run.Advance(1);
+
+        Assert.IsTrue(run.Finished);
+        Assert.AreEqual(
+            "play/t.play line 1: fast-forward needs the game view, use --game-view",
+            run.Problems.Single()
+        );
+        Assert.AreEqual(25, pacer.Due(2));
+    }
+
+    [TestMethod]
+    public void AGameViewWithNoGameRefusesTheStep()
+    {
+        var problem = Step("fast-forward woodcutter carrying max 5").Apply(null, true, new TickPacer());
+
+        Assert.AreEqual("fast-forward: no game is running", problem);
     }
 
     [TestMethod]

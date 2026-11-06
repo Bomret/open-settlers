@@ -140,16 +140,14 @@ public partial class MapViewControl : Control
 
     /// <summary>
     /// A play run's <c>fast-forward</c> step: ticks the game without drawing until the step's condition holds, then draws
-    /// once. Null when it holds; else the problem. The map view has no game, so it refuses the step.
+    /// once. The game then ticks no more until the next shot (<see cref="ShotTaken"/>). Null when it holds; else the problem.
     /// </summary>
     public string? FastForward(FastForwardStep step)
     {
-        if (!_gameView)
-            return "fast-forward needs the game view, use --game-view";
-        if (_game is null)
-            return "fast-forward: no game is running";
+        var problem = step.Apply(_game, _gameView, _pacer);
+        if (_game is null || !_gameView)
+            return problem;
 
-        var problem = step.Run(_game);
         _ticks.Text = $"Tick {_game.TickCount}";
         _logs.Text = CastleReadout.Text(_game.CastleLogs);
         UpdateSettlers();
@@ -157,6 +155,9 @@ public partial class MapViewControl : Control
 
         return problem;
     }
+
+    /// <summary>A play run has taken a shot: a game held by a fast-forward runs on.</summary>
+    public void ShotTaken() => _pacer.ShotTaken();
 
     /// <inheritdoc/>
     public override void _Ready()

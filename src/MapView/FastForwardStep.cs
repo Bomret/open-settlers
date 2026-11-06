@@ -1,4 +1,3 @@
-using System.Globalization;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -60,9 +59,23 @@ public sealed record FastForwardStep : PlayStep
         return null;
     }
 
-    /// <summary>The step as a script writes it.</summary>
-    public string Text =>
-        $"fast-forward {(Job == Settler.CarrierJob ? "carrier" : "woodcutter")} "
-        + (State is { } state ? $"state 0x{state.ToString("x", CultureInfo.InvariantCulture)}" : "carrying")
-        + $" max {MaxTicks.ToString(CultureInfo.InvariantCulture)}";
+    /// <summary>The step as the script wrote it.</summary>
+    public required string Text { get; init; }
+
+    /// <summary>
+    /// The step in a view: <see cref="Run"/> on its game, then holds <paramref name="pacer"/> until the next shot. A
+    /// view with no game view (the map view) or no game refuses it; null when the step is met, else the problem.
+    /// </summary>
+    public string? Apply(Game? game, bool gameView, TickPacer pacer)
+    {
+        if (!gameView)
+            return "fast-forward needs the game view, use --game-view";
+        if (game is null)
+            return "fast-forward: no game is running";
+
+        var problem = Run(game);
+        pacer.Hold();
+
+        return problem;
+    }
 }

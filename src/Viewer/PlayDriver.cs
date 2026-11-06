@@ -255,6 +255,7 @@ public partial class PlayDriver : Node
             Directory.CreateDirectory(_outputFolder);
             var image = GetViewport().GetTexture().GetImage();
             var saved = image.SavePng(file);
+            _view.ShotTaken();
 
             return saved == Error.Ok ? null : $"cannot write '{file}': {saved}";
         }

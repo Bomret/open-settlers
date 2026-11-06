@@ -333,9 +333,8 @@ public sealed class PlayScript
     static (PlayStep?, string?) ParseFastForward(string[] args, int number)
     {
         const string Usage = "'fast-forward' takes <job> state <n> max <ticks> or <job> carrying max <ticks>";
-        var carrying = args.Length == 4 && args[1] == "carrying" && args[2] == "max";
         var state = args.Length == 5 && args[1] == "state" && args[3] == "max";
-        if (!carrying && !state)
+        if (!state && !(args.Length == 4 && args[1] == "carrying" && args[2] == "max"))
             return (null, Usage);
 
         var job = args[0] switch
@@ -347,14 +346,9 @@ public sealed class PlayScript
         if (job < 0)
             return (null, $"'{args[0]}' is not woodcutter or carrier");
 
-        int? wanted = null;
-        if (state)
-        {
-            if (!Whole(args[2], out var n))
-                return (null, $"'{args[2]}' is not a whole number of zero or more");
-            wanted = n;
-        }
-
+        var n = 0;
+        if (state && !Whole(args[2], out n))
+            return (null, $"'{args[2]}' is not a whole number of zero or more");
         if (!Whole(args[^1], out var max))
             return (null, $"'{args[^1]}' is not a whole number of zero or more");
 
@@ -363,8 +357,9 @@ public sealed class PlayScript
             {
                 Line = number,
                 Job = job,
-                State = wanted,
+                State = state ? n : null,
                 MaxTicks = max,
+                Text = "fast-forward " + string.Join(' ', args),
             },
             null
         );
