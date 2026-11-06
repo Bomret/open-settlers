@@ -62,6 +62,16 @@ One run of the map view or the game view under Godot's Movie Maker that executes
 quits after its last step.
 _Avoid_: replay, recording
 
+**Thing**
+Anything that stands on a map node: a map object, a settler, a building, a flag, or a node of a road. A thing
+has a kind, a node, the raw values the engine holds for it, and a name where the name table has one.
+_Avoid_: entity, item, object (a map object is one kind of thing)
+
+**Name table**
+Open Settlers' own names for the original's bare codes: map object codes, settler jobs and states, and
+building types. Each entry cites its evidence; a code with no entry shows raw.
+_Avoid_: lookup, code map
+
 ## Game rules
 
 **Rule**
