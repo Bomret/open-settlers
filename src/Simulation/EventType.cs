@@ -29,7 +29,31 @@ public static class EventType
     /// <summary>The layout entry that puts a good on a flag.</summary>
     public const string LayoutGood = "layout-good";
 
+    /// <summary>A settler sent home takes the node it stands on.</summary>
+    public const string ClaimedHome = "claimed-home";
+
+    /// <summary>A settler sent home searches for the nearest flag with a road.</summary>
+    public const string SearchedHome = "searched-home";
+
+    /// <summary>A settler on its way home ends its free walk; on a flag with a road it starts the walk to the storage.</summary>
+    public const string ArrivedHome = "arrived-home";
+
+    /// <summary>A settler on its way home enters the storage.</summary>
+    public const string EnteredStorage = "entered-storage";
+
     /// <summary>Every type, for a check of a name.</summary>
     public static IReadOnlyList<string> All { get; } =
-    [PlaceCastle, PlaceFlag, BuildRoad, PlaceBuilding, LayoutInHut, LayoutWaitingOnRoad, LayoutGood];
+    [
+        PlaceCastle,
+        PlaceFlag,
+        BuildRoad,
+        PlaceBuilding,
+        LayoutInHut,
+        LayoutWaitingOnRoad,
+        LayoutGood,
+        ClaimedHome,
+        SearchedHome,
+        ArrivedHome,
+        EnteredStorage,
+    ];
 }
