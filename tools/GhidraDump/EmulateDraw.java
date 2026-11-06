@@ -20,7 +20,9 @@
 //                            settler record, in the order of the rows and of the records in a row, the settler's slot and the
 //                            sprites 0x406610 blits, as slot:entry/colour/x,y;... with the colour -1 for a sprite blitted as
 //                            it is (0x405590) and the palette index for a colour overlay (0x405880); records are separated
-//                            by |. The shadow before each settler (0x4061a0) and the sound request (0x44fe13) are skipped.
+//                            by |. For each settler drawn, t<slot>= gives the timer and the stamp (the words at 2 and 8) it held
+//                            before the view pass gave it its turn. The shadow before each settler (0x4061a0) and the sound
+//                            request (0x44fe13) are skipped.
 //                            The run fails, and prints no line, where a pass of a window draws no settler or no window pass
 //                            is reached.
 //
@@ -178,6 +180,7 @@ public class EmulateDraw extends EmulateMapStart {
             viewReady = true;
         }
         drawn.clear();
+        byte[] before = emu.readMemory(toAddr(TABLES + 0x40000), SETTLER_BYTES);
         rowSettlers.clear();
         for (int i = 0; i <= VIEW_ROWS; i++) {
             rowSettlers.add(new ArrayList<>());
@@ -211,6 +214,15 @@ public class EmulateDraw extends EmulateMapStart {
             }
         }
         settlersSeen = now.clone();
+        // The timer and the stamp (the words at 2 and 8) each drawn settler held before the view pass gave it a turn.
+        for (String record : drawn) {
+            int drawnSlot = Integer.parseInt(record.substring(0, record.indexOf(':')));
+            StringBuilder held = new StringBuilder();
+            for (int i : new int[] {2, 3, 8, 9}) {
+                held.append(String.format("%02X", before[16 * drawnSlot + i] & 0xff));
+            }
+            line.append(" t").append(drawnSlot).append("=").append(held);
+        }
         line.append(" d=").append(String.join("|", drawn));
         lines.add(line.toString());
         recorded++;
