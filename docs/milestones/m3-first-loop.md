@@ -18,7 +18,7 @@ left open:
   ([Goods at a flag](../rules/goods.md#the-delivery-into-the-castle)). likely
 - `Table16`: the states other than 1 to 6, 10, 12, 15, 0xe, 0x42 to 0x45, 0x19, 0x1c, and the fields they use (state 3 and 0x42 are
   settled for a carrier, with and without goods: [Carriers](../rules/carriers.md#the-carriers-walk),
-  [Goods at a flag](../rules/goods.md)). The code between `0x43013b` and `0x4312ed` is the handler of state 0x28 (a soldier at a
+  [Goods at a flag](../rules/goods.md)). The code between `0x43013b` and `0x4312ed` is the handler of state 0x34 (a soldier at a
   military building), not carrier code. guess
 - The player block's transport priority table (`+good - 0x55` from the pointer at `+0x64` of the state): it reads 0 in the verb
   `goods:`, so a second good that waits for a road never takes the road's byte again, **inferred**. Open lead.

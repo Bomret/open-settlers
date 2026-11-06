@@ -9,7 +9,9 @@ for searching with `grep`:
   references from inside another function is a case block or jump target of that function.
 - `ApplyIndexNames.java` applies the names of the "By address" table in
   `docs/rules/program-index.md` to the project: function names at code addresses, labels at data
-  addresses.
+  addresses. A row whose role starts with "Data:" gets a label even in the code section, and a
+  function at its address is removed together with its instructions up to the next function or index
+  row.
 - `DumpProgram.java` writes the dump.
 - `StateFields.java` writes the table of game-state fields.
 
