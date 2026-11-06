@@ -29,6 +29,117 @@ public static class EventType
     /// <summary>The layout entry that puts a good on a flag.</summary>
     public const string LayoutGood = "layout-good";
 
+    /// <summary>A settler sent home takes the node it stands on.</summary>
+    public const string ClaimedHome = "claimed-home";
+
+    /// <summary>A settler sent home searches for the nearest flag with a road.</summary>
+    public const string SearchedHome = "searched-home";
+
+    /// <summary>A settler on its way home ends its free walk; on a flag with a road it starts the walk to the storage.</summary>
+    public const string ArrivedHome = "arrived-home";
+
+    /// <summary>A settler on its way home enters the storage.</summary>
+    public const string EnteredStorage = "entered-storage";
+
+    /// <summary>A building asks the castle for a worker and a waiting settler is sent out; the other thing is the one at the other end.</summary>
+    public const string WorkerRequested = "worker-requested";
+
+    /// <summary>A building's handler finds no worker and marks the request to be made again.</summary>
+    public const string BuildingHandled = "building-handled";
+
+    /// <summary>The scan that clears the retry bit of a building's status.</summary>
+    public const string RetryBitsCleared = "retry-bits-cleared";
+
+    /// <summary>A settler's turn that only waits out or counts down its timer.</summary>
+    public const string Visited = "visited";
+
+    /// <summary>A knight's turn in the castle: its timer and the draws for a promotion.</summary>
+    public const string KnightIdled = "knight-idled";
+
+    /// <summary>The settler that stands by while the castle is built adds to the castle's progress.</summary>
+    public const string Builder = "builder";
+
+    /// <summary>A settler leaves the castle by its door, or waits for a busy node.</summary>
+    public const string Left = "left";
+
+    /// <summary>A settler takes another node.</summary>
+    public const string Moved = "moved";
+
+    /// <summary>A settler on the road chooses its way, or turns away from a flag no road leads on from.</summary>
+    public const string Walked = "walked";
+
+    /// <summary>A settler's step on a road, or the wait for a node another settler stands on.</summary>
+    public const string Stepped = "stepped";
+
+    /// <summary>A settler at a flag goes on to the building there.</summary>
+    public const string Entered = "entered";
+
+    /// <summary>A flag taken down (removal).</summary>
+    public const string TookFlagDown = "took-flag-down";
+
+    /// <summary>A building taken down (removal).</summary>
+    public const string TookBuildingDown = "took-building-down";
+
+    /// <summary>The flag at the end of a road that was taken down (removal).</summary>
+    public const string EndOfRoad = "end-of-road";
+
+    /// <summary>A settler on a road that goes is dismissed (removal).</summary>
+    public const string Dismiss = "dismiss";
+
+    /// <summary>A carrier that waits next to a flag is told to go home (removal).</summary>
+    public const string DismissWaiting = "dismiss-waiting";
+
+    /// <summary>A carrier that waits next to a flag is taken with the settlers of a road (removal).</summary>
+    public const string TakeWaiting = "take-waiting";
+
+    /// <summary>A dismissed carrier that waited goes home (removal).</summary>
+    public const string Dismissed = "dismissed";
+
+    /// <summary>A carrier that waited at the end of a joined road takes its place on it (removal).</summary>
+    public const string Rejoined = "rejoined";
+
+    /// <summary>A good lost is counted back against the building it was bound for (removal).</summary>
+    public const string CountLost = "count-lost";
+
+    /// <summary>A settler on a road to be joined is taken with it (removal).</summary>
+    public const string Gather = "gather";
+
+    /// <summary>The join of the two roads of a flag taken down (removal).</summary>
+    public const string JoinRoads = "join-roads";
+
+    /// <summary>The worker of a building taken down walks home (removal).</summary>
+    public const string SendWorkerHome = "send-worker-home";
+
+    /// <summary>What waits for a building taken down is released (removal).</summary>
+    public const string ReleaseGoodsFor = "release-goods-for";
+
+    /// <summary>A building that burns loses time off its countdown (removal).</summary>
+    public const string Burn = "burn";
+
+    /// <summary>A burnt building's slot is freed: the event that ends the building (removal).</summary>
+    public const string FreeBuilding = "free-building";
+
+    /// <summary>A flag's slot is freed: the event that ends the flag (removal).</summary>
+    public const string FreeFlagSlot = "free-flag-slot";
+
+    /// <summary>A road asks the castle for a carrier: the settler sent, and the status and road bytes of the road's flags.</summary>
+    public const string CarrierRequested = "carrier-requested";
+
+    /// <summary>A flag's turn changes the status bits of its roads.</summary>
+    public const string VisitFlag = "visit-flag";
+
+    /// <summary>The retry scan clears a flag's bit for a request that found no carrier.</summary>
+    public const string ClearFlagRetryBits = "clear-flag-retry-bits";
+
+    /// <summary>A carrier takes the road it was sent to.</summary>
+    public const string EnterRoad = "enter-road";
+
+    /// <summary>A carrier on its road waits out a step at a node.</summary>
+    public const string WalkRoad = "walk-road";
+
+    /// <summary>A carrier next to the flag at the end of its road waits.</summary>
+    public const string Wait = "wait";
+
     /// <summary>A waiting carrier sees a good to fetch and turns toward it.</summary>
     public const string Fetch = "fetch";
 
@@ -46,5 +157,55 @@ public static class EventType
 
     /// <summary>Every type, for a check of a name.</summary>
     public static IReadOnlyList<string> All { get; } =
-    [PlaceCastle, PlaceFlag, BuildRoad, PlaceBuilding, LayoutInHut, LayoutWaitingOnRoad, LayoutGood, Fetch, Claim, Exchange, Deliver, Handover];
+    [
+        PlaceCastle,
+        PlaceFlag,
+        BuildRoad,
+        PlaceBuilding,
+        LayoutInHut,
+        LayoutWaitingOnRoad,
+        LayoutGood,
+        ClaimedHome,
+        SearchedHome,
+        ArrivedHome,
+        EnteredStorage,
+        WorkerRequested,
+        BuildingHandled,
+        RetryBitsCleared,
+        Visited,
+        KnightIdled,
+        Builder,
+        Left,
+        Moved,
+        Walked,
+        Stepped,
+        Entered,
+        TookFlagDown,
+        TookBuildingDown,
+        EndOfRoad,
+        Dismiss,
+        DismissWaiting,
+        TakeWaiting,
+        Dismissed,
+        Rejoined,
+        CountLost,
+        Gather,
+        JoinRoads,
+        SendWorkerHome,
+        ReleaseGoodsFor,
+        Burn,
+        FreeBuilding,
+        FreeFlagSlot,
+        CarrierRequested,
+        VisitFlag,
+        ClearFlagRetryBits,
+        EnterRoad,
+        WalkRoad,
+        Wait,
+        Fetch,
+        Claim,
+        Exchange,
+        Deliver,
+        Handover,
+    ];
 }

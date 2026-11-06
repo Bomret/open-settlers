@@ -7,7 +7,7 @@ namespace OpenSettlers.MapView;
 /// <summary>
 /// A play run of a <see cref="PlayScript"/> (<c>CONTEXT.md</c>) on simulated time: the caller feeds each frame's time
 /// to <see cref="Advance"/> and the run executes every step that is due, in file order. <c>wait</c>, <c>dump</c>, <c>list</c>, and
-/// <c>expect</c>, <c>expect-at</c>, and <c>expect-count</c> are the run's own; every other step goes to the <c>input</c> function, which sends it to the view.
+/// <c>expect</c>, <c>expect-at</c>, <c>expect-count</c>, and the named-thing steps (<see cref="NamedThings"/>) are the run's own; every other step goes to the <c>input</c> function, which sends it to the view.
 /// A step that fails or throws ends the run with a problem naming the script and the line. The run never logs and
 /// never throws for a step; the caller logs <see cref="Problems"/> and quits with the exit code.
 /// </summary>
@@ -22,6 +22,7 @@ public sealed class PlayRun(
     public const int FailedExitCode = 1;
 
     readonly List<string> _problems = [];
+    readonly NamedThings _named = new();
     HoldStep? _held;
     double _clock;
     double _due;
@@ -112,6 +113,18 @@ public sealed class PlayRun(
                 return state().Check(expectAt);
             case ExpectCountStep expectCount:
                 return state().Check(expectCount);
+            case NameStep name:
+                return _named.Run(name, state());
+            case MarkStep mark:
+                return _named.Run(mark, state());
+            case ExpectThingStep expectThing:
+                return _named.Run(expectThing, state());
+            case ExpectEventStep expectEvent:
+                return _named.Run(expectEvent, state());
+            case ExpectGoneStep expectGone:
+                return _named.Run(expectGone, state());
+            case EventsStep events:
+                return _named.Run(events, state(), outputFolder);
             case HoldStep hold:
                 _held = hold;
                 _due += hold.Seconds;

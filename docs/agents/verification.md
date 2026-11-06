@@ -66,7 +66,7 @@ When a line is about one place, take a cropped shot, `shot <name> <column> <row>
 than the whole frame: it keeps the tiles within `radius` steps of the tile (default 1) and the room above them
 for the tallest object sprite, enlarged by the whole factor `scale` (default 1). The tile is placed as
 `click-tile` places it and fails with its messages; a crop is clipped to the canvas, and one over 16384 pixels
-on a side once enlarged fails the step. README.md's "Run a play script" lists every step.
+on a side once enlarged fails the step. README.md's "Run a play script" lists every step. The named-thing steps (`name`, `mark`, `expect <alias>.<field>`, `expect-event`, `expect-gone`, `events`) check one thing's fields and events in the game view; `play/named-woodcutter.play` shows them on `layouts/woodcutter.jsonc`.
 
 ### Layouts: reach a moment without clicks
 

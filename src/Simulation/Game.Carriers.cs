@@ -21,6 +21,10 @@ public sealed partial class Game
     private readonly List<byte[]> _roadBytes = [];
     private int _flagCursor;
 
+    // The command cause of each road a command built: the carrier sent to it carries it on until it waits on its road. A road no
+    // command built (a layout's) has none. The request of a carrier takes the entry.
+    private readonly Dictionary<Road, Cause> _roadCauses = [];
+
     /// <summary>
     /// The status byte of a flag's item (byte 5): bit 7 marks a request for a carrier that found none, until the retry
     /// scan clears it, and bit <c>d</c> a road in direction <c>d</c> that holds a carrier.
@@ -160,6 +164,11 @@ public sealed partial class Game
         {
             var had = (_flagStatus[_flagCursor] & 0x80) != 0;
             _flagStatus[_flagCursor] &= 0x7f;
+            if (had)
+            {
+                RecordFlag(_flagCursor, EventType.ClearFlagRetryBits, Cause.Carriers);
+            }
+
             if (had && --left == 0)
             {
                 return;
@@ -216,7 +225,11 @@ public sealed partial class Game
             }
         }
 
-        _flagStatus[slot] = status;
+        if (status != _flagStatus[slot])
+        {
+            _flagStatus[slot] = status;
+            RecordFlag(slot, EventType.VisitFlag, Cause.Carriers);
+        }
     }
 
     // 0x42b455: the road asks the castle for a carrier. The search runs over the land roads from both ends of the road
@@ -234,7 +247,8 @@ public sealed partial class Game
             return false;
         }
 
-        var settler = _settlers[_waiting[job]];
+        var carrier = _waiting[job];
+        var settler = _settlers[carrier];
         _waiting[job] = 0;
         settler.Job = Settler.CarrierJob;
         var (flag, flagDirection) = end == 0 ? (slot, direction) : (far, farDirection);
@@ -244,6 +258,18 @@ public sealed partial class Game
         _leaving++;
         _roadBytes[slot][direction] |= 0x80;
         _roadBytes[far][farDirection] |= 0x80;
+        var id = SettlerId(carrier);
+        EndCarry(carrier);
+        var cause = Cause.Carriers;
+        if (_roadCauses.Remove(road, out var placed))
+        {
+            CarryCause(carrier, placed);
+            cause = placed;
+        }
+
+        RecordSettler(carrier, EventType.CarrierRequested, Cause.Carriers, FlagId(flag).ToString());
+        RecordFlag(slot, EventType.CarrierRequested, cause, id.ToString());
+        RecordFlag(far, EventType.CarrierRequested, cause, id.ToString());
 
         return true;
     }
@@ -301,6 +327,10 @@ public sealed partial class Game
         settler.Heading = direction;
         settler.Mode = 0;
         settler.Next = 0;
+        var id = SettlerId(slot);
+        RecordSettler(slot, EventType.EnterRoad, Cause.Carriers, FlagId(settler.Target).ToString());
+        RecordFlag(settler.Target, EventType.EnterRoad, Cause.Carriers, id.ToString());
+        RecordFlag(far, EventType.EnterRoad, Cause.Carriers, id.ToString());
         WalkRoad(slot, settler);
     }
 
@@ -333,6 +363,7 @@ public sealed partial class Game
                 if (direction < 0)
                 {
                     settler.Timer = 0;
+                    RecordSettler(slot, EventType.WalkRoad, Cause.Carriers);
                     return;
                 }
             }
@@ -358,7 +389,7 @@ public sealed partial class Game
                 && (_directionBytes[Map.Layer(MapLayer.Resource)[next]][(direction + 3) % 6] & 0x80) == 0
             )
             {
-                Wait(settler, (direction + 3) % 6, Map.Layer(MapLayer.Resource)[next]);
+                Wait(slot, settler, (direction + 3) % 6, Map.Layer(MapLayer.Resource)[next]);
                 return;
             }
 
@@ -379,7 +410,7 @@ public sealed partial class Game
     // the target. **Not ported:** the work at the flag in state 0x42 (the goods of the next slice).
     // **Inferred:** the fourth turn at a road that holds two carriers is read from the code; no emulator or debugger run reaches
     // it. Open lead in docs/milestones/m3-first-loop.md (the fourth turn of a carrier at the end of a road that holds two).
-    private void Wait(Settler settler, int back, int flag)
+    private void Wait(int slot, Settler settler, int back, int flag)
     {
         settler.Timer = 0x3f;
         settler.Frame = (byte)(settler.Heading + 0x6e);
@@ -394,13 +425,20 @@ public sealed partial class Game
                 _roadBytes[flag][back]--;
                 _roadBytes[far][farDirection]--;
                 settler.Next = 0xff;
+                var id = SettlerId(slot);
+                RecordFlag(flag, EventType.Wait, Cause.Carriers, id.ToString());
+                RecordFlag(far, EventType.Wait, Cause.Carriers, id.ToString());
             }
+
+            RecordSettler(slot, EventType.Wait, Cause.Carriers);
 
             return;
         }
 
         if ((_directionBytes[far][farDirection] & 0x80) != 0)
         {
+            RecordSettler(slot, EventType.Wait, Cause.Carriers);
+
             return;
         }
 
@@ -411,5 +449,6 @@ public sealed partial class Game
         settler.Next = 0;
         settler.State = WaitingState;
         _occupant.Remove(Map.Index(settler.X, settler.Y));
+        RecordSettler(slot, EventType.Wait, Cause.Carriers);
     }
 }
