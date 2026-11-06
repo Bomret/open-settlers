@@ -341,4 +341,65 @@ public sealed class ThingHistoryTests
         Assert.AreEqual(Text(Laid()), Text(Laid()));
         Assert.AreEqual(Text(World()), Text(World()));
     }
+
+    private static List<string> Lines(Game game) =>
+        [.. Thing.Of(game, new NameTable(TestProgram.Made())).Select(thing => thing.Line())];
+
+    [TestMethod]
+    public void EveryFlagLineEndsWithItsId()
+    {
+        var lines = Lines(World()).Where(line => line.StartsWith("flag ", StringComparison.Ordinal)).ToList();
+
+        CollectionAssert.AreEquivalent(
+            new[]
+            {
+                "flag 16,6 slot=0 id=flag#0.1",
+                "flag 18,6 slot=1 id=flag#1.1",
+                "flag 19,4 slot=2 id=flag#2.1",
+                "flag 17,3 slot=3 id=flag#3.1",
+            },
+            lines
+        );
+    }
+
+    [TestMethod]
+    public void ABuildingLineShowsItsIdThenItsFlagAndItsWorkerAsIdsAfterEveryRawValue()
+    {
+        var game = World();
+        var hut = game.Buildings[1];
+        hut.Worker = 12;
+
+        var line = Lines(game).Single(l => l.StartsWith("building 16,2 ", StringComparison.Ordinal));
+
+        Assert.AreEqual(
+            $"building 16,2 type=0x02 constructing=false status=0x{hut.Status:x2} flag=3 worker={hut.Worker} "
+                + $"id=building#1.1 flag-id=flag#3.1 worker-id={game.SettlerId(hut.Worker)} woodcutter-hut",
+            line
+        );
+    }
+
+    [TestMethod]
+    public void ABurningBuildingShowsNoWorkerId()
+    {
+        var game = World();
+        Do(game, CommandKind.RemoveBuilding, 16, 2);
+
+        var line = Lines(game).Single(l => l.StartsWith("building 16,2 ", StringComparison.Ordinal));
+
+        StringAssert.Contains(line, " id=building#1.1 flag-id=flag#3.1 woodcutter-hut");
+        Assert.IsFalse(line.Contains("worker-id", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void ASettlerLineShowsItsIdAndTheFlagItsStateMakesTheTargetAfterEveryRawValue()
+    {
+        var game = Laid();
+        var carrier = game.Settlers.Select((s, slot) => (s, slot)).Single(e => e.s.State == 0x42);
+        var line = Lines(game).Single(l => l.Contains($" id={game.SettlerId(carrier.slot)}", StringComparison.Ordinal));
+
+        StringAssert.StartsWith(line, $"settler {carrier.s.X},{carrier.s.Y} job=0 ");
+        StringAssert.Contains(line, $"stamp={carrier.s.Stamp} id=settler#{carrier.slot}.1 flag-id={game.FlagId(carrier.s.Target)} ");
+        var waiting = Lines(game).Count(l => l.StartsWith("settler ", StringComparison.Ordinal) && l.Contains("flag-id=", StringComparison.Ordinal));
+        Assert.AreEqual(1, waiting, "a settler in the castle has no flag target");
+    }
 }

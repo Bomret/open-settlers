@@ -105,23 +105,26 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     /// </summary>
     public static IReadOnlyList<Thing> Of(Game game, NameTable? names)
     {
-        var buildings = game.Buildings.Where(building => !building.IsFree).ToList();
+        var buildings = game.Buildings.Select((building, slot) => (building, slot)).Where(e => !e.building.IsFree).ToList();
         var flags = game.Flags.Select((flag, slot) => (flag, slot)).Where(entry => !entry.flag.IsFree).ToList();
         var taken = buildings
-            .Select(b => (b.X, b.Y))
+            .Select(e => (e.building.X, e.building.Y))
             .Concat(flags.Select(entry => (entry.flag.X, entry.flag.Y)))
             .ToHashSet();
 
         return
         [
             .. game.Map.Objects.Where(o => !taken.Contains((o.X, o.Y))).Select(o => Of(o, names)),
-            .. game.Settlers.Select(Of),
-            .. buildings.Select(Of),
+            .. game.Settlers.Select((settler, slot) => Of(game, settler, slot)),
+            .. buildings.Select(e => Of(game, e.building, e.slot)),
             .. flags.Select(entry => new Thing(
                 FlagKind,
                 entry.flag.X,
                 entry.flag.Y,
-                [("slot", entry.slot.ToString(CultureInfo.InvariantCulture))],
+                [
+                    ("slot", entry.slot.ToString(CultureInfo.InvariantCulture)),
+                    ("id", game.FlagId(entry.slot).ToString()),
+                ],
                 null
             )),
             .. RoadNodes(game)
@@ -134,6 +137,49 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
                 )),
         ];
     }
+
+    // The settler with the ID of its slot, and the flag its state makes the target (state 0x42 waits next to it; state 2 walks to it
+    // or along the road that leaves it, but not the walk home, which targets a storage). No other state is known to hold a flag
+    // slot in the target.
+    static Thing Of(Game game, Settler settler, int slot)
+    {
+        var thing = Of(settler);
+        var flag = settler.State == 0x42 || (settler.State == 2 && settler.Mode != 0xfe) ? FlagLink(game, settler.Target) : null;
+
+        return thing with
+        {
+            Values =
+            [
+                .. thing.Values,
+                ("id", game.SettlerId(slot).ToString()),
+                .. flag is { } id ? [("flag-id", id)] : Array.Empty<(string, string)>(),
+            ],
+        };
+    }
+
+    // The building with the ID of its slot, and its flag and worker as IDs. A building that burns holds its countdown in the
+    // worker word, so it has no worker link; no worker is slot 0.
+    static Thing Of(Game game, Building building, int slot)
+    {
+        var thing = Of(building);
+        var worker = !building.IsDemolishing && building.Worker > 0 && building.Worker < game.Settlers.Count;
+        var flag = FlagLink(game, building.Flag);
+
+        return thing with
+        {
+            Values =
+            [
+                .. thing.Values,
+                ("id", game.BuildingId(slot).ToString()),
+                .. flag is { } flagId ? [("flag-id", flagId)] : Array.Empty<(string, string)>(),
+                .. worker ? [("worker-id", game.SettlerId(building.Worker).ToString())] : Array.Empty<(string, string)>(),
+            ],
+        };
+    }
+
+    // The ID of the flag in the slot, or null where no flag stands there.
+    static string? FlagLink(Game game, int slot) =>
+        slot >= 0 && slot < game.Flags.Count && !game.Flags[slot].IsFree ? game.FlagId(slot).ToString() : null;
 
     // The directions each road node's roads leave in: a road's steps run from its starting flag, each node holding the
     // way on and the way back; the ending flag holds the way back only.
