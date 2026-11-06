@@ -63,14 +63,18 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
                 ("timer", settler.Timer.ToString(CultureInfo.InvariantCulture)),
                 ("stamp", settler.Stamp.ToString(CultureInfo.InvariantCulture)),
             ],
-            string.Join(
-                " ",
-                new[] { NameTable.JobName(settler.Job), NameTable.StateName(settler.State) }.OfType<string>()
-            )
-                is { Length: > 0 } name
-                ? name
-                : null
+            SettlerName(settler)
         );
+
+    static string? SettlerName(Settler settler)
+    {
+        var name = string.Join(
+            " ",
+            new[] { NameTable.JobName(settler.Job), NameTable.StateName(settler.State) }.OfType<string>()
+        );
+
+        return name.Length > 0 ? name : null;
+    }
 
     /// <summary>The building as a thing: its raw type, never the walk's type index, and its raw status.</summary>
     public static Thing Of(Building building) =>
@@ -87,6 +91,13 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
             ],
             NameTable.BuildingName(building.Type)
         );
+
+    /// <summary>
+    /// The things a <c>list</c> step shows: every thing of <paramref name="game"/> in the game view once a game runs,
+    /// otherwise the map objects of <paramref name="map"/>; empty for no map.
+    /// </summary>
+    public static IReadOnlyList<Thing> Listed(bool gameView, Game? game, Map? map, NameTable? names) =>
+        gameView && game is not null ? Of(game, names) : [.. (map?.Objects ?? []).Select(o => Of(o, names))];
 
     /// <summary>
     /// Every thing of the game: the map objects off the flags' and buildings' nodes, the settlers, the buildings and
@@ -160,7 +171,11 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     public string Line()
     {
         var text = new StringBuilder();
-        text.Append(Kind).Append(' ').Append(X.ToString(CultureInfo.InvariantCulture)).Append(',').Append(Y);
+        text.Append(Kind)
+            .Append(' ')
+            .Append(X.ToString(CultureInfo.InvariantCulture))
+            .Append(',')
+            .Append(Y.ToString(CultureInfo.InvariantCulture));
         foreach (var (field, value) in Values)
         {
             text.Append(' ').Append(field).Append('=').Append(value);

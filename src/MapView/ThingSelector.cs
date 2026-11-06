@@ -25,7 +25,7 @@ public sealed record ThingSelector(string Text, int? RawCode)
         if (text.StartsWith("object:", StringComparison.Ordinal))
         {
             var digits = text.StartsWith(RawPrefix, StringComparison.Ordinal) ? text[RawPrefix.Length..] : "";
-            if (digits.Length == 0 || !Array.TrueForAll(digits.ToCharArray(), Uri.IsHexDigit))
+            if (digits.Length == 0 || !digits.All(Uri.IsHexDigit))
                 return (
                     null,
                     $"'{text}' is a malformed raw code, use object:0x followed by hex digits, such as object:0x0a"
@@ -40,16 +40,21 @@ public sealed record ThingSelector(string Text, int? RawCode)
         }
 
         return Array.IndexOf(Kinds, text) >= 0 || NameTable.IsName(text)
-            ? (new ThingSelector(text, null), null)
+            ? (new ThingSelector(text, null) { UnlistedInMapView = UnlistedKind(text) }, null)
             : (
                 null,
                 $"unknown name '{text}', use a kind ({string.Join(", ", Kinds)}), a name of the name table, or object:0xNN"
             );
     }
 
-    /// <summary>The kind the selector names that a map view cannot list; null for any other selector.</summary>
-    public string? UnlistedInMapView =>
-        RawCode is null && Text != Thing.ObjectKind && Array.IndexOf(Kinds, Text) >= 0 ? Text : null;
+    /// <summary>
+    /// The kind or name the selector names that a map view cannot list: a kind but <c>object</c>, or a name that is no
+    /// object name (a job, state, or building type); null for any other selector.
+    /// </summary>
+    public string? UnlistedInMapView { get; private init; }
+
+    static string? UnlistedKind(string text) =>
+        text != Thing.ObjectKind && (Array.IndexOf(Kinds, text) >= 0 || !NameTable.IsObjectName(text)) ? text : null;
 
     /// <summary>Whether <paramref name="thing"/> is what the selector names.</summary>
     public bool Matches(Thing thing)
@@ -59,6 +64,7 @@ public sealed record ThingSelector(string Text, int? RawCode)
             return thing.Kind == Thing.ObjectKind
                 && thing.Values.Any(v =>
                     v.Field == "code"
+                    && v.Value.StartsWith("0x", StringComparison.Ordinal)
                     && int.TryParse(
                         v.Value.AsSpan(2),
                         NumberStyles.HexNumber,

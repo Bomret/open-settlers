@@ -129,7 +129,7 @@ public sealed class ThingCheckTests
     [TestMethod]
     public void AnExpectCountCountsTheMatchingThings()
     {
-        Assert.IsEmpty(Problems("expect-count tree = 1\nexpect-count object = 2\nexpect-count carrier = 0"));
+        Assert.IsEmpty(Problems("expect-count tree = 1\nexpect-count object = 2\nexpect-count stone = 0"));
         Assert.IsEmpty(Problems("expect-count tree >= 1\nexpect-count tree > 0\nexpect-count tree < 2"));
         Assert.IsEmpty(Problems("expect-count tree <= 1\nexpect-count object:0x31 = 1"));
     }
@@ -160,6 +160,25 @@ public sealed class ThingCheckTests
         var problems = Problems($"expect-at 12 4 {kind}");
 
         StringAssert.Contains(problems[0], $"the map view cannot list {kind}");
+    }
+
+    [TestMethod]
+    [DataRow("carrier")]
+    [DataRow("builder")]
+    [DataRow("walks")]
+    [DataRow("castle")]
+    public void AJobStateOrBuildingTypeNameTheMapViewCannotListFails(string name)
+    {
+        Assert.Contains($"the map view cannot list {name}", Problems($"expect-count {name} = 0")[0]);
+        Assert.Contains($"the map view cannot list {name}", Problems($"expect-at 12 4 {name}")[0]);
+    }
+
+    [TestMethod]
+    public void ARawCodeValueWithoutThePrefixMatchesNothingAndDoesNotThrow()
+    {
+        _state = _state with { Things = [new Thing("object", 1, 1, [("code", "a")], null)] };
+
+        StringAssert.Contains(Problems("expect-at 1 1 object:0x0a")[0], "the node holds object 1,1 code=a");
     }
 
     [TestMethod]

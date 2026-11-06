@@ -453,11 +453,10 @@ public sealed class PlayScript
     {
         if (args.Length != 3)
             return Wrong("expect-at", "3 arguments", args.Length);
-        foreach (var arg in args[..2])
-        {
-            if (!int.TryParse(arg, NumberStyles.None, CultureInfo.InvariantCulture, out _))
-                return (null, $"'{arg}' is not a whole number of zero or more");
-        }
+        if (!int.TryParse(args[0], NumberStyles.None, CultureInfo.InvariantCulture, out var column))
+            return (null, $"'{args[0]}' is not a whole number of zero or more");
+        if (!int.TryParse(args[1], NumberStyles.None, CultureInfo.InvariantCulture, out var row))
+            return (null, $"'{args[1]}' is not a whole number of zero or more");
 
         var (what, problem) = ThingSelector.Parse(args[2]);
         if (what is null)
@@ -467,8 +466,8 @@ public sealed class PlayScript
             new ExpectAtStep
             {
                 Line = number,
-                Column = int.Parse(args[0], CultureInfo.InvariantCulture),
-                Row = int.Parse(args[1], CultureInfo.InvariantCulture),
+                Column = column,
+                Row = row,
                 What = what,
             },
             null

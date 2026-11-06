@@ -138,12 +138,8 @@ public partial class MapViewControl : Control
     System.Collections.Generic.IReadOnlyList<Thing> ListedThings()
     {
         var names = _tables is null ? null : new NameTable(_tables);
-        if (_gameView && _game is not null)
-        {
-            return Thing.Of(_game, names);
-        }
 
-        return [.. (_state.Map?.Objects ?? []).Select(o => Thing.Of(o, names))];
+        return Thing.Listed(_gameView, _game, _state.Map, names);
     }
 
     /// <inheritdoc/>

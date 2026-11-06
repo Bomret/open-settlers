@@ -150,6 +150,51 @@ public sealed class GameThingTests
     }
 
     [TestMethod]
+    public void TheMapViewListsTheMapObjectsWithTheirNames()
+    {
+        var game = World();
+        var names = new NameTable(TestProgram.Made());
+
+        var listed = Thing.Listed(false, game, game.Map, names);
+
+        CollectionAssert.AreEqual(
+            game.Map.Objects.Select(o => Thing.Of(o, names).Line()).ToArray(),
+            listed.Select(thing => thing.Line()).ToArray()
+        );
+        Assert.IsTrue(listed.Any(thing => thing.Name is not null));
+        Assert.IsTrue(listed.All(thing => thing.Kind == Thing.ObjectKind));
+    }
+
+    [TestMethod]
+    public void TheMapViewListsNothingWithoutAMap()
+    {
+        Assert.IsEmpty(Thing.Listed(false, null, null, null));
+    }
+
+    [TestMethod]
+    public void TheGameViewListsThePlacedCastleFlagsAndRoads()
+    {
+        var game = World();
+
+        var lines = Thing
+            .Listed(true, game, game.Map, new NameTable(TestProgram.Made()))
+            .Select(thing => thing.Line())
+            .ToList();
+
+        Assert.IsTrue(lines.Any(line => line.StartsWith("building 15,5 ", StringComparison.Ordinal)));
+        Assert.Contains("flag 16,6 slot=0", lines);
+        Assert.IsTrue(lines.Any(line => line.StartsWith("road 17,6 ", StringComparison.Ordinal)));
+    }
+
+    [TestMethod]
+    public void TheGameViewBeforeAGameListsTheMapObjects()
+    {
+        var map = World().Map;
+
+        Assert.HasCount(map.Objects.Count, Thing.Listed(true, null, map, null));
+    }
+
+    [TestMethod]
     public void NoNodeShowsAFlagOrABuildingAlsoAsAMapObject()
     {
         var lines = Lines(World());
