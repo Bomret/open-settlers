@@ -1,0 +1,11 @@
+# Names the woodcutter of the layout and checks it now, at a mark, and by its events.
+# Run it on the layout: sh tools/play-run.sh named-woodcutter --layout layouts/woodcutter.jsonc --fps 10
+name wc 13 10 settler
+mark start
+expect wc.x = 13
+expect wc.state@start = 0x1
+expect-event wc layout-in-hut cause layout
+fast-forward woodcutter state 0x11 max 20000
+expect wc.state = 0x11
+expect wc.state@start = 0x1
+events wc woodcutter
