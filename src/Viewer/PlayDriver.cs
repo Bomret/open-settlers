@@ -281,6 +281,7 @@ public partial class PlayDriver : Node
                 if (ShotCrop.ScaleProblem(box, tile.Scale) is { } tooLarge)
                     return tooLarge;
 
+                // Canvas units are image pixels: the play run pins the window to WindowSize, so the content scale is 1.
                 image = image.GetRegion(new Rect2I(box.X, box.Y, box.Width, box.Height));
                 if (tile.Scale > 1)
                     image.Resize(box.Width * tile.Scale, box.Height * tile.Scale, Image.Interpolation.Nearest);
