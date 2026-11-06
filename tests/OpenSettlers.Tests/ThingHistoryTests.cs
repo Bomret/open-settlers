@@ -138,4 +138,43 @@ public sealed class ThingHistoryTests
         Assert.AreEqual("settler#0.1", game.SettlerId(0).ToString());
         Assert.AreEqual("settler#19.1", game.SettlerId(19).ToString());
     }
+
+    [TestMethod]
+    public void PlacingTheCastleRecordsTheEventsOfTheCastleItsFlagAndItsSettlers()
+    {
+        var game = Castle();
+        var castle = game.BuildingId(0);
+
+        var events = game.EventsOf(castle);
+
+        Assert.HasCount(1, events);
+        Assert.AreEqual(EventType.PlaceCastle, events[0].Type);
+        Assert.AreEqual(0L, events[0].Tick);
+        Assert.AreEqual(Cause.Placed(castle), events[0].Cause);
+        Assert.AreEqual(game.FlagId(0).ToString(), events[0].Other);
+        Assert.AreEqual(15, events[0].State.Get("x"));
+        Assert.AreEqual(Cause.Placed(castle), game.EventsOf(game.FlagId(0)).Single().Cause);
+        Assert.AreEqual(Cause.Placed(castle), game.EventsOf(game.SettlerId(19)).Single().Cause);
+        Assert.AreEqual(22, game.Events.Count);
+    }
+
+    [TestMethod]
+    public void PlacingAFlagAndABuildingRecordsOneEventEachCausePlacedWithTheThingCommanded()
+    {
+        var game = Castle();
+        Do(game, CommandKind.PlaceFlag, 17, 3);
+        Do(game, CommandKind.PlaceBuilding, 16, 2);
+
+        var flag = game.EventsOf(game.FlagId(1)).Single();
+        var hut = game.EventsOf(game.BuildingId(1)).Single();
+
+        Assert.AreEqual(EventType.PlaceFlag, flag.Type);
+        Assert.AreEqual(1L, flag.Tick);
+        Assert.AreEqual(Cause.Placed(game.FlagId(1)), flag.Cause);
+        Assert.AreEqual(EventType.PlaceBuilding, hut.Type);
+        Assert.AreEqual(2L, hut.Tick);
+        Assert.AreEqual(Cause.Placed(game.BuildingId(1)), hut.Cause);
+        Assert.AreEqual("flag#1.1", hut.Other, "the hut names its flag by the ID the flag has now");
+        Assert.AreEqual(2, hut.State.Get("type"));
+    }
 }

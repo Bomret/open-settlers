@@ -736,6 +736,7 @@ public sealed partial class Game
         }
 
         Fill(_buildingFills, slot);
+        RecordBuilding(slot, EventType.PlaceBuilding, CommandCause(BuildingId(slot)), FlagId(flag).ToString());
 
         return true;
     }
