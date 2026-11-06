@@ -143,7 +143,8 @@ public partial class MapViewControl : Control
                 : ObjectDraws
                     .FlagGoodsOf(_game)
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0)),
-            ListedThings()
+            ListedThings(),
+            _gameView ? _game : null
         );
 
     /// <summary>

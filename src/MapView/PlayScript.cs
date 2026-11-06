@@ -188,6 +188,83 @@ public sealed record ExpectCountStep : PlayStep
     public required int Count { get; init; }
 }
 
+/// <summary><c>name &lt;alias&gt; &lt;column&gt; &lt;row&gt; &lt;what&gt;</c>: saves the ID of the one thing at the node that matches <see cref="What"/>.</summary>
+public sealed record NameStep : PlayStep
+{
+    /// <summary>The alias the ID is saved under.</summary>
+    public required string Alias { get; init; }
+
+    /// <summary>The node's column; zero or more.</summary>
+    public required int Column { get; init; }
+
+    /// <summary>The node's row; zero or more.</summary>
+    public required int Row { get; init; }
+
+    /// <summary>What the thing must be.</summary>
+    public required ThingSelector What { get; init; }
+}
+
+/// <summary><c>mark &lt;label&gt;</c>: saves the game as it stands now under a label.</summary>
+public sealed record MarkStep : PlayStep
+{
+    /// <summary>The label; not a whole number.</summary>
+    public required string Label { get; init; }
+}
+
+/// <summary>
+/// <c>expect &lt;alias&gt;.&lt;field&gt;[@&lt;label&gt;|@&lt;tick&gt;] &lt;op&gt; &lt;value&gt;</c>: checks a field of a named thing now, at a mark, or at a tick.
+/// </summary>
+public sealed record ExpectThingStep : PlayStep
+{
+    /// <summary>The alias of the thing.</summary>
+    public required string Alias { get; init; }
+
+    /// <summary>A field of the thing's list line or of its state in an event.</summary>
+    public required string Field { get; init; }
+
+    /// <summary>The mark label after <c>@</c>; null for none.</summary>
+    public string? Mark { get; init; }
+
+    /// <summary>The tick after <c>@</c>; null for none.</summary>
+    public long? Tick { get; init; }
+
+    /// <summary>One of <c>&lt;</c>, <c>&lt;=</c>, <c>=</c>, <c>&gt;=</c>, <c>&gt;</c>; a link field takes only <c>=</c>.</summary>
+    public required string Op { get; init; }
+
+    /// <summary>The value as written: a number, a thing ID, or an alias.</summary>
+    public required string Value { get; init; }
+}
+
+/// <summary><c>expect-event &lt;alias&gt; &lt;type&gt; [cause &lt;cause&gt;]</c>: checks that the thing has an event of the type, with the cause when given.</summary>
+public sealed record ExpectEventStep : PlayStep
+{
+    /// <summary>The alias of the thing.</summary>
+    public required string Alias { get; init; }
+
+    /// <summary>One of <see cref="Simulation.EventType.All"/>.</summary>
+    public required string Type { get; init; }
+
+    /// <summary>One of <see cref="Simulation.Cause.Kinds"/>; null for any cause.</summary>
+    public string? Cause { get; init; }
+}
+
+/// <summary><c>expect-gone &lt;alias&gt;</c>: checks that the thing is gone.</summary>
+public sealed record ExpectGoneStep : PlayStep
+{
+    /// <summary>The alias of the thing.</summary>
+    public required string Alias { get; init; }
+}
+
+/// <summary><c>events &lt;alias&gt; &lt;file&gt;</c>: writes the thing's events to <c>&lt;file&gt;.events.txt</c>.</summary>
+public sealed record EventsStep : PlayStep
+{
+    /// <summary>The alias of the thing.</summary>
+    public required string Alias { get; init; }
+
+    /// <summary>The file stem.</summary>
+    public required string Name { get; init; }
+}
+
 /// <summary>
 /// A play script (<c>CONTEXT.md</c>): a text file with one step per line, run in file order. Blank lines and lines
 /// that start with <c>#</c> are skipped. A line that cannot be read is a problem naming the script and the line and
@@ -231,13 +308,14 @@ public sealed class PlayScript
         var steps = new List<PlayStep>();
         var problems = new List<string>();
         var lines = text.Split('\n');
+        var declared = new Declared();
         for (var i = 0; i < lines.Length; i++)
         {
             var line = lines[i].Trim();
             if (line.Length == 0 || line[0] == '#')
                 continue;
 
-            var (step, problem) = ParseLine(line, i + 1);
+            var (step, problem) = ParseLine(line, i + 1, declared);
             if (step is not null)
                 steps.Add(step);
             else
@@ -252,7 +330,15 @@ public sealed class PlayScript
         };
     }
 
-    static (PlayStep? Step, string? Problem) ParseLine(string line, int number)
+    // The aliases and marks the steps before the current line declared.
+    sealed class Declared
+    {
+        public HashSet<string> Aliases { get; } = [];
+
+        public HashSet<string> Marks { get; } = [];
+    }
+
+    static (PlayStep? Step, string? Problem) ParseLine(string line, int number, Declared declared)
     {
         var words = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         var args = words.Skip(1).ToArray();
@@ -359,7 +445,46 @@ public sealed class PlayScript
             case "fast-forward":
                 return ParseFastForward(args, number);
             case "expect":
-                return ParseExpect(args, number);
+                return args.Length > 0 && args[0].Contains('.')
+                    ? ParseExpectThing(args, number, declared)
+                    : ParseExpect(args, number);
+            case "name":
+                return ParseName(args, number, declared);
+            case "mark":
+                if (args.Length != 1)
+                    return Wrong(words[0], "1 argument", args.Length);
+                if (int.TryParse(args[0], NumberStyles.None, CultureInfo.InvariantCulture, out _))
+                    return (null, $"'{args[0]}' is a number, a mark's label is not");
+                if (!declared.Marks.Add(args[0]))
+                    return (null, $"mark '{args[0]}' is given twice");
+
+                return (new MarkStep { Line = number, Label = args[0] }, null);
+            case "expect-event":
+                return ParseExpectEvent(args, number, declared);
+            case "expect-gone":
+                if (args.Length != 1)
+                    return Wrong(words[0], "1 argument", args.Length);
+
+                return declared.Aliases.Contains(args[0])
+                    ? (new ExpectGoneStep { Line = number, Alias = args[0] }, null)
+                    : (null, $"unknown alias '{args[0]}'");
+            case "events":
+                if (args.Length != 2)
+                    return Wrong(words[0], "2 arguments", args.Length);
+                if (!declared.Aliases.Contains(args[0]))
+                    return (null, $"unknown alias '{args[0]}'");
+                if (FileNameProblem(args[1]) is { } badEvents)
+                    return (null, badEvents);
+
+                return (
+                    new EventsStep
+                    {
+                        Line = number,
+                        Alias = args[0],
+                        Name = args[1],
+                    },
+                    null
+                );
             case "expect-at":
                 return ParseExpectAt(args, number);
             case "expect-count":
@@ -487,6 +612,128 @@ public sealed class PlayScript
                 Field = args[0],
                 Op = args[1],
                 Value = value,
+            },
+            null
+        );
+    }
+
+    // name <alias> <column> <row> <what>
+    static (PlayStep?, string?) ParseName(string[] args, int number, Declared declared)
+    {
+        if (args.Length != 4)
+            return Wrong("name", "4 arguments", args.Length);
+        if (!NamedThings.IsAliasText(args[0]))
+            return (null, $"'{args[0]}' is no alias, use letters, digits, '-', and '_'");
+        if (PlayFields.IsKnown(args[0]))
+            return (null, $"'{args[0]}' is a field of 'expect' and cannot be an alias");
+        if (declared.Aliases.Contains(args[0]))
+            return (null, $"alias '{args[0]}' is given twice");
+        if (!int.TryParse(args[1], NumberStyles.None, CultureInfo.InvariantCulture, out var column))
+            return (null, $"'{args[1]}' is not a whole number of zero or more");
+        if (!int.TryParse(args[2], NumberStyles.None, CultureInfo.InvariantCulture, out var row))
+            return (null, $"'{args[2]}' is not a whole number of zero or more");
+
+        var (what, problem) = ThingSelector.Parse(args[3]);
+        if (what is null)
+            return (null, problem);
+
+        declared.Aliases.Add(args[0]);
+
+        return (
+            new NameStep
+            {
+                Line = number,
+                Alias = args[0],
+                Column = column,
+                Row = row,
+                What = what,
+            },
+            null
+        );
+    }
+
+    // expect <alias>.<field>[@<label>|@<tick>] <op> <value>
+    static (PlayStep?, string?) ParseExpectThing(string[] args, int number, Declared declared)
+    {
+        if (args.Length != 3)
+            return Wrong("expect", "a field, an operator, and a value", args.Length);
+
+        var dot = args[0].IndexOf('.');
+        var alias = args[0][..dot];
+        var rest = args[0][(dot + 1)..];
+        var at = rest.IndexOf('@');
+        var field = at < 0 ? rest : rest[..at];
+        if (!declared.Aliases.Contains(alias))
+            return (null, $"unknown alias '{alias}'");
+        if (!NamedThings.IsField(field))
+            return (null, $"unknown field '{field}', use one of {string.Join(", ", NamedThings.Fields)}");
+
+        string? mark = null;
+        long? tick = null;
+        if (at >= 0)
+        {
+            var target = rest[(at + 1)..];
+            if (long.TryParse(target, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed))
+                tick = parsed;
+            else if (declared.Marks.Contains(target))
+                mark = target;
+            else
+                return (null, $"unknown mark '{target}'");
+        }
+
+        if (!Ops.Contains(args[1]))
+            return (null, $"unknown operator '{args[1]}', use one of {string.Join(" ", Ops)}");
+        if (NamedThings.IsLink(field))
+        {
+            if (args[1] != "=")
+                return (null, $"'{field}' takes only '=', not '{args[1]}'");
+            if (!declared.Aliases.Contains(args[2]) && !args[2].Contains('#') && !args[2].Contains('@'))
+                return (null, $"unknown alias '{args[2]}'");
+        }
+        else if (!NamedThings.Numeric(args[2], out _))
+        {
+            return (null, $"'{args[2]}' is not a number");
+        }
+
+        return (
+            new ExpectThingStep
+            {
+                Line = number,
+                Alias = alias,
+                Field = field,
+                Mark = mark,
+                Tick = tick,
+                Op = args[1],
+                Value = args[2],
+            },
+            null
+        );
+    }
+
+    // expect-event <alias> <type> [cause <cause>]
+    static (PlayStep?, string?) ParseExpectEvent(string[] args, int number, Declared declared)
+    {
+        if (args.Length is not (2 or 4))
+            return (
+                null,
+                $"'expect-event' takes an alias, a type, and optionally 'cause' and a cause, found {args.Length} arguments"
+            );
+        if (!declared.Aliases.Contains(args[0]))
+            return (null, $"unknown alias '{args[0]}'");
+        if (!Simulation.EventType.All.Contains(args[1]))
+            return (null, $"unknown event type '{args[1]}', use one of {string.Join(", ", Simulation.EventType.All)}");
+        if (args.Length == 4 && args[2] != "cause")
+            return (null, $"'{args[2]}' is not 'cause'");
+        if (args.Length == 4 && !Simulation.Cause.Kinds.Contains(args[3]))
+            return (null, $"unknown cause '{args[3]}', use one of {string.Join(", ", Simulation.Cause.Kinds)}");
+
+        return (
+            new ExpectEventStep
+            {
+                Line = number,
+                Alias = args[0],
+                Type = args[1],
+                Cause = args.Length == 4 ? args[3] : null,
             },
             null
         );
