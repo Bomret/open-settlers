@@ -88,6 +88,9 @@
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
 //                            lists the settlers, the flags (f<slot>=, 70 bytes), and the storage item that changed, in hex. The
 //                            roads after AT are built before pass AT.
+//   draw:WINDOWS:CX,CY:VERB...
+//                            the settler draw path (docs/rules/settlers.md) after the passes of carrier, wood, or goods in
+//                            the windows, a verb of EmulateDraw.java (see its header); this script refuses it
 //   home:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE[:WATCH]]
 //                            the passes of wood: (docs/rules/settlers.md) on a game with a castle, flags, and roads and no
 //                            building, where before pass AT the settler of the slot SLOT is sent home as the teardown of a
@@ -136,8 +139,8 @@ import ghidra.program.model.lang.Register;
 
 public class EmulateMapStart extends GhidraScript {
 
-    private static final long REGISTERS = 0x20000000L;
-    private static final long STATE = 0x20010000L;
+    protected static final long REGISTERS = 0x20000000L;
+    protected static final long STATE = 0x20010000L;
     private static final long STACK = 0x20020000L;
     private static final long MACHINE_STACK = 0x20030000L;
     private static final long TEXT = 0x0067408dL;
@@ -149,7 +152,7 @@ public class EmulateMapStart extends GhidraScript {
     private static final int SEED_0 = 0x364;
     private static final int MAP_SEED_0 = 0x1ee;
 
-    private EmulatorHelper emu;
+    protected EmulatorHelper emu;
 
     @Override
     protected void run() throws Exception {
@@ -180,6 +183,7 @@ public class EmulateMapStart extends GhidraScript {
                         worker(rest, true);
                     }
                     case "carrier" -> carrier(rest);
+                    case "draw" -> draw(rest);
                     case "home" -> {
                         reserveBuildingZero = true;
                         home(rest);
@@ -210,16 +214,16 @@ public class EmulateMapStart extends GhidraScript {
         putInt(REGISTERS + 0x3c, STACK);
     }
 
-    private void putInt(long address, long value) throws Exception {
+    protected void putInt(long address, long value) throws Exception {
         emu.writeMemory(toAddr(address), new byte[] {(byte) value, (byte) (value >>> 8), (byte) (value >>> 16),
                 (byte) (value >>> 24)});
     }
 
-    private void putWord(long address, int value) throws Exception {
+    protected void putWord(long address, int value) throws Exception {
         emu.writeMemory(toAddr(address), new byte[] {(byte) value, (byte) (value >>> 8)});
     }
 
-    private int getWord(long address) throws Exception {
+    protected int getWord(long address) throws Exception {
         byte[] bytes = emu.readMemory(toAddr(address), 2);
         return (bytes[0] & 0xff) | ((bytes[1] & 0xff) << 8);
     }
@@ -331,7 +335,7 @@ public class EmulateMapStart extends GhidraScript {
     }
 
     private static final long MAP = 0x21000000L;
-    private static final long RETURN = 0x41ee3bL;
+    protected static final long RETURN = 0x41ee3bL;
     private static final int MAP_BUFFER = 0x24;
     private static final int WIDTH = 0x1c2;
     private static final int HEIGHT = 0x1c4;
@@ -427,7 +431,7 @@ public class EmulateMapStart extends GhidraScript {
     }
 
     /** Runs the function at entry to its return: pushes a return address on the machine stack and stops there. */
-    private void call(long entry) throws Exception {
+    protected void call(long entry) throws Exception {
         long esp = emu.readRegister("ESP").longValue() - 4;
         emu.writeRegister("ESP", esp);
         putInt(esp, RETURN);
@@ -1058,7 +1062,7 @@ public class EmulateMapStart extends GhidraScript {
         return built;
     }
 
-    private String hex(long address, int length) throws Exception {
+    protected String hex(long address, int length) throws Exception {
         byte[] bytes = emu.readMemory(toAddr(address), length);
         StringBuilder out = new StringBuilder();
         for (byte b : bytes) {
@@ -1075,7 +1079,7 @@ public class EmulateMapStart extends GhidraScript {
      * (+0x206) by 8 units and the phase (+0x26c) by one, as 0x4291c2 does. A line per pass lists the settlers and
      * the building whose bytes changed since the pass before, as hexadecimal bytes; PASSES is the number of passes.
      */
-    private void worker(String rest, boolean wood) throws Exception {
+    protected void worker(String rest, boolean wood) throws Exception {
         objectPass = wood;
         String[] parts = rest.split(":");
         String label = "worker size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
@@ -1176,6 +1180,7 @@ public class EmulateMapStart extends GhidraScript {
             }
             clock += 8;
             int phase = simulationPass(clock);
+            afterPass(pass, clock);
             StringBuilder line = new StringBuilder();
             if (wood) {
                 byte[] mapNow = emu.readMemory(toAddr(MAP), mapBytes);
@@ -1588,7 +1593,7 @@ public class EmulateMapStart extends GhidraScript {
      * (see the header) on a game started as road starts it, and lists each pass what changed in the settlers (the first 64
      * slots), the flags (the first 16 slots), and the storage item.
      */
-    private void carrier(String rest) throws Exception {
+    protected void carrier(String rest) throws Exception {
         objectPass = false;
         String[] parts = rest.split(":");
         String label = "carrier size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
@@ -1626,6 +1631,7 @@ public class EmulateMapStart extends GhidraScript {
             }
             clock += 8;
             int phase = simulationPass(clock);
+            afterPass(pass, clock);
             StringBuilder line = new StringBuilder();
             byte[] now = emu.readMemory(toAddr(TABLES + 0x40000), 16 * 64);
             for (int s = 0; s < 64; s++) {
@@ -1660,17 +1666,26 @@ public class EmulateMapStart extends GhidraScript {
      */
     private boolean objectPass;
 
+    /** Runs after each pass of worker and carrier, with the pass number and the clock; EmulateDraw overrides it. */
+    protected void afterPass(int pass, int clock) throws Exception {
+    }
+
+    /** The draw verb of EmulateDraw.java; emulate.py runs that script for it, so this script refuses it. */
+    protected void draw(String rest) throws Exception {
+        throw new IllegalArgumentException("draw: runs through EmulateDraw.java (emulate.py)");
+    }
+
     /**
      * Whether startWorld takes flag slot 0 for the dummy the original's game start takes (the allocator 0x45d7ad that
      * ends MapGen_InitParams, 0x421530), so the first flag is slot 1 as in a real game.
      */
-    private boolean reserveFlagZero;
+    protected boolean reserveFlagZero;
 
     /**
      * Whether startWorld runs the default transport priority routine 0x445570 on the player block, as the player setup of a new
      * game (0x42055e) does: it writes the rank of each good 1 to 26 at the player's block -0x55 + good.
      */
-    private boolean defaultPriorities;
+    protected boolean defaultPriorities;
 
     /**
      * Whether startWorld takes building slot 0 for the dummy the original's game start takes (the allocator 0x45da8f at the
@@ -1694,7 +1709,7 @@ public class EmulateMapStart extends GhidraScript {
         return phase;
     }
 
-    private long getInt(long address) throws Exception {
+    protected long getInt(long address) throws Exception {
         byte[] bytes = emu.readMemory(toAddr(address), 4);
         return (bytes[0] & 0xffL) | ((bytes[1] & 0xffL) << 8) | ((bytes[2] & 0xffL) << 16) | ((bytes[3] & 0xffL) << 24);
     }
@@ -1812,11 +1827,11 @@ public class EmulateMapStart extends GhidraScript {
         println("EMU opponents seed=" + rest.toUpperCase() + " settings=" + values);
     }
 
-    private static final long PLAYERS = 0x22000000L;
-    private static final long TABLES = 0x23000000L;
+    protected static final long PLAYERS = 0x22000000L;
+    protected static final long TABLES = 0x23000000L;
     private static final int LEVEL = 0x162;
 
-    private void zero(long address, int length) throws Exception {
+    protected void zero(long address, int length) throws Exception {
         emu.writeMemory(toAddr(address), new byte[length]);
     }
 
