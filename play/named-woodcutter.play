@@ -3,9 +3,9 @@
 name wc 13 10 settler
 mark start
 expect wc.x = 13
-expect wc.state@start = 0x1
+expect wc.state@start = 0x4
 expect-event wc layout-in-hut cause layout
 fast-forward woodcutter state 0x11 max 20000
 expect wc.state = 0x11
-expect wc.state@start = 0x1
+expect wc.state@start = 0x4
 events wc woodcutter

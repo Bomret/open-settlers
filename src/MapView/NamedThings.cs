@@ -74,7 +74,12 @@ public sealed class NamedThings
 
         if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
-            var ok = long.TryParse(text[2..], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var hex);
+            var ok = long.TryParse(
+                text[2..],
+                NumberStyles.AllowHexSpecifier,
+                CultureInfo.InvariantCulture,
+                out var hex
+            );
             value = hex;
 
             return ok;
@@ -150,7 +155,10 @@ public sealed class NamedThings
     /// <summary>Runs an <c>expect</c> step on a named thing.</summary>
     public string? Run(ExpectThingStep step, PlayState state)
     {
-        var at = step.Mark is not null ? "@" + step.Mark : step.Tick is { } t ? $"@{t}" : "";
+        var at =
+            step.Mark is not null ? "@" + step.Mark
+            : step.Tick is { } t ? $"@{t}"
+            : "";
         var text = $"expect {step.Alias}.{step.Field}{at} {step.Op} {step.Value}";
         if (Refusal(text, state) is { } refused)
             return refused;

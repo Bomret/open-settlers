@@ -38,18 +38,7 @@ public sealed class PlayNamedThingTests
     }
 
     static PlayState StateOf(Game game) =>
-        new(
-            0,
-            0,
-            1f,
-            "1",
-            1,
-            game.TickCount,
-            0,
-            new Dictionary<(int X, int Y), int>(),
-            Thing.Of(game, null),
-            game
-        );
+        new(0, 0, 1f, "1", 1, game.TickCount, 0, new Dictionary<(int X, int Y), int>(), Thing.Of(game, null), game);
 
     static PlayScript Parse(string text) => PlayScript.Parse(text, "play/t.play");
 
@@ -119,14 +108,8 @@ public sealed class PlayNamedThingTests
         var first = game.EventsOf(game.BuildingId(0))[0].Tick;
 
         StringAssert.Contains(Problem(Run("name c 15 5 building\nexpect c.x = 16", game)), "actual 15");
-        StringAssert.Contains(
-            Problem(Run("name c 15 5 building\nmark m\nexpect c.x@m = 16", game)),
-            "actual 15"
-        );
-        StringAssert.Contains(
-            Problem(Run($"name c 15 5 building\nexpect c.x@{first} = 16", game)),
-            "actual 15"
-        );
+        StringAssert.Contains(Problem(Run("name c 15 5 building\nmark m\nexpect c.x@m = 16", game)), "actual 15");
+        StringAssert.Contains(Problem(Run($"name c 15 5 building\nexpect c.x@{first} = 16", game)), "actual 15");
     }
 
     [TestMethod]
@@ -150,10 +133,7 @@ public sealed class PlayNamedThingTests
     [TestMethod]
     public void ExpectEventPassesWithAndWithoutACause()
     {
-        var run = Run(
-            "name f 18 6 flag\nexpect-event f place-flag\nexpect-event f place-flag cause placed",
-            Castle()
-        );
+        var run = Run("name f 18 6 flag\nexpect-event f place-flag\nexpect-event f place-flag cause placed", Castle());
 
         Assert.AreEqual("", string.Join("\n", run.Problems));
     }

@@ -476,7 +476,15 @@ public sealed class PlayScript
                 if (FileNameProblem(args[1]) is { } badEvents)
                     return (null, badEvents);
 
-                return (new EventsStep { Line = number, Alias = args[0], Name = args[1] }, null);
+                return (
+                    new EventsStep
+                    {
+                        Line = number,
+                        Alias = args[0],
+                        Name = args[1],
+                    },
+                    null
+                );
             case "expect-at":
                 return ParseExpectAt(args, number);
             case "expect-count":
@@ -706,7 +714,10 @@ public sealed class PlayScript
     static (PlayStep?, string?) ParseExpectEvent(string[] args, int number, Declared declared)
     {
         if (args.Length is not (2 or 4))
-            return (null, $"'expect-event' takes an alias, a type, and optionally 'cause' and a cause, found {args.Length} arguments");
+            return (
+                null,
+                $"'expect-event' takes an alias, a type, and optionally 'cause' and a cause, found {args.Length} arguments"
+            );
         if (!declared.Aliases.Contains(args[0]))
             return (null, $"unknown alias '{args[0]}'");
         if (!Simulation.EventType.All.Contains(args[1]))
