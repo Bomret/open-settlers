@@ -52,8 +52,7 @@ def main(argv):
     headless = shutil.which("analyzeHeadless") or fail("analyzeHeadless is not on PATH; run through `mise run`")
     program = find_program(game)
     script = "EmulateDraw.java" if drawing else "EmulateMapStart.java"
-    environment = dict(os.environ)
-    environment["EMU_GAME"] = game
+    environment = {**os.environ, "EMU_GAME": game}
     install = None
     if drawing:
         with open(program, "rb") as file:

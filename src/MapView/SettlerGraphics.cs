@@ -37,9 +37,15 @@ public sealed class SettlerGraphics
     /// <summary>The header bytes 0 and 1 of each figure entry (1850 to 2499) that loaded: the shift of its second figure.</summary>
     public required IReadOnlyDictionary<int, (int X, int Y)> Shifts { get; init; }
 
+    /// <summary>
+    /// The layer of the sprite of a draw, false where no layer holds it (the load left it out: another player's colour, a
+    /// sprite cut at the layer limit). The viewer skips such a draw.
+    /// </summary>
+    public bool TryLayerOf(SettlerDraw draw, out int layer) => Layers.TryGetValue((draw.Entry, draw.Colour), out layer);
+
     /// <summary>The layer of the sprite of a draw. A sprite no layer holds is a failure: the load left it out, and the view would never show it.</summary>
     public int LayerOf(SettlerDraw draw) =>
-        Layers.TryGetValue((draw.Entry, draw.Colour), out var layer)
+        TryLayerOf(draw, out var layer)
             ? layer
             : throw new InvalidOperationException(
                 $"No layer holds the settler sprite {draw.Entry}/{draw.Colour}: the load of the settler graphics left it out."

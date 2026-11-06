@@ -26,7 +26,13 @@ namespace OpenSettlers.Tests;
 public sealed class SettlerDrawTests
 {
     private const string Fixture = "settler-draws.txt";
-    private const string ReferenceSha256 = "0113d8b31268a5848e6827da32a970d7c6a0aab33ff28cc8f11a974b3679dbd5";
+
+    // The build the recordings came from: the sha256 of the first "install=" line of the fixture (every recording must
+    // name the same one).
+    private static readonly string ReferenceSha256 = File.ReadLines(Fixture)
+        .First(line => line.StartsWith("install=", StringComparison.Ordinal))
+        .Split(' ')
+        .Single(part => part.StartsWith("sha256=", StringComparison.Ordinal))["sha256=".Length..];
 
     // 0x44ffe7 moves a record's position by 0x10 and 8 before the blit.
     private const int OffsetX = 0x10;

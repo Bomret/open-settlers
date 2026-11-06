@@ -855,8 +855,14 @@ public partial class MapViewControl : Control
             var draw in _settlerGraphics.Figures.Draws(_state.Map, _game.Settlers, _game.Clock, _settlerGraphics.Shifts)
         )
         {
-            // A sprite with no loaded layer fails (LayerOf), it is not skipped.
-            var layer = _settlerGraphics.LayerOf(draw);
+            // A sprite with no loaded layer is skipped and reported: the render loop must not throw. The tests assert that
+            // every draw of the recorded scenarios has a layer (LayerOf).
+            if (!_settlerGraphics.TryLayerOf(draw, out var layer))
+            {
+                GD.PushWarning($"No layer holds the settler sprite {draw.Entry}/{draw.Colour}.");
+                continue;
+            }
+
             var image = _settlerGraphics.Images[layer];
             if (image.Width > 0 && image.Height > 0)
             {

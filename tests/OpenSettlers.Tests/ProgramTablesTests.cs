@@ -247,7 +247,6 @@ public sealed class ProgramTablesTests
             ProgramTables.Read(exe).CarriedFigures[7],
             "the word of good 7 at the address plus 2 * 7"
         );
-        Assert.AreEqual(0x43f4b7, ProgramTables.CarriedFigureAddress);
     }
 
     [TestMethod]

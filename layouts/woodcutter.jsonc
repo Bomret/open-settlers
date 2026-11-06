@@ -1,5 +1,5 @@
 // A woodcutter in his hut at 13,10, beside trees to the east. The castle stands at 10,10 with its flag at 11,11; the road
-// runs three steps east to a flag at 14,11, and the hut's flag is that one. Play it with play/woodcutter-cut.play, play/woodcutter-figures.play, or play/woodcutter-log.play.
+// runs three steps east to a flag at 14,11, and the hut's flag is that one. Play it with the play/woodcutter-*.play scripts.
 {
   "size": 1,
   "seed": "1234567812345678",

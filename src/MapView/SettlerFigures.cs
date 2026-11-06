@@ -132,7 +132,7 @@ public sealed class SettlerFigures
         IReadOnlyDictionary<int, (int X, int Y)>? shifts = null
     )
     {
-        var records = new List<(int Row, int Y, int X, List<SettlerDraw> Sprites)>();
+        var records = new List<(int Y, int X, List<SettlerDraw> Sprites)>();
         foreach (var settler in settlers)
         {
             if (
@@ -172,13 +172,17 @@ public sealed class SettlerFigures
                 sprites.Add(new SettlerDraw(row, entry, colour, x + shift.X, y + shift.Y));
             }
 
-            records.Add((row, settler.Y, settler.X, sprites));
+            // A word outside the tables draws nothing, so the record has no row to order by.
+            if (sprites.Count > 0)
+            {
+                records.Add((settler.Y, settler.X, sprites));
+            }
         }
 
         return
         [
             .. records
-                .OrderBy(record => record.Row)
+                .OrderBy(record => record.Sprites[0].Row)
                 .ThenBy(record => record.Y)
                 .ThenBy(record => record.X)
                 .SelectMany(record => record.Sprites),
@@ -233,12 +237,13 @@ public sealed class SettlerFigures
                 }
 
                 break;
-            case Settler.WoodcutterJob when figure >= HighFigure:
-                yield return figure + _woodcutter.Cutting;
-                break;
             case Settler.WoodcutterJob:
-                yield return figure + _woodcutter.Walk;
-                yield return figure + _woodcutter.Carrying;
+                yield return figure + WoodcutterAdd(figure, false);
+                if (figure < HighFigure)
+                {
+                    yield return figure + WoodcutterAdd(figure, true);
+                }
+
                 break;
             case ProgramTables.TypeOneHutJob when figure >= HighFigure:
                 yield return figure + _typeOneHut.High;
@@ -273,13 +278,15 @@ public sealed class SettlerFigures
             return figure + (WayBackWithLoad(settler) ? _typeOneHut.Carrying : _typeOneHut.Walk);
         }
 
-        if (figure >= HighFigure)
-        {
-            return figure + _woodcutter.Cutting;
-        }
-
-        return figure + (WayBackWithLoad(settler) ? _woodcutter.Carrying : _woodcutter.Walk);
+        return figure + WoodcutterAdd(figure, WayBackWithLoad(settler));
     }
+
+    // What the woodcutter's handler (0x43fb6b) adds to a figure byte: the felling's constant from 0x80, below it the way
+    // back's with a load or the walk's.
+    private int WoodcutterAdd(int figure, bool carrying) =>
+        figure >= HighFigure ? _woodcutter.Cutting
+        : carrying ? _woodcutter.Carrying
+        : _woodcutter.Walk;
 
     // The way back with a load: byte 13 0x80, byte 14 1, and state 0x10 (0x43fc0b, 0x43ff40).
     private static bool WayBackWithLoad(Settler settler) =>

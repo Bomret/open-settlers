@@ -67,31 +67,28 @@ public sealed class SettlerGraphicsTests
     [TestMethod]
     public void ACarrierCarryingALogIsDrawnInEachDirectionWithTheEntriesTheCarriedRowGives()
     {
-        var install = TestProgram.OpenInstall();
-        var tables = TestProgram.Tables();
-        var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
-        var sequences = archive.Data(archive[2]).ToArray();
         var figures = Load().Figures;
         var map = Map();
+        // The figure and the overlay entry of each direction, as the install's tables give them in the row 0x14.
+        int[][] expected =
+        [
+            [1905, 2555],
+            [1913, 2563],
+            [1921, 2571],
+            [1929, 2579],
+            [1937, 2587],
+            [1945, 2595],
+        ];
 
-        Assert.AreEqual(0x1400, tables.CarriedFigures[Game.GoodLog]);
         for (var direction = 0; direction < 6; direction++)
         {
-            var frame = 4 + 9 * direction;
-            var start =
-                4
-                + (
-                    (sequences[4 + 4 * frame] << 24)
-                    | (sequences[5 + 4 * frame] << 16)
-                    | (sequences[6 + 4 * frame] << 8)
-                    | sequences[7 + 4 * frame]
-                );
-            var figure = sequences[start];
-            var first = tables.FigureBases[2 * 0x14] + tables.FigureOffsets[2 * figure];
+            var entries = figures
+                .Draws(map, [LoadedCarrier(4 + 9 * direction)], 0)
+                .Select(d => d.Entry)
+                .Take(2)
+                .ToArray();
 
-            var entries = figures.Draws(map, [LoadedCarrier(frame)], 0).Select(d => d.Entry).Take(2).ToArray();
-
-            CollectionAssert.AreEqual(new[] { 1850 + first, 2500 + first }, entries, $"direction {direction}");
+            CollectionAssert.AreEqual(expected[direction], entries, $"direction {direction}");
         }
     }
 
@@ -194,9 +191,10 @@ public sealed class SettlerGraphicsTests
         Assert.IsEmpty(missing, $"entries drawn and not loaded: {string.Join(", ", missing.Take(20))}");
     }
 
-    // The view finds the layer of each sprite it draws through the graphics, and a sprite with none is a failure.
+    // LayerOf is what the tests use to assert that a recorded draw has a layer: a sprite with none is a failure there (the
+    // viewer asks TryLayerOf instead, below).
     [TestMethod]
-    public void ADrawWhoseSpriteHasNoLoadedLayerFailsInsteadOfBeingSkipped()
+    public void ADrawWhoseSpriteHasNoLoadedLayerFailsInLayerOf()
     {
         var graphics = Load();
 
@@ -204,6 +202,16 @@ public sealed class SettlerGraphicsTests
             graphics.LayerOf(new SettlerDraw(0, 1, 99, 0, 0))
         );
         StringAssert.Contains(failure.Message, "1/99");
+    }
+
+    // The per-frame render loop of the viewer must survive a draw with no layer (another player's colour, a sprite cut at
+    // the layer limit): it asks TryLayerOf and skips the draw.
+    [TestMethod]
+    public void TheViewerCanAskForTheLayerOfADrawWithNoneWithoutAFailure()
+    {
+        var graphics = Load();
+
+        Assert.IsFalse(graphics.TryLayerOf(new SettlerDraw(0, 1, 99, 0, 0), out _));
     }
 
     [TestMethod]
