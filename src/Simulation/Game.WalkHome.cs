@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 namespace OpenSettlers.Simulation;
@@ -10,6 +11,10 @@ namespace OpenSettlers.Simulation;
 // branch of 0x437ddd is not the generic one (see ArrivesHome), and the entry of the jobs 4 and 21 into a storage.
 public sealed partial class Game
 {
+    // The settlers on the walk home, from the claim of their node to the entry into the storage: the steps of the shared walk
+    // routines (FreeWalk, Walk) record the walk home as their cause (SettlerCause; history only, no rule reads it).
+    private readonly HashSet<int> _walkingHome = [];
+
     // The mode of state 2 that walks to a storage along the roads (byte 11 = 0xfe).
     private const int StorageWalk = 0xfe;
 
@@ -30,6 +35,7 @@ public sealed partial class Game
         }
 
         _occupant[index] = slot;
+        _walkingHome.Add(slot);
         settler.Frame = 0x52;
         settler.Timer = 0;
         settler.State = 0x19;
@@ -52,7 +58,7 @@ public sealed partial class Game
     // test of the mode 0xfe, which is all but the jobs 4 and 21): the node it stands on is free again, and it waits in the
     // storage's list (state 1, mode 0, the storage's slot as heading, no target); the turn of state 1 enters it in the list.
     // The castle is storage 0.
-    private void EnterStorage(int node, Settler settler)
+    private void EnterStorage(int slot, int node, Settler settler)
     {
         if (settler.Job is 4 or 21)
         {
@@ -60,16 +66,14 @@ public sealed partial class Game
         }
 
         _occupant.Remove(node);
+        _walkingHome.Remove(slot);
         settler.State = 1;
         settler.Mode = 0;
         settler.Target = 0;
         settler.Heading = 0;
         settler.Next = 0;
-        RecordSettler(SlotOf(settler), EventType.EnteredStorage, Cause.WalkHome, BuildingId(0).ToString());
+        RecordSettler(slot, EventType.EnteredStorage, Cause.WalkHome, BuildingId(0).ToString());
     }
-
-    // The slot of a settler, for the events of the rules that hold the settler and not its slot.
-    private int SlotOf(Settler settler) => _settlers.IndexOf(settler);
 
     // The owner bits a node of the settler's player holds in its height byte (0x4354b8: the player plus 4, in the top three bits).
     private static int OwnerBits(Settler settler) => ((settler.Player & 3) + 4) << 5;
@@ -96,12 +100,13 @@ public sealed partial class Game
     // entries 1 to 258 of the table, or 258 to 1 where byte 11 is not 0: the far end first), whose offset becomes the vector of the
     // free walk (bytes 11 and 12, byte 13 = 0x80 marks a walk to a flag, byte 14 = -1 and byte 15 = 0). Where none is found a
     // random node is taken (HomeNode). The jobs 22 to 26 take state 0x35 where the others take 0x10.
-    private void HomeSearch(Settler settler)
+    private void HomeSearch(int slot, Settler settler)
     {
         if (!TimerRan(settler))
         {
-            // TimerRan has counted the timer down and stamped the settler.
-            RecordSettler(SlotOf(settler), EventType.SearchedHome, Cause.WalkHome);
+            // TimerRan has counted the timer down and stamped the settler: the clock moves between two turns, so the stamp
+            // changed, and the turn is a change to record.
+            RecordSettler(slot, EventType.SearchedHome, Cause.WalkHome);
 
             return;
         }
@@ -130,7 +135,7 @@ public sealed partial class Game
         settler.Next = 0;
         settler.State = settler.Job is >= FirstKnightJob and <= 26 ? KnightWalk : 0x10;
         settler.Timer = 0;
-        RecordSettler(SlotOf(settler), EventType.SearchedHome, Cause.WalkHome);
+        RecordSettler(slot, EventType.SearchedHome, Cause.WalkHome);
     }
 
     // The random choice where no flag is near (0x43560c): the draw of the generator gives two offsets, its low byte and
@@ -195,7 +200,7 @@ public sealed partial class Game
 
     // The arrival of a settler on the way home (0x4385ab): on a flag of its player with a road it starts the walk to the
     // storage (state 2, mode 0xfe, target 0, heading 0, next 0, timer 0); anywhere else it searches again (state 0x19, mode 0).
-    private void ArriveHome(Settler settler)
+    private void ArriveHome(int slot, Settler settler)
     {
         settler.Timer = 0;
         if (HomeFlag(settler, settler.X, settler.Y))
@@ -205,15 +210,13 @@ public sealed partial class Game
             settler.Target = 0;
             settler.Heading = 0;
             settler.Next = 0;
-            var slot = SlotOf(settler);
             RecordSettler(slot, EventType.ArrivedHome, Cause.WalkHome, BuildingId(0).ToString());
-            EndCarry(slot);
 
             return;
         }
 
         settler.State = 0x19;
         settler.Mode = 0;
-        RecordSettler(SlotOf(settler), EventType.ArrivedHome, Cause.WalkHome);
+        RecordSettler(slot, EventType.ArrivedHome, Cause.WalkHome);
     }
 }

@@ -77,7 +77,10 @@ public sealed class ThingHistoryRemovalTests
     {
         var game = World();
         var flag = game.FlagId(1);
-        var carriers = Enumerable.Range(0, game.Settlers.Count).Where(slot => game.Settlers[slot].State == 0x42).ToList();
+        var carriers = Enumerable
+            .Range(0, game.Settlers.Count)
+            .Where(slot => game.Settlers[slot].State == 0x42)
+            .ToList();
         var before = game.Events.Count;
 
         Do(game, CommandKind.RemoveFlag, 18, 6);
@@ -91,7 +94,9 @@ public sealed class ThingHistoryRemovalTests
         var settlers = made.Where(e => e.Thing.Kind == ThingId.SettlerKind).ToList();
         Assert.AreNotEqual(0, settlers.Count, "a settler of the flag's roads is touched:\n" + Text(game));
         Assert.IsTrue(
-            settlers.All(e => carriers.Contains(e.Thing.Slot) && e.Type is EventType.TakeWaiting or EventType.JoinRoads),
+            settlers.All(e =>
+                carriers.Contains(e.Thing.Slot) && e.Type is EventType.TakeWaiting or EventType.JoinRoads
+            ),
             "only carriers waiting on a road (state 0x42) are touched, by take-waiting and join-roads:\n" + Text(game)
         );
     }
@@ -112,7 +117,11 @@ public sealed class ThingHistoryRemovalTests
             Assert.AreEqual(Cause.Razed(game.FlagId(1)), join.Cause);
         }
 
-        var carriers = game.Events.All.Skip(before).Where(e => e.Type == EventType.TakeWaiting).Select(e => e.Thing).ToList();
+        var carriers = game
+            .Events.All.Skip(before)
+            .Where(e => e.Type == EventType.TakeWaiting)
+            .Select(e => e.Thing)
+            .ToList();
         Assert.AreNotEqual(0, carriers.Count, "the carriers of the two roads wait at the flag:\n" + Text(game));
         foreach (var carrier in carriers)
         {

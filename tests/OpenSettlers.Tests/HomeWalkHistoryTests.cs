@@ -47,18 +47,20 @@ public sealed class HomeWalkHistoryTests
     public void ASettlerWalkingHomeRecordsEachChangeWithTheWalkHomeCause()
     {
         var walk = Walk(SentHome(null));
+        var types = walk.Select(e => e.Type).Distinct().ToList();
 
-        CollectionAssert.AreEqual(
+        CollectionAssert.IsSubsetOf(
             new[] { EventType.ClaimedHome, EventType.SearchedHome, EventType.ArrivedHome, EventType.EnteredStorage },
-            walk.Select(e => e.Type).Distinct().ToArray()
+            types
         );
-        Assert.IsTrue(walk.All(e => e.Cause == Cause.WalkHome));
+        Assert.IsTrue(types.Contains(EventType.Walked), "the walk along the roads is recorded");
+        Assert.IsTrue(walk.All(e => e.Cause == Cause.WalkHome), "every change carries walk-home");
         Assert.AreEqual(0x19, walk.First(e => e.Type == EventType.ClaimedHome).State.Get("state"));
         Assert.AreEqual(1, walk[^1].State.Get("state"));
     }
 
     [TestMethod]
-    public void ArrivingHomeNamesTheCastleAndEndsTheCarriedRazedCause()
+    public void ARazedSettlerKeepsTheRazedCauseUntilItIsInTheCastle()
     {
         var razed = Cause.Razed(new ThingId(ThingId.BuildingKind, 3, 1));
         var game = SentHome(razed);
@@ -67,10 +69,57 @@ public sealed class HomeWalkHistoryTests
         var arrived = walk.Single(e => e.Type == EventType.ArrivedHome);
         Assert.AreEqual(razed, arrived.Cause);
         Assert.AreEqual(game.BuildingId(0).ToString(), arrived.Other);
+        Assert.IsTrue(walk.Any(e => e.Type == EventType.Walked), "the road walk is recorded");
         Assert.IsTrue(
-            walk.TakeWhile(e => e.Type != EventType.ArrivedHome).All(e => e.Cause == razed),
-            "the changes before the arrival carry the razed cause"
+            walk.All(e => e.Cause == razed),
+            "every change, the road steps and the entry included, carries razed"
         );
-        Assert.AreEqual(Cause.WalkHome, walk.Single(e => e.Type == EventType.EnteredStorage).Cause);
+    }
+
+    // A free walk home that ends on a node that is no flag with a road: the arrival names no storage and the settler searches again.
+    [TestMethod]
+    public void ArrivingOnANodeThatIsNoHomeFlagSearchesAgainAndKeepsTheCarry()
+    {
+        var razed = Cause.Razed(new ThingId(ThingId.BuildingKind, 3, 1));
+        var game = SentHome(razed);
+        var settler = game.Settlers[Sent];
+        settler.X = 30;
+        settler.Y = 30;
+        settler.State = 0x10;
+        settler.Mode = 0;
+        settler.Target = 0x8000;
+        settler.Heading = -1;
+        settler.Next = 8;
+        settler.Timer = 0;
+        game.CarryCause(Sent, razed);
+        for (var pass = 0; pass < 200 && settler.State == 0x10; pass++)
+        {
+            game.Tick();
+        }
+
+        var arrived = game.EventsOf(game.SettlerId(Sent)).Last(e => e.Type == EventType.ArrivedHome);
+        Assert.IsNull(arrived.Other);
+        Assert.AreEqual(0x19, arrived.State.Get("state"));
+        Assert.AreEqual(razed, arrived.Cause);
+        game.Tick();
+        Assert.AreEqual(razed, game.EventsOf(game.SettlerId(Sent)).Last().Cause, "the carry goes on");
+    }
+
+    [TestMethod]
+    public void AKnightSearchingHomeTakesState0x35()
+    {
+        var game = SentHome(null);
+        var knight = game.Settlers.First(s => s.Job == 22);
+        var slot = game.Settlers.ToList().IndexOf(knight);
+        knight.State = 0x1c;
+        for (var pass = 0; pass < 80 && knight.State != 0x35; pass++)
+        {
+            game.Tick();
+        }
+
+        Assert.AreEqual(0x35, knight.State);
+        var searched = game.EventsOf(game.SettlerId(slot)).Last(e => e.Type == EventType.SearchedHome);
+        Assert.AreEqual(0x35, searched.State.Get("state"));
+        Assert.AreEqual(Cause.WalkHome, searched.Cause);
     }
 }
