@@ -30,7 +30,7 @@ public sealed class ThingHistoryTests
         );
     }
 
-    private static Game NewGame()
+    internal static Game NewGame()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var objects = map.Bytes(MapLayer.Object);
