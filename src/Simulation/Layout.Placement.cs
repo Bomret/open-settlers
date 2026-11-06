@@ -47,7 +47,7 @@ public sealed partial class Layout
 
     private sealed partial class Reader
     {
-        // The castle, flags, roads, and buildings entries in the order the file holds them. Null when an entry is bad
+        // The castle, flags, roads, buildings, settlers, and goods entries in the order the file holds them. Null when an entry is bad
         // or repeats an earlier one of its kind.
         private List<Step>? ReadSteps(JsonElement root)
         {
