@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
+using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
 
@@ -371,6 +372,16 @@ public partial class MapViewControl : Control
         if (_gameView && _state.Map is not null && _tables is not null)
         {
             _game = new Game(_tables, _state.Map, _state.StockLevel);
+            // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
+            if (_layout?.Apply(_game) is { } layoutProblem)
+            {
+                _game = null;
+                GD.Print($"ERROR {layoutProblem}");
+                GetTree().Quit(LaunchArgs.BadArgumentExitCode);
+
+                return;
+            }
+
             _drawing = new RoadDrawing(_game);
             _castleDrawn = false;
             _flagsDrawn = 0;
