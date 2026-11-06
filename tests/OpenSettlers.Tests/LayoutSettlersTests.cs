@@ -49,7 +49,7 @@ public sealed class LayoutSettlersTests
 
     // Made-up tables as the hut and carrier tests have them: every step takes 100 clock units, the flag's object class is 3,
     // and the walk's direction rows hold the heading class's own first direction first.
-    static Game NewGame(Layout layout)
+    internal static Game NewGame(Layout layout)
     {
         var classes = new byte[ProgramTables.ClassCount];
         classes[FlagPlacement.FlagCode] = 3;
