@@ -85,6 +85,25 @@ and building types. Each entry cites its evidence. A code with no entry shows ra
 loaded class table, so `stone` names a code only where the table says class 2.
 _Avoid_: lookup, code map
 
+**Thing ID**
+The name a settler, building, or flag keeps for its whole life: its kind, its slot, and a count of how often
+that slot was filled, as in `settler#12.3`. A slot filled again gives the new thing a new ID. A map object
+does not move, so its node serves as its ID, as in `tree@12,4`.
+_Avoid_: handle, key, index
+
+**Event**
+A record of one change a rule made to a settler, building, or flag: the tick, the rule that made it, the
+thing's state after the change, and its cause. An event names another thing by its ID. The game keeps every
+event in one event store, and the state of a thing at an earlier tick is the state in its last event up to
+that tick.
+_Avoid_: log entry, change, history item
+
+**Cause**
+Why a change happened: the player's command that started the chain of changes (`placed` or `razed`, with
+the ID of the thing commanded), or, where no command started it, the rule area that acted on its own, such
+as `woodcutting`. A layout's entries give the cause `layout`.
+_Avoid_: reason, trigger, source
+
 ## Game rules
 
 **Rule**
