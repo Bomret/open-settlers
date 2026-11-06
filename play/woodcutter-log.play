@@ -1,0 +1,22 @@
+# The woodcutter's log from the cut to the castle road, on layouts/woodcutter.jsonc: the woodcutter cutting, the
+# woodcutter walking back with the log, and the carrier carrying that log toward the castle. Each fast-forward stops at a
+# moment, each expect checks that the settler the crop names stands on the crop's node in the state it names, and each
+# shot crops around that node.
+# Run it on the layout: sh tools/play-run.sh woodcutter-log --layout layouts/woodcutter.jsonc --fps 10
+wait 0.3
+fast-forward woodcutter state 0x11 max 20000
+scroll up 6 1056 520
+wait 0.3
+expect-at 18 10 woodcutter
+expect-at 18 10 cuts-tree
+shot cut 18 10 1 4
+fast-forward woodcutter carrying max 20000
+wait 0.3
+expect-at 18 10 woodcutter
+expect-at 18 10 walks-free
+shot back 18 10 1 4
+fast-forward carrier carrying max 40000
+wait 0.3
+expect-at 13 11 carrier
+expect-at 13 11 walks-along-road
+shot carry 13 11 1 4
