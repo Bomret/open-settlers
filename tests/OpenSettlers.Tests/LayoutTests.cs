@@ -129,4 +129,79 @@ public sealed class LayoutTests
         Assert.AreEqual(0, map.Layer(MapLayer.Flags)[At(10, 12)]);
         Assert.AreEqual(0, map.Layer(MapLayer.Flags)[At(12, 10)]);
     }
+
+    static string Rows31 => "[" + string.Join(", ", Enumerable.Range(0, 31).Select(_ => $"\"{new string('1', 32)}\"")) + "]";
+
+    [TestMethod]
+    public void AGoodLayoutWithCommentsAndTrailingCommasLoadsWithNoProblem()
+    {
+        // Text starts with a comment and ends its last entry with a comma.
+        var read = Layout.Read(Text(), "x.jsonc");
+
+        Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
+    }
+
+    [DataTestMethod]
+    [DataRow("{ \"size\": 1, ", "syntax")]
+    [DataRow("{ \"size\": 1, \"seed\": \"1234567812345678\", \"height\": [], \"terrain\": [], \"objects\": [], \"bogus\": 1 }", "bogus")]
+    [DataRow("{ \"size\": 1, \"seed\": \"1234567812345678\", \"height\": [], \"objects\": [] }", "terrain")]
+    [DataRow("{ \"seed\": \"1234567812345678\", \"height\": [], \"terrain\": [], \"objects\": [] }", "size")]
+    [DataRow("[1]", "layout")]
+    public void ABrokenFileNamesTheFileAndTheEntryAndLoadsNothing(string text, string entry)
+    {
+        var read = Layout.Read(text, "layouts/broken.jsonc");
+
+        Assert.IsNull(read.Layout);
+        Assert.IsTrue(
+            read.Problems.Any(p => p.StartsWith("layouts/broken.jsonc: ") && p.Contains(entry)),
+            string.Join("; ", read.Problems)
+        );
+    }
+
+    [TestMethod]
+    public void AMissingOptionalEntryIsNoProblem()
+    {
+        var read = Layout.Read(Text().Replace("\"objects\": [],", ""), "x.jsonc");
+
+        Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
+    }
+
+    public static System.Collections.Generic.IEnumerable<object[]> BrokenEntries =>
+        [
+            ["size is a string", Text(size: "\"big\""), "size"],
+            ["size not offered", Text(size: "4"), "size"],
+            ["seed is a number", Text(seed: "5"), "seed"],
+            ["seed is no seed", Text(seed: "\"abc\""), "seed"],
+            ["height row too short", Text(height: Grid('1', (3, "111"))), "height[3]"],
+            ["height row too long", Text(height: Grid('1', (7, new string('1', 33)))), "height[7]"],
+            ["height has 31 rows", Text(height: Rows31), "height"],
+            ["height outside 0-v", Text(height: Grid('1', (1, Row('1', 4, 'w')))), "height[1]"],
+            ["height is no list", Text(height: "\"1\""), "height"],
+            ["terrain letter unknown", Text(terrain: Grid('g', (2, Row('g', 9, 'Z')))), "terrain[2]"],
+            ["terrain has 31 rows", Text(terrain: Rows31), "terrain"],
+            ["lower row too short", Text(lower: Grid('g', (5, "g"))), "terrainLower[5]"],
+            ["lower letter unknown", Text(lower: Grid('g', (6, Row('g', 0, '?')))), "terrainLower[6]"],
+            ["object outside the map", Text(objects: """[{"x": 32, "y": 0, "code": 8}]"""), "objects[0]"],
+            ["object below the map", Text(objects: """[{"x": 0, "y": 0, "code": 8}, {"x": 1, "y": -1, "code": 8}]"""), "objects[1]"],
+            ["object code 0", Text(objects: """[{"x": 0, "y": 0, "code": 0}]"""), "objects[0]"],
+            ["object code 128", Text(objects: """[{"x": 0, "y": 0, "code": 128}]"""), "objects[0]"],
+            ["object has an unknown key", Text(objects: """[{"x": 0, "y": 0, "code": 8, "z": 1}]"""), "objects[0]"],
+            ["object lacks its code", Text(objects: """[{"x": 0, "y": 0}]"""), "objects[0]"],
+            ["object is no object", Text(objects: "[3]"), "objects[0]"],
+            ["two objects on one tile", Text(objects: """[{"x": 1, "y": 1, "code": 8}, {"x": 1, "y": 1, "code": 9}]"""), "objects[1]"],
+            ["a key twice", Text(extra: "").Replace("\"size\": 1,", "\"size\": 1, \"size\": 1,"), "size"],
+        ];
+
+    [DataTestMethod]
+    [DynamicData(nameof(BrokenEntries))]
+    public void AnEntryTheMapCannotDrawIsAProblemNamingTheEntry(string name, string text, string entry)
+    {
+        var read = Layout.Read(text, "layouts/broken.jsonc");
+
+        Assert.IsNull(read.Layout, name);
+        Assert.IsTrue(
+            read.Problems.Any(p => p.StartsWith("layouts/broken.jsonc: " + entry) || p.StartsWith("layouts/broken.jsonc: " + entry + ":")),
+            name + ": " + string.Join("; ", read.Problems)
+        );
+    }
 }
