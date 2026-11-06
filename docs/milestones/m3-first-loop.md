@@ -104,11 +104,9 @@ left open:
   building placement routine (the click handler `0x440c24` reaches it) and a Windows run that places a hut. The type 1 and job 11 that
   the first walk was read with are another hut's and worker's (the work at `0x433f71`: a node with no object by the water, likely a
   fisherman's).
-- The settler's drawing is written from the figure tables at `0x4501a1` and `0x4503c5` and the walk sequences of entry 2 of the
-  graphics archive, but no emulator or debugger run of the draw (`0x43f537`, `0x43fed8`, `0x44fff3`, `0x406610`) confirms the
-  details listed as inferred in [Settlers](../rules/settlers.md#drawing-the-walk-leads): the sequence offsets, the triple index,
-  the position, the overlay's fill colour, and the variants from figure byte 0x80. The overlay entry, the shift of the second figure,
-  and the draw order are confirmed from `0x406610`. Lead: run `0x43f537` in the
+- The settler's drawing follows the figure word and the tables at `0x4501a1` and `0x4503c5` ([Settlers](../rules/settlers.md#drawing-the-walk-leads)),
+  confirmed from the code and, for the woodcutter, by screenshots. No emulator or debugger run of the draw (`0x43f537`, `0x44fff3`, `0x406610`) confirms
+  the details listed as inferred there: the sequence offsets, the triple index, the position, and the overlay's fill colour. Lead: run `0x43f537` in the
   emulator with a settler record and read the draw record it writes.
 - The castle's own handler (building type 0x18, `0x42e7e0`) and the settlers the castle makes later (`0x428a75`), and the ambient
   sounds of each view (`0x428964`): they may draw from the random generator; the port draws nothing for them. The knights' idle

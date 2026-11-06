@@ -13,29 +13,41 @@ namespace OpenSettlers.Tests;
 public sealed class SettlerFiguresTests
 {
     // Entry 2: a dword, then 200 big-endian offsets from the first byte after that dword. The sequence of frame 7 holds
-    // three triples (figure byte, dx, dy): (3, 1, 2), (4, -1, 0), (5, 0, 0).
+    // three triples (figure byte, dx, dy): (3, 1, 2), (4, -1, 0), (5, 0, 0); the sequence of frame 8 holds (0x81, 0, 0), a
+    // figure byte from 0x80 as the cut's frames hold.
     private static byte[] Sequences()
     {
-        var data = new byte[4 + 200 * 4 + 9];
+        var data = new byte[4 + 200 * 4 + 12];
         var at = 4 + 200 * 4;
-        for (var i = 0; i < 9; i++)
+        for (var i = 0; i < 12; i++)
         {
-            data[at + i] = new byte[] { 3, 1, 2, 4, 0xff, 0, 5, 0, 0 }[i];
+            data[at + i] = new byte[] { 3, 1, 2, 4, 0xff, 0, 5, 0, 0, 0x81, 0, 0 }[i];
         }
 
         var offset = at - 4;
         data[4 + 7 * 4 + 2] = (byte)(offset >> 8);
         data[4 + 7 * 4 + 3] = (byte)offset;
+        data[4 + 8 * 4 + 2] = (byte)((offset + 9) >> 8);
+        data[4 + 8 * 4 + 3] = (byte)(offset + 9);
 
         return data;
     }
 
-    // Job 11: the figure base 100 and the second base 50; each figure byte adds its own number and, to the second, 1.
+    // The adds of the woodcutter's handler (0x43fb6b): the high byte of the figure word is 0x0b for the walk, 0x10 for the
+    // way back with the log, and 0x0f for a figure byte from 0x80.
+    private static readonly FigureAdds Adds = new(0x0b00, 0x1000, 0x0e80);
+
+    // The woodcutter: the figure base 100 and the second base 50 in the row 0x0b, 200 and none in the row 0x10, 300 and
+    // none in the row 0x0f; each figure byte adds its own number and, to the second, 1. The carrier's row 0: 100, none.
     private static SettlerFigures Figures()
     {
-        var bases = new short[32 * 8];
-        bases[11 * 8] = 100;
-        bases[11 * 8 + 1] = 50;
+        var bases = new short[256];
+        bases[2 * 0x0b] = 100;
+        bases[2 * 0x0b + 1] = 50;
+        bases[2 * 0x10] = 200;
+        bases[2 * 0x10 + 1] = -1;
+        bases[2 * 0x0f] = 300;
+        bases[2 * 0x0f + 1] = -1;
         var offsets = new short[512];
         for (var b = 0; b < 256; b++)
         {
@@ -48,7 +60,7 @@ public sealed class SettlerFiguresTests
         var carried = new short[27];
         carried[7] = 10;
 
-        return new SettlerFigures(bases, offsets, Sequences(), carried);
+        return new SettlerFigures(bases, offsets, Sequences(), carried, Adds);
     }
 
     private static Settler Carrier(int mode, int state = 3) =>
@@ -63,7 +75,7 @@ public sealed class SettlerFiguresTests
         MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
     private static Settler Walker(int frame, int timer, int state = 2) =>
-        new(11, 0, 4, 3, 0, state, 0)
+        new(Settler.WoodcutterJob, 0, 4, 3, 0, state, 0)
         {
             Frame = frame,
             Timer = (ushort)timer,
@@ -180,14 +192,90 @@ public sealed class SettlerFiguresTests
     }
 
     [TestMethod]
-    public void TheSpritesOfAJobAreThoseOfEveryTripleOfItsSequences()
+    public void TheSpritesOfTheWoodcutterAreThoseOfEveryTripleOfItsSequencesInTheRowsOfHisHandler()
     {
-        var sprites = Figures().Sprites(11, 0x40).OrderBy(s => s.Entry).ToArray();
+        var sprites = Figures().Sprites(Settler.WoodcutterJob, 0x40).OrderBy(s => s.Entry).ToArray();
 
         CollectionAssert.AreEqual(
-            new[] { (1953, -1), (1954, -1), (1955, -1), (2603, 0x40), (2604, 0x40), (2605, 0x40), (3201, -1) },
+            new[]
+            {
+                (1953, -1),
+                (1954, -1),
+                (1955, -1),
+                (2053, -1),
+                (2054, -1),
+                (2055, -1),
+                (2151, -1),
+                (2603, 0x40),
+                (2604, 0x40),
+                (2605, 0x40),
+                (2703, 0x40),
+                (2704, 0x40),
+                (2705, 0x40),
+                (2801, 0x40),
+                (3201, -1),
+            },
             sprites.Distinct().ToArray()
         );
+    }
+
+    // 0x43fb6b: the figure byte plus 0x0b00; plus 0x1000 where byte 13 is 0x80, byte 14 is 1, and the state is 0x10 (the way
+    // back with the log); plus 0x0e80 for a figure byte from 0x80 (the felling).
+    [TestMethod]
+    public void AWoodcutterOnTheWayBackWithTheLogIsDrawnInTheRowOfTheLog()
+    {
+        var home = Walker(7, 0, state: 0x10);
+        home.Target = 0x8000;
+        home.Heading = 1;
+
+        var draws = Figures().Draws(Map(), [home], 0);
+
+        // Figure byte 3 in the row 0x10: 1850 + 200 + 3, the overlay 2500 + 200 + 3, no second figure.
+        CollectionAssert.AreEqual(new[] { 2053, 2703 }, draws.Select(d => d.Entry).ToArray());
+    }
+
+    [TestMethod]
+    public void AWoodcutterWhoseTreeIsGoneWalksBackInTheRowOfTheWalk()
+    {
+        var home = Walker(7, 0, state: 0x10);
+        home.Target = 0x8000;
+        home.Heading = 0;
+
+        CollectionAssert.AreEqual(
+            new[] { 1953, 2603, 3201 },
+            Figures().Draws(Map(), [home], 0).Select(d => d.Entry).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void AWoodcutterWithTheLogOutsideTheFreeWalkIsDrawnInTheRowOfTheWalk()
+    {
+        var home = Walker(7, 0, state: 4);
+        home.Target = 0x8000;
+        home.Heading = 1;
+
+        CollectionAssert.AreEqual(
+            new[] { 1953, 2603, 3201 },
+            Figures().Draws(Map(), [home], 0).Select(d => d.Entry).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void AWoodcutterWhoseSequenceHoldsAFigureByteFrom0x80IsDrawnInTheFellingRow()
+    {
+        var draws = Figures().Draws(Map(), [Walker(8, 0, state: 0x11)], 0);
+
+        // Figure byte 0x81: the word 0x0e80 + 0x81 = 0x0f01, so the row 0x0f and the offsets of the byte 1:
+        // 1850 + 300 + 1, the overlay 2500 + 300 + 1, no second figure.
+        CollectionAssert.AreEqual(new[] { 2151, 2801 }, draws.Select(d => d.Entry).ToArray());
+    }
+
+    [TestMethod]
+    public void ASettlerOfAnotherJobDrawsNothing()
+    {
+        var jobless = new Settler(21, 0, 4, 3, 0, 2, 0) { Frame = 7 };
+
+        Assert.IsEmpty(Figures().Draws(Map(), [jobless], 0));
     }
 
     [TestMethod]
@@ -236,13 +324,13 @@ public sealed class SettlerFiguresTests
     [TestMethod]
     public void TheColourOverlayOfTheFigureOneEightFiftyPlusIIsTwentyFiveHundredPlusI()
     {
-        var bases = new short[32 * 8];
-        bases[11 * 8] = 40;
-        bases[11 * 8 + 1] = -1;
+        var bases = new short[256];
+        bases[2 * 0x0b] = 40;
+        bases[2 * 0x0b + 1] = -1;
         var offsets = new short[512];
         offsets[2 * 3] = 7;
 
-        var draws = new SettlerFigures(bases, offsets, Sequences()).Draws(Map(), [Walker(7, 0)], 0);
+        var draws = new SettlerFigures(bases, offsets, Sequences(), null, Adds).Draws(Map(), [Walker(7, 0)], 0);
 
         CollectionAssert.AreEqual(new[] { (1897, -1), (2547, 0x40) }, draws.Select(d => (d.Entry, d.Colour)).ToArray());
     }
@@ -308,9 +396,11 @@ public sealed class SettlerFiguresTests
     [TestMethod]
     public void AFigureByteOutsideTheTablesDrawsNothing()
     {
-        var bases = new short[32 * 8];
-        bases[11 * 8 + 1] = -1;
+        var bases = new short[256];
+        bases[2 * 0x0b + 1] = -1;
 
-        Assert.IsEmpty(new SettlerFigures(bases, new short[4], Sequences()).Draws(Map(), [Walker(7, 0)], 0));
+        Assert.IsEmpty(
+            new SettlerFigures(bases, new short[4], Sequences(), null, Adds).Draws(Map(), [Walker(7, 0)], 0)
+        );
     }
 }

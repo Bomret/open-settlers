@@ -207,6 +207,9 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x406350` | `Gfx_DrawSpriteGrowing` | Draws a transparent sprite through `Gfx_BlitSprite` with its top moved by a fraction of its height, which the EDI block holds, and the top clipped to the clip rectangle; the entry is the base 1250 plus a script index. | inferred | platform | Called at `0x44ff45`. See [Graphics images](graphics-images.md). |
 | `0x406590` | `Gfx_DrawSpriteNoOffset` | Draws a transparent sprite through `Gfx_BlitSprite` with the entry's two offsets set to 0 for the call and restored after; the entry is the base 1250 plus a script index. | confirmed | platform | Called at `0x44db12`. See [Graphics images](graphics-images.md). |
 | `0x406610` | `Gfx_DrawSettler` | Draws a settler: the figure from the base 1850 through `Gfx_BlitSprite`, the overlay of the same index plus 2500 through `Gfx_BlitSpriteOneColor` in the player color (40 hex plus four times the player), then, where a second figure is set, an entry from the base 3150 through `Gfx_BlitSprite`, moved by header bytes 0 and 1 of the first figure as signed offsets. | confirmed | platform | Called at `0x450189`. See [Graphics images](graphics-images.md). |
+| `0x44fff3` | `Gfx_DrawSettlerRecords` | Reads the draw records of an object (flags, figure word, position) and, for each, loads the pair of words at 4 times the high byte of the figure word from the figure bases at `0x4501a1` and the pair at 4 times its low byte from the figure offsets at `0x4503c5` (`lea` at `0x4500fb` and `0x450128`; both addresses odd, the words read unaligned), adds the offsets, and calls `Gfx_DrawSettler`. | confirmed | game | Called at `0x44d3ae`. See [Settlers](settlers.md#drawing-the-walk-leads). |
+| `0x43f744` | `Settler_FigureStubs` | Data-like code: 8 bytes for each job (`jmp rel32`), reached by `0x43f537` from byte 0 bits 2 to 6; each jumps to the job's figure handler, which adds the job's constant to the figure byte. | confirmed | game | Stub 0 to `0x43f8ae` (carrier), stub 5 to `0x43fb6b` (woodcutter), stub 11 to `0x43fed8`. |
+| `0x43fb6b` | `Woodcutter_FigureWord` | The woodcutter's figure handler: a figure byte below 0x80 gets `0x0b00` (`0x43fc16`), or `0x1000` (`0x43fc0b`) on the way back with the log (byte 13 0x80, byte 14 1, state 0x10); a byte from 0x80 gets `0x0e80` (`0x43fbe5`). | confirmed | game | Reached by the stub at `0x43f76c`. Screenshots of `play/woodcutter-figures.play`. |
 | `0x4511d5` | `Text_DrawGlyphs` | Draws a string of characters as one-color sprites: for each character, a shadow glyph (entry plus 809) in the shadow color when one is set, then the glyph (entry plus 749) in the text color; steps 8 pixels per character. | inferred | game | Entered by jumps at `0x45103e`, `0x4510a3`, `0x45110c`, `0x451171`, `0x4511d3`, the ends of the five sites that start at `0x450fde`, `0x451043`, `0x4510a8`, `0x451111`, `0x451173`; calls `Gfx_DrawSpriteOneColor`. |
 | `0x405b80` | `Gfx_BlitShadow` | Draws a mask to the surface, clipped, storing palette index `0x80` on every covered pixel with no blending. | confirmed | platform | Called at `0x4061fa`, in `Gfx_DrawShadow`, and at `0x4062c9`, in the second shadow routine at `0x406210`, which `0x44ff2a` calls with an object's number plus 1500 (reached from `0x44fcd0`, from `0x44fd2f` by the jump at `0x44e56a`, and by a third path that reads the table at `0x44fcfe` (at `0x44fc4f`) after the call at `0x44fc21` and jumps to `0x44fee2` at `0x44fc70`). |
 | `0x4061a0` | `Gfx_DrawShadow` | Sets the clip rectangle and draws the mask whose entry number is in the draw block's third field through `Gfx_BlitShadow`. | confirmed | platform | Called at `0x44daa4` (the entry is an object's number plus 1500, in `Gfx_DrawObjectSprite`, which about 38 sites reach) and at `0x45007d` (entry 4). |
@@ -865,6 +868,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
 | `0x43e036` | `Settler_StepToFlag` | confirmed | Simulation |
 | `0x43f17a` | `Settler_StandByCastle` | confirmed | Simulation |
+| `0x43f744` | `Settler_FigureStubs` | confirmed | Graphics images |
+| `0x43fb6b` | `Woodcutter_FigureWord` | confirmed | Graphics images |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
 | `0x440c24` | `View_HandleClick` | inferred | Roads |
 | `0x440d23` | `View_RunButtonAction` | inferred | Roads |
@@ -902,6 +907,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
 | `0x44ff59` | `Gfx_DrawPhaseSprite` | confirmed | Graphics images |
+| `0x44fff3` | `Gfx_DrawSettlerRecords` | confirmed | Graphics images |
 | `0x450609` | `Save_ConfirmSlot` | confirmed | Save and load |
 | `0x450a35` | `Render_DrawViewOverlay` | inferred | Views, panels, and drawing |
 | `0x4511d5` | `Text_DrawGlyphs` | inferred | Graphics images |
@@ -988,7 +994,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 221 routines of the 471 functions in the dump's game code band and lists 10 more without a name: 182 confirmed, 41 inferred, 8 unknown.
+Coverage: the index names 224 routines of the 471 functions in the dump's game code band and lists 10 more without a name: 185 confirmed, 41 inferred, 8 unknown.
 <!-- coverage:end -->
 
 Open anchors:

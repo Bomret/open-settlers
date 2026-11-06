@@ -44,11 +44,48 @@ public sealed class ProgramTables
     /// <summary>The address of the table of scan windows: 16-bit words, one for each map size (<c>0x421d28</c>).</summary>
     public const int ScanWindowAddress = 0x421d28;
 
-    /// <summary>The address of the figure bases: 8 words for each job (<c>0x4501a1</c>, 256 words).</summary>
+    /// <summary>
+    /// The address of the figure bases (<c>0x4501a1</c>, 256 words): two 16-bit words for each value of the high byte of
+    /// the figure word, the base of the figure and the base of the second figure (negative for none). The address is odd:
+    /// the draw routine loads it at <see cref="FigureBaseLoadAddress"/> and reads the words unaligned.
+    /// </summary>
     public const int FigureBaseAddress = 0x4501a1;
 
-    /// <summary>The address of the figure offsets: 2 words for each figure byte (<c>0x4503c5</c>, 512 words).</summary>
+    /// <summary>
+    /// The address of the figure offsets (<c>0x4503c5</c>, 512 words): two 16-bit words for each value of the low byte of
+    /// the figure word, what it adds to the figure and to the second figure. The address is odd, as the bases' is.
+    /// </summary>
     public const int FigureOffsetAddress = 0x4503c5;
+
+    /// <summary>The <c>lea esi, imm32</c> in the draw routine (<c>0x44fff3</c>) that loads <see cref="FigureBaseAddress"/>.</summary>
+    public const int FigureBaseLoadAddress = 0x4500fb;
+
+    /// <summary>The <c>lea esi, imm32</c> in the draw routine that loads <see cref="FigureOffsetAddress"/>.</summary>
+    public const int FigureOffsetLoadAddress = 0x450128;
+
+    /// <summary>
+    /// The jump stubs of the figure handlers (<c>0x43f744</c>): 8 bytes for each job, <c>jmp rel32</c> to the job's
+    /// handler, which adds the job's constant to the figure byte to make the figure word.
+    /// </summary>
+    public const int JobStubAddress = 0x43f744;
+
+    /// <summary>The bytes of the stub of one job.</summary>
+    public const int JobStubSize = 8;
+
+    /// <summary>The handler of the woodcutter's figure (<c>0x43fb6b</c>, the target of the stub of job 5).</summary>
+    public const int WoodcutterHandlerAddress = 0x43fb6b;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the handler for a figure byte from 0x80 (the felling).</summary>
+    public const int WoodcutterCuttingAddress = 0x43fbe5;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the handler for the way back with the log (state 0x10, byte 13 0x80, byte 14 1).</summary>
+    public const int WoodcutterCarryingAddress = 0x43fc0b;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int WoodcutterWalkAddress = 0x43fc16;
+
+    /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
+    private static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
     /// <summary>
     /// The address of the carried goods' figure words: 27 words, one for each good (<c>0x43f4b8</c>). **Inferred:** the
@@ -113,7 +150,8 @@ public sealed class ProgramTables
         short[]? carriedFigures = null,
         byte[]? goodKinds = null,
         byte[]? roadCapacities = null,
-        byte[]? transportPriorities = null
+        byte[]? transportPriorities = null,
+        FigureAdds? woodcutterFigureAdds = null
     )
     {
         if (
@@ -137,6 +175,7 @@ public sealed class ProgramTables
         GoodKinds = goodKinds ?? new byte[GoodKindCount];
         RoadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
         TransportPriorities = transportPriorities ?? new byte[Simulation.StartStock.Goods];
+        WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
     }
 
     /// <summary>
@@ -165,11 +204,14 @@ public sealed class ProgramTables
     /// <summary>For each good a word that a carrier carrying it adds to its figure byte (<c>0x43f8ae</c>).</summary>
     public short[] CarriedFigures { get; }
 
-    /// <summary>For each job 8 words; the first two are the figure base and the second figure base (negative: none).</summary>
+    /// <summary>For each high byte of the figure word 2 words: the figure base and the second figure base (negative: none).</summary>
     public short[] FigureBases { get; }
 
-    /// <summary>For each figure byte 2 words: what it adds to the figure and to the second figure.</summary>
+    /// <summary>For each low byte of the figure word 2 words: what it adds to the figure and to the second figure.</summary>
     public short[] FigureOffsets { get; }
+
+    /// <summary>What the woodcutter's handler adds to the figure byte to make the figure word.</summary>
+    public FigureAdds WoodcutterFigureAdds { get; }
 
     /// <summary>
     /// The time in clock units of a step, by step shape: <c>4 + 9 * direction + (height of the node reached minus
@@ -233,8 +275,58 @@ public sealed class ProgramTables
             Words(Slice(exe, CarriedFigureAddress, 2 * CarriedFigureCount)),
             Slice(exe, GoodKindAddress, GoodKindCount),
             Slice(exe, RoadCapacityAddress, RoadCapacityCount),
-            TransportPriorityRanks(exe)
+            TransportPriorityRanks(exe),
+            WoodcutterAdds(exe)
         );
+    }
+
+    // The woodcutter's adds from the immediates of his handler. The draw routine must load the tables read here, and the
+    // stub of the job must jump to the handler, else the program is not the one the rule was read from and the figures
+    // would be wrong.
+    private static FigureAdds WoodcutterAdds(byte[] exe)
+    {
+        Expect(
+            exe,
+            FigureBaseLoadAddress,
+            [0x8d, 0x35, .. BitConverter.GetBytes(FigureBaseAddress)],
+            "loads the figure bases"
+        );
+        Expect(
+            exe,
+            FigureOffsetLoadAddress,
+            [0x8d, 0x35, .. BitConverter.GetBytes(FigureOffsetAddress)],
+            "loads the figure offsets"
+        );
+        var stub = JobStubAddress + JobStubSize * Settler.WoodcutterJob;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(WoodcutterHandlerAddress - (stub + 5))],
+            "jumps to the woodcutter's handler"
+        );
+
+        return new FigureAdds(
+            Immediate(exe, WoodcutterWalkAddress),
+            Immediate(exe, WoodcutterCarryingAddress),
+            Immediate(exe, WoodcutterCuttingAddress)
+        );
+    }
+
+    private static ushort Immediate(byte[] exe, int address)
+    {
+        Expect(exe, address, AddFigureWord, "adds to the figure word");
+
+        return BitConverter.ToUInt16(Slice(exe, address + AddFigureWord.Length, 2));
+    }
+
+    private static void Expect(byte[] exe, int address, byte[] code, string what)
+    {
+        if (!Slice(exe, address, code.Length).SequenceEqual(code))
+        {
+            throw new InvalidDataException(
+                $"Siedler1.exe holds no figure routine as expected: the code at 0x{address:x} no longer {what}."
+            );
+        }
     }
 
     // The rank of each good from the routine's instructions. Each good's step must start with mov al, imm8, and the ranks
@@ -305,3 +397,9 @@ public sealed class ProgramTables
         throw new InvalidDataException($"Siedler1.exe holds no data at 0x{address:x}.");
     }
 }
+
+/// <summary>
+/// What a job's handler adds to the figure byte to make the figure word: for a figure byte below 0x80 (<paramref name="Walk"/>,
+/// or <paramref name="Carrying"/> on the way back with the log) and for one from 0x80 (<paramref name="Cutting"/>).
+/// </summary>
+public readonly record struct FigureAdds(ushort Walk, ushort Carrying, ushort Cutting);

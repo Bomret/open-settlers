@@ -43,7 +43,13 @@ public sealed class SettlerGraphics
         var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var palette = PaletteFile.Read(archive.Data(archive[3]).Span);
         var sequences = archive.Data(archive[2]).ToArray();
-        var figures = new SettlerFigures(tables.FigureBases, tables.FigureOffsets, sequences, tables.CarriedFigures);
+        var figures = new SettlerFigures(
+            tables.FigureBases,
+            tables.FigureOffsets,
+            sequences,
+            tables.CarriedFigures,
+            tables.WoodcutterFigureAdds
+        );
         var images = new List<ObjectImage>();
         var layers = new Dictionary<(int Entry, int Colour), int>();
         var shifts = new Dictionary<int, (int X, int Y)>();

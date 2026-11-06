@@ -44,9 +44,29 @@ public sealed class ProgramTablesTests
             exe[at + 1] = (byte)(StartStock.Goods + 1 - good);
         }
 
+        WriteFigureRoutines(exe);
         fill(exe);
 
         return exe;
+    }
+
+    // The instructions of the draw routine and the woodcutter's handler that Read checks: the loads of the two tables,
+    // the stub of job 5 that jumps to its handler, and the three adds to the figure word.
+    private static void WriteFigureRoutines(byte[] exe)
+    {
+        void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
+
+        void Load(int at, int table) => Write(at, [0x8d, 0x35, .. BitConverter.GetBytes(table)]);
+
+        Load(ProgramTables.FigureBaseLoadAddress, ProgramTables.FigureBaseAddress);
+        Load(ProgramTables.FigureOffsetLoadAddress, ProgramTables.FigureOffsetAddress);
+        var stub = ProgramTables.JobStubAddress + ProgramTables.JobStubSize * Settler.WoodcutterJob;
+        Write(stub, [0xe9, .. BitConverter.GetBytes(ProgramTables.WoodcutterHandlerAddress - (stub + 5))]);
+        void Add(int at, int word) => Write(at, [0x66, 0x81, 0x47, 0x08, (byte)word, (byte)(word >> 8)]);
+
+        Add(ProgramTables.WoodcutterWalkAddress, 0x0b00);
+        Add(ProgramTables.WoodcutterCarryingAddress, 0x1000);
+        Add(ProgramTables.WoodcutterCuttingAddress, 0x0e80);
     }
 
     private static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -314,6 +334,68 @@ public sealed class ProgramTablesTests
 
         // The bytes 1 to 26 of the prio= line of the goods and remove verbs, which run 0x445570 at the game's start.
         Assert.AreEqual(0xBBF1449BF71E9134UL, Fnv(tables.TransportPriorities));
+    }
+
+    [TestMethod]
+    public void TheFigureTablesHoldTheWordsTheDrawRoutineReadsUnaligned()
+    {
+        var tables = TestProgram.Tables();
+
+        // 0x44fff3 reads a pair of words at 4 times the high byte of the figure word in the bases (0x4501a1, odd) and at 4
+        // times its low byte in the offsets (0x4503c5, odd): the woodcutter's rows 0x0b (walk), 0x10 (way back with the log),
+        // and 0x0f (felling), the carrier's row 0, and the offsets of the figure bytes 9 and 0.
+        CollectionAssert.AreEqual(new short[] { 0, 0 }, tables.FigureBases[..2]);
+        CollectionAssert.AreEqual(new short[] { 48, 54 }, tables.FigureBases[(2 * 0x0b)..(2 * 0x0b + 2)]);
+        CollectionAssert.AreEqual(new short[] { 272, -1 }, tables.FigureBases[(2 * 0x0f)..(2 * 0x0f + 2)]);
+        CollectionAssert.AreEqual(new short[] { 48, 60 }, tables.FigureBases[(2 * 0x10)..(2 * 0x10 + 2)]);
+        CollectionAssert.AreEqual(new short[] { 9, 1 }, tables.FigureOffsets[18..20]);
+        CollectionAssert.AreEqual(new short[] { 0, 0 }, tables.FigureOffsets[..2]);
+    }
+
+    [TestMethod]
+    public void TheWoodcuttersFigureWordsOfTheInstallAreThoseOfHisDrawHandler()
+    {
+        var adds = TestProgram.Tables().WoodcutterFigureAdds;
+
+        // 0x43fb6b, the handler of job 5: add word [edi+8], imm16 at 0x43fc16 (walk), 0x43fc0b (way back with the log), 0x43fbe5 (figure byte from 0x80).
+        Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), adds);
+    }
+
+    [TestMethod]
+    public void TheWoodcuttersFigureWordsAreTheImmediatesOfHisHandler()
+    {
+        var tables = ProgramTables.Read(Executable(_ => { }));
+
+        Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), tables.WoodcutterFigureAdds);
+    }
+
+    [TestMethod]
+    public void AHandlerOtherThanTheJobsIsRefused()
+    {
+        var exe = Executable(bytes =>
+            bytes[FileOffset(ProgramTables.JobStubAddress + ProgramTables.JobStubSize * Settler.WoodcutterJob) + 1] ^= 1
+        );
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "figure");
+    }
+
+    [TestMethod]
+    public void AHandlerWithoutItsAddInstructionIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.WoodcutterCarryingAddress)] = 0x90);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "figure");
+    }
+
+    [TestMethod]
+    public void ADrawRoutineThatLoadsOtherTablesIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.FigureOffsetLoadAddress) + 2] ^= 1);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "figure");
     }
 
     private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);

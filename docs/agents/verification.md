@@ -78,6 +78,7 @@ script alone. Add a layout only where none of them holds the situation.
 
 - `layouts/woodcutter.jsonc` and `play/woodcutter-cut.play`: a woodcutter in his hut beside trees,
   fast-forwarded to the cut (state `0x11`).
+- `play/woodcutter-figures.play` on the same layout: crops of the woodcutter at his door, on the way out, at the cut, and on the way back with the log.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 
