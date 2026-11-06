@@ -124,6 +124,32 @@ public sealed partial class Game
     private static bool HeadsTo(Settler settler) =>
         settler.State is 2 or 0xf || (settler.State is 5 or 7 && settler.Next == 2);
 
+    // The raze command being applied, for the cause of the events its changes record (ADR 0011); null between commands. Never read
+    // to decide a change (INV-0007).
+    private Cause? _raze;
+
+    // The raze cause of each building taken down, for its burn and free events ticks later.
+    private readonly Dictionary<ThingId, Cause> _razedBuildings = [];
+
+    private Cause RazeCause => _raze ?? Cause.Removal;
+
+    // Records the settler's event: it carries the raze command's cause on until it idles (CarryCause); a change ticks after the
+    // command takes the cause the settler already carries, else removal.
+    private void Touch(int slot, string type, string? other = null)
+    {
+        if (_raze is { } command)
+        {
+            CarryCause(slot, command);
+        }
+
+        RecordSettler(slot, type, Cause.Removal, other);
+    }
+
+    private void TouchFlag(int slot, string type, string? other = null) => RecordFlag(slot, type, RazeCause, other);
+
+    private void TouchBuilding(Building building, string type) =>
+        RecordBuilding(_buildings.IndexOf(building), type, RazeCause);
+
     private bool RemoveFlagAt(int x, int y)
     {
         var index = Map.Index(x, y);
@@ -132,7 +158,9 @@ public sealed partial class Game
             return false;
         }
 
+        _raze = Cause.Razed(FlagId(Map.Layer(MapLayer.Resource)[index]));
         TakeFlagDown(index);
+        _raze = null;
 
         return true;
     }
@@ -145,7 +173,9 @@ public sealed partial class Game
             return false;
         }
 
+        _raze = Cause.Razed(BuildingId(_buildings.IndexOf(building)));
         TakeBuildingDown(building);
+        _raze = null;
 
         return true;
     }
@@ -178,9 +208,12 @@ public sealed partial class Game
             second = 5;
         }
 
+        // A road has no ID: its cause names the flag it leaves from.
+        _raze = Cause.Razed(FlagId(road.FromSlot));
         TakeRoadDown(index, first);
         TakeRoadDown(index, second);
         _roads.Remove(road);
+        _raze = null;
 
         return true;
     }
@@ -213,7 +246,7 @@ public sealed partial class Game
         var standing = Occupant(index);
         if (standing != 0 && _settlers[standing].State is 2 or 3 && Back(_settlers[standing]) == direction)
         {
-            Dismiss(_settlers[standing]);
+            Dismiss(standing);
         }
 
         flags[index] &= (byte)~(1 << direction);
@@ -240,7 +273,7 @@ public sealed partial class Game
             standing = Occupant(index);
             if (standing != 0 && _settlers[standing].State is 2 or 3)
             {
-                Dismiss(_settlers[standing]);
+                Dismiss(standing);
             }
         }
     }
@@ -254,7 +287,7 @@ public sealed partial class Game
         var standing = Occupant(index);
         if (standing != 0 && _settlers[standing].State is 0xe or 3 or 2 && Back(_settlers[standing]) == back)
         {
-            Dismiss(_settlers[standing]);
+            Dismiss(standing);
         }
 
         var carrierOnTheWay = (_roadBytes[slot][back] & 0x80) != 0;
@@ -262,12 +295,14 @@ public sealed partial class Game
         _flagStatus[slot] &= (byte)~(1 << back);
         if (carrierOnTheWay)
         {
-            foreach (var settler in _settlers.Where(HeadsTo))
+            for (var walker = 0; walker < _settlers.Count; walker++)
             {
-                if (settler.Target == slot && settler.Mode == back)
+                var settler = _settlers[walker];
+                if (HeadsTo(settler) && settler.Target == slot && settler.Mode == back)
                 {
                     settler.Mode = StorageWalk;
                     settler.Target = 0;
+                    Touch(walker, EventType.EndOfRoad, FlagId(slot).ToString());
                 }
             }
         }
@@ -283,6 +318,8 @@ public sealed partial class Game
                 _goodsBit[slot] = true;
             }
         }
+
+        TouchFlag(slot, EventType.EndOfRoad);
     }
 
     // 0x46385b (the boatman's state 0x1a is not ported): a settler on a road that goes is dismissed. One on its way to a building
@@ -290,8 +327,9 @@ public sealed partial class Game
     // that carries a good counts it lost. It then looks for the nearest flag on the way home (state 0x19).
     // **Inferred:** the carrier dismissed while it carries a good is read from the code; no emulator or debugger run reaches
     // this. Open lead in docs/milestones/m3-first-loop.md (a carrier carrying a good on a road that goes).
-    private void Dismiss(Settler settler)
+    private void Dismiss(int slot)
     {
+        var settler = _settlers[slot];
         if (settler.State == 2)
         {
             var mode = (sbyte)settler.Mode;
@@ -305,15 +343,19 @@ public sealed partial class Game
                     {
                         building.Fill = (ushort)((building.Fill & 0xff00) | ((building.Fill - 1) & 0xff));
                     }
+
+                    TouchBuilding(building, EventType.Dismiss);
                 }
             }
             else if (mode is >= 0 and < 6)
             {
                 _roadBytes[settler.Target][mode] &= 0x7f;
+                TouchFlag(settler.Target, EventType.Dismiss);
                 if (RoadAt(settler.Target, mode) is { } road)
                 {
                     var (far, farDirection) = FarEnd(road, settler.Target, mode);
                     _roadBytes[far][farDirection] &= 0x7f;
+                    TouchFlag(far, EventType.Dismiss);
                 }
             }
         }
@@ -324,13 +366,20 @@ public sealed partial class Game
 
         settler.State = 0x19;
         settler.Mode = 0;
+        Touch(slot, EventType.Dismiss);
     }
 
     // 0x463ef9: the carriers that wait at a node next to a flag (the states 0x42, 0x43, 0x45) are told to go home (state 0x44).
     private void DismissWaiting(int index)
     {
-        foreach (var settler in _settlers.Where(settler => Map.Index(settler.X, settler.Y) == index))
+        for (var slot = 0; slot < _settlers.Count; slot++)
         {
+            var settler = _settlers[slot];
+            if (Map.Index(settler.X, settler.Y) != index)
+            {
+                continue;
+            }
+
             if (settler.State == 0x44)
             {
                 return;
@@ -339,6 +388,7 @@ public sealed partial class Game
             if (settler.State is 0x45 or 0x43 or 0x42)
             {
                 settler.State = 0x44;
+                Touch(slot, EventType.DismissWaiting);
 
                 return;
             }
@@ -360,6 +410,7 @@ public sealed partial class Game
             {
                 case 0x42 or 0x43:
                     settler.State = 0x45;
+                    Touch(slot, EventType.TakeWaiting);
 
                     return slot;
                 case 0x45:
@@ -387,6 +438,7 @@ public sealed partial class Game
         settler.Timer = 0;
         settler.State = 0x19;
         settler.Mode = 0;
+        Touch(slot, EventType.Dismissed);
     }
 
     // State 0x45 (0x4300f1): a carrier that waited at the end of a road that was joined takes state 0x43 with the highest road
@@ -402,6 +454,7 @@ public sealed partial class Game
         }
 
         settler.Heading = direction;
+        Touch(slot, EventType.Rejoined);
         Claim(slot, settler);
     }
 
@@ -432,6 +485,7 @@ public sealed partial class Game
             kind == 0
                 ? (ushort)((building.Fill & 0xff00) | ((building.Fill - 1) & 0xff))
                 : (ushort)((building.Fill & 0xff) | ((((building.Fill >> 8) - 1) & 0xff) << 8));
+        TouchBuilding(building, EventType.CountLost);
     }
 
     private sealed record Walked(int Steps, List<int> Settlers, int Far, int FarDirection);
@@ -454,6 +508,7 @@ public sealed partial class Game
         )
         {
             first.Next = 0;
+            Touch(standing, EventType.Gather);
             settlers.Add(standing);
         }
 
@@ -475,6 +530,7 @@ public sealed partial class Game
                 )
                 {
                     last.Next = 0;
+                    Touch(standing, EventType.Gather);
                     settlers.Add(standing);
                 }
 
@@ -491,6 +547,7 @@ public sealed partial class Game
             if (standing != 0 && _settlers[standing] is { State: 3 } passing && passing.Next != 0xff)
             {
                 passing.Next = 0;
+                Touch(standing, EventType.Gather);
                 settlers.Add(standing);
             }
         }
@@ -516,10 +573,12 @@ public sealed partial class Game
             if (settler.State is 0x4a or 7 or 5)
             {
                 settler.Next = 0x19;
+                Touch(standing, EventType.TookFlagDown);
             }
             else if (settler.State == 2 && (flags[index] & 0x3f) == 0)
             {
                 settler.State = 0x19;
+                Touch(standing, EventType.TookFlagDown);
             }
         }
 
@@ -529,12 +588,14 @@ public sealed partial class Game
         }
 
         flags[index] &= 0x7f;
-        foreach (var settler in _settlers.Where(HeadsTo))
+        for (var walker = 0; walker < _settlers.Count; walker++)
         {
-            if (settler.Target == slot)
+            var settler = _settlers[walker];
+            if (HeadsTo(settler) && settler.Target == slot)
             {
                 settler.Mode = StorageWalk;
                 settler.Target = 0;
+                Touch(walker, EventType.TookFlagDown, FlagId(slot).ToString());
             }
         }
 
@@ -548,6 +609,9 @@ public sealed partial class Game
             }
         }
 
+        // The event that ends the flag, recorded while the slot still holds it.
+        TouchFlag(slot, EventType.TookFlagDown);
+        TouchFlag(slot, EventType.FreeFlagSlot);
         FreeFlagSlot(slot);
     }
 
@@ -601,8 +665,9 @@ public sealed partial class Game
             {
                 kept = capacity;
                 var excess = carriers.Count - capacity;
-                foreach (var carrier in carriers.Select(carrierSlot => _settlers[carrierSlot]))
+                foreach (var carrierSlot in carriers)
                 {
+                    var carrier = _settlers[carrierSlot];
                     if (carrier.State == 0x45)
                     {
                         carrier.State = 0x44;
@@ -629,15 +694,28 @@ public sealed partial class Game
             _roadBytes[b.Far][b.FarDirection] |= (byte)kept;
         }
 
-        foreach (var settler in _settlers.Where(HeadsTo))
+        // The flags at the ends of the new road, naming each other, and the carriers now on it, naming its two flags.
+        TouchFlag(a.Far, EventType.JoinRoads, FlagId(b.Far).ToString());
+        TouchFlag(b.Far, EventType.JoinRoads, FlagId(a.Far).ToString());
+        foreach (var carrierSlot in carriers)
         {
+            Touch(carrierSlot, EventType.JoinRoads, $"{FlagId(a.Far)} {FlagId(b.Far)}");
+        }
+
+        for (var walker = 0; walker < _settlers.Count; walker++)
+        {
+            var settler = _settlers[walker];
             if (
-                (settler.Target == a.Far && settler.Mode == a.FarDirection)
-                || (settler.Target == b.Far && settler.Mode == b.FarDirection)
+                HeadsTo(settler)
+                && (
+                    (settler.Target == a.Far && settler.Mode == a.FarDirection)
+                    || (settler.Target == b.Far && settler.Mode == b.FarDirection)
+                )
             )
             {
                 settler.Mode = StorageWalk;
                 settler.Target = 0;
+                Touch(walker, EventType.JoinRoads);
             }
         }
     }
@@ -658,9 +736,12 @@ public sealed partial class Game
         var worker = building.Worker;
         building.Worker = 0x7ff;
         building.Stamp = _clock;
-        if ((building.Status & 0x40) != 0)
+        var wasWorking = (building.Status & 0x40) != 0;
+        building.Status &= ~0x40;
+        _razedBuildings[BuildingId(_buildings.IndexOf(building))] = RazeCause;
+        TouchBuilding(building, EventType.TookBuildingDown);
+        if (wasWorking)
         {
-            building.Status &= ~0x40;
             SendWorkerHome(worker);
         }
 
@@ -692,6 +773,8 @@ public sealed partial class Game
         {
             settler.State = 0x1c;
         }
+
+        Touch(slot, EventType.SendWorkerHome);
     }
 
     // 0x4312ed: what waits for the building at a flag is released. A settler on its way to the flag (the mode below 0) goes home;
@@ -699,21 +782,25 @@ public sealed partial class Game
     // destination and its direction, and the flag gets its turn again. **Not ported:** the loop over the storage items.
     private void ReleaseGoodsFor(int flag)
     {
-        foreach (var settler in _settlers)
+        for (var walker = 0; walker < _settlers.Count; walker++)
         {
+            var settler = _settlers[walker];
             if (HeadsTo(settler) && settler.Target == flag && (settler.Mode & 0x80) != 0)
             {
                 settler.Mode = StorageWalk;
                 settler.Target = 0;
+                Touch(walker, EventType.ReleaseGoodsFor, FlagId(flag).ToString());
             }
             else if (settler.State == 3 && settler.Mode != 0 && settler.Target == flag + 1)
             {
                 settler.Target = 0;
+                Touch(walker, EventType.ReleaseGoodsFor, FlagId(flag).ToString());
             }
         }
 
         for (var holder = 0; holder < _flags.Count; holder++)
         {
+            var released = false;
             for (var place = 7; place >= 0; place--)
             {
                 var good = _flagGoods[holder][place];
@@ -722,6 +809,7 @@ public sealed partial class Game
                     continue;
                 }
 
+                released = true;
                 _goodsDestination[holder][place] = NoDestination;
                 _goodsBit[holder] = true;
                 var way = good & 0xe0;
@@ -750,6 +838,11 @@ public sealed partial class Game
                     _directionBytes[holder][direction] |= (byte)(0x80 | bestPlace);
                 }
             }
+
+            if (released)
+            {
+                TouchFlag(holder, EventType.ReleaseGoodsFor, FlagId(flag).ToString());
+            }
         }
     }
 
@@ -761,6 +854,8 @@ public sealed partial class Game
         building.Stamp = _clock;
         var left = (ushort)building.Worker;
         building.Worker = (ushort)(left - elapsed);
+        var cause = _razedBuildings.GetValueOrDefault(BuildingId(slot), Cause.Removal);
+        RecordBuilding(slot, EventType.Burn, cause);
         if (left < elapsed)
         {
             FreeBuilding(slot, building);
@@ -775,6 +870,10 @@ public sealed partial class Game
         Map.Bytes(MapLayer.Flags)[node] &= 0xbf;
         Map.Bytes(MapLayer.Object)[node] &= 0x80;
         Map.Bytes(MapLayer.Resource)[node] = 0;
+        // The event that ends the building, recorded while the slot still holds it.
+        var id = BuildingId(slot);
+        RecordBuilding(slot, EventType.FreeBuilding, _razedBuildings.GetValueOrDefault(id, Cause.Removal));
+        _razedBuildings.Remove(id);
         _buildings[slot] = Building.Free();
         while (_buildings.Count > 0 && _buildings[^1].IsFree)
         {
