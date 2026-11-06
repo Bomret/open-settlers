@@ -31,3 +31,11 @@ Concepts: Simulation
 Statement: The simulation code references no Godot type, so tests run its rules without Godot.
 Breaks: silently
 Check: the test build (`docs/agents/CODING_PATTERNS.md`, "Godot boundary").
+
+### INV-0005
+
+Class: fidelity
+Concepts: Layout, Entry state, Settler
+Statement: A layout sets a settler or a good only in an entry state: a state some routine of the original writes at the start of a behaviour, named by its address. It never sets a settler in the middle of a behaviour (a walk, a cut, a step's timer). A settler a layout places is one of the castle's own.
+Breaks: silently
+Check: the layout loader's tests refuse every settler or good entry that names no supported entry state, and each supported entry state's documentation names its address.

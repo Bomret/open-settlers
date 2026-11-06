@@ -61,6 +61,18 @@ One run of the map view or the game view under Godot's Movie Maker that executes
 quits after its last step.
 _Avoid_: replay, recording
 
+**Layout**
+A JSONC file in `layouts/` that sets up a game for the game view: a hand-drawn map (heights, terrain per
+triangle, objects), a seed for the game's random generator, the castle, flags, roads, and buildings as
+commands, and settlers and goods in entry states.
+_Avoid_: scenario, save, fixture
+
+**Entry state**
+A state of a settler or a good that a routine of the original writes at the start of a behaviour, such as a
+woodcutter inside his hut, a carrier on his road, or a good put on a flag. A layout places settlers and
+goods only in these (INV-0005).
+_Avoid_: start state, initial state
+
 ## Game rules
 
 **Rule**
