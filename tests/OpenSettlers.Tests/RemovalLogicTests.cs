@@ -13,7 +13,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RemovalLogicTests
 {
-    private static ProgramTables Made(byte capacity = 8)
+    private static ProgramTables Made(byte capacity = 8, byte[]? transportPriorities = null)
     {
         var classes = new byte[ProgramTables.ClassCount];
         classes[1] = 3;
@@ -31,11 +31,12 @@ public sealed class RemovalLogicTests
             Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
             Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray(),
             goodKinds: kinds,
-            roadCapacities: Enumerable.Repeat(capacity, ProgramTables.RoadCapacityCount).ToArray()
+            roadCapacities: Enumerable.Repeat(capacity, ProgramTables.RoadCapacityCount).ToArray(),
+            transportPriorities: transportPriorities
         );
     }
 
-    private static Game World(byte capacity = 8, bool hut = true)
+    private static Game World(byte capacity = 8, bool hut = true, byte[]? transportPriorities = null)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var objects = map.Bytes(MapLayer.Object);
@@ -48,7 +49,7 @@ public sealed class RemovalLogicTests
             }
         }
 
-        var game = new Game(Made(capacity), map);
+        var game = new Game(Made(capacity, transportPriorities), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
@@ -217,6 +218,30 @@ public sealed class RemovalLogicTests
 
         Assert.AreEqual(0xff, hut.Fill >> 8, "the byte of the log's kind counts one less (the byte wraps)");
         Assert.AreEqual(0, hut.Fill & 0xff);
+    }
+
+    [TestMethod]
+    public void WhenARemovalFreesARoadsWaitingPlaceTheGoodOfTheHighestTransportPriorityForThatRoadWaitsNext()
+    {
+        const int stone = 9;
+        const int board = 1;
+        const int way = 0;
+        var ranks = new byte[StartStock.Goods];
+        ranks[Game.GoodLog - 1] = 5;
+        ranks[stone - 1] = 9;
+        ranks[board - 1] = 2;
+        var game = World(transportPriorities: ranks);
+        var directed = (way + 1) << 5;
+        game.LayGood(1, 0, board | directed);
+        game.LayGood(1, 1, Game.GoodLog | directed);
+        game.LayGood(1, 2, stone | directed);
+        game.LayGood(1, 5, board | directed, 4);
+        game.WaitForRoad(1, way, 5);
+
+        Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
+
+        Assert.AreEqual(board, game.FlagGoods(1)[5], "the good for the hut loses its direction");
+        Assert.AreEqual(0x80 | 2, game.FlagDirectionBytes(1)[way] & 0x87, "the stone waits for the road next");
     }
 
     [TestMethod]

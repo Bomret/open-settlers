@@ -60,7 +60,8 @@ the quit request returns.
 | `0x468717` | `Game_SetStartParams` | Fills the start parameters and the map seed from a mission record or from the free-game settings; returns the size class. | confirmed | game | Sites `0x4688f4`, `0x468b3d`. |
 | `0x41eeeb` | — | After map generation, calls `0x41f1f4` once per player block with its start values. Inferred: places the players. | unknown | game | Called by `Game_Start`. |
 | `0x42593a` | `Game_ResetCounters` | Zeroes the clock, the statistics, and other counters at a new game. | confirmed | game | Called by `Game_Start`. |
-| `0x42055e` | — | Sets up the player blocks at a new game and sets `Sim_PhaseCount`. Its full role is unknown. | unknown | game | Called by `Game_Start`. |
+| `0x42055e` | — | Sets up the player blocks at a new game and sets `Sim_PhaseCount`; with a player block at `+0x30` of the EDI block it calls `Player_SetTransportPriorities` among other routines that fill default orders. Its full role is unknown. | unknown | game | Called by `Game_Start`. |
+| `0x445570` | `Player_SetTransportPriorities` | Writes the default transport priority of each good 1 to 26 into the player block of `+0x30` of the EDI block, at `-0x55 + good`: for each good, in steps of 8 bytes, a load of the rank as a constant and its store, so the rank of good g is the byte at `0x445571 + 8 * (g - 1)`. The ranks are 1 to 26, each once ([Goods](goods.md#transport-priorities)). | confirmed | game | Called by `0x42055e`. |
 | `0x467c03` | `StartScreen_HandleClick` | Click handler of the start screens; dispatches 42 actions through the table at `0x468148`. | inferred | game | Called by `0x440b01`. |
 | `0x466b94` | `StartScreen_SwitchPage` | Moves a requested start-screen page into the current page and runs its handler. | confirmed | game | `Main_Loop` while `Game_Flags` bit 4 is set. |
 | `0x4685bc` | `StartScreen_StartGame` | Action 38: sets the start parameters and the map size, then requests a new game. Entry inferred. | confirmed | game | Slot `0x468278` of the table at `0x468148`. |
@@ -246,7 +247,7 @@ entries per phase (see "Item tables").
 | `0x4291c2` | `Sim_StepPhase` | Advances `Sim_Phase`; phases 0 to 31 run the per-player update for player `phase & 3`, later phases draw from the random generator and dispatch through a table. | confirmed | game | Called by `Main_Loop`; tables at `0x4292ee` and `0x42923c`. |
 | `0x474da3` | `Ai_UpdatePlayer` | Per-player update for players whose block marks them active and computer-controlled. | inferred | game | Reached from `Sim_StepPhase`; calls `Rng_Step`. |
 | `0x46414d` | `Table70_Pass` | Processes the phase's slice of `Table70` (the flags whose slot divided by 32 is the phase, phases 0 to 31): for each flag in use, its goods (not read), then through `0x464c36` its roads. | confirmed | game | Called by `Main_Loop`. [Carriers](carriers.md#the-flag-pass). |
-| `0x464c36` | `Flag_VisitRoads` | The part of `0x46414d` after a flag's goods: for each direction from north to east that holds a road, sets the flag status bit of a road that holds a carrier, and asks `0x42b455` for a carrier for a road whose byte shows none, unless the flag's status bit 7 says a request found none since the retry scan. | confirmed | game | Called by `0x46414d`. [Carriers](carriers.md#the-flag-pass). |
+| `0x464c36` | `Flag_VisitRoads` | The part of `0x46414d` after a flag's goods: for each direction from north to east that holds a road, sets the flag status bit of a road that holds a carrier, and asks `0x42b455` for a carrier for a road whose byte shows none, unless the flag's status bit 7 says a request found none since the retry scan. The same Ghidra function holds the end of a good's direction step: at `0x46501a` a good given a road on which another good waits takes the waiting place only with a higher transport priority ([Goods](goods.md#the-turn-of-a-flags-goods)). | confirmed | game | Called by `0x46414d`. [Carriers](carriers.md#the-flag-pass). |
 | `0x42cb2d` | `Table18_Pass` | Processes the phase's slice of `Table18` (slots `32 * phase` on, in groups of 32 every 1024): a finished building goes to its type's handler through the table at `0x42cd1d`, a building under construction to the countdown. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
 | `0x42f3d9` | `Table16_Pass` | Processes the phase's slice of `Table16`: the slots whose number is the phase modulo 16 plus a multiple of 16, each through `0x42fc81`. | confirmed | game | Called by `Main_Loop`. [Settlers](settlers.md#the-pass). |
 | `0x42f4f1` | — | For each view, gathers the settlers on the shown tiles, runs their turn through `0x42fc81` once more, and builds their draw records (`0x42f512`, `0x43f537`). So a settler in view acts every pass, others every 16th. | inferred | game | Called by `Main_Loop`. |
@@ -597,7 +598,11 @@ from `+0x21e` to `+0x237`) are in the dump, not here.
 
 `Player_Blocks` points to four blocks of 8628 bytes, one per player. Known fields: byte `+2` (bit 6
 active and bit 7 computer, both inferred; bit 3 set by `Msg_Post`), the message slots at `+0x1df4`, and
-the timed messages at `+0x1f34`.
+the timed messages at `+0x1f34`. The bytes `-0x54` to `-0x3b` (good g at `-0x55 + g`) hold the transport priorities that
+`Player_SetTransportPriorities` writes; the carrier's exchange (`0x43b054`, in `Settler_WalkRoad`) and the direction step of
+`Table70_Pass` (`0x46501a`) read them by the good's low 5 bits ([Goods](goods.md#transport-priorities)). The words at `-0x3a`
+and `-0x36`, which those reads reach for the goods 27 and 31, are counters that `Castle_CreateSettlers` adds to (inferred:
+counts of settlers).
 
 ### View records
 
@@ -876,6 +881,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x444b29` | `Road_WalkEnds` | inferred | Roads |
 | `0x444e68` | `Road_Commit` | confirmed | Roads |
 | `0x4454e7` | `Road_LengthClass` | confirmed | Roads |
+| `0x445570` | `Player_SetTransportPriorities` | confirmed | Program start and game flow |
 | `0x44591d` | `Panel_HandleClick` | inferred | Views, panels, and drawing |
 | `0x448418` | `Game_ConfirmEnd` | inferred | Program start and game flow |
 | `0x448436` | `Game_EndToStartScreen` | confirmed | Program start and game flow |
@@ -982,7 +988,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 220 routines of the 471 functions in the dump's game code band and lists 10 more without a name: 181 confirmed, 41 inferred, 8 unknown.
+Coverage: the index names 221 routines of the 471 functions in the dump's game code band and lists 10 more without a name: 182 confirmed, 41 inferred, 8 unknown.
 <!-- coverage:end -->
 
 Open anchors:

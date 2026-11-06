@@ -20,7 +20,8 @@ public sealed class ProgramTablesTests
     private const int SectionSize = 0x50000;
     private const int RawStart = 0x200;
 
-    // A PE32 file with one section that holds the addresses 0x41e000 to 0x46e000 at the file offset 0x200.
+    // A PE32 file with one section that holds the addresses 0x41e000 to 0x46e000 at the file offset 0x200, with a made-up
+    // default transport priority order: the routine's instructions give good g the rank 27 - g.
     private static byte[] Executable(Action<byte[]> fill, int sectionAt = SectionStart)
     {
         var exe = new byte[RawStart + SectionSize];
@@ -35,6 +36,14 @@ public sealed class ProgramTablesTests
         BitConverter.GetBytes(sectionAt).CopyTo(exe, header + 12);
         BitConverter.GetBytes(SectionSize).CopyTo(exe, header + 16);
         BitConverter.GetBytes(RawStart).CopyTo(exe, header + 20);
+        for (var good = 1; good <= StartStock.Goods; good++)
+        {
+            var at =
+                FileOffset(ProgramTables.TransportPriorityAddress) + ProgramTables.TransportPriorityStep * (good - 1);
+            exe[at] = ProgramTables.MovAlOpcode;
+            exe[at + 1] = (byte)(StartStock.Goods + 1 - good);
+        }
+
         fill(exe);
 
         return exe;
@@ -265,6 +274,46 @@ public sealed class ProgramTablesTests
         // peek:462d6d:32 (a byte for each of 32 goods) and peek:462acd:8 (a count for each of 8 length classes).
         Assert.AreEqual(0x1C7E05E97572CBCBUL, Fnv(tables.GoodKinds));
         Assert.AreEqual(0x6FC87DA442D34B9DUL, Fnv(tables.RoadCapacities));
+    }
+
+    [TestMethod]
+    public void TheTransportPrioritiesAreTheRanksTheDefaultOrderRoutineWrites()
+    {
+        var tables = ProgramTables.Read(Executable(_ => { }));
+
+        Assert.AreEqual(26, tables.TransportPriorities[0], "good 1");
+        Assert.AreEqual(1, tables.TransportPriorities[25], "good 26");
+    }
+
+    [TestMethod]
+    public void ADefaultOrderRoutineWithoutItsInstructionsIsRefused()
+    {
+        var exe = Executable(bytes =>
+            bytes[FileOffset(ProgramTables.TransportPriorityAddress) + ProgramTables.TransportPriorityStep * 4] = 0x90
+        );
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "transport priority table");
+    }
+
+    [TestMethod]
+    public void ADefaultOrderWhoseRanksAreNotOneTo26EachOnceIsRefused()
+    {
+        var exe = Executable(bytes =>
+            bytes[FileOffset(ProgramTables.TransportPriorityAddress) + ProgramTables.TransportPriorityStep * 4 + 1] = 26
+        );
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "transport priority table");
+    }
+
+    [TestMethod]
+    public void TheTransportPrioritiesOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // The bytes 1 to 26 of the prio= line of the goods and remove verbs, which run 0x445570 at the game's start.
+        Assert.AreEqual(0xBBF1449BF71E9134UL, Fnv(tables.TransportPriorities));
     }
 
     private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);

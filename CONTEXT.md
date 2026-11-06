@@ -53,7 +53,8 @@ _Avoid_: map summary, map dump
 **Play script**
 A text file of steps, one per line, that drive the map view or the game view through its own input
 handlers (keys, the mouse, a click on a tile by `click-tile`, a click on a button by `button`), take
-screenshots, and check its state (in the game view also the tick count and the castle's log count).
+screenshots, and check its state (in the game view also the tick count, the castle's log count, and the goods on a
+flag).
 _Avoid_: test script, macro
 
 **Play run**
@@ -116,6 +117,11 @@ _Avoid_: edge, path, street
 **Carrier**
 A settler who walks one road and carries goods between its two flags.
 _Avoid_: porter, transporter, worker
+
+**Transport priority**
+A player's rank for each kind of good. Where several goods at one flag wait for the same road, the good
+with the highest rank goes next. A new game starts every player with the same default order.
+_Avoid_: goods priority, transport order
 
 ## Roadmap
 
