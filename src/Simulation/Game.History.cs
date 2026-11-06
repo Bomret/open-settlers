@@ -73,7 +73,7 @@ public sealed partial class Game
         _events.Add(new ThingEvent(TickCount, type, thing, state, cause, other));
 
     // Records the event of the building in the slot: its state now, naming the other thing by its ID now.
-    private void RecordBuilding(int slot, string type, Cause cause, string? other = null)
+    internal void RecordBuilding(int slot, string type, Cause cause, string? other = null)
     {
         var b = _buildings[slot];
         Record(
@@ -99,7 +99,7 @@ public sealed partial class Game
     }
 
     // Records the event of the flag in the slot: its node, status byte, road bytes, and the goods on it.
-    private void RecordFlag(int slot, string type, Cause cause, string? other = null)
+    internal void RecordFlag(int slot, string type, Cause cause, string? other = null)
     {
         var fields = new List<(string, int)> { ("x", _flags[slot].X), ("y", _flags[slot].Y), ("status", _flagStatus[slot]) };
         fields.AddRange(_roadBytes[slot].Select((value, direction) => ($"road{direction}", (int)value)));
@@ -107,10 +107,26 @@ public sealed partial class Game
         Record(type, FlagId(slot), new ThingState(fields), cause, other);
     }
 
+    // Starts the settler carrying a command cause on: every event of the settler records it in place of its rule area's cause
+    // (RecordSettler) from the change that set a behaviour going, until the behaviour ends: the event that leaves the settler
+    // idle in storage (state 1) or waiting at a flag (state 0x42) is the last one that carries it, and a rule ends it with
+    // EndCarry before the event of a new job request. Throws for a cause no command made.
+    internal void CarryCause(int slot, Cause command)
+    {
+        if (!command.IsCommand)
+        {
+            throw new ArgumentException($"a {command.Kind} cause is no command and cannot be carried", nameof(command));
+        }
+
+        _carried[SettlerId(slot)] = command;
+    }
+
+    // Ends the carrying of a command cause: the settler's next event takes the rule area's cause.
+    internal void EndCarry(int slot) => _carried.Remove(SettlerId(slot));
+
     // Records the event of the settler in the slot: its state now, with the command cause it carries (CarryCause) in place of the
-    // rule area's cause. The event that leaves the settler idle in storage or waiting at a flag is the last one the command
-    // cause reaches.
-    private void RecordSettler(int slot, string type, Cause cause, string? other = null)
+    // rule area's cause.
+    internal void RecordSettler(int slot, string type, Cause cause, string? other = null)
     {
         var s = _settlers[slot];
         var id = SettlerId(slot);

@@ -242,4 +242,50 @@ public sealed class ThingHistoryTests
         Assert.IsNull(late);
         StringAssert.Contains(lateReason, "9");
     }
+
+    [TestMethod]
+    public void ASettlerCarriesACommandCauseUntilItIdlesInStorageThenTakesTheRuleArea()
+    {
+        var game = Castle();
+        var command = Cause.Placed(game.BuildingId(0));
+        var settler = game.Settlers[5];
+        game.CarryCause(5, command);
+
+        settler.State = 2;
+        game.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
+        settler.State = 1;
+        game.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
+        game.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
+
+        var causes = game.EventsOf(game.SettlerId(5)).Skip(1).Select(e => e.Cause).ToArray();
+        CollectionAssert.AreEqual(new[] { command, command, Cause.Settlers }, causes);
+    }
+
+    [TestMethod]
+    public void ASettlerWaitingAtAFlagEndsTheCarryAndATakenJobRequestEndsItBeforeTheEvent()
+    {
+        var game = Castle();
+        var command = Cause.Razed(game.BuildingId(0));
+        var settler = game.Settlers[5];
+
+        game.CarryCause(5, command);
+        settler.State = 0x42;
+        game.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
+        game.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
+        game.CarryCause(5, command);
+        settler.State = 2;
+        game.EndCarry(5);
+        game.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
+
+        var causes = game.EventsOf(game.SettlerId(5)).Skip(1).Select(e => e.Cause).ToArray();
+        CollectionAssert.AreEqual(new[] { command, Cause.Carriers, Cause.Settlers }, causes);
+    }
+
+    [TestMethod]
+    public void OnlyACommandCauseCanBeCarried()
+    {
+        var game = Castle();
+
+        Assert.ThrowsExactly<ArgumentException>(() => game.CarryCause(5, Cause.Woodcutting));
+    }
 }
