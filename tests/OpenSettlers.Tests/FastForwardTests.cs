@@ -125,7 +125,10 @@ public sealed class FastForwardTests
         run.Advance(1);
 
         Assert.IsTrue(run.Finished);
-        Assert.AreEqual("play/t.play line 1: fast-forward needs the game view, use --game-view", run.Problems.Single());
+        Assert.AreEqual(
+            "play/t.play line 1: fast-forward needs the game view, use --game-view",
+            run.Problems.Single()
+        );
         Assert.AreEqual(25, pacer.Due(2));
     }
 
