@@ -78,7 +78,10 @@ the settler in state 2 with the mode `0xff` or a road direction (a worker or car
    takes state `0x45` and joins.
 2. The two far flags' items are joined: each far flag's direction byte for the road keeps its good bits and takes the other far
    flag's direction in bits 3 to 5, each is marked as the road's other end, and the carrier-on-the-road bits of the two ends
-   are cleared. The new road's length is the sum of the two, its class (`0x4454e7`) goes into the road bytes of both ends.
+   are cleared. The new road's length is the sum of the two, its class (`0x4454e7`) goes into the road bytes of both ends. The join writes
+neither the road bits nor the land bits (`+3`, `+4`) of the far flags: each keeps the kind it had for its road, so taking
+down a flag between two water roads leaves a water road (read in `0x462153`, not run: no emulated map holds a water road
+at a flag; [Roads](roads.md#water-roads)).
 3. With settlers on the old roads the status bit of the road is set at both ends, and the road byte's low nibble takes their
    number, up to the number its class holds (the table at `0x462acd`, read from the program at run time). Past that, the
    settlers of the lists are marked to go from the first: a waiting carrier (state `0x45`) takes state `0x44`, any other settler
