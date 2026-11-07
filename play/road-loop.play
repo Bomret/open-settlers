@@ -1,0 +1,41 @@
+# A road that ends at the flag it started from, drawn with the Road button, gets a carrier; a flag on it splits it into two roads between
+# the same two flags, each with a carrier at work.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   sh tools/play-run.sh road-loop --game-view --seed 1234567812345678 --size 1 --fps 10
+# On that map the castle stands at 21,4, so its flag is at 22,5. The loop leaves the flag south-east and goes round the node 22,6
+# (23,6 23,7 22,7 21,6 21,5) back to 22,5; the flag that splits it goes on 22,7, three steps along.
+expect seed = 1234567812345678
+expect size = 1
+wait 0.3
+click-tile 21 4
+wait 0.3
+button Road
+click-tile 22 5
+click-tile 23 6
+click-tile 23 7
+click-tile 22 7
+click-tile 21 6
+click-tile 21 5
+click-tile 22 5
+button Road
+wait 0.3
+expect-count road = 6
+fast-forward carrier state 0x42 max 20000
+wait 0.3
+shot loop 21 4 5 5
+list loop
+expect-count carrier = 1
+
+button Flag
+click-tile 22 7
+button Flag
+wait 0.3
+expect-at 22 7 flag
+shot split 21 4 5 5
+list split
+wait 40
+shot two-carriers 21 4 5 5
+list two-carriers
+expect-count flag = 2
+expect-count carrier = 2
+dump after

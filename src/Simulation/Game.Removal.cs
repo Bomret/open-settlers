@@ -277,6 +277,7 @@ public sealed partial class Game
             }
 
             direction = BitOperations.TrailingZeroCount(rest);
+            flags[index] &= (byte)~(1 << direction);
             DismissWaiting(index);
             standing = Occupant(index);
             if (standing != 0 && _settlers[standing].State is 2 or 3)
