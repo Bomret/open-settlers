@@ -23,7 +23,8 @@ same routines on each pass (`0x425bce` to `0x425bf1`):
 - In a game with 49 phases, the routines of phases 33 to 48 call `Rng_Step` for the player blocks with
   bits 7 and 6 of byte 2 set, in turn, without reading the clock step (`0x429427`). They stop at the
   first draw below the block's `+0x1ae`, which leads to the call of `0x46986d` (`0x42943c`, `ret` at
-  `0x429441`). `0x46986d` returns at once while the clock step is 0 (`0x469870` to `0x46987a`).
+  `0x429441`), or when the phase reaches the phase count, where they set `Sim_Phase` to 0 (`0x42956c`,
+  `0x429572` to `0x42957f`). `0x46986d` returns at once while the clock step is 0 (`0x469870` to `0x46987a`).
 
 Whether the item-table routines and the other routines of the pass change the game state during a pause
 is still unknown.

@@ -32,7 +32,7 @@ Write-Host ("pid {0}, image base 0x{1:x}" -f $p.Id, $p.MainModule.BaseAddress.To
 $hist = @{}      # speed -> elapsed -> count
 $cycles = @{}    # speed -> "phasecount:total" -> count
 $missed = @{}    # speed -> extra phase steps between two polls
-$prevPhase = -1; $paused = 0
+$prevPhase = -1; $paused = 0; $failedReads = 0
 $sw = [Diagnostics.Stopwatch]::StartNew(); $nextWrite = 5000
 
 function Bump($table, $k1, $k2) {
@@ -41,7 +41,7 @@ function Bump($table, $k1, $k2) {
 }
 
 function Write-Summary {
-  $lines = @("elapsed-probe  pid $($p.Id)  runtime $([int]($sw.ElapsedMilliseconds/1000)) s  paused passes $paused")
+  $lines = @("elapsed-probe  pid $($p.Id)  runtime $([int]($sw.ElapsedMilliseconds/1000)) s  paused passes $paused  failed reads $failedReads")
   foreach ($s in ($hist.Keys | Sort-Object)) {
     $lines += "speed $s"
     $lines += "  elapsed units per pass: " + (($hist[$s].Keys | Sort-Object | ForEach-Object { "$($_)=$($hist[$s][$_])" }) -join "  ")
@@ -72,8 +72,11 @@ while ($sw.ElapsedMilliseconds -lt $Seconds * 1000 -and -not $p.HasExited) {
         if ($phase -lt $prevPhase) { Bump $cycles $speed ("{0}:{1}" -f $count, [BitConverter]::ToUInt16($b, 0x28a)) }
       }
       $prevPhase = $phase
-    } else { $prevPhase = -1 }
-  }
+    } else {
+      if (-not $b) { $failedReads++ }
+      $prevPhase = -1
+    }
+  } else { $failedReads++ }
   if ($sw.ElapsedMilliseconds -ge $nextWrite) { Write-Summary; $nextWrite += 5000 }
   $t = $sw.Elapsed.TotalMilliseconds + 0.5
   while ($sw.Elapsed.TotalMilliseconds -lt $t) { }
