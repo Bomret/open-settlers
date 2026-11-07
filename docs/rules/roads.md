@@ -80,7 +80,9 @@ in the bytes at `+3` and (for a land road) `+4`, the length class (`0x4454e7`: 0
 `+6 + direction`, the direction of the other end goes into bits 3 to 5 of the byte at `+0x3c + direction`, and the
 pointer to the other flag's item goes to `+0x24 + 4 x direction`. The road leaves the map as drawn, with the last
 step's two bits set after the commit succeeded. A road from a flag back to itself is accepted and joins the one item
-to itself.
+to itself. The engine builds it with both ends at one slot, in two directions; the carrier, the split by a flag on it
+(two roads between the same two flags), and the take-down of the road work as for any road. The click refuses to take down
+the flag that split it, because its two roads go to the same flag.
 
 **An error of the program.** A road whose first step goes back along a road that already leaves the start flag is let
 through when the node it leads to is a flag (a road of one step between two flags): the step finds the start's bit,

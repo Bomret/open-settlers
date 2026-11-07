@@ -36,7 +36,8 @@ command a click on a node means (`Game.RemovalAt`).
 
 `Road_TakeDown` takes the first two road bits of the clicked node (the lowest, then the next one above; a second bit
 of 4 with bit 5 also set is taken for 5) and runs `0x463204` for each. That walk clears the bit of the direction at the node
-and then, node after node, the bit that points back, until it reaches the flag at the end of the road. On the way:
+and then, node after node, the bit that points back and the bit that leads on, until it reaches the flag at the end of the road. A road
+that returns to its start flag is taken down the same way: the two walks from the click each end at the flag. On the way:
 
 - The carriers that wait on a node next to a flag (the states `0x42`, `0x43`, and `0x45`) are told to go home
   (`0x463ef9`): they take state `0x44`.
