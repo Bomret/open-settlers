@@ -181,7 +181,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 - `docs/agents/`: instructions for coding agents.
 - `tools/play-run.sh`: the play-run wrapper ("Run a play script").
 - `tools/GhidraDump/`: Ghidra scripts that build a local Ghidra project and write a searchable dump of the game's program, and the emulator harness that runs the original's map-start code for reference values.
-- `tools/WindowsCheck/`: the procedure that confirms the emulator's values by running the original in Windows.
+- `tools/WindowsCheck/`: the procedures that run the original in Windows: the check that confirms the emulator's values, and the probe `elapsed-probe.ps1` that tallies the clock units of the main loop's passes.
 
 ## Build and test
 

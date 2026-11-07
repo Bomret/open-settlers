@@ -67,12 +67,12 @@ stores the new value. A pass therefore takes at least 4 timer calls: at least 80
 speed. While the clock runs, the elapsed units of a pass are at least 8, and always even because the clock advances in steps of 2. The wait itself lies in the
 game code; it waits through the platform routine `Frame_Handshake` at `0x406c60` that hands control between the threads.
 
-A measurement on the History Edition agrees. A script polled the game state block of a running game
-in a Windows 11 virtual machine. It recorded `Clock_Elapsed` for 5921 passes that advanced `Sim_Phase`
-by exactly 1, and all of them had 8 elapsed units: 1884 at speed 1 and 4037 at speed 8. It did not
-record the passes that ran several phases (see "Rules that count passes"). The totals that `0x42a74a`
-copied were 264 to 296 units per phase cycle of 49 phases, multiples of 8 that match 33 to 37 passes
-of 8 units each.
+A measurement on the History Edition agrees. The probe `tools/WindowsCheck/elapsed-probe.ps1` polled the
+game state block of a running game. It tallied `Clock_Elapsed` only for the passes that advanced
+`Sim_Phase` by exactly 1 with the clock running, which leaves out paused passes, passes that ran several
+phases (see "Rules that count passes"), and passes the poller missed. All 5921 tallied passes had 8
+elapsed units: 1884 at speed 1 and 4037 at speed 8. The totals that `0x42a74a` copied were 264 to 296
+units per phase cycle of 49 phases, multiples of 8 that match 33 to 37 passes of 8 units each.
 
 `Timer_WaitNextCall` at `0x425c9c` resets the interrupt counter and waits until the next timer call has happened.
 Its callers are unknown: the program holds no direct call to it and no reference to its address as a
