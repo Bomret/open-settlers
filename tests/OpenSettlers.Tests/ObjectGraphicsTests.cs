@@ -77,7 +77,7 @@ public sealed class ObjectGraphicsTests
         var graphics = ObjectGraphics.Load(Open(fake));
 
         Assert.HasCount(
-            ObjectGraphics.EntryCount + 3 + ObjectSprites.GoodsCount + ObjectSprites.WaterCount,
+            ObjectGraphics.EntryCount + 3 + ObjectSprites.GoodsCount + ObjectSprites.WaterCount + 3,
             graphics.Images
         );
         Assert.AreEqual(3, graphics.LayerWidth);
@@ -135,7 +135,8 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(ObjectGraphics.EntryCount + 3, ObjectGraphics.Layer(ObjectSprites.GoodEntry(0)));
         Assert.AreEqual(ObjectGraphics.EntryCount + 10, ObjectGraphics.Layer(ObjectSprites.GoodEntry(7)));
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(ObjectSprites.GoodEntry(7))].OffsetX);
-        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32 + 16, graphics.Images.Count);
+        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32 + 16 + 3, graphics.Images.Count);
+        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32 + 16 + 2, ObjectGraphics.Layer(ObjectSprites.FlagEntry + 3));
         Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32, ObjectGraphics.Layer(ObjectSprites.WaterFirstEntry));
     }
 

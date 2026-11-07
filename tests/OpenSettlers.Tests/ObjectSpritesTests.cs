@@ -24,6 +24,16 @@ public sealed class ObjectSpritesTests
         Assert.IsNull(ObjectSprites.Entry(4));
     }
 
+    // 0x44db26 adds the state's +0x206 shifted right 3, two bits, to the object number 0x80.
+    [TestMethod]
+    public void AFlagWavesThroughFourFramesOneEveryEightClockUnits()
+    {
+        Assert.AreEqual(1378, ObjectSprites.Entry(ObjectSprites.FlagCode, 7));
+        Assert.AreEqual(1379, ObjectSprites.Entry(ObjectSprites.FlagCode, 8));
+        Assert.AreEqual(1381, ObjectSprites.Entry(ObjectSprites.FlagCode, 31));
+        Assert.AreEqual(1378, ObjectSprites.Entry(ObjectSprites.FlagCode, 32));
+    }
+
     [TestMethod]
     public void AStaticCodeTakesTheEntryOfItsCodeMinusEightPlus1250()
     {
