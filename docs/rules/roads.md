@@ -288,6 +288,13 @@ pointers are not kept (a later slice reads the road from the map and from `Game.
 second-button click that puts a flag on a road ([A flag on a road](#a-flag-on-a-road)); the step back at the start;
 directions after the road reached a flag are refused; the sounds; and the pixel alignment of the strips.
 
+**A road ending on a road.** The Road button holds no view flag bit 3 and the stand-in offers no second pointer button, so
+a road whose step lands on a node of another road, a node with road bits and no flag, is refused as the original refuses it
+(`road-click-bit0`; [the evidence](#the-pointer-button-that-places-a-flag-on-a-road)). The same holds for a step onto the
+road's own earlier node and for a road across another. The other road, the flags, and the map stay as they were
+(`RoadOnRoadTests`). The branch of `0x44426c` that puts a flag on the node and splits that road is not built: no control
+sets the bit.
+
 `Game.PlaceFlag` on a road node (node state 4) splits the road (`src/Simulation/Game.Split.cs`): `Game.Roads` holds the two
 halves in place of the old road, the water kind goes to both, the settlers on the road are gathered as the take-down of a flag
 gathers them (`JoinRoads` is the inverse), and the half without a carrier asks for one at the next flag pass. The events are

@@ -136,7 +136,8 @@ public static class RoadBuilding
             var reachesFlag = (objects[to] & 0x7f) == FlagCode;
             if ((flags[to] & RoadBits) != 0 && !reachesFlag)
             {
-                // A node that holds a road already, and no flag: refused.
+                // A node that holds a road already, and no flag: refused. The Road button never holds view flag bit 3, the
+                // second pointer button that makes the click place a flag there (docs/rules/roads.md#the-pointer-button-that-places-a-flag-on-a-road).
                 status = RoadStatus.Refused;
                 break;
             }
