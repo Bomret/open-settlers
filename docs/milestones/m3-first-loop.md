@@ -22,8 +22,8 @@ left open:
   military building), not carrier code. guess
 - The player block's transport priority table (`+good - 0x55` from the pointer at `+0x64` of the state): it reads 0 in the verb
   `goods:`, so a second good that waits for a road never takes the road's byte again, **inferred**. Open lead.
-- A carrier carrying a log is drawn with the figure word plus the word of the table at `0x43f4b7` (`0x1400` for the log, a row of
-  the figure bases), read from the code of `0x43f8ae` and the table's bytes; a play run shows it
+- A carrier carrying a log is drawn with the figure word plus the word of the table at `0x43f4b7`. The word is `0x1400` for the
+  log, a row of the figure bases. It is read from the code of `0x43f8ae` and the table's bytes. A play run shows it
   ([Goods at a flag](../rules/goods.md#drawing-a-carrier-with-a-good)). The emulator's draw runs of `0x43f537` confirm it for each good.
 
 ## Tick
@@ -104,12 +104,12 @@ left open:
   building placement routine (the click handler `0x440c24` reaches it) and a Windows run that places a hut. The type 1 and job 11 that
   the first walk was read with are another hut's and worker's (the work at `0x433f71`: a node with no object by the water, likely a
   fisherman's).
-- The settler's drawing follows the figure word and the tables at `0x4501a1` and `0x4503c5` ([Settlers](../rules/settlers.md#drawing-the-walk-leads)),
-  confirmed from the code and, for the woodcutter, by screenshots; the sequence offsets, the triple index, the time left, the position, the
-  overlay's fill colour (player 0), the row order, and the draws of the carrier (each good, dismissed, walking home), the woodcutter, and the
-  settler of the type 1 hut are confirmed by the emulator verb `draw:`
-  ([Settlers](../rules/settlers.md#the-draw-path-emulated)). Open leads: the states and jobs no recording holds, and the colours of the
-  other players.
+- The settler's drawing follows the figure word and the tables at `0x4501a1` and `0x4503c5`
+  ([Settlers](../rules/settlers.md#drawing-the-walk-leads)). The code confirms it, and screenshots confirm it for the woodcutter.
+  The emulator verb `draw:` confirms the sequence offsets, the triple index, the time left, the position, the overlay's fill
+  colour (player 0), and the row order. It also confirms the draws of the carrier (each good, dismissed, walking home), the
+  woodcutter, and the settler of the type 1 hut ([Settlers](../rules/settlers.md#the-draw-path-emulated)). Open leads: the
+  states and jobs no recording holds, and the colours of the other players.
 - The castle's own handler (building type 0x18, `0x42e7e0`) and the settlers the castle makes later (`0x428a75`), and the ambient
   sounds of each view (`0x428964`): they may draw from the random generator; the port draws nothing for them. The knights' idle
   turns (jobs 22 to 26) are known and ported ([Woodcutting](../rules/woodcutting.md#the-random-generator)).
@@ -123,7 +123,7 @@ left open:
   `0x67` (`0x428eb8`): likely, not ported ([Woodcutting](../rules/woodcutting.md#open-leads)). The boatman's walk home (state `0x1a`)
   stays unported with the water roads.
 - The drawing of the walk home is confirmed by the `walk-home`, `dismissed`, and `dismissed-with-log` recordings: the state `0x19` is drawn
-  (frame `0x52`) and the state `0x1c` is not ([Settlers](../rules/settlers.md#the-draw-path-emulated)).
+  (the frame `0x52` picks the sequence) and the state `0x1c` is not ([Settlers](../rules/settlers.md#the-draw-path-emulated)).
 - The drawing of the goods on a flag (`0x44db26`, `0x44de9a`): the place offsets and the sprite entry 320 plus the good (a log is
   entry 327) are read from the decompile and **inferred**; no emulator or debugger run of the draw confirms them. Lead: run `0x44db26`
   in the emulator with a flag that holds a log and read the position and entry `0x44de9a` hands the blit.

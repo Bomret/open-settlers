@@ -130,12 +130,21 @@ simulation must not depend on or does not port, so a real game's tree choices di
 
 **Status:** the trees and the stumps are drawn from the map like any object (the codes 0x5d to 0x66 and 0x53 as the still sprites
 `1250 + code - 8`); the woodcutter is drawn as the walking settlers are ([Settlers](settlers.md#drawing-the-walk-leads)) with the
-figure rows of job 5 in the states 4, 0x10, and 0x11: the walk, the way back with the log (byte 13 0x80, byte 14 1, state 0x10), and the felling at the cut (figure bytes from 0x80, frames `0x74` to `0x78`) ([Settlers](settlers.md#drawing-the-walk-leads)). The frames `0x74` to `0x78` are **confirmed** by the draw run of the `woodcutter` recording ([Settlers](settlers.md#the-draw-path-emulated),
-`tests/OpenSettlers.Tests/settler-draws.txt`, every pass of the cut, and a screenshot of `play/woodcutter-figures.play` for the frame `0x74`): the frames `0x74`, `0x76`, and `0x77` draw the felling figure bytes (from `0x80`, two sprites
-with no second figure) and the frames `0x75` and `0x78` walking bytes (the figure, its overlay, and a second figure); the figure bytes of the walk, the way back with the log, and the door
-(state 4) are the rows of the handler's three adds. The woodcutter's hat is the colour overlay of his figure (entry 2500 plus the figure), filled with the palette index `0x40` plus 4 for the player, as every settler's overlay is: the
-draw path holds no colour of his own, so the hat takes the player's fill (index `0x40` for player 0, the same as the carrier's overlay). The recordings fix the index, not the RGB the palette
-gives it. The goods on a flag are drawn by `0x44db26` (read from the decompile): for each of the 8 places
+figure rows of job 5. The engine draws him in the states 2, 3, 4, 5, 0xe, 0x10, 0x11, and 0x19, the full list in
+[Settlers](settlers.md#drawing-the-walk-leads). The rows cover the walk, the way back with the log (byte 13 0x80, byte 14 1,
+state 0x10), and the felling at the cut (figure bytes from 0x80, frames `0x74` to `0x78`).
+
+The frames `0x74` to `0x78` are **confirmed** by the draw run of the `woodcutter` recording
+([Settlers](settlers.md#the-draw-path-emulated), `tests/OpenSettlers.Tests/settler-draws.txt`, every pass of the cut). A screenshot
+of `play/woodcutter-figures.play` confirms the frame `0x74`. The frames `0x74`, `0x76`, and `0x77` draw the felling figure bytes.
+Those are from `0x80`, with two sprites and no second figure. The frames `0x75` and `0x78` draw walking bytes with the figure, its
+overlay, and a second figure. The figure bytes of the walk, the way back with the log, and the door (state 4) are the rows of the
+handler's three adds.
+
+The woodcutter's hat is the colour overlay of his figure (entry 2500 plus the figure). It is filled with the palette index `0x40`
+plus 4 for the player, as every settler's overlay is. The draw path holds no colour of his own, so the hat takes the player's
+fill. That is the index `0x40` for player 0, the same as the carrier's overlay. The recordings fix the index. The palette gives
+the RGB. The goods on a flag are drawn by `0x44db26` (read from the decompile): for each of the 8 places
 of the flag item (bytes `0xc` to `0x13`) holding a good, `0x44de9a` draws the sprite 320 plus the good's low 5 bits at the flag's draw
 position moved by (6, -4), (10, -2), (-4, -4) for the places 0 to 2 (before the flag's sprite) and (10, 2), (-8, -2), (6, 4), (-8, 2),
 (-4, 4) for the places 3 to 7 (after it), from the flag's draw at its node. A log (good 7) is the sprite entry 327, drawn in
