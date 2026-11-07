@@ -131,5 +131,5 @@ second at normal speed. `Game.Tick` in `src/Simulation/Game.cs` applies the comm
 then advances the tick count; the view calls it 12.5 times per second of frame time and carries the
 fraction. Each tick then runs one pass of the item tables' routines: the retry scan, the phase step, the slice of the flag
 list (the carriers' requests only: [Carriers](carriers.md#the-flag-pass)), and the slices of the building and settler lists
-([Settlers](settlers.md#the-pass)); the clock starts at 0 and gains 8 a pass, and
+([Settlers](settlers.md#the-pass)), then, with `Game.EveryPassTurns`, one more turn for every settler in a state the view draws in motion; the clock starts at 0 and gains 8 a pass, and
 the phase at 0 goes to 1 on the first pass. The players' timers are not in the engine yet.
