@@ -88,7 +88,8 @@ pixel of index 0 shows color 0 of the palette.
 `src/MapView/ObjectSprites.cs` (code to entry), `ObjectDraws.cs` (the tile and the position), `ObjectImage.cs`
 (indices and coverage), `ObjectGraphics.cs` (the install's sprites as array-texture layers), and
 `ObjectQuads.cs` (the quads, in bands of 16 rows). `src/Viewer/MapViewControl.cs` and `Objects.gdshader` draw them
-over the terrain of all nine copies. Resources (`Map.Deposits`) are never drawn. **Inferred:** the tile routine
+over the terrain of all nine copies. Resources (`Map.Deposits`) are never drawn. The tile routine
 `0x44d5b4` reads the flag, height, and object bytes of record A and, at the tile's record-B offset (the state
-`+0x36`), byte 1, none of which is the resource byte (byte 0 of record B). The engine departs from the program in three places: it
+`+0x36`), byte 1, none of which is the resource byte (byte 0 of record B). Byte 1 marks a waiting carrier
+([Carriers](carriers.md#drawing)). The engine departs from the program in three places: it
 draws no shadow, it draws the objects of every row after the terrain, and it draws no object of code 2 to 7 from the map (a flag, code 1, is drawn: [Flags](flags.md#how-a-flag-is-drawn); the castle and the woodcutter's hut are drawn from the game's buildings, the hut with the entry 1417: [Settlers](settlers.md#drawing-the-walk-leads)).

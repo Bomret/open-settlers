@@ -217,6 +217,8 @@ them from the install's archive at run time and takes the tables from the progra
 - a settler that claims its node on its way home (0x1c),
 - a settler at work (the woodcutter's 0x12, the type 1 hut's 0x1f).
 
+The tile pass draws the carriers in 0x42 to 0x45 instead ([Carriers](carriers.md#drawing)).
+
 The time left is the timer less the clock units since the settler's turn, so the animation moves with the game's ticks. The view
 draws the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)), 5, and 11 in every wrap copy. It rebuilds them
 after each tick. The viewer skips a sprite of a draw with no loaded layer and reports it once per sprite

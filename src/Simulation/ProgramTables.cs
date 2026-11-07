@@ -45,11 +45,15 @@ public sealed class ProgramTables
     public const int ScanWindowAddress = 0x421d28;
 
     /// <summary>
-    /// The address of the figure bases (<c>0x4501a1</c>, 256 words): two 16-bit words for each value of the high byte of
-    /// the figure word, the base of the figure and the base of the second figure (negative for none). The address is odd:
-    /// the draw routine loads it at <see cref="FigureBaseLoadAddress"/> and reads the words unaligned.
+    /// The address of the figure bases (<c>0x4501a1</c>, 274 words up to the figure offsets): two 16-bit words for each value
+    /// of the high byte of the figure word up to 0x88, the base of the figure and the base of the second figure (negative for
+    /// none). The address is odd: the draw routine loads it at <see cref="FigureBaseLoadAddress"/> and reads the words
+    /// unaligned. The waiting carrier's figure words (<see cref="IdleFigureAddress"/>) use the row 0x88, the last.
     /// </summary>
     public const int FigureBaseAddress = 0x4501a1;
+
+    /// <summary>The number of rows of the figure bases: those before the figure offsets.</summary>
+    public const int FigureBaseRowCount = (FigureOffsetAddress - FigureBaseAddress) / 4;
 
     /// <summary>
     /// The address of the figure offsets (<c>0x4503c5</c>, 512 words): two 16-bit words for each value of the low byte of
@@ -127,6 +131,33 @@ public sealed class ProgramTables
     /// <summary>The number of frames the frame row table covers.</summary>
     public const int FrameRowCount = CarriedFigureAddress - FrameRowAddress;
 
+    /// <summary>
+    /// The address of the waiting carriers' phases: 16 words (<c>0x44d87d</c>). The tile pass's figure routine (<c>0x44d77e</c>)
+    /// picks one by bits 2 to 5 of the address of the node's record (<c>docs/rules/carriers.md</c>, "Drawing").
+    /// </summary>
+    public const int IdlePhaseAddress = 0x44d87d;
+
+    /// <summary>The number of words of <see cref="IdlePhases"/>.</summary>
+    public const int IdlePhaseCount = 16;
+
+    /// <summary>
+    /// The address of the waiting carriers' figure words: 128 words (<c>0x44d89d</c>), picked by the phase plus the clock,
+    /// shifted right 3 (<c>0x44d77e</c>).
+    /// </summary>
+    public const int IdleFigureAddress = 0x44d89d;
+
+    /// <summary>The number of words of <see cref="IdleFigures"/>.</summary>
+    public const int IdleFigureCount = 128;
+
+    /// <summary>
+    /// The address of the waiting carriers' offsets: two signed bytes, x then y, for each value of the low six bits of the
+    /// node's flag byte, its road directions (<c>0x674923</c>, read by <c>0x44d77e</c>).
+    /// </summary>
+    public const int IdleOffsetAddress = 0x674923;
+
+    /// <summary>The number of bytes of <see cref="IdleOffsets"/>.</summary>
+    public const int IdleOffsetCount = 128;
+
     /// <summary>The number of words of <see cref="ScanWindows"/>.</summary>
     public const int ScanWindowCount = 8;
 
@@ -183,7 +214,10 @@ public sealed class ProgramTables
         byte[]? transportPriorities = null,
         FigureAdds? woodcutterFigureAdds = null,
         sbyte[]? frameRows = null,
-        HutFigureAdds? typeOneHutFigureAdds = null
+        HutFigureAdds? typeOneHutFigureAdds = null,
+        short[]? idlePhases = null,
+        short[]? idleFigures = null,
+        sbyte[]? idleOffsets = null
     )
     {
         if (
@@ -200,7 +234,7 @@ public sealed class ProgramTables
         StepTimes = stepTimes ?? new ushort[StepTimeCount];
         DoorSpeeds = doorSpeeds ?? new byte[DoorSpeedCount];
         ScanWindows = scanWindows ?? new ushort[ScanWindowCount];
-        FigureBases = figureBases ?? new short[256];
+        FigureBases = figureBases ?? new short[2 * FigureBaseRowCount];
         FigureOffsets = figureOffsets ?? new short[512];
         WalkRows = walkRows ?? new byte[WalkRowCount * WalkRowSize];
         CarriedFigures = carriedFigures ?? new short[CarriedFigureCount];
@@ -210,7 +244,19 @@ public sealed class ProgramTables
         WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
         FrameRows = frameRows ?? new sbyte[FrameRowCount];
         TypeOneHutFigureAdds = typeOneHutFigureAdds ?? default;
+        IdlePhases = idlePhases ?? new short[IdlePhaseCount];
+        IdleFigures = idleFigures ?? new short[IdleFigureCount];
+        IdleOffsets = idleOffsets ?? new sbyte[IdleOffsetCount];
     }
+
+    /// <summary>The waiting carriers' phases (<see cref="IdlePhaseAddress"/>).</summary>
+    public short[] IdlePhases { get; }
+
+    /// <summary>The waiting carriers' figure words (<see cref="IdleFigureAddress"/>).</summary>
+    public short[] IdleFigures { get; }
+
+    /// <summary>The waiting carriers' offsets by road directions, x and y for each (<see cref="IdleOffsetAddress"/>).</summary>
+    public sbyte[] IdleOffsets { get; }
 
     /// <summary>
     /// The default transport priority of each good 1 to 26 (index good - 1): its rank, 1 to 26, each once; the carrier's
@@ -309,7 +355,7 @@ public sealed class ProgramTables
             [.. Enumerable.Range(0, StepTimeCount).Select(i => BitConverter.ToUInt16(steps, 2 * i))],
             Slice(exe, DoorSpeedAddress, DoorSpeedCount),
             [.. Enumerable.Range(0, ScanWindowCount).Select(i => BitConverter.ToUInt16(windows, 2 * i))],
-            Words(Slice(exe, FigureBaseAddress, 512)),
+            Words(Slice(exe, FigureBaseAddress, 4 * FigureBaseRowCount)),
             Words(Slice(exe, FigureOffsetAddress, 1024)),
             Slice(exe, WalkRowAddress, WalkRowCount * WalkRowSize),
             Words(Slice(exe, CarriedFigureAddress, 2 * CarriedFigureCount)),
@@ -318,7 +364,10 @@ public sealed class ProgramTables
             TransportPriorityRanks(exe),
             WoodcutterAdds(exe),
             [.. Slice(exe, FrameRowAddress, FrameRowCount).Select(row => (sbyte)row)],
-            TypeOneHutAdds(exe)
+            TypeOneHutAdds(exe),
+            Words(Slice(exe, IdlePhaseAddress, 2 * IdlePhaseCount)),
+            Words(Slice(exe, IdleFigureAddress, 2 * IdleFigureCount)),
+            [.. Slice(exe, IdleOffsetAddress, IdleOffsetCount).Select(offset => (sbyte)offset)]
         );
     }
 

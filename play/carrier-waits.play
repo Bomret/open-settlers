@@ -1,0 +1,27 @@
+# The carrier of a road waits next to the flag at its far end and is drawn there, as the original's tile pass draws it.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   sh tools/play-run.sh carrier-waits --game-view --seed 1234567812345678 --size 1 --fps 10
+# On that map the castle stands at 21,4, so its flag is at 22,5. The woodcutter goes to 26,4, its flag to 27,5.
+expect seed = 1234567812345678
+expect size = 1
+wait 0.3
+click-tile 21 4
+wait 0.3
+button Woodcutter
+click-tile 26 4
+button Woodcutter
+wait 0.3
+button Road
+click-tile 22 5
+click-tile 23 5
+click-tile 24 5
+click-tile 25 5
+click-tile 26 5
+click-tile 27 5
+button Road
+wait 0.3
+fast-forward carrier state 0x42 max 20000
+wait 0.3
+expect-at 26 5 carrier
+wait 0.3
+shot waits 25 5 2 4

@@ -93,8 +93,20 @@ height less 4 (not below 0) and its smallest plus 4, and at least 1.
 through its own height field (condition 10). No building of that code exists before the construction slices. The evaluator also
 sets two bits of the player's flags that tell the screen where to draw its marker; they change no result.
 
+## Placing a building
+
+**Status:** confirmed for what `0x449a63` writes; which node states the building buttons accept is **inferred**.
+
+A building comes with its flag. `0x449a63` takes a slot of the building table and, unless the node state is 5, a slot
+of the flag table. Where the node state is 5, a flag stands on the south-east node and the building takes it. Otherwise
+the routine writes a new flag on the south-east node as the flag placement does ([Flags](flags.md)): the flag object,
+the flag bit, the deposit moved to the neighbors, and the new slot as the node's link. The player then joins that flag
+to the others with a road.
+
 ## In the engine
 
 `OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Simulation/BuildSite.cs`). The engine departs from the program
 in two places: a node with a flag or a building object gives 0, 0, 0, and the code 3 height term is left out
-(above). `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md).
+(above). `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md). `Game.PlaceBuilding`
+places a woodcutter's hut on a site of 3 or more with the node state 5 (a flag with no building) or 7, and puts its
+flag down for the node state 7. **Stand-in:** it refuses the node state 6.

@@ -70,7 +70,7 @@ public sealed partial class Layout
             CommandKind.BuildRoad =>
                 "a step is not allowed where the original's road drawing allows it, or the last step reaches no "
                     + "flag; list the flag at the end before the road",
-            _ => "the node is no site for a hut with the flag south-east of it standing and free",
+            _ => "the node is no site for a hut and its flag south-east of it",
         };
 
     private sealed partial class Reader

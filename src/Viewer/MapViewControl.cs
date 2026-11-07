@@ -872,13 +872,7 @@ public partial class MapViewControl : Control
             if (image.Width > 0 && image.Height > 0)
             {
                 quads.Add(
-                    (
-                        draw.X + image.OffsetX,
-                        draw.Y + image.OffsetY,
-                        image.Width,
-                        image.Height,
-                        new Color(layer / 255f, 0, 0, 1)
-                    )
+                    (draw.X + image.OffsetX, draw.Y + image.OffsetY, image.Width, image.Height, LayerColor(layer))
                 );
             }
         }
@@ -1007,6 +1001,14 @@ public partial class MapViewControl : Control
         return material;
     }
 
+    // The vertex color that carries a sprite's array texture layer to Objects.gdshader and Water.gdshader.
+    static Color LayerColor(int layer)
+    {
+        var (red, green) = SpriteLayer.Channels(layer);
+
+        return new Color(red, green, 0, 1);
+    }
+
     ShaderMaterial BuildObjectMaterial(ObjectGraphics graphics)
     {
         Godot.Collections.Array<Image> Layers(System.Func<ObjectImage, byte[]> pixels)
@@ -1093,7 +1095,7 @@ public partial class MapViewControl : Control
         var quads = ObjectQuads
             .Bands(ObjectDraws.WaterOf(map, _frameCounter), _objects.Images, map.Size.Height, map.Size.Height)
             .SelectMany(band => band)
-            .Select(q => (q.X, q.Y, q.Width, q.Height, new Color(q.Layer / 255f, 0, 0, 1)))
+            .Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))
             .ToList();
 
         return quads.Count > 0 ? BuildQuadMesh(quads) : null;
@@ -1123,9 +1125,7 @@ public partial class MapViewControl : Control
             )
         )
         {
-            meshes.Add(
-                BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, new Color(q.Layer / 255f, 0, 0, 1))))
-            );
+            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))));
         }
 
         return meshes;

@@ -67,9 +67,10 @@ Nothing of it is left on the map. Escape also turns the Road button off.
 
 ### Woodcutter
 
-A click puts a woodcutter's hut on the node. The node must lie north-west of a flag that has no building yet, and it
-must be a site for a small or a large building: for example, not a tree or a stone. The hut stands finished at once,
-and its worker walks to it from the castle.
+A click puts a woodcutter's hut on the node and its flag on the node south-east of it. Where a flag with no building
+stands there already, the hut takes that flag. The node must be a site for a small or a large building: for example,
+not a tree or a stone, and with nothing on or around the node south-east of it but such a flag. Connect the hut's flag
+to the castle with a road. The hut stands finished at once, and its worker walks to it from the castle.
 
 ### Remove
 

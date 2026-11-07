@@ -64,7 +64,8 @@ public sealed class SettlerGraphics
             tables.CarriedFigures,
             tables.WoodcutterFigureAdds,
             tables.FrameRows,
-            tables.TypeOneHutFigureAdds
+            tables.TypeOneHutFigureAdds,
+            new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets)
         );
         var images = new List<ObjectImage>();
         var layers = new Dictionary<(int Entry, int Colour), int>();

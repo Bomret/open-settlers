@@ -108,7 +108,7 @@ not marked from, however long the road.
 
 **Status:** confirmed for a carrier on its road (state 3, with no good and with each of the goods 1 to 26), handing a good over (state 0xe), walking
 to its road (states 2 and 5), walking home (0x19, 0x10, and 2 after a road was taken down), and waiting next to a flag (state 0x42) or for its
-turn to go home (states 0x44 and 0x45) by the draw runs of the `carrier`, `goods`, `goods-alone`, `rejoined`, `dismissed`, and `dismissed-with-log`
+turn to go home (states 0x44 and 0x45: no settler record) by the draw runs of the `carrier`, `goods`, `goods-alone`, `rejoined`, `dismissed`, and `dismissed-with-log`
 recordings ([Settlers](settlers.md#the-draw-path-emulated), `tests/OpenSettlers.Tests/settler-draws.txt`).
 
 The carrier is drawn as the walking worker is ([Settlers](settlers.md#drawing-the-walk-leads)) in states 2, 3, 5, 0xe, 0x10, and
@@ -116,9 +116,28 @@ The carrier is drawn as the walking worker is ([Settlers](settlers.md#drawing-th
 word of the table at `0x43f4b7`. The high byte of that word is the row. The log's word is `0x1400`
 ([Goods at a flag](goods.md#drawing-a-carrier-with-a-good)).
 
-Two kinds of carrier are not drawn. The first waits in state 0x42. The carrier's figure handler (`0x43f8ae`) returns at once for
-that state. The second has had its road taken down or joined and has not yet gone home (states 0x44 and 0x45). The recordings
-hold such carriers, and the original does not draw them.
+The settlers' draw path has no record for a carrier that waits off its node (states 0x42 to 0x45). The carrier's figure
+handler (`0x43f8ae`) returns at once in state 0x42, and the record builder needs the node's settler word, which the carrier
+cleared. The tile pass draws such a carrier instead.
+
+**Status:** confirmed by the code read below and by the `carrier`, `goods`, and `remove` emulator runs with the node marks
+(`m=`, `tools/GhidraDump/README.md`).
+
+- **The mark.** As the carrier takes state 0x42, `Carrier_WaitAtEnd` at `0x43bc52` writes the player, with bit 7 set, to byte 1
+  of record B of its node. `Settler_CarrierWaits` at `0x42ff81` (its state 0x43 part) and `Settler_StateDismissed` at `0x43007b`
+  clear the byte when the carrier takes the node again. A carrier that a removal sends to state 0x44 or 0x45 keeps the mark
+  until then (the `remove` runs: the mark clears in the pass the carrier takes state 3 again).
+- **The draw.** `Render_DrawRowTiles` at `0x44d5b4` calls `Render_AddWaitingCarrier` at `0x44d77e` for each tile of a row
+  whose mark has bit 7. That routine appends a draw record to a list that `Render_DrawViewRows` draws right after the row's
+  settler records, as it draws them (`Gfx_DrawSettlerRecords`). The record's colour is the player of the mark.
+- **The figure.** Where bit 6 of the node's flag byte is set, the figure word is `0x203` at the node's position. Otherwise the
+  routine takes a phase word from a table of 16 (`0x44d87d`) by the address of the node's record, adds the clock, and takes the
+  figure word from a table of 128 (`0x44d89d`) at that sum shifted right 3. The words lie in the figure rows 0 and `0x88`. The
+  position is the node's, less 4 times its height, plus two signed bytes from the table at `0x674923` for the six road direction
+  bits of the node's flag byte.
+
+So a waiting carrier stands, and moves, on the road node next to the flag at its road's far end. On a road of two steps that
+node is the middle of the road.
 
 ## Open leads
 
@@ -137,3 +156,9 @@ hold such carriers, and the original does not draw them.
 `Game.FlagStatus(flag)` and `Game.RoadByte(flag, direction)` read the flag item's bytes; `Settler.CarrierJob` is job 0. The
 carrier of a road is found by its state: a settler of job 0 in state 0x42 waits next to the flag `Target` on the road that
 leaves it in direction `Mode`. `Game.Digest` holds the flags' status and road bytes and the flag scan's cursor.
+
+`src/MapView/SettlerFigures.cs` draws a waiting carrier as the tile pass does, from the tables `ProgramTables` reads
+(`IdlePhases`, `IdleFigures`, `IdleOffsets`). The engine keeps no mark byte: a carrier of job 0 in states 0x42 to 0x45 stands
+for the mark, since the carrier enters those states only from 0x42 and leaves them only by taking its node. **Stand-in:** the
+original picks the phase by the address of the node's record; the engine picks it by the node's column, which gives the
+same phase where the map buffer starts on a multiple of 64 bytes.
