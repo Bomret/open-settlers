@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -124,8 +125,9 @@ public sealed partial class Game
     private static bool HeadsTo(Settler settler) =>
         settler.State is 2 or 0xf || (settler.State is 5 or 7 && settler.Next == 2);
 
-    // The raze command being applied, for the cause of the events its changes record (ADR 0011); null between commands. Never read
-    // to decide a change (INV-0007).
+    // The command being applied that takes things down, joins roads, or splits one, for the cause of the events its changes record
+    // (ADR 0011): the raze command, or the flag placement that splits a road (a layout's entry has the layout cause); null between
+    // commands. Never read to decide a change (INV-0007).
     private Cause? _raze;
 
     // The raze cause of each building taken down, for its burn and free events ticks later.
@@ -140,12 +142,12 @@ public sealed partial class Game
     // command takes the cause the settler already carries, else removal.
     private void Touch(int slot, string type, string? other = null)
     {
-        if (_raze is { } command)
+        if (_raze is { IsCommand: true } command)
         {
             CarryCause(slot, command);
         }
 
-        RecordSettler(slot, type, Cause.Removal, other);
+        RecordSettler(slot, type, RazeCause, other);
     }
 
     private void TouchFlag(int slot, string type, string? other = null) => RecordFlag(slot, type, RazeCause, other);
@@ -197,19 +199,7 @@ public sealed partial class Game
             return false;
         }
 
-        // The take-down walks from the node along its first two road bits (0x462e1d); a second bit found at 4 with bit 5 set
-        // is taken for 5.
-        var first = BitOperations.TrailingZeroCount(bits);
-        var second = first + 1;
-        while ((bits >> second & 1) == 0)
-        {
-            second++;
-        }
-
-        if (second == 4 && (bits & 0x20) != 0)
-        {
-            second = 5;
-        }
+        var (first, second) = RoadBits(bits);
 
         // A road has no ID: its cause names the flag it leaves from.
         _raze = Cause.Razed(FlagId(road.FromSlot));
@@ -220,6 +210,20 @@ public sealed partial class Game
         _roadCauses.Remove(road);
 
         return true;
+    }
+
+    // The take-down and the split walk from a node along its first two road bits (0x462e1d, 0x4662e2); a second bit found at 4
+    // with bit 5 set is taken for 5.
+    private static (int First, int Second) RoadBits(int bits)
+    {
+        var first = BitOperations.TrailingZeroCount(bits);
+        var second = first + 1;
+        while ((bits >> second & 1) == 0)
+        {
+            second++;
+        }
+
+        return (first, second == 4 && (bits & 0x20) != 0 ? 5 : second);
     }
 
     // The road that passes a node that holds no flag.
@@ -625,9 +629,62 @@ public sealed partial class Game
         FreeFlagSlot(slot);
     }
 
+    // The settlers on a road count on it up to the capacity of its length class (the table 0x462acd, less one for a road that
+    // a carrier is on its way to, in the split): the status bit is set at both ends and the number goes into the low nibble of
+    // both road bytes; the settlers beyond the capacity, taken from the start of the list, are marked to go (the next state
+    // 0xff, a waiting carrier takes state 0x44) and a good they carry is lost. A road with no settler keeps its bytes.
+    private void CountCarriers(
+        List<int> carriers,
+        (int Flag, int Direction) a,
+        (int Flag, int Direction) b,
+        int capacity
+    )
+    {
+        if (carriers.Count == 0)
+        {
+            return;
+        }
+
+        _flagStatus[a.Flag] |= (byte)(1 << a.Direction);
+        _flagStatus[b.Flag] |= (byte)(1 << b.Direction);
+        var kept = carriers.Count;
+        if (capacity < carriers.Count)
+        {
+            kept = Math.Max(capacity, 0);
+            var excess = carriers.Count - kept;
+            foreach (var carrierSlot in carriers)
+            {
+                var carrier = _settlers[carrierSlot];
+                if (carrier.State == 0x45)
+                {
+                    carrier.State = 0x44;
+                }
+                else
+                {
+                    carrier.Next = 0xff;
+                    if (carrier.Mode != 0)
+                    {
+                        var good = carrier.Mode;
+                        carrier.Mode = 0;
+                        CountLost(good, carrier.Target);
+                    }
+                }
+
+                if (--excess == 0)
+                {
+                    break;
+                }
+            }
+        }
+
+        _roadBytes[a.Flag][a.Direction] |= (byte)kept;
+        _roadBytes[b.Flag][b.Direction] |= (byte)kept;
+    }
+
     // The join of the two roads of a flag (0x462153): one road of the summed length between the flags at the far ends. The
-    // settlers on the old roads count on the new one up to the number its length class holds (the table 0x462acd); the others
-    // are marked to go (the next state 0xff) and a good they carry is lost.
+    // settlers on the old roads count on the new one (CountCarriers). The new road is a water road where both old roads are
+    // (the take-down writes no land bit at the far flags, so each far flag keeps the bit of its own road, and the original's
+    // click only takes down a flag whose roads are land; the engine keeps one kind for the road).
     // **Inferred:** the case of more settlers than the length class holds (the mark 0xff) is read from the code; no emulator or
     // debugger run reaches it. Open lead in docs/milestones/m3-first-loop.md (more settlers on a joined road than its class holds).
     private void JoinRoads(int index, int slot)
@@ -653,7 +710,7 @@ public sealed partial class Game
         _roads.Remove(roadB);
         _roadCauses.Remove(roadA);
         _roadCauses.Remove(roadB);
-        _roads.Add(new Road(a.Far, a.FarDirection, b.Far, b.FarDirection, path, false));
+        _roads.Add(new Road(a.Far, a.FarDirection, b.Far, b.FarDirection, path, roadA.Water && roadB.Water));
 
         _directionBytes[a.Far][a.FarDirection] = (byte)(
             (_directionBytes[a.Far][a.FarDirection] & 0xc7) | (b.FarDirection << 3)
@@ -667,44 +724,7 @@ public sealed partial class Game
         _roadBytes[a.Far][a.FarDirection] = length;
         _roadBytes[b.Far][b.FarDirection] = length;
         var carriers = a.Settlers.Concat(b.Settlers).ToList();
-        if (carriers.Count != 0)
-        {
-            _flagStatus[a.Far] |= (byte)(1 << a.FarDirection);
-            _flagStatus[b.Far] |= (byte)(1 << b.FarDirection);
-            var kept = carriers.Count;
-            var capacity = _tables.RoadCapacities[length >> 4];
-            if (capacity < carriers.Count)
-            {
-                kept = capacity;
-                var excess = carriers.Count - capacity;
-                foreach (var carrierSlot in carriers)
-                {
-                    var carrier = _settlers[carrierSlot];
-                    if (carrier.State == 0x45)
-                    {
-                        carrier.State = 0x44;
-                    }
-                    else
-                    {
-                        carrier.Next = 0xff;
-                        if (carrier.Mode != 0)
-                        {
-                            var good = carrier.Mode;
-                            carrier.Mode = 0;
-                            CountLost(good, carrier.Target);
-                        }
-                    }
-
-                    if (--excess == 0)
-                    {
-                        break;
-                    }
-                }
-            }
-
-            _roadBytes[a.Far][a.FarDirection] |= (byte)kept;
-            _roadBytes[b.Far][b.FarDirection] |= (byte)kept;
-        }
+        CountCarriers(carriers, (a.Far, a.FarDirection), (b.Far, b.FarDirection), _tables.RoadCapacities[length >> 4]);
 
         // The flags at the ends of the new road, naming each other, and the carriers now on it, naming its two flags.
         TouchFlag(a.Far, EventType.JoinRoads, FlagId(b.Far).ToString());

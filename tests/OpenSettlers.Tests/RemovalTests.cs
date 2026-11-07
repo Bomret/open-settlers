@@ -22,7 +22,7 @@ public sealed class RemovalTests
 {
     private const string Fixture = "removals.txt";
 
-    private sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
+    internal sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
 
     public static IEnumerable<object[]> Scenarios =>
         Load()
@@ -34,15 +34,25 @@ public sealed class RemovalTests
             .Where(scenario => scenario.Name.StartsWith("sweep", StringComparison.Ordinal))
             .Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    internal static List<Scenario> Load(string fixture = Fixture)
     {
         var scenarios = new List<Scenario>();
-        foreach (var line in File.ReadAllLines(Fixture))
+        foreach (var line in File.ReadAllLines(fixture))
         {
-            if (line.StartsWith("# ", StringComparison.Ordinal))
+            // A scenario's "# name command" line has a verb command (no space before its first colon); the other "#" lines and
+            // the blank lines of a fixture are notes.
+            if (line.StartsWith("# ", StringComparison.Ordinal) && line[2..].Split(' ', 2) is [var head, var command])
             {
-                var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                if (!command.Split(':')[0].Contains(' ') && command.Contains(':'))
+                {
+                    scenarios.Add(new Scenario(head, command, []));
+                }
+
+                continue;
+            }
+
+            if (line.Length == 0 || line[0] == '#')
+            {
                 continue;
             }
 
@@ -66,9 +76,13 @@ public sealed class RemovalTests
         var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        // The flags take their slots in the order the verb lists them, which the order of the commands of one tick (by node) would
+        // change: each is applied at once.
+        game.ApplyCommands();
         foreach (var flag in Points(parts[5]))
         {
             game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.ApplyCommands();
         }
 
         foreach (var road in parts[6].Split(';').Where(text => text.Length > 0).Select(text => text.Split(',')))
@@ -234,6 +248,24 @@ public sealed class RemovalTests
         return string.Join(';', changed);
     }
 
+    // The verb also lists the changes of byte 5 of a node, the mark a settler leaves on the node it stands on (0x80); the engine
+    // keeps that mark in its settler table (Game.Occupant) and no map layer holds it, so the settlers' bytes check it.
+    private static string WithoutOccupancy(string changes) =>
+        string.Join(
+            ';',
+            changes
+                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .Select(entry => entry.Split(':', 2))
+                .Select(entry =>
+                    (
+                        Node: entry[0],
+                        Layers: entry[1].Split('/').Where(layer => !layer.StartsWith("5=", StringComparison.Ordinal))
+                    )
+                )
+                .Where(entry => entry.Layers.Any())
+                .Select(entry => $"{entry.Node}:{string.Join('/', entry.Layers)}")
+        );
+
     private static byte[][] Snapshot(Map map) =>
         [
             map.Layer(MapLayer.Flags).ToArray(),
@@ -245,9 +277,30 @@ public sealed class RemovalTests
 
     [TestMethod]
     [DynamicData(nameof(Scenarios))]
-    public void ARemovalChangesTheGameAsTheOriginalsRoutinesDo(string name)
+    public void ARemovalChangesTheGameAsTheOriginalsRoutinesDo(string name) =>
+        Replay(
+            Fixture,
+            name,
+            (click, expectedClass) =>
+                click == 'r' ? [CommandKind.RemoveRoad]
+                : expectedClass == 2 ? [CommandKind.RemoveFlag]
+                : expectedClass == 3 ? [CommandKind.RemoveBuilding]
+                : [CommandKind.RemoveFlag, CommandKind.RemoveBuilding],
+            line => line["sound"] == "4"
+        );
+
+    // Replays a scenario of a fixture of the verb remove: the commands each click asks for (from the click's letter and the class
+    // the check gave the node) are enqueued at the pass of the click, and the engine must hold the lines' bytes after the click and
+    // after each pass. A click the line marks as refused must change nothing; the clicks "c@x,y" only read the class and ask for
+    // nothing.
+    internal static void Replay(
+        string fixture,
+        string name,
+        Func<char, int, int[]> kindsOf,
+        Func<Dictionary<string, string>, bool> isRefused
+    )
     {
-        var scenario = Load().Single(candidate => candidate.Name == name);
+        var scenario = Load(fixture).Single(candidate => candidate.Name == name);
         // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
         var parts = scenario.Command.Split(':');
         var map = MapOf(parts);
@@ -257,6 +310,7 @@ public sealed class RemovalTests
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
         var clicks = parts[10]
             .Split(';')
+            .Where(text => text[0] != 'c')
             .Select(text => (Kind: text[0], Node: text[2..].Split(',').Select(int.Parse).ToArray()))
             .ToList();
         var puts =
@@ -267,6 +321,10 @@ public sealed class RemovalTests
         var passLines = scenario
             .Lines.Where(line => line.ContainsKey("pass"))
             .ToDictionary(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
+
+        // The lines list changes, so a run's output ends with its last change; a fixture whose output stops well before its pass
+        // count (split-nofree-1000, at pass 1195 of 1400) has no expected value for the passes after it.
+        passes = Math.Min(passes, passLines.Keys.Max() + 1);
 
         var settlers = new Dictionary<int, string>();
         var flags = new Dictionary<int, string>();
@@ -299,7 +357,7 @@ public sealed class RemovalTests
         void Check(string when, Dictionary<string, string> line, byte[][] before)
         {
             Assert.AreEqual(
-                line.GetValueOrDefault("m") ?? "",
+                WithoutOccupancy(line.GetValueOrDefault("m") ?? ""),
                 MapChanges(before, map),
                 $"{name}: the map bytes that changed {when}"
             );
@@ -325,7 +383,8 @@ public sealed class RemovalTests
 
             foreach (var (slot, expected) in buildings)
             {
-                if (slot - 1 < game.Buildings.Count && !game.Buildings[slot - 1].IsFree)
+                // Slot 0 is the dummy of the building table, which has no building of the engine's.
+                if (slot > 0 && slot - 1 < game.Buildings.Count && !game.Buildings[slot - 1].IsFree)
                 {
                     var length = game.Buildings[slot - 1].Type == Building.CastleType ? 28 : 36;
                     Assert.AreEqual(
@@ -356,6 +415,12 @@ public sealed class RemovalTests
         var clickIndex = 0;
         for (var pass = 0; pass < passes; pass++)
         {
+            // A click at pass 0 comes after the setup commands, which are due at the same tick.
+            if (pass == at)
+            {
+                game.ApplyCommands();
+            }
+
             var before = Snapshot(map);
             if (pass == at)
             {
@@ -369,25 +434,20 @@ public sealed class RemovalTests
                         game.ClickClass(node[0], node[1]),
                         $"{name}: the class of the click on {node[0]},{node[1]}"
                     );
-                    var kinds =
-                        click.Kind == 'r' ? new[] { CommandKind.RemoveRoad }
-                        : expectedClass == 2 ? new[] { CommandKind.RemoveFlag }
-                        : expectedClass == 3 ? new[] { CommandKind.RemoveBuilding }
-                        : new[] { CommandKind.RemoveFlag, CommandKind.RemoveBuilding };
                     var digest = game.Digest();
-                    foreach (var kind in kinds)
+                    foreach (var kind in kindsOf(click.Kind, expectedClass))
                     {
                         game.Enqueue(new Command(game.TickCount, 0, kind, node[0], node[1]));
                     }
 
                     game.ApplyCommands();
-                    if (line["sound"] == "4")
+                    if (isRefused(line))
                     {
                         Assert.AreEqual(digest, game.Digest(), $"{name}: a refused click changes nothing");
                     }
                     else
                     {
-                        Assert.AreNotEqual(digest, game.Digest(), $"{name}: the click takes something down");
+                        Assert.AreNotEqual(digest, game.Digest(), $"{name}: the click changes the game");
                     }
 
                     Take(line);

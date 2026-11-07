@@ -128,6 +128,9 @@ public static class EventType
     /// <summary>The join of the two roads of a flag taken down (removal).</summary>
     public const string JoinRoads = "join-roads";
 
+    /// <summary>A flag put on a road splits it into two roads: the new flag, the far flags, and the carriers on the halves.</summary>
+    public const string SplitRoads = "split-roads";
+
     /// <summary>The worker of a building taken down walks home (removal).</summary>
     public const string SendWorkerHome = "send-worker-home";
 
@@ -211,6 +214,7 @@ public static class EventType
         CountLost,
         Gather,
         JoinRoads,
+        SplitRoads,
         SendWorkerHome,
         ReleaseGoodsFor,
         Burn,
