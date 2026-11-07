@@ -1,0 +1,17 @@
+# The woodcutter's own figures: out of his door, out along the free walk, at the cut, and back with the log. The layout
+# sets up the hut; each fast-forward stops at a moment, and each shot crops around the node the woodcutter stands on then.
+# Run it on the layout: sh tools/play-run.sh woodcutter-figures --layout layouts/woodcutter.jsonc --fps 10
+wait 0.3
+fast-forward woodcutter state 4 max 20000
+scroll up 6 1056 520
+wait 0.3
+shot door 13 10 1 4
+fast-forward woodcutter state 0x10 max 20000
+wait 0.3
+shot out 14 11 1 4
+fast-forward woodcutter state 0x11 max 20000
+wait 0.3
+shot cut 18 10 1 4
+fast-forward woodcutter carrying max 20000
+wait 0.3
+shot back 18 10 1 4

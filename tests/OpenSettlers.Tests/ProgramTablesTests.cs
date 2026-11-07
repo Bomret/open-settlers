@@ -44,9 +44,35 @@ public sealed class ProgramTablesTests
             exe[at + 1] = (byte)(StartStock.Goods + 1 - good);
         }
 
+        WriteFigureRoutines(exe);
         fill(exe);
 
         return exe;
+    }
+
+    // The instructions of the draw routine and the woodcutter's handler that Read checks: the loads of the two tables,
+    // the stub of job 5 that jumps to its handler, and the three adds to the figure word.
+    private static void WriteFigureRoutines(byte[] exe)
+    {
+        void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
+
+        void Load(int at, int table) => Write(at, [0x8d, 0x35, .. BitConverter.GetBytes(table)]);
+
+        Load(ProgramTables.FigureBaseLoadAddress, ProgramTables.FigureBaseAddress);
+        Load(ProgramTables.FigureOffsetLoadAddress, ProgramTables.FigureOffsetAddress);
+        var stub = ProgramTables.JobStubAddress + ProgramTables.JobStubSize * Settler.WoodcutterJob;
+        Write(stub, [0xe9, .. BitConverter.GetBytes(ProgramTables.WoodcutterHandlerAddress - (stub + 5))]);
+        void Add(int at, int word) => Write(at, [0x66, 0x81, 0x47, 0x08, (byte)word, (byte)(word >> 8)]);
+
+        Add(ProgramTables.WoodcutterWalkAddress, 0x0b00);
+        Add(ProgramTables.WoodcutterCarryingAddress, 0x1000);
+        Add(ProgramTables.WoodcutterCuttingAddress, 0x0e80);
+        var hutStub = ProgramTables.JobStubAddress + ProgramTables.JobStubSize * ProgramTables.TypeOneHutJob;
+        Write(hutStub, [0xe9, .. BitConverter.GetBytes(ProgramTables.TypeOneHutHandlerAddress - (hutStub + 5))]);
+        Add(ProgramTables.TypeOneHutWalkAddress, 0x2c00);
+        Add(ProgramTables.TypeOneHutCarryingAddress, 0x2f00);
+        Add(ProgramTables.TypeOneHutHighAddress, 0x2c80);
+        Add(ProgramTables.TypeOneHutHighFacingAddress, 0x2d80);
     }
 
     private static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -174,37 +200,38 @@ public sealed class ProgramTablesTests
     {
         var tables = TestProgram.Tables();
 
-        // peek:43f4b8:54, the 27 words one for each good (inferred: the program's load names 0x43f4b7, see docs/rules/goods.md).
+        // The 27 words one for each good from 0x43f4b7 (the handler 0x43f8ae loads 0x43f4b7 and adds 2 * good, docs/rules/goods.md):
+        // each word is the row of the figure bases in its high byte.
         CollectionAssert.AreEqual(
             new short[]
             {
-                0x00,
-                0x30,
-                0x35,
-                0x3B,
-                0x41,
-                0x46,
-                0x4B,
-                0x14,
-                0x07,
-                0x51,
-                0x08,
-                0x1C,
-                0x1D,
-                0x1E,
-                0x1A,
-                0x1B,
-                0x68,
-                0x6D,
-                0x65,
-                0x67,
-                0x6B,
-                0x6A,
-                0x66,
-                0x69,
-                0x6C,
-                0x57,
-                0x56,
+                0x0000,
+                0x3000,
+                0x3500,
+                0x3B00,
+                0x4100,
+                0x4600,
+                0x4B00,
+                0x1400,
+                0x0700,
+                0x5100,
+                0x0800,
+                0x1C00,
+                0x1D00,
+                0x1E00,
+                0x1A00,
+                0x1B00,
+                0x6800,
+                0x6D00,
+                0x6500,
+                0x6700,
+                0x6B00,
+                0x6A00,
+                0x6600,
+                0x6900,
+                0x6C00,
+                0x5700,
+                0x5600,
             },
             tables.CarriedFigures
         );
@@ -213,9 +240,13 @@ public sealed class ProgramTablesTests
     [TestMethod]
     public void TheCarriedGoodFiguresAreFoundByTheirAddress()
     {
-        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.CarriedFigureAddress) + 14] = 0x2a);
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.CarriedFigureAddress) + 15] = 0x2a);
 
-        Assert.AreEqual(0x2a, ProgramTables.Read(exe).CarriedFigures[7]);
+        Assert.AreEqual(
+            0x2a00,
+            ProgramTables.Read(exe).CarriedFigures[7],
+            "the word of good 7 at the address plus 2 * 7"
+        );
     }
 
     [TestMethod]
@@ -242,6 +273,32 @@ public sealed class ProgramTablesTests
 
         // peek:4388ff:192 (24 rows of 8 bytes).
         Assert.AreEqual(0x6EFEA098351E0AF5UL, Fnv(tables.WalkRows));
+    }
+
+    [TestMethod]
+    public void TheFrameRowsAreFoundByTheirAddress()
+    {
+        var exe = Executable(bytes =>
+        {
+            bytes[FileOffset(ProgramTables.FrameRowAddress) + 10] = 0xff;
+            bytes[FileOffset(ProgramTables.FrameRowAddress) + 11] = 2;
+        });
+
+        var tables = ProgramTables.Read(exe);
+
+        Assert.AreEqual(ProgramTables.FrameRowCount, tables.FrameRows.Length);
+        Assert.AreEqual(-1, tables.FrameRows[10], "a signed byte for the frame 10");
+        Assert.AreEqual(2, tables.FrameRows[11]);
+        Assert.AreEqual(0x43f402, ProgramTables.FrameRowAddress);
+    }
+
+    [TestMethod]
+    public void TheFrameRowsOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:43f402:181 (the bytes up to the carried goods' table at 0x43f4b7).
+        Assert.AreEqual(0x02AE63A4FDE36C2DUL, Fnv([.. tables.FrameRows.Select(row => (byte)row)]));
     }
 
     [TestMethod]
@@ -314,6 +371,89 @@ public sealed class ProgramTablesTests
 
         // The bytes 1 to 26 of the prio= line of the goods and remove verbs, which run 0x445570 at the game's start.
         Assert.AreEqual(0xBBF1449BF71E9134UL, Fnv(tables.TransportPriorities));
+    }
+
+    [TestMethod]
+    public void TheFigureTablesHoldTheWordsTheDrawRoutineReadsUnaligned()
+    {
+        var tables = TestProgram.Tables();
+
+        // 0x44fff3 reads a pair of words at 4 times the high byte of the figure word in the bases (0x4501a1, odd) and at 4
+        // times its low byte in the offsets (0x4503c5, odd): the woodcutter's rows 0x0b (walk), 0x10 (way back with the log),
+        // and 0x0f (felling), the carrier's row 0, and the offsets of the figure bytes 9 and 0.
+        CollectionAssert.AreEqual(new short[] { 0, 0 }, tables.FigureBases[..2]);
+        CollectionAssert.AreEqual(new short[] { 48, 54 }, tables.FigureBases[(2 * 0x0b)..(2 * 0x0b + 2)]);
+        CollectionAssert.AreEqual(new short[] { 272, -1 }, tables.FigureBases[(2 * 0x0f)..(2 * 0x0f + 2)]);
+        CollectionAssert.AreEqual(new short[] { 48, 60 }, tables.FigureBases[(2 * 0x10)..(2 * 0x10 + 2)]);
+        CollectionAssert.AreEqual(new short[] { 9, 1 }, tables.FigureOffsets[18..20]);
+        CollectionAssert.AreEqual(new short[] { 0, 0 }, tables.FigureOffsets[..2]);
+    }
+
+    [TestMethod]
+    public void TheWoodcuttersFigureWordsOfTheInstallAreThoseOfHisDrawHandler()
+    {
+        var adds = TestProgram.Tables().WoodcutterFigureAdds;
+
+        // 0x43fb6b, the handler of job 5: add word [edi+8], imm16 at 0x43fc16 (walk), 0x43fc0b (way back with the log), 0x43fbe5 (figure byte from 0x80).
+        Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), adds);
+    }
+
+    [TestMethod]
+    public void TheWoodcuttersFigureWordsAreTheImmediatesOfHisHandler()
+    {
+        var tables = ProgramTables.Read(Executable(_ => { }));
+
+        Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), tables.WoodcutterFigureAdds);
+    }
+
+    [TestMethod]
+    public void TheFigureWordsOfTheSettlerOfTheTypeOneHutAreTheImmediatesOfHisHandler()
+    {
+        var tables = ProgramTables.Read(Executable(_ => { }));
+
+        Assert.AreEqual(new HutFigureAdds(0x2c00, 0x2f00, 0x2c80, 0x2d80), tables.TypeOneHutFigureAdds);
+    }
+
+    [TestMethod]
+    public void AStubOfTheTypeOneHutSettlerThatJumpsElsewhereIsRefused()
+    {
+        var exe = Executable(bytes =>
+            bytes[
+                FileOffset(ProgramTables.JobStubAddress + ProgramTables.JobStubSize * ProgramTables.TypeOneHutJob) + 1
+            ] ^= 1
+        );
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "figure");
+    }
+
+    [TestMethod]
+    public void AHandlerOtherThanTheJobsIsRefused()
+    {
+        var exe = Executable(bytes =>
+            bytes[FileOffset(ProgramTables.JobStubAddress + ProgramTables.JobStubSize * Settler.WoodcutterJob) + 1] ^= 1
+        );
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "figure");
+    }
+
+    [TestMethod]
+    public void AHandlerWithoutItsAddInstructionIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.WoodcutterCarryingAddress)] = 0x90);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "figure");
+    }
+
+    [TestMethod]
+    public void ADrawRoutineThatLoadsOtherTablesIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.FigureOffsetLoadAddress) + 2] ^= 1);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        StringAssert.Contains(refusal.Message, "figure");
     }
 
     private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);

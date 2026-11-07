@@ -149,32 +149,168 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
 
 ## Drawing the walk: leads
 
-**Status:** inferred (below). The engine draws the hut (entry 1418 of the archive, the object of the type 2's draw stub, drawn like the
-castle) and the walking settlers. What the program does, read from `0x42f512`, `0x43f537`, the job's figure routine (`0x43fed8` for
-job 11), `0x44fff3`, and `0x406610`: the draw record of a settler takes the frame (byte 1) to pick a sequence from
-a table the program loads from entry 2 of the graphics archive at start-up (`0x41e8e0`): 200 big-endian offsets, each to a run of
-triples (figure byte, dx, dy) that is indexed by the timer shifted right 3, so the animation follows the step's
-remaining time in ticks and the offsets carry the settler along the step. The figure word is the job times
-1024 plus the figure byte; the tables at `0x4501a1` (8 words for each job: the base entry of the figure in the entries from
-1850 and of a second figure from 3150) and `0x4503c5` (two words for each figure byte) turn it into the sprite entries,
-and the overlay in the player's colour of the figure 1850 + i is the entry 2500 + i (`0x406610`). The frame's index is the shape of the step: `4 + 9 * direction`
-plus the height difference, so the facing is the direction of the step.
+**Status:** confirmed for the carrier, the woodcutter, and the settler of the type 1 hut by the emulator verb `draw:`
+([Emulated](#the-draw-path-emulated)). The recordings `tests/OpenSettlers.Tests/settler-draws.txt` hold what the original draws,
+and the engine matches them pass for pass. The figure word and the two tables are also confirmed by the program evidence below
+and by the screenshots of `play/woodcutter-figures.play`. Inferred parts are marked. The jobs and states that no recording holds
+a settler of are inferred.
 
-**In the engine** (`SettlerFigures`, `SettlerGraphics`, `src/MapView`): a settler in state 2, 3, 5, or 0x42 is drawn with the sprites its
-frame's sequence names for the time it has left, read from the install's archive at run time and the tables from the program
-(`ProgramTables.FigureBases`, `FigureOffsets`, matched by digest with the emulator's `peek`). The time left is the
-timer less the clock units since the settler's turn, so the animation moves with the game's ticks. The view draws
-the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)) and 11 in every wrap copy, rebuilt after each tick. **Inferred, with no emulator run of the draw:** that the
-sequence offsets count from the byte after the entry's first dword, that a sequence runs to the next one's offset, that
-the triple index is the time left shifted right 3, the figure's position (the node lifted by its height,
-plus the triple's dx and dy, as an object), the colour overlay filled with the
-palette index 0x40 plus 4 for the player, and the job's variants for figure bytes from 0x80 (not read).
-**Confirmed** from `0x406610`: the overlay of the figure 1850 + i is the entry 2500 + i, the second figure moves by the
-header bytes 0 and 1 of the figure 1850 + i read as signed bytes (`0x4066d2`, `0x4066e4`) while the figure and the overlay
-stay where they are, and a settler draws its figure, then its overlay, then its second figure. The engine keeps that order
-within a row. A figure entry that is absent or no sprite, an overlay with no drawn pixel, or a job with no second figure
-draws what is left. The original draws a
-settler in view from the turn it acts every pass; the engine takes the time left from the clock instead.
+The engine draws the hut and the walking settlers. The hut is entry 1418 of the archive, the object of the type 2's draw stub,
+drawn like the castle.
+
+What the program does is read from `0x42f512`, `0x43f537`, the job's figure handler, `0x44fff3`, and `0x406610`. The draw record
+of a settler takes the frame (byte 1) to pick a sequence from a table. The program loads that table from entry 2 of the graphics
+archive at start-up (`0x41e8e0`). It holds 200 big-endian offsets, each to a run of triples (figure byte, dx, dy). The timer
+shifted right 3 indexes the run. So the animation follows the step's remaining time in ticks, and the offsets carry the settler
+along the step. The frame's index is the shape of the step: `4 + 9 * direction` plus the height difference. So the facing is
+the direction of the step.
+
+Terms used below:
+- The **figure byte** is the first value of the triple the sequence yields for the settler's frame and time left.
+- The **figure word** is a 16-bit value stored with the draw record. Its low byte is the figure byte plus the job's constant.
+  Its high byte picks a row of the figure bases.
+- The **figure bases** are the first table below, one pair of sprite bases for each high byte of the figure word.
+- The **stamp** is the clock value the settler stored at its last turn.
+
+**The figure word** (confirmed: `0x43f537` jumps by byte 0 bits 2 to 6, the job, through the stubs at `0x43f744` plus 8 for each
+job). Each stub is a `jmp rel32` to the job's handler. The handler adds a constant to the figure byte and stores the word with the
+draw record. `0x44fff3` reads it. The job does not index the tables. The constant does.
+- Job 0, the carrier (`0x43f8ae`): no constant, so the word is the figure byte. The carried good adds its own word, the 16-bit word
+  at `0x43f4b7` plus 2 * good (`0x43f904`). Its high byte is the row of the figure bases. The log adds `0x1400`
+  ([Drawing a carrier with a good](goods.md#drawing-a-carrier-with-a-good)).
+- Job 5, the woodcutter (stub `0x43f76c`, handler `0x43fb6b`): a figure byte below 0x80 gets `0x0b00` (`0x43fc16`, the walk).
+  It gets `0x1000` (`0x43fc0b`) where byte 13 is 0x80, byte 14 is 1, and the state is 0x10. That is the way back with the log
+  ([Woodcutting](woodcutting.md#the-cut)). A figure byte from 0x80 gets `0x0e80` (`0x43fbe5`), so its word is `0x0f00` plus the
+  byte less 0x80. That is the felling. The bytes 0x85 and 0x86 also play a sound (`0x44fe13`), which the engine leaves out.
+- Job 11, the settler of the type 1 hut (stub `0x43f79c`, handler `0x43fed8`): a figure byte below 0x80 gets `0x2c00`
+  (`0x43ff4b`, the walk). It gets `0x2f00` (`0x43ff40`) under the same test as the woodcutter's way back (byte 13 0x80,
+  byte 14 1, state 0x10). A figure byte from 0x80 gets `0x2c80` (`0x43ff0f`). It gets `0x2d80` (`0x43ff1a`) where byte 14 is 1.
+  The bytes 0x80, 0x87, 0x88, and 0x8f skip the sound request that the others make. The `job11` recording confirms the walk
+  (states 5, 2, and 4). The other adds are read from the code only.
+
+**The tables** (confirmed: `0x44fff3` loads `0x4501a1` at `0x4500fb` and `0x4503c5` at `0x450128` with `lea esi, imm32`, and reads
+16-bit words from them with `mov ax, [ebx+esi]`). Both addresses are odd, so the words are read unaligned. Read from the even
+address before them, the bytes are no words. Read from the odd one, the bases run 0,0 / 48,6 / 96,-1 / 48,24 and the offsets
+0,0 / 1,0 / 2,0 and on. The element is a pair of words (4 bytes).
+- The figure bases at `0x4501a1`: the pair at 4 times the high byte of the word (`(word & 0xff00) >> 6` at `0x44fff3`) holds the
+  base of the figure, from the entry 1850, and the base of the second figure, from the entry 3150. A negative second base means
+  no second figure. The table holds 128 pairs in the engine's read (`ProgramTables.FigureBases`). The rows the woodcutter takes
+  are 0x0b (48, 54), 0x0f (272, none), and 0x10 (48, 60).
+- The figure offsets at `0x4503c5`: the pair at 4 times the low byte of the word is what the figure and the second figure add
+  (`ProgramTables.FigureOffsets`, 256 pairs). The code does not bound the low byte.
+
+The figure is the entry 1850 plus the base plus the first offset. The second figure, where there is one, is 3150 plus its base
+plus the second offset. The overlay in the player's colour of the figure 1850 + i is the entry 2500 + i (`0x406610`).
+
+The engine reads both tables and the three constants of the woodcutter's handler from the install (`ProgramTables.Read`). It
+refuses an install whose draw routine does not load those addresses. It also refuses an install whose stub of job 5 does not jump
+to `0x43fb6b`, or whose handler has no `add word [edi+8], imm16` at the three addresses.
+
+Screenshot evidence (`play/woodcutter-figures.play` on `layouts/woodcutter.jsonc`): the woodcutter walks out, steps through his
+door, fells, and walks back with a hat, an axe, and a log.
+
+**In the engine** (`SettlerFigures`, `SettlerGraphics`, `src/MapView`): a settler of the job 0, 5, or 11 in state 2, 3, 4, 5, 0xe,
+0x10, 0x11, or 0x19 is drawn. Its sprites are the ones its frame's sequence names for the time it has left. The engine reads
+them from the install's archive at run time and takes the tables from the program. A settler in any other state has no record:
+- a carrier that waits next to a flag (0x42),
+- a carrier told to go home (0x44, 0x45),
+- a settler that claims its node on its way home (0x1c),
+- a settler at work (the woodcutter's 0x12, the type 1 hut's 0x1f).
+
+The time left is the timer less the clock units since the settler's turn, so the animation moves with the game's ticks. The view
+draws the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)), 5, and 11 in every wrap copy. It rebuilds them
+after each tick. The viewer skips a sprite of a draw with no loaded layer and reports it once per sprite
+(`SettlerGraphics.TryLayerOf`). The tests fail on it (`SettlerGraphics.LayerOf`). The engine does not draw a settler of another
+job. That is a limit of the port. The program draws settlers of every job.
+
+The draw runs ([The draw path, emulated](#the-draw-path-emulated)) confirm the rules below. They cover the carrier in states 2,
+3, 5, 0xe, 0x10, 0x19, 0x42, 0x44, and 0x45, with and without each good the recordings carry. They cover the woodcutter in states
+2, 4, 5, 0x10, 0x11, 0x12, 0x19, and 0x1c, and the settler of the type 1 hut in states 2, 4, 5, and 0x1f. The engine's draws equal
+the original's in every recorded pass.
+- The sequence offsets count from the byte after the entry's first dword, as `0x41e8e0` keeps its table. A sequence runs to the
+  next one's offset.
+- The triple index is the time left shifted right 3.
+- The time left is the timer less the clock units since the stamp. The view pass gives a settler in view a turn every pass. That
+  turn runs the timer down by the clock units since the stamp and sets the stamp to the clock. The recordings hold each
+  settler's timer and stamp before that turn. The engine's draw from them equals the original's.
+- The figure's position is the node (32 x - 16 y, 20 y), less 4 times its height byte, less 2 more, plus the triple's dx and dy
+  (signed bytes). `0x44ffe7` adds 0x10 and 8 before the blit. The engine's positions are the record's, before that addition.
+- The overlay of the figure 1850 + i is the entry 2500 + i, filled with the palette index 0x40 for player 0. The woodcutter's
+  hat is that overlay. The carrier's overlay is the same. The draw path has no other colour for either, so the fill is the
+  player's.
+- The second figure moves by the header bytes 0 and 1 of the figure 1850 + i, read as signed bytes (`0x4066d2`, `0x4066e4`). The
+  figure and the overlay stay where they are. A settler draws its figure, then its overlay, then its second figure. A figure
+  entry that is absent or no sprite, an overlay with no drawn pixel, or a job with no second figure draws what is left.
+- The record joins the list of the view's row of the settler plus the signed byte of the frame in the table at `0x43f402`
+  (181 bytes, `ProgramTables.FrameRows`). The frames 9 to 26, 63 to 80, 121 and 122, and 125 to 128 hold -1 and move a record up
+  one row. Every other frame holds 0. The lists are drawn from the top row to the bottom, so a settler drawn up a row is drawn
+  before the settlers of the row it stands in. Records of one row come in the order of the original's scan (below).
+- The frames 0x74 to 0x78 are the cut. `0x438a9e` sets the frame ([Woodcutting](woodcutting.md#the-cut)). The frames 0x74,
+  0x76, and 0x77 hold the figure bytes 0x80 and up. That is the felling, with the row 0x0f and two sprites. The frames 0x75
+  and 0x78 hold walking bytes only. The frames 0x74, 0x76, and 0x77 also hold walking bytes for part of their time left.
+
+**Confirmed** the same way: the order of the records of one row. `0x42f512` scans the nodes of the view row by row, two rows a
+step. It appends a record as `0x43f537` builds it. So a list holds its records by the node's row, then the column from the
+view's west edge. The recordings hold pairs of neighbours in one list row, from different node rows and from one node row. Two
+of them are the carrier next to the woodcutter and the type 1 hut's settler next to a carrier. Both orders of their slots occur.
+The engine's order by row, node row, column equals the original's in every one.
+
+**Inferred:** the draws of every job other than 0, 5, and 11, and of every state that no recording holds a settler of. The
+engine does not port them.
+
+The player's colour index is `0x40` plus 4 times the player byte with 1 and 2 exchanged. `0x44ffe7` turns a player bits value of
+1 into 2 and 2 into 1 before the blit. This is read from the code. No recording holds another player than 0. The engine does not
+exchange them.
+
+### The draw path, emulated
+
+The harness verb `draw:` (`tools/GhidraDump/emulate.py`, `EmulateDraw.java`; [the harness](../../tools/GhidraDump/README.md#emulator-harness))
+runs the settler draw of the main loop (`0x425a10`). It runs after the passes of a `carrier:`, `wood:`, `goods:`, `home:`, or
+`remove:` game, on the reference install only.
+
+Use `draw:` instead of a screenshot or a `play` run to check what a settler draws. A screenshot shows a picture that a reader
+judges by eye. `draw:` gives the original's sprite entries, fill colours, and positions for each pass, and the tests compare the
+engine's draws with them exactly. It is the stronger check. It runs only on the reference build of `Siedler1.exe`. Use a
+screenshot or a `play` run where no reference install is at hand.
+
+After the simulation's passes the verb runs the view pass `0x42f4f1`. For each view, `0x42f512` does the following:
+- It clears the row lists (`0x4409d5`).
+- It scans the nodes of the view for settlers.
+- It gives each settler a turn through `0x42fc81`.
+- It builds the settler's record through `0x43f537`.
+- It ends the lists with `0x440a53`.
+
+Then, for each row of the view, the row draw `0x44ffe7` draws each record of the row through `0x406610`. Its blits are `0x405590`
+(a sprite) and `0x405880` (a colour fill). The harness skips the shadow of each settler (`0x4061a0`, the mask entry 4). It also
+skips the sound request of the felling bytes 0x85 and 0x86 (`0x44fe13`).
+
+For each pass of its windows, in drawing order, the harness records each settler's record: the slot and the sprites blitted. Each
+sprite is an entry, a fill colour (-1 for none), and a position. The view is a stand-in that the harness builds. It is the
+640 by 480 view of `0x4200b6` (38 columns, 28 rows), looking at a node. Its screen origin is chosen so that a position is the
+node's map pixel. The graphics archive is read from the install. The rule data of its entry 2 is prepared as `0x41e8e0` does. The
+passes before the first window run without the view, so a game's first settlers walk as in the other recordings. From the first
+window on, each settler in view takes a turn every pass.
+
+**Recordings** (`tests/OpenSettlers.Tests/settler-draws.txt`, from the History Edition's `Siedler1.exe`, SHA-256 in `docs/rules/AGENTS.md`):
+- `carrier`: a hut of the woodcutter with a road to the castle and a log laid on the hut's flag at pass 5 (`goods:`), the carrier walking
+  its road (state 3), waiting next to a flag (0x42: no record), and walking with the log (state 3, mode 7);
+- `woodcutter`: the same game without the log, the woodcutter walking to his door (state 2, 5), stepping through it (4), walking free
+  (0x10), felling (0x11, the frames 0x74 to 0x78), and walking back with the log (0x10, byte 13 0x80, byte 14 1) and through his door again;
+- `job11`: the same game with a hut of the type 1 (`goods:`, the building type 1): the settler of job 11 walking to his door (states 5, 2) and
+  stepping through it (4) in the rows of the handler `0x43fed8`; `job11-work`: the same with a log laid at pass 215, the settler at work (0x1f: no
+  record) while a carrier walks, with and without the log;
+- `walk-home`: the woodcutter sent home as the teardown of a hut sends its settlers (`home:`, pass 68): claiming its node (0x1c: no record, a carrier
+  walking in the same passes), searching for a flag (0x19), walking home free (0x10), on the road (2), and through the castle's door (4);
+- `rejoined`, `dismissed`, `dismissed-with-log` (`remove:`): carriers told to go home after a road was joined (0x45: no record), taken down (0x44:
+  no record), and taken down while carrying a log, which then search for a flag (0x19), walk free (0x10), and walk on the road (2);
+- `goods`: one good laid on the hut's flag every 223 passes, goods 1 to 25 (`goods:`), and the carrier walking its road (state 3) and handing the
+  good over at the castle (0xe) with each good it took: 2 to 13, 15 to 17, 19 to 22, 24, 25, and the log; `goods-alone`: the goods 1, 14, 18, 23, and 26,
+  which the first game did not take, laid one at a time at the type 1 hut's flag, where the woodcutter lays no log. Together they hold the carrier with every good
+  of the table at `0x43f4b7` (the goods 1 to 26), in both states.
+
+`SettlerDrawTests` gives the engine's `Draws` each pass's settlers, the heights of their nodes, and the clock, and compares the sprites, colours, and
+positions with the original's, in order; it names the first pass and settler that differ. The recordings were made on the reference install
+only, the tests skip where none is present, and a `draw:` run that reaches no pass of its windows, or whose pass draws no settler, fails and prints no recording.
 
 ## Walking home
 
@@ -249,8 +385,8 @@ slot 0 and has no dummy; the engine treats every building on the node as a build
 **Not ported:** the commands that tear down, the boatman's state `0x1a` (`0x4350f8`; water roads are not ported), state `0x35`
 of the knights, the arrivals of the jobs 7, 8, 11, 14, and 20 where they do not walk home, the entry of the jobs 4 and 21 into
 a storage (`0x43ceea`, and `0x43cc5f`, which also counts the settler in the word `0x40` of the storage item), the chain of
-blocked settlers, and a storage other than the castle. **Inferred:** the drawing of the states `0x19` and `0x1c` (frame
-`0x52`, as a waiting settler); the second and third rings of the random search and its last phase without end (no run
+blocked settlers, and a storage other than the castle. **Confirmed** by the `walk-home`, `dismissed`, and `dismissed-with-log` recordings: the
+state `0x19` is drawn (the frame `0x52` picks the sequence) and the state `0x1c` is not. **Inferred:** the second and third rings of the random search and its last phase without end (no run
 reaches them: the scenarios find a node in the first ring), the ring masks of those phases are read from the code only.
 
 ## Open leads

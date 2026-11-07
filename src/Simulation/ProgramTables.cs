@@ -44,21 +44,88 @@ public sealed class ProgramTables
     /// <summary>The address of the table of scan windows: 16-bit words, one for each map size (<c>0x421d28</c>).</summary>
     public const int ScanWindowAddress = 0x421d28;
 
-    /// <summary>The address of the figure bases: 8 words for each job (<c>0x4501a1</c>, 256 words).</summary>
+    /// <summary>
+    /// The address of the figure bases (<c>0x4501a1</c>, 256 words): two 16-bit words for each value of the high byte of
+    /// the figure word, the base of the figure and the base of the second figure (negative for none). The address is odd:
+    /// the draw routine loads it at <see cref="FigureBaseLoadAddress"/> and reads the words unaligned.
+    /// </summary>
     public const int FigureBaseAddress = 0x4501a1;
 
-    /// <summary>The address of the figure offsets: 2 words for each figure byte (<c>0x4503c5</c>, 512 words).</summary>
+    /// <summary>
+    /// The address of the figure offsets (<c>0x4503c5</c>, 512 words): two 16-bit words for each value of the low byte of
+    /// the figure word, what it adds to the figure and to the second figure. The address is odd, as the bases' is.
+    /// </summary>
     public const int FigureOffsetAddress = 0x4503c5;
 
+    /// <summary>The <c>lea esi, imm32</c> in the draw routine (<c>0x44fff3</c>) that loads <see cref="FigureBaseAddress"/>.</summary>
+    public const int FigureBaseLoadAddress = 0x4500fb;
+
+    /// <summary>The <c>lea esi, imm32</c> in the draw routine that loads <see cref="FigureOffsetAddress"/>.</summary>
+    public const int FigureOffsetLoadAddress = 0x450128;
+
     /// <summary>
-    /// The address of the carried goods' figure words: 27 words, one for each good (<c>0x43f4b8</c>). **Inferred:** the
-    /// program's load of the table (<c>0x43f904</c>) names <c>0x43f4b7</c>, one byte before; read from there the words
-    /// are no figure bytes, so the table is taken to start at <c>0x43f4b8</c> ( <c>docs/rules/goods.md</c>).
+    /// The jump stubs of the figure handlers (<c>0x43f744</c>): 8 bytes for each job, <c>jmp rel32</c> to the job's
+    /// handler, which adds the job's constant to the figure byte to make the figure word.
     /// </summary>
-    public const int CarriedFigureAddress = 0x43f4b8;
+    public const int JobStubAddress = 0x43f744;
+
+    /// <summary>The bytes of the stub of one job.</summary>
+    public const int JobStubSize = 8;
+
+    /// <summary>The handler of the woodcutter's figure (<c>0x43fb6b</c>, the target of the stub of job 5).</summary>
+    public const int WoodcutterHandlerAddress = 0x43fb6b;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the handler for a figure byte from 0x80 (the felling).</summary>
+    public const int WoodcutterCuttingAddress = 0x43fbe5;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the handler for the way back with the log (state 0x10, byte 13 0x80, byte 14 1).</summary>
+    public const int WoodcutterCarryingAddress = 0x43fc0b;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int WoodcutterWalkAddress = 0x43fc16;
+
+    /// <summary>The job of the settler of the type 1 hut (<c>docs/rules/woodcutting.md</c>).</summary>
+    public const int TypeOneHutJob = 11;
+
+    /// <summary>The handler of the figure of the settler of the type 1 hut (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
+    public const int TypeOneHutHandlerAddress = 0x43fed8;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where the heading is not 1.</summary>
+    public const int TypeOneHutHighAddress = 0x43ff0f;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where the heading is 1.</summary>
+    public const int TypeOneHutHighFacingAddress = 0x43ff1a;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the way back with a load (state 0x10, byte 13 0x80, byte 14 1).</summary>
+    public const int TypeOneHutCarryingAddress = 0x43ff40;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int TypeOneHutWalkAddress = 0x43ff4b;
+
+    /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
+    private static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
+
+    /// <summary>
+    /// The address of the carried goods' figure words: 27 words, one for each good (<c>0x43f4b7</c>). The carrier's draw
+    /// handler (<c>0x43f8ae</c>) loads this address at <c>0x43f904</c> and adds the word at 2 * good to the figure word
+    /// (<c>docs/rules/goods.md</c>). The high byte of a word is the row of the figure bases, so the log's <c>0x1400</c>
+    /// puts the figure byte in the row <c>0x14</c> (confirmed by the draw run of <c>settler-draws.txt</c>, the carrier carrying a log).
+    /// </summary>
+    public const int CarriedFigureAddress = 0x43f4b7;
 
     /// <summary>The number of goods the carried figure table covers.</summary>
     public const int CarriedFigureCount = 27;
+
+    /// <summary>
+    /// The address of the frame rows: one signed byte for each frame of a settler (<c>0x43f402</c>), 181 of them up to the carried
+    /// goods' table. The record builder (<c>0x43f537</c>) adds the byte of the settler's frame to the row of the view whose list
+    /// takes the settler's record, so the figure is drawn before or after the settlers of the row above or below
+    /// (<c>docs/rules/settlers.md</c>).
+    /// </summary>
+    public const int FrameRowAddress = 0x43f402;
+
+    /// <summary>The number of frames the frame row table covers.</summary>
+    public const int FrameRowCount = CarriedFigureAddress - FrameRowAddress;
 
     /// <summary>The number of words of <see cref="ScanWindows"/>.</summary>
     public const int ScanWindowCount = 8;
@@ -113,7 +180,10 @@ public sealed class ProgramTables
         short[]? carriedFigures = null,
         byte[]? goodKinds = null,
         byte[]? roadCapacities = null,
-        byte[]? transportPriorities = null
+        byte[]? transportPriorities = null,
+        FigureAdds? woodcutterFigureAdds = null,
+        sbyte[]? frameRows = null,
+        HutFigureAdds? typeOneHutFigureAdds = null
     )
     {
         if (
@@ -137,6 +207,9 @@ public sealed class ProgramTables
         GoodKinds = goodKinds ?? new byte[GoodKindCount];
         RoadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
         TransportPriorities = transportPriorities ?? new byte[Simulation.StartStock.Goods];
+        WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
+        FrameRows = frameRows ?? new sbyte[FrameRowCount];
+        TypeOneHutFigureAdds = typeOneHutFigureAdds ?? default;
     }
 
     /// <summary>
@@ -162,14 +235,23 @@ public sealed class ProgramTables
     /// </summary>
     public byte[] WalkRows { get; }
 
-    /// <summary>For each good a word that a carrier carrying it adds to its figure byte (<c>0x43f8ae</c>).</summary>
+    /// <summary>For each good a word that a carrier carrying it adds to its figure byte: the row in the high byte (<c>0x43f8ae</c>).</summary>
     public short[] CarriedFigures { get; }
 
-    /// <summary>For each job 8 words; the first two are the figure base and the second figure base (negative: none).</summary>
+    /// <summary>For each high byte of the figure word 2 words: the figure base and the second figure base (negative: none).</summary>
     public short[] FigureBases { get; }
 
-    /// <summary>For each figure byte 2 words: what it adds to the figure and to the second figure.</summary>
+    /// <summary>For each low byte of the figure word 2 words: what it adds to the figure and to the second figure.</summary>
     public short[] FigureOffsets { get; }
+
+    /// <summary>What the woodcutter's handler adds to the figure byte to make the figure word.</summary>
+    public FigureAdds WoodcutterFigureAdds { get; }
+
+    /// <summary>What the handler of the settler of the type 1 hut adds to the figure byte to make the figure word.</summary>
+    public HutFigureAdds TypeOneHutFigureAdds { get; }
+
+    /// <summary>For each frame of a settler what the record builder adds to the row of its record's list (<see cref="FrameRowAddress"/>).</summary>
+    public sbyte[] FrameRows { get; }
 
     /// <summary>
     /// The time in clock units of a step, by step shape: <c>4 + 9 * direction + (height of the node reached minus
@@ -233,8 +315,80 @@ public sealed class ProgramTables
             Words(Slice(exe, CarriedFigureAddress, 2 * CarriedFigureCount)),
             Slice(exe, GoodKindAddress, GoodKindCount),
             Slice(exe, RoadCapacityAddress, RoadCapacityCount),
-            TransportPriorityRanks(exe)
+            TransportPriorityRanks(exe),
+            WoodcutterAdds(exe),
+            [.. Slice(exe, FrameRowAddress, FrameRowCount).Select(row => (sbyte)row)],
+            TypeOneHutAdds(exe)
         );
+    }
+
+    // The woodcutter's adds from the immediates of his handler. The draw routine must load the tables read here, and the
+    // stub of the job must jump to the handler, else the program is not the one the rule was read from and the figures
+    // would be wrong.
+    private static FigureAdds WoodcutterAdds(byte[] exe)
+    {
+        Expect(
+            exe,
+            FigureBaseLoadAddress,
+            [0x8d, 0x35, .. BitConverter.GetBytes(FigureBaseAddress)],
+            "loads the figure bases"
+        );
+        Expect(
+            exe,
+            FigureOffsetLoadAddress,
+            [0x8d, 0x35, .. BitConverter.GetBytes(FigureOffsetAddress)],
+            "loads the figure offsets"
+        );
+        var stub = JobStubAddress + JobStubSize * Settler.WoodcutterJob;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(WoodcutterHandlerAddress - (stub + 5))],
+            "jumps to the woodcutter's handler"
+        );
+
+        return new FigureAdds(
+            Immediate(exe, WoodcutterWalkAddress),
+            Immediate(exe, WoodcutterCarryingAddress),
+            Immediate(exe, WoodcutterCuttingAddress)
+        );
+    }
+
+    // The adds of the handler of the settler of the type 1 hut, read as the woodcutter's are: the stub of job 11 must jump
+    // to the handler.
+    private static HutFigureAdds TypeOneHutAdds(byte[] exe)
+    {
+        var stub = JobStubAddress + JobStubSize * TypeOneHutJob;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(TypeOneHutHandlerAddress - (stub + 5))],
+            "jumps to the handler of the settler of the type 1 hut"
+        );
+
+        return new HutFigureAdds(
+            Immediate(exe, TypeOneHutWalkAddress),
+            Immediate(exe, TypeOneHutCarryingAddress),
+            Immediate(exe, TypeOneHutHighAddress),
+            Immediate(exe, TypeOneHutHighFacingAddress)
+        );
+    }
+
+    private static ushort Immediate(byte[] exe, int address)
+    {
+        Expect(exe, address, AddFigureWord, "adds to the figure word");
+
+        return BitConverter.ToUInt16(Slice(exe, address + AddFigureWord.Length, 2));
+    }
+
+    private static void Expect(byte[] exe, int address, byte[] code, string what)
+    {
+        if (!Slice(exe, address, code.Length).SequenceEqual(code))
+        {
+            throw new InvalidDataException(
+                $"Siedler1.exe holds no figure routine as expected: the code at 0x{address:x} no longer {what}."
+            );
+        }
     }
 
     // The rank of each good from the routine's instructions. Each good's step must start with mov al, imm8, and the ranks
@@ -305,3 +459,16 @@ public sealed class ProgramTables
         throw new InvalidDataException($"Siedler1.exe holds no data at 0x{address:x}.");
     }
 }
+
+/// <summary>
+/// What a job's handler adds to the figure byte to make the figure word: for a figure byte below 0x80 (<paramref name="Walk"/>,
+/// or <paramref name="Carrying"/> on the way back with the log) and for one from 0x80 (<paramref name="Cutting"/>).
+/// </summary>
+public readonly record struct FigureAdds(ushort Walk, ushort Carrying, ushort Cutting);
+
+/// <summary>
+/// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <paramref name="Walk"/>
+/// (or <paramref name="Carrying"/> on the way back with a load), for one from 0x80 <paramref name="High"/>
+/// (<paramref name="HighFacing"/> where the settler's heading, byte 14, is 1).
+/// </summary>
+public readonly record struct HutFigureAdds(ushort Walk, ushort Carrying, ushort High, ushort HighFacing);

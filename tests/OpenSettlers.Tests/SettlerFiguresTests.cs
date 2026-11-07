@@ -13,29 +13,45 @@ namespace OpenSettlers.Tests;
 public sealed class SettlerFiguresTests
 {
     // Entry 2: a dword, then 200 big-endian offsets from the first byte after that dword. The sequence of frame 7 holds
-    // three triples (figure byte, dx, dy): (3, 1, 2), (4, -1, 0), (5, 0, 0).
+    // three triples (figure byte, dx, dy): (3, 1, 2), (4, -1, 0), (5, 0, 0); the sequence of frame 8 holds (0x81, 0, 0), a
+    // figure byte from 0x80 as the cut's frames hold.
     private static byte[] Sequences()
     {
-        var data = new byte[4 + 200 * 4 + 9];
+        var data = new byte[4 + 200 * 4 + 12];
         var at = 4 + 200 * 4;
-        for (var i = 0; i < 9; i++)
+        for (var i = 0; i < 12; i++)
         {
-            data[at + i] = new byte[] { 3, 1, 2, 4, 0xff, 0, 5, 0, 0 }[i];
+            data[at + i] = new byte[] { 3, 1, 2, 4, 0xff, 0, 5, 0, 0, 0x81, 0, 0 }[i];
         }
 
         var offset = at - 4;
         data[4 + 7 * 4 + 2] = (byte)(offset >> 8);
         data[4 + 7 * 4 + 3] = (byte)offset;
+        data[4 + 8 * 4 + 2] = (byte)((offset + 9) >> 8);
+        data[4 + 8 * 4 + 3] = (byte)(offset + 9);
 
         return data;
     }
 
-    // Job 11: the figure base 100 and the second base 50; each figure byte adds its own number and, to the second, 1.
-    private static SettlerFigures Figures()
+    // The adds of the woodcutter's handler (0x43fb6b): the high byte of the figure word is 0x0b for the walk, 0x10 for the
+    // way back with the log, and 0x0f for a figure byte from 0x80.
+    private static readonly FigureAdds Adds = new(0x0b00, 0x1000, 0x0e80);
+
+    // The adds of the handler of the settler of the type 1 hut (0x43fed8), with made-up rows: 0x11 for the walk, 0x12 for the
+    // way back with a load, 0x13 and 0x14 for a figure byte from 0x80.
+    private static readonly HutFigureAdds HutAdds = new(0x1100, 0x1200, 0x1280, 0x1380);
+
+    // The woodcutter: the figure base 100 and the second base 50 in the row 0x0b, 200 and none in the row 0x10, 300 and
+    // none in the row 0x0f; each figure byte adds its own number and, to the second, 1. The carrier's row 0: 100, none.
+    private static SettlerFigures Figures(sbyte[]? frameRows = null)
     {
-        var bases = new short[32 * 8];
-        bases[11 * 8] = 100;
-        bases[11 * 8 + 1] = 50;
+        var bases = new short[256];
+        bases[2 * 0x0b] = 100;
+        bases[2 * 0x0b + 1] = 50;
+        bases[2 * 0x10] = 200;
+        bases[2 * 0x10 + 1] = -1;
+        bases[2 * 0x0f] = 300;
+        bases[2 * 0x0f + 1] = -1;
         var offsets = new short[512];
         for (var b = 0; b < 256; b++)
         {
@@ -46,16 +62,27 @@ public sealed class SettlerFiguresTests
         bases[0] = 100;
         bases[1] = -1;
         var carried = new short[27];
-        carried[7] = 10;
+        carried[7] = 0x0a00;
+        bases[2 * 0x0a] = 500;
+        bases[2 * 0x0a + 1] = -1;
 
-        return new SettlerFigures(bases, offsets, Sequences(), carried);
+        bases[2 * 0x11] = 600;
+        bases[2 * 0x11 + 1] = -1;
+        bases[2 * 0x12] = 700;
+        bases[2 * 0x12 + 1] = -1;
+        bases[2 * 0x13] = 800;
+        bases[2 * 0x13 + 1] = -1;
+        bases[2 * 0x14] = 900;
+        bases[2 * 0x14 + 1] = -1;
+
+        return new SettlerFigures(bases, offsets, Sequences(), carried, Adds, frameRows, HutAdds);
     }
 
-    private static Settler Carrier(int mode, int state = 3) =>
+    private static Settler Carrier(int mode, int state = 3, int timer = 0) =>
         new(0, 0, 4, 3, 0, state, 0)
         {
             Frame = 7,
-            Timer = 0,
+            Timer = (ushort)timer,
             Mode = mode,
         };
 
@@ -63,7 +90,7 @@ public sealed class SettlerFiguresTests
         MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
     private static Settler Walker(int frame, int timer, int state = 2) =>
-        new(11, 0, 4, 3, 0, state, 0)
+        new(Settler.WoodcutterJob, 0, 4, 3, 0, state, 0)
         {
             Frame = frame,
             Timer = (ushort)timer,
@@ -133,28 +160,71 @@ public sealed class SettlerFiguresTests
         Assert.HasCount(3, Figures().Draws(Map(), [Walker(7, 0, state: state)], 0));
     }
 
-    // Inferred: a settler that claims its node (0x1c) or searches for the nearest flag (0x19) stands with the frame 0x52 the
-    // claim sets and is drawn as a waiting settler is; no draw run confirms it.
+    // Confirmed (draw runs walk-home, dismissed, dismissed-with-log): a settler that searches for the nearest flag (0x19) on its
+    // way home is drawn as a walking settler is.
     [TestMethod]
-    [DataRow(0x19)]
-    [DataRow(0x1c)]
-    public void ASettlerOnItsWayHomeIsDrawnAsAWalkingSettlerIs(int state)
+    public void ASettlerSearchingForAFlagOnItsWayHomeIsDrawnAsAWalkingSettlerIs()
     {
-        Assert.HasCount(3, Figures().Draws(Map(), [Walker(7, 0, state: state)], 0));
+        Assert.HasCount(3, Figures().Draws(Map(), [Walker(7, 0, state: 0x19)], 0));
     }
 
-    // Inferred: a carrier whose road was taken down or joined (0x44, 0x45) still stands next to the flag and is drawn as the carrier
-    // that waits (0x42); no draw run confirms it.
+    // Confirmed (the same runs): a settler that claims its node (0x1c) on its way home, and a carrier whose road was taken down
+    // or joined and that waits for its turn to go home (0x44, 0x45), have no record.
     [TestMethod]
+    [DataRow(0x1c)]
     [DataRow(0x44)]
     [DataRow(0x45)]
-    public void ADismissedCarrierIsDrawnAsTheCarrierThatWaitsIs(int state)
+    public void ASettlerThatClaimsItsNodeOrWaitsToGoHomeIsNotDrawn(int state)
     {
-        var waiting = Figures().Draws(Map(), [Carrier(mode: 7, state: 0x42)], 0);
-        var dismissed = Figures().Draws(Map(), [Carrier(mode: 7, state: state)], 0);
+        Assert.IsEmpty(Figures().Draws(Map(), [Walker(7, 0, state: state)], 0));
+        Assert.IsEmpty(Figures().Draws(Map(), [Carrier(mode: 0, state: state)], 0));
+    }
 
-        Assert.HasCount(waiting.Count, dismissed);
-        Assert.AreEqual(waiting[0].Entry, dismissed[0].Entry);
+    // Confirmed (the draw runs of the carried goods): the carrier that hands a good over (state 0xe) is drawn as one on its
+    // road is, the good's row added to the figure byte (0x43f8ae serves both states).
+    [TestMethod]
+    public void ACarrierHandingAGoodOverIsDrawnWithTheGoodInItsHands()
+    {
+        var draws = Figures().Draws(Map(), [Carrier(mode: 7, state: 0xe)], 0);
+
+        CollectionAssert.AreEqual(new[] { 2353, 3003 }, draws.Select(d => d.Entry).ToArray());
+    }
+
+    // The handler of the settler of the type 1 hut (0x43fed8) adds, for a figure byte below 0x80, 0x2c00 or 0x2f00 on the way back
+    // with a load and, from 0x80, 0x2c80 or, where the heading (byte 14) is 1, 0x2d80; the rows here are made up.
+    private static Settler Hut(int frame, int state = 2, int heading = 0, int mark = 0) =>
+        new(ProgramTables.TypeOneHutJob, 0, 4, 3, 0, state, 0)
+        {
+            Frame = frame,
+            Heading = heading,
+            Target = mark << 8,
+        };
+
+    [TestMethod]
+    public void TheSettlerOfTheTypeOneHutIsDrawnInTheRowsOfHisHandler()
+    {
+        var figures = Figures();
+        var map = Map();
+
+        var walk = figures.Draws(map, [Hut(7)], 0).Select(d => d.Entry).ToArray();
+        var back = figures.Draws(map, [Hut(7, 0x10, 1, 0x80)], 0).Select(d => d.Entry).ToArray();
+        var high = figures.Draws(map, [Hut(8, 0x11, 0)], 0).Select(d => d.Entry).ToArray();
+        var highFacing = figures.Draws(map, [Hut(8, 0x11, 1)], 0).Select(d => d.Entry).ToArray();
+
+        // Figure byte 3 in the row 0x11 (base 600), in the row 0x12 (700) on the way back; byte 0x81 makes the word 0x1301 in the
+        // row 0x13 (800), or 0x1401 in the row 0x14 (900), with the offset 1.
+        CollectionAssert.AreEqual(new[] { 2453, 3103 }, walk);
+        CollectionAssert.AreEqual(new[] { 2553, 3203 }, back);
+        CollectionAssert.AreEqual(new[] { 2651, 3301 }, high);
+        CollectionAssert.AreEqual(new[] { 2751, 3401 }, highFacing);
+    }
+
+    [TestMethod]
+    public void TheSpritesOfTheSettlerOfTheTypeOneHutAreThoseOfEveryTripleOfItsSequencesInTheRowsOfHisHandler()
+    {
+        var entries = Figures().Sprites(ProgramTables.TypeOneHutJob, 0x40).Select(s => s.Entry).Distinct().ToArray();
+
+        CollectionAssert.IsSubsetOf(new[] { 2453, 2553, 2651, 2751, 3103, 3203, 3301, 3401 }, entries);
     }
 
     [TestMethod]
@@ -166,28 +236,147 @@ public sealed class SettlerFiguresTests
         Assert.AreEqual(1954, figures.Draws(Map(), [Walker(7, 16, state: 3)], 8)[0].Entry);
     }
 
-    // Inferred: that the original draws a carrier that waits next to a flag (state 0x42) with the timer it holds; no draw
-    // run confirms it (open lead in docs/milestones/m3-first-loop.md).
+    // Confirmed by the draw run (settler-draws.txt): the carrier's handler returns at once for a carrier that waits next to a
+    // flag (state 0x42), so it has no record and is not drawn, whatever it carries or its frame names.
     [TestMethod]
-    public void AWaitingCarrierIsDrawnWithTheTimerItHoldsAndTheClockDoesNotRunItDown()
+    public void AWaitingCarrierIsNotDrawn()
     {
-        var figures = Figures();
+        Assert.IsEmpty(Figures().Draws(Map(), [Carrier(mode: 7, state: 0x42), Walker(7, 8, state: 0x42)], 800));
+    }
 
-        var drawn = figures.Draws(Map(), [Walker(7, 8, state: 0x42)], 800);
+    // The row of a record is the settler's row plus the byte of its frame's row (0x43f537); a list holds its records in the order
+    // of the original's scan of the nodes, which is the settlers' row, then column.
+    [TestMethod]
+    public void ARecordJoinsTheRowItsFramesByteMovesItTo()
+    {
+        var rows = new sbyte[16];
+        rows[8] = -2;
+        // The settler of the frame 8 (the felling) stands in row 4, the one of the frame 7 in row 3; the frame's byte
+        // puts the first in row 2, so it is drawn first.
+        var felling = Walker(8, 0, state: 0x11);
+        felling.Y = 4;
 
-        Assert.HasCount(3, drawn);
-        Assert.AreEqual(1954, drawn[0].Entry, "the second triple: 8 units left, however much clock has passed");
+        var draws = Figures(rows).Draws(Map(), [Walker(7, 0), felling], 0);
+
+        Assert.AreEqual(2151, draws[0].Entry, "the felling: 1850 + 300 + 1");
+        Assert.AreEqual(2, draws[0].Row);
+        Assert.AreEqual(3, draws[^1].Row);
     }
 
     [TestMethod]
-    public void TheSpritesOfAJobAreThoseOfEveryTripleOfItsSequences()
+    public void TheRecordsOfOneRowAreInTheOrderOfTheNodesFromTheWest()
     {
-        var sprites = Figures().Sprites(11, 0x40).OrderBy(s => s.Entry).ToArray();
+        var east = Walker(7, 0);
+        east.X = 6;
+        var west = Walker(7, 0);
+        west.X = 2;
+
+        var draws = Figures().Draws(Map(), [east, west], 0);
+
+        Assert.IsLessThan(draws[3].X, draws[0].X, "the settler at column 2 first");
+    }
+
+    // 0x43f537: the figure is 4 times the node's height and 2 more pixels above the node, plus the triple's offsets.
+    [TestMethod]
+    public void ASettlerIsLiftedByTheHeightOfItsNodeAndTwoPixels()
+    {
+        var map = Map();
+        var settler = Walker(7, 0);
+        var height =
+            map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & OpenSettlers.Simulation.Map.HeightMask;
+        var (nodeX, nodeY) = Camera.NodePosition(settler.X, settler.Y);
+
+        var draw = Figures().Draws(map, [settler], 0)[0];
+
+        Assert.AreEqual(nodeX + 1, draw.X, "the triple's dx is 1");
+        Assert.AreEqual(nodeY + 2 - 4 * height - 2, draw.Y, "the triple's dy is 2");
+    }
+
+    [TestMethod]
+    public void TheSpritesOfTheWoodcutterAreThoseOfEveryTripleOfItsSequencesInTheRowsOfHisHandler()
+    {
+        var sprites = Figures().Sprites(Settler.WoodcutterJob, 0x40).OrderBy(s => s.Entry).ToArray();
 
         CollectionAssert.AreEqual(
-            new[] { (1953, -1), (1954, -1), (1955, -1), (2603, 0x40), (2604, 0x40), (2605, 0x40), (3201, -1) },
+            new[]
+            {
+                (1953, -1),
+                (1954, -1),
+                (1955, -1),
+                (2053, -1),
+                (2054, -1),
+                (2055, -1),
+                (2151, -1),
+                (2603, 0x40),
+                (2604, 0x40),
+                (2605, 0x40),
+                (2703, 0x40),
+                (2704, 0x40),
+                (2705, 0x40),
+                (2801, 0x40),
+                (3201, -1),
+            },
             sprites.Distinct().ToArray()
         );
+    }
+
+    // 0x43fb6b: the figure byte plus 0x0b00; plus 0x1000 where byte 13 is 0x80, byte 14 is 1, and the state is 0x10 (the way
+    // back with the log); plus 0x0e80 for a figure byte from 0x80 (the felling).
+    [TestMethod]
+    public void AWoodcutterOnTheWayBackWithTheLogIsDrawnInTheRowOfTheLog()
+    {
+        var home = Walker(7, 0, state: 0x10);
+        home.Target = 0x8000;
+        home.Heading = 1;
+
+        var draws = Figures().Draws(Map(), [home], 0);
+
+        // Figure byte 3 in the row 0x10: 1850 + 200 + 3, the overlay 2500 + 200 + 3, no second figure.
+        CollectionAssert.AreEqual(new[] { 2053, 2703 }, draws.Select(d => d.Entry).ToArray());
+    }
+
+    [TestMethod]
+    public void AWoodcutterWhoseTreeIsGoneWalksBackInTheRowOfTheWalk()
+    {
+        var home = Walker(7, 0, state: 0x10);
+        home.Target = 0x8000;
+        home.Heading = 0;
+
+        CollectionAssert.AreEqual(
+            new[] { 1953, 2603, 3201 },
+            Figures().Draws(Map(), [home], 0).Select(d => d.Entry).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void AWoodcutterWithTheLogOutsideTheFreeWalkIsDrawnInTheRowOfTheWalk()
+    {
+        var home = Walker(7, 0, state: 4);
+        home.Target = 0x8000;
+        home.Heading = 1;
+
+        CollectionAssert.AreEqual(
+            new[] { 1953, 2603, 3201 },
+            Figures().Draws(Map(), [home], 0).Select(d => d.Entry).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void AWoodcutterWhoseSequenceHoldsAFigureByteFrom0x80IsDrawnInTheFellingRow()
+    {
+        var draws = Figures().Draws(Map(), [Walker(8, 0, state: 0x11)], 0);
+
+        // Figure byte 0x81: the word 0x0e80 + 0x81 = 0x0f01, so the row 0x0f and the offsets of the byte 1:
+        // 1850 + 300 + 1, the overlay 2500 + 300 + 1, no second figure.
+        CollectionAssert.AreEqual(new[] { 2151, 2801 }, draws.Select(d => d.Entry).ToArray());
+    }
+
+    [TestMethod]
+    public void ASettlerOfAnotherJobDrawsNothing()
+    {
+        var jobless = new Settler(21, 0, 4, 3, 0, 2, 0) { Frame = 7 };
+
+        Assert.IsEmpty(Figures().Draws(Map(), [jobless], 0));
     }
 
     [TestMethod]
@@ -196,16 +385,17 @@ public sealed class SettlerFiguresTests
         Assert.IsEmpty(Figures().Draws(Map(), [Walker(9, 0)], 0));
     }
 
-    // The carried good's figure byte is the walking figure byte plus the table's word for the good (0x43f8ae to 0x43f92a).
-    // Inferred: that the table's words start at 0x43f4b8 (the program's load names 0x43f4b7), and that the carrier's job
-    // (0) with a good in byte 11 in state 3 is the only one drawn so; no emulator run of the draw confirms it.
+    // The carried good's figure word is the walking figure byte plus the table's word for the good (0x43f8ae to 0x43f92a):
+    // the table starts at 0x43f4b7 and its word holds the row in the high byte. **Inferred:** that the carrier's job (0)
+    // with a good in byte 11 in state 3 is the only one drawn so.
     [TestMethod]
     public void ACarrierCarryingALogIsDrawnWithTheFigureByteOfTheLogAdded()
     {
         var draws = Figures().Draws(Map(), [Carrier(mode: 7)], 0);
 
-        // Figure byte 3 plus 10: entry 1850 + 100 + 13, and the colour overlay 2500 + 100 + 13; the job has no second figure here.
-        CollectionAssert.AreEqual(new[] { 1963, 2613 }, draws.Select(d => d.Entry).ToArray());
+        // The word 0x0a00 adds the row 10 to the figure byte 3: entry 1850 + 500 + 3, and the colour overlay 2500 + 500 + 3;
+        // the row has no second figure here.
+        CollectionAssert.AreEqual(new[] { 2353, 3003 }, draws.Select(d => d.Entry).ToArray());
     }
 
     [TestMethod]
@@ -217,32 +407,39 @@ public sealed class SettlerFiguresTests
     }
 
     [TestMethod]
-    public void AWaitingCarrierDoesNotCarryItsDirectionAsAGood()
-    {
-        var draws = Figures().Draws(Map(), [Carrier(mode: 7, state: 0x42)], 0);
-
-        Assert.AreEqual(1953, draws[0].Entry, "in state 0x42 byte 11 is the road direction");
-    }
-
-    [TestMethod]
     public void TheSpritesOfTheCarrierIncludeThoseItCarriesALog()
     {
         var entries = Figures().Sprites(0, 0x40, carriedGood: 7).Select(s => s.Entry).Distinct().ToArray();
 
-        CollectionAssert.IsSubsetOf(new[] { 1963, 1964, 1965, 2613 }, entries);
+        CollectionAssert.IsSubsetOf(new[] { 2353, 2354, 2355, 3003 }, entries);
+        CollectionAssert.Contains(entries, 2353);
+    }
+
+    // What the carrier is drawn with is among what Sprites loads: both apply the one rule, for every frame and timer.
+    [TestMethod]
+    public void EveryEntryACarrierCarryingALogIsDrawnWithIsAmongTheSpritesLoadedForIt()
+    {
+        var figures = Figures();
+        var loaded = figures.Sprites(Settler.CarrierJob, 0x40, carriedGood: 7).ToHashSet();
+        var drawn = new[] { 0, 8, 16 }
+            .SelectMany(timer => figures.Draws(Map(), [Carrier(7, timer: timer)], 0).Select(d => (d.Entry, d.Colour)))
+            .ToHashSet();
+
+        Assert.IsNotEmpty(drawn);
+        Assert.IsTrue(drawn.IsSubsetOf(loaded), string.Join(", ", drawn.Except(loaded)));
     }
 
     // The original draws the overlay of the figure 1850 + i from 2500 + i (0x406610), not from the figure's entry plus 2500.
     [TestMethod]
     public void TheColourOverlayOfTheFigureOneEightFiftyPlusIIsTwentyFiveHundredPlusI()
     {
-        var bases = new short[32 * 8];
-        bases[11 * 8] = 40;
-        bases[11 * 8 + 1] = -1;
+        var bases = new short[256];
+        bases[2 * 0x0b] = 40;
+        bases[2 * 0x0b + 1] = -1;
         var offsets = new short[512];
         offsets[2 * 3] = 7;
 
-        var draws = new SettlerFigures(bases, offsets, Sequences()).Draws(Map(), [Walker(7, 0)], 0);
+        var draws = new SettlerFigures(bases, offsets, Sequences(), null, Adds).Draws(Map(), [Walker(7, 0)], 0);
 
         CollectionAssert.AreEqual(new[] { (1897, -1), (2547, 0x40) }, draws.Select(d => (d.Entry, d.Colour)).ToArray());
     }
@@ -308,9 +505,11 @@ public sealed class SettlerFiguresTests
     [TestMethod]
     public void AFigureByteOutsideTheTablesDrawsNothing()
     {
-        var bases = new short[32 * 8];
-        bases[11 * 8 + 1] = -1;
+        var bases = new short[256];
+        bases[2 * 0x0b + 1] = -1;
 
-        Assert.IsEmpty(new SettlerFigures(bases, new short[4], Sequences()).Draws(Map(), [Walker(7, 0)], 0));
+        Assert.IsEmpty(
+            new SettlerFigures(bases, new short[4], Sequences(), null, Adds).Draws(Map(), [Walker(7, 0)], 0)
+        );
     }
 }

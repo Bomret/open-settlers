@@ -125,3 +125,28 @@ opponent settings, and a byte dump: their forms are in the header of `EmulateMap
 check are in `docs/rules/build-sites.md` and `docs/rules/castle.md`. The `flag` command runs the flag button (`0x442244`) on every tile and counts, per pair of node state and site,
 the tiles that put a flag; `castle` with sites adds the same count after the castle stands. The `flagput` command places flags with the button after a castle; `road` draws roads between those flags with the original's cursor update, click step, and commit, and `roaddraw` runs the three strip routines that draw a road (`docs/rules/roads.md`). The `tables:x` command prints the digest of the
 spiral table and the object codes of the large objects.
+
+### The draw verb
+
+`draw:WINDOWS:CX,CY:VERB:ARGS...` runs the settler draw path of the original's main loop. That is `0x42f4f1`, then `0x44ffe7` for
+each row of the view. It runs after the passes of a `carrier:`, `wood:`, `goods:`, `home:`, or `remove:` game. `WINDOWS` is a list
+of `FROM-TO` pass ranges, with pass numbers from 0. For each pass in `WINDOWS` it prints the settlers' bytes and what the original
+blits for them. That is each settler's sprite entries, fill colour, and position, in drawing order
+(`docs/rules/settlers.md`, "The draw path, emulated"). It runs `EmulateDraw.java`, a script that extends `EmulateMapStart.java`.
+`emulate.py` passes the install folder to it.
+
+Use `draw:` instead of a screenshot or a `play` run to check what a settler draws. It gives the original's exact sprites,
+colours, and positions, and a test can compare them. It is the stronger check. It runs on the reference build of `Siedler1.exe`
+only (the SHA-256 in `docs/rules/AGENTS.md`). It exits non-zero and prints nothing in these cases:
+- The install or the program is missing.
+- The program is another build.
+- The run reaches no pass of a window.
+- A pass of a window draws no settler.
+
+```sh
+python3 -I tools/GhidraDump/emulate.py --game "$SIEDLER_DIR" \
+  "draw:95-110,230-275:17,20:goods:1:1234,5678,9ABC:0:18,20:16,20:19,21,343:16,20,2:276:0::-1:5,0,7"
+```
+
+The settler draw turns the settlers in view every pass, so from the first window on a run differs from the verb it wraps. A recording keeps each
+pass's output with the `EMU draw ` prefix removed, under a `# name command` line (`tests/OpenSettlers.Tests/settler-draws.txt`).

@@ -51,6 +51,9 @@ public partial class MapViewControl : Control
     SettlerGraphics? _settlerGraphics;
     ShaderMaterial? _settlerMaterial;
     readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
+
+    // The settler sprites (Entry, Colour) already warned about as having no loaded layer.
+    readonly System.Collections.Generic.HashSet<(int Entry, int Colour)> _warnedSettlerSprites = [];
     int _flagsDrawn;
     ObjectLayerWatch _objectWatch = new();
     int _buildingsDrawn;
@@ -364,12 +367,13 @@ public partial class MapViewControl : Control
             {
                 if (_tables is not null)
                 {
-                    // The sprites of the jobs whose settlers walk so far: the carrier and the woodcutter.
+                    // The sprites of the jobs whose settlers walk so far: the carrier, the woodcutter, and the settler of the type 1 hut.
                     _settlerGraphics = SettlerGraphics.Load(
                         _install,
                         _tables,
                         Settler.CarrierJob,
-                        Settler.WoodcutterJob
+                        Settler.WoodcutterJob,
+                        ProgramTables.TypeOneHutJob
                     );
                     _settlerMaterial = BuildObjectMaterial(
                         new ObjectGraphics
@@ -855,21 +859,27 @@ public partial class MapViewControl : Control
             var draw in _settlerGraphics.Figures.Draws(_state.Map, _game.Settlers, _game.Clock, _settlerGraphics.Shifts)
         )
         {
-            if (_settlerGraphics.Layers.TryGetValue((draw.Entry, draw.Colour), out var layer))
+            // A sprite with no loaded layer is skipped and reported once per sprite: the render loop must not throw or
+            // warn every frame. The tests assert that every draw of the recorded scenarios has a layer (LayerOf).
+            if (!_settlerGraphics.TryLayerOf(draw, out var layer))
             {
-                var image = _settlerGraphics.Images[layer];
-                if (image.Width > 0 && image.Height > 0)
-                {
-                    quads.Add(
-                        (
-                            draw.X + image.OffsetX,
-                            draw.Y + image.OffsetY,
-                            image.Width,
-                            image.Height,
-                            new Color(layer / 255f, 0, 0, 1)
-                        )
-                    );
-                }
+                if (_warnedSettlerSprites.Add((draw.Entry, draw.Colour)))
+                    GD.PushWarning($"No layer holds the settler sprite {draw.Entry}/{draw.Colour}.");
+                continue;
+            }
+
+            var image = _settlerGraphics.Images[layer];
+            if (image.Width > 0 && image.Height > 0)
+            {
+                quads.Add(
+                    (
+                        draw.X + image.OffsetX,
+                        draw.Y + image.OffsetY,
+                        image.Width,
+                        image.Height,
+                        new Color(layer / 255f, 0, 0, 1)
+                    )
+                );
             }
         }
 

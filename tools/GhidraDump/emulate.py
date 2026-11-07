@@ -6,8 +6,14 @@ Each command is one of the forms EmulateMapStart.java lists, for example rng:000
 repository root. The install is the --game folder or SIEDLER_DIR, as for the game itself. The script imports
 Siedler1.exe into a project in a temporary folder, without analysis, and removes the project afterwards: it
 keeps no program bytes.
+
+The command draw:WINDOWS:CX,CY:VERB:ARGS... (EmulateDraw.java lists its form) runs EmulateDraw.java instead. It runs
+only on the reference build of Siedler1.exe (the History Edition, docs/rules/AGENTS.md, "Reference build") and
+prints nothing, and exits non-zero, where the run fails, so a failed run leaves no recording. A successful run
+prints the line "EMU draw install=..." that names the build, then the lines of the recording.
 """
 
+import hashlib
 import os
 import shutil
 import subprocess
@@ -15,6 +21,9 @@ import sys
 import tempfile
 
 SCRIPTS = os.path.join(os.getcwd(), "tools", "GhidraDump")
+
+# The History Edition's Siedler1.exe (docs/rules/AGENTS.md, "Reference build"; ADR 0004).
+REFERENCE_SHA256 = "0113d8b31268a5848e6827da32a970d7c6a0aab33ff28cc8f11a974b3679dbd5"
 
 
 def fail(message):
@@ -37,19 +46,39 @@ def main(argv):
         fail("no install folder: pass --game <dir> or set SIEDLER_DIR")
     if not argv:
         fail(__doc__.strip().splitlines()[2])
+    drawing = any(command.startswith("draw:") for command in argv)
+    if drawing and not all(command.startswith("draw:") for command in argv):
+        fail("draw: runs alone: its recording is the whole output")
     headless = shutil.which("analyzeHeadless") or fail("analyzeHeadless is not on PATH; run through `mise run`")
     program = find_program(game)
+    script = "EmulateDraw.java" if drawing else "EmulateMapStart.java"
+    environment = {**os.environ, "EMU_GAME": game}
+    install = None
+    if drawing:
+        with open(program, "rb") as file:
+            data = file.read()
+        digest = hashlib.sha256(data).hexdigest()
+        if digest != REFERENCE_SHA256:
+            fail(f"{program} is not the reference build of the History Edition (SHA-256 {digest})")
+        install = f"EMU draw install=History Edition program=Siedler1.exe bytes={len(data)} sha256={digest}"
     with tempfile.TemporaryDirectory(prefix="emulate") as project:
         result = subprocess.run(
             [headless, project, "Emu", "-import", program, "-noanalysis", "-deleteProject",
-             "-scriptPath", SCRIPTS, "-postScript", "EmulateMapStart.java", *argv],
-            capture_output=True, text=True,
+             "-scriptPath", SCRIPTS, "-postScript", script, *argv],
+            capture_output=True, text=True, env=environment,
         )
-    lines = [line.split("> ", 1)[1].strip().removesuffix("(GhidraScript)").strip()
-             for line in result.stdout.splitlines() if "EmulateMapStart.java> " in line]
+    marker = script + "> "
+    lines = [line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip()
+             for line in result.stdout.splitlines() if marker in line]
+    if drawing:
+        # A run counts only if it ends: a failed pass stops the script before its last line.
+        if result.returncode != 0 or not any(line.startswith("EMU draw end") for line in lines):
+            sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
+            sys.exit(1)
+        print(install)
     for line in lines:
         print(line)
-    if result.returncode != 0 or not any(line.startswith("EMU ") for line in lines):
+    if not drawing and (result.returncode != 0 or not any(line.startswith("EMU ") for line in lines)):
         sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
         sys.exit(1)
 

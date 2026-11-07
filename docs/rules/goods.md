@@ -180,21 +180,36 @@ step table, as a step on the road does; the turn goes on at once when the timer 
 
 ## Drawing a carrier with a good
 
-**Status:** inferred. The draw routine for job 0 (`0x43f8ae`, reached from `0x43f537`) adds to the figure byte of a carrier in
-state 3 or 0xe that carries a good (byte 11, not 0) a word of a table of 27 words, one for each good, loaded at
-`0x43f4b7` (`0x43f904`). The figure byte then picks the sprites through the tables of [Settlers](settlers.md#drawing-the-walk-leads)
-as the walking carrier's does. The words read as figure bytes only where the table starts at `0x43f4b8` (the emulator's `peek`
-shows `00 00 30 00 35 00 3b 00 ...` from there; the log, good 7, has `0x14`), so the port reads from `0x43f4b8`
-(`ProgramTables.CarriedFigures`). **Inferred, no emulator run of the draw:** that one byte of the load address, that the sum is
-the figure byte the figure tables take, and that the log's words are drawn with the walking sequences of the carrier's frame.
-`SettlerFigures` draws a carrier on its road (state 3) with a good so, in every wrap copy of the view; state 0xe is not drawn.
+**Status:** confirmed from the code and the table's bytes and by the emulator's draw runs of the carrier with each of the goods
+1 to 26.
+
+The draw routine for job 0 (`0x43f8ae`, reached from `0x43f537`) copies byte 11 (the good) of a carrier in state 3 or 0xe to the
+work register. Where the good is not 0, the routine doubles it, loads the address `0x43f4b7` (`0x43f904`), and adds the 16-bit
+word at that address plus 2 * good to the figure word.
+
+The table at `0x43f4b7` has 27 words, one for each good. Good 0 never reads its word. The word is added to the whole figure word.
+The figure word holds the figure byte in the low byte. The carried word's high byte is the row of the figure bases (`0x44fff3`,
+[Settlers](settlers.md#drawing-the-walk-leads)). Its low byte is 0 for every good.
+
+The table's bytes from `0x43f4b7` are `00 00 | 00 30 | 00 35 | 00 3b | 00 41 | 00 46 | 00 4b | 00 14 | ...`. As little-endian
+words they are `0x0000, 0x3000, 0x3500, 0x3b00, 0x4100, 0x4600, 0x4b00, 0x1400, ...`. The log (good 7) adds `0x1400`, so its
+figure byte is drawn in the row `0x14` of the figure bases. A carrier in state 0x42 is not drawn, and its byte 11 is the road
+direction. A carrier with no good (byte 11 0) adds nothing.
+
+`ProgramTables.CarriedFigures` reads the 27 words from `0x43f4b7`. `SettlerFigures` draws a carrier on its road (state 3) or
+handing a good over (state 0xe) with a good by the same rule for every good. `Sprites` and `Draws` share one function. The view
+draws it in every wrap copy. A play run of `play/carrier-log.play` shows the carrier holding the log above his head and facing
+the way he walks.
+
+**Confirmed** by the draw runs of the `carrier`, `goods`, and `goods-alone` recordings
+([Settlers](settlers.md#the-draw-path-emulated)). The original draws a carrier in state 3 or 0xe with a good (byte 11, each of
+the goods 1 to 26 recorded, the log among them). It draws the figure byte of its frame's triple in the row the good's word
+picks, with its overlay and a second figure, in every recorded pass. The engine's draws are the same.
 
 ## Open leads
 
 - The request words at `0x42` to `0x45` of a flag item and the priority bytes: no building asks for a good yet (milestone 4).
 - The counter in the player block that the put adds to (`+good - 0x6f`).
-- The draw of a carrier with a good (above): run `0x43f537` in the emulator with a carrier record holding a log and read the
-  draw record it writes.
 - What the original does with some road holding a carrier and no storage reached (`0x464539`).
 - A carrier sent home (byte 15 negative, `0x43aea4`), and state 0x44 and later (`0x43007b`, `0x4300f1`).
 - The passing of two settlers that come the other way at a flag (the emulated game of several carriers shows it at a flag where

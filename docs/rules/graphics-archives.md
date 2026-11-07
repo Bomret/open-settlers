@@ -121,7 +121,7 @@ draw call. The disassembly of the game code band then gave these results.
 - **Other bases.** The routine at `0x44da4d` adds 1250 (and 1500 for the shadow) to an index. The callers read take
   it from immediates, masks, and the inline byte tables at `0x44fcfe` and `0x44fd16` (values 152 to 193), so they
   reach 1250 to 1443. The figure routine `0x406610` adds 1850, 2500, and 3150 to words of the tables at `0x4501a1`
-  (137 pairs) whose largest values are 533 and 627. It then adds a word of the table at `0x4503c5` to both fields
+  (137 pairs, an odd address the code reads unaligned) whose largest values are 533 and 627. It then adds a word of the table at `0x4503c5` to both fields
 (`0x450128` to `0x45014c`; the words are 0 to about 62 for the first field and 0 to 5 for the second, and the index
 byte into that table is not bounded by the code), so it reaches about 1850 to 2446, 2500 to 3095, and 3150 to 3782. The
   routine at `0x44ff59` forms a number from 0 to 15 and adds 630. Reaching 3900 to 3999 would need an index of 2650
