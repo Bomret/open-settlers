@@ -75,8 +75,10 @@ mise run map
 The game view is the map view with a game on the shown map that ticks at the original's normal speed:
 
 ```sh
-mise exec -- <godot> --path . -- --game-view [--seed <seed>] [--size <1|2|3>]
+mise run game -- [--seed <seed>] [--size <1|2|3>]
 ```
+
+The task builds the C# project first, so the game runs the current code.
 
 It takes `--seed` and `--size` as the map view does, and it has the map view's exit codes. `--layout <file>` in place of `--seed` and `--size` starts it on a layout. "Layouts" under "Run a play script" describes layouts.
 

@@ -102,6 +102,52 @@ public sealed class CarrierWalkTests
         }
     }
 
+    // The longest run of passes in which a walking carrier's step had no time left, as the view draws it: the frame
+    // stands still until the carrier's next turn.
+    private static int LongestStall(bool everyPassTurns)
+    {
+        var scenario = Load()[0];
+        var parts = scenario.Command.Split(':');
+        MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
+        var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
+        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture))
+        {
+            EveryPassTurns = everyPassTurns,
+        };
+        var castle = Points(parts[4]).Single();
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        foreach (var flag in Points(parts[5]))
+        {
+            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+        }
+
+        Roads(game, parts[6], 0);
+        var stalls = new Dictionary<int, int>();
+        var longest = 0;
+        for (var pass = 0; pass < int.Parse(parts[7], CultureInfo.InvariantCulture); pass++)
+        {
+            game.Tick();
+            for (var slot = 0; slot < game.Settlers.Count; slot++)
+            {
+                var settler = game.Settlers[slot];
+                var elapsed = (ushort)(game.Clock - settler.Stamp);
+                var walking = settler.State is 2 or 3;
+                stalls[slot] = walking && settler.Timer <= elapsed ? stalls.GetValueOrDefault(slot) + 1 : 0;
+                longest = Math.Max(longest, stalls[slot]);
+            }
+        }
+
+        return longest;
+    }
+
+    [TestMethod]
+    public void AWalkingCarrierTakesItsNextStepThePassAfterItsStepEndsWhenEveryPassGivesATurn()
+    {
+        Assert.IsTrue(LongestStall(everyPassTurns: false) > 1, "the slice turns alone leave a step ended for passes");
+        Assert.IsTrue(LongestStall(everyPassTurns: true) <= 1);
+    }
+
     [TestMethod]
     [DynamicData(nameof(Scenarios))]
     public void TheCarriersAreSentAndWalkAsTheOriginalsPassesMoveThem(string name)
