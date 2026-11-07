@@ -274,6 +274,20 @@ public sealed class RoadBuildingTests
         Assert.AreEqual(RoadStatus.Complete, status);
     }
 
+    // Codes 3 and 4 are classes 5 and 6: the class check refuses classes 2 and 4 alone.
+    [TestMethod]
+    [DataRow((byte)3)]
+    [DataRow((byte)4)]
+    public void ARoadDrawnForwardAcrossAClassFiveOrSixNodeCompletesAtAFlag(byte code)
+    {
+        var map = OwnedLandWithFlags();
+        map.Bytes(MapLayer.Object)[map.Index(11, 10)] = code;
+
+        var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
+
+        Assert.AreEqual(RoadStatus.Complete, status);
+    }
+
     [TestMethod]
     [DataRow(StoneCode)]
     [DataRow(SmallBuildingCode)]
