@@ -67,6 +67,13 @@ stores the new value. A pass therefore takes at least 4 timer calls: at least 80
 speed. While the clock runs, the elapsed units of a pass are at least 8, and always even because the clock advances in steps of 2. The wait itself lies in the
 game code; it waits through the platform routine `Frame_Handshake` at `0x406c60` that hands control between the threads.
 
+A measurement on the History Edition agrees. A script polled the game state block of a running game
+in a Windows 11 virtual machine. It recorded `Clock_Elapsed` for 5921 passes that advanced `Sim_Phase`
+by exactly 1, and all of them had 8 elapsed units: 1884 at speed 1 and 4037 at speed 8. It did not
+record the passes that ran several phases (see "Rules that count passes"). The totals that `0x42a74a`
+copied were 264 to 296 units per phase cycle of 49 phases, multiples of 8 that match 33 to 37 passes
+of 8 units each.
+
 `Timer_WaitNextCall` at `0x425c9c` resets the interrupt counter and waits until the next timer call has happened.
 Its callers are unknown: the program holds no direct call to it and no reference to its address as a
 value. Whether any code reaches this routine is unknown.
@@ -85,15 +92,27 @@ The phase selects the work of a pass:
 
 - Phases 0 to 31: the per-player update for player `phase & 3`, and a slice of each item table.
   `Sim_StepPhase` skips the per-player update while the clock step is 0.
-- Phases from 32: one routine from the phase table at `0x4292ee`. The routine at `0x42a74a`, reached
-  from that table, copies the running total of the elapsed units and resets it.
+- Phase 32: the routine `0x42965c`. While the clock runs, it calls `0x42a74a`, which copies the
+  running total of the elapsed units and resets it.
+- Phases 33 to 48: the routines at `0x4293f6`, `0x42944d`, `0x4294a4`, and `0x4294fb`, one per player
+  block in turn. When the block marks its player active and computer-controlled, the routine draws
+  from the random generator (`0x466ade`). When the draw is below the player block's `+0x1ae`, it calls
+  `0x46986d`, and the pass ends there. Otherwise the routine adds 1 to `Sim_Phase` itself and goes on
+  to the next player's routine in the same pass. After phase 48 it sets `Sim_Phase` to 0.
+
+A pass therefore runs one phase from 0 to 32, or one or more phases from 33 to 48. A phase cycle takes
+33 passes when the phase count is 33, and from 33 to 49 passes when it is 49. When the routines of
+phases 33 to 48 set `Sim_Phase` to 0, the item-table routines of that pass process the slices of phase
+0, and the next pass starts at phase 1. The per-player update of phase 0 then does not run in that
+cycle.
 
 Which work runs counts passes, not clock units: each entry of an item table gets its turn once per
 phase cycle, however many clock units the cycle takes. The work on a turn can itself count clock units,
 as the countdowns of `Table18` do (see the next section).
 
 While the clock step is 0, the main loop still advances the phase and still calls the routines for the
-item tables, with 0 elapsed units. Whether that work changes the game state is unknown.
+item tables, with 0 elapsed units. Phase 32 then returns before it calls `0x42a74a`. Whether the other
+work changes the game state is unknown.
 
 ## Rules that count clock units
 

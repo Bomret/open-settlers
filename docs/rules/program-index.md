@@ -411,7 +411,9 @@ entries per phase (see "Item tables").
 | `0x44257a` | `Rng_StepSettler` | The draw the settlers' routines use: the same step as `0x466ade`, the new first word left in item word `+0x14` of the EDI block. | confirmed | game | Called by `0x438b8c` and the other searches. |
 | `0x428d10` | `Map_ObjectPass` | Every 20 clock units takes the next nodes of a cursor that moves 23 columns on (a row down where it wraps), as many as the map's size gives (`+0x21c`): a lake node with detail may move its detail (one draw); an object code from `0x53` goes through the table at `0x428eb8`, 8 bytes an entry: `0x53` vanishes when a draw's low two bits are 0, `0x5d` to `0x66` become `0x53`, the codes from `0x67` grow or decay. | confirmed | game | Called by `0x4286d8`; draws through `0x466ade`. [Woodcutting](woodcutting.md#the-object-pass). |
 | `0x428a75` | — | Counts down three timers of a player block; the timer at `+0x120` repeats its work once per period that has elapsed. | unknown | game | Called by `0x4286d8`. |
-| `0x42a74a` | — | Copies `Clock_ElapsedTotal` and resets it, then calls `0x42a7ac` for each player block. | unknown | game | Reached from the phase table of `Sim_StepPhase`. |
+| `0x42a74a` | — | Copies `Clock_ElapsedTotal` and resets it, then calls `0x42a7ac` for each player block. | unknown | game | Called by `0x42965c` while the clock runs. |
+| `0x42965c` | — | Phase 32: calls `0x42b18d`; while the clock runs, also `0x42a3f1`, `0x42a74a`, `0x42abac`, and further routines. | confirmed | game | Entry 0 of the phase table at `0x4292ee`. |
+| `0x4293f6` | — | Phases 33 to 48, with `0x42944d`, `0x4294a4`, and `0x4294fb` for the player blocks at `+0x64` to `+0x70`: for an active computer player, draws through `0x466ade` and calls `0x46986d` when the draw is below the block's `+0x1ae`; otherwise adds 1 to `Sim_Phase` and runs the next player's entry in the same pass. After phase 48, sets `Sim_Phase` to 0. | confirmed | game | Entries 1 to 16 of the phase table at `0x4292ee`; writes `Sim_Phase` at `0x429445`, `0x42949c`, `0x4294f3`, `0x42954a`, `0x429578`. |
 | `0x429580` | `Ai_PhaseUpdate` | Phase-table entry: runs `Ai_UpdatePlayer` when the player block at `+0x64` has bits 7 and 6 of byte 2 set. | confirmed | game | Entry of the phase table at `0x42923c`. |
 | `0x42a3f1` | — | Counts the player blocks with bit 6 of byte 2 set, sums their `+0x112`, compares the count with `+0x48`, then scales the sum and calls `0x42a567`. | unknown | game | Called by `0x42965c`. |
 | `0x42a567` | — | Scales a player's `+0x112` by `+0x4a` and adds `+0x58`; role open. | unknown | game | Called by `0x42a3f1`. |
@@ -809,7 +811,7 @@ from `+0x21e` to `+0x237`) are in the dump, not here.
 | `+0x21c` | `MapGen_PatchCount` | 2 | Base count of patches, clusters, and deposits. | confirmed |
 | `+0x240` | `Archive_Result` | 2 | Result code of the last save or load. | confirmed |
 | `+0x258` to `+0x266` | `Table70_Count` (`+0x25e`), `Table18_Count` (`+0x260`), `Table16_Count` (`+0x262`), `Table120_Count` (`+0x266`), and capacities | 2 each | Slots in use and slot capacity of the item tables. | confirmed |
-| `+0x26c`, `+0x286` | `Sim_Phase`, `Sim_PhaseCount` | 2 each | The phase counter and its wrap value: 33, or 49 when a player's start parameter is from 1 to 11 (`0x42055e`). | confirmed |
+| `+0x26c`, `+0x286` | `Sim_Phase`, `Sim_PhaseCount` | 2 each | The phase counter and its wrap value: 33, or 49 when a player's start parameter is from 1 to 11 (`0x42055e`). `Sim_StepPhase` and `0x4293f6` advance the counter. | confirmed |
 | `+0x284` | `Clock_Elapsed` | 2 | Elapsed whole units of this pass. | confirmed |
 | `+0x288` | `Clock_ElapsedTotal` | 2 | Running total of the elapsed units. | confirmed |
 | `+0x30c` | `Memory_SizeClass` | 1 | Low 4 bits: the size class of the game buffer; it caps the free-game map size. | confirmed |
@@ -1073,7 +1075,9 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x428a75` | — | unknown | Simulation |
 | `0x428d10` | `Map_ObjectPass` | confirmed | Simulation |
 | `0x4291c2` | `Sim_StepPhase` | confirmed | Simulation |
+| `0x4293f6` | — | confirmed | Simulation |
 | `0x429580` | `Ai_PhaseUpdate` | confirmed | Simulation |
+| `0x42965c` | — | confirmed | Simulation |
 | `0x42a313` | — | inferred | Simulation |
 | `0x42a35d` | — | inferred | Simulation |
 | `0x42a3a7` | — | inferred | Simulation |
@@ -1364,7 +1368,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 308 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 249 confirmed, 73 inferred, 52 unknown.
+Coverage: the index names 308 routines of the 513 functions in the dump's game code band and lists 68 more without a name: 251 confirmed, 73 inferred, 52 unknown.
 <!-- coverage:end -->
 
 Open anchors:

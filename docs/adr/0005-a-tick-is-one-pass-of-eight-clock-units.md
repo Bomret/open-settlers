@@ -11,7 +11,7 @@ does not change the step. While the game is paused, the engine runs no ticks.
 
 The original has two kinds of rules ([timing](../rules/timing.md)):
 
-- Rules that count passes. `Sim_StepPhase` advances the phase by 1 on each pass, and the routines for
+- Rules that count passes. `Sim_StepPhase` advances the phase on each pass, and the routines for
   the item tables and the per-player updates do their work by phase. These rules do not read the
   game clock.
 - Rules that count clock units. They subtract the elapsed units of the pass from a countdown, or they
