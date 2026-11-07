@@ -203,9 +203,11 @@ The probe compares each poll with the previous one and counts only polls in whic
 The phase steps between two polls are the change of `Sim_Phase`, modulo `Sim_PhaseCount`.
 
 - `paused passes`: polls that saw the phase change while the clock step was 0, at any speed.
-- `failed reads`: polls in which a read of the EDI block or of the game state failed. A count that grows
-  with every poll points to a wrong image base, a wrong block offset, or reads the system denies, not to a
-  game that is not running.
+- `null state pointer`: polls in which the game state pointer at EDI block `+0x34` was 0. The probe reads
+  no game state in them.
+- `failed reads`: polls in which a read of the EDI block, or of the game state at a pointer other than 0,
+  failed. A count that grows with every poll can point to a wrong image base, a wrong block offset, or
+  reads the system denies.
 - `elapsed units per pass`: for each value of `Clock_Elapsed`, the number of polls that saw the phase
   advance by exactly 1 with the clock running.
 - `extra phase steps`: for each poll that saw the phase advance by more than 1 with the clock running, the

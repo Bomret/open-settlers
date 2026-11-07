@@ -32,7 +32,7 @@ Write-Host ("pid {0}, image base 0x{1:x}" -f $p.Id, $p.MainModule.BaseAddress.To
 $hist = @{}      # speed -> elapsed -> count
 $cycles = @{}    # speed -> "phasecount:total" -> count
 $missed = @{}    # speed -> extra phase steps between two polls
-$prevPhase = -1; $paused = 0; $failedReads = 0
+$prevPhase = -1; $paused = 0; $failedReads = 0; $nullState = 0
 $sw = [Diagnostics.Stopwatch]::StartNew(); $nextWrite = 5000
 
 function Bump($table, $k1, $k2) {
@@ -41,7 +41,7 @@ function Bump($table, $k1, $k2) {
 }
 
 function Write-Summary {
-  $lines = @("elapsed-probe  pid $($p.Id)  runtime $([int]($sw.ElapsedMilliseconds/1000)) s  paused passes $paused  failed reads $failedReads")
+  $lines = @("elapsed-probe  pid $($p.Id)  runtime $([int]($sw.ElapsedMilliseconds/1000)) s  paused passes $paused  null state pointer $nullState  failed reads $failedReads")
   foreach ($s in ($hist.Keys | Sort-Object)) {
     $lines += "speed $s"
     $lines += "  elapsed units per pass: " + (($hist[$s].Keys | Sort-Object | ForEach-Object { "$($_)=$($hist[$s][$_])" }) -join "  ")
@@ -58,7 +58,8 @@ while ($sw.ElapsedMilliseconds -lt $Seconds * 1000 -and -not $p.HasExited) {
   $spd = [Mem]::Read($h, $ediBlock + 0x48, 1)
   if ($ptr -and $spd) {
     $state = [BitConverter]::ToUInt32($ptr, 0)
-    $b = [Mem]::Read($h, $state, 0x290)
+    $b = $null
+    if ($state -eq 0) { $nullState++ } else { $b = [Mem]::Read($h, $state, 0x290) }
     if ($b -and ($b[0x1c8] -band 8)) {
       $phase = [BitConverter]::ToUInt16($b, 0x26c)
       $count = [BitConverter]::ToUInt16($b, 0x286)
@@ -73,7 +74,7 @@ while ($sw.ElapsedMilliseconds -lt $Seconds * 1000 -and -not $p.HasExited) {
       }
       $prevPhase = $phase
     } else {
-      if (-not $b) { $failedReads++ }
+      if ($state -ne 0 -and -not $b) { $failedReads++ }
       $prevPhase = -1
     }
   } else { $failedReads++ }
