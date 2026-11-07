@@ -56,22 +56,25 @@ public sealed class HeadOnPassTests
         game.Tick();
     }
 
-    private static Meeting Meet()
+    // The roads run from the castle's flag in `direction` (east unless named): two steps to the second flag, two more
+    // to the third. The settler coming home heads the opposite way.
+    private static Meeting Meet(int direction = East)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = new Game(Tables, map);
+        var (dx, dy) = RoadBuilding.Steps[direction];
         Do(game, CommandKind.PlaceCastle, 15, 5);
-        Do(game, CommandKind.PlaceFlag, 18, 6);
-        Do(game, CommandKind.PlaceFlag, 20, 6);
-        Do(game, CommandKind.BuildRoad, 16, 6, [East, East]);
-        Do(game, CommandKind.BuildRoad, 18, 6, [East, East]);
+        Do(game, CommandKind.PlaceFlag, 16 + 2 * dx, 6 + 2 * dy);
+        Do(game, CommandKind.PlaceFlag, 16 + 4 * dx, 6 + 4 * dy);
+        Do(game, CommandKind.BuildRoad, 16, 6, [direction, direction]);
+        Do(game, CommandKind.BuildRoad, 16 + 2 * dx, 6 + 2 * dy, [direction, direction]);
         for (var i = 0; i < 400; i++)
         {
             game.Tick();
         }
 
-        Do(game, CommandKind.RemoveRoad, 19, 6);
-        Do(game, CommandKind.BuildRoad, 18, 6, [East, East]);
+        Do(game, CommandKind.RemoveRoad, 16 + 3 * dx, 6 + 3 * dy);
+        Do(game, CommandKind.BuildRoad, 16 + 2 * dx, 6 + 2 * dy, [direction, direction]);
 
         ThingEvent? pass = null;
         for (var i = 0; i < 3000 && pass is null; i++)
@@ -172,5 +175,22 @@ public sealed class HeadOnPassTests
         Assert.AreEqual(0x7f, state.Get("timer"));
         Assert.AreEqual(0x51 + West, state.Get("frame"));
         Assert.AreEqual(West - 6, state.Get("heading"));
+    }
+
+    // The same meeting on a road running south-east (the one coming home heads north-west) or south (it heads north).
+    [TestMethod]
+    [DataRow(1)]
+    [DataRow(2)]
+    public void TheSettlerHeadingNorthWestOrNorthWaitsInsteadOfPassing(int direction)
+    {
+        var meeting = Meet(direction);
+        var (dx, dy) = RoadBuilding.Steps[direction];
+        var home = (direction + 3) % 6;
+        var state = meeting.Wait.State;
+
+        Assert.AreEqual((16 + 3 * dx, 6 + 3 * dy), Node(state), "the settler heading home waits mid-road");
+        Assert.AreEqual(home - 6, state.Get("heading"));
+        Assert.AreEqual(direction, meeting.Pass.State.Get("heading"), "the waiting settler passes the other way");
+        Assert.AreEqual((16 + 2 * dx, 6 + 2 * dy), Node(meeting.Pass.State));
     }
 }
