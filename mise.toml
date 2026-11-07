@@ -78,6 +78,11 @@ description = "Open the map view (needs SIEDLER_DIR)"
 depends = ["build"]
 run = "{{ env.GODOT }} --path . -- --map"
 
+[tasks.game]
+description = "Open the game view (needs SIEDLER_DIR): -- [--seed <seed>] [--size <n>] [--layout <file>]"
+depends = ["build"]
+run = "{{ env.GODOT }} --path . -- --game-view"
+
 [tasks.godot]
 description = "Run the project in Godot with the given program arguments: -- <args>"
 depends = ["build"]
