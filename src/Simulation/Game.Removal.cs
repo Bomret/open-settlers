@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -632,7 +631,7 @@ public sealed partial class Game
     }
 
     // The settlers on a road count on it up to the capacity of its length class (the table 0x462acd, less one for a road that
-    // a carrier is on its way to, in the split): the status bit is set at both ends and the number goes into the low nibble of
+    // a carrier is on its way to, in the split; the table's least value is 1, so the capacity is never below 0): the status bit is set at both ends and the number goes into the low nibble of
     // both road bytes; the settlers beyond the capacity, taken from the start of the list, are marked to go (the next state
     // 0xff, a waiting carrier takes state 0x44) and a good they carry is lost. A road with no settler keeps its bytes.
     private void CountCarriers(
@@ -652,7 +651,7 @@ public sealed partial class Game
         var kept = carriers.Count;
         if (capacity < carriers.Count)
         {
-            kept = Math.Max(capacity, 0);
+            kept = capacity;
             var excess = carriers.Count - kept;
             foreach (var carrierSlot in carriers)
             {

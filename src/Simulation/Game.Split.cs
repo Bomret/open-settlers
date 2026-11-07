@@ -34,7 +34,7 @@ public sealed partial class Game
                     || (settler.Target == b.Far && settler.Mode == b.FarDirection)
                 )
             );
-            var loser = onItsWay is not null && onItsWay.Target == b.Far && onItsWay.Mode == b.FarDirection ? a : b;
+            var loser = onItsWay?.Target == b.Far && onItsWay.Mode == b.FarDirection ? a : b;
             _roadBytes[loser.Far][loser.FarDirection] &= 0x7f;
         }
 
@@ -63,6 +63,7 @@ public sealed partial class Game
 
         // A half that holds no carrier and none on its way is asked for at the next flag pass, with the cause of this command.
         _roadCauses.Remove(road);
+        // The cause only attributes the request (INV-0007): a request is made with or without it.
         if (cause.IsCommand)
         {
             foreach (var (half, direction) in new[] { (halves[0], startDirection), (halves[1], endDirection) })
