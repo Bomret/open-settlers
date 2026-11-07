@@ -101,7 +101,7 @@ carrier holds in bytes 12 to 15 while it waits keeps its low word through state 
 byte 14 is the heading and byte 15 is 0.
 
 What follows in state 3 is below. The bytes `0x42fca1` to `0x42fef9` are the table of eight-byte jumps that the state byte
-indexes (`0x42fc88`), and `0x43013b` to `0x4312ed` is the handler of state 0x28 (a soldier's work at a military building), so
+indexes (`0x42fc88`), and `0x43013b` to `0x4312ed` is the handler of state 0x34 (a soldier's work at a military building), so
 neither holds carrier code; the carrier's states are `0x42`, `0x43`, 3 and 0xe.
 
 ## The carrier's exchange at a flag

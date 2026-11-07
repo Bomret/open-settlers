@@ -77,7 +77,7 @@ public sealed partial class Game
 
     // State 4, a settler that stepped through a door (0x43c96b): once its timer is down to the time the door leaves it, it
     // runs the routine of its job when a building stands there that is not marked bit 5; else it is state 0x19.
-    private void Door(Settler settler)
+    private void Door(int slot, Settler settler)
     {
         var delta = (ushort)(_clock - settler.Stamp);
         settler.Stamp = _clock;
@@ -85,6 +85,8 @@ public sealed partial class Game
         settler.Timer = (ushort)(old - delta);
         if (delta <= old && (short)((ushort)settler.Target - settler.Timer) < 0)
         {
+            RecordWork(slot, EventType.Door);
+
             return;
         }
 
@@ -97,31 +99,63 @@ public sealed partial class Game
             // 0, so a value of 0xfe is the original's send-home mark and no walk's -2 east. The original shares the byte.
             if (settler.Mode == StorageWalk)
             {
-                EnterStorage(node, settler);
+                // The timer and stamp change is this rule's; EnterStorage records its own.
+                RecordWork(slot, EventType.Door);
+                EnterStorage(slot, node, settler);
+
+                return;
             }
-            else if (settler.Job == WoodcutterJob)
+
+            if (settler.Job == WoodcutterJob)
             {
                 // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree.
                 _occupant.Remove(node);
                 settler.State = 0x12;
             }
-
-            return;
+        }
+        else
+        {
+            settler.State = 0x19;
+            settler.Mode = 0;
+            settler.Timer = 0;
         }
 
-        settler.State = 0x19;
-        settler.Mode = 0;
-        settler.Timer = 0;
+        RecordWork(slot, EventType.Door);
     }
+
+    // Records the change a rule of this file made to the settler in the slot (ADR 0011): its state now, the rule's type, and the
+    // rule's area where the settler carries no command cause: the layout while one builds, the walk home for a settler on it
+    // (a woodcutter walking home included), woodcutting for another woodcutter, and the settlers' rules for another job that
+    // passes through these states.
+    private void RecordWork(int slot, string type, string? other = null) =>
+        RecordSettler(
+            slot,
+            type,
+            InLayout || _walkingHome.Contains(slot) || _settlers[slot].Job != WoodcutterJob
+                ? SettlerCause(slot)
+                : Cause.Woodcutting,
+            other
+        );
 
     // State 0x12, the woodcutter's search (0x438b8c). When its timer has run out it draws a node of the spiral around the
     // hut, entries 1 to 128, until a tree stands on one; each node without a tree adds 400 to the timer, and the search
     // ends for this turn when that wraps the timer.
     private void SearchTree(int slot, Settler settler)
     {
+        var found = SearchTurn(settler);
+        RecordWork(slot, EventType.SearchTree);
+        if (found)
+        {
+            StepOut(slot, settler);
+        }
+    }
+
+    // One turn of the search; true where it found a tree and took state 7.
+    private bool SearchTurn(Settler settler)
+    {
         if (!TimerRan(settler))
         {
-            return;
+            return false;
         }
 
         var objects = Map.Layer(MapLayer.Object);
@@ -140,16 +174,15 @@ public sealed partial class Game
                 settler.Heading = (sbyte)-(dy - 1);
                 settler.Next = 0x10;
                 settler.State = 7;
-                StepOut(slot, settler);
 
-                return;
+                return true;
             }
 
             var old = settler.Timer;
             settler.Timer = (ushort)(old + 400);
             if (old > 0xfe6f)
             {
-                return;
+                return false;
             }
         }
     }
@@ -171,12 +204,14 @@ public sealed partial class Game
             settler.Timer = (ushort)((ushort)(_tables.StepTime(shape) * speed) >> 5);
             settler.Stamp = _clock;
             settler.State = 5;
+            RecordWork(slot, EventType.StepOut);
 
             return;
         }
 
         settler.Frame = 0x52;
         settler.Timer = 0;
+        RecordWork(slot, EventType.StepOut);
     }
 
     // State 0x10, the free walk along a vector (0x436c38). Byte 15 holds the walk's memory: with bit 3 set and the low three
@@ -187,9 +222,20 @@ public sealed partial class Game
     // frame 0x52 as it does when a blocked step is tried again), and the checks of a target node marked solid.
     private void FreeWalk(int slot, Settler settler)
     {
+        var arrived = FreeWalkTurn(slot, settler);
+        RecordWork(slot, EventType.FreeWalk);
+        if (arrived)
+        {
+            Arrive(slot, settler);
+        }
+    }
+
+    // One turn of the free walk; true where the vector is used up and the settler has arrived.
+    private bool FreeWalkTurn(int slot, Settler settler)
+    {
         if (!TimerRan(settler))
         {
-            return;
+            return false;
         }
 
         while (true)
@@ -197,9 +243,7 @@ public sealed partial class Game
             var memory = settler.Next;
             if ((memory & 8) != 0 && (memory & 7) == 0)
             {
-                Arrive(slot, settler);
-
-                return;
+                return true;
             }
 
             var direction = Choose(settler, (memory & 8) != 0 ? (memory & 7) + 5 : (memory & 7) - 1);
@@ -208,7 +252,7 @@ public sealed partial class Game
                 settler.Frame = 0x52;
                 settler.Timer = 0x7f;
 
-                return;
+                return false;
             }
 
             var (x, y, next) = Neighbour(settler, direction);
@@ -238,7 +282,7 @@ public sealed partial class Game
             {
                 settler.Frame = (byte)shape;
 
-                return;
+                return false;
             }
         }
     }
@@ -419,7 +463,8 @@ public sealed partial class Game
             // **Not ported:** the arrival of the jobs 7, 8, 11, 14, and 20 where they are not walking home (0x437ddd).
             if (ArrivesHome(settler.Job) || (Mark(settler) == 0x80 && settler.Heading < 0))
             {
-                ArriveHome(settler);
+                ArriveHome(slot, settler);
+                RecordWork(slot, EventType.Arrive);
             }
 
             return;
@@ -430,14 +475,15 @@ public sealed partial class Game
             // A negative count marks the walk home (0x4385ab).
             if (settler.Heading < 0)
             {
-                ArriveHome(settler);
+                ArriveHome(slot, settler);
+                RecordWork(slot, EventType.Arrive);
 
                 return;
             }
 
             if (settler.Heading != 0)
             {
-                PutGood(settler, GoodLog);
+                PutGood(slot, settler, GoodLog);
             }
 
             settler.Mode = 0;
@@ -456,6 +502,7 @@ public sealed partial class Game
             settler.Frame = 0x74;
             settler.Timer = 0x3ff;
             settler.State = 0x11;
+            RecordWork(slot, EventType.Arrive);
 
             return;
         }
@@ -464,12 +511,21 @@ public sealed partial class Game
         settler.Heading = 0;
         settler.Next = 0;
         settler.Timer = 0;
+        RecordWork(slot, EventType.Arrive);
     }
 
     // State 0x11, the cut (0x438a9e): each time the timer runs out the tree takes the next of its falling codes (0x5d to
     // 0x66, the second variant after 0x61 for the codes 8 to 15), the frame is 0x74 plus the count and the timer takes
     // the time that frame's table word gives. After the fifth the settler starts the way back with the log.
     private void Cut(Settler settler)
+    {
+        var slot = _settlers.IndexOf(settler);
+        var tree = ThingId.OfObject("tree", settler.X, settler.Y).ToString();
+        CutTurn(settler);
+        RecordWork(slot, EventType.CutTree, tree);
+    }
+
+    private void CutTurn(Settler settler)
     {
         if (!TimerRan(settler))
         {
@@ -505,14 +561,16 @@ public sealed partial class Game
         settler.Timer = 0;
     }
 
-    // The settler lays a good on the first empty place of the flag it stands on (0x436b46).
-    private void PutGood(Settler settler, int good)
+    // The settler lays a good on the first empty place of the flag it stands on (0x436b46). The flag changes and records; the
+    // settler does not.
+    private void PutGood(int slot, Settler settler, int good)
     {
         var flag = Map.Layer(MapLayer.Resource)[Map.Index(settler.X, settler.Y)];
         var place = Array.IndexOf(_flagGoods[flag], (byte)0);
         if (place >= 0)
         {
             LayGood(flag, place, good);
+            RecordFlag(flag, EventType.PutGood, Cause.Woodcutting, SettlerId(slot).ToString());
         }
     }
 
@@ -528,6 +586,7 @@ public sealed partial class Game
         {
             settler.Frame = 0x55;
             settler.Timer = 0;
+            RecordWork(slot, EventType.EnterHut);
 
             return;
         }
@@ -540,6 +599,7 @@ public sealed partial class Game
         settler.Target = (ushort)(time * _tables.DoorSpeeds[BuildingAt(node)?.TypeIndex ?? 0]) >> 5;
         settler.Stamp = _clock;
         settler.State = 4;
+        RecordWork(slot, EventType.EnterHut);
     }
 
     // The map's object pass (0x428d10, called by the main loop's 0x4286d8 each pass). Each 20 clock units it takes the next

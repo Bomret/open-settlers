@@ -21,6 +21,20 @@ public sealed partial class Layout
     /// </summary>
     public string? Apply(Game game)
     {
+        game.InLayout = true;
+        try
+        {
+            return Build(game);
+        }
+        finally
+        {
+            game.InLayout = false;
+        }
+    }
+
+    // The entries one at a time; the game records their events with the cause layout (Game.InLayout).
+    private string? Build(Game game)
+    {
         foreach (var step in _steps)
         {
             if (step.Place is not null)

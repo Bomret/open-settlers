@@ -23,6 +23,7 @@ namespace OpenSettlers.MapView;
 /// The count of goods on each flag that holds some, by the flag's node; a flag left out holds none. Null in the map view.
 /// </param>
 /// <param name="Things">The things a <c>list</c> step writes; null lists none.</param>
+/// <param name="Game">The running game the named-thing steps read events from; null in the map view.</param>
 public sealed record PlayState(
     int CameraX,
     int CameraY,
@@ -32,7 +33,8 @@ public sealed record PlayState(
     long? Ticks = null,
     int? Logs = null,
     IReadOnlyDictionary<(int X, int Y), int>? FlagGoods = null,
-    IReadOnlyList<Thing>? Things = null
+    IReadOnlyList<Thing>? Things = null,
+    Game? Game = null
 )
 {
     /// <summary>The decimals zoom is written with and compared at.</summary>
@@ -151,7 +153,7 @@ public sealed record PlayState(
         return Compare(actual, wanted, expect.Op);
     }
 
-    static bool Compare(double actual, double wanted, string op) =>
+    internal static bool Compare(double actual, double wanted, string op) =>
         op switch
         {
             "<" => actual < wanted,
