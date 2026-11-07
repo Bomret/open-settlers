@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0012](0012-the-engine-skips-the-originals-pause-work.md)
+
 The engine's tick is one pass of the original's main loop at its shortest length: 4 timer calls, 8
 units of the game clock. At normal speed this is 80 milliseconds, 12.5 ticks per second. On each tick
 the engine runs the work that the original runs once per pass, and it advances every rule that counts
@@ -11,7 +13,7 @@ does not change the step. While the game is paused, the engine runs no ticks.
 
 The original has two kinds of rules ([timing](../rules/timing.md)):
 
-- Rules that count passes. `Sim_StepPhase` advances the phase on each pass, and the routines for
+- Rules that count passes. `Sim_StepPhase` advances the phase by 1 on each pass, and the routines for
   the item tables and the per-player updates do their work by phase. These rules do not read the
   game clock.
 - Rules that count clock units. They subtract the elapsed units of the pass from a countdown, or they
