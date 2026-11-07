@@ -15,13 +15,15 @@ Part of it does. While the original is paused, the clock step is 0, and the main
 same routines on each pass (`0x425bce` to `0x425bf1`):
 
 - The ambient sounds of each view draw from the random generator through `Rng_Step` at `0x466ade`
-  (`0x42899a`), in every game.
+  (`0x42899a`), in every game, for each view whose byte 0 has bit 0 clear; `0x428985` returns without
+  a draw when that bit is set (`0x42898d` to `0x428999`).
 - `Sim_StepPhase` advances the phase and calls the phase-table routine before it reads the clock step
   (`0x4291c2`). At phase 32, `0x42965c` calls `0x42b18d`, which writes to the player blocks, before it
   reads the clock step (`0x42965c` to `0x42966e`).
-- In a game with 49 phases, the routines of phases 33 to 48 call `Rng_Step` for each player block with
-  bits 7 and 6 of byte 2 set, without reading the clock step (`0x429427`). `0x46986d`, which they call
-  after a low draw, returns at once while the clock step is 0 (`0x469870` to `0x46987a`).
+- In a game with 49 phases, the routines of phases 33 to 48 call `Rng_Step` for the player blocks with
+  bits 7 and 6 of byte 2 set, in turn, without reading the clock step (`0x429427`). They stop at the
+  first draw below the block's `+0x1ae`, which leads to the call of `0x46986d` (`0x42943c`, `ret` at
+  `0x429441`). `0x46986d` returns at once while the clock step is 0 (`0x469870` to `0x46987a`).
 
 Whether the item-table routines and the other routines of the pass change the game state during a pause
 is still unknown.
@@ -35,9 +37,10 @@ The decision weighed these options:
 
 - Run the draws of phases 33 to 48 during a pause, in passes that advance no clock. The engine does not
   take the ambient-sound draws ([woodcutting](../rules/woodcutting.md)), so its random sequence already
-  differs from the original's on every pass. Taking the pause draws as well would not bring the computer
-  players' later choices in line with the original's. During a pause the computer players do no work
-  besides the draws, because `0x46986d` returns at once.
+  differs from the original's on every pass. Taking the pause draws as well would not bring the later
+  choices of the players whose blocks have bits 7 and 6 of byte 2 set (inferred: the computer players)
+  in line with the original's. During a pause those players do no work besides the draws, because
+  `0x46986d` returns at once.
 
 ## Consequences
 

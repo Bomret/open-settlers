@@ -176,6 +176,8 @@ breakpoint, so it needs no debugger.
 powershell -ExecutionPolicy Bypass -File tools\WindowsCheck\elapsed-probe.ps1 [-Seconds <n>] [-Out <path>]
 ```
 
+In PowerShell 7, run the same command with `pwsh` in place of `powershell`.
+
 `-Seconds` is how long the probe polls, 900 by default; it also stops when the game exits. `-Out` is the
 summary file, `$env:TEMP\elapsed-summary.txt` by default. The probe rewrites the summary every 5 seconds and
 once at the end. Keep the summary outside the repository, and send back only the counts of the summary.

@@ -92,7 +92,8 @@ starts: 33, or 49 when a player's start parameter at `+0x1d6` is from 1 to 11.
 The phase selects the work of a pass:
 
 - Phases 0 to 31: the per-player update for player `phase & 3`, and a slice of each item table.
-  `Sim_StepPhase` skips the per-player update while the clock step is 0.
+  `Sim_StepPhase` skips the per-player update while the clock step is 0 (`0x429200` to `0x42920d`), and
+  while `Table70_Count` (`+0x25e`) is 50 or more (`0x42920e` to `0x429221`).
 - Phase 32: the routine `0x42965c`. It calls `0x42b18d` first. While the clock runs, it then calls
   `0x42a74a`, which copies the running total of the elapsed units and resets it, and further routines.
 - Phases 33 to 48: the routines at `0x4293f6`, `0x42944d`, `0x4294a4`, and `0x4294fb`, one per player
@@ -122,7 +123,8 @@ tables at `0x46414d`, `0x42cb2d`, and `0x42f3d9`, then `0x42f4f1` and `0x425cb9`
 game state:
 
 - The ambient sounds of each view draw from the random generator through `Rng_Step` (`0x428985`, the
-  call at `0x42899a`), in every game.
+  call at `0x42899a`), in every game, for each view whose byte 0 has bit 0 clear; `0x428985` returns
+  without a draw when that bit is set (`0x42898d` to `0x428999`).
 - `Sim_StepPhase` advances the phase. At phase 32, `0x42965c` calls `0x42b18d` before it reads the
   clock step (`0x42965c` to `0x42966e`); `0x42b18d` writes `+0x188` and `+0x184` of each player block
   through `0x42b1ce`. Phase 32 then returns before it calls `0x42a74a`.

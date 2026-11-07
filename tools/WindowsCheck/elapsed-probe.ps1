@@ -24,6 +24,7 @@ public static class Mem {
 Write-Host "Waiting for Siedler1.exe ..."
 while (-not ($p = Get-Process Siedler1 -ErrorAction SilentlyContinue | Select-Object -First 1)) { Start-Sleep -Milliseconds 500 }
 $h = [Mem]::OpenProcess(0x0410, $false, $p.Id)   # QUERY_INFORMATION | VM_READ
+if ($h -eq [IntPtr]::Zero) { throw "OpenProcess failed for pid $($p.Id); run the probe as the same user as the game." }
 $delta = $p.MainModule.BaseAddress.ToInt64() - 0x400000
 $ediBlock = 0x674000 + $delta
 Write-Host ("pid {0}, image base 0x{1:x}" -f $p.Id, $p.MainModule.BaseAddress.ToInt64())

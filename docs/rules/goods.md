@@ -23,7 +23,7 @@ pass 5 before any carrier is on the road, and on a road of three flags logs and 
 **Status:** confirmed for the fields below.
 
 - Byte 4 of a flag item, bit 7: the flag has goods that need a turn. A put sets it (`0x436b46`), the turn of the goods clears it,
-  and a turn that could not finish sets it again, so a good that waits is looked at again at each cycle of 33 passes.
+  and a turn that could not finish sets it again, so a good that waits is looked at again at each phase cycle ([Timing](timing.md#rules-that-count-passes)).
 - Bytes `0xc` to `0x13`: the 8 places. A place holds the good in its low 5 bits and, in bits 5 to 7, the direction the good was
   given plus one (0 for none yet).
 - Bytes `0x14` to `0x23`: one word for each place, the slot of the flag the good goes to (0 for none).

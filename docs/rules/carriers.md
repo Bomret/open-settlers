@@ -27,8 +27,8 @@ request clears the job bits (`0x42bbea`, `& 0x83`) and no tool is taken from the
 **Status:** confirmed for the road loop; the goods part of `0x46414d` is in [Goods at a flag](goods.md).
 
 `0x46414d` runs once for each pass in the phases 0 to 31, after the phase step and before the building pass. It handles the
-flags in use whose slot divided by 32 is the phase, in the order of their slots, so a flag is handled once for each cycle of 33
-passes (the first flags, slots 0 to 31, in phase 0: the pass with the number 32 of a game). For a flag with no goods it
+flags in use whose slot divided by 32 is the phase, in the order of their slots, so a flag is handled once for each phase cycle, of 33
+passes in a game with 33 phases and of 33 to 49 passes in a game with 49 ([Timing](timing.md#rules-that-count-passes)) (the first flags, slots 0 to 31, in phase 0: the pass with the number 32 of a game). For a flag with no goods it
 reaches `0x464c36`, which looks at each direction from north (5) to east (0) that holds a road:
 
 - The road byte (flag item byte `6 + direction`) holds the length class in bits 4 to 6, bit 7 while a carrier is on the way to
@@ -67,7 +67,7 @@ where it carries 0xff. If no storage is reached, or it holds neither settler, th
 The castle holds the settlers of job 21 in its list of waiting settlers: the slot of the one that last took its turn in state
 1 (`0x438eeb`). The request takes it and empties the entry, so a second request, at the same flag or in the same pass, finds
 none until another of the five has had a turn in state 1. A road built together with another therefore gets its carrier in
-a later cycle: with two roads at the castle's flag, the road in the higher direction first, and the other 33 passes later.
+a later cycle: with two roads at the castle's flag, the road in the higher direction first, and the other one phase cycle later.
 
 ## The carrier's walk
 
