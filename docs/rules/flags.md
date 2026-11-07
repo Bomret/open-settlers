@@ -59,7 +59,7 @@ For a node the evaluator allowed:
    emulated;** every field and the carrier of each half are in [Roads](roads.md#a-flag-on-a-road).
 
 The flag table's item is cleared to zero and the placement fills no field of it itself; the road commit ([Roads](roads.md))
-fills the road bits and the links to the other flags. Where the node holds road bits (node state 4), step 5 below does. **Inferred (not read from the allocator's limit):** the table has a slot limit (state
+fills the road bits and the links to the other flags. Where the node holds road bits (node state 4), step 5 above does. **Inferred (not read from the allocator's limit):** the table has a slot limit (state
 `+0x258`) that `Game_Init` (`0x41dbea`) computes from a division of a value it reads at start-up. It is not
 recovered, and the harness sets 100. The engine holds 256 flags, the most a one-byte link names. A flag past that
 is refused (`simplicity:` ceiling).
@@ -101,5 +101,5 @@ bit 7 set (a water triangle) would draw entry 1386 in the original; the engine a
 castle's flag is the first. The digest holds the flags and the total of resource 1. A refused command changes no
 state. The map view's stand-in flag button (`src/Viewer/MapViewControl.cs`) turns a click into `PlaceFlag`;
 `ObjectSprites.FlagEntry` and `ObjectDraws` draw the flags with the objects. Departures: the table limit, the
-border bits that are not set anyway, the colour bits, the refusal before the castle, the goods that wait, and the
-split of a road under the new flag (the engine's placement leaves the road's items alone: [Roads](roads.md#a-flag-on-a-road)).
+border bits that are not set anyway, the colour bits, the refusal before the castle, and the goods that wait.
+(The engine splits a road under the new flag, as `Game.PlaceFlag` and a building's flag do through `SplitRoad`: [Roads](roads.md#a-flag-on-a-road).)

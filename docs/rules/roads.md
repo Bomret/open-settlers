@@ -93,7 +93,7 @@ takes it for a step back, clears the old road's two bits, and counts the length 
 on with a wrong length, and the commit then joins the wrong items. The engine refuses such a step.
 
 **Open lead (inferred, not run):** bit 6 of the state's byte at `+0x37e` makes the cursor update also walk the road
-under a node that holds one (`0x444b29`). The harness holds it clear; the engine does not walk.
+under a node that holds one (`Road_WalkEnds`, `0x444b29`). The harness holds it clear; the engine does not walk.
 
 The two other leads this section carried, bit 3 of the view's flag byte and a flag put on a node of a road, are known
 now: [A flag on a road](#a-flag-on-a-road).
@@ -197,7 +197,7 @@ between a land road and a water road leaves a road that is land at one end and w
 
 ### The pointer button that places a flag on a road
 
-**Status:** confirmed for the branch and for what sets the bit; **inferred** that the bit is the right pointer button
+**Status:** confirmed for the branch and for what sets the bit, except that the road walk `0x444b29` is **inferred** (named by its callers, not run); **inferred** that the bit is the right pointer button
 (the platform layer's button order).
 
 Bit 3 of the view's flag byte at `+1` is not a mode of road drawing. The pointer update (`0x47a4c3`) sets it while the
@@ -208,8 +208,9 @@ the click step, and the road cancel (`0x442002`) never do. Road mode does not se
 With the bit set, the click step (`Road_ClickStep`, `0x443f62`) acts as follows:
 
 - **A node that holds road bits and no flag.** After the usual mask check, the step checks the node with the evaluator
-  (`0x44b6e6`) and the road walk (`0x444b29`, which turns the placement away where the node's road leads to no flag: the
-  road being drawn), and puts a flag with `Flag_Place` (`0x44426c`), where the site is not 0. The road then ends at the
+  (`0x44b6e6`) and the road walk (`Road_WalkEnds`, `0x444b29`, **inferred**; its call at `0x444261` turns the placement away where
+  the node's road leads to no flag: the road being drawn), and puts a flag with `Flag_Place` (`0x44426c`), where the
+  site is not 0. The road then ends at the
   new flag (the commit runs). **Emulated:** `road-click-bit3`: the second road of two steps ends at the flag put on the
   first road's node, which splits the first road.
 - **An empty node.** The step puts a flag there (`0x444491`) when the site is not 0 and ends the road at it. **Emulated:**
@@ -225,7 +226,7 @@ recovered.
 
 The harness verbs: `remove` with the clicks `p@x,y` (the flag button) and `b@x,y` (the building placement `0x449a63`)
 and `road` with the fourth field `2` (bit 3 held), in `tools/GhidraDump/EmulateMapStart.java`. `road-splits.txt`
-(`tests/OpenSettlers.Tests/`) holds the lines of 18 runs: the split with the carrier in each state, with a good, on the
+(`tests/OpenSettlers.Tests/`) holds the lines of 19 runs: the split with the carrier in each state, with a good, on the
 west road, with no free settler, the refused nodes, the building with node state 6, and the three road clicks. The lines
 are expected values for the engine's split; `RoadSplitTests` replays the `split-*` runs.
 
