@@ -195,7 +195,7 @@ tables from the program; a settler in any other state has no record: a carrier t
 (0x44, 0x45), a settler that claims its node on its way home (0x1c), and a settler at work (the woodcutter's 0x12, the type 1 hut's 0x1f). The
 time left is the timer less the clock units since the settler's turn, so the animation moves with the game's ticks. The view draws
 the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)), 5, and 11 in every wrap copy, rebuilt after each tick, and a sprite of
-a draw with no loaded layer is skipped and reported by the viewer (`SettlerGraphics.TryLayerOf`); the tests fail on it (`SettlerGraphics.LayerOf`). A settler of another job is not drawn. The rules below are
+a draw with no loaded layer is skipped and reported once per sprite by the viewer (`SettlerGraphics.TryLayerOf`); the tests fail on it (`SettlerGraphics.LayerOf`). A settler of another job is not drawn. The rules below are
 **confirmed** by the draw runs ([The draw path, emulated](#the-draw-path-emulated)) for the carrier in states 2, 3, 5, 0xe, 0x10, 0x19, 0x42, 0x44, and 0x45
 (with and without each good the recordings carry), the woodcutter in states 2, 4, 5, 0x10, 0x11, 0x12, 0x19, and 0x1c, and the settler of the type 1 hut in states 2, 4, 5,
 and 0x1f, and the engine's draws equal the original's in every recorded pass:

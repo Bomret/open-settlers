@@ -51,6 +51,9 @@ public partial class MapViewControl : Control
     SettlerGraphics? _settlerGraphics;
     ShaderMaterial? _settlerMaterial;
     readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
+
+    // The settler sprites (Entry, Colour) already warned about as having no loaded layer.
+    readonly System.Collections.Generic.HashSet<(int Entry, int Colour)> _warnedSettlerSprites = [];
     int _flagsDrawn;
     ObjectLayerWatch _objectWatch = new();
     int _buildingsDrawn;
@@ -856,11 +859,12 @@ public partial class MapViewControl : Control
             var draw in _settlerGraphics.Figures.Draws(_state.Map, _game.Settlers, _game.Clock, _settlerGraphics.Shifts)
         )
         {
-            // A sprite with no loaded layer is skipped and reported: the render loop must not throw. The tests assert that
-            // every draw of the recorded scenarios has a layer (LayerOf).
+            // A sprite with no loaded layer is skipped and reported once per sprite: the render loop must not throw or
+            // warn every frame. The tests assert that every draw of the recorded scenarios has a layer (LayerOf).
             if (!_settlerGraphics.TryLayerOf(draw, out var layer))
             {
-                GD.PushWarning($"No layer holds the settler sprite {draw.Entry}/{draw.Colour}.");
+                if (_warnedSettlerSprites.Add((draw.Entry, draw.Colour)))
+                    GD.PushWarning($"No layer holds the settler sprite {draw.Entry}/{draw.Colour}.");
                 continue;
             }
 
