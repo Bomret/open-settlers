@@ -1,0 +1,56 @@
+# A woodcutter whose flag lands on a road is placed, and its flag splits the road into two roads that meet at it; a carrier
+# works each half and the woodcutter walks out to its hut.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   sh tools/play-run.sh hut-on-road --game-view --seed 1234567812345678 --size 1 --fps 10
+# On that map the castle stands at 21,4, so its flag is at 22,5. A flag goes on 28,7 (the territory ends near column 28) and a
+# road of seven steps joins the two flags: five east along row 5, then down to 28,6 and 28,7. The woodcutter goes to 26,4, so
+# its flag lands on the road node 27,5.
+expect seed = 1234567812345678
+expect size = 1
+wait 0.3
+click-tile 21 4
+wait 0.3
+button Flag
+click-tile 28 7
+button Flag
+wait 0.3
+button Road
+click-tile 22 5
+click-tile 23 5
+click-tile 24 5
+click-tile 25 5
+click-tile 26 5
+click-tile 27 5
+click-tile 28 6
+click-tile 28 7
+button Road
+wait 0.3
+fast-forward carrier state 0x42 max 20000
+wait 0.3
+expect-count carrier = 1
+shot one-road 26 5 5 4
+
+button Woodcutter
+click-tile 26 4
+button Woodcutter
+wait 0.3
+expect-at 26 4 building
+expect-at 27 5 flag
+expect-count flag = 3
+name flag 27 5 flag
+expect-event flag place-flag cause placed
+expect-event flag split-roads cause placed
+shot split 26 5 5 4
+list split
+
+# The woodcutter walks out along the roads to its hut and fells a tree; by then each half of the road holds a carrier.
+fast-forward woodcutter state 2 max 20000
+wait 0.3
+shot walks-out 26 5 5 4
+
+fast-forward woodcutter state 0x11 max 40000
+wait 0.3
+expect-count carrier = 2
+shot two-carriers 26 5 5 4
+list two-carriers
+dump after
