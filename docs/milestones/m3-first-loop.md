@@ -38,7 +38,7 @@ left open:
   leaves; `goods:` takes the dummy slot as the original's game start does.
 - `0x42cb2d`, `0x42f3d9`: known. The slices of `Table18` and `Table16`: [Settlers](../rules/settlers.md#the-pass).
 - `0x42f4f1`: runs the turn of each settler in view once more; with `Game.EveryPassTurns` the engine gives that turn to
-  every settler (the simulation must not depend on the view). likely
+  every settler in a state the view draws in motion (the simulation must not depend on the view). likely
 
 ## Flags, roads, and routes
 

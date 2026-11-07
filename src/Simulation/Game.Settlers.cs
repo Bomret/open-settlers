@@ -108,16 +108,21 @@ public sealed partial class Game
             return;
         }
 
-        // 0x42f4f1 gives each settler in view one more turn every pass; the engine gives it to every settler, so the
-        // walk on the screen does not stall between the slice turns and the simulation does not depend on the view.
+        // 0x42f4f1 gives each settler in view one more turn every pass; the engine gives it to every settler in a state
+        // the view draws in motion, so the walk on the screen does not stall between the slice turns and the simulation
+        // does not depend on the view. The other states keep the slice turns alone.
         for (var slot = 0; slot < _settlers.Count; slot++)
         {
-            Visit(slot, _settlers[slot]);
+            if (_settlers[slot].State is 2 or 3 or 4 or 5 or 0xe or 0x10 or 0x11 or 0x19)
+            {
+                Visit(slot, _settlers[slot]);
+            }
         }
     }
 
     /// <summary>
-    /// Whether each pass gives every settler one more turn after the slices, as the original's view pass
+    /// Whether each pass gives every settler that walks, waits out a step, steps through a door, cuts, or searches
+    /// (the states 2, 3, 4, 5, 0xe, 0x10, 0x11, 0x19) one more turn after the slices, as the original's view pass
     /// (<c>0x42f4f1</c>) does for the settlers in view. Off, a settler takes a turn only in its slice, every 16 or 17
     /// passes, as in the original's passes without a view.
     /// </summary>

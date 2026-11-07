@@ -123,7 +123,7 @@ public sealed class CarrierWalkTests
         }
 
         Roads(game, parts[6], 0);
-        var stalls = new int[game.Settlers.Count + 32];
+        var stalls = new Dictionary<int, int>();
         var longest = 0;
         for (var pass = 0; pass < int.Parse(parts[7], CultureInfo.InvariantCulture); pass++)
         {
@@ -133,7 +133,7 @@ public sealed class CarrierWalkTests
                 var settler = game.Settlers[slot];
                 var elapsed = (ushort)(game.Clock - settler.Stamp);
                 var walking = settler.State is 2 or 3;
-                stalls[slot] = walking && settler.Timer <= elapsed ? stalls[slot] + 1 : 0;
+                stalls[slot] = walking && settler.Timer <= elapsed ? stalls.GetValueOrDefault(slot) + 1 : 0;
                 longest = Math.Max(longest, stalls[slot]);
             }
         }
