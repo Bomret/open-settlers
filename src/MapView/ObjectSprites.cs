@@ -25,12 +25,15 @@ public static class ObjectSprites
 
     /// <summary>
     /// The sprite entry of a flag (object code 1, <c>docs/rules/flags.md</c>): <c>0x44db26</c> hands <c>0x44da4d</c> the
-    /// object number 0x80, plus the animation frame (state <c>+0x206</c> shifted right 3, 2 bits; 0 here) and the top
+    /// object number 0x80, plus the animation frame (state <c>+0x206</c> shifted right 3, 2 bits; see <see cref="Entry"/>) and the top
     /// two bits of the node's object byte shifted right 4, which are clear on a flag node, and <c>0x44da4d</c> adds
     /// the 1250. <b>Inferred:</b> the colour offset of the top bits is not drawn: a flag on a node whose object byte
     /// has bit 7 set (a water triangle) takes 8 more in the original.
     /// </summary>
     public const int FlagEntry = FirstEntry + 0x80;
+
+    /// <summary>The number of frames a flag waves through: entries <see cref="FlagEntry"/> to <see cref="FlagEntry"/> plus 3.</summary>
+    public const int FlagFrames = 4;
 
     /// <summary>
     /// The sprite entry of the finished building of type 2, the woodcutter's hut (<c>docs/rules/woodcutting.md</c>): the
@@ -71,13 +74,14 @@ public static class ObjectSprites
     /// The sprite entry of a code at the frame counter <paramref name="counter"/> (the game state's <c>+0x206</c>, the
     /// game clock in clock units), or null where the view draws none (a code of 2 to 7 or above 127; 0 is no object).
     /// Indexes 0 to 15 (codes 8 to 23) run through 8 frames and indexes 16 to 23 (codes 24 to 31) through 4, with the
-    /// phase <c>(counter + index) &gt;&gt; 4</c> (<c>docs/rules/map-objects.md</c>).
+    /// phase <c>(counter + index) &gt;&gt; 4</c> (<c>docs/rules/map-objects.md</c>). A flag waves through
+    /// <see cref="FlagFrames"/> frames, <c>(counter &gt;&gt; 3) &amp; 3</c> (<c>0x44db26</c>).
     /// </summary>
     public static int? Entry(int code, ushort counter = 0)
     {
         if (code == FlagCode)
         {
-            return FlagEntry;
+            return FlagEntry + ((counter >> 3) & (FlagFrames - 1));
         }
 
         if (code is < FirstCode or > LastCode)
