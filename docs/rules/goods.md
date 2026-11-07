@@ -88,8 +88,9 @@ flag's item:
 - **Bit 7 set** (a good waits here to go along this road): the carrier's heading (byte 14) is the low byte of its stamp plus 6,
   the heading it came in: it goes on toward the flag.
 - **Else** the byte's bits 3 to 5 name the direction in which the road leaves the flag at its far end; byte `0x3c` plus that
-  direction of that flag, with bit 7 set (a good waits at the far end), gives the heading the low byte of the stamp less 3,
-  plus 6 where that went below 0: the carrier turns round. Where it has no bit 7 either, the carrier stays in state 0x42 and
+  direction of that flag, with bit 7 set (a good waits at the far end), gives the heading the low byte of the stamp (a signed
+  byte, the heading less 6) plus 3, plus 6 where that went below 0: the carrier turns round (`split-good-*` in
+  `road-splits.txt`, a carrier that came by 0 and one that came by 3). Where it has no bit 7 either, the carrier stays in state 0x42 and
   nothing changes.
 
 It then takes state 0x43, which every turn does the rest: where the node the carrier stands on holds no settler (the word at

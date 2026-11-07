@@ -29,6 +29,7 @@
     <None Include="flag-goods.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="home-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="road-splits.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="settler-draws.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

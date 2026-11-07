@@ -50,7 +50,9 @@ off.
 ### Flag
 
 A click puts a flag on the node. The node must lie in the castle's territory and allow a flag: for example, a flag
-does not go next to another flag, or on a tree or a stone.
+does not go next to another flag, or on a tree or a stone. A flag on a node of a road splits the road into two roads
+that meet at the new flag. The carrier of the old road keeps one half, and the other half waits for a carrier
+to come from the castle.
 
 ### Road
 
@@ -60,7 +62,11 @@ A road goes from a flag to a flag, one node per click.
 2. Click a node next to the end of the road. The road grows by that node. A node outside the territory, a node with
    a tree or a stone, or a node with a road and no flag is refused.
 3. Click the node before the end to take the last step back.
-4. Click a flag next to the end. The road is built, and the drawing ends.
+4. Click a flag next to the end. The road is built, and the drawing ends. The flag may be the one the road started
+   from: the road is then a loop, and it gets a carrier.
+
+A road cannot end on a node of another road that holds no flag. Put a flag on that road first, which splits it, and end
+the new road at the flag.
 
 Escape, a right click, a click on the Road button, another button, or a new map drops a road that is not finished.
 Nothing of it is left on the map. Escape also turns the Road button off.
@@ -68,7 +74,8 @@ Nothing of it is left on the map. Escape also turns the Road button off.
 ### Woodcutter
 
 A click puts a woodcutter's hut on the node and its flag on the node south-east of it. Where a flag with no building
-stands there already, the hut takes that flag. The node must be a site for a small or a large building: for example,
+stands there already, the hut takes that flag. Where a road runs through the node south-east of the hut, the flag splits that road like the
+Flag button does. The node must be a site for a small or a large building: for example,
 not a tree or a stone, and with nothing on or around the node south-east of it but such a flag. Connect the hut's flag
 to the castle with a road. The hut stands finished at once, and its worker walks to it from the castle.
 

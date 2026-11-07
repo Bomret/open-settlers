@@ -13,7 +13,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RemovalLogicTests
 {
-    private static ProgramTables Made(byte capacity = 8, byte[]? transportPriorities = null)
+    internal static ProgramTables Made(byte capacity = 8, byte[]? transportPriorities = null)
     {
         var classes = new byte[ProgramTables.ClassCount];
         classes[1] = 3;

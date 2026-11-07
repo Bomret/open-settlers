@@ -821,10 +821,10 @@ public sealed partial class Game
         var flag = _flags.FindIndex(f => f.X == flagX && f.Y == flagY);
         var site = Castle is null ? default : BuildSite.Evaluate(_tables, Map, x, y, 0, hasCastle: true);
         // **Inferred:** a small hut needs the site of a small or a large building (3 or 4), and either the flag standing
-        // south-east of it (node state 5) or nothing on or around that node (7). **Stand-in:** node state 6 (a road's bits
-        // on the south-east node) is refused.
+        // south-east of it (node state 5), a road's bits on that node (6), or nothing on or around it (7); the flag button
+        // takes the same states for its flag (4, 6, 7 of the flag's own node).
         var withFlag = site.Node == 5 && flag >= 0 && BuildingOfFlag(flag) is null;
-        if (site.Site < 3 || !(withFlag || site.Node == 7 && NextFlagSlot() < MaxFlags))
+        if (site.Site < 3 || !(withFlag || site.Node is 6 or 7 && NextFlagSlot() < MaxFlags))
         {
             return false;
         }
@@ -836,6 +836,13 @@ public sealed partial class Game
             FlagPlacement.Apply(Map, flagX, flagY, NextFlagSlot());
             flag = AddFlag(new Flag(flagX, flagY));
             RecordFlag(flag, EventType.PlaceFlag, CommandCause(FlagId(flag)));
+
+            // A flag on a road's node splits the road (0x4662e2), before the hut's mark at the flag is set below: the mark
+            // (bit 4 of the flag's direction byte) is no road bit.
+            if (site.Node == 6)
+            {
+                SplitRoad(Map.Index(flagX, flagY), flag, CommandCause(FlagId(flag)));
+            }
         }
 
         var node = Map.Index(x, y);

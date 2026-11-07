@@ -11,7 +11,8 @@ judgment of a node is in [Build sites](build-sites.md); the table the flags live
 
 The flag button (`0x442244`) runs the build-site evaluator on the node under the cursor and goes on to the
 placement (`0x4422c5`) where the site is not 0 and the node state is 4, 6, or 7. Otherwise it asks for the error
-sound and changes nothing. The placement itself checks nothing more about the node: the evaluator holds every
+sound and changes nothing. A node state of 4 is a node on a road, and the placement then splits the road
+([Roads](roads.md#a-flag-on-a-road)). The placement itself checks nothing more about the node: the evaluator holds every
 condition, among them the spacing to other flags and objects:
 
 - A node that holds a flag, a building, a tree, or a stone gets no site, so no flag goes on it.
@@ -51,9 +52,14 @@ For a node the evaluator allowed:
    `0x44a0aa` runs with a carry of 0), and the move crosses the column wrap; both are read from the decompile, no
    emulator run backs them.
 4. The slot number is stored as the node's link, in the byte the resource layer shares (the same byte as step 3).
+5. **A road under the node.** Where the evaluator's node state is 4, the placement ends with `Road_SplitAtFlag`
+   (`0x4662e2`): the node's road becomes two roads that end at the new flag, the new flag's item takes the two roads'
+   bits, lengths, links, and carriers, and the two old end flags link to the new flag. The flag button, a click in road
+   mode with the second pointer button held, and a building whose flag node holds a road all reach it. **Confirmed,
+   emulated;** every field and the carrier of each half are in [Roads](roads.md#a-flag-on-a-road).
 
-The flag table's item is cleared to zero and the placement fills no field of it; the road commit ([Roads](roads.md))
-fills the road bits and the links to the other flags. **Inferred (not read from the allocator's limit):** the table has a slot limit (state
+The flag table's item is cleared to zero and the placement fills no field of it itself; the road commit ([Roads](roads.md))
+fills the road bits and the links to the other flags. Where the node holds road bits (node state 4), step 5 above does. **Inferred (not read from the allocator's limit):** the table has a slot limit (state
 `+0x258`) that `Game_Init` (`0x41dbea`) computes from a division of a value it reads at start-up. It is not
 recovered, and the harness sets 100. The engine holds 256 flags, the most a one-byte link names. A flag past that
 is refused (`simplicity:` ceiling).
@@ -67,8 +73,10 @@ flag's, sends the worker home, releases what waits for it, and takes the flag do
 ([Removal](removal.md#taking-a-building-down)); a flag is taken down by `0x462153`
 ([Removal](removal.md#taking-a-flag-down)).
 
-`0x4422c5` has a second caller, the in-game click handler (`0x440c24`), which this slice does not recover: the
-handler may place a flag without the button's check. Open lead.
+`0x4422c5` has two more callers, both in the road click step (`0x443f62`, inside the click handler `0x440c24`): it
+places a flag, without the button's check, on a node of a road or on an empty node when the second pointer button is held
+([Roads](roads.md#the-pointer-button-that-places-a-flag-on-a-road)). Those calls judge the node with the evaluator first
+and place a flag where the site is not 0; unlike the button they ask for no node state in particular.
 
 ## How a flag is drawn
 
@@ -94,3 +102,4 @@ castle's flag is the first. The digest holds the flags and the total of resource
 state. The map view's stand-in flag button (`src/Viewer/MapViewControl.cs`) turns a click into `PlaceFlag`;
 `ObjectSprites.FlagEntry` and `ObjectDraws` draw the flags with the objects. Departures: the table limit, the
 border bits that are not set anyway, the colour bits, the refusal before the castle, and the goods that wait.
+(The engine splits a road under the new flag, as `Game.PlaceFlag` and a building's flag do through `SplitRoad`: [Roads](roads.md#a-flag-on-a-road).)
