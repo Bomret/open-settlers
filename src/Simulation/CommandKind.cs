@@ -29,8 +29,10 @@ public static class CommandKind
     public const int BuildRoad = 3;
 
     /// <summary>
-    /// Places a woodcutter's hut on the node of the command, tied to the flag south-east of it. The hut stands finished
-    /// at once: a stand-in for the construction (M4), not a rule of the original. Later slices add the other types.
+    /// Places a woodcutter's hut on the node of the command. A building brings its flag on the node south-east of it,
+    /// takes the flag already there, or splits the road there (<c>docs/rules/build-sites.md</c>, "Placing a building").
+    /// The hut stands finished at once: a stand-in for the construction (M4), not a rule of the original. Later slices
+    /// add the other types.
     /// </summary>
     public const int PlaceBuilding = 4;
 

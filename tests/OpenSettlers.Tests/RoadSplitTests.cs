@@ -28,4 +28,16 @@ public sealed class RoadSplitTests
     [DynamicData(nameof(Scenarios))]
     public void AFlagOnARoadSplitsItAsTheOriginalDoes(string name) =>
         RemovalTests.Replay(Fixture, name, (_, _) => [CommandKind.PlaceFlag], line => !line.ContainsKey("m"));
+
+    // The building button's click (0x449a63) on a node whose flag node holds a road splits the road under the hut's flag; the
+    // click's map bytes and the flags' items are the original's. The passes after it differ (the hut stands finished at once).
+    [TestMethod]
+    public void AHutWhoseFlagLandsOnARoadSplitsItAsTheOriginalDoes() =>
+        RemovalTests.Replay(
+            Fixture,
+            "building-state6",
+            (click, _) => [click == 'b' ? CommandKind.PlaceBuilding : CommandKind.PlaceFlag],
+            line => false,
+            clickOnly: true
+        );
 }
