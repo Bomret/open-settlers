@@ -17,10 +17,10 @@ public sealed class ProgramTablesTests
     private const ulong FnvPrime = 0x100000001b3;
     private const int ImageBase = 0x400000;
     private const int SectionStart = 0x1e000;
-    private const int SectionSize = 0x50000;
+    private const int SectionSize = 0x260000;
     private const int RawStart = 0x200;
 
-    // A PE32 file with one section that holds the addresses 0x41e000 to 0x46e000 at the file offset 0x200, with a made-up
+    // A PE32 file with one section that holds the addresses 0x41e000 to 0x67e000 (the waiting carriers' offsets lie at 0x674923) at the file offset 0x200, with a made-up
     // default transport priority order: the routine's instructions give good g the rank 27 - g.
     private static byte[] Executable(Action<byte[]> fill, int sectionAt = SectionStart)
     {
@@ -190,8 +190,8 @@ public sealed class ProgramTablesTests
     {
         var tables = TestProgram.Tables();
 
-        // peek:4501a1:512 (256 words, 8 for each job) and peek:4503c5:1024 (512 words, 2 for each figure byte).
-        Assert.AreEqual(0x25D56F6459E7D367UL, Fnv(tables.FigureBases.SelectMany(BitConverter.GetBytes).ToArray()));
+        // peek:4501a1:548 (274 words, 2 for each row 0 to 0x88) and peek:4503c5:1024 (512 words, 2 for each figure byte).
+        Assert.AreEqual(0x7A4340847303DFB6UL, Fnv(tables.FigureBases.SelectMany(BitConverter.GetBytes).ToArray()));
         Assert.AreEqual(0x9074A7BD864B08BDUL, Fnv(tables.FigureOffsets.SelectMany(BitConverter.GetBytes).ToArray()));
     }
 
@@ -457,4 +457,19 @@ public sealed class ProgramTablesTests
     }
 
     private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
+
+    // The waiting carriers' tables of the reference build (0x44d87d, 0x44d89d, 0x674923): the first phase word, the first
+    // figure word (row 0x88), and the offsets of a node whose road runs north and south (directions 2 and 5, bits 0x24).
+    [TestMethod]
+    public void TheWaitingCarriersTablesAreReadFromTheProgram()
+    {
+        var tables = TestProgram.Tables();
+
+        Assert.AreEqual(0x0240, tables.IdlePhases[0]);
+        Assert.AreEqual(unchecked((short)0x8800), tables.IdleFigures[0]);
+        Assert.AreEqual((sbyte)2, tables.IdleOffsets[2 * 0x24]);
+        Assert.AreEqual((sbyte)1, tables.IdleOffsets[2 * 0x24 + 1]);
+        // The row 0x88 of the figure bases, the last before the figure offsets: the base 192 and no second figure.
+        CollectionAssert.AreEqual(new short[] { 192, -1 }, tables.FigureBases[(2 * 0x88)..(2 * 0x88 + 2)]);
+    }
 }

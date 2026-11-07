@@ -1,0 +1,35 @@
+# A woodcutter placed with no flag standing puts its flag down on the node south-east of it; a road from the castle's flag
+# to that flag then brings the woodcutter's log home.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   sh tools/play-run.sh hut-flag --game-view --seed 1234567812345678 --size 1 --fps 10
+# On that map the castle stands at 21,4, so its flag is at 22,5. The woodcutter goes to 26,4, its flag to 27,5.
+expect seed = 1234567812345678
+expect size = 1
+wait 0.3
+click-tile 21 4
+wait 0.3
+
+button Woodcutter
+click-tile 26 4
+button Woodcutter
+wait 0.3
+expect-at 26 4 building
+expect-at 27 5 flag
+shot placed 26 4 1 2
+
+button Road
+click-tile 22 5
+click-tile 23 5
+click-tile 24 5
+click-tile 25 5
+click-tile 26 5
+click-tile 27 5
+button Road
+wait 0.3
+expect-at 25 5 road
+shot road
+
+# The castle starts with 4 logs; a fifth is the woodcutter's.
+wait 240
+expect logs >= 5
+shot log

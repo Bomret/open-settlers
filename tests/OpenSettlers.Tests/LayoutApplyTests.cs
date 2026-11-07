@@ -19,7 +19,6 @@ public sealed class LayoutApplyTests
     const string FlagRefusal =
         "the original's flag button does not allow a flag on the node: the castle must stand, and the node must hold no flag, "
         + "no building, and no object that blocks it";
-    const string HutRefusal = "the node is no site for a hut with the flag south-east of it standing and free";
     const string RoadRefusal =
         "a step is not allowed where the original's road drawing allows it, or the last step reaches no flag; list the flag "
         + "at the end before the road";
@@ -110,11 +109,13 @@ public sealed class LayoutApplyTests
     }
 
     [TestMethod]
-    public void ABuildingWithNoFlagStandingFailsTheLoad()
+    public void ABuildingWithNoFlagStandingPutsItsFlagDown()
     {
         var layout = Read(Castle + Hut);
+        var game = NewGame(layout);
 
-        Assert.AreEqual("test.jsonc: buildings[0]: " + HutRefusal, layout.Apply(NewGame(layout)));
+        Assert.IsNull(layout.Apply(game));
+        Assert.IsTrue(game.Flags.Any(flag => (flag.X, flag.Y) == (14, 11)));
     }
 
     [TestMethod]

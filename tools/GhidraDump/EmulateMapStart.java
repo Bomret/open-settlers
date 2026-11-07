@@ -72,6 +72,7 @@
 //                            0x428d10 after 0x428728, as the main loop 0x4286d8 does, the hut node and its flag take the marks the castle leaves, and a line per pass also lists the object
 //                            bytes that changed (o=x,y:old>new;...), the flag items of slots 0 to 15 that changed (f<slot>=), and
 //                            the random generator's words (rng=) when they moved. A building of type 2 is the woodcutter's hut.
+//                            worker, wood, and goods lines also carry m= as carrier does.
 //   goods:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PUT;PUT...]]]
 //                            wood: in a game that starts as the original's game start leaves its tables: flag slot 0 is the
 //                            dummy the allocator 0x45d7ad takes at the end of MapGen_InitParams (0x421530), so the castle's
@@ -87,7 +88,9 @@
 //                            the passes of worker (docs/rules/carriers.md) on a game with a castle, flags, and roads and no
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
 //                            lists the settlers, the flags (f<slot>=, 70 bytes), and the storage item that changed, in hex. The
-//                            roads after AT are built before pass AT.
+//                            roads after AT are built before pass AT. m= lists the nodes whose byte 1 of record B is not 0,
+//                            as x,y:BB,FF with that byte and byte 0 of record A, when that set changed (a waiting carrier's
+//                            mark, docs/rules/carriers.md).
 //   draw:WINDOWS:CX,CY:VERB...
 //                            the settler draw path (docs/rules/settlers.md) after the passes of carrier, wood, goods, home, or remove in
 //                            the windows, a verb of EmulateDraw.java (see its header); this script refuses it
@@ -117,7 +120,8 @@
 //                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
 //                            before that pass, as goods does, with the destination word DEST. A line per click and per pass lists
-//                            what changed: the map bytes of flags, object, and link (m=x,y:i=old>new), the settlers (s<slot>=, 16
+//                            what changed: the map bytes of flags, object, link, and the waiting carrier's mark (record B byte 1,
+//                            i=5) (m=x,y:i=old>new), the settlers (s<slot>=, 16
 //                            bytes), the flag items (f<slot>=, 70 bytes), the building items (b<slot>=, 18 bytes), the storage item
 //                            (st=), the counts of the tables (c=), the total of resource 1 (r1=), and the generator (rng=).
 //   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
@@ -1095,6 +1099,7 @@ public class EmulateMapStart extends GhidraScript {
                 println("EMU " + label + " road=" + road + (silentRoad(width, road) ? " BUILT" : " REFUSED"));
             }
         }
+        String markSeen = "";
         int clock = 0;
         putWord(STATE + PHASE, 0);
         int warm = parts.length > 8 ? Integer.parseInt(parts[8]) : 0;
@@ -1243,6 +1248,7 @@ public class EmulateMapStart extends GhidraScript {
                 line.append(" st=").append(hex(TABLES + 0x60000, 120));
                 storage = snow.clone();
             }
+            markSeen = appendMarks(line, markSeen);
             println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + line);
         }
     }
@@ -1338,7 +1344,7 @@ public class EmulateMapStart extends GhidraScript {
                 int a = ty * 8 * width + tx * 4;
                 int b = a + 4 * width;
                 StringBuilder diff = new StringBuilder();
-                for (int i : new int[] {0, 3, 4}) {
+                for (int i : new int[] {0, 3, 4, 5}) {
                     int at = (i < 4 ? a : b) + (i & 3);
                     if (after.map[at] != before.map[at]) {
                         diff.append("/").append(i).append("=").append(String.format("%02X>%02X", before.map[at] & 0xff,
@@ -1624,6 +1630,7 @@ public class EmulateMapStart extends GhidraScript {
             }
         }
         println("EMU " + label + " pass=start" + start + " st=" + hex(TABLES + 0x60000, 120));
+        String markSeen = "";
         int clock = 0;
         for (int pass = 0; pass < passes; pass++) {
             if (pass == lateAt && !late.isEmpty()) {
@@ -1656,6 +1663,7 @@ public class EmulateMapStart extends GhidraScript {
                 line.append(" st=").append(hex(TABLES + 0x60000, 120));
                 storage = snow.clone();
             }
+            markSeen = appendMarks(line, markSeen);
             println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + line);
         }
     }
@@ -1667,6 +1675,35 @@ public class EmulateMapStart extends GhidraScript {
      * clock (+0x206) is the 16-bit whole clock units after this pass. Returns the phase the slices ran with.
      */
     private boolean objectPass;
+
+    /**
+     * Appends m= to a pass line when the set of nodes whose byte 1 of record B is not 0 changed, and returns the set.
+     * Each node is x,y:BB,FF with that byte and byte 0 of record A. The tile pass (0x44d5b4) draws a figure on a node
+     * where bit 7 of that byte is set (0x44d77e).
+     */
+    protected String appendMarks(StringBuilder line, String seen) throws Exception {
+        int bits = getWord(STATE + 0x30);
+        long layerA = getInt(STATE + MAP_BUFFER);
+        int layerB = getWord(STATE + 0x36);
+        int width = getWord(STATE + 0x32) + 1;
+        int height = getWord(STATE + 0x34) + 1;
+        StringBuilder marks = new StringBuilder();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                long node = (((long) y << bits) + x) * 4;
+                int mark = emu.readMemory(toAddr(layerA + layerB + node + 1), 1)[0] & 0xff;
+                if (mark != 0) {
+                    int flagsByte = emu.readMemory(toAddr(layerA + node), 1)[0] & 0xff;
+                    marks.append(marks.length() == 0 ? "" : ";").append(x).append(',').append(y).append(':')
+                            .append(String.format("%02X,%02X", mark, flagsByte));
+                }
+            }
+        }
+        if (!marks.toString().equals(seen)) {
+            line.append(" m=").append(marks);
+        }
+        return marks.toString();
+    }
 
     /** Runs after each pass of worker, carrier, remove, and home, with the pass number and the clock; EmulateDraw overrides it. */
     protected void afterPass(int pass, int clock) throws Exception {

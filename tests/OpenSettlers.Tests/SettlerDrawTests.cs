@@ -250,7 +250,8 @@ public sealed class SettlerDrawTests
             void Check(string where, SortedDictionary<int, byte[]> state)
             {
                 var settlers = state.Values.Select(bytes => FromBytes(bytes, width)).ToList();
-                var drawn = graphics.Figures.Draws(map, settlers, pass.Clock, graphics.Shifts);
+                // The draw verb runs the settlers' draw path only (0x42f4f1, 0x44ffe7), not the tile pass.
+                var drawn = graphics.Figures.Draws(map, settlers, pass.Clock, graphics.Shifts, tilePass: false);
 
                 // The view draws a sprite from the layers the graphics loaded: a draw with no layer is a failure, not a skip.
                 var unloaded = drawn.Where(draw => !graphics.Layers.ContainsKey((draw.Entry, draw.Colour))).ToList();

@@ -107,19 +107,56 @@ public sealed class HutTests
         Assert.AreEqual(2, game.Map.Layer(MapLayer.Object)[game.Map.Index(16, 2)] & 0x7f);
     }
 
+    // The original's placement (0x449a63) puts the building's flag on the south-east node where none stands there (node
+    // state other than 5): the hut and its flag go down in one command.
     [TestMethod]
-    public void ASpotWithNoFlagSouthEastOfItChangesNoState()
+    public void AHutPlacedWhereNoFlagStandsPutsItsFlagDownSouthEastOfIt()
+    {
+        var game = World();
+        var (x, y) = FreeSite(game);
+
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, x, y));
+        game.Tick();
+
+        Assert.AreEqual(2, game.Buildings.Count);
+        var hut = game.Buildings[1];
+        Assert.AreEqual((x, y), (hut.X, hut.Y));
+        Assert.AreEqual((x + 1, y + 1), (game.Flags[hut.Flag].X, game.Flags[hut.Flag].Y));
+        Assert.AreEqual(Flags.Length + 1, hut.Flag);
+        Assert.AreEqual(1, game.Map.Layer(MapLayer.Object)[game.Map.Index(x + 1, y + 1)] & 0x7f);
+    }
+
+    [TestMethod]
+    public void ASpotWithNoRoomForABuildingChangesNoState()
     {
         var refused = World();
         var control = World();
 
-        // The flag at 17,3 stands south-east of 16,2; 17,2 has none south-east of it.
+        // 17,2 has the flag at 17,3 as its south neighbour, which leaves it no site for a building.
         refused.Enqueue(new Command(refused.TickCount, 0, CommandKind.PlaceBuilding, 17, 2));
         refused.Tick();
         control.Tick();
 
         Assert.AreEqual(1, refused.Buildings.Count);
         Assert.AreEqual(control.Digest(), refused.Digest(), "a refused command changes no state");
+    }
+
+    // A node of the castle's land with a site for a building and nothing on or around its south-east node (node state 7).
+    private static (int X, int Y) FreeSite(Game game)
+    {
+        for (var y = 0; y < game.Map.Size.Height - 1; y++)
+        {
+            for (var x = 0; x < game.Map.Size.Width - 1; x++)
+            {
+                var site = BuildSite.Evaluate(Made(), game.Map, x, y, 0, hasCastle: true);
+                if (site is { Node: 7, Site: >= 3 })
+                {
+                    return (x, y);
+                }
+            }
+        }
+
+        throw new AssertFailedException("the map holds no free site");
     }
 
     [TestMethod]

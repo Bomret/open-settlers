@@ -11,6 +11,13 @@ namespace OpenSettlers.MapView;
 public readonly record struct SettlerDraw(int Row, int Entry, int Colour, int X, int Y);
 
 /// <summary>
+/// The tables the tile pass draws a waiting carrier with (<c>0x44d77e</c>): 16 phase words (<c>0x44d87d</c>), 128 figure words
+/// (<c>0x44d89d</c>), and the x and y offsets, as signed bytes, for each value of a node's six road direction bits
+/// (<c>0x674923</c>).
+/// </summary>
+public sealed record IdleCarrierTables(short[] Phases, short[] Figures, sbyte[] Offsets);
+
+/// <summary>
 /// Which sprites a walking settler is drawn with (<c>docs/rules/settlers.md</c>, "Drawing the walk"). The settler's frame
 /// (the shape of its step, which holds the direction) picks a sequence of (figure byte, dx, dy) triples from entry 2 of the
 /// graphics archive; the time left of the step, in ticks (8 clock units), picks the triple. The job's handler
@@ -88,6 +95,18 @@ public sealed class SettlerFigures
     private readonly FigureAdds _woodcutter;
     private readonly sbyte[] _frameRows;
     private readonly HutFigureAdds _typeOneHut;
+    private readonly IdleCarrierTables? _idle;
+
+    // A carrier that waits off its node: it takes state 0x42 at the end of its road (0x43bc52), state 0x43 when it has a good
+    // to fetch and its node is taken, and 0x44 or 0x45 when its road goes (docs/rules/removal.md). From 0x42 on its node
+    // holds a mark (byte 1 of record B: bit 7 and the player) until it takes the node again (0x42ff81, 0x43007b).
+    private const int StatesWaitingFirst = 0x42;
+    private const int StatesWaitingLast = 0x45;
+
+    // The node's flag byte: bit 6 picks the fixed figure word, the low six bits (the road directions) the offsets (0x44d77e).
+    private const int FixedFigureBit = 0x40;
+    private const int FixedFigureWord = 0x203;
+    private const int RoadDirectionBits = 0x3f;
 
     // The woodcutter's handler (0x43fb6b) tests the figure byte for bit 7, and the settler's byte 13 (the high byte of the
     // target), byte 14 (the heading), and state for the way back with the log.
@@ -108,9 +127,11 @@ public sealed class SettlerFigures
         short[]? carried = null,
         FigureAdds woodcutter = default,
         sbyte[]? frameRows = null,
-        HutFigureAdds typeOneHut = default
+        HutFigureAdds typeOneHut = default,
+        IdleCarrierTables? idle = null
     )
     {
+        _idle = idle;
         _typeOneHut = typeOneHut;
         _frameRows = frameRows ?? [];
         _woodcutter = woodcutter;
@@ -123,13 +144,15 @@ public sealed class SettlerFigures
     /// <summary>
     /// The sprites of the settlers that walk, in the order of their rows, each settler's figure, overlay, and second figure in
     /// that order; the clock is the game's (16 bits). <paramref name="shifts"/> holds the header bytes 0 and 1 of a figure
-    /// entry, the shift of its second figure; a figure it leaves out shifts nothing.
+    /// entry, the shift of its second figure; a figure it leaves out shifts nothing. With <paramref name="tilePass"/> the
+    /// waiting carriers that the tile pass draws (<c>0x44d77e</c>) follow the settlers of their row.
     /// </summary>
     public List<SettlerDraw> Draws(
         Map map,
         IReadOnlyList<Settler> settlers,
         ushort clock,
-        IReadOnlyDictionary<int, (int X, int Y)>? shifts = null
+        IReadOnlyDictionary<int, (int X, int Y)>? shifts = null,
+        bool tilePass = true
     )
     {
         var records = new List<(int Y, int X, List<SettlerDraw> Sprites)>();
@@ -179,14 +202,83 @@ public sealed class SettlerFigures
             }
         }
 
+        // 0x44d3ae draws each row's settler records (0x44ffe7), then the records the tile pass made for that row's nodes
+        // (0x44fff3 on the list at 0x6749a3), which are the waiting carriers' (0x44d77e).
+        var idle = tilePass ? IdleRecords(map, settlers, clock, shifts) : [];
+
         return
         [
             .. records
+                .Select(record => (Order: 0, record.Y, record.X, record.Sprites))
+                .Concat(idle.Select(record => (Order: 1, record.Y, record.X, record.Sprites)))
                 .OrderBy(record => record.Sprites[0].Row)
+                .ThenBy(record => record.Order)
                 .ThenBy(record => record.Y)
                 .ThenBy(record => record.X)
                 .SelectMany(record => record.Sprites),
         ];
+    }
+
+    // The records the tile pass makes for the nodes marked by a waiting carrier (0x44d77e). The figure word is 0x203 where bit
+    // 6 of the node's flag byte is set; else the word of the table at 0x44d89d at the phase of the node plus the clock, shifted
+    // right 3. The position is the node lifted by 4 times its height (no lift of 2, unlike 0x43f537), plus, for the second
+    // kind, the offsets of the node's road directions.
+    private List<(int Y, int X, List<SettlerDraw> Sprites)> IdleRecords(
+        Map map,
+        IReadOnlyList<Settler> settlers,
+        ushort clock,
+        IReadOnlyDictionary<int, (int X, int Y)>? shifts
+    )
+    {
+        var records = new List<(int Y, int X, List<SettlerDraw> Sprites)>();
+        if (_idle is null)
+        {
+            return records;
+        }
+
+        foreach (var settler in settlers)
+        {
+            if (settler.Job != Settler.CarrierJob || settler.State is < StatesWaitingFirst or > StatesWaitingLast)
+            {
+                continue;
+            }
+
+            var node = map.Index(settler.X, settler.Y);
+            var flags = map.Layer(MapLayer.Flags)[node];
+            var height = map.Layer(MapLayer.Height)[node] & Map.HeightMask;
+            var (x, y) = Camera.NodePosition(settler.X, settler.Y);
+            y -= height * TerrainTriangles.HeightStep;
+            int word;
+            if ((flags & FixedFigureBit) != 0)
+            {
+                word = FixedFigureWord;
+            }
+            else
+            {
+                // **Stand-in:** the original picks the phase by bits 2 to 5 of the address of the node's record, so by the
+                // node's column only where the map buffer starts on a multiple of 64; the engine takes the column.
+                var phase = _idle.Phases[settler.X & (_idle.Phases.Length - 1)];
+                word = (ushort)_idle.Figures[((ushort)(phase + clock) >> 3) & (_idle.Figures.Length - 1)];
+                var direction = flags & RoadDirectionBits;
+                x += _idle.Offsets[2 * direction];
+                y += _idle.Offsets[2 * direction + 1];
+            }
+
+            // The record is drawn as a settler's is (0x44fff3): the figure, the overlay, and the shifted second figure.
+            var sprites = new List<SettlerDraw>();
+            foreach (var (entry, colour, shiftedBy) in Entries(word, ColourOf(settler.Player)))
+            {
+                var shift = shiftedBy >= 0 && shifts is not null ? shifts.GetValueOrDefault(shiftedBy) : default;
+                sprites.Add(new SettlerDraw(settler.Y, entry, colour, x + shift.X, y + shift.Y));
+            }
+
+            if (sprites.Count > 0)
+            {
+                records.Add((settler.Y, settler.X, sprites));
+            }
+        }
+
+        return records;
     }
 
     /// <summary>
@@ -203,6 +295,18 @@ public sealed class SettlerFigures
             if (start > TableEnd - 4)
             {
                 starts.Add(start);
+            }
+        }
+
+        // A waiting carrier is drawn with the figure words of the tile pass (0x44d77e).
+        if (job == Settler.CarrierJob && _idle is not null)
+        {
+            foreach (var word in _idle.Figures.Select(word => (int)(ushort)word).Append(FixedFigureWord).Distinct())
+            {
+                foreach (var (entry, fill, _) in Entries(word, colour))
+                {
+                    yield return (entry, fill);
+                }
             }
         }
 

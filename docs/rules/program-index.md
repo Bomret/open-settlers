@@ -273,6 +273,10 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x44e114` | `Gfx_SpriteLists` | Data: 25 inline sprite lists in the code band, entries 0 or 8, read by the site `0x44e0d1`. | inferred | game |
 | `0x44f225` | `Gfx_BuildingPairTable` | Data: 128 byte pairs inline in the code band (up to `0x44f325`); first bytes 162 to 173, read with an even index by the eight sites from `0x44ee56`. | confirmed | game |
 | `0x44fd16` | `Gfx_ObjectNumberTable` | Data: inline byte table in the code band of object numbers (152 to 193) for the shadow path through `0x44fcd0` to `0x44ff2a`; sibling of the table at `0x44fcfe`. | confirmed | game |
+| `0x44d87d` | `Render_WaitingCarrierPhases` | Data: in the code band, 16 words, the phase of a waiting carrier's figure by the tile record's address. | confirmed | game |
+| `0x44d89d` | `Render_WaitingCarrierFigures` | Data: in the code band, 128 figure words of a waiting carrier, in the figure rows 0 and `0x88`; read at the phase plus the clock. | confirmed | game |
+| `0x674923` | `Render_WaitingCarrierOffsets` | Data: 64 pairs of signed bytes, x then y, one for each value of the six road direction bits of a tile's record A byte 0. Only `Render_AddWaitingCarrier` reads it. | confirmed | game |
+| `0x6749a3` | `Render_WaitingCarriers` | Data: the list of draw records `Render_DrawRowTiles` builds for one row; `Render_DrawViewRows` draws it through `Gfx_DrawSettlerRecords` right after the row's settler records (`0x44d4c1`, `0x44d56e`). | confirmed | game |
 | `0x4501a1` | `Settler_FigureBases` | Data: in the code band, 8 words for each job (137 pairs): the figure base in the entries from 1850 and a second figure from 3150. | confirmed | game |
 | `0x4503c5` | `Settler_FigureOffsets` | Data: in the code band, two words for each figure byte, added to both entry fields by `Gfx_DrawSettlerRecords` at `0x450128` to `0x45014c`. | confirmed | game |
 
@@ -312,7 +316,8 @@ Sites:
 | `0x45ce5a` | `Panel_CopyToScreen` | For each view, copies the panel into the view's screen. | inferred | game | Called by `Main_Loop`. |
 | `0x44d38d` | `Render_DrawMapView` | For each view, draws the map row by row. | inferred | game | Called by `Main_Loop` in a game. |
 | `0x44d3ae` | `Render_DrawViewRows` | Walks the rows of one view two at a time and runs `Render_DrawRowTiles` for each. | confirmed | game | Called by `Render_DrawMapView`. See [Map objects](map-objects.md). |
-| `0x44d5b4` | `Render_DrawRowTiles` | Draws the tiles of one row from west to east: for the object code in byte 3 of record A, no sprite for 0, other routines for 1 to 7, the animated or still sprite through `Gfx_DrawObjectSprite` from 8 on. | confirmed | game | Called by `Render_DrawViewRows`. See [Map objects](map-objects.md). |
+| `0x44d77e` | `Render_AddWaitingCarrier` | Appends a draw record (the low two bits of record B byte 1, the figure word, x, y) to the list at `Render_WaitingCarriers` for a tile whose record B byte 1 has bit 7 set. Where bit 6 of the tile's record A byte 0 is set, the figure word is `0x203` and the position the tile's (x the column counter times 8, y the row position less 4 times the height). Otherwise it takes a phase word from `Render_WaitingCarrierPhases` at bits 1 to 4 of the tile record's address shifted right 1 (`0x44d832`), adds the clock (`+0x206`), shifts right 2, masks with `0xfe`, and takes that byte offset in `Render_WaitingCarrierFigures` as the figure word (`0x44d85d`). It then adds the two signed bytes of `Render_WaitingCarrierOffsets` at twice the low six bits of record A byte 0 to the position (`0x44d9b2`). | confirmed | game | Called at `0x44d5ef` by `Render_DrawRowTiles`. [Carriers](carriers.md#drawing). |
+| `0x44d5b4` | `Render_DrawRowTiles` | Draws the tiles of one row from west to east. For each tile it first reads byte 1 of record B (at the state's `+0x36` from the tile's record) and calls `Render_AddWaitingCarrier` where bit 7 is set (`0x44d5ef`). Then, for the object code in byte 3 of record A: no sprite for 0, other routines for 1 to 7, the animated or still sprite through `Gfx_DrawObjectSprite` from 8 on. It starts the list at `Render_WaitingCarriers` and ends it with `0xffff`. | confirmed | game | Called by `Render_DrawViewRows`. See [Map objects](map-objects.md). |
 | `0x450a35` | `Render_DrawViewOverlay` | For each view, draws sprite lists over the map. | inferred | game | Called by `Main_Loop` in a game. |
 | `0x44d2fc` | — | For each view, copies a rectangle from the surface at `+0x108` into the view's screen. | unknown | game | Called by `Main_Loop` in a game. |
 | `0x424d87` | `Minimap_Build` | Writes one byte per tile from terrain and height to the buffer at `+0x8c`. | inferred | game | Called by `MapGen_Generate` and `Game_ResumeLoaded`. |
@@ -380,7 +385,7 @@ entries per phase (see "Item tables").
 | `0x43ad78` | `Settler_WalkRoad` | State 3: a carrier on its road. When the timer has run out it steps from a flag in the direction of its heading or from a road node in the road's other direction, through `0x43b788` and its siblings (the entries of the table at `0x43b508`); a step that would end at a flag is its last, and a carrier that carries a good, or finds a good waiting for its road at that flag, steps onto the flag. On a flag it delivers a good it carries to the flag's own destination (`0x43c45e`, state 0xe) or swaps goods with the flag (`0x43af07`). | confirmed | game | Entry 3 of `0x42fca1`. [Carriers](carriers.md#the-carriers-walk), [Goods at a flag](goods.md#the-carriers-exchange-at-a-flag). |
 | `0x43c4ea` | `Settler_DeliverGood` | State 0xe (entered at `0x43c45e`): the carrier on a building's flag. When the timer has run out, a good carried gains `0x0f` in byte 8 or 9 of the building's item and, on a carry out of the byte, one in the building's storage word for the good (at most 50000); then the frame is turned round and, at the next run-out, the carrier takes state 3 again. | confirmed | game | Entry 0xe of `0x42fca1`. [Goods at a flag](goods.md#the-delivery-into-the-castle). |
 | `0x43b788` | `Settler_StepRoadEast` | The step east of `Settler_WalkRoad` (the siblings `0x43b9eb`, `0x43bda1`, `0x43c008`, `0x43c156`, `0x43c29c` step south-east, south, west, north-west, north): the carrier next to the flag at the end of its road takes state 0x42; a free node is stepped to as in state 2; an occupied one is marked in the heading (the direction less 6) and tried again, or swapped with a settler coming the other way (not ported). | confirmed | game | Entries of the table at `0x43b508`. [Carriers](carriers.md#the-carriers-walk). |
-| `0x42ff81` | `Settler_CarrierWaits` | State 0x42: a carrier waits next to a flag at the end of its road. A good waiting at the near flag or at the far end of the road sends the carrier on (state 0x43, which `0x43001a` runs at once, then state 3); else the item does not change. | confirmed | game | Entry 0x42 of `0x42fca1`. [Carriers](carriers.md#the-carriers-walk), [Goods at a flag](goods.md#the-carrier-told-to-fetch). |
+| `0x42ff81` | `Settler_CarrierWaits` | State 0x42: a carrier waits next to a flag at the end of its road. A good waiting at the near flag or at the far end of the road sends the carrier on (state 0x43, which `0x43001a` runs at once, then state 3); else the item does not change. In the state `0x43` part (`0x43001a`), where its node's settler word is 0, it clears byte 1 of record B of the node and takes the node. | confirmed | game | Entry 0x42 of `0x42fca1`. [Carriers](carriers.md#the-carriers-walk), [Goods at a flag](goods.md#the-carrier-told-to-fetch). |
 | `0x42ca7a` | `Route_NextGeneration` | Counts the generation (`+0x26e`) that marks the flags a search has reached; when it wraps, clears the mark of every `Table70` item. | confirmed | game | Called by the searches and by `0x42965c`, `0x45d3ea`, `0x46414d`. |
 | `0x42fc81` | `Settler_Dispatch` | Runs the turn of the settler at the item pointer: jumps through the table at `0x42fca1` (8 bytes an entry) by the state byte (item `+0xa`). | confirmed | game | Called by `0x42f3d9` and `0x42f512`. |
 | `0x438eeb` | `Settler_WaitInStorage` | State 1: a settler in a storage enters its slot in the storage's list of waiting settlers by its job (`+0x42` plus twice the job); the knights' jobs take their own branches. | confirmed | game | Entry 1 of `0x42fca1`. |
@@ -604,6 +609,7 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x45dd1c` | `Table120_Allocate` | Takes the first free slot of the storage table ([Item tables](item-tables.md)). | confirmed | game | Called by `Castle_Place`. |
 | `0x45e121` | `Table16_Allocate` | Takes the first free slot of the settler table ([Item tables](item-tables.md)). | confirmed | game | Called by `0x421530`, `Settler_TakeFromStorage`, and `0x41f2d2`. |
 | `0x449f58` | `Flag_MoveDeposit` | Moves the resource deposit of a node that is about to hold a flag to the nodes around it. | confirmed | game | Called by `Flag_Place` and `0x449a63`. |
+| `0x449a63` | `Building_Place` | Places a building on the judged node (`+0xfc`, `+0xfe` of the player block): takes a building slot, and a flag slot unless the node state at `+0x100` is 5. It writes the building's object and marks on the node. Where the node state is not 5 it writes a flag on the south-east node as `Flag_Place` does: the object code 1, the flag bit `0x80`, the deposit moved through `Flag_MoveDeposit`, and the new slot as the link. Where the node state is 5 it takes the flag that stands there. | confirmed | game | The dump names `0x41f2d2` and `0x42cf9d` as callers; the click path that reaches it is not recovered. See [Castle and build sites](build-sites.md#placing-a-building). |
 | `0x44a0aa` | `Deposit_MergeInto` | Adds a deposit to the byte of one node: into an empty byte, or into one of the same type up to 31, carrying the rest on. | confirmed | game | Called by `Flag_MoveDeposit`. |
 | `0x44db26` | `Render_DrawFlag` | Draws a flag (object code 1): the flag sprite, then the road stubs and goods that wait at it. | inferred | game | Called by `Render_DrawRowTiles` for object code 1. |
 | `0x4617fd` | `Building_Remove` | Takes a building down: marks it (it burns, `0x42cb2d`), clears the marks of the building on its node and its flag, sends its worker home, releases what waits for it (`0x4312ed`), and takes its flag down where no road leaves it. The castle, the military buildings, and the storage's settlers have branches of their own. Not a placement. | confirmed | game | Called by `0x45ed5f` and `0x4615cf`. See [Removal](removal.md). |
@@ -615,9 +621,9 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x4312ed` | `Flag_ReleaseGoods` | Releases what waits for the building at a flag: settlers on their way to it go home, a carrier's good for it loses its destination, goods on any flag headed for it lose destination and direction, and the storage items' request fields are cleared (not ported). | confirmed | game | Called by `0x4617fd`. |
 | `0x42cf9d` | `Building_Free` | The end of a burning building: clears the marks of its node, its object and link, and frees its slot; a building with a territory also gives the territory back (not ported). | inferred | game | Called by `0x42cb2d`. |
 | `0x45d974`, `0x45dc0d`, `0x45e273`, `0x45e012` | `Table70_Free`, `Table18_Free`, `Table16_Free`, `Table120_Free` | Free a slot of the flag, building, settler, and storage tables: clear the slot's bit in the table's bitmap and, at the end of the table, let the count fall past the free slots. | confirmed | game | Called by the teardown routines. |
-| `0x43007b` | `Settler_StateDismissed` | State `0x44`: a carrier sent home from where it waited takes its node when no settler stands on it, and goes on as state `0x19`. | confirmed | game | State table entry. |
+| `0x43007b` | `Settler_StateDismissed` | State `0x44`: a carrier sent home from where it waited takes its node when no settler stands on it, clears byte 1 of record B of the node, and goes on as state `0x19`. | confirmed | game | State table entry. |
 | `0x4300f1` | `Settler_StateRejoined` | State `0x45`: a carrier that waited at the end of a road that was joined takes state `0x43` with the highest road direction of its node as its heading, and runs it. | confirmed | game | State table entry. |
-| `0x43bc52` | `Carrier_WaitAtEnd` | The end of a carrier's road: with a road that holds two carriers the carrier counts its turns and after four leaves the road; with a good waiting at the far end it does nothing; else it takes state `0x42`. | confirmed | game | Called by the step routines of `0x43ad78` (`0x43b788` and siblings). |
+| `0x43bc52` | `Carrier_WaitAtEnd` | The end of a carrier's road: with a road that holds two carriers the carrier counts its turns and after four leaves the road; with a good waiting at the far end it does nothing; else it takes state `0x42`. Taking it, it writes the player (low two bits of the settler's byte 0) with bit 7 set (`0x43bcf0`) to byte 1 of record B of its node and clears the node's settler word. | confirmed | game | Called by the step routines of `0x43ad78` (`0x43b788` and siblings). |
 | `0x44b6e6` | `BuildSite_Evaluate` | Judges the node in the player block (`+0xfc`, `+0xfe`) and leaves the node state, the site, and the height at `+0x100` to `+0x102`. | confirmed | game | Called by the click handlers, `Castle_PlaceAtStart`, and the build marker. |
 | `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | A copy of the judgment from the south-east node on, also entered from `0x44b63a`. | inferred | game | Called by `BuildSite_Evaluate` and `0x44b63a`. |
 | `0x44bd72` | `BuildSite_EvaluateBuilding` | The judgment for a node that holds a building, with its own copy of the conditions. | inferred | game | Called by `BuildSite_Evaluate` and `BuildSite_EvaluateFromSouthEast`. |
@@ -1172,6 +1178,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x446f54` | — | unknown | Main loop |
 | `0x448418` | `Game_ConfirmEnd` | inferred | Program start and game flow |
 | `0x448436` | `Game_EndToStartScreen` | confirmed | Program start and game flow |
+| `0x449a63` | `Building_Place` | confirmed | Castle and build sites |
 | `0x449f58` | `Flag_MoveDeposit` | confirmed | Castle and build sites |
 | `0x44a0aa` | `Deposit_MergeInto` | confirmed | Castle and build sites |
 | `0x44b6ce` | `Road_UpdateCursor` | confirmed | Roads |
@@ -1190,6 +1197,9 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44d38d` | `Render_DrawMapView` | inferred | Views, panels, and drawing |
 | `0x44d3ae` | `Render_DrawViewRows` | confirmed | Views, panels, and drawing |
 | `0x44d5b4` | `Render_DrawRowTiles` | confirmed | Views, panels, and drawing |
+| `0x44d77e` | `Render_AddWaitingCarrier` | confirmed | Views, panels, and drawing |
+| `0x44d87d` | `Render_WaitingCarrierPhases` | confirmed | Graphics images |
+| `0x44d89d` | `Render_WaitingCarrierFigures` | confirmed | Graphics images |
 | `0x44da4d` | `Gfx_DrawObjectSprite` | confirmed | Graphics images |
 | `0x44db26` | `Render_DrawFlag` | inferred | Castle and build sites |
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
@@ -1338,6 +1348,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x47b4f9` | `Gfx_BlitSpriteOverColor8` | confirmed | Game code band |
 | `0x674048` | `Speed_Factor` | confirmed | Timing |
 | `0x674824` | `StartScreen_SpriteList` | confirmed | Graphics images |
+| `0x674923` | `Render_WaitingCarrierOffsets` | confirmed | Graphics images |
+| `0x6749a3` | `Render_WaitingCarriers` | confirmed | Graphics images |
 | `0x674a30` | `BuildSite_NeighborTiles` | inferred | Castle and build sites |
 | `0x67d608` | `Timer_RateHz` | confirmed | Timing |
 | `0x67d614` | `Loca_FileTable` | inferred | Files and configuration |
@@ -1352,7 +1364,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 304 routines of the 512 functions in the dump's game code band and lists 66 more without a name: 244 confirmed, 74 inferred, 52 unknown.
+Coverage: the index names 308 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 249 confirmed, 73 inferred, 52 unknown.
 <!-- coverage:end -->
 
 Open anchors:

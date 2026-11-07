@@ -75,7 +75,35 @@ public sealed class SettlerFiguresTests
         bases[2 * 0x14] = 900;
         bases[2 * 0x14 + 1] = -1;
 
-        return new SettlerFigures(bases, offsets, Sequences(), carried, Adds, frameRows, HutAdds);
+        // The row 2 of the waiting carrier's fixed figure word 0x203 (0x44d77e).
+        bases[2 * 2] = 400;
+        bases[2 * 2 + 1] = -1;
+
+        return new SettlerFigures(bases, offsets, Sequences(), carried, Adds, frameRows, HutAdds, Idle());
+    }
+
+    // The waiting carriers' tables: the phase of the column c is 8 * c, the figure word of the index i is i (row 0), and the
+    // road directions 0x09 (east and west) move the figure 3 right and 1 up.
+    private static IdleCarrierTables Idle()
+    {
+        var offsets = new sbyte[128];
+        offsets[2 * 0x09] = 3;
+        offsets[2 * 0x09 + 1] = -1;
+
+        return new IdleCarrierTables(
+            [.. Enumerable.Range(0, 16).Select(c => (short)(8 * c))],
+            [.. Enumerable.Range(0, 128).Select(i => (short)i)],
+            offsets
+        );
+    }
+
+    // A map whose node of the waiting carriers (4,3) has the flag byte given.
+    private static Map MapWithRoad(byte flags)
+    {
+        var map = Map();
+        map.Bytes(MapLayer.Flags)[map.Index(4, 3)] = flags;
+
+        return map;
     }
 
     private static Settler Carrier(int mode, int state = 3, int timer = 0) =>
@@ -168,8 +196,9 @@ public sealed class SettlerFiguresTests
         Assert.HasCount(3, Figures().Draws(Map(), [Walker(7, 0, state: 0x19)], 0));
     }
 
-    // Confirmed (the same runs): a settler that claims its node (0x1c) on its way home, and a carrier whose road was taken down
-    // or joined and that waits for its turn to go home (0x44, 0x45), have no record.
+    // Confirmed (the same runs): a settler that claims its node (0x1c) on its way home, and a settler in the states 0x44 and
+    // 0x45, have no record of the settler's draw path. A carrier in 0x44 or 0x45 is drawn by the tile pass instead
+    // (AWaitingCarrierIsDrawnByTheTilePassOnItsNode).
     [TestMethod]
     [DataRow(0x1c)]
     [DataRow(0x44)]
@@ -177,7 +206,6 @@ public sealed class SettlerFiguresTests
     public void ASettlerThatClaimsItsNodeOrWaitsToGoHomeIsNotDrawn(int state)
     {
         Assert.IsEmpty(Figures().Draws(Map(), [Walker(7, 0, state: state)], 0));
-        Assert.IsEmpty(Figures().Draws(Map(), [Carrier(mode: 0, state: state)], 0));
     }
 
     // Confirmed (the draw runs of the carried goods): the carrier that hands a good over (state 0xe) is drawn as one on its
@@ -236,12 +264,61 @@ public sealed class SettlerFiguresTests
         Assert.AreEqual(1954, figures.Draws(Map(), [Walker(7, 16, state: 3)], 8)[0].Entry);
     }
 
-    // Confirmed by the draw run (settler-draws.txt): the carrier's handler returns at once for a carrier that waits next to a
-    // flag (state 0x42), so it has no record and is not drawn, whatever it carries or its frame names.
+    // Confirmed by the draw run (settler-draws.txt): the settler's draw path has no record for a settler in state 0x42 (the
+    // carrier's handler returns at once). A settler of another job in that state draws nothing.
     [TestMethod]
-    public void AWaitingCarrierIsNotDrawn()
+    public void ASettlerOfAnotherJobInTheWaitingStateIsNotDrawn()
     {
-        Assert.IsEmpty(Figures().Draws(Map(), [Carrier(mode: 7, state: 0x42), Walker(7, 8, state: 0x42)], 800));
+        Assert.IsEmpty(Figures().Draws(Map(), [Walker(7, 8, state: 0x42)], 800));
+    }
+
+    // A carrier that waits off its node (states 0x42 to 0x45) leaves a mark on the node (0x43bc52), and the tile pass draws it
+    // there (0x44d77e): the figure word of the phase of its node plus the clock, moved by the offsets of the node's road
+    // directions, at the node lifted by 4 times its height, with no lift of 2.
+    [TestMethod]
+    [DataRow(0x42)]
+    [DataRow(0x43)]
+    [DataRow(0x44)]
+    [DataRow(0x45)]
+    public void AWaitingCarrierIsDrawnByTheTilePassOnItsNode(int state)
+    {
+        var map = MapWithRoad(0x09);
+        var height = map.Layer(MapLayer.Height)[map.Index(4, 3)] & OpenSettlers.Simulation.Map.HeightMask;
+        var (nodeX, nodeY) = Camera.NodePosition(4, 3);
+
+        // The phase of the column 4 is 32; with the clock 40 the index is (32 + 40) >> 3 = 9, the figure word 9.
+        var draws = Figures().Draws(map, [Carrier(mode: 7, state: state)], 40);
+
+        Assert.HasCount(2, draws, "the figure and its overlay: the carrier's row 0 has no second figure");
+        Assert.AreEqual(1850 + 100 + 9, draws[0].Entry);
+        Assert.AreEqual(2500 + 100 + 9, draws[1].Entry);
+        Assert.AreEqual((nodeX + 3, nodeY - 4 * height - 1), (draws[0].X, draws[0].Y));
+    }
+
+    // A node whose flag byte has bit 6 set draws the fixed figure word 0x203 with no offsets (0x44d77e).
+    [TestMethod]
+    public void AWaitingCarrierOnANodeWithBitSixDrawsTheFixedFigure()
+    {
+        var map = MapWithRoad(0x49);
+        var height = map.Layer(MapLayer.Height)[map.Index(4, 3)] & OpenSettlers.Simulation.Map.HeightMask;
+        var (nodeX, nodeY) = Camera.NodePosition(4, 3);
+
+        var draw = Figures().Draws(map, [Carrier(mode: 7, state: 0x42)], 40)[0];
+
+        Assert.AreEqual(1850 + 400 + 3, draw.Entry);
+        Assert.AreEqual((nodeX, nodeY - 4 * height), (draw.X, draw.Y));
+    }
+
+    // 0x44d3ae draws a row's settler records, then the tile pass's records of that row.
+    [TestMethod]
+    public void AWaitingCarrierIsDrawnAfterTheWalkingSettlersOfItsRow()
+    {
+        var walker = Walker(7, 0);
+        walker.X = 6;
+
+        var draws = Figures().Draws(MapWithRoad(0x09), [Carrier(mode: 7, state: 0x42), walker], 40);
+
+        Assert.AreEqual(1850 + 100 + 9, draws[^2].Entry);
     }
 
     // The row of a record is the settler's row plus the byte of its frame's row (0x43f537); a list holds its records in the order

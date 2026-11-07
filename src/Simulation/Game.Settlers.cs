@@ -791,10 +791,22 @@ public sealed partial class Game
         var flagY = (y + 1) & (height - 1);
         var flag = _flags.FindIndex(f => f.X == flagX && f.Y == flagY);
         var site = Castle is null ? default : BuildSite.Evaluate(_tables, Map, x, y, 0, hasCastle: true);
-        // **Inferred:** a small hut needs the site of a small or a large building (3 or 4) and the flag already standing.
-        if (flag < 0 || BuildingOfFlag(flag) is not null || site.Node != 5 || site.Site < 3)
+        // **Inferred:** a small hut needs the site of a small or a large building (3 or 4), and either the flag standing
+        // south-east of it (node state 5) or nothing on or around that node (7). **Stand-in:** node state 6 (a road's bits
+        // on the south-east node) is refused.
+        var withFlag = site.Node == 5 && flag >= 0 && BuildingOfFlag(flag) is null;
+        if (site.Site < 3 || !(withFlag || site.Node == 7 && NextFlagSlot() < MaxFlags))
         {
             return false;
+        }
+
+        // The building's placement (0x449a63) puts its flag down on the south-east node where none stands there, as the
+        // flag placement does (0x4422c5): the flag object and bit, the deposit moved, the link to the new slot.
+        if (!withFlag)
+        {
+            FlagPlacement.Apply(Map, flagX, flagY, NextFlagSlot());
+            flag = AddFlag(new Flag(flagX, flagY));
+            RecordFlag(flag, EventType.PlaceFlag, CommandCause(FlagId(flag)));
         }
 
         var node = Map.Index(x, y);
