@@ -570,8 +570,9 @@ public sealed partial class Game
     // was over already, and the settler then goes on at once; else it waits out the rest. At the flag it walks to
     // it enters the building there, or, as a carrier, the road. A step onto a node another settler stands on is tried
     // again after the timer of 0x7f. The mode 0xfe is the walk home to a storage: the storage is picked at the first flag
-    // (StorageFlag), and at its flag the settler enters it as a worker enters its hut. **Not ported:** the swap with a
-    // settler that comes the other way and the states the original reaches from here for other modes.
+    // (StorageFlag), and at its flag the settler enters it as a worker enters its hut. A step east, south-east, or south onto
+    // a settler that comes the other way and is blocked passes it (Step). **Not ported:** the states the original reaches
+    // from here for other modes.
     private void Walk(int slot, Settler settler)
     {
         // `walked` records the turn of state 2; a step or entry inside it records its own change first (`stepped`, `entered`).
