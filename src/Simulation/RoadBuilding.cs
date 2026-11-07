@@ -175,7 +175,8 @@ public static class RoadBuilding
 
     // The directions the original's cursor update (0x44b6ce) leaves allowed at the road's end: the node in that
     // direction belongs to the player, and it is the last step's node (the road may be taken back), or it holds no
-    // tree or stone (classes 2 and 4 block), or it is a flag, or it holds no road, or a flag could be put on it.
+    // stone or small building (classes 2 and 4 block; a tree, class 1, does not), and it is a flag, or it holds no
+    // road, or a flag could be put on it.
     private static bool Allowed(ProgramTables tables, Map map, int x, int y, int length, int direction)
     {
         var flags = map.Bytes(MapLayer.Flags);

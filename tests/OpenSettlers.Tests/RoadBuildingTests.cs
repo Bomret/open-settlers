@@ -257,6 +257,57 @@ public sealed class RoadBuildingTests
                 .Select(entry => $"{entry.Node % width},{entry.Node / width}:{entry.Diff}")
         );
 
+    // The cursor update (0x44b6ce) refuses a step onto an object of class 2 or 4 of the class table (0x41e640) and lets
+    // a tree (class 1) through. The steps go forward onto nodes that hold no road bits, so the class check decides.
+    private const byte TreeCode = 0x08;
+    private const byte StoneCode = 0x48;
+    private const byte SmallBuildingCode = 0x02;
+
+    [TestMethod]
+    public void ARoadDrawnForwardAcrossATreeNodeCompletesAtAFlag()
+    {
+        var map = OwnedLandWithFlags();
+        map.Bytes(MapLayer.Object)[map.Index(11, 10)] = TreeCode;
+
+        var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
+
+        Assert.AreEqual(RoadStatus.Complete, status);
+    }
+
+    [TestMethod]
+    [DataRow(StoneCode)]
+    [DataRow(SmallBuildingCode)]
+    public void ARoadStepOntoAStoneOrASmallBuildingIsRefused(byte code)
+    {
+        var map = OwnedLandWithFlags();
+        map.Bytes(MapLayer.Object)[map.Index(11, 10)] = code;
+
+        var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
+
+        Assert.AreEqual(RoadStatus.Refused, status);
+    }
+
+    [TestMethod]
+    public void AFlagMayNotBePlacedOnATreeNode()
+    {
+        var map = OwnedLandWithFlags();
+        map.Bytes(MapLayer.Object)[map.Index(11, 12)] = TreeCode;
+
+        Assert.AreEqual(0, BuildSite.Evaluate(TestProgram.Tables(), map, 11, 12, 0, hasCastle: true).Site);
+    }
+
+    // A map whose every node is player 0's and land, with flags (object code 1) at 10,10 and 12,10.
+    private static Map OwnedLandWithFlags()
+    {
+        var map = new Map(MapSize.Offered[0]);
+        Array.Fill(map.Bytes(MapLayer.Height), (byte)0x80);
+        Array.Fill(map.Bytes(MapLayer.Terrain), (byte)0x55);
+        map.Bytes(MapLayer.Object)[map.Index(10, 10)] = 1;
+        map.Bytes(MapLayer.Object)[map.Index(12, 10)] = 1;
+
+        return map;
+    }
+
     private static MapSeed ParseSeed(string text)
     {
         var words = text.Split(',').Select(word => ushort.Parse(word, NumberStyles.HexNumber)).ToArray();

@@ -49,9 +49,17 @@ directions at `+0xd0` of the view. A direction is allowed when the node it leads
 2. is the node the road came from: a road begun marks the way back by the bit of that direction at the end, and the
    way back is allowed (the cursor shows another sprite for it). At the start flag no direction marks a way back,
    whatever roads leave the flag;
-3. otherwise holds no object of class 2 or 4 (trees and stones, [Build sites](build-sites.md)), and then is allowed
+3. otherwise holds no object of class 2 (stones and rocks) or class 4 (the small building), and then is allowed
    if it holds a flag (class 3), or holds no road bits, or holds road bits and the evaluator would put a flag on it
-   (its site is not 0: no flag next to it, and it is not a building's or flag's node).
+   (its site is not 0: no flag next to it, and it is not a building's or flag's node). Trees and palms (class 1) do
+   not block a step, so a road may cross a tree node where a flag may not stand ([Build sites](build-sites.md)).
+
+   The class is read from the class table at `0x41e640` ([Map object codes](map-object-codes.md)): codes `0x08` to
+   `0x1b` (trees and palms) are class 1, the stones (`0x48` to `0x4f`) and rocks (`0x50`, `0x51`) class 2, the flag
+   (code 1) class 3, and the codes 2 to 4 classes 4 to 6. The cursor update reads the table through the game state's `+0xc8` (`0x44c3b8`), which `0x41de80`
+   to `0x41de88` set to `0x41e640`, and refuses classes 2 and 4 alone (`0x44c49d`, `0x44c4a7`). The click step reads
+   no class: it tests the clicked node's object code for a flag (`0x44414a`, `0x444520`), and the commit
+   (`0x444e68`) reads the owner and terrain bytes only, so nothing in the click refuses a step onto a tree.
 
 **The click on a node.** The click step (`0x443f62` to `0x44477f`) finds the direction from the end of the road to
 the clicked node. A node that is not a neighbor of the end, or is the end itself, changes nothing and makes no sound.
