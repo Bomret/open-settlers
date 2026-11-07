@@ -12,7 +12,8 @@ public static class ObjectQuads
     /// <summary>
     /// Turns <c>draws</c>, in row-major order as <see cref="ObjectDraws.Of"/> returns them, into rectangles and
     /// groups them in bands of <c>bandRows</c> rows, the grouping <see cref="TerrainQuads.Bands"/> uses, so a band's
-    /// objects paint after its terrain. A sprite hangs from the draw position by its header offsets. A draw whose
+    /// objects paint after its terrain. Each sprite's shadow, where it has one, comes right before it, as
+    /// <c>0x44da4d</c> draws the mask before the sprite. A sprite hangs from the draw position by its header offsets. A draw whose
     /// image is empty is left out, and so is a band without a draw.
     /// </summary>
     public static List<List<ObjectQuad>> Bands(
@@ -30,14 +31,13 @@ public static class ObjectQuads
             while (next < draws.Count && draws[next].Row < band.Row + band.Height)
             {
                 var draw = draws[next++];
-                var layer = ObjectGraphics.Layer(draw.Entry);
-                var image = images[layer];
-                if (image.Width > 0 && image.Height > 0)
+                var shadow = ObjectGraphics.ShadowLayer(draw.Entry);
+                if (shadow < images.Count)
                 {
-                    quads.Add(
-                        new ObjectQuad(draw.X + image.OffsetX, draw.Y + image.OffsetY, image.Width, image.Height, layer)
-                    );
+                    Add(quads, draw, images, shadow);
                 }
+
+                Add(quads, draw, images, ObjectGraphics.Layer(draw.Entry));
             }
 
             if (quads.Count > 0)
@@ -47,5 +47,14 @@ public static class ObjectQuads
         }
 
         return bands;
+    }
+
+    static void Add(List<ObjectQuad> quads, ObjectDraw draw, IReadOnlyList<ObjectImage> images, int layer)
+    {
+        var image = images[layer];
+        if (image.Width > 0 && image.Height > 0)
+        {
+            quads.Add(new ObjectQuad(draw.X + image.OffsetX, draw.Y + image.OffsetY, image.Width, image.Height, layer));
+        }
     }
 }

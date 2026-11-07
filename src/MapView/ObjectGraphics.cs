@@ -37,6 +37,23 @@ public sealed class ObjectGraphics
     /// </summary>
     public required IReadOnlyList<ObjectImage> Images { get; init; }
 
+    /// <summary>The number of sprite layers; the shadow layers follow them (<see cref="ShadowLayer"/>).</summary>
+    public const int SpriteLayerCount =
+        EntryCount + 3 + ObjectSprites.GoodsCount + ObjectSprites.WaterCount + ObjectSprites.FlagFrames - 1;
+
+    /// <summary>
+    /// The number <c>Gfx_DrawObjectSprite</c> (<c>0x44da4d</c>) adds to an object sprite entry for its shadow mask: it
+    /// draws the mask of the number plus 1500 through <c>Gfx_DrawShadow</c> (<c>0x4061a0</c>), then the sprite of the
+    /// number plus 1250.
+    /// </summary>
+    public const int ShadowOffset = 1500 - ObjectSprites.FirstEntry;
+
+    /// <summary>
+    /// The layer of the shadow of a sprite entry: <see cref="SpriteLayerCount"/> plus its sprite's layer. The goods and
+    /// the water draw no shadow (<c>0x44de9a</c>, <c>0x44ff59</c> draw only the sprite), so their shadow layers are empty.
+    /// </summary>
+    public static int ShadowLayer(int entry) => SpriteLayerCount + Layer(entry);
+
     /// <summary>The layer of a sprite entry: the object entries in order, then the castle's, the flag's, the hut's, the goods', the water's, and the flag's further frames.</summary>
     public static int Layer(int entry) =>
         entry is > ObjectSprites.FlagEntry and < ObjectSprites.FlagEntry + ObjectSprites.FlagFrames
@@ -146,6 +163,24 @@ public sealed class ObjectGraphics
                 archive[entry].State == EntryState.Absent
                     ? ObjectImage.Empty
                     : Read(archive, entry, "the flag sprite", data => ObjectImage.From(SpriteFile.Read(data)))
+            );
+        }
+
+        // The shadow of each sprite in the order of the sprite layers; an entry below 1250 draws none.
+        var entries = Enumerable
+            .Range(ObjectSprites.FirstEntry, EntryCount)
+            .Append(ObjectSprites.CastleEntry)
+            .Append(ObjectSprites.FlagEntry)
+            .Append(ObjectSprites.WoodcutterEntry)
+            .Concat(Enumerable.Repeat(-1, ObjectSprites.GoodsCount + ObjectSprites.WaterCount))
+            .Concat(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1));
+        foreach (var entry in entries)
+        {
+            var shadow = entry + ShadowOffset;
+            images.Add(
+                entry < 0 || shadow >= archive.RowCount || archive[shadow].State == EntryState.Absent
+                    ? ObjectImage.Empty
+                    : Read(archive, shadow, "the shadow mask", data => ObjectImage.Shadow(MaskFile.Read(data)))
             );
         }
 

@@ -868,19 +868,32 @@ public partial class MapViewControl : Control
                 continue;
             }
 
-            var image = _settlerGraphics.Images[layer];
-            if (image.Width > 0 && image.Height > 0)
+            // The shadow comes before each settler's figure (0x45007d), at the same position.
+            if (SettlerGraphics.IsFigure(draw) && _settlerGraphics.ShadowLayer >= 0)
             {
-                quads.Add(
-                    (draw.X + image.OffsetX, draw.Y + image.OffsetY, image.Width, image.Height, LayerColor(layer))
-                );
+                AddSettlerQuad(quads, draw, _settlerGraphics.ShadowLayer);
             }
+
+            AddSettlerQuad(quads, draw, layer);
         }
 
         var mesh = quads.Count > 0 ? BuildQuadMesh(quads) : null;
         foreach (var node in _settlerMeshes)
         {
             node.Mesh = mesh;
+        }
+    }
+
+    void AddSettlerQuad(
+        System.Collections.Generic.List<(int X, int Y, int Width, int Height, Color Color)> quads,
+        SettlerDraw draw,
+        int layer
+    )
+    {
+        var image = _settlerGraphics!.Images[layer];
+        if (image.Width > 0 && image.Height > 0)
+        {
+            quads.Add((draw.X + image.OffsetX, draw.Y + image.OffsetY, image.Width, image.Height, LayerColor(layer)));
         }
     }
 

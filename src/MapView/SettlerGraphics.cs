@@ -34,6 +34,23 @@ public sealed class SettlerGraphics
 
     public required SettlerFigures Figures { get; init; }
 
+    /// <summary>
+    /// The mask entry of a settler's shadow: <c>Gfx_DrawSettlerRecords</c> stores 4 at <c>0x45006a</c> and draws it
+    /// through <c>Gfx_DrawShadow</c> at <c>0x45007d</c>, at the record's position, before the figure.
+    /// </summary>
+    public const int ShadowEntry = 4;
+
+    /// <summary>The layer of the shadow mask (<see cref="ShadowEntry"/>), or -1 where the archive holds none.</summary>
+    public int ShadowLayer { get; init; } = -1;
+
+    /// <summary>
+    /// Whether a draw is a settler's figure, the first sprite of its record, which the shadow comes before
+    /// (<c>0x45007d</c>, then <c>0x406610</c>). <b>Inferred:</b> the record skips its shadow where bit 2 of its flags
+    /// word is set (<c>0x450039</c>); which records set it is not traced, and the engine draws the shadow of every record.
+    /// </summary>
+    public static bool IsFigure(SettlerDraw draw) =>
+        draw.Colour < 0 && draw.Entry is >= SettlerFigures.FigureBase and < SettlerFigures.OverlayBase;
+
     /// <summary>The header bytes 0 and 1 of each figure entry (1850 to 2499) that loaded: the shift of its second figure.</summary>
     public required IReadOnlyDictionary<int, (int X, int Y)> Shifts { get; init; }
 
@@ -117,6 +134,13 @@ public sealed class SettlerGraphics
             images.Add(image);
         }
 
+        var shadowLayer = -1;
+        if (archive.RowCount > ShadowEntry && archive[ShadowEntry].State != EntryState.Absent)
+        {
+            shadowLayer = images.Count;
+            images.Add(ObjectImage.Shadow(MaskFile.Read(archive.Data(archive[ShadowEntry]))));
+        }
+
         var width = Math.Max(images.Max(image => image.Width), 1);
         var height = Math.Max(images.Max(image => image.Height), 1);
 
@@ -129,6 +153,7 @@ public sealed class SettlerGraphics
             Layers = layers,
             Figures = figures,
             Shifts = shifts,
+            ShadowLayer = shadowLayer,
         };
     }
 

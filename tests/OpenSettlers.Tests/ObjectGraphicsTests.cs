@@ -76,10 +76,7 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.HasCount(
-            ObjectGraphics.EntryCount + 3 + ObjectSprites.GoodsCount + ObjectSprites.WaterCount + 3,
-            graphics.Images
-        );
+        Assert.HasCount(ObjectGraphics.SpriteLayerCount * 2, graphics.Images);
         Assert.AreEqual(3, graphics.LayerWidth);
         Assert.AreEqual(2, graphics.LayerHeight);
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
@@ -135,7 +132,7 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(ObjectGraphics.EntryCount + 3, ObjectGraphics.Layer(ObjectSprites.GoodEntry(0)));
         Assert.AreEqual(ObjectGraphics.EntryCount + 10, ObjectGraphics.Layer(ObjectSprites.GoodEntry(7)));
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(ObjectSprites.GoodEntry(7))].OffsetX);
-        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32 + 16 + 3, graphics.Images.Count);
+        Assert.AreEqual((ObjectGraphics.EntryCount + 3 + 32 + 16 + 3) * 2, graphics.Images.Count);
         Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32 + 16 + 2, ObjectGraphics.Layer(ObjectSprites.FlagEntry + 3));
         Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32, ObjectGraphics.Layer(ObjectSprites.WaterFirstEntry));
     }
@@ -228,5 +225,46 @@ public sealed class ObjectGraphicsTests
         Assert.HasCount(2, bands);
         CollectionAssert.AreEqual(new[] { new ObjectQuad(99, 48, 3, 1, 0) }, bands[0]);
         Assert.AreEqual(448, bands[1][0].Y);
+    }
+
+    [TestMethod]
+    public void AShadowIsDrawnRightBeforeItsSpriteFromItsOwnOffsets()
+    {
+        var images = new ObjectImage[ObjectGraphics.SpriteLayerCount * 2];
+        Array.Fill(images, ObjectImage.Empty);
+        images[0] = new ObjectImage(3, 1, -1, -2, new byte[3], new byte[] { 0, 255, 255 });
+        images[ObjectGraphics.ShadowLayer(1250)] = new ObjectImage(4, 2, 1, -1, new byte[8], new byte[8]);
+
+        var bands = ObjectQuads.Bands([new ObjectDraw(0, 1250, 100, 50)], images, 1, 16);
+
+        CollectionAssert.AreEqual(
+            new[] { new ObjectQuad(101, 49, 4, 2, ObjectGraphics.SpriteLayerCount), new ObjectQuad(99, 48, 3, 1, 0) },
+            bands[0]
+        );
+    }
+
+    [TestMethod]
+    public void AShadowMaskCoversItsPixelsInTheShadowColor()
+    {
+        var mask = new Mask
+        {
+            Header = new GraphicHeader
+            {
+                First = 0,
+                Second = 0,
+                Width = 2,
+                Height = 1,
+                OffsetX = 3,
+                OffsetY = -4,
+            },
+            Covered = [false, true],
+        };
+
+        var image = ObjectImage.Shadow(mask);
+
+        CollectionAssert.AreEqual(new byte[] { 0x80, 0x80 }, image.Indices);
+        CollectionAssert.AreEqual(new byte[] { 0, 255 }, image.Coverage);
+        Assert.AreEqual(3, image.OffsetX);
+        Assert.AreEqual(-4, image.OffsetY);
     }
 }
