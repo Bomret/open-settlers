@@ -119,8 +119,8 @@ direction goes and the byte of that direction is made again (the good of the gre
 [Goods at a flag](goods.md#the-carrier-told-to-fetch) states). Last, if no road leaves the flag (its road bits, after the bit `0x10` is
 cleared, are 0) and it holds a flag, the flag is taken down as above, with the goods that lie on it counted lost.
 
-The building burns: the building pass (`0x42cb2d`) takes the clock since its last turn off the countdown at each of its turns (every 33rd
-pass), and when the word wraps `Building_Free` (`0x42cf9d`) clears the node's mark `0x40`, object, and link, and frees the slot (the table's count
+The building burns: the building pass (`0x42cb2d`) takes the clock since its last turn off the countdown at each of its turns (once per phase cycle,
+[Settlers](settlers.md#the-pass)), and when the word wraps `Building_Free` (`0x42cf9d`) clears the node's mark `0x40`, object, and link, and frees the slot (the table's count
 falls past the free slots at its end). It takes about 8 turns, 264 passes.
 
 **Emulated:** the games `hut-inside` (the worker is inside at the pass 571; it takes state `0x19` and walks home to the castle; the building

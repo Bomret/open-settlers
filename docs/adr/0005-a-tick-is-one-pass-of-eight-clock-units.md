@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0012](0012-the-engine-skips-the-originals-pause-work.md)
+
 The engine's tick is one pass of the original's main loop at its shortest length: 4 timer calls, 8
 units of the game clock. At normal speed this is 80 milliseconds, 12.5 ticks per second. On each tick
 the engine runs the work that the original runs once per pass, and it advances every rule that counts

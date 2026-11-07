@@ -38,16 +38,21 @@ in the storage, 0 for none (`+0x42 + 2 * job`); and at `+0x4a` the number of set
 
 **Status:** confirmed.
 
-The main loop calls, in this order for each pass: `0x428728` (the retry scan, below), the phase step `0x4291c2` (one
-more, back to 0 at the phase count), the flag pass `0x46414d`, the building pass `0x42cb2d`, and the settler pass
+The main loop calls, in this order for each pass: `0x428728` (the retry scan, below), the phase step `0x4291c2` (one or
+more phases: [Timing](timing.md#rules-that-count-passes)), the flag pass `0x46414d`, the building pass `0x42cb2d`, and the settler pass
 `0x42f3d9`. The engine runs one pass for each tick (8 clock units) and runs the flag pass for the carriers only
 ([Carriers](carriers.md#the-flag-pass)).
 
 - The building pass handles the buildings whose slot divided by 32, modulo 32, is the phase, so a building is
-  handled once for each cycle of 33 passes. A finished building goes to the handler of its type (the table at
+  handled once for each phase cycle. A cycle takes 33 passes in a game with 33 phases and 33 to 49 passes in a
+  game with 49 phases, where one pass can run several of the phases 33 to 48
+  ([Timing](timing.md#rules-that-count-passes)). The building pass returns at phase 32 and up (`0x42cb3a`).
+  A finished building goes to the handler of its type (the table at
   `0x42cd1d`, 8 bytes an entry); the castle's own handler (`0x42e7e0`, knights and defence) is not ported.
 - The settler pass handles the settlers whose slot modulo 16 is the phase modulo 16, so a settler is handled at two
-  phases of each cycle, 16 or 17 passes apart. Each goes through the state table at `0x42fca1`.
+  phases of each cycle, 16 passes apart. The next cycle follows after 17 passes in a game with 33 phases and after
+  17 to 33 passes in a game with 49 phases. The settler pass returns at phase 32 and up (`0x42f3e6`). Each goes
+  through the state table at `0x42fca1`.
 - **Departure from the engine:** the program runs the turn of each settler in view once more every pass
   (`0x42f4f1`), which makes the motion on the screen smooth. The simulation must not depend on the view, so with
   `Game.EveryPassTurns` the engine gives that turn to every settler in a state the view draws in motion (2, 3, 4,
