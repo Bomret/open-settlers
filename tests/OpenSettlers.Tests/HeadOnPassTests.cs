@@ -5,7 +5,8 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The pass of two walking settlers that meet head-on (Step in Game.Settlers.cs, 0x43a6c1), reached through commands alone,
-// on the test program tables (the made-up tables have no rows for the free walk home). Roads run east from the castle's
+// on made-up tables as LayoutSettlersTests has them: every step takes 100 clock units, the flag's object class is 3, and
+// the free walk's direction rows hold each heading class's own first direction first. Roads run east from the castle's
 // flag at 16,6 to 18,6 and on to 20,6. Taking down the second road sends its carrier home: it walks west along the first
 // road. Building the road again at once sends a new carrier east from the castle along the first road. The two meet
 // between 18,6 and 19,6: the carrier going west waits on 19,6, and the one going east steps past it.
@@ -14,6 +15,38 @@ public sealed class HeadOnPassTests
 {
     private const int East = 0;
     private const int West = 3;
+
+    // The direction each heading class (0x437072) takes first, as in WoodcuttingTests: a step that cuts the vector.
+    private static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
+
+    private static readonly ProgramTables Tables = MadeTables();
+
+    private static ProgramTables MadeTables()
+    {
+        var classes = new byte[ProgramTables.ClassCount];
+        classes[FlagPlacement.FlagCode] = 3;
+        var rows = new byte[ProgramTables.WalkRowCount * ProgramTables.WalkRowSize];
+        for (var row = 0; row < ProgramTables.WalkRowCount; row++)
+        {
+            var first = row < 12 ? (byte)4 : FirstDirections[row - 12];
+            new[] { first }
+                .Concat(new byte[] { 4, 8, 12, 16, 20, 24 }.Where(code => code != first))
+                .ToArray()
+                .CopyTo(rows, row * ProgramTables.WalkRowSize);
+        }
+
+        return new ProgramTables(
+            classes,
+            Enumerable
+                .Range(0, ProgramTables.StartStockRows)
+                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
+                .ToArray(),
+            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray(),
+            walkRows: rows
+        );
+    }
 
     private sealed record Meeting(Game Game, ThingEvent Pass, ThingEvent Wait, int Stepper, int Passer);
 
@@ -26,7 +59,7 @@ public sealed class HeadOnPassTests
     private static Meeting Meet()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Tables(), map);
+        var game = new Game(Tables, map);
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 18, 6);
         Do(game, CommandKind.PlaceFlag, 20, 6);
@@ -72,11 +105,12 @@ public sealed class HeadOnPassTests
         Assert.AreEqual((18, 6), Node(state), "the passer is on the stepper's node");
         Assert.AreEqual(East, state.Get("heading"));
         Assert.AreEqual(back, state.Get("frame"));
-        Assert.AreEqual((int)TestProgram.Tables().StepTime(back), state.Get("timer"));
+        Assert.AreEqual((int)Tables.StepTime(back), state.Get("timer"));
 
+        // The stepper's turn ends with its `walked` event, after the pass.
         var stepper = meeting
             .Game.EventsOf(meeting.Game.SettlerId(meeting.Stepper))
-            .First(e => e.Tick == meeting.Pass.Tick);
+            .Last(e => e.Tick == meeting.Pass.Tick);
         Assert.AreEqual((19, 6), Node(stepper.State), "the stepper is on the passer's node");
         Assert.AreEqual((East + 3) % 6, stepper.State.Get("heading"));
     }
