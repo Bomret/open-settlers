@@ -691,7 +691,9 @@ public sealed partial class Game
     // debugger run reaches it. Open lead in docs/milestones/m3-first-loop.md (more settlers on a joined road than its class holds).
     private void JoinRoads(int index, int slot)
     {
-        // Bit 4 with no road there is the mark of a hut standing at the flag (PlaceBuilding), no road bit.
+        // **Inferred:** bit 4 with no road there is the mark of a hut standing at the flag (PlaceBuilding), no road bit. Nothing
+        // shows that the original (0x462153) masks it so: its click refuses a flag with a hut (ClickClass) and a hut's removal
+        // clears the mark first, so only a direct TakeFlagDown reaches this. A guard for a state the original's input never reaches.
         var bits = Map.Layer(MapLayer.Flags)[index] & (RoadAt(slot, 4) is null ? 0x2f : 0x3f);
         if (bits == 0)
         {
