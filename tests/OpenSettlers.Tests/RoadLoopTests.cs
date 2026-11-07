@@ -120,6 +120,8 @@ public sealed class RoadLoopTests
 
         Apply(game, CommandKind.RemoveRoad, 17, 6);
 
+        // The mask leaves out bit 4 (0x10): at the castle's flag 16,6 it is the mark of the castle at its north-west, which the
+        // take-down keeps, and no road of this test uses direction 4. Bits 6 and 7 are the flag's own marks.
         CollectionAssert.AreEqual(
             new[] { 0, 0, 0, 0, 0 },
             Enumerable.Range(16, 5).Select(x => map.Bytes(MapLayer.Flags)[map.Index(x, 6)] & 0x2f).ToArray()

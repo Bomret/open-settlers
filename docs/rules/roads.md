@@ -82,7 +82,10 @@ pointer to the other flag's item goes to `+0x24 + 4 x direction`. The road leave
 step's two bits set after the commit succeeded. A road from a flag back to itself is accepted and joins the one item
 to itself. The engine builds it with both ends at one slot, in two directions; the carrier, the split by a flag on it
 (two roads between the same two flags), and the take-down of the road work as for any road. The click refuses to take down
-the flag that split it, because its two roads go to the same flag.
+the flag that split it, because its two roads go to the same flag. **Emulated:** the game `split-loop-40` (a road of six steps
+from the castle's flag back to it, split by the flag button at 18,8, `road-splits.txt`): the evaluator `0x44b6e6` gives the new flag
+class 1 and the remove click `0x4615cf` on it asks for the error sound and changes nothing, as the class table of
+[Removal](removal.md) states; the engine replays the split and the refusal.
 
 **An error of the program.** A road whose first step goes back along a road that already leaves the start flag is let
 through when the node it leads to is a flag (a road of one step between two flags): the step finds the start's bit,
