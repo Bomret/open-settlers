@@ -635,7 +635,8 @@ public sealed partial class Game
     // a carrier is on its way to, in the split): the status bit is set at both ends and the number goes into the low nibble of
     // both road bytes; a capacity below 0 counts as 0 (the all-zero table ProgramTables falls back to with no install, less
     // one; the original's table has no 0); the settlers beyond the capacity, taken from the start of the list, are marked to
-    // go (the next state 0xff, a waiting carrier takes state 0x44) and a good they carry is lost. A road with no settler keeps its bytes.
+    // go (the next state 0xff, a waiting carrier takes state 0x44) and a good they carry is lost. A road with no
+    // settler keeps its bytes.
     private void CountCarriers(
         List<int> carriers,
         (int Flag, int Direction) a,
