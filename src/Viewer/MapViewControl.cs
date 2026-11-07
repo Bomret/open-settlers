@@ -1018,9 +1018,9 @@ public partial class MapViewControl : Control
     // blue whether the layer is one of the shadow array.
     static Color LayerColor(int layer, bool shadow = false)
     {
-        var (red, green) = SpriteLayer.Channels(layer);
+        var (red, green, blue) = SpriteLayer.Color(layer, shadow);
 
-        return new Color(red, green, shadow ? 1 : 0, 1);
+        return new Color(red, green, blue, 1);
     }
 
     ShaderMaterial BuildObjectMaterial(ObjectGraphics graphics)
@@ -1124,13 +1124,7 @@ public partial class MapViewControl : Control
         }
 
         var quads = ObjectQuads
-            .Bands(
-                ObjectDraws.WaterOf(map, _frameCounter),
-                _objects.Images,
-                _objects.ShadowImages,
-                map.Size.Height,
-                map.Size.Height
-            )
+            .Bands(ObjectDraws.WaterOf(map, _frameCounter), _objects.Images, [], map.Size.Height, map.Size.Height)
             .SelectMany(band => band)
             .Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))
             .ToList();

@@ -17,7 +17,8 @@ public static class ObjectQuads
     /// groups them in bands of <c>bandRows</c> rows, the grouping <see cref="TerrainQuads.Bands"/> uses, so a band's
     /// objects paint after its terrain. Each sprite's shadow from <c>shadows</c>, where it has one, comes right before it, as
     /// <c>0x44da4d</c> draws the mask before the sprite. A sprite hangs from the draw position by its header offsets. A draw whose
-    /// image is empty is left out, and so is a band without a draw.
+    /// image is empty is left out, and so is a band without a draw. An empty <c>shadows</c> draws no shadow; any other
+    /// <c>shadows</c> holds one mask per sprite layer, and one of another length throws <see cref="ArgumentException"/>.
     /// </summary>
     public static List<List<ObjectQuad>> Bands(
         IReadOnlyList<ObjectDraw> draws,
@@ -27,6 +28,14 @@ public static class ObjectQuads
         int bandRows
     )
     {
+        if (shadows.Count != 0 && shadows.Count != images.Count)
+        {
+            throw new ArgumentException(
+                $"{shadows.Count} shadow masks for {images.Count} sprite layers: pass one per layer, or none",
+                nameof(shadows)
+            );
+        }
+
         var bands = new List<List<ObjectQuad>>();
         var next = 0;
         foreach (var band in TerrainTiling.Chunks(1, rows, bandRows))
@@ -35,8 +44,13 @@ public static class ObjectQuads
             while (next < draws.Count && draws[next].Row < band.Row + band.Height)
             {
                 var draw = draws[next++];
-                Add(quads, draw, shadows, ObjectGraphics.ShadowLayer(draw.Entry), true);
-                Add(quads, draw, images, ObjectGraphics.Layer(draw.Entry), false);
+                var layer = ObjectGraphics.Layer(draw.Entry);
+                if (shadows.Count > 0)
+                {
+                    Add(quads, draw, shadows, layer, true);
+                }
+
+                Add(quads, draw, images, layer, false);
             }
 
             if (quads.Count > 0)

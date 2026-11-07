@@ -44,7 +44,7 @@ public sealed class ObjectGraphics
     public int ShadowLayerHeight { get; init; }
 
     /// <summary>
-    /// The shadow mask of each sprite layer at the same index as its sprite (<see cref="ShadowLayer"/>), padded to
+    /// The shadow mask of each sprite layer at the same index as its sprite (<see cref="Layer"/>), padded to
     /// <see cref="ShadowLayerWidth"/> x <see cref="ShadowLayerHeight"/>; empty where the sprite draws none. Empty for
     /// graphics that draw no object shadow.
     /// </summary>
@@ -62,12 +62,11 @@ public sealed class ObjectGraphics
     public const int ShadowOffset = 1500 - ObjectSprites.FirstEntry;
 
     /// <summary>
-    /// The layer of the shadow of a sprite entry in <see cref="ShadowImages"/>: its sprite's layer. The goods and the
-    /// water draw no shadow (<c>0x44de9a</c>, <c>0x44ff59</c> draw only the sprite), so their shadow layers are empty.
+    /// The layer of a sprite entry, in <see cref="Images"/> and of its shadow in <see cref="ShadowImages"/>: the object
+    /// entries in order, then the castle's, the flag's, the hut's, the goods', the water's, and the flag's further
+    /// frames. The goods and the water draw no shadow (<c>0x44de9a</c>, <c>0x44ff59</c> draw only the sprite), so their
+    /// shadow layers are empty.
     /// </summary>
-    public static int ShadowLayer(int entry) => Layer(entry);
-
-    /// <summary>The layer of a sprite entry: the object entries in order, then the castle's, the flag's, the hut's, the goods', the water's, and the flag's further frames.</summary>
     public static int Layer(int entry) =>
         entry is > ObjectSprites.FlagEntry and < ObjectSprites.FlagEntry + ObjectSprites.FlagFrames
             ? EntryCount + 3 + ObjectSprites.GoodsCount + ObjectSprites.WaterCount + entry - ObjectSprites.FlagEntry - 1

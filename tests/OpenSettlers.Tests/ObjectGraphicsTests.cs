@@ -241,7 +241,7 @@ public sealed class ObjectGraphicsTests
         images[1] = images[0];
         var shadows = new ObjectImage[ObjectGraphics.SpriteLayerCount];
         Array.Fill(shadows, ObjectImage.Empty);
-        shadows[ObjectGraphics.ShadowLayer(1250)] = new ObjectImage(4, 2, 1, -1, new byte[8], new byte[8]);
+        shadows[ObjectGraphics.Layer(1250)] = new ObjectImage(4, 2, 1, -1, new byte[8], new byte[8]);
 
         var bands = ObjectQuads.Bands(
             [new ObjectDraw(0, 1250, 100, 50), new ObjectDraw(0, 1251, 200, 50)],
@@ -263,6 +263,29 @@ public sealed class ObjectGraphicsTests
     }
 
     [TestMethod]
+    public void NoShadowListDrawsTheSpritesWithoutShadows()
+    {
+        var images = new ObjectImage[ObjectGraphics.SpriteLayerCount];
+        Array.Fill(images, ObjectImage.Empty);
+        images[0] = new ObjectImage(3, 1, -1, -2, new byte[3], new byte[] { 0, 255, 255 });
+
+        var bands = ObjectQuads.Bands([new ObjectDraw(0, 1250, 100, 50)], images, [], 1, 16);
+
+        CollectionAssert.AreEqual(new[] { new ObjectQuad(99, 48, 3, 1, 0) }, bands[0]);
+    }
+
+    [TestMethod]
+    public void AShadowListOfAnotherLengthThanTheSpritesIsRefused()
+    {
+        var images = new ObjectImage[ObjectGraphics.SpriteLayerCount];
+        Array.Fill(images, ObjectImage.Empty);
+
+        Assert.ThrowsExactly<ArgumentException>(() =>
+            ObjectQuads.Bands([new ObjectDraw(0, 1250, 100, 50)], images, [ObjectImage.Empty], 1, 16)
+        );
+    }
+
+    [TestMethod]
     public void TheShadowsSitInTheirOwnLayersPaddedToTheLargestShadowMask()
     {
         var payloads = Payloads();
@@ -271,7 +294,6 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.AreEqual(ObjectGraphics.Layer(1250), ObjectGraphics.ShadowLayer(1250));
         Assert.AreEqual(2, graphics.ShadowImages[ObjectGraphics.Layer(1250)].Width);
         Assert.AreEqual(2, graphics.ShadowLayerWidth);
         Assert.AreEqual(1, graphics.ShadowLayerHeight);

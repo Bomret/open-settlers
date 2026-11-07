@@ -74,7 +74,7 @@ no emulator or debugger run of the draw confirms it for the castle.
 Before the sprite, the routine draws the shadow mask of the entry plus 1500 through `Gfx_DrawShadow` (`0x4061a0`),
 which stores palette index `0x80` on the covered pixels with no blending. The engine draws each object's shadow
 right before its sprite, from a shadow array texture of its own, sized to the largest shadow mask, at the layer
-of its sprite (`ObjectGraphics.ShadowLayer`): the objects, the
+of its sprite (`ObjectGraphics.Layer`): the objects, the
 castle (1678), the woodcutter's hut (1668), and the flag's frames (1628 to 1631). The goods on a flag and the water
 draw no shadow (`0x44de9a` and `0x44ff59` draw only the sprite).
 
