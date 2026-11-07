@@ -27,16 +27,13 @@ public sealed partial class Game
         // second direction loses it.
         if ((_roadBytes[b.Far][b.FarDirection] & 0x80) != 0)
         {
-            var onItsWay = Enumerable
-                .Range(0, _settlers.Count)
-                .Select(walker => _settlers[walker])
-                .FirstOrDefault(settler =>
-                    HeadsTo(settler)
-                    && (
-                        (settler.Target == a.Far && settler.Mode == a.FarDirection)
-                        || (settler.Target == b.Far && settler.Mode == b.FarDirection)
-                    )
-                );
+            var onItsWay = _settlers.FirstOrDefault(settler =>
+                HeadsTo(settler)
+                && (
+                    (settler.Target == a.Far && settler.Mode == a.FarDirection)
+                    || (settler.Target == b.Far && settler.Mode == b.FarDirection)
+                )
+            );
             var loser = onItsWay is not null && onItsWay.Target == b.Far && onItsWay.Mode == b.FarDirection ? a : b;
             _roadBytes[loser.Far][loser.FarDirection] &= 0x7f;
         }

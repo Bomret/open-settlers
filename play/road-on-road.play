@@ -1,9 +1,5 @@
-# A road drawn with the Road button that ends on a node of another road is refused (the Road button holds no view flag
-# bit 3, docs/rules/roads.md#the-pointer-button-that-places-a-flag-on-a-road): the click is ignored, the other road
-# keeps its carrier, and no flag appears there. Run it on the game view with seed 1234567812345678 and size 1:
 #   sh tools/play-run.sh road-on-road --game-view --seed 1234567812345678 --size 1 --fps 10
-# The castle stands at 21,4, its flag at 22,5; the woodcutter's flag is at 27,5 and the road between them runs east. A
-# flag at 25,7 starts the road that goes north to 25,6 and then onto 25,5, a node of that road.
+# The road from the castle flag 22,5 to 27,5 runs east; a road from the flag 25,7 north onto 25,5 is refused.
 expect seed = 1234567812345678
 expect size = 1
 wait 0.3

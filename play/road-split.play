@@ -36,6 +36,9 @@ expect-event flag split-roads cause placed
 shot split 24 5 3 3
 list split
 wait 40
+expect-count carrier = 2
+expect-at 24 5 carrier
+expect-at 26 5 carrier
 shot two-carriers 24 5 3 3
 list two-carriers
 dump after
