@@ -37,8 +37,8 @@ left open:
   priority table of the player's block. The harness verb `wood:` leaves flag slot 0 to the castle's flag, where no good ever
   leaves; `goods:` takes the dummy slot as the original's game start does.
 - `0x42cb2d`, `0x42f3d9`: known. The slices of `Table18` and `Table16`: [Settlers](../rules/settlers.md#the-pass).
-- `0x42f4f1`: runs the turn of each settler in view once more; the engine does not (the simulation must not depend on the
-  view). likely
+- `0x42f4f1`: runs the turn of each settler in view once more; with `Game.EveryPassTurns` the engine gives that turn to
+  every settler (the simulation must not depend on the view). likely
 
 ## Flags, roads, and routes
 

@@ -49,8 +49,10 @@ more, back to 0 at the phase count), the flag pass `0x46414d`, the building pass
 - The settler pass handles the settlers whose slot modulo 16 is the phase modulo 16, so a settler is handled at two
   phases of each cycle, 16 or 17 passes apart. Each goes through the state table at `0x42fca1`.
 - **Departure from the engine:** the program runs the turn of each settler in view once more every pass
-  (`0x42f4f1`), which makes the motion on the screen smooth. The simulation must not depend on the view, so the
-  engine runs the pass alone.
+  (`0x42f4f1`), which makes the motion on the screen smooth. The simulation must not depend on the view, so with
+  `Game.EveryPassTurns` the engine gives that turn to every settler, in view or not, after the slices of every pass
+  (phase 32 included). The game view sets it; without it a settler takes a turn only in its slice, as in the
+  original's passes without a view, which is what the emulator recordings of the walks hold.
 
 ## The retry scan
 

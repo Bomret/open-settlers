@@ -98,11 +98,34 @@ public sealed partial class Game
         ClearFlagRetryBits();
         ObjectPass();
         _phase = (_phase + 1) % PhaseCount;
-        if (_phase >= TablePhases)
+        if (_phase < TablePhases)
+        {
+            TablePass();
+        }
+
+        if (!EveryPassTurns)
         {
             return;
         }
 
+        // 0x42f4f1 gives each settler in view one more turn every pass; the engine gives it to every settler, so the
+        // walk on the screen does not stall between the slice turns and the simulation does not depend on the view.
+        for (var slot = 0; slot < _settlers.Count; slot++)
+        {
+            Visit(slot, _settlers[slot]);
+        }
+    }
+
+    /// <summary>
+    /// Whether each pass gives every settler one more turn after the slices, as the original's view pass
+    /// (<c>0x42f4f1</c>) does for the settlers in view. Off, a settler takes a turn only in its slice, every 16 or 17
+    /// passes, as in the original's passes without a view.
+    /// </summary>
+    public bool EveryPassTurns { get; set; }
+
+    // The slices of the flag, building, and settler tables for the phase.
+    private void TablePass()
+    {
         FlagPass();
         for (var slot = 0; slot < _buildings.Count; slot++)
         {
