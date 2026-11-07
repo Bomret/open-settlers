@@ -9,7 +9,4 @@ public static class SpriteLayer
 {
     /// <summary>The red and green channels of the vertex color that carries <paramref name="layer"/>.</summary>
     public static (float Red, float Green) Channels(int layer) => ((layer & 0xff) / 255f, (layer >> 8) / 255f);
-
-    /// <summary>The layer the shaders read back from the two channels once stored in 8 bits each.</summary>
-    public static int Decode(byte red, byte green) => red + 256 * green;
 }

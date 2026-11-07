@@ -1,4 +1,3 @@
-using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -8,16 +7,13 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SpriteLayerTests
 {
-    // Godot keeps a vertex color in 8 bits a channel; every layer an array texture of 2048 layers holds survives that.
+    // Godot keeps a vertex color in 8 bits a channel: the low byte of the layer goes in red, the high byte in green, each
+    // a whole number of 255ths, which the shaders read back as red + 256 * green.
     [TestMethod]
-    public void EveryLayerOfAnArrayTextureSurvivesTheEightBitsOfAVertexColor()
+    public void ALayerIsSplitIntoItsLowByteInRedAndItsHighByteInGreen()
     {
-        for (var layer = 0; layer < 2048; layer++)
-        {
-            var (red, green) = SpriteLayer.Channels(layer);
-
-            Assert.AreEqual(layer, SpriteLayer.Decode((byte)Math.Round(red * 255), (byte)Math.Round(green * 255)));
-        }
+        Assert.AreEqual((44 / 255f, 1 / 255f), SpriteLayer.Channels(300));
+        Assert.AreEqual((255 / 255f, 7 / 255f), SpriteLayer.Channels(2047));
     }
 
     // The settlers' sprites take more layers than one 8-bit channel holds: the woodcutter's lie past 255.

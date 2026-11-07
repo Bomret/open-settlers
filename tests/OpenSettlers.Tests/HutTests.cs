@@ -144,11 +144,12 @@ public sealed class HutTests
     // A node of the castle's land with a site for a building and nothing on or around its south-east node (node state 7).
     private static (int X, int Y) FreeSite(Game game)
     {
+        var tables = Made();
         for (var y = 0; y < game.Map.Size.Height - 1; y++)
         {
             for (var x = 0; x < game.Map.Size.Width - 1; x++)
             {
-                var site = BuildSite.Evaluate(Made(), game.Map, x, y, 0, hasCastle: true);
+                var site = BuildSite.Evaluate(tables, game.Map, x, y, 0, hasCastle: true);
                 if (site is { Node: 7, Site: >= 3 })
                 {
                     return (x, y);

@@ -295,6 +295,19 @@ public sealed class SettlerFiguresTests
         Assert.AreEqual((nodeX + 3, nodeY - 4 * height - 1), (draws[0].X, draws[0].Y));
     }
 
+    // The phase is the node's column's (stand-in for the address of the node's record): the column 13 has the phase 104, and
+    // with the clock 40 the index is (104 + 40) >> 3 = 18.
+    [TestMethod]
+    public void AWaitingCarriersPhaseIsItsColumns()
+    {
+        var map = Map();
+        map.Bytes(MapLayer.Flags)[map.Index(13, 3)] = 0x09;
+        var carrier = Carrier(mode: 7, state: 0x42);
+        carrier.X = 13;
+
+        Assert.AreEqual(1850 + 100 + 18, Figures().Draws(map, [carrier], 40)[0].Entry);
+    }
+
     // A node whose flag byte has bit 6 set draws the fixed figure word 0x203 with no offsets (0x44d77e).
     [TestMethod]
     public void AWaitingCarrierOnANodeWithBitSixDrawsTheFixedFigure()

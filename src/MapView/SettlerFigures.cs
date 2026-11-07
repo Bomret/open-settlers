@@ -144,15 +144,14 @@ public sealed class SettlerFigures
     /// <summary>
     /// The sprites of the settlers that walk, in the order of their rows, each settler's figure, overlay, and second figure in
     /// that order; the clock is the game's (16 bits). <paramref name="shifts"/> holds the header bytes 0 and 1 of a figure
-    /// entry, the shift of its second figure; a figure it leaves out shifts nothing. With <paramref name="tilePass"/> the
-    /// waiting carriers that the tile pass draws (<c>0x44d77e</c>) follow the settlers of their row.
+    /// entry, the shift of its second figure; a figure it leaves out shifts nothing. The waiting carriers that the tile pass
+    /// draws (<c>0x44d77e</c>) follow the settlers of their row.
     /// </summary>
     public List<SettlerDraw> Draws(
         Map map,
         IReadOnlyList<Settler> settlers,
         ushort clock,
-        IReadOnlyDictionary<int, (int X, int Y)>? shifts = null,
-        bool tilePass = true
+        IReadOnlyDictionary<int, (int X, int Y)>? shifts = null
     )
     {
         var records = new List<(int Y, int X, List<SettlerDraw> Sprites)>();
@@ -204,7 +203,7 @@ public sealed class SettlerFigures
 
         // 0x44d3ae draws each row's settler records (0x44ffe7), then the records the tile pass made for that row's nodes
         // (0x44fff3 on the list at 0x6749a3), which are the waiting carriers' (0x44d77e).
-        var idle = tilePass ? IdleRecords(map, settlers, clock, shifts) : [];
+        var idle = IdleRecords(map, settlers, clock, shifts);
 
         return
         [
