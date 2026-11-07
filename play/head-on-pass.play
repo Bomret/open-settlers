@@ -1,0 +1,35 @@
+# Two settlers meet head-on and pass (docs/rules/settlers.md, "Passing"). Taking the second road down sends its carrier
+# home west along the first road; the woodcutter of a hut put down at 13,10 walks out east along it. The carrier waits on
+# the node the woodcutter holds, and the woodcutter steps east past it: each takes the other's node.
+# Run it on the layout: sh tools/play-run.sh head-on-pass --layout layouts/head-on-pass.jsonc --fps 10
+wait 32
+name cr 16 11 carrier
+button Remove
+click-tile 15 11
+button Remove
+wait 1
+button Woodcutter
+click-tile 13 10
+button Woodcutter
+wait 1
+name wc 10 10 woodcutter
+shot start
+wait 16
+# Tick 496: the carrier, heading west, is blocked on 13,11 and waits.
+expect cr.x@496 = 13
+expect cr.heading@496 = -3
+expect cr.frame@496 = 0x54
+expect cr.timer@496 = 0x7f
+# Tick 499: the woodcutter steps east past it. The carrier takes 12,11 with the shape and time of its step back west.
+expect wc.x@499 = 13
+expect wc.y@499 = 11
+expect wc.heading@499 = 3
+expect cr.x@499 = 12
+expect cr.y@499 = 11
+expect cr.heading@499 = 0
+expect cr.frame@499 = 31
+expect cr.timer@499 = 255
+expect-event cr stepped cause razed
+events wc woodcutter
+events cr carrier
+shot passed 13 11 2 2
