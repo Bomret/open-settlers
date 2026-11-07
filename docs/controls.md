@@ -59,8 +59,9 @@ to come from the castle.
 A road goes from a flag to a flag, one node per click.
 
 1. Click a flag. The castle's flag counts. A white line shows the road while you draw it.
-2. Click a node next to the end of the road. The road grows by that node. A node outside the territory, a node with
-   a tree or a stone, or a node with a road and no flag is refused.
+2. Click a node next to the end of the road. The road grows by that node. A node outside the territory is refused.
+   A node with a stone, a rock, or a small building is refused. A node with a road and no flag is refused.
+   A tree does not refuse the step. A road may cross a tree node.
 3. Click the node before the end to take the last step back.
 4. Click a flag next to the end. The road is built, and the drawing ends. The flag may be the one the road started
    from: the road is then a loop, and it gets a carrier.
