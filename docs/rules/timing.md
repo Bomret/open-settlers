@@ -84,35 +84,55 @@ value. Whether any code reaches this routine is unknown.
 
 While a game runs, each pass of the main loop calls these routines once, in this order: `0x4286d8`,
 `Sim_StepPhase` at `0x4291c2`, then the routines for the item tables at `0x46414d`, `0x42cb2d`, and
-`0x42f3d9`. `Sim_StepPhase` adds 1 to `Sim_Phase` and wraps it at the phase count. The routine at
-`0x42055e` sets the phase count when a game starts: 33, or 49 when a player's start parameter at
-`+0x1d6` is from 1 to 11.
+`0x42f3d9`. `Sim_StepPhase` adds 1 to `Sim_Phase`, wraps it at the phase count, and calls the
+routine for the new phase from one of two tables: the table at `0x42923c` for phases 0 to 31, and the
+table at `0x4292ee` for phase 32 and up. The routine at `0x42055e` sets the phase count when a game
+starts: 33, or 49 when a player's start parameter at `+0x1d6` is from 1 to 11.
 
 The phase selects the work of a pass:
 
 - Phases 0 to 31: the per-player update for player `phase & 3`, and a slice of each item table.
   `Sim_StepPhase` skips the per-player update while the clock step is 0.
-- Phase 32: the routine `0x42965c`. While the clock runs, it calls `0x42a74a`, which copies the
-  running total of the elapsed units and resets it.
+- Phase 32: the routine `0x42965c`. It calls `0x42b18d` first. While the clock runs, it then calls
+  `0x42a74a`, which copies the running total of the elapsed units and resets it, and further routines.
 - Phases 33 to 48: the routines at `0x4293f6`, `0x42944d`, `0x4294a4`, and `0x4294fb`, one per player
-  block in turn. When the block marks its player active and computer-controlled, the routine draws
-  from the random generator (`0x466ade`). When the draw is below the player block's `+0x1ae`, it calls
-  `0x46986d`, and the pass ends there. Otherwise the routine adds 1 to `Sim_Phase` itself and goes on
-  to the next player's routine in the same pass. After phase 48 it sets `Sim_Phase` to 0.
+  block in turn. Each tests bits 7 and 6 of byte 2 of its player block (inferred: the block marks an
+  active computer player). When both are set, the routine draws from the random generator through
+  `Rng_Step` at `0x466ade`. When the draw is below the player block's `+0x1ae`, it calls `0x46986d`
+  and returns: the pass runs no further phase, and the item-table routines of the pass still run.
+  Otherwise the routine adds 1 to `Sim_Phase` itself and goes on to the next player's routine in the
+  same pass. `0x4294fb` goes back to `0x4293f6` while `Sim_Phase` is below the phase count
+  (`0x42956c`), and sets `Sim_Phase` to 0 when it reaches the count. The routines therefore go round
+  the player blocks until a draw leads to the call of `0x46986d` or the phase reaches the phase count.
 
 A pass therefore runs one phase from 0 to 32, or one or more phases from 33 to 48. A phase cycle takes
 33 passes when the phase count is 33, and from 33 to 49 passes when it is 49. When the routines of
 phases 33 to 48 set `Sim_Phase` to 0, the item-table routines of that pass process the slices of phase
 0, and the next pass starts at phase 1. The per-player update of phase 0 then does not run in that
-cycle.
+cycle. When a draw at phase 48 leads to the call of `0x46986d`, `Sim_Phase` stays at 48,
+`Sim_StepPhase` wraps it to 0 on the next pass, and the per-player update of phase 0 runs.
 
 Which work runs counts passes, not clock units: each entry of an item table gets its turn once per
 phase cycle, however many clock units the cycle takes. The work on a turn can itself count clock units,
 as the countdowns of `Table18` do (see the next section).
 
-While the clock step is 0, the main loop still advances the phase and still calls the routines for the
-item tables, with 0 elapsed units. Phase 32 then returns before it calls `0x42a74a`. Whether the other
-work changes the game state is unknown.
+While the clock step is 0, the main loop still calls the same routines on each pass, with 0 elapsed
+units (`0x425bce` to `0x425bf1`): `0x427062`, `0x4286d8`, `Sim_StepPhase`, the routines for the item
+tables at `0x46414d`, `0x42cb2d`, and `0x42f3d9`, then `0x42f4f1` and `0x425cb9`. This work changes the
+game state:
+
+- The ambient sounds of each view draw from the random generator through `Rng_Step` (`0x428985`, the
+  call at `0x42899a`), in every game.
+- `Sim_StepPhase` advances the phase. At phase 32, `0x42965c` calls `0x42b18d` before it reads the
+  clock step (`0x42965c` to `0x42966e`); `0x42b18d` writes `+0x188` and `+0x184` of each player block
+  through `0x42b1ce`. Phase 32 then returns before it calls `0x42a74a`.
+- In a game with 49 phases, the routines of phases 33 to 48 draw through `Rng_Step` without reading
+  the clock step (`0x429427`). `0x46986d` returns at once while the clock step is 0 (`0x469870` to
+  `0x46987a`).
+
+Whether the item-table routines and the other routines of the pass change the game state during a
+pause is unknown. The engine skips all of this work
+([ADR 0012](../adr/0012-the-engine-skips-the-originals-pause-work.md)).
 
 ## Rules that count clock units
 

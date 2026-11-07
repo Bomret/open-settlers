@@ -38,8 +38,8 @@ in the storage, 0 for none (`+0x42 + 2 * job`); and at `+0x4a` the number of set
 
 **Status:** confirmed.
 
-The main loop calls, in this order for each pass: `0x428728` (the retry scan, below), the phase step `0x4291c2` (one
-more, back to 0 at the phase count), the flag pass `0x46414d`, the building pass `0x42cb2d`, and the settler pass
+The main loop calls, in this order for each pass: `0x428728` (the retry scan, below), the phase step `0x4291c2` (one or
+more phases: [Timing](timing.md#rules-that-count-passes)), the flag pass `0x46414d`, the building pass `0x42cb2d`, and the settler pass
 `0x42f3d9`. The engine runs one pass for each tick (8 clock units) and runs the flag pass for the carriers only
 ([Carriers](carriers.md#the-flag-pass)).
 
