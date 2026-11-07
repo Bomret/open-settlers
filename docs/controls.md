@@ -51,8 +51,8 @@ off.
 
 A click puts a flag on the node. The node must lie in the castle's territory and allow a flag: for example, a flag
 does not go next to another flag, or on a tree or a stone. A flag on a node of a road splits the road into two roads
-that meet at the new flag. Each road gets a carrier: the carrier of the old road keeps one half, and a carrier from the
-castle takes the other.
+that meet at the new flag. The carrier of the old road keeps one half, and the other half waits for a carrier
+to come from the castle.
 
 ### Road
 
