@@ -259,14 +259,22 @@ public sealed partial class Game
             return false;
         }
 
-        if (!BuildSite.Evaluate(_tables, Map, x, y, 0, hasCastle: true).AllowsFlag)
+        var site = BuildSite.Evaluate(_tables, Map, x, y, 0, hasCastle: true);
+        if (!site.AllowsFlag)
         {
             return false;
         }
 
         FlagPlacement.Apply(Map, x, y, NextFlagSlot());
         var slot = AddFlag(new Flag(x, y));
-        RecordFlag(slot, EventType.PlaceFlag, CommandCause(FlagId(slot)));
+        var cause = CommandCause(FlagId(slot));
+        RecordFlag(slot, EventType.PlaceFlag, cause);
+
+        // A flag on a node that holds a road splits the road (node state 4, docs/rules/roads.md#a-flag-on-a-road).
+        if (site.Node == 4)
+        {
+            SplitRoad(Map.Index(x, y), slot, cause);
+        }
 
         return true;
     }

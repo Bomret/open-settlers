@@ -45,7 +45,8 @@
 //   road:N:S0,S1,S2:L:cx,cy:x,y;x,y;...:sx,sy,D;sx,sy,D;...
 //                            road drawing (docs/rules/roads.md) on that map after a castle at cx,cy (0x442704) and the
 //                            flags the flag button (0x442244) puts on the listed tiles. Each road is a start flag sx,sy and
-//                            a string D of directions 0 to 5 (east, south-east, south, west, north-west, north). The road
+//                            a string D of directions 0 to 5 (east, south-east, south, west, north-west, north), and an
+//                            optional fourth field 2 that holds the second pointer button (bit 3 of the view's flag byte). The road
 //                            button's check (0x44b6e6 must say 1 or 2 on the start) and then, per direction, the cursor
 //                            update (0x44b6ce, which leaves the mask of allowed directions at +0xd0 of the view) and the
 //                            click step (0x443f62 to 0x44477f of the click handler 0x440c24, with the click on the node
@@ -115,7 +116,7 @@
 //                            the flag fx,fy, with the marks the castle leaves as wood does). The passes of wood run; before the
 //                            pass AT the CLICKS run in order, each the click handler's routine on a node: f:x,y the remove click
 //                            0x4615cf (a flag by 0x462153, a building by 0x4617fd, anything else refused), r:x,y the road click
-//                            0x462d88 (road take-down 0x462e1d), c:x,y only the classification 0x44b6e6 (the class at +0x100 and
+//                            0x462d88 (road take-down 0x462e1d), p:x,y the flag button 0x442244 (a flag put on a node of a road splits the road: docs/rules/roads.md), b:x,y the building placement 0x449a63 (type 2) after the check, c:x,y only the classification 0x44b6e6 (the class at +0x100 and
 //                            +0x101 of the player), and s:0,0 the classification of every tile of the territory. The sound
 //                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
@@ -815,7 +816,9 @@ public class EmulateMapStart extends GhidraScript {
                 continue;
             }
             // The road button (0x440d23, action 0x18): road mode, the length starts at 0.
-            emu.writeMemory(toAddr(RECORD + 1), new byte[] {(byte) 0xc4});
+            // A fourth field "2" in the road spec sets bit 3 of the view's flag byte, which the pointer update sets while the
+            // second pointer button is held (docs/rules/roads.md); the road mode itself never sets it.
+            emu.writeMemory(toAddr(RECORD + 1), new byte[] {(byte) (fields.length > 3 && fields[3].equals("2") ? 0xcc : 0xc4)});
             putWord(RECORD + 0xce, 0);
             byte[] tablesBefore = emu.readMemory(toAddr(TABLES), ROAD_ITEMS * ITEM_SIZE).clone();
             byte[] mapAtStart = emu.readMemory(toAddr(MAP), bytes).clone();
@@ -1480,7 +1483,14 @@ public class EmulateMapStart extends GhidraScript {
                                 + "/" + (emu.readMemory(toAddr(player + 0x101), 1)[0] & 0xff));
                         continue;
                     }
-                    int sound = runClick(kind.equals("f") ? 0x4615cfL : 0x462d88L);
+                    if (kind.equals("b")) {
+                        // b:x,y the building placement 0x449a63 for a building of type 2 on the node x,y, after the check
+                        // 0x44b6e6 judged it (a node state of 5, 6, or 7 is what its callers hand it).
+                        call(0x44b6e6);
+                        putInt(REGISTERS + 0x14, 2);
+                    }
+                    int sound = runClick(kind.equals("f") ? 0x4615cfL : kind.equals("p") ? 0x442244L
+                            : kind.equals("b") ? 0x449a63L : 0x462d88L);
                     Snapshot now = snapshot(width, height);
                     println("EMU " + label + " click=" + kind + "@" + x + "," + y + " class="
                             + (emu.readMemory(toAddr(player + 0x100), 1)[0] & 0xff) + " sound=" + sound

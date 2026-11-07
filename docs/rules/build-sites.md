@@ -95,7 +95,7 @@ sets two bits of the player's flags that tell the screen where to draw its marke
 
 ## Placing a building
 
-**Status:** confirmed for what `0x449a63` writes; which node states the building buttons accept is **inferred**.
+**Status:** confirmed for what `0x449a63` writes and for the node states it takes; the click that reaches it is **open**.
 
 A building comes with its flag. `0x449a63` takes a slot of the building table and, unless the node state is 5, a slot
 of the flag table. Where the node state is 5, a flag stands on the south-east node and the building takes it. Otherwise
@@ -103,10 +103,27 @@ the routine writes a new flag on the south-east node as the flag placement does 
 the flag bit, the deposit moved to the neighbors, and the new slot as the node's link. The player then joins that flag
 to the others with a road.
 
+**The node states.** `0x449a63` has two callers, and no player's click is one of them: the placement at the start of a
+mission (`0x41f2d2`), which takes the node as the evaluator leaves it, and the end of a building's timer (`0x42cf9d`),
+which judges the node again and places a building only where the node state is 5, 6, or 7. So the program places a
+building on a node of state 5, 6, or 7. The building buttons of the game view (actions 2, 3, 4, `0x11`, `0x12`, and
+`0x17` of `0x440d23`) only open the building panels, and the click on a panel's building is not recovered.
+
+**Node state 6: the flag node holds a road.** The state means the south-east node (the building's flag node) has road
+bits and no flag. `0x449a63` writes the flag there like any other, then, where the node state is 6, calls the split of
+the road on that node (`Road_SplitAtFlag`, `0x4662e2`), as `Flag_Place` does for a node state of 4
+([Roads](roads.md#a-flag-on-a-road)). The building's flag therefore stands on the road and cuts it into two roads. The flag's item also takes bit `0x40`
+at `+4`, which a placement of any building sets. **Confirmed, emulated:** `building-state6` in `road-splits.txt`
+places a building of type 2 on the node 17,5 whose flag node 18,6 is the middle of a road of 4 steps: the road splits as
+a flag put there by the button would split it, the node's flag byte takes the building's bit `0x10`, and the new flag
+is slot 3.
+
 ## In the engine
 
 `OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Simulation/BuildSite.cs`). The engine departs from the program
 in two places: a node with a flag or a building object gives 0, 0, 0, and the code 3 height term is left out
 (above). `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md). `Game.PlaceBuilding`
-places a woodcutter's hut on a site of 3 or more with the node state 5 (a flag with no building) or 7, and puts its
-flag down for the node state 7. **Stand-in:** it refuses the node state 6.
+places a woodcutter's hut on a site of 3 or more with the node state 5 (a flag with no building), 6, or 7. It puts the
+flag down for the node states 6 and 7, and for 6 it splits the road under the flag (`Game.SplitRoad`) before it sets the
+hut's mark (bit `0x10`) at the flag, so the mark is never read as a road bit. The click's map bytes and the flag items
+are those of `building-state6` (`RoadSplitTests`).

@@ -300,7 +300,10 @@ public sealed partial class Game
                 return;
             }
 
-            var turned = (byte)settler.Stamp - 3;
+            // The stamp's low byte is the heading less 6 (Wait): a signed byte, from -6 (heading 0) to -1 (heading 5). The turned
+            // heading is the opposite direction: low + 6 - 3, and 6 more where that went below 0 (checked against the
+            // emulator's fetches in road-splits.txt, where the carrier came by 0 and by 3).
+            var turned = (sbyte)settler.Stamp + 3;
             heading = (byte)(turned < 0 ? turned + 6 : turned);
         }
 

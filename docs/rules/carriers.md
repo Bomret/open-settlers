@@ -44,6 +44,9 @@ reaches `0x464c36`, which looks at each direction from north (5) to east (0) tha
   of the table: the window is the buildings' (16, 30, or 55 by map size), the scan stops after 10 flags that had the bit set.
   It is the building scan of [Settlers](settlers.md#the-retry-scan) with the flag table's items (70 bytes) and bit 7.
 
+A road split by a flag ([Roads](roads.md#a-flag-on-a-road)) leaves the half without the old carrier with its road bytes at the
+class alone, so this loop asks for a carrier for it like for a new road.
+
 The goods part of `0x46414d` (a good's destination and direction, the second carrier of a busy road) is in
 [Goods at a flag](goods.md); it runs before this road loop at the flag's turn.
 
