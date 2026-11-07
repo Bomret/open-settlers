@@ -138,11 +138,18 @@ public sealed class SettlerGraphics
         if (archive.RowCount > ShadowEntry && archive[ShadowEntry].State != EntryState.Absent)
         {
             shadowLayer = images.Count;
-            images.Add(ObjectImage.Shadow(MaskFile.Read(archive.Data(archive[ShadowEntry]))));
+            images.Add(
+                ObjectGraphics.Read(
+                    archive,
+                    ShadowEntry,
+                    "the shadow mask",
+                    data => ObjectImage.Shadow(MaskFile.Read(data))
+                )
+            );
         }
 
-        var width = Math.Max(images.Max(image => image.Width), 1);
-        var height = Math.Max(images.Max(image => image.Height), 1);
+        var width = Math.Max(images.Select(image => image.Width).DefaultIfEmpty().Max(), 1);
+        var height = Math.Max(images.Select(image => image.Height).DefaultIfEmpty().Max(), 1);
 
         return new SettlerGraphics
         {

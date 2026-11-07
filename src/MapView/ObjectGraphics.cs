@@ -222,7 +222,8 @@ public sealed class ObjectGraphics
         };
     }
 
-    static T Read<T>(Archive archive, int number, string what, Func<ReadOnlyMemory<byte>, T> read)
+    /// <summary>Reads entry <paramref name="number"/> with <paramref name="read"/>; an absent or unreadable entry fails naming <paramref name="what"/> and the entry.</summary>
+    internal static T Read<T>(Archive archive, int number, string what, Func<ReadOnlyMemory<byte>, T> read)
     {
         try
         {
