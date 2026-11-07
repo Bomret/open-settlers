@@ -55,3 +55,11 @@ Concepts: Thing ID, Event, Simulation
 Statement: Recording never changes the game. The thing-ID counters and the event store stay out of `Game.Digest()`, and no rule reads them to decide anything. The same seed and commands give the same digest as before the feature, and every existing test passes unchanged.
 Breaks: silently
 Check: a test runs the same seed and commands and compares the digest with a value taken before recording existed; reviewers check that no rule reads the store or a counter.
+
+### INV-0008
+
+Class: architecture
+Concepts: Simulation, Domain, Adapter
+Statement: The simulation's layers are separate assemblies, and each depends only inward. The domain assembly references no other project assembly. The application assembly references only the domain. The adapter assembly references the domain and the application. None of them references a Godot type. The original's packed state bytes, map layers, and bare codes appear only in the adapter assembly; the map view and every other caller read the typed model (ADR 0013).
+Breaks: loudly
+Check: the project references in each layer's `.csproj`; the compiler refuses a reference that points outward. Reviewers check that no packed byte or bare code of the original enters the domain or the application.

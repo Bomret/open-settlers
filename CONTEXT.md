@@ -148,6 +148,17 @@ _Avoid_: edge, path, street
 A settler who walks one road and carries goods between its two flags.
 _Avoid_: porter, transporter, worker
 
+**Job**
+What a settler is employed as, such as carrier, woodcutter, or builder. A settler keeps its identity when its
+job changes: a settler without a job becomes a carrier when it takes a road.
+_Avoid_: role, profession, class
+
+**Activity**
+What a settler does at one moment, with exactly the data that doing it needs: waiting in the castle, walking
+along a road, searching for a tree, walking home. A settler has one activity at a time and leaves it for the
+next; each activity keeps the code of the original's settler state it stands for.
+_Avoid_: settler state, mode, action
+
 **Transport priority**
 A player's rank for each kind of good. Where several goods at one flag wait for the same road, the good
 with the highest rank goes next. A new game starts every player with the same default order.
