@@ -299,6 +299,24 @@ public sealed class RoadSplitGameTests
         Assert.AreEqual(1, game.Roads.Count);
     }
 
+    // The hut's flag node 18,6 holds a road (node state 6), but the hut's own node 17,5 is a site for a flag only (site 1).
+    [TestMethod]
+    public void AHutOnARoadNodeWhoseSiteIsTooSmallIsRefusedAndNothingChanges()
+    {
+        var game = EastRoad();
+        game.Map.Bytes(MapLayer.Terrain)[game.Map.Index(17, 5)] = 0;
+        var site = BuildSite.Evaluate(TestProgram.Made(), game.Map, 17, 5, 0, hasCastle: true);
+        Assert.AreEqual((6, 1), (site.Node, site.Site), "a road on the flag node, a site for a flag only");
+        var digest = game.Digest();
+
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 17, 5));
+        game.ApplyCommands();
+
+        Assert.AreEqual(digest, game.Digest());
+        Assert.AreEqual(1, game.Roads.Count);
+        Assert.AreEqual(2, game.Flags.Count);
+    }
+
     [TestMethod]
     public void TheMarkOfAHutAtItsFlagIsNoRoadForALaterRoadAtThatFlag()
     {
@@ -322,6 +340,21 @@ public sealed class RoadSplitGameTests
         Apply(game, CommandKind.RemoveBuilding, 17, 5);
 
         Apply(game, CommandKind.RemoveFlag, 18, 6);
+
+        Assert.AreEqual(Describe(before), Describe(game.Roads.Single()));
+    }
+
+    // The click refuses the flag while the hut stands (ClickClass), so the join is reached through the take-down itself.
+    [TestMethod]
+    public void TheMarkOfAStandingHutAtItsFlagIsNoRoadWhenTheFlagJoinsTheRoad()
+    {
+        var game = EastRoad();
+        var before = game.Roads.Single();
+        Apply(game, CommandKind.PlaceBuilding, 17, 5);
+        var node = game.Map.Index(18, 6);
+        Assert.AreEqual(0x10, game.Map.Layer(MapLayer.Flags)[node] & 0x10, "the hut's mark is set");
+
+        game.TakeFlagDown(node);
 
         Assert.AreEqual(Describe(before), Describe(game.Roads.Single()));
     }

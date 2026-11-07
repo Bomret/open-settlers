@@ -691,7 +691,13 @@ public sealed partial class Game
     // debugger run reaches it. Open lead in docs/milestones/m3-first-loop.md (more settlers on a joined road than its class holds).
     private void JoinRoads(int index, int slot)
     {
-        var bits = Map.Layer(MapLayer.Flags)[index] & 0x3f;
+        // Bit 4 with no road there is the mark of a hut standing at the flag (PlaceBuilding), no road bit.
+        var bits = Map.Layer(MapLayer.Flags)[index] & (RoadAt(slot, 4) is null ? 0x2f : 0x3f);
+        if (bits == 0)
+        {
+            return;
+        }
+
         var first = BitOperations.TrailingZeroCount(bits);
         var last = 5;
         while ((bits >> last & 1) == 0)
