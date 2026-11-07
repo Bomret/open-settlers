@@ -222,7 +222,7 @@ The harness verbs: `remove` with the clicks `p@x,y` (the flag button) and `b@x,y
 and `road` with the fourth field `2` (bit 3 held), in `tools/GhidraDump/EmulateMapStart.java`. `road-splits.txt`
 (`tests/OpenSettlers.Tests/`) holds the lines of 18 runs: the split with the carrier in each state, with a good, on the
 west road, with no free settler, the refused nodes, the building with node state 6, and the three road clicks. The lines
-are expected values for the engine's split; no test reads the file yet.
+are expected values for the engine's split; `RoadSplitTests` replays the `split-*` runs.
 
 ## How a road is drawn
 
@@ -285,6 +285,11 @@ game, a node at a time, and sends one command where the road reaches a flag; Esc
 again cancels. `RoadDraws`, `RoadGraphics`, and the control draw the strips over the terrain in every copy of the map;
 the road being drawn is a white line. Departures: the length class, the second bit byte at `+5`, and the items'
 pointers are not kept (a later slice reads the road from the map and from `Game.Roads`); the `+0x37e` option, the
-second-button click that puts a flag on a road, and the split of a road by a flag ([A flag on a road](#a-flag-on-a-road));
-the step back at the start; directions after the road reached a flag are refused;
-the sounds; and the pixel alignment of the strips.
+second-button click that puts a flag on a road ([A flag on a road](#a-flag-on-a-road)); the step back at the start;
+directions after the road reached a flag are refused; the sounds; and the pixel alignment of the strips.
+
+`Game.PlaceFlag` on a road node (node state 4) splits the road (`src/Simulation/Game.Split.cs`): `Game.Roads` holds the two
+halves in place of the old road, the water kind goes to both, the settlers on the road are gathered as the take-down of a flag
+gathers them (`JoinRoads` is the inverse), and the half without a carrier asks for one at the next flag pass. The events are
+`split-roads`, with the cause of the flag's placement. `RoadSplitTests` replays the `split-*` runs of `road-splits.txt`.
+A road holds one kind in the engine: the join of a water road and a land road is a land road.

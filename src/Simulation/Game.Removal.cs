@@ -572,8 +572,9 @@ public sealed partial class Game
 
     // 0x462153: a flag is taken down. A flag with roads (the check allows two) joins its two roads into one between the flags at
     // their far ends; the flag then goes as a flag with no road does: the node loses its flag bit, object, and link, the
-    // settlers on their way to it go home, the goods that lie on it are counted lost, and its slot is free.
-    private void TakeFlagDown(int index)
+    // settlers on their way to it go home, the goods that lie on it are counted lost, and its slot is free. Internal for the test
+    // of the join of two water roads, whose flag the original's click refuses (ClickClass).
+    internal void TakeFlagDown(int index)
     {
         var flags = Map.Bytes(MapLayer.Flags);
         var slot = Map.Layer(MapLayer.Resource)[index];
