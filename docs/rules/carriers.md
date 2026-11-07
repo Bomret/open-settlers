@@ -89,8 +89,8 @@ a later cycle: with two roads at the castle's flag, the road in the higher direc
   the one of state 2 (the shape `4 + 9 * direction + height difference`, the time of the step added to the timer, the carrier going
   on at once where the sum did not wrap). **Blocked:** where the next node holds a settler, the timer is 0x7f, the frame
   `0x51 + direction`, and the heading the direction less 6; at the next turn after the timer the carrier tries the same
-  direction again. A settler coming the other way, whose own heading is that direction's opposite less 6, is swapped past instead
-  (**not ported**: the port waits; no run in the three games swaps).
+  direction again. A step east, south-east, or south onto a settler coming the other way, whose own heading is that direction's opposite
+  less 6, passes it instead ([Settlers](settlers.md#walking-home), *Passing*; `HeadOnPassTests` reaches it with two carriers).
 - **The last step.** Where the next node is the flag at the end of the road and the carrier's mode is 0, the carrier stays on
   its node: its timer takes 0x3f, its frame `0x6e` plus its heading, the low byte of its stamp the heading less 6, its mode the
   direction in which the road leaves that flag (the heading before it) and the dword at 12 a pointer to that flag's item (the

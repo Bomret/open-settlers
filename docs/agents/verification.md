@@ -82,6 +82,9 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
+- `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the
+  second road down and puts a woodcutter's hut down at the first flag, so the road's carrier walking home and the
+  woodcutter walking out meet head-on and pass, and checks both at the pass (tick 499).
 
 ```sh
 sh tools/play-run.sh woodcutter-cut --layout layouts/woodcutter.jsonc --fps 10

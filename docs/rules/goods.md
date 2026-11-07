@@ -215,7 +215,8 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 - A carrier sent home (byte 15 negative, `0x43aea4`), and state 0x44 and later (`0x43007b`, `0x4300f1`).
 - The passing of two settlers that come the other way at a flag (the emulated game of several carriers shows it at a flag where
   a carrier with a log and a carrier that is to fetch one meet): the swap of a step east, south-east, or south is ported with the
-  walk home ([Settlers](settlers.md#walking-home)); the carriers' own scenarios keep the roads' carriers from meeting head on.
+  walk home ([Settlers](settlers.md#walking-home)). `layouts/head-on-pass.jsonc` with `play/head-on-pass.play` meets a carrier
+  walking home and a woodcutter walking out head on along one road, and `HeadOnPassTests` meets two carriers the same way.
 
 ## In the engine
 
