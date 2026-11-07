@@ -50,7 +50,8 @@ current phase and works a slice of its table:
   its table, so slots past it get no turn. A slot with a clear bit is skipped.
 - `Table16`: the phase modulo 16 picks the first slot of the slice, which then takes every 16th slot up to the
   high-water mark; each set slot is dispatched on its state byte through `0x42fc81`. **Emulated:** a settler's
-  turns lie 16 or 17 passes apart (`worker-walks.txt`).
+  turns lie 16 passes apart within a cycle (`worker-walks.txt`). The gap to the next cycle is 17 passes in a
+  game with 33 phases and 17 to 33 passes in a game with 49 ([Settlers](settlers.md#the-pass)).
 
 Phases 32 and above call none of these routines. A `Table70` or `Table18` slot therefore gets one turn per phase
 cycle, a `Table16` slot two, and a cycle is 33 or 49 passes long.

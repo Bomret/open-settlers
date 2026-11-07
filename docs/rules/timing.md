@@ -64,15 +64,18 @@ at normal speed.
 Each pass of the main loop calls `Frame_WaitAndPresent` at `0x45d718` before it presents the frame. That routine
 waits until the interrupt counter is at least 4 above the value it stored at the previous frame, then
 stores the new value. A pass therefore takes at least 4 timer calls: at least 80 milliseconds at normal
-speed. While the clock runs, the elapsed units of a pass are at least 8, and always even because the clock advances in steps of 2. The wait itself lies in the
-game code; it waits through the platform routine `Frame_Handshake` at `0x406c60` that hands control between the threads.
+speed. While the clock runs, the elapsed units of a pass are at least 8. They are always even, because the
+clock advances in steps of 2. The wait itself lies in the game code. It waits through the platform routine
+`Frame_Handshake` at `0x406c60`, which hands control between the threads.
 
-A measurement on the History Edition agrees. The probe `tools/WindowsCheck/elapsed-probe.ps1` polled the
-game state block of a running game. It tallied `Clock_Elapsed` only for the passes that advanced
-`Sim_Phase` by exactly 1 with the clock running, which leaves out paused passes, passes that ran several
-phases (see "Rules that count passes"), and passes the poller missed. All 5921 tallied passes had 8
-elapsed units: 1884 at speed 1 and 4037 at speed 8. The totals that `0x42a74a` copied were 264 to 296
-units per phase cycle of 49 phases, multiples of 8 that match 33 to 37 passes of 8 units each.
+A run of the probe `tools/WindowsCheck/elapsed-probe.ps1` against the History Edition agrees. The probe
+polled the game state block of a running game. It tallied `Clock_Elapsed` only for the passes that
+advanced `Sim_Phase` by exactly 1 with the clock running. That leaves out paused passes, passes that ran
+several phases ([Rules that count passes](#rules-that-count-passes)), and passes the poller missed. The
+summary of the run recorded 5921 tallied passes, all with 8 elapsed units: 1884 at speed 1 and 4037 at
+speed 8. It recorded totals that `0x42a74a` copied of 264 to 296 units per phase cycle of 49 phases.
+These are multiples of 8 that match 33 to 37 passes of 8 units each. The repository does not keep the
+summary (INV-0001).
 
 `Timer_WaitNextCall` at `0x425c9c` resets the interrupt counter and waits until the next timer call has happened.
 Its callers are unknown: the program holds no direct call to it and no reference to its address as a
@@ -97,40 +100,40 @@ The phase selects the work of a pass:
 - Phase 32: the routine `0x42965c`. It calls `0x42b18d` first. While the clock runs, it then calls
   `0x42a74a`, which copies the running total of the elapsed units and resets it, and further routines.
 - Phases 33 to 48: the routines at `0x4293f6`, `0x42944d`, `0x4294a4`, and `0x4294fb`, one per player
-  block in turn. Each tests bits 7 and 6 of byte 2 of its player block (inferred: the block marks an
-  active computer player). When both are set, the routine draws from the random generator through
-  `Rng_Step` at `0x466ade`. When the draw is below the player block's `+0x1ae`, it calls `0x46986d`
-  and returns: the pass runs no further phase, and the item-table routines of the pass still run.
+  block in turn. Each tests bits 7 and 6 of byte 2 of its player block. **Inferred:** the block marks an
+  active computer player. When both bits are set, the routine draws from the random generator through
+  `Rng_Step` at `0x466ade`. When the draw is below the player block's `+0x1ae`, it calls `0x46986d` and
+  returns. The pass then runs no further phase, and the item-table routines of the pass still run.
   Otherwise the routine adds 1 to `Sim_Phase` itself and goes on to the next player's routine in the
-  same pass. `0x4294fb` goes back to `0x4293f6` while `Sim_Phase` is below the phase count
-  (`0x42956c`), and sets `Sim_Phase` to 0 when it reaches the count. The routines therefore go round
-  the player blocks until a draw leads to the call of `0x46986d` or the phase reaches the phase count.
+  same pass. `0x4294fb` goes back to `0x4293f6` while `Sim_Phase` is below the phase count (`0x42956c`).
+  It sets `Sim_Phase` to 0 when the phase reaches the count. The routines therefore go round the player
+  blocks until a draw leads to the call of `0x46986d` or the phase reaches the phase count.
 
 A pass therefore runs one phase from 0 to 32, or one or more phases from 33 to 48. A phase cycle takes
-33 passes when the phase count is 33, and from 33 to 49 passes when it is 49. When the routines of
-phases 33 to 48 set `Sim_Phase` to 0, the item-table routines of that pass process the slices of phase
-0, and the next pass starts at phase 1. The per-player update of phase 0 then does not run in that
-cycle. When a draw at phase 48 leads to the call of `0x46986d`, `Sim_Phase` stays at 48,
+33 passes when the phase count is 33. It takes 33 to 49 passes when the phase count is 49. When the
+routines of phases 33 to 48 set `Sim_Phase` to 0, the item-table routines of that pass process the
+slices of phase 0, and the next pass starts at phase 1. The per-player update of phase 0 then does not
+run in that cycle. When a draw at phase 48 leads to the call of `0x46986d`, `Sim_Phase` stays at 48.
 `Sim_StepPhase` wraps it to 0 on the next pass, and the per-player update of phase 0 runs.
 
 Which work runs counts passes, not clock units: each entry of an item table gets its turn once per
 phase cycle, however many clock units the cycle takes. The work on a turn can itself count clock units,
-as the countdowns of `Table18` do (see the next section).
+as the countdowns of `Table18` do. The next section describes them.
 
 While the clock step is 0, the main loop still calls the same routines on each pass, with 0 elapsed
-units (`0x425bce` to `0x425bf1`): `0x427062`, `0x4286d8`, `Sim_StepPhase`, the routines for the item
-tables at `0x46414d`, `0x42cb2d`, and `0x42f3d9`, then `0x42f4f1` and `0x425cb9`. This work changes the
-game state:
+units. The code is at `0x425bce` to `0x425bf1`. The routines are `0x427062`, `0x4286d8`, `Sim_StepPhase`,
+the routines for the item tables at `0x46414d`, `0x42cb2d`, and `0x42f3d9`, then `0x42f4f1` and
+`0x425cb9`. This work changes the game state:
 
-- The ambient sounds of each view draw from the random generator through `Rng_Step` (`0x428985`, the
-  call at `0x42899a`), in every game, for each view whose byte 0 has bit 0 clear; `0x428985` returns
-  without a draw when that bit is set (`0x42898d` to `0x428999`).
+- The ambient sounds of each view draw from the random generator through `Rng_Step`, in every game, for
+  each view whose byte 0 has bit 0 clear. The routine is `0x428985` and the call is at `0x42899a`.
+  `0x428985` returns without a draw when that bit is set (`0x42898d` to `0x428999`).
 - `Sim_StepPhase` advances the phase. At phase 32, `0x42965c` calls `0x42b18d` before it reads the
-  clock step (`0x42965c` to `0x42966e`); `0x42b18d` writes `+0x188` and `+0x184` of each player block
+  clock step (`0x42965c` to `0x42966e`). `0x42b18d` writes `+0x188` and `+0x184` of each player block
   through `0x42b1ce`. Phase 32 then returns before it calls `0x42a74a`.
 - In a game with 49 phases, the routines of phases 33 to 48 draw through `Rng_Step` without reading
-  the clock step (`0x429427`). `0x46986d` returns at once while the clock step is 0 (`0x469870` to
-  `0x46987a`).
+  the clock step (`0x429427`). `0x46986d` returns at once while the clock step is 0
+  (`0x469870` to `0x46987a`).
 
 Whether the item-table routines and the other routines of the pass change the game state during a
 pause is unknown. The engine skips all of this work
@@ -168,9 +171,13 @@ covered.
 
 The engine's tick is one pass of 8 clock units
 ([ADR 0005](../adr/0005-a-tick-is-one-pass-of-eight-clock-units.md)): 4 timer calls, 12.5 ticks per
-second at normal speed. `Game.Tick` in `src/Simulation/Game.cs` applies the commands due at the tick,
-then advances the tick count; the view calls it 12.5 times per second of frame time and carries the
-fraction. Each tick then runs one pass of the item tables' routines: the retry scan, the phase step, the slice of the flag
-list (the carriers' requests only: [Carriers](carriers.md#the-flag-pass)), and the slices of the building and settler lists
-([Settlers](settlers.md#the-pass)), then, with `Game.EveryPassTurns`, one more turn for every settler in a state the view draws in motion; the clock starts at 0 and gains 8 a pass, and
-the phase at 0 goes to 1 on the first pass. The players' timers are not in the engine yet.
+second at normal speed. `Game.Tick` in `src/Simulation/Game.cs` applies the commands due at the tick, runs one pass, and then
+advances the tick count. The view calls it 12.5 times per second of frame time and carries the fraction.
+
+A pass runs the retry scan and the phase step. It then runs the slice of the flag list, for the carriers'
+requests only ([Carriers](carriers.md#the-flag-pass)), and the slices of the building and settler lists
+([Settlers](settlers.md#the-pass)). With `Game.EveryPassTurns`, it then gives one more turn to every
+settler in a state the view draws in motion.
+
+The clock starts at 0 and gains 8 a pass. The phase at 0 goes to 1 on the first pass. The players' timers
+are not in the engine yet.

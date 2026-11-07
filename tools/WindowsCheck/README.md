@@ -202,7 +202,8 @@ The fields are those of [the program index](../../docs/rules/program-index.md):
 The probe compares each poll with the previous one and counts only polls in which `Sim_Phase` changed.
 The phase steps between two polls are the change of `Sim_Phase`, modulo `Sim_PhaseCount`.
 
-- `paused passes`: polls that saw the phase change while the clock step was 0, at any speed.
+- `paused passes`: polls that saw the phase change while the clock step was 0, at any speed. A paused
+  poll that saw the phase wrap also adds to `cycle totals`.
 - `null state pointer`: polls in which the game state pointer at EDI block `+0x34` was 0. The probe reads
   no game state in them.
 - `failed reads`: polls in which a read of the EDI block, or of the game state at a pointer other than 0,
@@ -214,4 +215,5 @@ The phase steps between two polls are the change of `Sim_Phase`, modulo `Sim_Pha
   steps beyond the first. A pass of phases 33 to 48 that ran several phases adds to it, and so does a pass
   the poller missed; the count does not tell the two apart.
 - `cycle totals (phase count:units)`: for each poll that saw the phase wrap, the phase count and the value
-  at `+0x28a`, with how often that pair occurred.
+  at `+0x28a`, with how often that pair occurred. This includes a poll that saw the phase wrap while the
+  clock step was 0, because the probe checks the wrap before it sorts the poll as paused or running.
