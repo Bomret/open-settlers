@@ -100,7 +100,8 @@ public sealed class ExchangeTests
     }
 
     // A good on a place that has been given the road's direction (bits 5 to 7 hold the direction plus one).
-    private static void LayDirected(GoodsTransport goods, int place, int good) => goods.LayGood(0, place, good, way: Way);
+    private static void LayDirected(GoodsTransport goods, int place, int good) =>
+        goods.LayGood(0, place, good, way: Way);
 
     [TestMethod]
     public void AfterACarrierTakesAGoodTheGoodOfTheHighestTransportPriorityForTheSameRoadWaitsNext()

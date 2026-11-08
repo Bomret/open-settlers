@@ -114,12 +114,9 @@ public sealed partial class Game
         _behaviours.Register<Leaving>((slot, settler, _) => Leave(slot, settler));
         _behaviours.Register<WaitsOutStep>((slot, settler, _) => WaitOutStep(slot, settler));
         _behaviours.Register<Walks>((slot, settler, _) => Walk(slot, settler));
-        _behaviours.Register<WalksRoad>((slot, settler, _) => WalkRoadTurn(slot, settler));
-        _behaviours.Register<WaitsAtFlag>((slot, settler, _) => Fetch(slot, settler));
-        _behaviours.Register<ClaimsNode>((slot, settler, _) => Claim(slot, settler));
         _behaviours.Register<WaitsToGoHome>((slot, settler, _) => Dismissed(slot, settler));
         _behaviours.Register<WaitsToRejoin>((slot, settler, _) => Rejoined(slot, settler));
-        _behaviours.Register<HandsOver>((slot, settler, _) => HandoverTurn(slot, settler));
+        _carriers.Register(_behaviours);
         _woodcutter.Register(_behaviours);
         _walkHome.Register(_behaviours);
         _behaviours.Register<KnightWalks>((_, _, _) => { });
@@ -146,14 +143,14 @@ public sealed partial class Game
     {
         _clock = (ushort)(_clock + ClockStep);
         ClearRetryBits();
-        ClearFlagRetryBits();
+        _carriers.ClearFlagRetryBits();
         _woodcutter.ObjectPass();
         _phase = (_phase + 1) % PhaseCount;
         if (_phase < TablePhases)
         {
             _tablePass.Run(
                 _phase,
-                FlagPass,
+                () => _carriers.FlagPass(_phase),
                 (slot, building) =>
                 {
                     if (building.IsDemolishing)
@@ -351,32 +348,6 @@ public sealed partial class Game
         History.RecordSettler(slot, EventType.Visited, RuleCause);
     }
 
-    // State 3: a carrier on its road takes its turn when its timer has run out.
-    private void WalkRoadTurn(int slot, Settler settler)
-    {
-        if (TimerRan(settler))
-        {
-            WalkRoad(slot, settler);
-        }
-        else
-        {
-            History.RecordSettler(slot, EventType.Visited, RuleCause);
-        }
-    }
-
-    // State 0xe: a carrier handing a good over takes its turn when its timer has run out.
-    private void HandoverTurn(int slot, Settler settler)
-    {
-        if (TimerRan(settler))
-        {
-            Handover(slot, settler);
-        }
-        else
-        {
-            History.RecordSettler(slot, EventType.Visited, RuleCause);
-        }
-    }
-
     // State 1, a settler waiting in the castle (0x438eeb): it enters its slot in the castle's list of waiting settlers
     // each turn. The job 10 takes another branch (not ported); the knights, the jobs 22 to 26, also draw
     // (docs/rules/woodcutting.md, "The random generator").
@@ -547,7 +518,7 @@ public sealed partial class Game
             else if (!Map.At(here).FlagMark)
             {
                 // A node of a road: the road's other direction than the one the settler came by.
-                direction = RoadContinuation(Map.At(here).Roads, walks.Heading.Direction);
+                direction = SettlerMovement.RoadContinuation(Map.At(here).Roads, walks.Heading.Direction);
                 if (direction < 0)
                 {
                     settler.Timer = 0;
@@ -572,7 +543,7 @@ public sealed partial class Game
                     // the road.
                     if (errand is ToRoad)
                     {
-                        EnterRoad(slot, settler);
+                        _carriers.EnterRoad(slot, settler);
                     }
                     else
                     {

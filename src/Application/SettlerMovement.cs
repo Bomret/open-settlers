@@ -80,6 +80,17 @@ public sealed class SettlerMovement(
     }
 
     /// <summary>
+    /// On a node of a road, the one direction of the road other than the one the settler came by (its heading); -1 where the road
+    /// has none or has more than one.
+    /// </summary>
+    public static int RoadContinuation(RoadSet roads, int heading)
+    {
+        var rest = roads.Without(heading);
+
+        return rest.Count == 1 ? rest.First : -1;
+    }
+
+    /// <summary>
     /// The step onto a node. It records nothing: the rule that moves the settler records the change after it has applied all of
     /// it (a `moved` event here would show the settler on its new node with the rest of the change not yet made).
     /// </summary>

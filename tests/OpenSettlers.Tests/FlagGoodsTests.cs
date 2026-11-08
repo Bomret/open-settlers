@@ -158,7 +158,7 @@ public sealed class FlagGoodsTests
         {
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
-                game.LayGood(put.Flag, put.Place, put.Good);
+                game.Goods.LayGood(put.Flag, put.Place, put.Good);
             }
 
             game.Tick();
@@ -235,7 +235,7 @@ public sealed class FlagGoodsTests
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 6));
         game.Tick();
-        game.LayGood(1, 0, 7);
+        game.Goods.LayGood(1, 0, 7);
         var before = game.Digest();
 
         for (var tick = 0; tick < 70; tick++)

@@ -146,7 +146,7 @@ public sealed class LayoutSettlersTests
             $"the list names {waiting}, the lowest waiting settler is {lowest}"
         );
 
-        Assert.IsNull(game.PlaceCarrierOnRoad(11, 11, 0));
+        Assert.IsNull(game.Carriers.PlaceCarrierOnRoad(11, 11, 0));
 
         Assert.IsInstanceOfType<WaitsAtFlag>(game.Settlers[waiting].Activity);
         Assert.IsInstanceOfType<WaitsInCastle>(game.Settlers[lowest].Activity);

@@ -9,7 +9,7 @@ namespace OpenSettlers.Simulation;
 /// commands due at a tick applied in a total order so that the order of <see cref="Enqueue"/> calls does not change
 /// the game (INV-0002).
 /// </summary>
-public sealed partial class Game
+public sealed partial class Game : ICastleRoster
 {
     /// <summary>Ticks in a second at normal speed: 4 timer calls of 20 milliseconds make one tick.</summary>
     public const double TicksPerSecond = 12.5;
@@ -22,6 +22,8 @@ public sealed partial class Game
     private readonly int _stockLevel;
     private readonly FlagTable _flags = new();
     private readonly RoadNetwork _roads = new();
+    private readonly GoodsTransport _goods;
+    private readonly CarrierBehavior _carriers;
     private ulong _applied = FnvOffset;
 
     /// <summary>
@@ -38,6 +40,7 @@ public sealed partial class Game
         History = new GameHistory(new SnapshotExporter(_settlers, _buildings, _flags), () => TickCount);
         _draws = new GeneratorDraws(map.Generator);
         _movement = new SettlerMovement(map, _buildings, tables, () => _clock, SettlerEncoder.ResidueOf);
+        _goods = new GoodsTransport(_movement, _flags, _roads, History);
         _walkHome = new WalkHomeBehavior(_movement, _buildings, _flags, _roads, History, _draws, Route);
         _woodcutter = new WoodcutterBehavior(
             _movement,
@@ -46,7 +49,20 @@ public sealed partial class Game
             History,
             _draws,
             _walkHome,
-            (flag, place, good) => LayGood(flag, place, good),
+            (flag, place, good) => _goods.LayGood(flag, place, good),
+            () => InLayout
+        );
+        _carriers = new CarrierBehavior(
+            _movement,
+            _settlers,
+            _buildings,
+            _flags,
+            _roads,
+            History,
+            _goods,
+            this,
+            Step,
+            AddToStock,
             () => InLayout
         );
         _tablePass = new TablePass(_settlers, _buildings, _behaviours);
@@ -147,7 +163,7 @@ public sealed partial class Game
             hash = Mix(hash, item);
         }
 
-        hash = Mix(hash, _flagCursor);
+        hash = Mix(hash, _carriers.FlagCursor);
 
         foreach (var road in _roads.Roads)
         {
@@ -223,12 +239,12 @@ public sealed partial class Game
         }
 
         _roads.Add(road!);
-        SetSides(road!);
+        _carriers.SetSides(road!);
         // The road's `placed` cause names the road's start flag (the flag the road was built from).
         var cause = CommandCause(History.FlagId(road!.FromSlot));
         if (cause.IsCommand)
         {
-            _roadCauses[road] = cause;
+            _carriers.CarryCause(road, cause);
         }
 
         History.RecordFlag(road.FromSlot, EventType.BuildRoad, cause, History.FlagId(road.ToSlot).ToString());

@@ -207,7 +207,7 @@ public sealed partial class Game
         TakeRoadDown(index, second);
         _roads.Remove(road);
         _raze = null;
-        _roadCauses.Remove(road);
+        _carriers.ForgetCause(road);
 
         return true;
     }
@@ -461,7 +461,7 @@ public sealed partial class Game
         var approach = ((WaitsToRejoin)settler.Activity).Approach;
         Become(settler, new ClaimsNode(Heading.Facing(Map.At(settler.X, settler.Y).Roads.Last), approach));
         Touch(slot, EventType.Rejoined);
-        Claim(slot, settler);
+        _carriers.Claim(slot, settler);
     }
 
     // 0x462c8d: a good that is lost (carried by a settler who is dismissed, or lying on a flag that is taken down) is counted back.
@@ -717,8 +717,8 @@ public sealed partial class Game
         path.AddRange(PathFrom(roadB, slot, last));
         _roads.Remove(roadA);
         _roads.Remove(roadB);
-        _roadCauses.Remove(roadA);
-        _roadCauses.Remove(roadB);
+        _carriers.ForgetCause(roadA);
+        _carriers.ForgetCause(roadB);
         _roads.Add(new Road(a.Far, a.FarDirection, b.Far, b.FarDirection, path, roadA.Water && roadB.Water));
 
         var sideA = _flags[a.Far].Side(a.FarDirection);
@@ -861,9 +861,13 @@ public sealed partial class Game
                 for (var other = 0; other < Flag.PlaceCount; other++)
                 {
                     var candidate = _flags[holder].Places[other];
-                    if (!candidate.IsEmpty && candidate.Way == way && best < TransportPriority(candidate.Good.Code))
+                    if (
+                        !candidate.IsEmpty
+                        && candidate.Way == way
+                        && best < _goods.TransportPriority(candidate.Good.Code)
+                    )
                     {
-                        best = TransportPriority(candidate.Good.Code);
+                        best = _goods.TransportPriority(candidate.Good.Code);
                         bestPlace = other;
                     }
                 }
