@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -50,10 +51,9 @@ public static class ObjectDraws
         ushort counter = 0
     )
     {
-        var heights = map.Layer(MapLayer.Height);
-        var width = map.Size.Width;
-        var draws = new List<ObjectDraw>(map.Objects.Count);
-        foreach (var item in map.Objects)
+        var objects = map.Objects;
+        var draws = new List<ObjectDraw>(objects.Count);
+        foreach (var item in objects)
         {
             if (ObjectSprites.Entry(item.Code, counter) is not { } entry)
             {
@@ -61,7 +61,7 @@ public static class ObjectDraws
             }
 
             var (x, y) = Camera.NodePosition(item.X, item.Y);
-            var height = heights[item.Y * width + item.X] & Map.HeightMask;
+            var height = map.At(item.X, item.Y).Height;
             var top = y - height * TerrainTriangles.HeightStep;
             var goods =
                 item.Code == ObjectSprites.FlagCode && flagGoods is not null
@@ -78,7 +78,7 @@ public static class ObjectDraws
             // the objects of its row. inferred: its alignment to the node is that of an object, which the sprite's own
             // header offsets then adjust.
             var (x, y) = Camera.NodePosition(placed.X, placed.Y);
-            var height = heights[placed.Y * width + placed.X] & Map.HeightMask;
+            var height = map.At(placed.X, placed.Y).Height;
             var index = draws.FindIndex(draw => draw.Row > placed.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,
@@ -95,7 +95,7 @@ public static class ObjectDraws
             // A hut is drawn like the castle: at its node in the order of its row. inferred: the alignment is that of an
             // object, as for the castle.
             var (x, y) = Camera.NodePosition(hut.X, hut.Y);
-            var height = heights[hut.Y * width + hut.X] & Map.HeightMask;
+            var height = map.At(hut.X, hut.Y).Height;
             var index = draws.FindIndex(draw => draw.Row > hut.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,
@@ -107,19 +107,17 @@ public static class ObjectDraws
     }
 
     /// <summary>
-    /// The water sprites of a map in row-major order: one on each tile whose object byte has bit 7 set (a tile with a
-    /// water triangle), drawn by <c>0x44ff59</c> at the tile's horizontal field times 8 and its row's top plus 8, with no
+    /// The water sprites of a map in row-major order: one on each tile with a water triangle, drawn by <c>0x44ff59</c> at the tile's horizontal field times 8 and its row's top plus 8, with no
     /// height. That is 16 pixels west of where an object of the tile at height 0 is drawn, so in the engine's layout the
     /// node's position less 16 in x. <b>Inferred:</b> the alignment, as for the objects.
     /// </summary>
     public static List<ObjectDraw> WaterOf(Map map, ushort counter)
     {
-        var objects = map.Layer(MapLayer.Object);
         var width = map.Size.Width;
         var draws = new List<ObjectDraw>();
-        for (var tile = 0; tile < objects.Length; tile++)
+        for (var tile = 0; tile < map.Count; tile++)
         {
-            if ((objects[tile] & 0x80) != 0)
+            if (map.At(tile).WaterTriangle)
             {
                 var (x, y) = Camera.NodePosition(tile % width, tile / width);
                 draws.Add(new ObjectDraw(tile / width, ObjectSprites.WaterEntry(tile, counter), x - 16, y));

@@ -1,4 +1,4 @@
-namespace OpenSettlers.Simulation;
+namespace OpenSettlers.Domain;
 
 /// <summary>
 /// The original's random generator: three unsigned 16-bit words that <c>Rng_Step</c> (<c>0x466ade</c>) advances

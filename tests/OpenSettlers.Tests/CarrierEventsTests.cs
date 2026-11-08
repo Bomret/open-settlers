@@ -14,12 +14,11 @@ public sealed class CarrierEventsTests
     private static Game NewGame()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var objects = map.Bytes(MapLayer.Object);
-        for (var index = 0; index < objects.Length; index++)
+        for (var index = 0; index < map.Count; index++)
         {
-            if ((objects[index] & 0x7f) is >= 8 and < 0x18)
+            if (map.At(index).Object.Kind == MapObjectKind.Tree)
             {
-                objects[index] &= 0x80;
+                map.At(index).Object = MapObject.None;
             }
         }
 
@@ -317,7 +316,7 @@ public sealed class CarrierEventsTests
     public void ACarrierThatMeetsNoWayOnOnForItsRoadRecordsWalkRoad()
     {
         var game = RoadBuilt();
-        game.Map.Bytes(MapLayer.Flags)[game.Map.Index(17, 6)] = 0;
+        game.Map.At(17, 6).Roads = RoadSet.Empty;
         Run(game, 400);
 
         var carrier = game.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;

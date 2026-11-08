@@ -73,7 +73,7 @@ public sealed class ObjectDrawsTests
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
         game.Tick();
-        var height = map.Layer(MapLayer.Height)[map.Index(16, 2)] & Map.HeightMask;
+        var height = map.At(16, 2).Height;
 
         var draws = ObjectDraws.Of(map, game.Castle, game.Buildings);
 
@@ -112,7 +112,7 @@ public sealed class ObjectDrawsTests
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         var (x, y) = Camera.NodePosition(16, 6);
-        var lift = (map.Layer(MapLayer.Height)[map.Index(16, 6)] & Map.HeightMask) * TerrainTriangles.HeightStep;
+        var lift = map.At(16, 6).Height * TerrainTriangles.HeightStep;
 
         var flag = ObjectDraws.Of(map, game.Castle).Single(draw => draw.Entry == ObjectSprites.FlagEntry);
 
@@ -180,9 +180,8 @@ public sealed class ObjectDrawsTests
     public void EveryWaterTileDrawsItsWaterFrame16PixelsWestOfItsNodeWithNoHeight()
     {
         var map = Generated();
-        var objects = map.Layer(MapLayer.Object).ToArray();
         var width = map.Size.Width;
-        var tiles = Enumerable.Range(0, objects.Length).Where(tile => (objects[tile] & 0x80) != 0).ToList();
+        var tiles = Enumerable.Range(0, map.Count).Where(tile => map.At(tile).WaterTriangle).ToList();
 
         var draws = ObjectDraws.WaterOf(map, 40);
 

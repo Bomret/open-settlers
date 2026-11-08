@@ -36,7 +36,7 @@ public sealed class LayoutApplyTests
     static Game NewGame(Layout layout)
     {
         var tables = TestProgram.Made();
-        tables.Classes[FlagPlacement.FlagCode] = 3;
+        tables.Classes[MapObject.Flag.Code] = 3;
 
         return new Game(tables, layout.BuildMap());
     }

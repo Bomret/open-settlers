@@ -30,14 +30,8 @@ public static class RoadBuilding
     /// </summary>
     public static IReadOnlyList<(int Dx, int Dy)> Steps { get; } = [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
 
-    // The object code of a flag, and the class the program's table gives it.
-    private const int FlagCode = 1;
+    // The class the program's table gives a flag.
     private const int FlagClass = 3;
-
-    // The owner bits of a node of player 0 (the player's number plus 4, in the top 3 bits of the height byte).
-    private const int Owner = 4 << 5;
-
-    private const int RoadBits = 0x3f;
 
     /// <summary>
     /// Draws the road that starts at the flag on the node and takes the given directions, one step each, the way the
@@ -56,14 +50,9 @@ public static class RoadBuilding
         bool keep
     )
     {
-        var flags = map.Bytes(MapLayer.Flags);
-        var heights = map.Bytes(MapLayer.Height);
-        var objects = map.Bytes(MapLayer.Object);
-        var links = map.Bytes(MapLayer.Resource);
-
         var start = map.Index(startX, startY);
         // The road button needs a flag of the player's under the cursor (the evaluator's answers 1 and 2, 0x44b6e6).
-        if ((heights[start] & 0xe0) != Owner || BuildSite.ObjectClass(tables, objects[start]) != FlagClass)
+        if (map.At(start).Owner != Owner.Player(0) || BuildSite.ObjectClass(tables, map.At(start).Object) != FlagClass)
         {
             return (RoadStatus.Refused, null);
         }
@@ -79,7 +68,7 @@ public static class RoadBuilding
 
         void Set(int node, int bit)
         {
-            flags[node] |= (byte)(1 << bit);
+            map.At(node).Roads = map.At(node).Roads.With(bit);
             set.Add((node, bit));
         }
 
@@ -87,7 +76,7 @@ public static class RoadBuilding
         {
             for (var i = set.Count - 1; i >= 0; i--)
             {
-                flags[set[i].Node] &= (byte)~(1 << set[i].Bit);
+                map.At(set[i].Node).Roads = map.At(set[i].Node).Roads.Without(set[i].Bit);
             }
 
             set.Clear();
@@ -114,7 +103,7 @@ public static class RoadBuilding
             var to = map.Index(next.X, next.Y);
             var back = (direction + 3) % 6;
 
-            if ((flags[from] >> direction & 1) != 0)
+            if (map.At(from).Roads.Has(direction))
             {
                 // The bit of this direction is set at the end: the click takes the last step back.
                 if (length == 0)
@@ -123,8 +112,8 @@ public static class RoadBuilding
                     break;
                 }
 
-                flags[from] &= (byte)~(1 << direction);
-                flags[to] &= (byte)~(1 << back);
+                map.At(from).Roads = map.At(from).Roads.Without(direction);
+                map.At(to).Roads = map.At(to).Roads.Without(back);
                 set.RemoveAll(entry => entry.Node == from && entry.Bit == direction);
                 set.RemoveAll(entry => entry.Node == to && entry.Bit == back);
                 steps.RemoveAt(length - 1);
@@ -133,8 +122,8 @@ public static class RoadBuilding
                 continue;
             }
 
-            var reachesFlag = (objects[to] & 0x7f) == FlagCode;
-            if ((flags[to] & RoadBits) != 0 && !reachesFlag)
+            var reachesFlag = map.At(to).Object.Kind == MapObjectKind.Flag;
+            if (!map.At(to).Roads.IsEmpty && !reachesFlag)
             {
                 // A node that holds a road already, and no flag: refused. The Road button never sets view flag bit 3 (docs/rules/roads.md).
                 status = RoadStatus.Refused;
@@ -151,7 +140,7 @@ public static class RoadBuilding
                 continue;
             }
 
-            road = Commit(map, nodes, steps, links);
+            road = Commit(map, nodes, steps);
             if (road is null)
             {
                 status = RoadStatus.Refused;
@@ -179,29 +168,26 @@ public static class RoadBuilding
     // flag, or it holds no road, or a flag could be put on it.
     private static bool Allowed(ProgramTables tables, Map map, int x, int y, int length, int direction)
     {
-        var flags = map.Bytes(MapLayer.Flags);
-        var heights = map.Bytes(MapLayer.Height);
-        var objects = map.Bytes(MapLayer.Object);
         var (dx, dy) = Steps[direction];
         var next = map.Index(x + dx, y + dy);
-        if ((heights[next] & 0xe0) != Owner)
+        if (map.At(next).Owner != Owner.Player(0))
         {
             return false;
         }
 
         // Only a road already begun marks the way back: at the start flag the roads that leave it are no step back.
-        if (length != 0 && (flags[map.Index(x, y)] >> direction & 1) != 0)
+        if (length != 0 && map.At(x, y).Roads.Has(direction))
         {
             return true;
         }
 
-        var objectClass = BuildSite.ObjectClass(tables, objects[next]);
+        var objectClass = BuildSite.ObjectClass(tables, map.At(next).Object);
         if (objectClass is 2 or 4)
         {
             return false;
         }
 
-        if (objectClass == FlagClass || (flags[next] & RoadBits) == 0)
+        if (objectClass == FlagClass || map.At(next).Roads.IsEmpty)
         {
             return true;
         }
@@ -222,12 +208,11 @@ public static class RoadBuilding
 
     // The commit at a flag (0x444e68): walks the drawn road from the flag it ends at back to the one it started at.
     // Every node must be the player's, and the beside-triangles of the steps must be all land or all water.
-    private static Road? Commit(Map map, List<int> nodes, List<int> steps, byte[] links)
+    private static Road? Commit(Map map, List<int> nodes, List<int> steps)
     {
-        var heights = map.Bytes(MapLayer.Height);
         foreach (var node in nodes)
         {
-            if ((heights[node] & 0xe0) != Owner)
+            if (map.At(node).Owner != Owner.Player(0))
             {
                 return null;
             }
@@ -246,28 +231,34 @@ public static class RoadBuilding
             return null;
         }
 
-        return new Road(links[nodes[0]], steps[0], links[nodes[^1]], (steps[^1] + 3) % 6, [.. steps], kinds == 2);
+        return new Road(
+            map.At(nodes[0]).Link ?? 0,
+            steps[0],
+            map.At(nodes[^1]).Link ?? 0,
+            (steps[^1] + 3) % 6,
+            [.. steps],
+            kinds == 2
+        );
     }
 
     // Whether the two triangles beside the step from the node in the direction are both water (0x444e68: the
-    // terrain nibbles of 0 to 3 are water). The triangles are read from the node the step starts at, which differs by
+    // terrain codes of 0 to 3 are water). The triangles are read from the node the step starts at, which differs by
     // direction.
     private static bool Water(Map map, int node, int direction)
     {
-        var terrain = map.Bytes(MapLayer.Terrain);
         var width = map.Size.Width;
         var x = node % width;
         var y = node / width;
-        int T(int dx, int dy) => terrain[map.Index(x + dx, y + dy)];
+        Node At(int dx, int dy) => map.At(x + dx, y + dy);
 
         return direction switch
         {
-            0 => (T(0, 0) & 0x0c) == 0 && (T(0, -1) & 0xc0) == 0,
-            1 => (T(0, 0) & 0xcc) == 0,
-            2 => (T(0, 0) & 0xc0) == 0 && (T(-1, 0) & 0x0c) == 0,
-            3 => (T(-1, 0) & 0x0c) == 0 && (T(-1, -1) & 0xc0) == 0,
-            4 => (T(-1, -1) & 0xcc) == 0,
-            _ => (T(-1, -1) & 0x0c) == 0 && (T(0, -1) & 0xc0) == 0,
+            0 => At(0, 0).Lower.IsWater && At(0, -1).Upper.IsWater,
+            1 => At(0, 0).Upper.IsWater && At(0, 0).Lower.IsWater,
+            2 => At(0, 0).Upper.IsWater && At(-1, 0).Lower.IsWater,
+            3 => At(-1, 0).Lower.IsWater && At(-1, -1).Upper.IsWater,
+            4 => At(-1, -1).Upper.IsWater && At(-1, -1).Lower.IsWater,
+            _ => At(-1, -1).Lower.IsWater && At(0, -1).Upper.IsWater,
         };
     }
 }

@@ -211,7 +211,6 @@ public sealed class SettlerDrawTests
         var seed = parts[5].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
         var width = map.Size.Width;
-        var heights = map.Bytes(MapLayer.Height);
 
         var known = new SortedDictionary<int, byte[]>();
         foreach (var pass in scenario.Passes)
@@ -220,7 +219,8 @@ public sealed class SettlerDrawTests
             {
                 known[slot] = bytes;
                 var settler = FromBytes(bytes, width);
-                heights[map.Index(settler.X, settler.Y)] = (byte)height;
+                // The fixture holds the original's height byte: the height in its low 5 bits.
+                map.At(settler.X, settler.Y).Height = height & Node.MaxHeight;
             }
 
             // The settlers as the original's view pass left them, which it drew.

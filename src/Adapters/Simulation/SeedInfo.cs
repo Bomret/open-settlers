@@ -27,17 +27,20 @@ public static class SeedInfo
         text.Append($"Seed: {seedText}\n");
         text.Append($"Size: {map.Size.Value} ({map.Size.Width} x {map.Size.Height} tiles)\n");
         text.Append("Layer digests (FNV-1a 64, row-major):\n");
+        var layers = MapLayerExporter.Export(map);
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
             var note = layer == MapLayer.Resource ? " (same bytes as Lake, so the digests match)" : "";
-            text.Append($"  {layer}: {map.Digest(layer):x16}{note}\n");
+            text.Append($"  {layer}: {layers.Digest(layer):x16}{note}\n");
         }
 
-        var terrain = map.Layer(MapLayer.Terrain);
         Section(
             text,
             "Terrain tiles (both triangles of each tile, by type):",
-            terrain.ToArray().SelectMany(value => new[] { value >> 4, value & 0xf }).GroupBy(type => type),
+            Enumerable
+                .Range(0, map.Count)
+                .SelectMany(index => new[] { map.At(index).Upper.Code, map.At(index).Lower.Code })
+                .GroupBy(type => type),
             group => $"  {group.Key}: {group.Count()}"
         );
         Section(

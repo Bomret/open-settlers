@@ -24,7 +24,7 @@ public sealed class HeadOnPassTests
     private static ProgramTables MadeTables()
     {
         var classes = new byte[ProgramTables.ClassCount];
-        classes[FlagPlacement.FlagCode] = 3;
+        classes[MapObject.Flag.Code] = 3;
         var rows = new byte[ProgramTables.WalkRowCount * ProgramTables.WalkRowSize];
         for (var row = 0; row < ProgramTables.WalkRowCount; row++)
         {
@@ -92,8 +92,7 @@ public sealed class HeadOnPassTests
         return new Meeting(game, pass, wait, stepper, passer);
     }
 
-    private static int Height(Game game, int x, int y) =>
-        game.Map.Layer(MapLayer.Height)[game.Map.Index(x, y)] & Map.HeightMask;
+    private static int Height(Game game, int x, int y) => game.Map.At(x, y).Height;
 
     private static (int X, int Y) Node(ThingState state) => (state.Get("x")!.Value, state.Get("y")!.Value);
 

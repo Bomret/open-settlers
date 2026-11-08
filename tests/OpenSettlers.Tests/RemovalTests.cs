@@ -219,6 +219,7 @@ public sealed class RemovalTests
     private static string MapChanges(byte[][] before, Map map)
     {
         var width = map.Size.Width;
+        var exported = MapLayerExporter.Export(map);
         var layers = new[] { (0, MapLayer.Flags), (3, MapLayer.Object), (4, MapLayer.Resource) };
         var changed = new List<string>();
         for (var index = 0; index < width * map.Size.Height; index++)
@@ -226,16 +227,16 @@ public sealed class RemovalTests
             // The link byte of a flag or a building holds the slot, one less than the verb's (the dummies of the tables).
             static int Link(int value, int code) => value != 0 && code is 1 or 2 ? value + 1 : value;
             var parts = layers
-                .Where(layer => map.Layer(layer.Item2)[index] != before[layer.Item1][index])
+                .Where(layer => exported.Layer(layer.Item2)[index] != before[layer.Item1][index])
                 .Select(layer =>
                     layer.Item1 == 4
                         ? string.Create(
                             CultureInfo.InvariantCulture,
-                            $"4={Link(before[4][index], before[3][index] & 0x7f):X2}>{Link(map.Layer(MapLayer.Resource)[index], map.Layer(MapLayer.Object)[index] & 0x7f):X2}"
+                            $"4={Link(before[4][index], before[3][index] & 0x7f):X2}>{Link(exported.Layer(MapLayer.Resource)[index], exported.Layer(MapLayer.Object)[index] & 0x7f):X2}"
                         )
                         : string.Create(
                             CultureInfo.InvariantCulture,
-                            $"{layer.Item1}={before[layer.Item1][index]:X2}>{map.Layer(layer.Item2)[index]:X2}"
+                            $"{layer.Item1}={before[layer.Item1][index]:X2}>{exported.Layer(layer.Item2)[index]:X2}"
                         )
                 );
             var text = string.Join('/', parts);
@@ -267,13 +268,7 @@ public sealed class RemovalTests
         );
 
     private static byte[][] Snapshot(Map map) =>
-        [
-            map.Layer(MapLayer.Flags).ToArray(),
-            [],
-            [],
-            map.Layer(MapLayer.Object).ToArray(),
-            map.Layer(MapLayer.Resource).ToArray(),
-        ];
+        [Layers.Of(map, MapLayer.Flags), [], [], Layers.Of(map, MapLayer.Object), Layers.Of(map, MapLayer.Resource)];
 
     [TestMethod]
     [DynamicData(nameof(Scenarios))]

@@ -107,7 +107,7 @@ public sealed class RoadLoopTests
             game.Settlers.Count(s => s is { Job: Settler.CarrierJob, State: 3 or 0x42 }),
             "no carrier at work"
         );
-        CollectionAssert.AreEqual(bare.Map.Bytes(MapLayer.Flags).ToArray(), game.Map.Bytes(MapLayer.Flags).ToArray());
+        CollectionAssert.AreEqual(TestMaps.Roads(bare.Map), TestMaps.Roads(game.Map));
     }
 
     [TestMethod]
@@ -120,11 +120,11 @@ public sealed class RoadLoopTests
 
         Apply(game, CommandKind.RemoveRoad, 17, 6);
 
-        // The mask leaves out bit 4 (0x10): at the castle's flag 16,6 it is the mark of the castle at its north-west, which the
-        // take-down keeps, and no road of this test uses direction 4. Bits 6 and 7 are the flag's own marks.
+        // Direction 4 is left out: at the castle's flag 16,6 it is the mark of the castle at its north-west, which the
+        // take-down keeps, and no road of this test uses it.
         CollectionAssert.AreEqual(
-            new[] { 0, 0, 0, 0, 0 },
-            Enumerable.Range(16, 5).Select(x => map.Bytes(MapLayer.Flags)[map.Index(x, 6)] & 0x2f).ToArray()
+            new[] { RoadSet.Empty, RoadSet.Empty, RoadSet.Empty, RoadSet.Empty, RoadSet.Empty },
+            Enumerable.Range(16, 5).Select(x => map.At(x, 6).Roads.Without(4)).ToArray()
         );
     }
 
@@ -166,11 +166,11 @@ public sealed class RoadLoopTests
     {
         // Out and straight back is the click that takes the last step back, so it leaves no road.
         var game = Started();
-        var flags = game.Map.Bytes(MapLayer.Flags).ToArray();
+        var roads = TestMaps.Roads(game.Map);
 
         Apply(game, CommandKind.BuildRoad, 16, 6, [0, 3]);
 
         Assert.AreEqual(0, game.Roads.Count);
-        CollectionAssert.AreEqual(flags, game.Map.Bytes(MapLayer.Flags).ToArray());
+        CollectionAssert.AreEqual(roads, TestMaps.Roads(game.Map));
     }
 }

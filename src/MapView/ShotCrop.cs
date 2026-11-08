@@ -1,4 +1,5 @@
 using System;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -63,9 +64,6 @@ public static class ShotCrop
         if (problem is not null)
             return problem;
 
-        var width = map.Size.Width;
-        var rows = map.Size.Height;
-        var heights = map.Layer(MapLayer.Height);
         var (left, top, right, bottom) = (double.MaxValue, double.MaxValue, double.MinValue, double.MinValue);
         for (var dr = -radius; dr <= radius; dr++)
         {
@@ -79,8 +77,7 @@ public static class ShotCrop
 
                 var (c, r) = (column + dc, row + dr);
                 var (x, y) = Camera.NodePosition(c, r);
-                var wrapped = (((r % rows) + rows) % rows) * width + ((c % width) + width) % width;
-                y -= (heights[wrapped] & Map.HeightMask) * TerrainTriangles.HeightStep;
+                y -= map.At(c, r).Height * TerrainTriangles.HeightStep;
                 var screenX = (x + copy.X - cameraX) * scale + viewWidth / 2;
                 var screenY = (y + copy.Y - cameraY) * scale + viewHeight / 2;
                 left = Math.Min(left, screenX - Camera.NodeSpacing / 2 * scale);

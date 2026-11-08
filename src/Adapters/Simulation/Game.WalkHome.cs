@@ -75,18 +75,15 @@ public sealed partial class Game
         RecordSettler(slot, EventType.EnteredStorage, Cause.WalkHome, BuildingId(0).ToString());
     }
 
-    // The owner bits a node of the settler's player holds in its height byte (0x4354b8: the player plus 4, in the top three bits).
-    private static int OwnerBits(Settler settler) => ((settler.Player & 3) + 4) << 5;
+    // The owner a node of the settler's player has (0x4354b8).
+    private static Owner OwnerOf(Settler settler) => Owner.Player(settler.Player);
 
-    // Whether a flag of the settler's player stands on the node and a road leaves it (flag bit 7 of the node, bits 0 to 5 of the
-    // flag item's byte 4 not 0, the owner bits equal: 0x4355 and 0x4385ab).
+    // Whether a flag of the settler's player stands on the node and a road leaves it (the flag mark of the node, bits 0 to 5 of the
+    // flag item's byte 4 not 0, the owners equal: 0x4355 and 0x4385ab).
     private bool HomeFlag(Settler settler, int x, int y)
     {
         var index = Map.Index(x, y);
-        if (
-            (Map.Layer(MapLayer.Flags)[index] & 0x80) == 0
-            || (Map.Layer(MapLayer.Height)[index] & 0xe0) != OwnerBits(settler)
-        )
+        if (!Map.At(index).FlagMark || Map.At(index).Owner != OwnerOf(settler))
         {
             return false;
         }
@@ -148,9 +145,7 @@ public sealed partial class Game
     {
         var width = Map.Size.Width - 1;
         var height = Map.Size.Height - 1;
-        var objects = Map.Layer(MapLayer.Object);
-        var heights = Map.Layer(MapLayer.Height);
-        var owner = OwnerBits(settler);
+        var owner = OwnerOf(settler);
         var tries = 10;
         var mask = 15;
         var half = 8;
@@ -182,11 +177,7 @@ public sealed partial class Game
             var dx = (draw & 0xff & mask) - half;
             var dy = (draw >> 8 & mask) - half;
             var index = Map.Index((settler.X + dx) & width, (settler.Y + dy) & height);
-            if (
-                (objects[index] & 0x7f) == 0
-                && (heights[index] & 0x1f) != 0
-                && (anywhere || (heights[index] & 0xe0) == owner)
-            )
+            if (!Map.At(index).Object.Exists && Map.At(index).Height != 0 && (anywhere || Map.At(index).Owner == owner))
             {
                 return ((sbyte)dx, (sbyte)dy);
             }

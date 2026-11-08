@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 
 namespace OpenSettlers.Simulation;
 
@@ -336,11 +335,11 @@ public sealed partial class Game
 
     // On a node of a road, the one direction of the road other than the one the settler came by (its heading); -1
     // where the road has none or has more than one.
-    private static int RoadContinuation(byte flagsByte, int heading)
+    private static int RoadContinuation(RoadSet roads, int heading)
     {
-        var rest = flagsByte & 0x3f & ~(1 << heading);
+        var rest = roads.Without(heading);
 
-        return rest == 0 || (rest & (rest - 1)) != 0 ? -1 : BitOperations.TrailingZeroCount(rest);
+        return rest.Count == 1 ? rest.First : -1;
     }
 
     // State 3, a carrier on its road (0x43ad78 and the step routines of 0x43b508): when its timer has run out it steps along
@@ -348,7 +347,6 @@ public sealed partial class Game
     // direction the road goes on. A step that would end at a flag is its last: the carrier stays on the node and waits.
     private void WalkRoad(int slot, Settler settler)
     {
-        var flags = Map.Layer(MapLayer.Flags);
         while (true)
         {
             var here = Map.Index(settler.X, settler.Y);
@@ -357,9 +355,9 @@ public sealed partial class Game
             {
                 direction = settler.Heading + 6;
             }
-            else if ((flags[here] & 0x80) == 0)
+            else if (!Map.At(here).FlagMark)
             {
-                direction = RoadContinuation(flags[here], settler.Heading);
+                direction = RoadContinuation(Map.At(here).Roads, settler.Heading);
                 if (direction < 0)
                 {
                     settler.Timer = 0;
@@ -371,25 +369,25 @@ public sealed partial class Game
             {
                 // A carrier on a flag: with a good for the building at this flag it goes in, else it swaps goods with the flag and
                 // goes on along the road it came by.
-                if (settler.Mode != 0 && settler.Target == Map.Layer(MapLayer.Resource)[here] + 1)
+                if (settler.Mode != 0 && settler.Target == Map.At(here).LinkedSlot + 1)
                 {
                     Deliver(slot, settler);
                     return;
                 }
 
-                Exchange(slot, settler, Map.Layer(MapLayer.Resource)[here]);
+                Exchange(slot, settler, Map.At(here).LinkedSlot);
                 direction = settler.Heading;
             }
 
             var (_, _, next) = Neighbour(settler, direction);
             if (
-                (flags[next] & 0x80) != 0
+                Map.At(next).FlagMark
                 && settler.Mode == 0
                 && (sbyte)settler.Next >= 0
-                && (_directionBytes[Map.Layer(MapLayer.Resource)[next]][(direction + 3) % 6] & 0x80) == 0
+                && (_directionBytes[Map.At(next).LinkedSlot][(direction + 3) % 6] & 0x80) == 0
             )
             {
-                Wait(slot, settler, (direction + 3) % 6, Map.Layer(MapLayer.Resource)[next]);
+                Wait(slot, settler, (direction + 3) % 6, Map.At(next).LinkedSlot);
                 return;
             }
 

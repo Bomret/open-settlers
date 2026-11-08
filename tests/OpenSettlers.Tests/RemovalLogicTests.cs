@@ -39,13 +39,12 @@ public sealed class RemovalLogicTests
     private static Game World(byte capacity = 8, bool hut = true, byte[]? transportPriorities = null)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var objects = map.Bytes(MapLayer.Object);
-        for (var index = 0; index < objects.Length; index++)
+        for (var index = 0; index < map.Count; index++)
         {
             // No tree stands anywhere, so the worker waits in its hut.
-            if ((objects[index] & 0x7f) is >= 8 and < 0x18)
+            if (map.At(index).Object.Kind == MapObjectKind.Tree)
             {
-                objects[index] &= 0x80;
+                map.At(index).Object = MapObject.None;
             }
         }
 
@@ -103,9 +102,9 @@ public sealed class RemovalLogicTests
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));
         Assert.IsTrue(game.Flags[4].IsFree, "the slot is free");
         Assert.AreEqual(6, game.Flags.Count, "a slot that is not the last leaves the count");
-        Assert.AreEqual(0, game.Map.Layer(MapLayer.Resource)[game.Map.Index(13, 4)], "the node holds no link");
-        Assert.AreEqual(0, game.Map.Layer(MapLayer.Object)[game.Map.Index(13, 4)] & 0x7f, "or object");
-        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[game.Map.Index(13, 4)] & 0x80, "or flag bit");
+        Assert.IsNull(game.Map.At(13, 4).Link, "the node holds no link");
+        Assert.IsFalse(game.Map.At(13, 4).Object.Exists, "or object");
+        Assert.IsFalse(game.Map.At(13, 4).FlagMark, "or flag mark");
 
         Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
         Assert.AreEqual(new Flag(13, 4), game.Flags[4], "the next flag takes the free slot");
@@ -136,21 +135,9 @@ public sealed class RemovalLogicTests
         Assert.IsTrue(Applied(game, CommandKind.RemoveRoad, 17, 6));
 
         Assert.AreEqual(2, game.Roads.Count);
-        Assert.AreEqual(
-            0,
-            game.Map.Layer(MapLayer.Flags)[game.Map.Index(17, 6)] & 0x3f,
-            "the node of the road is bare"
-        );
-        Assert.AreEqual(
-            0,
-            game.Map.Layer(MapLayer.Flags)[game.Map.Index(16, 6)] & 0x01,
-            "the castle's flag holds no east road bit"
-        );
-        Assert.AreEqual(
-            0,
-            game.Map.Layer(MapLayer.Flags)[game.Map.Index(18, 6)] & 0x08,
-            "nor the flag at the other end a west bit"
-        );
+        Assert.IsTrue(game.Map.At(17, 6).Roads.IsEmpty, "the node of the road is bare");
+        Assert.IsFalse(game.Map.At(16, 6).Roads.Has(0), "the castle's flag holds no east road");
+        Assert.IsFalse(game.Map.At(18, 6).Roads.Has(3), "nor the flag at the other end a west road");
         Assert.IsNull(game.RemovalAt(16, 6), "the castle's flag is still refused");
     }
 
@@ -165,8 +152,8 @@ public sealed class RemovalLogicTests
         Assert.AreEqual(5, joined.Directions.Count, "2 steps and 3 steps");
         Assert.AreEqual(2, joined.ToSlot, "from the castle's flag to the flag at 19,4");
         Assert.IsTrue(game.Flags[1].IsFree);
-        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[game.Map.Index(18, 6)] & 0x80, "the flag bit is gone");
-        Assert.AreNotEqual(0, game.Map.Layer(MapLayer.Flags)[game.Map.Index(18, 6)] & 0x28, "the road passes the node");
+        Assert.IsFalse(game.Map.At(18, 6).FlagMark, "the flag mark is gone");
+        Assert.IsTrue(game.Map.At(18, 6).Roads.Has(3) || game.Map.At(18, 6).Roads.Has(5), "the road passes the node");
     }
 
     // **Inferred:** the test runs on this file's made-up tables (Made), and no emulator or debugger run reaches more settlers on
@@ -254,15 +241,15 @@ public sealed class RemovalLogicTests
 
         Assert.IsTrue(hut.IsDemolishing);
         Assert.AreEqual(0x7ff, hut.Worker, "it burns for 0x7ff clock units");
-        Assert.AreEqual(2, game.Map.Layer(MapLayer.Object)[node] & 0x7f, "its object stays while it burns");
-        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[node] & 0x02, "its node lost the mark of a building");
-        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[game.Map.Index(17, 3)] & 0x10, "and its flag too");
+        Assert.AreEqual(MapObjectKind.Hut, game.Map.At(node).Object.Kind, "its object stays while it burns");
+        Assert.IsFalse(game.Map.At(node).Roads.Has(1), "its node lost the road to its flag");
+        Assert.IsFalse(game.Map.At(17, 3).Roads.Has(4), "and its flag the road to it");
 
         Run(game, 400);
 
         Assert.AreEqual(1, game.Buildings.Count, "the castle only");
-        Assert.AreEqual(0, game.Map.Layer(MapLayer.Object)[node] & 0x7f);
-        Assert.AreEqual(0, game.Map.Layer(MapLayer.Flags)[node] & 0x40);
+        Assert.IsFalse(game.Map.At(node).Object.Exists);
+        Assert.IsFalse(game.Map.At(node).LakeMark);
         Assert.IsTrue(Applied(game, CommandKind.PlaceBuilding, 16, 2), "a hut may stand there again");
     }
 
@@ -277,8 +264,8 @@ public sealed class RemovalLogicTests
         string Part() =>
             string.Join(
                 ' ',
-                game.Map.Digest(MapLayer.Terrain),
-                game.Map.Digest(MapLayer.Height),
+                Layers.Digest(game.Map, MapLayer.Terrain),
+                Layers.Digest(game.Map, MapLayer.Height),
                 game.Roads.Single(road => road.FromSlot == 3 && road.ToSlot == 2).Directions.Sum(),
                 string.Concat(
                     Enumerable

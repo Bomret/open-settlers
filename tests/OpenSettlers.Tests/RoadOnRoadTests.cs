@@ -47,14 +47,14 @@ public sealed class RoadOnRoadTests
     public void ARefusedRoadOnARoadLeavesTheOtherRoadAndTheMapAsTheyWere()
     {
         var game = Started();
-        var flags = game.Map.Digest(MapLayer.Flags);
+        var roads = TestMaps.Roads(game.Map);
         var road = game.Roads.Single();
 
         Apply(game, new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 8, OntoTheRoad));
 
         Assert.AreEqual(1, game.Roads.Count);
         Assert.AreEqual(road, game.Roads.Single());
-        Assert.AreEqual(flags, game.Map.Digest(MapLayer.Flags));
+        CollectionAssert.AreEqual(roads, TestMaps.Roads(game.Map));
         Assert.IsFalse(game.Events.All.Any(e => e.Type == EventType.SplitRoads), "no split");
     }
 
@@ -76,7 +76,7 @@ public sealed class RoadOnRoadTests
     public void ATakenBackStepNextToTheOtherRoadLeavesTheOtherRoadFlagsAndEventsAsTheyWere()
     {
         var game = Started();
-        var flags = game.Map.Digest(MapLayer.Flags);
+        var roads = TestMaps.Roads(game.Map);
         var road = game.Roads.Single();
         var events = game.Events.All.Count();
         var drawing = new RoadDrawing(game);
@@ -87,14 +87,14 @@ public sealed class RoadOnRoadTests
         Assert.IsNull(drawing.Click(18, 8));
 
         CollectionAssert.AreEqual(new[] { (18, 8) }, drawing.Nodes.ToArray());
-        AssertUnchanged(game, road, flags, events);
+        AssertUnchanged(game, road, roads, events);
     }
 
     [TestMethod]
     public void ACancelledRoadNextToTheOtherRoadLeavesTheOtherRoadFlagsAndEventsAsTheyWere()
     {
         var game = Started();
-        var flags = game.Map.Digest(MapLayer.Flags);
+        var roads = TestMaps.Roads(game.Map);
         var road = game.Roads.Single();
         var events = game.Events.All.Count();
         var drawing = new RoadDrawing(game);
@@ -105,14 +105,14 @@ public sealed class RoadOnRoadTests
         drawing.Cancel();
 
         Assert.IsFalse(drawing.Active);
-        AssertUnchanged(game, road, flags, events);
+        AssertUnchanged(game, road, roads, events);
     }
 
-    private static void AssertUnchanged(Game game, Road road, ulong flags, int events)
+    private static void AssertUnchanged(Game game, Road road, RoadSet[] roads, int events)
     {
         Assert.AreEqual(1, game.Roads.Count);
         Assert.AreEqual(road, game.Roads.Single());
-        Assert.AreEqual(flags, game.Map.Digest(MapLayer.Flags));
+        CollectionAssert.AreEqual(roads, TestMaps.Roads(game.Map));
         Assert.AreEqual(events, game.Events.All.Count());
     }
 

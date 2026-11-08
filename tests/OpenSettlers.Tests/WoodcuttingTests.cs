@@ -54,19 +54,18 @@ public sealed class WoodcuttingTests
         ];
 
     private static bool IsTree(Map map, (int X, int Y) node) =>
-        (map.Layer(MapLayer.Object)[map.Index(node.X & 31, node.Y & 31)] & 0x7f) is >= 8 and < 0x18;
+        map.At(node.X, node.Y).Object.Kind == MapObjectKind.Tree;
 
     // The castle, the flags, the roads, and the hut; a tree stands on every node of the hut's reach where trees is true,
     // and the generated trees are gone from the whole map.
     internal static Game World(bool trees, out Map map)
     {
         map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var objects = map.Bytes(MapLayer.Object);
-        for (var index = 0; index < objects.Length; index++)
+        for (var index = 0; index < map.Count; index++)
         {
-            if ((objects[index] & 0x7f) is >= 8 and < 0x18)
+            if (map.At(index).Object.Kind == MapObjectKind.Tree)
             {
-                objects[index] &= 0x80;
+                map.At(index).Object = MapObject.None;
             }
         }
 
@@ -75,9 +74,9 @@ public sealed class WoodcuttingTests
             foreach (var (x, y) in Reach())
             {
                 var index = map.Index(x & 31, y & 31);
-                if ((objects[index] & 0x7f) == 0)
+                if (!map.At(index).Object.Exists)
                 {
-                    objects[index] = 8;
+                    map.At(index).Object = new MapObject(8);
                 }
             }
         }
@@ -139,12 +138,8 @@ public sealed class WoodcuttingTests
             game.Tick();
             felled ??= reach
                 .Cast<(int X, int Y)?>()
-                .FirstOrDefault(node =>
-                    (map.Layer(MapLayer.Object)[map.Index(node!.Value.X & 31, node.Value.Y & 31)] & 0x7f)
-                        is >= 0x5d
-                            and <= 0x66
-                );
-            if (felled is { } node && (map.Layer(MapLayer.Object)[map.Index(node.X & 31, node.Y & 31)] & 0x7f) == 0)
+                .FirstOrDefault(node => map.At(node!.Value.X, node.Value.Y).Object.Kind == MapObjectKind.FallingTree);
+            if (felled is { } node && !map.At(node.X, node.Y).Object.Exists)
             {
                 return;
             }
@@ -159,14 +154,14 @@ public sealed class WoodcuttingTests
         var game = World(true, out var map);
         var watch = new OpenSettlers.MapView.ObjectLayerWatch();
         Assert.IsTrue(watch.Changed(game), "the first look is a change: nothing was drawn yet");
-        var objects = map.Layer(MapLayer.Object).ToArray();
+        var objects = TestMaps.Objects(map);
         var goods = game.FlagGoods(HutFlag).ToArray();
         var changes = 0;
 
         for (var tick = 0; tick < 6000 && !game.FlagGoods(HutFlag).Contains(7); tick++)
         {
             game.Tick();
-            var now = map.Layer(MapLayer.Object).ToArray();
+            var now = TestMaps.Objects(map);
             var moved = !now.SequenceEqual(objects) || !game.FlagGoods(HutFlag).SequenceEqual(goods);
             Assert.AreEqual(moved, watch.Changed(game), $"tick {game.TickCount}");
             changes += moved ? 1 : 0;
@@ -185,7 +180,7 @@ public sealed class WoodcuttingTests
         Assert.IsTrue(watch.Changed(game));
 
         // Only a tick changes the game, so a look between two ticks does not read the layers again.
-        map.Bytes(MapLayer.Object)[0] ^= 0x7f;
+        map.At(0).Object = new MapObject((byte)(map.At(0).Object.Code ^ 0x7f));
 
         Assert.IsFalse(watch.Changed(game));
     }
@@ -194,7 +189,7 @@ public sealed class WoodcuttingTests
     public void WithNoTreeInReachTheWorkerWaitsInItsHutAndTheGameKeepsTicking()
     {
         var game = World(false, out var map);
-        var objects = map.Layer(MapLayer.Object).ToArray();
+        var objects = TestMaps.Objects(map);
 
         for (var tick = 0; tick < 3000; tick++)
         {
@@ -210,9 +205,9 @@ public sealed class WoodcuttingTests
         Assert.IsFalse(game.FlagGoods(HutFlag).Any(good => good != 0));
         Assert.AreEqual(ticks + 1, game.TickCount);
         Assert.AreNotEqual(digest, game.Digest(), "the game state moves on");
-        var after = map.Layer(MapLayer.Object).ToArray();
+        var after = TestMaps.Objects(map);
         Assert.IsTrue(
-            objects.Zip(after).All(pair => pair.First == pair.Second || (pair.First & 0x7f) == 0x53),
+            objects.Zip(after).All(pair => pair.First == pair.Second || pair.First.Kind == MapObjectKind.Stump),
             "the object pass changes only stumps"
         );
     }
@@ -248,9 +243,6 @@ public sealed class WoodcuttingTests
         }
 
         Assert.AreEqual(first.Digest(), second.Digest());
-        CollectionAssert.AreEqual(
-            firstMap.Layer(MapLayer.Object).ToArray(),
-            secondMap.Layer(MapLayer.Object).ToArray()
-        );
+        CollectionAssert.AreEqual(TestMaps.Objects(firstMap), TestMaps.Objects(secondMap));
     }
 }

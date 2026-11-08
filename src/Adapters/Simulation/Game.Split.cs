@@ -18,7 +18,7 @@ public sealed partial class Game
         }
 
         _raze = cause;
-        var (first, second) = RoadBits(Map.Layer(MapLayer.Flags)[index] & 0x3f);
+        var (first, second) = RoadBits(Map.At(index).Roads);
         var a = Gather(index, first);
         var b = Gather(index, second);
 

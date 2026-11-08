@@ -129,7 +129,7 @@ public sealed class MapGeneratorTests
             }
         );
 
-        return map.Layer(MapLayer.Object)[tile];
+        return Layers.Of(map, MapLayer.Object)[tile];
     }
 
     [TestMethod]
@@ -143,7 +143,7 @@ public sealed class MapGeneratorTests
 
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
-            CollectionAssert.AreEqual(first.Layer(layer).ToArray(), second.Layer(layer).ToArray());
+            CollectionAssert.AreEqual(Layers.Of(first, layer), Layers.Of(second, layer));
         }
     }
 
@@ -234,7 +234,12 @@ public sealed class MapGeneratorTests
 
         Assert.AreEqual(552, map.Objects.Count);
         CollectionAssert.AreEqual(
-            new[] { new MapObject(9, 0, 82), new MapObject(22, 0, 73), new MapObject(45, 0, 21) },
+            new[]
+            {
+                new PlacedObject(9, 0, new MapObject(82)),
+                new PlacedObject(22, 0, new MapObject(73)),
+                new PlacedObject(45, 0, new MapObject(21)),
+            },
             map.Objects.Take(3).ToList()
         );
         Assert.AreEqual(1091, map.Deposits.Count);

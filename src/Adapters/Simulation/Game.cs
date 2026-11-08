@@ -29,7 +29,7 @@ public sealed partial class Game
     /// A game on <paramref name="map"/> with the rule tables of <paramref name="tables"/> (read from the install's
     /// program), at tick 0 with no command queued and no castle. The castle will hold the stock of
     /// <paramref name="stockLevel"/> (<see cref="StartStock.At"/>). The game changes the map it is given:
-    /// placing the castle writes the castle, its flag, the heights, and the territory into the map's layers.
+    /// placing the castle writes the castle, its flag, the heights, and the territory into the map.
     /// </summary>
     public Game(ProgramTables tables, Map map, int stockLevel = 0)
     {
@@ -149,9 +149,10 @@ public sealed partial class Game
         MixSettlers(ref hash);
         MixWoodcutting(ref hash);
 
+        var layers = MapLayerExporter.Export(Map);
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
-            hash = Mix(hash, (long)Map.Digest(layer));
+            hash = Mix(hash, (long)layers.Digest(layer));
         }
 
         return hash;

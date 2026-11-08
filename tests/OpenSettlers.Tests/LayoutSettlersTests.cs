@@ -56,7 +56,7 @@ public sealed class LayoutSettlersTests
     internal static ProgramTables MadeTables(byte buildingClass = 0)
     {
         var classes = new byte[ProgramTables.ClassCount];
-        classes[FlagPlacement.FlagCode] = 3;
+        classes[MapObject.Flag.Code] = 3;
         classes[2] = buildingClass;
         var rows = new byte[ProgramTables.WalkRowCount * ProgramTables.WalkRowSize];
         for (var row = 0; row < ProgramTables.WalkRowCount; row++)
@@ -163,7 +163,7 @@ public sealed class LayoutSettlersTests
         }
 
         Assert.IsFalse(leftTheCastle);
-        Assert.IsTrue(Trees.Any(tree => (game.Map.Layer(MapLayer.Object)[game.Map.Index(tree.X, tree.Y)] & 0x7f) != 8));
+        Assert.IsTrue(Trees.Any(tree => game.Map.At(tree.X, tree.Y).Object.Code != 8));
         Assert.AreEqual(0, game.Buildings[1].Status & 0x80);
         Assert.AreEqual(1, game.Settlers.Count(settler => settler.Job == Settler.WoodcutterJob));
     }

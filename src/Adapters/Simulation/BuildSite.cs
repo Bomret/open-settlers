@@ -49,26 +49,22 @@ public static class BuildSite
     /// </summary>
     public static BuildSiteResult Evaluate(ProgramTables tables, Map map, int x, int y, int player, bool hasCastle)
     {
-        var width = map.Size.Width;
-        var flags = map.Bytes(MapLayer.Flags);
-        var heights = map.Bytes(MapLayer.Height);
-        var terrain = map.Bytes(MapLayer.Terrain);
-        var objects = map.Bytes(MapLayer.Object);
-        var owner = hasCastle ? (player + 4) << 5 : 0;
+        var owner = hasCastle ? Owner.Player(player) : Owner.Nobody;
 
-        var p = new int[Nodes];
+        var nodes = new Node[Nodes];
         for (var i = 0; i < Nodes; i++)
         {
             var (dx, dy) = MapGenerator.SpiralOffsets[i];
-            p[i] = map.Index(x + dx, y + dy);
+            nodes[i] = map.At(x + dx, y + dy);
         }
 
         var classes = tables.Classes;
-        int Class(int i) => classes[objects[p[i]] & 0x7f];
-        int Terrain(int i) => terrain[p[i]];
-        int Height(int i) => heights[p[i]] & Map.HeightMask;
+        int Class(int i) => classes[nodes[i].Object.Code];
+        Terrain Up(int i) => nodes[i].Upper;
+        Terrain Low(int i) => nodes[i].Lower;
+        int Height(int i) => nodes[i].Height;
 
-        if ((heights[p[0]] & 0xe0) != owner)
+        if (nodes[0].Owner != owner)
             return default;
 
         var own = Class(0);
@@ -77,15 +73,15 @@ public static class BuildSite
 
         // Node: how the node itself stands.
         int node;
-        var edge = flags[p[0]] & 0x3f;
-        if (edge == 0)
+        var edge = nodes[0].Roads;
+        if (edge.IsEmpty)
         {
             node =
                 Class(2) == 3 ? 5
-                : (flags[p[2]] & 0x3f) == 0 ? 7
+                : nodes[2].Roads.IsEmpty ? 7
                 : 6;
         }
-        else if (edge is 2 or 0x10)
+        else if (edge.IsOnly(1) || edge.IsOnly(4))
         {
             return default;
         }
@@ -98,12 +94,7 @@ public static class BuildSite
         if (own != 0)
             return new(node, 0, 0);
 
-        if (
-            (Terrain(0) & 0xcc) == 0
-            && (Terrain(4) & 0x0c) == 0
-            && (Terrain(5) & 0xcc) == 0
-            && (Terrain(6) & 0xc0) == 0
-        )
+        if (Up(0).IsWater && Low(0).IsWater && Low(4).IsWater && Up(5).IsWater && Low(5).IsWater && Up(6).IsWater)
             return new(node, 0, 0);
 
         var flagNear = false;
@@ -141,39 +132,26 @@ public static class BuildSite
                 return new(node, site, 0);
         }
 
-        if (
-            (Terrain(1) & 0xc0) == 0
-            || (Terrain(3) & 0x0c) == 0
-            || (Terrain(2) & 0xc0) == 0
-            || (Terrain(2) & 0x0c) == 0
-        )
+        if (Up(1).IsWater || Low(3).IsWater || Up(2).IsWater || Low(2).IsWater)
             return new(node, site, 0);
 
         for (var i = 1; i <= 6; i++)
         {
-            if ((heights[p[i]] & 0xe0) != owner)
+            if (nodes[i].Owner != owner)
                 return new(node, site, 0);
         }
 
-        // The six triangles around the node: terrain codes 4 to 7 are plain land, 11 to 14 mountain, others
-        // (water, snow, swamp) cannot be built on (0x44be72).
+        // The six triangles around the node: plain land and mountain can be built on, and no mixture of the two;
+        // the other terrain (water, snow, swamp) cannot (0x44be72).
         var kinds = 0;
-        foreach (
-            var nibble in new[]
-            {
-                Terrain(0) >> 4,
-                Terrain(0) & 0xf,
-                Terrain(4) & 0xf,
-                Terrain(5) >> 4,
-                Terrain(5) & 0xf,
-                Terrain(6) >> 4,
-            }
-        )
+        foreach (var terrain in new[] { Up(0), Low(0), Low(4), Up(5), Low(5), Up(6) })
         {
-            kinds |=
-                nibble is >= 4 and < 8 ? 0
-                : nibble is > 10 and < 15 ? 1
-                : 2;
+            kinds |= terrain.Kind switch
+            {
+                TerrainKind.Plain => 0,
+                TerrainKind.Mountain => 1,
+                _ => 2,
+            };
         }
 
         if (kinds > 1)
@@ -200,7 +178,14 @@ public static class BuildSite
                 return new(node, site, 0);
         }
 
-        if (Terrain(0) != 0x55 || (Terrain(4) & 0xf) != 5 || Terrain(5) != 0x55 || (Terrain(6) & 0xf0) != 0x50)
+        if (
+            Up(0) != Terrain.Lowland
+            || Low(0) != Terrain.Lowland
+            || Low(4) != Terrain.Lowland
+            || Up(5) != Terrain.Lowland
+            || Low(5) != Terrain.Lowland
+            || Up(6) != Terrain.Lowland
+        )
             return new(node, site, 0);
 
         // The heights of the 12 nodes of the second ring bound the levelled height. simplicity: the original also
@@ -235,9 +220,9 @@ public static class BuildSite
     }
 
     /// <summary>
-    /// The class of the object in a tile's object byte (the low 7 bits are the code): the size byte of the program's
+    /// The class of a node's object: the size byte of the program's
     /// table (<c>0x41e640</c>). 1 and 2 are the trees and stones, 3 is a flag, 4 to 6 are buildings (6 is the
     /// castle), 255 marks a border.
     /// </summary>
-    internal static int ObjectClass(ProgramTables tables, byte objectByte) => tables.Classes[objectByte & 0x7f];
+    internal static int ObjectClass(ProgramTables tables, MapObject mapObject) => tables.Classes[mapObject.Code];
 }
