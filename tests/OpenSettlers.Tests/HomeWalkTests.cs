@@ -91,21 +91,27 @@ public sealed class HomeWalkTests
             game.Tick();
         }
 
-        game.Settlers[12].State = 0x1c;
-        game.Settlers[13].State = 0x1c;
+        game.Settlers[12].Activity = new ClaimsHomeNode();
+        game.Settlers[13].Activity = new ClaimsHomeNode();
         var firstClaimed = false;
-        for (var pass = 0; pass < 120 && game.Settlers[13].State == 0x1c; pass++)
+        for (var pass = 0; pass < 120 && game.Settlers[13].Activity is ClaimsHomeNode; pass++)
         {
             game.Tick();
-            if (game.Settlers[12].State != 0x1c && !firstClaimed)
+            if (game.Settlers[12].Activity is not ClaimsHomeNode && !firstClaimed)
             {
                 firstClaimed = true;
-                Assert.AreEqual(0x1c, game.Settlers[13].State, "the node is taken while the first stands on it");
+                Assert.IsInstanceOfType<ClaimsHomeNode>(
+                    game.Settlers[13].Activity,
+                    "the node is taken while the first stands on it"
+                );
             }
         }
 
         Assert.IsTrue(firstClaimed);
-        Assert.AreNotEqual(0x1c, game.Settlers[13].State, "the second claims the node once it is free");
+        Assert.IsNotInstanceOfType<ClaimsHomeNode>(
+            game.Settlers[13].Activity,
+            "the second claims the node once it is free"
+        );
         Assert.AreNotEqual(
             (game.Settlers[12].X, game.Settlers[12].Y),
             (game.Settlers[13].X, game.Settlers[13].Y),
@@ -124,15 +130,18 @@ public sealed class HomeWalkTests
             game.Tick();
         }
 
-        var knight = game.Settlers.First(settler => settler.Job == 22);
-        knight.State = 0x1c;
+        var knight = game.Settlers.First(settler => settler.Job == new Job(22));
+        knight.Activity = new ClaimsHomeNode();
         for (var pass = 0; pass < 80; pass++)
         {
             game.Tick();
         }
 
-        Assert.AreEqual(0x35, knight.State);
-        Assert.AreEqual(0x80, knight.Target >> 8, "the vector of the walk home is set as for the others");
+        Assert.IsInstanceOfType<KnightWalks>(knight.Activity);
+        Assert.IsInstanceOfType<Home>(
+            ((KnightWalks)knight.Activity).Trip.Purpose,
+            "the vector of the walk home is set as for the others"
+        );
     }
 
     [TestMethod]
@@ -189,12 +198,17 @@ public sealed class HomeWalkTests
                     sent.Y = node[1];
                 }
 
-                sent.State = 0x1c;
+                sent.Activity = new ClaimsHomeNode();
                 if (parts.Length > 10)
                 {
+                    // The scenario forces the state and the mode the original's run had at that pass.
                     var force = parts[10].Split(',').Select(int.Parse).ToArray();
-                    sent.State = force[0];
-                    sent.Mode = force[1];
+                    sent.Activity = (force[0], force[1]) switch
+                    {
+                        (0x19, 1) => new SearchesHome(true) { Residue = new Residue(Mode: 1) },
+                        (2, 0xfe) => new Walks(new ToStorage(), new Heading(0)),
+                        _ => throw new InvalidOperationException($"{name}: no activity for the forced {parts[10]}"),
+                    };
                 }
             }
 
@@ -239,7 +253,10 @@ public sealed class HomeWalkTests
         // The settler has walked into the castle and is in its list; the settler that finds no road to a storage does not.
         if (name != NoStorage)
         {
-            Assert.AreEqual(1, game.Settlers[slot].State, $"{name}: the settler waits in the castle");
+            Assert.IsInstanceOfType<WaitsInCastle>(
+                game.Settlers[slot].Activity,
+                $"{name}: the settler waits in the castle"
+            );
             Assert.AreEqual(
                 slot,
                 game.Waiting(game.Settlers[slot].Job),

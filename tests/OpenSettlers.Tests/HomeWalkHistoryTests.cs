@@ -24,18 +24,18 @@ public sealed class HomeWalkHistoryTests
             game.Tick();
         }
 
-        game.Settlers[Sent].State = 0x1c;
+        game.Settlers[Sent].Activity = new ClaimsHomeNode();
         if (carried is not null)
         {
             game.History.CarryCause(Sent, carried);
         }
 
-        for (var pass = 0; pass < 400 && game.Settlers[Sent].State != 1; pass++)
+        for (var pass = 0; pass < 400 && game.Settlers[Sent].Activity is not WaitsInCastle; pass++)
         {
             game.Tick();
         }
 
-        Assert.AreEqual(1, game.Settlers[Sent].State, "the settler is home");
+        Assert.IsInstanceOfType<WaitsInCastle>(game.Settlers[Sent].Activity, "the settler is home");
 
         return game;
     }
@@ -85,14 +85,10 @@ public sealed class HomeWalkHistoryTests
         var settler = game.Settlers[Sent];
         settler.X = 30;
         settler.Y = 30;
-        settler.State = 0x10;
-        settler.Mode = 0;
-        settler.Target = 0x8000;
-        settler.Heading = -1;
-        settler.Next = 8;
+        settler.Activity = new WalksFree(new Trip(new Vector(0, 0), new Home(), 8));
         settler.Timer = 0;
         game.History.CarryCause(Sent, razed);
-        for (var pass = 0; pass < 200 && settler.State == 0x10; pass++)
+        for (var pass = 0; pass < 200 && settler.Activity is WalksFree; pass++)
         {
             game.Tick();
         }
@@ -109,15 +105,15 @@ public sealed class HomeWalkHistoryTests
     public void AKnightSearchingHomeTakesState0x35()
     {
         var game = SentHome(null);
-        var knight = game.Settlers.First(s => s.Job == 22);
+        var knight = game.Settlers.First(s => s.Job == new Job(22));
         var slot = game.Settlers.ToList().IndexOf(knight);
-        knight.State = 0x1c;
-        for (var pass = 0; pass < 80 && knight.State != 0x35; pass++)
+        knight.Activity = new ClaimsHomeNode();
+        for (var pass = 0; pass < 80 && knight.Activity is not KnightWalks; pass++)
         {
             game.Tick();
         }
 
-        Assert.AreEqual(0x35, knight.State);
+        Assert.IsInstanceOfType<KnightWalks>(knight.Activity);
         var searched = game.History.EventsOf(game.History.SettlerId(slot)).Last(e => e.Type == EventType.SearchedHome);
         Assert.AreEqual(0x35, searched.State.Get("state"));
         Assert.AreEqual(Cause.WalkHome, searched.Cause);

@@ -63,31 +63,21 @@ public sealed class SettlerFigures
     /// <summary>The palette index of a player's colour.</summary>
     public static int ColourOf(int player) => ColourBase + ColourStep * player;
 
-    private const int StatesWalking = 2;
-    private const int StatesWaiting = 5;
-
-    // A carrier on its road (state 3) walks as a settler does. **Confirmed** (draw run, settler-draws.txt): a carrier that
-    // waits next to a flag (state 0x42) is not drawn at all: the carrier's figure handler (0x43f8ae) returns at once for it.
-    // **Confirmed** the same way: a carrier whose road was taken down or joined and that waits for its turn to go home
-    // (states 0x44 and 0x45, docs/rules/removal.md) is not drawn either, nor is a settler that claims its node (0x1c)
-    // on its way home, nor a settler at work (the woodcutter's 0x12, the state 0x1f of the settler of the type 1 hut).
-    private const int StatesOnRoad = 3;
-
-    // A carrier hands the good it carries over to the castle in state 0xe (docs/rules/goods.md). **Confirmed** (draw run): it
-    // is drawn as one on its road is, with the good in its hands.
-    private const int StatesHandover = 0xe;
-
-    // A woodcutter that steps through its door (state 4), walks free along its vector (0x10), or cuts (0x11) is drawn with
-    // the frame and the timer it holds as a walking settler is (docs/rules/woodcutting.md). **Confirmed** (draw run): the
-    // cut's frames 0x74 to 0x78 are drawn through the same rule, the figure bytes from 0x80 in the row of the felling and the
-    // other bytes in the row of the walk.
-    private const int StatesDoor = 4;
-    private const int StatesFreeWalk = 0x10;
-    private const int StatesCutting = 0x11;
-
-    // A settler that searches for the nearest flag (0x19) on its way home is drawn with the frame 0x52 the claim sets, as a
-    // walking settler is. **Confirmed** (draw run, the woodcutter and the dismissed carrier).
-    private const int StatesSearching = 0x19;
+    // The settlers that are drawn walk the roads (state 2), wait out a step (5), walk along a road as a carrier does (3), hand
+    // a good over (0xe), step through a door (4), walk free (0x10), cut (0x11), or search for a flag home (0x19). **Confirmed**
+    // (draw run, settler-draws.txt): a carrier that waits next to a flag (state 0x42) is not drawn at all: the carrier's figure
+    // handler (0x43f8ae) returns at once for it. **Confirmed** the same way: a carrier whose road was taken down or joined and
+    // that waits for its turn to go home (states 0x44 and 0x45, docs/rules/removal.md) is not drawn either, nor is a settler
+    // that claims its node (0x1c) on its way home, nor a settler at work (the woodcutter's 0x12, the state 0x1f of the settler
+    // of the type 1 hut). A carrier hands the good it carries over to the castle in state 0xe (docs/rules/goods.md);
+    // **Confirmed** (draw run): it is drawn as one on its road is, with the good in its hands. A woodcutter that steps through
+    // its door, walks free along its vector, or cuts is drawn with the frame and the timer it holds as a walking settler is
+    // (docs/rules/woodcutting.md). **Confirmed** (draw run): the cut's frames 0x74 to 0x78 are drawn through the same rule, the
+    // figure bytes from 0x80 in the row of the felling and the other bytes in the row of the walk. A settler that searches for
+    // the nearest flag on its way home is drawn with the frame 0x52 the claim sets, as a walking settler is. **Confirmed**
+    // (draw run, the woodcutter and the dismissed carrier).
+    private static bool IsDrawn(Activity activity) =>
+        activity is Walks or WaitsOutStep or WalksRoad or HandsOver or Door or WalksFree or Cuts or SearchesHome;
 
     private readonly short[] _bases;
     private readonly short[] _offsets;
@@ -98,19 +88,17 @@ public sealed class SettlerFigures
     private readonly HutFigureAdds _typeOneHut;
     private readonly IdleCarrierTables? _idle;
 
-    // A carrier that waits off its node: it takes state 0x42 at the end of its road (0x43bc52), state 0x43 when it has a good
-    // to fetch and its node is taken, and 0x44 or 0x45 when its road goes (docs/rules/removal.md). From 0x42 on its node
-    // holds a mark (byte 1 of record B: bit 7 and the player) until it takes the node again (0x42ff81, 0x43007b).
-    private const int StatesWaitingFirst = 0x42;
-    private const int StatesWaitingLast = 0x45;
+    // A carrier that waits off its node (the activities of the states 0x42 to 0x45): it takes state 0x42 at the end of its road
+    // (0x43bc52), state 0x43 when it has a good to fetch and its node is taken, and 0x44 or 0x45 when its road goes
+    // (docs/rules/removal.md). From 0x42 on its node holds a mark (byte 1 of record B: bit 7 and the player) until it takes the
+    // node again (0x42ff81, 0x43007b).
 
     // The node's lake mark picks the fixed figure word, and its road directions the offsets (0x44d77e).
     private const int FixedFigureWord = 0x203;
 
-    // The woodcutter's handler (0x43fb6b) tests the figure byte for bit 7, and the settler's byte 13 (the high byte of the
-    // target), byte 14 (the heading), and state for the way back with the log.
+    // The woodcutter's handler (0x43fb6b) tests the figure byte for bit 7, and the settler's activity for the way back with the
+    // log.
     private const int HighFigure = 0x80;
-    private const int WayBackMark = 0x80;
 
     /// <param name="bases">Two words for each high byte of the figure word: the figure base and the second figure base (negative for none).</param>
     /// <param name="offsets">Two words for each low byte of the figure word: what it adds to the figure and to the second figure.</param>
@@ -157,18 +145,8 @@ public sealed class SettlerFigures
         foreach (var settler in settlers)
         {
             if (
-                settler.State
-                    is not (
-                        StatesWalking
-                        or StatesWaiting
-                        or StatesOnRoad
-                        or StatesHandover
-                        or StatesDoor
-                        or StatesFreeWalk
-                        or StatesCutting
-                        or StatesSearching
-                    )
-                || settler.Job is not (Settler.CarrierJob or Settler.WoodcutterJob or RuleTables.TypeOneHutJob)
+                !IsDrawn(settler.Activity)
+                || (settler.Job != Job.Carrier && settler.Job != Job.Woodcutter && settler.Job != Job.TypeOneHut)
                 || Triple(settler, clock) is not { } triple
             )
             {
@@ -236,7 +214,7 @@ public sealed class SettlerFigures
 
         foreach (var settler in settlers)
         {
-            if (settler.Job != Settler.CarrierJob || settler.State is < StatesWaitingFirst or > StatesWaitingLast)
+            if (settler.Job != Job.Carrier || settler.Activity is not WaitsOffRoad)
             {
                 continue;
             }
@@ -285,7 +263,7 @@ public sealed class SettlerFigures
     /// </summary>
     public IEnumerable<(int Entry, int Colour)> Sprites(int job, int colour, int carriedGood = 0)
     {
-        var add = job == Settler.CarrierJob ? Carried(carriedGood) : 0;
+        var add = job == Job.CarrierCode ? Carried(carriedGood) : 0;
         var starts = new HashSet<int>();
         for (var frame = 0; frame < Sequences && _data.Length >= TableEnd; frame++)
         {
@@ -297,7 +275,7 @@ public sealed class SettlerFigures
         }
 
         // A waiting carrier is drawn with the figure words of the tile pass (0x44d77e).
-        if (job == Settler.CarrierJob && _idle is not null)
+        if (job == Job.CarrierCode && _idle is not null)
         {
             foreach (var word in _idle.Figures.Select(word => (int)(ushort)word).Append(FixedFigureWord).Distinct())
             {
@@ -331,7 +309,7 @@ public sealed class SettlerFigures
     {
         switch (job)
         {
-            case Settler.CarrierJob:
+            case Job.CarrierCode:
                 yield return figure;
                 if (add != 0)
                 {
@@ -339,7 +317,7 @@ public sealed class SettlerFigures
                 }
 
                 break;
-            case Settler.WoodcutterJob:
+            case Job.WoodcutterCode:
                 yield return figure + WoodcutterAdd(figure, false);
                 if (figure < HighFigure)
                 {
@@ -363,18 +341,18 @@ public sealed class SettlerFigures
     // log (byte 13 0x80, byte 14 1, state 0x10) for a figure byte below 0x80 on that way.
     private int FigureWord(Settler settler, int figure)
     {
-        if (settler.Job == Settler.CarrierJob)
+        if (settler.Job == Job.Carrier)
         {
             return figure + CarriedFigure(settler);
         }
 
-        if (settler.Job == RuleTables.TypeOneHutJob)
+        if (settler.Job == Job.TypeOneHut)
         {
             // The handler of the type 1 hut's settler (0x43fed8) adds by the heading for a figure byte from 0x80 and by the
             // way back with a load, as the woodcutter's does, below it.
             if (figure >= HighFigure)
             {
-                return figure + (settler.Heading == 1 ? _typeOneHut.HighFacing : _typeOneHut.High);
+                return figure + (FacesBack(settler) ? _typeOneHut.HighFacing : _typeOneHut.High);
             }
 
             return figure + (WayBackWithLoad(settler) ? _typeOneHut.Carrying : _typeOneHut.Walk);
@@ -390,9 +368,20 @@ public sealed class SettlerFigures
         : carrying ? _woodcutter.Carrying
         : _woodcutter.Walk;
 
-    // The way back with a load: byte 13 0x80, byte 14 1, and state 0x10 (0x43fc0b, 0x43ff40).
+    // The way back with a load: the free walk back to the hut's flag with the log (0x43fc0b, 0x43ff40).
     private static bool WayBackWithLoad(Settler settler) =>
-        settler is { State: StatesFreeWalk, Heading: 1 } && settler.Target >> 8 == WayBackMark;
+        settler.Activity is WalksFree { Trip.Purpose: BackToHut { Carrying: true } };
+
+    // The settler's heading is 1 (byte 14, which the handler of the type 1 hut's settler reads at 0x43fed8): the way back with
+    // a load, the first cut, or a step back from the node to the south-west.
+    private static bool FacesBack(Settler settler) =>
+        settler.Activity switch
+        {
+            WalksFree { Trip.Purpose: BackToHut { Carrying: true } } => true,
+            Cuts cut => cut.Count == 1,
+            Walks walks => walks.Heading == new Heading(1),
+            _ => false,
+        };
 
     // The offset in the sequences' entry at which the sequence of a frame starts.
     private int SequenceStart(int frame)
@@ -428,7 +417,16 @@ public sealed class SettlerFigures
     // 0x43f8ae, for the states 3 and 0xe). A carrier in state 0x42 has no record (byte 11 is the road direction there, no
     // good). Sprites applies the same rule through Carried.
     private int CarriedFigure(Settler settler) =>
-        settler is { Job: Settler.CarrierJob, State: StatesOnRoad or StatesHandover } ? Carried(settler.Mode) : 0;
+        settler is { Job.Code: Job.CarrierCode, Activity: WalksRoad or HandsOver }
+            ? Carried(
+                settler.Activity switch
+                {
+                    WalksRoad road => road.Load?.Good.Code ?? 0,
+                    HandsOver hands => hands.Load?.Good.Code ?? 0,
+                    _ => 0,
+                }
+            )
+            : 0;
 
     // The word of the table at 0x43f4b7 for a good (2 * good bytes on): the row of the figure bases in its high byte. A
     // carrier with no good (0) adds nothing; so does a good the table does not cover.

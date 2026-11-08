@@ -27,17 +27,18 @@ public sealed class ExchangeTests
         return game;
     }
 
-    // A settler of the game's list made a carrier on a flag, with the heading it came in.
-    private static Settler Carrier(Game game, int good, int target)
+    // A settler of the game's list made a carrier on a flag, with the heading it came in and the good it carries for the flag
+    // `destination` (none: no good).
+    private static Settler Carrier(Game game, int good, int? destination)
     {
         var settler = game.Settlers[0];
-        settler.State = 3;
-        settler.Heading = Way;
-        settler.Mode = good;
-        settler.Target = target;
+        settler.Activity = new WalksRoad(good == 0 ? null : new Load(new Good(good), destination), new Heading(Way));
 
         return settler;
     }
+
+    // The good a carrier carries; 0 for none.
+    private static int Carried(Settler carrier) => ((WalksRoad)carrier.Activity).Load?.Good.Code ?? 0;
 
     [TestMethod]
     public void ACarrierThatCarriesAGoodLeavesItInThePlaceOfTheGoodThatWaitsForItsRoadAndTakesThatOneAlong()
@@ -45,11 +46,11 @@ public sealed class ExchangeTests
         var game = WithFlag();
         game.LayGood(0, 2, Log);
         game.WaitForRoad(0, Way, 2);
-        var carrier = Carrier(game, Stone, 1);
+        var carrier = Carrier(game, Stone, 0);
 
         game.Exchange(0, carrier, 0);
 
-        Assert.AreEqual(Log, carrier.Mode, "the carrier takes the good that waited");
+        Assert.AreEqual(Log, Carried(carrier), "the carrier takes the good that waited");
         Assert.AreEqual(new Good(Stone), game.Flags[0].Places[2].Good, "the good it carried is left in that place");
         Assert.AreEqual(0, game.Flags[0].Places[2].Destination, "its destination goes with it");
         Assert.IsNull(game.Flags[0].Side(Way).WaitingPlace, "no good waits for the road any more");
@@ -62,11 +63,11 @@ public sealed class ExchangeTests
         var game = WithFlag();
         game.LayGood(0, 5, Log);
         game.WaitForRoad(0, Way, 5);
-        var carrier = Carrier(game, 0, 0);
+        var carrier = Carrier(game, 0, null);
 
         game.Exchange(0, carrier, 0);
 
-        Assert.AreEqual(Log, carrier.Mode);
+        Assert.AreEqual(Log, Carried(carrier));
         Assert.IsTrue(game.Flags[0].Places[5].IsEmpty, "the place is empty");
     }
 
@@ -75,11 +76,11 @@ public sealed class ExchangeTests
     {
         var game = WithFlag();
         game.LayGood(0, 0, Log);
-        var carrier = Carrier(game, Stone, 1);
+        var carrier = Carrier(game, Stone, 0);
 
         game.Exchange(0, carrier, 0);
 
-        Assert.AreEqual(0, carrier.Mode, "the carrier has nothing left");
+        Assert.AreEqual(0, Carried(carrier), "the carrier has nothing left");
         Assert.AreEqual(new Good(Stone), game.Flags[0].Places[1].Good);
         Assert.AreEqual(0, game.Flags[0].Places[1].Destination);
     }
@@ -108,7 +109,7 @@ public sealed class ExchangeTests
         LayDirected(game, 4, Log);
         game.WaitForRoad(0, Way, 4);
 
-        game.Exchange(0, Carrier(game, 0, 0), 0);
+        game.Exchange(0, Carrier(game, 0, null), 0);
 
         Assert.AreEqual(2, game.Flags[0].Side(Way).WaitingPlace, "the stone waits next");
     }
@@ -122,7 +123,7 @@ public sealed class ExchangeTests
         LayDirected(game, 6, Log);
         game.WaitForRoad(0, Way, 6);
 
-        game.Exchange(0, Carrier(game, 0, 0), 0);
+        game.Exchange(0, Carrier(game, 0, null), 0);
 
         Assert.AreEqual(1, game.Flags[0].Side(Way).WaitingPlace);
     }
@@ -135,7 +136,7 @@ public sealed class ExchangeTests
         LayDirected(game, 6, Stone);
         game.WaitForRoad(0, Way, 6);
 
-        game.Exchange(0, Carrier(game, 0, 0), 0);
+        game.Exchange(0, Carrier(game, 0, null), 0);
 
         Assert.IsNull(game.Flags[0].Side(Way).WaitingPlace, "no good waits for the road");
     }
@@ -149,10 +150,10 @@ public sealed class ExchangeTests
             game.LayGood(0, place, Log);
         }
 
-        var carrier = Carrier(game, Stone, 1);
+        var carrier = Carrier(game, Stone, 0);
 
         game.Exchange(0, carrier, 0);
 
-        Assert.AreEqual(Stone, carrier.Mode);
+        Assert.AreEqual(Stone, Carried(carrier));
     }
 }

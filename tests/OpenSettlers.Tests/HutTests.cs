@@ -86,8 +86,10 @@ public sealed class HutTests
 
         Assert.AreEqual(1, game.Buildings.Count);
         Assert.AreEqual(20, game.Settlers.Count);
-        Assert.AreEqual(Settler.WoodcutterJob, game.Settlers[10].Job);
-        Assert.IsTrue(game.Settlers.Skip(1).All(settler => settler.State == 1 && settler.X == 15 && settler.Y == 5));
+        Assert.AreEqual(Job.Woodcutter, game.Settlers[10].Job);
+        Assert.IsTrue(
+            game.Settlers.Skip(1).All(settler => settler.Activity is WaitsInCastle && settler.X == 15 && settler.Y == 5)
+        );
     }
 
     [TestMethod]
@@ -98,11 +100,11 @@ public sealed class HutTests
         PlaceHut(game);
 
         var hut = game.Buildings[1];
-        Assert.AreEqual(Building.WoodcutterType, hut.Type);
+        Assert.AreEqual(BuildingType.Woodcutter, hut.Type);
         Assert.AreEqual((16, 2), (hut.X, hut.Y));
         Assert.AreEqual(3, hut.Flag);
         Assert.IsFalse(hut.Constructing);
-        Assert.AreEqual(0, hut.Status & 0x40);
+        Assert.IsFalse(hut.WorkerInside);
         Assert.AreEqual(MapObjectKind.Hut, game.Map.At(16, 2).Object.Kind);
     }
 
@@ -215,10 +217,13 @@ public sealed class HutTests
         Run(game, 1200);
 
         var worker = game.Settlers[10];
-        Assert.AreEqual(0x12, worker.State, "inside the hut, looking for a tree");
+        Assert.IsInstanceOfType<LooksForTree>(worker.Activity, "inside the hut, looking for a tree");
         Assert.AreEqual((16, 2), (worker.X, worker.Y));
         Assert.AreEqual(10, game.Buildings[1].Worker);
-        Assert.AreEqual(0x40, game.Buildings[1].Status & 0xc0, "the worker is inside, and no longer on the way");
+        Assert.IsTrue(
+            game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay,
+            "the worker is inside, and no longer on the way"
+        );
     }
 
     [TestMethod]
@@ -229,13 +234,13 @@ public sealed class HutTests
 
         Run(game, 300);
         var idle = game.Settlers[10];
-        Assert.AreEqual(1, idle.State, "the worker waits in the castle");
-        Assert.AreEqual(0, game.Buildings[1].Status & 0x80);
+        Assert.IsInstanceOfType<WaitsInCastle>(idle.Activity, "the worker waits in the castle");
+        Assert.IsFalse(game.Buildings[1].WorkerOnTheWay);
 
         Build(game, 17, 3, 0, 1);
         Run(game, 1200);
 
-        Assert.AreEqual(0x12, game.Settlers[10].State);
+        Assert.IsInstanceOfType<LooksForTree>(game.Settlers[10].Activity);
         Assert.AreEqual(10, game.Buildings[1].Worker);
     }
 

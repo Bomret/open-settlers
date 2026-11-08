@@ -549,7 +549,7 @@ public sealed class PlayScript
             return (null, Usage);
 
         // The job names are the name table's (ADR 0010); fast-forward watches only these two jobs.
-        var job = new[] { Simulation.Settler.WoodcutterJob, Simulation.Settler.CarrierJob }.FirstOrDefault(
+        var job = new[] { Domain.Job.Woodcutter.Code, Domain.Job.Carrier.Code }.FirstOrDefault(
             code => Simulation.NameTable.JobName(code) == args[0],
             -1
         );

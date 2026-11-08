@@ -8,26 +8,22 @@ namespace OpenSettlers.Simulation;
 /// holds (ADR 0013, INV-0006): the fields in a fixed order, each a name and its number. It reads the game's lists, which the
 /// game shares with it, and changes none.
 /// </summary>
-public sealed class SnapshotExporter(
-    IReadOnlyList<Settler> settlers,
-    IReadOnlyList<Building> buildings,
-    FlagTable flags
-) : IThingSnapshots
+public sealed class SnapshotExporter(SettlerTable settlers, BuildingTable buildings, FlagTable flags) : IThingSnapshots
 {
     /// <summary>The building in the slot: its type, node, flag, status, worker, and fill, as the building table holds them.</summary>
     public ThingState Building(int slot)
     {
         var b = buildings[slot];
         return new ThingState([
-            ("type", b.Type),
+            ("type", b.Type.Code),
             ("constructing", b.Constructing ? 1 : 0),
             ("x", b.X),
             ("y", b.Y),
             ("flag", b.Flag),
-            ("status", b.Status),
-            ("worker", b.Worker),
+            ("status", BuildingEncoder.Status(b)),
+            ("worker", BuildingEncoder.Worker(b)),
             ("stamp", b.Stamp),
-            ("fill", b.Fill),
+            ("fill", BuildingEncoder.Fill(b)),
             ("progress", b.Progress),
         ]);
     }
@@ -51,17 +47,18 @@ public sealed class SnapshotExporter(
     public ThingState Settler(int slot)
     {
         var s = settlers[slot];
+        var raw = SettlerEncoder.Fields(s);
         return new ThingState([
-            ("job", s.Job),
-            ("state", s.State),
+            ("job", s.Job.Code),
+            ("state", raw.State),
             ("player", s.Player),
-            ("mode", s.Mode),
-            ("target", s.Target),
-            ("next", s.Next),
-            ("heading", s.Heading),
+            ("mode", raw.Mode),
+            ("target", raw.Target),
+            ("next", raw.Next),
+            ("heading", raw.Heading),
             ("frame", s.Frame),
             ("timer", s.Timer),
-            ("stamp", s.Stamp),
+            ("stamp", raw.Stamp),
             ("x", s.X),
             ("y", s.Y),
         ]);

@@ -23,8 +23,8 @@ public sealed class SpriteLayerTests
         var graphics = SettlerGraphics.Load(
             TestProgram.OpenInstall(),
             TestProgram.Tables(),
-            Settler.CarrierJob,
-            Settler.WoodcutterJob,
+            Job.CarrierCode,
+            Job.WoodcutterCode,
             RuleTables.TypeOneHutJob
         );
 

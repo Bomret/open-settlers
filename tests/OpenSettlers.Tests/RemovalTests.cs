@@ -204,10 +204,10 @@ public sealed class RemovalTests
     {
         var bytes = new List<byte>();
         bytes.AddRange(BitConverter.GetBytes((building.Y * 2 * width + building.X) * 4));
-        bytes.AddRange([(byte)(building.TypeIndex << 2), (byte)building.Status]);
+        bytes.AddRange([(byte)(BuildingEncoder.TypeIndex(building) << 2), (byte)BuildingEncoder.Status(building)]);
         bytes.AddRange(BitConverter.GetBytes((ushort)(building.Flag + 1)));
-        bytes.AddRange(BitConverter.GetBytes(building.Fill));
-        bytes.AddRange(BitConverter.GetBytes((ushort)building.Worker));
+        bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Fill(building)));
+        bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Worker(building)));
         bytes.AddRange(BitConverter.GetBytes(building.Progress));
         bytes.AddRange(BitConverter.GetBytes(building.Stamp));
         bytes.AddRange([0, 0]);
@@ -385,10 +385,10 @@ public sealed class RemovalTests
                     slot > 0
                     && slot - 1 < game.Buildings.Count
                     && !game.Buildings[slot - 1].IsFree
-                    && !(clickOnly && game.Buildings[slot - 1].Type != Building.CastleType)
+                    && !(clickOnly && game.Buildings[slot - 1].Type != BuildingType.Castle)
                 )
                 {
-                    var length = game.Buildings[slot - 1].Type == Building.CastleType ? 28 : 36;
+                    var length = game.Buildings[slot - 1].Type == BuildingType.Castle ? 28 : 36;
                     Assert.AreEqual(
                         expected[..length],
                         BuildingBytes(game.Buildings[slot - 1], width)[..length],

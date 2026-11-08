@@ -47,31 +47,36 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     static string Hex(int value) => $"0x{value:x2}";
 
     /// <summary>The settler as a thing: every value the engine holds for it, and its job and state names where there are some.</summary>
-    public static Thing Of(Settler settler) =>
-        new(
+    public static Thing Of(Settler settler)
+    {
+        // The readout shows the original's own encoding of the settler beside the names (INV-0006).
+        var raw = SettlerEncoder.Fields(settler);
+
+        return new(
             SettlerKind,
             settler.X,
             settler.Y,
             [
-                ("job", settler.Job.ToString(CultureInfo.InvariantCulture)),
-                ("state", Hex(settler.State)),
+                ("job", settler.Job.ToString()),
+                ("state", Hex(raw.State)),
                 ("player", settler.Player.ToString(CultureInfo.InvariantCulture)),
-                ("mode", Hex(settler.Mode)),
-                ("target", settler.Target.ToString(CultureInfo.InvariantCulture)),
-                ("next", Hex(settler.Next)),
-                ("heading", settler.Heading.ToString(CultureInfo.InvariantCulture)),
+                ("mode", Hex(raw.Mode)),
+                ("target", raw.Target.ToString(CultureInfo.InvariantCulture)),
+                ("next", Hex(raw.Next)),
+                ("heading", raw.Heading.ToString(CultureInfo.InvariantCulture)),
                 ("frame", settler.Frame.ToString(CultureInfo.InvariantCulture)),
                 ("timer", settler.Timer.ToString(CultureInfo.InvariantCulture)),
-                ("stamp", settler.Stamp.ToString(CultureInfo.InvariantCulture)),
+                ("stamp", raw.Stamp.ToString(CultureInfo.InvariantCulture)),
             ],
             SettlerName(settler)
         );
+    }
 
     static string? SettlerName(Settler settler)
     {
         var name = string.Join(
             " ",
-            new[] { NameTable.JobName(settler.Job), NameTable.StateName(settler.State) }.OfType<string>()
+            new[] { NameTable.JobName(settler.Job.Code), NameTable.StateName(settler.Activity.Code) }.OfType<string>()
         );
 
         return name.Length > 0 ? name : null;
@@ -84,13 +89,13 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
             building.X,
             building.Y,
             [
-                ("type", Hex(building.Type)),
+                ("type", Hex(building.Type.Code)),
                 ("constructing", building.Constructing ? "true" : "false"),
-                ("status", Hex(building.Status)),
+                ("status", Hex(BuildingEncoder.Status(building))),
                 ("flag", building.Flag.ToString(CultureInfo.InvariantCulture)),
-                ("worker", building.Worker.ToString(CultureInfo.InvariantCulture)),
+                ("worker", BuildingEncoder.Worker(building).ToString(CultureInfo.InvariantCulture)),
             ],
-            NameTable.BuildingName(building.Type)
+            NameTable.BuildingName(building.Type.Code)
         );
 
     /// <summary>
@@ -148,10 +153,12 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     static Thing Of(Game game, Settler settler, int slot)
     {
         var thing = Of(settler);
-        var flag =
-            settler.State == 0x42 || (settler.State == 2 && settler.Mode != 0xfe)
-                ? FlagLink(game, settler.Target)
-                : null;
+        var flag = settler.Activity switch
+        {
+            WaitsAtFlag waiting => FlagLink(game, waiting.Flag),
+            Walks { Errand: not ToStorage } walking => FlagLink(game, walking.Errand.Flag),
+            _ => null,
+        };
 
         return thing with
         {

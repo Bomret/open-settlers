@@ -28,13 +28,9 @@ public sealed partial class Game
         if (_flags[b.Far].Side(b.FarDirection).CarrierOnTheWay)
         {
             var onItsWay = _settlers.FirstOrDefault(settler =>
-                HeadsTo(settler)
-                && (
-                    (settler.Target == a.Far && settler.Mode == a.FarDirection)
-                    || (settler.Target == b.Far && settler.Mode == b.FarDirection)
-                )
+                HeadsToRoad(settler, a.Far, a.FarDirection) || HeadsToRoad(settler, b.Far, b.FarDirection)
             );
-            var loser = onItsWay?.Target == b.Far && onItsWay.Mode == b.FarDirection ? a : b;
+            var loser = onItsWay is not null && HeadsToRoad(onItsWay, b.Far, b.FarDirection) ? a : b;
             _flags[loser.Far].Side(loser.FarDirection).CarrierOnTheWay = false;
         }
 

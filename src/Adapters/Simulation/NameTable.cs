@@ -27,11 +27,6 @@ public sealed class NameTable
     internal const int FirstCutObject = MapObject.FirstFallingCode;
     internal const int EndCutObject = MapObject.EndFallingCode;
 
-    // The settler jobs and the building type the engine names; Game reads them from here.
-    internal const int BuilderJob = 4;
-    internal const int JoblessJob = 21;
-    internal const int StorehouseType = 0xa;
-
     /// <summary>What a code stands for.</summary>
     internal enum CodeKind
     {
@@ -136,12 +131,17 @@ public sealed class NameTable
             "docs/rules/woodcutting.md (the cut writes 0x5d to 0x66, the object pass turns each into 0x53, 0x428eb8)"
         );
 
-        AddOne(CodeKind.Job, Settler.CarrierJob, "carrier", "Settler.CarrierJob; docs/rules/carriers.md");
-        AddOne(CodeKind.Job, BuilderJob, "builder", "Game.Removal reads job 4 as the builder; docs/rules/settlers.md");
-        AddOne(CodeKind.Job, Settler.WoodcutterJob, "woodcutter", "Settler.WoodcutterJob; docs/rules/woodcutting.md");
-        AddOne(CodeKind.Job, JoblessJob, "jobless", "Settler.Job doc: 21 is a settler without a job yet");
+        AddOne(CodeKind.Job, Job.Carrier.Code, "carrier", "Job.Carrier; docs/rules/carriers.md");
+        AddOne(
+            CodeKind.Job,
+            Job.Builder.Code,
+            "builder",
+            "Job.Builder; Game.Removal reads job 4 as the builder; docs/rules/settlers.md"
+        );
+        AddOne(CodeKind.Job, Job.Woodcutter.Code, "woodcutter", "Job.Woodcutter; docs/rules/woodcutting.md");
+        AddOne(CodeKind.Job, Job.Jobless.Code, "jobless", "Job.Jobless: 21 is a settler without a job yet");
 
-        const string State = "Settler.State doc";
+        const string State = "the code of the Activity record (src/Domain/Activity.cs)";
         AddOne(CodeKind.State, 1, "waits-in-castle", State);
         AddOne(CodeKind.State, 2, "walks", State);
         AddOne(CodeKind.State, 3, "walks-along-road", State);
@@ -157,9 +157,14 @@ public sealed class NameTable
         AddOne(CodeKind.State, 0x1c, "claims-node-home", State);
         AddOne(CodeKind.State, 0x42, "waits-at-flag", State);
 
-        AddOne(CodeKind.Building, Building.CastleType, "castle", "Building.CastleType");
-        AddOne(CodeKind.Building, Building.WoodcutterType, "woodcutter-hut", "Building.WoodcutterType");
-        AddOne(CodeKind.Building, StorehouseType, "storehouse", "Game.Removal storage types: the castle and type 0xa");
+        AddOne(CodeKind.Building, BuildingType.Castle.Code, "castle", "BuildingType.Castle");
+        AddOne(CodeKind.Building, BuildingType.Woodcutter.Code, "woodcutter-hut", "BuildingType.Woodcutter");
+        AddOne(
+            CodeKind.Building,
+            BuildingType.Storehouse.Code,
+            "storehouse",
+            "BuildingType.Storehouse; Game.Removal storage types: the castle and type 0xa"
+        );
 
         return entries;
     }

@@ -72,15 +72,21 @@ public sealed class GameHistoryTests
     [TestMethod]
     public void TheExporterWritesTheSettlersRawValuesAsNamedFieldsInOrder()
     {
-        var settler = new Settler(job: 5, player: 0, x: 7, y: 9, stamp: 11, state: 0x42, home: 3)
+        var settler = new Settler(
+            Job.Woodcutter,
+            0,
+            7,
+            9,
+            0,
+            new WaitsAtFlag(300, new Direction(254), new Heading(11)) { Residue = new Residue(Heading: 3, Next: 15) }
+        )
         {
-            Mode = 0xfe,
-            Target = 300,
-            Next = 15,
             Frame = 6,
             Timer = 65535,
         };
-        var exporter = new SnapshotExporter([settler], [], new FlagTable());
+        var settlers = new SettlerTable();
+        settlers.Add(settler);
+        var exporter = new SnapshotExporter(settlers, new BuildingTable(), new FlagTable());
 
         var state = exporter.Settler(0);
 
@@ -106,7 +112,7 @@ public sealed class GameHistoryTests
         flags[0].Places[7].Good = new Good(1);
         flags[0].Places[7].Way = 0;
 
-        var exporter = new SnapshotExporter([], [], flags);
+        var exporter = new SnapshotExporter(new SettlerTable(), new BuildingTable(), flags);
 
         var state = exporter.Flag(0);
 

@@ -26,12 +26,12 @@ public sealed class WoodcuttingHistoryTests
         return game;
     }
 
-    private static Settler Woodcutter(Game game) => game.Settlers.Single(s => s.Job == Settler.WoodcutterJob);
+    private static Settler Woodcutter(Game game) => game.Settlers.Single(s => s.Job == Job.Woodcutter);
 
     private static void RunTrip(Game game, Action? each = null)
     {
         var laid = false;
-        for (var i = 0; i < 4000 && !(laid && Woodcutter(game).State == 4); i++)
+        for (var i = 0; i < 4000 && !(laid && Woodcutter(game).Activity is Door); i++)
         {
             game.Tick();
             each?.Invoke();
@@ -75,7 +75,7 @@ public sealed class WoodcuttingHistoryTests
     public void ATripRecordsNoMovedEventAndEveryWoodcuttingEventCarriesTheCauseWoodcutting()
     {
         var game = Laid();
-        var id = game.History.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob));
+        var id = game.History.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Job.Woodcutter));
         RunTrip(game);
 
         // The layout's own setup (the settler entering its hut) comes before the first door turn.
@@ -100,7 +100,7 @@ public sealed class WoodcuttingHistoryTests
     public void ATurnRecordsEachRuleOnceForTheWoodcutter()
     {
         var game = Laid();
-        var id = game.History.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob));
+        var id = game.History.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Job.Woodcutter));
         RunTrip(game);
 
         var twice = game
@@ -116,12 +116,12 @@ public sealed class WoodcuttingHistoryTests
     public void ADoorTurnOfAnotherJobRecordsTheSettlersCauseNotWoodcutting()
     {
         var game = Laid();
-        var slot = game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob);
+        var slot = game.Settlers.ToList().FindIndex(s => s.Job == Job.Woodcutter);
         var id = game.History.SettlerId(slot);
-        for (var i = 0; i < 4000 && Woodcutter(game).State != 4; i++)
+        for (var i = 0; i < 4000 && Woodcutter(game).Activity is not Door; i++)
             game.Tick();
-        Assert.AreEqual(4, Woodcutter(game).State);
-        Woodcutter(game).Job = Settler.CarrierJob;
+        Assert.IsInstanceOfType<Door>(Woodcutter(game).Activity);
+        Woodcutter(game).Job = Job.Carrier;
         var before = game.History.EventsOf(id).Count;
         for (var i = 0; i < 50 && !game.History.EventsOf(id).Skip(before).Any(e => e.Type == EventType.Door); i++)
             game.Tick();
@@ -134,7 +134,7 @@ public sealed class WoodcuttingHistoryTests
     public void TheWoodcuttersStateAtEveryTickOfATripEqualsTheEnginesState()
     {
         var game = Laid();
-        var id = game.History.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob));
+        var id = game.History.SettlerId(game.Settlers.ToList().FindIndex(s => s.Job == Job.Woodcutter));
         var seen = new System.Collections.Generic.HashSet<int>();
         var wrong = new System.Collections.Generic.List<string>();
         RunTrip(
@@ -142,11 +142,12 @@ public sealed class WoodcuttingHistoryTests
             () =>
             {
                 var s = Woodcutter(game);
-                seen.Add(s.State);
+                var raw = SettlerEncoder.Fields(s);
+                seen.Add(s.Activity.Code);
                 var (state, refusal) = game.History.StateAt(id, game.TickCount - 1);
                 var now =
-                    $"state={s.State} mode={s.Mode} target={s.Target} next={s.Next} heading={s.Heading} frame={s.Frame} "
-                    + $"timer={s.Timer} stamp={s.Stamp} x={s.X} y={s.Y}";
+                    $"state={raw.State} mode={raw.Mode} target={raw.Target} next={raw.Next} heading={raw.Heading} frame={s.Frame} "
+                    + $"timer={s.Timer} stamp={raw.Stamp} x={s.X} y={s.Y}";
                 var then = state is null
                     ? refusal!
                     : string.Join(
@@ -180,12 +181,12 @@ public sealed class WoodcuttingHistoryTests
     public void AWoodcutterOnTheWalkHomeRecordsItsWorkEventsWithTheCauseWalkHome()
     {
         var game = Laid();
-        var slot = game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob);
+        var slot = game.Settlers.ToList().FindIndex(s => s.Job == Job.Woodcutter);
         var id = game.History.SettlerId(slot);
-        for (var i = 0; i < 4000 && Woodcutter(game).State != 0x12; i++)
+        for (var i = 0; i < 4000 && Woodcutter(game).Activity is not LooksForTree; i++)
             game.Tick();
 
-        Assert.AreEqual(0x12, Woodcutter(game).State);
+        Assert.IsInstanceOfType<LooksForTree>(Woodcutter(game).Activity);
         // No command or removal rule sends a woodcutter home without a carried cause, so the walk-home set is filled directly.
         var walkingHome = (System.Collections.Generic.HashSet<int>)
             typeof(Game)
@@ -211,7 +212,7 @@ public sealed class WoodcuttingHistoryTests
     public void AWoodcutterCarryingACommandCauseRecordsItsWorkEventsWithIt()
     {
         var game = Laid();
-        var slot = game.Settlers.ToList().FindIndex(s => s.Job == Settler.WoodcutterJob);
+        var slot = game.Settlers.ToList().FindIndex(s => s.Job == Job.Woodcutter);
         var id = game.History.SettlerId(slot);
         var command = Cause.Placed(game.History.BuildingId(1));
         game.History.CarryCause(slot, command);

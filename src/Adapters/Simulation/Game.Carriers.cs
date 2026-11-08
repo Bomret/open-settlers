@@ -8,12 +8,6 @@ namespace OpenSettlers.Simulation;
 // road without one, and the carrier's walk from the castle to its road and along it (docs/rules/carriers.md).
 public sealed partial class Game
 {
-    // A settler of job 21 that has no job yet becomes a carrier when a road asks for it.
-    private const int JoblessJob = NameTable.JoblessJob;
-
-    // The state of a carrier that waits on its road next to the flag at the road's far end.
-    private const int WaitingState = 0x42;
-
     private int _flagCursor;
 
     // The command cause of each road a command built: the carrier sent to it carries it on until it waits on its road. A road no
@@ -144,26 +138,24 @@ public sealed partial class Game
     // 0x42b455: the road asks the castle for a carrier. The search runs over the land roads from both ends of the road
     // (the flag first, then the flag at the far end) and marks each flag it reaches with the end it came from; the castle's
     // flag is the only storage. The castle sends the settler of job 0 that waits there, or else makes a carrier of a settler
-    // of job 21 that waits there (no tool). The carrier walks to the end of the road the search came from. **Not ported:**
-    // the water roads' boatmen (job 1, 0x42b4bc).
+    // of job 21 that waits there (no tool): a settler without a job becomes a carrier, and stays the same settler. The carrier
+    // walks to the end of the road the search came from. **Not ported:** the water roads' boatmen (job 1, 0x42b4bc).
     private bool RequestCarrier(int slot, int direction, Road road)
     {
         var (far, farDirection) = FarEnd(road, slot, direction);
         var end = StorageEnd(slot, far);
-        var job = _waiting[Settler.CarrierJob] != 0 ? Settler.CarrierJob : JoblessJob;
-        if (end < 0 || _waiting[job] == 0)
+        var job = _waiting[Job.Carrier.Code] != 0 ? Job.Carrier : Job.Jobless;
+        if (end < 0 || _waiting[job.Code] == 0)
         {
             return false;
         }
 
-        var carrier = _waiting[job];
+        var carrier = _waiting[job.Code];
         var settler = _settlers[carrier];
-        _waiting[job] = 0;
-        settler.Job = Settler.CarrierJob;
+        _waiting[job.Code] = 0;
+        settler.Job = Job.Carrier;
         var (flag, flagDirection) = end == 0 ? (slot, direction) : (far, farDirection);
-        settler.Mode = flagDirection;
-        settler.Target = flag;
-        settler.State = 0xf;
+        Become(settler, new Leaving(new ToRoad(flag, flagDirection)));
         _leaving++;
         _flags[slot].Side(direction).CarrierOnTheWay = true;
         _flags[far].Side(farDirection).CarrierOnTheWay = true;
@@ -223,22 +215,19 @@ public sealed partial class Game
     // heading and goes on at once.
     private void EnterRoad(int slot, Settler settler)
     {
-        var direction = settler.Mode;
-        if (RoadAt(settler.Target, direction) is not { } road)
+        var (flag, direction) = settler.Activity.GoingTo is ToRoad errand ? (errand.At, errand.Direction) : default;
+        if (RoadAt(flag, direction) is not { } road)
         {
             return;
         }
 
-        var (far, farDirection) = FarEnd(road, settler.Target, direction);
+        var (far, farDirection) = FarEnd(road, flag, direction);
         CountCarrier(_flags[far].Side(farDirection));
-        CountCarrier(_flags[settler.Target].Side(direction));
-        settler.State = 3;
-        settler.Heading = direction;
-        settler.Mode = 0;
-        settler.Next = 0;
+        CountCarrier(_flags[flag].Side(direction));
+        Become(settler, new WalksRoad(null, Heading.Facing(direction)));
         var id = History.SettlerId(slot);
-        History.RecordSettler(slot, EventType.EnterRoad, Cause.Carriers, History.FlagId(settler.Target).ToString());
-        History.RecordFlag(settler.Target, EventType.EnterRoad, Cause.Carriers, id.ToString());
+        History.RecordSettler(slot, EventType.EnterRoad, Cause.Carriers, History.FlagId(flag).ToString());
+        History.RecordFlag(flag, EventType.EnterRoad, Cause.Carriers, id.ToString());
         History.RecordFlag(far, EventType.EnterRoad, Cause.Carriers, id.ToString());
         WalkRoad(slot, settler);
     }
@@ -266,15 +255,16 @@ public sealed partial class Game
     {
         while (true)
         {
+            var walks = (WalksRoad)settler.Activity;
             var here = Map.Index(settler.X, settler.Y);
             int direction;
-            if (settler.Heading < 0)
+            if (walks.Heading.IsRetried)
             {
-                direction = settler.Heading + 6;
+                direction = walks.Heading.Direction;
             }
             else if (!Map.At(here).FlagMark)
             {
-                direction = RoadContinuation(Map.At(here).Roads, settler.Heading);
+                direction = RoadContinuation(Map.At(here).Roads, walks.Heading.Direction);
                 if (direction < 0)
                 {
                     settler.Timer = 0;
@@ -286,21 +276,20 @@ public sealed partial class Game
             {
                 // A carrier on a flag: with a good for the building at this flag it goes in, else it swaps goods with the flag and
                 // goes on along the road it came by.
-                if (settler.Mode != 0 && settler.Target == Map.At(here).LinkedSlot + 1)
+                if (walks.Load is { Destination: { } destination } && destination == Map.At(here).LinkedSlot)
                 {
                     Deliver(slot, settler);
                     return;
                 }
 
                 Exchange(slot, settler, Map.At(here).LinkedSlot);
-                direction = settler.Heading;
+                direction = ((WalksRoad)settler.Activity).Heading.Direction;
             }
 
             var (_, _, next) = Neighbour(settler, direction);
             if (
                 Map.At(next).FlagMark
-                && settler.Mode == 0
-                && (sbyte)settler.Next >= 0
+                && ((WalksRoad)settler.Activity) is { Load: null, Marked: false }
                 && _flags[Map.At(next).LinkedSlot].Side((direction + 3) % 6).WaitingPlace is null
             )
             {
@@ -327,20 +316,23 @@ public sealed partial class Game
     // it. Open lead in docs/milestones/m3-first-loop.md (the fourth turn of a carrier at the end of a road that holds two).
     private void Wait(int slot, Settler settler, int back, int flag)
     {
+        var walks = (WalksRoad)settler.Activity;
         settler.Timer = 0x3f;
-        settler.Frame = (byte)(settler.Heading + 0x6e);
-        settler.Heading -= 6;
+        settler.Frame = (byte)(walks.Heading.Value + 0x6e);
+        var approach = walks.Heading.Retried;
+        settler.Activity = walks with { Heading = approach };
         var far = FlagNeighbour(flag, back);
         var side = _flags[flag].Side(back);
         var farDirection = side.FarDirection;
         if (side.Carriers >= 2)
         {
-            settler.Next = (settler.Next + 1) & 0xff;
-            if (settler.Next >= 4)
+            var waits = (walks.Waits + 1) & 0xff;
+            settler.Activity = walks with { Heading = approach, Waits = waits };
+            if (waits >= 4)
             {
                 side.Carriers--;
                 _flags[far].Side(farDirection).Carriers--;
-                settler.Next = 0xff;
+                settler.Activity = walks with { Heading = approach, Waits = 0, Marked = true };
                 var id = History.SettlerId(slot);
                 History.RecordFlag(flag, EventType.Wait, Cause.Carriers, id.ToString());
                 History.RecordFlag(far, EventType.Wait, Cause.Carriers, id.ToString());
@@ -358,12 +350,9 @@ public sealed partial class Game
             return;
         }
 
-        settler.Stamp = (ushort)((settler.Stamp & 0xff00) | (byte)settler.Heading);
-        settler.Mode = back;
-        settler.Target = flag;
-        settler.Heading = 0;
-        settler.Next = 0;
-        settler.State = WaitingState;
+        // The approach moves into the low byte of the stamp, which the encoder writes from the activity.
+        settler.Stamp = (ushort)(settler.Stamp & 0xff00);
+        settler.Activity = new WaitsAtFlag(flag, back, approach);
         _occupant.Remove(Map.Index(settler.X, settler.Y));
         History.RecordSettler(slot, EventType.Wait, Cause.Carriers);
     }

@@ -90,7 +90,7 @@ public static class ObjectDraws
 
         // A hut that was taken down burns (docs/rules/removal.md); the burning is not drawn (the sprites of the fire are not read).
         foreach (
-            var hut in buildings?.Where(building => building.Type == Building.WoodcutterType && !building.IsDemolishing)
+            var hut in buildings?.Where(building => building.Type == BuildingType.Woodcutter && !building.IsDemolishing)
                 ?? []
         )
         {

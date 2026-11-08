@@ -11,13 +11,6 @@ public sealed partial class Game
     /// <summary>The logs the castle holds: the count of its storage item for the good 7.</summary>
     public int CastleLogs => Stock.Count > GoodLog ? Stock[GoodLog] : 0;
 
-    // A settler's target word holds the destination flag as the original numbers its flags: its first flag, slot 0, is a
-    // dummy the game's start takes (0x421530), so the castle's flag is 1 there and the word is 0 for none. The engine's slot 0 is
-    // the castle's flag, so the word is the engine's slot plus one.
-    private static int? DestinationOf(int word) => word == 0 ? null : word - 1;
-
-    private static int WordOf(int? destination) => destination is { } slot ? slot + 1 : 0;
-
     // A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that
     // lays a good with a destination, and a way, for a test that lays a good with a direction) and the flag's turn is due.
     internal void LayGood(int flag, int place, int good, int? destination = null, int? way = null)
@@ -269,29 +262,27 @@ public sealed partial class Game
     // next stage); it walks on as it does with none.
     private void Fetch(int slot, Settler settler)
     {
-        var direction = settler.Mode;
-        var side = _flags[settler.Target].Side(direction);
-        byte heading;
+        var waiting = (WaitsAtFlag)settler.Activity;
+        var side = _flags[waiting.Flag].Side(waiting.Direction);
+        Heading heading;
         if (side.WaitingPlace is not null)
         {
-            heading = (byte)((byte)settler.Stamp + 6);
+            heading = waiting.Approach.Unmarked;
         }
         else
         {
-            if (_flags[FlagNeighbour(settler.Target, direction)].Side(side.FarDirection).WaitingPlace is null)
+            if (_flags[FlagNeighbour(waiting.Flag, waiting.Direction)].Side(side.FarDirection).WaitingPlace is null)
             {
                 return;
             }
 
-            // The stamp's low byte is the heading less 6 (Wait): a signed byte, from -6 (heading 0) to -1 (heading 5). The turned
-            // heading is the opposite direction: low + 6 - 3, and 6 more where that went below 0 (checked against the
-            // emulator's fetches in road-splits.txt, where the carrier came by 0 and by 3).
-            var turned = (sbyte)settler.Stamp + 3;
-            heading = (byte)(turned < 0 ? turned + 6 : turned);
+            // The approach is the heading less 6 (Wait): from -6 (heading 0) to -1 (heading 5). The turned heading is the
+            // opposite direction: approach + 6 - 3, and 6 more where that went below 0 (checked against the emulator's fetches
+            // in road-splits.txt, where the carrier came by 0 and by 3).
+            heading = waiting.Approach.Turned;
         }
 
-        settler.Heading = heading;
-        settler.State = 0x43;
+        Become(settler, new ClaimsNode(heading, waiting.Approach));
         History.RecordSettler(slot, EventType.Fetch, Cause.Goods);
         Claim(slot, settler);
     }
@@ -307,11 +298,9 @@ public sealed partial class Game
         }
 
         _occupant[here] = slot;
-        settler.State = 3;
+        Become(settler, new WalksRoad(null, ((ClaimsNode)settler.Activity).Heading));
         settler.Stamp = _clock;
         settler.Timer = 0;
-        settler.Mode = 0;
-        settler.Next = 0;
         History.RecordSettler(slot, EventType.Claim, Cause.Goods);
     }
 
@@ -325,37 +314,36 @@ public sealed partial class Game
     // that was given the road's direction waits for it next.
     internal void Exchange(int slot, Settler settler, int flag)
     {
-        var way = settler.Heading;
+        var walks = (WalksRoad)settler.Activity;
+        var residue = SettlerEncoder.ResidueOf(settler);
+        var way = walks.Heading.Direction;
         var places = _flags[flag].Places;
         var side = _flags[flag].Side(way);
-        var left = settler.Mode;
+        var left = walks.Load?.Good.Code ?? 0;
         var took = 0;
         var changed = false;
         if (side.WaitingPlace is { } waiting)
         {
             var place = places[waiting];
-            settler.Next = 0;
             changed = true;
-            if (settler.Mode != 0)
+            if (walks.Load is { } carried)
             {
                 _flags[flag].NeedsGoodsTurn = true;
                 var good = place.Good;
                 var destination = place.Destination;
-                place.Good = new Good(settler.Mode);
+                place.Good = carried.Good;
                 place.Way = null;
-                place.Destination = DestinationOf(settler.Target);
-                settler.Mode = good.Code;
-                settler.Target = WordOf(destination);
+                place.Destination = carried.Destination;
+                walks = walks with { Load = new Load(good, destination), Waits = 0, Marked = false };
             }
             else
             {
-                settler.Mode = place.Good.Code;
-                settler.Target = WordOf(place.Destination);
+                walks = walks with { Load = new Load(place.Good, place.Destination), Waits = 0, Marked = false };
                 place.Good = Good.None;
                 place.Way = null;
             }
 
-            took = settler.Mode;
+            took = walks.Load?.Good.Code ?? 0;
             side.WaitingPlace = null;
             var best = 0;
             var found = -1;
@@ -373,20 +361,22 @@ public sealed partial class Game
                 WaitForRoad(flag, way, found);
             }
         }
-        else if (settler.Mode != 0)
+        else if (walks.Load is { } carried)
         {
             var empty = _flags[flag].FirstEmptyPlace();
             if (empty >= 0)
             {
                 _flags[flag].NeedsGoodsTurn = true;
-                places[empty].Good = new Good(settler.Mode);
+                places[empty].Good = carried.Good;
                 places[empty].Way = null;
-                settler.Mode = 0;
-                places[empty].Destination = DestinationOf(settler.Target);
+                walks = walks with { Load = null };
+                places[empty].Destination = carried.Destination;
                 changed = true;
             }
         }
 
+        // A carrier with no good keeps the destination of the last one in its item: the residue holds it.
+        settler.Activity = walks.Carrying(residue);
         if (changed)
         {
             var detail = $"took {took} left {left}";
@@ -407,8 +397,8 @@ public sealed partial class Game
     {
         var here = Map.Index(settler.X, settler.Y);
         var (_, _, node) = Neighbour(settler, 4);
-        settler.State = 0xe;
-        settler.Next = 0;
+        var walks = (WalksRoad)settler.Activity;
+        Become(settler, new HandsOver(walks.Load, walks.Heading));
         settler.Frame = (byte)(Height(node) - Height(here) + 0x5d);
         var old = settler.Timer;
         settler.Timer = (ushort)(old + _tables.StepTime(settler.Frame));
@@ -428,10 +418,10 @@ public sealed partial class Game
     {
         while (true)
         {
-            if (settler.Next != 0)
+            var hands = (HandsOver)settler.Activity;
+            if (hands.Marked)
             {
-                settler.Next = 0;
-                settler.State = 3;
+                Become(settler, new WalksRoad(hands.Load, hands.Heading));
                 History.RecordSettler(slot, EventType.Handover, Cause.Goods);
                 WalkRoad(slot, settler);
 
@@ -439,26 +429,28 @@ public sealed partial class Game
             }
 
             var (_, _, node) = Neighbour(settler, 4);
-            var good = settler.Mode;
+            var good = hands.Load?.Good.Code ?? 0;
             var given = "";
             if (good != 0)
             {
-                settler.Mode = 0;
-                if (BuildingAt(node) is { } building && (building.Status & 0x20) == 0)
+                // The carrier's hands are empty; its item keeps the destination of the good (the residue).
+                Become(settler, hands with { Load = null });
+                if (BuildingAt(node) is { IsDemolishing: false } building)
                 {
-                    var shift = (good >= 9 ? good != 13 : good == 7) ? 8 : 0;
-                    var sum = ((building.Fill >> shift) & 0xff) + 0x0f;
-                    building.Fill = (ushort)((building.Fill & ~(0xff << shift)) | ((sum & 0xff) << shift));
+                    var counter = (good >= 9 ? good != 13 : good == 7) ? FillCounter.High : FillCounter.Low;
+                    var sum = building.FillOf(counter) + 0x0f;
+                    building.SetFill(counter, sum);
                     if (sum > 0xff)
                     {
-                        building.Fill = 0xffff;
-                        if (building.Type == Building.CastleType)
+                        building.FillLow = 0xff;
+                        building.FillHigh = 0xff;
+                        if (building.Type == BuildingType.Castle)
                         {
                             AddToStock(good);
                         }
                     }
 
-                    var buildingSlot = _buildings.IndexOf(building);
+                    var buildingSlot = _buildings.SlotOf(building);
                     History.RecordBuilding(
                         buildingSlot,
                         EventType.Handover,
@@ -471,7 +463,7 @@ public sealed partial class Game
 
             var shape = 0x0d - (settler.Frame - 0x5d);
             settler.Frame = (byte)shape;
-            settler.Next = 0xff;
+            settler.Activity = ((HandsOver)settler.Activity) with { Marked = true };
             var old = settler.Timer;
             settler.Timer = (ushort)(old + (_tables.StepTime(shape) >> 1));
             History.RecordSettler(slot, EventType.Handover, Cause.Goods, given.Length == 0 ? null : given);
