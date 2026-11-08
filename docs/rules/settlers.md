@@ -439,5 +439,6 @@ request, the route search, and the walk are in `src/Adapters/Simulation/Game.Set
 times, the door speeds, and the scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`,
 `ScanWindows`). `Game.Digest` holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's
 waiting list, and the settlers' places. The carriers' part is in `src/Adapters/Simulation/Game.Carriers.cs`
-([Carriers](carriers.md#in-the-engine)), the woodcutter's and the map's object pass in `src/Adapters/Simulation/Game.Woodcutting.cs`
-([Woodcutting](woodcutting.md#in-the-engine)).
+([Carriers](carriers.md#in-the-engine)), the woodcutter's and the map's object pass in `src/Application/WoodcutterBehavior.cs`
+([Woodcutting](woodcutting.md#in-the-engine)), the walk home in `src/Application/WalkHomeBehavior.cs`; both build on
+`SettlerMovement` (the settlers' nodes, the step, and the timer).

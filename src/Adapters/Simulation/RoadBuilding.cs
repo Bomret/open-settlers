@@ -28,7 +28,7 @@ public static class RoadBuilding
     /// The column and row each of the six directions moves by: 0 east, 1 south-east, 2 south, 3 west, 4 north-west,
     /// 5 north. Direction <c>d</c> and <c>(d + 3) % 6</c> are opposite.
     /// </summary>
-    public static IReadOnlyList<(int Dx, int Dy)> Steps { get; } = [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
+    public static IReadOnlyList<(int Dx, int Dy)> Steps => Direction.Steps;
 
     /// <summary>
     /// Draws the road that starts at the flag on the node and takes the given directions, one step each, the way the

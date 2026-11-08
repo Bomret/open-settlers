@@ -35,10 +35,16 @@ public sealed partial class Game
     private readonly SettlerTable _settlers = new();
     private readonly ActivityRegistry _behaviours = new();
     private readonly TablePass _tablePass;
+    private readonly WalkHomeBehavior _walkHome;
+    private readonly WoodcutterBehavior _woodcutter;
+    private readonly GeneratorDraws _draws;
 
     // The castle's list of waiting settlers: for each job the slot of the settler that waits there (word at 0x42 + 2
     // times the job of the storage item), 0 for none.
     private readonly ushort[] _waiting = new ushort[32];
+
+    /// <summary>The walk home: which settlers are on it, and the rules of its claim, search, and arrival.</summary>
+    internal WalkHomeBehavior WalkHome => _walkHome;
 
     /// <summary>The behaviour of each activity type that the table pass hands a settler to.</summary>
     internal ActivityRegistry Behaviours => _behaviours;
@@ -52,9 +58,9 @@ public sealed partial class Game
     // The settlers a request has sent out that have not left the castle yet (word at 0x4a of the storage item).
     private int _leaving;
 
-    // The settler on each node by node index (word at 2 of the second map record), 0 for none. A node of settler 0
-    // reads as free, as in the original.
-    private readonly Dictionary<int, int> _occupant = [];
+    // The settler on each node (word at 2 of the second map record), the step onto a node, the timer, and the change of
+    // activity: the ground the behaviours of the settlers share.
+    private readonly SettlerMovement _movement;
 
     // The command cause a placed building carries until its worker has entered, the worker turns away, or the building is
     // freed: the events of the building and of the settler sent to it name the placing (history only; no rule reads it).
@@ -71,7 +77,7 @@ public sealed partial class Game
 
     // The cause of a change the settler rules make to the settler in the slot: the walk home while it walks to a storage
     // (a command cause it carries takes the place of either in RecordSettler), else the rule area's.
-    private Cause SettlerCause(int slot) => _walkingHome.Contains(slot) ? Cause.WalkHome : RuleCause;
+    private Cause SettlerCause(int slot) => _walkHome.IsWalking(slot) ? Cause.WalkHome : RuleCause;
 
     private void RecordBuildingOf(Building building, string type, string? other = null)
     {
@@ -79,15 +85,23 @@ public sealed partial class Game
         History.RecordBuilding(slot, type, BuildingCause(slot), other);
     }
 
+    // The game's random generator: it continues from the map's generation, as the original's does.
+    /// <summary>The game's random generator: it starts as the map's generation left it and draws only in the passes.</summary>
+    internal RandomGenerator Random => _draws.Generator;
+
+    // The good of a log (the byte 7 the settler writes onto the flag, 0x438011).
+    internal const int GoodLog = WoodcutterBehavior.GoodLog;
+
+    // The draw of the game's generator: the new first word, which Rng_Step (0x466ade) and the draw at 0x44257a leave.
+    private ushort Draw() => _draws.Draw();
+
     // The settler takes up another activity. The bytes of the original's item that the new activity does not use stay as they
     // were, in its residue.
-    private static void Become(Settler settler, Activity next) =>
-        settler.Activity = next.Carrying(SettlerEncoder.ResidueOf(settler));
+    private void Become(Settler settler, Activity next) => _movement.Become(settler, next);
 
     // The settler takes up another activity with the bytes of the original's item the new activity does not use set to
     // `residue` (a builder that loses its job: SettlerEncoder.ResidueOfBuilder).
-    private static void Become(Settler settler, Activity next, Residue residue) =>
-        settler.Activity = next.Carrying(residue);
+    private void Become(Settler settler, Activity next, Residue residue) => _movement.Become(settler, next, residue);
 
     // The behaviour of each activity type, for the table pass. The activities whose turn the original does not port have a
     // turn that changes nothing.
@@ -106,15 +120,9 @@ public sealed partial class Game
         _behaviours.Register<WaitsToGoHome>((slot, settler, _) => Dismissed(slot, settler));
         _behaviours.Register<WaitsToRejoin>((slot, settler, _) => Rejoined(slot, settler));
         _behaviours.Register<HandsOver>((slot, settler, _) => HandoverTurn(slot, settler));
-        _behaviours.Register<Door>((slot, settler, _) => PassDoor(slot, settler));
-        _behaviours.Register<EntersBuilding>((slot, settler, _) => EnterHut(slot, settler));
-        _behaviours.Register<StepsOntoFlag>((slot, settler, _) => StepOut(slot, settler));
-        _behaviours.Register<WalksFree>((slot, settler, _) => FreeWalk(slot, settler));
+        _woodcutter.Register(_behaviours);
+        _walkHome.Register(_behaviours);
         _behaviours.Register<KnightWalks>((_, _, _) => { });
-        _behaviours.Register<Cuts>((slot, settler, _) => Cut(settler));
-        _behaviours.Register<LooksForTree>((slot, settler, _) => SearchTree(slot, settler));
-        _behaviours.Register<SearchesHome>((slot, settler, _) => HomeSearch(slot, settler));
-        _behaviours.Register<ClaimsHomeNode>((slot, settler, _) => HomeClaim(slot, settler));
     }
 
     private ushort _clock;
@@ -139,7 +147,7 @@ public sealed partial class Game
         _clock = (ushort)(_clock + ClockStep);
         ClearRetryBits();
         ClearFlagRetryBits();
-        ObjectPass();
+        _woodcutter.ObjectPass();
         _phase = (_phase + 1) % PhaseCount;
         if (_phase < TablePhases)
         {
@@ -440,7 +448,7 @@ public sealed partial class Game
         if (castle.Progress < old)
         {
             Become(settler, new BuiltCastle());
-            _occupant.Remove(Map.Index(settler.X, settler.Y));
+            _movement.Release(Map.Index(settler.X, settler.Y));
             castle.Constructing = false;
             castle.Worker = 0;
         }
@@ -449,45 +457,16 @@ public sealed partial class Game
         History.RecordBuilding(0, EventType.Builder, BuildingCause(0), History.SettlerId(slot).ToString());
     }
 
-    // The timer of the states that wait: the time since the settler's last turn comes off its timer; true where the
-    // timer ran out, that is where the elapsed time was more than the time left (0x43dceb).
-    private bool TimerRan(Settler settler)
-    {
-        var delta = (ushort)(_clock - settler.Stamp);
-        settler.Stamp = _clock;
-        var old = settler.Timer;
-        settler.Timer = (ushort)(old - delta);
+    private bool TimerRan(Settler settler) => _movement.TimerRan(settler);
 
-        return delta > old;
-    }
+    private int Occupant(int index) => _movement.Occupant(index);
 
-    private int Occupant(int index) => _occupant.TryGetValue(index, out var slot) ? slot : 0;
+    private int Height(int index) => _movement.Height(index);
 
-    private int Height(int index) => Map.At(index).Height;
+    private Building? BuildingAt(int index) => _movement.BuildingAt(index);
 
-    // The building on a node: the node's link names its slot, and the building must stand on the node, since the link
-    // also holds a flag's slot.
-    private Building? BuildingAt(int index)
-    {
-        var slot = Map.At(index).LinkedSlot;
-
-        return
-            slot < _buildings.Count
-            && !_buildings[slot].IsFree
-            && Map.Index(_buildings[slot].X, _buildings[slot].Y) == index
-            ? _buildings[slot]
-            : null;
-    }
-
-    // The index of the node a step in a direction leads to, and the settler's new column and row.
-    private (int X, int Y, int Index) Neighbour(Settler settler, int direction)
-    {
-        var (dx, dy) = RoadBuilding.Steps[direction];
-        var x = (settler.X + dx) & (Map.Size.Width - 1);
-        var y = (settler.Y + dy) & (Map.Size.Height - 1);
-
-        return (x, y, Map.Index(x, y));
-    }
+    private (int X, int Y, int Index) Neighbour(Settler settler, int direction) =>
+        _movement.Neighbour(settler, direction);
 
     // State 15, a settler that leaves the castle by its door onto the castle's flag (0x43dd4a): it steps south-east
     // when that node and the node of the building it walks to are free, takes the time of the step times the door's
@@ -524,15 +503,7 @@ public sealed partial class Game
         History.RecordSettler(slot, EventType.Left, RuleCause);
     }
 
-    // The step onto a node. It records nothing: the rule that moves the settler records the change after it has applied all of
-    // it (a `moved` event here would show the settler on its new node with the rest of the change not yet made).
-    private void Move(int slot, Settler settler, int x, int y, int index)
-    {
-        _occupant.Remove(Map.Index(settler.X, settler.Y));
-        settler.X = x;
-        settler.Y = y;
-        _occupant[index] = slot;
-    }
+    private void Move(int slot, Settler settler, int x, int y, int index) => _movement.Move(slot, settler, x, y, index);
 
     // State 2, a settler on the road (0x4398ea with the step routines at 0x43a64c to 0x43ac8b). When its timer has run
     // out it chooses a direction (on a node of a road the one the road goes on, on a flag the first direction of the
@@ -586,7 +557,7 @@ public sealed partial class Game
             else
             {
                 var errand = walks.Errand;
-                if (errand is ToStorage && StorageFlag(Map.At(here).LinkedSlot) < 0)
+                if (errand is ToStorage && _walkHome.StorageFlag(Map.At(here).LinkedSlot) < 0)
                 {
                     // No storage chosen yet (0x45d09b); none a road leads to sends the settler to look for a flag again,
                     // from the far end of the search.
@@ -716,7 +687,7 @@ public sealed partial class Game
             var back = 4 + 9 * ((direction + 3) % 6) - rise;
             passer.X = settler.X;
             passer.Y = settler.Y;
-            _occupant[here] = other;
+            _movement.Occupy(here, other);
             passer.Activity = WithHeading(passer.Activity, Heading.Facing(direction));
             passer.Frame = (byte)back;
             passer.Timer = _tables.StepTime(back);
@@ -725,7 +696,7 @@ public sealed partial class Game
             settler.Activity = WithHeading(settler.Activity, forward);
             settler.X = x;
             settler.Y = y;
-            _occupant[next] = slot;
+            _movement.Occupy(next, slot);
         }
         else
         {
@@ -885,6 +856,19 @@ public sealed partial class Game
     private Building? BuildingOfFlag(int flag) =>
         _buildings.FirstOrDefault(building => !building.IsFree && !building.IsDemolishing && building.Flag == flag);
 
+    private void MixWoodcutting(ref ulong hash)
+    {
+        MixGoods(ref hash);
+        var random = _draws.Generator;
+        hash = Mix(Mix(Mix(hash, random.W0), random.W1), random.W2);
+        var (stamp, timer, x, y) = _woodcutter.ObjectPassState;
+        hash = Mix(Mix(Mix(Mix(hash, stamp), timer), x), y);
+        foreach (var good in FlagEncoder.Places(_flags))
+        {
+            hash = Mix(hash, good);
+        }
+    }
+
     private void MixSettlers(ref ulong hash)
     {
         hash = Mix(Mix(Mix(Mix(hash, _clock), _phase), _scanCursor), _leaving);
@@ -939,7 +923,7 @@ public sealed partial class Game
             hash = Mix(hash, slot);
         }
 
-        foreach (var (index, slot) in _occupant.OrderBy(pair => pair.Key).Select(pair => (pair.Key, pair.Value)))
+        foreach (var (index, slot) in _movement.Occupied)
         {
             hash = Mix(Mix(hash, index), slot);
         }
