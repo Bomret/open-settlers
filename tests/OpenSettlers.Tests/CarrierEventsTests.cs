@@ -69,7 +69,7 @@ public sealed class CarrierEventsTests
     // Runs the game until the castle has sent a carrier to the road, which is then on its way.
     private static void RunToTheRequest(Game game)
     {
-        for (var i = 0; i < 400 && !game.Events.All.Any(e => e.Type == EventType.CarrierRequested); i++)
+        for (var i = 0; i < 400 && !game.History.Events.All.Any(e => e.Type == EventType.CarrierRequested); i++)
         {
             game.Tick();
         }
@@ -100,7 +100,7 @@ public sealed class CarrierEventsTests
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 18, 6);
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
-        for (var i = 0; i < 400 && !game.Events.All.Any(e => e.Type == EventType.Wait); i++)
+        for (var i = 0; i < 400 && !game.History.Events.All.Any(e => e.Type == EventType.Wait); i++)
         {
             game.Tick();
         }
@@ -113,11 +113,11 @@ public sealed class CarrierEventsTests
     {
         var game = RoadWithACarrier();
 
-        var request = game.Events.All.First(e => e.Type == EventType.CarrierRequested);
+        var request = game.History.Events.All.First(e => e.Type == EventType.CarrierRequested);
 
         Assert.AreEqual(ThingId.SettlerKind, request.Thing.Kind);
-        Assert.AreEqual(Cause.Placed(game.FlagId(0)), request.Cause);
-        Assert.AreEqual(game.FlagId((int)request.State.Get("target")!.Value).ToString(), request.Other);
+        Assert.AreEqual(Cause.Placed(game.History.FlagId(0)), request.Cause);
+        Assert.AreEqual(game.History.FlagId((int)request.State.Get("target")!.Value).ToString(), request.Other);
         Assert.AreEqual(Settler.CarrierJob, request.State.Get("job"));
     }
 
@@ -125,14 +125,17 @@ public sealed class CarrierEventsTests
     public void TheCarrierEntersItsRoadAndWaitsWithTheCauseOfThePlacement()
     {
         var game = RoadWithACarrier();
-        var carrier = game.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
+        var carrier = game.History.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
 
         // The window runs from the request to the first wait: the turn's `walked` and later goods work are other behaviours.
-        var history = game.EventsOf(carrier).SkipWhile(e => e.Type != EventType.CarrierRequested).ToList();
+        var history = game.History.EventsOf(carrier).SkipWhile(e => e.Type != EventType.CarrierRequested).ToList();
         var events = history.Take(history.FindIndex(e => e.Type == EventType.Wait) + 1).ToList();
 
         Assert.IsTrue(events.Any(e => e.Type == EventType.EnterRoad), "the carrier enters the road");
-        Assert.IsTrue(events.All(e => e.Cause == Cause.Placed(game.FlagId(0))), "the cause is carried up to the wait");
+        Assert.IsTrue(
+            events.All(e => e.Cause == Cause.Placed(game.History.FlagId(0))),
+            "the cause is carried up to the wait"
+        );
         Assert.AreEqual(EventType.Wait, events[^1].Type);
         Assert.AreEqual(0x42, events[^1].State.Get("state"));
     }
@@ -141,9 +144,9 @@ public sealed class CarrierEventsTests
     public void TheCarriedPlacedCauseEndsAtTheCarriersFirstWait()
     {
         var game = RoadWithACarrier();
-        var carrier = game.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
+        var carrier = game.History.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
 
-        var history = game.EventsOf(carrier).ToList();
+        var history = game.History.EventsOf(carrier).ToList();
         var after = history[history.FindIndex(e => e.Type == EventType.Wait) + 1];
 
         Assert.AreEqual(Cause.Settlers, after.Cause, after.ToString());
@@ -154,19 +157,19 @@ public sealed class CarrierEventsTests
     {
         var game = RoadWithACarrier();
         const int ticks = 2000;
-        var start = game.Events.Count;
+        var start = game.History.Events.Count;
         for (var i = 0; i < ticks; i++)
         {
             game.Tick();
         }
 
-        var first = game.Events.Count - start;
+        var first = game.History.Events.Count - start;
         for (var i = 0; i < ticks; i++)
         {
             game.Tick();
         }
 
-        var both = game.Events.Count - start;
+        var both = game.History.Events.Count - start;
         Assert.IsLessThanOrEqualTo(first * 5 / 2, both, $"first {first}, both {both}");
     }
 
@@ -179,12 +182,12 @@ public sealed class CarrierEventsTests
         game.InLayout = true;
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
         game.InLayout = false;
-        for (var i = 0; i < 400 && !game.Events.All.Any(e => e.Type == EventType.Wait); i++)
+        for (var i = 0; i < 400 && !game.History.Events.All.Any(e => e.Type == EventType.Wait); i++)
         {
             game.Tick();
         }
 
-        var wait = game.Events.All.First(e => e.Type == EventType.Wait);
+        var wait = game.History.Events.All.First(e => e.Type == EventType.Wait);
 
         Assert.AreEqual(Cause.Carriers, wait.Cause);
     }
@@ -203,19 +206,19 @@ public sealed class CarrierEventsTests
         for (var i = 0; i < 400; i++)
         {
             game.Tick();
-            if (game.Events.All.FirstOrDefault(e => e.Type == EventType.CarrierRequested) is not { } request)
+            if (game.History.Events.All.FirstOrDefault(e => e.Type == EventType.CarrierRequested) is not { } request)
             {
                 continue;
             }
 
             var tick = game.TickCount - 1;
             var settler = game.Settlers[request.Thing.Slot];
-            var (state, _) = game.StateAt(request.Thing, tick);
+            var (state, _) = game.History.StateAt(request.Thing, tick);
             compared++;
             Assert.AreEqual(settler.Job, state!.Get("job"), $"job at tick {tick}");
             Assert.AreEqual(settler.Mode, state.Get("mode"), $"mode at tick {tick}");
             Assert.AreEqual(settler.Target, state.Get("target"), $"target at tick {tick}");
-            if (game.EventsOf(request.Thing).Any(e => e.Tick == tick))
+            if (game.History.EventsOf(request.Thing).Any(e => e.Tick == tick))
             {
                 eventTicks++;
             }
@@ -242,7 +245,7 @@ public sealed class CarrierEventsTests
     {
         var game = RoadWithACarrier();
 
-        var types = game.EventsOf(game.FlagId(1)).Select(e => e.Type).ToList();
+        var types = game.History.EventsOf(game.History.FlagId(1)).Select(e => e.Type).ToList();
 
         Assert.Contains(EventType.CarrierRequested, types);
         Assert.Contains(EventType.EnterRoad, types);
@@ -253,11 +256,11 @@ public sealed class CarrierEventsTests
     {
         var game = RoadWithACarrier();
 
-        var requests = new[] { game.FlagId(0), game.FlagId(1) }
-            .Select(flag => game.EventsOf(flag).First(e => e.Type == EventType.CarrierRequested))
+        var requests = new[] { game.History.FlagId(0), game.History.FlagId(1) }
+            .Select(flag => game.History.EventsOf(flag).First(e => e.Type == EventType.CarrierRequested))
             .ToList();
 
-        Assert.IsTrue(requests.All(e => e.Cause == Cause.Placed(game.FlagId(0))));
+        Assert.IsTrue(requests.All(e => e.Cause == Cause.Placed(game.History.FlagId(0))));
     }
 
     [TestMethod]
@@ -272,7 +275,7 @@ public sealed class CarrierEventsTests
 
         Run(game, 400);
 
-        var requests = game.Events.All.Where(e =>
+        var requests = game.History.Events.All.Where(e =>
             e.Type == EventType.CarrierRequested && e.Thing.Kind == ThingId.SettlerKind
         );
         Assert.AreEqual(2, requests.Count(), "the road asked again");
@@ -285,7 +288,7 @@ public sealed class CarrierEventsTests
         var game = RoadWithACarrier();
         Run(game, 40);
 
-        var visit = game.EventsOf(game.FlagId(0)).First(e => e.Type == EventType.VisitFlag);
+        var visit = game.History.EventsOf(game.History.FlagId(0)).First(e => e.Type == EventType.VisitFlag);
 
         Assert.AreEqual(Cause.Carriers, visit.Cause);
         Assert.AreEqual(1, visit.State.Get("status")!.Value & 1, "the road in direction 0 holds a carrier");
@@ -301,7 +304,7 @@ public sealed class CarrierEventsTests
         Do(game, CommandKind.BuildRoad, 18, 6, [5, 5, 0]);
         Run(game, 40);
 
-        var types = game.EventsOf(game.FlagId(1)).ToList();
+        var types = game.History.EventsOf(game.History.FlagId(1)).ToList();
         var cleared = types.First(e => e.Type == EventType.ClearFlagRetryBits);
 
         Assert.AreEqual(Cause.Carriers, cleared.Cause);
@@ -319,10 +322,10 @@ public sealed class CarrierEventsTests
         game.Map.At(17, 6).Roads = RoadSet.Empty;
         Run(game, 400);
 
-        var carrier = game.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
-        var walk = game.EventsOf(carrier).First(e => e.Type == EventType.WalkRoad);
+        var carrier = game.History.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
+        var walk = game.History.EventsOf(carrier).First(e => e.Type == EventType.WalkRoad);
 
-        Assert.AreEqual(Cause.Placed(game.FlagId(0)), walk.Cause);
+        Assert.AreEqual(Cause.Placed(game.History.FlagId(0)), walk.Cause);
         Assert.AreEqual(0, walk.State.Get("timer"));
         Assert.AreEqual(3, walk.State.Get("state"));
     }
@@ -332,7 +335,7 @@ public sealed class CarrierEventsTests
     // several turns put its heading back to the direction it came by (3 on this road), as at its arrival.
     private static void RunToTheTurn(Game game, ThingId carrier, int turn)
     {
-        RunUntil(game, () => game.EventsOf(carrier).Count(e => e.Type == EventType.Wait) == turn);
+        RunUntil(game, () => game.History.EventsOf(carrier).Count(e => e.Type == EventType.Wait) == turn);
         game.Settlers[carrier.Slot].Heading = 3;
     }
 
@@ -351,22 +354,22 @@ public sealed class CarrierEventsTests
         var game = RoadBuilt();
         RunToTheRequest(game);
         SetRoadCount(game, 2);
-        var carrier = game.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
+        var carrier = game.History.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
 
         for (var turn = 1; turn <= 4; turn++)
         {
             RunToTheTurn(game, carrier, turn);
         }
 
-        var waits = game.EventsOf(carrier).Where(e => e.Type == EventType.Wait).ToList();
+        var waits = game.History.EventsOf(carrier).Where(e => e.Type == EventType.Wait).ToList();
         Assert.AreEqual(3, waits[2].State.Get("next"), "three turns counted");
         Assert.AreEqual(0xff, waits[3].State.Get("next"), "sent away at the fourth");
-        Assert.IsTrue(waits.All(e => e.Cause == Cause.Placed(game.FlagId(0))));
-        var flagWait = game.EventsOf(game.FlagId(1)).Single(e => e.Type == EventType.Wait);
+        Assert.IsTrue(waits.All(e => e.Cause == Cause.Placed(game.History.FlagId(0))));
+        var flagWait = game.History.EventsOf(game.History.FlagId(1)).Single(e => e.Type == EventType.Wait);
         Assert.AreEqual(carrier.ToString(), flagWait.Other);
         Assert.AreEqual(Cause.Carriers, flagWait.Cause);
         Assert.AreEqual(2, flagWait.State.Get("road3")!.Value & 0xf, "the road counts one carrier less");
-        Assert.AreEqual(1, game.EventsOf(game.FlagId(0)).Count(e => e.Type == EventType.Wait));
+        Assert.AreEqual(1, game.History.EventsOf(game.History.FlagId(0)).Count(e => e.Type == EventType.Wait));
     }
 
     [TestMethod]
@@ -375,7 +378,7 @@ public sealed class CarrierEventsTests
         var game = RoadBuilt();
         RunToTheRequest(game);
         SetRoadCount(game, 2);
-        var carrier = game.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
+        var carrier = game.History.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
         RunToTheTurn(game, carrier, 1);
         // The road holds one carrier again, and a good waits at the castle's flag for it (the carrier's swap at that flag has
         // come and gone).
@@ -384,11 +387,11 @@ public sealed class CarrierEventsTests
 
         RunToTheTurn(game, carrier, 2);
 
-        Assert.AreNotEqual(0x42, game.EventsOf(carrier).Last().State.Get("state"), "the carrier waits on");
+        Assert.AreNotEqual(0x42, game.History.EventsOf(carrier).Last().State.Get("state"), "the carrier waits on");
 
         Table(game, "_directionBytes", 0)[0] &= 0x7f;
         RunToTheTurn(game, carrier, 3);
 
-        Assert.AreEqual(0x42, game.EventsOf(carrier).Last().State.Get("state"), "it waits at the flag");
+        Assert.AreEqual(0x42, game.History.EventsOf(carrier).Last().State.Get("state"), "it waits at the flag");
     }
 }

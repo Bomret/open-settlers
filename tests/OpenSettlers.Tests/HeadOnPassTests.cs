@@ -80,13 +80,14 @@ public sealed class HeadOnPassTests
         for (var i = 0; i < 3000 && pass is null; i++)
         {
             game.Tick();
-            pass = game.Events.All.FirstOrDefault(e => e.Type == EventType.Stepped && e.Other is not null);
+            pass = game.History.Events.All.FirstOrDefault(e => e.Type == EventType.Stepped && e.Other is not null);
         }
 
         Assert.IsNotNull(pass, "the two carriers met head-on and passed within 3000 ticks");
         var passer = pass.Thing.Slot;
-        var stepper = game.Events.All.First(e => e.Thing.ToString() == pass.Other).Thing.Slot;
-        var wait = game.EventsOf(pass.Thing)
+        var stepper = game.History.Events.All.First(e => e.Thing.ToString() == pass.Other).Thing.Slot;
+        var wait = game
+            .History.EventsOf(pass.Thing)
             .Last(e => e.Type == EventType.Stepped && e.Tick < pass.Tick && e.State.Get("heading") < 0);
 
         return new Meeting(game, pass, wait, stepper, passer);
@@ -111,7 +112,7 @@ public sealed class HeadOnPassTests
 
         // The stepper's turn ends with its `walked` event, after the pass.
         var stepper = meeting
-            .Game.EventsOf(meeting.Game.SettlerId(meeting.Stepper))
+            .Game.History.EventsOf(meeting.Game.History.SettlerId(meeting.Stepper))
             .Last(e => e.Tick == meeting.Pass.Tick);
         Assert.AreEqual((19, 6), Node(stepper.State), "the stepper is on the passer's node");
         Assert.AreEqual((East + 3) % 6, stepper.State.Get("heading"));
@@ -121,16 +122,18 @@ public sealed class HeadOnPassTests
     public void ThePasserGetsOneSteppedEventWithItsOwnCauseNamingTheStepper()
     {
         var meeting = Meet();
-        var stepper = meeting.Game.SettlerId(meeting.Stepper);
+        var stepper = meeting.Game.History.SettlerId(meeting.Stepper);
 
-        var passes = meeting.Game.Events.All.Where(e => e.Type == EventType.Stepped && e.Other is not null).ToList();
+        var passes = meeting
+            .Game.History.Events.All.Where(e => e.Type == EventType.Stepped && e.Other is not null)
+            .ToList();
 
         Assert.AreEqual(1, passes.Count);
-        Assert.AreEqual(meeting.Game.SettlerId(meeting.Passer), passes[0].Thing);
+        Assert.AreEqual(meeting.Game.History.SettlerId(meeting.Passer), passes[0].Thing);
         Assert.AreEqual(stepper.ToString(), passes[0].Other);
         Assert.AreEqual(meeting.Wait.Cause, passes[0].Cause, "the passer's cause, as on its own wait");
         Assert.AreNotEqual(
-            meeting.Game.EventsOf(stepper).Last(e => e.Tick < meeting.Pass.Tick).Cause,
+            meeting.Game.History.EventsOf(stepper).Last(e => e.Tick < meeting.Pass.Tick).Cause,
             passes[0].Cause,
             "not the stepper's cause"
         );
@@ -143,9 +146,10 @@ public sealed class HeadOnPassTests
     {
         var meeting = Meet();
         var game = meeting.Game;
-        var stepper = game.SettlerId(meeting.Stepper);
+        var stepper = game.History.SettlerId(meeting.Stepper);
         var passer = game.Settlers[meeting.Passer];
-        bool Posted() => game.EventsOf(stepper).Any(e => e.Tick > meeting.Pass.Tick && e.Type == EventType.Wait);
+        bool Posted() =>
+            game.History.EventsOf(stepper).Any(e => e.Tick > meeting.Pass.Tick && e.Type == EventType.Wait);
 
         for (var i = 0; i < 2000 && (!Posted() || (passer.X, passer.Y) == (18, 6)); i++)
         {
@@ -155,7 +159,7 @@ public sealed class HeadOnPassTests
         Assert.IsTrue(Posted(), "the stepper took up its post on the passer's old node");
         Assert.AreNotEqual((18, 6), (passer.X, passer.Y), "the passer walked on from the stepper's old node");
         var blocked = game
-            .Events.All.Where(e =>
+            .History.Events.All.Where(e =>
                 e.Tick > meeting.Pass.Tick && e.Type == EventType.Stepped && e.State.Get("heading") < 0
             )
             .Where(e => e.Thing.Slot == meeting.Stepper || e.Thing.Slot == meeting.Passer);

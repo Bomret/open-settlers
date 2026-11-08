@@ -128,24 +128,25 @@ public sealed partial class Game
     private Cause RazeCause => _raze ?? Cause.Removal;
 
     // The cause the building at the slot was taken down with, removal for a building no raze took down.
-    private Cause RazedCauseOf(int slot) => _razedBuildings.GetValueOrDefault(BuildingId(slot), Cause.Removal);
+    private Cause RazedCauseOf(int slot) => _razedBuildings.GetValueOrDefault(History.BuildingId(slot), Cause.Removal);
 
-    // Records the settler's event: it carries the raze command's cause on until it idles (CarryCause); a change ticks after the
+    // Records the settler's event: it carries the raze command's cause on until it idles (History.CarryCause); a change ticks after the
     // command takes the cause the settler already carries, else removal.
     private void Touch(int slot, string type, string? other = null)
     {
         if (_raze is { IsCommand: true } command)
         {
-            CarryCause(slot, command);
+            History.CarryCause(slot, command);
         }
 
-        RecordSettler(slot, type, RazeCause, other);
+        History.RecordSettler(slot, type, RazeCause, other);
     }
 
-    private void TouchFlag(int slot, string type, string? other = null) => RecordFlag(slot, type, RazeCause, other);
+    private void TouchFlag(int slot, string type, string? other = null) =>
+        History.RecordFlag(slot, type, RazeCause, other);
 
     private void TouchBuilding(Building building, string type) =>
-        RecordBuilding(_buildings.IndexOf(building), type, RazeCause);
+        History.RecordBuilding(_buildings.IndexOf(building), type, RazeCause);
 
     private bool RemoveFlagAt(int x, int y)
     {
@@ -155,7 +156,7 @@ public sealed partial class Game
             return false;
         }
 
-        _raze = Cause.Razed(FlagId(Map.At(index).LinkedSlot));
+        _raze = Cause.Razed(History.FlagId(Map.At(index).LinkedSlot));
         TakeFlagDown(index);
         _raze = null;
 
@@ -170,7 +171,7 @@ public sealed partial class Game
             return false;
         }
 
-        _raze = Cause.Razed(BuildingId(_buildings.IndexOf(building)));
+        _raze = Cause.Razed(History.BuildingId(_buildings.IndexOf(building)));
         TakeBuildingDown(building);
         _raze = null;
 
@@ -194,7 +195,7 @@ public sealed partial class Game
         var (first, second) = RoadBits(roads);
 
         // A road has no ID: its cause names the flag it leaves from.
-        _raze = Cause.Razed(FlagId(road.FromSlot));
+        _raze = Cause.Razed(History.FlagId(road.FromSlot));
         TakeRoadDown(index, first);
         TakeRoadDown(index, second);
         _roads.Remove(road);
@@ -303,7 +304,7 @@ public sealed partial class Game
                     settler.Mode = StorageWalk;
                     settler.Target = 0;
                     _walkingHome.Add(walker);
-                    Touch(walker, EventType.EndOfRoad, FlagId(slot).ToString());
+                    Touch(walker, EventType.EndOfRoad, History.FlagId(slot).ToString());
                 }
             }
         }
@@ -592,7 +593,7 @@ public sealed partial class Game
                 settler.Mode = StorageWalk;
                 settler.Target = 0;
                 _walkingHome.Add(walker);
-                Touch(walker, EventType.TookFlagDown, FlagId(slot).ToString());
+                Touch(walker, EventType.TookFlagDown, History.FlagId(slot).ToString());
             }
         }
 
@@ -717,11 +718,11 @@ public sealed partial class Game
         CountCarriers(carriers, (a.Far, a.FarDirection), (b.Far, b.FarDirection), _tables.RoadCapacity(length >> 4));
 
         // The flags at the ends of the new road, naming each other, and the carriers now on it, naming its two flags.
-        TouchFlag(a.Far, EventType.JoinRoads, FlagId(b.Far).ToString());
-        TouchFlag(b.Far, EventType.JoinRoads, FlagId(a.Far).ToString());
+        TouchFlag(a.Far, EventType.JoinRoads, History.FlagId(b.Far).ToString());
+        TouchFlag(b.Far, EventType.JoinRoads, History.FlagId(a.Far).ToString());
         foreach (var carrierSlot in carriers)
         {
-            Touch(carrierSlot, EventType.JoinRoads, $"{FlagId(a.Far)} {FlagId(b.Far)}");
+            Touch(carrierSlot, EventType.JoinRoads, $"{History.FlagId(a.Far)} {History.FlagId(b.Far)}");
         }
 
         for (var walker = 0; walker < _settlers.Count; walker++)
@@ -761,7 +762,7 @@ public sealed partial class Game
         building.Stamp = _clock;
         var wasWorking = (building.Status & 0x40) != 0;
         building.Status &= ~0x40;
-        _razedBuildings[BuildingId(_buildings.IndexOf(building))] = RazeCause;
+        _razedBuildings[History.BuildingId(_buildings.IndexOf(building))] = RazeCause;
         TouchBuilding(building, EventType.TookBuildingDown);
         if (wasWorking)
         {
@@ -814,12 +815,12 @@ public sealed partial class Game
                 settler.Mode = StorageWalk;
                 settler.Target = 0;
                 _walkingHome.Add(walker);
-                Touch(walker, EventType.ReleaseGoodsFor, FlagId(flag).ToString());
+                Touch(walker, EventType.ReleaseGoodsFor, History.FlagId(flag).ToString());
             }
             else if (settler.State == 3 && settler.Mode != 0 && settler.Target == flag + 1)
             {
                 settler.Target = 0;
-                Touch(walker, EventType.ReleaseGoodsFor, FlagId(flag).ToString());
+                Touch(walker, EventType.ReleaseGoodsFor, History.FlagId(flag).ToString());
             }
         }
 
@@ -866,7 +867,7 @@ public sealed partial class Game
 
             if (released)
             {
-                TouchFlag(holder, EventType.ReleaseGoodsFor, FlagId(flag).ToString());
+                TouchFlag(holder, EventType.ReleaseGoodsFor, History.FlagId(flag).ToString());
             }
         }
     }
@@ -879,7 +880,7 @@ public sealed partial class Game
         building.Stamp = _clock;
         var left = (ushort)building.Worker;
         building.Worker = (ushort)(left - elapsed);
-        RecordBuilding(slot, EventType.Burn, RazedCauseOf(slot));
+        History.RecordBuilding(slot, EventType.Burn, RazedCauseOf(slot));
         if (left < elapsed)
         {
             FreeBuilding(slot, building);
@@ -896,9 +897,9 @@ public sealed partial class Game
         freed.Object = MapObject.None;
         freed.ClearLink();
         // The event that ends the building, recorded while the slot still holds it.
-        RecordBuilding(slot, EventType.FreeBuilding, RazedCauseOf(slot));
-        _razedBuildings.Remove(BuildingId(slot));
-        _buildingCommand.Remove(BuildingId(slot));
+        History.RecordBuilding(slot, EventType.FreeBuilding, RazedCauseOf(slot));
+        _razedBuildings.Remove(History.BuildingId(slot));
+        _buildingCommand.Remove(History.BuildingId(slot));
         _buildings[slot] = Building.Free();
         while (_buildings.Count > 0 && _buildings[^1].IsFree)
         {

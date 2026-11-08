@@ -90,7 +90,7 @@ public sealed class PlayNamedThingTests
     public void ALinkFieldIsRefusedAtAMarkAndAtATick()
     {
         var game = Castle();
-        var first = game.EventsOf(game.FlagId(1))[0].Tick;
+        var first = game.History.EventsOf(game.History.FlagId(1))[0].Tick;
 
         StringAssert.Contains(
             Problem(Run("name f 18 6 flag\nmark m\nexpect f.id@m = flag#1.1", game)),
@@ -146,7 +146,7 @@ public sealed class PlayNamedThingTests
     {
         var game = Castle();
         var type = game.Buildings[0].Type;
-        var first = game.EventsOf(game.BuildingId(0))[0].Tick;
+        var first = game.History.EventsOf(game.History.BuildingId(0))[0].Tick;
         var run = Run(
             $"name c 15 5 building\nmark start\nexpect c.x = 15\nexpect c.x >= 15\nexpect c.type@start = {type}\nexpect c.type@{first} = {type}\nexpect ticks >= 1",
             game
@@ -159,7 +159,7 @@ public sealed class PlayNamedThingTests
     public void ExpectFailsByTheEnginesStateNowAtAMarkAndAtATick()
     {
         var game = Castle();
-        var first = game.EventsOf(game.BuildingId(0))[0].Tick;
+        var first = game.History.EventsOf(game.History.BuildingId(0))[0].Tick;
 
         StringAssert.Contains(Problem(Run("name c 15 5 building\nexpect c.x = 16", game)), "actual 15");
         StringAssert.Contains(Problem(Run("name c 15 5 building\nmark m\nexpect c.x@m = 16", game)), "actual 15");
@@ -214,9 +214,9 @@ public sealed class PlayNamedThingTests
         var game = Castle();
         var run = new PlayRun(Parse("name f 18 6 flag\nwait 1\nexpect f.x = 18"), () => StateOf(game), _out, _ => null);
         run.Advance(0);
-        var id = game.FlagId(1);
+        var id = game.History.FlagId(1);
         Do(game, CommandKind.RemoveFlag, 18, 6);
-        var last = game.EventsOf(id).Last();
+        var last = game.History.EventsOf(id).Last();
         run.Advance(1.0);
 
         StringAssert.Contains(Problem(run), $"gone at tick {last.Tick}");
@@ -234,9 +234,9 @@ public sealed class PlayNamedThingTests
             _ => null
         );
         run.Advance(0);
-        var id = game.FlagId(1);
+        var id = game.History.FlagId(1);
         Do(game, CommandKind.RemoveFlag, 18, 6);
-        var last = game.EventsOf(id).Last();
+        var last = game.History.EventsOf(id).Last();
         run.Advance(1.0);
 
         StringAssert.Contains(Problem(run), $"gone at tick {last.Tick}");
@@ -273,7 +273,7 @@ public sealed class PlayNamedThingTests
         run.Advance(0);
         Do(game, CommandKind.RemoveFlag, 18, 6);
         Do(game, CommandKind.PlaceFlag, 18, 6);
-        Assert.AreEqual("flag#1.2", game.FlagId(1).ToString());
+        Assert.AreEqual("flag#1.2", game.History.FlagId(1).ToString());
         run.Advance(1.0);
 
         Assert.AreEqual("", string.Join("\n", run.Problems));

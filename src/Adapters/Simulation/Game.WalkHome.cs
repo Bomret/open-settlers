@@ -41,7 +41,7 @@ public sealed partial class Game
         settler.State = 0x19;
         settler.Mode = 0;
         settler.Stamp = _clock;
-        RecordSettler(slot, EventType.ClaimedHome, Cause.WalkHome);
+        History.RecordSettler(slot, EventType.ClaimedHome, Cause.WalkHome);
     }
 
     // The storage the walk home goes to (0x45d09b): the nearest by roads of the flags that hold a storage's request bytes.
@@ -72,7 +72,7 @@ public sealed partial class Game
         settler.Target = 0;
         settler.Heading = 0;
         settler.Next = 0;
-        RecordSettler(slot, EventType.EnteredStorage, Cause.WalkHome, BuildingId(0).ToString());
+        History.RecordSettler(slot, EventType.EnteredStorage, Cause.WalkHome, History.BuildingId(0).ToString());
     }
 
     // The owner a node of the settler's player has (0x4354b8).
@@ -103,7 +103,7 @@ public sealed partial class Game
         {
             // TimerRan has counted the timer down and stamped the settler: the clock moves between two turns, so the stamp
             // changed, and the turn is a change to record.
-            RecordSettler(slot, EventType.SearchedHome, Cause.WalkHome);
+            History.RecordSettler(slot, EventType.SearchedHome, Cause.WalkHome);
 
             return;
         }
@@ -132,7 +132,7 @@ public sealed partial class Game
         settler.Next = 0;
         settler.State = settler.Job is >= FirstKnightJob and <= 26 ? KnightWalk : 0x10;
         settler.Timer = 0;
-        RecordSettler(slot, EventType.SearchedHome, Cause.WalkHome);
+        History.RecordSettler(slot, EventType.SearchedHome, Cause.WalkHome);
     }
 
     // The random choice where no flag is near (0x43560c): the draw of the generator gives two offsets, its low byte and
@@ -201,13 +201,13 @@ public sealed partial class Game
             settler.Target = 0;
             settler.Heading = 0;
             settler.Next = 0;
-            RecordSettler(slot, EventType.ArrivedHome, Cause.WalkHome, BuildingId(0).ToString());
+            History.RecordSettler(slot, EventType.ArrivedHome, Cause.WalkHome, History.BuildingId(0).ToString());
 
             return;
         }
 
         settler.State = 0x19;
         settler.Mode = 0;
-        RecordSettler(slot, EventType.ArrivedHome, Cause.WalkHome);
+        History.RecordSettler(slot, EventType.ArrivedHome, Cause.WalkHome);
     }
 }

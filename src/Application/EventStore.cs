@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace OpenSettlers.Simulation;
 
 /// <summary>
-/// Every event of one game in the order recorded (ADR 0011). Always on, no cap. The game fills it; it is outside the state
+/// Every event of one game in the order recorded (ADR 0011). Always on, no cap. The <see cref="GameHistory"/> fills it; it is outside the state
 /// hash and no rule reads it (INV-0007).
 /// </summary>
 public sealed class EventStore

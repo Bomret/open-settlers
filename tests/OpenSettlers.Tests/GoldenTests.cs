@@ -177,7 +177,9 @@ public sealed class GoldenTests
 
             var digest = $"{checkpoint}:{game.Digest():x16}";
             digests.Add(digest);
-            points.Add(readEvents ? $"{digest}:{game.Events.Count}:{EventDigest(game.Events.All):x16}" : digest);
+            points.Add(
+                readEvents ? $"{digest}:{game.History.Events.Count}:{EventDigest(game.History.Events.All):x16}" : digest
+            );
         }
 
         var line =
@@ -258,7 +260,7 @@ public sealed class GoldenTests
     [TestMethod]
     public void EveryBehaviourActsSeveralTimesInTheEventLogOfAScenario()
     {
-        var logs = Runs().Select(r => Run(r.Scenario, r.EveryPass).Game.Events.All).ToList();
+        var logs = Runs().Select(r => Run(r.Scenario, r.EveryPass).Game.History.Events.All).ToList();
 
         var problems = Behaviours
             .Select(b => (b.Behaviour, Count: logs.Max(log => log.Count(b.Is))))

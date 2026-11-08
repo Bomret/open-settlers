@@ -68,14 +68,14 @@ public sealed class ThingHistorySettlersTests
     public void AWorkerRequestedForAHutRecordsTheBuildingAndEachStepOfItsWalkTheNode()
     {
         var game = Built(out var hut);
-        var hutId = game.BuildingId(hut);
-        var worker = game.SettlerId(WoodcutterSlot(game));
+        var hutId = game.History.BuildingId(hut);
+        var worker = game.History.SettlerId(WoodcutterSlot(game));
         for (var i = 0; i < 400 && game.Settlers[WoodcutterSlot(game)].State != 4; i++)
         {
             game.Tick();
         }
 
-        var events = game.EventsOf(worker);
+        var events = game.History.EventsOf(worker);
         var request = events.Single(e => e.Type == EventType.WorkerRequested);
         Assert.AreEqual(hutId.ToString(), request.Other);
         Assert.AreEqual($"placed {hutId}", request.Cause.ToString());
@@ -87,7 +87,7 @@ public sealed class ThingHistorySettlersTests
             steps[^1].State.Get("x") * 1000 + steps[^1].State.Get("y")
         );
         Assert.IsTrue(
-            game.EventsOf(hutId).Any(e => e.Type == EventType.WorkerRequested && e.Other == worker.ToString())
+            game.History.EventsOf(hutId).Any(e => e.Type == EventType.WorkerRequested && e.Other == worker.ToString())
         );
     }
 
@@ -100,13 +100,14 @@ public sealed class ThingHistorySettlersTests
             game.Tick();
         }
 
-        var castle = game.BuildingId(0);
-        var changes = game.EventsOf(castle).Where(e => e.Type == EventType.Builder).ToList();
+        var castle = game.History.BuildingId(0);
+        var changes = game.History.EventsOf(castle).Where(e => e.Type == EventType.Builder).ToList();
         Assert.IsNotEmpty(changes);
         Assert.AreEqual("settlers", changes[0].Cause.ToString());
         Assert.AreEqual(game.Buildings[0].Progress, changes[^1].State.Get("progress"));
         Assert.IsTrue(
-            game.EventsOf(game.SettlerId(0)).Any(e => e.Type == EventType.Builder && e.Other == castle.ToString())
+            game.History.EventsOf(game.History.SettlerId(0))
+                .Any(e => e.Type == EventType.Builder && e.Other == castle.ToString())
         );
     }
 
@@ -157,7 +158,7 @@ public sealed class ThingHistorySettlersTests
                     settler.X,
                     settler.Y,
                 ];
-                var (state, refusal) = game.StateAt(game.SettlerId(s), game.TickCount - 1);
+                var (state, refusal) = game.History.StateAt(game.History.SettlerId(s), game.TickCount - 1);
                 Assert.IsNotNull(state, refusal);
                 CollectionAssert.AreEqual(
                     expected,
@@ -177,13 +178,13 @@ public sealed class ThingHistorySettlersTests
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 17, 3);
         Do(game, CommandKind.PlaceBuilding, 16, 2);
-        var hut = game.BuildingId(1);
+        var hut = game.History.BuildingId(1);
         for (var i = 0; i < 400; i++)
         {
             game.Tick();
         }
 
-        var events = game.EventsOf(hut);
+        var events = game.History.EventsOf(hut);
         var handled = events.First(e => e.Type == EventType.BuildingHandled);
         Assert.AreEqual(4, handled.State.Get("status")! & 4, "the unanswered request sets bit 2");
         Assert.AreEqual($"placed {hut}", handled.Cause.ToString());
@@ -196,7 +197,7 @@ public sealed class ThingHistorySettlersTests
     public void AHutsStateAtEveryTickOfTheWorkersWalkEqualsTheEnginesState()
     {
         var game = Built(out var hutSlot);
-        var hut = game.BuildingId(hutSlot);
+        var hut = game.History.BuildingId(hutSlot);
         for (var i = 0; i < 400 && game.Settlers[WoodcutterSlot(game)].State != 4; i++)
         {
             game.Tick();
@@ -214,7 +215,7 @@ public sealed class ThingHistorySettlersTests
                 b.Fill,
                 b.Progress,
             ];
-            var (state, refusal) = game.StateAt(hut, game.TickCount - 1);
+            var (state, refusal) = game.History.StateAt(hut, game.TickCount - 1);
             Assert.IsNotNull(state, refusal);
             CollectionAssert.AreEqual(
                 expected,
@@ -235,7 +236,7 @@ public sealed class ThingHistorySettlersTests
             game.Tick();
         }
 
-        var idled = game.Events.All.Where(e => e.Type == EventType.KnightIdled).ToList();
+        var idled = game.History.Events.All.Where(e => e.Type == EventType.KnightIdled).ToList();
         Assert.IsNotEmpty(idled);
         Assert.IsTrue(idled.All(e => e.Cause == Cause.Settlers && e.State.Get("job") >= 22));
     }
@@ -258,9 +259,9 @@ public sealed class ThingHistorySettlersTests
             game.Tick();
         }
 
-        var hut = game.BuildingId(hutSlot);
-        var turned = game.EventsOf(hut).Single(e => e.Type == EventType.Walked);
-        Assert.AreEqual(game.SettlerId(worker).ToString(), turned.Other);
+        var hut = game.History.BuildingId(hutSlot);
+        var turned = game.History.EventsOf(hut).Single(e => e.Type == EventType.Walked);
+        Assert.AreEqual(game.History.SettlerId(worker).ToString(), turned.Other);
         Assert.AreEqual(0, turned.State.Get("status")! & 0x80, "the worker on the way ends");
     }
 }

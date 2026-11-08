@@ -3,7 +3,7 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// A record of one change a rule made to a settler, building, or flag (<c>CONTEXT.md</c>, ADR 0011).
 /// </summary>
-/// <param name="Tick">The tick the change happened in: <see cref="Game.TickCount"/> as the rule ran.</param>
+/// <param name="Tick">The tick the change happened in: <c>Game.TickCount</c> as the rule ran.</param>
 /// <param name="Type">The rule that made the change, one of <see cref="EventType.All"/>.</param>
 /// <param name="Thing">The thing that changed.</param>
 /// <param name="State">The thing's state after the change.</param>

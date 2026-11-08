@@ -127,7 +127,7 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
                 entry.flag.Y,
                 [
                     ("slot", entry.slot.ToString(CultureInfo.InvariantCulture)),
-                    ("id", game.FlagId(entry.slot).ToString()),
+                    ("id", game.History.FlagId(entry.slot).ToString()),
                 ],
                 null
             )),
@@ -158,7 +158,7 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
             Values =
             [
                 .. thing.Values,
-                ("id", game.SettlerId(slot).ToString()),
+                ("id", game.History.SettlerId(slot).ToString()),
                 .. flag is { } id ? [("flag-id", id)] : Array.Empty<(string, string)>(),
             ],
         };
@@ -177,10 +177,10 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
             Values =
             [
                 .. thing.Values,
-                ("id", game.BuildingId(slot).ToString()),
+                ("id", game.History.BuildingId(slot).ToString()),
                 .. flag is { } flagId ? [("flag-id", flagId)] : Array.Empty<(string, string)>(),
                 .. worker
-                    ? [("worker-id", game.SettlerId(building.Worker).ToString())]
+                    ? [("worker-id", game.History.SettlerId(building.Worker).ToString())]
                     : Array.Empty<(string, string)>(),
             ],
         };
@@ -188,7 +188,7 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
 
     // The ID of the flag in the slot, or null where no flag stands there.
     static string? FlagLink(Game game, int slot) =>
-        slot >= 0 && slot < game.Flags.Count && !game.Flags[slot].IsFree ? game.FlagId(slot).ToString() : null;
+        slot >= 0 && slot < game.Flags.Count && !game.Flags[slot].IsFree ? game.History.FlagId(slot).ToString() : null;
 
     // The directions each road node's roads leave in: a road's steps run from its starting flag, each node holding the
     // way on and the way back; the ending flag holds the way back only.

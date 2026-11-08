@@ -309,7 +309,7 @@ public sealed partial class Game
 
         settler.Heading = heading;
         settler.State = 0x43;
-        RecordSettler(slot, EventType.Fetch, Cause.Goods);
+        History.RecordSettler(slot, EventType.Fetch, Cause.Goods);
         Claim(slot, settler);
     }
 
@@ -329,7 +329,7 @@ public sealed partial class Game
         settler.Timer = 0;
         settler.Mode = 0;
         settler.Next = 0;
-        RecordSettler(slot, EventType.Claim, Cause.Goods);
+        History.RecordSettler(slot, EventType.Claim, Cause.Goods);
     }
 
     // The good on a place waits for the road that leaves the flag in a direction: bit 7 and the place go into the road's byte.
@@ -408,8 +408,8 @@ public sealed partial class Game
         if (changed)
         {
             var detail = $"took {took} left {left}";
-            RecordSettler(slot, EventType.Exchange, Cause.Goods, $"{FlagId(flag)} {detail}");
-            RecordFlag(flag, EventType.Exchange, Cause.Goods, $"{SettlerId(slot)} {detail}");
+            History.RecordSettler(slot, EventType.Exchange, Cause.Goods, $"{History.FlagId(flag)} {detail}");
+            History.RecordFlag(flag, EventType.Exchange, Cause.Goods, $"{History.SettlerId(slot)} {detail}");
         }
     }
 
@@ -430,7 +430,7 @@ public sealed partial class Game
         settler.Frame = (byte)(Height(node) - Height(here) + 0x5d);
         var old = settler.Timer;
         settler.Timer = (ushort)(old + _tables.StepTime(settler.Frame));
-        RecordSettler(slot, EventType.Deliver, Cause.Goods);
+        History.RecordSettler(slot, EventType.Deliver, Cause.Goods);
         if (settler.Timer >= old)
         {
             Handover(slot, settler);
@@ -450,7 +450,7 @@ public sealed partial class Game
             {
                 settler.Next = 0;
                 settler.State = 3;
-                RecordSettler(slot, EventType.Handover, Cause.Goods);
+                History.RecordSettler(slot, EventType.Handover, Cause.Goods);
                 WalkRoad(slot, settler);
 
                 return;
@@ -477,8 +477,13 @@ public sealed partial class Game
                     }
 
                     var buildingSlot = _buildings.IndexOf(building);
-                    RecordBuilding(buildingSlot, EventType.Handover, Cause.Goods, $"{SettlerId(slot)} good {good}");
-                    given = $"{BuildingId(buildingSlot)} good {good}";
+                    History.RecordBuilding(
+                        buildingSlot,
+                        EventType.Handover,
+                        Cause.Goods,
+                        $"{History.SettlerId(slot)} good {good}"
+                    );
+                    given = $"{History.BuildingId(buildingSlot)} good {good}";
                 }
             }
 
@@ -487,7 +492,7 @@ public sealed partial class Game
             settler.Next = 0xff;
             var old = settler.Timer;
             settler.Timer = (ushort)(old + (_tables.StepTime(shape) >> 1));
-            RecordSettler(slot, EventType.Handover, Cause.Goods, given.Length == 0 ? null : given);
+            History.RecordSettler(slot, EventType.Handover, Cause.Goods, given.Length == 0 ? null : given);
             if (settler.Timer < old)
             {
                 return;
