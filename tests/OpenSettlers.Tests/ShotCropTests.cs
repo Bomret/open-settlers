@@ -67,7 +67,7 @@ public sealed class ShotCropTests
         var c = ((column % width) + width) % width;
         var r = ((row % rows) + rows) % rows;
 
-        return (Map.Layer(MapLayer.Height)[r * width + c] & Map.HeightMask) * TerrainTriangles.HeightStep;
+        return Map.At(c, r).Height * TerrainTriangles.HeightStep;
     }
 
     [TestMethod]

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -22,7 +23,7 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     public const string ObjectKind = "object";
 
     /// <summary>The map object as a thing: its code in hex, and its name where <paramref name="names"/> has one.</summary>
-    public static Thing Of(MapObject mapObject, NameTable? names) =>
+    public static Thing Of(PlacedObject mapObject, NameTable? names) =>
         new(
             ObjectKind,
             mapObject.X,

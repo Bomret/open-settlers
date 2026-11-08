@@ -1,4 +1,5 @@
 using System;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -16,7 +17,7 @@ namespace OpenSettlers.MapView;
 public static class MapPicking
 {
     // The tallest lift of a node: the greatest height at 4 pixels a unit.
-    private const int MaxLift = Map.HeightMask * TerrainTriangles.HeightStep;
+    private const int MaxLift = Node.MaxHeight * TerrainTriangles.HeightStep;
 
     /// <summary>
     /// The node under a click. <paramref name="cameraX"/> and <paramref name="cameraY"/> are the camera position
@@ -40,14 +41,12 @@ public static class MapPicking
     {
         var pointX = cameraX + (screenX - viewWidth / 2) / scale;
         var pointY = cameraY + (screenY - viewHeight / 2) / scale;
-        var heights = map.Layer(MapLayer.Height);
         var width = map.Size.Width;
         var rows = map.Size.Height;
 
         // A node of row r is drawn between 20 r - MaxLift and 20 r, so its row is at or below the point's row.
         var firstRow = (int)Math.Floor(pointY / Camera.RowSpacing);
         var lastRow = firstRow + MaxLift / Camera.RowSpacing + 2;
-        var objects = map.Layer(MapLayer.Object);
         (int X, int Y)? onFlag = null;
         var best = (X: 0, Y: 0);
         var bestDistance = double.MaxValue;
@@ -60,10 +59,10 @@ public static class MapPicking
                 var wrappedColumn = ((column % width) + width) % width;
                 var wrappedRow = ((row % rows) + rows) % rows;
                 var (x, y) = Camera.NodePosition(column, row);
-                y -= (heights[wrappedRow * width + wrappedColumn] & Map.HeightMask) * TerrainTriangles.HeightStep;
+                y -= map.At(wrappedColumn, wrappedRow).Height * TerrainTriangles.HeightStep;
                 if (
                     pickFlag
-                    && (objects[wrappedRow * width + wrappedColumn] & 0x7f) == ObjectSprites.FlagCode
+                    && map.At(wrappedColumn, wrappedRow).Object.Code == ObjectSprites.FlagCode
                     && pointX >= x + flag!.OffsetX
                     && pointX < x + flag.OffsetX + flag.Width
                     && pointY >= y + flag.OffsetY
@@ -149,7 +148,7 @@ public static class MapPicking
             return $"tile {column},{row} is outside the map of {width} by {rows} tiles";
 
         var (x, y) = Camera.NodePosition(column, row);
-        y -= (map.Layer(MapLayer.Height)[row * width + column] & Map.HeightMask) * TerrainTriangles.HeightStep;
+        y -= map.At(column, row).Height * TerrainTriangles.HeightStep;
         (double X, double Y)? best = null;
         var bestCopy = (X: 0, Y: 0);
         var bestDistance = double.MaxValue;

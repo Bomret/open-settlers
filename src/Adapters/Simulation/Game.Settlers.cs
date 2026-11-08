@@ -494,13 +494,13 @@ public sealed partial class Game
 
     private int Occupant(int index) => _occupant.TryGetValue(index, out var slot) ? slot : 0;
 
-    private int Height(int index) => Map.Layer(MapLayer.Height)[index] & Map.HeightMask;
+    private int Height(int index) => Map.At(index).Height;
 
-    // The building on a node: the link byte of the node names its slot, and the building must stand on the node, since
-    // the byte also holds a flag's slot or a resource deposit.
+    // The building on a node: the node's link names its slot, and the building must stand on the node, since the link
+    // also holds a flag's slot.
     private Building? BuildingAt(int index)
     {
-        var slot = Map.Layer(MapLayer.Resource)[index];
+        var slot = Map.At(index).LinkedSlot;
 
         return
             slot < _buildings.Count
@@ -587,8 +587,6 @@ public sealed partial class Game
             return;
         }
 
-        var flags = Map.Layer(MapLayer.Flags);
-        var links = Map.Layer(MapLayer.Resource);
         while (true)
         {
             var here = Map.Index(settler.X, settler.Y);
@@ -601,17 +599,17 @@ public sealed partial class Game
                 // makes the settler step against it and pass the settler there (as for the swap of Step); every other chain
                 // ends with the count at 0 and the same direction tried again.
                 settler.Next++;
-                if (settler.Next >= ((flags[here] & 0x80) != 0 ? 10 : 50))
+                if (settler.Next >= (Map.At(here).FlagMark ? 10 : 50))
                 {
                     settler.Next = 0;
                 }
 
                 direction = settler.Heading + 6;
             }
-            else if ((flags[here] & 0x80) == 0)
+            else if (!Map.At(here).FlagMark)
             {
                 // A node of a road: the road's other direction than the one the settler came by.
-                direction = RoadContinuation(flags[here], settler.Heading);
+                direction = RoadContinuation(Map.At(here).Roads, settler.Heading);
                 if (direction < 0)
                 {
                     settler.Timer = 0;
@@ -624,7 +622,7 @@ public sealed partial class Game
                 {
                     // No storage chosen yet (0x45d09b); none a road leads to sends the settler to look for a flag again,
                     // from the far end of the search.
-                    var storage = StorageFlag(links[here]);
+                    var storage = StorageFlag(Map.At(here).LinkedSlot);
                     if (storage < 0)
                     {
                         settler.State = 0x19;
@@ -636,7 +634,7 @@ public sealed partial class Game
                     settler.Target = storage;
                 }
 
-                if (settler.Target == links[here])
+                if (settler.Target == Map.At(here).LinkedSlot)
                 {
                     // A negative mode (a byte of 0x80 or more) enters the building north-west of the flag.
                     if (settler.Mode >= 0x80)
@@ -651,7 +649,7 @@ public sealed partial class Game
                     return;
                 }
 
-                direction = Route(links[here], settler.Target);
+                direction = Route(Map.At(here).LinkedSlot, settler.Target);
                 if (direction < 0 && settler.Mode is >= 0x80 and < 0xff)
                 {
                     // 0x43a24e: a settler on its way to a storage that finds no road leads on looks for a flag again.
@@ -848,10 +846,13 @@ public sealed partial class Game
         var node = Map.Index(x, y);
         var slot = _buildings.FindIndex(building => building.IsFree);
         slot = slot < 0 ? _buildings.Count : slot;
-        Map.Bytes(MapLayer.Flags)[node] |= 0x42;
-        Map.Bytes(MapLayer.Flags)[Map.Index(flagX, flagY)] |= 0x10;
-        Map.Bytes(MapLayer.Object)[node] = (byte)((Map.Layer(MapLayer.Object)[node] & 0x80) | 2);
-        Map.Bytes(MapLayer.Resource)[node] = (byte)slot;
+        ref var hutNode = ref Map.At(node);
+        hutNode.Roads = hutNode.Roads.With(1);
+        hutNode.LakeMark = true;
+        hutNode.Object = MapObject.Hut;
+        hutNode.LinkTo(slot);
+        ref var flagNode = ref Map.At(flagX, flagY);
+        flagNode.Roads = flagNode.Roads.With(4);
         var hut = new Building(Building.WoodcutterType, x, y, flag);
         if (slot == _buildings.Count)
         {

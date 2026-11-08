@@ -64,7 +64,7 @@ public sealed partial class Layout
     private readonly string[] _terrain;
     private readonly string[] _terrainLower;
     private readonly string[]? _lakes;
-    private readonly IReadOnlyList<MapObject> _objects;
+    private readonly IReadOnlyList<PlacedObject> _objects;
     private readonly IReadOnlyList<Step> _steps;
     private readonly string _file;
 
@@ -76,7 +76,7 @@ public sealed partial class Layout
         string[] terrain,
         string[] terrainLower,
         string[]? lakes,
-        IReadOnlyList<MapObject> objects,
+        IReadOnlyList<PlacedObject> objects,
         IReadOnlyList<Step> steps
     )
     {
@@ -149,7 +149,7 @@ public sealed partial class Layout
     /// </summary>
     public Map BuildMap()
     {
-        var map = new Map(Size);
+        var map = new MapLayers(Size);
         var seed = Seed.ToMapSeed();
         map.Generator = new RandomGenerator(seed.W0, seed.W1, seed.W2).Step().Step();
         var height = map.Bytes(MapLayer.Height);
@@ -192,7 +192,7 @@ public sealed partial class Layout
             }
         }
 
-        return map;
+        return MapImporter.Import(map);
     }
 
     // MapGen_FillLakes (0x422a0e): the generator marks the tiles of a lake (those it reaches by growing from a tile
@@ -203,7 +203,7 @@ public sealed partial class Layout
     // west, north-west, and north, are at height 0 too. Against generated maps (LayoutTests) this marks every tile
     // the generator marks, and also tiles at height 0 that it leaves unmarked; a layout that draws the marks in its
     // lakes grid has no need of the rule.
-    private static void MarkLakeMiddles(Map map)
+    private static void MarkLakeMiddles(MapLayers map)
     {
         var height = map.Bytes(MapLayer.Height);
         var terrain = map.Bytes(MapLayer.Terrain);
@@ -215,10 +215,10 @@ public sealed partial class Layout
             {
                 var tile = map.Index(x, y);
                 if (
-                    (height[tile] & Map.HeightMask) == 0
+                    (height[tile] & 0x1f) == 0
                     && terrain[tile] >> 4 < 4
                     && (terrain[tile] & 0xf) < 4
-                    && around.All(step => (height[map.Index(x + step.Dx, y + step.Dy)] & Map.HeightMask) == 0)
+                    && around.All(step => (height[map.Index(x + step.Dx, y + step.Dy)] & 0x1f) == 0)
                 )
                 {
                     flags[tile] |= 0x40;
@@ -406,7 +406,7 @@ public sealed partial class Layout
             return good ? rows : null;
         }
 
-        private List<MapObject>? ReadObjects(JsonElement entry, MapSize? size)
+        private List<PlacedObject>? ReadObjects(JsonElement entry, MapSize? size)
         {
             if (entry.ValueKind != JsonValueKind.Array)
             {
@@ -415,7 +415,7 @@ public sealed partial class Layout
                 return null;
             }
 
-            var objects = new List<MapObject>();
+            var objects = new List<PlacedObject>();
             var good = true;
             var index = -1;
             foreach (var drawn in entry.EnumerateArray())
@@ -471,7 +471,7 @@ public sealed partial class Layout
                 }
                 else
                 {
-                    objects.Add(new MapObject(x, y, (byte)code));
+                    objects.Add(new PlacedObject(x, y, new MapObject((byte)code)));
                 }
             }
 

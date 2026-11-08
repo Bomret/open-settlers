@@ -111,11 +111,10 @@ public sealed class RoadSplitGameTests
         Started(
             map =>
             {
-                var terrain = map.Bytes(MapLayer.Terrain);
                 for (var x = 16; x < 20; x++)
                 {
-                    terrain[map.Index(x, 6)] &= 0xf3;
-                    terrain[map.Index(x, 5)] &= 0x3f;
+                    map.At(x, 6).Lower = new Terrain(map.At(x, 6).Lower.Code & 3);
+                    map.At(x, 5).Upper = new Terrain(map.At(x, 5).Upper.Code & 3);
                 }
             },
             15,
@@ -280,9 +279,9 @@ public sealed class RoadSplitGameTests
 
         Assert.AreEqual(Describe(byButton.Roads[0]), Describe(byHut.Roads[0]));
         Assert.AreEqual(Describe(byButton.Roads[1]), Describe(byHut.Roads[1]));
-        var node = byHut.Map.Index(18, 6);
-        Assert.AreEqual(0x10, byHut.Map.Layer(MapLayer.Flags)[node] & 0x10, "the hut's mark at its flag");
-        Assert.AreEqual(0x09, byHut.Map.Layer(MapLayer.Flags)[node] & 0x2f, "the road bits of the two halves");
+        var roads = byHut.Map.At(18, 6).Roads;
+        Assert.IsTrue(roads.Has(4), "the hut's mark at its flag");
+        Assert.AreEqual(RoadSet.Of(0).With(3), roads.Without(4), "the road bits of the two halves");
     }
 
     [TestMethod]
@@ -304,7 +303,8 @@ public sealed class RoadSplitGameTests
     public void AHutOnARoadNodeWhoseSiteIsTooSmallIsRefusedAndNothingChanges()
     {
         var game = EastRoad();
-        game.Map.Bytes(MapLayer.Terrain)[game.Map.Index(17, 5)] = 0;
+        game.Map.At(17, 5).Upper = new Terrain(0);
+        game.Map.At(17, 5).Lower = new Terrain(0);
         var site = BuildSite.Evaluate(TestProgram.Made(), game.Map, 17, 5, 0, hasCastle: true);
         Assert.AreEqual((6, 1), (site.Node, site.Site), "a road on the flag node, a site for a flag only");
         var digest = game.Digest();
@@ -328,7 +328,7 @@ public sealed class RoadSplitGameTests
         game.Tick();
 
         Assert.AreEqual(3, game.Roads.Count, "a road leaves the hut's flag along a direction the mark does not take");
-        Assert.AreEqual(0x10, game.Map.Layer(MapLayer.Flags)[game.Map.Index(18, 6)] & 0x10, "the mark stays");
+        Assert.IsTrue(game.Map.At(18, 6).Roads.Has(4), "the mark stays");
     }
 
     [TestMethod]
@@ -352,7 +352,7 @@ public sealed class RoadSplitGameTests
         var before = game.Roads.Single();
         Apply(game, CommandKind.PlaceBuilding, 17, 5);
         var node = game.Map.Index(18, 6);
-        Assert.AreEqual(0x10, game.Map.Layer(MapLayer.Flags)[node] & 0x10, "the hut's mark is set");
+        Assert.IsTrue(game.Map.At(node).Roads.Has(4), "the hut's mark is set");
 
         game.TakeFlagDown(node);
 

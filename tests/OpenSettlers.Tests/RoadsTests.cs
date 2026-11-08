@@ -59,10 +59,9 @@ public sealed class RoadsTests
         Assert.AreEqual(1, road.ToSlot);
         Assert.AreEqual(3, road.ToDirection);
         CollectionAssert.AreEqual(new[] { 0, 0 }, road.Directions.ToArray());
-        var flags = game.Map.Layer(MapLayer.Flags);
-        Assert.AreEqual(1, flags[6 * 32 + 16] & 0x3f & 1);
-        Assert.AreEqual(0x09, flags[6 * 32 + 17] & 0x3f);
-        Assert.AreEqual(0x08, flags[6 * 32 + 18] & 0x3f);
+        Assert.IsTrue(game.Map.At(16, 6).Roads.Has(0));
+        Assert.AreEqual(RoadSet.Of(0).With(3), game.Map.At(17, 6).Roads);
+        Assert.IsTrue(game.Map.At(18, 6).Roads.IsOnly(3));
     }
 
     [TestMethod]
@@ -105,7 +104,7 @@ public sealed class RoadsTests
 
         Assert.AreEqual(1, detour.Roads.Count);
         CollectionAssert.AreEqual(direct.Roads[0].Directions.ToArray(), detour.Roads[0].Directions.ToArray());
-        Assert.AreEqual(direct.Map.Digest(MapLayer.Flags), detour.Map.Digest(MapLayer.Flags));
+        CollectionAssert.AreEqual(TestMaps.Roads(direct.Map), TestMaps.Roads(detour.Map));
     }
 
     [TestMethod]

@@ -13,6 +13,9 @@
     <Compile Include="../../src/MapView/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="OpenSettlers.Domain" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/Domain/OpenSettlers.Domain.csproj" />
     <ProjectReference Include="../../src/Application/OpenSettlers.Application.csproj" />
     <ProjectReference Include="../../src/Adapters/OpenSettlers.Adapters.csproj" />

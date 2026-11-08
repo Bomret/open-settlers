@@ -9,6 +9,9 @@
     <InternalsVisibleTo Include="OpenSettlers.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="OpenSettlers.Domain" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
     <ProjectReference Include="../Application/OpenSettlers.Application.csproj" />
   </ItemGroup>

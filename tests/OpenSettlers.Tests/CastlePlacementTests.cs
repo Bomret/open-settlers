@@ -198,7 +198,7 @@ public sealed class CastlePlacementTests
     }
 
     private static byte[][] Snapshot(Map map) =>
-        Enum.GetValues<MapLayer>().Select(layer => map.Layer(layer).ToArray()).ToArray();
+        Enum.GetValues<MapLayer>().Select(layer => Layers.Of(map, layer)).ToArray();
 
     private static int Changes(byte[][] before, byte[][] after)
     {
@@ -221,7 +221,7 @@ public sealed class CastlePlacementTests
         return string.Join(
             ' ',
             new[] { MapLayer.Flags, MapLayer.Height, MapLayer.Terrain, MapLayer.Object, MapLayer.Resource }
-                .Select(layer => Digest(map.Layer(layer).ToArray()))
+                .Select(layer => Digest(Layers.Of(map, layer)))
                 .Concat([zero, zero, zero])
                 .Select(hash => $"{hash:X16}")
         );

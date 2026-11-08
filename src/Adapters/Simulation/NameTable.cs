@@ -19,13 +19,13 @@ public sealed class NameTable
     public NameTable(ProgramTables tables) => this.tables = tables;
 
     // The object codes the engine and docs/rules/map-object-codes.md name; Game.Woodcutting reads the ranges from here.
-    internal const int FirstTree = 8;
-    internal const int EndTree = 0x18;
+    internal const int FirstTree = MapObject.FirstTreeCode;
+    internal const int EndTree = MapObject.EndTreeCode;
     internal const int FirstStone = 0x48;
     internal const int EndStone = 0x50;
-    internal const int Stump = 0x53;
-    internal const int FirstCutObject = 0x5d;
-    internal const int EndCutObject = 0x67;
+    internal const int Stump = MapObject.StumpCode;
+    internal const int FirstCutObject = MapObject.FirstFallingCode;
+    internal const int EndCutObject = MapObject.EndFallingCode;
 
     // The settler jobs and the building type the engine names; Game reads them from here.
     internal const int BuilderJob = 4;
@@ -110,7 +110,7 @@ public sealed class NameTable
         void AddOne(CodeKind kind, int code, string name, string evidence) => Add(kind, code, code + 1, name, evidence);
 
         const string Map = "docs/rules/map-object-codes.md";
-        AddOne(CodeKind.Object, 1, "flag", "FlagPlacement.FlagCode; class 3; docs/rules/flags.md");
+        AddOne(CodeKind.Object, 1, "flag", "MapObject.Flag; class 3; docs/rules/flags.md");
         Add(
             CodeKind.Object,
             2,

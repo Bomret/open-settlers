@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace OpenSettlers.Simulation;
+namespace OpenSettlers.Domain;
 
 /// <summary>
 /// One of the map sizes the original offers (<c>docs/rules/map-form.md</c>). The size value is the one

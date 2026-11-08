@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
+using OpenSettlers.Domain;
 using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -668,12 +669,11 @@ public partial class MapViewControl : Control
             return;
         }
 
-        var heights = map.Layer(MapLayer.Height).ToArray();
         var points = _drawing
             .Nodes.Select(node =>
             {
                 var (px, py) = Camera.NodePosition(node.X, node.Y);
-                var height = heights[map.Index(node.X, node.Y)] & Map.HeightMask;
+                var height = map.At(node.X, node.Y).Height;
 
                 return new Vector2(px, py - height * TerrainTriangles.HeightStep);
             })

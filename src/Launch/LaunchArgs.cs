@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Launch;

@@ -75,7 +75,7 @@ from `MapGen_ResolveObjectOverlap` as well: it marks a tile that carries a large
 The digest of a layer is the FNV-1a 64-bit hash of its bytes in that order. The digest line after a step
 names the size value, the map seed words, the step, the three generator words, and the digests of the
 layers in layer order; after `CountResource1` it ends with the total of resource type 1. The engine's
-`Map.Digest` and the harness command `gen` compute the same digests from the same layout. The steps are the
+`MapLayerExporter.Digest` and the harness command `gen` compute the same digests from the same layout. The steps are the
 seeding (`Seed`, which has the generator words only, because the buffer holds nothing the generator wrote)
 and the passes `ClearMap`, `SeedHeights`, `SubdivideHeights`, `LimitSlopes`, `FillLakes`,
 `LowerToWaterLevel`, `ClassifyTerrain`, `KeepMainLand`, `ScaleHeights`, `GradeWaterDepth`,
@@ -241,10 +241,14 @@ part of what the generator words after each pass check.
 
 ## In the engine
 
-`src/Adapters/Simulation/MapSize.cs`, `Map.cs`, `MapLayer.cs`, `MapPass.cs`, `MapObject.cs`, `ResourceDeposit.cs`, and
-`MapGenerator.cs`. A caller reads the objects through `Map.Objects` (a column, a row, and a code for each
-tile with an object) or from `Map.Layer(MapLayer.Object)` with the mask `0x7f`, and the deposits through
-`Map.Deposits` or `Map.Layer(MapLayer.Resource)`. The engine departs from the program in two places: it
+The map generator, `src/Adapters/Simulation/MapGenerator.cs` with `MapLayers.cs`, `MapLayer.cs`, and `MapPass.cs`,
+writes the layers above byte for byte. `MapImporter.cs` turns them into the typed map of
+`src/Domain/Map.cs` (`Node.cs`, `Owner.cs`, `Terrain.cs`, `MapObject.cs`, `RoadSet.cs`, `ResourceDeposit.cs`,
+`MapSize.cs`), and `MapLayerExporter.cs` turns a typed map back into the layers for the digest. A caller reads a node
+through `Map.At`, the objects through `Map.Objects` (a column, a row, and an object for each node that holds one),
+and the deposits through `Map.Deposits`. The typed map keeps every bit of a layer as a named field or a raw value (an
+object code with no name, a terrain code, a deposit type), so the layers come back exactly. The lake detail and the
+deposit are one byte of the original, so the node holds them as one pair of values. The engine departs from the program in two places: it
 keeps columns and rows where the program keeps masked offsets, and it throws where the program would scan
 without end.
 

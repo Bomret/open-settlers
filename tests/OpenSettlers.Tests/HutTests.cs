@@ -35,13 +35,12 @@ public sealed class HutTests
     private static Game World()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var objects = map.Bytes(MapLayer.Object);
-        for (var index = 0; index < objects.Length; index++)
+        for (var index = 0; index < map.Count; index++)
         {
             // No tree stands anywhere, so the worker waits in its hut (WoodcuttingTests holds the work).
-            if ((objects[index] & 0x7f) is >= 8 and < 0x18)
+            if (map.At(index).Object.Kind == MapObjectKind.Tree)
             {
-                objects[index] &= 0x80;
+                map.At(index).Object = MapObject.None;
             }
         }
 
@@ -104,7 +103,7 @@ public sealed class HutTests
         Assert.AreEqual(3, hut.Flag);
         Assert.IsFalse(hut.Constructing);
         Assert.AreEqual(0, hut.Status & 0x40);
-        Assert.AreEqual(2, game.Map.Layer(MapLayer.Object)[game.Map.Index(16, 2)] & 0x7f);
+        Assert.AreEqual(MapObjectKind.Hut, game.Map.At(16, 2).Object.Kind);
     }
 
     // The original's placement (0x449a63) puts the building's flag on the south-east node where none stands there (node
@@ -123,7 +122,7 @@ public sealed class HutTests
         Assert.AreEqual((x, y), (hut.X, hut.Y));
         Assert.AreEqual((x + 1, y + 1), (game.Flags[hut.Flag].X, game.Flags[hut.Flag].Y));
         Assert.AreEqual(Flags.Length + 1, hut.Flag);
-        Assert.AreEqual(1, game.Map.Layer(MapLayer.Object)[game.Map.Index(x + 1, y + 1)] & 0x7f);
+        Assert.AreEqual(MapObjectKind.Flag, game.Map.At(x + 1, y + 1).Object.Kind);
     }
 
     [TestMethod]

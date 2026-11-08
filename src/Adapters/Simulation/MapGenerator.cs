@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
 
-/// <summary>Called after the seeding and after each pass of the generation with the map and generator as they stand.</summary>
-public delegate void MapPassObserver(MapPass pass, Map map, RandomGenerator generator);
+/// <summary>Called after the seeding and after each pass of the generation with the layers and generator as they stand.</summary>
+public delegate void MapPassObserver(MapPass pass, MapLayers layers, RandomGenerator generator);
 
 /// <summary>
 /// The original's map generation, <c>MapGen_Generate</c> (<c>0x4216e9</c>), as far as the height and terrain
@@ -27,7 +28,7 @@ public static class MapGenerator
     {
         ArgumentNullException.ThrowIfNull(tables);
 
-        return new Generation(tables, seed, size, observer).Run();
+        return MapImporter.Import(new Generation(tables, seed, size, observer).Run());
     }
 
     /// <summary>
@@ -162,7 +163,7 @@ public static class MapGenerator
         private readonly byte[] _classes;
         private readonly MapSeed _seed;
         private readonly MapPassObserver? _observer;
-        private readonly Map _map;
+        private readonly MapLayers _map;
         private readonly int _width;
         private readonly int _height;
         private readonly byte[] _flags;
@@ -178,7 +179,7 @@ public static class MapGenerator
             _classes = tables.Classes;
             _seed = seed;
             _observer = observer;
-            _map = new Map(size);
+            _map = new MapLayers(size);
             _width = size.Width;
             _height = size.Height;
             _flags = _map.Bytes(MapLayer.Flags);
@@ -189,7 +190,7 @@ public static class MapGenerator
             _resource = _map.Bytes(MapLayer.Resource);
         }
 
-        public Map Run()
+        public MapLayers Run()
         {
             // MapGen_Generate copies the map seed into the generator and steps it twice.
             _generator = new RandomGenerator(_seed.W0, _seed.W1, _seed.W2).Step().Step();

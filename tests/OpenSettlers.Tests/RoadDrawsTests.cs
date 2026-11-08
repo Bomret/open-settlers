@@ -48,12 +48,14 @@ public sealed class RoadDrawsTests
         {
             var values = fields[name].Split(',').Select(int.Parse).ToArray();
             heights[name] = values[0];
-            var node = map.Index(Column + dx, Row + dy);
-            map.Bytes(MapLayer.Height)[node] = (byte)values[0];
-            map.Bytes(MapLayer.Terrain)[node] = (byte)values[1];
+            ref var node = ref map.At(Column + dx, Row + dy);
+            node.Height = values[0];
+            // The fixture holds the original's terrain byte: the upper triangle in the high nibble.
+            node.Upper = new Terrain(values[1] >> 4);
+            node.Lower = new Terrain(values[1] & 0xf);
         }
 
-        map.Bytes(MapLayer.Flags)[map.Index(Column, Row)] = (byte)(1 << direction);
+        map.At(Column, Row).Roads = RoadSet.Of(direction);
         var mask = int.Parse(fields["mask"], CultureInfo.InvariantCulture);
         var target = new[] { "e", "se", "s" }[direction];
         var strips = RoadDraws.Of(map);
@@ -84,12 +86,10 @@ public sealed class RoadDrawsTests
     public void TheStripsLieBetweenTheNodesTheyJoin()
     {
         var map = Blank();
-        var flags = map.Bytes(MapLayer.Flags);
-        flags[map.Index(5, 5)] = 0x01;
-        flags[map.Index(8, 6)] = 0x02;
-        flags[map.Index(12, 7)] = 0x04;
-        var land = map.Bytes(MapLayer.Terrain);
-        Array.Fill(land, (byte)0x55);
+        map.At(5, 5).Roads = RoadSet.Of(0);
+        map.At(8, 6).Roads = RoadSet.Of(1);
+        map.At(12, 7).Roads = RoadSet.Of(2);
+        Land(map);
 
         var strips = RoadDraws.Of(map);
 
@@ -114,10 +114,10 @@ public sealed class RoadDrawsTests
     {
         var map = Blank();
         var last = map.Size.Width - 1;
-        map.Bytes(MapLayer.Flags)[map.Index(last, 3)] = 0x01;
-        map.Bytes(MapLayer.Height)[map.Index(last, 3)] = 5;
-        map.Bytes(MapLayer.Height)[map.Index(0, 3)] = 3;
-        Array.Fill(map.Bytes(MapLayer.Terrain), (byte)0x55);
+        map.At(last, 3).Roads = RoadSet.Of(0);
+        map.At(last, 3).Height = 5;
+        map.At(0, 3).Height = 3;
+        Land(map);
 
         var strip = RoadDraws.Of(map).Single();
 
@@ -132,14 +132,14 @@ public sealed class RoadDrawsTests
     public void AWaterRoadTakesTheWaterTextureAndMountainAndSnowStepTheTexture()
     {
         var map = Blank();
-        map.Bytes(MapLayer.Flags)[map.Index(5, 5)] = 0x02;
-        map.Bytes(MapLayer.Terrain)[map.Index(5, 5)] = 0x00;
+        map.At(5, 5).Roads = RoadSet.Of(1);
+        SetTerrain(map, 5, 5, 0);
         Assert.AreEqual(309, RoadDraws.Of(map).Single().Texture);
 
-        map.Bytes(MapLayer.Terrain)[map.Index(5, 5)] = 0x99;
+        SetTerrain(map, 5, 5, 9);
         Assert.AreEqual(304, RoadDraws.Of(map).Single().Texture);
 
-        map.Bytes(MapLayer.Terrain)[map.Index(5, 5)] = 0xff;
+        SetTerrain(map, 5, 5, 15);
         Assert.AreEqual(307, RoadDraws.Of(map).Single().Texture);
     }
 
@@ -147,10 +147,27 @@ public sealed class RoadDrawsTests
     public void TheDirectionsWestNorthWestAndNorthAreDrawnFromTheNodeAtTheOtherEnd()
     {
         var map = Blank();
-        map.Bytes(MapLayer.Flags)[map.Index(5, 5)] = 0x38;
+        map.At(5, 5).Roads = RoadSet.Of(3).With(4).With(5);
 
         Assert.IsEmpty(RoadDraws.Of(map));
     }
 
     private static Map Blank() => new(MapSize.Offered[0]);
+
+    // Both triangles of a node take the terrain code.
+    private static void SetTerrain(Map map, int x, int y, int code)
+    {
+        map.At(x, y).Upper = new Terrain(code);
+        map.At(x, y).Lower = new Terrain(code);
+    }
+
+    // Every triangle of the map is the lowest land.
+    private static void Land(Map map)
+    {
+        for (var index = 0; index < map.Count; index++)
+        {
+            map.At(index).Upper = Terrain.Lowland;
+            map.At(index).Lower = Terrain.Lowland;
+        }
+    }
 }

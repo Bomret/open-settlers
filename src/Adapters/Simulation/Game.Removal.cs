@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 
 namespace OpenSettlers.Simulation;
 
@@ -13,9 +12,8 @@ namespace OpenSettlers.Simulation;
 // water roads, and the click on the castle (the check gives it class 0, so the click is refused).
 public sealed partial class Game
 {
-    // The class the program's table gives the object of a flag, and the owner bits of a node of player 0.
+    // The class the program's table gives the object of a flag.
     private const int FlagObjectClass = 3;
-    private const int PlayerOwner = 4 << 5;
 
     // The types whose item holds a storage (0x462c8d does not count a good against them): the castle and the type 0xa.
     private const int StorehouseType = NameTable.StorehouseType;
@@ -43,28 +41,27 @@ public sealed partial class Game
 
     private int ClickClass(int index)
     {
-        if (Castle is null || (Map.Layer(MapLayer.Height)[index] & 0xe0) != PlayerOwner)
+        if (Castle is null || Map.At(index).Owner != Owner.Player(0))
         {
             return 0;
         }
 
-        var flags = Map.Layer(MapLayer.Flags)[index];
-        var objects = Map.Layer(MapLayer.Object);
-        var objectClass = BuildSite.ObjectClass(_tables, objects[index]);
+        var roads = Map.At(index).Roads;
+        var objectClass = BuildSite.ObjectClass(_tables, Map.At(index).Object);
         if (objectClass == FlagObjectClass)
         {
             var (x, y) = Position(index);
             var (dx, dy) = RoadBuilding.Steps[4];
-            // A flag with a building at its north-west (the bit 0x10) is refused; so is a flag with roads unless it has two,
-            // each a road of land, to different flags.
-            if ((flags & 0x10) != 0 && BuildSite.ObjectClass(_tables, objects[Map.Index(x + dx, y + dy)]) > 3)
+            // A flag with a building at its north-west (the road mark in direction 4) is refused; so is a flag with roads
+            // unless it has two, each a road of land, to different flags.
+            if (roads.Has(4) && BuildSite.ObjectClass(_tables, Map.At(x + dx, y + dy).Object) > 3)
             {
                 return 1;
             }
 
-            if ((flags & 0x3f) != 0)
+            if (!roads.IsEmpty)
             {
-                var slot = Map.Layer(MapLayer.Resource)[index];
+                var slot = Map.At(index).LinkedSlot;
                 var count = 0;
                 var far = -1;
                 for (var direction = 5; direction >= 0; direction--)
@@ -98,9 +95,7 @@ public sealed partial class Game
             return objectClass != 6 && BuildingAt(index) is { IsDemolishing: false } ? 3 : 0;
         }
 
-        var roads = flags & 0x3f;
-
-        return roads != 0 && roads != 0x02 && roads != 0x10 ? 4 : 0;
+        return !roads.IsEmpty && !roads.IsOnly(1) && !roads.IsOnly(4) ? 4 : 0;
     }
 
     private (int X, int Y) Position(int index) => (index % Map.Size.Width, index / Map.Size.Width);
@@ -163,7 +158,7 @@ public sealed partial class Game
             return false;
         }
 
-        _raze = Cause.Razed(FlagId(Map.Layer(MapLayer.Resource)[index]));
+        _raze = Cause.Razed(FlagId(Map.At(index).LinkedSlot));
         TakeFlagDown(index);
         _raze = null;
 
@@ -193,13 +188,13 @@ public sealed partial class Game
             return false;
         }
 
-        var bits = Map.Layer(MapLayer.Flags)[index] & 0x3f;
-        if (RoadThrough(index) is not { } road || (bits & (bits - 1)) == 0)
+        var roads = Map.At(index).Roads;
+        if (RoadThrough(index) is not { } road || roads.Count < 2)
         {
             return false;
         }
 
-        var (first, second) = RoadBits(bits);
+        var (first, second) = RoadBits(roads);
 
         // A road has no ID: its cause names the flag it leaves from.
         _raze = Cause.Razed(FlagId(road.FromSlot));
@@ -214,16 +209,16 @@ public sealed partial class Game
 
     // The take-down and the split walk from a node along its first two road bits (0x462e1d, 0x4662e2); a second bit found at 4
     // with bit 5 set is taken for 5.
-    private static (int First, int Second) RoadBits(int bits)
+    private static (int First, int Second) RoadBits(RoadSet roads)
     {
-        var first = BitOperations.TrailingZeroCount(bits);
+        var first = roads.First;
         var second = first + 1;
-        while ((bits >> second & 1) == 0)
+        while (!roads.Has(second))
         {
             second++;
         }
 
-        return (first, second == 4 && (bits & 0x20) != 0 ? 5 : second);
+        return (first, second == 4 && roads.Has(5) ? 5 : second);
     }
 
     // The road that passes a node that holds no flag.
@@ -249,7 +244,6 @@ public sealed partial class Game
     // are dismissed, and the flag at the end loses its road (EndOfRoad).
     private void TakeRoadDown(int index, int direction)
     {
-        var flags = Map.Bytes(MapLayer.Flags);
         DismissWaiting(index);
         var standing = Occupant(index);
         if (standing != 0 && _settlers[standing].State is 2 or 3 && Back(_settlers[standing]) == direction)
@@ -257,27 +251,27 @@ public sealed partial class Game
             Dismiss(standing);
         }
 
-        flags[index] &= (byte)~(1 << direction);
+        Map.At(index).Roads = Map.At(index).Roads.Without(direction);
         while (true)
         {
             index = NodeAfter(index, direction);
             var back = (direction + 3) % 6;
-            flags[index] &= (byte)~(1 << back);
-            var rest = flags[index];
-            if ((rest & 0x80) != 0)
+            Map.At(index).Roads = Map.At(index).Roads.Without(back);
+            var rest = Map.At(index).Roads;
+            if (Map.At(index).FlagMark)
             {
                 EndOfRoad(index, back);
 
                 return;
             }
 
-            if ((rest & 0x3f) == 0)
+            if (rest.IsEmpty)
             {
                 return;
             }
 
-            direction = BitOperations.TrailingZeroCount(rest);
-            flags[index] &= (byte)~(1 << direction);
+            direction = rest.First;
+            Map.At(index).Roads = rest.Without(direction);
             DismissWaiting(index);
             standing = Occupant(index);
             if (standing != 0 && _settlers[standing].State is 2 or 3)
@@ -292,7 +286,7 @@ public sealed partial class Game
     // goods that were to go along the road lose that direction.
     private void EndOfRoad(int index, int back)
     {
-        var slot = Map.Layer(MapLayer.Resource)[index];
+        var slot = Map.At(index).LinkedSlot;
         var standing = Occupant(index);
         if (standing != 0 && _settlers[standing].State is 0xe or 3 or 2 && Back(_settlers[standing]) == back)
         {
@@ -458,14 +452,7 @@ public sealed partial class Game
     private void Rejoined(int slot, Settler settler)
     {
         settler.State = 0x43;
-        var bits = Map.Layer(MapLayer.Flags)[Map.Index(settler.X, settler.Y)] & 0x3f;
-        var direction = 5;
-        while (direction >= 0 && (bits >> direction & 1) == 0)
-        {
-            direction--;
-        }
-
-        settler.Heading = direction;
+        settler.Heading = Map.At(settler.X, settler.Y).Roads.Last;
         Touch(slot, EventType.Rejoined);
         Claim(slot, settler);
     }
@@ -508,7 +495,6 @@ public sealed partial class Game
     // the road leaves it in.
     private Walked Gather(int index, int direction)
     {
-        var flags = Map.Layer(MapLayer.Flags);
         var settlers = new List<int>();
         DismissWaiting(index);
         var standing = Occupant(index);
@@ -530,8 +516,8 @@ public sealed partial class Game
             steps++;
             index = NodeAfter(index, direction);
             var back = (direction + 3) % 6;
-            var rest = flags[index] & ~(1 << back);
-            if ((rest & 0x80) != 0)
+            var rest = Map.At(index).Roads.Without(back);
+            if (Map.At(index).FlagMark)
             {
                 standing = Occupant(index);
                 if (
@@ -546,10 +532,10 @@ public sealed partial class Game
                     settlers.Add(standing);
                 }
 
-                return new Walked(steps, settlers, Map.Layer(MapLayer.Resource)[index], back);
+                return new Walked(steps, settlers, Map.At(index).LinkedSlot, back);
             }
 
-            direction = BitOperations.TrailingZeroCount(rest);
+            direction = rest.First;
             if (TakeWaiting(index) is var waiting and >= 0)
             {
                 settlers.Add(waiting);
@@ -572,13 +558,12 @@ public sealed partial class Game
             : [.. road.Directions.Reverse().Select(step => (step + 3) % 6)];
 
     // 0x462153: a flag is taken down. A flag with roads (the check allows two) joins its two roads into one between the flags at
-    // their far ends; the flag then goes as a flag with no road does: the node loses its flag bit, object, and link, the
+    // their far ends; the flag then goes as a flag with no road does: the node loses its flag mark, object, and link, the
     // settlers on their way to it go home, the goods that lie on it are counted lost, and its slot is free. Internal for the test
     // of the join of two water roads, whose flag the original's click refuses (ClickClass).
     internal void TakeFlagDown(int index)
     {
-        var flags = Map.Bytes(MapLayer.Flags);
-        var slot = Map.Layer(MapLayer.Resource)[index];
+        var slot = Map.At(index).LinkedSlot;
         var standing = Occupant(index);
         if (standing != 0)
         {
@@ -588,7 +573,7 @@ public sealed partial class Game
                 settler.Next = 0x19;
                 Touch(standing, EventType.TookFlagDown);
             }
-            else if (settler.State == 2 && (flags[index] & 0x3f) == 0)
+            else if (settler.State == 2 && Map.At(index).Roads.IsEmpty)
             {
                 settler.State = 0x19;
                 _walkingHome.Add(standing);
@@ -596,12 +581,12 @@ public sealed partial class Game
             }
         }
 
-        if ((flags[index] & 0x3f) != 0)
+        if (!Map.At(index).Roads.IsEmpty)
         {
             JoinRoads(index, slot);
         }
 
-        flags[index] &= 0x7f;
+        Map.At(index).FlagMark = false;
         for (var walker = 0; walker < _settlers.Count; walker++)
         {
             var settler = _settlers[walker];
@@ -614,8 +599,8 @@ public sealed partial class Game
             }
         }
 
-        Map.Bytes(MapLayer.Object)[index] &= 0x80;
-        Map.Bytes(MapLayer.Resource)[index] = 0;
+        Map.At(index).Object = MapObject.None;
+        Map.At(index).ClearLink();
         for (var place = 7; place >= 0; place--)
         {
             if (_flagGoods[slot][place] != 0)
@@ -696,18 +681,14 @@ public sealed partial class Game
         // **Inferred:** bit 4 with no road there is the mark of a hut standing at the flag (PlaceBuilding), no road bit. Nothing
         // shows that the original (0x462153) masks it so: its click refuses a flag with a hut (ClickClass) and a hut's removal
         // clears the mark first, so only a direct TakeFlagDown reaches this. A guard for a state the original's input never reaches.
-        var bits = Map.Layer(MapLayer.Flags)[index] & (RoadAt(slot, 4) is null ? 0x2f : 0x3f);
-        if (bits == 0)
+        var roads = RoadAt(slot, 4) is null ? Map.At(index).Roads.Without(4) : Map.At(index).Roads;
+        if (roads.IsEmpty)
         {
             return;
         }
 
-        var first = BitOperations.TrailingZeroCount(bits);
-        var last = 5;
-        while ((bits >> last & 1) == 0)
-        {
-            last--;
-        }
+        var first = roads.First;
+        var last = roads.Last;
 
         if (RoadAt(slot, first) is not { } roadA || RoadAt(slot, last) is not { } roadB)
         {
@@ -770,12 +751,12 @@ public sealed partial class Game
     // for it lose their destination (ReleaseGoodsFor), and its flag goes where no road leaves it.
     private void TakeBuildingDown(Building building)
     {
-        var flags = Map.Bytes(MapLayer.Flags);
         var flag = _flags[building.Flag];
         var flagNode = Map.Index(flag.X, flag.Y);
         building.Status |= Building.Demolishing;
-        flags[Map.Index(building.X, building.Y)] &= 0xfd;
-        flags[flagNode] &= 0xef;
+        ref var hutNode = ref Map.At(building.X, building.Y);
+        hutNode.Roads = hutNode.Roads.Without(1);
+        Map.At(flagNode).Roads = Map.At(flagNode).Roads.Without(4);
         building.Status &= ~0x18;
         building.Fill = 0;
         var worker = building.Worker;
@@ -791,7 +772,7 @@ public sealed partial class Game
         }
 
         ReleaseGoodsFor(building.Flag);
-        if ((flags[flagNode] & 0x3f) == 0 && (Map.Layer(MapLayer.Object)[flagNode] & 0x7f) == 1)
+        if (Map.At(flagNode).Roads.IsEmpty && Map.At(flagNode).Object.Kind == MapObjectKind.Flag)
         {
             TakeFlagDown(flagNode);
         }
@@ -908,14 +889,15 @@ public sealed partial class Game
         }
     }
 
-    // 0x42cf9d for a building without a territory: the node loses its mark 0x40, object, and link, and the slot is free; the
+    // 0x42cf9d for a building without a territory: the node loses its lake mark, object, and link, and the slot is free; the
     // table's count falls past the free slots at its end.
     private void FreeBuilding(int slot, Building building)
     {
         var node = Map.Index(building.X, building.Y);
-        Map.Bytes(MapLayer.Flags)[node] &= 0xbf;
-        Map.Bytes(MapLayer.Object)[node] &= 0x80;
-        Map.Bytes(MapLayer.Resource)[node] = 0;
+        ref var freed = ref Map.At(node);
+        freed.LakeMark = false;
+        freed.Object = MapObject.None;
+        freed.ClearLink();
         // The event that ends the building, recorded while the slot still holds it.
         RecordBuilding(slot, EventType.FreeBuilding, RazedCauseOf(slot));
         _razedBuildings.Remove(BuildingId(slot));

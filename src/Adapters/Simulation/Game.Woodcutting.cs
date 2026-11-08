@@ -9,22 +9,15 @@ namespace OpenSettlers.Simulation;
 // cursor over the map and turns a felled tree into nothing in the time the original takes.
 public sealed partial class Game
 {
-    // The object codes of the trees: the program compares the code of a node with 8 and 0x18 (0x438c11, 0x437f8f), and
-    // the class table calls them class 1 (docs/rules/build-sites.md).
-    private const int FirstTree = NameTable.FirstTree;
-    private const int EndTree = NameTable.EndTree;
-
-    // The trees that take the second cutting variant (the animation with the byte 13 set): codes 8 to 15.
-    private const int EndFirstTrees = 0x10;
+    // The trees are the object codes 8 to 0x17 (0x438c11, 0x437f8f; MapObjectKind.Tree), and the class table calls them
+    // class 1 (docs/rules/build-sites.md). The trees of the codes 8 to 15 take the second cutting variant (the animation
+    // with the byte 13 set).
 
     // The good of a log (the byte 7 the settler writes onto the flag, 0x438011).
     internal const int GoodLog = 7;
 
-    // The first code the object pass handles, the felled tree that waits to vanish, and the codes of a tree being cut:
-    // the cut writes 0x5d to 0x66, the pass turns each of them into 0x53, and 0x53 vanishes by chance (0x428eb8).
-    private const int FirstHandledObject = NameTable.Stump;
-    private const int FirstCutObject = NameTable.FirstCutObject;
-    private const int EndCutObject = NameTable.EndCutObject;
+    // The objects the object pass handles: the cut writes the falling tree of the codes 0x5d to 0x66, the pass turns each of
+    // them into the stump 0x53, and the stump vanishes by chance (0x428eb8).
 
     // The walk's remaining vector lives in the bytes of the settler item that the road walk uses otherwise: the east
     // steps in byte 11 (Settler.Mode), the south steps in byte 12 (the low byte of Settler.Target), byte 13 (the high
@@ -158,15 +151,13 @@ public sealed partial class Game
             return false;
         }
 
-        var objects = Map.Layer(MapLayer.Object);
         while (true)
         {
             var entry = ((Draw() & 0x1fc) + 4) >> 2;
             var (dx, dy) = MapGenerator.SpiralOffsets[entry];
             var x = (settler.X + dx) & (Map.Size.Width - 1);
             var y = (settler.Y + dy) & (Map.Size.Height - 1);
-            var code = objects[Map.Index(x, y)] & 0x7f;
-            if (code >= FirstTree && code < EndTree)
+            if (Map.At(x, y).Object.Kind == MapObjectKind.Tree)
             {
                 // The vector to the tree is taken from the flag the first step reaches: one less each way.
                 SetVector(settler, dx - 1, dy - 1);
@@ -287,8 +278,8 @@ public sealed partial class Game
         }
     }
 
-    // A node the walk may step onto: not marked solid (flag bit 6) and holding no settler.
-    private bool Free(int index) => (Map.Layer(MapLayer.Flags)[index] & 0x40) == 0 && Occupant(index) == 0;
+    // A node the walk may step onto: not marked solid (the lake mark) and holding no settler.
+    private bool Free(int index) => !Map.At(index).LakeMark && Occupant(index) == 0;
 
     // The direction a row entry names (4 east, 8 south-east, 12 south, 16 west, 20 north-west, 24 north) where the step it
     // leads to is free; -1 for an entry that is none of them (a table with no row) and for a node that is taken.
@@ -494,10 +485,10 @@ public sealed partial class Game
 
         settler.Mode = Mark(settler);
         settler.Target = (settler.Target & 0xff00) | (settler.Heading & 0xff);
-        var code = Map.Layer(MapLayer.Object)[Map.Index(settler.X, settler.Y)] & 0x7f;
-        if (code >= FirstTree && code < EndTree)
+        var standing = Map.At(settler.X, settler.Y).Object;
+        if (standing.Kind == MapObjectKind.Tree)
         {
-            SetMark(settler, code < EndFirstTrees ? 0xff : 0);
+            SetMark(settler, standing.HasSecondCutVariant ? 0xff : 0);
             settler.Heading = 0;
             settler.Frame = 0x74;
             settler.Timer = 0x3ff;
@@ -532,14 +523,12 @@ public sealed partial class Game
             return;
         }
 
-        var objects = Map.Bytes(MapLayer.Object);
-        var node = Map.Index(settler.X, settler.Y);
+        ref var node = ref Map.At(settler.X, settler.Y);
         while (true)
         {
             settler.Heading = (sbyte)(settler.Heading + 1);
             var count = settler.Heading;
-            var code = count + 0x5c + (Mark(settler) != 0 ? 5 : 0);
-            objects[node] = (byte)((objects[node] & 0x80) | code);
+            node.Object = MapObject.Falling(count, Mark(settler) != 0);
             if (count == 5)
             {
                 break;
@@ -565,7 +554,7 @@ public sealed partial class Game
     // settler does not.
     private void PutGood(int slot, Settler settler, int good)
     {
-        var flag = Map.Layer(MapLayer.Resource)[Map.Index(settler.X, settler.Y)];
+        var flag = Map.At(settler.X, settler.Y).LinkedSlot;
         var place = Array.IndexOf(_flagGoods[flag], (byte)0);
         if (place >= 0)
         {
@@ -627,9 +616,6 @@ public sealed partial class Game
             _objectTimer = (ushort)(due + 20);
         } while (due < 0xffec);
 
-        var flags = Map.Bytes(MapLayer.Flags);
-        var objects = Map.Bytes(MapLayer.Object);
-        var detail = Map.Bytes(MapLayer.Resource);
         for (; count > 0; count--)
         {
             _objectX += 23;
@@ -640,22 +626,23 @@ public sealed partial class Game
             }
 
             var node = Map.Index(_objectX, _objectY);
-            if ((objects[node] & 0x80) != 0 && (flags[node] & 0x40) != 0 && detail[node] != 0)
+            ref var at = ref Map.At(node);
+            if (at.WaterTriangle && at.LakeMark && at.LakeDetail != 0)
             {
-                MoveLakeDetail(node, flags, detail);
+                MoveLakeDetail(node);
             }
 
-            var code = objects[node] & 0x7f;
-            if (code == FirstHandledObject)
+            var kind = at.Object.Kind;
+            if (kind == MapObjectKind.Stump)
             {
                 if ((Draw() & 3) == 0)
                 {
-                    objects[node] &= 0x80;
+                    at.Object = MapObject.None;
                 }
             }
-            else if (code >= FirstCutObject && code < EndCutObject)
+            else if (kind == MapObjectKind.FallingTree)
             {
-                objects[node] = (byte)((objects[node] & 0x80) | FirstHandledObject);
+                at.Object = MapObject.Stump;
             }
         }
     }
@@ -663,17 +650,18 @@ public sealed partial class Game
     // The lake detail of a node (0x428d6e): one draw; below 10 the detail may grow by one (when the draw's bits 8 to 13 are
     // 0), and it moves one to a neighbour that is a lake node too (south-east, south, north-west, or north by the draw's
     // bits 2 and 3).
-    private void MoveLakeDetail(int node, byte[] flags, byte[] detail)
+    private void MoveLakeDetail(int node)
     {
         var draw = Draw();
-        if ((sbyte)(detail[node] - 10) >= 0)
+        ref var at = ref Map.At(node);
+        if ((sbyte)(at.LakeDetail - 10) >= 0)
         {
             return;
         }
 
         if ((draw & 0x3f00) == 0)
         {
-            detail[node]++;
+            at.LakeDetail++;
         }
 
         var direction = (draw & 0xc) switch
@@ -684,14 +672,11 @@ public sealed partial class Game
             _ => 5,
         };
         var (dx, dy) = RoadBuilding.Steps[direction];
-        var neighbour = Map.Index(
-            (node % Map.Size.Width + dx) & (Map.Size.Width - 1),
-            (node / Map.Size.Width + dy) & (Map.Size.Height - 1)
-        );
-        if ((flags[neighbour] & 0x40) != 0)
+        ref var neighbour = ref Map.At(node % Map.Size.Width + dx, node / Map.Size.Width + dy);
+        if (neighbour.LakeMark)
         {
-            detail[node]--;
-            detail[neighbour]++;
+            at.LakeDetail--;
+            neighbour.LakeDetail++;
         }
     }
 

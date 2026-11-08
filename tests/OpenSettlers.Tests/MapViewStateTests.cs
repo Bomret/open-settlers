@@ -30,7 +30,7 @@ public sealed class MapViewStateTests
 
         Assert.IsTrue(changed);
         Assert.AreNotSame(first, state.Map);
-        Assert.AreNotEqual(first!.Digest(MapLayer.Height), state.Map!.Digest(MapLayer.Height));
+        Assert.AreNotEqual(Layers.Digest(first!, MapLayer.Height), Layers.Digest(state.Map!, MapLayer.Height));
     }
 
     [TestMethod]
@@ -128,7 +128,7 @@ public sealed class MapViewStateTests
 
         var state = MapViewState.OpenLayout(layout);
 
-        Assert.AreEqual(layout.BuildMap().Digest(MapLayer.Object), state.Map!.Digest(MapLayer.Object));
+        Assert.AreEqual(Layers.Digest(layout.BuildMap(), MapLayer.Object), Layers.Digest(state.Map!, MapLayer.Object));
         Assert.AreEqual(layout.Seed.ToScreen(), state.SeedText);
         Assert.AreEqual(1, state.SizeValue);
         Assert.AreEqual(StartStock.LevelOf(layout.Seed), state.StockLevel);

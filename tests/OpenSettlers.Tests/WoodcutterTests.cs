@@ -63,7 +63,7 @@ public sealed class WoodcutterTests
     // The object bytes of a map that differ from a copy, as the verb lists them: "x,y:old>new" joined by ";".
     private static string Changes(byte[] before, Map map)
     {
-        var now = map.Layer(MapLayer.Object).ToArray();
+        var now = Layers.Of(map, MapLayer.Object);
         var width = map.Size.Width;
 
         return string.Join(
@@ -143,12 +143,12 @@ public sealed class WoodcutterTests
 
         for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
         {
-            var before = map.Layer(MapLayer.Object).ToArray();
+            var before = Layers.Of(map, MapLayer.Object);
             game.Tick();
             if (pass == 0)
             {
                 // The commands of the first tick put the castle, the flags, and the hut on the map; the verb lists changes from there.
-                before = map.Layer(MapLayer.Object).ToArray();
+                before = Layers.Of(map, MapLayer.Object);
             }
 
             var line = scenario.Lines.SingleOrDefault(candidate =>

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -103,10 +104,8 @@ public sealed class SettlerFigures
     private const int StatesWaitingFirst = 0x42;
     private const int StatesWaitingLast = 0x45;
 
-    // The node's flag byte: bit 6 picks the fixed figure word, the low six bits (the road directions) the offsets (0x44d77e).
-    private const int FixedFigureBit = 0x40;
+    // The node's lake mark picks the fixed figure word, and its road directions the offsets (0x44d77e).
     private const int FixedFigureWord = 0x203;
-    private const int RoadDirectionBits = 0x3f;
 
     // The woodcutter's handler (0x43fb6b) tests the figure byte for bit 7, and the settler's byte 13 (the high byte of the
     // target), byte 14 (the heading), and state for the way back with the log.
@@ -179,7 +178,7 @@ public sealed class SettlerFigures
             var (walkFigure, dx, dy) = triple;
             var word = FigureWord(settler, walkFigure);
             var (x, y) = Camera.NodePosition(settler.X, settler.Y);
-            var height = map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & Map.HeightMask;
+            var height = map.At(settler.X, settler.Y).Height;
             x += dx;
             y += dy - height * TerrainTriangles.HeightStep - SettlerLift;
             // The record joins the list of its row, which the frame moves (0x43f537); a list holds its records in the order
@@ -242,13 +241,12 @@ public sealed class SettlerFigures
                 continue;
             }
 
-            var node = map.Index(settler.X, settler.Y);
-            var flags = map.Layer(MapLayer.Flags)[node];
-            var height = map.Layer(MapLayer.Height)[node] & Map.HeightMask;
+            var node = map.At(settler.X, settler.Y);
+            var height = node.Height;
             var (x, y) = Camera.NodePosition(settler.X, settler.Y);
             y -= height * TerrainTriangles.HeightStep;
             int word;
-            if ((flags & FixedFigureBit) != 0)
+            if (node.LakeMark)
             {
                 word = FixedFigureWord;
             }
@@ -258,7 +256,8 @@ public sealed class SettlerFigures
                 // node's column only where the map buffer starts on a multiple of 64; the engine takes the column.
                 var phase = _idle.Phases[settler.X & (_idle.Phases.Length - 1)];
                 word = (ushort)_idle.Figures[((ushort)(phase + clock) >> 3) & (_idle.Figures.Length - 1)];
-                var direction = flags & RoadDirectionBits;
+                // The offsets table has an entry for each set of road directions (its six bits as a number).
+                var direction = node.Roads.Bits;
                 x += _idle.Offsets[2 * direction];
                 y += _idle.Offsets[2 * direction + 1];
             }

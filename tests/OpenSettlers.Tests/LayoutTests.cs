@@ -68,10 +68,10 @@ public sealed class LayoutTests
         );
 
         Assert.AreEqual(32, map.Size.Width);
-        Assert.AreEqual(9, map.Layer(MapLayer.Height)[At(5, 4)]);
-        Assert.AreEqual(0, map.Layer(MapLayer.Height)[At(3, 10)]);
-        Assert.AreEqual(0x55, map.Layer(MapLayer.Terrain)[At(0, 0)]);
-        Assert.AreEqual(0x01, map.Layer(MapLayer.Terrain)[At(3, 10)]);
+        Assert.AreEqual(9, map.At(5, 4).Height);
+        Assert.AreEqual(0, map.At(3, 10).Height);
+        Assert.AreEqual((new Terrain(5), new Terrain(5)), (map.At(0, 0).Upper, map.At(0, 0).Lower));
+        Assert.AreEqual((new Terrain(0), new Terrain(1)), (map.At(3, 10).Upper, map.At(3, 10).Lower));
         CollectionAssert.AreEqual(
             new[] { (7, 2, 8), (8, 2, 9) },
             map.Objects.Select(o => (o.X, o.Y, (int)o.Code)).ToArray()
@@ -83,7 +83,7 @@ public sealed class LayoutTests
     {
         var map = Built(Text(terrain: Grid('g', (0, Row('g', 0, 'm')))));
 
-        Assert.AreEqual(0xbb, map.Layer(MapLayer.Terrain)[At(0, 0)]);
+        Assert.AreEqual((new Terrain(11), new Terrain(11)), (map.At(0, 0).Upper, map.At(0, 0).Lower));
     }
 
     // The letters of docs/rules/map-form.md, in the order of the terrain codes 0 to 15.
@@ -96,13 +96,11 @@ public sealed class LayoutTests
             .Select(word =>
                 MapGenerator.Generate(TestProgram.Made(), new MapSeed((ushort)word, 0xA0D2, 0xB4FA), MapSize.Offered[0])
             )
-            .First(map => map.Layer(MapLayer.Terrain).ToArray().Any(t => t >> 4 < 4));
+            .First(map => Enumerable.Range(0, map.Count).Any(tile => map.At(tile).Upper.IsWater));
 
     // The generated map's heights and terrain, drawn again as a layout and built.
     static Map Redrawn(Map generated, bool withLakes = false)
     {
-        var heights = generated.Layer(MapLayer.Height).ToArray();
-        var terrain = generated.Layer(MapLayer.Terrain).ToArray();
         string RowOf(int y, System.Func<int, char> letter) =>
             string.Concat(Enumerable.Range(0, 32).Select(x => letter(y * 32 + x)));
         string DrawnGrid(System.Func<int, char> letter) =>
@@ -110,12 +108,10 @@ public sealed class LayoutTests
 
         return Built(
             Text(
-                height: DrawnGrid(tile => "0123456789abcdefghijklmnopqrstuv"[heights[tile] & 0x1f]),
-                terrain: DrawnGrid(tile => Letters[terrain[tile] >> 4]),
-                lower: DrawnGrid(tile => Letters[terrain[tile] & 0xf]),
-                lakes: withLakes
-                    ? DrawnGrid(tile => (generated.Layer(MapLayer.Flags)[tile] & 0x40) != 0 ? 'L' : '.')
-                    : null
+                height: DrawnGrid(tile => "0123456789abcdefghijklmnopqrstuv"[generated.At(tile).Height]),
+                terrain: DrawnGrid(tile => Letters[generated.At(tile).Upper.Code]),
+                lower: DrawnGrid(tile => Letters[generated.At(tile).Lower.Code]),
+                lakes: withLakes ? DrawnGrid(tile => generated.At(tile).LakeMark ? 'L' : '.') : null
             )
         );
     }
@@ -136,15 +132,15 @@ public sealed class LayoutTests
             var map = Redrawn(generated);
             for (var tile = 0; tile < 1024; tile++)
             {
-                if ((generated.Layer(MapLayer.Object)[tile] & 0x7f) != 0)
+                if (generated.At(tile).Object.Exists)
                 {
                     continue;
                 }
 
-                if ((generated.Layer(MapLayer.Flags)[tile] & 0x40) != 0)
+                if (generated.At(tile).LakeMark)
                 {
                     lakes++;
-                    if ((map.Layer(MapLayer.Flags)[tile] & 0x40) == 0)
+                    if (!map.At(tile).LakeMark)
                     {
                         missed.Add($"{first}:{tile % 32},{tile / 32}");
                     }
@@ -171,9 +167,9 @@ public sealed class LayoutTests
             var map = Redrawn(generated, withLakes: true);
             for (var tile = 0; tile < 1024; tile++)
             {
-                var want = generated.Layer(MapLayer.Flags)[tile] & 0x40;
-                marked += want != 0 ? 1 : 0;
-                if ((map.Layer(MapLayer.Flags)[tile] & 0x40) != want)
+                var want = generated.At(tile).LakeMark;
+                marked += want ? 1 : 0;
+                if (map.At(tile).LakeMark != want)
                 {
                     wrong.Add($"{first}:{tile % 32},{tile / 32}");
                 }
@@ -194,9 +190,9 @@ public sealed class LayoutTests
         var drawn = Built(Text(height: flat, terrain: water, lakes: lakes));
         var derived = Built(Text(height: flat, terrain: water));
 
-        Assert.AreEqual(0x40, drawn.Layer(MapLayer.Flags)[At(3, 12)]);
-        Assert.AreEqual(0, drawn.Layer(MapLayer.Flags)[At(12, 12)]);
-        Assert.AreEqual(0x40, derived.Layer(MapLayer.Flags)[At(12, 12)]);
+        Assert.IsTrue(drawn.At(3, 12).LakeMark);
+        Assert.IsFalse(drawn.At(12, 12).LakeMark);
+        Assert.IsTrue(derived.At(12, 12).LakeMark);
     }
 
     [TestMethod]
@@ -223,11 +219,11 @@ public sealed class LayoutTests
         var generated = Generated(1);
         var map = Redrawn(generated);
 
-        var water = Enumerable.Range(0, 1024).Count(tile => (generated.Layer(MapLayer.Object)[tile] & 0x80) != 0);
+        var water = Enumerable.Range(0, 1024).Count(tile => generated.At(tile).WaterTriangle);
         Assert.IsTrue(water > 0 && water < 1024, "the generated map holds water and land");
         CollectionAssert.AreEqual(
-            Enumerable.Range(0, 1024).Select(tile => generated.Layer(MapLayer.Object)[tile] & 0x80).ToArray(),
-            Enumerable.Range(0, 1024).Select(tile => map.Layer(MapLayer.Object)[tile] & 0x80).ToArray()
+            Enumerable.Range(0, 1024).Select(tile => generated.At(tile).WaterTriangle).ToArray(),
+            Enumerable.Range(0, 1024).Select(tile => map.At(tile).WaterTriangle).ToArray()
         );
     }
 
@@ -236,7 +232,8 @@ public sealed class LayoutTests
     {
         var map = Built(Text(terrain: Grid('g', (2, Row('g', 2, 'z'))), objects: """[{"x": 2, "y": 2, "code": 8}]"""));
 
-        Assert.AreEqual(0x88, map.Layer(MapLayer.Object)[At(2, 2)]);
+        Assert.AreEqual(8, map.At(2, 2).Object.Code);
+        Assert.IsTrue(map.At(2, 2).WaterTriangle);
     }
 
     [TestMethod]
@@ -257,9 +254,9 @@ public sealed class LayoutTests
 
         var map = Built(Text(height: Json(lakeHeights), terrain: Json(water)));
 
-        Assert.AreEqual(0x40, map.Layer(MapLayer.Flags)[At(12, 12)]);
-        Assert.AreEqual(0, map.Layer(MapLayer.Flags)[At(10, 12)]);
-        Assert.AreEqual(0, map.Layer(MapLayer.Flags)[At(12, 10)]);
+        Assert.IsTrue(map.At(12, 12).LakeMark);
+        Assert.IsFalse(map.At(10, 12).LakeMark);
+        Assert.IsFalse(map.At(12, 10).LakeMark);
     }
 
     static Game Played(string text, int ticks)

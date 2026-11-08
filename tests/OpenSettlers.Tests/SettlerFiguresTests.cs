@@ -97,11 +97,12 @@ public sealed class SettlerFiguresTests
         );
     }
 
-    // A map whose node of the waiting carriers (4,3) has the flag byte given.
-    private static Map MapWithRoad(byte flags)
+    // A map whose node of the waiting carriers (4,3) has the roads given, and the lake mark where asked.
+    private static Map MapWithRoad(RoadSet roads, bool lakeMark = false)
     {
         var map = Map();
-        map.Bytes(MapLayer.Flags)[map.Index(4, 3)] = flags;
+        map.At(4, 3).Roads = roads;
+        map.At(4, 3).LakeMark = lakeMark;
 
         return map;
     }
@@ -282,8 +283,8 @@ public sealed class SettlerFiguresTests
     [DataRow(0x45)]
     public void AWaitingCarrierIsDrawnByTheTilePassOnItsNode(int state)
     {
-        var map = MapWithRoad(0x09);
-        var height = map.Layer(MapLayer.Height)[map.Index(4, 3)] & OpenSettlers.Simulation.Map.HeightMask;
+        var map = MapWithRoad(RoadSet.Of(0).With(3));
+        var height = map.At(4, 3).Height;
         var (nodeX, nodeY) = Camera.NodePosition(4, 3);
 
         // The phase of the column 4 is 32; with the clock 40 the index is (32 + 40) >> 3 = 9, the figure word 9.
@@ -301,19 +302,19 @@ public sealed class SettlerFiguresTests
     public void AWaitingCarriersPhaseIsItsColumns()
     {
         var map = Map();
-        map.Bytes(MapLayer.Flags)[map.Index(13, 3)] = 0x09;
+        map.At(13, 3).Roads = RoadSet.Of(0).With(3);
         var carrier = Carrier(mode: 7, state: 0x42);
         carrier.X = 13;
 
         Assert.AreEqual(1850 + 100 + 18, Figures().Draws(map, [carrier], 40)[0].Entry);
     }
 
-    // A node whose flag byte has bit 6 set draws the fixed figure word 0x203 with no offsets (0x44d77e).
+    // A node with the lake mark draws the fixed figure word 0x203 with no offsets (0x44d77e).
     [TestMethod]
     public void AWaitingCarrierOnANodeWithBitSixDrawsTheFixedFigure()
     {
-        var map = MapWithRoad(0x49);
-        var height = map.Layer(MapLayer.Height)[map.Index(4, 3)] & OpenSettlers.Simulation.Map.HeightMask;
+        var map = MapWithRoad(RoadSet.Of(0).With(3), lakeMark: true);
+        var height = map.At(4, 3).Height;
         var (nodeX, nodeY) = Camera.NodePosition(4, 3);
 
         var draw = Figures().Draws(map, [Carrier(mode: 7, state: 0x42)], 40)[0];
@@ -329,7 +330,7 @@ public sealed class SettlerFiguresTests
         var walker = Walker(7, 0);
         walker.X = 6;
 
-        var draws = Figures().Draws(MapWithRoad(0x09), [Carrier(mode: 7, state: 0x42), walker], 40);
+        var draws = Figures().Draws(MapWithRoad(RoadSet.Of(0).With(3)), [Carrier(mode: 7, state: 0x42), walker], 40);
 
         Assert.AreEqual(1850 + 100 + 9, draws[^2].Entry);
     }
@@ -372,8 +373,7 @@ public sealed class SettlerFiguresTests
     {
         var map = Map();
         var settler = Walker(7, 0);
-        var height =
-            map.Layer(MapLayer.Height)[map.Index(settler.X, settler.Y)] & OpenSettlers.Simulation.Map.HeightMask;
+        var height = map.At(settler.X, settler.Y).Height;
         var (nodeX, nodeY) = Camera.NodePosition(settler.X, settler.Y);
 
         var draw = Figures().Draws(map, [settler], 0)[0];

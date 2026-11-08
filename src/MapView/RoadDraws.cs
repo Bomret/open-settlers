@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -42,17 +43,16 @@ public static class RoadDraws
     /// </summary>
     public static List<RoadStrip> Of(Map map)
     {
-        var flags = map.Layer(MapLayer.Flags);
         var strips = new List<RoadStrip>();
         var width = map.Size.Width;
         for (var row = 0; row < map.Size.Height; row++)
         {
             for (var column = 0; column < width; column++)
             {
-                var bits = flags[row * width + column] & 7;
+                var roads = map.At(column, row).Roads;
                 for (var direction = 0; direction < 3; direction++)
                 {
-                    if ((bits >> direction & 1) != 0 && Strip(map, column, row, direction) is { } strip)
+                    if (roads.Has(direction) && Strip(map, column, row, direction) is { } strip)
                     {
                         strips.Add(strip);
                     }
@@ -66,11 +66,9 @@ public static class RoadDraws
     // The strip of the road that leaves a node east, south-east, or south.
     private static RoadStrip? Strip(Map map, int column, int row, int direction)
     {
-        var heights = map.Bytes(MapLayer.Height);
-        var terrain = map.Bytes(MapLayer.Terrain);
-        int H(int dx, int dy) => heights[map.Index(column + dx, row + dy)] & Map.HeightMask;
-        int Low(int dx, int dy) => terrain[map.Index(column + dx, row + dy)] & 0xf;
-        int High(int dx, int dy) => terrain[map.Index(column + dx, row + dy)] >> 4;
+        int H(int dx, int dy) => map.At(column + dx, row + dy).Height;
+        int Low(int dx, int dy) => map.At(column + dx, row + dy).Lower.Code;
+        int High(int dx, int dy) => map.At(column + dx, row + dy).Upper.Code;
 
         var (x, y) = Camera.NodePosition(column, row);
         var here = H(0, 0);
