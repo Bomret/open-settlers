@@ -37,7 +37,7 @@ public sealed class CarrierBehavior(
     Func<int, Settler, int, bool> step,
     Action<int> addToStock,
     Func<bool> inLayout
-)
+) : IRoadCarriers
 {
     // The command cause of each road a command built: the carrier sent to it carries it on until it waits on its road. A road no
     // command built (a layout's) has none. The request of a carrier takes the entry.

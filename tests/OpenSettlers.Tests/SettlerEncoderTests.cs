@@ -9,6 +9,16 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SettlerEncoderTests
 {
+    // The movement that turns a walk home reads the residue as the encoder writes it.
+    private static SettlerMovement Movement { get; } =
+        new(
+            new Map(MapSize.Offered[0]),
+            new BuildingTable(),
+            LayoutSettlersTests.MadeTables(),
+            () => 0,
+            SettlerEncoder.ResidueOf
+        );
+
     private static Settler Of(Activity activity, ushort stamp = 0) => new(Job.Carrier, 0, 4, 3, stamp, activity);
 
     private static (int State, int Mode, int Target, int Heading, int Next) Fields(Activity activity)
@@ -147,7 +157,7 @@ public sealed class SettlerEncoderTests
     [TestMethod]
     public void TheSearchAWalkTurnsIntoKeepsTheModeByteOfTheWalk()
     {
-        var search = SettlerEncoder.HomeSearchFrom(new Walks(new ToBuilding(1), new Heading(4), 2));
+        var search = Movement.HomeSearchFrom(new Walks(new ToBuilding(1), new Heading(4), 2));
 
         Assert.AreEqual((0x19, 0xff, 1, 4, 2), Fields(search));
     }
@@ -155,7 +165,7 @@ public sealed class SettlerEncoderTests
     [TestMethod]
     public void TheSearchAfterAStepClearsTheNextByte()
     {
-        var search = SettlerEncoder.HomeSearchAfterStep(new Walks(new ToBuilding(1), new Heading(4), 2));
+        var search = Movement.HomeSearchAfterStep(new Walks(new ToBuilding(1), new Heading(4), 2));
 
         Assert.AreEqual((0x19, 0xff, 1, 4, 0), Fields(search));
     }

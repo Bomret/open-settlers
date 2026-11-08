@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace OpenSettlers.Domain;
 
@@ -47,6 +48,10 @@ public sealed class BuildingTable : IReadOnlyList<Building>
 
     /// <summary>The slot of the building.</summary>
     public int SlotOf(Building building) => _buildings.IndexOf(building);
+
+    /// <summary>The building a flag is tied to: the one that stands at it, not one that burns (0x4617fd takes the pointer from the flag's item).</summary>
+    public Building? OfFlag(int flag) =>
+        _buildings.FirstOrDefault(building => !building.IsFree && !building.IsDemolishing && building.Flag == flag);
 
     /// <summary>Frees the slot and lets the count fall past the free slots at the table's end.</summary>
     public void Free(int slot)

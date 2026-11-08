@@ -99,10 +99,6 @@ public sealed partial class Game
     // were, in its residue.
     private void Become(Settler settler, Activity next) => _movement.Become(settler, next);
 
-    // The settler takes up another activity with the bytes of the original's item the new activity does not use set to
-    // `residue` (a builder that loses its job: SettlerEncoder.ResidueOfBuilder).
-    private void Become(Settler settler, Activity next, Residue residue) => _movement.Become(settler, next, residue);
-
     // The behaviour of each activity type, for the table pass. The activities whose turn the original does not port have a
     // turn that changes nothing.
     private void RegisterBehaviours()
@@ -114,8 +110,7 @@ public sealed partial class Game
         _behaviours.Register<Leaving>((slot, settler, _) => Leave(slot, settler));
         _behaviours.Register<WaitsOutStep>((slot, settler, _) => WaitOutStep(slot, settler));
         _behaviours.Register<Walks>((slot, settler, _) => Walk(slot, settler));
-        _behaviours.Register<WaitsToGoHome>((slot, settler, _) => Dismissed(slot, settler));
-        _behaviours.Register<WaitsToRejoin>((slot, settler, _) => Rejoined(slot, settler));
+        _removal.Register(_behaviours);
         _carriers.Register(_behaviours);
         _woodcutter.Register(_behaviours);
         _walkHome.Register(_behaviours);
@@ -155,7 +150,7 @@ public sealed partial class Game
                 {
                     if (building.IsDemolishing)
                     {
-                        Burn(slot, building);
+                        _removal.Burn(slot, building);
                     }
                     else
                     {
@@ -586,42 +581,12 @@ public sealed partial class Game
         }
     }
 
-    // The heading of a settler that walks the roads (state 2), a carrier on its road (state 3), or one that hands a good over
-    // (state 0xe); null for any other activity.
-    private static Heading? HeadingOf(Activity activity) =>
-        activity switch
-        {
-            Walks walks => walks.Heading,
-            WalksRoad road => road.Heading,
-            HandsOver handover => handover.Heading,
-            _ => null,
-        };
-
-    // The good a carrier carries on its road or hands over; null for a carrier with none and for any other activity.
-    private static Load? LoadOf(Activity activity) =>
-        activity switch
-        {
-            WalksRoad road => road.Load,
-            HandsOver handover => handover.Load,
-            _ => null,
-        };
-
     // The activity of a walking settler with a new heading.
     private static Activity WithHeading(Activity activity, Heading heading) =>
         activity switch
         {
             Walks walks => walks with { Heading = heading },
             WalksRoad road => road with { Heading = heading },
-            _ => activity,
-        };
-
-    // The activity of a walking settler with the count of its blocked tries, or the mark that it is to go, cleared (byte 15 = 0).
-    private static Activity Cleared(Activity activity) =>
-        activity switch
-        {
-            Walks walks => walks with { Tries = 0 },
-            WalksRoad road => road with { Waits = 0, Marked = false },
-            HandsOver handover => handover with { Marked = false },
             _ => activity,
         };
 
@@ -640,13 +605,13 @@ public sealed partial class Game
         if (other == 0)
         {
             shape = 4 + 9 * direction + Height(next) - Height(here);
-            settler.Activity = Cleared(WithHeading(settler.Activity, forward));
+            settler.Activity = WalkingActivity.Cleared(WithHeading(settler.Activity, forward));
             Move(slot, settler, x, y, next);
         }
         else if (
             direction <= 2
             && _settlers[other] is { Activity: Walks or WalksRoad } passer
-            && HeadingOf(passer.Activity) == forward.Retried
+            && WalkingActivity.HeadingOf(passer.Activity) == forward.Retried
         )
         {
             // A step east, south-east, or south onto a settler that walks (state 2 or 3) and is blocked on this very node (its
@@ -681,7 +646,7 @@ public sealed partial class Game
             return false;
         }
 
-        settler.Activity = Cleared(settler.Activity);
+        settler.Activity = WalkingActivity.Cleared(settler.Activity);
         var old = settler.Timer;
         settler.Timer = (ushort)(old + _tables.StepTime(shape));
         var finished = settler.Timer < old;
@@ -796,7 +761,7 @@ public sealed partial class Game
             // (bit 4 of the flag's direction byte) is no road bit.
             if (site.Node == 6)
             {
-                SplitRoad(Map.Index(flagX, flagY), flag, CommandCause(History.FlagId(flag)));
+                _removal.SplitRoad(Map.Index(flagX, flagY), flag, CommandCause(History.FlagId(flag)));
             }
         }
 
@@ -824,8 +789,7 @@ public sealed partial class Game
     }
 
     // The building a flag is tied to: the one that stands at it, not one that burns (0x4617fd takes the pointer from the flag's item).
-    private Building? BuildingOfFlag(int flag) =>
-        _buildings.FirstOrDefault(building => !building.IsFree && !building.IsDemolishing && building.Flag == flag);
+    private Building? BuildingOfFlag(int flag) => _buildings.OfFlag(flag);
 
     private void MixWoodcutting(ref ulong hash)
     {

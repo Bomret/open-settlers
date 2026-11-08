@@ -153,7 +153,7 @@ the castle, the hut's flag, and a flag as a road, a node of no road, and a node 
 
 ## In the engine
 
-- `Game.ClickClass`, `Game.RemovalAt` (the command a click means), `CommandKind.RemoveFlag` (5), `RemoveBuilding` (6), and `RemoveRoad` (7): `src/Adapters/Simulation/Game.Removal.cs`.
+- `Removal` (`src/Application/Removal.cs`): the click class (`ClickClass`), the take-downs (`RemoveFlagAt`, `RemoveBuildingAt`, `RemoveRoadAt`, `TakeFlagDown`), the burn of a building, and the split of a road by a flag (`SplitRoad`). `Game.ClickClass`, `Game.RemovalAt` (the command a click means), and the commands forward to it; `CommandKind.RemoveFlag` (5), `RemoveBuilding` (6), and `RemoveRoad` (7) are the game's (`src/Adapters/Simulation/Game.Removal.cs`).
 - The table slots: a flag's or building's slot freed is `Flag.Free` or `Building.Free()`; the next flag or building takes the first free slot (`0x45d7ad`, `0x45da8f`).
 - `RuleTables.FillCounterOf` (`0x462d6d`) and `RuleTables.RoadCapacity` (`0x462acd`).
 - The states `0x44` and `0x45` (`Dismissed`, `Rejoined`) and the carrier's end-of-road counting (`Wait` in `src/Application/CarrierBehavior.cs`).

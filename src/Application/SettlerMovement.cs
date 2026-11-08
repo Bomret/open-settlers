@@ -122,6 +122,34 @@ public sealed class SettlerMovement(
     /// </summary>
     public void Become(Settler settler, Activity next) => settler.Activity = next.Carrying(residueOf(settler.Activity));
 
+    /// <summary>The bytes of the original's item the activity leaves as they are when the settler takes up another one.</summary>
+    public Residue ResidueOf(Activity activity) => residueOf(activity);
+
+    /// <summary>
+    /// The search for a flag the settler takes up where its walk is turned home with only its state changed (<c>0x461b77</c>,
+    /// <c>0x462153</c>): the original reads the byte 11 the walk left (not 0: the far end first), and the other bytes stay.
+    /// </summary>
+    public SearchesHome HomeSearchFrom(Activity activity)
+    {
+        var residue = residueOf(activity);
+
+        return new SearchesHome(residue.Mode != 0, residue.Mode) { Residue = residue };
+    }
+
+    /// <summary>
+    /// The search for a flag home that takes the place of the activity a step's wait leads to (<c>0x462153</c>): as
+    /// <see cref="HomeSearchFrom"/>, and the wait's end clears the next byte.
+    /// </summary>
+    public SearchesHome HomeSearchAfterStep(Activity then)
+    {
+        var search = HomeSearchFrom(then);
+
+        return search with
+        {
+            Residue = search.Residue with { Next = 0 },
+        };
+    }
+
     /// <summary>The settler takes up another activity with the bytes the new activity does not use set to <paramref name="residue"/>.</summary>
     public void Become(Settler settler, Activity next, Residue residue) => settler.Activity = next.Carrying(residue);
 }
