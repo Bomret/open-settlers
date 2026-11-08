@@ -11,27 +11,27 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CarrierTests
 {
-    private static ProgramTables Made()
+    private static RuleTables Made()
     {
-        var classes = new byte[ProgramTables.ClassCount];
+        var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
 
-        return new ProgramTables(
+        return new RuleTables(
             classes,
             Enumerable
-                .Range(0, ProgramTables.StartStockRows)
+                .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
-            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray()
+            Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray()
         );
     }
 
     // The castle and the three flags.
     private static Game World()
     {
-        var game = new Game(
+        var game = GameFactory.Create(
             Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );
@@ -60,8 +60,7 @@ public sealed class CarrierTests
         }
     }
 
-    private static Settler[] Carriers(Game game) =>
-        [.. game.Settlers.Where(settler => settler.Job == Settler.CarrierJob)];
+    private static Settler[] Carriers(Game game) => [.. game.Settlers.Where(settler => settler.Job == Job.Carrier)];
 
     [TestMethod]
     public void ARoadAsksTheCastleForACarrierAtItsFlagsTurnAndTheCastleSendsASettlerWithoutAJob()
@@ -74,11 +73,14 @@ public sealed class CarrierTests
         game.Tick();
 
         var carrier = Carriers(game).Single();
-        Assert.AreEqual(0xf, carrier.State, "the carrier leaves the castle");
-        Assert.AreEqual(0, carrier.Mode, "it takes the road that leaves the castle's flag east");
-        Assert.AreEqual(0, carrier.Target, "it walks to the castle's flag");
-        Assert.AreEqual(0x80, game.RoadByte(0, 0) & 0x80, "a carrier is on the way: the near end");
-        Assert.AreEqual(0x80, game.RoadByte(1, 3) & 0x80, "a carrier is on the way: the far end");
+        Assert.IsInstanceOfType<Leaving>(carrier.Activity, "the carrier leaves the castle");
+        Assert.AreEqual(
+            new ToRoad(0, 0),
+            ((Leaving)carrier.Activity).Errand,
+            "it takes the road that leaves the castle's flag east, walking to the castle's flag"
+        );
+        Assert.IsTrue(game.Flags[0].Side(0).CarrierOnTheWay, "a carrier is on the way: the near end");
+        Assert.IsTrue(game.Flags[1].Side(3).CarrierOnTheWay, "a carrier is on the way: the far end");
     }
 
     [TestMethod]
@@ -90,9 +92,9 @@ public sealed class CarrierTests
         Run(game, 600);
 
         Assert.AreEqual(1, Carriers(game).Length);
-        Assert.AreEqual(1, game.RoadByte(0, 0) & 0xf);
-        Assert.AreEqual(1, game.RoadByte(1, 3) & 0xf);
-        Assert.AreEqual(0, game.RoadByte(0, 0) & 0x80, "the carrier is on the road: no carrier is on the way");
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers);
+        Assert.AreEqual(1, game.Flags[1].Side(3).Carriers);
+        Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay, "the carrier is on the road: no carrier is on the way");
     }
 
     [TestMethod]
@@ -104,10 +106,10 @@ public sealed class CarrierTests
         Run(game, 600);
 
         var carrier = Carriers(game).Single();
-        Assert.AreEqual(0x42, carrier.State);
+        var waiting = (WaitsAtFlag)carrier.Activity;
         Assert.AreEqual((17, 6), (carrier.X, carrier.Y), "the node of the road next to the flag at 18,6");
-        Assert.AreEqual(1, carrier.Target, "the flag it waits next to");
-        Assert.AreEqual(3, carrier.Mode, "the direction in which the road leaves that flag");
+        Assert.AreEqual(1, waiting.Flag, "the flag it waits next to");
+        Assert.AreEqual(new Direction(3), waiting.Direction, "the direction in which the road leaves that flag");
         Assert.AreEqual(0x71, carrier.Frame, "the frame of the idle carrier: 0x6e plus the direction it came by");
     }
 
@@ -121,12 +123,16 @@ public sealed class CarrierTests
 
         Run(game, 27);
         var first = Carriers(game).Single();
-        Assert.AreEqual(0, first.Target, "the first turn is the castle's flag, for the road that leaves it");
+        Assert.AreEqual(
+            0,
+            ((Leaving)first.Activity).Errand.Flag,
+            "the first turn is the castle's flag, for the road that leaves it"
+        );
 
         Run(game, 600);
 
         Assert.AreEqual(2, Carriers(game).Length);
-        Assert.AreEqual(1, game.RoadByte(1, 5) & 0xf, "the second road holds its carrier as well");
+        Assert.AreEqual(1, game.Flags[1].Side(5).Carriers, "the second road holds its carrier as well");
     }
 
     [TestMethod]
@@ -138,7 +144,7 @@ public sealed class CarrierTests
         Run(game, 33);
 
         Assert.AreEqual(0, Carriers(game).Length);
-        Assert.AreEqual(0, game.FlagStatus(1) & 0x80, "the retry scan cleared the mark of the failed request");
+        Assert.IsFalse(game.Flags[1].CarrierRequestFailed, "the retry scan cleared the mark of the failed request");
     }
 
     [TestMethod]
@@ -152,13 +158,14 @@ public sealed class CarrierTests
         // The settlers enter the table as their turns come, so it is emptied before every tick.
         for (var tick = 0; tick < 40; tick++)
         {
-            game.ClearWaiting(Settler.CarrierJob);
-            game.ClearWaiting(21);
+            game.Roster.ClearWaiting(Job.Carrier);
+            game.Roster.ClearWaiting(Job.Jobless);
             game.Tick();
         }
 
         Assert.AreEqual(0, Carriers(game).Length);
-        Assert.AreEqual(0, game.RoadByte(0, 0) & 0x8f, "no carrier is on the road or on the way");
+        Assert.AreEqual(0, game.Flags[0].Side(0).Carriers, "no carrier is on the road");
+        Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay, "no carrier is on the way");
     }
 
     [TestMethod]

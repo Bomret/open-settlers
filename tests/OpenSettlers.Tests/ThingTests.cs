@@ -10,22 +10,28 @@ public sealed class ThingTests
 {
     static NameTable Names() =>
         new(
-            new ProgramTables(
-                new byte[ProgramTables.ClassCount],
-                Enumerable.Range(0, ProgramTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray()
+            new RuleTables(
+                new ObjectClass[RuleTables.ClassCount],
+                Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray()
             )
         );
 
     [TestMethod]
     public void ANamedMapObjectShowsItsRawCodeThenItsName()
     {
-        Assert.AreEqual("object 12,4 code=0x0a tree", Thing.Of(new MapObject(12, 4, 0x0a), Names()).Line());
+        Assert.AreEqual(
+            "object 12,4 code=0x0a tree",
+            Thing.Of(new PlacedObject(12, 4, new MapObject(0x0a)), Names()).Line()
+        );
     }
 
     [TestMethod]
     public void ACodeWithNoNameShowsOnlyItsRawCode()
     {
-        Assert.AreEqual("object 13,4 code=0x31", Thing.Of(new MapObject(13, 4, 0x31), Names()).Line());
+        Assert.AreEqual(
+            "object 13,4 code=0x31",
+            Thing.Of(new PlacedObject(13, 4, new MapObject(0x31)), Names()).Line()
+        );
     }
 
     [TestMethod]

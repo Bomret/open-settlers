@@ -75,7 +75,7 @@ from `MapGen_ResolveObjectOverlap` as well: it marks a tile that carries a large
 The digest of a layer is the FNV-1a 64-bit hash of its bytes in that order. The digest line after a step
 names the size value, the map seed words, the step, the three generator words, and the digests of the
 layers in layer order; after `CountResource1` it ends with the total of resource type 1. The engine's
-`Map.Digest` and the harness command `gen` compute the same digests from the same layout. The steps are the
+`MapLayerExporter.Digest` and the harness command `gen` compute the same digests from the same layout. The steps are the
 seeding (`Seed`, which has the generator words only, because the buffer holds nothing the generator wrote)
 and the passes `ClearMap`, `SeedHeights`, `SubdivideHeights`, `LimitSlopes`, `FillLakes`,
 `LowerToWaterLevel`, `ClassifyTerrain`, `KeepMainLand`, `ScaleHeights`, `GradeWaterDepth`,
@@ -223,7 +223,7 @@ position wraps at both edges.
 30. **`MapGen_ResolveObjectOverlap`.** For each tile whose object is large, in row-major order: if the flag
     bit 6 is clear on the west, north-west, and north tiles, set it on the tile; otherwise clear the object
     code and keep bit 7. A large object is one whose class byte in the program's table (`0x41e640`), read
-    from the install's `Siedler1.exe` at run time by `ProgramTables`, is above 1, compared unsigned. No draw.
+    from the install's `Siedler1.exe` at run time by `ProgramTablesImporter` (`RuleTables.ClassOf`), is above 1, compared unsigned. No draw.
 31. **`MapGen_MarkWaterAdjacent`.** Sets bit 7 of the object byte on each tile whose upper terrain nibble or
     lower terrain nibble is below 4. No draw.
 32. **`MapGen_CountResource1`.** Sums the amounts of the deposits of resource type 1 into the total at state
@@ -241,10 +241,14 @@ part of what the generator words after each pass check.
 
 ## In the engine
 
-`src/Simulation/MapSize.cs`, `Map.cs`, `MapLayer.cs`, `MapPass.cs`, `MapObject.cs`, `ResourceDeposit.cs`, and
-`MapGenerator.cs`. A caller reads the objects through `Map.Objects` (a column, a row, and a code for each
-tile with an object) or from `Map.Layer(MapLayer.Object)` with the mask `0x7f`, and the deposits through
-`Map.Deposits` or `Map.Layer(MapLayer.Resource)`. The engine departs from the program in two places: it
+The map generator, `src/Adapters/Simulation/MapGenerator.cs` with `MapLayers.cs`, `MapLayer.cs`, and `MapPass.cs`,
+writes the layers above byte for byte. `MapImporter.cs` turns them into the typed map of
+`src/Domain/Map.cs` (`Node.cs`, `Owner.cs`, `Terrain.cs`, `MapObject.cs`, `RoadSet.cs`, `ResourceDeposit.cs`,
+`MapSize.cs`), and `MapLayerExporter.cs` turns a typed map back into the layers for the digest. A caller reads a node
+through `Map.At`, the objects through `Map.Objects` (a column, a row, and an object for each node that holds one),
+and the deposits through `Map.Deposits`. The typed map keeps every bit of a layer as a named field or a raw value (an
+object code with no name, a terrain code, a deposit type), so the layers come back exactly. The lake detail and the
+deposit are one byte of the original, so the node holds them as one pair of values. The engine departs from the program in two places: it
 keeps columns and rows where the program keeps masked offsets, and it throws where the program would scan
 without end.
 
@@ -258,7 +262,7 @@ spiral table with the program's builder and points the object size table at the 
 
 **Status:** the engine's own form (a stand-in; the original has no hand-drawn maps). A layout file
 ([ADR 0009](../adr/0009-layouts-set-up-a-game-by-hand-drawn-map-and-commands.md)) draws the height, terrain, and
-object layers. `src/Simulation/Layout.cs` derives from them the bytes the generator derives. The map has one of the
+object layers. `src/Adapters/Simulation/Layout.cs` derives from them the bytes the generator derives. The map has one of the
 sizes above, written as its size value in the layout's `size`.
 
 **The grids.** `height`, `terrain`, `terrainLower`, and `lakes` are lists of strings. One string is one row of the

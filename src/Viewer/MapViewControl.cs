@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
+using OpenSettlers.Domain;
 using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -87,7 +88,7 @@ public partial class MapViewControl : Control
     bool _dragging;
     readonly ClickGesture _gesture = new();
     (int X, int Y, float Scale, float Width, float Height) _pressView;
-    ProgramTables? _tables;
+    RuleTables? _tables;
     bool _castleDrawn;
     Vector2 _keyCarry;
     Vector2 _dragCarry;
@@ -140,12 +141,12 @@ public partial class MapViewControl : Control
             _state.SeedText,
             _state.SizeValue,
             _gameView ? _game?.TickCount ?? 0 : null,
-            _gameView ? _game?.CastleLogs ?? 0 : null,
+            _gameView ? _game?.CastleStock.Logs ?? 0 : null,
             !_gameView ? null
                 : _game is null ? new System.Collections.Generic.Dictionary<(int X, int Y), int>()
                 : ObjectDraws
                     .FlagGoodsOf(_game)
-                    .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0)),
+                    .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => !good.IsNone)),
             ListedThings(),
             _gameView ? _game : null
         );
@@ -161,7 +162,7 @@ public partial class MapViewControl : Control
             return problem;
 
         _ticks.Text = $"Tick {_game.TickCount}";
-        _logs.Text = CastleReadout.Text(_game.CastleLogs);
+        _logs.Text = CastleReadout.Text(_game.CastleStock.Logs);
         UpdateSettlers();
         Redraw();
 
@@ -353,7 +354,7 @@ public partial class MapViewControl : Control
 
         try
         {
-            _tables = ProgramTables.Read(_install.ReadAll(Install.Program));
+            _tables = ProgramTablesImporter.Import(_install.ReadAll(Install.Program));
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -371,9 +372,9 @@ public partial class MapViewControl : Control
                     _settlerGraphics = SettlerGraphics.Load(
                         _install,
                         _tables,
-                        Settler.CarrierJob,
-                        Settler.WoodcutterJob,
-                        ProgramTables.TypeOneHutJob
+                        Job.Carrier.Code,
+                        Job.Woodcutter.Code,
+                        RuleTables.TypeOneHutJob
                     );
                     _settlerMaterial = BuildObjectMaterial(
                         new ObjectGraphics
@@ -415,7 +416,7 @@ public partial class MapViewControl : Control
             // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
             var exit = LayoutLoad.Start(
                 _layout,
-                new Game(_tables, _state.Map, _state.StockLevel) { EveryPassTurns = true },
+                GameFactory.Create(_tables, _state.Map, _state.StockLevel, everyPassTurns: true),
                 out _game,
                 out var layoutProblem
             );
@@ -455,15 +456,15 @@ public partial class MapViewControl : Control
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
-            _logs.Text = CastleReadout.Text(_game.CastleLogs);
+            _logs.Text = CastleReadout.Text(_game.CastleStock.Logs);
             UpdateSettlers();
             // Evaluated each frame, so the watch sees every change.
             var objectsChanged = _objectWatch.Changed(_game);
             if (
                 objectsChanged
-                || (_game.Castle is not null && !_castleDrawn)
+                || (_game.CastleStock.Castle is not null && !_castleDrawn)
                 || _game.Flags.Count != _flagsDrawn
-                || _game.Roads.Count != _roadsDrawn
+                || _game.Network.Roads.Count != _roadsDrawn
                 || _game.Buildings.Count != _buildingsDrawn
                 || _game.Revision != _revisionDrawn
             )
@@ -471,14 +472,14 @@ public partial class MapViewControl : Control
                 // The castle stands, a flag went up, a road was built, a hut stands, something was taken
                 // down, or an object or a good on a flag changed: draw it.
                 _revisionDrawn = _game.Revision;
-                _castleDrawn = _game.Castle is not null;
+                _castleDrawn = _game.CastleStock.Castle is not null;
                 _flagsDrawn = _game.Flags.Count;
-                _roadsDrawn = _game.Roads.Count;
+                _roadsDrawn = _game.Network.Roads.Count;
                 _buildingsDrawn = _game.Buildings.Count;
                 Redraw();
             }
 
-            _frameCounter = _game.Clock;
+            _frameCounter = _game.Clock.Now;
         }
         else
         {
@@ -632,7 +633,7 @@ public partial class MapViewControl : Control
         if (_removeButton.ButtonPressed)
         {
             // The check decides what the click takes down; a click it refuses asks for nothing.
-            if (_game.RemovalAt(x, y) is { } removal)
+            if (_game.Removal.CommandAt(x, y) is { } removal)
             {
                 _game.Enqueue(new Command(_game.TickCount, 0, removal, x, y));
             }
@@ -668,12 +669,11 @@ public partial class MapViewControl : Control
             return;
         }
 
-        var heights = map.Layer(MapLayer.Height).ToArray();
         var points = _drawing
             .Nodes.Select(node =>
             {
                 var (px, py) = Camera.NodePosition(node.X, node.Y);
-                var height = heights[map.Index(node.X, node.Y)] & Map.HeightMask;
+                var height = map.At(node.X, node.Y).Height;
 
                 return new Vector2(px, py - height * TerrainTriangles.HeightStep);
             })
@@ -856,7 +856,12 @@ public partial class MapViewControl : Control
 
         var quads = new System.Collections.Generic.List<(int X, int Y, int Width, int Height, Color Color)>();
         foreach (
-            var draw in _settlerGraphics.Figures.Draws(_state.Map, _game.Settlers, _game.Clock, _settlerGraphics.Shifts)
+            var draw in _settlerGraphics.Figures.Draws(
+                _state.Map,
+                _game.Settlers,
+                _game.Clock.Now,
+                _settlerGraphics.Shifts
+            )
         )
         {
             // A sprite with no loaded layer is skipped and reported once per sprite: the render loop must not throw or
@@ -1145,7 +1150,7 @@ public partial class MapViewControl : Control
             var band in ObjectQuads.Bands(
                 ObjectDraws.Of(
                     map,
-                    _game?.Castle,
+                    _game?.CastleStock.Castle,
                     _game?.Buildings,
                     _game is null ? null : ObjectDraws.FlagGoodsOf(_game),
                     _frameCounter

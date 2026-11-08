@@ -1,0 +1,52 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// The game asks the digest port for its digest: the encoding is the adapter's.
+[TestClass]
+public sealed class GameDigestPortTests
+{
+    private sealed class FixedDigest(ulong value) : IGameDigest
+    {
+        public Game? Asked { get; private set; }
+
+        public ulong Of(Game game)
+        {
+            Asked = game;
+
+            return value;
+        }
+    }
+
+    [TestMethod]
+    public void TheDigestOfTheGameIsWhatTheDigestPortGivesForTheGame()
+    {
+        var tables = TestProgram.Made();
+        var map = MapGenerator.Generate(tables, new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0]);
+        var port = new FixedDigest(42);
+        var game = GameFactory.Create(tables, map, digest: port);
+
+        Assert.AreEqual(42UL, game.Digest());
+        Assert.AreSame(game, port.Asked);
+    }
+
+    [TestMethod]
+    public void TheDigestOfTheGameThePortBuildsFollowsTheCommandsApplied()
+    {
+        var tables = TestProgram.Made();
+        Game Make() =>
+            GameFactory.Create(
+                tables,
+                MapGenerator.Generate(tables, new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+            );
+        var a = Make();
+        var b = Make();
+        a.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 17, 0));
+        b.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 18, 0));
+        a.Tick();
+        b.Tick();
+
+        Assert.AreNotEqual(a.Digest(), b.Digest());
+    }
+}

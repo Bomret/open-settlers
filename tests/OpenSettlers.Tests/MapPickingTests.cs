@@ -36,7 +36,7 @@ public sealed class MapPickingTests
     private static (int X, int Y) DrawnPoint(int column, int row)
     {
         var (x, y) = Camera.NodePosition(column, row);
-        var height = Map.Layer(MapLayer.Height)[row * Map.Size.Width + column] & 31;
+        var height = Map.At(column, row).Height;
 
         return (x, y - height * TerrainTriangles.HeightStep);
     }
@@ -105,11 +105,10 @@ public sealed class MapPickingTests
     [TestMethod]
     public void ARaisedNodeIsPickedWhereItIsDrawnNotWhereItsRowWouldPutIt()
     {
-        var heights = Map.Layer(MapLayer.Height).ToArray();
         var raised = Enumerable
-            .Range(0, heights.Length)
+            .Range(0, Map.Count)
             .First(node =>
-                (heights[node] & 31) >= 8
+                Map.At(node).Height >= 8
                 && node % Map.Size.Width is > 3 and < 28
                 && node / Map.Size.Width is > 8 and < 24
             );
@@ -256,8 +255,7 @@ public sealed class MapPickingTests
     [TestMethod]
     public void ARaisedTileIsAimedAtWhereItIsDrawn()
     {
-        var heights = Map.Layer(MapLayer.Height).ToArray();
-        var raised = Enumerable.Range(0, heights.Length).First(node => (heights[node] & 31) >= 8);
+        var raised = Enumerable.Range(0, Map.Count).First(node => Map.At(node).Height >= 8);
         var (column, row) = (raised % Map.Size.Width, raised / Map.Size.Width);
         var camera = Camera.NodePosition(column, row);
 
@@ -331,7 +329,7 @@ public sealed class MapPickingTests
     {
         var map = MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
         var (column, row) = (12, 9);
-        map.Bytes(MapLayer.Object)[map.Index(column, row)] = 1;
+        map.At(column, row).Object = MapObject.Flag;
         var (x, y) = DrawnPoint(column, row);
         var camera = ((double)x, (double)y);
 

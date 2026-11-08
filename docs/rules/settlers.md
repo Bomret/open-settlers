@@ -108,7 +108,7 @@ was reached by. It then takes the flags off the queue in order, tries their dire
 flag not yet marked marks it, gives it the first direction of the flag it came from, and queues it. A flag therefore
 keeps the first direction of the first route that reached it: of several routes with the same number of flags, the one
 whose first flag came first in the order of the directions. The search ends when the flag it looks for is marked, or
-the queue is empty (no route). The engine's `Game.Route(from, to)` returns the first direction, or -1.
+the queue is empty (no route). The engine's `RoadNetwork.Route(flagCount, from, to)` (`Game.Network`) returns the first direction, or -1.
 
 The marks of a generation are 16-bit words in the flag items; when the generation counter wraps, the program clears
 all marks (`0x42ca7a`). The queue holds 994 flags a level; the engine's search has no limit.
@@ -202,15 +202,15 @@ address before them, the bytes are no words. Read from the odd one, the bases ru
 0,0 / 1,0 / 2,0 and on. The element is a pair of words (4 bytes).
 - The figure bases at `0x4501a1`: the pair at 4 times the high byte of the word (`(word & 0xff00) >> 6` at `0x44fff3`) holds the
   base of the figure, from the entry 1850, and the base of the second figure, from the entry 3150. A negative second base means
-  no second figure. The table holds 128 pairs in the engine's read (`ProgramTables.FigureBases`). The rows the woodcutter takes
+  no second figure. The table holds 128 pairs in the engine's read (`RuleTables.FigureBases`). The rows the woodcutter takes
   are 0x0b (48, 54), 0x0f (272, none), and 0x10 (48, 60).
 - The figure offsets at `0x4503c5`: the pair at 4 times the low byte of the word is what the figure and the second figure add
-  (`ProgramTables.FigureOffsets`, 256 pairs). The code does not bound the low byte.
+  (`RuleTables.FigureOffsets`, 256 pairs). The code does not bound the low byte.
 
 The figure is the entry 1850 plus the base plus the first offset. The second figure, where there is one, is 3150 plus its base
 plus the second offset. The overlay in the player's colour of the figure 1850 + i is the entry 2500 + i (`0x406610`).
 
-The engine reads both tables and the three constants of the woodcutter's handler from the install (`ProgramTables.Read`). It
+The engine reads both tables and the three constants of the woodcutter's handler from the install (`ProgramTablesImporter.Import`). It
 refuses an install whose draw routine does not load those addresses. It also refuses an install whose stub of job 5 does not jump
 to `0x43fb6b`, or whose handler has no `add word [edi+8], imm16` at the three addresses.
 
@@ -252,7 +252,7 @@ the original's in every recorded pass.
   figure and the overlay stay where they are. A settler draws its figure, then its overlay, then its second figure. A figure
   entry that is absent or no sprite, an overlay with no drawn pixel, or a job with no second figure draws what is left.
 - The record joins the list of the view's row of the settler plus the signed byte of the frame in the table at `0x43f402`
-  (181 bytes, `ProgramTables.FrameRows`). The frames 9 to 26, 63 to 80, 121 and 122, and 125 to 128 hold -1 and move a record up
+  (181 bytes, `RuleTables.FrameRows`). The frames 9 to 26, 63 to 80, 121 and 122, and 125 to 128 hold -1 and move a record up
   one row. Every other frame holds 0. The lists are drawn from the top row to the bottom, so a settler drawn up a row is drawn
   before the settlers of the row it stands in. Records of one row come in the order of the original's scan (below).
 - The frames 0x74 to 0x78 are the cut. `0x438a9e` sets the frame ([Woodcutting](woodcutting.md#the-cut)). The frames 0x74,
@@ -416,10 +416,38 @@ reaches them: the scenarios find a node in the first ring), the ring masks of th
 
 ## In the engine
 
-`Game.Buildings` and `Game.Settlers` hold the items (`src/Simulation/Building.cs`, `Settler.cs`); the pass, the
-request, the route search, and the walk are in `src/Simulation/Game.Settlers.cs`. `ProgramTables` reads the step
-times, the door speeds, and the scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`,
-`ScanWindows`). `Game.Digest` holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's
-waiting list, and the settlers' places. The carriers' part is in `src/Simulation/Game.Carriers.cs`
-([Carriers](carriers.md#in-the-engine)), the woodcutter's and the map's object pass in `src/Simulation/Game.Woodcutting.cs`
-([Woodcutting](woodcutting.md#in-the-engine)).
+`Game.Buildings` (a `BuildingTable` of `Building`s, each with a `BuildingType`) and `Game.Settlers` (a `SettlerTable` of
+`Settler`s) hold the items (`src/Domain/Building.cs`, `Settler.cs`). A `Settler` is one object for its whole life. It has an
+identity and body (node, player, timer, stamp, frame). It has a `Job` that can change: a settler without a job becomes a carrier
+when a road takes it, and stays the same settler with the same thing ID. It has one `Activity` record that holds only that
+activity's data (`src/Domain/Activity.cs`).
+
+Each activity type keeps the code of the original's state it stands for (`Activity.Code`). `src/Domain/Activity.cs` lists the
+types and their codes. A state code with no activity type is kept as it is in `RawState`, whose turn changes nothing. The
+original's branch for mode `0xfd` to state `0x49` and its branch for state `0x4a` are not ported, because no rule writes
+those states.
+
+The original shares bytes 11 to 15 of the item between its states. An activity names the values it uses: an `Errand` for the
+walk's mode and target, a `Load` for the good a carrier carries and where it goes, a `Heading`, and a free walk's `Trip`. The
+bytes it leaves unused ride along in its `Residue`, so that a change of activity keeps them as the original does. No rule reads
+or writes the residue. A search for a flag home (`SearchesHome`) holds its mode byte itself (`FarEndMark`). A heading gives the
+idle frame of a carrier (`Heading.IdleFrame`), and a job says whether its settler arrives home generically
+(`Job.ArrivesHomeGenerically`).
+
+`SettlerEncoder` (`src/Adapters/Simulation/SettlerEncoder.cs`) writes the state, mode, target, heading, next, and stamp of the
+original's item from the typed settler. The digest, the event snapshots, and the thing readouts use it. The readouts show the
+original's encoding as read-only display, and no rule reads it. `BuildingEncoder` does the same for the building's status,
+worker, fill, and type index.
+
+The table pass is `TablePass` (`src/Application`). It runs the flag, building, and settler slices of a phase in the original's
+order and hands each settler to the behavior registered for its activity type in `ActivityRegistry`. `GameFactory` registers
+the behaviors (`Game.Behaviours`), one for each activity type. The pass is `MainPass` (`src/Application/MainPass.cs`). The
+castle's settlers and the request for a worker are `CastleRoster`. The walk to an errand is `WalkBehavior` with the step in
+`RoadStep`, and the route search is `RoadNetwork.Route`. `ProgramTablesImporter` reads the step times, the door speeds, and the
+scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`, `ScanWindows`). `Game.Digest` (`GameDigest` in
+the adapters) holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's waiting list, and the
+settlers' places.
+
+The carriers' part is in `src/Application/CarrierBehavior.cs` ([Carriers](carriers.md#in-the-engine)). The woodcutter's part and
+the map's object pass are in `src/Application/WoodcutterBehavior.cs` ([Woodcutting](woodcutting.md#in-the-engine)). The walk home
+is in `src/Application/WalkHomeBehavior.cs`. Both build on `SettlerMovement` (the settlers' nodes, the step, and the timer).

@@ -36,9 +36,9 @@ public sealed class LayoutApplyTests
     static Game NewGame(Layout layout)
     {
         var tables = TestProgram.Made();
-        tables.Classes[FlagPlacement.FlagCode] = 3;
+        tables.Classes[MapObject.Flag.Code] = 3;
 
-        return new Game(tables, layout.BuildMap());
+        return GameFactory.Create(tables, layout.BuildMap());
     }
 
     static Command At(int kind, int x, int y, params int[] directions) =>
@@ -69,9 +69,9 @@ public sealed class LayoutApplyTests
 
         Assert.IsNull(problem);
         Assert.AreEqual(0, game.TickCount);
-        Assert.AreEqual((10, 10), (game.Castle!.Value.X, game.Castle.Value.Y));
+        Assert.AreEqual((10, 10), (game.CastleStock.Castle!.Value.X, game.CastleStock.Castle.Value.Y));
         Assert.AreEqual(2, game.Flags.Count);
-        Assert.AreEqual(1, game.Roads.Count);
+        Assert.AreEqual(1, game.Network.Roads.Count);
         Assert.AreEqual(2, game.Buildings.Count(building => !building.IsFree));
         Assert.AreEqual(byHand.Digest(), game.Digest());
     }
@@ -105,7 +105,7 @@ public sealed class LayoutApplyTests
         var game = NewGame(layout);
 
         Assert.AreEqual("test.jsonc: castle: " + CastleRefusal, layout.Apply(game));
-        Assert.IsNull(game.Castle);
+        Assert.IsNull(game.CastleStock.Castle);
     }
 
     [TestMethod]

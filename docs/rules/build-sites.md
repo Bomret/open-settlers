@@ -29,7 +29,7 @@ Each node holds, among others, these bytes: the flag byte (record A byte 0), the
 bits are the height, the top 3 the owner), the terrain byte (byte 2: the upper triangle in the high nibble, the
 lower in the low nibble), and the object byte (byte 3: the low 7 bits are the object code). The owner of a node
 is the player's number plus 4, or 0 for a node nobody owns. The class of an object code is the size byte of
-the program's table (`0x41e640`, read from `Siedler1.exe` at run time by `ProgramTables`): the code 1 is a flag (class 3), the codes 2 to 4 are buildings (classes 4, 5,
+the program's table (`0x41e640`; `ProgramTablesImporter` reads it from `Siedler1.exe` at run time, and the rules read it through `RuleTables.ClassOf`): the code 1 is a flag (class 3), the codes 2 to 4 are buildings (classes 4, 5,
 and 6, the castle), the generated trees and stones are classes 1 and 2, and no other object is a class 3 or more.
 
 ## The node state
@@ -120,10 +120,10 @@ is slot 3.
 
 ## In the engine
 
-`OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Simulation/BuildSite.cs`). The engine departs from the program
+`OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Application/BuildSite.cs`). The engine departs from the program
 in two places: a node with a flag or a building object gives 0, 0, 0, and the code 3 height term is left out
 (above). `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md). `Game.PlaceBuilding`
 places a woodcutter's hut on a site of 3 or more with the node state 5 (a flag with no building), 6, or 7. It puts the
-flag down for the node states 6 and 7, and for 6 it splits the road under the flag (`Game.SplitRoad`) before it sets the
+flag down for the node states 6 and 7, and for 6 it splits the road under the flag (`Removal.SplitRoad`) before it sets the
 hut's mark (bit `0x10`) at the flag, so the mark is never read as a road bit. The click's map bytes and the flag items
 are those of `building-state6` (`RoadSplitTests`).

@@ -1,3 +1,5 @@
+using OpenSettlers.Domain;
+
 namespace OpenSettlers.MapView;
 
 /// <summary>
@@ -50,7 +52,7 @@ public static class ObjectSprites
 
     /// <summary>The sprite entry of a good lying on a flag (<c>docs/rules/woodcutting.md</c>); a log is good 7, entry 327.
     /// <b>Inferred:</b> read from the decompile of <c>0x44de9a</c>; no emulator or debugger run of the draw confirms it.</summary>
-    public static int GoodEntry(int good) => GoodsFirstEntry + (good & 0x1f);
+    public static int GoodEntry(Good good) => GoodsFirstEntry + (good.Code & 0x1f);
 
     /// <summary>The first of the 16 water entries, drawn only over palette index 8 (<c>docs/rules/map-objects.md</c>).</summary>
     public const int WaterFirstEntry = 630;
@@ -67,19 +69,17 @@ public static class ObjectSprites
     public static int WaterEntry(int tile, ushort counter) =>
         WaterFirstEntry + (((((tile * 4) & 0x3c) * 2 ^ 0xa8) + counter) >> 3 & 0xf);
 
-    /// <summary>The object code of a flag.</summary>
-    public const int FlagCode = 1;
-
     /// <summary>
-    /// The sprite entry of a code at the frame counter <paramref name="counter"/> (the game state's <c>+0x206</c>, the
+    /// The sprite entry of a map object at the frame counter <paramref name="counter"/> (the game state's <c>+0x206</c>, the
     /// game clock in clock units), or null where the view draws none (a code of 2 to 7 or above 127; 0 is no object).
     /// Indexes 0 to 15 (codes 8 to 23) run through 8 frames and indexes 16 to 23 (codes 24 to 31) through 4, with the
     /// phase <c>(counter + index) &gt;&gt; 4</c> (<c>docs/rules/map-objects.md</c>). A flag waves through
     /// <see cref="FlagFrames"/> frames, <c>(counter &gt;&gt; 3) &amp; 3</c> (<c>0x44db26</c>).
     /// </summary>
-    public static int? Entry(int code, ushort counter = 0)
+    public static int? Entry(MapObject mapObject, ushort counter = 0)
     {
-        if (code == FlagCode)
+        var code = mapObject.Code;
+        if (mapObject == MapObject.Flag)
         {
             return FlagEntry + ((counter >> 3) & (FlagFrames - 1));
         }

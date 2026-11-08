@@ -12,37 +12,36 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ThingHistoryTests
 {
-    private static ProgramTables Made()
+    private static RuleTables Made()
     {
-        var classes = new byte[ProgramTables.ClassCount];
+        var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         classes[2] = 4;
 
-        return new ProgramTables(
+        return new RuleTables(
             classes,
             Enumerable
-                .Range(0, ProgramTables.StartStockRows)
+                .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
-            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray()
+            Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray()
         );
     }
 
     internal static Game NewGame()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var objects = map.Bytes(MapLayer.Object);
-        for (var index = 0; index < objects.Length; index++)
+        for (var index = 0; index < map.Count; index++)
         {
-            if ((objects[index] & 0x7f) is >= 8 and < 0x18)
+            if (map.At(index).Object.Kind == MapObjectKind.Tree)
             {
-                objects[index] &= 0x80;
+                map.At(index).Object = MapObject.None;
             }
         }
 
-        return new Game(Made(), map);
+        return GameFactory.Create(Made(), map);
     }
 
     private static void Do(Game game, int kind, int x, int y, int[]? directions = null)
@@ -94,19 +93,19 @@ public sealed class ThingHistoryTests
         Do(game, CommandKind.PlaceFlag, 18, 6);
         Do(game, CommandKind.PlaceFlag, 19, 4);
 
-        Assert.AreEqual("flag#2.1", game.FlagId(2).ToString());
+        Assert.AreEqual("flag#2.1", game.History.FlagId(2).ToString());
 
         // The last slot: the list is trimmed at its end, and the count stays.
         Do(game, CommandKind.RemoveFlag, 19, 4);
         Assert.HasCount(2, game.Flags);
         Do(game, CommandKind.PlaceFlag, 19, 4);
-        Assert.AreEqual("flag#2.2", game.FlagId(2).ToString());
+        Assert.AreEqual("flag#2.2", game.History.FlagId(2).ToString());
 
         // A slot in the middle of the list.
         Do(game, CommandKind.RemoveFlag, 18, 6);
         Do(game, CommandKind.PlaceFlag, 18, 6);
-        Assert.AreEqual("flag#1.2", game.FlagId(1).ToString());
-        Assert.AreEqual("flag#2.2", game.FlagId(2).ToString());
+        Assert.AreEqual("flag#1.2", game.History.FlagId(1).ToString());
+        Assert.AreEqual("flag#2.2", game.History.FlagId(2).ToString());
     }
 
     [TestMethod]
@@ -115,8 +114,8 @@ public sealed class ThingHistoryTests
         var game = Castle();
         Do(game, CommandKind.PlaceFlag, 17, 3);
         Do(game, CommandKind.PlaceBuilding, 16, 2);
-        Assert.AreEqual("building#0.1", game.BuildingId(0).ToString());
-        Assert.AreEqual("building#1.1", game.BuildingId(1).ToString());
+        Assert.AreEqual("building#0.1", game.History.BuildingId(0).ToString());
+        Assert.AreEqual("building#1.1", game.History.BuildingId(1).ToString());
 
         Do(game, CommandKind.RemoveBuilding, 16, 2);
         for (var i = 0; i < 3000 && game.Buildings.Count > 1; i++)
@@ -127,7 +126,7 @@ public sealed class ThingHistoryTests
         Assert.HasCount(1, game.Buildings);
         Do(game, CommandKind.PlaceFlag, 17, 3);
         Do(game, CommandKind.PlaceBuilding, 16, 2);
-        Assert.AreEqual("building#1.2", game.BuildingId(1).ToString());
+        Assert.AreEqual("building#1.2", game.History.BuildingId(1).ToString());
     }
 
     [TestMethod]
@@ -135,27 +134,27 @@ public sealed class ThingHistoryTests
     {
         var game = Castle();
 
-        Assert.AreEqual("settler#0.1", game.SettlerId(0).ToString());
-        Assert.AreEqual("settler#19.1", game.SettlerId(19).ToString());
+        Assert.AreEqual("settler#0.1", game.History.SettlerId(0).ToString());
+        Assert.AreEqual("settler#19.1", game.History.SettlerId(19).ToString());
     }
 
     [TestMethod]
     public void PlacingTheCastleRecordsTheEventsOfTheCastleItsFlagAndItsSettlers()
     {
         var game = Castle();
-        var castle = game.BuildingId(0);
+        var castle = game.History.BuildingId(0);
 
-        var events = game.EventsOf(castle);
+        var events = game.History.EventsOf(castle);
 
         Assert.HasCount(1, events);
         Assert.AreEqual(EventType.PlaceCastle, events[0].Type);
         Assert.AreEqual(0L, events[0].Tick);
         Assert.AreEqual(Cause.Placed(castle), events[0].Cause);
-        Assert.AreEqual(game.FlagId(0).ToString(), events[0].Other);
+        Assert.AreEqual(game.History.FlagId(0).ToString(), events[0].Other);
         Assert.AreEqual(15, events[0].State.Get("x"));
-        Assert.AreEqual(Cause.Placed(castle), game.EventsOf(game.FlagId(0)).Single().Cause);
-        Assert.AreEqual(Cause.Placed(castle), game.EventsOf(game.SettlerId(19)).Single().Cause);
-        Assert.AreEqual(22, game.Events.Count);
+        Assert.AreEqual(Cause.Placed(castle), game.History.EventsOf(game.History.FlagId(0)).Single().Cause);
+        Assert.AreEqual(Cause.Placed(castle), game.History.EventsOf(game.History.SettlerId(19)).Single().Cause);
+        Assert.AreEqual(22, game.History.Events.Count);
     }
 
     [TestMethod]
@@ -165,15 +164,15 @@ public sealed class ThingHistoryTests
         Do(game, CommandKind.PlaceFlag, 17, 3);
         Do(game, CommandKind.PlaceBuilding, 16, 2);
 
-        var flag = game.EventsOf(game.FlagId(1)).Single();
-        var hut = game.EventsOf(game.BuildingId(1)).Single();
+        var flag = game.History.EventsOf(game.History.FlagId(1)).Single();
+        var hut = game.History.EventsOf(game.History.BuildingId(1)).Single();
 
         Assert.AreEqual(EventType.PlaceFlag, flag.Type);
         Assert.AreEqual(1L, flag.Tick);
-        Assert.AreEqual(Cause.Placed(game.FlagId(1)), flag.Cause);
+        Assert.AreEqual(Cause.Placed(game.History.FlagId(1)), flag.Cause);
         Assert.AreEqual(EventType.PlaceBuilding, hut.Type);
         Assert.AreEqual(2L, hut.Tick);
-        Assert.AreEqual(Cause.Placed(game.BuildingId(1)), hut.Cause);
+        Assert.AreEqual(Cause.Placed(game.History.BuildingId(1)), hut.Cause);
         Assert.AreEqual("flag#1.1", hut.Other, "the hut names its flag by the ID the flag has now");
         Assert.AreEqual(2, hut.State.Get("type"));
     }
@@ -185,29 +184,33 @@ public sealed class ThingHistoryTests
         Do(game, CommandKind.PlaceFlag, 18, 6);
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
 
-        var from = game.EventsOf(game.FlagId(0)).Last();
-        var to = game.EventsOf(game.FlagId(1)).Last();
+        var from = game.History.EventsOf(game.History.FlagId(0)).Last();
+        var to = game.History.EventsOf(game.History.FlagId(1)).Last();
 
         Assert.AreEqual(EventType.BuildRoad, from.Type);
         Assert.AreEqual(EventType.BuildRoad, to.Type);
-        Assert.AreEqual(Cause.Placed(game.FlagId(0)), from.Cause, "the command's node is the road's first flag");
-        Assert.AreEqual(Cause.Placed(game.FlagId(0)), to.Cause);
+        Assert.AreEqual(
+            Cause.Placed(game.History.FlagId(0)),
+            from.Cause,
+            "the command's node is the road's first flag"
+        );
+        Assert.AreEqual(Cause.Placed(game.History.FlagId(0)), to.Cause);
         Assert.AreEqual("flag#1.1", from.Other);
         Assert.AreEqual("flag#0.1", to.Other);
-        Assert.AreEqual(game.RoadByte(1, 3), to.State.Get("road3"));
+        Assert.AreEqual(FlagEncoder.RoadByte(game.Flags[1].Side(3)), to.State.Get("road3"));
     }
 
     [TestMethod]
     public void TheStateOfAThingAtTheTickOfAnEventIsItsStateAtTheEndOfThatTick()
     {
         var game = World();
-        var flag = game.FlagId(1);
-        var placedAt = game.EventsOf(flag).First().Tick;
+        var flag = game.History.FlagId(1);
+        var placedAt = game.History.EventsOf(flag).First().Tick;
 
-        var (state, refusal) = game.StateAt(flag, placedAt);
+        var (state, refusal) = game.History.StateAt(flag, placedAt);
 
         Assert.IsNull(refusal);
-        Assert.AreEqual(game.EventsOf(flag).First().State, state);
+        Assert.AreEqual(game.History.EventsOf(flag).First().State, state);
     }
 
     [TestMethod]
@@ -218,13 +221,13 @@ public sealed class ThingHistoryTests
         game.Enqueue(new Command(1, 0, CommandKind.PlaceFlag, 19, 4));
         game.Enqueue(new Command(1, 0, CommandKind.BuildRoad, 18, 6, [5, 5, 0]));
         game.Tick();
-        var flag = game.FlagId(1);
+        var flag = game.History.FlagId(1);
 
-        var (state, _) = game.StateAt(flag, 1);
+        var (state, _) = game.History.StateAt(flag, 1);
 
-        Assert.HasCount(2, game.EventsOf(flag));
-        Assert.AreEqual(game.EventsOf(flag)[1].State, state);
-        Assert.AreEqual(game.RoadByte(1, 5), state!.Get("road5"));
+        Assert.HasCount(2, game.History.EventsOf(flag));
+        Assert.AreEqual(game.History.EventsOf(flag)[1].State, state);
+        Assert.AreEqual(FlagEncoder.RoadByte(game.Flags[1].Side(5)), state!.Get("road5"));
     }
 
     [TestMethod]
@@ -234,8 +237,8 @@ public sealed class ThingHistoryTests
         Do(game, CommandKind.PlaceFlag, 18, 6);
         game.Tick();
 
-        var (early, earlyReason) = game.StateAt(game.FlagId(1), 0);
-        var (late, lateReason) = game.StateAt(game.FlagId(1), 9);
+        var (early, earlyReason) = game.History.StateAt(game.History.FlagId(1), 0);
+        var (late, lateReason) = game.History.StateAt(game.History.FlagId(1), 9);
 
         Assert.IsNull(early);
         StringAssert.Contains(earlyReason, "flag#1.1");
@@ -247,17 +250,17 @@ public sealed class ThingHistoryTests
     public void ASettlerCarriesACommandCauseUntilItIdlesInStorageThenTakesTheRuleArea()
     {
         var game = Castle();
-        var command = Cause.Placed(game.BuildingId(0));
+        var command = Cause.Placed(game.History.BuildingId(0));
         var settler = game.Settlers[5];
-        game.CarryCause(5, command);
+        game.History.CarryCause(5, command);
 
-        settler.State = 2;
-        game.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
-        settler.State = 1;
-        game.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
-        game.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
+        settler.Activity = new Walks(new ToStorage(), new Heading(0));
+        game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
+        settler.Activity = new WaitsInCastle();
+        game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
+        game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
 
-        var causes = game.EventsOf(game.SettlerId(5)).Skip(1).Select(e => e.Cause).ToArray();
+        var causes = game.History.EventsOf(game.History.SettlerId(5)).Skip(1).Select(e => e.Cause).ToArray();
         CollectionAssert.AreEqual(new[] { command, command, Cause.Settlers }, causes);
     }
 
@@ -265,19 +268,19 @@ public sealed class ThingHistoryTests
     public void ASettlerWaitingAtAFlagEndsTheCarryAndATakenJobRequestEndsItBeforeTheEvent()
     {
         var game = Castle();
-        var command = Cause.Razed(game.BuildingId(0));
+        var command = Cause.Razed(game.History.BuildingId(0));
         var settler = game.Settlers[5];
 
-        game.CarryCause(5, command);
-        settler.State = 0x42;
-        game.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
-        game.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
-        game.CarryCause(5, command);
-        settler.State = 2;
-        game.EndCarry(5);
-        game.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
+        game.History.CarryCause(5, command);
+        settler.Activity = new WaitsAtFlag(0, 0, new Heading(0));
+        game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
+        game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
+        game.History.CarryCause(5, command);
+        settler.Activity = new Walks(new ToStorage(), new Heading(0));
+        game.History.EndCarry(5);
+        game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
 
-        var causes = game.EventsOf(game.SettlerId(5)).Skip(1).Select(e => e.Cause).ToArray();
+        var causes = game.History.EventsOf(game.History.SettlerId(5)).Skip(1).Select(e => e.Cause).ToArray();
         CollectionAssert.AreEqual(new[] { command, Cause.Carriers, Cause.Settlers }, causes);
     }
 
@@ -286,7 +289,7 @@ public sealed class ThingHistoryTests
     {
         var game = Castle();
 
-        Assert.ThrowsExactly<ArgumentException>(() => game.CarryCause(5, Cause.Woodcutting));
+        Assert.ThrowsExactly<ArgumentException>(() => game.History.CarryCause(5, Cause.Woodcutting));
     }
 
     private const string Built = """
@@ -312,27 +315,34 @@ public sealed class ThingHistoryTests
     }
 
     private static string Text(Game game) =>
-        string.Join("\n", game.Events.All.Select(e => $"{e.Tick} {e.Type} {e.Thing} [{e.State}] {e.Cause} {e.Other}"));
+        string.Join(
+            "\n",
+            game.History.Events.All.Select(e => $"{e.Tick} {e.Type} {e.Thing} [{e.State}] {e.Cause} {e.Other}")
+        );
 
     [TestMethod]
     public void EveryLayoutEntryRecordsEventsWithTheCauseLayoutAndNamesThingsByTheirIds()
     {
         var game = Laid();
 
-        Assert.IsTrue(game.Events.All.All(e => e.Cause == Cause.Layout), Text(game));
-        var inHut = game.Events.All.Single(e => e.Type == EventType.LayoutInHut && e.Thing.Kind == ThingId.SettlerKind);
-        var hut = game.Events.All.Single(e => e.Type == EventType.LayoutInHut && e.Thing.Kind == ThingId.BuildingKind);
+        Assert.IsTrue(game.History.Events.All.All(e => e.Cause == Cause.Layout), Text(game));
+        var inHut = game.History.Events.All.Single(e =>
+            e.Type == EventType.LayoutInHut && e.Thing.Kind == ThingId.SettlerKind
+        );
+        var hut = game.History.Events.All.Single(e =>
+            e.Type == EventType.LayoutInHut && e.Thing.Kind == ThingId.BuildingKind
+        );
         Assert.AreEqual(hut.Thing.ToString(), inHut.Other);
         Assert.AreEqual(inHut.Thing.ToString(), hut.Other);
-        Assert.AreEqual(game.Settlers[inHut.Thing.Slot].State, inHut.State.Get("state"));
-        var onRoad = game.Events.All.Where(e => e.Type == EventType.LayoutWaitingOnRoad).ToList();
+        Assert.AreEqual(game.Settlers[inHut.Thing.Slot].Activity.Code, inHut.State.Get("state"));
+        var onRoad = game.History.Events.All.Where(e => e.Type == EventType.LayoutWaitingOnRoad).ToList();
         Assert.AreEqual(3, onRoad.Count, "the carrier and the flags at the two ends of its road");
         Assert.IsTrue(
             onRoad.Any(e =>
                 e.Thing.Kind == ThingId.SettlerKind && e.Other!.StartsWith("flag#", StringComparison.Ordinal)
             )
         );
-        var good = game.Events.All.Single(e => e.Type == EventType.LayoutGood);
+        var good = game.History.Events.All.Single(e => e.Type == EventType.LayoutGood);
         Assert.AreEqual(7, good.State.Get("good0"));
     }
 
@@ -373,8 +383,8 @@ public sealed class ThingHistoryTests
         var line = Lines(game).Single(l => l.StartsWith("building 16,2 ", StringComparison.Ordinal));
 
         Assert.AreEqual(
-            $"building 16,2 type=0x02 constructing=false status=0x{hut.Status:x2} flag=3 worker={hut.Worker} "
-                + $"id=building#1.1 flag-id=flag#3.1 worker-id={game.SettlerId(hut.Worker)} woodcutter-hut",
+            $"building 16,2 type=0x02 constructing=false status=0x{BuildingEncoder.Status(hut):x2} flag=3 worker={hut.Worker} "
+                + $"id=building#1.1 flag-id=flag#3.1 worker-id={game.History.SettlerId(hut.Worker)} woodcutter-hut",
             line
         );
     }
@@ -395,13 +405,14 @@ public sealed class ThingHistoryTests
     public void ASettlerLineShowsItsIdAndTheFlagItsStateMakesTheTargetAfterEveryRawValue()
     {
         var game = Laid();
-        var carrier = game.Settlers.Select((s, slot) => (s, slot)).Single(e => e.s.State == 0x42);
-        var line = Lines(game).Single(l => l.Contains($" id={game.SettlerId(carrier.slot)}", StringComparison.Ordinal));
+        var carrier = game.Settlers.Select((s, slot) => (s, slot)).Single(e => e.s.Activity is WaitsAtFlag);
+        var line = Lines(game)
+            .Single(l => l.Contains($" id={game.History.SettlerId(carrier.slot)}", StringComparison.Ordinal));
 
         StringAssert.StartsWith(line, $"settler {carrier.s.X},{carrier.s.Y} job=0 ");
         StringAssert.Contains(
             line,
-            $"stamp={carrier.s.Stamp} id=settler#{carrier.slot}.1 flag-id={game.FlagId(carrier.s.Target)} "
+            $"stamp={SettlerEncoder.Fields(carrier.s).Stamp} id=settler#{carrier.slot}.1 flag-id={game.History.FlagId(((WaitsAtFlag)carrier.s.Activity).Flag)} "
         );
         var waiting = Lines(game)
             .Count(l =>

@@ -31,9 +31,9 @@ public sealed class SpriteLayerTests
         var graphics = SettlerGraphics.Load(
             TestProgram.OpenInstall(),
             TestProgram.Tables(),
-            Settler.CarrierJob,
-            Settler.WoodcutterJob,
-            ProgramTables.TypeOneHutJob
+            Job.CarrierCode,
+            Job.WoodcutterCode,
+            RuleTables.TypeOneHutJob
         );
 
         Assert.IsGreaterThan(256, graphics.Images.Count);

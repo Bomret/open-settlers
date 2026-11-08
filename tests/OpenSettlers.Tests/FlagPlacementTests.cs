@@ -34,7 +34,11 @@ public sealed class FlagPlacementTests
         MapSize.TryFromValue(int.Parse(header["size"], CultureInfo.InvariantCulture), out var size, out _);
         var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(header["seed"]), size!);
         var castle = header["castle"].Split(',').Select(int.Parse).ToArray();
-        var game = new Game(TestProgram.Tables(), map, int.Parse(header["level"], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(
+            TestProgram.Tables(),
+            map,
+            int.Parse(header["level"], CultureInfo.InvariantCulture)
+        );
         game.Enqueue(new Command(CastleTick, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         game.ApplyCommands();
 
@@ -50,7 +54,7 @@ public sealed class FlagPlacementTests
 
             var placed = game.Flags.Count > flags;
             var actual =
-                $"outcome={(placed ? "PLACED" : "REFUSED")} link={map.Layer(MapLayer.Resource)[map.Size.Width * tile[1] + tile[0]]} "
+                $"outcome={(placed ? "PLACED" : "REFUSED")} link={Layers.Of(map, MapLayer.Resource)[map.Size.Width * tile[1] + tile[0]]} "
                 + $"resource1={map.Resource1Total} changes={Changes(before, Snapshot(map), map.Size.Width)}";
             var expected =
                 $"outcome={fields["outcome"]} link={fields["link"]} resource1={fields["resource1"]} changes={line[(line.IndexOf(" changes=", StringComparison.Ordinal) + " changes=".Length)..]}";
@@ -68,10 +72,10 @@ public sealed class FlagPlacementTests
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
         game.Tick();
 
-        Assert.AreEqual(new Flag(16, 6), game.Flags[0]);
-        Assert.AreEqual(new Flag(x, y), game.Flags[1]);
-        Assert.AreEqual(1, game.Map.Layer(MapLayer.Resource)[y * game.Map.Size.Width + x]);
-        Assert.AreEqual(1, game.Map.Layer(MapLayer.Object)[y * game.Map.Size.Width + x] & 0x7f);
+        Assert.AreEqual((16, 6), (game.Flags[0].X, game.Flags[0].Y));
+        Assert.AreEqual((x, y), (game.Flags[1].X, game.Flags[1].Y));
+        Assert.AreEqual(1, game.Map.At(x, y).Link);
+        Assert.AreEqual(MapObjectKind.Flag, game.Map.At(x, y).Object.Kind);
     }
 
     [TestMethod]
@@ -93,11 +97,11 @@ public sealed class FlagPlacementTests
     [TestMethod]
     public void AFlagIsRefusedBeforeTheCastleStandsAndOutsideTheMapAndForAnotherPlayer()
     {
-        var game = new Game(
+        var game = GameFactory.Create(
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
-        var fresh = new Game(
+        var fresh = GameFactory.Create(
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
@@ -145,8 +149,8 @@ public sealed class FlagPlacementTests
         game.Tick();
 
         Assert.AreEqual(2, game.Flags.Count);
-        Assert.AreEqual(new Flag(x, y), game.Flags[1]);
-        Assert.AreEqual(1, game.Map.Layer(MapLayer.Object)[y * width + x] & 0x7f);
+        Assert.AreEqual((x, y), (game.Flags[1].X, game.Flags[1].Y));
+        Assert.AreEqual(MapObjectKind.Flag, game.Map.At(x, y).Object.Kind);
     }
 
     [TestMethod]
@@ -178,11 +182,12 @@ public sealed class FlagPlacementTests
         // docs/milestones/m3-first-loop.md). The first neighbour is offered the deposit even when its amount is 0, so
         // the type bits move and the amount 0 with them.
         var map = new Map(MapSize.Offered[0]);
-        map.Bytes(MapLayer.Resource)[map.Index(5, 5)] = 0x20;
+        map.At(5, 5).DepositType = 1;
 
         FlagPlacement.Apply(map, 5, 5, 3);
 
-        Assert.AreEqual(0x20, map.Layer(MapLayer.Resource)[map.Index(6, 5)]);
+        Assert.AreEqual(1, map.At(6, 5).DepositType);
+        Assert.AreEqual(0, map.At(6, 5).DepositAmount);
     }
 
     [TestMethod]
@@ -192,16 +197,18 @@ public sealed class FlagPlacementTests
         // first neighbour is east, which wraps from the last column to the first.
         var map = new Map(MapSize.Offered[0]);
         var last = map.Size.Width - 1;
-        map.Bytes(MapLayer.Resource)[map.Index(last, 5)] = 0x23;
+        map.At(last, 5).DepositType = 1;
+        map.At(last, 5).DepositAmount = 3;
 
         FlagPlacement.Apply(map, last, 5, 3);
 
-        Assert.AreEqual(0x23, map.Layer(MapLayer.Resource)[map.Index(0, 5)]);
+        Assert.AreEqual(1, map.At(0, 5).DepositType);
+        Assert.AreEqual(3, map.At(0, 5).DepositAmount);
     }
 
     private static Game GameWithCastle(int x = 15, int y = 5, string seed = "1234,5678,9ABC")
     {
-        var game = new Game(
+        var game = GameFactory.Create(
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), ParseSeed(seed), MapSize.Offered[0])
         );
@@ -229,7 +236,7 @@ public sealed class FlagPlacementTests
 
     private static byte[][] Snapshot(Map map) =>
         new[] { MapLayer.Flags, MapLayer.Height, MapLayer.Terrain, MapLayer.Object, MapLayer.Resource }
-            .Select(layer => map.Layer(layer).ToArray())
+            .Select(layer => Layers.Of(map, layer))
             .ToArray();
 
     // The changed bytes as the harness lists them: each changed tile in row-major order with "position=old>new".

@@ -28,7 +28,7 @@ public sealed class GoodsHistoryTests
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
         var game = LayoutSettlersTests.NewGame(read.Layout!);
         Assert.IsNull(read.Layout!.Apply(game));
-        for (var i = 0; i < 4000 && game.Events.All.All(e => e.Type != EventType.Handover); i++)
+        for (var i = 0; i < 4000 && game.History.Events.All.All(e => e.Type != EventType.Handover); i++)
         {
             game.Tick();
         }
@@ -38,14 +38,16 @@ public sealed class GoodsHistoryTests
 
     private static ThingId Carrier(Game game) =>
         game
-            .Events.All.First(e => e.Thing.Kind == ThingId.SettlerKind && e.Type == EventType.LayoutWaitingOnRoad)
+            .History.Events.All.First(e =>
+                e.Thing.Kind == ThingId.SettlerKind && e.Type == EventType.LayoutWaitingOnRoad
+            )
             .Thing;
 
     [TestMethod]
     public void ACarrierThatPicksUpAndDeliversAGoodRecordsEachChangeNamingTheFlagAndTheBuilding()
     {
         var game = Carried();
-        var events = game.EventsOf(Carrier(game));
+        var events = game.History.EventsOf(Carrier(game));
         var types = events.Select(e => e.Type).ToHashSet();
 
         Assert.IsTrue(
@@ -58,9 +60,9 @@ public sealed class GoodsHistoryTests
             ])
         );
         var picked = events.First(e => e.Type == EventType.Exchange);
-        StringAssert.StartsWith(picked.Other, game.FlagId(1).ToString());
+        StringAssert.StartsWith(picked.Other, game.History.FlagId(1).ToString());
         Assert.AreEqual(7, picked.State.Get("mode"), "the log is in the carrier's hands");
-        var castle = game.EventsOf(game.BuildingId(0)).Single(e => e.Type == EventType.Handover);
+        var castle = game.History.EventsOf(game.History.BuildingId(0)).Single(e => e.Type == EventType.Handover);
         StringAssert.Contains(castle.Other!, Carrier(game).ToString());
         StringAssert.Contains(castle.Other!, "good 7");
     }
@@ -78,7 +80,7 @@ public sealed class GoodsHistoryTests
             EventType.Handover,
         };
 
-        Assert.IsTrue(game.Events.All.Where(e => ours.Contains(e.Type)).All(e => e.Cause == Cause.Goods));
+        Assert.IsTrue(game.History.Events.All.Where(e => ours.Contains(e.Type)).All(e => e.Cause == Cause.Goods));
     }
 
     private static readonly string[] Fields =
@@ -105,26 +107,27 @@ public sealed class GoodsHistoryTests
         Assert.IsNull(read.Layout!.Apply(game));
         var id = Carrier(game);
         var ticks = 0;
-        for (var i = 0; i < 4000 && game.Events.All.All(e => e.Type != EventType.Handover); i++)
+        for (var i = 0; i < 4000 && game.History.Events.All.All(e => e.Type != EventType.Handover); i++)
         {
             game.Tick();
             var s = game.Settlers[id.Slot];
+            var raw = SettlerEncoder.Fields(s);
             int[] engine =
             [
-                s.Job,
-                s.State,
+                s.Job.Code,
+                raw.State,
                 s.Player,
-                s.Mode,
-                s.Target,
-                s.Next,
-                s.Heading,
+                raw.Mode,
+                raw.Target,
+                raw.Next,
+                raw.Heading,
                 s.Frame,
                 s.Timer,
-                s.Stamp,
+                raw.Stamp,
                 s.X,
                 s.Y,
             ];
-            var (state, refusal) = game.StateAt(id, game.TickCount - 1);
+            var (state, refusal) = game.History.StateAt(id, game.TickCount - 1);
             Assert.IsNotNull(state, refusal);
             CollectionAssert.AreEqual(
                 engine,
@@ -134,7 +137,10 @@ public sealed class GoodsHistoryTests
             ticks++;
         }
 
-        Assert.IsTrue(game.EventsOf(id).Any(e => e.Type == EventType.Handover), "the carry ended in a delivery");
+        Assert.IsTrue(
+            game.History.EventsOf(id).Any(e => e.Type == EventType.Handover),
+            "the carry ended in a delivery"
+        );
         Assert.IsGreaterThan(50, ticks, "the carry spans many ticks");
     }
 
@@ -143,12 +149,12 @@ public sealed class GoodsHistoryTests
     {
         var game = Carried();
         var id = Carrier(game);
-        for (var i = 0; i < 4000 && game.EventsOf(id).Count(e => e.Type == EventType.Handover) < 2; i++)
+        for (var i = 0; i < 4000 && game.History.EventsOf(id).Count(e => e.Type == EventType.Handover) < 2; i++)
         {
             game.Tick();
         }
 
-        var handovers = game.EventsOf(id).Where(e => e.Type == EventType.Handover).ToList();
+        var handovers = game.History.EventsOf(id).Where(e => e.Type == EventType.Handover).ToList();
 
         Assert.IsGreaterThanOrEqualTo(2, handovers.Count);
         Assert.IsNotNull(handovers[0].Other, "the first names the building and the good");

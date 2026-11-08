@@ -73,7 +73,7 @@ public sealed class RemovalTests
     // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]: the game before the first pass.
     private static Game Started(string[] parts, Map map)
     {
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         // The flags take their slots in the order the verb lists them, which the order of the commands of one tick (by node) would
@@ -141,7 +141,7 @@ public sealed class RemovalTests
             {
                 Assert.AreEqual(
                     expected.GetValueOrDefault($"{x},{y}"),
-                    game.ClickClass(x, y),
+                    game.Removal.ClickClass(x, y),
                     $"{name}: the class of the node {x},{y}"
                 );
             }
@@ -181,12 +181,12 @@ public sealed class RemovalTests
     // goods and their destination words, and the bytes of the directions (0x3c to 0x41).
     private static string FlagFields(Game game, int slot) =>
         Convert.ToHexString([
-            (byte)(game.FlagGoodsBit(slot) ? 0x80 : 0),
-            game.FlagStatus(slot),
-            .. Enumerable.Range(0, 6).Select(direction => game.RoadByte(slot, direction)),
-            .. game.FlagGoods(slot).Select(good => (byte)good),
-            .. game.FlagDestinations(slot).SelectMany(word => BitConverter.GetBytes((ushort)word)),
-            .. game.FlagDirectionBytes(slot).Select(value => (byte)value),
+            FlagEncoder.GoodsByte(game.Flags[slot]),
+            FlagEncoder.Status(game.Flags[slot]),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.RoadByte(game.Flags[slot].Side(direction))),
+            .. game.Flags[slot].Places.Select(FlagEncoder.GoodByte),
+            .. game.Flags[slot].Places.SelectMany(place => BitConverter.GetBytes(FlagEncoder.DestinationWord(place))),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[slot].Side(direction))),
         ]);
 
     private static string Fields(string item) =>
@@ -204,10 +204,10 @@ public sealed class RemovalTests
     {
         var bytes = new List<byte>();
         bytes.AddRange(BitConverter.GetBytes((building.Y * 2 * width + building.X) * 4));
-        bytes.AddRange([(byte)(building.TypeIndex << 2), (byte)building.Status]);
+        bytes.AddRange([(byte)(BuildingEncoder.TypeIndex(building) << 2), (byte)BuildingEncoder.Status(building)]);
         bytes.AddRange(BitConverter.GetBytes((ushort)(building.Flag + 1)));
-        bytes.AddRange(BitConverter.GetBytes(building.Fill));
-        bytes.AddRange(BitConverter.GetBytes((ushort)building.Worker));
+        bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Fill(building)));
+        bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Worker(building)));
         bytes.AddRange(BitConverter.GetBytes(building.Progress));
         bytes.AddRange(BitConverter.GetBytes(building.Stamp));
         bytes.AddRange([0, 0]);
@@ -219,6 +219,7 @@ public sealed class RemovalTests
     private static string MapChanges(byte[][] before, Map map)
     {
         var width = map.Size.Width;
+        var exported = MapLayerExporter.Export(map);
         var layers = new[] { (0, MapLayer.Flags), (3, MapLayer.Object), (4, MapLayer.Resource) };
         var changed = new List<string>();
         for (var index = 0; index < width * map.Size.Height; index++)
@@ -226,16 +227,16 @@ public sealed class RemovalTests
             // The link byte of a flag or a building holds the slot, one less than the verb's (the dummies of the tables).
             static int Link(int value, int code) => value != 0 && code is 1 or 2 ? value + 1 : value;
             var parts = layers
-                .Where(layer => map.Layer(layer.Item2)[index] != before[layer.Item1][index])
+                .Where(layer => exported.Layer(layer.Item2)[index] != before[layer.Item1][index])
                 .Select(layer =>
                     layer.Item1 == 4
                         ? string.Create(
                             CultureInfo.InvariantCulture,
-                            $"4={Link(before[4][index], before[3][index] & 0x7f):X2}>{Link(map.Layer(MapLayer.Resource)[index], map.Layer(MapLayer.Object)[index] & 0x7f):X2}"
+                            $"4={Link(before[4][index], before[3][index] & 0x7f):X2}>{Link(exported.Layer(MapLayer.Resource)[index], exported.Layer(MapLayer.Object)[index] & 0x7f):X2}"
                         )
                         : string.Create(
                             CultureInfo.InvariantCulture,
-                            $"{layer.Item1}={before[layer.Item1][index]:X2}>{map.Layer(layer.Item2)[index]:X2}"
+                            $"{layer.Item1}={before[layer.Item1][index]:X2}>{exported.Layer(layer.Item2)[index]:X2}"
                         )
                 );
             var text = string.Join('/', parts);
@@ -267,13 +268,7 @@ public sealed class RemovalTests
         );
 
     private static byte[][] Snapshot(Map map) =>
-        [
-            map.Layer(MapLayer.Flags).ToArray(),
-            [],
-            [],
-            map.Layer(MapLayer.Object).ToArray(),
-            map.Layer(MapLayer.Resource).ToArray(),
-        ];
+        [Layers.Of(map, MapLayer.Flags), [], [], Layers.Of(map, MapLayer.Object), Layers.Of(map, MapLayer.Resource)];
 
     [TestMethod]
     [DynamicData(nameof(Scenarios))]
@@ -390,10 +385,10 @@ public sealed class RemovalTests
                     slot > 0
                     && slot - 1 < game.Buildings.Count
                     && !game.Buildings[slot - 1].IsFree
-                    && !(clickOnly && game.Buildings[slot - 1].Type != Building.CastleType)
+                    && !(clickOnly && game.Buildings[slot - 1].Type != BuildingType.Castle)
                 )
                 {
-                    var length = game.Buildings[slot - 1].Type == Building.CastleType ? 28 : 36;
+                    var length = game.Buildings[slot - 1].Type == BuildingType.Castle ? 28 : 36;
                     Assert.AreEqual(
                         expected[..length],
                         BuildingBytes(game.Buildings[slot - 1], width)[..length],
@@ -404,7 +399,7 @@ public sealed class RemovalTests
 
             if (rng is not null)
             {
-                var words = game.Random;
+                var words = game.Draws.Generator;
                 Assert.AreEqual(rng, $"{words.W0:X4},{words.W1:X4},{words.W2:X4}", $"{name}: the generator {when}");
             }
 
@@ -438,7 +433,7 @@ public sealed class RemovalTests
                     var expectedClass = int.Parse(line["class"], CultureInfo.InvariantCulture);
                     Assert.AreEqual(
                         expectedClass is >= 1 and <= 4 ? expectedClass : 0,
-                        game.ClickClass(node[0], node[1]),
+                        game.Removal.ClickClass(node[0], node[1]),
                         $"{name}: the class of the click on {node[0]},{node[1]}"
                     );
                     var digest = game.Digest();
@@ -471,7 +466,14 @@ public sealed class RemovalTests
 
             foreach (var put in puts.Where(candidate => candidate[0] == pass))
             {
-                game.LayGood(put[1] - 1, put[2], put[3], put[4]);
+                // The fixture holds the original's good byte (the way plus one in bits 5 to 7) and destination word (the slot plus one).
+                game.Goods.LayGood(
+                    put[1] - 1,
+                    put[2],
+                    put[3] & 0x1f,
+                    put[4] == 0 ? null : put[4] - 1,
+                    put[3] >> 5 == 0 ? null : (put[3] >> 5) - 1
+                );
             }
 
             game.Tick();

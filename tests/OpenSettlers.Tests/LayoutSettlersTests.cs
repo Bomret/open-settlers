@@ -49,33 +49,37 @@ public sealed class LayoutSettlersTests
 
     // Made-up tables as the hut and carrier tests have them: every step takes 100 clock units, the flag's object class is 3,
     // and the walk's direction rows hold the heading class's own first direction first.
-    internal static Game NewGame(Layout layout)
+    internal static Game NewGame(Layout layout) => GameFactory.Create(MadeTables(), layout.BuildMap());
+
+    // The object class of the building's code (2) is 0 unless `buildingClass` names one: the removal click (0x44b6e6)
+    // takes a building for class 4.
+    internal static RuleTables MadeTables(byte buildingClass = 0, byte[]? transportPriorities = null)
     {
-        var classes = new byte[ProgramTables.ClassCount];
-        classes[FlagPlacement.FlagCode] = 3;
-        var rows = new byte[ProgramTables.WalkRowCount * ProgramTables.WalkRowSize];
-        for (var row = 0; row < ProgramTables.WalkRowCount; row++)
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[MapObject.Flag.Code] = 3;
+        classes[2] = buildingClass;
+        var rows = new byte[RuleTables.WalkRowCount * RuleTables.WalkRowSize];
+        for (var row = 0; row < RuleTables.WalkRowCount; row++)
         {
             var first = row < 12 ? (byte)4 : FirstDirections[row - 12];
             new[] { first }
                 .Concat(new byte[] { 4, 8, 12, 16, 20, 24 }.Where(code => code != first))
                 .ToArray()
-                .CopyTo(rows, row * ProgramTables.WalkRowSize);
+                .CopyTo(rows, row * RuleTables.WalkRowSize);
         }
 
-        var tables = new ProgramTables(
+        return new RuleTables(
             classes,
             Enumerable
-                .Range(0, ProgramTables.StartStockRows)
+                .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
-            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray(),
-            walkRows: rows
+            Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
+            walkRows: rows,
+            transportPriorities: transportPriorities
         );
-
-        return new Game(tables, layout.BuildMap());
     }
 
     static Game Applied(string extra, string objects = "[]")
@@ -107,18 +111,18 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built + $"\"settlers\": [{Woodcutter}]");
 
-        var worker = game.Settlers.Single(settler => settler.Job == Settler.WoodcutterJob);
-        Assert.AreEqual(4, worker.State);
+        var worker = game.Settlers.Single(settler => settler.Job == Job.Woodcutter);
+        Assert.IsInstanceOfType<Door>(worker.Activity);
         Assert.AreEqual((13, 10), (worker.X, worker.Y));
-        Assert.AreEqual(0x40, game.Buildings[1].Status & 0xc0);
+        Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
         Assert.AreEqual(game.Settlers.ToList().IndexOf(worker), game.Buildings[1].Worker);
-        Assert.AreEqual(0, game.Waiting(Settler.WoodcutterJob));
+        Assert.AreEqual(0, game.Roster.Waiting(Job.Woodcutter));
     }
 
     [TestMethod]
     public void ACarrierPlacedOnARoadIsTheSettlerTheCastlesWaitingListNamesWhereItNamesOne()
     {
-        const int jobless = 21;
+        var jobless = Job.Jobless;
         var game = Applied("\"castle\": {\"x\": 10, \"y\": 10},");
         Run(game, 3000);
         foreach (
@@ -133,17 +137,19 @@ public sealed class LayoutSettlersTests
             game.ApplyCommands();
         }
 
-        var waiting = game.Waiting(jobless);
-        var lowest = game.Settlers.ToList().FindIndex(settler => settler.Job == jobless && settler.State == 1);
+        var waiting = game.Roster.Waiting(jobless);
+        var lowest = game
+            .Settlers.ToList()
+            .FindIndex(settler => settler.Job == jobless && settler.Activity is WaitsInCastle);
         Assert.IsTrue(
             waiting > lowest && lowest > 0,
             $"the list names {waiting}, the lowest waiting settler is {lowest}"
         );
 
-        Assert.IsNull(game.PlaceCarrierOnRoad(11, 11, 0));
+        Assert.IsNull(game.Carriers.PlaceCarrierOnRoad(11, 11, 0));
 
-        Assert.AreEqual(0x42, game.Settlers[waiting].State);
-        Assert.AreEqual(1, game.Settlers[lowest].State);
+        Assert.IsInstanceOfType<WaitsAtFlag>(game.Settlers[waiting].Activity);
+        Assert.IsInstanceOfType<WaitsInCastle>(game.Settlers[lowest].Activity);
     }
 
     [TestMethod]
@@ -155,14 +161,14 @@ public sealed class LayoutSettlersTests
         for (var tick = 0; tick < 4000; tick++)
         {
             game.Tick();
-            // Mode 255 is a settler sent to a building; the road's own carrier leaves with the mode of its road.
-            leftTheCastle |= game.Settlers.Any(settler => settler.State == 0xf && settler.Mode == 0xff);
+            // A settler sent to a building; the road's own carrier leaves for its road.
+            leftTheCastle |= game.Settlers.Any(settler => settler.Activity is Leaving { Errand: ToBuilding });
         }
 
         Assert.IsFalse(leftTheCastle);
-        Assert.IsTrue(Trees.Any(tree => (game.Map.Layer(MapLayer.Object)[game.Map.Index(tree.X, tree.Y)] & 0x7f) != 8));
-        Assert.AreEqual(0, game.Buildings[1].Status & 0x80);
-        Assert.AreEqual(1, game.Settlers.Count(settler => settler.Job == Settler.WoodcutterJob));
+        Assert.IsTrue(Trees.Any(tree => game.Map.At(tree.X, tree.Y).Object.Code != 8));
+        Assert.IsFalse(game.Buildings[1].WorkerOnTheWay);
+        Assert.AreEqual(1, game.Settlers.Count(settler => settler.Job == Job.Woodcutter));
     }
 
     [TestMethod]
@@ -170,13 +176,13 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built + $"\"settlers\": [{Carrier}]");
 
-        var carrier = game.Settlers.Single(settler => settler.Job == Settler.CarrierJob);
-        Assert.AreEqual(0x42, carrier.State);
+        var carrier = game.Settlers.Single(settler => settler.Job == Job.Carrier);
+        var waiting = (WaitsAtFlag)carrier.Activity;
         Assert.AreEqual((13, 11), (carrier.X, carrier.Y));
-        Assert.AreEqual((1, 3), (carrier.Target, carrier.Mode));
-        Assert.AreEqual(1, game.RoadByte(0, 0) & 0xf);
-        Assert.AreEqual(1, game.RoadByte(1, 3) & 0xf);
-        Assert.AreEqual(0, game.RoadByte(0, 0) & 0x80);
+        Assert.AreEqual((1, new Direction(3)), (waiting.Flag, waiting.Direction));
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers);
+        Assert.AreEqual(1, game.Flags[1].Side(3).Carriers);
+        Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay);
     }
 
     [TestMethod]
@@ -185,11 +191,11 @@ public sealed class LayoutSettlersTests
         var game = Applied(
             Built + $"\"settlers\": [{Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": 7}}]"
         );
-        var before = game.CastleLogs;
+        var before = game.CastleStock.Logs;
 
         Run(game, 20000);
 
-        Assert.AreEqual(before + 1, game.CastleLogs);
+        Assert.AreEqual(before + 1, game.CastleStock.Logs);
     }
 
     [TestMethod]
@@ -197,9 +203,9 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built + "\"goods\": [{\"x\": 14, \"y\": 11, \"place\": 2, \"good\": 7}]");
 
-        Assert.AreEqual(7, game.FlagGoods(1)[2]);
-        Assert.AreEqual(0, game.FlagGoods(1)[0]);
-        Assert.IsTrue(game.FlagGoodsBit(1));
+        Assert.AreEqual(new Good(7), game.Flags[1].Places[2].Good);
+        Assert.IsTrue(game.Flags[1].Places[0].IsEmpty);
+        Assert.IsTrue(game.Flags[1].NeedsGoodsTurn);
     }
 
     [TestMethod]

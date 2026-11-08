@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CheckedInLayoutsTests
 {
-    static string LayoutsFolder()
+    internal static string LayoutsFolder()
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
         while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))

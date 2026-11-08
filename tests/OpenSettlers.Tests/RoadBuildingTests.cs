@@ -33,7 +33,11 @@ public sealed class RoadBuildingTests
         MapSize.TryFromValue(int.Parse(header["size"], CultureInfo.InvariantCulture), out var size, out _);
         var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(header["seed"]), size!);
         var castle = header["castle"].Split(',').Select(int.Parse).ToArray();
-        var game = new Game(TestProgram.Tables(), map, int.Parse(header["level"], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(
+            TestProgram.Tables(),
+            map,
+            int.Parse(header["level"], CultureInfo.InvariantCulture)
+        );
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         game.ApplyCommands();
 
@@ -54,13 +58,13 @@ public sealed class RoadBuildingTests
             var label = $"{run} start {first["start"]} dirs {first["dirs"]}";
             var outcome = attempt.Last();
             var before = Snapshot(map);
-            var roads = game.Roads.Count;
+            var roads = game.Network.Roads.Count;
 
             if (outcome.Contains(" START-REFUSED ", StringComparison.Ordinal))
             {
                 Assert.AreEqual(
                     RoadStatus.Refused,
-                    game.CheckRoad(start[0], start[1], first["dirs"].Select(c => c - '0').ToArray()),
+                    game.RoadPlanner.Check(start[0], start[1], first["dirs"].Select(c => c - '0').ToArray()),
                     label
                 );
                 continue;
@@ -89,7 +93,7 @@ public sealed class RoadBuildingTests
                 var digest = game.Digest();
                 Assert.AreEqual(
                     expected,
-                    game.CheckRoad(start[0], start[1], directions[..(index + 1)]),
+                    game.RoadPlanner.Check(start[0], start[1], directions[..(index + 1)]),
                     $"{label} step {index}"
                 );
                 Assert.AreEqual(digest, game.Digest(), $"{label} step {index} checks without changing the game");
@@ -99,7 +103,7 @@ public sealed class RoadBuildingTests
             game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, start[0], start[1], directions));
             game.ApplyCommands();
 
-            Assert.AreEqual(built ? roads + 1 : roads, game.Roads.Count, label);
+            Assert.AreEqual(built ? roads + 1 : roads, game.Network.Roads.Count, label);
             // No state behind where the road is not built: the changes the harness lists are empty.
             Assert.AreEqual(
                 Between(outcome, " roadchanges=", " items="),
@@ -108,7 +112,7 @@ public sealed class RoadBuildingTests
             );
             if (built)
             {
-                AssertItems(label, game.Roads[^1], outcome);
+                AssertItems(label, game.Network.Roads[^1], outcome);
             }
         }
     }
@@ -165,8 +169,8 @@ public sealed class RoadBuildingTests
 
         var ends = new[]
         {
-            (Slot: road.FromSlot, Direction: road.FromDirection, Other: road.ToDirection),
-            (Slot: road.ToSlot, Direction: road.ToDirection, Other: road.FromDirection),
+            (Slot: road.FromSlot, Direction: road.FromDirection.Value, Other: road.ToDirection.Value),
+            (Slot: road.ToSlot, Direction: road.ToDirection.Value, Other: road.FromDirection.Value),
         };
         foreach (var (slot, direction, otherDirection) in ends)
         {
@@ -232,7 +236,7 @@ public sealed class RoadBuildingTests
 
     private static byte[][] Snapshot(Map map) =>
         new[] { MapLayer.Flags, MapLayer.Height, MapLayer.Terrain, MapLayer.Object, MapLayer.Resource }
-            .Select(layer => map.Layer(layer).ToArray())
+            .Select(layer => Layers.Of(map, layer))
             .ToArray();
 
     // The changed bytes as the harness lists them: each changed tile in row-major order with "position=old>new".
@@ -267,7 +271,7 @@ public sealed class RoadBuildingTests
     public void ARoadDrawnForwardAcrossATreeNodeCompletesAtAFlag()
     {
         var map = OwnedLandWithFlags();
-        map.Bytes(MapLayer.Object)[map.Index(11, 10)] = TreeCode;
+        map.At(11, 10).Object = new MapObject(TreeCode);
 
         var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
 
@@ -281,7 +285,7 @@ public sealed class RoadBuildingTests
     public void ARoadDrawnForwardAcrossAClassFiveOrSixNodeCompletesAtAFlag(byte code)
     {
         var map = OwnedLandWithFlags();
-        map.Bytes(MapLayer.Object)[map.Index(11, 10)] = code;
+        map.At(11, 10).Object = new MapObject(code);
 
         var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
 
@@ -294,7 +298,7 @@ public sealed class RoadBuildingTests
     public void ARoadStepOntoAStoneOrASmallBuildingIsRefused(byte code)
     {
         var map = OwnedLandWithFlags();
-        map.Bytes(MapLayer.Object)[map.Index(11, 10)] = code;
+        map.At(11, 10).Object = new MapObject(code);
 
         var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
 
@@ -305,7 +309,7 @@ public sealed class RoadBuildingTests
     public void AFlagMayNotBePlacedOnATreeNode()
     {
         var map = OwnedLandWithFlags();
-        map.Bytes(MapLayer.Object)[map.Index(11, 12)] = TreeCode;
+        map.At(11, 12).Object = new MapObject(TreeCode);
 
         Assert.AreEqual(0, BuildSite.Evaluate(TestProgram.Tables(), map, 11, 12, 0, hasCastle: true).Site);
     }
@@ -314,10 +318,15 @@ public sealed class RoadBuildingTests
     private static Map OwnedLandWithFlags()
     {
         var map = new Map(MapSize.Offered[0]);
-        Array.Fill(map.Bytes(MapLayer.Height), (byte)0x80);
-        Array.Fill(map.Bytes(MapLayer.Terrain), (byte)0x55);
-        map.Bytes(MapLayer.Object)[map.Index(10, 10)] = 1;
-        map.Bytes(MapLayer.Object)[map.Index(12, 10)] = 1;
+        for (var index = 0; index < map.Count; index++)
+        {
+            map.At(index).Owner = Owner.Player(0);
+            map.At(index).Upper = Terrain.Lowland;
+            map.At(index).Lower = Terrain.Lowland;
+        }
+
+        map.At(10, 10).Object = MapObject.Flag;
+        map.At(12, 10).Object = MapObject.Flag;
 
         return map;
     }

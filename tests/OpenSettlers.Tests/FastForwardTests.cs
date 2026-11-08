@@ -29,7 +29,7 @@ public sealed class FastForwardTests
         return script.Problems.Single();
     }
 
-    static bool Cutting(Game game) => game.Settlers.Any(s => s is { Job: Settler.WoodcutterJob, State: 0x11 });
+    static bool Cutting(Game game) => game.Settlers.Any(s => s is { Job.Code: Job.WoodcutterCode, Activity: Cuts });
 
     // The tick the woodcutter first cuts at, found on a game of its own.
     static long FirstCut()
@@ -50,7 +50,7 @@ public sealed class FastForwardTests
             new FastForwardStep
             {
                 Line = 2,
-                Job = Settler.WoodcutterJob,
+                Job = Job.Woodcutter,
                 State = 0x11,
                 MaxTicks = 5000,
                 Text = "fast-forward woodcutter state 0x11 max 5000",
@@ -68,7 +68,7 @@ public sealed class FastForwardTests
             new FastForwardStep
             {
                 Line = 1,
-                Job = Settler.CarrierJob,
+                Job = Job.Carrier,
                 State = null,
                 MaxTicks = 7,
                 Text = "fast-forward carrier carrying max 7",
@@ -200,7 +200,7 @@ public sealed class FastForwardTests
         var problem = Step("fast-forward woodcutter carrying max 6000").Run(game);
 
         Assert.IsNull(problem);
-        Assert.IsTrue(game.FlagGoods(3).All(good => good == 0), "the log is not on the flag yet");
+        Assert.IsTrue(game.Flags[3].Places.All(place => place.IsEmpty), "the log is not on the flag yet");
     }
 
     [TestMethod]
@@ -211,6 +211,8 @@ public sealed class FastForwardTests
         var problem = Step("fast-forward carrier carrying max 6000").Run(game);
 
         Assert.IsNull(problem);
-        Assert.IsTrue(game.Settlers.Any(s => s is { Job: Settler.CarrierJob, State: 3, Mode: > 0 }));
+        Assert.IsTrue(
+            game.Settlers.Any(s => s is { Job.Code: Job.CarrierCode, Activity: WalksRoad { Load: not null } })
+        );
     }
 }

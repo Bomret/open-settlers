@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -22,7 +23,7 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     public const string ObjectKind = "object";
 
     /// <summary>The map object as a thing: its code in hex, and its name where <paramref name="names"/> has one.</summary>
-    public static Thing Of(MapObject mapObject, NameTable? names) =>
+    public static Thing Of(PlacedObject mapObject, NameTable? names) =>
         new(
             ObjectKind,
             mapObject.X,
@@ -46,31 +47,36 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     static string Hex(int value) => $"0x{value:x2}";
 
     /// <summary>The settler as a thing: every value the engine holds for it, and its job and state names where there are some.</summary>
-    public static Thing Of(Settler settler) =>
-        new(
+    public static Thing Of(Settler settler)
+    {
+        // The readout shows the original's own encoding of the settler beside the names (INV-0006).
+        var raw = SettlerEncoder.Fields(settler);
+
+        return new(
             SettlerKind,
             settler.X,
             settler.Y,
             [
-                ("job", settler.Job.ToString(CultureInfo.InvariantCulture)),
-                ("state", Hex(settler.State)),
+                ("job", settler.Job.ToString()),
+                ("state", Hex(raw.State)),
                 ("player", settler.Player.ToString(CultureInfo.InvariantCulture)),
-                ("mode", Hex(settler.Mode)),
-                ("target", settler.Target.ToString(CultureInfo.InvariantCulture)),
-                ("next", Hex(settler.Next)),
-                ("heading", settler.Heading.ToString(CultureInfo.InvariantCulture)),
+                ("mode", Hex(raw.Mode)),
+                ("target", raw.Target.ToString(CultureInfo.InvariantCulture)),
+                ("next", Hex(raw.Next)),
+                ("heading", raw.Heading.ToString(CultureInfo.InvariantCulture)),
                 ("frame", settler.Frame.ToString(CultureInfo.InvariantCulture)),
                 ("timer", settler.Timer.ToString(CultureInfo.InvariantCulture)),
-                ("stamp", settler.Stamp.ToString(CultureInfo.InvariantCulture)),
+                ("stamp", raw.Stamp.ToString(CultureInfo.InvariantCulture)),
             ],
             SettlerName(settler)
         );
+    }
 
     static string? SettlerName(Settler settler)
     {
         var name = string.Join(
             " ",
-            new[] { NameTable.JobName(settler.Job), NameTable.StateName(settler.State) }.OfType<string>()
+            new[] { NameTable.JobName(settler.Job.Code), NameTable.StateName(settler.Activity.Code) }.OfType<string>()
         );
 
         return name.Length > 0 ? name : null;
@@ -83,13 +89,13 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
             building.X,
             building.Y,
             [
-                ("type", Hex(building.Type)),
+                ("type", Hex(building.Type.Code)),
                 ("constructing", building.Constructing ? "true" : "false"),
-                ("status", Hex(building.Status)),
+                ("status", Hex(BuildingEncoder.Status(building))),
                 ("flag", building.Flag.ToString(CultureInfo.InvariantCulture)),
-                ("worker", building.Worker.ToString(CultureInfo.InvariantCulture)),
+                ("worker", BuildingEncoder.Worker(building).ToString(CultureInfo.InvariantCulture)),
             ],
-            NameTable.BuildingName(building.Type)
+            NameTable.BuildingName(building.Type.Code)
         );
 
     /// <summary>
@@ -126,7 +132,7 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
                 entry.flag.Y,
                 [
                     ("slot", entry.slot.ToString(CultureInfo.InvariantCulture)),
-                    ("id", game.FlagId(entry.slot).ToString()),
+                    ("id", game.History.FlagId(entry.slot).ToString()),
                 ],
                 null
             )),
@@ -147,17 +153,19 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     static Thing Of(Game game, Settler settler, int slot)
     {
         var thing = Of(settler);
-        var flag =
-            settler.State == 0x42 || (settler.State == 2 && settler.Mode != 0xfe)
-                ? FlagLink(game, settler.Target)
-                : null;
+        var flag = settler.Activity switch
+        {
+            WaitsAtFlag waiting => FlagLink(game, waiting.Flag),
+            Walks { Errand: not ToStorage } walking => FlagLink(game, walking.Errand.Flag),
+            _ => null,
+        };
 
         return thing with
         {
             Values =
             [
                 .. thing.Values,
-                ("id", game.SettlerId(slot).ToString()),
+                ("id", game.History.SettlerId(slot).ToString()),
                 .. flag is { } id ? [("flag-id", id)] : Array.Empty<(string, string)>(),
             ],
         };
@@ -176,10 +184,10 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
             Values =
             [
                 .. thing.Values,
-                ("id", game.BuildingId(slot).ToString()),
+                ("id", game.History.BuildingId(slot).ToString()),
                 .. flag is { } flagId ? [("flag-id", flagId)] : Array.Empty<(string, string)>(),
                 .. worker
-                    ? [("worker-id", game.SettlerId(building.Worker).ToString())]
+                    ? [("worker-id", game.History.SettlerId(building.Worker).ToString())]
                     : Array.Empty<(string, string)>(),
             ],
         };
@@ -187,7 +195,7 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
 
     // The ID of the flag in the slot, or null where no flag stands there.
     static string? FlagLink(Game game, int slot) =>
-        slot >= 0 && slot < game.Flags.Count && !game.Flags[slot].IsFree ? game.FlagId(slot).ToString() : null;
+        slot >= 0 && slot < game.Flags.Count && !game.Flags[slot].IsFree ? game.History.FlagId(slot).ToString() : null;
 
     // The directions each road node's roads leave in: a road's steps run from its starting flag, each node holding the
     // way on and the way back; the ending flag holds the way back only.
@@ -205,7 +213,7 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
         }
 
         var size = game.Map.Size;
-        foreach (var road in game.Roads)
+        foreach (var road in game.Network.Roads)
         {
             var flag = game.Flags[road.FromSlot];
             var node = (flag.X, flag.Y);

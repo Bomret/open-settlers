@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -25,20 +26,18 @@ public static class TerrainTriangles
     {
         var width = map.Size.Width;
         var height = map.Size.Height;
-        var heights = map.Layer(MapLayer.Height).ToArray();
-        var terrain = map.Layer(MapLayer.Terrain).ToArray();
-        int H(int column, int row) => heights[row % height * width + column % width] & 31;
+        int H(int column, int row) => map.At(column, row).Height;
         var triangles = new List<TerrainTriangle>(width * height * 2);
         for (var row = 0; row < height; row++)
         {
             for (var column = 0; column < width; column++)
             {
-                var code = terrain[row * width + column];
+                var tile = map.At(column, row);
                 var node = H(column, row);
                 var south = H(column, row + 1);
                 var southEast = H(column + 1, row + 1);
                 var east = H(column + 1, row);
-                if (TerrainRules.Upper(node, south, southEast, code >> 4) is { } upper)
+                if (TerrainRules.Upper(node, south, southEast, tile.Upper) is { } upper)
                 {
                     var (x, y) = Camera.NodePosition(column, row);
                     triangles.Add(
@@ -46,7 +45,7 @@ public static class TerrainTriangles
                     );
                 }
 
-                if (TerrainRules.Lower(southEast, node, east, code & 15) is { } lower)
+                if (TerrainRules.Lower(southEast, node, east, tile.Lower) is { } lower)
                 {
                     var (x, y) = Camera.NodePosition(column + 1, row + 1);
                     triangles.Add(

@@ -1,3 +1,5 @@
+using OpenSettlers.Domain;
+
 namespace OpenSettlers.MapView;
 
 /// <summary>The mask and the texture the original draws a terrain triangle with (entries of <c>loca/SPAD.PA</c>).</summary>
@@ -7,7 +9,7 @@ public readonly record struct TerrainDraw(int Mask, int Texture);
 /// How the original picks the mask and the texture of a terrain triangle (<c>docs/rules/graphics-images.md</c>,
 /// "Terrain drawing"): <c>0x4278be</c> for the upper triangle of a tile and <c>0x427a25</c> for the lower. Both
 /// read five-bit heights and form <c>(a + 4 - b) + 9 * (a' + 4 - b')</c> of the three nodes; the sum indexes a
-/// table of 81 values that picks the texture variant, and the terrain code of the triangle picks a row of eight.
+/// table of 81 values that picks the texture variant, and the terrain of the triangle picks a row of eight.
 /// </summary>
 public static class TerrainRules
 {
@@ -196,24 +198,24 @@ public static class TerrainRules
     /// south and south-east of it, with the five low bits of their heights and the terrain code of the triangle.
     /// Null where a base node differs from the apex by more than four either way: the original has no mask for it.
     /// </summary>
-    public static TerrainDraw? Upper(int apex, int left, int right, int terrain) =>
+    public static TerrainDraw? Upper(int apex, int left, int right, Terrain terrain) =>
         Pick(
             (apex & 31) + 4 - (left & 31) + 9 * ((apex & 31) + 4 - (right & 31)),
             UpperVariants,
             FirstUpperMask,
-            terrain
+            terrain.Code
         );
 
     /// <summary>
     /// The draw of the lower triangle of a tile, whose apex is the node south-east of the tile's node and whose top
     /// nodes are the tile's node (left) and the node east of it (right), arguments as for <see cref="Upper"/>.
     /// </summary>
-    public static TerrainDraw? Lower(int apex, int left, int right, int terrain) =>
+    public static TerrainDraw? Lower(int apex, int left, int right, Terrain terrain) =>
         Pick(
             (left & 31) + 4 - (apex & 31) + 9 * ((right & 31) + 4 - (apex & 31)),
             LowerVariants,
             FirstLowerMask,
-            terrain
+            terrain.Code
         );
 
     /// <summary>

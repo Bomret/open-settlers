@@ -20,7 +20,7 @@ public sealed class ObjectDrawsTests
 
         Assert.IsNotEmpty(map.Objects);
         CollectionAssert.AreEqual(
-            map.Objects.Select(o => (o.Y, ObjectSprites.Entry(o.Code)!.Value)).ToList(),
+            map.Objects.Select(o => (o.Y, ObjectSprites.Entry(o.Object)!.Value)).ToList(),
             draws.Select(d => (d.Row, d.Entry)).ToList()
         );
     }
@@ -41,11 +41,11 @@ public sealed class ObjectDrawsTests
     {
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15.
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Made(), map);
+        var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
-        var draws = ObjectDraws.Of(map, game.Castle);
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle);
 
         // The castle's node 15,5 is levelled to 15: x = 15 * 32 - 5 * 16, y = 5 * 20 - 15 * 4. inferred: the
         // entry is the emulator's (peek:44fd2f:4, see ObjectGraphicsTests), but the draw at the node is that of the
@@ -64,18 +64,18 @@ public sealed class ObjectDrawsTests
         // The hut at 16,2 stands tied to the flag at 17,3 (the road test world of HutTests); its node's height is read from
         // the map: x = 16 * 32 - 2 * 16, y = 2 * 20 - height * 4.
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var classes = new byte[ProgramTables.ClassCount];
+        var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = new Game(new ProgramTables(classes, TestProgram.Made().StartStock), map);
+        var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
         game.Tick();
-        var height = map.Layer(MapLayer.Height)[map.Index(16, 2)] & Map.HeightMask;
+        var height = map.At(16, 2).Height;
 
-        var draws = ObjectDraws.Of(map, game.Castle, game.Buildings);
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings);
 
         Assert.AreEqual(
             new ObjectDraw(2, ObjectSprites.WoodcutterEntry, 480, 40 - height * 4),
@@ -93,11 +93,11 @@ public sealed class ObjectDrawsTests
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15; its flag stands at 16,6 on height 15:
         // x = 16 * 32 - 6 * 16, y = 6 * 20 - 15 * 4.
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Made(), map);
+        var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
-        var draws = ObjectDraws.Of(map, game.Castle);
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle);
 
         CollectionAssert.Contains(draws, new ObjectDraw(6, ObjectSprites.FlagEntry, 416, 60));
     }
@@ -108,13 +108,13 @@ public sealed class ObjectDrawsTests
         // In the original's picture the roads meet at the foot of a flag's pole. Roads and the pick use the node's
         // point, Camera.NodePosition lifted by the node's height, so the flag's draw position is that point.
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Made(), map);
+        var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         var (x, y) = Camera.NodePosition(16, 6);
-        var lift = (map.Layer(MapLayer.Height)[map.Index(16, 6)] & Map.HeightMask) * TerrainTriangles.HeightStep;
+        var lift = map.At(16, 6).Height * TerrainTriangles.HeightStep;
 
-        var flag = ObjectDraws.Of(map, game.Castle).Single(draw => draw.Entry == ObjectSprites.FlagEntry);
+        var flag = ObjectDraws.Of(map, game.CastleStock.Castle).Single(draw => draw.Entry == ObjectSprites.FlagEntry);
 
         Assert.AreEqual((x, y - lift), (flag.X, flag.Y));
     }
@@ -125,12 +125,15 @@ public sealed class ObjectDrawsTests
     static List<ObjectDraw> FlagDrawsWith(params int[] goods)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Made(), map);
+        var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
-        var flagGoods = new Dictionary<(int, int), IReadOnlyList<int>> { [(16, 6)] = goods };
+        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>>
+        {
+            [(16, 6)] = [.. goods.Select(good => new Good(good))],
+        };
 
-        return ObjectDraws.Of(map, game.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
+        return ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
     }
 
     [TestMethod]
@@ -140,9 +143,9 @@ public sealed class ObjectDrawsTests
         // 320 plus the good (0x44de9a). The flag's draw is at 416,60 (the test above).
         var draws = FlagDrawsWith(7, 0, 0, 0, 0, 0, 0, 0);
 
-        var log = new ObjectDraw(6, ObjectSprites.GoodEntry(7), 422, 56);
+        var log = new ObjectDraw(6, ObjectSprites.GoodEntry(new Good(7)), 422, 56);
         var flag = draws.FindIndex(draw => draw.Entry == ObjectSprites.FlagEntry);
-        Assert.AreEqual(327, ObjectSprites.GoodEntry(7));
+        Assert.AreEqual(327, ObjectSprites.GoodEntry(new Good(7)));
         Assert.AreEqual(log, draws[flag - 1]);
     }
 
@@ -162,7 +165,7 @@ public sealed class ObjectDrawsTests
         var masked = FlagDrawsWith(0x27, 0, 0, 0, 0, 0, 0, 0);
 
         Assert.AreEqual(1, empty.Count(draw => draw.Entry == ObjectSprites.FlagEntry));
-        Assert.DoesNotContain(draw => draw.Entry == ObjectSprites.GoodEntry(7), empty);
+        Assert.DoesNotContain(draw => draw.Entry == ObjectSprites.GoodEntry(new Good(7)), empty);
         Assert.AreEqual(empty.Count + 1, masked.Count);
         Assert.Contains(new ObjectDraw(6, 327, 422, 56), masked);
     }
@@ -180,9 +183,8 @@ public sealed class ObjectDrawsTests
     public void EveryWaterTileDrawsItsWaterFrame16PixelsWestOfItsNodeWithNoHeight()
     {
         var map = Generated();
-        var objects = map.Layer(MapLayer.Object).ToArray();
         var width = map.Size.Width;
-        var tiles = Enumerable.Range(0, objects.Length).Where(tile => (objects[tile] & 0x80) != 0).ToList();
+        var tiles = Enumerable.Range(0, map.Count).Where(tile => map.At(tile).WaterTriangle).ToList();
 
         var draws = ObjectDraws.WaterOf(map, 40);
 

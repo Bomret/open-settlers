@@ -14,38 +14,37 @@ namespace OpenSettlers.Tests;
 public sealed class GameThingTests
 {
     // Made-up tables as HutTests has them: every object class is 0 except the flag's, code 1, which is 3.
-    private static ProgramTables Made()
+    private static RuleTables Made()
     {
-        var classes = new byte[ProgramTables.ClassCount];
+        var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         classes[2] = 4;
 
-        return new ProgramTables(
+        return new RuleTables(
             classes,
             Enumerable
-                .Range(0, ProgramTables.StartStockRows)
+                .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
-            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray()
+            Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray()
         );
     }
 
     private static Game World()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var objects = map.Bytes(MapLayer.Object);
-        for (var index = 0; index < objects.Length; index++)
+        for (var index = 0; index < map.Count; index++)
         {
             // No tree stands anywhere, so the woodcutter waits in his hut.
-            if ((objects[index] & 0x7f) is >= 8 and < 0x18)
+            if (map.At(index).Object.Kind == MapObjectKind.Tree)
             {
-                objects[index] &= 0x80;
+                map.At(index).Object = MapObject.None;
             }
         }
 
-        var game = new Game(Made(), map);
+        var game = GameFactory.Create(Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
@@ -142,14 +141,15 @@ public sealed class GameThingTests
 
         var settlers = Lines(game).Where(line => line.StartsWith("settler ", StringComparison.Ordinal)).ToList();
         var first = game.Settlers[0];
+        var raw = SettlerEncoder.Fields(first);
 
         Assert.AreEqual(game.Settlers.Count, settlers.Count);
         Assert.IsTrue(
             settlers.Contains(
-                $"settler {first.X},{first.Y} job={first.Job} state=0x{first.State:x2} player={first.Player} "
-                    + $"mode=0x{first.Mode:x2} target={first.Target} next=0x{first.Next:x2} heading={first.Heading} "
-                    + $"frame={first.Frame} timer={first.Timer} stamp={first.Stamp} id=settler#0.1 "
-                    + $"{NameTable.JobName(first.Job)} {NameTable.StateName(first.State)}".TrimEnd()
+                $"settler {first.X},{first.Y} job={first.Job} state=0x{raw.State:x2} player={first.Player} "
+                    + $"mode=0x{raw.Mode:x2} target={raw.Target} next=0x{raw.Next:x2} heading={raw.Heading} "
+                    + $"frame={first.Frame} timer={first.Timer} stamp={raw.Stamp} id=settler#0.1 "
+                    + $"{NameTable.JobName(first.Job.Code)} {NameTable.StateName(first.Activity.Code)}".TrimEnd()
             ),
             string.Join("\n", settlers.Take(3))
         );
@@ -226,7 +226,7 @@ public sealed class GameThingTests
         Assert.IsTrue(
             Lines(game)
                 .Contains(
-                    $"building 16,2 type=0x02 constructing=false status=0x{hut.Status:x2} flag=3 worker={hut.Worker} id=building#1.1 flag-id=flag#3.1 woodcutter-hut"
+                    $"building 16,2 type=0x02 constructing=false status=0x{BuildingEncoder.Status(hut):x2} flag=3 worker={BuildingEncoder.Worker(hut)} id=building#1.1 flag-id=flag#3.1 woodcutter-hut"
                 )
         );
     }
@@ -290,8 +290,10 @@ public sealed class GameThingTests
             game.Tick();
         }
 
-        var carrier = game.Settlers.First(s => s.Job == Settler.CarrierJob && NameTable.StateName(s.State) is not null);
-        var carriers = game.Settlers.Count(s => s.Job == Settler.CarrierJob);
+        var carrier = game.Settlers.First(s =>
+            s.Job == Job.Carrier && NameTable.StateName(s.Activity.Code) is not null
+        );
+        var carriers = game.Settlers.Count(s => s.Job == Job.Carrier);
 
         Assert.AreEqual(
             "",
@@ -299,7 +301,7 @@ public sealed class GameThingTests
                 game,
                 $"expect-count carrier = {carriers}\n"
                     + $"expect-at {carrier.X} {carrier.Y} carrier\n"
-                    + $"expect-at {carrier.X} {carrier.Y} {NameTable.StateName(carrier.State)}"
+                    + $"expect-at {carrier.X} {carrier.Y} {NameTable.StateName(carrier.Activity.Code)}"
             )
         );
     }

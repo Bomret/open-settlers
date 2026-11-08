@@ -153,7 +153,7 @@ For the goods 27 to 31 the read reaches past the table into two counters of the 
 `Castle_CreateSettlers` adds to; no good has those numbers. Good 0 is no good. A rank of 0 never wins the exchange's scan, which
 starts at 0 and takes only a greater rank.
 
-The port reads the ranks from the routine's instructions in the install's program (`ProgramTables.TransportPriorities`), never
+The port reads the ranks from the routine's instructions in the install's program (`RuleTables.TransportPriority`), never
 from source. It checks that every step starts with the load of a constant and that the ranks are 1 to 26 each once; an install whose program fails either
 check is refused with a message naming the transport priority table, so the game never runs with every rank 0. `Game` gives the
 goods 0 and 27 to 31 the rank 0. **Not ported:** the player's panel that reorders the ranks, and one table per player (the engine
@@ -197,7 +197,7 @@ words they are `0x0000, 0x3000, 0x3500, 0x3b00, 0x4100, 0x4600, 0x4b00, 0x1400, 
 figure byte is drawn in the row `0x14` of the figure bases. A carrier in state 0x42 is not drawn, and its byte 11 is the road
 direction. A carrier with no good (byte 11 0) adds nothing.
 
-`ProgramTables.CarriedFigures` reads the 27 words from `0x43f4b7`. `SettlerFigures` draws a carrier on its road (state 3) or
+`RuleTables.CarriedFigures` holds the 27 words from `0x43f4b7`. `SettlerFigures` draws a carrier on its road (state 3) or
 handing a good over (state 0xe) with a good by the same rule for every good. `Sprites` and `Draws` share one function. The view
 draws it in every wrap copy. A play run of `play/carrier-log.play` shows the carrier holding the log above his head and facing
 the way he walks.
@@ -220,11 +220,17 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 
 ## In the engine
 
-`Game.Goods.cs`: `GoodsTurn`, `Destine`, `StorageSearch`, `Direct`, `Fetch` and `Claim` port the above; `LayGood` is the put.
-`Exchange` and `WaitForRoad` are the carrier's exchange at a flag, `TransportPriority` reads a good's rank from
-`ProgramTables.TransportPriorities`, `Deliver` and `Handover` state 0xe, `AddToStock` the castle's
-count (`Game.CastleLogs` reads the log's). A carrier's byte 11 is `Settler.Mode` and its word at 12 `Settler.Target` (the
-destination as the original numbers the flags while it carries a good). `Building.Fill` holds bytes 8 and 9.
-`Game.FlagGoods(flag)` holds the places' bytes (the direction in bits 5 to 7), `FlagGoodsBit`, `FlagDestinations` (the slot plus
-one, as the original numbers the flags, 0 for none), and `FlagDirectionBytes` read the other fields. `Game.Digest` holds all
-of them.
+`src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `StorageSearch`, and `Direct` port the above. `LayGood` is the put.
+`Exchange` and `WaitForRoad` are the carrier's exchange at a flag, and `TransportPriority` reads a good's rank from
+`RuleTables.TransportPriority`. `src/Application/CarrierBehavior.cs` holds `Fetch` and `Claim`, and `Deliver` and `Handover`
+(state 0xe). `CastleStock.Add` is the castle's count, and `CastleStock.Logs` reads the log's. `Game.Goods` returns the
+`GoodsTransport`, which a test builds on a hand-made flag table. A carrier's good and destination are the `Load` of its
+`WalksRoad` or `HandsOver` activity. `SettlerEncoder` writes them as byte 11 and the word at 12, and the destination as the
+original numbers the flags while it carries a good. `Building.FillLow` and `FillHigh` hold bytes 8 and 9, and
+`BuildingEncoder.Fill` writes the word.
+`Flag.Places` holds the eight `WaitingGood`s of a flag. Each has a `Good`, a `Destination` as a flag slot or none, and a
+`Way` as a direction or none. An empty place keeps its last destination.
+`Flag.NeedsGoodsTurn` is byte 4 bit 7. `FlagSide.WaitingPlace` and
+`FlagSide.FarDirection` are the direction bytes at `0x3c` to `0x41`. `FlagEncoder` writes them as the original's bytes: the
+good byte with the direction plus one in bits 5 to 7, and the destination word as the slot plus one (the original numbers its
+flags from 1), 0 for none. `Game.Digest` holds all of them through `FlagEncoder`.

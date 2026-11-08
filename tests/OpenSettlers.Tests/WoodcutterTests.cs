@@ -63,7 +63,7 @@ public sealed class WoodcutterTests
     // The object bytes of a map that differ from a copy, as the verb lists them: "x,y:old>new" joined by ";".
     private static string Changes(byte[] before, Map map)
     {
-        var now = map.Layer(MapLayer.Object).ToArray();
+        var now = Layers.Of(map, MapLayer.Object);
         var width = map.Size.Width;
 
         return string.Join(
@@ -100,7 +100,7 @@ public sealed class WoodcutterTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var flags = Points(parts[5]);
         var hut = parts[7].Split(',').Select(int.Parse).ToArray();
@@ -143,12 +143,12 @@ public sealed class WoodcutterTests
 
         for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
         {
-            var before = map.Layer(MapLayer.Object).ToArray();
+            var before = Layers.Of(map, MapLayer.Object);
             game.Tick();
             if (pass == 0)
             {
                 // The commands of the first tick put the castle, the flags, and the hut on the map; the verb lists changes from there.
-                before = map.Layer(MapLayer.Object).ToArray();
+                before = Layers.Of(map, MapLayer.Object);
             }
 
             var line = scenario.Lines.SingleOrDefault(candidate =>
@@ -185,12 +185,12 @@ public sealed class WoodcutterTests
 
             if (line.TryGetValue("g", out var goods))
             {
-                var places = game.FlagGoods(hutFlag);
-                var bytes = string.Concat(places.Select(good => good.ToString("X2")));
+                var places = game.Flags[hutFlag].Places;
+                var bytes = string.Concat(places.Select(place => FlagEncoder.GoodByte(place).ToString("X2")));
                 Assert.AreEqual(goods.Split('/')[1], bytes, $"{name}: the goods on the hut's flag after pass {pass}");
                 Assert.AreEqual(
                     Convert.ToInt32(goods.Split('/')[0], 16) >> 7,
-                    game.FlagGoodsBit(hutFlag) ? 1 : 0,
+                    game.Flags[hutFlag].NeedsGoodsTurn ? 1 : 0,
                     $"{name}: the flag's goods bit after pass {pass}"
                 );
             }
@@ -210,7 +210,7 @@ public sealed class WoodcutterTests
 
             if (line.TryGetValue("rng", out var rng))
             {
-                Assert.AreEqual(rng, Words(game.Random), $"{name}: the random generator after pass {pass}");
+                Assert.AreEqual(rng, Words(game.Draws.Generator), $"{name}: the random generator after pass {pass}");
             }
         }
     }

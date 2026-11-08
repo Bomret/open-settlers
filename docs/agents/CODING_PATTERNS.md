@@ -5,13 +5,43 @@ Target audience: LLMs working in this repo. The folder layout is in `README.md` 
 ## Namespace
 
 `OpenSettlers.<Folder>`, one namespace per folder of `src/`. For example, `OpenSettlers.Formats`. Tests use
-`OpenSettlers.Tests`.
+`OpenSettlers.Tests`. The layers are the exception: `src/Domain/` is `OpenSettlers.Domain`, and both
+`src/Application/` and `src/Adapters/Simulation/` are `OpenSettlers.Simulation`.
+
+## Simulation layers
+
+The simulation is three class-library assemblies under `src/` that depend only inward (INV-0008, ADR 0013):
+
+- `Domain/` (`OpenSettlers.Domain`): the typed model. The map, flag table, road network, building and settler
+  tables, `Job`, `Activity`, `RuleTables`, and the value types they use. It references no other project.
+- `Application/` (`OpenSettlers.Simulation`): `Game`, the coordinator, the `ICommandHandler` of each command, the
+  `CommandQueue`, the history, and the rules as behaviors (`CarrierBehavior`, `GoodsTransport`, `Removal`,
+  `WalkHomeBehavior`, `WoodcutterBehavior`, `SettlerMovement`). It references the domain. A behavior takes its parts
+  through its constructor. `GameParts` holds them wired, and `GameFactory` in the adapters builds them.
+- `Adapters/Simulation/` (`OpenSettlers.Simulation`): the edge. Importers (`ProgramTablesImporter`, `MapImporter`,
+  `MapGenerator`, `Layout`), exporters (`GameDigest`, `SnapshotExporter`, `FlagEncoder`, `SettlerEncoder`,
+  `BuildingEncoder`, `MapLayerExporter`), and `GameFactory`. It references the domain and the application.
+
+Place new code by what it does: a rule goes in the application, a type that states what a rule reads goes in the
+domain, and a conversion from or to the original's bytes goes in the adapters.
+
+## Typed vocabulary
+
+Rules read and write typed state: `Settler` with a `Job` and one `Activity`, `Flag` with its `FlagSide`s and
+`WaitingGood`s, `Road`, `Good`, `BuildingType`, `Terrain`, `MapObject`, `ObjectClass`, `Direction`, and `Heading`.
+Never read a packed byte, a bit mask, a map layer, or a bare code in the domain or the application. The original's
+codes sit at the edge: an importer turns them into the typed model and an exporter turns the typed model back, so
+`Game.Digest()` and the events keep the original's encoding. A field with no recovered meaning stays a named raw
+field, so the exporters lose nothing. A test of a rule asserts typed state. Only a test of an importer or exporter
+asserts bytes. A rule reads what it needs through a typed accessor or a port (`IThingSnapshots`, `IRandomDraws`),
+and a test builds a `RuleTables` or a flag table by hand instead of importing the install's.
 
 ## Godot boundary
 
 Keep logic that needs no engine in Godot-free folders of `src/`. The test project compiles the source files
 of those folders directly (a `<Compile Include>` per folder in `OpenSettlers.Tests.csproj`), so the tests
-run without Godot. A `using Godot` in such a folder breaks the test build.
+run without Godot. A `using Godot` in such a folder breaks the test build. The three layer assemblies are
+projects the test project references, and they use the plain .NET SDK with no Godot type.
 
 - When Godot-free code needs an engine service, pass it in as a delegate.
 - Only the folders that build scenes or views reference Godot.
@@ -63,5 +93,6 @@ The repository holds no bytes from an install (INV-0001). Build every fixture in
 
 - Do not split a large class into `partial` files to manage its size. Extract cohesive
   responsibilities into separate collaborator types instead. A class that derives from a Godot type
-  is `partial` because the Godot source generator requires it. That use is the only exception.
+  is `partial` because the Godot source generator requires it. `Layout` is the one other `partial` class:
+  `Layout.cs` parses a layout file and `Layout.Placement.cs` builds its entries in a game.
 - Do not hard-code a value that the install defines.

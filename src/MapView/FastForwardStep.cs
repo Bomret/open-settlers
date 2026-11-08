@@ -1,32 +1,37 @@
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
 
 /// <summary>
 /// <c>fast-forward &lt;job&gt; state &lt;n&gt; max &lt;ticks&gt;</c> or <c>fast-forward &lt;job&gt; carrying max &lt;ticks&gt;</c>: in the game
-/// view, runs <see cref="Game.Tick"/> without drawing until some settler of the job is in the state, or carries a good.
+/// view, runs <see cref="Game.Tick"/> without drawing until some settler of the job is in the activity whose original state code
+/// is the number, or carries a good.
 /// </summary>
 public sealed record FastForwardStep : PlayStep
 {
-    /// <summary>The job to watch: <see cref="Settler.WoodcutterJob"/> or <see cref="Settler.CarrierJob"/>.</summary>
-    public required int Job { get; init; }
+    /// <summary>The job to watch: <see cref="Domain.Job.Woodcutter"/> or <see cref="Domain.Job.Carrier"/>.</summary>
+    public required Job Job { get; init; }
 
-    /// <summary>The state to wait for; null waits for a settler that carries a good.</summary>
+    /// <summary>
+    /// The code of the original's settler state the settler's activity stands for, as the play script writes it (a number of
+    /// the original); null waits for a settler that carries a good.
+    /// </summary>
     public int? State { get; init; }
 
     /// <summary>The most ticks the step runs; a condition first holding after that many ticks still counts as reached.</summary>
     public required int MaxTicks { get; init; }
 
     /// <summary>
-    /// Whether the settler carries a good. A carrier does while it walks its road (state 3) with a good in its mode. A
-    /// woodcutter does on the way back from the tree (the way-back mark in the high byte of its target, a positive south
-    /// count in its heading), the log the hut's flag takes on arrival.
+    /// Whether the settler carries a good. A carrier does while it walks its road with a good in its hands. A woodcutter
+    /// does on the way back from the tree, the log the hut's flag takes on arrival.
     /// </summary>
     public static bool Carries(Settler settler) =>
         settler.Job switch
         {
-            Settler.CarrierJob => settler is { State: 3, Mode: > 0 },
-            Settler.WoodcutterJob => settler.Target >> 8 == 0x80 && settler.Heading > 0,
+            var job when job == Domain.Job.Carrier => settler.Activity is WalksRoad { Load.Good.IsNone: false },
+            var job when job == Domain.Job.Woodcutter => settler.Activity
+                is WalksFree { Trip.Purpose: BackToHut { Carrying: true } },
             _ => false,
         };
 
@@ -35,7 +40,9 @@ public sealed record FastForwardStep : PlayStep
     {
         foreach (var settler in game.Settlers)
         {
-            if (settler.Job == Job && (State is { } state ? settler.State == state : Carries(settler)))
+            // The raw-code boundary: a play script writes the original's state numbers, so State is compared with the
+            // activity's original state code.
+            if (settler.Job == Job && (State is { } state ? settler.Activity.Code == state : Carries(settler)))
                 return true;
         }
 

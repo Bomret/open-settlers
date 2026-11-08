@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -111,7 +112,7 @@ public sealed class NamedThings
     // The tick and cause of the thing's last event: where it went, as far as the events tell.
     static string Went(PlayState state, string id)
     {
-        var last = state.Game!.EventsOf(ParseId(id)).LastOrDefault();
+        var last = state.Game!.History.EventsOf(ParseId(id)).LastOrDefault();
 
         return last is null ? "gone, it has no event" : $"gone at tick {last.Tick}, cause {last.Cause}";
     }
@@ -146,7 +147,7 @@ public sealed class NamedThings
         if (Refusal($"mark {step.Label}", state) is { } refused)
             return refused;
 
-        _marks[step.Label] = (state.Ticks!.Value, state.Game!.Events.Count);
+        _marks[step.Label] = (state.Ticks!.Value, state.Game!.History.Events.Count);
 
         return null;
     }
@@ -190,13 +191,13 @@ public sealed class NamedThings
             if (step.Mark is not null)
             {
                 var (_, events) = _marks[step.Mark];
-                past = state.Game!.Events.All.Take(events).LastOrDefault(e => e.Thing == ParseId(id))?.State;
+                past = state.Game!.History.Events.All.Take(events).LastOrDefault(e => e.Thing == ParseId(id))?.State;
                 if (past is null)
                     return $"{text} failed: {step.Alias} ({id}) had no event at mark {step.Mark}";
             }
             else
             {
-                var (found, refusal) = state.Game!.StateAt(ParseId(id), step.Tick!.Value);
+                var (found, refusal) = state.Game!.History.StateAt(ParseId(id), step.Tick!.Value);
                 if (found is null)
                     return $"{text} failed: {refusal}";
 
@@ -231,7 +232,7 @@ public sealed class NamedThings
         if (Live(state, _ids[step.Alias]) is null)
             return $"{text} failed: {step.Alias} ({_ids[step.Alias]}) is {Went(state, _ids[step.Alias])}";
 
-        var events = state.Game!.EventsOf(ParseId(_ids[step.Alias]));
+        var events = state.Game!.History.EventsOf(ParseId(_ids[step.Alias]));
         if (events.Any(e => e.Type == step.Type && (step.Cause is null || e.Cause.Kind == step.Cause)))
             return null;
 
@@ -257,7 +258,7 @@ public sealed class NamedThings
             return refused;
 
         var text = new StringBuilder();
-        foreach (var e in state.Game!.EventsOf(ParseId(_ids[step.Alias])))
+        foreach (var e in state.Game!.History.EventsOf(ParseId(_ids[step.Alias])))
         {
             text.Append($"tick={e.Tick} type={e.Type} cause={e.Cause}");
             if (e.Other is not null)

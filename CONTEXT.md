@@ -93,10 +93,22 @@ _Avoid_: handle, key, index
 
 **Event**
 A record of one change a rule made to a settler, building, or flag: the tick, the rule that made it, the
-thing's state after the change, and its cause. An event names another thing by its ID. The game keeps every
-event in one event store, and the state of a thing at an earlier tick is the state in its last event up to
-that tick.
+thing's state after the change, and its cause. An event names another thing by its ID. The game's history keeps
+every event in one event store, and the state of a thing at an earlier tick is the state in its last event up
+to that tick.
 _Avoid_: log entry, change, history item
+
+**Game history**
+The part of a game that holds the thing IDs, the causes, and the event store (`Game.History`,
+`src/Application/GameHistory.cs`). It sits beside the game state, takes no part in the digest, and no rule
+reads it. It asks the snapshot exporter for a thing's state when a rule records an event.
+_Avoid_: event log, journal
+
+**Snapshot exporter**
+The adapter that writes the state of a settler, building, or flag as the original's named raw values, the
+form each event holds (`SnapshotExporter`, `src/Adapters/Simulation/SnapshotExporter.cs`). The history calls it
+through the `IThingSnapshots` port.
+_Avoid_: serializer, dumper
 
 **Cause**
 Why a change happened: the player's command that started the chain of changes (`placed` or `razed`, with
@@ -110,6 +122,19 @@ _Avoid_: reason, trigger, source
 A behavior of the original game that the engine reproduces, recovered from the game code of `Siedler1.exe`
 (`docs/rules/AGENTS.md`).
 _Avoid_: mechanic, logic
+
+**RuleTables**
+The tables of the program data that the rules read, as typed values (`src/Domain/RuleTables.cs`). The importer
+builds them from the bytes of `Siedler1.exe`. A test builds its own.
+_Avoid_: program tables
+
+**ObjectClass**
+The class the rules give an object code (0 nothing, 3 a flag, 4 to 6 buildings), read with `RuleTables.ClassOf`.
+_Avoid_: object size, kind
+
+**FillCounter**
+The counter of a building's stock that a good counts against: low, high, or none (`RuleTables.FillCounterOf`).
+_Avoid_: good kind
 
 **Game code**
 The part of `Siedler1.exe` that the History Edition carries over from the original DOS program: the
@@ -140,6 +165,16 @@ _Avoid_: input, event, order
 A point on the map where roads meet and where goods wait to be carried on. A building stands at a flag.
 _Avoid_: node, waypoint
 
+**Flag side**
+One of the six directions along which a road leaves a flag. It holds what the flag knows of that road: its length class, its
+carriers, and the good that waits for it.
+_Avoid_: port, slot
+
+**Waiting good**
+A good that lies on one of the eight places of a flag until a carrier takes it along a road. It has a destination flag and,
+once given, the direction of the first road toward it.
+_Avoid_: item, cargo
+
 **Road**
 A path between two flags, built one of six directions at a time. One carrier serves each road.
 _Avoid_: edge, path, street
@@ -147,6 +182,27 @@ _Avoid_: edge, path, street
 **Carrier**
 A settler who walks one road and carries goods between its two flags.
 _Avoid_: porter, transporter, worker
+
+**Job**
+What a settler is employed as, such as carrier, woodcutter, or builder. A settler keeps its identity when its
+job changes: a settler without a job becomes a carrier when it takes a road.
+_Avoid_: role, profession, class
+
+**Activity**
+What a settler does at one moment, with exactly the data that doing it needs: waiting in the castle, walking
+along a road, searching for a tree, walking home. A settler has one activity at a time and leaves it for the
+next. Each activity keeps the code of the original's settler state it stands for.
+_Avoid_: settler state, mode, action
+
+**Settler**
+One of the player's people, one object for its whole life: its place on the map, its player, its timer, a job, and
+one activity. Its slot in the settler table is its number and the slot of its thing ID.
+_Avoid_: worker, unit, figure
+
+**Building**
+A finished building of the player's: its type, its node and flag, whether its worker is inside or on the way, and
+the counters of the goods it takes in. Its slot in the building table is its number. The castle is slot 0.
+_Avoid_: house, structure
 
 **Transport priority**
 A player's rank for each kind of good. Where several goods at one flag wait for the same road, the good

@@ -121,7 +121,7 @@ public sealed class ObjectGraphicsTests
     public void TheGoodsSpritesAreTheLayersAfterTheHutsAndTheLogsImageIsRead()
     {
         var payloads = Payloads();
-        payloads[ObjectSprites.GoodEntry(7)] = GraphicFileTests.Entry(
+        payloads[ObjectSprites.GoodEntry(new Good(7))] = GraphicFileTests.Entry(
             1,
             0,
             2,
@@ -134,9 +134,9 @@ public sealed class ObjectGraphicsTests
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.AreEqual(ObjectGraphics.EntryCount + 3, ObjectGraphics.Layer(ObjectSprites.GoodEntry(0)));
-        Assert.AreEqual(ObjectGraphics.EntryCount + 10, ObjectGraphics.Layer(ObjectSprites.GoodEntry(7)));
-        Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(ObjectSprites.GoodEntry(7))].OffsetX);
+        Assert.AreEqual(ObjectGraphics.EntryCount + 3, ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(0))));
+        Assert.AreEqual(ObjectGraphics.EntryCount + 10, ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(7))));
+        Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(7)))].OffsetX);
         Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32 + 16 + 3, graphics.Images.Count);
         Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32 + 16 + 2, ObjectGraphics.Layer(ObjectSprites.FlagEntry + 3));
         Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32, ObjectGraphics.Layer(ObjectSprites.WaterFirstEntry));
@@ -299,7 +299,7 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(1, graphics.ShadowLayerHeight);
         Assert.AreEqual(3, graphics.LayerWidth);
         Assert.AreEqual(2, graphics.ShadowImages[ObjectGraphics.Layer(1251)].Coverage.Length);
-        Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.GoodEntry(7))].Width);
+        Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(7)))].Width);
         Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.WaterFirstEntry)].Width);
     }
 

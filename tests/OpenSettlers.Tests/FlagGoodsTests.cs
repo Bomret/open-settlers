@@ -78,10 +78,10 @@ public sealed class FlagGoodsTests
     // A flag's goods fields in the order of the fixture's f fields.
     private static string Fields(Game game, int flag) =>
         Convert.ToHexString([
-            .. new[] { (byte)(game.FlagGoodsBit(flag) ? 0x80 : 0), game.FlagStatus(flag) },
-            .. game.FlagGoods(flag).Select(good => (byte)good),
-            .. game.FlagDestinations(flag).SelectMany(word => BitConverter.GetBytes((ushort)word)),
-            .. game.FlagDirectionBytes(flag).Select(value => (byte)value),
+            .. new[] { FlagEncoder.GoodsByte(game.Flags[flag]), FlagEncoder.Status(game.Flags[flag]) },
+            .. game.Flags[flag].Places.Select(FlagEncoder.GoodByte),
+            .. game.Flags[flag].Places.SelectMany(place => BitConverter.GetBytes(FlagEncoder.DestinationWord(place))),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[flag].Side(direction))),
         ]);
 
     private static string Expected(string fields) =>
@@ -90,15 +90,16 @@ public sealed class FlagGoodsTests
     // The carrier's 16 bytes as the original's item holds them while it waits and the turn it fetches a good.
     private static string Carrier(Settler s, int width)
     {
-        var bytes = new List<byte> { (byte)(s.Job << 2 | s.Player), (byte)s.Frame };
+        var raw = SettlerEncoder.Fields(s);
+        var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
         bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
-        bytes.AddRange(BitConverter.GetBytes(s.Stamp));
-        bytes.AddRange([(byte)s.State, (byte)s.Mode]);
-        var pointer = 0x23000000 + 0x46 * (s.Target + 1);
-        bytes.AddRange(BitConverter.GetBytes((ushort)(s.State is 0x42 or 0x43 ? pointer : s.Target)));
-        bytes.Add((byte)s.Heading);
-        bytes.Add(s.State is 0x42 or 0x43 ? (byte)(pointer >> 24) : (byte)s.Next);
+        bytes.AddRange(BitConverter.GetBytes(raw.Stamp));
+        bytes.AddRange([(byte)raw.State, (byte)raw.Mode]);
+        var pointer = 0x23000000 + 0x46 * (raw.Target + 1);
+        bytes.AddRange(BitConverter.GetBytes((ushort)(raw.State is 0x42 or 0x43 ? pointer : raw.Target)));
+        bytes.Add((byte)raw.Heading);
+        bytes.Add(raw.State is 0x42 or 0x43 ? (byte)(pointer >> 24) : (byte)raw.Next);
 
         return Convert.ToHexString([.. bytes]);
     }
@@ -113,7 +114,7 @@ public sealed class FlagGoodsTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var flags = Points(parts[5]);
         var hut = parts[7].Split(',').Select(int.Parse).ToArray();
@@ -157,7 +158,7 @@ public sealed class FlagGoodsTests
         {
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
-                game.LayGood(put.Flag, put.Place, put.Good);
+                game.Goods.LayGood(put.Flag, put.Place, put.Good);
             }
 
             game.Tick();
@@ -193,14 +194,14 @@ public sealed class FlagGoodsTests
                     case 'l':
                         Assert.AreEqual(
                             int.Parse(value, CultureInfo.InvariantCulture),
-                            game.CastleLogs,
+                            game.CastleStock.Logs,
                             $"{name}: the logs in the castle after pass {pass}"
                         );
                         break;
                     case 'c':
                         Assert.AreEqual(
                             value,
-                            Convert.ToHexString(BitConverter.GetBytes(game.Buildings[0].Fill)),
+                            Convert.ToHexString(BitConverter.GetBytes((ushort)BuildingEncoder.Fill(game.Buildings[0]))),
                             $"{name}: bytes 8 and 9 of the castle after pass {pass}"
                         );
                         break;
@@ -226,7 +227,7 @@ public sealed class FlagGoodsTests
     [TestMethod]
     public void AGoodOnAFlagWithNoCarrierWaitsAndTheFlagAsksAgainAtEachTurn()
     {
-        var game = new Game(
+        var game = GameFactory.Create(
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );
@@ -234,7 +235,7 @@ public sealed class FlagGoodsTests
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 6));
         game.Tick();
-        game.LayGood(1, 0, 7);
+        game.Goods.LayGood(1, 0, 7);
         var before = game.Digest();
 
         for (var tick = 0; tick < 70; tick++)
@@ -242,9 +243,10 @@ public sealed class FlagGoodsTests
             game.Tick();
         }
 
-        Assert.AreEqual(7, game.FlagGoods(1)[0], "the good has no direction");
-        Assert.IsTrue(game.FlagGoodsBit(1), "the flag asks again at its next turn");
-        Assert.AreEqual(0, game.FlagDestinations(1)[0]);
+        Assert.AreEqual(new Good(7), game.Flags[1].Places[0].Good);
+        Assert.IsNull(game.Flags[1].Places[0].Way, "the good has no direction");
+        Assert.IsTrue(game.Flags[1].NeedsGoodsTurn, "the flag asks again at its next turn");
+        Assert.IsNull(game.Flags[1].Places[0].Destination);
         Assert.AreNotEqual(before, game.Digest(), "the digest holds the new fields");
     }
 }

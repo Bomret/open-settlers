@@ -13,7 +13,7 @@ public sealed class GameTests
 
     static Game Run(params Command[] commands)
     {
-        var game = new Game(
+        var game = GameFactory.Create(
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
         );
@@ -57,7 +57,7 @@ public sealed class GameTests
     public void ACallerChangingTheDirectionsOfAQueuedCommandChangesNothing()
     {
         var directions = new[] { 1, 2 };
-        var game = new Game(
+        var game = GameFactory.Create(
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
         );

@@ -148,24 +148,59 @@ public sealed class SettlerDrawTests
 
         // The job is the bits 2 to 6 of byte 0 (0x43f537 masks with 0x7c); the byte's bit 7 is not the job's.
         return new Settler(
-            (bytes[0] >> 2) & 0x1f,
+            new Job((bytes[0] >> 2) & 0x1f),
             bytes[0] & 3,
             node % (2 * width),
             node / (2 * width),
             BitConverter.ToUInt16(bytes, 8),
-            state,
-            0
+            ActivityOf(bytes, state)
         )
         {
             Frame = bytes[1],
             Timer = BitConverter.ToUInt16(bytes, 2),
-            Mode = bytes[11],
-            Target =
-                state == 0x42
-                    ? (BitConverter.ToInt32(bytes, 12) - 0x23000000) / 0x46
-                    : BitConverter.ToUInt16(bytes, 12),
-            Heading = (sbyte)bytes[14],
-            Next = bytes[15],
+        };
+    }
+
+    // The importer of a recorded item's state bytes into the activity they stand for. A state the engine has no activity for
+    // (a settler at work, or a state of the original's that the engine does not reach) takes the activity that is not drawn.
+    private static Activity ActivityOf(byte[] bytes, int state)
+    {
+        var mode = bytes[11];
+        var target =
+            state == 0x42 ? (BitConverter.ToInt32(bytes, 12) - 0x23000000) / 0x46 : BitConverter.ToUInt16(bytes, 12);
+        var heading = new Heading((sbyte)bytes[14]);
+        var next = bytes[15];
+        var approach = new Heading((sbyte)BitConverter.ToUInt16(bytes, 8));
+        var load = mode > 0 ? new Load(new Good(mode), null) : (Load?)null;
+        var vector = new Vector((sbyte)mode, (sbyte)target);
+        var mark = target >> 8;
+
+        return state switch
+        {
+            1 => new WaitsInCastle(heading.Value),
+            2 => new Walks(new ToStorage(), heading, next),
+            3 => new WalksRoad(load, heading, next == 0xff ? 0 : next, next == 0xff),
+            4 => new Door(target, mode == 0xfe),
+            5 => new WaitsOutStep(new Walks(new ToStorage(), heading)),
+            0xe => new HandsOver(load, heading, next == 0xff),
+            0xf => new Leaving(new ToStorage()),
+            0x10 => new WalksFree(
+                new Trip(
+                    vector,
+                    mark != 0x80 ? new ToTree(new Vector((sbyte)mark, heading.Value))
+                        : heading.Value < 0 ? new Home()
+                        : new BackToHut(heading.Value != 0),
+                    next
+                )
+            ),
+            0x11 => new Cuts(new Vector((sbyte)mode, (sbyte)target), mark != 0, heading.Value, next),
+            0x12 => new LooksForTree(),
+            0x19 => new SearchesHome(mode != 0, mode),
+            0x42 => new WaitsAtFlag(target, mode, approach),
+            0x43 => new ClaimsNode(heading, approach),
+            0x44 => new WaitsToGoHome(approach),
+            0x45 => new WaitsToRejoin(approach),
+            _ => new BuiltCastle(),
         };
     }
 
@@ -201,9 +236,9 @@ public sealed class SettlerDrawTests
         var graphics = SettlerGraphics.Load(
             install,
             TestProgram.Tables(),
-            Settler.CarrierJob,
-            Settler.WoodcutterJob,
-            ProgramTables.TypeOneHutJob
+            Job.CarrierCode,
+            Job.WoodcutterCode,
+            RuleTables.TypeOneHutJob
         );
         // draw:WINDOWS:CX,CY:VERB:N:SEED:...
         var parts = scenario.Command.Split(':');
@@ -211,7 +246,6 @@ public sealed class SettlerDrawTests
         var seed = parts[5].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
         var width = map.Size.Width;
-        var heights = map.Bytes(MapLayer.Height);
 
         var known = new SortedDictionary<int, byte[]>();
         foreach (var pass in scenario.Passes)
@@ -220,7 +254,8 @@ public sealed class SettlerDrawTests
             {
                 known[slot] = bytes;
                 var settler = FromBytes(bytes, width);
-                heights[map.Index(settler.X, settler.Y)] = (byte)height;
+                // The fixture holds the original's height byte: the height in its low 5 bits.
+                map.At(settler.X, settler.Y).Height = height & Node.MaxHeight;
             }
 
             // The settlers as the original's view pass left them, which it drew.
@@ -254,7 +289,7 @@ public sealed class SettlerDrawTests
                 // carriers that wait off their node (states 0x42 to 0x45): those are left out.
                 var drawn = graphics.Figures.Draws(
                     map,
-                    [.. settlers.Where(s => s.Job != Settler.CarrierJob || s.State is < 0x42 or > 0x45)],
+                    [.. settlers.Where(s => s.Job != Job.Carrier || s.Activity is not WaitsOffRoad)],
                     pass.Clock,
                     graphics.Shifts
                 );

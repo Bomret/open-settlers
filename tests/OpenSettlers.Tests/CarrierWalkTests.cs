@@ -58,19 +58,20 @@ public sealed class CarrierWalkTests
     // The settler's 16 bytes as the original's item holds them (Table16), as in WorkerWalkTests.
     private static string Hex(Settler s, int width)
     {
-        var bytes = new List<byte> { (byte)(s.Job << 2 | s.Player), (byte)s.Frame };
+        var raw = SettlerEncoder.Fields(s);
+        var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
         bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
-        bytes.AddRange(BitConverter.GetBytes(s.Stamp));
-        bytes.AddRange([(byte)s.State, (byte)s.Mode]);
-        if (s.State == 0x42)
+        bytes.AddRange(BitConverter.GetBytes(raw.Stamp));
+        bytes.AddRange([(byte)raw.State, (byte)raw.Mode]);
+        if (raw.State == 0x42)
         {
-            bytes.AddRange(BitConverter.GetBytes(0x23000000 + 0x46 * s.Target));
+            bytes.AddRange(BitConverter.GetBytes(0x23000000 + 0x46 * raw.Target));
         }
         else
         {
-            bytes.AddRange(BitConverter.GetBytes((ushort)s.Target));
-            bytes.AddRange([(byte)s.Heading, (byte)s.Next]);
+            bytes.AddRange(BitConverter.GetBytes((ushort)raw.Target));
+            bytes.AddRange([(byte)raw.Heading, (byte)raw.Next]);
         }
 
         return Convert.ToHexString([.. bytes]);
@@ -78,8 +79,8 @@ public sealed class CarrierWalkTests
 
     private static string Hex(Game game, int flag) =>
         Convert.ToHexString([
-            game.FlagStatus(flag),
-            .. Enumerable.Range(0, 6).Select(direction => game.RoadByte(flag, direction)),
+            FlagEncoder.Status(game.Flags[flag]),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.RoadByte(game.Flags[flag].Side(direction))),
         ]);
 
     private static List<int[]> Points(string list) =>
@@ -111,10 +112,12 @@ public sealed class CarrierWalkTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture))
-        {
-            EveryPassTurns = everyPassTurns,
-        };
+        var game = GameFactory.Create(
+            TestProgram.Tables(),
+            map,
+            int.Parse(parts[3], CultureInfo.InvariantCulture),
+            everyPassTurns
+        );
         var castle = Points(parts[4]).Single();
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         foreach (var flag in Points(parts[5]))
@@ -131,8 +134,8 @@ public sealed class CarrierWalkTests
             for (var slot = 0; slot < game.Settlers.Count; slot++)
             {
                 var settler = game.Settlers[slot];
-                var elapsed = (ushort)(game.Clock - settler.Stamp);
-                var walking = settler.State is 2 or 3;
+                var elapsed = (ushort)(game.Clock.Now - settler.Stamp);
+                var walking = settler.Activity is Walks or WalksRoad;
                 stalls[slot] = walking && settler.Timer <= elapsed ? stalls.GetValueOrDefault(slot) + 1 : 0;
                 longest = Math.Max(longest, stalls[slot]);
             }
@@ -158,7 +161,7 @@ public sealed class CarrierWalkTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var passes = int.Parse(parts[7], CultureInfo.InvariantCulture);
 
@@ -213,13 +216,12 @@ public sealed class CarrierWalkTests
                 else
                 {
                     Assert.AreEqual(
-                        21,
+                        Job.Jobless,
                         game.Settlers[slot].Job,
                         $"{name}: settler {slot} still waits in the castle after pass {pass}"
                     );
-                    Assert.AreEqual(
-                        1,
-                        game.Settlers[slot].State,
+                    Assert.IsInstanceOfType<WaitsInCastle>(
+                        game.Settlers[slot].Activity,
                         $"{name}: settler {slot} still waits in the castle after pass {pass}"
                     );
                 }

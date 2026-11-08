@@ -16,9 +16,9 @@ public sealed class NameTableTests
         Assert.AreEqual("felled-tree", names.ObjectName(0x5d));
         Assert.AreEqual("stump", names.ObjectName(0x53));
         Assert.AreEqual("flag", names.ObjectName(1));
-        Assert.AreEqual("castle", NameTable.BuildingName(Building.CastleType));
+        Assert.AreEqual("castle", NameTable.BuildingName(BuildingType.Castle.Code));
         Assert.AreEqual("storehouse", NameTable.BuildingName(0xa));
-        Assert.AreEqual("carrier", NameTable.JobName(Settler.CarrierJob));
+        Assert.AreEqual("carrier", NameTable.JobName(Job.CarrierCode));
         Assert.AreEqual("builder", NameTable.JobName(4));
         Assert.AreEqual("jobless", NameTable.JobName(21));
         Assert.AreEqual("walks-along-road", NameTable.StateName(3));
@@ -87,15 +87,15 @@ public sealed class NameTableTests
 
     private static NameTable Table(params (int Code, int Class)[] classes)
     {
-        var table = new byte[ProgramTables.ClassCount];
+        var table = new ObjectClass[RuleTables.ClassCount];
         foreach (var (code, @class) in classes)
         {
             table[code] = (byte)@class;
         }
 
-        return new NameTable(new ProgramTables(table, ZeroStock()));
+        return new NameTable(new RuleTables(table, ZeroStock()));
     }
 
     private static byte[][] ZeroStock() =>
-        Enumerable.Range(0, ProgramTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
+        Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
 }

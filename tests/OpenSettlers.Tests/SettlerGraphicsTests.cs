@@ -16,9 +16,9 @@ public sealed class SettlerGraphicsTests
         SettlerGraphics.Load(
             TestProgram.OpenInstall(),
             TestProgram.Tables(),
-            Settler.CarrierJob,
-            Settler.WoodcutterJob,
-            ProgramTables.TypeOneHutJob
+            Job.CarrierCode,
+            Job.WoodcutterCode,
+            RuleTables.TypeOneHutJob
         );
 
     // An archive of the settler loader's own entries: no sequences, a black palette, and entry 4 as given.
@@ -66,14 +66,12 @@ public sealed class SettlerGraphicsTests
     private static Map Map() =>
         MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
-    private static Settler Woodcutter(int frame, int timer, int state, int mark = 0, int heading = 0) =>
-        new(Settler.WoodcutterJob, 0, 4, 3, 0, state, 0)
-        {
-            Frame = frame,
-            Timer = (ushort)timer,
-            Target = mark << 8,
-            Heading = heading,
-        };
+    private static Settler Woodcutter(int frame, int timer, Activity activity) =>
+        new(Job.Woodcutter, 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)timer };
+
+    private static readonly Activity Walking = new Walks(new ToStorage(), new Heading(0));
+
+    private static readonly Activity BackWithLog = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(true)));
 
     // The table rule at the program's addresses (docs/rules/settlers.md): the woodcutter's walk is the row 0x0b of the bases
     // (48, 54), the cut a figure byte from 0x80 in the row 0x0f (272, none), the way back with the log the row 0x10 (48, 60).
@@ -84,11 +82,13 @@ public sealed class SettlerGraphicsTests
         var map = Map();
 
         // Frame 4 with no time left: the figure byte 7 (offsets 7, 0): 1850 + 48 + 7, 2500 + 48 + 7, 3150 + 54 + 0.
-        var walk = figures.Draws(map, [Woodcutter(4, 0, 2)], 0).Select(d => d.Entry);
+        var walk = figures.Draws(map, [Woodcutter(4, 0, Walking)], 0).Select(d => d.Entry);
         // The way back with the log: the same byte in the row 0x10: 1850 + 48 + 7, 2500 + 48 + 7, 3150 + 60 + 0.
-        var back = figures.Draws(map, [Woodcutter(4, 0, 0x10, 0x80, 1)], 0).Select(d => d.Entry);
+        var back = figures.Draws(map, [Woodcutter(4, 0, BackWithLog)], 0).Select(d => d.Entry);
         // Frame 0x74 with 800 units left: the triple 100 holds the figure byte 0x83, the word 0x0f03: 1850 + 272 + 3, 2500 + 272 + 3.
-        var cut = figures.Draws(map, [Woodcutter(0x74, 800, 0x11)], 0).Select(d => d.Entry);
+        var cut = figures
+            .Draws(map, [Woodcutter(0x74, 800, new Cuts(new Vector(0, 0), false, 0, 0))], 0)
+            .Select(d => d.Entry);
 
         CollectionAssert.AreEqual(new[] { 1905, 2555, 3204 }, walk.ToArray());
         CollectionAssert.AreEqual(new[] { 1905, 2555, 3210 }, back.ToArray());
@@ -96,11 +96,17 @@ public sealed class SettlerGraphicsTests
     }
 
     private static Settler LoadedCarrier(int frame, int timer = 0) =>
-        new(Settler.CarrierJob, 0, 4, 3, 0, 3, 0)
+        new(
+            Job.Carrier,
+            0,
+            4,
+            3,
+            0,
+            new WalksRoad(new Load(new Good(WoodcutterBehavior.GoodLog), null), new Heading(0))
+        )
         {
             Frame = frame,
             Timer = (ushort)timer,
-            Mode = Game.GoodLog,
         };
 
     // The carried table at 0x43f4b7 holds 0x1400 for the log: the carrier's figure word is its figure byte in the row 0x14,
@@ -166,7 +172,7 @@ public sealed class SettlerGraphicsTests
         var graphics = Load();
         var map = Map();
         var missing = new HashSet<(int, int)>();
-        foreach (var good in Enumerable.Range(1, ProgramTables.CarriedFigureCount - 1))
+        foreach (var good in Enumerable.Range(1, RuleTables.CarriedFigureCount - 1))
         {
             foreach (var state in new[] { 3, 0xe })
             {
@@ -176,11 +182,13 @@ public sealed class SettlerGraphicsTests
                 {
                     foreach (var timer in Enumerable.Range(0, 128).Select(step => step * 8))
                     {
-                        var carrier = new Settler(Settler.CarrierJob, 0, 4, 3, 0, state, 0)
+                        var load = new Load(new Good(good), null);
+                        Activity activity =
+                            state == 3 ? new WalksRoad(load, new Heading(0)) : new HandsOver(load, new Heading(0));
+                        var carrier = new Settler(Job.Carrier, 0, 4, 3, 0, activity)
                         {
                             Frame = frame,
                             Timer = (ushort)timer,
-                            Mode = good,
                         };
                         foreach (var draw in graphics.Figures.Draws(map, [carrier], 0))
                         {
@@ -210,14 +218,20 @@ public sealed class SettlerGraphicsTests
         {
             foreach (var timer in Enumerable.Range(0, 128).Select(step => step * 8))
             {
-                foreach (var (state, mark, heading) in new[] { (2, 0, 0), (0x10, 0x80, 1), (0x11, 0, 1), (0x11, 0, 0) })
+                foreach (
+                    var activity in new Activity[]
+                    {
+                        Walking,
+                        BackWithLog,
+                        new Cuts(new Vector(0, 0), false, 1, 0),
+                        new Cuts(new Vector(0, 0), false, 0, 0),
+                    }
+                )
                 {
-                    var settler = new Settler(ProgramTables.TypeOneHutJob, 0, 4, 3, 0, state, 0)
+                    var settler = new Settler(Job.TypeOneHut, 0, 4, 3, 0, activity)
                     {
                         Frame = frame,
                         Timer = (ushort)timer,
-                        Target = mark << 8,
-                        Heading = heading,
                     };
                     foreach (var draw in graphics.Figures.Draws(map, [settler], 0))
                     {
@@ -279,7 +293,7 @@ public sealed class SettlerGraphicsTests
             foreach (var timer in Enumerable.Range(0, 1024).Where(timer => timer % 8 == 0))
             {
                 foreach (
-                    var woodcutter in new[] { Woodcutter(frame, timer, 2), Woodcutter(frame, timer, 0x10, 0x80, 1) }
+                    var woodcutter in new[] { Woodcutter(frame, timer, Walking), Woodcutter(frame, timer, BackWithLog) }
                 )
                 {
                     foreach (var draw in graphics.Figures.Draws(map, [woodcutter], 0))
@@ -317,8 +331,8 @@ public sealed class SettlerGraphicsTests
     {
         var graphics = Load();
         var colour = SettlerFigures.ColourOf(0);
-        var figures = new[] { Settler.CarrierJob, Settler.WoodcutterJob }
-            .Select(job => graphics.Figures.Sprites(job, colour, Game.GoodLog).ToArray())
+        var figures = new[] { Job.CarrierCode, Job.WoodcutterCode }
+            .Select(job => graphics.Figures.Sprites(job, colour, WoodcutterBehavior.GoodLog).ToArray())
             .SelectMany(sprites => sprites.Zip(sprites.Skip(1)))
             .Where(pair =>
                 pair.First is { Colour: -1, Entry: < 2500 }

@@ -54,13 +54,14 @@ public sealed class WorkerWalkTests
     // twice the map's width), the stamp, the state, the mode, the target, the heading, and the next state.
     internal static string Hex(Settler s, int width)
     {
-        var bytes = new List<byte> { (byte)(s.Job << 2 | s.Player), (byte)s.Frame };
+        var raw = SettlerEncoder.Fields(s);
+        var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
         bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
-        bytes.AddRange(BitConverter.GetBytes(s.Stamp));
-        bytes.AddRange([(byte)s.State, (byte)s.Mode]);
-        bytes.AddRange(BitConverter.GetBytes((ushort)s.Target));
-        bytes.AddRange([(byte)s.Heading, (byte)s.Next]);
+        bytes.AddRange(BitConverter.GetBytes(raw.Stamp));
+        bytes.AddRange([(byte)raw.State, (byte)raw.Mode]);
+        bytes.AddRange(BitConverter.GetBytes((ushort)raw.Target));
+        bytes.AddRange([(byte)raw.Heading, (byte)raw.Next]);
 
         return Convert.ToHexString([.. bytes]);
     }
@@ -71,10 +72,10 @@ public sealed class WorkerWalkTests
     {
         var bytes = new List<byte>();
         bytes.AddRange(BitConverter.GetBytes((b.Y * 2 * width + b.X) * 4));
-        bytes.AddRange([(byte)(b.TypeIndex << 2), (byte)b.Status]);
+        bytes.AddRange([(byte)(BuildingEncoder.TypeIndex(b) << 2), (byte)BuildingEncoder.Status(b)]);
         bytes.AddRange(BitConverter.GetBytes((ushort)b.Flag));
         bytes.AddRange([0, 0]);
-        bytes.AddRange(BitConverter.GetBytes((ushort)b.Worker));
+        bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Worker(b)));
         bytes.AddRange(BitConverter.GetBytes(b.Progress));
         bytes.AddRange([0, 0, 0, 0]);
 
@@ -94,7 +95,7 @@ public sealed class WorkerWalkTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var hut = parts[7].Split(',').Select(int.Parse).ToArray();
         var late = parts.Length > 11 ? parts[10] : "";
