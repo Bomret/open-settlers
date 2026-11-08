@@ -80,7 +80,7 @@ public sealed class GameHistoryTests
             Frame = 6,
             Timer = 65535,
         };
-        var exporter = new SnapshotExporter([settler], [], [], [], [], []);
+        var exporter = new SnapshotExporter([settler], [], new FlagTable());
 
         var state = exporter.Settler(0);
 
@@ -93,18 +93,20 @@ public sealed class GameHistoryTests
     [TestMethod]
     public void TheExporterWritesAFlagsRoadBytesAndGoodsAfterItsNodeAndStatus()
     {
-        var exporter = new SnapshotExporter(
-            [],
-            [],
-            [new Flag(4, 5)],
-            [0x81],
-            [
-                [1, 2, 3, 4, 5, 6],
-            ],
-            [
-                [9, 0, 0, 0, 0, 0, 0, 0x21],
-            ]
-        );
+        var flags = new FlagTable();
+        flags.Add(4, 5);
+        flags[0].CarrierRequestFailed = true;
+        flags[0].Side(0).HoldsCarrier = true;
+        for (var direction = 0; direction < 6; direction++)
+        {
+            flags[0].Side(direction).Carriers = direction + 1;
+        }
+
+        flags[0].Places[0].Good = new Good(9);
+        flags[0].Places[7].Good = new Good(1);
+        flags[0].Places[7].Way = 0;
+
+        var exporter = new SnapshotExporter([], [], flags);
 
         var state = exporter.Flag(0);
 

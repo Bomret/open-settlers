@@ -219,13 +219,17 @@ public sealed class ThingHistoryRemovalTests
                     for (var direction = 0; direction < 6; direction++)
                     {
                         Assert.AreEqual(
-                            game.RoadByte(thing.Slot, direction),
+                            FlagEncoder.RoadByte(game.Flags[thing.Slot].Side(direction)),
                             state.Get($"road{direction}"),
                             $"{thing} road{direction} tick {tick}"
                         );
                     }
 
-                    Assert.AreEqual(game.FlagStatus(thing.Slot), state.Get("status"), $"{thing} status tick {tick}");
+                    Assert.AreEqual(
+                        FlagEncoder.Status(game.Flags[thing.Slot]),
+                        state.Get("status"),
+                        $"{thing} status tick {tick}"
+                    );
                 }
                 else
                 {

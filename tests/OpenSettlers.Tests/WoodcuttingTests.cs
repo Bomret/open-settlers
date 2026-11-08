@@ -46,6 +46,11 @@ public sealed class WoodcuttingTests
     }
 
     // The 128 nodes around the hut the worker draws from, as the spiral gives them.
+    private static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == new Good(7));
+
+    // The goods on the hut's flag, place by place.
+    private static Good[] Goods(Game game) => [.. game.Flags[HutFlag].Places.Select(place => place.Good)];
+
     private static (int X, int Y)[] Reach() =>
         [
             .. Enumerable
@@ -116,13 +121,13 @@ public sealed class WoodcuttingTests
         var reach = Reach();
         var before = reach.Count(node => IsTree(map, node));
 
-        for (var tick = 0; tick < 6000 && !game.FlagGoods(HutFlag).Contains(7); tick++)
+        for (var tick = 0; tick < 6000 && !HoldsLog(game); tick++)
         {
             game.Tick();
         }
 
-        Assert.AreEqual(7, game.FlagGoods(HutFlag)[0], "the log lies on the first place of the flag");
-        Assert.AreEqual(8, game.FlagGoods(HutFlag).Count);
+        Assert.AreEqual(new Good(7), game.Flags[HutFlag].Places[0].Good, "the log lies on the first place of the flag");
+        Assert.AreEqual(8, game.Flags[HutFlag].Places.Count);
         Assert.AreEqual(before - 1, reach.Count(node => IsTree(map, node)), "one tree is felled");
     }
 
@@ -155,18 +160,18 @@ public sealed class WoodcuttingTests
         var watch = new OpenSettlers.MapView.ObjectLayerWatch();
         Assert.IsTrue(watch.Changed(game), "the first look is a change: nothing was drawn yet");
         var objects = TestMaps.Objects(map);
-        var goods = game.FlagGoods(HutFlag).ToArray();
+        var goods = Goods(game);
         var changes = 0;
 
-        for (var tick = 0; tick < 6000 && !game.FlagGoods(HutFlag).Contains(7); tick++)
+        for (var tick = 0; tick < 6000 && !HoldsLog(game); tick++)
         {
             game.Tick();
             var now = TestMaps.Objects(map);
-            var moved = !now.SequenceEqual(objects) || !game.FlagGoods(HutFlag).SequenceEqual(goods);
+            var moved = !now.SequenceEqual(objects) || !Goods(game).SequenceEqual(goods);
             Assert.AreEqual(moved, watch.Changed(game), $"tick {game.TickCount}");
             changes += moved ? 1 : 0;
             objects = now;
-            goods = game.FlagGoods(HutFlag).ToArray();
+            goods = Goods(game);
         }
 
         Assert.IsGreaterThan(1, changes, "a tree is cut and a log laid");
@@ -202,7 +207,7 @@ public sealed class WoodcuttingTests
 
         Assert.AreEqual(0x12, game.Settlers[10].State, "the worker looks for a tree inside the hut");
         Assert.AreEqual((16, 2), (game.Settlers[10].X, game.Settlers[10].Y));
-        Assert.IsFalse(game.FlagGoods(HutFlag).Any(good => good != 0));
+        Assert.IsTrue(game.Flags[HutFlag].Places.All(place => place.IsEmpty));
         Assert.AreEqual(ticks + 1, game.TickCount);
         Assert.AreNotEqual(digest, game.Digest(), "the game state moves on");
         var after = TestMaps.Objects(map);

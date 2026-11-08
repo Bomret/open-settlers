@@ -8,78 +8,48 @@ namespace OpenSettlers.Simulation;
 // road is told to fetch it (state 0x42, 0x42ff81).
 public sealed partial class Game
 {
-    // The destination word of a place (flag item +0x14 + 2 * place) holds the slot of the destination flag as the original
-    // numbers it: its first flag, slot 0, is a dummy the game's start takes (0x421530), so the castle's flag is slot 1 there
-    // and the word is 0 for none. The engine's slot 0 is the castle's flag, so the word here is the engine's slot plus one.
-    private const int NoDestination = 0;
-
-    // The direction a good has been given is kept in bits 5 to 7 of its byte, as the direction plus one; the bits below hold
-    // the good.
-    private const int DirectionShift = 5;
-
-    // Byte 4 bit 7 of each flag's item: the flag has goods that still need their turn. A put sets it, a turn clears it, and a
-    // turn that could not finish sets it again.
-    private readonly List<bool> _goodsBit = [];
-
-    // The destination words of the places of each flag (see NoDestination).
-    private readonly List<ushort[]> _goodsDestination = [];
-
-    // Bytes 0x3c to 0x41 of each flag's item, one for each direction: bit 7 a good waits to go that way, bits 0 to 2 its place,
-    // bits 3 to 5 the direction in which the road leaves the flag at its far end (written when the road is made).
-    private readonly List<byte[]> _directionBytes = [];
-
     /// <summary>The logs the castle holds: the count of its storage item for the good 7.</summary>
     public int CastleLogs => Stock.Count > GoodLog ? Stock[GoodLog] : 0;
 
-    /// <summary>Whether a flag's item has byte 4 bit 7 set: goods wait for their next turn at the flag pass.</summary>
-    public bool FlagGoodsBit(int flag) => _goodsBit[flag];
+    // A settler's target word holds the destination flag as the original numbers its flags: its first flag, slot 0, is a
+    // dummy the game's start takes (0x421530), so the castle's flag is 1 there and the word is 0 for none. The engine's slot 0 is
+    // the castle's flag, so the word is the engine's slot plus one.
+    private static int? DestinationOf(int word) => word == 0 ? null : word - 1;
 
-    /// <summary>The destination words of a flag's 8 places (the original's numbering of the flags: 0 for none, else the slot plus one).</summary>
-    public IReadOnlyList<int> FlagDestinations(int flag) => [.. _goodsDestination[flag]];
-
-    /// <summary>The bytes of a flag's item at 0x3c to 0x41, for the directions 0 to 5.</summary>
-    public IReadOnlyList<int> FlagDirectionBytes(int flag) => [.. _directionBytes[flag]];
-
-    private void SetDirectionBytes(Road road)
-    {
-        _directionBytes[road.FromSlot][road.FromDirection] = (byte)(road.ToDirection << 3);
-        _directionBytes[road.ToSlot][road.ToDirection] = (byte)(road.FromDirection << 3);
-    }
+    private static int WordOf(int? destination) => destination is { } slot ? slot + 1 : 0;
 
     // A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that
-    // lays a good with a destination) and the flag's bit set.
-    internal void LayGood(int flag, int place, int good, int destination = NoDestination)
+    // lays a good with a destination, and a way, for a test that lays a good with a direction) and the flag's turn is due.
+    internal void LayGood(int flag, int place, int good, int? destination = null, int? way = null)
     {
-        _flagGoods[flag][place] = (byte)good;
-        _goodsDestination[flag][place] = (ushort)destination;
-        _goodsBit[flag] = true;
+        var laid = _flags[flag].Places[place];
+        laid.Good = new Good(good);
+        laid.Destination = destination;
+        laid.Way = way;
+        _flags[flag].NeedsGoodsTurn = true;
     }
-
-    // The flag at the other end of the road that leaves a flag in a direction, or -1 where none does.
-    private int FlagNeighbour(int flag, int direction) =>
-        RoadAt(flag, direction) is { } road ? FarEnd(road, flag, direction).Flag : -1;
 
     // The turn of a flag's goods (0x46414d, from the thermometer at 0x46427c to the places' loop ending at 0x4650b9). It runs
     // when the flag's bit is set: the bit goes out, and each place from the last to the first that holds a good without a
     // direction gets a destination, or, with one, a direction.
     private void GoodsTurn(int flag)
     {
-        if (!_goodsBit[flag])
+        if (!_flags[flag].NeedsGoodsTurn)
         {
             return;
         }
 
-        _goodsBit[flag] = false;
+        _flags[flag].NeedsGoodsTurn = false;
         var load = Load(flag);
-        var goods = _flagGoods[flag];
+        var places = _flags[flag].Places;
         for (var place = 7; place >= 0; place--)
         {
-            if (goods[place] == 0 || (goods[place] >> DirectionShift) != 0)
+            if (places[place].IsEmpty || places[place].Way is not null)
             {
                 continue;
             }
 
-            if (_goodsDestination[flag][place] == NoDestination)
+            if (places[place].Destination is null)
             {
                 Destine(flag, place);
             }
@@ -90,29 +60,29 @@ public sealed partial class Game
         }
     }
 
-    // The goods that head each direction, as the four bytes the original builds (0x46427c): byte k holds, for each direction,
-    // whether more than k goods have been given it. Index k of the result is that byte.
-    private byte[] Load(int flag)
+    // The goods that head each direction, as the four sets the original builds (0x46427c): set k holds the directions that more
+    // than k goods have been given. Index k of the result is that set.
+    private RoadSet[] Load(int flag)
     {
-        var count = new int[6];
-        foreach (var good in _flagGoods[flag])
+        var count = new int[Direction.Count];
+        foreach (var place in _flags[flag].Places)
         {
-            if (good >> DirectionShift != 0)
+            if (place.Way is { } way)
             {
-                count[(good >> DirectionShift) - 1]++;
+                count[way]++;
             }
         }
 
-        var bytes = new byte[4];
-        for (var direction = 0; direction < 6; direction++)
+        var sets = new RoadSet[4];
+        for (var direction = 0; direction < Direction.Count; direction++)
         {
-            for (var k = 0; k < 4 && k < count[direction]; k++)
+            for (var k = 0; k < sets.Length && k < count[direction]; k++)
             {
-                bytes[k] |= (byte)(1 << direction);
+                sets[k] = sets[k].With(direction);
             }
         }
 
-        return bytes;
+        return sets;
     }
 
     // The destination of a good with none (0x464364 to 0x46444c, 0x45d3ea). The table at 0x464117 sends a log to the request
@@ -122,10 +92,10 @@ public sealed partial class Game
     private void Destine(int flag, int place)
     {
         var found = StorageSearch(flag);
-        _goodsBit[flag] = true;
+        _flags[flag].NeedsGoodsTurn = true;
         if (found >= 0)
         {
-            _goodsDestination[flag][place] = (ushort)(found + 1);
+            _flags[flag].Places[place].Destination = found;
 
             return;
         }
@@ -135,7 +105,7 @@ public sealed partial class Game
         // once, chosen from what its registers hold (0x464539); the engine lets it wait as it does with none.
     }
 
-    // 0x45d3ea: the search from a flag over the roads that hold a carrier (the bits of the status byte, from north to east) for
+    // 0x45d3ea: the search from a flag over the roads that hold a carrier (from north to east) for
     // the flag of a storage. A flag that is a storage itself finds none. The castle's flag is the only storage.
     private int StorageSearch(int start)
     {
@@ -153,7 +123,7 @@ public sealed partial class Game
             for (var direction = 5; direction >= 0; direction--)
             {
                 if (
-                    (_flagStatus[flag] >> direction & 1) == 0
+                    !_flags[flag].Side(direction).HoldsCarrier
                     || FlagNeighbour(flag, direction) is not (>= 0 and var next)
                     || marked[next]
                 )
@@ -174,29 +144,42 @@ public sealed partial class Game
         return -1;
     }
 
+    // The directions of a flag's roads that hold a carrier.
+    private RoadSet CarrierRoads(int flag)
+    {
+        var roads = RoadSet.Empty;
+        for (var direction = 0; direction < Direction.Count; direction++)
+        {
+            roads = _flags[flag].Side(direction).HoldsCarrier ? roads.With(direction) : roads;
+        }
+
+        return roads;
+    }
+
     // A good with a destination gets the direction of the first road toward it (0x464aa8, 0x464c36 to 0x4650b9). The search
     // runs from the flag's roads that hold a carrier, the ones with the fewest goods heading that way first (0x464bb2 seeds
     // one load after the other), and spreads each seed's direction over the roads that hold a carrier, level by level; the
     // direction that reaches the destination first is the good's.
-    private void Direct(int flag, int place, byte[] load)
+    private void Direct(int flag, int place, RoadSet[] load)
     {
-        var destination = _goodsDestination[flag][place] - 1;
+        var good = _flags[flag].Places[place];
+        var destination = good.Destination!.Value;
         var marked = new bool[_flags.Count];
         var label = new int[_flags.Count];
         marked[flag] = true;
         label[flag] = 6;
         var queue = new List<int>();
-        var carried = _flagStatus[flag] & 0x3f;
-        void Seed(int mask)
+        var carried = CarrierRoads(flag);
+        void Seed(RoadSet seeds)
         {
             for (var direction = 5; direction >= 0; direction--)
             {
-                if ((mask >> direction & 1) == 0)
+                if (!seeds.Has(direction))
                 {
                     continue;
                 }
 
-                carried &= ~(1 << direction);
+                carried = carried.Without(direction);
                 if (FlagNeighbour(flag, direction) is >= 0 and var next && !marked[next])
                 {
                     marked[next] = true;
@@ -206,20 +189,22 @@ public sealed partial class Game
             }
         }
 
-        Seed(~load[0] & 0x3f & carried);
-        for (var k = 1; k < 4 && carried != 0; k++)
+        // Each set of the load holds the next one (more than k goods heading a way include more than k + 1), so the
+        // directions that gain one good from set k - 1 to set k are the ones in set k - 1 and not in set k.
+        Seed(carried.Except(load[0]));
+        for (var k = 1; k < 4 && !carried.IsEmpty; k++)
         {
-            Seed(load[k - 1] ^ load[k]);
+            Seed(load[k - 1].Except(load[k]));
         }
 
-        if (carried != 0)
+        if (!carried.IsEmpty)
         {
             Seed(load[3]);
         }
 
         if (queue.Count == 0)
         {
-            _goodsBit[flag] = true;
+            _flags[flag].NeedsGoodsTurn = true;
 
             return;
         }
@@ -233,7 +218,7 @@ public sealed partial class Game
                 for (var direction = 5; direction >= 0; direction--)
                 {
                     if (
-                        (_flagStatus[current] >> direction & 1) != 0
+                        _flags[current].Side(direction).HoldsCarrier
                         && FlagNeighbour(current, direction) is >= 0 and var other
                         && !marked[other]
                     )
@@ -255,29 +240,27 @@ public sealed partial class Game
         if (!marked[destination] || label[destination] == 6)
         {
             // The destination cannot be reached: the good gives it up (0x462ca4 releases a request, and a storage counts none).
-            _goodsDestination[flag][place] = NoDestination;
-            _goodsBit[flag] = true;
+            good.Destination = null;
+            _flags[flag].NeedsGoodsTurn = true;
 
             return;
         }
 
-        // Where no good waits for the road the good takes the road's byte. Where one waits, the good takes its place only with a
-        // higher transport priority (0x46501a): the byte keeps bit 7 and bits 3 to 6 and gets the new place, and the good that
-        // loses the place keeps its direction and waits until the exchange lines it up again.
+        // Where no good waits for the road the good takes the road. Where one waits, the good takes its place only with a
+        // higher transport priority (0x46501a): the road is waited for by the new place, and the good that loses the place
+        // keeps its direction and waits until the exchange lines it up again.
         var way = label[destination];
-        var waiting = _directionBytes[flag][way];
-        if ((waiting & 0x80) == 0)
+        var side = _flags[flag].Side(way);
+        if (side.WaitingPlace is not { } waiting)
         {
             WaitForRoad(flag, way, place);
         }
-        else if (
-            TransportPriority(_flagGoods[flag][waiting & 7] & 0x1f) < TransportPriority(_flagGoods[flag][place] & 0x1f)
-        )
+        else if (TransportPriority(_flags[flag].Places[waiting].Good.Code) < TransportPriority(good.Good.Code))
         {
-            _directionBytes[flag][way] = (byte)((waiting & 0xf8) | place);
+            side.WaitingPlace = place;
         }
 
-        _flagGoods[flag][place] |= (byte)((way + 1) << DirectionShift);
+        good.Way = way;
     }
 
     // State 0x42 (0x42ff81): a carrier who waits next to a flag looks for a good that waits to go along its road, at the flag it
@@ -287,15 +270,15 @@ public sealed partial class Game
     private void Fetch(int slot, Settler settler)
     {
         var direction = settler.Mode;
-        var waiting = _directionBytes[settler.Target][direction];
+        var side = _flags[settler.Target].Side(direction);
         byte heading;
-        if ((waiting & 0x80) != 0)
+        if (side.WaitingPlace is not null)
         {
             heading = (byte)((byte)settler.Stamp + 6);
         }
         else
         {
-            if ((_directionBytes[FlagNeighbour(settler.Target, direction)][(waiting & 0x38) >> 3] & 0x80) == 0)
+            if (_flags[FlagNeighbour(settler.Target, direction)].Side(side.FarDirection).WaitingPlace is null)
             {
                 return;
             }
@@ -332,57 +315,55 @@ public sealed partial class Game
         History.RecordSettler(slot, EventType.Claim, Cause.Goods);
     }
 
-    // The good on a place waits for the road that leaves the flag in a direction: bit 7 and the place go into the road's byte.
-    internal void WaitForRoad(int flag, int way, int place) => _directionBytes[flag][way] |= (byte)(0x80 | place);
+    // The good on a place waits for the road that leaves the flag in a direction.
+    internal void WaitForRoad(int flag, int way, int place) => _flags[flag].Side(way).WaitingPlace = place;
 
     // A carrier on a flag (state 3, 0x43af07 to 0x43b410): with the heading it came in, the road it works, it swaps goods with the
-    // flag. Where a good waits for that road (byte 0x3c + heading, bit 7) the carrier takes it, and leaves the good it carries
-    // in the same place, destination word and all; where none waits and the carrier carries one, the good goes on the first
-    // empty place. A flag where something was laid is asked again by its next turn (byte 4, bit 7). The byte of the road is
-    // then made again: the good of the greatest transport priority that was given the road's direction waits for it next.
+    // flag. Where a good waits for that road the carrier takes it, and leaves the good it carries in the same place, destination
+    // and all; where none waits and the carrier carries one, the good goes on the first empty place. A flag where something was
+    // laid has its goods turn again. The road's waiting place is then made again: the good of the greatest transport priority
+    // that was given the road's direction waits for it next.
     internal void Exchange(int slot, Settler settler, int flag)
     {
         var way = settler.Heading;
-        var goods = _flagGoods[flag];
-        var waiting = _directionBytes[flag][way];
+        var places = _flags[flag].Places;
+        var side = _flags[flag].Side(way);
         var left = settler.Mode;
         var took = 0;
         var changed = false;
-        if ((waiting & 0x80) != 0)
+        if (side.WaitingPlace is { } waiting)
         {
-            var place = waiting & 7;
+            var place = places[waiting];
             settler.Next = 0;
             changed = true;
             if (settler.Mode != 0)
             {
-                _goodsBit[flag] = true;
-                var good = goods[place];
-                var destination = _goodsDestination[flag][place];
-                goods[place] = (byte)settler.Mode;
-                _goodsDestination[flag][place] = (ushort)settler.Target;
-                settler.Mode = good & 0x1f;
-                settler.Target = destination;
+                _flags[flag].NeedsGoodsTurn = true;
+                var good = place.Good;
+                var destination = place.Destination;
+                place.Good = new Good(settler.Mode);
+                place.Way = null;
+                place.Destination = DestinationOf(settler.Target);
+                settler.Mode = good.Code;
+                settler.Target = WordOf(destination);
             }
             else
             {
-                settler.Mode = goods[place] & 0x1f;
-                settler.Target = _goodsDestination[flag][place];
-                goods[place] = 0;
+                settler.Mode = place.Good.Code;
+                settler.Target = WordOf(place.Destination);
+                place.Good = Good.None;
+                place.Way = null;
             }
 
             took = settler.Mode;
-            _directionBytes[flag][way] = (byte)(waiting & 0x78);
+            side.WaitingPlace = null;
             var best = 0;
             var found = -1;
-            for (var i = 0; i < goods.Length; i++)
+            for (var i = 0; i < places.Count; i++)
             {
-                if (
-                    goods[i] != 0
-                    && (goods[i] & 0xe0) == (way + 1) << DirectionShift
-                    && TransportPriority(goods[i] & 0x1f) > best
-                )
+                if (!places[i].IsEmpty && places[i].Way == way && TransportPriority(places[i].Good.Code) > best)
                 {
-                    best = TransportPriority(goods[i] & 0x1f);
+                    best = TransportPriority(places[i].Good.Code);
                     found = i;
                 }
             }
@@ -394,13 +375,14 @@ public sealed partial class Game
         }
         else if (settler.Mode != 0)
         {
-            var place = Array.IndexOf(goods, (byte)0);
-            if (place >= 0)
+            var empty = _flags[flag].FirstEmptyPlace();
+            if (empty >= 0)
             {
-                _goodsBit[flag] = true;
-                goods[place] = (byte)settler.Mode;
+                _flags[flag].NeedsGoodsTurn = true;
+                places[empty].Good = new Good(settler.Mode);
+                places[empty].Way = null;
                 settler.Mode = 0;
-                _goodsDestination[flag][place] = (ushort)settler.Target;
+                places[empty].Destination = DestinationOf(settler.Target);
                 changed = true;
             }
         }
@@ -509,18 +491,9 @@ public sealed partial class Game
 
     private void MixGoods(ref ulong hash)
     {
-        for (var flag = 0; flag < _flags.Count; flag++)
+        foreach (var word in FlagEncoder.Words(_flags))
         {
-            hash = Mix(hash, _goodsBit[flag] ? 1 : 0);
-            foreach (var destination in _goodsDestination[flag])
-            {
-                hash = Mix(hash, destination);
-            }
-
-            foreach (var value in _directionBytes[flag])
-            {
-                hash = Mix(hash, value);
-            }
+            hash = Mix(hash, word);
         }
     }
 }

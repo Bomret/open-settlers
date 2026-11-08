@@ -181,12 +181,12 @@ public sealed class RemovalTests
     // goods and their destination words, and the bytes of the directions (0x3c to 0x41).
     private static string FlagFields(Game game, int slot) =>
         Convert.ToHexString([
-            (byte)(game.FlagGoodsBit(slot) ? 0x80 : 0),
-            game.FlagStatus(slot),
-            .. Enumerable.Range(0, 6).Select(direction => game.RoadByte(slot, direction)),
-            .. game.FlagGoods(slot).Select(good => (byte)good),
-            .. game.FlagDestinations(slot).SelectMany(word => BitConverter.GetBytes((ushort)word)),
-            .. game.FlagDirectionBytes(slot).Select(value => (byte)value),
+            FlagEncoder.GoodsByte(game.Flags[slot]),
+            FlagEncoder.Status(game.Flags[slot]),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.RoadByte(game.Flags[slot].Side(direction))),
+            .. game.Flags[slot].Places.Select(FlagEncoder.GoodByte),
+            .. game.Flags[slot].Places.SelectMany(place => BitConverter.GetBytes(FlagEncoder.DestinationWord(place))),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[slot].Side(direction))),
         ]);
 
     private static string Fields(string item) =>
@@ -466,7 +466,14 @@ public sealed class RemovalTests
 
             foreach (var put in puts.Where(candidate => candidate[0] == pass))
             {
-                game.LayGood(put[1] - 1, put[2], put[3], put[4]);
+                // The fixture holds the original's good byte (the way plus one in bits 5 to 7) and destination word (the slot plus one).
+                game.LayGood(
+                    put[1] - 1,
+                    put[2],
+                    put[3] & 0x1f,
+                    put[4] == 0 ? null : put[4] - 1,
+                    put[3] >> 5 == 0 ? null : (put[3] >> 5) - 1
+                );
             }
 
             game.Tick();

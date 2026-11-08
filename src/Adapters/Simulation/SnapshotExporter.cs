@@ -11,10 +11,7 @@ namespace OpenSettlers.Simulation;
 public sealed class SnapshotExporter(
     IReadOnlyList<Settler> settlers,
     IReadOnlyList<Building> buildings,
-    IReadOnlyList<Flag> flags,
-    IReadOnlyList<byte> flagStatus,
-    IReadOnlyList<byte[]> roadBytes,
-    IReadOnlyList<byte[]> flagGoods
+    FlagTable flags
 ) : IThingSnapshots
 {
     /// <summary>The building in the slot: its type, node, flag, status, worker, and fill, as the building table holds them.</summary>
@@ -38,14 +35,15 @@ public sealed class SnapshotExporter(
     /// <summary>The flag in the slot: its node, status byte, road bytes, and the goods on it.</summary>
     public ThingState Flag(int slot)
     {
-        var fields = new List<(string, int)>
+        var flag = flags[slot];
+        var fields = new List<(string, int)> { ("x", flag.X), ("y", flag.Y), ("status", FlagEncoder.Status(flag)) };
+        for (var direction = 0; direction < Direction.Count; direction++)
         {
-            ("x", flags[slot].X),
-            ("y", flags[slot].Y),
-            ("status", flagStatus[slot]),
-        };
-        fields.AddRange(roadBytes[slot].Select((value, direction) => ($"road{direction}", (int)value)));
-        fields.AddRange(flagGoods[slot].Select((value, place) => ($"good{place}", (int)value)));
+            fields.Add(($"road{direction}", FlagEncoder.RoadByte(flag.Side(direction))));
+        }
+
+        fields.AddRange(flag.Places.Select((place, index) => ($"good{index}", (int)FlagEncoder.GoodByte(place))));
+
         return new ThingState(fields);
     }
 

@@ -10,6 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="OpenSettlers.Domain" />
+    <Using Include="OpenSettlers.Domain.RoadNetwork" Static="true" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />

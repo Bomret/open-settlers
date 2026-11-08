@@ -22,10 +22,10 @@ public sealed partial class Game
         var a = Gather(index, first);
         var b = Gather(index, second);
 
-        // A carrier on its way to the road (bit 7 of the road byte at the end reached along the second direction) keeps the half
+        // A carrier on its way to the road (marked at the end reached along the second direction) keeps the half
         // at the end flag it targets; the other end loses the mark. **Inferred:** with no such settler the end reached along the
         // second direction loses it.
-        if ((_roadBytes[b.Far][b.FarDirection] & 0x80) != 0)
+        if (_flags[b.Far].Side(b.FarDirection).CarrierOnTheWay)
         {
             var onItsWay = _settlers.FirstOrDefault(settler =>
                 HeadsTo(settler)
@@ -35,7 +35,7 @@ public sealed partial class Game
                 )
             );
             var loser = onItsWay?.Target == b.Far && onItsWay.Mode == b.FarDirection ? a : b;
-            _roadBytes[loser.Far][loser.FarDirection] &= 0x7f;
+            _flags[loser.Far].Side(loser.FarDirection).CarrierOnTheWay = false;
         }
 
         // The half on the side of the road's start, and the steps the road took before the node.
@@ -68,7 +68,7 @@ public sealed partial class Game
         {
             foreach (var (half, direction) in new[] { (halves[0], startDirection), (halves[1], endDirection) })
             {
-                if ((_roadBytes[slot][direction] & 0x8f) == 0)
+                if (_flags[slot].Side(direction) is { CarrierOnTheWay: false, Carriers: 0 })
                 {
                     _roadCauses[half] = cause;
                 }
@@ -90,26 +90,28 @@ public sealed partial class Game
         _raze = null;
     }
 
-    // 0x466719: the new flag's end of a half and the far flag's end. The road byte of the new flag's end is cleared and takes
-    // bit 7 from the far flag's byte, which keeps only that bit; the half's length class goes into both; the directions of the
-    // two ends name each other; the carriers on the half count on it (CountCarriers) up to the capacity of its length class, one
-    // less where a carrier is on its way to it.
+    // 0x466719: the new flag's end of a half and the far flag's end. The new flag's end is cleared and takes the mark of a
+    // carrier on its way from the far flag's end, which keeps only that mark; the half's length class goes into both; the
+    // directions of the two ends name each other; the carriers on the half count on it (CountCarriers) up to the capacity of
+    // its length class, one less where a carrier is on its way to it.
     private void LinkHalf(int flag, int direction, Walked half)
     {
         var (far, farDirection) = (half.Far, half.FarDirection);
-        var onItsWay = (_roadBytes[far][farDirection] & 0x80) != 0;
-        var length = LengthClass(half.Steps);
-        _roadBytes[flag][direction] = (byte)((_roadBytes[far][farDirection] & 0x80) | length);
-        _roadBytes[far][farDirection] = (byte)((_roadBytes[far][farDirection] & 0x80) | length);
-        _directionBytes[flag][direction] = (byte)((_directionBytes[flag][direction] & 0xc7) | (farDirection << 3));
-        _directionBytes[far][farDirection] = (byte)((_directionBytes[far][farDirection] & 0xc7) | (direction << 3));
-        _flagStatus[flag] &= (byte)~(1 << direction);
-        _flagStatus[far] &= (byte)~(1 << farDirection);
+        var side = _flags[flag].Side(direction);
+        var farSide = _flags[far].Side(farDirection);
+        var onItsWay = farSide.CarrierOnTheWay;
+        var length = LengthClass.OfSteps(half.Steps);
+        side.SetLength(length, onItsWay);
+        farSide.SetLength(length, onItsWay);
+        side.FarDirection = farDirection;
+        farSide.FarDirection = direction;
+        side.HoldsCarrier = false;
+        farSide.HoldsCarrier = false;
         CountCarriers(
             half.Settlers,
             (flag, direction),
             (far, farDirection),
-            _tables.RoadCapacity(length >> 4) - (onItsWay ? 1 : 0)
+            _tables.RoadCapacity(length.Value) - (onItsWay ? 1 : 0)
         );
     }
 }

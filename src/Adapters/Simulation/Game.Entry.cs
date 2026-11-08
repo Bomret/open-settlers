@@ -27,7 +27,7 @@ public sealed partial class Game
         return -1;
     }
 
-    private int FlagAt(int x, int y) => _flags.FindIndex(flag => flag.X == x && flag.Y == y);
+    private int FlagAt(int x, int y) => _flags.SlotAt(x, y);
 
     // The castle's list of waiting settlers no longer names a settler the dispatch takes (0x42be63, 0x42b455 clear the entry).
     private void TakeFromWaiting(int job, int slot)
@@ -105,7 +105,9 @@ public sealed partial class Game
         }
 
         var (far, farDirection) = FarEnd(road, start, direction);
-        if (((_roadBytes[start][direction] | _roadBytes[far][farDirection]) & 0x8f) != 0)
+        var startSide = _flags[start].Side(direction);
+        var farSide = _flags[far].Side(farDirection);
+        if (startSide.CarrierOnTheWay || startSide.Carriers != 0 || farSide.CarrierOnTheWay || farSide.Carriers != 0)
         {
             return "the road has its carrier already";
         }
@@ -139,8 +141,8 @@ public sealed partial class Game
         settler.Heading = 0;
         settler.Next = 0;
         settler.State = WaitingState;
-        _roadBytes[start][direction] = (byte)((_roadBytes[start][direction] & 0x7f) + 1);
-        _roadBytes[far][farDirection] = (byte)((_roadBytes[far][farDirection] & 0x7f) + 1);
+        CountCarrier(startSide);
+        CountCarrier(farSide);
         History.RecordSettler(slot, EventType.LayoutWaitingOnRoad, Cause.Layout, History.FlagId(waitFlag).ToString());
         History.RecordFlag(start, EventType.LayoutWaitingOnRoad, Cause.Layout, History.FlagId(far).ToString());
         History.RecordFlag(far, EventType.LayoutWaitingOnRoad, Cause.Layout, History.FlagId(start).ToString());
@@ -161,7 +163,7 @@ public sealed partial class Game
             return "no flag stands on the node";
         }
 
-        if (_flagGoods[flag][place] != 0)
+        if (!_flags[flag].Places[place].IsEmpty)
         {
             return "the place holds a good already";
         }

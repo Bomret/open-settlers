@@ -197,7 +197,7 @@ public sealed class ThingHistoryTests
         Assert.AreEqual(Cause.Placed(game.History.FlagId(0)), to.Cause);
         Assert.AreEqual("flag#1.1", from.Other);
         Assert.AreEqual("flag#0.1", to.Other);
-        Assert.AreEqual(game.RoadByte(1, 3), to.State.Get("road3"));
+        Assert.AreEqual(FlagEncoder.RoadByte(game.Flags[1].Side(3)), to.State.Get("road3"));
     }
 
     [TestMethod]
@@ -227,7 +227,7 @@ public sealed class ThingHistoryTests
 
         Assert.HasCount(2, game.History.EventsOf(flag));
         Assert.AreEqual(game.History.EventsOf(flag)[1].State, state);
-        Assert.AreEqual(game.RoadByte(1, 5), state!.Get("road5"));
+        Assert.AreEqual(FlagEncoder.RoadByte(game.Flags[1].Side(5)), state!.Get("road5"));
     }
 
     [TestMethod]

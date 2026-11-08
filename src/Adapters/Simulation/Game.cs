@@ -14,15 +14,14 @@ public sealed partial class Game
     /// <summary>Ticks in a second at normal speed: 4 timer calls of 20 milliseconds make one tick.</summary>
     public const double TicksPerSecond = 12.5;
 
-    private const int MaxFlags = 256;
     private const ulong FnvOffset = 0xcbf29ce484222325;
     private const ulong FnvPrime = 0x100000001b3;
 
     private readonly SortedSet<Command> _queue = new(Comparer<Command>.Create(Compare));
     private readonly RuleTables _tables;
     private readonly int _stockLevel;
-    private readonly List<Flag> _flags = [];
-    private readonly List<Road> _roads = [];
+    private readonly FlagTable _flags = new();
+    private readonly RoadNetwork _roads = new();
     private ulong _applied = FnvOffset;
 
     /// <summary>
@@ -37,10 +36,7 @@ public sealed partial class Game
         Map = map;
         _stockLevel = stockLevel;
         _random = map.Generator;
-        History = new GameHistory(
-            new SnapshotExporter(_settlers, _buildings, _flags, _flagStatus, _roadBytes, _flagGoods),
-            () => TickCount
-        );
+        History = new GameHistory(new SnapshotExporter(_settlers, _buildings, _flags), () => TickCount);
     }
 
     /// <summary>
@@ -65,7 +61,7 @@ public sealed partial class Game
     public IReadOnlyList<Flag> Flags => _flags;
 
     /// <summary>The finished roads in the order they were built.</summary>
-    public IReadOnlyList<Road> Roads => _roads;
+    public IReadOnlyList<Road> Roads => _roads.Roads;
 
     /// <summary>
     /// The number of commands applied so far. A view that draws the flags, roads, and buildings redraws when it
@@ -132,18 +128,14 @@ public sealed partial class Game
             hash = Mix(hash, count);
         }
 
-        for (var slot = 0; slot < _flags.Count; slot++)
+        foreach (var item in FlagEncoder.Items(_flags))
         {
-            hash = Mix(Mix(hash, _flags[slot].X * 65536L + _flags[slot].Y), _flagStatus[slot]);
-            foreach (var value in _roadBytes[slot])
-            {
-                hash = Mix(hash, value);
-            }
+            hash = Mix(hash, item);
         }
 
         hash = Mix(hash, _flagCursor);
 
-        foreach (var road in _roads)
+        foreach (var road in _roads.Roads)
         {
             hash = Mix(
                 Mix(Mix(Mix(Mix(hash, road.FromSlot), road.FromDirection), road.ToSlot), road.ToDirection),
@@ -217,7 +209,7 @@ public sealed partial class Game
         }
 
         _roads.Add(road!);
-        SetRoadBytes(road!);
+        SetSides(road!);
         // The road's `placed` cause names the road's start flag (the flag the road was built from).
         var cause = CommandCause(History.FlagId(road!.FromSlot));
         if (cause.IsCommand)
@@ -248,7 +240,7 @@ public sealed partial class Game
         Stock = StartStock.At(_tables, _stockLevel);
         CastlePlacement.Apply(Map, x, y, site.Height, 0);
         // The castle's flag stands south-east of it and takes the first slot of the flag table.
-        AddFlag(new Flag((x + 1) & (Map.Size.Width - 1), (y + 1) & (Map.Size.Height - 1)));
+        AddFlag((x + 1) & (Map.Size.Width - 1), (y + 1) & (Map.Size.Height - 1));
         CreateCastleSettlers(x, y);
         var cause = CommandCause(History.BuildingId(0));
         History.RecordBuilding(0, EventType.PlaceCastle, cause, History.FlagId(0).ToString());
@@ -263,9 +255,7 @@ public sealed partial class Game
 
     private bool PlaceFlag(int x, int y)
     {
-        // simplicity: the link keeps the slot in one byte, so a flag table holds 256 flags. The original's limit is
-        // set from the machine's memory at start-up and is not recovered (docs/rules/flags.md).
-        if (Castle is null || NextFlagSlot() >= MaxFlags)
+        if (Castle is null || _flags.IsFull)
         {
             return false;
         }
@@ -276,8 +266,8 @@ public sealed partial class Game
             return false;
         }
 
-        FlagPlacement.Apply(Map, x, y, NextFlagSlot());
-        var slot = AddFlag(new Flag(x, y));
+        FlagPlacement.Apply(Map, x, y, _flags.NextSlot);
+        var slot = AddFlag(x, y);
         var cause = CommandCause(History.FlagId(slot));
         History.RecordFlag(slot, EventType.PlaceFlag, cause);
 

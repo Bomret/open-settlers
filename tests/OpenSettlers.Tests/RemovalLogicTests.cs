@@ -107,7 +107,7 @@ public sealed class RemovalLogicTests
         Assert.IsFalse(game.Map.At(13, 4).FlagMark, "or flag mark");
 
         Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
-        Assert.AreEqual(new Flag(13, 4), game.Flags[4], "the next flag takes the free slot");
+        Assert.AreEqual((13, 4), (game.Flags[4].X, game.Flags[4].Y), "the next flag takes the free slot");
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 7));
         Assert.AreEqual(4, game.Flags.Count, "the count falls past the free slots at its end");
@@ -186,7 +186,7 @@ public sealed class RemovalLogicTests
         );
         Assert.AreEqual(
             1,
-            game.RoadByte(0, 0) & 0xf,
+            game.Flags[0].Side(0).Carriers,
             "the joined road counts one carrier at its end at the castle's flag"
         );
     }
@@ -197,7 +197,7 @@ public sealed class RemovalLogicTests
         var game = World();
         Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
         var lost = game.Flags.Count - 1;
-        game.LayGood(lost, 0, Game.GoodLog, 4);
+        game.LayGood(lost, 0, Game.GoodLog, destination: 3);
         var hut = game.Buildings[1];
         Assert.AreEqual(0, hut.Fill >> 8);
 
@@ -218,17 +218,17 @@ public sealed class RemovalLogicTests
         ranks[stone - 1] = 9;
         ranks[board - 1] = 2;
         var game = World(transportPriorities: ranks);
-        var directed = (way + 1) << 5;
-        game.LayGood(1, 0, board | directed);
-        game.LayGood(1, 1, Game.GoodLog | directed);
-        game.LayGood(1, 2, stone | directed);
-        game.LayGood(1, 5, board | directed, 4);
+        game.LayGood(1, 0, board, way: way);
+        game.LayGood(1, 1, Game.GoodLog, way: way);
+        game.LayGood(1, 2, stone, way: way);
+        game.LayGood(1, 5, board, destination: 3, way: way);
         game.WaitForRoad(1, way, 5);
 
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
 
-        Assert.AreEqual(board, game.FlagGoods(1)[5], "the good for the hut loses its direction");
-        Assert.AreEqual(0x80 | 2, game.FlagDirectionBytes(1)[way] & 0x87, "the stone waits for the road next");
+        Assert.IsNull(game.Flags[1].Places[5].Way, "the good for the hut loses its direction");
+        Assert.AreEqual(new Good(board), game.Flags[1].Places[5].Good);
+        Assert.AreEqual(2, game.Flags[1].Side(way).WaitingPlace, "the stone waits for the road next");
     }
 
     [TestMethod]
@@ -270,7 +270,9 @@ public sealed class RemovalLogicTests
                 string.Concat(
                     Enumerable
                         .Range(2, 2)
-                        .Select(flag => $"{game.FlagStatus(flag)}{game.RoadByte(flag, 0)}{game.RoadByte(flag, 5)}")
+                        .Select(flag =>
+                            $"{FlagEncoder.Status(game.Flags[flag])}{FlagEncoder.RoadByte(game.Flags[flag].Side(0))}{FlagEncoder.RoadByte(game.Flags[flag].Side(5))}"
+                        )
                 ),
                 string.Concat(game.Stock)
             );

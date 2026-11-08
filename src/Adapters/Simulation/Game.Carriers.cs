@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace OpenSettlers.Simulation;
 
-// The carriers: the roads' status bytes in the flag items, the flag table's pass that asks the castle for a carrier for a
+// The carriers: the roads' state in the flag sides, the flag table's pass that asks the castle for a carrier for a
 // road without one, and the carrier's walk from the castle to its road and along it (docs/rules/carriers.md).
 public sealed partial class Game
 {
@@ -13,133 +14,42 @@ public sealed partial class Game
     // The state of a carrier that waits on its road next to the flag at the road's far end.
     private const int WaitingState = 0x42;
 
-    // The bytes of each flag's item that the carriers read and write: the status (byte 5; bit 7 is set when a request
-    // for a carrier found none, and cleared by the retry scan, bit d when the road in direction d holds a carrier), and
-    // for each direction the road byte (bytes 6 to 11).
-    private readonly List<byte> _flagStatus = [];
-    private readonly List<byte[]> _roadBytes = [];
     private int _flagCursor;
 
     // The command cause of each road a command built: the carrier sent to it carries it on until it waits on its road. A road no
     // command built (a layout's) has none. The request of a carrier takes the entry.
     private readonly Dictionary<Road, Cause> _roadCauses = [];
 
-    /// <summary>
-    /// The status byte of a flag's item (byte 5): bit 7 marks a request for a carrier that found none, until the retry
-    /// scan clears it, and bit <c>d</c> a road in direction <c>d</c> that holds a carrier.
-    /// </summary>
-    public byte FlagStatus(int flag) => _flagStatus[flag];
-
-    /// <summary>
-    /// The byte of a flag's item for the road that leaves it in a direction (byte 6 + direction): bits 4 to 6 the road's
-    /// length class (0 to 7), bit 7 while a carrier is on the way to the road, and the low nibble the carriers on it.
-    /// </summary>
-    public byte RoadByte(int flag, int direction) => _roadBytes[flag][direction];
-
-    // The slot the next flag takes: the first one a taken-down flag left free, else the end of the table (the allocator 0x45d7ad).
-    private int NextFlagSlot()
-    {
-        var free = _flags.FindIndex(flag => flag.IsFree);
-
-        return free >= 0 ? free : _flags.Count;
-    }
-
     // Puts a flag in the next slot; the item of the slot starts as zeros (the allocator clears it).
-    private int AddFlag(Flag flag)
+    private int AddFlag(int x, int y)
     {
-        var slot = NextFlagSlot();
-        if (slot == _flags.Count)
-        {
-            _flags.Add(flag);
-            History.FillFlag(slot);
-            _flagStatus.Add(0);
-            _roadBytes.Add(new byte[6]);
-            _flagGoods.Add(new byte[8]);
-            _goodsBit.Add(false);
-            _goodsDestination.Add(new ushort[8]);
-            _directionBytes.Add(new byte[6]);
-
-            return slot;
-        }
-
-        _flags[slot] = flag;
+        var slot = _flags.Add(x, y);
         History.FillFlag(slot);
-        _flagStatus[slot] = 0;
-        _roadBytes[slot] = new byte[6];
-        _flagGoods[slot] = new byte[8];
-        _goodsBit[slot] = false;
-        _goodsDestination[slot] = new ushort[8];
-        _directionBytes[slot] = new byte[6];
 
         return slot;
     }
 
-    // Frees a flag's slot (0x45d974): the item keeps its bytes until a new flag takes the slot; the table's count falls past the
+    // Frees a flag's slot (0x45d974): the item keeps its values until a new flag takes the slot; the table's count falls past the
     // free slots at its end.
-    private void FreeFlagSlot(int slot)
+    private void FreeFlagSlot(int slot) => _flags.Free(slot);
+
+    private Road? RoadAt(int flag, int direction) => _roads.RoadAt(flag, direction);
+
+    private int FlagNeighbour(int flag, int direction) => _roads.FlagNeighbour(flag, direction);
+
+    // A new road gives both its sides the road's length class, no carrier, and the direction of the other end.
+    private void SetSides(Road road)
     {
-        _flags[slot] = Flag.Free;
-        while (_flags.Count > 0 && _flags[^1].IsFree)
-        {
-            var last = _flags.Count - 1;
-            _flags.RemoveAt(last);
-            _flagStatus.RemoveAt(last);
-            _roadBytes.RemoveAt(last);
-            _flagGoods.RemoveAt(last);
-            _goodsBit.RemoveAt(last);
-            _goodsDestination.RemoveAt(last);
-            _directionBytes.RemoveAt(last);
-        }
+        var length = LengthClass.OfSteps(road.Directions.Count);
+        var from = _flags[road.FromSlot].Side(road.FromDirection);
+        var to = _flags[road.ToSlot].Side(road.ToDirection);
+        from.SetLength(length, carrierOnTheWay: false);
+        to.SetLength(length, carrierOnTheWay: false);
+        from.FarDirection = road.ToDirection;
+        to.FarDirection = road.FromDirection;
+        from.WaitingPlace = null;
+        to.WaitingPlace = null;
     }
-
-    // The length class of a road (0x4454e7), kept in bits 4 to 6 of the road bytes of both its ends.
-    private static byte LengthClass(int steps) =>
-        (byte)(
-            (
-                steps switch
-                {
-                    <= 3 => 0,
-                    <= 5 => 1,
-                    6 => 2,
-                    <= 9 => 3,
-                    <= 12 => 4,
-                    <= 17 => 5,
-                    <= 23 => 6,
-                    _ => 7,
-                }
-            ) << 4
-        );
-
-    private void SetRoadBytes(Road road)
-    {
-        var length = LengthClass(road.Directions.Count);
-        _roadBytes[road.FromSlot][road.FromDirection] = length;
-        _roadBytes[road.ToSlot][road.ToDirection] = length;
-        SetDirectionBytes(road);
-    }
-
-    // The road that leaves a flag in a direction, or null.
-    private Road? RoadAt(int flag, int direction)
-    {
-        foreach (var road in _roads)
-        {
-            if (
-                (road.FromSlot == flag && road.FromDirection == direction)
-                || (road.ToSlot == flag && road.ToDirection == direction)
-            )
-            {
-                return road;
-            }
-        }
-
-        return null;
-    }
-
-    // The flag at the other end of a road that leaves a flag in a direction, and the direction the road leaves it in.
-    private static (int Flag, int Direction) FarEnd(Road road, int flag, int direction) =>
-        road.FromSlot == flag && road.FromDirection == direction
-            ? (road.ToSlot, road.ToDirection)
-            : (road.FromSlot, road.FromDirection);
 
     // 0x428728, the second half: each pass clears bit 7 of the status of a window of flags from a cursor that wraps at the
     // end of the table, and stops after 10 flags that had the bit set. A flag whose request found no carrier asks again
@@ -161,8 +71,8 @@ public sealed partial class Game
         var left = 10;
         for (var i = 0; i < window; i++)
         {
-            var had = (_flagStatus[_flagCursor] & 0x80) != 0;
-            _flagStatus[_flagCursor] &= 0x7f;
+            var had = _flags[_flagCursor].CarrierRequestFailed;
+            _flags[_flagCursor].CarrierRequestFailed = false;
             if (had)
             {
                 History.RecordFlag(_flagCursor, EventType.ClearFlagRetryBits, Cause.Carriers);
@@ -200,7 +110,10 @@ public sealed partial class Game
     // with a carrier sets its bit in the status.
     private void VisitFlag(int slot)
     {
-        var status = _flagStatus[slot];
+        // The flag takes what the turn found only at its end: a request made in the turn records the flag as it stood before.
+        var flag = _flags[slot];
+        var failed = flag.CarrierRequestFailed;
+        var holders = new List<FlagSide>();
         for (var direction = 5; direction >= 0; direction--)
         {
             if (RoadAt(slot, direction) is not { } road)
@@ -208,25 +121,22 @@ public sealed partial class Game
                 continue;
             }
 
-            var value = _roadBytes[slot][direction];
-            if ((value & 0xf) != 0)
+            var side = flag.Side(direction);
+            if (side.Carriers != 0)
             {
-                status |= (byte)(1 << direction);
+                holders.Add(side);
             }
-            else if (
-                (value & 0x80) == 0
-                && (status & 0x80) == 0
-                && !road.Water
-                && !RequestCarrier(slot, direction, road)
-            )
+            else if (!side.CarrierOnTheWay && !failed && !road.Water && !RequestCarrier(slot, direction, road))
             {
-                status |= 0x80;
+                failed = true;
             }
         }
 
-        if (status != _flagStatus[slot])
+        var changed = failed != flag.CarrierRequestFailed || holders.Any(side => !side.HoldsCarrier);
+        flag.CarrierRequestFailed = failed;
+        holders.ForEach(side => side.HoldsCarrier = true);
+        if (changed)
         {
-            _flagStatus[slot] = status;
             History.RecordFlag(slot, EventType.VisitFlag, Cause.Carriers);
         }
     }
@@ -255,8 +165,8 @@ public sealed partial class Game
         settler.Target = flag;
         settler.State = 0xf;
         _leaving++;
-        _roadBytes[slot][direction] |= 0x80;
-        _roadBytes[far][farDirection] |= 0x80;
+        _flags[slot].Side(direction).CarrierOnTheWay = true;
+        _flags[far].Side(farDirection).CarrierOnTheWay = true;
         var id = History.SettlerId(carrier);
         History.EndCarry(carrier);
         var cause = Cause.Carriers;
@@ -320,8 +230,8 @@ public sealed partial class Game
         }
 
         var (far, farDirection) = FarEnd(road, settler.Target, direction);
-        _roadBytes[far][farDirection] = (byte)((_roadBytes[far][farDirection] & 0x7f) + 1);
-        _roadBytes[settler.Target][direction] = (byte)((_roadBytes[settler.Target][direction] & 0x7f) + 1);
+        CountCarrier(_flags[far].Side(farDirection));
+        CountCarrier(_flags[settler.Target].Side(direction));
         settler.State = 3;
         settler.Heading = direction;
         settler.Mode = 0;
@@ -331,6 +241,13 @@ public sealed partial class Game
         History.RecordFlag(settler.Target, EventType.EnterRoad, Cause.Carriers, id.ToString());
         History.RecordFlag(far, EventType.EnterRoad, Cause.Carriers, id.ToString());
         WalkRoad(slot, settler);
+    }
+
+    // A carrier has entered a road: no carrier is on the way to it any more and it holds one more.
+    private static void CountCarrier(FlagSide side)
+    {
+        side.CarrierOnTheWay = false;
+        side.Carriers++;
     }
 
     // On a node of a road, the one direction of the road other than the one the settler came by (its heading); -1
@@ -384,7 +301,7 @@ public sealed partial class Game
                 Map.At(next).FlagMark
                 && settler.Mode == 0
                 && (sbyte)settler.Next >= 0
-                && (_directionBytes[Map.At(next).LinkedSlot][(direction + 3) % 6] & 0x80) == 0
+                && _flags[Map.At(next).LinkedSlot].Side((direction + 3) % 6).WaitingPlace is null
             )
             {
                 Wait(slot, settler, (direction + 3) % 6, Map.At(next).LinkedSlot);
@@ -414,14 +331,15 @@ public sealed partial class Game
         settler.Frame = (byte)(settler.Heading + 0x6e);
         settler.Heading -= 6;
         var far = FlagNeighbour(flag, back);
-        var farDirection = (_directionBytes[flag][back] & 0x38) >> 3;
-        if ((_roadBytes[flag][back] & 0xf) >= 2)
+        var side = _flags[flag].Side(back);
+        var farDirection = side.FarDirection;
+        if (side.Carriers >= 2)
         {
             settler.Next = (settler.Next + 1) & 0xff;
             if (settler.Next >= 4)
             {
-                _roadBytes[flag][back]--;
-                _roadBytes[far][farDirection]--;
+                side.Carriers--;
+                _flags[far].Side(farDirection).Carriers--;
                 settler.Next = 0xff;
                 var id = History.SettlerId(slot);
                 History.RecordFlag(flag, EventType.Wait, Cause.Carriers, id.ToString());
@@ -433,7 +351,7 @@ public sealed partial class Game
             return;
         }
 
-        if ((_directionBytes[far][farDirection] & 0x80) != 0)
+        if (_flags[far].Side(farDirection).WaitingPlace is not null)
         {
             History.RecordSettler(slot, EventType.Wait, Cause.Carriers);
 

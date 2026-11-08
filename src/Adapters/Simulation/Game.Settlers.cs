@@ -245,25 +245,6 @@ public sealed partial class Game
         return true;
     }
 
-    // The flag a road leads to from a flag in a direction, or -1 where no road leaves that way.
-    private int Link(int flag, int direction)
-    {
-        foreach (var road in _roads)
-        {
-            if (road.FromSlot == flag && road.FromDirection == direction)
-            {
-                return road.ToSlot;
-            }
-
-            if (road.ToSlot == flag && road.ToDirection == direction)
-            {
-                return road.FromSlot;
-            }
-        }
-
-        return -1;
-    }
-
     /// <summary>
     /// The route search over the flags (<c>0x42b4bc</c>, the copy of it in the settlers' walk, and <c>0x42ca7a</c>):
     /// the direction a settler at flag <paramref name="from"/> takes first to reach flag <paramref name="to"/>, or -1 where no
@@ -284,7 +265,7 @@ public sealed partial class Game
         reached[from] = true;
         for (var direction = 5; direction >= 0; direction--)
         {
-            var next = Link(from, direction);
+            var next = FlagNeighbour(from, direction);
             if (next >= 0)
             {
                 reached[next] = true;
@@ -298,7 +279,7 @@ public sealed partial class Game
             var flag = queue.Dequeue();
             for (var direction = 5; direction >= 0; direction--)
             {
-                var next = Link(flag, direction);
+                var next = FlagNeighbour(flag, direction);
                 if (next >= 0 && !reached[next])
                 {
                     reached[next] = true;
@@ -816,13 +797,13 @@ public sealed partial class Game
         var height = Map.Size.Height;
         var flagX = (x + 1) & (width - 1);
         var flagY = (y + 1) & (height - 1);
-        var flag = _flags.FindIndex(f => f.X == flagX && f.Y == flagY);
+        var flag = _flags.SlotAt(flagX, flagY);
         var site = Castle is null ? default : BuildSite.Evaluate(_tables, Map, x, y, 0, hasCastle: true);
         // **Inferred:** a small hut needs the site of a small or a large building (3 or 4), and either the flag standing
         // south-east of it (node state 5), a road's bits on that node (6), or nothing on or around it (7); the flag button
         // takes the same states for its flag (4, 6, 7 of the flag's own node).
         var withFlag = site.Node == 5 && flag >= 0 && BuildingOfFlag(flag) is null;
-        if (site.Site < 3 || !(withFlag || site.Node is 6 or 7 && NextFlagSlot() < MaxFlags))
+        if (site.Site < 3 || !(withFlag || site.Node is 6 or 7 && !_flags.IsFull))
         {
             return false;
         }
@@ -831,8 +812,8 @@ public sealed partial class Game
         // flag placement does (0x4422c5): the flag object and bit, the deposit moved, the link to the new slot.
         if (!withFlag)
         {
-            FlagPlacement.Apply(Map, flagX, flagY, NextFlagSlot());
-            flag = AddFlag(new Flag(flagX, flagY));
+            FlagPlacement.Apply(Map, flagX, flagY, _flags.NextSlot);
+            flag = AddFlag(flagX, flagY);
             History.RecordFlag(flag, EventType.PlaceFlag, CommandCause(History.FlagId(flag)));
 
             // A flag on a road's node splits the road (0x4662e2), before the hut's mark at the flag is set below: the mark

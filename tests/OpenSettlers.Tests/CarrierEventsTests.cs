@@ -49,13 +49,6 @@ public sealed class CarrierEventsTests
         game.Tick();
     }
 
-    // The tables the carrier rules keep privately (the road bytes and the direction bytes of the flags' items): no command gives a
-    // road a second carrier or a good at a flag's road end in these tests' short setups, so a test sets the byte it needs.
-    private static byte[] Table(Game game, string field, int flag) =>
-        ((List<byte[]>)typeof(Game).GetField(field, BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(game)!)[
-            flag
-        ];
-
     private static Game RoadBuilt()
     {
         var game = NewGame();
@@ -270,7 +263,7 @@ public sealed class CarrierEventsTests
         // The carrier is gone from the road: both ends count none, and the castle holds another settler to send.
         foreach (var (flag, direction) in new[] { (0, 0), (1, 3) })
         {
-            Table(game, "_roadBytes", flag)[direction] &= 0xf0;
+            game.Flags[flag].Side(direction).Carriers = 0;
         }
 
         Run(game, 400);
@@ -339,12 +332,12 @@ public sealed class CarrierEventsTests
         game.Settlers[carrier.Slot].Heading = 3;
     }
 
+    // No command gives a road a second carrier in these tests' short setups, so a test sets the count it needs.
     private static void SetRoadCount(Game game, int count)
     {
         foreach (var (flag, direction) in new[] { (0, 0), (1, 3) })
         {
-            var road = Table(game, "_roadBytes", flag);
-            road[direction] = (byte)((road[direction] & 0xf0) | count);
+            game.Flags[flag].Side(direction).Carriers = count;
         }
     }
 
@@ -383,13 +376,13 @@ public sealed class CarrierEventsTests
         // The road holds one carrier again, and a good waits at the castle's flag for it (the carrier's swap at that flag has
         // come and gone).
         SetRoadCount(game, 1);
-        Table(game, "_directionBytes", 0)[0] |= 0x80;
+        game.Flags[0].Side(0).WaitingPlace = 0;
 
         RunToTheTurn(game, carrier, 2);
 
         Assert.AreNotEqual(0x42, game.History.EventsOf(carrier).Last().State.Get("state"), "the carrier waits on");
 
-        Table(game, "_directionBytes", 0)[0] &= 0x7f;
+        game.Flags[0].Side(0).WaitingPlace = null;
         RunToTheTurn(game, carrier, 3);
 
         Assert.AreEqual(0x42, game.History.EventsOf(carrier).Last().State.Get("state"), "it waits at the flag");

@@ -68,8 +68,8 @@ public sealed class FlagPlacementTests
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
         game.Tick();
 
-        Assert.AreEqual(new Flag(16, 6), game.Flags[0]);
-        Assert.AreEqual(new Flag(x, y), game.Flags[1]);
+        Assert.AreEqual((16, 6), (game.Flags[0].X, game.Flags[0].Y));
+        Assert.AreEqual((x, y), (game.Flags[1].X, game.Flags[1].Y));
         Assert.AreEqual(1, game.Map.At(x, y).Link);
         Assert.AreEqual(MapObjectKind.Flag, game.Map.At(x, y).Object.Kind);
     }
@@ -145,7 +145,7 @@ public sealed class FlagPlacementTests
         game.Tick();
 
         Assert.AreEqual(2, game.Flags.Count);
-        Assert.AreEqual(new Flag(x, y), game.Flags[1]);
+        Assert.AreEqual((x, y), (game.Flags[1].X, game.Flags[1].Y));
         Assert.AreEqual(MapObjectKind.Flag, game.Map.At(x, y).Object.Kind);
     }
 

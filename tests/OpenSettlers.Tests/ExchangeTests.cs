@@ -50,10 +50,10 @@ public sealed class ExchangeTests
         game.Exchange(0, carrier, 0);
 
         Assert.AreEqual(Log, carrier.Mode, "the carrier takes the good that waited");
-        Assert.AreEqual(Stone, game.FlagGoods(0)[2], "the good it carried is left in that place");
-        Assert.AreEqual(1, game.FlagDestinations(0)[2], "its destination goes with it");
-        Assert.AreEqual(0, game.FlagDirectionBytes(0)[Way] & 0x80, "no good waits for the road any more");
-        Assert.IsTrue(game.FlagGoodsBit(0), "the flag looks at the new good at its next turn");
+        Assert.AreEqual(new Good(Stone), game.Flags[0].Places[2].Good, "the good it carried is left in that place");
+        Assert.AreEqual(0, game.Flags[0].Places[2].Destination, "its destination goes with it");
+        Assert.IsNull(game.Flags[0].Side(Way).WaitingPlace, "no good waits for the road any more");
+        Assert.IsTrue(game.Flags[0].NeedsGoodsTurn, "the flag looks at the new good at its next turn");
     }
 
     [TestMethod]
@@ -67,7 +67,7 @@ public sealed class ExchangeTests
         game.Exchange(0, carrier, 0);
 
         Assert.AreEqual(Log, carrier.Mode);
-        Assert.AreEqual(0, game.FlagGoods(0)[5], "the place is empty");
+        Assert.IsTrue(game.Flags[0].Places[5].IsEmpty, "the place is empty");
     }
 
     [TestMethod]
@@ -80,8 +80,8 @@ public sealed class ExchangeTests
         game.Exchange(0, carrier, 0);
 
         Assert.AreEqual(0, carrier.Mode, "the carrier has nothing left");
-        Assert.AreEqual(Stone, game.FlagGoods(0)[1]);
-        Assert.AreEqual(1, game.FlagDestinations(0)[1]);
+        Assert.AreEqual(new Good(Stone), game.Flags[0].Places[1].Good);
+        Assert.AreEqual(0, game.Flags[0].Places[1].Destination);
     }
 
     // Made-up ranks for the goods 1 to 26 (index good - 1): the stone ranks above the log, the board below it.
@@ -96,7 +96,7 @@ public sealed class ExchangeTests
     }
 
     // A good on a place that has been given the road's direction (bits 5 to 7 hold the direction plus one).
-    private static void LayDirected(Game game, int place, int good) => game.LayGood(0, place, good | (Way + 1) << 5);
+    private static void LayDirected(Game game, int place, int good) => game.LayGood(0, place, good, way: Way);
 
     [TestMethod]
     public void AfterACarrierTakesAGoodTheGoodOfTheHighestTransportPriorityForTheSameRoadWaitsNext()
@@ -110,7 +110,7 @@ public sealed class ExchangeTests
 
         game.Exchange(0, Carrier(game, 0, 0), 0);
 
-        Assert.AreEqual(0x80 | 2, game.FlagDirectionBytes(0)[Way] & 0x87, "the stone waits next");
+        Assert.AreEqual(2, game.Flags[0].Side(Way).WaitingPlace, "the stone waits next");
     }
 
     [TestMethod]
@@ -124,7 +124,7 @@ public sealed class ExchangeTests
 
         game.Exchange(0, Carrier(game, 0, 0), 0);
 
-        Assert.AreEqual(0x80 | 1, game.FlagDirectionBytes(0)[Way] & 0x87);
+        Assert.AreEqual(1, game.Flags[0].Side(Way).WaitingPlace);
     }
 
     [TestMethod]
@@ -137,7 +137,7 @@ public sealed class ExchangeTests
 
         game.Exchange(0, Carrier(game, 0, 0), 0);
 
-        Assert.AreEqual(0, game.FlagDirectionBytes(0)[Way] & 0x80, "no good waits for the road");
+        Assert.IsNull(game.Flags[0].Side(Way).WaitingPlace, "no good waits for the road");
     }
 
     [TestMethod]

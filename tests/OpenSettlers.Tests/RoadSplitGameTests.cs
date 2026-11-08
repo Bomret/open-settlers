@@ -85,11 +85,11 @@ public sealed class RoadSplitGameTests
         Apply(game, CommandKind.PlaceFlag, 18, 6);
 
         // The direction byte holds the direction the road leaves the far end by in bits 3 to 5; the road byte the length class.
-        Assert.AreEqual(3 << 3, game.FlagDirectionBytes(0)[0] & 0x38, "castle flag to the new flag");
-        Assert.AreEqual(0 << 3, game.FlagDirectionBytes(2)[3] & 0x38, "new flag to the castle flag");
-        Assert.AreEqual(3 << 3, game.FlagDirectionBytes(2)[0] & 0x38, "new flag to the far flag");
-        Assert.AreEqual(0 << 3, game.FlagDirectionBytes(1)[3] & 0x38, "far flag to the new flag");
-        Assert.AreEqual(0, game.RoadByte(2, 0) & 0x70, "a half of 2 steps is class 0");
+        Assert.AreEqual(new Direction(3), game.Flags[0].Side(0).FarDirection, "castle flag to the new flag");
+        Assert.AreEqual(new Direction(0), game.Flags[2].Side(3).FarDirection, "new flag to the castle flag");
+        Assert.AreEqual(new Direction(3), game.Flags[2].Side(0).FarDirection, "new flag to the far flag");
+        Assert.AreEqual(new Direction(0), game.Flags[1].Side(3).FarDirection, "far flag to the new flag");
+        Assert.AreEqual(new LengthClass(0), game.Flags[2].Side(0).Length, "a half of 2 steps is class 0");
     }
 
     [TestMethod]
@@ -153,13 +153,16 @@ public sealed class RoadSplitGameTests
     {
         var game = EastRoad();
         var before = game.Roads.Single();
-        var bytes = (game.RoadByte(0, 0), game.RoadByte(1, 3));
+        var bytes = (FlagEncoder.RoadByte(game.Flags[0].Side(0)), FlagEncoder.RoadByte(game.Flags[1].Side(3)));
         Apply(game, CommandKind.PlaceFlag, 18, 6);
 
         Apply(game, CommandKind.RemoveFlag, 18, 6);
 
         Assert.AreEqual(Describe(before), Describe(game.Roads.Single()));
-        Assert.AreEqual(bytes, (game.RoadByte(0, 0), game.RoadByte(1, 3)));
+        Assert.AreEqual(
+            bytes,
+            (FlagEncoder.RoadByte(game.Flags[0].Side(0)), FlagEncoder.RoadByte(game.Flags[1].Side(3)))
+        );
     }
 
     [TestMethod]
@@ -192,14 +195,18 @@ public sealed class RoadSplitGameTests
     {
         var game = EastRoad();
         Run(game, 600);
-        Assert.AreEqual(1, game.RoadByte(0, 0) & 0xf, "the road holds its carrier");
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers, "the road holds its carrier");
         Apply(game, CommandKind.PlaceFlag, 18, 6);
-        Assert.AreEqual(1, (game.RoadByte(2, 3) & 0xf) + (game.RoadByte(2, 0) & 0xf), "one half holds the carrier");
+        Assert.AreEqual(
+            1,
+            game.Flags[2].Side(3).Carriers + game.Flags[2].Side(0).Carriers,
+            "one half holds the carrier"
+        );
 
         Run(game, 600);
 
-        Assert.AreEqual(1, game.RoadByte(2, 0) & 0xf, "the far half has a carrier");
-        Assert.AreEqual(1, game.RoadByte(2, 3) & 0xf, "the castle half has a carrier");
+        Assert.AreEqual(1, game.Flags[2].Side(0).Carriers, "the far half has a carrier");
+        Assert.AreEqual(1, game.Flags[2].Side(3).Carriers, "the castle half has a carrier");
         Assert.AreEqual(
             2,
             game.Settlers.Count(settler => settler is { Job: Settler.CarrierJob, State: 3 or 0x42 }),
@@ -211,7 +218,7 @@ public sealed class RoadSplitGameTests
     public void ACarrierThatCarriesAGoodWhenTheRoadSplitsStillCarriesIt()
     {
         var game = EastRoad();
-        game.LayGood(0, 0, 7, 2);
+        game.LayGood(0, 0, 7, destination: 1);
         for (var tick = 0; tick < 3000 && !game.Settlers.Any(settler => settler is { State: 3, Mode: 7 }); tick++)
         {
             game.Tick();
@@ -372,8 +379,8 @@ public sealed class RoadSplitGameTests
 
         Run(game, 900);
 
-        Assert.AreEqual(1, game.RoadByte(2, 0) & 0xf, "the far half has a carrier");
-        Assert.AreEqual(1, game.RoadByte(2, 3) & 0xf, "the castle half has a carrier");
+        Assert.AreEqual(1, game.Flags[2].Side(0).Carriers, "the far half has a carrier");
+        Assert.AreEqual(1, game.Flags[2].Side(3).Carriers, "the castle half has a carrier");
     }
 
     [TestMethod]

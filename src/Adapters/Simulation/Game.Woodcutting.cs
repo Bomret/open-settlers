@@ -50,16 +50,6 @@ public sealed partial class Game
     private int _objectX;
     private int _objectY;
 
-    // The goods that lie on each flag (bytes 0xc to 0x13 of the flag item), 0 for none, in the order of the flag slots.
-    private readonly List<byte[]> _flagGoods = [];
-
-    /// <summary>
-    /// The goods that lie on a flag, 8 places in the order of the flag item's bytes <c>0xc</c> to <c>0x13</c>: 0 for an
-    /// empty place, else the good in the low 5 bits (7 is a log) and, in bits 5 to 7, the direction the good was given plus
-    /// one (<c>docs/rules/goods.md</c>). The woodcutter lays a log on the first empty place of its hut's flag.
-    /// </summary>
-    public IReadOnlyList<int> FlagGoods(int flag) => [.. _flagGoods[flag]];
-
     // The draw of the game's generator: the new first word, which Rng_Step (0x466ade) and the draw at 0x44257a leave.
     private ushort Draw()
     {
@@ -548,7 +538,7 @@ public sealed partial class Game
     private void PutGood(int slot, Settler settler, int good)
     {
         var flag = Map.At(settler.X, settler.Y).LinkedSlot;
-        var place = Array.IndexOf(_flagGoods[flag], (byte)0);
+        var place = _flags[flag].FirstEmptyPlace();
         if (place >= 0)
         {
             LayGood(flag, place, good);
@@ -678,12 +668,9 @@ public sealed partial class Game
         MixGoods(ref hash);
         hash = Mix(Mix(Mix(hash, _random.W0), _random.W1), _random.W2);
         hash = Mix(Mix(Mix(Mix(hash, _objectStamp), _objectTimer), _objectX), _objectY);
-        foreach (var goods in _flagGoods)
+        foreach (var good in FlagEncoder.Places(_flags))
         {
-            foreach (var good in goods)
-            {
-                hash = Mix(hash, good);
-            }
+            hash = Mix(hash, good);
         }
     }
 }

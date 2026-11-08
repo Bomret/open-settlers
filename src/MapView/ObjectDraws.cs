@@ -31,9 +31,11 @@ public static class ObjectDraws
     /// <summary>The goods that lie on the flags of a game, by the flag's node; a flag with no good is left out.</summary>
     public static Dictionary<(int X, int Y), IReadOnlyList<int>> FlagGoodsOf(Game game) =>
         game
-            .Flags.Select((flag, slot) => (flag, goods: game.FlagGoods(slot)))
-            .Where(entry => !entry.flag.IsFree && entry.goods.Any(good => good != 0))
-            .ToDictionary(entry => (entry.flag.X, entry.flag.Y), entry => entry.goods);
+            .Flags.Where(flag => !flag.IsFree && flag.Places.Any(place => !place.IsEmpty))
+            .ToDictionary(
+                flag => (flag.X, flag.Y),
+                flag => (IReadOnlyList<int>)[.. flag.Places.Select(place => place.Good.Code)]
+            );
 
     /// <summary>
     /// The objects of a map in row-major order, which is the order the original paints them. A draw sits at its
