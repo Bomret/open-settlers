@@ -194,6 +194,16 @@ along a road, searching for a tree, walking home. A settler has one activity at 
 next; each activity keeps the code of the original's settler state it stands for.
 _Avoid_: settler state, mode, action
 
+**Settler**
+One of the player's people, one object for its whole life: its place on the map, its player, its timer, a job, and
+one activity. Its slot in the settler table is its number and the slot of its thing ID.
+_Avoid_: worker, unit, figure
+
+**Building**
+A finished building of the player's: its type, its node and flag, whether its worker is inside or on the way, and
+the counters of the goods it takes in. Its slot in the building table is its number; the castle is slot 0.
+_Avoid_: house, structure
+
 **Transport priority**
 A player's rank for each kind of good. Where several goods at one flag wait for the same road, the good
 with the highest rank goes next. A new game starts every player with the same default order.

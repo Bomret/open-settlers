@@ -223,8 +223,9 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 `Game.Goods.cs`: `GoodsTurn`, `Destine`, `StorageSearch`, `Direct`, `Fetch` and `Claim` port the above; `LayGood` is the put.
 `Exchange` and `WaitForRoad` are the carrier's exchange at a flag, `TransportPriority` reads a good's rank from
 `RuleTables.TransportPriority`, `Deliver` and `Handover` state 0xe, `AddToStock` the castle's
-count (`Game.CastleLogs` reads the log's). A carrier's byte 11 is `Settler.Mode` and its word at 12 `Settler.Target` (the
-destination as the original numbers the flags while it carries a good). `Building.Fill` holds bytes 8 and 9.
+count (`Game.CastleLogs` reads the log's). A carrier's good and destination are the `Load` of its `WalksRoad` or `HandsOver` activity
+(`SettlerEncoder` writes them as byte 11 and the word at 12, the destination as the original numbers the flags while it carries a
+good). `Building.FillLow` and `FillHigh` hold bytes 8 and 9 (`BuildingEncoder.Fill` writes the word).
 `Flag.Places` holds the eight `WaitingGood`s of a flag (`Good`, `Destination` as a flag slot or none, `Way` as a direction or
 none; an empty place keeps its last destination), `Flag.NeedsGoodsTurn` is byte 4 bit 7, and `FlagSide.WaitingPlace` and
 `FlagSide.FarDirection` are the direction bytes at `0x3c` to `0x41`. `FlagEncoder` writes them as the original's bytes: the
