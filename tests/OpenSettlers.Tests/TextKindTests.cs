@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Runtime.Versioning;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Assets;
 using OpenSettlers.Launch;
@@ -82,6 +83,7 @@ public sealed class TextKindTests
     }
 
     [TestMethod]
+    [UnsupportedOSPlatform("windows")]
     public void AnUnreadableFileFailsOnLoadAndTheOthersStillLoad()
     {
         if (OperatingSystem.IsWindows())

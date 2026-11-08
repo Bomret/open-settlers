@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.Versioning;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Assets;
 using OpenSettlers.Launch;
@@ -100,6 +101,7 @@ public sealed class InstallCaseTests
     }
 
     [TestMethod]
+    [UnsupportedOSPlatform("windows")]
     public void AFolderThatCannotBeListedReadsAsMissing()
     {
         if (!System.OperatingSystem.IsLinux() && !System.OperatingSystem.IsMacOS())

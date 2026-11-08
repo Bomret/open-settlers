@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
@@ -68,6 +69,7 @@ public class PlayRunWrapperTests
     string repo = "";
     string fake = "";
 
+    [UnsupportedOSPlatform("windows")]
     static void Executable(string path, string text)
     {
         File.WriteAllText(path, text);
@@ -75,6 +77,7 @@ public class PlayRunWrapperTests
     }
 
     [TestInitialize]
+    [UnsupportedOSPlatform("windows")]
     public void Init()
     {
         root = Path.Combine(Path.GetTempPath(), "play-run-wrapper-" + Guid.NewGuid().ToString("N"));

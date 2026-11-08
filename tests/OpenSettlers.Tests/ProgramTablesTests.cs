@@ -304,7 +304,9 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(RuleTables.FrameRowCount, tables.FrameRows.Length);
         Assert.AreEqual(-1, tables.FrameRows[10], "a signed byte for the frame 10");
         Assert.AreEqual(2, tables.FrameRows[11]);
+        #pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
         Assert.AreEqual(0x43f402, ProgramTablesImporter.FrameRowAddress);
+        #pragma warning restore MSTEST0032
     }
 
     [TestMethod]

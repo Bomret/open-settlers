@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace OpenSettlers.Simulation;
 
@@ -41,7 +42,7 @@ public sealed class Causes(GameHistory history, BuildingTable buildings, WalkHom
     public void Placed(int slot, Cause command) => _placements[history.BuildingId(slot)] = command;
 
     /// <summary>The command cause the building carries, if it carries one.</summary>
-    public bool TryPlacementOf(int slot, out Cause command) =>
+    public bool TryPlacementOf(int slot, [MaybeNullWhen(false)] out Cause command) =>
         _placements.TryGetValue(history.BuildingId(slot), out command);
 
     /// <summary>The building no longer carries a command cause.</summary>

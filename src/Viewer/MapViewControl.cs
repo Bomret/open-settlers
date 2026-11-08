@@ -428,7 +428,7 @@ public partial class MapViewControl : Control
                 return;
             }
 
-            _drawing = new RoadDrawing(_game);
+            _drawing = new RoadDrawing(_game!);
             _castleDrawn = false;
             _flagsDrawn = 0;
             _objectWatch = new();

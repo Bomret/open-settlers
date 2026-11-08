@@ -343,7 +343,7 @@ public sealed class LayoutTests
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
     }
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow("{ \"size\": 1, ", "syntax")]
     [DataRow(
         "{ \"size\": 1, \"seed\": \"1234567812345678\", \"height\": [], \"terrain\": [], \"objects\": [], \"bogus\": 1 }",
@@ -405,7 +405,7 @@ public sealed class LayoutTests
             ["a key twice", Text(extra: "").Replace("\"size\": 1,", "\"size\": 1, \"size\": 1,"), "size"],
         ];
 
-    [DataTestMethod]
+    [TestMethod]
     [DynamicData(nameof(BrokenEntries))]
     public void AnEntryTheMapCannotDrawIsAProblemNamingTheEntry(string name, string text, string entry)
     {
