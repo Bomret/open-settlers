@@ -10,8 +10,12 @@
     <Compile Include="../../src/Launch/**/*.cs" />
     <Compile Include="../../src/Formats/**/*.cs" />
     <Compile Include="../../src/Assets/**/*.cs" />
-    <Compile Include="../../src/Simulation/**/*.cs" />
     <Compile Include="../../src/MapView/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Domain/OpenSettlers.Domain.csproj" />
+    <ProjectReference Include="../../src/Application/OpenSettlers.Application.csproj" />
+    <ProjectReference Include="../../src/Adapters/OpenSettlers.Adapters.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="map-digests.txt" CopyToOutputDirectory="PreserveNewest" />
