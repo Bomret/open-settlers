@@ -165,7 +165,7 @@ read from the registers the decompile shows); an open lead.
 ## In the engine
 
 `src/Adapters/Simulation/Game.Woodcutting.cs`: `Door`, `SearchTree`, `StepOut`, `FreeWalk`, `Arrive`, `Cut`, `PutGood`, `EnterHut`, and
-`ObjectPass`; `Game.FlagGoods(flag)` reads the 8 places of a flag; `Settler.WoodcutterJob` is job 5, `Building.WoodcutterType` the type
+`ObjectPass`; `Flag.Places` holds the 8 places of a flag; `Settler.WoodcutterJob` is job 5, `Building.WoodcutterType` the type
 2; `RuleTables.WalkRows` holds the rows of `0x4388ff`; `Map.Generator` is the generator the generation leaves, and the game's
 generator (`Game.Random`, internal) continues from it. `Game.Settlers.cs` runs the knights' idle turns (`KnightIdle`). `Game.Digest`
 holds the generator, the object pass's clock, countdown, and cursor, and the goods on the flags.

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace OpenSettlers.Simulation;
 
-// The carriers: the roads' status bytes in the flag items, the flag table's pass that asks the castle for a carrier for a
+// The carriers: the roads' state in the flag sides, the flag table's pass that asks the castle for a carrier for a
 // road without one, and the carrier's walk from the castle to its road and along it (docs/rules/carriers.md).
 public sealed partial class Game
 {

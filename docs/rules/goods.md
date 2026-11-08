@@ -225,6 +225,8 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 `RuleTables.TransportPriority`, `Deliver` and `Handover` state 0xe, `AddToStock` the castle's
 count (`Game.CastleLogs` reads the log's). A carrier's byte 11 is `Settler.Mode` and its word at 12 `Settler.Target` (the
 destination as the original numbers the flags while it carries a good). `Building.Fill` holds bytes 8 and 9.
-`Game.FlagGoods(flag)` holds the places' bytes (the direction in bits 5 to 7), `FlagGoodsBit`, `FlagDestinations` (the slot plus
-one, as the original numbers the flags, 0 for none), and `FlagDirectionBytes` read the other fields. `Game.Digest` holds all
-of them.
+`Flag.Places` holds the eight `WaitingGood`s of a flag (`Good`, `Destination` as a flag slot or none, `Way` as a direction or
+none; an empty place keeps its last destination), `Flag.NeedsGoodsTurn` is byte 4 bit 7, and `FlagSide.WaitingPlace` and
+`FlagSide.FarDirection` are the direction bytes at `0x3c` to `0x41`. `FlagEncoder` writes them as the original's bytes: the
+good byte with the direction plus one in bits 5 to 7, and the destination word as the slot plus one (the original numbers its
+flags from 1), 0 for none. `Game.Digest` holds all of them through `FlagEncoder`.

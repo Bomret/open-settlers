@@ -165,6 +165,16 @@ _Avoid_: input, event, order
 A point on the map where roads meet and where goods wait to be carried on. A building stands at a flag.
 _Avoid_: node, waypoint
 
+**Flag side**
+One of the six directions along which a road leaves a flag. It holds what the flag knows of that road: its length class, its
+carriers, and the good that waits for it.
+_Avoid_: port, slot
+
+**Waiting good**
+A good that lies on one of the eight places of a flag until a carrier takes it along a road. It has a destination flag and,
+once given, the direction of the first road toward it.
+_Avoid_: item, cargo
+
 **Road**
 A path between two flags, built one of six directions at a time. One carrier serves each road.
 _Avoid_: edge, path, street
