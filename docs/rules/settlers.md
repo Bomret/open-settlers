@@ -108,7 +108,7 @@ was reached by. It then takes the flags off the queue in order, tries their dire
 flag not yet marked marks it, gives it the first direction of the flag it came from, and queues it. A flag therefore
 keeps the first direction of the first route that reached it: of several routes with the same number of flags, the one
 whose first flag came first in the order of the directions. The search ends when the flag it looks for is marked, or
-the queue is empty (no route). The engine's `Game.Route(from, to)` returns the first direction, or -1.
+the queue is empty (no route). The engine's `RoadNetwork.Route(flagCount, from, to)` (`Game.Network`) returns the first direction, or -1.
 
 The marks of a generation are 16-bit words in the flag items; when the generation counter wraps, the program clears
 all marks (`0x42ca7a`). The queue holds 994 flags a level; the engine's search has no limit.
@@ -433,11 +433,12 @@ idle frame of a carrier (`Heading.IdleFrame`), and a job says whether its settle
 next, and stamp of the original's item from the typed settler for the digest, the event snapshots, and the readouts;
 `BuildingEncoder` does the same for the building's status, worker, fill, and type index. The table pass is `TablePass`
 (`src/Application`): it runs the flag, building, and settler slices of a phase in the original's order and hands each settler to the
-behaviour registered for its activity type in `ActivityRegistry`; the game registers the behaviours (`Game.Behaviours`), one for
-each activity type. The pass, the
-request, the route search, and the walk are in `src/Adapters/Simulation/Game.Settlers.cs`. `ProgramTablesImporter` reads the step
+behaviour registered for its activity type in `ActivityRegistry`; `GameFactory` registers the behaviours (`Game.Behaviours`), one for
+each activity type. The pass is `MainPass` (`src/Application/MainPass.cs`), the castle's settlers and the request for a worker
+are `CastleRoster`, the walk to an errand is `WalkBehavior` with the step in `RoadStep`, and the route search is
+`RoadNetwork.Route`. `ProgramTablesImporter` reads the step
 times, the door speeds, and the scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`,
-`ScanWindows`). `Game.Digest` holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's
+`ScanWindows`). `Game.Digest` (`GameDigest` in the adapters) holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's
 waiting list, and the settlers' places. The carriers' part is in `src/Application/CarrierBehavior.cs`
 ([Carriers](carriers.md#in-the-engine)), the woodcutter's and the map's object pass in `src/Application/WoodcutterBehavior.cs`
 ([Woodcutting](woodcutting.md#in-the-engine)), the walk home in `src/Application/WalkHomeBehavior.cs`; both build on

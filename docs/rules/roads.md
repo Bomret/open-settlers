@@ -295,8 +295,8 @@ matches. The verb `roaddraw:SEED:COUNT` runs the three strip routines on random 
 ## In the engine
 
 `CommandKind.BuildRoad` takes the start flag in `Command.X` and `Command.Y` and the step of each direction in
-`Command.Directions`. `RoadBuilding.Walk` (`src/Adapters/Simulation/RoadBuilding.cs`) draws the road into the map as the
-original does and takes it back unless the road is accepted; `Game.CheckRoad` asks the same without changing the game,
+`Command.Directions`. `RoadBuilding.Walk` (`src/Application/RoadBuilding.cs`) draws the road into the map as the
+original does and takes it back unless the road is accepted; `RoadPlanner.Check` (`Game.RoadPlanner`) asks the same without changing the game,
 and `Game.Roads` lists the built roads (`Road`: the slots and directions of the two ends, the steps, and whether it is
 a water road). The digest holds the roads. A refused command, and a road that does not end on a flag, changes nothing.
 The stand-in road button (`src/Viewer/MapViewControl.cs` with `src/MapView/RoadDrawing.cs`) draws a road outside the

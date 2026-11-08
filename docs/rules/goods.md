@@ -223,7 +223,7 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 `src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `StorageSearch`, and `Direct` port the above; `LayGood` is the put.
 `Exchange` and `WaitForRoad` are the carrier's exchange at a flag, `TransportPriority` reads a good's rank from
 `RuleTables.TransportPriority`. `src/Application/CarrierBehavior.cs` holds `Fetch` and `Claim`, and `Deliver` and `Handover`
-(state 0xe); `Game.AddToStock` is the castle's count (`Game.CastleLogs` reads the log's). `Game.Goods` returns the
+(state 0xe); `CastleStock.Add` is the castle's count (`CastleStock.Logs` reads the log's). `Game.Goods` returns the
 `GoodsTransport`, which a test builds on a hand-made flag table. A carrier's good and destination are the `Load` of its `WalksRoad` or `HandsOver` activity
 (`SettlerEncoder` writes them as byte 11 and the word at 12, the destination as the original numbers the flags while it carries a
 good). `Building.FillLow` and `FillHigh` hold bytes 8 and 9 (`BuildingEncoder.Fill` writes the word).

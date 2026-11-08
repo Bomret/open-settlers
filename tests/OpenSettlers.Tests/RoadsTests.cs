@@ -81,7 +81,7 @@ public sealed class RoadsTests
     [TestMethod]
     public void ACancelledRoadLeavesNoStateBehind()
     {
-        // The stand-in interface draws a step at a time through CheckRoad and cancels by sending nothing.
+        // The stand-in interface draws a step at a time through RoadPlanner.Check and cancels by sending nothing.
         var game = TwoFlags();
         var same = TwoFlags();
 

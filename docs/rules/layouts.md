@@ -83,6 +83,6 @@ contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut. 
 
 ## In the engine
 
-`Layout.Placement.cs` reads the `settlers` and `goods` keys. `Game.Entry.cs` holds `PlaceWoodcutterInHut`;
+`Layout.Placement.cs` reads the `settlers` and `goods` keys. `WalkBehavior` (`Game.Walks`) holds `PlaceWoodcutterInHut`;
 `CarrierBehavior.PlaceCarrierOnRoad` and `GoodsTransport.PlaceGood` are the carrier's and the good's. A settler for a hut or road that the layout has not built before it fails the
 load with the entry named. A good on a flag that does not stand fails it the same way.

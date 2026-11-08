@@ -171,7 +171,7 @@ covered.
 
 The engine's tick is one pass of 8 clock units
 ([ADR 0005](../adr/0005-a-tick-is-one-pass-of-eight-clock-units.md)): 4 timer calls, 12.5 ticks per
-second at normal speed. `Game.Tick` in `src/Adapters/Simulation/Game.cs` applies the commands due at the tick, runs one pass, and then
+second at normal speed. `Game.Tick` in `src/Application/Game.cs` applies the commands due at the tick (each kind through its `ICommandHandler`), runs one pass (`MainPass`), and then
 advances the tick count. The view calls it 12.5 times per second of frame time and carries the fraction.
 
 A pass runs the retry scan and the phase step. It then runs the slice of the flag list, for the carriers'

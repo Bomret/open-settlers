@@ -28,7 +28,7 @@ the castle at its north-west, so it is class 1 and refused. **Emulated:** the ve
 check alone) and `s@0,0` (the check on every node) gives the classes of two games, and the engine's `Game.ClickClass`
 gives the same class 1 to 4 for every node; the nodes with another class the check gives (5 to 7: nodes where
 something may be built) are not judged. The flag button's and the road button's stand-ins in the engine ask the game which
-command a click on a node means (`Game.RemovalAt`).
+command a click on a node means (`Removal.CommandAt`).
 
 ## Taking a road down
 
