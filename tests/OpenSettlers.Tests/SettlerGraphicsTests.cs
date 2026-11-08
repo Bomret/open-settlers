@@ -54,7 +54,14 @@ public sealed class SettlerGraphicsTests
     }
 
     private static Settler LoadedCarrier(int frame, int timer = 0) =>
-        new(Job.Carrier, 0, 4, 3, 0, new WalksRoad(new Load(new Good(Game.GoodLog), null), new Heading(0)))
+        new(
+            Job.Carrier,
+            0,
+            4,
+            3,
+            0,
+            new WalksRoad(new Load(new Good(WoodcutterBehavior.GoodLog), null), new Heading(0))
+        )
         {
             Frame = frame,
             Timer = (ushort)timer,
@@ -283,7 +290,7 @@ public sealed class SettlerGraphicsTests
         var graphics = Load();
         var colour = SettlerFigures.ColourOf(0);
         var figures = new[] { Job.CarrierCode, Job.WoodcutterCode }
-            .Select(job => graphics.Figures.Sprites(job, colour, Game.GoodLog).ToArray())
+            .Select(job => graphics.Figures.Sprites(job, colour, WoodcutterBehavior.GoodLog).ToArray())
             .SelectMany(sprites => sprites.Zip(sprites.Skip(1)))
             .Where(pair =>
                 pair.First is { Colour: -1, Entry: < 2500 }

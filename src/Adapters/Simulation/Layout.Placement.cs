@@ -9,7 +9,8 @@ public sealed partial class Layout
 {
     // One entry of the file that a game takes as a command: its name in the file (flags[1]) and the command; a refusal
     // reports the reason Refusal gives for the command's kind. A settler or good entry has no command: its Place
-    // puts it in the game directly (Game.Entry.cs) and returns why it refused, or null.
+    // puts it in the game directly (WalkBehavior.PlaceWoodcutterInHut, CarrierBehavior.PlaceCarrierOnRoad,
+    // GoodsTransport.PlaceGood) and returns why it refused, or null.
     private sealed record Step(string Name, Command Command, Func<Game, string?>? Place = null);
 
     /// <summary>
@@ -21,18 +22,18 @@ public sealed partial class Layout
     /// </summary>
     public string? Apply(Game game)
     {
-        game.InLayout = true;
+        game.Causes.InLayout = true;
         try
         {
             return Build(game);
         }
         finally
         {
-            game.InLayout = false;
+            game.Causes.InLayout = false;
         }
     }
 
-    // The entries one at a time; the game records their events with the cause layout (Game.InLayout).
+    // The entries one at a time; the game records their events with the cause layout (Causes.InLayout).
     private string? Build(Game game)
     {
         foreach (var step in _steps)
@@ -210,7 +211,7 @@ public sealed partial class Layout
                     name,
                     default,
                     woodcutter
-                        ? game => game.PlaceWoodcutterInHut(x, y)
+                        ? game => game.Walks.PlaceWoodcutterInHut(x, y)
                         : game => game.Carriers.PlaceCarrierOnRoad(x, y, direction)
                 )
             );

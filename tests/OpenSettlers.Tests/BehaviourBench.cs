@@ -87,6 +87,8 @@ internal sealed class QueuedDraws(ushort[] draws) : IRandomDraws
 
     public int Taken { get; private set; }
 
+    public RandomGenerator Generator => default;
+
     public ushort Draw()
     {
         Taken++;

@@ -15,7 +15,7 @@ public sealed class HomeWalkHistoryTests
     {
         MapSize.TryFromValue(1, out var size, out _);
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(0x1234, 0x5678, 0x9ABC), size!);
-        var game = new Game(TestProgram.Tables(), map, 0);
+        var game = GameFactory.Create(TestProgram.Tables(), map, 0);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 18, 20));
         game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, 16, 20));
         game.Enqueue(new Command(0, 0, CommandKind.BuildRoad, 19, 21, [3, 4, 3]));

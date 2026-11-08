@@ -141,7 +141,7 @@ public partial class MapViewControl : Control
             _state.SeedText,
             _state.SizeValue,
             _gameView ? _game?.TickCount ?? 0 : null,
-            _gameView ? _game?.CastleLogs ?? 0 : null,
+            _gameView ? _game?.CastleStock.Logs ?? 0 : null,
             !_gameView ? null
                 : _game is null ? new System.Collections.Generic.Dictionary<(int X, int Y), int>()
                 : ObjectDraws
@@ -162,7 +162,7 @@ public partial class MapViewControl : Control
             return problem;
 
         _ticks.Text = $"Tick {_game.TickCount}";
-        _logs.Text = CastleReadout.Text(_game.CastleLogs);
+        _logs.Text = CastleReadout.Text(_game.CastleStock.Logs);
         UpdateSettlers();
         Redraw();
 
@@ -416,7 +416,7 @@ public partial class MapViewControl : Control
             // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
             var exit = LayoutLoad.Start(
                 _layout,
-                new Game(_tables, _state.Map, _state.StockLevel) { EveryPassTurns = true },
+                GameFactory.Create(_tables, _state.Map, _state.StockLevel, everyPassTurns: true),
                 out _game,
                 out var layoutProblem
             );
@@ -456,7 +456,7 @@ public partial class MapViewControl : Control
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
-            _logs.Text = CastleReadout.Text(_game.CastleLogs);
+            _logs.Text = CastleReadout.Text(_game.CastleStock.Logs);
             UpdateSettlers();
             // Evaluated each frame, so the watch sees every change.
             var objectsChanged = _objectWatch.Changed(_game);
@@ -633,7 +633,7 @@ public partial class MapViewControl : Control
         if (_removeButton.ButtonPressed)
         {
             // The check decides what the click takes down; a click it refuses asks for nothing.
-            if (_game.RemovalAt(x, y) is { } removal)
+            if (_game.Removal.CommandAt(x, y) is { } removal)
             {
                 _game.Enqueue(new Command(_game.TickCount, 0, removal, x, y));
             }

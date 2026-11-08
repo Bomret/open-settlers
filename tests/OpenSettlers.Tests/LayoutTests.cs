@@ -261,7 +261,7 @@ public sealed class LayoutTests
 
     static Game Played(string text, int ticks)
     {
-        var game = new Game(TestProgram.Made(), Built(text));
+        var game = GameFactory.Create(TestProgram.Made(), Built(text));
         for (var i = 0; i < ticks; i++)
         {
             game.Tick();
@@ -285,7 +285,7 @@ public sealed class LayoutTests
         var second = Played(Text(seed: "\"8765432187654321\""), 5);
 
         Assert.AreNotEqual(first.Digest(), second.Digest());
-        Assert.AreNotEqual(first.Random, second.Random);
+        Assert.AreNotEqual(first.Draws.Generator, second.Draws.Generator);
     }
 
     [TestMethod]
@@ -294,9 +294,9 @@ public sealed class LayoutTests
         OpenSettlers.Simulation.Seed.TryParse(Seed, out var seed, out _);
         var words = seed.ToMapSeed();
 
-        var game = new Game(TestProgram.Made(), Built(Text()));
+        var game = GameFactory.Create(TestProgram.Made(), Built(Text()));
 
-        Assert.AreEqual(new RandomGenerator(words.W0, words.W1, words.W2).Step().Step(), game.Random);
+        Assert.AreEqual(new RandomGenerator(words.W0, words.W1, words.W2).Step().Step(), game.Draws.Generator);
     }
 
     [TestMethod]

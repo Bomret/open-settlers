@@ -100,7 +100,7 @@ public sealed class WoodcutterTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var flags = Points(parts[5]);
         var hut = parts[7].Split(',').Select(int.Parse).ToArray();
@@ -210,7 +210,7 @@ public sealed class WoodcutterTests
 
             if (line.TryGetValue("rng", out var rng))
             {
-                Assert.AreEqual(rng, Words(game.Random), $"{name}: the random generator after pass {pass}");
+                Assert.AreEqual(rng, Words(game.Draws.Generator), $"{name}: the random generator after pass {pass}");
             }
         }
     }

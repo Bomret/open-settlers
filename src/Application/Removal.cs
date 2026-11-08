@@ -71,6 +71,20 @@ public sealed class Removal(
     /// </summary>
     public int ClickClass(int x, int y) => ClickClass(Map.Index(x, y));
 
+    /// <summary>
+    /// The command a click of the remove tool on the node asks for: <see cref="CommandKind.RemoveFlag"/> for a flag the original
+    /// takes down, <see cref="CommandKind.RemoveBuilding"/> for a building that stands, <see cref="CommandKind.RemoveRoad"/>
+    /// for a node of a road, and null where the original's check refuses the click.
+    /// </summary>
+    public int? CommandAt(int x, int y) =>
+        ClickClass(x, y) switch
+        {
+            2 => CommandKind.RemoveFlag,
+            3 => CommandKind.RemoveBuilding,
+            4 => CommandKind.RemoveRoad,
+            _ => null,
+        };
+
     private int ClickClass(int index)
     {
         if (!hasCastle() || Map.At(index).Owner != Owner.Player(0))

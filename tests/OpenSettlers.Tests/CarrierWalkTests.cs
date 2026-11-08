@@ -112,10 +112,12 @@ public sealed class CarrierWalkTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture))
-        {
-            EveryPassTurns = everyPassTurns,
-        };
+        var game = GameFactory.Create(
+            TestProgram.Tables(),
+            map,
+            int.Parse(parts[3], CultureInfo.InvariantCulture),
+            everyPassTurns
+        );
         var castle = Points(parts[4]).Single();
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         foreach (var flag in Points(parts[5]))
@@ -159,7 +161,7 @@ public sealed class CarrierWalkTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var passes = int.Parse(parts[7], CultureInfo.InvariantCulture);
 

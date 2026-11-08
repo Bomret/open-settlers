@@ -61,7 +61,7 @@ public sealed class HeadOnPassTests
     private static Meeting Meet(int direction = East)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(Tables, map);
+        var game = GameFactory.Create(Tables, map);
         var (dx, dy) = RoadBuilding.Steps[direction];
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 16 + 2 * dx, 6 + 2 * dy);

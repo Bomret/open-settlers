@@ -86,7 +86,7 @@ public sealed class WoodcuttingTests
             }
         }
 
-        var game = new Game(Made(), map);
+        var game = GameFactory.Create(Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
@@ -221,9 +221,13 @@ public sealed class WoodcuttingTests
     public void TheWorkersDrawsComeFromTheGamesGeneratorAndShowInTheDigest()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(Made(), map);
-        Assert.AreEqual(map.Generator, game.Random, "the game's generator starts where the map's generation ended");
-        var same = new Game(
+        var game = GameFactory.Create(Made(), map);
+        Assert.AreEqual(
+            map.Generator,
+            game.Draws.Generator,
+            "the game's generator starts where the map's generation ended"
+        );
+        var same = GameFactory.Create(
             Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );
@@ -232,7 +236,7 @@ public sealed class WoodcuttingTests
         var other = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         other.Generator = other.Generator.Step();
 
-        Assert.AreNotEqual(game.Digest(), new Game(Made(), other).Digest());
+        Assert.AreNotEqual(game.Digest(), GameFactory.Create(Made(), other).Digest());
     }
 
     [TestMethod]

@@ -62,7 +62,7 @@ public sealed class LayoutLoadTests
         }
     }
 
-    static Game NewGame(Layout layout) => new(TestProgram.Made(), layout.BuildMap());
+    static Game NewGame(Layout layout) => GameFactory.Create(TestProgram.Made(), layout.BuildMap());
 
     [TestMethod]
     public void AStartWithARefusedEntryExitsFourWithTheFullMessageAndNoGame()
@@ -99,7 +99,7 @@ public sealed class LayoutLoadTests
     [TestMethod]
     public void AStartWithNoLayoutGivesTheGameUntouched()
     {
-        var made = new Game(TestProgram.Made(), Layout.Read(LayoutTests.Text(), "t").Layout!.BuildMap());
+        var made = GameFactory.Create(TestProgram.Made(), Layout.Read(LayoutTests.Text(), "t").Layout!.BuildMap());
 
         var code = LayoutLoad.Start(null, made, out var game, out _);
 

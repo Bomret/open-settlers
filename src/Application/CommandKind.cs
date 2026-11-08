@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace OpenSettlers.Simulation;
 
 /// <summary>
@@ -57,4 +59,8 @@ public static class CommandKind
     /// player does not own.
     /// </summary>
     public const int RemoveRoad = 7;
+
+    /// <summary>Every kind of command, in the order of their codes: each has a handler of its own (<see cref="ICommandHandler"/>).</summary>
+    public static IReadOnlyList<int> All { get; } =
+    [PlaceCastle, PlaceFlag, BuildRoad, PlaceBuilding, RemoveFlag, RemoveBuilding, RemoveRoad];
 }

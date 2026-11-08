@@ -33,7 +33,11 @@ public sealed class RoadBuildingTests
         MapSize.TryFromValue(int.Parse(header["size"], CultureInfo.InvariantCulture), out var size, out _);
         var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(header["seed"]), size!);
         var castle = header["castle"].Split(',').Select(int.Parse).ToArray();
-        var game = new Game(TestProgram.Tables(), map, int.Parse(header["level"], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(
+            TestProgram.Tables(),
+            map,
+            int.Parse(header["level"], CultureInfo.InvariantCulture)
+        );
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         game.ApplyCommands();
 
@@ -60,7 +64,7 @@ public sealed class RoadBuildingTests
             {
                 Assert.AreEqual(
                     RoadStatus.Refused,
-                    game.CheckRoad(start[0], start[1], first["dirs"].Select(c => c - '0').ToArray()),
+                    game.RoadPlanner.Check(start[0], start[1], first["dirs"].Select(c => c - '0').ToArray()),
                     label
                 );
                 continue;
@@ -89,7 +93,7 @@ public sealed class RoadBuildingTests
                 var digest = game.Digest();
                 Assert.AreEqual(
                     expected,
-                    game.CheckRoad(start[0], start[1], directions[..(index + 1)]),
+                    game.RoadPlanner.Check(start[0], start[1], directions[..(index + 1)]),
                     $"{label} step {index}"
                 );
                 Assert.AreEqual(digest, game.Digest(), $"{label} step {index} checks without changing the game");

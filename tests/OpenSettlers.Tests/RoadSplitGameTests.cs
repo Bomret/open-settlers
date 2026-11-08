@@ -25,7 +25,7 @@ public sealed class RoadSplitGameTests
     )
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(RemovalLogicTests.Made(), map);
+        var game = GameFactory.Create(RemovalLogicTests.Made(), map);
         Apply(game, CommandKind.PlaceCastle, castleX, castleY);
         Apply(game, CommandKind.PlaceFlag, endX, endY);
         beforeRoad?.Invoke(map);
@@ -172,7 +172,7 @@ public sealed class RoadSplitGameTests
         var game = WaterRoad();
         Apply(game, CommandKind.PlaceFlag, 18, 6);
 
-        game.TakeFlagDown(game.Map.Index(18, 6));
+        game.Removal.TakeFlagDown(game.Map.Index(18, 6));
 
         Assert.AreEqual("0.0>1.3 0000 True", Describe(game.Roads.Single()));
     }
@@ -378,7 +378,7 @@ public sealed class RoadSplitGameTests
         var node = game.Map.Index(18, 6);
         Assert.IsTrue(game.Map.At(node).Roads.Has(4), "the hut's mark is set");
 
-        game.TakeFlagDown(node);
+        game.Removal.TakeFlagDown(node);
 
         Assert.AreEqual(Describe(before), Describe(game.Roads.Single()));
     }

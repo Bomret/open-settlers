@@ -7,7 +7,7 @@ namespace OpenSettlers.MapView;
 /// The stand-in for the original's road drawing at the pointer (<c>docs/rules/roads.md</c>). The original draws the
 /// road into the map step by step as the player clicks the next node, takes a step back where the player clicks the
 /// previous node, builds the road where a click reaches a flag, and takes the drawn bits back where the player
-/// cancels. This keeps the road being drawn outside the game: it asks <see cref="Game.CheckRoad"/> after each click,
+/// cancels. This keeps the road being drawn outside the game: it asks <see cref="RoadPlanner.Check"/> after each click,
 /// so an open road or a cancelled one leaves no state behind, and it hands back a <see cref="CommandKind.BuildRoad"/>
 /// command when the road reaches a flag.
 /// </summary>
@@ -56,7 +56,7 @@ public sealed class RoadDrawing(Game game)
         var size = game.Map.Size;
         if (_start is not { } start)
         {
-            if (game.CheckRoad(column, row, []) == RoadStatus.Open)
+            if (game.RoadPlanner.Check(column, row, []) == RoadStatus.Open)
             {
                 _start = (column, row);
             }
@@ -82,7 +82,7 @@ public sealed class RoadDrawing(Game game)
             }
 
             var next = new List<int>(_directions) { direction };
-            switch (game.CheckRoad(start.X, start.Y, next))
+            switch (game.RoadPlanner.Check(start.X, start.Y, next))
             {
                 case RoadStatus.Open:
                     _directions.Add(direction);

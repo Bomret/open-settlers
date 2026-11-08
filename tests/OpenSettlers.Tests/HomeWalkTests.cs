@@ -72,7 +72,7 @@ public sealed class HomeWalkTests
     {
         MapSize.TryFromValue(1, out var size, out _);
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(0x1234, 0x5678, 0x9ABC), size!);
-        var game = new Game(TestProgram.Tables(), map, 0);
+        var game = GameFactory.Create(TestProgram.Tables(), map, 0);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 18, 20));
         game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, 16, 20));
         game.Enqueue(new Command(0, 0, CommandKind.BuildRoad, 19, 21, [3, 4, 3]));
@@ -154,7 +154,7 @@ public sealed class HomeWalkTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var who = parts[7].Split('@');
         var slot = int.Parse(who[0], CultureInfo.InvariantCulture);
@@ -221,7 +221,7 @@ public sealed class HomeWalkTests
                 other = line.Other ?? other;
             }
 
-            var words = game.Random;
+            var words = game.Draws.Generator;
             Assert.AreEqual(
                 rng,
                 $"{words.W0:X4},{words.W1:X4},{words.W2:X4}",
@@ -242,7 +242,7 @@ public sealed class HomeWalkTests
                 );
             }
 
-            var listed = game.Waiting(game.Settlers[slot].Job);
+            var listed = game.Roster.Waiting(game.Settlers[slot].Job);
             Assert.AreEqual(
                 $"{listed & 0xff:X2}{listed >> 8:X2}",
                 waiting,
@@ -259,7 +259,7 @@ public sealed class HomeWalkTests
             );
             Assert.AreEqual(
                 slot,
-                game.Waiting(game.Settlers[slot].Job),
+                game.Roster.Waiting(game.Settlers[slot].Job),
                 $"{name}: the settler is in the castle's list"
             );
         }

@@ -34,7 +34,7 @@ public sealed class ThingHistorySettlersTests
             }
         }
 
-        return new Game(tables, map);
+        return GameFactory.Create(tables, map);
     }
 
     private static void Do(Game game, int kind, int x, int y, int[]? directions = null)

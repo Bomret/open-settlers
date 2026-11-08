@@ -44,7 +44,7 @@ public sealed class HutTests
             }
         }
 
-        var game = new Game(Made(), map);
+        var game = GameFactory.Create(Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in Flags)
@@ -175,7 +175,7 @@ public sealed class HutTests
     [TestMethod]
     public void NothingCanBePlacedBeforeTheCastleStands()
     {
-        var game = new Game(
+        var game = GameFactory.Create(
             Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );
@@ -191,10 +191,14 @@ public sealed class HutTests
         var game = World();
         Build(game, 17, 3, 0, 1);
 
-        Assert.AreEqual(0, game.Route(0, 1));
-        Assert.AreEqual(0, game.Route(0, 3), "the castle's flag leads on only east");
-        Assert.AreEqual(3, game.Route(1, 0), "from the flag at 18,6 the road to the castle leaves west");
-        Assert.AreEqual(5, game.Route(1, 2), "the road to 19,4 leaves north");
+        Assert.AreEqual(0, game.Network.Route(game.Flags.Count, 0, 1));
+        Assert.AreEqual(0, game.Network.Route(game.Flags.Count, 0, 3), "the castle's flag leads on only east");
+        Assert.AreEqual(
+            3,
+            game.Network.Route(game.Flags.Count, 1, 0),
+            "from the flag at 18,6 the road to the castle leaves west"
+        );
+        Assert.AreEqual(5, game.Network.Route(game.Flags.Count, 1, 2), "the road to 19,4 leaves north");
     }
 
     [TestMethod]
@@ -202,9 +206,9 @@ public sealed class HutTests
     {
         var game = World();
 
-        Assert.AreEqual(-1, game.Route(0, 3), "the flag at 17,3 has no road yet");
-        Assert.AreEqual(-1, game.Route(1, 1));
-        Assert.AreEqual(-1, game.Route(0, 9));
+        Assert.AreEqual(-1, game.Network.Route(game.Flags.Count, 0, 3), "the flag at 17,3 has no road yet");
+        Assert.AreEqual(-1, game.Network.Route(game.Flags.Count, 1, 1));
+        Assert.AreEqual(-1, game.Network.Route(game.Flags.Count, 0, 9));
     }
 
     [TestMethod]

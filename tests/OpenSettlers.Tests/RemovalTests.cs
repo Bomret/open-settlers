@@ -73,7 +73,7 @@ public sealed class RemovalTests
     // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]: the game before the first pass.
     private static Game Started(string[] parts, Map map)
     {
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         // The flags take their slots in the order the verb lists them, which the order of the commands of one tick (by node) would
@@ -141,7 +141,7 @@ public sealed class RemovalTests
             {
                 Assert.AreEqual(
                     expected.GetValueOrDefault($"{x},{y}"),
-                    game.ClickClass(x, y),
+                    game.Removal.ClickClass(x, y),
                     $"{name}: the class of the node {x},{y}"
                 );
             }
@@ -399,7 +399,7 @@ public sealed class RemovalTests
 
             if (rng is not null)
             {
-                var words = game.Random;
+                var words = game.Draws.Generator;
                 Assert.AreEqual(rng, $"{words.W0:X4},{words.W1:X4},{words.W2:X4}", $"{name}: the generator {when}");
             }
 
@@ -433,7 +433,7 @@ public sealed class RemovalTests
                     var expectedClass = int.Parse(line["class"], CultureInfo.InvariantCulture);
                     Assert.AreEqual(
                         expectedClass is >= 1 and <= 4 ? expectedClass : 0,
-                        game.ClickClass(node[0], node[1]),
+                        game.Removal.ClickClass(node[0], node[1]),
                         $"{name}: the class of the click on {node[0]},{node[1]}"
                     );
                     var digest = game.Digest();

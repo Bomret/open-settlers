@@ -38,7 +38,7 @@ public sealed class LayoutApplyTests
         var tables = TestProgram.Made();
         tables.Classes[MapObject.Flag.Code] = 3;
 
-        return new Game(tables, layout.BuildMap());
+        return GameFactory.Create(tables, layout.BuildMap());
     }
 
     static Command At(int kind, int x, int y, params int[] directions) =>

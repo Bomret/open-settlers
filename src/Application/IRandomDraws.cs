@@ -7,6 +7,9 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public interface IRandomDraws
 {
+    /// <summary>The generator as the draws so far left it; its three words are the generator's whole state.</summary>
+    RandomGenerator Generator { get; }
+
     /// <summary>Steps the generator and returns its first word.</summary>
     ushort Draw();
 }

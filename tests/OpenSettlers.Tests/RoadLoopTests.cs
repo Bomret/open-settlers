@@ -16,7 +16,7 @@ public sealed class RoadLoopTests
     private static Game Started()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(RemovalLogicTests.Made(), map);
+        var game = GameFactory.Create(RemovalLogicTests.Made(), map);
         Apply(game, CommandKind.PlaceCastle, 15, 5);
 
         return game;
@@ -147,7 +147,7 @@ public sealed class RoadLoopTests
 
         Apply(game, CommandKind.RemoveFlag, 18, 8);
 
-        Assert.IsNull(game.RemovalAt(18, 8));
+        Assert.IsNull(game.Removal.CommandAt(18, 8));
         CollectionAssert.AreEquivalent(roads, game.Roads.ToList());
     }
 
@@ -158,7 +158,7 @@ public sealed class RoadLoopTests
         var game = WithLoop();
         Apply(game, CommandKind.PlaceFlag, 18, 8);
 
-        game.TakeFlagDown(game.Map.Index(18, 8));
+        game.Removal.TakeFlagDown(game.Map.Index(18, 8));
 
         var road = game.Roads.Single();
         Assert.AreEqual((0, 0), (road.FromSlot, road.ToSlot));

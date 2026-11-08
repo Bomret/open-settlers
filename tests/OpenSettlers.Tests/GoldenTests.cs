@@ -59,7 +59,7 @@ public sealed class GoldenTests
     {
         var map = MapGenerator.Generate(TestProgram.Made(), GeneratedSeed, MapSize.Offered[0]);
 
-        return new Game(LayoutSettlersTests.MadeTables(BuildingClass), map) { EveryPassTurns = everyPass };
+        return GameFactory.Create(LayoutSettlersTests.MadeTables(BuildingClass), map, everyPassTurns: everyPass);
     }
 
     private static Func<bool, Game> OnLayout(string file) =>
@@ -68,8 +68,11 @@ public sealed class GoldenTests
             var path = Path.Combine(CheckedInLayoutsTests.LayoutsFolder(), file);
             var read = Layout.Read(File.ReadAllText(path), file);
             Assert.IsNotNull(read.Layout, string.Join("; ", read.Problems));
-            var game = new Game(LayoutSettlersTests.MadeTables(BuildingClass), read.Layout.BuildMap());
-            game.EveryPassTurns = everyPass;
+            var game = GameFactory.Create(
+                LayoutSettlersTests.MadeTables(BuildingClass),
+                read.Layout.BuildMap(),
+                everyPassTurns: everyPass
+            );
             Assert.IsNull(read.Layout.Apply(game));
 
             return game;
