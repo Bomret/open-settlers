@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 
-namespace OpenSettlers.Simulation;
+namespace OpenSettlers.Domain;
 
 /// <summary>
 /// A finished road between two flags (<c>docs/rules/roads.md</c>). The road itself lies in the map: each node of it
-/// holds a bit in its flag byte for each of the six directions along which a road leaves it
-/// (<see cref="RoadBuilding.Steps"/>), so a node on the road has two bits and a flag at its end holds one for this road.
+/// holds a bit in its flag byte for each of the six directions along which a road leaves it, so a node on the road has
+/// two bits and a flag at its end holds one for this road.
 /// </summary>
-/// <param name="FromSlot">The slot (<see cref="Game.Flags"/>) of the flag the road starts at.</param>
+/// <param name="FromSlot">The slot (<see cref="FlagTable"/>) of the flag the road starts at.</param>
 /// <param name="FromDirection">The direction in which the road leaves the starting flag.</param>
 /// <param name="ToSlot">The slot of the flag the road ends at.</param>
 /// <param name="ToDirection">The direction in which the road leaves the ending flag, back towards the start.</param>

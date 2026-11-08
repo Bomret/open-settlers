@@ -36,21 +36,12 @@ public sealed partial class Game
     /// </summary>
     public byte RoadByte(int flag, int direction) => _roadBytes[flag][direction];
 
-    // The slot the next flag takes: the first one a taken-down flag left free, else the end of the table (the allocator 0x45d7ad).
-    private int NextFlagSlot()
-    {
-        var free = _flags.FindIndex(flag => flag.IsFree);
-
-        return free >= 0 ? free : _flags.Count;
-    }
-
     // Puts a flag in the next slot; the item of the slot starts as zeros (the allocator clears it).
-    private int AddFlag(Flag flag)
+    private int AddFlag(int x, int y)
     {
-        var slot = NextFlagSlot();
-        if (slot == _flags.Count)
+        var slot = _flags.Add(x, y);
+        if (slot == _flagStatus.Count)
         {
-            _flags.Add(flag);
             History.FillFlag(slot);
             _flagStatus.Add(0);
             _roadBytes.Add(new byte[6]);
@@ -62,7 +53,6 @@ public sealed partial class Game
             return slot;
         }
 
-        _flags[slot] = flag;
         History.FillFlag(slot);
         _flagStatus[slot] = 0;
         _roadBytes[slot] = new byte[6];
@@ -78,11 +68,10 @@ public sealed partial class Game
     // free slots at its end.
     private void FreeFlagSlot(int slot)
     {
-        _flags[slot] = Flag.Free;
-        while (_flags.Count > 0 && _flags[^1].IsFree)
+        _flags.Free(slot);
+        while (_flagStatus.Count > _flags.Count)
         {
-            var last = _flags.Count - 1;
-            _flags.RemoveAt(last);
+            var last = _flagStatus.Count - 1;
             _flagStatus.RemoveAt(last);
             _roadBytes.RemoveAt(last);
             _flagGoods.RemoveAt(last);
@@ -110,6 +99,10 @@ public sealed partial class Game
             ) << 4
         );
 
+    private Road? RoadAt(int flag, int direction) => _roads.RoadAt(flag, direction);
+
+    private int FlagNeighbour(int flag, int direction) => _roads.FlagNeighbour(flag, direction);
+
     private void SetRoadBytes(Road road)
     {
         var length = LengthClass(road.Directions.Count);
@@ -117,29 +110,6 @@ public sealed partial class Game
         _roadBytes[road.ToSlot][road.ToDirection] = length;
         SetDirectionBytes(road);
     }
-
-    // The road that leaves a flag in a direction, or null.
-    private Road? RoadAt(int flag, int direction)
-    {
-        foreach (var road in _roads)
-        {
-            if (
-                (road.FromSlot == flag && road.FromDirection == direction)
-                || (road.ToSlot == flag && road.ToDirection == direction)
-            )
-            {
-                return road;
-            }
-        }
-
-        return null;
-    }
-
-    // The flag at the other end of a road that leaves a flag in a direction, and the direction the road leaves it in.
-    private static (int Flag, int Direction) FarEnd(Road road, int flag, int direction) =>
-        road.FromSlot == flag && road.FromDirection == direction
-            ? (road.ToSlot, road.ToDirection)
-            : (road.FromSlot, road.FromDirection);
 
     // 0x428728, the second half: each pass clears bit 7 of the status of a window of flags from a cursor that wraps at the
     // end of the table, and stops after 10 flags that had the bit set. A flag whose request found no carrier asks again

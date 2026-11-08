@@ -222,7 +222,7 @@ public sealed partial class Game
     // The road that passes a node that holds no flag.
     private Road? RoadThrough(int index)
     {
-        foreach (var road in _roads)
+        foreach (var road in _roads.Roads)
         {
             var node = Map.Index(_flags[road.FromSlot].X, _flags[road.FromSlot].Y);
             for (var step = 0; step < road.Directions.Count - 1; step++)

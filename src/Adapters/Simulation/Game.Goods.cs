@@ -55,10 +55,6 @@ public sealed partial class Game
         _goodsBit[flag] = true;
     }
 
-    // The flag at the other end of the road that leaves a flag in a direction, or -1 where none does.
-    private int FlagNeighbour(int flag, int direction) =>
-        RoadAt(flag, direction) is { } road ? FarEnd(road, flag, direction).Flag : -1;
-
     // The turn of a flag's goods (0x46414d, from the thermometer at 0x46427c to the places' loop ending at 0x4650b9). It runs
     // when the flag's bit is set: the bit goes out, and each place from the last to the first that holds a good without a
     // direction gets a destination, or, with one, a direction.

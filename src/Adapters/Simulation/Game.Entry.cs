@@ -27,7 +27,7 @@ public sealed partial class Game
         return -1;
     }
 
-    private int FlagAt(int x, int y) => _flags.FindIndex(flag => flag.X == x && flag.Y == y);
+    private int FlagAt(int x, int y) => _flags.SlotAt(x, y);
 
     // The castle's list of waiting settlers no longer names a settler the dispatch takes (0x42be63, 0x42b455 clear the entry).
     private void TakeFromWaiting(int job, int slot)

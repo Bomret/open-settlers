@@ -88,9 +88,9 @@ public sealed partial class Game
             return false;
         }
 
-        var flag = _flags.FindIndex(f => f.X == x && f.Y == y);
+        var flag = _flags.SlotAt(x, y);
 
-        return flag >= 0 && Enumerable.Range(0, 6).Any(direction => Link(flag, direction) >= 0);
+        return flag >= 0 && Enumerable.Range(0, 6).Any(direction => FlagNeighbour(flag, direction) >= 0);
     }
 
     // State 0x19 (0x4353ef), once its timer has run out: the spiral search around the settler for the nearest such flag (the

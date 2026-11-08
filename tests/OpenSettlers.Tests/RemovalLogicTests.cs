@@ -107,7 +107,7 @@ public sealed class RemovalLogicTests
         Assert.IsFalse(game.Map.At(13, 4).FlagMark, "or flag mark");
 
         Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
-        Assert.AreEqual(new Flag(13, 4), game.Flags[4], "the next flag takes the free slot");
+        Assert.AreEqual((13, 4), (game.Flags[4].X, game.Flags[4].Y), "the next flag takes the free slot");
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 7));
         Assert.AreEqual(4, game.Flags.Count, "the count falls past the free slots at its end");
