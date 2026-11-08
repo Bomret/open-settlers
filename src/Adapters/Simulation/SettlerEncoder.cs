@@ -63,7 +63,10 @@ public static class SettlerEncoder
     {
         var search = HomeSearchFrom(then);
 
-        return search with { Residue = search.Residue with { Next = 0 } };
+        return search with
+        {
+            Residue = search.Residue with { Next = 0 },
+        };
     }
 
     /// <summary>The bytes of a builder's item when it loses its job (<c>0x4617fd</c>): as it leaves them, with the mode byte cleared.</summary>

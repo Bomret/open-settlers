@@ -170,7 +170,6 @@ public sealed partial class Game
         }
     }
 
-
     // The arrival of a settler on the way home (0x4385ab): on a flag of its player with a road it starts the walk to the
     // storage (state 2, mode 0xfe, target 0, heading 0, next 0, timer 0); anywhere else it searches again (state 0x19, mode 0).
     private void ArriveHome(int slot, Settler settler)
