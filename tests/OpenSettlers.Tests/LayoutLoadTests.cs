@@ -93,7 +93,7 @@ public sealed class LayoutLoadTests
         Assert.AreEqual(0, code);
         Assert.AreSame(made, game);
         Assert.IsNull(message);
-        Assert.IsNotNull(game!.Castle);
+        Assert.IsNotNull(game!.CastleStock.Castle);
     }
 
     [TestMethod]

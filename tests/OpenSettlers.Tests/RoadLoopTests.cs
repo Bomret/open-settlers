@@ -49,7 +49,7 @@ public sealed class RoadLoopTests
     {
         var game = WithLoop();
 
-        var road = game.Roads.Single();
+        var road = game.Network.Roads.Single();
         Assert.AreEqual((0, 0, 0, 2), (road.FromSlot, road.FromDirection, road.ToSlot, road.ToDirection));
         CollectionAssert.AreEqual(Loop, road.Directions.ToArray());
         Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length, "class 2 for six steps at the start end");
@@ -86,9 +86,11 @@ public sealed class RoadLoopTests
         Apply(game, CommandKind.PlaceFlag, 18, 8);
         Run(game, 1500);
 
-        Assert.AreEqual(2, game.Roads.Count);
-        Assert.IsTrue(game.Roads.All(r => (r.FromSlot == 0 && r.ToSlot == 1) || (r.FromSlot == 1 && r.ToSlot == 0)));
-        Assert.AreEqual(Loop.Length, game.Roads.Sum(r => r.Directions.Count));
+        Assert.AreEqual(2, game.Network.Roads.Count);
+        Assert.IsTrue(
+            game.Network.Roads.All(r => (r.FromSlot == 0 && r.ToSlot == 1) || (r.FromSlot == 1 && r.ToSlot == 0))
+        );
+        Assert.AreEqual(Loop.Length, game.Network.Roads.Sum(r => r.Directions.Count));
         Assert.AreEqual(1, game.Flags[0].Side(0).Carriers, "the first half");
         Assert.AreEqual(1, game.Flags[1].Side(5).Carriers, "the first half at the new flag");
         Assert.AreEqual(1, game.Flags[1].Side(3).Carriers, "the second half");
@@ -109,7 +111,7 @@ public sealed class RoadLoopTests
         Apply(game, CommandKind.RemoveRoad, 18, 8);
         Run(game, 1500);
 
-        Assert.AreEqual(0, game.Roads.Count);
+        Assert.AreEqual(0, game.Network.Roads.Count);
         Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay, "no carrier is on the way to the road");
         Assert.IsFalse(game.Flags[0].Side(2).CarrierOnTheWay);
         Assert.AreEqual(
@@ -143,12 +145,12 @@ public sealed class RoadLoopTests
     {
         var game = WithLoop();
         Apply(game, CommandKind.PlaceFlag, 18, 8);
-        var roads = game.Roads.ToList();
+        var roads = game.Network.Roads.ToList();
 
         Apply(game, CommandKind.RemoveFlag, 18, 8);
 
         Assert.IsNull(game.Removal.CommandAt(18, 8));
-        CollectionAssert.AreEquivalent(roads, game.Roads.ToList());
+        CollectionAssert.AreEquivalent(roads, game.Network.Roads.ToList());
     }
 
     [TestMethod]
@@ -160,7 +162,7 @@ public sealed class RoadLoopTests
 
         game.Removal.TakeFlagDown(game.Map.Index(18, 8));
 
-        var road = game.Roads.Single();
+        var road = game.Network.Roads.Single();
         Assert.AreEqual((0, 0), (road.FromSlot, road.ToSlot));
         Assert.AreEqual(Loop.Length, road.Directions.Count);
         CollectionAssert.AreEquivalent(
@@ -180,7 +182,7 @@ public sealed class RoadLoopTests
 
         Apply(game, CommandKind.BuildRoad, 16, 6, [0, 3]);
 
-        Assert.AreEqual(0, game.Roads.Count);
+        Assert.AreEqual(0, game.Network.Roads.Count);
         CollectionAssert.AreEqual(roads, TestMaps.Roads(game.Map));
     }
 }

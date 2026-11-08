@@ -462,9 +462,9 @@ public partial class MapViewControl : Control
             var objectsChanged = _objectWatch.Changed(_game);
             if (
                 objectsChanged
-                || (_game.Castle is not null && !_castleDrawn)
+                || (_game.CastleStock.Castle is not null && !_castleDrawn)
                 || _game.Flags.Count != _flagsDrawn
-                || _game.Roads.Count != _roadsDrawn
+                || _game.Network.Roads.Count != _roadsDrawn
                 || _game.Buildings.Count != _buildingsDrawn
                 || _game.Revision != _revisionDrawn
             )
@@ -472,14 +472,14 @@ public partial class MapViewControl : Control
                 // The castle stands, a flag went up, a road was built, a hut stands, something was taken
                 // down, or an object or a good on a flag changed: draw it.
                 _revisionDrawn = _game.Revision;
-                _castleDrawn = _game.Castle is not null;
+                _castleDrawn = _game.CastleStock.Castle is not null;
                 _flagsDrawn = _game.Flags.Count;
-                _roadsDrawn = _game.Roads.Count;
+                _roadsDrawn = _game.Network.Roads.Count;
                 _buildingsDrawn = _game.Buildings.Count;
                 Redraw();
             }
 
-            _frameCounter = _game.Clock;
+            _frameCounter = _game.Clock.Now;
         }
         else
         {
@@ -856,7 +856,12 @@ public partial class MapViewControl : Control
 
         var quads = new System.Collections.Generic.List<(int X, int Y, int Width, int Height, Color Color)>();
         foreach (
-            var draw in _settlerGraphics.Figures.Draws(_state.Map, _game.Settlers, _game.Clock, _settlerGraphics.Shifts)
+            var draw in _settlerGraphics.Figures.Draws(
+                _state.Map,
+                _game.Settlers,
+                _game.Clock.Now,
+                _settlerGraphics.Shifts
+            )
         )
         {
             // A sprite with no loaded layer is skipped and reported once per sprite: the render loop must not throw or
@@ -1114,7 +1119,7 @@ public partial class MapViewControl : Control
             var band in ObjectQuads.Bands(
                 ObjectDraws.Of(
                     map,
-                    _game?.Castle,
+                    _game?.CastleStock.Castle,
                     _game?.Buildings,
                     _game is null ? null : ObjectDraws.FlagGoodsOf(_game),
                     _frameCounter

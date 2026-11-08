@@ -17,8 +17,8 @@ public sealed class GameDigest : IGameDigest
     public ulong Of(Game game)
     {
         var hash = Mix(Mix(FnvOffset, game.TickCount), (long)Applied(game));
-        hash = Mix(hash, game.Castle is { } castle ? castle.X * 65536L + castle.Y : -1);
-        foreach (var count in game.Stock)
+        hash = Mix(hash, game.CastleStock.Castle is { } castle ? castle.X * 65536L + castle.Y : -1);
+        foreach (var count in game.CastleStock.Stock)
         {
             hash = Mix(hash, count);
         }
@@ -30,7 +30,7 @@ public sealed class GameDigest : IGameDigest
 
         hash = Mix(hash, game.Carriers.FlagCursor);
 
-        foreach (var road in game.Roads)
+        foreach (var road in game.Network.Roads)
         {
             hash = Mix(
                 Mix(Mix(Mix(Mix(hash, road.FromSlot), road.FromDirection), road.ToSlot), road.ToDirection),
@@ -93,7 +93,10 @@ public sealed class GameDigest : IGameDigest
 
     private static void MixSettlers(Game game, ref ulong hash)
     {
-        hash = Mix(Mix(Mix(Mix(hash, game.Clock), game.Pass.Phase), game.Pass.ScanCursor), game.Roster.LeavingCount);
+        hash = Mix(
+            Mix(Mix(Mix(hash, game.Clock.Now), game.Pass.Phase), game.Pass.ScanCursor),
+            game.Roster.LeavingCount
+        );
         foreach (var building in game.Buildings)
         {
             foreach (

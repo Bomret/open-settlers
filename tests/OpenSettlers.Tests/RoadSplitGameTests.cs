@@ -40,7 +40,7 @@ public sealed class RoadSplitGameTests
             )
         );
         game.Tick();
-        Assert.AreEqual(1, game.Roads.Count, "the road is built");
+        Assert.AreEqual(1, game.Network.Roads.Count, "the road is built");
 
         return game;
     }
@@ -62,7 +62,7 @@ public sealed class RoadSplitGameTests
     }
 
     private static int[] Path(Game game) =>
-        [.. game.Roads.OrderBy(road => road.FromSlot).SelectMany(road => road.Directions)];
+        [.. game.Network.Roads.OrderBy(road => road.FromSlot).SelectMany(road => road.Directions)];
 
     [TestMethod]
     public void AFlagOnARoadGivesTwoRoadsThatMeetAtItAndFollowTheOldPath()
@@ -71,9 +71,9 @@ public sealed class RoadSplitGameTests
 
         Apply(game, CommandKind.PlaceFlag, 18, 6);
 
-        Assert.AreEqual(2, game.Roads.Count);
-        Assert.AreEqual("0.0>2.3 00 False", Show(game.Roads.Single(road => road.FromSlot == 0)), "castle half");
-        Assert.AreEqual("2.0>1.3 00 False", Show(game.Roads.Single(road => road.FromSlot == 2)), "far half");
+        Assert.AreEqual(2, game.Network.Roads.Count);
+        Assert.AreEqual("0.0>2.3 00 False", Show(game.Network.Roads.Single(road => road.FromSlot == 0)), "castle half");
+        Assert.AreEqual("2.0>1.3 00 False", Show(game.Network.Roads.Single(road => road.FromSlot == 2)), "far half");
         CollectionAssert.AreEqual(new[] { 0, 0, 0, 0 }, Path(game));
     }
 
@@ -100,9 +100,9 @@ public sealed class RoadSplitGameTests
 
         Apply(game, CommandKind.PlaceFlag, 0, 9);
 
-        Assert.AreEqual(2, game.Roads.Count);
-        Assert.AreEqual("0.3>2.0 33 False", Show(game.Roads.Single(road => road.FromSlot == 0)));
-        Assert.AreEqual("2.3>1.0 33 False", Show(game.Roads.Single(road => road.FromSlot == 2)));
+        Assert.AreEqual(2, game.Network.Roads.Count);
+        Assert.AreEqual("0.3>2.0 33 False", Show(game.Network.Roads.Single(road => road.FromSlot == 0)));
+        Assert.AreEqual("2.3>1.0 33 False", Show(game.Network.Roads.Single(road => road.FromSlot == 2)));
     }
 
     // The triangles beside the steps from 16,6 to 20,6 are water (the lower triangle of a node and the upper of its north node,
@@ -140,25 +140,25 @@ public sealed class RoadSplitGameTests
     public void AWaterRoadSplitsIntoTwoWaterRoads()
     {
         var game = WaterRoad();
-        Assert.IsTrue(game.Roads.Single().Water, "the road is a water road");
+        Assert.IsTrue(game.Network.Roads.Single().Water, "the road is a water road");
 
         Apply(game, CommandKind.PlaceFlag, 18, 6);
 
-        Assert.AreEqual(2, game.Roads.Count);
-        Assert.IsTrue(game.Roads.All(road => road.Water));
+        Assert.AreEqual(2, game.Network.Roads.Count);
+        Assert.IsTrue(game.Network.Roads.All(road => road.Water));
     }
 
     [TestMethod]
     public void RemovingTheFlagThatSplitARoadJoinsTheHalvesIntoOneRoadWithTheOldPath()
     {
         var game = EastRoad();
-        var before = game.Roads.Single();
+        var before = game.Network.Roads.Single();
         var bytes = (FlagEncoder.RoadByte(game.Flags[0].Side(0)), FlagEncoder.RoadByte(game.Flags[1].Side(3)));
         Apply(game, CommandKind.PlaceFlag, 18, 6);
 
         Apply(game, CommandKind.RemoveFlag, 18, 6);
 
-        Assert.AreEqual(Describe(before), Describe(game.Roads.Single()));
+        Assert.AreEqual(Describe(before), Describe(game.Network.Roads.Single()));
         Assert.AreEqual(
             bytes,
             (FlagEncoder.RoadByte(game.Flags[0].Side(0)), FlagEncoder.RoadByte(game.Flags[1].Side(3)))
@@ -174,7 +174,7 @@ public sealed class RoadSplitGameTests
 
         game.Removal.TakeFlagDown(game.Map.Index(18, 6));
 
-        Assert.AreEqual("0.0>1.3 0000 True", Describe(game.Roads.Single()));
+        Assert.AreEqual("0.0>1.3 0000 True", Describe(game.Network.Roads.Single()));
     }
 
     [TestMethod]
@@ -187,7 +187,7 @@ public sealed class RoadSplitGameTests
         game.ApplyCommands();
 
         Assert.AreEqual(digest, game.Digest());
-        Assert.AreEqual(1, game.Roads.Count);
+        Assert.AreEqual(1, game.Network.Roads.Count);
     }
 
     [TestMethod]
@@ -285,8 +285,8 @@ public sealed class RoadSplitGameTests
 
         Assert.AreEqual(2, game.Buildings.Count(building => !building.IsFree), "the castle and the hut");
         Assert.AreEqual(3, game.Flags.Count);
-        Assert.AreEqual("0.0>2.3 00 False", Show(game.Roads.Single(road => road.FromSlot == 0)));
-        Assert.AreEqual("2.0>1.3 00 False", Show(game.Roads.Single(road => road.FromSlot == 2)));
+        Assert.AreEqual("0.0>2.3 00 False", Show(game.Network.Roads.Single(road => road.FromSlot == 0)));
+        Assert.AreEqual("2.0>1.3 00 False", Show(game.Network.Roads.Single(road => road.FromSlot == 2)));
         Assert.AreEqual(2, game.Buildings[1].Flag, "the hut is tied to the flag that split the road");
         var split = game.History.EventsOf(game.History.FlagId(2)).Single(e => e.Type == EventType.SplitRoads);
         Assert.AreEqual(Cause.Placed(game.History.FlagId(2)), split.Cause);
@@ -301,8 +301,8 @@ public sealed class RoadSplitGameTests
 
         Apply(byHut, CommandKind.PlaceBuilding, 17, 5);
 
-        Assert.AreEqual(Describe(byButton.Roads[0]), Describe(byHut.Roads[0]));
-        Assert.AreEqual(Describe(byButton.Roads[1]), Describe(byHut.Roads[1]));
+        Assert.AreEqual(Describe(byButton.Network.Roads[0]), Describe(byHut.Network.Roads[0]));
+        Assert.AreEqual(Describe(byButton.Network.Roads[1]), Describe(byHut.Network.Roads[1]));
         var roads = byHut.Map.At(18, 6).Roads;
         Assert.IsTrue(roads.Has(4), "the hut's mark at its flag");
         Assert.AreEqual(RoadSet.Of(0).With(3), roads.Without(4), "the road bits of the two halves");
@@ -319,7 +319,7 @@ public sealed class RoadSplitGameTests
         game.ApplyCommands();
 
         Assert.AreEqual(digest, game.Digest());
-        Assert.AreEqual(1, game.Roads.Count);
+        Assert.AreEqual(1, game.Network.Roads.Count);
     }
 
     // The hut's flag node 18,6 holds a road (node state 6), but the hut's own node 17,5 is a site for a flag only (site 1).
@@ -337,7 +337,7 @@ public sealed class RoadSplitGameTests
         game.ApplyCommands();
 
         Assert.AreEqual(digest, game.Digest());
-        Assert.AreEqual(1, game.Roads.Count);
+        Assert.AreEqual(1, game.Network.Roads.Count);
         Assert.AreEqual(2, game.Flags.Count);
     }
 
@@ -351,7 +351,11 @@ public sealed class RoadSplitGameTests
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 6, [2, 2]));
         game.Tick();
 
-        Assert.AreEqual(3, game.Roads.Count, "a road leaves the hut's flag along a direction the mark does not take");
+        Assert.AreEqual(
+            3,
+            game.Network.Roads.Count,
+            "a road leaves the hut's flag along a direction the mark does not take"
+        );
         Assert.IsTrue(game.Map.At(18, 6).Roads.Has(4), "the mark stays");
     }
 
@@ -359,13 +363,13 @@ public sealed class RoadSplitGameTests
     public void RemovingTheHutAndThenItsFlagJoinsTheRoadBackIntoOne()
     {
         var game = EastRoad();
-        var before = game.Roads.Single();
+        var before = game.Network.Roads.Single();
         Apply(game, CommandKind.PlaceBuilding, 17, 5);
         Apply(game, CommandKind.RemoveBuilding, 17, 5);
 
         Apply(game, CommandKind.RemoveFlag, 18, 6);
 
-        Assert.AreEqual(Describe(before), Describe(game.Roads.Single()));
+        Assert.AreEqual(Describe(before), Describe(game.Network.Roads.Single()));
     }
 
     // The click refuses the flag while the hut stands (ClickClass), so the join is reached through the take-down itself.
@@ -373,14 +377,14 @@ public sealed class RoadSplitGameTests
     public void TheMarkOfAStandingHutAtItsFlagIsNoRoadWhenTheFlagJoinsTheRoad()
     {
         var game = EastRoad();
-        var before = game.Roads.Single();
+        var before = game.Network.Roads.Single();
         Apply(game, CommandKind.PlaceBuilding, 17, 5);
         var node = game.Map.Index(18, 6);
         Assert.IsTrue(game.Map.At(node).Roads.Has(4), "the hut's mark is set");
 
         game.Removal.TakeFlagDown(node);
 
-        Assert.AreEqual(Describe(before), Describe(game.Roads.Single()));
+        Assert.AreEqual(Describe(before), Describe(game.Network.Roads.Single()));
     }
 
     [TestMethod]

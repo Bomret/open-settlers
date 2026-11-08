@@ -32,13 +32,35 @@ public sealed class CastleRoster(
     // The job whose waiting settler's turn in the castle takes another branch (not ported): the original's job 10.
     private static readonly Job UnportedWaitingJob = new(10);
 
+    // The number of jobs the castle's list of waiting settlers has an entry for (0x42 + 2 times the job, up to 0x82).
+    private const int JobCount = 32;
+
+    // The castle's status bit 4, the only status bit it has besides the bit of its worker inside, with no recovered meaning.
+    private const int CastleOtherStatus = 0x10;
+
+    // A fill counter that has overflowed: both fill bytes of the castle read full, as a delivery that carries out of the
+    // counter leaves them (docs/rules/goods.md).
+    private const int FullFill = 0xff;
+
+    // The frame of a settler that waits for a busy node, as the claims of the walk home and of the woodcutter set it.
+    private const int WaitingFrame = 0x52;
+
+    // The clock units a knight's timer is set to after a promotion and grows by for each draw that does not promote it.
+    private const ushort KnightTimerStep = 6000;
+
+    // The timer value at and above which adding KnightTimerStep wraps past 16 bits (0x10000 - 6000), which ends the draws.
+    private const int KnightTimerWraps = 0x10000 - KnightTimerStep;
+
     // The draws below which a knight of the level 0 to 3 (the jobs 22 to 25) is made a knight of the next level
     // (0x43910b, 0x4391eb, 0x4392cb, 0x4393ab).
     private static readonly int[] PromotionLimits = [4000, 2000, 1000, 500];
 
     // The castle's list of waiting settlers: for each job the slot of the settler that waits there (word at 0x42 + 2
     // times the job of the storage item), 0 for none.
-    private readonly ushort[] _waiting = new ushort[32];
+    private readonly ushort[] _waiting = new ushort[JobCount];
+
+    // The entry of a job in the castle's list of waiting settlers.
+    private ref ushort Entry(Job job) => ref _waiting[job.Code];
 
     /// <summary>The castle's list of waiting settlers, by job: the slot of the settler that waits there, 0 for none.</summary>
     public ReadOnlySpan<ushort> WaitingList => _waiting;
@@ -58,14 +80,14 @@ public sealed class CastleRoster(
     }
 
     /// <summary>The slot of the settler that waits in the castle's list for a job, 0 for none.</summary>
-    public int Waiting(Job job) => _waiting[job.Code];
+    public int Waiting(Job job) => Entry(job);
 
     void ICastleRoster.Take(Job job, int slot) => TakeFromWaiting(job, slot);
 
     void ICastleRoster.WorkerSent() => LeavingCount++;
 
     // Empties the castle's list of the settlers that wait for a job (a test that has the castle run out of settlers).
-    internal void ClearWaiting(Job job) => _waiting[job.Code] = 0;
+    internal void ClearWaiting(Job job) => Entry(job) = 0;
 
     /// <summary>
     /// The settler the castle's list of waiting settlers names for a job (the dispatch takes that one, 0x42be63, 0x42b455), else
@@ -73,7 +95,7 @@ public sealed class CastleRoster(
     /// </summary>
     public int CastleSettler(Job job)
     {
-        var listed = _waiting[job.Code];
+        var listed = Entry(job);
         if (listed != 0 && settlers[listed] is { Activity: WaitsInCastle } waiting && waiting.Job == job)
         {
             return listed;
@@ -93,9 +115,9 @@ public sealed class CastleRoster(
     /// <summary>The castle's list of waiting settlers no longer names a settler the dispatch takes (0x42be63, 0x42b455 clear the entry).</summary>
     public void TakeFromWaiting(Job job, int slot)
     {
-        if (_waiting[job.Code] == slot)
+        if (Entry(job) == slot)
         {
-            _waiting[job.Code] = 0;
+            Entry(job) = 0;
         }
     }
 
@@ -110,9 +132,9 @@ public sealed class CastleRoster(
             new Building(BuildingType.Castle, x, y, 0, constructing: true)
             {
                 WorkerInside = true,
-                OtherStatus = 0x10,
-                FillLow = 0xff,
-                FillHigh = 0xff,
+                OtherStatus = CastleOtherStatus,
+                FillLow = FullFill,
+                FillHigh = FullFill,
             }
         );
         history.FillBuilding(0);
@@ -146,14 +168,14 @@ public sealed class CastleRoster(
     // and a tool from the stock; the castle's 20 first settlers hold one woodcutter.
     private bool RequestWorker(Building building, Job job)
     {
-        if (roads.Route(flags.Count, building.Flag, 0) < 0 || _waiting[job.Code] == 0)
+        if (roads.Route(flags.Count, building.Flag, 0) < 0 || Entry(job) == 0)
         {
             return false;
         }
 
-        var slot = _waiting[job.Code];
+        var slot = Entry(job);
         var settler = settlers[slot];
-        _waiting[job.Code] = 0;
+        Entry(job) = 0;
         movement.Become(settler, new Leaving(new ToBuilding(building.Flag)));
         building.WorkerOnTheWay = true;
         LeavingCount++;
@@ -187,7 +209,7 @@ public sealed class CastleRoster(
         }
         else if (settler.Job != UnportedWaitingJob)
         {
-            _waiting[settler.Job.Code] = (ushort)slot;
+            Entry(settler.Job) = (ushort)slot;
         }
     }
 
@@ -209,15 +231,15 @@ public sealed class CastleRoster(
                 {
                     if (draws.Draw() < PromotionLimits[level])
                     {
-                        _waiting[settler.Job.Code] = 0;
+                        Entry(settler.Job) = 0;
                         settler.Job = settler.Job.Promoted;
-                        settler.Timer = 6000;
+                        settler.Timer = KnightTimerStep;
                         break;
                     }
 
                     var timer = settler.Timer;
-                    settler.Timer = (ushort)(timer + 6000);
-                    if (timer >= 0xe890)
+                    settler.Timer = (ushort)(timer + KnightTimerStep);
+                    if (timer >= KnightTimerWraps)
                     {
                         break;
                     }
@@ -227,7 +249,7 @@ public sealed class CastleRoster(
             history.RecordSettler(slot, EventType.KnightIdled, causes.Rule);
         }
 
-        _waiting[settler.Job.Code] = (ushort)slot;
+        Entry(settler.Job) = (ushort)slot;
     }
 
     // State 10, the settler that stands by while the castle is built (0x43f17a): each turn adds the elapsed units
@@ -269,7 +291,7 @@ public sealed class CastleRoster(
             || (target is not null && movement.Occupant(movement.Map.Index(target.X, target.Y)) != 0)
         )
         {
-            settler.Frame = 0x52;
+            settler.Frame = WaitingFrame;
             settler.Timer = 0;
             history.RecordSettler(slot, EventType.Left, causes.Rule);
             return;

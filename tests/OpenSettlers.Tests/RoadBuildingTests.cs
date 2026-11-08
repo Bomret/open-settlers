@@ -58,7 +58,7 @@ public sealed class RoadBuildingTests
             var label = $"{run} start {first["start"]} dirs {first["dirs"]}";
             var outcome = attempt.Last();
             var before = Snapshot(map);
-            var roads = game.Roads.Count;
+            var roads = game.Network.Roads.Count;
 
             if (outcome.Contains(" START-REFUSED ", StringComparison.Ordinal))
             {
@@ -103,7 +103,7 @@ public sealed class RoadBuildingTests
             game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, start[0], start[1], directions));
             game.ApplyCommands();
 
-            Assert.AreEqual(built ? roads + 1 : roads, game.Roads.Count, label);
+            Assert.AreEqual(built ? roads + 1 : roads, game.Network.Roads.Count, label);
             // No state behind where the road is not built: the changes the harness lists are empty.
             Assert.AreEqual(
                 Between(outcome, " roadchanges=", " items="),
@@ -112,7 +112,7 @@ public sealed class RoadBuildingTests
             );
             if (built)
             {
-                AssertItems(label, game.Roads[^1], outcome);
+                AssertItems(label, game.Network.Roads[^1], outcome);
             }
         }
     }

@@ -53,7 +53,7 @@ public sealed class RoadsTests
 
         Build(game, 0, 0);
 
-        var road = game.Roads.Single();
+        var road = game.Network.Roads.Single();
         Assert.AreEqual(0, road.FromSlot);
         Assert.AreEqual(0, road.FromDirection);
         Assert.AreEqual(1, road.ToSlot);
@@ -74,7 +74,7 @@ public sealed class RoadsTests
         same.Tick();
 
         Assert.AreEqual(RoadStatus.Open, game.RoadPlanner.Check(16, 6, [0]));
-        Assert.AreEqual(0, game.Roads.Count);
+        Assert.AreEqual(0, game.Network.Roads.Count);
         Assert.AreEqual(same.Digest(), game.Digest());
     }
 
@@ -102,8 +102,11 @@ public sealed class RoadsTests
         Build(direct, 0, 0);
         Build(detour, 0, 3, 0, 0);
 
-        Assert.AreEqual(1, detour.Roads.Count);
-        CollectionAssert.AreEqual(direct.Roads[0].Directions.ToArray(), detour.Roads[0].Directions.ToArray());
+        Assert.AreEqual(1, detour.Network.Roads.Count);
+        CollectionAssert.AreEqual(
+            direct.Network.Roads[0].Directions.ToArray(),
+            detour.Network.Roads[0].Directions.ToArray()
+        );
         CollectionAssert.AreEqual(TestMaps.Roads(direct.Map), TestMaps.Roads(detour.Map));
     }
 

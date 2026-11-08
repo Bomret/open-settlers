@@ -134,7 +134,7 @@ public sealed class RemovalLogicTests
         var game = World();
         Assert.IsTrue(Applied(game, CommandKind.RemoveRoad, 17, 6));
 
-        Assert.AreEqual(2, game.Roads.Count);
+        Assert.AreEqual(2, game.Network.Roads.Count);
         Assert.IsTrue(game.Map.At(17, 6).Roads.IsEmpty, "the node of the road is bare");
         Assert.IsFalse(game.Map.At(16, 6).Roads.Has(0), "the castle's flag holds no east road");
         Assert.IsFalse(game.Map.At(18, 6).Roads.Has(3), "nor the flag at the other end a west road");
@@ -147,8 +147,8 @@ public sealed class RemovalLogicTests
         var game = World();
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 18, 6));
 
-        Assert.AreEqual(2, game.Roads.Count);
-        var joined = game.Roads.Single(road => road.FromSlot == 0);
+        Assert.AreEqual(2, game.Network.Roads.Count);
+        var joined = game.Network.Roads.Single(road => road.FromSlot == 0);
         Assert.AreEqual(5, joined.Directions.Count, "2 steps and 3 steps");
         Assert.AreEqual(2, joined.ToSlot, "from the castle's flag to the flag at 19,4");
         Assert.IsTrue(game.Flags[1].IsFree);
@@ -266,7 +266,7 @@ public sealed class RemovalLogicTests
                 ' ',
                 Layers.Digest(game.Map, MapLayer.Terrain),
                 Layers.Digest(game.Map, MapLayer.Height),
-                game.Roads.Single(road => road.FromSlot == 3 && road.ToSlot == 2).Directions.Sum(),
+                game.Network.Roads.Single(road => road.FromSlot == 3 && road.ToSlot == 2).Directions.Sum(),
                 string.Concat(
                     Enumerable
                         .Range(2, 2)
@@ -274,7 +274,7 @@ public sealed class RemovalLogicTests
                             $"{FlagEncoder.Status(game.Flags[flag])}{FlagEncoder.RoadByte(game.Flags[flag].Side(0))}{FlagEncoder.RoadByte(game.Flags[flag].Side(5))}"
                         )
                 ),
-                string.Concat(game.Stock)
+                string.Concat(game.CastleStock.Stock)
             );
         var before = Part();
         var whole = game.Digest();
@@ -305,7 +305,7 @@ public sealed class RemovalLogicTests
 
         int Huts() =>
             OpenSettlers
-                .MapView.ObjectDraws.Of(game.Map, game.Castle, game.Buildings)
+                .MapView.ObjectDraws.Of(game.Map, game.CastleStock.Castle, game.Buildings)
                 .Count(draw => draw.Entry == OpenSettlers.MapView.ObjectSprites.WoodcutterEntry);
         Assert.AreEqual(1, Huts());
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));

@@ -45,7 +45,7 @@ public sealed class ObjectDrawsTests
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
-        var draws = ObjectDraws.Of(map, game.Castle);
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle);
 
         // The castle's node 15,5 is levelled to 15: x = 15 * 32 - 5 * 16, y = 5 * 20 - 15 * 4. inferred: the
         // entry is the emulator's (peek:44fd2f:4, see ObjectGraphicsTests), but the draw at the node is that of the
@@ -75,7 +75,7 @@ public sealed class ObjectDrawsTests
         game.Tick();
         var height = map.At(16, 2).Height;
 
-        var draws = ObjectDraws.Of(map, game.Castle, game.Buildings);
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings);
 
         Assert.AreEqual(
             new ObjectDraw(2, ObjectSprites.WoodcutterEntry, 480, 40 - height * 4),
@@ -97,7 +97,7 @@ public sealed class ObjectDrawsTests
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
-        var draws = ObjectDraws.Of(map, game.Castle);
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle);
 
         CollectionAssert.Contains(draws, new ObjectDraw(6, ObjectSprites.FlagEntry, 416, 60));
     }
@@ -114,7 +114,7 @@ public sealed class ObjectDrawsTests
         var (x, y) = Camera.NodePosition(16, 6);
         var lift = map.At(16, 6).Height * TerrainTriangles.HeightStep;
 
-        var flag = ObjectDraws.Of(map, game.Castle).Single(draw => draw.Entry == ObjectSprites.FlagEntry);
+        var flag = ObjectDraws.Of(map, game.CastleStock.Castle).Single(draw => draw.Entry == ObjectSprites.FlagEntry);
 
         Assert.AreEqual((x, y - lift), (flag.X, flag.Y));
     }
@@ -130,7 +130,7 @@ public sealed class ObjectDrawsTests
         game.Tick();
         var flagGoods = new Dictionary<(int, int), IReadOnlyList<int>> { [(16, 6)] = goods };
 
-        return ObjectDraws.Of(map, game.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
+        return ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
     }
 
     [TestMethod]

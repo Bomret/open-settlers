@@ -213,7 +213,7 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
         }
 
         var size = game.Map.Size;
-        foreach (var road in game.Roads)
+        foreach (var road in game.Network.Roads)
         {
             var flag = game.Flags[road.FromSlot];
             var node = (flag.X, flag.Y);

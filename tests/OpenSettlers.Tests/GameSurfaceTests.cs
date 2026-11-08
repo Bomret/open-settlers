@@ -34,6 +34,44 @@ public sealed class GameSurfaceTests
     }
 
     [TestMethod]
+    public void TheGamePublishesOnlyTheCountersAndTheParts()
+    {
+        var properties = typeof(Game)
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Select(property => property.Name)
+            .Order();
+        string[] expected =
+        [
+            "Behaviours",
+            "Buildings",
+            "CastleStock",
+            "Carriers",
+            "Causes",
+            "Clock",
+            "Draws",
+            "Flags",
+            "Goods",
+            "History",
+            "Map",
+            "Movement",
+            "Network",
+            "Pass",
+            "Removal",
+            "Revision",
+            "RoadPlanner",
+            "Roster",
+            "Settlers",
+            "Tables",
+            "TickCount",
+            "WalkHome",
+            "Walks",
+            "Woodcutter",
+        ];
+
+        CollectionAssert.AreEqual(expected.Order().ToArray(), properties.ToArray());
+    }
+
+    [TestMethod]
     public void TheGameLivesInTheApplicationAssembly()
     {
         Assert.AreEqual("OpenSettlers.Application", typeof(Game).Assembly.GetName().Name);

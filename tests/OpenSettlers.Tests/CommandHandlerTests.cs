@@ -80,7 +80,7 @@ public sealed class CommandHandlerTests
         var before = game.Digest();
 
         Assert.IsFalse(game.Handlers[CommandKind.PlaceCastle].Handle(Of(CommandKind.PlaceCastle, x, y)));
-        Assert.IsNull(game.Castle);
+        Assert.IsNull(game.CastleStock.Castle);
         Assert.AreEqual(before, game.Digest());
     }
 
@@ -91,10 +91,10 @@ public sealed class CommandHandlerTests
         var handler = game.Handlers[CommandKind.PlaceCastle];
 
         Assert.IsTrue(handler.Handle(Of(CommandKind.PlaceCastle, 17, 0)));
-        Assert.AreEqual(17, game.Castle!.Value.X);
+        Assert.AreEqual(17, game.CastleStock.Castle!.Value.X);
         Assert.AreEqual(1, game.Flags.Count);
         Assert.IsFalse(handler.Handle(Of(CommandKind.PlaceCastle, 18, 0)));
-        Assert.AreEqual(17, game.Castle!.Value.X);
+        Assert.AreEqual(17, game.CastleStock.Castle!.Value.X);
     }
 
     [TestMethod]

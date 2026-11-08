@@ -29,10 +29,10 @@ public sealed class Game
     }
 
     /// <summary>The handler of each kind of command.</summary>
-    public IReadOnlyDictionary<int, ICommandHandler> Handlers { get; }
+    internal IReadOnlyDictionary<int, ICommandHandler> Handlers { get; }
 
     /// <summary>The commands applied so far, in the order they were applied.</summary>
-    public IReadOnlyList<Command> Applied => _applied;
+    internal IReadOnlyList<Command> Applied => _applied;
 
     /// <summary>
     /// The number of commands applied so far. A view that draws the flags, roads, and buildings redraws when it changes: a
@@ -49,13 +49,7 @@ public sealed class Game
     /// <summary>The rule tables.</summary>
     public RuleTables Tables => _parts.Tables;
 
-    /// <summary>The castle of the one player, or null before it is placed.</summary>
-    public Castle? Castle => _parts.CastleStock.Castle;
-
-    /// <summary>The goods in the castle, <see cref="StartStock.Goods"/> counts; empty before the castle is placed.</summary>
-    public IReadOnlyList<int> Stock => _parts.CastleStock.Stock;
-
-    /// <summary>The castle and its goods.</summary>
+    /// <summary>The castle of the one player (null before it is placed) and the goods in it.</summary>
     public CastleStock CastleStock => _parts.CastleStock;
 
     /// <summary>
@@ -64,10 +58,7 @@ public sealed class Game
     /// </summary>
     public FlagTable Flags => _parts.Flags;
 
-    /// <summary>The finished roads in the order they were built.</summary>
-    public IReadOnlyList<Road> Roads => _parts.Network.Roads;
-
-    /// <summary>The roads and the questions the rules ask of them.</summary>
+    /// <summary>The finished roads in the order they were built, and the questions the rules ask of them.</summary>
     public RoadNetwork Network => _parts.Network;
 
     /// <summary>The buildings in the order of their slots: the castle first, then each placed building.</summary>
@@ -82,8 +73,8 @@ public sealed class Game
     /// </summary>
     public GameHistory History => _parts.History;
 
-    /// <summary>The game clock in clock units (16 bits, 8 for each tick): the settlers' timers and stamps count in it.</summary>
-    public ushort Clock => _parts.Clock.Now;
+    /// <summary>The game clock, in clock units (16 bits, 8 for each tick): the settlers' timers and stamps count in it.</summary>
+    public GameClock Clock => _parts.Clock;
 
     /// <summary>The causes the rules give their events.</summary>
     public Causes Causes => _parts.Causes;
@@ -141,9 +132,10 @@ public sealed class Game
     /// <summary>The FNV-1a 64-bit fingerprint of the game state the ticks have produced (a command still queued is no part of it).</summary>
     public ulong Digest() => _parts.Digest.Of(this);
 
-    // Applies the commands due at this tick and nothing else: the layout and the tests that compare a command's own effect
-    // with the emulator's (the verbs of castle, flag, and road run no pass) apply a command without the pass that moves the
-    // map's lake details and the settlers.
+    // The layout seam: applies the commands due at this tick and nothing else, with no pass and no tick advance. The layout
+    // loader places its things at tick 0 through it, and the tests that compare a command's own effect with the emulator's
+    // (the verbs of castle, flag, and road run no pass) apply a command without the pass that moves the map's lake details and
+    // the settlers. A game that is played runs only Tick.
     internal void ApplyCommands()
     {
         while (_parts.Queue.TryTakeDue(TickCount, out var command))

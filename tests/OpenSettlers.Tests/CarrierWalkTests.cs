@@ -134,7 +134,7 @@ public sealed class CarrierWalkTests
             for (var slot = 0; slot < game.Settlers.Count; slot++)
             {
                 var settler = game.Settlers[slot];
-                var elapsed = (ushort)(game.Clock - settler.Stamp);
+                var elapsed = (ushort)(game.Clock.Now - settler.Stamp);
                 var walking = settler.Activity is Walks or WalksRoad;
                 stalls[slot] = walking && settler.Timer <= elapsed ? stalls.GetValueOrDefault(slot) + 1 : 0;
                 longest = Math.Max(longest, stalls[slot]);

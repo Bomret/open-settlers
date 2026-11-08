@@ -52,7 +52,7 @@ public sealed class CastlePlacementTests
         );
         var actual =
             $"seed={fields["seed"]} size={fields["size"]} tile={fields["tile"]} level={fields["level"]} "
-            + $"evaluator={site.Node}.{site.Site}.{site.Height} stock={string.Join(',', game.Stock)} "
+            + $"evaluator={site.Node}.{site.Site}.{site.Height} stock={string.Join(',', game.CastleStock.Stock)} "
             + $"layers={Digests(map)} changes={Changes(before, Snapshot(map))}";
 
         Assert.AreEqual(expected, actual);
@@ -74,8 +74,8 @@ public sealed class CastlePlacementTests
         game.Enqueue(new Command(1, 0, CommandKind.PlaceCastle, 0, 0));
         game.Tick();
 
-        Assert.IsNull(game.Castle);
-        Assert.IsEmpty(game.Stock);
+        Assert.IsNull(game.CastleStock.Castle);
+        Assert.IsEmpty(game.CastleStock.Stock);
         Assert.AreEqual(before, tick);
         var fresh = GameFactory.Create(
             TestProgram.Made(),
@@ -119,7 +119,7 @@ public sealed class CastlePlacementTests
         game.Enqueue(new Command(0, 1, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
-        Assert.IsNull(game.Castle);
+        Assert.IsNull(game.CastleStock.Castle);
     }
 
     [TestMethod]
@@ -135,7 +135,7 @@ public sealed class CastlePlacementTests
         game.Tick();
         game.Tick();
 
-        Assert.AreEqual(new Castle(15, 5, 15), game.Castle);
+        Assert.AreEqual(new Castle(15, 5, 15), game.CastleStock.Castle);
     }
 
     [TestMethod]
