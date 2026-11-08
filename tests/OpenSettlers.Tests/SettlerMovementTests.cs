@@ -25,7 +25,10 @@ public sealed class SettlerMovementTests
 
         movement.Move(7, settler, 4, 5, map.Index(4, 5));
 
-        Assert.AreEqual((0, 7, 4, 5), (movement.Occupant(map.Index(3, 4)), movement.Occupant(map.Index(4, 5)), settler.X, settler.Y));
+        Assert.AreEqual(
+            (0, 7, 4, 5),
+            (movement.Occupant(map.Index(3, 4)), movement.Occupant(map.Index(4, 5)), settler.X, settler.Y)
+        );
     }
 
     [TestMethod]

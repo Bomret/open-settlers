@@ -187,15 +187,8 @@ public sealed class WoodcuttingHistoryTests
             game.Tick();
 
         Assert.IsInstanceOfType<LooksForTree>(Woodcutter(game).Activity);
-        // No command or removal rule sends a woodcutter home without a carried cause, so the walk-home set is filled directly.
-        var walkingHome = (System.Collections.Generic.HashSet<int>)
-            typeof(Game)
-                .GetField(
-                    "_walkingHome",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
-                )!
-                .GetValue(game)!;
-        walkingHome.Add(slot);
+        // No command or removal rule sends a woodcutter home without a carried cause, so the walk home is begun directly.
+        game.WalkHome.Begin(slot);
         var before = game.History.EventsOf(id).Count;
         for (var i = 0; i < 30; i++)
             game.Tick();

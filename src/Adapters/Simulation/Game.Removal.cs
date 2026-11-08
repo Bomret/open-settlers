@@ -121,7 +121,7 @@ public sealed partial class Game
     private void SendHome(int walker, Settler settler)
     {
         settler.Activity = settler.Activity.Redirected(new ToStorage());
-        _walkingHome.Add(walker);
+        _walkHome.Begin(walker);
     }
 
     // The command being applied that takes things down, joins roads, or splits one, for the cause of the events its changes record
@@ -378,7 +378,7 @@ public sealed partial class Game
         }
 
         Become(settler, new SearchesHome());
-        _walkingHome.Add(slot);
+        _walkHome.Begin(slot);
         Touch(slot, EventType.Dismiss);
     }
 
@@ -450,7 +450,7 @@ public sealed partial class Game
         settler.Stamp = _clock;
         settler.Timer = 0;
         Become(settler, new SearchesHome());
-        _walkingHome.Add(slot);
+        _walkHome.Begin(slot);
         Touch(slot, EventType.Dismissed);
     }
 
@@ -586,7 +586,7 @@ public sealed partial class Game
             else if (settler.Activity is Walks && Map.At(index).Roads.IsEmpty)
             {
                 Become(settler, SettlerEncoder.HomeSearchFrom(settler.Activity));
-                _walkingHome.Add(standing);
+                _walkHome.Begin(standing);
                 Touch(standing, EventType.TookFlagDown);
             }
         }
@@ -803,7 +803,7 @@ public sealed partial class Game
         if (Occupant(Map.Index(settler.X, settler.Y)) == slot)
         {
             Become(settler, new SearchesHome(), residue);
-            _walkingHome.Add(slot);
+            _walkHome.Begin(slot);
         }
         else
         {

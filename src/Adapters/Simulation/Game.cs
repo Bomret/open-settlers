@@ -35,11 +35,22 @@ public sealed partial class Game
         _tables = tables;
         Map = map;
         _stockLevel = stockLevel;
-        _random = map.Generator;
-        _movement = new SettlerMovement(map, _buildings, tables, () => _clock, SettlerEncoder.ResidueOf);
-        RegisterBehaviours();
-        _tablePass = new TablePass(_settlers, _buildings, _behaviours);
         History = new GameHistory(new SnapshotExporter(_settlers, _buildings, _flags), () => TickCount);
+        _draws = new GeneratorDraws(map.Generator);
+        _movement = new SettlerMovement(map, _buildings, tables, () => _clock, SettlerEncoder.ResidueOf);
+        _walkHome = new WalkHomeBehavior(_movement, _buildings, _flags, _roads, History, _draws, Route);
+        _woodcutter = new WoodcutterBehavior(
+            _movement,
+            _settlers,
+            _flags,
+            History,
+            _draws,
+            _walkHome,
+            (flag, place, good) => LayGood(flag, place, good),
+            () => InLayout
+        );
+        _tablePass = new TablePass(_settlers, _buildings, _behaviours);
+        RegisterBehaviours();
     }
 
     /// <summary>

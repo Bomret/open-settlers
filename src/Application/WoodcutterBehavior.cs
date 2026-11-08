@@ -1,29 +1,41 @@
 using System;
-using System.Collections.Generic;
+using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
 
-// The woodcutter's work cycle and the map's object pass (docs/rules/woodcutting.md): the worker at its hut picks a node
-// of the first 128 around the hut with a random draw until a tree stands on it, walks there, cuts the tree, walks back
-// to the hut's flag with a log, lays the log on the flag, and goes into the hut to start again. The object pass walks a
-// cursor over the map and turns a felled tree into nothing in the time the original takes.
-public sealed partial class Game
+/// <summary>
+/// The woodcutter's work cycle and the map's object pass (docs/rules/woodcutting.md): the worker at its hut picks a node
+/// of the first 128 around the hut with a random draw until a tree stands on it, walks there, cuts the tree, walks back
+/// to the hut's flag with a log, lays the log on the flag, and goes into the hut to start again. The object pass walks a
+/// cursor over the map and turns a felled tree into nothing in the time the original takes. The behaviour takes the
+/// activities of the steps through a door, the search for a tree, the step onto the flag, the free walk (the walk home's
+/// too), the cut, and the entry into a hut.
+/// </summary>
+/// <param name="movement">The settlers' ground: the node of each settler, the timer, the change of activity, the tables.</param>
+/// <param name="settlers">The settler table.</param>
+/// <param name="flags">The flag table.</param>
+/// <param name="history">The history the behaviour records its changes in (no rule reads it).</param>
+/// <param name="draws">The random generator the search and the object pass draw from.</param>
+/// <param name="walkHome">The walk home, where the free walk arrives and the door leads into the storage.</param>
+/// <param name="layGood">Lays a good on a place of a flag: the flag slot, the place, and the good.</param>
+/// <param name="inLayout">Whether a layout is being built: its rules record their events with the cause layout.</param>
+public sealed class WoodcutterBehavior(
+    SettlerMovement movement,
+    SettlerTable settlers,
+    FlagTable flags,
+    GameHistory history,
+    IRandomDraws draws,
+    WalkHomeBehavior walkHome,
+    Action<int, int, int> layGood,
+    Func<bool> inLayout
+)
 {
     // The trees are the object codes 8 to 0x17 (0x438c11, 0x437f8f; MapObjectKind.Tree), and the class table calls them
     // class 1 (docs/rules/build-sites.md). The trees of the codes 8 to 15 take the second cutting variant (the animation
     // with the byte 13 set).
 
-    // The good of a log (the byte 7 the settler writes onto the flag, 0x438011).
-    internal const int GoodLog = 7;
-
-    // The objects the object pass handles: the cut writes the falling tree of the codes 0x5d to 0x66, the pass turns each of
-    // them into the stump 0x53, and the stump vanishes by chance (0x428eb8).
-
-    // The game's random generator: it continues from the map's generation, as the original's does.
-    private RandomGenerator _random;
-
-    /// <summary>The game's random generator: it starts as the map's generation left it and draws only in the passes.</summary>
-    internal RandomGenerator Random => _random;
+    /// <summary>The good of a log (the byte 7 the settler writes onto the flag, 0x438011).</summary>
+    public const int GoodLog = 7;
 
     // The object pass (0x428d10): the clock at its last run, its countdown (a debt that wraps while 20 units are due),
     // and the cursor's column and row.
@@ -32,21 +44,37 @@ public sealed partial class Game
     private int _objectX;
     private int _objectY;
 
-    // The draw of the game's generator: the new first word, which Rng_Step (0x466ade) and the draw at 0x44257a leave.
-    private ushort Draw()
-    {
-        _random = _random.Step();
+    /// <summary>The object pass's state, for the digest: the clock at its last run, its countdown, and the cursor's column and row.</summary>
+    public (ushort Stamp, ushort Timer, int X, int Y) ObjectPassState =>
+        (_objectStamp, _objectTimer, _objectX, _objectY);
 
-        return _random.W0;
+    private Map Map => movement.Map;
+
+    /// <summary>Registers the behaviour of the activities of the woodcutter's work cycle.</summary>
+    public void Register(ActivityRegistry registry)
+    {
+        registry.Register<Door>((slot, settler, _) => PassDoor(slot, settler));
+        registry.Register<EntersBuilding>((slot, settler, _) => EnterHut(slot, settler));
+        registry.Register<StepsOntoFlag>((slot, settler, _) => StepOut(slot, settler));
+        registry.Register<WalksFree>((slot, settler, _) => FreeWalk(slot, settler));
+        registry.Register<Cuts>((slot, settler, _) => Cut(settler));
+        registry.Register<LooksForTree>((slot, settler, _) => SearchTree(slot, settler));
     }
+
+    // The cause of a change the settler rules make to the settler in the slot: the walk home while it walks to a storage, else
+    // the rule area's (the layout while one is built).
+    private Cause SettlerCause(int slot) =>
+        walkHome.IsWalking(slot) ? Cause.WalkHome
+        : inLayout() ? Cause.Layout
+        : Cause.Settlers;
 
     // State 4, a settler that stepped through a door (0x43c96b): once its timer is down to the time the door leaves it, it
     // runs the routine of its job when a building stands there that is not marked bit 5; else it is state 0x19.
     private void PassDoor(int slot, Settler settler)
     {
         var door = (Door)settler.Activity;
-        var delta = (ushort)(_clock - settler.Stamp);
-        settler.Stamp = _clock;
+        var delta = (ushort)(movement.Clock - settler.Stamp);
+        settler.Stamp = movement.Clock;
         var old = settler.Timer;
         settler.Timer = (ushort)(old - delta);
         if (delta <= old && (short)((ushort)door.TimeLeft - settler.Timer) < 0)
@@ -57,7 +85,7 @@ public sealed partial class Game
         }
 
         var node = Map.Index(settler.X, settler.Y);
-        var building = BuildingAt(node);
+        var building = movement.BuildingAt(node);
         if (building is { IsDemolishing: false })
         {
             settler.Timer = (ushort)door.TimeLeft;
@@ -65,7 +93,7 @@ public sealed partial class Game
             {
                 // The timer and stamp change is this rule's; EnterStorage records its own.
                 RecordWork(slot, EventType.Door);
-                EnterStorage(slot, node, settler);
+                walkHome.EnterStorage(slot, node, settler);
 
                 return;
             }
@@ -73,13 +101,13 @@ public sealed partial class Game
             if (settler.Job == Job.Woodcutter)
             {
                 // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree.
-                _movement.Release(node);
-                Become(settler, new LooksForTree());
+                movement.Release(node);
+                movement.Become(settler, new LooksForTree());
             }
         }
         else
         {
-            Become(settler, new SearchesHome());
+            movement.Become(settler, new SearchesHome());
             settler.Timer = 0;
         }
 
@@ -91,10 +119,10 @@ public sealed partial class Game
     // (a woodcutter walking home included), woodcutting for another woodcutter, and the settlers' rules for another job that
     // passes through these states.
     private void RecordWork(int slot, string type, string? other = null) =>
-        History.RecordSettler(
+        history.RecordSettler(
             slot,
             type,
-            InLayout || _walkingHome.Contains(slot) || _settlers[slot].Job != Job.Woodcutter
+            inLayout() || walkHome.IsWalking(slot) || settlers[slot].Job != Job.Woodcutter
                 ? SettlerCause(slot)
                 : Cause.Woodcutting,
             other
@@ -116,15 +144,15 @@ public sealed partial class Game
     // One turn of the search; true where it found a tree and took state 7.
     private bool SearchTurn(Settler settler)
     {
-        if (!TimerRan(settler))
+        if (!movement.TimerRan(settler))
         {
             return false;
         }
 
         while (true)
         {
-            var entry = ((Draw() & 0x1fc) + 4) >> 2;
-            var (dx, dy) = MapGenerator.SpiralOffsets[entry];
+            var entry = ((draws.Draw() & 0x1fc) + 4) >> 2;
+            var (dx, dy) = Spiral.Offsets[entry];
             var x = (settler.X + dx) & (Map.Size.Width - 1);
             var y = (settler.Y + dy) & (Map.Size.Height - 1);
             if (Map.At(x, y).Object.Kind == MapObjectKind.Tree)
@@ -151,17 +179,17 @@ public sealed partial class Game
     private void StepOut(int slot, Settler settler)
     {
         var here = Map.Index(settler.X, settler.Y);
-        var (x, y, next) = Neighbour(settler, 1);
-        var standing = Occupant(here);
-        if ((standing == slot || standing == 0) && Occupant(next) == 0)
+        var (x, y, next) = movement.Neighbour(settler, 1);
+        var standing = movement.Occupant(here);
+        if ((standing == slot || standing == 0) && movement.Occupant(next) == 0)
         {
-            var door = BuildingAt(here);
-            var shape = 0xd + Height(next) - Height(here);
-            Move(slot, settler, x, y, next);
+            var door = movement.BuildingAt(here);
+            var shape = 0xd + movement.Height(next) - movement.Height(here);
+            movement.Move(slot, settler, x, y, next);
             settler.Frame = (byte)shape;
-            var speed = (byte)(_tables.DoorSpeed(door) ^ 0x1f);
-            settler.Timer = (ushort)((ushort)(_tables.StepTime(shape) * speed) >> 5);
-            settler.Stamp = _clock;
+            var speed = (byte)(movement.Tables.DoorSpeed(door) ^ 0x1f);
+            settler.Timer = (ushort)((ushort)(movement.Tables.StepTime(shape) * speed) >> 5);
+            settler.Stamp = movement.Clock;
             settler.Activity = new WaitsOutStep(((StepsOntoFlag)settler.Activity).Then);
             RecordWork(slot, EventType.StepOut);
 
@@ -192,7 +220,7 @@ public sealed partial class Game
     // One turn of the free walk; true where the vector is used up and the settler has arrived.
     private bool FreeWalkTurn(int slot, Settler settler)
     {
-        if (!TimerRan(settler))
+        if (!movement.TimerRan(settler))
         {
             return false;
         }
@@ -222,7 +250,7 @@ public sealed partial class Game
                 return false;
             }
 
-            var (x, y, next) = Neighbour(settler, direction);
+            var (x, y, next) = movement.Neighbour(settler, direction);
             trip = trip with { Remaining = trip.Remaining.After(direction) };
             if (trip.Remaining.IsUsedUp)
             {
@@ -231,10 +259,10 @@ public sealed partial class Game
 
             settler.Activity = new WalksFree(trip);
             var here = Map.Index(settler.X, settler.Y);
-            var shape = 4 + 9 * direction + Height(next) - Height(here);
-            Move(slot, settler, x, y, next);
+            var shape = 4 + 9 * direction + movement.Height(next) - movement.Height(here);
+            movement.Move(slot, settler, x, y, next);
             var old = settler.Timer;
-            settler.Timer = (ushort)(old + _tables.StepTime(shape));
+            settler.Timer = (ushort)(old + movement.Tables.StepTime(shape));
             if (settler.Timer < old)
             {
                 settler.Frame = (byte)shape;
@@ -245,12 +273,12 @@ public sealed partial class Game
     }
 
     // A node the walk may step onto: not marked solid (the lake mark) and holding no settler.
-    private bool Free(int index) => !Map.At(index).LakeMark && Occupant(index) == 0;
+    private bool Free(int index) => !Map.At(index).LakeMark && movement.Occupant(index) == 0;
 
     // The direction a row entry names (0 east to 5 north, -1 for an entry that names none: a table with no row) where the
     // step it leads to is free; -1 for such an entry and for a node that is taken.
     private int Candidate(Settler settler, int direction) =>
-        direction >= 0 && Free(Neighbour(settler, direction).Index) ? direction : -1;
+        direction >= 0 && Free(movement.Neighbour(settler, direction).Index) ? direction : -1;
 
     // The direction of the next step (0 to 5) or -1 where all are taken, and the memory it leaves in byte 15. A settler with a
     // memory (row 0 or more: the low bits less one, or plus five with bit 3) tries the six directions of that row of the
@@ -264,7 +292,7 @@ public sealed partial class Game
         {
             for (var candidate = 0; candidate < 6; candidate++)
             {
-                var entry = _tables.WalkDirection(memoryRow, candidate);
+                var entry = movement.Tables.WalkDirection(memoryRow, candidate);
                 var direction = Candidate(settler, entry);
                 if (direction < 0)
                 {
@@ -313,7 +341,7 @@ public sealed partial class Game
     private int Fresh(Settler settler, Vector remaining, ref int memory)
     {
         var heading = HeadingClass(remaining.East, remaining.South);
-        var first = Candidate(settler, _tables.WalkDirection(heading, 0));
+        var first = Candidate(settler, movement.Tables.WalkDirection(heading, 0));
         if (first >= 0)
         {
             return first;
@@ -321,7 +349,7 @@ public sealed partial class Game
 
         for (var candidate = 1; candidate < 6; candidate++)
         {
-            var direction = Candidate(settler, _tables.WalkDirection(heading, candidate));
+            var direction = Candidate(settler, movement.Tables.WalkDirection(heading, candidate));
             if (direction < 0)
             {
                 continue;
@@ -414,7 +442,7 @@ public sealed partial class Game
             // **Not ported:** the arrival of the jobs 7, 8, 11, 14, and 20 where they are not walking home (0x437ddd).
             if (settler.Job.ArrivesHomeGenerically || trip.Purpose is Home)
             {
-                ArriveHome(slot, settler);
+                walkHome.ArriveHome(slot, settler);
                 RecordWork(slot, EventType.Arrive);
             }
 
@@ -426,7 +454,7 @@ public sealed partial class Game
             // The walk home (0x4385ab).
             if (trip.Purpose is Home)
             {
-                ArriveHome(slot, settler);
+                walkHome.ArriveHome(slot, settler);
                 RecordWork(slot, EventType.Arrive);
 
                 return;
@@ -465,7 +493,7 @@ public sealed partial class Game
     // the time that frame's table word gives. After the fifth the settler starts the way back with the log.
     private void Cut(Settler settler)
     {
-        var slot = _settlers.SlotOf(settler);
+        var slot = settlers.SlotOf(settler);
         var tree = ThingId.OfObject("tree", settler.X, settler.Y).ToString();
         CutTurn(settler);
         RecordWork(slot, EventType.CutTree, tree);
@@ -473,7 +501,7 @@ public sealed partial class Game
 
     private void CutTurn(Settler settler)
     {
-        if (!TimerRan(settler))
+        if (!movement.TimerRan(settler))
         {
             return;
         }
@@ -493,7 +521,7 @@ public sealed partial class Game
 
             settler.Frame = (byte)(count + 0x74);
             var old = settler.Timer;
-            settler.Timer = (ushort)(old + _tables.StepTime(settler.Frame));
+            settler.Timer = (ushort)(old + movement.Tables.StepTime(settler.Frame));
             if (settler.Timer < old)
             {
                 return;
@@ -509,11 +537,11 @@ public sealed partial class Game
     private void PutGood(int slot, Settler settler, int good)
     {
         var flag = Map.At(settler.X, settler.Y).LinkedSlot;
-        var place = _flags[flag].FirstEmptyPlace();
+        var place = flags[flag].FirstEmptyPlace();
         if (place >= 0)
         {
-            LayGood(flag, place, good);
-            History.RecordFlag(flag, EventType.PutGood, Cause.Woodcutting, History.SettlerId(slot).ToString());
+            layGood(flag, place, good);
+            history.RecordFlag(flag, EventType.PutGood, Cause.Woodcutting, history.SettlerId(slot).ToString());
         }
     }
 
@@ -524,12 +552,12 @@ public sealed partial class Game
     {
         if (settler.Activity is not EntersBuilding)
         {
-            Become(settler, new EntersBuilding());
+            movement.Become(settler, new EntersBuilding());
         }
 
         var here = Map.Index(settler.X, settler.Y);
-        var (x, y, node) = Neighbour(settler, 4);
-        if (Occupant(node) != 0)
+        var (x, y, node) = movement.Neighbour(settler, 4);
+        if (movement.Occupant(node) != 0)
         {
             settler.Frame = 0x55;
             settler.Timer = 0;
@@ -538,14 +566,17 @@ public sealed partial class Game
             return;
         }
 
-        var shape = 0x28 + Height(node) - Height(here);
-        Move(slot, settler, x, y, node);
+        var shape = 0x28 + movement.Height(node) - movement.Height(here);
+        movement.Move(slot, settler, x, y, node);
         settler.Frame = (byte)shape;
-        var time = _tables.StepTime(shape);
+        var time = movement.Tables.StepTime(shape);
         settler.Timer = time;
-        settler.Stamp = _clock;
+        settler.Stamp = movement.Clock;
         var storage = ((EntersBuilding)settler.Activity).Storage;
-        Become(settler, new Door((ushort)(time * _tables.DoorSpeed(BuildingAt(node))) >> 5, storage));
+        movement.Become(
+            settler,
+            new Door((ushort)(time * movement.Tables.DoorSpeed(movement.BuildingAt(node))) >> 5, storage)
+        );
         RecordWork(slot, EventType.EnterHut);
     }
 
@@ -554,10 +585,11 @@ public sealed partial class Game
     // detail (the draws of the original), a node with an object code of 0x53 or more takes its handler: the cut tree codes
     // 0x5d to 0x66 become 0x53, and 0x53 vanishes when the draw's low two bits are 0. **Not ported:** the handlers of the codes
     // 0x67 and up (the original's growth and decay; the generation places none).
-    private void ObjectPass()
+    /// <summary>The map's object pass, run once each pass of the main loop.</summary>
+    public void ObjectPass()
     {
-        var delta = (ushort)(_clock - _objectStamp);
-        _objectStamp = _clock;
+        var delta = (ushort)(movement.Clock - _objectStamp);
+        _objectStamp = movement.Clock;
         var timer = _objectTimer;
         _objectTimer = (ushort)(timer - delta);
         if (delta <= timer)
@@ -593,7 +625,7 @@ public sealed partial class Game
             var kind = at.Object.Kind;
             if (kind == MapObjectKind.Stump)
             {
-                if ((Draw() & 3) == 0)
+                if ((draws.Draw() & 3) == 0)
                 {
                     at.Object = MapObject.None;
                 }
@@ -610,7 +642,7 @@ public sealed partial class Game
     // bits 2 and 3).
     private void MoveLakeDetail(int node)
     {
-        var draw = Draw();
+        var draw = draws.Draw();
         ref var at = ref Map.At(node);
         if ((sbyte)(at.LakeDetail - 10) >= 0)
         {
@@ -629,23 +661,12 @@ public sealed partial class Game
             8 => 4,
             _ => 5,
         };
-        var (dx, dy) = RoadBuilding.Steps[direction];
+        var (dx, dy) = Direction.Steps[direction];
         ref var neighbour = ref Map.At(node % Map.Size.Width + dx, node / Map.Size.Width + dy);
         if (neighbour.LakeMark)
         {
             at.LakeDetail--;
             neighbour.LakeDetail++;
-        }
-    }
-
-    private void MixWoodcutting(ref ulong hash)
-    {
-        MixGoods(ref hash);
-        hash = Mix(Mix(Mix(hash, _random.W0), _random.W1), _random.W2);
-        hash = Mix(Mix(Mix(Mix(hash, _objectStamp), _objectTimer), _objectX), _objectY);
-        foreach (var good in FlagEncoder.Places(_flags))
-        {
-            hash = Mix(hash, good);
         }
     }
 }

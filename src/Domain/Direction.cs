@@ -15,7 +15,7 @@ public readonly record struct Direction(int Value)
     /// 5 north.
     /// </summary>
     public static System.Collections.Generic.IReadOnlyList<(int Dx, int Dy)> Steps { get; } =
-        [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
+    [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
 
     /// <summary>The direction that leads back along a step in this direction.</summary>
     public Direction Opposite => new((Value + 3) % Count);
