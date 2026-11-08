@@ -1,0 +1,161 @@
+namespace OpenSettlers.Simulation;
+
+/// <summary>
+/// Builds a <see cref="Game"/>: it makes every part and wires the graph by hand, the rules in the application layer and the
+/// original's encodings (the digest, the residue of a settler's item) from the adapters.
+/// </summary>
+public static class GameFactory
+{
+    /// <summary>
+    /// A game on <paramref name="map"/> with the rule tables of <paramref name="tables"/> (read from the install's program), at
+    /// tick 0 with no command queued and no castle. The castle will hold the stock of <paramref name="stockLevel"/>
+    /// (<see cref="StartStock.At"/>). The game changes the map it is given: placing the castle writes the castle, its flag,
+    /// the heights, and the territory into the map. With <paramref name="everyPassTurns"/> each pass gives the settlers in
+    /// motion one more turn (<see cref="MainPass.EveryPassTurns"/>). <paramref name="digest"/> is the game's digest port,
+    /// <see cref="GameDigest"/> by default.
+    /// </summary>
+    public static Game Create(
+        RuleTables tables,
+        Map map,
+        int stockLevel = 0,
+        bool everyPassTurns = false,
+        IGameDigest? digest = null
+    )
+    {
+        var clock = new GameClock();
+        var castle = new CastleStock();
+        var flags = new FlagTable();
+        var network = new RoadNetwork();
+        var buildings = new BuildingTable();
+        var settlers = new SettlerTable();
+        var behaviours = new ActivityRegistry();
+        var draws = new GeneratorDraws(map.Generator);
+        // The history reads the tick count of the game, which exists once the parts are wired.
+        Game? game = null;
+        var history = new GameHistory(new SnapshotExporter(settlers, buildings, flags), () => game!.TickCount);
+        var movement = new SettlerMovement(map, buildings, tables, () => clock.Now, SettlerEncoder.ResidueOf);
+        int Route(int from, int to) => network.Route(flags.Count, from, to);
+
+        var goods = new GoodsTransport(movement, flags, network, history);
+        var walkHome = new WalkHomeBehavior(movement, buildings, flags, network, history, draws, Route);
+        var causes = new Causes(history, buildings, walkHome);
+        var woodcutter = new WoodcutterBehavior(
+            movement,
+            settlers,
+            flags,
+            history,
+            draws,
+            walkHome,
+            (flag, place, good) => goods.LayGood(flag, place, good),
+            () => causes.InLayout
+        );
+        var roster = new CastleRoster(movement, settlers, buildings, flags, network, history, causes, draws, clock);
+        var roadStep = new RoadStep(movement, settlers, history, causes);
+        var carriers = new CarrierBehavior(
+            movement,
+            settlers,
+            buildings,
+            flags,
+            network,
+            history,
+            goods,
+            roster,
+            roadStep.Step,
+            castle.Add,
+            () => causes.InLayout
+        );
+        var removal = new Removal(
+            movement,
+            settlers,
+            buildings,
+            flags,
+            network,
+            history,
+            carriers,
+            goods,
+            walkHome.Begin,
+            () => castle.Castle is not null,
+            id => causes.ForgetPlacement(id)
+        );
+        var walks = new WalkBehavior(
+            movement,
+            buildings,
+            flags,
+            network,
+            history,
+            causes,
+            clock,
+            walkHome,
+            carriers,
+            roadStep,
+            roster,
+            settlers
+        );
+        roster.Register(behaviours);
+        walks.Register(behaviours);
+        removal.Register(behaviours);
+        carriers.Register(behaviours);
+        woodcutter.Register(behaviours);
+        walkHome.Register(behaviours);
+        var pass = new MainPass(
+            clock,
+            tables,
+            map,
+            settlers,
+            buildings,
+            history,
+            causes,
+            new TablePass(settlers, buildings, behaviours),
+            carriers,
+            woodcutter,
+            removal,
+            roster
+        )
+        {
+            EveryPassTurns = everyPassTurns,
+        };
+        var planner = new RoadPlanner(tables, map, castle);
+        var startStock = StartStock.At(tables, stockLevel);
+        game = new Game(
+            new GameParts
+            {
+                Tables = tables,
+                Map = map,
+                CastleStock = castle,
+                Flags = flags,
+                Network = network,
+                Buildings = buildings,
+                Settlers = settlers,
+                History = history,
+                Causes = causes,
+                Clock = clock,
+                Draws = draws,
+                Movement = movement,
+                Behaviours = behaviours,
+                Pass = pass,
+                Roster = roster,
+                Carriers = carriers,
+                Goods = goods,
+                Removal = removal,
+                WalkHome = walkHome,
+                Walks = walks,
+                Woodcutter = woodcutter,
+                RoadPlanner = planner,
+                Queue = new CommandQueue(),
+                Handlers =
+                [
+                    new PlaceCastleHandler(tables, map, castle, startStock, flags, settlers, roster, history, causes),
+                    new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal),
+                    new BuildRoadHandler(planner, network, carriers, history, causes),
+                    new PlaceBuildingHandler(tables, map, castle, flags, buildings, history, causes, removal),
+                    new RemoveFlagHandler(removal),
+                    new RemoveBuildingHandler(removal),
+                    new RemoveRoadHandler(removal),
+                ],
+                Digest = digest ?? new GameDigest(),
+            }
+        );
+
+        return game;
+    }
+}

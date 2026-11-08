@@ -15,12 +15,12 @@ public sealed class RoadOnRoadTests
     private static Game Started()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(RemovalLogicTests.Made(), map);
+        var game = GameFactory.Create(RemovalLogicTests.Made(), map);
         Apply(game, new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         Apply(game, new Command(game.TickCount, 0, CommandKind.PlaceFlag, 20, 6));
         Apply(game, new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 8));
         Apply(game, new Command(game.TickCount, 0, CommandKind.BuildRoad, 16, 6, [0, 0, 0, 0]));
-        Assert.AreEqual(1, game.Roads.Count, "the east road is built");
+        Assert.AreEqual(1, game.Network.Roads.Count, "the east road is built");
 
         return game;
     }
@@ -39,8 +39,8 @@ public sealed class RoadOnRoadTests
     {
         var game = Started();
 
-        Assert.AreEqual(RoadStatus.Open, game.CheckRoad(18, 8, [5]));
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(18, 8, OntoTheRoad));
+        Assert.AreEqual(RoadStatus.Open, game.RoadPlanner.Check(18, 8, [5]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(18, 8, OntoTheRoad));
     }
 
     [TestMethod]
@@ -48,12 +48,12 @@ public sealed class RoadOnRoadTests
     {
         var game = Started();
         var roads = TestMaps.Roads(game.Map);
-        var road = game.Roads.Single();
+        var road = game.Network.Roads.Single();
 
         Apply(game, new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 8, OntoTheRoad));
 
-        Assert.AreEqual(1, game.Roads.Count);
-        Assert.AreEqual(road, game.Roads.Single());
+        Assert.AreEqual(1, game.Network.Roads.Count);
+        Assert.AreEqual(road, game.Network.Roads.Single());
         CollectionAssert.AreEqual(roads, TestMaps.Roads(game.Map));
         Assert.IsFalse(game.History.Events.All.Any(e => e.Type == EventType.SplitRoads), "no split");
     }
@@ -69,7 +69,7 @@ public sealed class RoadOnRoadTests
         Assert.IsNull(drawing.Click(18, 6));
 
         CollectionAssert.AreEqual(new[] { (18, 8), (18, 7) }, drawing.Nodes.ToArray());
-        Assert.AreEqual(1, game.Roads.Count);
+        Assert.AreEqual(1, game.Network.Roads.Count);
     }
 
     [TestMethod]
@@ -77,7 +77,7 @@ public sealed class RoadOnRoadTests
     {
         var game = Started();
         var roads = TestMaps.Roads(game.Map);
-        var road = game.Roads.Single();
+        var road = game.Network.Roads.Single();
         var events = game.History.Events.All.Count();
         var drawing = new RoadDrawing(game);
         drawing.Click(18, 8);
@@ -95,7 +95,7 @@ public sealed class RoadOnRoadTests
     {
         var game = Started();
         var roads = TestMaps.Roads(game.Map);
-        var road = game.Roads.Single();
+        var road = game.Network.Roads.Single();
         var events = game.History.Events.All.Count();
         var drawing = new RoadDrawing(game);
         drawing.Click(18, 8);
@@ -110,8 +110,8 @@ public sealed class RoadOnRoadTests
 
     private static void AssertUnchanged(Game game, Road road, RoadSet[] roads, int events)
     {
-        Assert.AreEqual(1, game.Roads.Count);
-        Assert.AreEqual(road, game.Roads.Single());
+        Assert.AreEqual(1, game.Network.Roads.Count);
+        Assert.AreEqual(road, game.Network.Roads.Single());
         CollectionAssert.AreEqual(roads, TestMaps.Roads(game.Map));
         Assert.AreEqual(events, game.History.Events.All.Count());
     }
@@ -122,8 +122,8 @@ public sealed class RoadOnRoadTests
         var game = Started();
 
         // From 18,8 north, east, south: the next step north-west lands on the road's own earlier node 18,7.
-        Assert.AreEqual(RoadStatus.Open, game.CheckRoad(18, 8, [5, 0, 2]));
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(18, 8, [5, 0, 2, 4]), "its own earlier node");
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(18, 8, [5, 5, 5]), "across the east road");
+        Assert.AreEqual(RoadStatus.Open, game.RoadPlanner.Check(18, 8, [5, 0, 2]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(18, 8, [5, 0, 2, 4]), "its own earlier node");
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(18, 8, [5, 5, 5]), "across the east road");
     }
 }

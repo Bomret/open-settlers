@@ -33,7 +33,11 @@ public sealed class RoadBuildingTests
         MapSize.TryFromValue(int.Parse(header["size"], CultureInfo.InvariantCulture), out var size, out _);
         var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(header["seed"]), size!);
         var castle = header["castle"].Split(',').Select(int.Parse).ToArray();
-        var game = new Game(TestProgram.Tables(), map, int.Parse(header["level"], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(
+            TestProgram.Tables(),
+            map,
+            int.Parse(header["level"], CultureInfo.InvariantCulture)
+        );
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         game.ApplyCommands();
 
@@ -54,13 +58,13 @@ public sealed class RoadBuildingTests
             var label = $"{run} start {first["start"]} dirs {first["dirs"]}";
             var outcome = attempt.Last();
             var before = Snapshot(map);
-            var roads = game.Roads.Count;
+            var roads = game.Network.Roads.Count;
 
             if (outcome.Contains(" START-REFUSED ", StringComparison.Ordinal))
             {
                 Assert.AreEqual(
                     RoadStatus.Refused,
-                    game.CheckRoad(start[0], start[1], first["dirs"].Select(c => c - '0').ToArray()),
+                    game.RoadPlanner.Check(start[0], start[1], first["dirs"].Select(c => c - '0').ToArray()),
                     label
                 );
                 continue;
@@ -89,7 +93,7 @@ public sealed class RoadBuildingTests
                 var digest = game.Digest();
                 Assert.AreEqual(
                     expected,
-                    game.CheckRoad(start[0], start[1], directions[..(index + 1)]),
+                    game.RoadPlanner.Check(start[0], start[1], directions[..(index + 1)]),
                     $"{label} step {index}"
                 );
                 Assert.AreEqual(digest, game.Digest(), $"{label} step {index} checks without changing the game");
@@ -99,7 +103,7 @@ public sealed class RoadBuildingTests
             game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, start[0], start[1], directions));
             game.ApplyCommands();
 
-            Assert.AreEqual(built ? roads + 1 : roads, game.Roads.Count, label);
+            Assert.AreEqual(built ? roads + 1 : roads, game.Network.Roads.Count, label);
             // No state behind where the road is not built: the changes the harness lists are empty.
             Assert.AreEqual(
                 Between(outcome, " roadchanges=", " items="),
@@ -108,7 +112,7 @@ public sealed class RoadBuildingTests
             );
             if (built)
             {
-                AssertItems(label, game.Roads[^1], outcome);
+                AssertItems(label, game.Network.Roads[^1], outcome);
             }
         }
     }

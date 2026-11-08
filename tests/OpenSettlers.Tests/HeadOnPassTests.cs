@@ -4,7 +4,7 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
-// The pass of two walking settlers that meet head-on (Step in Game.Settlers.cs, 0x43a6c1), reached through commands alone,
+// The pass of two walking settlers that meet head-on (RoadStep.Step, 0x43a6c1), reached through commands alone,
 // on made-up tables as LayoutSettlersTests has them: every step takes 100 clock units, the flag's object class is 3, and
 // the free walk's direction rows hold each heading class's own first direction first. Roads run east from the castle's
 // flag at 16,6 to 18,6 and on to 20,6. Taking down the second road sends its carrier home: it walks west along the first
@@ -61,7 +61,7 @@ public sealed class HeadOnPassTests
     private static Meeting Meet(int direction = East)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(Tables, map);
+        var game = GameFactory.Create(Tables, map);
         var (dx, dy) = RoadBuilding.Steps[direction];
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 16 + 2 * dx, 6 + 2 * dy);

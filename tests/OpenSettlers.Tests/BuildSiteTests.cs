@@ -53,7 +53,7 @@ public sealed class BuildSiteTests
         MapSize.TryFromValue(int.Parse(fields["size"], CultureInfo.InvariantCulture), out var size, out _);
         var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(fields["seed"]), size!);
         var tile = fields["tile"].Split(',').Select(int.Parse).ToArray();
-        var game = new Game(TestProgram.Tables(), map);
+        var game = GameFactory.Create(TestProgram.Tables(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, tile[0], tile[1]));
         game.Tick();
 
@@ -69,7 +69,7 @@ public sealed class BuildSiteTests
         var map = MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]);
         var site = BuildSite.Evaluate(TestProgram.Made(), map, 15, 5, 0, hasCastle: false);
 
-        var game = new Game(TestProgram.Made(), map);
+        var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 

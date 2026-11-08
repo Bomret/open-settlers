@@ -54,7 +54,7 @@ public static class BuildSite
         var nodes = new Node[Nodes];
         for (var i = 0; i < Nodes; i++)
         {
-            var (dx, dy) = MapGenerator.SpiralOffsets[i];
+            var (dx, dy) = Spiral.Offsets[i];
             nodes[i] = map.At(x + dx, y + dy);
         }
 

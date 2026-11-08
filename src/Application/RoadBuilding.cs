@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace OpenSettlers.Simulation;
 
-/// <summary>How far a drawn road has come (<see cref="RoadBuilding.Walk"/>, <see cref="Game.CheckRoad"/>).</summary>
+/// <summary>How far a drawn road has come (<see cref="RoadBuilding.Walk"/>, <see cref="RoadPlanner.Check"/>).</summary>
 public enum RoadStatus
 {
     /// <summary>A step, or the start, is refused: the original would sound the error and leave the road as it was.</summary>

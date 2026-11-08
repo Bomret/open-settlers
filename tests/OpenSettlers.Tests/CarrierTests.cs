@@ -31,7 +31,7 @@ public sealed class CarrierTests
     // The castle and the three flags.
     private static Game World()
     {
-        var game = new Game(
+        var game = GameFactory.Create(
             Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );
@@ -158,8 +158,8 @@ public sealed class CarrierTests
         // The settlers enter the table as their turns come, so it is emptied before every tick.
         for (var tick = 0; tick < 40; tick++)
         {
-            game.ClearWaiting(Job.Carrier);
-            game.ClearWaiting(Job.Jobless);
+            game.Roster.ClearWaiting(Job.Carrier);
+            game.Roster.ClearWaiting(Job.Jobless);
             game.Tick();
         }
 

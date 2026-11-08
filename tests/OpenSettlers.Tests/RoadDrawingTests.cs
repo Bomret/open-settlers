@@ -21,7 +21,7 @@ public sealed class RoadDrawingTests
         Assert.IsNull(drawing.Click(17, 6));
 
         CollectionAssert.AreEqual(new[] { (16, 6), (17, 6) }, drawing.Nodes.ToArray());
-        Assert.AreEqual(0, game.Roads.Count);
+        Assert.AreEqual(0, game.Network.Roads.Count);
     }
 
     [TestMethod]
@@ -40,7 +40,7 @@ public sealed class RoadDrawingTests
         Assert.IsFalse(drawing.Active);
         game.Enqueue(command.Value);
         game.Tick();
-        Assert.AreEqual(1, game.Roads.Count);
+        Assert.AreEqual(1, game.Network.Roads.Count);
     }
 
     [TestMethod]

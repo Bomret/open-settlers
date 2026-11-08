@@ -49,7 +49,7 @@ public sealed class LayoutSettlersTests
 
     // Made-up tables as the hut and carrier tests have them: every step takes 100 clock units, the flag's object class is 3,
     // and the walk's direction rows hold the heading class's own first direction first.
-    internal static Game NewGame(Layout layout) => new(MadeTables(), layout.BuildMap());
+    internal static Game NewGame(Layout layout) => GameFactory.Create(MadeTables(), layout.BuildMap());
 
     // The object class of the building's code (2) is 0 unless `buildingClass` names one: the removal click (0x44b6e6)
     // takes a building for class 4.
@@ -116,7 +116,7 @@ public sealed class LayoutSettlersTests
         Assert.AreEqual((13, 10), (worker.X, worker.Y));
         Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
         Assert.AreEqual(game.Settlers.ToList().IndexOf(worker), game.Buildings[1].Worker);
-        Assert.AreEqual(0, game.Waiting(Job.Woodcutter));
+        Assert.AreEqual(0, game.Roster.Waiting(Job.Woodcutter));
     }
 
     [TestMethod]
@@ -137,7 +137,7 @@ public sealed class LayoutSettlersTests
             game.ApplyCommands();
         }
 
-        var waiting = game.Waiting(jobless);
+        var waiting = game.Roster.Waiting(jobless);
         var lowest = game
             .Settlers.ToList()
             .FindIndex(settler => settler.Job == jobless && settler.Activity is WaitsInCastle);
@@ -191,11 +191,11 @@ public sealed class LayoutSettlersTests
         var game = Applied(
             Built + $"\"settlers\": [{Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": 7}}]"
         );
-        var before = game.CastleLogs;
+        var before = game.CastleStock.Logs;
 
         Run(game, 20000);
 
-        Assert.AreEqual(before + 1, game.CastleLogs);
+        Assert.AreEqual(before + 1, game.CastleStock.Logs);
     }
 
     [TestMethod]

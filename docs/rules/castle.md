@@ -88,7 +88,7 @@ the screen. **Emulated:** the harness (`opponents:S0,S1,S2`) gave the level for 
 `Game` takes the program's tables (`RuleTables`), the map, and a start stock level (`MapViewState.StockLevel`
 from the seed). `CommandKind.PlaceCastle`
 with the node in `Command.X` and `Command.Y` places the castle through `BuildSite.Evaluate` and
-`CastlePlacement.Apply`; `Game.Castle` and `Game.Stock` hold the result. The game changes the map's layers it was
+`CastlePlacement.Apply`; `Game.CastleStock` holds the result. The game changes the map's layers it was
 given. The placement also adds the castle as building slot 0 and the 20 settlers (`Game.Buildings`, `Game.Settlers`).
 The digest holds the castle, the stock, the buildings, and the settlers. Departures: the storage item and the
 item tables' other fields, the player's flag bits, and the mission changes are not held.

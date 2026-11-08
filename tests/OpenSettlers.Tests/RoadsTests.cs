@@ -30,7 +30,7 @@ public sealed class RoadsTests
     internal static Game TwoFlags()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(Made(), map);
+        var game = GameFactory.Create(Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, CastleX, CastleY));
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 6));
@@ -53,7 +53,7 @@ public sealed class RoadsTests
 
         Build(game, 0, 0);
 
-        var road = game.Roads.Single();
+        var road = game.Network.Roads.Single();
         Assert.AreEqual(0, road.FromSlot);
         Assert.AreEqual(0, road.FromDirection);
         Assert.AreEqual(1, road.ToSlot);
@@ -73,20 +73,20 @@ public sealed class RoadsTests
         Build(game, 0);
         same.Tick();
 
-        Assert.AreEqual(RoadStatus.Open, game.CheckRoad(16, 6, [0]));
-        Assert.AreEqual(0, game.Roads.Count);
+        Assert.AreEqual(RoadStatus.Open, game.RoadPlanner.Check(16, 6, [0]));
+        Assert.AreEqual(0, game.Network.Roads.Count);
         Assert.AreEqual(same.Digest(), game.Digest());
     }
 
     [TestMethod]
     public void ACancelledRoadLeavesNoStateBehind()
     {
-        // The stand-in interface draws a step at a time through CheckRoad and cancels by sending nothing.
+        // The stand-in interface draws a step at a time through RoadPlanner.Check and cancels by sending nothing.
         var game = TwoFlags();
         var same = TwoFlags();
 
-        Assert.AreEqual(RoadStatus.Open, game.CheckRoad(16, 6, [0]));
-        Assert.AreEqual(RoadStatus.Complete, game.CheckRoad(16, 6, [0, 0]));
+        Assert.AreEqual(RoadStatus.Open, game.RoadPlanner.Check(16, 6, [0]));
+        Assert.AreEqual(RoadStatus.Complete, game.RoadPlanner.Check(16, 6, [0, 0]));
         game.Tick();
         same.Tick();
 
@@ -102,8 +102,11 @@ public sealed class RoadsTests
         Build(direct, 0, 0);
         Build(detour, 0, 3, 0, 0);
 
-        Assert.AreEqual(1, detour.Roads.Count);
-        CollectionAssert.AreEqual(direct.Roads[0].Directions.ToArray(), detour.Roads[0].Directions.ToArray());
+        Assert.AreEqual(1, detour.Network.Roads.Count);
+        CollectionAssert.AreEqual(
+            direct.Network.Roads[0].Directions.ToArray(),
+            detour.Network.Roads[0].Directions.ToArray()
+        );
         CollectionAssert.AreEqual(TestMaps.Roads(direct.Map), TestMaps.Roads(detour.Map));
     }
 
@@ -112,9 +115,9 @@ public sealed class RoadsTests
     {
         var game = TwoFlags();
 
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(16, 6, [0, 0, 0]));
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(16, 6, [6]));
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(16, 6, [-1]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(16, 6, [0, 0, 0]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(16, 6, [6]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(16, 6, [-1]));
     }
 
     [TestMethod]
@@ -122,8 +125,8 @@ public sealed class RoadsTests
     {
         var game = TwoFlags();
 
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(17, 6, [0]));
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(CastleX, CastleY, [1]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(17, 6, [0]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(CastleX, CastleY, [1]));
     }
 
     [TestMethod]
@@ -133,11 +136,11 @@ public sealed class RoadsTests
         Build(game, 0, 0);
 
         // The node 17,6 holds the road now: a second road may not step onto it, from the flag or from the side.
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(16, 6, [0]));
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(16, 6, [1, 5]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(16, 6, [0]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(16, 6, [1, 5]));
         // Round a loop back onto a node of the road being drawn: south, south, east, north, west is 16,7 again.
-        Assert.AreEqual(RoadStatus.Refused, game.CheckRoad(16, 6, [2, 2, 0, 5, 3]));
-        Assert.AreEqual(RoadStatus.Open, game.CheckRoad(16, 6, [2, 2, 0, 5]));
+        Assert.AreEqual(RoadStatus.Refused, game.RoadPlanner.Check(16, 6, [2, 2, 0, 5, 3]));
+        Assert.AreEqual(RoadStatus.Open, game.RoadPlanner.Check(16, 6, [2, 2, 0, 5]));
     }
 
     [TestMethod]
@@ -145,7 +148,7 @@ public sealed class RoadsTests
     {
         var game = TwoFlags();
         var same = TwoFlags();
-        var fresh = new Game(
+        var fresh = GameFactory.Create(
             Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );
@@ -157,7 +160,7 @@ public sealed class RoadsTests
         same.Tick();
         fresh.Enqueue(new Command(0, 0, CommandKind.BuildRoad, 16, 6, [0, 0]));
         fresh.Tick();
-        var freshSame = new Game(
+        var freshSame = GameFactory.Create(
             Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );

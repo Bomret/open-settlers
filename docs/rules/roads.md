@@ -295,15 +295,15 @@ matches. The verb `roaddraw:SEED:COUNT` runs the three strip routines on random 
 ## In the engine
 
 `CommandKind.BuildRoad` takes the start flag in `Command.X` and `Command.Y` and the step of each direction in
-`Command.Directions`. `RoadBuilding.Walk` (`src/Adapters/Simulation/RoadBuilding.cs`) draws the road into the map as the
-original does and takes it back unless the road is accepted; `Game.CheckRoad` asks the same without changing the game,
-and `Game.Roads` lists the built roads (`Road`: the slots and directions of the two ends, the steps, and whether it is
+`Command.Directions`. `RoadBuilding.Walk` (`src/Application/RoadBuilding.cs`) draws the road into the map as the
+original does and takes it back unless the road is accepted; `RoadPlanner.Check` (`Game.RoadPlanner`) asks the same without changing the game,
+and `Game.Network.Roads` lists the built roads (`Road`: the slots and directions of the two ends, the steps, and whether it is
 a water road). The digest holds the roads. A refused command, and a road that does not end on a flag, changes nothing.
 The stand-in road button (`src/Viewer/MapViewControl.cs` with `src/MapView/RoadDrawing.cs`) draws a road outside the
 game, a node at a time, and sends one command where the road reaches a flag; Escape, a right click, or the button
 again cancels. `RoadDraws`, `RoadGraphics`, and the control draw the strips over the terrain in every copy of the map;
 the road being drawn is a white line. Departures: the length class, the second bit byte at `+5`, and the items'
-pointers are not kept (a later slice reads the road from the map and from `Game.Roads`); the `+0x37e` option, the
+pointers are not kept (a later slice reads the road from the map and from `Game.Network.Roads`); the `+0x37e` option, the
 second-button click that puts a flag on a road ([A flag on a road](#a-flag-on-a-road)); the step back at the start;
 directions after the road reached a flag are refused; the sounds; and the pixel alignment of the strips.
 
@@ -314,7 +314,7 @@ road's own earlier node and for a road across another. The other road, the flags
 (`RoadOnRoadTests`). The branch of `0x44426c` that puts a flag on the node and splits that road is not built: no control
 sets the bit.
 
-`Game.PlaceFlag` on a road node (node state 4) splits the road (`Removal.SplitRoad`, `src/Application/Removal.cs`): `Game.Roads` holds the two
+`Game.PlaceFlag` on a road node (node state 4) splits the road (`Removal.SplitRoad`, `src/Application/Removal.cs`): `Game.Network.Roads` holds the two
 halves in place of the old road, the water kind goes to both, the settlers on the road are gathered as the take-down of a flag
 gathers them (`JoinRoads` is the inverse), and the half without a carrier asks for one at the next flag pass. The events are
 `split-roads`, with the cause of the flag's placement. `RoadSplitTests` replays the `split-*` runs of `road-splits.txt`.

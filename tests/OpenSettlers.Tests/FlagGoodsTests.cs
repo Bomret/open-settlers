@@ -114,7 +114,7 @@ public sealed class FlagGoodsTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
-        var game = new Game(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var flags = Points(parts[5]);
         var hut = parts[7].Split(',').Select(int.Parse).ToArray();
@@ -194,7 +194,7 @@ public sealed class FlagGoodsTests
                     case 'l':
                         Assert.AreEqual(
                             int.Parse(value, CultureInfo.InvariantCulture),
-                            game.CastleLogs,
+                            game.CastleStock.Logs,
                             $"{name}: the logs in the castle after pass {pass}"
                         );
                         break;
@@ -227,7 +227,7 @@ public sealed class FlagGoodsTests
     [TestMethod]
     public void AGoodOnAFlagWithNoCarrierWaitsAndTheFlagAsksAgainAtEachTurn()
     {
-        var game = new Game(
+        var game = GameFactory.Create(
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
         );

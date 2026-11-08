@@ -38,7 +38,7 @@ public sealed class ThingHistoryRemovalTests
             }
         }
 
-        return new Game(Made(), map);
+        return GameFactory.Create(Made(), map);
     }
 
     private static void Do(Game game, int kind, int x, int y, int[]? directions = null)

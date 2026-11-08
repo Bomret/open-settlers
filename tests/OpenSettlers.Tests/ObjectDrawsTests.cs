@@ -41,11 +41,11 @@ public sealed class ObjectDrawsTests
     {
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15.
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Made(), map);
+        var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
-        var draws = ObjectDraws.Of(map, game.Castle);
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle);
 
         // The castle's node 15,5 is levelled to 15: x = 15 * 32 - 5 * 16, y = 5 * 20 - 15 * 4. inferred: the
         // entry is the emulator's (peek:44fd2f:4, see ObjectGraphicsTests), but the draw at the node is that of the
@@ -66,7 +66,7 @@ public sealed class ObjectDrawsTests
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = new Game(new RuleTables(classes, TestProgram.Made().StartStock), map);
+        var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
@@ -75,7 +75,7 @@ public sealed class ObjectDrawsTests
         game.Tick();
         var height = map.At(16, 2).Height;
 
-        var draws = ObjectDraws.Of(map, game.Castle, game.Buildings);
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings);
 
         Assert.AreEqual(
             new ObjectDraw(2, ObjectSprites.WoodcutterEntry, 480, 40 - height * 4),
@@ -93,11 +93,11 @@ public sealed class ObjectDrawsTests
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15; its flag stands at 16,6 on height 15:
         // x = 16 * 32 - 6 * 16, y = 6 * 20 - 15 * 4.
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Made(), map);
+        var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
 
-        var draws = ObjectDraws.Of(map, game.Castle);
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle);
 
         CollectionAssert.Contains(draws, new ObjectDraw(6, ObjectSprites.FlagEntry, 416, 60));
     }
@@ -108,13 +108,13 @@ public sealed class ObjectDrawsTests
         // In the original's picture the roads meet at the foot of a flag's pole. Roads and the pick use the node's
         // point, Camera.NodePosition lifted by the node's height, so the flag's draw position is that point.
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Made(), map);
+        var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         var (x, y) = Camera.NodePosition(16, 6);
         var lift = map.At(16, 6).Height * TerrainTriangles.HeightStep;
 
-        var flag = ObjectDraws.Of(map, game.Castle).Single(draw => draw.Entry == ObjectSprites.FlagEntry);
+        var flag = ObjectDraws.Of(map, game.CastleStock.Castle).Single(draw => draw.Entry == ObjectSprites.FlagEntry);
 
         Assert.AreEqual((x, y - lift), (flag.X, flag.Y));
     }
@@ -125,12 +125,12 @@ public sealed class ObjectDrawsTests
     static List<ObjectDraw> FlagDrawsWith(params int[] goods)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var game = new Game(TestProgram.Made(), map);
+        var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         var flagGoods = new Dictionary<(int, int), IReadOnlyList<int>> { [(16, 6)] = goods };
 
-        return ObjectDraws.Of(map, game.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
+        return ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
     }
 
     [TestMethod]

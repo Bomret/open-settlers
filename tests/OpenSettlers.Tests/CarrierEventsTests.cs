@@ -26,7 +26,7 @@ public sealed class CarrierEventsTests
         classes[1] = 3;
         classes[2] = 4;
 
-        return new Game(
+        return GameFactory.Create(
             new RuleTables(
                 classes,
                 Enumerable
@@ -172,9 +172,9 @@ public sealed class CarrierEventsTests
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 18, 6);
-        game.InLayout = true;
+        game.Causes.InLayout = true;
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
-        game.InLayout = false;
+        game.Causes.InLayout = false;
         for (var i = 0; i < 400 && !game.History.Events.All.Any(e => e.Type == EventType.Wait); i++)
         {
             game.Tick();

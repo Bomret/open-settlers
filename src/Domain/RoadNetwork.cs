@@ -48,4 +48,52 @@ public sealed class RoadNetwork
     /// <summary>The flag at the other end of the road that leaves a flag in a direction, or -1 where none does.</summary>
     public int FlagNeighbour(int flag, int direction) =>
         RoadAt(flag, direction) is { } road ? FarEnd(road, flag, direction).Flag : -1;
+
+    /// <summary>
+    /// The route search over the flags (<c>0x42b4bc</c>, the copy of it in the settlers' walk, and <c>0x42ca7a</c>):
+    /// the direction a settler at flag <paramref name="from"/> takes first to reach flag <paramref name="to"/>, or -1 where no
+    /// road joins them, in a table of <paramref name="flagCount"/> flags. The search runs breadth first from
+    /// <paramref name="from"/>, tries the directions of a flag from north (5) to east (0), and hands each flag it reaches
+    /// the first direction of the flag it came from; of several routes of the same number of flags it keeps the first one it
+    /// reached.
+    /// </summary>
+    public int Route(int flagCount, int from, int to)
+    {
+        if (from < 0 || to < 0 || from >= flagCount || to >= flagCount || from == to)
+        {
+            return -1;
+        }
+
+        var reached = new bool[flagCount];
+        var first = new int[flagCount];
+        var queue = new Queue<int>();
+        reached[from] = true;
+        for (var direction = 5; direction >= 0; direction--)
+        {
+            var next = FlagNeighbour(from, direction);
+            if (next >= 0)
+            {
+                reached[next] = true;
+                first[next] = direction;
+                queue.Enqueue(next);
+            }
+        }
+
+        while (queue.Count > 0)
+        {
+            var flag = queue.Dequeue();
+            for (var direction = 5; direction >= 0; direction--)
+            {
+                var next = FlagNeighbour(flag, direction);
+                if (next >= 0 && !reached[next])
+                {
+                    reached[next] = true;
+                    first[next] = first[flag];
+                    queue.Enqueue(next);
+                }
+            }
+        }
+
+        return reached[to] ? first[to] : -1;
+    }
 }

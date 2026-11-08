@@ -139,7 +139,7 @@ public sealed class PlayStateTests
     {
         static string Dump()
         {
-            var game = new Game(
+            var game = GameFactory.Create(
                 TestProgram.Made(),
                 MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
             );
@@ -149,7 +149,7 @@ public sealed class PlayStateTests
                 game.Tick();
             }
 
-            return (State with { Ticks = game.TickCount, Logs = game.CastleLogs }).Dump();
+            return (State with { Ticks = game.TickCount, Logs = game.CastleStock.Logs }).Dump();
         }
 
         Assert.AreEqual(Dump(), Dump());
@@ -158,12 +158,12 @@ public sealed class PlayStateTests
     [TestMethod]
     public void AGameWithNoCastleHoldsNoLogs()
     {
-        var game = new Game(
+        var game = GameFactory.Create(
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
         );
         game.Tick();
-        var state = State with { Ticks = game.TickCount, Logs = game.CastleLogs };
+        var state = State with { Ticks = game.TickCount, Logs = game.CastleStock.Logs };
 
         Assert.IsNull(state.Check(Expect("logs", "=", "0")));
     }

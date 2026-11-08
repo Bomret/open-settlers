@@ -33,14 +33,14 @@ internal static class CastlePlacement
         // The node and its six neighbors, the first seven entries of the spiral, all take the site's height.
         for (var i = 0; i < 7; i++)
         {
-            var (dx, dy) = MapGenerator.SpiralOffsets[i];
+            var (dx, dy) = Spiral.Offsets[i];
             map.At(x + dx, y + dy).Height = height;
         }
 
         var owner = Owner.Player(player);
         for (var i = 0; i < TerritoryNodes; i++)
         {
-            var (dx, dy) = MapGenerator.SpiralOffsets[i];
+            var (dx, dy) = Spiral.Offsets[i];
             ref var node = ref map.At(x + dx, y + dy);
             if (node.Owner.IsNobody)
             {
