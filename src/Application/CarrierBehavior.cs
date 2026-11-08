@@ -35,7 +35,7 @@ public sealed class CarrierBehavior(
     GoodsTransport goods,
     ICastleRoster roster,
     Func<int, Settler, int, bool> step,
-    Action<int> addToStock,
+    Action<Good> addToStock,
     Func<bool> inLayout
 ) : IRoadCarriers
 {
@@ -565,15 +565,15 @@ public sealed class CarrierBehavior(
             }
 
             var (_, _, node) = movement.Neighbour(settler, 4);
-            var good = hands.Load?.Good.Code ?? 0;
+            var good = hands.Load?.Good ?? Good.None;
             var given = "";
-            if (good != 0)
+            if (!good.IsNone)
             {
                 // The carrier's hands are empty; its item keeps the destination of the good (the residue).
                 movement.Become(settler, hands with { Load = null });
                 if (movement.BuildingAt(node) is { IsDemolishing: false } building)
                 {
-                    var counter = (good >= 9 ? good != 13 : good == 7) ? FillCounter.High : FillCounter.Low;
+                    var counter = good.FillsHigh ? FillCounter.High : FillCounter.Low;
                     var sum = building.FillOf(counter) + 0x0f;
                     building.SetFill(counter, sum);
                     if (sum > 0xff)

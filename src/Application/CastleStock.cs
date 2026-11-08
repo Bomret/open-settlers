@@ -23,10 +23,10 @@ public sealed class CastleStock
     }
 
     /// <summary>The castle takes one good in, up to the 50000 its count holds.</summary>
-    public void Add(int good)
+    public void Add(Good good)
     {
         int[] stock = [.. Stock];
-        stock[good] = Math.Min(stock[good] + 1, 50000);
+        stock[good.Code] = Math.Min(stock[good.Code] + 1, 50000);
         Stock = stock;
     }
 }

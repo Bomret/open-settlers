@@ -29,6 +29,15 @@ public readonly record struct Terrain(int Code)
     /// <summary>True for the water codes 0 to 3.</summary>
     public bool IsWater => Code < 4;
 
+    /// <summary>True for the codes 8 to 15, above the plain land: a road over them takes the mountain or the snow texture.</summary>
+    public bool IsAbovePlain => Code > 7;
+
+    /// <summary>True for the codes 14 and 15: a road over them takes the snow texture.</summary>
+    public bool IsSnow => Code >= 14;
+
+    /// <summary>Of two terrains the one of the higher code, as the road draw compares them.</summary>
+    public static Terrain Higher(Terrain a, Terrain b) => a.Code >= b.Code ? a : b;
+
     /// <summary>The group the build-site evaluator puts the code in.</summary>
     public TerrainKind Kind =>
         Code switch

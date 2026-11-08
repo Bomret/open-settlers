@@ -146,7 +146,7 @@ public partial class MapViewControl : Control
                 : _game is null ? new System.Collections.Generic.Dictionary<(int X, int Y), int>()
                 : ObjectDraws
                     .FlagGoodsOf(_game)
-                    .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => good != 0)),
+                    .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => !good.IsNone)),
             ListedThings(),
             _gameView ? _game : null
         );

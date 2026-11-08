@@ -29,14 +29,14 @@ public sealed class ObjectLayerWatch
         var map = game.Map;
         for (var index = 0; index < map.Count; index++)
         {
-            hash = Fnv1a.Add(hash, map.At(index).Object.Code);
+            hash = Fnv1a.Add(hash, map.At(index).Object);
         }
 
         foreach (var flag in game.Flags)
         {
             foreach (var place in flag.Places)
             {
-                hash = Fnv1a.Add(hash, (ulong)place.Good.Code);
+                hash = Fnv1a.Add(hash, place.Good);
             }
         }
 

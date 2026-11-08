@@ -159,17 +159,17 @@ public sealed class RuleTables
     /// carrier's exchange lines up the good of the highest rank next (<c>docs/rules/goods.md</c>). 0 for a number that is no
     /// good, and for every good where a test needs none.
     /// </summary>
-    public int TransportPriority(int good) => good is >= 1 and <= Goods ? _transportPriorities[good - 1] : 0;
+    public int TransportPriority(Good good) => good.Code is >= 1 and <= Goods ? _transportPriorities[good.Code - 1] : 0;
 
     /// <summary>The byte counts of the good kind table as the importer read them.</summary>
     public byte[] GoodKinds => _goodKinds;
 
     /// <summary>
     /// Which byte of a building's fill a lost good counts against (<c>docs/rules/removal.md</c>). <paramref name="good"/> is a
-    /// good number, 0 to 31.
+    /// good, its number taken to 0 to 31 (the original masks it with 0x1f).
     /// </summary>
-    public FillCounter FillCounterOf(int good) =>
-        _goodKinds[good] switch
+    public FillCounter FillCounterOf(Good good) =>
+        _goodKinds[good.Code & 0x1f] switch
         {
             0 => FillCounter.Low,
             1 => FillCounter.High,

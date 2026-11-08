@@ -62,7 +62,7 @@ public static class MapPicking
                 y -= map.At(wrappedColumn, wrappedRow).Height * TerrainTriangles.HeightStep;
                 if (
                     pickFlag
-                    && map.At(wrappedColumn, wrappedRow).Object.Code == ObjectSprites.FlagCode
+                    && map.At(wrappedColumn, wrappedRow).Object == MapObject.Flag
                     && pointX >= x + flag!.OffsetX
                     && pointX < x + flag.OffsetX + flag.Width
                     && pointY >= y + flag.OffsetY

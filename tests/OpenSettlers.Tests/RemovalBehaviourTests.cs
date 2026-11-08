@@ -30,7 +30,7 @@ public sealed class RemovalBehaviourTests
 
     private sealed class FakePriorities : ITransportPriorities
     {
-        public int TransportPriority(int good) => good;
+        public int TransportPriority(Good good) => good.Code;
     }
 
     private sealed class Rig

@@ -65,7 +65,7 @@ public sealed class GoodsTransport(SettlerMovement movement, FlagTable flags, Ro
     /// 0x445570), read from the program. Good 0 is no good and has none. The bytes for the goods 27 to 31 belong to other fields
     /// of the player's block in the original; no good has those numbers, and the engine gives them none.
     /// </summary>
-    public int TransportPriority(int good) => movement.Tables.TransportPriority(good);
+    public int TransportPriority(Good good) => movement.Tables.TransportPriority(good);
 
     /// <summary>
     /// The turn of a flag's goods (0x46414d, from the thermometer at 0x46427c to the places' loop ending at 0x4650b9). It runs
@@ -295,7 +295,7 @@ public sealed class GoodsTransport(SettlerMovement movement, FlagTable flags, Ro
         {
             WaitForRoad(flag, way, place);
         }
-        else if (TransportPriority(flags[flag].Places[waiting].Good.Code) < TransportPriority(good.Good.Code))
+        else if (TransportPriority(flags[flag].Places[waiting].Good) < TransportPriority(good.Good))
         {
             side.WaitingPlace = place;
         }
@@ -315,8 +315,8 @@ public sealed class GoodsTransport(SettlerMovement movement, FlagTable flags, Ro
         var way = walks.Heading.Direction;
         var places = flags[flag].Places;
         var side = flags[flag].Side(way);
-        var left = walks.Load?.Good.Code ?? 0;
-        var took = 0;
+        var left = walks.Load?.Good ?? Good.None;
+        var took = Good.None;
         var changed = false;
         if (side.WaitingPlace is { } waiting)
         {
@@ -339,15 +339,15 @@ public sealed class GoodsTransport(SettlerMovement movement, FlagTable flags, Ro
                 place.Way = null;
             }
 
-            took = walks.Load?.Good.Code ?? 0;
+            took = walks.Load?.Good ?? Good.None;
             side.WaitingPlace = null;
             var best = 0;
             var found = -1;
             for (var i = 0; i < places.Count; i++)
             {
-                if (!places[i].IsEmpty && places[i].Way == way && TransportPriority(places[i].Good.Code) > best)
+                if (!places[i].IsEmpty && places[i].Way == way && TransportPriority(places[i].Good) > best)
                 {
-                    best = TransportPriority(places[i].Good.Code);
+                    best = TransportPriority(places[i].Good);
                     found = i;
                 }
             }

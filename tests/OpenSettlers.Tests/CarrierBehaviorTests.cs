@@ -66,7 +66,7 @@ public sealed class CarrierBehaviorTests
 
         public ActivityRegistry Registry { get; } = new();
 
-        public List<int> Stocked { get; } = [];
+        public List<Good> Stocked { get; } = [];
     }
 
     [TestMethod]
@@ -153,6 +153,6 @@ public sealed class CarrierBehaviorTests
         rig.Bench.Clock += 200;
         rig.Registry.Handle(slot, settler);
 
-        CollectionAssert.AreEqual(new[] { Log }, rig.Stocked, "the castle counts the log once");
+        CollectionAssert.AreEqual(new[] { new Good(Log) }, rig.Stocked, "the castle counts the log once");
     }
 }

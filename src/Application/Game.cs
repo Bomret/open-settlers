@@ -9,6 +9,7 @@ namespace OpenSettlers.Simulation;
 /// at a tick applied in a total order so that the order of <see cref="Enqueue"/> calls does not change the game (INV-0002).
 /// The game only applies commands, runs the tick in the original's order, and builds the digest: each kind of command has its
 /// handler, the tick is the main pass, the digest is the port's, and everything else a caller reaches is a read-only part.
+/// The behaviours that change the game are internal, reached only by the assemblies that build and drive it.
 /// </summary>
 public sealed class Game
 {
@@ -77,40 +78,40 @@ public sealed class Game
     public GameClock Clock => _parts.Clock;
 
     /// <summary>The causes the rules give their events.</summary>
-    public Causes Causes => _parts.Causes;
+    internal Causes Causes => _parts.Causes;
 
     /// <summary>The game's random generator: it starts as the map's generation left it and draws only in the passes.</summary>
-    public IRandomDraws Draws => _parts.Draws;
+    internal IRandomDraws Draws => _parts.Draws;
 
     /// <summary>The ground the settlers share.</summary>
-    public SettlerMovement Movement => _parts.Movement;
+    internal SettlerMovement Movement => _parts.Movement;
 
     /// <summary>The behaviour of each activity type that the table pass hands a settler to.</summary>
-    public ActivityRegistry Behaviours => _parts.Behaviours;
+    internal ActivityRegistry Behaviours => _parts.Behaviours;
 
     /// <summary>The pass of the main loop: the phase, the scan cursor, and whether every pass gives the settlers a turn.</summary>
-    public MainPass Pass => _parts.Pass;
+    internal MainPass Pass => _parts.Pass;
 
     /// <summary>The castle's settlers and the list of those that wait.</summary>
-    public CastleRoster Roster => _parts.Roster;
+    internal CastleRoster Roster => _parts.Roster;
 
     /// <summary>The carriers: the flag table's pass, the carrier requests, and the walk along the roads.</summary>
-    public CarrierBehavior Carriers => _parts.Carriers;
+    internal CarrierBehavior Carriers => _parts.Carriers;
 
     /// <summary>The goods on the flags: their destinations, directions, and the exchange with the carriers.</summary>
-    public GoodsTransport Goods => _parts.Goods;
+    internal GoodsTransport Goods => _parts.Goods;
 
     /// <summary>The removal: the click class of a node, the take-downs, and the split of a road.</summary>
-    public Removal Removal => _parts.Removal;
+    internal Removal Removal => _parts.Removal;
 
     /// <summary>The walk home: which settlers are on it, and the rules of its claim, search, and arrival.</summary>
-    public WalkHomeBehavior WalkHome => _parts.WalkHome;
+    internal WalkHomeBehavior WalkHome => _parts.WalkHome;
 
     /// <summary>The walk to an errand and the entry into the building at its end.</summary>
-    public WalkBehavior Walks => _parts.Walks;
+    internal WalkBehavior Walks => _parts.Walks;
 
     /// <summary>The woodcutter's work on the objects and the trees.</summary>
-    public WoodcutterBehavior Woodcutter => _parts.Woodcutter;
+    internal WoodcutterBehavior Woodcutter => _parts.Woodcutter;
 
     /// <summary>The check of the road the player draws.</summary>
     public RoadPlanner RoadPlanner => _parts.RoadPlanner;

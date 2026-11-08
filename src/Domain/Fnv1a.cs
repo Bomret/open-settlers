@@ -10,4 +10,10 @@ public static class Fnv1a
 
     /// <summary>The hash after one more value.</summary>
     public static ulong Add(ulong hash, ulong value) => (hash ^ value) * Prime;
+
+    /// <summary>Mixes a map object into the hash by its code.</summary>
+    public static ulong Add(ulong hash, MapObject mapObject) => Add(hash, mapObject.Code);
+
+    /// <summary>Mixes a good into the hash by its number.</summary>
+    public static ulong Add(ulong hash, Good good) => Add(hash, (ulong)good.Code);
 }

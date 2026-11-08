@@ -13,7 +13,7 @@ public sealed class TerrainTests
     [TestMethod]
     public void AFlatUpperTriangleOfGrassIsMask100WithTexture264()
     {
-        var draw = TerrainRules.Upper(5, 5, 5, 5);
+        var draw = TerrainRules.Upper(5, 5, 5, new Terrain(5));
 
         Assert.AreEqual(new TerrainDraw(100, 264), draw);
     }
@@ -21,7 +21,7 @@ public sealed class TerrainTests
     [TestMethod]
     public void AFlatLowerTriangleOfGrassIsMask181WithTexture264()
     {
-        var draw = TerrainRules.Lower(5, 5, 5, 5);
+        var draw = TerrainRules.Lower(5, 5, 5, new Terrain(5));
 
         Assert.AreEqual(new TerrainDraw(181, 264), draw);
     }
@@ -29,20 +29,20 @@ public sealed class TerrainTests
     [TestMethod]
     public void WaterIsDrawnWithTheLastTexture()
     {
-        Assert.AreEqual(292, TerrainRules.Upper(0, 0, 0, 0)!.Value.Texture);
+        Assert.AreEqual(292, TerrainRules.Upper(0, 0, 0, new Terrain(0))!.Value.Texture);
     }
 
     [TestMethod]
     public void AHeightStepBeyondFourHasNoMask()
     {
-        Assert.IsNull(TerrainRules.Upper(5, 0, 5, 5));
-        Assert.IsNull(TerrainRules.Lower(5, 5, 0, 5));
+        Assert.IsNull(TerrainRules.Upper(5, 0, 5, new Terrain(5)));
+        Assert.IsNull(TerrainRules.Lower(5, 5, 0, new Terrain(5)));
     }
 
     [TestMethod]
     public void AHeightIsItsFiveLowBits()
     {
-        Assert.AreEqual(TerrainRules.Upper(1, 1, 1, 5), TerrainRules.Upper(33, 1, 1, 5));
+        Assert.AreEqual(TerrainRules.Upper(1, 1, 1, new Terrain(5)), TerrainRules.Upper(33, 1, 1, new Terrain(5)));
     }
 
     [TestMethod]

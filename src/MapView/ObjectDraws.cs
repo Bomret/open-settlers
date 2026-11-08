@@ -29,12 +29,12 @@ public static class ObjectDraws
     private const int GoodsBeforeFlag = 3;
 
     /// <summary>The goods that lie on the flags of a game, by the flag's node; a flag with no good is left out.</summary>
-    public static Dictionary<(int X, int Y), IReadOnlyList<int>> FlagGoodsOf(Game game) =>
+    public static Dictionary<(int X, int Y), IReadOnlyList<Good>> FlagGoodsOf(Game game) =>
         game
             .Flags.Where(flag => !flag.IsFree && flag.Places.Any(place => !place.IsEmpty))
             .ToDictionary(
                 flag => (flag.X, flag.Y),
-                flag => (IReadOnlyList<int>)[.. flag.Places.Select(place => place.Good.Code)]
+                flag => (IReadOnlyList<Good>)[.. flag.Places.Select(place => place.Good)]
             );
 
     /// <summary>
@@ -49,7 +49,7 @@ public static class ObjectDraws
         Map map,
         Castle? castle = null,
         IReadOnlyList<Building>? buildings = null,
-        IReadOnlyDictionary<(int X, int Y), IReadOnlyList<int>>? flagGoods = null,
+        IReadOnlyDictionary<(int X, int Y), IReadOnlyList<Good>>? flagGoods = null,
         ushort counter = 0
     )
     {
@@ -57,7 +57,7 @@ public static class ObjectDraws
         var draws = new List<ObjectDraw>(objects.Count);
         foreach (var item in objects)
         {
-            if (ObjectSprites.Entry(item.Code, counter) is not { } entry)
+            if (ObjectSprites.Entry(item.Object, counter) is not { } entry)
             {
                 continue;
             }
@@ -66,7 +66,7 @@ public static class ObjectDraws
             var height = map.At(item.X, item.Y).Height;
             var top = y - height * TerrainTriangles.HeightStep;
             var goods =
-                item.Code == ObjectSprites.FlagCode && flagGoods is not null
+                item.Object == MapObject.Flag && flagGoods is not null
                     ? flagGoods.GetValueOrDefault((item.X, item.Y))
                     : null;
             AddGoods(draws, goods, item.Y, x, top, 0, GoodsBeforeFlag);
@@ -131,7 +131,7 @@ public static class ObjectDraws
 
     private static void AddGoods(
         List<ObjectDraw> draws,
-        IReadOnlyList<int>? goods,
+        IReadOnlyList<Good>? goods,
         int row,
         int x,
         int y,
@@ -141,7 +141,7 @@ public static class ObjectDraws
     {
         for (var place = from; place < to && goods is not null && place < goods.Count; place++)
         {
-            if (goods[place] != 0)
+            if (!goods[place].IsNone)
             {
                 draws.Add(
                     new ObjectDraw(

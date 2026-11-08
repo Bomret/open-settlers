@@ -20,7 +20,7 @@ public sealed class ObjectDrawsTests
 
         Assert.IsNotEmpty(map.Objects);
         CollectionAssert.AreEqual(
-            map.Objects.Select(o => (o.Y, ObjectSprites.Entry(o.Code)!.Value)).ToList(),
+            map.Objects.Select(o => (o.Y, ObjectSprites.Entry(o.Object)!.Value)).ToList(),
             draws.Select(d => (d.Row, d.Entry)).ToList()
         );
     }
@@ -128,7 +128,10 @@ public sealed class ObjectDrawsTests
         var game = GameFactory.Create(TestProgram.Made(), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
-        var flagGoods = new Dictionary<(int, int), IReadOnlyList<int>> { [(16, 6)] = goods };
+        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>>
+        {
+            [(16, 6)] = [.. goods.Select(good => new Good(good))],
+        };
 
         return ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
     }
@@ -140,9 +143,9 @@ public sealed class ObjectDrawsTests
         // 320 plus the good (0x44de9a). The flag's draw is at 416,60 (the test above).
         var draws = FlagDrawsWith(7, 0, 0, 0, 0, 0, 0, 0);
 
-        var log = new ObjectDraw(6, ObjectSprites.GoodEntry(7), 422, 56);
+        var log = new ObjectDraw(6, ObjectSprites.GoodEntry(new Good(7)), 422, 56);
         var flag = draws.FindIndex(draw => draw.Entry == ObjectSprites.FlagEntry);
-        Assert.AreEqual(327, ObjectSprites.GoodEntry(7));
+        Assert.AreEqual(327, ObjectSprites.GoodEntry(new Good(7)));
         Assert.AreEqual(log, draws[flag - 1]);
     }
 
@@ -162,7 +165,7 @@ public sealed class ObjectDrawsTests
         var masked = FlagDrawsWith(0x27, 0, 0, 0, 0, 0, 0, 0);
 
         Assert.AreEqual(1, empty.Count(draw => draw.Entry == ObjectSprites.FlagEntry));
-        Assert.DoesNotContain(draw => draw.Entry == ObjectSprites.GoodEntry(7), empty);
+        Assert.DoesNotContain(draw => draw.Entry == ObjectSprites.GoodEntry(new Good(7)), empty);
         Assert.AreEqual(empty.Count + 1, masked.Count);
         Assert.Contains(new ObjectDraw(6, 327, 422, 56), masked);
     }

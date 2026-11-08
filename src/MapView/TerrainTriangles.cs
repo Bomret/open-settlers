@@ -37,7 +37,7 @@ public static class TerrainTriangles
                 var south = H(column, row + 1);
                 var southEast = H(column + 1, row + 1);
                 var east = H(column + 1, row);
-                if (TerrainRules.Upper(node, south, southEast, tile.Upper.Code) is { } upper)
+                if (TerrainRules.Upper(node, south, southEast, tile.Upper) is { } upper)
                 {
                     var (x, y) = Camera.NodePosition(column, row);
                     triangles.Add(
@@ -45,7 +45,7 @@ public static class TerrainTriangles
                     );
                 }
 
-                if (TerrainRules.Lower(southEast, node, east, tile.Lower.Code) is { } lower)
+                if (TerrainRules.Lower(southEast, node, east, tile.Lower) is { } lower)
                 {
                     var (x, y) = Camera.NodePosition(column + 1, row + 1);
                     triangles.Add(

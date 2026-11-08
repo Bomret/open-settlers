@@ -143,7 +143,7 @@ public sealed class GameDigest : IGameDigest
             }
         }
 
-        foreach (var slot in game.Roster.WaitingList.ToArray())
+        foreach (var slot in game.Roster.WaitingList)
         {
             hash = Mix(hash, slot);
         }

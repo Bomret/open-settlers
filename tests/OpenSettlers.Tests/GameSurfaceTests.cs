@@ -6,7 +6,7 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The game is a coordinator: it applies commands, runs the tick, and builds the digest (ADR 0013). Everything else a caller
-// reaches is a read-only part.
+// reaches is a read-only part; the behaviours that change the game are internal to the assemblies that build and drive it.
 [TestClass]
 public sealed class GameSurfaceTests
 {
@@ -34,7 +34,7 @@ public sealed class GameSurfaceTests
     }
 
     [TestMethod]
-    public void TheGamePublishesOnlyTheCountersAndTheParts()
+    public void TheGamePublishesOnlyTheCountersAndTheStateItsCallersRead()
     {
         var properties = typeof(Game)
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -42,30 +42,18 @@ public sealed class GameSurfaceTests
             .Order();
         string[] expected =
         [
-            "Behaviours",
             "Buildings",
             "CastleStock",
-            "Carriers",
-            "Causes",
             "Clock",
-            "Draws",
             "Flags",
-            "Goods",
             "History",
             "Map",
-            "Movement",
             "Network",
-            "Pass",
-            "Removal",
             "Revision",
             "RoadPlanner",
-            "Roster",
             "Settlers",
             "Tables",
             "TickCount",
-            "WalkHome",
-            "Walks",
-            "Woodcutter",
         ];
 
         CollectionAssert.AreEqual(expected.Order().ToArray(), properties.ToArray());

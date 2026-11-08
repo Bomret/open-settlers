@@ -68,10 +68,10 @@ public sealed class RuleTablesTests
             goodKinds: kinds
         );
 
-        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(3));
-        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(4));
-        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(5));
-        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(6));
+        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(new Good(3)));
+        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(new Good(4)));
+        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good(5)));
+        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good(6)));
     }
 
     [TestMethod]
@@ -83,10 +83,10 @@ public sealed class RuleTablesTests
 
         var tables = TestProgram.Made(ranks);
 
-        Assert.AreEqual(26, tables.TransportPriority(1));
-        Assert.AreEqual(1, tables.TransportPriority(26));
-        Assert.AreEqual(0, tables.TransportPriority(0));
-        Assert.AreEqual(0, tables.TransportPriority(27));
+        Assert.AreEqual(26, tables.TransportPriority(new Good(1)));
+        Assert.AreEqual(1, tables.TransportPriority(new Good(26)));
+        Assert.AreEqual(0, tables.TransportPriority(new Good(0)));
+        Assert.AreEqual(0, tables.TransportPriority(new Good(27)));
     }
 
     [TestMethod]

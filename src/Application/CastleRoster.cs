@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace OpenSettlers.Simulation;
 
@@ -57,13 +59,14 @@ public sealed class CastleRoster(
 
     // The castle's list of waiting settlers: for each job the slot of the settler that waits there (word at 0x42 + 2
     // times the job of the storage item), 0 for none.
-    private readonly ushort[] _waiting = new ushort[JobCount];
+    private readonly Dictionary<Job, ushort> _waiting = [];
 
     // The entry of a job in the castle's list of waiting settlers.
-    private ref ushort Entry(Job job) => ref _waiting[job.Code];
+    private ref ushort Entry(Job job) => ref CollectionsMarshal.GetValueRefOrAddDefault(_waiting, job, out _);
 
     /// <summary>The castle's list of waiting settlers, by job: the slot of the settler that waits there, 0 for none.</summary>
-    public ReadOnlySpan<ushort> WaitingList => _waiting;
+    public IReadOnlyList<ushort> WaitingList =>
+        [.. Enumerable.Range(0, JobCount).Select(code => _waiting.GetValueOrDefault(new Job(code)))];
 
     /// <summary>The settlers a request has sent out that have not left the castle yet (word at 0x4a of the storage item).</summary>
     public int LeavingCount { get; private set; }

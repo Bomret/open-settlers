@@ -4,5 +4,5 @@ namespace OpenSettlers.Simulation;
 public interface ITransportPriorities
 {
     /// <summary>The transport priority of the good: of two goods that wait for a road the higher goes first.</summary>
-    int TransportPriority(int good);
+    int TransportPriority(Good good);
 }

@@ -415,7 +415,7 @@ public sealed class Removal(
         }
         else if (WalkingActivity.LoadOf(settler.Activity) is { } load)
         {
-            CountLost(load.Good.Code, load.Destination);
+            CountLost(load.Good, load.Destination);
         }
 
         movement.Become(settler, new SearchesHome());
@@ -509,10 +509,9 @@ public sealed class Removal(
     // The goods 14 and 15 count against the total of resource 1; a good that has a kind counts against the byte of the fill of
     // the building at its destination flag, except the buildings with a storage. **Not ported:** a destination flag with no
     // building, where the original reads a null pointer.
-    private void CountLost(int good, int? destination)
+    private void CountLost(Good good, int? destination)
     {
-        good &= 0x1f;
-        if (good is 0xe or 0xf)
+        if (good.CountsAgainstResource1)
         {
             Map.Resource1Total--;
         }
@@ -656,7 +655,7 @@ public sealed class Removal(
             var good = flags[slot].Places[place];
             if (!good.IsEmpty)
             {
-                CountLost(good.Good.Code, good.Destination);
+                CountLost(good.Good, good.Destination);
             }
         }
 
@@ -711,7 +710,7 @@ public sealed class Removal(
                     );
                     if (load is { } lost)
                     {
-                        CountLost(lost.Good.Code, lost.Destination);
+                        CountLost(lost.Good, lost.Destination);
                     }
                 }
 
@@ -906,13 +905,9 @@ public sealed class Removal(
                 for (var other = 0; other < Flag.PlaceCount; other++)
                 {
                     var candidate = flags[holder].Places[other];
-                    if (
-                        !candidate.IsEmpty
-                        && candidate.Way == way
-                        && best < goods.TransportPriority(candidate.Good.Code)
-                    )
+                    if (!candidate.IsEmpty && candidate.Way == way && best < goods.TransportPriority(candidate.Good))
                     {
-                        best = goods.TransportPriority(candidate.Good.Code);
+                        best = goods.TransportPriority(candidate.Good);
                         bestPlace = other;
                     }
                 }

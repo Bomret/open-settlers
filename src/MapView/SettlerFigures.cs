@@ -263,7 +263,7 @@ public sealed class SettlerFigures
     /// </summary>
     public IEnumerable<(int Entry, int Colour)> Sprites(int job, int colour, int carriedGood = 0)
     {
-        var add = job == Job.CarrierCode ? Carried(carriedGood) : 0;
+        var add = job == Job.CarrierCode ? Carried(new Good(carriedGood)) : 0;
         var starts = new HashSet<int>();
         for (var frame = 0; frame < Sequences && _data.Length >= TableEnd; frame++)
         {
@@ -417,20 +417,20 @@ public sealed class SettlerFigures
     // 0x43f8ae, for the states 3 and 0xe). A carrier in state 0x42 has no record (byte 11 is the road direction there, no
     // good). Sprites applies the same rule through Carried.
     private int CarriedFigure(Settler settler) =>
-        settler is { Job.Code: Job.CarrierCode, Activity: WalksRoad or HandsOver }
+        settler.Job == Job.Carrier && settler.Activity is WalksRoad or HandsOver
             ? Carried(
                 settler.Activity switch
                 {
-                    WalksRoad road => road.Load?.Good.Code ?? 0,
-                    HandsOver hands => hands.Load?.Good.Code ?? 0,
-                    _ => 0,
+                    WalksRoad road => road.Load?.Good ?? Good.None,
+                    HandsOver hands => hands.Load?.Good ?? Good.None,
+                    _ => Good.None,
                 }
             )
             : 0;
 
     // The word of the table at 0x43f4b7 for a good (2 * good bytes on): the row of the figure bases in its high byte. A
     // carrier with no good (0) adds nothing; so does a good the table does not cover.
-    private int Carried(int good) => good > 0 && good < _carried.Length ? _carried[good] : 0;
+    private int Carried(Good good) => good.Code > 0 && good.Code < _carried.Length ? _carried[good.Code] : 0;
 
     // The triple of the settler's sequence for the time it has left (the timer less the clock units since the stamp, 0x43f537
     // shifts the timer the view pass leaves right 3), or null where there is none.
