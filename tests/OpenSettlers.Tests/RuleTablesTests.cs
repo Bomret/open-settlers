@@ -95,7 +95,7 @@ public sealed class RuleTablesTests
         var baseSpan = ProgramTablesImporter.FigureOffsetAddress - ProgramTablesImporter.FigureBaseAddress;
         var frameSpan = ProgramTablesImporter.CarriedFigureAddress - ProgramTablesImporter.FrameRowAddress;
 
-        Assert.AreEqual(baseSpan, 4 * RuleTables.FigureBaseRowCount);
-        Assert.AreEqual(frameSpan, RuleTables.FrameRowCount);
+        Assert.AreEqual(4 * RuleTables.FigureBaseRowCount, baseSpan);
+        Assert.AreEqual(RuleTables.FrameRowCount, frameSpan);
     }
 }
