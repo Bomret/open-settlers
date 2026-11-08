@@ -197,7 +197,7 @@ public sealed class RemovalLogicTests
         var game = World();
         Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
         var lost = game.Flags.Count - 1;
-        game.LayGood(lost, 0, Game.GoodLog, 4);
+        game.LayGood(lost, 0, Game.GoodLog, destination: 3);
         var hut = game.Buildings[1];
         Assert.AreEqual(0, hut.Fill >> 8);
 
@@ -218,16 +218,16 @@ public sealed class RemovalLogicTests
         ranks[stone - 1] = 9;
         ranks[board - 1] = 2;
         var game = World(transportPriorities: ranks);
-        var directed = (way + 1) << 5;
-        game.LayGood(1, 0, board | directed);
-        game.LayGood(1, 1, Game.GoodLog | directed);
-        game.LayGood(1, 2, stone | directed);
-        game.LayGood(1, 5, board | directed, 4);
+        game.LayGood(1, 0, board, way: way);
+        game.LayGood(1, 1, Game.GoodLog, way: way);
+        game.LayGood(1, 2, stone, way: way);
+        game.LayGood(1, 5, board, destination: 3, way: way);
         game.WaitForRoad(1, way, 5);
 
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
 
-        Assert.AreEqual(board, game.FlagGoods(1)[5], "the good for the hut loses its direction");
+        Assert.IsNull(game.Flags[1].Places[5].Way, "the good for the hut loses its direction");
+        Assert.AreEqual(new Good(board), game.Flags[1].Places[5].Good);
         Assert.AreEqual(2, game.Flags[1].Side(way).WaitingPlace, "the stone waits for the road next");
     }
 

@@ -215,7 +215,7 @@ public sealed class RoadSplitGameTests
     public void ACarrierThatCarriesAGoodWhenTheRoadSplitsStillCarriesIt()
     {
         var game = EastRoad();
-        game.LayGood(0, 0, 7, 2);
+        game.LayGood(0, 0, 7, destination: 1);
         for (var tick = 0; tick < 3000 && !game.Settlers.Any(settler => settler is { State: 3, Mode: 7 }); tick++)
         {
             game.Tick();

@@ -78,9 +78,9 @@ public sealed class FlagGoodsTests
     // A flag's goods fields in the order of the fixture's f fields.
     private static string Fields(Game game, int flag) =>
         Convert.ToHexString([
-            .. new[] { (byte)(game.FlagGoodsBit(flag) ? 0x80 : 0), FlagEncoder.Status(game.Flags[flag]) },
-            .. game.FlagGoods(flag).Select(good => (byte)good),
-            .. game.FlagDestinations(flag).SelectMany(word => BitConverter.GetBytes((ushort)word)),
+            .. new[] { FlagEncoder.GoodsByte(game.Flags[flag]), FlagEncoder.Status(game.Flags[flag]) },
+            .. game.Flags[flag].Places.Select(FlagEncoder.GoodByte),
+            .. game.Flags[flag].Places.SelectMany(place => BitConverter.GetBytes(FlagEncoder.DestinationWord(place))),
             .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[flag].Side(direction))),
         ]);
 
@@ -242,9 +242,10 @@ public sealed class FlagGoodsTests
             game.Tick();
         }
 
-        Assert.AreEqual(7, game.FlagGoods(1)[0], "the good has no direction");
-        Assert.IsTrue(game.FlagGoodsBit(1), "the flag asks again at its next turn");
-        Assert.AreEqual(0, game.FlagDestinations(1)[0]);
+        Assert.AreEqual(new Good(7), game.Flags[1].Places[0].Good);
+        Assert.IsNull(game.Flags[1].Places[0].Way, "the good has no direction");
+        Assert.IsTrue(game.Flags[1].NeedsGoodsTurn, "the flag asks again at its next turn");
+        Assert.IsNull(game.Flags[1].Places[0].Destination);
         Assert.AreNotEqual(before, game.Digest(), "the digest holds the new fields");
     }
 }

@@ -185,12 +185,12 @@ public sealed class WoodcutterTests
 
             if (line.TryGetValue("g", out var goods))
             {
-                var places = game.FlagGoods(hutFlag);
-                var bytes = string.Concat(places.Select(good => good.ToString("X2")));
+                var places = game.Flags[hutFlag].Places;
+                var bytes = string.Concat(places.Select(place => FlagEncoder.GoodByte(place).ToString("X2")));
                 Assert.AreEqual(goods.Split('/')[1], bytes, $"{name}: the goods on the hut's flag after pass {pass}");
                 Assert.AreEqual(
                     Convert.ToInt32(goods.Split('/')[0], 16) >> 7,
-                    game.FlagGoodsBit(hutFlag) ? 1 : 0,
+                    game.Flags[hutFlag].NeedsGoodsTurn ? 1 : 0,
                     $"{name}: the flag's goods bit after pass {pass}"
                 );
             }

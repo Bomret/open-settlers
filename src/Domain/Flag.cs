@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 namespace OpenSettlers.Domain;
@@ -11,6 +12,10 @@ namespace OpenSettlers.Domain;
 public sealed class Flag
 {
     private readonly FlagSide[] _sides = [.. Enumerable.Range(0, Direction.Count).Select(_ => new FlagSide())];
+    private readonly WaitingGood[] _places = [.. Enumerable.Range(0, PlaceCount).Select(_ => new WaitingGood())];
+
+    /// <summary>The number of places for goods on a flag.</summary>
+    public const int PlaceCount = 8;
 
     /// <summary>A flag on the node at (<paramref name="x"/>, <paramref name="y"/>) with an empty item.</summary>
     public Flag(int x, int y)
@@ -34,8 +39,28 @@ public sealed class Flag
     /// </summary>
     public bool CarrierRequestFailed { get; set; }
 
+    /// <summary>Whether goods on the flag still need their turn: a put sets it, a turn clears it, a turn that could not finish sets it again.</summary>
+    public bool NeedsGoodsTurn { get; set; }
+
+    /// <summary>The eight places of the flag, for the goods that lie on it.</summary>
+    public IReadOnlyList<WaitingGood> Places => _places;
+
     /// <summary>The side the road in <paramref name="direction"/> leaves the flag by.</summary>
     public FlagSide Side(Direction direction) => _sides[direction];
+
+    /// <summary>The first place that holds no good, or -1 where every place holds one.</summary>
+    public int FirstEmptyPlace()
+    {
+        for (var place = 0; place < _places.Length; place++)
+        {
+            if (_places[place].IsEmpty)
+            {
+                return place;
+            }
+        }
+
+        return -1;
+    }
 
     /// <summary>Takes the flag down: the slot has no node and keeps its item.</summary>
     internal void Release()

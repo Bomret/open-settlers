@@ -163,7 +163,7 @@ public sealed partial class Game
             return "no flag stands on the node";
         }
 
-        if (_flagGoods[flag][place] != 0)
+        if (!_flags[flag].Places[place].IsEmpty)
         {
             return "the place holds a good already";
         }

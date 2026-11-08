@@ -25,35 +25,13 @@ public sealed partial class Game
     {
         var slot = _flags.Add(x, y);
         History.FillFlag(slot);
-        if (slot == _flagGoods.Count)
-        {
-            _flagGoods.Add(new byte[8]);
-            _goodsBit.Add(false);
-            _goodsDestination.Add(new ushort[8]);
-
-            return slot;
-        }
-
-        _flagGoods[slot] = new byte[8];
-        _goodsBit[slot] = false;
-        _goodsDestination[slot] = new ushort[8];
 
         return slot;
     }
 
-    // Frees a flag's slot (0x45d974): the item keeps its bytes until a new flag takes the slot; the table's count falls past the
+    // Frees a flag's slot (0x45d974): the item keeps its values until a new flag takes the slot; the table's count falls past the
     // free slots at its end.
-    private void FreeFlagSlot(int slot)
-    {
-        _flags.Free(slot);
-        while (_flagGoods.Count > _flags.Count)
-        {
-            var last = _flagGoods.Count - 1;
-            _flagGoods.RemoveAt(last);
-            _goodsBit.RemoveAt(last);
-            _goodsDestination.RemoveAt(last);
-        }
-    }
+    private void FreeFlagSlot(int slot) => _flags.Free(slot);
 
     private Road? RoadAt(int flag, int direction) => _roads.RoadAt(flag, direction);
 

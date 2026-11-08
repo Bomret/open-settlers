@@ -311,14 +311,13 @@ public sealed partial class Game
         }
 
         side.WaitingPlace = null;
-        var mark = (back + 1) << DirectionShift;
-        for (var place = 7; place >= 0; place--)
+        for (var place = Flag.PlaceCount - 1; place >= 0; place--)
         {
-            var good = _flagGoods[slot][place];
-            if (good != 0 && (good & 0xe0) == mark)
+            var good = _flags[slot].Places[place];
+            if (!good.IsEmpty && good.Way == back)
             {
-                _flagGoods[slot][place] &= 0x1f;
-                _goodsBit[slot] = true;
+                good.Way = null;
+                _flags[slot].NeedsGoodsTurn = true;
             }
         }
 
@@ -602,9 +601,10 @@ public sealed partial class Game
         Map.At(index).ClearLink();
         for (var place = 7; place >= 0; place--)
         {
-            if (_flagGoods[slot][place] != 0)
+            var good = _flags[slot].Places[place];
+            if (!good.IsEmpty)
             {
-                CountLost(_flagGoods[slot][place], _goodsDestination[slot][place]);
+                CountLost(good.Good.Code, WordOf(good.Destination));
             }
         }
 
@@ -828,36 +828,34 @@ public sealed partial class Game
             var released = false;
             for (var place = 7; place >= 0; place--)
             {
-                var good = _flagGoods[holder][place];
-                if (good == 0 || _goodsDestination[holder][place] != flag + 1)
+                var good = _flags[holder].Places[place];
+                if (good.IsEmpty || good.Destination != flag)
                 {
                     continue;
                 }
 
                 released = true;
-                _goodsDestination[holder][place] = NoDestination;
-                _goodsBit[holder] = true;
-                var way = good & 0xe0;
-                if (way == 0)
+                good.Destination = null;
+                _flags[holder].NeedsGoodsTurn = true;
+                if (good.Way is not { } way)
                 {
                     continue;
                 }
 
-                _flagGoods[holder][place] &= 0x1f;
+                good.Way = null;
                 var best = 0;
                 var bestPlace = -1;
-                for (var other = 0; other < 8; other++)
+                for (var other = 0; other < Flag.PlaceCount; other++)
                 {
-                    var candidate = _flagGoods[holder][other];
-                    if (candidate != 0 && (candidate & 0xe0) == way && best < TransportPriority(candidate & 0x1f))
+                    var candidate = _flags[holder].Places[other];
+                    if (!candidate.IsEmpty && candidate.Way == way && best < TransportPriority(candidate.Good.Code))
                     {
-                        best = TransportPriority(candidate & 0x1f);
+                        best = TransportPriority(candidate.Good.Code);
                         bestPlace = other;
                     }
                 }
 
-                var direction = (way >> DirectionShift) - 1;
-                _flags[holder].Side(direction).WaitingPlace = bestPlace >= 0 ? bestPlace : null;
+                _flags[holder].Side(way).WaitingPlace = bestPlace >= 0 ? bestPlace : null;
             }
 
             if (released)

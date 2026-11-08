@@ -34,11 +34,11 @@ public sealed class ObjectLayerWatch
             hash = (hash ^ map.At(index).Object.Code) * FnvPrime;
         }
 
-        for (var slot = 0; slot < game.Flags.Count; slot++)
+        foreach (var flag in game.Flags)
         {
-            foreach (var good in game.FlagGoods(slot))
+            foreach (var place in flag.Places)
             {
-                hash = (hash ^ (ulong)good) * 1099511628211UL;
+                hash = (hash ^ (ulong)place.Good.Code) * 1099511628211UL;
             }
         }
 

@@ -200,7 +200,7 @@ public sealed class FastForwardTests
         var problem = Step("fast-forward woodcutter carrying max 6000").Run(game);
 
         Assert.IsNull(problem);
-        Assert.IsTrue(game.FlagGoods(3).All(good => good == 0), "the log is not on the flag yet");
+        Assert.IsTrue(game.Flags[3].Places.All(place => place.IsEmpty), "the log is not on the flag yet");
     }
 
     [TestMethod]

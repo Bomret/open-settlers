@@ -200,9 +200,9 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built + "\"goods\": [{\"x\": 14, \"y\": 11, \"place\": 2, \"good\": 7}]");
 
-        Assert.AreEqual(7, game.FlagGoods(1)[2]);
-        Assert.AreEqual(0, game.FlagGoods(1)[0]);
-        Assert.IsTrue(game.FlagGoodsBit(1));
+        Assert.AreEqual(new Good(7), game.Flags[1].Places[2].Good);
+        Assert.IsTrue(game.Flags[1].Places[0].IsEmpty);
+        Assert.IsTrue(game.Flags[1].NeedsGoodsTurn);
     }
 
     [TestMethod]

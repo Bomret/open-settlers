@@ -79,6 +79,108 @@ public sealed class FlagEncoderTests
     }
 
     [TestMethod]
+    public void AGoodWithADirectionEncodesAsTheGoodInBits0To4AndTheDirectionPlusOneInBits5To7()
+    {
+        var place = new Flag(4, 5).Places[2];
+        place.Good = new Good(7);
+        place.Way = 3;
+
+        Assert.AreEqual(7 | 4 << 5, FlagEncoder.GoodByte(place));
+    }
+
+    [TestMethod]
+    public void AGoodWithNoDirectionAndAnEmptyPlaceEncodeAsTheCodeAndZero()
+    {
+        var flag = new Flag(4, 5);
+        flag.Places[0].Good = new Good(9);
+
+        Assert.AreEqual(9, FlagEncoder.GoodByte(flag.Places[0]));
+        Assert.AreEqual(0, FlagEncoder.GoodByte(flag.Places[1]));
+    }
+
+    [TestMethod]
+    public void ADestinationEncodesAsTheSlotPlusOneAndNoDestinationAsZero()
+    {
+        var places = new Flag(4, 5).Places;
+        places[0].Destination = 0;
+        places[1].Destination = 3;
+
+        Assert.AreEqual(1, FlagEncoder.DestinationWord(places[0]));
+        Assert.AreEqual(4, FlagEncoder.DestinationWord(places[1]));
+        Assert.AreEqual(0, FlagEncoder.DestinationWord(places[2]));
+    }
+
+    [TestMethod]
+    public void AnEmptyPlaceKeepsTheDestinationOfItsLastGoodInTheEncoding()
+    {
+        var place = new Flag(4, 5).Places[4];
+        place.Good = new Good(7);
+        place.Destination = 0;
+
+        place.Good = Good.None;
+
+        Assert.AreEqual(0, FlagEncoder.GoodByte(place));
+        Assert.AreEqual(1, FlagEncoder.DestinationWord(place));
+    }
+
+    [TestMethod]
+    public void TheGoodsByteHasBit7WhileGoodsWaitForTheirTurn()
+    {
+        var flag = new Flag(4, 5);
+
+        Assert.AreEqual(0, FlagEncoder.GoodsByte(flag));
+
+        flag.NeedsGoodsTurn = true;
+
+        Assert.AreEqual(0x80, FlagEncoder.GoodsByte(flag));
+    }
+
+    [TestMethod]
+    public void ThePlaceOfAFlagIsTheFirstEmptyOneAndNoneWhenAllHoldAGood()
+    {
+        var flag = new Flag(4, 5);
+        flag.Places[0].Good = new Good(7);
+        flag.Places[1].Good = new Good(7);
+
+        Assert.AreEqual(2, flag.FirstEmptyPlace());
+
+        foreach (var place in flag.Places)
+        {
+            place.Good = new Good(7);
+        }
+
+        Assert.AreEqual(-1, flag.FirstEmptyPlace());
+    }
+
+    [TestMethod]
+    public void TheDigestWordsOfAFlagAreItsTurnBitItsEightDestinationWordsAndItsSixDirectionBytes()
+    {
+        var table = new FlagTable();
+        table.Add(4, 5);
+        table[0].NeedsGoodsTurn = true;
+        table[0].Places[1].Destination = 0;
+        table[0].Side(2).WaitingPlace = 1;
+        table[0].Side(2).FarDirection = 5;
+
+        CollectionAssert.AreEqual(
+            new long[] { 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0x80 | 1 | 5 << 3, 0, 0, 0 },
+            FlagEncoder.Words(table).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void TheDigestPlacesOfAFlagAreTheEightGoodBytes()
+    {
+        var table = new FlagTable();
+        table.Add(4, 5);
+        table[0].Places[0].Good = new Good(9);
+        table[0].Places[7].Good = new Good(7);
+        table[0].Places[7].Way = 0;
+
+        CollectionAssert.AreEqual(new long[] { 9, 0, 0, 0, 0, 0, 0, 7 | 1 << 5 }, FlagEncoder.Places(table).ToArray());
+    }
+
+    [TestMethod]
     [DataRow(1, 0)]
     [DataRow(3, 0)]
     [DataRow(4, 1)]
