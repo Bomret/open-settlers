@@ -219,6 +219,7 @@ public sealed class SettlerDrawTests
 
     [TestMethod]
     [DynamicData(nameof(Scenarios))]
+    [TestCategory(Needs.Install)]
     public void TheEnginesDrawsAreTheOriginalsPassForPass(string name)
     {
         var scenario = Load().Single(candidate => candidate.Name == name);

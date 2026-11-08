@@ -51,11 +51,12 @@ description = "Build the C# project"
 run = "dotnet build OpenSettlers.csproj"
 
 [tasks.test]
-description = "Run the unit tests"
-run = "dotnet test --project tests/OpenSettlers.Tests"
+description = "Run the unit tests that need neither the install nor Ghidra"
+# The category names are the constants of tests/OpenSettlers.Tests/Needs.cs.
+run = "dotnet test --project tests/OpenSettlers.Tests --filter 'TestCategory!=Install&TestCategory!=Ghidra'"
 
 [tasks.check]
-description = "Full verification: format check, unit tests, build"
+description = "Full verification: format check, every unit test (needs SIEDLER_DIR and Ghidra), build"
 depends = ["restore"]
 run = [
   "dotnet csharpier check .",

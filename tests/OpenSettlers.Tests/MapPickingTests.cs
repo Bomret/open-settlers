@@ -8,6 +8,7 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 [TestClass]
+[TestCategory(Needs.Install)]
 public sealed class MapPickingTests
 {
     private const double ViewWidth = 800;

@@ -17,6 +17,7 @@ namespace OpenSettlers.Tests;
 // original does next belongs to the woodcutter's work. The engine runs the same commands and must hold the same bytes
 // after each pass, which tests the route search, the retry scan, the request, the step times and the door speeds.
 [TestClass]
+[TestCategory(Needs.Install)]
 public sealed class WorkerWalkTests
 {
     private const string Fixture = "worker-walks.txt";

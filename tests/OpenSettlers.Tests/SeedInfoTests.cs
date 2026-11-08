@@ -19,6 +19,7 @@ public sealed class SeedInfoTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheReportOfOneSeedAndSizeIsPinned()
     {
         var text = SeedInfo.Report(SeedText, MapOf(SeedText, 1));
@@ -41,12 +42,14 @@ public sealed class SeedInfoTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheReportIsTheSameOnEveryRun()
     {
         Assert.AreEqual(SeedInfo.Report(SeedText, MapOf(SeedText, 2)), SeedInfo.Report(SeedText, MapOf(SeedText, 2)));
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheTerrainCountsSumToTwoTrianglesForEachTile()
     {
         var text = SeedInfo.Report(SeedText, MapOf(SeedText, 3));
@@ -56,6 +59,7 @@ public sealed class SeedInfoTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheResourceOneTotalMatchesTheMap()
     {
         var map = MapOf(SeedText, 1);
@@ -67,6 +71,7 @@ public sealed class SeedInfoTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void RunningAMapThatGeneratesExitsZeroWithTheReport()
     {
         Seed.TryParse(SeedText, out var seed, out _);

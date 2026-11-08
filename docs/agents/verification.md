@@ -9,13 +9,28 @@ mise run test
 ```
 
 The full command restores the local tools, checks formatting (CSharpier names each unformatted file;
-`mise run format` fixes them), runs the unit tests, and builds the project. `mise.toml` holds the
-steps.
+`mise run format` fixes them), runs every unit test, and builds the project. `mise.toml` holds the
+steps. It needs the reference install (`SIEDLER_DIR`) and Ghidra (`analyzeHeadless` on the path, which
+`mise install` provides); a test whose need is missing reports inconclusive.
 
-The focused command runs the unit tests alone. They build their fixtures in code and need neither an
-install nor Godot.
+The focused command runs the unit tests that need neither the install nor Ghidra. It skips the tests
+with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
+`TestProgram.Tables`) and the category `Ghidra` (they run `analyzeHeadless`), with the filter
+`TestCategory!=Install&TestCategory!=Ghidra`. It needs neither of them nor Godot: the remaining tests
+build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path.
 
-No timing command: the test runner's per-test durations are not wired in.
+The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
+`[TestCategory(Needs.Install)]` (and `Needs.Ghidra` where the test runs `analyzeHeadless`) on every test
+that needs one, on the class where every test in it does. A test without the category fails or reports
+inconclusive in the focused run without the install. `NeedsTests` checks that `mise.toml`'s focused
+filter names every category of `Needs`.
+
+## Timing command
+
+`mise exec -- dotnet test --project tests/OpenSettlers.Tests --output detailed`
+
+It runs the whole suite (over 2 minutes). Microsoft.Testing.Platform prints one `passed <test> (<duration>)`
+line per test, then the total duration in the run summary.
 
 ## Test paths
 

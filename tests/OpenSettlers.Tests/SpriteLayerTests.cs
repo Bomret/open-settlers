@@ -26,6 +26,7 @@ public sealed class SpriteLayerTests
 
     // The settlers' sprites take more layers than one 8-bit channel holds: the woodcutter's lie past 255.
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheSettlersSpritesTakeMoreLayersThanOneChannelHolds()
     {
         var graphics = SettlerGraphics.Load(

@@ -36,8 +36,9 @@ public issue.
 Run every command through its mise task from the repository root. `mise tasks` lists the tasks.
 
 - `mise run format` formats the C# code with CSharpier.
-- `mise run test` runs the unit tests.
-- `mise run check` runs the full verification: format check, unit tests, and build. It must pass
+- `mise run test` runs the unit tests that need neither the install nor Ghidra.
+- `mise run check` runs the full verification: format check, every unit test (it needs the install and
+  Ghidra), and build. It must pass
   before you open a pull request.
 
 ## Commits and pull requests

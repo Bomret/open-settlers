@@ -26,6 +26,7 @@ public sealed class CastlePlacementTests
 
     [TestMethod]
     [DynamicData(nameof(Lines))]
+    [TestCategory(Needs.Install)]
     public void ThePlacementMatchesTheEmulatorInStockAndMap(string expected)
     {
         var fields = Fields(expected);

@@ -10,6 +10,7 @@ namespace OpenSettlers.Tests;
 // state, a good, the west road, and no free settler. They are the verb remove of RemovalTests, whose replay checks the map
 // bytes, the settlers, and the flag items after the click and after each pass.
 [TestClass]
+[TestCategory(Needs.Install)]
 public sealed class RoadSplitTests
 {
     private const string Fixture = "road-splits.txt";
