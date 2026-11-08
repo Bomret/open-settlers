@@ -97,7 +97,7 @@ bit 7 set (a water triangle) would draw entry 1386 in the original; the engine a
 
 `CommandKind.PlaceFlag` takes the node in `Command.X` and `Command.Y`. `Game` judges it with
 `BuildSite.Evaluate` and `BuildSiteResult.AllowsFlag` for the player with a castle, and `FlagPlacement.Apply`
-(`src/Adapters/Simulation/FlagPlacement.cs`) writes it. `Game.Flags` lists the flags by table slot (`Flag(X, Y)`); the
+(`src/Application/FlagPlacement.cs`) writes it. `Game.Flags` lists the flags by table slot (`Flag(X, Y)`); the
 castle's flag is the first. The digest holds the flags and the total of resource 1. A refused command changes no
 state. The map view's stand-in flag button (`src/Viewer/MapViewControl.cs`) turns a click into `PlaceFlag`;
 `ObjectSprites.FlagEntry` and `ObjectDraws` draw the flags with the objects. Departures: the table limit, the
