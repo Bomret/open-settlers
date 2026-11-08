@@ -1,0 +1,8 @@
+# Every object, the castle, the hut, the flags and the settlers draw a hard shadow in palette index 0x80 before their
+# sprite (0x44da4d, 0x45007d). Zoom in on the carrier's road and take a shot.
+# Run it on the layout: sh tools/play-run.sh shadows --layout layouts/carrier.jsonc --fps 10
+wait 0.3
+fast-forward carrier carrying max 20000
+scroll up 6 860 560
+wait 0.3
+shot shadows

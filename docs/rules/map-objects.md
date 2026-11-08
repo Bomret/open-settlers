@@ -72,7 +72,17 @@ confirms where the program's road pass puts a node. The castle's entry (1428) is
 no emulator or debugger run of the draw confirms it for the castle.
 
 Before the sprite, the routine draws the shadow mask of the entry plus 1500 through `Gfx_DrawShadow` (`0x4061a0`),
-which stores one fixed palette index on the covered pixels. **Stand-in:** the engine draws no shadow.
+which stores palette index `0x80` on the covered pixels with no blending.
+
+The engine draws each object's shadow right before its sprite, from a shadow array texture of its own, sized to the
+largest shadow mask, at the layer of its sprite (`ObjectGraphics.Layer`). It does so for the objects of the map, the
+castle, the woodcutter's hut, and the flag. The mask entries are 1678 for the castle, 1668 for the woodcutter's hut, and
+1628 to 1631 for the flag's frames (the sprite frames are 1378 to 1381). The goods on a flag and the water draw no shadow
+(`0x44de9a` and `0x44ff59` draw only the sprite).
+
+A settler's shadow is the mask entry 4, which `Gfx_DrawSettlerRecords` draws at `0x45007d` at the record's position,
+before the figure. **Inferred:** the record skips its shadow where bit 2 of its flags word is set (`0x450039`); which
+records set the bit is not traced, and the engine draws the shadow of every settler.
 
 ## Transparency
 
@@ -91,5 +101,5 @@ pixel of index 0 shows color 0 of the palette.
 over the terrain of all nine copies. Resources (`Map.Deposits`) are never drawn. The tile routine
 `0x44d5b4` reads the flag, height, and object bytes of record A and, at the tile's record-B offset (the state
 `+0x36`), byte 1, none of which is the resource byte (byte 0 of record B). Byte 1 marks a waiting carrier
-([Carriers](carriers.md#drawing)). The engine departs from the program in three places: it
-draws no shadow, it draws the objects of every row after the terrain, and it draws no object of code 2 to 7 from the map (a flag, code 1, is drawn: [Flags](flags.md#how-a-flag-is-drawn); the castle and the woodcutter's hut are drawn from the game's buildings, the hut with the entry 1417: [Settlers](settlers.md#drawing-the-walk-leads)).
+([Carriers](carriers.md#drawing)). The engine departs from the program in two places: it
+draws the objects of every row after the terrain, and it draws no object of code 2 to 7 from the map (a flag, code 1, is drawn: [Flags](flags.md#how-a-flag-is-drawn); the castle and the woodcutter's hut are drawn from the game's buildings, the hut with the entry 1418: [Settlers](settlers.md#drawing-the-walk-leads)).
