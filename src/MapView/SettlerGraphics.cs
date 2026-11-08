@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using OpenSettlers.Assets;
+using OpenSettlers.Domain;
 using OpenSettlers.Formats;
 using OpenSettlers.Simulation;
 
@@ -52,7 +53,7 @@ public sealed class SettlerGraphics
             );
 
     /// <summary>Reads the sprites the sequences of <paramref name="jobs"/> use; sprites past the layer limit are left out.</summary>
-    public static SettlerGraphics Load(Install install, ProgramTables tables, params int[] jobs)
+    public static SettlerGraphics Load(Install install, RuleTables tables, params int[] jobs)
     {
         var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var palette = PaletteFile.Read(archive.Data(archive[3]).Span);
@@ -71,7 +72,7 @@ public sealed class SettlerGraphics
         var layers = new Dictionary<(int Entry, int Colour), int>();
         var shifts = new Dictionary<int, (int X, int Y)>();
         // A carrier carries any good of the table, in the row the good's word picks; the others carry none.
-        var goods = Enumerable.Range(0, ProgramTables.CarriedFigureCount);
+        var goods = Enumerable.Range(0, RuleTables.CarriedFigureCount);
         foreach (
             var (entry, colour) in jobs.SelectMany(job =>
                 (job == Settler.CarrierJob ? goods : [0]).SelectMany(good =>

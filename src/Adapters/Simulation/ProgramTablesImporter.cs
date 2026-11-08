@@ -5,41 +5,23 @@ using System.Linq;
 namespace OpenSettlers.Simulation;
 
 /// <summary>
-/// The tables of the original's program data that the rules read: the object class table, the start stock
-/// table, and the others below. They are read from the install's <c>Siedler1.exe</c> at run time and never restated in source (INV-0001).
-/// <see cref="Read"/> finds each by its address in the program, through the section headers of the executable.
+/// Builds the <see cref="RuleTables"/> from the bytes of the install's <c>Siedler1.exe</c> (INV-0001): the original's
+/// addresses and packed bytes stay here (ADR 0013). <see cref="Import"/> finds each table by its address in the program,
+/// through the section headers of the executable.
 /// </summary>
-public sealed class ProgramTables
+public static class ProgramTablesImporter
 {
     /// <summary>The address of the object class table: 128 bytes, one for each object code (<c>0x41e640</c>).</summary>
     public const int ClassTableAddress = 0x41e640;
 
-    /// <summary>The number of object codes, and the size of the class table.</summary>
-    public const int ClassCount = 128;
-
     /// <summary>The address of the start stock table: 5 rows of 26 bytes (<c>0x442e8a</c>).</summary>
     public const int StartStockAddress = 0x442e8a;
-
-    /// <summary>The number of rows of the start stock table (the levels 0, 10, 20, 30, and 40).</summary>
-    public const int StartStockRows = 5;
 
     /// <summary>The address of the step time table: 16-bit words, one for each step shape (<c>0x43f248</c>).</summary>
     public const int StepTimeAddress = 0x43f248;
 
-    /// <summary>
-    /// The first index of <see cref="StepTimes"/> the table holds: a step into a node much lower than its start
-    /// reads the program bytes before the table, as the original does.
-    /// </summary>
-    public const int StepTimeFirst = -32;
-
-    /// <summary>The number of words of <see cref="StepTimes"/> (the indices <see cref="StepTimeFirst"/> to 127).</summary>
-    public const int StepTimeCount = 160;
-
     /// <summary>The address of the door speed table: one byte for each building type (<c>0x43c92b</c>).</summary>
     public const int DoorSpeedAddress = 0x43c92b;
-
-    /// <summary>The number of building types the door speed table covers.</summary>
-    public const int DoorSpeedCount = 64;
 
     /// <summary>The address of the table of scan windows: 16-bit words, one for each map size (<c>0x421d28</c>).</summary>
     public const int ScanWindowAddress = 0x421d28;
@@ -51,9 +33,6 @@ public sealed class ProgramTables
     /// unaligned. The waiting carrier's figure words (<see cref="IdleFigureAddress"/>) use the row 0x88, the last.
     /// </summary>
     public const int FigureBaseAddress = 0x4501a1;
-
-    /// <summary>The number of rows of the figure bases: those before the figure offsets.</summary>
-    public const int FigureBaseRowCount = (FigureOffsetAddress - FigureBaseAddress) / 4;
 
     /// <summary>
     /// The address of the figure offsets (<c>0x4503c5</c>, 512 words): two 16-bit words for each value of the low byte of
@@ -88,9 +67,6 @@ public sealed class ProgramTables
     /// <summary>The <c>add word [edi+8], imm16</c> of the handler for any other figure byte below 0x80 (the walk).</summary>
     public const int WoodcutterWalkAddress = 0x43fc16;
 
-    /// <summary>The job of the settler of the type 1 hut (<c>docs/rules/woodcutting.md</c>).</summary>
-    public const int TypeOneHutJob = 11;
-
     /// <summary>The handler of the figure of the settler of the type 1 hut (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
     public const int TypeOneHutHandlerAddress = 0x43fed8;
 
@@ -117,9 +93,6 @@ public sealed class ProgramTables
     /// </summary>
     public const int CarriedFigureAddress = 0x43f4b7;
 
-    /// <summary>The number of goods the carried figure table covers.</summary>
-    public const int CarriedFigureCount = 27;
-
     /// <summary>
     /// The address of the frame rows: one signed byte for each frame of a settler (<c>0x43f402</c>), 181 of them up to the carried
     /// goods' table. The record builder (<c>0x43f537</c>) adds the byte of the settler's frame to the row of the view whose list
@@ -128,17 +101,11 @@ public sealed class ProgramTables
     /// </summary>
     public const int FrameRowAddress = 0x43f402;
 
-    /// <summary>The number of frames the frame row table covers.</summary>
-    public const int FrameRowCount = CarriedFigureAddress - FrameRowAddress;
-
     /// <summary>
     /// The address of the waiting carriers' phases: 16 words (<c>0x44d87d</c>). The tile pass's figure routine (<c>0x44d77e</c>)
     /// picks one by bits 2 to 5 of the address of the node's record (<c>docs/rules/carriers.md</c>, "Drawing").
     /// </summary>
     public const int IdlePhaseAddress = 0x44d87d;
-
-    /// <summary>The number of words of <see cref="IdlePhases"/>.</summary>
-    public const int IdlePhaseCount = 16;
 
     /// <summary>
     /// The address of the waiting carriers' figure words: 128 words (<c>0x44d89d</c>), picked by the phase plus the clock,
@@ -146,41 +113,20 @@ public sealed class ProgramTables
     /// </summary>
     public const int IdleFigureAddress = 0x44d89d;
 
-    /// <summary>The number of words of <see cref="IdleFigures"/>.</summary>
-    public const int IdleFigureCount = 128;
-
     /// <summary>
     /// The address of the waiting carriers' offsets: two signed bytes, x then y, for each value of the low six bits of the
     /// node's flag byte, its road directions (<c>0x674923</c>, read by <c>0x44d77e</c>).
     /// </summary>
     public const int IdleOffsetAddress = 0x674923;
 
-    /// <summary>The number of bytes of <see cref="IdleOffsets"/>.</summary>
-    public const int IdleOffsetCount = 128;
-
-    /// <summary>The number of words of <see cref="ScanWindows"/>.</summary>
-    public const int ScanWindowCount = 8;
-
     /// <summary>The address of the table that gives a lost good the byte of its destination's fill it counts against (<c>0x462d6d</c>).</summary>
     public const int GoodKindAddress = 0x462d6d;
-
-    /// <summary>The number of goods the kind table covers.</summary>
-    public const int GoodKindCount = 32;
 
     /// <summary>The address of the table of the carriers a road of each length class holds at most (<c>0x462acd</c>).</summary>
     public const int RoadCapacityAddress = 0x462acd;
 
-    /// <summary>The number of length classes of a road.</summary>
-    public const int RoadCapacityCount = 8;
-
     /// <summary>The address of the walk rows: 8 bytes for each row of the free walk's direction choice (<c>0x4388ff</c>).</summary>
     public const int WalkRowAddress = 0x4388ff;
-
-    /// <summary>The number of rows the free walk's direction choice reads (a row for each value of its heading class, 0 to 23).</summary>
-    public const int WalkRowCount = 24;
-
-    /// <summary>The bytes of one walk row: the directions the walker tries in order, each as 4 times its number plus 4.</summary>
-    public const int WalkRowSize = 8;
 
     /// <summary>
     /// The address of the routine that writes the default transport priorities into a player's block at a new game
@@ -195,179 +141,40 @@ public sealed class ProgramTables
     public const byte MovAlOpcode = 0xb0;
 
     /// <summary>
-    /// Creates tables from their contents; <see cref="Read"/> creates them from the program. The tables of the
-    /// settlers' walk (<paramref name="stepTimes"/>, <paramref name="doorSpeeds"/>, <paramref name="scanWindows"/>) are
-    /// empty where a test needs none; the walk then reads them as zeros.
-    /// </summary>
-    public ProgramTables(
-        byte[] classes,
-        byte[][] startStock,
-        ushort[]? stepTimes = null,
-        byte[]? doorSpeeds = null,
-        ushort[]? scanWindows = null,
-        short[]? figureBases = null,
-        short[]? figureOffsets = null,
-        byte[]? walkRows = null,
-        short[]? carriedFigures = null,
-        byte[]? goodKinds = null,
-        byte[]? roadCapacities = null,
-        byte[]? transportPriorities = null,
-        FigureAdds? woodcutterFigureAdds = null,
-        sbyte[]? frameRows = null,
-        HutFigureAdds? typeOneHutFigureAdds = null,
-        short[]? idlePhases = null,
-        short[]? idleFigures = null,
-        sbyte[]? idleOffsets = null
-    )
-    {
-        if (
-            classes.Length != ClassCount
-            || startStock.Length != StartStockRows
-            || startStock.Any(row => row.Length != Simulation.StartStock.Goods)
-        )
-        {
-            throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows of 26.");
-        }
-
-        Classes = classes;
-        StartStock = startStock;
-        StepTimes = stepTimes ?? new ushort[StepTimeCount];
-        DoorSpeeds = doorSpeeds ?? new byte[DoorSpeedCount];
-        ScanWindows = scanWindows ?? new ushort[ScanWindowCount];
-        FigureBases = figureBases ?? new short[2 * FigureBaseRowCount];
-        FigureOffsets = figureOffsets ?? new short[512];
-        WalkRows = walkRows ?? new byte[WalkRowCount * WalkRowSize];
-        CarriedFigures = carriedFigures ?? new short[CarriedFigureCount];
-        GoodKinds = goodKinds ?? new byte[GoodKindCount];
-        RoadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
-        TransportPriorities = transportPriorities ?? new byte[Simulation.StartStock.Goods];
-        WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
-        FrameRows = frameRows ?? new sbyte[FrameRowCount];
-        TypeOneHutFigureAdds = typeOneHutFigureAdds ?? default;
-        IdlePhases = idlePhases ?? new short[IdlePhaseCount];
-        IdleFigures = idleFigures ?? new short[IdleFigureCount];
-        IdleOffsets = idleOffsets ?? new sbyte[IdleOffsetCount];
-    }
-
-    /// <summary>The waiting carriers' phases (<see cref="IdlePhaseAddress"/>).</summary>
-    public short[] IdlePhases { get; }
-
-    /// <summary>The waiting carriers' figure words (<see cref="IdleFigureAddress"/>).</summary>
-    public short[] IdleFigures { get; }
-
-    /// <summary>The waiting carriers' offsets by road directions, x and y for each (<see cref="IdleOffsetAddress"/>).</summary>
-    public sbyte[] IdleOffsets { get; }
-
-    /// <summary>
-    /// The default transport priority of each good 1 to 26 (index good - 1): its rank, 1 to 26, each once; the carrier's
-    /// exchange lines up the good of the highest rank next (<c>docs/rules/goods.md</c>). All 0 where a test needs none.
-    /// </summary>
-    public byte[] TransportPriorities { get; }
-
-    /// <summary>
-    /// For each good which byte of a building's fill a lost good counts against: 0 the byte at 8, 1 the byte at 9, 0xff none
-    /// (<c>0x462c8d</c>, <c>docs/rules/removal.md</c>).
-    /// </summary>
-    public byte[] GoodKinds { get; }
-
-    /// <summary>For each length class of a road (<c>0x4454e7</c>) the number of carriers the road holds at most (<c>0x462acd</c>).</summary>
-    public byte[] RoadCapacities { get; }
-
-    /// <summary>
-    /// The rows of the free walk's direction choice, <see cref="WalkRowSize"/> bytes each: the directions to try, best
-    /// first, each as the offset of the step in the program's list of neighbours (4 east, 8 south-east, 12 south, 16 west,
-    /// 20 north-west, 24 north). A row is picked by the heading class of the vector left to walk
-    /// (<c>docs/rules/woodcutting.md</c>).
-    /// </summary>
-    public byte[] WalkRows { get; }
-
-    /// <summary>For each good a word that a carrier carrying it adds to its figure byte: the row in the high byte (<c>0x43f8ae</c>).</summary>
-    public short[] CarriedFigures { get; }
-
-    /// <summary>For each high byte of the figure word 2 words: the figure base and the second figure base (negative: none).</summary>
-    public short[] FigureBases { get; }
-
-    /// <summary>For each low byte of the figure word 2 words: what it adds to the figure and to the second figure.</summary>
-    public short[] FigureOffsets { get; }
-
-    /// <summary>What the woodcutter's handler adds to the figure byte to make the figure word.</summary>
-    public FigureAdds WoodcutterFigureAdds { get; }
-
-    /// <summary>What the handler of the settler of the type 1 hut adds to the figure byte to make the figure word.</summary>
-    public HutFigureAdds TypeOneHutFigureAdds { get; }
-
-    /// <summary>For each frame of a settler what the record builder adds to the row of its record's list (<see cref="FrameRowAddress"/>).</summary>
-    public sbyte[] FrameRows { get; }
-
-    /// <summary>
-    /// The time in clock units of a step, by step shape: <c>4 + 9 * direction + (height of the node reached minus
-    /// height of the node left)</c>, with the directions east 0 to north 5 (<c>docs/rules/settlers.md</c>). Index with
-    /// <see cref="StepTime"/>.
-    /// </summary>
-    public ushort[] StepTimes { get; }
-
-    /// <summary>The time of the step shape <paramref name="shape"/>; a shape outside the table reads as 0.</summary>
-    public ushort StepTime(int shape)
-    {
-        var index = shape - StepTimeFirst;
-
-        return index >= 0 && index < StepTimes.Length ? StepTimes[index] : (ushort)0;
-    }
-
-    /// <summary>The speed of the door of each building type, in 32nds of a step time.</summary>
-    public byte[] DoorSpeeds { get; }
-
-    /// <summary>
-    /// The number of buildings the retry scan clears in one pass, by map size value (<c>0x428728</c>, set by
-    /// <c>0x42195c</c> from the table at <c>0x421d28</c>).
-    /// </summary>
-    public ushort[] ScanWindows { get; }
-
-    /// <summary>The class of each object code: 1 and 2 are the trees and stones, 3 a flag, 4 to 6 buildings.</summary>
-    public byte[] Classes { get; }
-
-    /// <summary>The start stock rows, each <see cref="Simulation.StartStock.Goods"/> counts.</summary>
-    public byte[][] StartStock { get; }
-
-    /// <summary>
     /// Reads the tables from the bytes of <c>Siedler1.exe</c>. Throws <see cref="InvalidDataException"/> when the
     /// bytes are no executable or a table lies outside the data the file holds.
     /// </summary>
-    public static ProgramTables Read(byte[] exe)
+    public static RuleTables Import(byte[] exe)
     {
-        var classes = Slice(exe, ClassTableAddress, ClassCount);
-        var startStock = new byte[StartStockRows][];
-        for (var row = 0; row < StartStockRows; row++)
+        var classes = Slice(exe, ClassTableAddress, RuleTables.ClassCount);
+        var startStock = new byte[RuleTables.StartStockRows][];
+        for (var row = 0; row < RuleTables.StartStockRows; row++)
         {
-            startStock[row] = Slice(
-                exe,
-                StartStockAddress + row * Simulation.StartStock.Goods,
-                Simulation.StartStock.Goods
-            );
+            startStock[row] = Slice(exe, StartStockAddress + row * RuleTables.Goods, RuleTables.Goods);
         }
 
-        var steps = Slice(exe, StepTimeAddress + 2 * StepTimeFirst, 2 * StepTimeCount);
-        var windows = Slice(exe, ScanWindowAddress, 2 * ScanWindowCount);
+        var steps = Slice(exe, StepTimeAddress + 2 * RuleTables.StepTimeFirst, 2 * RuleTables.StepTimeCount);
+        var windows = Slice(exe, ScanWindowAddress, 2 * RuleTables.ScanWindowCount);
 
-        return new ProgramTables(
-            classes,
+        return new RuleTables(
+            [.. classes.Select(code => new ObjectClass(code))],
             startStock,
-            [.. Enumerable.Range(0, StepTimeCount).Select(i => BitConverter.ToUInt16(steps, 2 * i))],
-            Slice(exe, DoorSpeedAddress, DoorSpeedCount),
-            [.. Enumerable.Range(0, ScanWindowCount).Select(i => BitConverter.ToUInt16(windows, 2 * i))],
-            Words(Slice(exe, FigureBaseAddress, 4 * FigureBaseRowCount)),
+            [.. Enumerable.Range(0, RuleTables.StepTimeCount).Select(i => BitConverter.ToUInt16(steps, 2 * i))],
+            Slice(exe, DoorSpeedAddress, RuleTables.DoorSpeedCount),
+            [.. Enumerable.Range(0, RuleTables.ScanWindowCount).Select(i => BitConverter.ToUInt16(windows, 2 * i))],
+            Words(Slice(exe, FigureBaseAddress, 4 * RuleTables.FigureBaseRowCount)),
             Words(Slice(exe, FigureOffsetAddress, 1024)),
-            Slice(exe, WalkRowAddress, WalkRowCount * WalkRowSize),
-            Words(Slice(exe, CarriedFigureAddress, 2 * CarriedFigureCount)),
-            Slice(exe, GoodKindAddress, GoodKindCount),
-            Slice(exe, RoadCapacityAddress, RoadCapacityCount),
+            Slice(exe, WalkRowAddress, RuleTables.WalkRowCount * RuleTables.WalkRowSize),
+            Words(Slice(exe, CarriedFigureAddress, 2 * RuleTables.CarriedFigureCount)),
+            Slice(exe, GoodKindAddress, RuleTables.GoodKindCount),
+            Slice(exe, RoadCapacityAddress, RuleTables.RoadCapacityCount),
             TransportPriorityRanks(exe),
             WoodcutterAdds(exe),
-            [.. Slice(exe, FrameRowAddress, FrameRowCount).Select(row => (sbyte)row)],
+            [.. Slice(exe, FrameRowAddress, RuleTables.FrameRowCount).Select(row => (sbyte)row)],
             TypeOneHutAdds(exe),
-            Words(Slice(exe, IdlePhaseAddress, 2 * IdlePhaseCount)),
-            Words(Slice(exe, IdleFigureAddress, 2 * IdleFigureCount)),
-            [.. Slice(exe, IdleOffsetAddress, IdleOffsetCount).Select(offset => (sbyte)offset)]
+            Words(Slice(exe, IdlePhaseAddress, 2 * RuleTables.IdlePhaseCount)),
+            Words(Slice(exe, IdleFigureAddress, 2 * RuleTables.IdleFigureCount)),
+            [.. Slice(exe, IdleOffsetAddress, RuleTables.IdleOffsetCount).Select(offset => (sbyte)offset)]
         );
     }
 
@@ -407,7 +214,7 @@ public sealed class ProgramTables
     // to the handler.
     private static HutFigureAdds TypeOneHutAdds(byte[] exe)
     {
-        var stub = JobStubAddress + JobStubSize * TypeOneHutJob;
+        var stub = JobStubAddress + JobStubSize * RuleTables.TypeOneHutJob;
         Expect(
             exe,
             stub,
@@ -445,7 +252,7 @@ public sealed class ProgramTables
     // priorities.
     private static byte[] TransportPriorityRanks(byte[] exe)
     {
-        var goods = Simulation.StartStock.Goods;
+        var goods = RuleTables.Goods;
         var code = Slice(exe, TransportPriorityAddress, TransportPriorityStep * goods);
         var ranks = new byte[goods];
         for (var good = 0; good < goods; good++)
@@ -508,16 +315,3 @@ public sealed class ProgramTables
         throw new InvalidDataException($"Siedler1.exe holds no data at 0x{address:x}.");
     }
 }
-
-/// <summary>
-/// What a job's handler adds to the figure byte to make the figure word: for a figure byte below 0x80 (<paramref name="Walk"/>,
-/// or <paramref name="Carrying"/> on the way back with the log) and for one from 0x80 (<paramref name="Cutting"/>).
-/// </summary>
-public readonly record struct FigureAdds(ushort Walk, ushort Carrying, ushort Cutting);
-
-/// <summary>
-/// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <paramref name="Walk"/>
-/// (or <paramref name="Carrying"/> on the way back with a load), for one from 0x80 <paramref name="High"/>
-/// (<paramref name="HighFacing"/> where the settler's heading, byte 14, is 1).
-/// </summary>
-public readonly record struct HutFigureAdds(ushort Walk, ushort Carrying, ushort High, ushort HighFacing);

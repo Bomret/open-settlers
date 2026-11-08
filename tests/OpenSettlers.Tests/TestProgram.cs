@@ -16,7 +16,7 @@ namespace OpenSettlers.Tests;
 /// </summary>
 internal static class TestProgram
 {
-    private static ProgramTables? _tables;
+    private static RuleTables? _tables;
 
     /// <summary>
     /// Tables of made-up values, no restatement of the original's: every object code has class 0, so no object
@@ -24,14 +24,14 @@ internal static class TestProgram
     /// a map generated with these tables keeps every object and is not the original's map; tests that compare with the
     /// original's data use <see cref="Tables"/>. The transport priorities are all 0.
     /// </summary>
-    public static ProgramTables Made() => Made(null);
+    public static RuleTables Made() => Made(null);
 
     /// <summary>The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1), or all 0 for none.</summary>
-    public static ProgramTables Made(byte[]? transportPriorities) =>
+    public static RuleTables Made(byte[]? transportPriorities) =>
         new(
-            new byte[ProgramTables.ClassCount],
+            new ObjectClass[RuleTables.ClassCount],
             Enumerable
-                .Range(0, ProgramTables.StartStockRows)
+                .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
             transportPriorities: transportPriorities
@@ -49,7 +49,7 @@ internal static class TestProgram
         return install;
     }
 
-    public static ProgramTables Tables()
+    public static RuleTables Tables()
     {
         if (_tables is not null)
         {
@@ -60,7 +60,7 @@ internal static class TestProgram
 
         try
         {
-            return _tables = ProgramTables.Read(install.ReadAll(Install.Program));
+            return _tables = ProgramTablesImporter.Import(install.ReadAll(Install.Program));
         }
         catch (InvalidDataException e)
         {

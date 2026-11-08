@@ -19,31 +19,31 @@ public sealed class HeadOnPassTests
     // The direction each heading class (0x437072) takes first, as in WoodcuttingTests: a step that cuts the vector.
     private static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
 
-    private static readonly ProgramTables Tables = MadeTables();
+    private static readonly RuleTables Tables = MadeTables();
 
-    private static ProgramTables MadeTables()
+    private static RuleTables MadeTables()
     {
-        var classes = new byte[ProgramTables.ClassCount];
+        var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
-        var rows = new byte[ProgramTables.WalkRowCount * ProgramTables.WalkRowSize];
-        for (var row = 0; row < ProgramTables.WalkRowCount; row++)
+        var rows = new byte[RuleTables.WalkRowCount * RuleTables.WalkRowSize];
+        for (var row = 0; row < RuleTables.WalkRowCount; row++)
         {
             var first = row < 12 ? (byte)4 : FirstDirections[row - 12];
             new[] { first }
                 .Concat(new byte[] { 4, 8, 12, 16, 20, 24 }.Where(code => code != first))
                 .ToArray()
-                .CopyTo(rows, row * ProgramTables.WalkRowSize);
+                .CopyTo(rows, row * RuleTables.WalkRowSize);
         }
 
-        return new ProgramTables(
+        return new RuleTables(
             classes,
             Enumerable
-                .Range(0, ProgramTables.StartStockRows)
+                .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
-            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray(),
+            Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
             walkRows: rows
         );
     }

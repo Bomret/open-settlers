@@ -168,7 +168,7 @@ public sealed class SettlerFigures
                         or StatesCutting
                         or StatesSearching
                     )
-                || settler.Job is not (Settler.CarrierJob or Settler.WoodcutterJob or ProgramTables.TypeOneHutJob)
+                || settler.Job is not (Settler.CarrierJob or Settler.WoodcutterJob or RuleTables.TypeOneHutJob)
                 || Triple(settler, clock) is not { } triple
             )
             {
@@ -347,11 +347,11 @@ public sealed class SettlerFigures
                 }
 
                 break;
-            case ProgramTables.TypeOneHutJob when figure >= HighFigure:
+            case RuleTables.TypeOneHutJob when figure >= HighFigure:
                 yield return figure + _typeOneHut.High;
                 yield return figure + _typeOneHut.HighFacing;
                 break;
-            case ProgramTables.TypeOneHutJob:
+            case RuleTables.TypeOneHutJob:
                 yield return figure + _typeOneHut.Walk;
                 yield return figure + _typeOneHut.Carrying;
                 break;
@@ -368,7 +368,7 @@ public sealed class SettlerFigures
             return figure + CarriedFigure(settler);
         }
 
-        if (settler.Job == ProgramTables.TypeOneHutJob)
+        if (settler.Job == RuleTables.TypeOneHutJob)
         {
             // The handler of the type 1 hut's settler (0x43fed8) adds by the heading for a figure byte from 0x80 and by the
             // way back with a load, as the woodcutter's does, below it.

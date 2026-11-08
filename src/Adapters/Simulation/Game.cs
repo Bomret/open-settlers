@@ -19,7 +19,7 @@ public sealed partial class Game
     private const ulong FnvPrime = 0x100000001b3;
 
     private readonly SortedSet<Command> _queue = new(Comparer<Command>.Create(Compare));
-    private readonly ProgramTables _tables;
+    private readonly RuleTables _tables;
     private readonly int _stockLevel;
     private readonly List<Flag> _flags = [];
     private readonly List<Road> _roads = [];
@@ -31,7 +31,7 @@ public sealed partial class Game
     /// <paramref name="stockLevel"/> (<see cref="StartStock.At"/>). The game changes the map it is given:
     /// placing the castle writes the castle, its flag, the heights, and the territory into the map.
     /// </summary>
-    public Game(ProgramTables tables, Map map, int stockLevel = 0)
+    public Game(RuleTables tables, Map map, int stockLevel = 0)
     {
         _tables = tables;
         Map = map;

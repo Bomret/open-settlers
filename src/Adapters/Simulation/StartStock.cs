@@ -11,7 +11,7 @@ namespace OpenSettlers.Simulation;
 public static class StartStock
 {
     /// <summary>The number of goods the castle counts.</summary>
-    public const int Goods = 26;
+    public const int Goods = RuleTables.Goods;
 
     // What the castle's construction and its 20 first settlers take from the stock, by good: the planks and
     // stones the castle's own site uses (goods 7 and 9) and the tools the settlers carry out. inferred: the
@@ -34,10 +34,10 @@ public static class StartStock
 
     /// <summary>
     /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40). Each count steps from
-    /// its value in the lower row towards the higher row of the program's table (<see cref="ProgramTables.StartStock"/>)
+    /// its value in the lower row towards the higher row of the program's table (<see cref="RuleTables.StartStock"/>)
     /// by the tenths of the level, rounded as the original rounds.
     /// </summary>
-    public static IReadOnlyList<int> At(ProgramTables tables, int level)
+    public static IReadOnlyList<int> At(RuleTables tables, int level)
     {
         var low =
             level < 10 ? 0

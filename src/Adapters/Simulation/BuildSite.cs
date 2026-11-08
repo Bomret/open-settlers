@@ -47,7 +47,7 @@ public static class BuildSite
     /// A node whose object is a flag or a building gives the result 0, 0, 0: the original judges those from its
     /// flag and building tables, which this port does not hold yet.
     /// </summary>
-    public static BuildSiteResult Evaluate(ProgramTables tables, Map map, int x, int y, int player, bool hasCastle)
+    public static BuildSiteResult Evaluate(RuleTables tables, Map map, int x, int y, int player, bool hasCastle)
     {
         var owner = hasCastle ? Owner.Player(player) : Owner.Nobody;
 
@@ -58,8 +58,7 @@ public static class BuildSite
             nodes[i] = map.At(x + dx, y + dy);
         }
 
-        var classes = tables.Classes;
-        int Class(int i) => classes[nodes[i].Object.Code];
+        ObjectClass Class(int i) => tables.ClassOf(nodes[i].Object);
         Terrain Up(int i) => nodes[i].Upper;
         Terrain Low(int i) => nodes[i].Lower;
         int Height(int i) => nodes[i].Height;
@@ -68,7 +67,7 @@ public static class BuildSite
             return default;
 
         var own = Class(0);
-        if (own >= 3)
+        if (own.IsFlagOrBuilding)
             return default;
 
         // Node: how the node itself stands.
@@ -77,7 +76,7 @@ public static class BuildSite
         if (edge.IsEmpty)
         {
             node =
-                Class(2) == 3 ? 5
+                Class(2).IsFlag ? 5
                 : nodes[2].Roads.IsEmpty ? 7
                 : 6;
         }
@@ -91,7 +90,7 @@ public static class BuildSite
         }
 
         var site = 0;
-        if (own != 0)
+        if (!own.IsEmpty)
             return new(node, 0, 0);
 
         if (Up(0).IsWater && Low(0).IsWater && Low(4).IsWater && Up(5).IsWater && Low(5).IsWater && Up(6).IsWater)
@@ -100,7 +99,7 @@ public static class BuildSite
         var flagNear = false;
         for (var i = 1; i <= 6; i++)
         {
-            if (Class(i) == 3)
+            if (Class(i).IsFlag)
             {
                 if (node == 4)
                     return new(node, 0, 0);
@@ -119,16 +118,16 @@ public static class BuildSite
 
         for (var i = 1; i <= 6; i++)
         {
-            if (Class(i) > 3)
+            if (Class(i).IsBuilding)
                 return new(node, site, 0);
         }
 
-        if (node != 5 && Class(2) != 0)
+        if (node != 5 && !Class(2).IsEmpty)
             return new(node, site, 0);
 
         foreach (var i in new[] { 7, 8, 14, 1, 3 })
         {
-            if (Class(i) == 3)
+            if (Class(i).IsFlag)
                 return new(node, site, 0);
         }
 
@@ -168,13 +167,13 @@ public static class BuildSite
         for (var i = 1; i <= 6; i++)
         {
             var c = Class(i);
-            if (c > 1 && c != 3)
+            if (c.IsLarge && !c.IsFlag)
                 return new(node, site, 0);
         }
 
         for (var i = 7; i <= 18; i++)
         {
-            if (Class(i) > 4)
+            if (Class(i).IsLargeBuilding)
                 return new(node, site, 0);
         }
 
@@ -218,11 +217,4 @@ public static class BuildSite
 
         return new(node, hasCastle ? 4 : 5, level);
     }
-
-    /// <summary>
-    /// The class of a node's object: the size byte of the program's
-    /// table (<c>0x41e640</c>). 1 and 2 are the trees and stones, 3 is a flag, 4 to 6 are buildings (6 is the
-    /// castle), 255 marks a border.
-    /// </summary>
-    internal static int ObjectClass(ProgramTables tables, MapObject mapObject) => tables.Classes[mapObject.Code];
 }

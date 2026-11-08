@@ -10,9 +10,9 @@ public sealed class ThingTests
 {
     static NameTable Names() =>
         new(
-            new ProgramTables(
-                new byte[ProgramTables.ClassCount],
-                Enumerable.Range(0, ProgramTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray()
+            new RuleTables(
+                new ObjectClass[RuleTables.ClassCount],
+                Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray()
             )
         );
 

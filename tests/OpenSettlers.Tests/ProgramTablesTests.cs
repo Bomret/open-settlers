@@ -39,8 +39,9 @@ public sealed class ProgramTablesTests
         for (var good = 1; good <= StartStock.Goods; good++)
         {
             var at =
-                FileOffset(ProgramTables.TransportPriorityAddress) + ProgramTables.TransportPriorityStep * (good - 1);
-            exe[at] = ProgramTables.MovAlOpcode;
+                FileOffset(ProgramTablesImporter.TransportPriorityAddress)
+                + ProgramTablesImporter.TransportPriorityStep * (good - 1);
+            exe[at] = ProgramTablesImporter.MovAlOpcode;
             exe[at + 1] = (byte)(StartStock.Goods + 1 - good);
         }
 
@@ -58,21 +59,25 @@ public sealed class ProgramTablesTests
 
         void Load(int at, int table) => Write(at, [0x8d, 0x35, .. BitConverter.GetBytes(table)]);
 
-        Load(ProgramTables.FigureBaseLoadAddress, ProgramTables.FigureBaseAddress);
-        Load(ProgramTables.FigureOffsetLoadAddress, ProgramTables.FigureOffsetAddress);
-        var stub = ProgramTables.JobStubAddress + ProgramTables.JobStubSize * Settler.WoodcutterJob;
-        Write(stub, [0xe9, .. BitConverter.GetBytes(ProgramTables.WoodcutterHandlerAddress - (stub + 5))]);
+        Load(ProgramTablesImporter.FigureBaseLoadAddress, ProgramTablesImporter.FigureBaseAddress);
+        Load(ProgramTablesImporter.FigureOffsetLoadAddress, ProgramTablesImporter.FigureOffsetAddress);
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Settler.WoodcutterJob;
+        Write(stub, [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.WoodcutterHandlerAddress - (stub + 5))]);
         void Add(int at, int word) => Write(at, [0x66, 0x81, 0x47, 0x08, (byte)word, (byte)(word >> 8)]);
 
-        Add(ProgramTables.WoodcutterWalkAddress, 0x0b00);
-        Add(ProgramTables.WoodcutterCarryingAddress, 0x1000);
-        Add(ProgramTables.WoodcutterCuttingAddress, 0x0e80);
-        var hutStub = ProgramTables.JobStubAddress + ProgramTables.JobStubSize * ProgramTables.TypeOneHutJob;
-        Write(hutStub, [0xe9, .. BitConverter.GetBytes(ProgramTables.TypeOneHutHandlerAddress - (hutStub + 5))]);
-        Add(ProgramTables.TypeOneHutWalkAddress, 0x2c00);
-        Add(ProgramTables.TypeOneHutCarryingAddress, 0x2f00);
-        Add(ProgramTables.TypeOneHutHighAddress, 0x2c80);
-        Add(ProgramTables.TypeOneHutHighFacingAddress, 0x2d80);
+        Add(ProgramTablesImporter.WoodcutterWalkAddress, 0x0b00);
+        Add(ProgramTablesImporter.WoodcutterCarryingAddress, 0x1000);
+        Add(ProgramTablesImporter.WoodcutterCuttingAddress, 0x0e80);
+        var hutStub =
+            ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * RuleTables.TypeOneHutJob;
+        Write(
+            hutStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.TypeOneHutHandlerAddress - (hutStub + 5))]
+        );
+        Add(ProgramTablesImporter.TypeOneHutWalkAddress, 0x2c00);
+        Add(ProgramTablesImporter.TypeOneHutCarryingAddress, 0x2f00);
+        Add(ProgramTablesImporter.TypeOneHutHighAddress, 0x2c80);
+        Add(ProgramTablesImporter.TypeOneHutHighFacingAddress, 0x2d80);
     }
 
     private static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -82,27 +87,37 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
         {
-            for (var code = 0; code < ProgramTables.ClassCount; code++)
+            for (var code = 0; code < RuleTables.ClassCount; code++)
             {
-                bytes[FileOffset(ProgramTables.ClassTableAddress) + code] = (byte)(code * 3);
+                bytes[FileOffset(ProgramTablesImporter.ClassTableAddress) + code] = (byte)(code * 3);
             }
 
-            for (var i = 0; i < ProgramTables.StartStockRows * StartStock.Goods; i++)
+            for (var i = 0; i < RuleTables.StartStockRows * StartStock.Goods; i++)
             {
-                bytes[FileOffset(ProgramTables.StartStockAddress) + i] = (byte)(i + 1);
+                bytes[FileOffset(ProgramTablesImporter.StartStockAddress) + i] = (byte)(i + 1);
             }
         });
 
-        var tables = ProgramTables.Read(exe);
+        var tables = ProgramTablesImporter.Import(exe);
 
-        Assert.AreEqual((byte)(17 * 3), tables.Classes[17]);
+        Assert.AreEqual(new ObjectClass(17 * 3), tables.ClassOf(new MapObject(17)));
         Assert.AreEqual((byte)(2 * StartStock.Goods + 5 + 1), tables.StartStock[2][5]);
     }
 
     [TestMethod]
     public void AFileThatIsNoExecutableIsRefused()
     {
-        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read([1, 2, 3]));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import([1, 2, 3]));
+        Assert.AreEqual("Siedler1.exe is truncated.", refusal.Message);
+    }
+
+    [TestMethod]
+    public void AnExecutableCutShortBeforeItsSectionsIsRefusedAsTruncated()
+    {
+        var exe = Executable(_ => { })[..0x60];
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        Assert.AreEqual("Siedler1.exe is truncated.", refusal.Message);
     }
 
     [TestMethod]
@@ -110,17 +125,17 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(_ => { }, sectionAt: SectionStart + SectionSize);
 
-        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
     }
 
     [TestMethod]
     public void TablesOfTheWrongRowLengthsAreRefused()
     {
-        var rows = Enumerable.Range(0, ProgramTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
+        var rows = Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
         rows[2] = new byte[StartStock.Goods - 1];
 
-        Assert.ThrowsExactly<ArgumentException>(() => new ProgramTables(new byte[ProgramTables.ClassCount], rows));
-        Assert.ThrowsExactly<ArgumentException>(() => new ProgramTables(new byte[ProgramTables.ClassCount - 1], rows));
+        Assert.ThrowsExactly<ArgumentException>(() => new RuleTables(new ObjectClass[RuleTables.ClassCount], rows));
+        Assert.ThrowsExactly<ArgumentException>(() => new RuleTables(new ObjectClass[RuleTables.ClassCount - 1], rows));
     }
 
     [TestMethod]
@@ -128,7 +143,7 @@ public sealed class ProgramTablesTests
     {
         var tables = TestProgram.Tables();
 
-        Assert.AreEqual(0xAAD8621C6BD7A8D0UL, Fnv(tables.Classes));
+        Assert.AreEqual(0xAAD8621C6BD7A8D0UL, Fnv([.. tables.Classes.Select(c => (byte)c.Value)]));
         Assert.AreEqual(0x5495C7981E661835UL, Fnv(tables.StartStock.SelectMany(row => row).ToArray()));
     }
 
@@ -138,30 +153,30 @@ public sealed class ProgramTablesTests
         var exe = Executable(bytes =>
         {
             for (
-                var shape = ProgramTables.StepTimeFirst;
-                shape < ProgramTables.StepTimeFirst + ProgramTables.StepTimeCount;
+                var shape = RuleTables.StepTimeFirst;
+                shape < RuleTables.StepTimeFirst + RuleTables.StepTimeCount;
                 shape++
             )
             {
                 BitConverter
                     .GetBytes((ushort)(1000 + shape))
-                    .CopyTo(bytes, FileOffset(ProgramTables.StepTimeAddress) + 2 * shape);
+                    .CopyTo(bytes, FileOffset(ProgramTablesImporter.StepTimeAddress) + 2 * shape);
             }
 
-            for (var type = 0; type < ProgramTables.DoorSpeedCount; type++)
+            for (var type = 0; type < RuleTables.DoorSpeedCount; type++)
             {
-                bytes[FileOffset(ProgramTables.DoorSpeedAddress) + type] = (byte)(type + 7);
+                bytes[FileOffset(ProgramTablesImporter.DoorSpeedAddress) + type] = (byte)(type + 7);
             }
 
-            for (var size = 0; size < ProgramTables.ScanWindowCount; size++)
+            for (var size = 0; size < RuleTables.ScanWindowCount; size++)
             {
                 BitConverter
                     .GetBytes((ushort)(size * 5))
-                    .CopyTo(bytes, FileOffset(ProgramTables.ScanWindowAddress) + 2 * size);
+                    .CopyTo(bytes, FileOffset(ProgramTablesImporter.ScanWindowAddress) + 2 * size);
             }
         });
 
-        var tables = ProgramTables.Read(exe);
+        var tables = ProgramTablesImporter.Import(exe);
 
         Assert.AreEqual((ushort)1013, tables.StepTime(13));
         Assert.AreEqual(
@@ -240,11 +255,11 @@ public sealed class ProgramTablesTests
     [TestMethod]
     public void TheCarriedGoodFiguresAreFoundByTheirAddress()
     {
-        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.CarriedFigureAddress) + 15] = 0x2a);
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.CarriedFigureAddress) + 15] = 0x2a);
 
         Assert.AreEqual(
             0x2a00,
-            ProgramTables.Read(exe).CarriedFigures[7],
+            ProgramTablesImporter.Import(exe).CarriedFigures[7],
             "the word of good 7 at the address plus 2 * 7"
         );
     }
@@ -254,15 +269,15 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
         {
-            for (var i = 0; i < ProgramTables.WalkRowCount * ProgramTables.WalkRowSize; i++)
+            for (var i = 0; i < RuleTables.WalkRowCount * RuleTables.WalkRowSize; i++)
             {
-                bytes[FileOffset(ProgramTables.WalkRowAddress) + i] = (byte)(i * 7);
+                bytes[FileOffset(ProgramTablesImporter.WalkRowAddress) + i] = (byte)(i * 7);
             }
         });
 
-        var tables = ProgramTables.Read(exe);
+        var tables = ProgramTablesImporter.Import(exe);
 
-        Assert.AreEqual(ProgramTables.WalkRowCount * ProgramTables.WalkRowSize, tables.WalkRows.Length);
+        Assert.AreEqual(RuleTables.WalkRowCount * RuleTables.WalkRowSize, tables.WalkRows.Length);
         Assert.AreEqual((byte)(19 * 7), tables.WalkRows[19]);
     }
 
@@ -280,16 +295,16 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
         {
-            bytes[FileOffset(ProgramTables.FrameRowAddress) + 10] = 0xff;
-            bytes[FileOffset(ProgramTables.FrameRowAddress) + 11] = 2;
+            bytes[FileOffset(ProgramTablesImporter.FrameRowAddress) + 10] = 0xff;
+            bytes[FileOffset(ProgramTablesImporter.FrameRowAddress) + 11] = 2;
         });
 
-        var tables = ProgramTables.Read(exe);
+        var tables = ProgramTablesImporter.Import(exe);
 
-        Assert.AreEqual(ProgramTables.FrameRowCount, tables.FrameRows.Length);
+        Assert.AreEqual(RuleTables.FrameRowCount, tables.FrameRows.Length);
         Assert.AreEqual(-1, tables.FrameRows[10], "a signed byte for the frame 10");
         Assert.AreEqual(2, tables.FrameRows[11]);
-        Assert.AreEqual(0x43f402, ProgramTables.FrameRowAddress);
+        Assert.AreEqual(0x43f402, ProgramTablesImporter.FrameRowAddress);
     }
 
     [TestMethod]
@@ -306,18 +321,18 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
         {
-            for (var good = 0; good < ProgramTables.GoodKindCount; good++)
+            for (var good = 0; good < RuleTables.GoodKindCount; good++)
             {
-                bytes[FileOffset(ProgramTables.GoodKindAddress) + good] = (byte)(good + 3);
+                bytes[FileOffset(ProgramTablesImporter.GoodKindAddress) + good] = (byte)(good + 3);
             }
 
-            for (var length = 0; length < ProgramTables.RoadCapacityCount; length++)
+            for (var length = 0; length < RuleTables.RoadCapacityCount; length++)
             {
-                bytes[FileOffset(ProgramTables.RoadCapacityAddress) + length] = (byte)(length * 2);
+                bytes[FileOffset(ProgramTablesImporter.RoadCapacityAddress) + length] = (byte)(length * 2);
             }
         });
 
-        var tables = ProgramTables.Read(exe);
+        var tables = ProgramTablesImporter.Import(exe);
 
         Assert.AreEqual((byte)(9 + 3), tables.GoodKinds[9]);
         Assert.AreEqual((byte)(5 * 2), tables.RoadCapacities[5]);
@@ -336,7 +351,7 @@ public sealed class ProgramTablesTests
     [TestMethod]
     public void TheTransportPrioritiesAreTheRanksTheDefaultOrderRoutineWrites()
     {
-        var tables = ProgramTables.Read(Executable(_ => { }));
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(26, tables.TransportPriorities[0], "good 1");
         Assert.AreEqual(1, tables.TransportPriorities[25], "good 26");
@@ -346,10 +361,13 @@ public sealed class ProgramTablesTests
     public void ADefaultOrderRoutineWithoutItsInstructionsIsRefused()
     {
         var exe = Executable(bytes =>
-            bytes[FileOffset(ProgramTables.TransportPriorityAddress) + ProgramTables.TransportPriorityStep * 4] = 0x90
+            bytes[
+                FileOffset(ProgramTablesImporter.TransportPriorityAddress)
+                    + ProgramTablesImporter.TransportPriorityStep * 4
+            ] = 0x90
         );
 
-        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
         StringAssert.Contains(refusal.Message, "transport priority table");
     }
 
@@ -357,10 +375,14 @@ public sealed class ProgramTablesTests
     public void ADefaultOrderWhoseRanksAreNotOneTo26EachOnceIsRefused()
     {
         var exe = Executable(bytes =>
-            bytes[FileOffset(ProgramTables.TransportPriorityAddress) + ProgramTables.TransportPriorityStep * 4 + 1] = 26
+            bytes[
+                FileOffset(ProgramTablesImporter.TransportPriorityAddress)
+                    + ProgramTablesImporter.TransportPriorityStep * 4
+                    + 1
+            ] = 26
         );
 
-        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
         StringAssert.Contains(refusal.Message, "transport priority table");
     }
 
@@ -401,7 +423,7 @@ public sealed class ProgramTablesTests
     [TestMethod]
     public void TheWoodcuttersFigureWordsAreTheImmediatesOfHisHandler()
     {
-        var tables = ProgramTables.Read(Executable(_ => { }));
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), tables.WoodcutterFigureAdds);
     }
@@ -409,7 +431,7 @@ public sealed class ProgramTablesTests
     [TestMethod]
     public void TheFigureWordsOfTheSettlerOfTheTypeOneHutAreTheImmediatesOfHisHandler()
     {
-        var tables = ProgramTables.Read(Executable(_ => { }));
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(new HutFigureAdds(0x2c00, 0x2f00, 0x2c80, 0x2d80), tables.TypeOneHutFigureAdds);
     }
@@ -419,11 +441,13 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
             bytes[
-                FileOffset(ProgramTables.JobStubAddress + ProgramTables.JobStubSize * ProgramTables.TypeOneHutJob) + 1
+                FileOffset(
+                    ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * RuleTables.TypeOneHutJob
+                ) + 1
             ] ^= 1
         );
 
-        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
         StringAssert.Contains(refusal.Message, "figure");
     }
 
@@ -431,28 +455,32 @@ public sealed class ProgramTablesTests
     public void AHandlerOtherThanTheJobsIsRefused()
     {
         var exe = Executable(bytes =>
-            bytes[FileOffset(ProgramTables.JobStubAddress + ProgramTables.JobStubSize * Settler.WoodcutterJob) + 1] ^= 1
+            bytes[
+                FileOffset(
+                    ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Settler.WoodcutterJob
+                ) + 1
+            ] ^= 1
         );
 
-        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
         StringAssert.Contains(refusal.Message, "figure");
     }
 
     [TestMethod]
     public void AHandlerWithoutItsAddInstructionIsRefused()
     {
-        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.WoodcutterCarryingAddress)] = 0x90);
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.WoodcutterCarryingAddress)] = 0x90);
 
-        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
         StringAssert.Contains(refusal.Message, "figure");
     }
 
     [TestMethod]
     public void ADrawRoutineThatLoadsOtherTablesIsRefused()
     {
-        var exe = Executable(bytes => bytes[FileOffset(ProgramTables.FigureOffsetLoadAddress) + 2] ^= 1);
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.FigureOffsetLoadAddress) + 2] ^= 1);
 
-        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTables.Read(exe));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
         StringAssert.Contains(refusal.Message, "figure");
     }
 

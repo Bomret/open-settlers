@@ -12,9 +12,6 @@ namespace OpenSettlers.Simulation;
 // water roads, and the click on the castle (the check gives it class 0, so the click is refused).
 public sealed partial class Game
 {
-    // The class the program's table gives the object of a flag.
-    private const int FlagObjectClass = 3;
-
     // The types whose item holds a storage (0x462c8d does not count a good against them): the castle and the type 0xa.
     private const int StorehouseType = NameTable.StorehouseType;
 
@@ -47,14 +44,14 @@ public sealed partial class Game
         }
 
         var roads = Map.At(index).Roads;
-        var objectClass = BuildSite.ObjectClass(_tables, Map.At(index).Object);
-        if (objectClass == FlagObjectClass)
+        var objectClass = _tables.ClassOf(Map.At(index).Object);
+        if (objectClass.IsFlag)
         {
             var (x, y) = Position(index);
             var (dx, dy) = RoadBuilding.Steps[4];
             // A flag with a building at its north-west (the road mark in direction 4) is refused; so is a flag with roads
             // unless it has two, each a road of land, to different flags.
-            if (roads.Has(4) && BuildSite.ObjectClass(_tables, Map.At(x + dx, y + dy).Object) > 3)
+            if (roads.Has(4) && _tables.ClassOf(Map.At(x + dx, y + dy).Object).IsBuilding)
             {
                 return 1;
             }
@@ -90,9 +87,9 @@ public sealed partial class Game
             return 2;
         }
 
-        if (objectClass > 3)
+        if (objectClass.IsBuilding)
         {
-            return objectClass != 6 && BuildingAt(index) is { IsDemolishing: false } ? 3 : 0;
+            return !objectClass.IsCastle && BuildingAt(index) is { IsDemolishing: false } ? 3 : 0;
         }
 
         return !roads.IsEmpty && !roads.IsOnly(1) && !roads.IsOnly(4) ? 4 : 0;
@@ -469,8 +466,8 @@ public sealed partial class Game
             Map.Resource1Total--;
         }
 
-        var kind = _tables.GoodKinds[good];
-        if (kind > 1 || destination == 0 || BuildingOfFlag(destination - 1) is not { } building)
+        var kind = _tables.FillCounterOf(good);
+        if (kind == FillCounter.None || destination == 0 || BuildingOfFlag(destination - 1) is not { } building)
         {
             return;
         }
@@ -481,7 +478,7 @@ public sealed partial class Game
         }
 
         building.Fill =
-            kind == 0
+            kind == FillCounter.Low
                 ? (ushort)((building.Fill & 0xff00) | ((building.Fill - 1) & 0xff))
                 : (ushort)((building.Fill & 0xff) | ((((building.Fill >> 8) - 1) & 0xff) << 8));
         TouchBuilding(building, EventType.CountLost);
@@ -618,7 +615,7 @@ public sealed partial class Game
 
     // The settlers on a road count on it up to the capacity of its length class (the table 0x462acd, less one for a road that
     // a carrier is on its way to, in the split): the status bit is set at both ends and the number goes into the low nibble of
-    // both road bytes; a capacity below 0 counts as 0 (the all-zero table ProgramTables falls back to with no install, less
+    // both road bytes; a capacity below 0 counts as 0 (the all-zero table RuleTables falls back to with no install, less
     // one; the original's table has no 0); the settlers beyond the capacity, taken from the start of the list, are marked to
     // go (the next state 0xff, a waiting carrier takes state 0x44) and a good they carry is lost. A road with no
     // settler keeps its bytes.
@@ -717,7 +714,7 @@ public sealed partial class Game
         _roadBytes[a.Far][a.FarDirection] = length;
         _roadBytes[b.Far][b.FarDirection] = length;
         var carriers = a.Settlers.Concat(b.Settlers).ToList();
-        CountCarriers(carriers, (a.Far, a.FarDirection), (b.Far, b.FarDirection), _tables.RoadCapacities[length >> 4]);
+        CountCarriers(carriers, (a.Far, a.FarDirection), (b.Far, b.FarDirection), _tables.RoadCapacity(length >> 4));
 
         // The flags at the ends of the new road, naming each other, and the carriers now on it, naming its two flags.
         TouchFlag(a.Far, EventType.JoinRoads, FlagId(b.Far).ToString());

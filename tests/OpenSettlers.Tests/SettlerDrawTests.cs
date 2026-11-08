@@ -203,7 +203,7 @@ public sealed class SettlerDrawTests
             TestProgram.Tables(),
             Settler.CarrierJob,
             Settler.WoodcutterJob,
-            ProgramTables.TypeOneHutJob
+            RuleTables.TypeOneHutJob
         );
         // draw:WINDOWS:CX,CY:VERB:N:SEED:...
         var parts = scenario.Command.Split(':');

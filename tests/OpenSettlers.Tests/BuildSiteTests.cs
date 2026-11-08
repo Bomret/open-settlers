@@ -122,7 +122,7 @@ public sealed class BuildSiteTests
         {
             for (var x = 0; x < width; x++)
             {
-                if (BuildSite.ObjectClass(TestProgram.Tables(), map.At(x, y).Object) >= 3)
+                if (TestProgram.Tables().ClassOf(map.At(x, y).Object).IsFlagOrBuilding)
                 {
                     skipped++;
                     continue;

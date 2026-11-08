@@ -157,7 +157,7 @@ public sealed partial class Game
             _flagCursor = 0;
         }
 
-        var window = Math.Min(count - _flagCursor, _tables.ScanWindows[Map.Size.Value]);
+        var window = Math.Min(count - _flagCursor, _tables.ScanWindow(Map.Size.Value));
         var left = 10;
         for (var i = 0; i < window; i++)
         {

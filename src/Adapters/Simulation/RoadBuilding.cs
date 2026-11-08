@@ -30,9 +30,6 @@ public static class RoadBuilding
     /// </summary>
     public static IReadOnlyList<(int Dx, int Dy)> Steps { get; } = [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
 
-    // The class the program's table gives a flag.
-    private const int FlagClass = 3;
-
     /// <summary>
     /// Draws the road that starts at the flag on the node and takes the given directions, one step each, the way the
     /// original's click on the next node does. A refused start or step gives <see cref="RoadStatus.Refused"/> and
@@ -42,7 +39,7 @@ public static class RoadBuilding
     /// are taken back too. A direction after the road reached a flag is refused.
     /// </summary>
     internal static (RoadStatus Status, Road? Road) Walk(
-        ProgramTables tables,
+        RuleTables tables,
         Map map,
         int startX,
         int startY,
@@ -52,7 +49,7 @@ public static class RoadBuilding
     {
         var start = map.Index(startX, startY);
         // The road button needs a flag of the player's under the cursor (the evaluator's answers 1 and 2, 0x44b6e6).
-        if (map.At(start).Owner != Owner.Player(0) || BuildSite.ObjectClass(tables, map.At(start).Object) != FlagClass)
+        if (map.At(start).Owner != Owner.Player(0) || !tables.ClassOf(map.At(start).Object).IsFlag)
         {
             return (RoadStatus.Refused, null);
         }
@@ -166,7 +163,7 @@ public static class RoadBuilding
     // direction belongs to the player, and it is the last step's node (the road may be taken back), or it holds no
     // object of class 2 or 4 (stones and rocks, the small building; a tree, class 1, does not block) and then it is a
     // flag, or it holds no road, or a flag could be put on it.
-    private static bool Allowed(ProgramTables tables, Map map, int x, int y, int length, int direction)
+    private static bool Allowed(RuleTables tables, Map map, int x, int y, int length, int direction)
     {
         var (dx, dy) = Steps[direction];
         var next = map.Index(x + dx, y + dy);
@@ -181,13 +178,13 @@ public static class RoadBuilding
             return true;
         }
 
-        var objectClass = BuildSite.ObjectClass(tables, map.At(next).Object);
-        if (objectClass is 2 or 4)
+        var objectClass = tables.ClassOf(map.At(next).Object);
+        if (objectClass.IsStone || objectClass.IsSmallBuilding)
         {
             return false;
         }
 
-        if (objectClass == FlagClass || map.At(next).Roads.IsEmpty)
+        if (objectClass.IsFlag || map.At(next).Roads.IsEmpty)
         {
             return true;
         }

@@ -64,9 +64,9 @@ public sealed class ObjectDrawsTests
         // The hut at 16,2 stands tied to the flag at 17,3 (the road test world of HutTests); its node's height is read from
         // the map: x = 16 * 32 - 2 * 16, y = 2 * 20 - height * 4.
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
-        var classes = new byte[ProgramTables.ClassCount];
+        var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = new Game(new ProgramTables(classes, TestProgram.Made().StartStock), map);
+        var game = new Game(new RuleTables(classes, TestProgram.Made().StartStock), map);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));

@@ -191,7 +191,7 @@ public sealed partial class Game
             var shape = 0xd + Height(next) - Height(here);
             Move(slot, settler, x, y, next);
             settler.Frame = (byte)shape;
-            var speed = (byte)(_tables.DoorSpeeds[door?.TypeIndex ?? 0] ^ 0x1f);
+            var speed = (byte)(_tables.DoorSpeed(door?.TypeIndex ?? 0) ^ 0x1f);
             settler.Timer = (ushort)((ushort)(_tables.StepTime(shape) * speed) >> 5);
             settler.Stamp = _clock;
             settler.State = 5;
@@ -281,14 +281,10 @@ public sealed partial class Game
     // A node the walk may step onto: not marked solid (the lake mark) and holding no settler.
     private bool Free(int index) => !Map.At(index).LakeMark && Occupant(index) == 0;
 
-    // The direction a row entry names (4 east, 8 south-east, 12 south, 16 west, 20 north-west, 24 north) where the step it
-    // leads to is free; -1 for an entry that is none of them (a table with no row) and for a node that is taken.
-    private int Candidate(Settler settler, int code)
-    {
-        var direction = code / 4 - 1;
-
-        return code is >= 4 and <= 24 && code % 4 == 0 && Free(Neighbour(settler, direction).Index) ? direction : -1;
-    }
+    // The direction a row entry names (0 east to 5 north, -1 for an entry that names none: a table with no row) where the
+    // step it leads to is free; -1 for such an entry and for a node that is taken.
+    private int Candidate(Settler settler, int direction) =>
+        direction >= 0 && Free(Neighbour(settler, direction).Index) ? direction : -1;
 
     // The direction of the next step (0 to 5) or -1 where all are taken, and the memory it leaves in byte 15. A settler with a
     // memory (row 0 or more: the low bits less one, or plus five with bit 3) tries the six directions of that row of the
@@ -300,11 +296,10 @@ public sealed partial class Game
     {
         if (memoryRow >= 0)
         {
-            var row = memoryRow * ProgramTables.WalkRowSize;
             for (var candidate = 0; candidate < 6; candidate++)
             {
-                var code = _tables.WalkRows[row + candidate];
-                var direction = Candidate(settler, code);
+                var entry = _tables.WalkDirection(memoryRow, candidate);
+                var direction = Candidate(settler, entry);
                 if (direction < 0)
                 {
                     continue;
@@ -335,7 +330,7 @@ public sealed partial class Game
                     settler.Next -= delta << 4;
                 }
 
-                settler.Next = (settler.Next & 0xf8) | (code >> 2);
+                settler.Next = (settler.Next & 0xf8) | (direction + 1);
 
                 return direction;
             }
@@ -352,8 +347,7 @@ public sealed partial class Game
     private int Fresh(Settler settler)
     {
         var heading = HeadingClass(StepsEast(settler), StepsSouth(settler));
-        var row = heading * ProgramTables.WalkRowSize;
-        var first = Candidate(settler, _tables.WalkRows[row]);
+        var first = Candidate(settler, _tables.WalkDirection(heading, 0));
         if (first >= 0)
         {
             return first;
@@ -361,8 +355,7 @@ public sealed partial class Game
 
         for (var candidate = 1; candidate < 6; candidate++)
         {
-            var code = _tables.WalkRows[row + candidate];
-            var direction = Candidate(settler, code);
+            var direction = Candidate(settler, _tables.WalkDirection(heading, candidate));
             if (direction < 0)
             {
                 continue;
@@ -370,7 +363,7 @@ public sealed partial class Game
 
             var counter = 5 - candidate;
             var parity = ((heading ^ counter) & 1) != 0 ? 8 : 0;
-            settler.Next = (code >> 2) + parity + ((6 - counter) >> 1 << 4);
+            settler.Next = direction + 1 + parity + ((6 - counter) >> 1 << 4);
 
             return direction;
         }
@@ -585,7 +578,7 @@ public sealed partial class Game
         settler.Frame = (byte)shape;
         var time = _tables.StepTime(shape);
         settler.Timer = time;
-        settler.Target = (ushort)(time * _tables.DoorSpeeds[BuildingAt(node)?.TypeIndex ?? 0]) >> 5;
+        settler.Target = (ushort)(time * _tables.DoorSpeed(BuildingAt(node)?.TypeIndex ?? 0)) >> 5;
         settler.Stamp = _clock;
         settler.State = 4;
         RecordWork(slot, EventType.EnterHut);

@@ -18,7 +18,7 @@ public sealed class SettlerGraphicsTests
             TestProgram.Tables(),
             Settler.CarrierJob,
             Settler.WoodcutterJob,
-            ProgramTables.TypeOneHutJob
+            RuleTables.TypeOneHutJob
         );
 
     private static Map Map() =>
@@ -124,7 +124,7 @@ public sealed class SettlerGraphicsTests
         var graphics = Load();
         var map = Map();
         var missing = new HashSet<(int, int)>();
-        foreach (var good in Enumerable.Range(1, ProgramTables.CarriedFigureCount - 1))
+        foreach (var good in Enumerable.Range(1, RuleTables.CarriedFigureCount - 1))
         {
             foreach (var state in new[] { 3, 0xe })
             {
@@ -170,7 +170,7 @@ public sealed class SettlerGraphicsTests
             {
                 foreach (var (state, mark, heading) in new[] { (2, 0, 0), (0x10, 0x80, 1), (0x11, 0, 1), (0x11, 0, 0) })
                 {
-                    var settler = new Settler(ProgramTables.TypeOneHutJob, 0, 4, 3, 0, state, 0)
+                    var settler = new Settler(RuleTables.TypeOneHutJob, 0, 4, 3, 0, state, 0)
                     {
                         Frame = frame,
                         Timer = (ushort)timer,
