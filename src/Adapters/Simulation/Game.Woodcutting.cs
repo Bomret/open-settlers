@@ -412,7 +412,7 @@ public sealed partial class Game
         if (settler.Job != Job.Woodcutter)
         {
             // **Not ported:** the arrival of the jobs 7, 8, 11, 14, and 20 where they are not walking home (0x437ddd).
-            if (ArrivesHome(settler.Job) || trip.Purpose is Home)
+            if (settler.Job.ArrivesHomeGenerically || trip.Purpose is Home)
             {
                 ArriveHome(slot, settler);
                 RecordWork(slot, EventType.Arrive);

@@ -16,8 +16,14 @@ public sealed class TablePass(SettlerTable settlers, BuildingTable buildings, Ac
     /// <summary>The number of settler slices: a settler's slot, modulo this, is the phase of its turn.</summary>
     private const int SettlerSlices = 16;
 
-    /// <summary>The buildings that make a slice: a building's slot divided by this, modulo it, is the phase of its turn.</summary>
+    /// <summary>The buildings that make a slice: a building's slot divided by this is the group that takes its turn in one phase.</summary>
     private const int BuildingSlice = 32;
+
+    /// <summary>
+    /// The phases that run the item tables (0 to 31): the groups of buildings come round every <see cref="BuildingSlice"/> groups,
+    /// that is every 1024 slots (<c>0x42cb2d</c>, <c>docs/rules/program-index.md</c>).
+    /// </summary>
+    private const int TablePhases = 32;
 
     /// <summary>
     /// Runs the slices of <paramref name="phase"/>: <paramref name="flags"/> for the flag table, <paramref name="building"/>
@@ -28,7 +34,7 @@ public sealed class TablePass(SettlerTable settlers, BuildingTable buildings, Ac
         flags();
         for (var slot = 0; slot < buildings.Count; slot++)
         {
-            if (slot / BuildingSlice % BuildingSlice != phase || buildings[slot].IsFree)
+            if (slot / BuildingSlice % TablePhases != phase || buildings[slot].IsFree)
             {
                 continue;
             }

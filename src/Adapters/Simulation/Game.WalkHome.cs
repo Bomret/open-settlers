@@ -170,10 +170,6 @@ public sealed partial class Game
         }
     }
 
-    // The jobs whose arrival at the end of a free walk is the generic one of 0x4385ab whatever the vector (the table at
-    // 0x437dfb): all but the woodcutter (5), the jobs 7, 8, 11, 14, and 20, and the knights. Those jobs' own branches hand over
-    // to it where the walk is a walk home (byte 13 = 0x80, byte 14 negative).
-    private static bool ArrivesHome(Job job) => job.Code is not (5 or 7 or 8 or 11 or 14 or 20) && !job.IsKnightOrAbove;
 
     // The arrival of a settler on the way home (0x4385ab): on a flag of its player with a road it starts the walk to the
     // storage (state 2, mode 0xfe, target 0, heading 0, next 0, timer 0); anywhere else it searches again (state 0x19, mode 0).

@@ -39,6 +39,13 @@ public readonly record struct Job(int Code)
     /// <summary>Whether this is a job of a knight or of one of the jobs above (the castle's own handlers are not ported).</summary>
     public bool IsKnightOrAbove => Code >= FirstKnight;
 
+    /// <summary>
+    /// Whether the settler arrives at the end of a free walk home as the generic arrival of <c>0x4385ab</c> has it whatever
+    /// the vector (the table at <c>0x437dfb</c>): all but the woodcutter, the settler of the type 1 hut, the jobs 7, 8, 14, and
+    /// 20, and the knights. Those jobs' own branches hand over to it where the walk is a walk home.
+    /// </summary>
+    public bool ArrivesHomeGenerically => Code is not (WoodcutterCode or 7 or 8 or 11 or 14 or 20) && !IsKnightOrAbove;
+
     /// <summary>The level of a knight's job: 0 for the first.</summary>
     public int KnightLevel => Code - FirstKnight;
 

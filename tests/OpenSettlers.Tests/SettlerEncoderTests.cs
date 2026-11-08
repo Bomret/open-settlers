@@ -132,8 +132,55 @@ public sealed class SettlerEncoderTests
     [TestMethod]
     public void TheSearchForAFlagHomeHoldsMode1WhereItStartsAtTheFarEnd()
     {
-        Assert.AreEqual((0x19, 1, 0, 0, 0), Fields(new SearchesHome(true) { Residue = new(Mode: 1) }));
+        Assert.AreEqual((0x19, 1, 0, 0, 0), Fields(new SearchesHome(true)));
         Assert.AreEqual((0x19, 0, 0, 0, 0), Fields(new SearchesHome()));
+    }
+
+    [TestMethod]
+    public void TheSearchForAFlagHomeHoldsTheModeByteTheWalkLeftNotTheResidue()
+    {
+        Assert.AreEqual((0x19, 0xfe, 0, 0, 0), Fields(new SearchesHome(true, 0xfe) { Residue = new(Mode: 9) }));
+        Assert.AreEqual((0x19, 1, 0, 0, 0), Fields(new SearchesHome(true) { Residue = new(Mode: 0) }));
+        Assert.AreEqual((0x19, 0, 0, 0, 0), Fields(new SearchesHome() { Residue = new(Mode: 7) }));
+    }
+
+    [TestMethod]
+    public void TheSearchAWalkTurnsIntoKeepsTheModeByteOfTheWalk()
+    {
+        var search = SettlerEncoder.HomeSearchFrom(new Walks(new ToBuilding(1), new Heading(4), 2));
+
+        Assert.AreEqual((0x19, 0xff, 1, 4, 2), Fields(search));
+    }
+
+    [TestMethod]
+    public void TheSearchAfterAStepClearsTheNextByte()
+    {
+        var search = SettlerEncoder.HomeSearchAfterStep(new Walks(new ToBuilding(1), new Heading(4), 2));
+
+        Assert.AreEqual((0x19, 0xff, 1, 4, 0), Fields(search));
+    }
+
+    [TestMethod]
+    public void AStateTheEngineHasNoNameForIsKeptAsItsCode()
+    {
+        Assert.AreEqual((0x4a, 0, 0, 0, 0), Fields(new RawState(0x4a)));
+        Assert.AreEqual(0x49, new RawState(0x49).Code);
+    }
+
+    [TestMethod]
+    public void ACarrierWaitingAtAFlagKeepsTheRetriedHeadingInTheLowByteOfItsStamp()
+    {
+        var settler = Of(new WaitsAtFlag(7, new Direction(2), new Heading(-6)), 0x1234);
+
+        Assert.AreEqual((ushort)0x12fa, SettlerEncoder.Fields(settler).Stamp);
+    }
+
+    [TestMethod]
+    public void AHeadingKeptRetriedTwiceTurnsBackByByteArithmetic()
+    {
+        Assert.AreEqual(new Heading(0xfa + 6 & 0xff), new Heading(-6).Unmarked);
+        Assert.AreEqual(new Heading(3), new Heading(0).Turned);
+        Assert.AreEqual(new Heading(0xfd + 3 & 0xff), new Heading(-3).Turned);
     }
 
     [TestMethod]

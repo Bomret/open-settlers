@@ -278,22 +278,23 @@ public sealed partial class Game
                 // goes on along the road it came by.
                 if (walks.Load is { Destination: { } destination } && destination == Map.At(here).LinkedSlot)
                 {
-                    Deliver(slot, settler);
+                    Deliver(slot, settler, walks);
                     return;
                 }
 
                 Exchange(slot, settler, Map.At(here).LinkedSlot);
-                direction = ((WalksRoad)settler.Activity).Heading.Direction;
+                walks = (WalksRoad)settler.Activity;
+                direction = walks.Heading.Direction;
             }
 
             var (_, _, next) = Neighbour(settler, direction);
             if (
                 Map.At(next).FlagMark
-                && ((WalksRoad)settler.Activity) is { Load: null, Marked: false }
+                && walks is { Load: null, Marked: false }
                 && _flags[Map.At(next).LinkedSlot].Side((direction + 3) % 6).WaitingPlace is null
             )
             {
-                Wait(slot, settler, (direction + 3) % 6, Map.At(next).LinkedSlot);
+                Wait(slot, settler, walks, (direction + 3) % 6, Map.At(next).LinkedSlot);
                 return;
             }
 
@@ -314,11 +315,10 @@ public sealed partial class Game
     // the target. **Not ported:** the work at the flag in state 0x42 (the goods of the next slice).
     // **Inferred:** the fourth turn at a road that holds two carriers is read from the code; no emulator or debugger run reaches
     // it. Open lead in docs/milestones/m3-first-loop.md (the fourth turn of a carrier at the end of a road that holds two).
-    private void Wait(int slot, Settler settler, int back, int flag)
+    private void Wait(int slot, Settler settler, WalksRoad walks, int back, int flag)
     {
-        var walks = (WalksRoad)settler.Activity;
         settler.Timer = 0x3f;
-        settler.Frame = (byte)(walks.Heading.Value + 0x6e);
+        settler.Frame = walks.Heading.IdleFrame;
         var approach = walks.Heading.Retried;
         settler.Activity = walks with { Heading = approach };
         var far = FlagNeighbour(flag, back);

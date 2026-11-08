@@ -17,6 +17,9 @@ public readonly record struct Heading(int Value)
     /// <summary>The direction the heading names, with a retry marker taken off.</summary>
     public Direction Direction => new(Value < 0 ? Value + Direction.Count : Value);
 
+    /// <summary>The frame of a carrier that stands idle facing the heading: the byte 0x6e plus the heading, wrapping at 8 bits.</summary>
+    public int IdleFrame => (byte)(Value + 0x6e);
+
     /// <summary>The heading marked for a step tried again: the direction less 6.</summary>
     public Heading Retried => new(Value - Direction.Count);
 

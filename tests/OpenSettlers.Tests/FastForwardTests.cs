@@ -50,7 +50,7 @@ public sealed class FastForwardTests
             new FastForwardStep
             {
                 Line = 2,
-                Job = Job.WoodcutterCode,
+                Job = Job.Woodcutter,
                 State = 0x11,
                 MaxTicks = 5000,
                 Text = "fast-forward woodcutter state 0x11 max 5000",
@@ -68,7 +68,7 @@ public sealed class FastForwardTests
             new FastForwardStep
             {
                 Line = 1,
-                Job = Job.CarrierCode,
+                Job = Job.Carrier,
                 State = null,
                 MaxTicks = 7,
                 Text = "fast-forward carrier carrying max 7",

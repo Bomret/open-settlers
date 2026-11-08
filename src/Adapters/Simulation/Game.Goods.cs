@@ -315,7 +315,6 @@ public sealed partial class Game
     internal void Exchange(int slot, Settler settler, int flag)
     {
         var walks = (WalksRoad)settler.Activity;
-        var residue = SettlerEncoder.ResidueOf(settler);
         var way = walks.Heading.Direction;
         var places = _flags[flag].Places;
         var side = _flags[flag].Side(way);
@@ -376,7 +375,7 @@ public sealed partial class Game
         }
 
         // A carrier with no good keeps the destination of the last one in its item: the residue holds it.
-        settler.Activity = walks.Carrying(residue);
+        Become(settler, walks);
         if (changed)
         {
             var detail = $"took {took} left {left}";
@@ -393,11 +392,10 @@ public sealed partial class Game
 
     // A carrier on the flag it carries a good to (0x43c45e): it turns to the building north-west of the flag, state 0xe, with the
     // step's frame from the heights and its time on the timer, and goes on at once where the timer has not run out.
-    private void Deliver(int slot, Settler settler)
+    private void Deliver(int slot, Settler settler, WalksRoad walks)
     {
         var here = Map.Index(settler.X, settler.Y);
         var (_, _, node) = Neighbour(settler, 4);
-        var walks = (WalksRoad)settler.Activity;
         Become(settler, new HandsOver(walks.Load, walks.Heading));
         settler.Frame = (byte)(Height(node) - Height(here) + 0x5d);
         var old = settler.Timer;

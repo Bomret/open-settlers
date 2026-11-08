@@ -424,10 +424,12 @@ data (`src/Domain/Activity.cs`). Each activity type keeps the code of the origin
 `WaitsInCastle` 1, `Walks` 2, `WalksRoad` 3, `Door` 4, `WaitsOutStep` 5, `EntersBuilding` 6, `StepsOntoFlag` 7, `BuildsCastle`
 0xa, `BuiltCastle` 0xc, `HandsOver` 0xe, `Leaving` 0xf, `WalksFree` 0x10, `Cuts` 0x11, `LooksForTree` 0x12, `SearchesHome`
 0x19, `ClaimsHomeNode` 0x1c, `KnightWalks` 0x35, `WaitsAtFlag` 0x42, `ClaimsNode` 0x43, `WaitsToGoHome` 0x44, and
-`WaitsToRejoin` 0x45. The original shares bytes 11 to 15 of the item between its states: an activity names the values it uses
+`WaitsToRejoin` 0x45; a state code with no activity type is kept as it is in `RawState`, whose turn changes nothing (the original's
+branches for mode `0xfd` to state `0x49`, and for state `0x4a`, are not ported: no rule writes those). The original shares bytes 11 to 15 of the item between its states: an activity names the values it uses
 (an `Errand` for the walk's mode and target, a `Load` for the good a carrier carries and where it goes, a `Heading`, a free
 walk's `Trip`), and the bytes it leaves unused ride along in its `Residue` so that a change of activity keeps them as the original
-does. No rule reads them. `SettlerEncoder` (`src/Adapters/Simulation/SettlerEncoder.cs`) writes the state, mode, target, heading,
+does. No rule reads or writes them. A search for a flag home (`SearchesHome`) holds its mode byte itself (`FarEndMark`); a heading gives the
+idle frame of a carrier (`Heading.IdleFrame`), and a job says whether its settler arrives home generically (`Job.ArrivesHomeGenerically`). `SettlerEncoder` (`src/Adapters/Simulation/SettlerEncoder.cs`) writes the state, mode, target, heading,
 next, and stamp of the original's item from the typed settler for the digest, the event snapshots, and the readouts;
 `BuildingEncoder` does the same for the building's status, worker, fill, and type index. The table pass is `TablePass`
 (`src/Application`): it runs the flag, building, and settler slices of a phase in the original's order and hands each settler to the

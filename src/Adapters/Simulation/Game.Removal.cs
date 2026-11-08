@@ -561,18 +561,6 @@ public sealed partial class Game
             ? [.. road.Directions]
             : [.. road.Directions.Reverse().Select(step => (step + 3) % 6)];
 
-    // The search for a flag home that takes the place of the activity a step's wait leads to (0x462153 sets the state the wait
-    // ends in): the wait's end clears the next byte.
-    private static SearchesHome SearchAfterStep(Activity then)
-    {
-        var search = SettlerEncoder.HomeSearchFrom(then);
-
-        return search with
-        {
-            Residue = search.Residue with { Next = 0 },
-        };
-    }
-
     // 0x462153: a flag is taken down. A flag with roads (the check allows two) joins its two roads into one between the flags at
     // their far ends; the flag then goes as a flag with no road does: the node loses its flag mark, object, and link, the
     // settlers on their way to it go home, the goods that lie on it are counted lost, and its slot is free. Internal for the test
@@ -589,8 +577,8 @@ public sealed partial class Game
                 // The step's wait ends in the search for a flag home instead of the activity it was for.
                 settler.Activity = settler.Activity switch
                 {
-                    WaitsOutStep wait => wait with { Then = SearchAfterStep(wait.Then) },
-                    StepsOntoFlag step => step with { Then = SearchAfterStep(step.Then) },
+                    WaitsOutStep wait => wait with { Then = SettlerEncoder.HomeSearchAfterStep(wait.Then) },
+                    StepsOntoFlag step => step with { Then = SettlerEncoder.HomeSearchAfterStep(step.Then) },
                     var other => other,
                 };
                 Touch(standing, EventType.TookFlagDown);
@@ -672,14 +660,15 @@ public sealed partial class Game
                 {
                     // The carrier is marked to go and drops its good; its item keeps the good's destination (the residue).
                     var load = LoadOf(carrier.Activity);
-                    var residue = SettlerEncoder.ResidueOf(carrier);
-                    carrier.Activity = carrier.Activity switch
-                    {
-                        WalksRoad road => road with { Marked = true, Waits = 0, Load = null },
-                        HandsOver hands => hands with { Marked = true, Load = null },
-                        var other => other,
-                    };
-                    carrier.Activity = carrier.Activity.Carrying(residue);
+                    Become(
+                        carrier,
+                        carrier.Activity switch
+                        {
+                            WalksRoad road => road with { Marked = true, Waits = 0, Load = null },
+                            HandsOver hands => hands with { Marked = true, Load = null },
+                            var other => other,
+                        }
+                    );
                     if (load is { } lost)
                     {
                         CountLost(lost.Good.Code, lost.Destination);
@@ -807,7 +796,7 @@ public sealed partial class Game
         {
             // The settler keeps its identity and takes the carrier's job; the mode byte of its item is cleared.
             settler.Job = Job.Carrier;
-            residue = residue with { Mode = 0 };
+            residue = SettlerEncoder.ResidueOfBuilder(settler);
         }
 
         settler.Timer = 0;

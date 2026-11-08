@@ -85,7 +85,7 @@ public sealed partial class Game
         settler.Activity = next.Carrying(SettlerEncoder.ResidueOf(settler));
 
     // The settler takes up another activity with the bytes of the original's item the new activity does not use set to
-    // `residue`.
+    // `residue` (a builder that loses its job: SettlerEncoder.ResidueOfBuilder).
     private static void Become(Settler settler, Activity next, Residue residue) =>
         settler.Activity = next.Carrying(residue);
 
@@ -96,6 +96,7 @@ public sealed partial class Game
         _behaviours.Register<WaitsInCastle>((slot, settler, _) => Idle(slot, settler));
         _behaviours.Register<BuildsCastle>((slot, settler, _) => Builder(slot, settler));
         _behaviours.Register<BuiltCastle>((_, _, _) => { });
+        _behaviours.Register<RawState>((_, _, _) => { });
         _behaviours.Register<Leaving>((slot, settler, _) => Leave(slot, settler));
         _behaviours.Register<WaitsOutStep>((slot, settler, _) => WaitOutStep(slot, settler));
         _behaviours.Register<Walks>((slot, settler, _) => Walk(slot, settler));
@@ -589,7 +590,7 @@ public sealed partial class Game
                 {
                     // No storage chosen yet (0x45d09b); none a road leads to sends the settler to look for a flag again,
                     // from the far end of the search.
-                    Become(settler, new SearchesHome(true), SettlerEncoder.ResidueOf(settler) with { Mode = 1 });
+                    Become(settler, new SearchesHome(true));
                     settler.Timer = 0;
                     return;
                 }
@@ -614,7 +615,7 @@ public sealed partial class Game
                 if (direction < 0 && errand is ToStorage)
                 {
                     // 0x43a24e: a settler on its way to a storage that finds no road leads on looks for a flag again.
-                    Become(settler, new SearchesHome(true), SettlerEncoder.ResidueOf(settler) with { Mode = 1 });
+                    Become(settler, new SearchesHome(true));
                     settler.Timer = 0;
                     return;
                 }

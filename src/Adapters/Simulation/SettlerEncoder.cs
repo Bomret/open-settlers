@@ -13,7 +13,7 @@ public readonly record struct SettlerFields(int State, int Mode, int Target, int
 /// The exporter of the typed settler: it writes the original's state, mode, target, heading, and next (bytes 10 to 15 of the
 /// settler's item) and the stamp, field for field, for the digest, the event snapshots, and the readouts (ADR 0013). The
 /// original shares those four fields between its states; each activity here writes the ones it uses from its own data, and the
-/// others from its <see cref="Residue"/>.
+/// others from its <see cref="Residue"/>, which the rules never name: only this class and <c>Become</c> handle it.
 /// </summary>
 public static class SettlerEncoder
 {
@@ -52,8 +52,22 @@ public static class SettlerEncoder
     {
         var residue = ResidueOf(activity);
 
-        return new SearchesHome(residue.Mode != 0) { Residue = residue };
+        return new SearchesHome(residue.Mode != 0, residue.Mode) { Residue = residue };
     }
+
+    /// <summary>
+    /// The search for a flag home that takes the place of the activity a step's wait leads to (<c>0x462153</c>): as
+    /// <see cref="HomeSearchFrom"/>, and the wait's end clears the next byte.
+    /// </summary>
+    internal static SearchesHome HomeSearchAfterStep(Activity then)
+    {
+        var search = HomeSearchFrom(then);
+
+        return search with { Residue = search.Residue with { Next = 0 } };
+    }
+
+    /// <summary>The bytes of a builder's item when it loses its job (<c>0x4617fd</c>): as it leaves them, with the mode byte cleared.</summary>
+    internal static Residue ResidueOfBuilder(Settler settler) => ResidueOf(settler) with { Mode = 0 };
 
     /// <summary>The bytes the settler's activity leaves as they are when the settler takes up another activity.</summary>
     public static Residue ResidueOf(Settler settler) => ResidueOf(settler.Activity);
@@ -99,7 +113,7 @@ public static class SettlerEncoder
                 a.Count,
                 a.Memory
             ),
-            SearchesHome a => new(a.Code, a.FarEndFirst ? (r.Mode != 0 ? r.Mode : 1) : 0, r.Target, r.Heading, r.Next),
+            SearchesHome a => new(a.Code, a.FarEndFirst ? a.FarEndMark : 0, r.Target, r.Heading, r.Next),
             WaitsAtFlag a => new(a.Code, a.Direction.Value, a.Flag, r.Heading, r.Next),
             ClaimsNode a => new(a.Code, r.Mode, r.Target, a.Heading.Value, r.Next),
             _ => new(activity.Code, r.Mode, r.Target, r.Heading, r.Next),

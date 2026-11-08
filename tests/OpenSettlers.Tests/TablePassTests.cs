@@ -50,6 +50,33 @@ public sealed class TablePassTests
     }
 
     [TestMethod]
+    public void ABuildingSlotTurnsInThePhaseOfItsGroupOf32EveryThousandAndTwentyFour()
+    {
+        var turned = new List<int>();
+        var pass = new TablePass(Settlers(0), Buildings(1030), new ActivityRegistry());
+
+        pass.Run(0, () => { }, (slot, _) => turned.Add(slot));
+
+        Assert.AreEqual(32 + 6, turned.Count);
+        Assert.AreEqual(1024, turned[32]);
+    }
+
+    [TestMethod]
+    public void ASettlerTableThatIsNotAMultipleOf16TurnsEachSettlerOfThePhaseOnce()
+    {
+        var seen = new List<int>();
+        var registry = new ActivityRegistry();
+        registry.Register<WaitsInCastle>((slot, _, _) => seen.Add(slot));
+        registry.Register<BuildsCastle>((slot, _, _) => seen.Add(slot));
+        var pass = new TablePass(Settlers(19), new BuildingTable(), registry);
+
+        pass.Run(2, () => { }, (_, _) => { });
+        pass.Run(3, () => { }, (_, _) => { });
+
+        CollectionAssert.AreEqual(new[] { 2, 18, 3 }, seen);
+    }
+
+    [TestMethod]
     public void AFreeBuildingSlotTakesNoTurn()
     {
         var buildings = Buildings(3);

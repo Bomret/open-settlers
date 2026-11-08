@@ -13,7 +13,10 @@ public abstract record Activity
     /// <summary>The code of the original's settler state (byte 10 of the settler's item) that the activity stands for.</summary>
     public abstract int Code { get; }
 
-    /// <summary>The original's bytes the activity leaves unused and a change of activity keeps (<see cref="Domain.Residue"/>).</summary>
+    /// <summary>
+    /// The bytes of the original's item that the activity does not use, kept as they were so that they are exported again
+    /// exactly (<see cref="Domain.Residue"/>). No rule reads or writes them.
+    /// </summary>
     public Residue Residue { get; init; }
 
     /// <summary>Where the activity takes the settler along the roads, or null where it takes it nowhere along them.</summary>
@@ -34,20 +37,25 @@ public sealed record WaitsInCastle(int Storage = 0) : Activity
     public override int Code => 1;
 }
 
-/// <summary>State 2: the settler walks the roads to <see cref="Errand"/>.</summary>
-/// <param name="Errand">Where the walk leads.</param>
-/// <param name="Heading">The direction back to the node the settler came from.</param>
-/// <param name="Tries">The turns spent on a blocked step (byte 15), counted from 0.</param>
-public sealed record Walks(Errand Errand, Heading Heading, int Tries = 0) : Activity
+/// <summary>An activity that takes the settler along the roads to an errand: a walk, or the way out of the castle to it.</summary>
+/// <param name="Errand">Where the activity leads.</param>
+public abstract record HasErrand(Errand Errand) : Activity
 {
-    /// <inheritdoc />
-    public override int Code => 2;
-
     /// <inheritdoc />
     public override Errand? GoingTo => Errand;
 
     /// <inheritdoc />
     public override Activity Redirected(Errand errand) => this with { Errand = errand };
+}
+
+/// <summary>State 2: the settler walks the roads to <see cref="Errand"/>.</summary>
+/// <param name="Errand">Where the walk leads.</param>
+/// <param name="Heading">The direction back to the node the settler came from.</param>
+/// <param name="Tries">The turns spent on a blocked step (byte 15), counted from 0.</param>
+public sealed record Walks(Errand Errand, Heading Heading, int Tries = 0) : HasErrand(Errand)
+{
+    /// <inheritdoc />
+    public override int Code => 2;
 }
 
 /// <summary>State 3: a carrier walks its road, with a good in its hands or none.</summary>
@@ -70,18 +78,23 @@ public sealed record Door(int TimeLeft, bool EnteringStorage = false) : Activity
     public override int Code => 4;
 }
 
-/// <summary>State 5: the settler waits out a step and then takes up <see cref="Then"/>.</summary>
+/// <summary>An activity of a step whose time runs out before the settler takes up <see cref="Then"/>.</summary>
 /// <param name="Then">The activity the settler takes when the step's time has run out.</param>
-public sealed record WaitsOutStep(Activity Then) : Activity
+public abstract record StepsBefore(Activity Then) : Activity
 {
-    /// <inheritdoc />
-    public override int Code => 5;
-
     /// <inheritdoc />
     public override Errand? GoingTo => Then.GoingTo;
 
     /// <inheritdoc />
     public override Activity Redirected(Errand errand) => this with { Then = Then.Redirected(errand) };
+}
+
+/// <summary>State 5: the settler waits out a step and then takes up <see cref="StepsBefore.Then"/>.</summary>
+/// <param name="Then">The activity the settler takes when the step's time has run out.</param>
+public sealed record WaitsOutStep(Activity Then) : StepsBefore(Then)
+{
+    /// <inheritdoc />
+    public override int Code => 5;
 }
 
 /// <summary>State 6: the settler stands on the flag of the building it walks into and waits for the node of the door.</summary>
@@ -92,18 +105,12 @@ public sealed record EntersBuilding(bool Storage = false) : Activity
     public override int Code => 6;
 }
 
-/// <summary>State 7: the settler steps from a hut onto its flag, and then takes up <see cref="Then"/>.</summary>
+/// <summary>State 7: the settler steps from a hut onto its flag, and then takes up <see cref="StepsBefore.Then"/>.</summary>
 /// <param name="Then">The activity the settler takes when the step's time has run out.</param>
-public sealed record StepsOntoFlag(Activity Then) : Activity
+public sealed record StepsOntoFlag(Activity Then) : StepsBefore(Then)
 {
     /// <inheritdoc />
     public override int Code => 7;
-
-    /// <inheritdoc />
-    public override Errand? GoingTo => Then.GoingTo;
-
-    /// <inheritdoc />
-    public override Activity Redirected(Errand errand) => this with { Then = Then.Redirected(errand) };
 }
 
 /// <summary>State 10: the settler stands by while the castle is built.</summary>
@@ -132,16 +139,10 @@ public sealed record HandsOver(Load? Load, Heading Heading, bool Marked = false)
 
 /// <summary>State 15: the settler leaves the castle by its door onto the castle's flag.</summary>
 /// <param name="Errand">Where the settler walks to from the flag.</param>
-public sealed record Leaving(Errand Errand) : Activity
+public sealed record Leaving(Errand Errand) : HasErrand(Errand)
 {
     /// <inheritdoc />
     public override int Code => 0xf;
-
-    /// <inheritdoc />
-    public override Errand? GoingTo => Errand;
-
-    /// <inheritdoc />
-    public override Activity Redirected(Errand errand) => this with { Errand = errand };
 }
 
 /// <summary>State 16: the settler walks free along a vector.</summary>
@@ -172,7 +173,11 @@ public sealed record LooksForTree : Activity
 
 /// <summary>State 25: the settler looks for the nearest flag on the way home.</summary>
 /// <param name="FarEndFirst">Whether the search starts from the far end of its table of offsets.</param>
-public sealed record SearchesHome(bool FarEndFirst = false) : Activity
+/// <param name="FarEndMark">
+/// The byte 11 the search starts at the far end by: the byte the walk before it left, kept as it was (not 0), 1 where a rule
+/// starts the search. Its value is of no meaning while <paramref name="FarEndFirst"/> is false.
+/// </param>
+public sealed record SearchesHome(bool FarEndFirst = false, int FarEndMark = 1) : Activity
 {
     /// <inheritdoc />
     public override int Code => 0x19;
@@ -191,6 +196,18 @@ public sealed record KnightWalks(Trip Trip) : Activity
 {
     /// <inheritdoc />
     public override int Code => 0x35;
+}
+
+/// <summary>
+/// A state code the engine has no name for, kept as it is: no rule takes a settler into it and its turn changes nothing. The
+/// original's branches that reach the states 0x49 and 0x4a are not ported, and a settler a layout or a snapshot places in
+/// another state keeps it raw (INV-0006).
+/// </summary>
+/// <param name="StateCode">The code of the original's state.</param>
+public sealed record RawState(int StateCode) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => StateCode;
 }
 
 /// <summary>

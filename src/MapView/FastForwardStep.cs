@@ -10,10 +10,13 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed record FastForwardStep : PlayStep
 {
-    /// <summary>The code of the job to watch: that of <see cref="Domain.Job.Woodcutter"/> or <see cref="Domain.Job.Carrier"/>.</summary>
-    public required int Job { get; init; }
+    /// <summary>The job to watch: <see cref="Domain.Job.Woodcutter"/> or <see cref="Domain.Job.Carrier"/>.</summary>
+    public required Job Job { get; init; }
 
-    /// <summary>The code of the original's settler state the settler's activity stands for; null waits for a settler that carries a good.</summary>
+    /// <summary>
+    /// The code of the original's settler state the settler's activity stands for, as the play script writes it (a number of
+    /// the original); null waits for a settler that carries a good.
+    /// </summary>
     public int? State { get; init; }
 
     /// <summary>The most ticks the step runs; a condition first holding after that many ticks still counts as reached.</summary>
@@ -37,7 +40,7 @@ public sealed record FastForwardStep : PlayStep
     {
         foreach (var settler in game.Settlers)
         {
-            if (settler.Job.Code == Job && (State is { } state ? settler.Activity.Code == state : Carries(settler)))
+            if (settler.Job == Job && (State is { } state ? settler.Activity.Code == state : Carries(settler)))
                 return true;
         }
 
