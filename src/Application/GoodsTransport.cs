@@ -17,6 +17,7 @@ namespace OpenSettlers.Simulation;
 /// <param name="roads">The roads between the flags.</param>
 /// <param name="history">The history the behaviour records its changes in (no rule reads it).</param>
 public sealed class GoodsTransport(SettlerMovement movement, FlagTable flags, RoadNetwork roads, GameHistory history)
+    : ITransportPriorities
 {
     /// <summary>
     /// A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that

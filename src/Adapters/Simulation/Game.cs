@@ -24,6 +24,7 @@ public sealed partial class Game : ICastleRoster
     private readonly RoadNetwork _roads = new();
     private readonly GoodsTransport _goods;
     private readonly CarrierBehavior _carriers;
+    private readonly Removal _removal;
     private ulong _applied = FnvOffset;
 
     /// <summary>
@@ -64,6 +65,19 @@ public sealed partial class Game : ICastleRoster
             Step,
             AddToStock,
             () => InLayout
+        );
+        _removal = new Removal(
+            _movement,
+            _settlers,
+            _buildings,
+            _flags,
+            _roads,
+            History,
+            _carriers,
+            _goods,
+            _walkHome.Begin,
+            () => Castle is not null,
+            id => _buildingCommand.Remove(id)
         );
         _tablePass = new TablePass(_settlers, _buildings, _behaviours);
         RegisterBehaviours();
@@ -210,9 +224,9 @@ public sealed partial class Game : ICastleRoster
             CommandKind.PlaceFlag => PlaceFlag(command.X, command.Y),
             CommandKind.BuildRoad => BuildRoad(command),
             CommandKind.PlaceBuilding => PlaceBuilding(command.X, command.Y),
-            CommandKind.RemoveFlag => RemoveFlagAt(command.X, command.Y),
-            CommandKind.RemoveBuilding => RemoveBuildingAt(command.X, command.Y),
-            CommandKind.RemoveRoad => RemoveRoadAt(command.X, command.Y),
+            CommandKind.RemoveFlag => _removal.RemoveFlagAt(command.X, command.Y),
+            CommandKind.RemoveBuilding => _removal.RemoveBuildingAt(command.X, command.Y),
+            CommandKind.RemoveRoad => _removal.RemoveRoadAt(command.X, command.Y),
             _ => false,
         };
     }
@@ -304,7 +318,7 @@ public sealed partial class Game : ICastleRoster
         // A flag on a node that holds a road splits the road (node state 4, docs/rules/roads.md#a-flag-on-a-road).
         if (site.Node == 4)
         {
-            SplitRoad(Map.Index(x, y), slot, cause);
+            _removal.SplitRoad(Map.Index(x, y), slot, cause);
         }
 
         return true;

@@ -16,11 +16,5 @@ public sealed partial class Game
         return slot;
     }
 
-    // Frees a flag's slot (0x45d974): the item keeps its values until a new flag takes the slot; the table's count falls past the
-    // free slots at its end.
-    private void FreeFlagSlot(int slot) => _flags.Free(slot);
-
-    private Road? RoadAt(int flag, int direction) => _roads.RoadAt(flag, direction);
-
     private int FlagNeighbour(int flag, int direction) => _roads.FlagNeighbour(flag, direction);
 }

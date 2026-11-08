@@ -124,6 +124,6 @@ is slot 3.
 in two places: a node with a flag or a building object gives 0, 0, 0, and the code 3 height term is left out
 (above). `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md). `Game.PlaceBuilding`
 places a woodcutter's hut on a site of 3 or more with the node state 5 (a flag with no building), 6, or 7. It puts the
-flag down for the node states 6 and 7, and for 6 it splits the road under the flag (`Game.SplitRoad`) before it sets the
+flag down for the node states 6 and 7, and for 6 it splits the road under the flag (`Removal.SplitRoad`) before it sets the
 hut's mark (bit `0x10`) at the flag, so the mark is never read as a road bit. The click's map bytes and the flag items
 are those of `building-state6` (`RoadSplitTests`).

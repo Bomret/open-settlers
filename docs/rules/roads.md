@@ -314,7 +314,7 @@ road's own earlier node and for a road across another. The other road, the flags
 (`RoadOnRoadTests`). The branch of `0x44426c` that puts a flag on the node and splits that road is not built: no control
 sets the bit.
 
-`Game.PlaceFlag` on a road node (node state 4) splits the road (`src/Adapters/Simulation/Game.Split.cs`): `Game.Roads` holds the two
+`Game.PlaceFlag` on a road node (node state 4) splits the road (`Removal.SplitRoad`, `src/Application/Removal.cs`): `Game.Roads` holds the two
 halves in place of the old road, the water kind goes to both, the settlers on the road are gathered as the take-down of a flag
 gathers them (`JoinRoads` is the inverse), and the half without a carrier asks for one at the next flag pass. The events are
 `split-roads`, with the cause of the flag's placement. `RoadSplitTests` replays the `split-*` runs of `road-splits.txt`.

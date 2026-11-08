@@ -44,34 +44,6 @@ public static class SettlerEncoder
         return new Residue(raw.Mode, raw.Target, raw.Heading, raw.Next);
     }
 
-    /// <summary>
-    /// The search for a flag the settler takes up where its walk is turned home with only its state changed (<c>0x461b77</c>,
-    /// <c>0x462153</c>): the original reads the byte 11 the walk left (not 0: the far end first), and the other bytes stay.
-    /// </summary>
-    internal static SearchesHome HomeSearchFrom(Activity activity)
-    {
-        var residue = ResidueOf(activity);
-
-        return new SearchesHome(residue.Mode != 0, residue.Mode) { Residue = residue };
-    }
-
-    /// <summary>
-    /// The search for a flag home that takes the place of the activity a step's wait leads to (<c>0x462153</c>): as
-    /// <see cref="HomeSearchFrom"/>, and the wait's end clears the next byte.
-    /// </summary>
-    internal static SearchesHome HomeSearchAfterStep(Activity then)
-    {
-        var search = HomeSearchFrom(then);
-
-        return search with
-        {
-            Residue = search.Residue with { Next = 0 },
-        };
-    }
-
-    /// <summary>The bytes of a builder's item when it loses its job (<c>0x4617fd</c>): as it leaves them, with the mode byte cleared.</summary>
-    internal static Residue ResidueOfBuilder(Settler settler) => ResidueOf(settler) with { Mode = 0 };
-
     /// <summary>The bytes the settler's activity leaves as they are when the settler takes up another activity.</summary>
     public static Residue ResidueOf(Settler settler) => ResidueOf(settler.Activity);
 
