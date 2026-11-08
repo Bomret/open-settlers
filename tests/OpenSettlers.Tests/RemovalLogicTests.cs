@@ -197,7 +197,7 @@ public sealed class RemovalLogicTests
         var game = World();
         Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
         var lost = game.Flags.Count - 1;
-        game.LayGood(lost, 0, Game.GoodLog, destination: 3);
+        game.Goods.LayGood(lost, 0, Game.GoodLog, destination: 3);
         var hut = game.Buildings[1];
         Assert.AreEqual(0, hut.FillHigh);
 
@@ -218,11 +218,11 @@ public sealed class RemovalLogicTests
         ranks[stone - 1] = 9;
         ranks[board - 1] = 2;
         var game = World(transportPriorities: ranks);
-        game.LayGood(1, 0, board, way: way);
-        game.LayGood(1, 1, Game.GoodLog, way: way);
-        game.LayGood(1, 2, stone, way: way);
-        game.LayGood(1, 5, board, destination: 3, way: way);
-        game.WaitForRoad(1, way, 5);
+        game.Goods.LayGood(1, 0, board, way: way);
+        game.Goods.LayGood(1, 1, Game.GoodLog, way: way);
+        game.Goods.LayGood(1, 2, stone, way: way);
+        game.Goods.LayGood(1, 5, board, destination: 3, way: way);
+        game.Goods.WaitForRoad(1, way, 5);
 
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
 
@@ -294,7 +294,7 @@ public sealed class RemovalLogicTests
         foreach (var (x, y) in new[] { (13, 4), (13, 7), (14, 8) })
         {
             Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, x, y));
-            game.LayGood(game.Flags.Count - 1, 0, Game.GoodLog);
+            game.Goods.LayGood(game.Flags.Count - 1, 0, Game.GoodLog);
         }
 
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));

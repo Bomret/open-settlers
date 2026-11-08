@@ -467,7 +467,7 @@ public sealed class RemovalTests
             foreach (var put in puts.Where(candidate => candidate[0] == pass))
             {
                 // The fixture holds the original's good byte (the way plus one in bits 5 to 7) and destination word (the slot plus one).
-                game.LayGood(
+                game.Goods.LayGood(
                     put[1] - 1,
                     put[2],
                     put[3] & 0x1f,

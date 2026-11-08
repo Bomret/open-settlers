@@ -157,7 +157,8 @@ node is the middle of the road.
 
 ## In the engine
 
-`Game.Carriers.cs`: `FlagPass`, `VisitFlag`, `RequestCarrier`, `EnterRoad`, `WalkRoad`, and `Wait` port the above;
+`src/Application/CarrierBehavior.cs` (`Game.Carriers`): `FlagPass`, `VisitFlag`, `RequestCarrier`, `EnterRoad`, `WalkRoad`, and
+`Wait` port the above;
 the flag's typed state is `Flag` (`CarrierRequestFailed`, the status byte's bit 7) with a `FlagSide` for each direction
 (`Length`, `CarrierOnTheWay`, `Carriers`, `HoldsCarrier`, `FarDirection`), kept in the `FlagTable` that `Game.Flags` returns;
 `FlagEncoder.Status` and `FlagEncoder.RoadByte` write them as the flag item's bytes. `Job.Carrier` is job 0. The

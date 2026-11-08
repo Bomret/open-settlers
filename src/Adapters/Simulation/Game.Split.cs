@@ -58,7 +58,7 @@ public sealed partial class Game
         LinkHalf(slot, second, b);
 
         // A half that holds no carrier and none on its way is asked for at the next flag pass, with the cause of this command.
-        _roadCauses.Remove(road);
+        _carriers.ForgetCause(road);
         // The cause only attributes the request (INV-0007): a request is made with or without it.
         if (cause.IsCommand)
         {
@@ -66,7 +66,7 @@ public sealed partial class Game
             {
                 if (_flags[slot].Side(direction) is { CarrierOnTheWay: false, Carriers: 0 })
                 {
-                    _roadCauses[half] = cause;
+                    _carriers.CarryCause(half, cause);
                 }
             }
         }

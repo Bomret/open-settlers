@@ -211,7 +211,7 @@ public sealed partial class Layout
                     default,
                     woodcutter
                         ? game => game.PlaceWoodcutterInHut(x, y)
-                        : game => game.PlaceCarrierOnRoad(x, y, direction)
+                        : game => game.Carriers.PlaceCarrierOnRoad(x, y, direction)
                 )
             );
 
@@ -253,7 +253,7 @@ public sealed partial class Layout
                 return false;
             }
 
-            steps.Add(new Step(name, default, game => game.PlaceGood(x, y, place, good)));
+            steps.Add(new Step(name, default, game => game.Goods.PlaceGood(x, y, place, good)));
 
             return true;
         }
