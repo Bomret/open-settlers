@@ -295,7 +295,7 @@ matches. The verb `roaddraw:SEED:COUNT` runs the three strip routines on random 
 ## In the engine
 
 `CommandKind.BuildRoad` takes the start flag in `Command.X` and `Command.Y` and the step of each direction in
-`Command.Directions`. `RoadBuilding.Walk` (`src/Simulation/RoadBuilding.cs`) draws the road into the map as the
+`Command.Directions`. `RoadBuilding.Walk` (`src/Adapters/Simulation/RoadBuilding.cs`) draws the road into the map as the
 original does and takes it back unless the road is accepted; `Game.CheckRoad` asks the same without changing the game,
 and `Game.Roads` lists the built roads (`Road`: the slots and directions of the two ends, the steps, and whether it is
 a water road). The digest holds the roads. A refused command, and a road that does not end on a flag, changes nothing.
@@ -314,7 +314,7 @@ road's own earlier node and for a road across another. The other road, the flags
 (`RoadOnRoadTests`). The branch of `0x44426c` that puts a flag on the node and splits that road is not built: no control
 sets the bit.
 
-`Game.PlaceFlag` on a road node (node state 4) splits the road (`src/Simulation/Game.Split.cs`): `Game.Roads` holds the two
+`Game.PlaceFlag` on a road node (node state 4) splits the road (`src/Adapters/Simulation/Game.Split.cs`): `Game.Roads` holds the two
 halves in place of the old road, the water kind goes to both, the settlers on the road are gathered as the take-down of a flag
 gathers them (`JoinRoads` is the inverse), and the half without a carrier asks for one at the next flag pass. The events are
 `split-roads`, with the cause of the flag's placement. `RoadSplitTests` replays the `split-*` runs of `road-splits.txt`.

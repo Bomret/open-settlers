@@ -416,10 +416,10 @@ reaches them: the scenarios find a node in the first ring), the ring masks of th
 
 ## In the engine
 
-`Game.Buildings` and `Game.Settlers` hold the items (`src/Simulation/Building.cs`, `Settler.cs`); the pass, the
-request, the route search, and the walk are in `src/Simulation/Game.Settlers.cs`. `ProgramTables` reads the step
+`Game.Buildings` and `Game.Settlers` hold the items (`src/Adapters/Simulation/Building.cs`, `Settler.cs`); the pass, the
+request, the route search, and the walk are in `src/Adapters/Simulation/Game.Settlers.cs`. `ProgramTables` reads the step
 times, the door speeds, and the scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`,
 `ScanWindows`). `Game.Digest` holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's
-waiting list, and the settlers' places. The carriers' part is in `src/Simulation/Game.Carriers.cs`
-([Carriers](carriers.md#in-the-engine)), the woodcutter's and the map's object pass in `src/Simulation/Game.Woodcutting.cs`
+waiting list, and the settlers' places. The carriers' part is in `src/Adapters/Simulation/Game.Carriers.cs`
+([Carriers](carriers.md#in-the-engine)), the woodcutter's and the map's object pass in `src/Adapters/Simulation/Game.Woodcutting.cs`
 ([Woodcutting](woodcutting.md#in-the-engine)).

@@ -241,7 +241,7 @@ part of what the generator words after each pass check.
 
 ## In the engine
 
-`src/Simulation/MapSize.cs`, `Map.cs`, `MapLayer.cs`, `MapPass.cs`, `MapObject.cs`, `ResourceDeposit.cs`, and
+`src/Adapters/Simulation/MapSize.cs`, `Map.cs`, `MapLayer.cs`, `MapPass.cs`, `MapObject.cs`, `ResourceDeposit.cs`, and
 `MapGenerator.cs`. A caller reads the objects through `Map.Objects` (a column, a row, and a code for each
 tile with an object) or from `Map.Layer(MapLayer.Object)` with the mask `0x7f`, and the deposits through
 `Map.Deposits` or `Map.Layer(MapLayer.Resource)`. The engine departs from the program in two places: it
@@ -258,7 +258,7 @@ spiral table with the program's builder and points the object size table at the 
 
 **Status:** the engine's own form (a stand-in; the original has no hand-drawn maps). A layout file
 ([ADR 0009](../adr/0009-layouts-set-up-a-game-by-hand-drawn-map-and-commands.md)) draws the height, terrain, and
-object layers. `src/Simulation/Layout.cs` derives from them the bytes the generator derives. The map has one of the
+object layers. `src/Adapters/Simulation/Layout.cs` derives from them the bytes the generator derives. The map has one of the
 sizes above, written as its size value in the layout's `size`.
 
 **The grids.** `height`, `terrain`, `terrainLower`, and `lakes` are lists of strings. One string is one row of the
