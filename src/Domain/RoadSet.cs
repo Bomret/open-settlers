@@ -40,12 +40,6 @@ public readonly record struct RoadSet(byte Bits)
     /// <summary>The set with the direction removed.</summary>
     public RoadSet Without(int direction) => new((byte)(Bits & ~(1 << direction)));
 
-    /// <summary>The directions both sets hold.</summary>
-    public RoadSet Both(RoadSet other) => new((byte)(Bits & other.Bits));
-
-    /// <summary>The directions of either set.</summary>
-    public RoadSet Either(RoadSet other) => new((byte)(Bits | other.Bits));
-
     /// <summary>The directions this set holds that the other does not.</summary>
     public RoadSet Except(RoadSet other) => new((byte)(Bits & ~other.Bits));
 }

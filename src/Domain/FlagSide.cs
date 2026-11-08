@@ -7,22 +7,22 @@ namespace OpenSettlers.Domain;
 public sealed class FlagSide
 {
     /// <summary>The length class of the road, written at both its ends.</summary>
-    public LengthClass Length { get; set; }
+    public LengthClass Length { get; internal set; }
 
     /// <summary>Whether a carrier is on the way to the road.</summary>
-    public bool CarrierOnTheWay { get; set; }
+    public bool CarrierOnTheWay { get; internal set; }
 
     /// <summary>The number of carriers on the road.</summary>
-    public int Carriers { get; set; }
+    public int Carriers { get; internal set; }
 
     /// <summary>Whether the flag's last turn saw a carrier on the road (the road's bit of the flag's status).</summary>
-    public bool HoldsCarrier { get; set; }
+    public bool HoldsCarrier { get; internal set; }
 
     /// <summary>The direction in which the road leaves the flag at its far end.</summary>
-    public Direction FarDirection { get; set; }
+    public Direction FarDirection { get; internal set; }
 
     /// <summary>The place of the good that waits to go along the road, or null where none waits.</summary>
-    public int? WaitingPlace { get; set; }
+    public int? WaitingPlace { get; internal set; }
 
     /// <summary>
     /// Gives the side a new length class: the carriers on the road count again from none, and whether a carrier is on the

@@ -50,8 +50,8 @@ public sealed class RoadLoopTests
         var game = WithLoop();
 
         var road = game.Network.Roads.Single();
-        Assert.AreEqual((0, 0, 0, 2), (road.FromSlot, road.FromDirection, road.ToSlot, road.ToDirection));
-        CollectionAssert.AreEqual(Loop, road.Directions.ToArray());
+        Assert.AreEqual((0, 0, 0, 2), (road.FromSlot, road.FromDirection.Value, road.ToSlot, road.ToDirection.Value));
+        CollectionAssert.AreEqual(Loop, road.Directions.Select(step => step.Value).ToArray());
         Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length, "class 2 for six steps at the start end");
         Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(2).Length, "and at the other end");
         Assert.AreEqual(
@@ -167,7 +167,7 @@ public sealed class RoadLoopTests
         Assert.AreEqual(Loop.Length, road.Directions.Count);
         CollectionAssert.AreEquivalent(
             new[] { 0, 2 },
-            new[] { road.FromDirection, road.ToDirection },
+            new[] { road.FromDirection.Value, road.ToDirection.Value },
             "the joined road starts at either end"
         );
         Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length);

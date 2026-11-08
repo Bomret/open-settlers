@@ -40,6 +40,9 @@ public sealed class ExchangeTests
             )
         ];
 
+    private static void Exchange(GoodsTransport goods, Settler carrier) =>
+        goods.Exchange(0, carrier, (WalksRoad)carrier.Activity, 0);
+
     // The good a carrier carries; 0 for none.
     private static int Carried(Settler carrier) => ((WalksRoad)carrier.Activity).Load?.Good.Code ?? 0;
 
@@ -51,7 +54,7 @@ public sealed class ExchangeTests
         goods.WaitForRoad(0, Way, 2);
         var carrier = Carrier(bench, Stone, 0);
 
-        goods.Exchange(0, carrier, 0);
+        Exchange(goods, carrier);
 
         Assert.AreEqual(Log, Carried(carrier), "the carrier takes the good that waited");
         Assert.AreEqual(new Good(Stone), bench.Flags[0].Places[2].Good, "the good it carried is left in that place");
@@ -68,7 +71,7 @@ public sealed class ExchangeTests
         goods.WaitForRoad(0, Way, 5);
         var carrier = Carrier(bench, 0, null);
 
-        goods.Exchange(0, carrier, 0);
+        Exchange(goods, carrier);
 
         Assert.AreEqual(Log, Carried(carrier));
         Assert.IsTrue(bench.Flags[0].Places[5].IsEmpty, "the place is empty");
@@ -81,7 +84,7 @@ public sealed class ExchangeTests
         goods.LayGood(0, 0, Log);
         var carrier = Carrier(bench, Stone, 0);
 
-        goods.Exchange(0, carrier, 0);
+        Exchange(goods, carrier);
 
         Assert.AreEqual(0, Carried(carrier), "the carrier has nothing left");
         Assert.AreEqual(new Good(Stone), bench.Flags[0].Places[1].Good);
@@ -113,7 +116,7 @@ public sealed class ExchangeTests
         LayDirected(goods, 4, Log);
         goods.WaitForRoad(0, Way, 4);
 
-        goods.Exchange(0, Carrier(bench, 0, null), 0);
+        Exchange(goods, Carrier(bench, 0, null));
 
         Assert.AreEqual(2, bench.Flags[0].Side(Way).WaitingPlace, "the stone waits next");
     }
@@ -127,7 +130,7 @@ public sealed class ExchangeTests
         LayDirected(goods, 6, Log);
         goods.WaitForRoad(0, Way, 6);
 
-        goods.Exchange(0, Carrier(bench, 0, null), 0);
+        Exchange(goods, Carrier(bench, 0, null));
 
         Assert.AreEqual(1, bench.Flags[0].Side(Way).WaitingPlace);
     }
@@ -140,7 +143,7 @@ public sealed class ExchangeTests
         LayDirected(goods, 6, Stone);
         goods.WaitForRoad(0, Way, 6);
 
-        goods.Exchange(0, Carrier(bench, 0, null), 0);
+        Exchange(goods, Carrier(bench, 0, null));
 
         Assert.IsNull(bench.Flags[0].Side(Way).WaitingPlace, "no good waits for the road");
     }
@@ -156,7 +159,7 @@ public sealed class ExchangeTests
 
         var carrier = Carrier(bench, Stone, 0);
 
-        goods.Exchange(0, carrier, 0);
+        Exchange(goods, carrier);
 
         Assert.AreEqual(Stone, Carried(carrier));
     }

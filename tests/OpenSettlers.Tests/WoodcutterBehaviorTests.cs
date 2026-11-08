@@ -15,9 +15,12 @@ public sealed class WoodcutterBehaviorTests
 
     // The hut at (4, 4) with its flag south-east of it at (5, 5), and a tree at (5, 4): the first entry of the spiral around the
     // hut (an offset of 1 east) that the draw 0 names.
-    private static (BehaviourBench Bench, WoodcutterBehavior Behaviour, List<(int Flag, int Place, int Good)> Laid) Hut(
-        params ushort[] draws
-    )
+    private static (
+        BehaviourBench Bench,
+        WoodcutterBehavior Behaviour,
+        List<(int Flag, int Place, int Good)> Laid,
+        Causes Causes
+    ) Hut(params ushort[] draws)
     {
         var bench = new BehaviourBench(draws);
         var flag = bench.Flags.Add(HutX + 1, HutY + 1);
@@ -47,23 +50,16 @@ public sealed class WoodcutterBehaviorTests
             () => false
         );
 
-        return (bench, behaviour, laid);
+        return (bench, behaviour, laid, new Causes(bench.History, bench.Buildings, walkHome));
     }
 
-    // The registry of the woodcutter's activities, and the wait of a step that the game's own behaviour handles.
-    private static ActivityRegistry Registry(BehaviourBench bench, WoodcutterBehavior behaviour)
+    // The registry of the woodcutter's activities, and the wait of a step that the game's own walk behaviour handles.
+    private static ActivityRegistry Registry(BehaviourBench bench, WoodcutterBehavior behaviour, Causes causes)
     {
         var registry = new ActivityRegistry();
         behaviour.Register(registry);
         registry.Register<WaitsOutStep>(
-            (_, settler, wait) =>
-            {
-                if (bench.Movement.TimerRan(settler))
-                {
-                    settler.Timer = 0;
-                    settler.Activity = wait.Then;
-                }
-            }
+            (slot, settler, _) => WalkBehavior.WaitOutStep(bench.Movement, bench.History, causes, slot, settler)
         );
 
         return registry;
@@ -72,8 +68,8 @@ public sealed class WoodcutterBehaviorTests
     [TestMethod]
     public void AWoodcutterSearchesCutsAndCarriesALogToTheFlagWithOneDraw()
     {
-        var (bench, behaviour, laid) = Hut(0);
-        var registry = Registry(bench, behaviour);
+        var (bench, behaviour, laid, causes) = Hut(0);
+        var registry = Registry(bench, behaviour, causes);
         var woodcutter = new Settler(Job.Woodcutter, 0, HutX, HutY, 0, new LooksForTree());
         var slot = bench.Place(woodcutter);
 
@@ -92,8 +88,8 @@ public sealed class WoodcutterBehaviorTests
     [TestMethod]
     public void TheCutLeavesAFallingTreeOfTheSecondVariantOnTheTreesNode()
     {
-        var (bench, behaviour, _) = Hut(0);
-        var registry = Registry(bench, behaviour);
+        var (bench, behaviour, _, causes) = Hut(0);
+        var registry = Registry(bench, behaviour, causes);
         var woodcutter = new Settler(Job.Woodcutter, 0, HutX, HutY, 0, new LooksForTree());
         var slot = bench.Place(woodcutter);
 
@@ -109,7 +105,7 @@ public sealed class WoodcutterBehaviorTests
     [TestMethod]
     public void TheObjectPassTurnsAFallingTreeIntoAStumpWhenItsCursorReachesIt()
     {
-        var (bench, behaviour, _) = Hut();
+        var (bench, behaviour, _, _) = Hut();
         // The cursor starts at column 0 of row 0 and moves 23 columns on at each of its nodes.
         bench.Map.At(23, 0).Object = MapObject.Falling(5, secondVariant: false);
         bench.Clock = 8 * 40;

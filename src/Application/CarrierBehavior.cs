@@ -400,7 +400,7 @@ public sealed class CarrierBehavior(
                     return;
                 }
 
-                goods.Exchange(slot, settler, Map.At(here).LinkedSlot);
+                goods.Exchange(slot, settler, walks, Map.At(here).LinkedSlot);
                 walks = (WalksRoad)settler.Activity;
                 direction = walks.Heading.Direction;
             }

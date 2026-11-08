@@ -32,7 +32,4 @@ public static class MapLayerExporter
 
         return layers;
     }
-
-    /// <summary>The FNV-1a 64-bit digest of one layer of the map's encoding.</summary>
-    public static ulong Digest(Map map, MapLayer layer) => Export(map).Digest(layer);
 }

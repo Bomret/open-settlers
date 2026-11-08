@@ -8,13 +8,13 @@ namespace OpenSettlers.Domain;
 public sealed class WaitingGood
 {
     /// <summary>The good on the place; <see cref="Good.None"/> where the place is empty.</summary>
-    public Good Good { get; set; }
+    public Good Good { get; internal set; }
 
     /// <summary>The slot of the flag the good is to go to, or null where it has none yet.</summary>
-    public int? Destination { get; set; }
+    public int? Destination { get; internal set; }
 
     /// <summary>The direction of the first road toward the destination, or null where the good has been given none.</summary>
-    public Direction? Way { get; set; }
+    public Direction? Way { get; internal set; }
 
     /// <summary>Whether no good lies on the place.</summary>
     public bool IsEmpty => Good.IsNone;

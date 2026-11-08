@@ -107,6 +107,9 @@ public sealed class RemovalBehaviourTests
         var rig = new Rig();
         rig.Bench.Map.Resource1Total = 5;
         var events = rig.Bench.History.Events.All.Count();
+        var flags = rig.Bench.Flags.Count;
+        var node = rig.Bench.Map.At(12, 12);
+        var (obj, flagMark) = (node.Object, node.FlagMark);
 
         Assert.IsFalse(rig.Removal.RemoveFlagAt(12, 12));
         Assert.IsFalse(rig.Removal.RemoveBuildingAt(12, 12));
@@ -115,6 +118,8 @@ public sealed class RemovalBehaviourTests
         Assert.AreEqual(5, rig.Bench.Map.Resource1Total);
         Assert.AreEqual(events, rig.Bench.History.Events.All.Count());
         Assert.AreEqual(1, rig.Bench.Roads.Roads.Count);
+        Assert.AreEqual(flags, rig.Bench.Flags.Count, "no flag slot is freed");
+        Assert.AreEqual((obj, flagMark), (rig.Bench.Map.At(12, 12).Object, rig.Bench.Map.At(12, 12).FlagMark));
         Assert.AreEqual(0, rig.Removal.ClickClass(12, 12), "the click is refused");
     }
 

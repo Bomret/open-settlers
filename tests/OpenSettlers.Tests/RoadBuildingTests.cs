@@ -169,8 +169,8 @@ public sealed class RoadBuildingTests
 
         var ends = new[]
         {
-            (Slot: road.FromSlot, Direction: road.FromDirection, Other: road.ToDirection),
-            (Slot: road.ToSlot, Direction: road.ToDirection, Other: road.FromDirection),
+            (Slot: road.FromSlot, Direction: road.FromDirection.Value, Other: road.ToDirection.Value),
+            (Slot: road.ToSlot, Direction: road.ToDirection.Value, Other: road.FromDirection.Value),
         };
         foreach (var (slot, direction, otherDirection) in ends)
         {

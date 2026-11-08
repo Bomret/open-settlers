@@ -55,10 +55,10 @@ public sealed class RoadsTests
 
         var road = game.Network.Roads.Single();
         Assert.AreEqual(0, road.FromSlot);
-        Assert.AreEqual(0, road.FromDirection);
+        Assert.AreEqual(new Direction(0), road.FromDirection);
         Assert.AreEqual(1, road.ToSlot);
-        Assert.AreEqual(3, road.ToDirection);
-        CollectionAssert.AreEqual(new[] { 0, 0 }, road.Directions.ToArray());
+        Assert.AreEqual(new Direction(3), road.ToDirection);
+        CollectionAssert.AreEqual(new Direction[] { 0, 0 }, road.Directions.ToArray());
         Assert.IsTrue(game.Map.At(16, 6).Roads.Has(0));
         Assert.AreEqual(RoadSet.Of(0).With(3), game.Map.At(17, 6).Roads);
         Assert.IsTrue(game.Map.At(18, 6).Roads.IsOnly(3));

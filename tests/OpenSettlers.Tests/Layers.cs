@@ -12,5 +12,5 @@ internal static class Layers
     public static byte[] Of(Map map, MapLayer layer) => MapLayerExporter.Export(map).Layer(layer).ToArray();
 
     /// <summary>The digest of a layer of the map's encoding.</summary>
-    public static ulong Digest(Map map, MapLayer layer) => MapLayerExporter.Digest(map, layer);
+    public static ulong Digest(Map map, MapLayer layer) => MapLayerExporter.Export(map).Digest(layer);
 }

@@ -266,7 +266,8 @@ public sealed class RemovalLogicTests
                 ' ',
                 Layers.Digest(game.Map, MapLayer.Terrain),
                 Layers.Digest(game.Map, MapLayer.Height),
-                game.Network.Roads.Single(road => road.FromSlot == 3 && road.ToSlot == 2).Directions.Sum(),
+                game.Network.Roads.Single(road => road.FromSlot == 3 && road.ToSlot == 2)
+                    .Directions.Sum(step => step.Value),
                 string.Concat(
                     Enumerable
                         .Range(2, 2)

@@ -82,8 +82,6 @@ public sealed class CastleRoster(
     /// <summary>The slot of the settler that waits in the castle's list for a job, 0 for none.</summary>
     public int Waiting(Job job) => Entry(job);
 
-    void ICastleRoster.Take(Job job, int slot) => TakeFromWaiting(job, slot);
-
     void ICastleRoster.WorkerSent() => LeavingCount++;
 
     // Empties the castle's list of the settlers that wait for a job (a test that has the castle run out of settlers).
@@ -113,7 +111,7 @@ public sealed class CastleRoster(
     }
 
     /// <summary>The castle's list of waiting settlers no longer names a settler the dispatch takes (0x42be63, 0x42b455 clear the entry).</summary>
-    public void TakeFromWaiting(Job job, int slot)
+    public void Take(Job job, int slot)
     {
         if (Entry(job) == slot)
         {

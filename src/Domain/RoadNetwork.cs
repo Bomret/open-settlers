@@ -16,9 +16,6 @@ public sealed class RoadNetwork
     /// <summary>Adds a road at the end of the list.</summary>
     public void Add(Road road) => _roads.Add(road);
 
-    /// <summary>Adds roads at the end of the list, in order.</summary>
-    public void AddRange(IEnumerable<Road> roads) => _roads.AddRange(roads);
-
     /// <summary>Removes a road.</summary>
     public void Remove(Road road) => _roads.Remove(road);
 

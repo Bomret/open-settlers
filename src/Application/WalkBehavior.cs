@@ -24,13 +24,20 @@ public sealed class WalkBehavior(
     /// <summary>Registers the behaviours of the activities that walk to an errand.</summary>
     public void Register(ActivityRegistry registry)
     {
-        registry.Register<WaitsOutStep>((slot, settler, _) => WaitOutStep(slot, settler));
+        registry.Register<WaitsOutStep>((slot, settler, _) => WaitOutStep(movement, history, causes, slot, settler));
         registry.Register<Walks>((slot, settler, _) => Walk(slot, settler));
     }
 
     // State 5 (0x42fc81 dispatches on the state byte through a table of 8-byte entries): when the step's time has run out the
     // settler takes up the activity it waited for.
-    private void WaitOutStep(int slot, Settler settler)
+    // Static so a behaviour's test bench registers this very handler for the wait it meets.
+    internal static void WaitOutStep(
+        SettlerMovement movement,
+        GameHistory history,
+        Causes causes,
+        int slot,
+        Settler settler
+    )
     {
         if (movement.TimerRan(settler))
         {
@@ -237,7 +244,7 @@ public sealed class WalkBehavior(
         }
 
         var settler = settlers[slot];
-        roster.TakeFromWaiting(Job.Woodcutter, slot);
+        roster.Take(Job.Woodcutter, slot);
         hut.WorkerOnTheWay = true;
         movement.Become(settler, new Leaving(new ToBuilding(hut.Flag)));
         settler.X = flag.X;

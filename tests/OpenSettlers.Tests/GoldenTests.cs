@@ -160,7 +160,7 @@ public sealed class GoldenTests
 
     private sealed record Outcome(string Line, Game Game, IReadOnlyList<string> Digests);
 
-    // readEvents false never touches Game.Events, so the line holds only the digests.
+    // readEvents false never touches Game.History.Events, so the line holds only the digests.
     private static Outcome Run(Scenario scenario, bool everyPass, bool readEvents = true)
     {
         var game = scenario.Start(everyPass);
@@ -233,42 +233,52 @@ public sealed class GoldenTests
 
     private static Func<ThingEvent, bool> OfType(params string[] types) => e => types.Contains(e.Type);
 
-    // Every behaviour the engine has leaves each of these events at least once in the log of one scenario.
-    private static readonly (string Behaviour, Func<ThingEvent, bool> Is)[] Behaviours =
+    // Every behaviour the engine has leaves at least its minimum of these events in the log of one scenario: a recurring
+    // behaviour at least Recurring times, a behaviour a scenario sets going once (a removal, a split, the loop road, a
+    // head-on meeting, the woodcutter's one log) once.
+    private const int Recurring = 3;
+
+    private static readonly (string Behaviour, int Min, Func<ThingEvent, bool> Is)[] Behaviours =
     [
-        ("castle", OfType(EventType.PlaceCastle)),
-        ("flags", OfType(EventType.PlaceFlag)),
-        ("roads", OfType(EventType.BuildRoad)),
-        ("a flag on a road", OfType(EventType.SplitRoads)),
+        ("castle", 1, OfType(EventType.PlaceCastle)),
+        ("flags", Recurring, OfType(EventType.PlaceFlag)),
+        ("roads", Recurring, OfType(EventType.BuildRoad)),
+        ("a flag on a road", 1, OfType(EventType.SplitRoads)),
         (
             "the loop road: a road whose two ends are one flag",
+            1,
             e => e.Type == EventType.BuildRoad && e.Other == e.Thing.ToString()
         ),
-        ("the woodcutter searching a tree", OfType(EventType.SearchTree)),
-        ("the woodcutter cutting a tree", OfType(EventType.CutTree)),
-        ("the woodcutter carrying", OfType(EventType.PutGood)),
-        ("carriers entering a road", OfType(EventType.EnterRoad)),
-        ("carriers walking a road", OfType(EventType.Walked)),
-        ("goods fetched", OfType(EventType.Fetch)),
-        ("goods delivered", OfType(EventType.Deliver)),
-        ("goods handed over", OfType(EventType.Handover)),
-        ("the walk home", OfType(EventType.ArrivedHome)),
-        ("entering a storage", OfType(EventType.EnteredStorage)),
-        ("taking a road down", OfType(EventType.EndOfRoad)),
-        ("taking a building down", OfType(EventType.TookBuildingDown)),
-        ("taking a flag down", OfType(EventType.TookFlagDown)),
-        ("two settlers meeting head-on", e => e.Type == EventType.Stepped && e.Other is not null),
+        ("the woodcutter searching a tree", Recurring, OfType(EventType.SearchTree)),
+        ("the woodcutter cutting a tree", Recurring, OfType(EventType.CutTree)),
+        ("the woodcutter carrying", 1, OfType(EventType.PutGood)),
+        ("carriers entering a road", Recurring, OfType(EventType.EnterRoad)),
+        ("carriers walking a road", Recurring, OfType(EventType.Walked)),
+        ("goods fetched", Recurring, OfType(EventType.Fetch)),
+        ("goods delivered", 1, OfType(EventType.Deliver)),
+        ("goods handed over", Recurring, OfType(EventType.Handover)),
+        ("the walk home", Recurring, OfType(EventType.ArrivedHome)),
+        // The castle is the one storage a settler walks home to: the event names it (building slot 0).
+        (
+            "entering the castle",
+            Recurring,
+            e => e.Type == EventType.EnteredStorage && e.Other?.StartsWith("building#0.") == true
+        ),
+        ("taking a road down", 1, OfType(EventType.EndOfRoad)),
+        ("taking a building down", 1, OfType(EventType.TookBuildingDown)),
+        ("taking a flag down", 1, OfType(EventType.TookFlagDown)),
+        ("two settlers meeting head-on", 1, e => e.Type == EventType.Stepped && e.Other is not null),
     ];
 
     [TestMethod]
-    public void EveryBehaviourActsSeveralTimesInTheEventLogOfAScenario()
+    public void EveryBehaviourLeavesItsEventsInTheEventLogOfAScenario()
     {
         var logs = Runs().Select(r => Run(r.Scenario, r.EveryPass).Game.History.Events.All).ToList();
 
         var problems = Behaviours
-            .Select(b => (b.Behaviour, Count: logs.Max(log => log.Count(b.Is))))
-            .Where(b => b.Count < 1)
-            .Select(b => $"{b.Behaviour}: {b.Count} events");
+            .Select(b => (b.Behaviour, b.Min, Count: logs.Max(log => log.Count(b.Is))))
+            .Where(b => b.Count < b.Min)
+            .Select(b => $"{b.Behaviour}: {b.Count} events, at least {b.Min} wanted");
 
         Assert.AreEqual("", string.Join("\n", problems));
     }

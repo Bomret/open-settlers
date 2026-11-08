@@ -37,10 +37,10 @@ public sealed class Flag
     /// Whether a request of this flag for a carrier found none; the retry scan clears it, and while it is set the flag asks
     /// for no further carrier.
     /// </summary>
-    public bool CarrierRequestFailed { get; set; }
+    public bool CarrierRequestFailed { get; internal set; }
 
     /// <summary>Whether goods on the flag still need their turn: a put sets it, a turn clears it, a turn that could not finish sets it again.</summary>
-    public bool NeedsGoodsTurn { get; set; }
+    public bool NeedsGoodsTurn { get; internal set; }
 
     /// <summary>The eight places of the flag, for the goods that lie on it.</summary>
     public IReadOnlyList<WaitingGood> Places => _places;

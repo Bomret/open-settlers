@@ -6,7 +6,8 @@ namespace OpenSettlers.Simulation;
 /// Builds the typed <see cref="Map"/> from the layers of the original's encoding (<c>docs/rules/map-form.md</c>): the
 /// map generator's output, or a hand-drawn map's. Every bit of a layer lands in a named field, and a value with no
 /// recovered meaning stays a raw value (an object code, a terrain code, a deposit type), so
-/// <see cref="MapLayerExporter"/> writes the same layers back.
+/// <see cref="MapLayerExporter"/> writes the same layers back. The Resource byte is always read as a deposit: the
+/// maps imported here (the generator's, the layouts') carry no links, so <see cref="Node.Link"/> stays unset.
 /// </summary>
 public static class MapImporter
 {

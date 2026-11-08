@@ -41,7 +41,7 @@ public readonly record struct Job(int Code)
 
     /// <summary>
     /// Whether the settler arrives at the end of a free walk home as the generic arrival of <c>0x4385ab</c> has it whatever
-    /// the vector (the table at <c>0x437dfb</c>): all but the woodcutter, the settler of the type 1 hut, the jobs 7, 8, 14, and
+    /// the vector (the table at <c>0x437dfb</c>): all but the woodcutter, the jobs 7, 8, 11 (the settler of the type 1 hut, <c>docs/rules/settlers.md</c>), 14, and
     /// 20, and the knights. Those jobs' own branches hand over to it where the walk is a walk home.
     /// </summary>
     public bool ArrivesHomeGenerically => Code is not (WoodcutterCode or 7 or 8 or 11 or 14 or 20) && !IsKnightOrAbove;

@@ -310,9 +310,8 @@ public sealed class GoodsTransport(SettlerMovement movement, FlagTable flags, Ro
     /// something was laid has its goods turn again. The road's waiting place is then made again: the good of the greatest
     /// transport priority that was given the road's direction waits for it next.
     /// </summary>
-    public void Exchange(int slot, Settler settler, int flag)
+    public void Exchange(int slot, Settler settler, WalksRoad walks, int flag)
     {
-        var walks = (WalksRoad)settler.Activity;
         var way = walks.Heading.Direction;
         var places = flags[flag].Places;
         var side = flags[flag].Side(way);

@@ -597,10 +597,10 @@ public sealed class Removal(
     }
 
     // The directions of a road walked from one of its flags, the road leaving that flag in a direction.
-    private static List<int> PathFrom(Road road, int flag, int direction) =>
+    private static List<Direction> PathFrom(Road road, int flag, int direction) =>
         road.FromSlot == flag && road.FromDirection == direction
             ? [.. road.Directions]
-            : [.. road.Directions.Reverse().Select(step => (step + 3) % 6)];
+            : [.. road.Directions.Reverse().Select(step => step.Opposite)];
 
     /// <summary>
     /// 0x462153: the flag on the node is taken down with no check of the click (public for the test of the join of two water
@@ -753,7 +753,7 @@ public sealed class Removal(
 
         var a = Gather(index, first);
         var b = Gather(index, last);
-        var path = PathFrom(roadA, slot, first).AsEnumerable().Reverse().Select(step => (step + 3) % 6).ToList();
+        var path = PathFrom(roadA, slot, first).AsEnumerable().Reverse().Select(step => step.Opposite).ToList();
         path.AddRange(PathFrom(roadB, slot, last));
         roads.Remove(roadA);
         roads.Remove(roadB);
@@ -1009,7 +1009,10 @@ public sealed class Removal(
             ),
             new Road(slot, endDirection, road.ToSlot, road.ToDirection, [.. road.Directions.Skip(steps)], road.Water),
         };
-        roads.AddRange(halves);
+        foreach (var half in halves)
+        {
+            roads.Add(half);
+        }
 
         LinkHalf(slot, first, a);
         LinkHalf(slot, second, b);

@@ -19,9 +19,9 @@ namespace OpenSettlers.Domain;
 /// </param>
 public sealed record Road(
     int FromSlot,
-    int FromDirection,
+    Direction FromDirection,
     int ToSlot,
-    int ToDirection,
-    IReadOnlyList<int> Directions,
+    Direction ToDirection,
+    IReadOnlyList<Direction> Directions,
     bool Water
 );

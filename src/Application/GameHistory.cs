@@ -22,8 +22,6 @@ public sealed class GameHistory
     private readonly List<int> _buildingFills = [];
     private readonly List<int> _flagFills = [];
 
-    private readonly EventStore _events = new();
-
     // The command cause each settler carries on until its behaviour ends.
     private readonly Dictionary<ThingId, Cause> _carried = [];
 
@@ -44,10 +42,10 @@ public sealed class GameHistory
     /// The event store: every event the rules recorded, in order (ADR 0011). It is outside the game's digest; no rule reads
     /// it or a counter of the IDs.
     /// </summary>
-    public EventStore Events => _events;
+    public EventStore Events { get; } = new();
 
     /// <summary>The events of a settler, building, or flag in the order recorded.</summary>
-    public IReadOnlyList<ThingEvent> EventsOf(ThingId thing) => _events.Of(thing);
+    public IReadOnlyList<ThingEvent> EventsOf(ThingId thing) => Events.Of(thing);
 
     /// <summary>The ID of the settler in the slot of the settler list; the fill count 0 for a slot never filled.</summary>
     public ThingId SettlerId(int slot) => new(ThingId.SettlerKind, slot, FillOf(_settlerFills, slot));
@@ -59,13 +57,13 @@ public sealed class GameHistory
     public ThingId FlagId(int slot) => new(ThingId.FlagKind, slot, FillOf(_flagFills, slot));
 
     /// <summary>Counts a fill of the settler slot: its next settler takes the next count.</summary>
-    public void FillSettler(int slot) => Fill(_settlerFills, slot);
+    internal void FillSettler(int slot) => Fill(_settlerFills, slot);
 
     /// <summary>Counts a fill of the building slot: its next building takes the next count.</summary>
-    public void FillBuilding(int slot) => Fill(_buildingFills, slot);
+    internal void FillBuilding(int slot) => Fill(_buildingFills, slot);
 
     /// <summary>Counts a fill of the flag slot: its next flag takes the next count.</summary>
-    public void FillFlag(int slot) => Fill(_flagFills, slot);
+    internal void FillFlag(int slot) => Fill(_flagFills, slot);
 
     /// <summary>
     /// The state of the thing at the end of <paramref name="tick"/>: the state in its last event at or before that tick. A tick
@@ -75,13 +73,13 @@ public sealed class GameHistory
     /// </summary>
     public (ThingState? State, string? Refusal) StateAt(ThingId thing, long tick)
     {
-        var last = Math.Max(_tickCount() - 1, _events.LastTick);
+        var last = Math.Max(_tickCount() - 1, Events.LastTick);
         if (tick > last)
         {
             return (null, $"tick {tick} has not run: the game ran up to tick {last}");
         }
 
-        var events = _events.Of(thing);
+        var events = Events.Of(thing);
         if (events.Count == 0)
         {
             return (null, $"{thing} has no event");
@@ -103,11 +101,11 @@ public sealed class GameHistory
     }
 
     /// <summary>Records the event of the building in the slot: its state now, naming the other thing by its ID now.</summary>
-    public void RecordBuilding(int slot, string type, Cause cause, string? other = null) =>
+    internal void RecordBuilding(int slot, string type, Cause cause, string? other = null) =>
         Record(type, BuildingId(slot), _snapshots.Building(slot), cause, other);
 
     /// <summary>Records the event of the flag in the slot: its state now.</summary>
-    public void RecordFlag(int slot, string type, Cause cause, string? other = null) =>
+    internal void RecordFlag(int slot, string type, Cause cause, string? other = null) =>
         Record(type, FlagId(slot), _snapshots.Flag(slot), cause, other);
 
     /// <summary>
@@ -117,7 +115,7 @@ public sealed class GameHistory
     /// waiting at a flag (state 0x42) is the last one that carries it. A rule can end it earlier with
     /// <see cref="EndCarry"/>, before the event of a new job request. Throws for a cause no command made.
     /// </summary>
-    public void CarryCause(int slot, Cause command)
+    internal void CarryCause(int slot, Cause command)
     {
         if (!command.IsCommand)
         {
@@ -128,14 +126,14 @@ public sealed class GameHistory
     }
 
     /// <summary>Ends the carrying of a command cause: the settler's next event takes the rule area's cause.</summary>
-    public void EndCarry(int slot) => _carried.Remove(SettlerId(slot));
+    internal void EndCarry(int slot) => _carried.Remove(SettlerId(slot));
 
     /// <summary>
     /// Records the event of the settler in the slot: its state now, with the command cause it carries
     /// (<see cref="CarryCause"/>) in place of the rule area's cause. A carried cause ends here when the recorded state is 1
     /// (idle in storage) or 0x42 (waiting at a flag).
     /// </summary>
-    public void RecordSettler(int slot, string type, Cause cause, string? other = null)
+    internal void RecordSettler(int slot, string type, Cause cause, string? other = null)
     {
         var id = SettlerId(slot);
         var state = _snapshots.Settler(slot);
@@ -148,7 +146,7 @@ public sealed class GameHistory
     }
 
     private void Record(string type, ThingId thing, ThingState state, Cause cause, string? other) =>
-        _events.Add(new ThingEvent(_tickCount(), type, thing, state, cause, other));
+        Events.Add(new ThingEvent(_tickCount(), type, thing, state, cause, other));
 
     private static int FillOf(List<int> fills, int slot) => slot >= 0 && slot < fills.Count ? fills[slot] : 0;
 

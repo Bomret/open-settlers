@@ -40,6 +40,8 @@ public sealed record FastForwardStep : PlayStep
     {
         foreach (var settler in game.Settlers)
         {
+            // The raw-code boundary: a play script writes the original's state numbers, so State is compared with the
+            // activity's original state code.
             if (settler.Job == Job && (State is { } state ? settler.Activity.Code == state : Carries(settler)))
                 return true;
         }

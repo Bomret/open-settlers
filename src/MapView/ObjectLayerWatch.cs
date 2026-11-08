@@ -1,3 +1,4 @@
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -9,9 +10,6 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed class ObjectLayerWatch
 {
-    private const ulong FnvOffset = 0xcbf29ce484222325;
-    private const ulong FnvPrime = 0x100000001b3;
-
     private ulong? _last;
     private long _tick = -1;
 
@@ -27,18 +25,18 @@ public sealed class ObjectLayerWatch
         }
 
         _tick = game.TickCount;
-        var hash = FnvOffset;
+        var hash = Fnv1a.Offset;
         var map = game.Map;
         for (var index = 0; index < map.Count; index++)
         {
-            hash = (hash ^ map.At(index).Object.Code) * FnvPrime;
+            hash = Fnv1a.Add(hash, map.At(index).Object.Code);
         }
 
         foreach (var flag in game.Flags)
         {
             foreach (var place in flag.Places)
             {
-                hash = (hash ^ (ulong)place.Good.Code) * 1099511628211UL;
+                hash = Fnv1a.Add(hash, (ulong)place.Good.Code);
             }
         }
 

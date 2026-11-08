@@ -7,14 +7,14 @@ namespace OpenSettlers.Domain;
 /// <summary>The original's spiral table of offsets around a node, which the generator, the placements, and the settlers' searches read.</summary>
 public static class Spiral
 {
-    /// <summary>The column and row offsets around a node in rings: the node itself, then rings of 6, 12, and on (entries 0 to 255).</summary>
-    public static IReadOnlyList<(int Dx, int Dy)> Offsets { get; } = Build(256);
-
     /// <summary>
-    /// The same table to its entry 258, which the search for the nearest flag reads (0x4353ef walks entries 1 to 258 from
+    /// The table to its entry 258, which the search for the nearest flag reads (0x4353ef walks entries 1 to 258 from
     /// either end); entries 256 to 258 are the last rotations of the group of six that entry 253 starts.
     /// </summary>
     public static IReadOnlyList<(int Dx, int Dy)> SearchOffsets { get; } = Build(259);
+
+    /// <summary>The column and row offsets around a node in rings: the node itself, then rings of 6, 12, and on (entries 0 to 255).</summary>
+    public static IReadOnlyList<(int Dx, int Dy)> Offsets { get; } = [.. SearchOffsets.Take(256)];
 
     // The original builds the table at start-up (0x41e726) from a seed offset for each group of six: the six
     // rotations (x, y) -> (x - y, x) of the seed. Ring r holds the seeds (r, j) for j from 1 to r - 1, nearest

@@ -12,9 +12,6 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class MapLayers
 {
-    private const ulong FnvOffset = 0xcbf29ce484222325;
-    private const ulong FnvPrime = 0x100000001b3;
-
     private readonly byte[][] _layers;
 
     internal MapLayers(MapSize size)
@@ -42,10 +39,10 @@ public sealed class MapLayers
     /// <summary>The FNV-1a 64-bit digest of a layer's bytes in row-major order.</summary>
     public ulong Digest(MapLayer layer)
     {
-        var hash = FnvOffset;
+        var hash = Fnv1a.Offset;
         foreach (var value in _layers[(int)layer])
         {
-            hash = (hash ^ value) * FnvPrime;
+            hash = Fnv1a.Add(hash, value);
         }
 
         return hash;
