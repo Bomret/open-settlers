@@ -1,0 +1,23 @@
+# A road drawn across a tree node is accepted.
+# Run it on the woodcutter layout:
+#   sh tools/play-run.sh road-tree --layout layouts/woodcutter.jsonc --fps 30
+# The road runs from the hut's flag at 14,11 east across the tree at 17,11, then turns to a flag at 16,12.
+expect-at 17 11 tree
+wait 0.3
+button Flag
+click-tile 16 12
+button Flag
+wait 0.3
+button Road
+click-tile 14 11
+click-tile 15 11
+click-tile 16 11
+click-tile 17 11
+click-tile 17 12
+click-tile 16 12
+button Road
+wait 0.3
+shot built 16 11 3 2
+expect-at 17 11 road
+expect-at 17 11 tree
+list built
