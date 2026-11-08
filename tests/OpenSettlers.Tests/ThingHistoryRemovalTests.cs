@@ -78,7 +78,7 @@ public sealed class ThingHistoryRemovalTests
         var flag = game.History.FlagId(1);
         var carriers = Enumerable
             .Range(0, game.Settlers.Count)
-            .Where(slot => game.Settlers[slot].State == 0x42)
+            .Where(slot => game.Settlers[slot].Activity is WaitsAtFlag)
             .ToList();
         var before = game.History.Events.Count;
 
@@ -167,8 +167,8 @@ public sealed class ThingHistoryRemovalTests
         {
             var (state, _) = game.History.StateAt(hut, game.TickCount - 1);
             var building = game.Buildings[1];
-            Assert.AreEqual(building.Status, state!.Get("status"), $"tick {game.TickCount - 1}");
-            Assert.AreEqual((int)building.Worker, state.Get("worker"), $"tick {game.TickCount - 1}");
+            Assert.AreEqual(BuildingEncoder.Status(building), state!.Get("status"), $"tick {game.TickCount - 1}");
+            Assert.AreEqual(BuildingEncoder.Worker(building), state.Get("worker"), $"tick {game.TickCount - 1}");
             Assert.AreEqual((int)building.Stamp, state.Get("stamp"), $"tick {game.TickCount - 1}");
             game.Tick();
         }
@@ -234,18 +234,19 @@ public sealed class ThingHistoryRemovalTests
                 else
                 {
                     var s = game.Settlers[thing.Slot];
+                    var raw = SettlerEncoder.Fields(s);
                     int[] expected =
                     [
-                        s.Job,
-                        s.State,
+                        s.Job.Code,
+                        raw.State,
                         s.Player,
-                        s.Mode,
-                        s.Target,
-                        s.Next,
-                        s.Heading,
+                        raw.Mode,
+                        raw.Target,
+                        raw.Next,
+                        raw.Heading,
                         s.Frame,
                         s.Timer,
-                        s.Stamp,
+                        raw.Stamp,
                         s.X,
                         s.Y,
                     ];

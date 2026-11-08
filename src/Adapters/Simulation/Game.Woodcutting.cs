@@ -19,24 +19,6 @@ public sealed partial class Game
     // The objects the object pass handles: the cut writes the falling tree of the codes 0x5d to 0x66, the pass turns each of
     // them into the stump 0x53, and the stump vanishes by chance (0x428eb8).
 
-    // The walk's remaining vector lives in the bytes of the settler item that the road walk uses otherwise: the east
-    // steps in byte 11 (Settler.Mode), the south steps in byte 12 (the low byte of Settler.Target), byte 13 (the high
-    // byte of Target) is the way-back mark, and byte 14 (Settler.Heading) the way-back's south steps.
-    private static int StepsEast(Settler settler) => (sbyte)settler.Mode;
-
-    private static int StepsSouth(Settler settler) => (sbyte)(settler.Target & 0xff);
-
-    private static int Mark(Settler settler) => settler.Target >> 8;
-
-    private static void SetVector(Settler settler, int east, int south)
-    {
-        settler.Mode = east & 0xff;
-        settler.Target = (settler.Target & 0xff00) | (south & 0xff);
-    }
-
-    private static void SetMark(Settler settler, int mark) =>
-        settler.Target = (settler.Target & 0xff) | ((mark & 0xff) << 8);
-
     // The game's random generator: it continues from the map's generation, as the original's does.
     private RandomGenerator _random;
 
@@ -60,13 +42,14 @@ public sealed partial class Game
 
     // State 4, a settler that stepped through a door (0x43c96b): once its timer is down to the time the door leaves it, it
     // runs the routine of its job when a building stands there that is not marked bit 5; else it is state 0x19.
-    private void Door(int slot, Settler settler)
+    private void PassDoor(int slot, Settler settler)
     {
+        var door = (Door)settler.Activity;
         var delta = (ushort)(_clock - settler.Stamp);
         settler.Stamp = _clock;
         var old = settler.Timer;
         settler.Timer = (ushort)(old - delta);
-        if (delta <= old && (short)((ushort)settler.Target - settler.Timer) < 0)
+        if (delta <= old && (short)((ushort)door.TimeLeft - settler.Timer) < 0)
         {
             RecordWork(slot, EventType.Door);
 
@@ -75,12 +58,10 @@ public sealed partial class Game
 
         var node = Map.Index(settler.X, settler.Y);
         var building = BuildingAt(node);
-        if (building is not null && (building.Status & 0x20) == 0)
+        if (building is { IsDemolishing: false })
         {
-            settler.Timer = (ushort)settler.Target;
-            // Mode is byte 11, which the free walk also holds the steps east in (StepsEast): at the door the walk's vector is
-            // 0, so a value of 0xfe is the original's send-home mark and no walk's -2 east. The original shares the byte.
-            if (settler.Mode == StorageWalk)
+            settler.Timer = (ushort)door.TimeLeft;
+            if (door.EnteringStorage)
             {
                 // The timer and stamp change is this rule's; EnterStorage records its own.
                 RecordWork(slot, EventType.Door);
@@ -89,17 +70,16 @@ public sealed partial class Game
                 return;
             }
 
-            if (settler.Job == WoodcutterJob)
+            if (settler.Job == Job.Woodcutter)
             {
                 // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree.
                 _occupant.Remove(node);
-                settler.State = 0x12;
+                Become(settler, new LooksForTree());
             }
         }
         else
         {
-            settler.State = 0x19;
-            settler.Mode = 0;
+            Become(settler, new SearchesHome());
             settler.Timer = 0;
         }
 
@@ -114,7 +94,7 @@ public sealed partial class Game
         History.RecordSettler(
             slot,
             type,
-            InLayout || _walkingHome.Contains(slot) || _settlers[slot].Job != WoodcutterJob
+            InLayout || _walkingHome.Contains(slot) || _settlers[slot].Job != Job.Woodcutter
                 ? SettlerCause(slot)
                 : Cause.Woodcutting,
             other
@@ -149,12 +129,10 @@ public sealed partial class Game
             var y = (settler.Y + dy) & (Map.Size.Height - 1);
             if (Map.At(x, y).Object.Kind == MapObjectKind.Tree)
             {
-                // The vector to the tree is taken from the flag the first step reaches: one less each way.
-                SetVector(settler, dx - 1, dy - 1);
-                SetMark(settler, -(dx - 1));
-                settler.Heading = (sbyte)-(dy - 1);
-                settler.Next = 0x10;
-                settler.State = 7;
+                // The vector to the tree is taken from the flag the first step reaches: one less each way. The way back is
+                // the same vector turned round.
+                var way = new Trip(new Vector(dx - 1, dy - 1), new ToTree(new Vector(-(dx - 1), -(dy - 1))));
+                settler.Activity = new StepsOntoFlag(new WalksFree(way));
 
                 return true;
             }
@@ -181,10 +159,10 @@ public sealed partial class Game
             var shape = 0xd + Height(next) - Height(here);
             Move(slot, settler, x, y, next);
             settler.Frame = (byte)shape;
-            var speed = (byte)(_tables.DoorSpeed(door?.TypeIndex ?? 0) ^ 0x1f);
+            var speed = (byte)(_tables.DoorSpeed(door) ^ 0x1f);
             settler.Timer = (ushort)((ushort)(_tables.StepTime(shape) * speed) >> 5);
             settler.Stamp = _clock;
-            settler.State = 5;
+            settler.Activity = new WaitsOutStep(((StepsOntoFlag)settler.Activity).Then);
             RecordWork(slot, EventType.StepOut);
 
             return;
@@ -219,17 +197,25 @@ public sealed partial class Game
             return false;
         }
 
+        var trip = ((WalksFree)settler.Activity).Trip;
         while (true)
         {
-            var memory = settler.Next;
+            var memory = trip.Memory;
             if ((memory & 8) != 0 && (memory & 7) == 0)
             {
                 return true;
             }
 
-            var direction = Choose(settler, (memory & 8) != 0 ? (memory & 7) + 5 : (memory & 7) - 1);
+            var direction = Choose(
+                settler,
+                trip.Remaining,
+                ref memory,
+                (memory & 8) != 0 ? (memory & 7) + 5 : (memory & 7) - 1
+            );
+            trip = trip with { Memory = memory };
             if (direction < 0)
             {
+                settler.Activity = new WalksFree(trip);
                 settler.Frame = 0x52;
                 settler.Timer = 0x7f;
 
@@ -237,23 +223,13 @@ public sealed partial class Game
             }
 
             var (x, y, next) = Neighbour(settler, direction);
-            var east = StepsEast(settler);
-            var south = StepsSouth(settler);
-            (east, south) = direction switch
+            trip = trip with { Remaining = trip.Remaining.After(direction) };
+            if (trip.Remaining.IsUsedUp)
             {
-                0 => (east - 1, south),
-                1 => (east - 1, south - 1),
-                2 => (east, south - 1),
-                3 => (east + 1, south),
-                4 => (east + 1, south + 1),
-                _ => (east, south + 1),
-            };
-            SetVector(settler, east, south);
-            if ((sbyte)east == 0 && (sbyte)south == 0)
-            {
-                settler.Next = 8;
+                trip = trip with { Memory = 8 };
             }
 
+            settler.Activity = new WalksFree(trip);
             var here = Map.Index(settler.X, settler.Y);
             var shape = 4 + 9 * direction + Height(next) - Height(here);
             Move(slot, settler, x, y, next);
@@ -282,7 +258,7 @@ public sealed partial class Game
     // run out takes the step with the memory cleared, one that would overflow starts again from the vector. Else the
     // first direction of the vector's heading class is tried, and then the other five (0x4375ee) with a memory of the
     // step, the parity of the class and the candidate, and half of 6 less the candidate's counter as the debt.
-    private int Choose(Settler settler, int memoryRow)
+    private int Choose(Settler settler, Vector remaining, ref int memory, int memoryRow)
     {
         if (memoryRow >= 0)
         {
@@ -298,45 +274,45 @@ public sealed partial class Game
                 var delta = 2 - candidate;
                 if (delta < 0)
                 {
-                    var sum = settler.Next + (-delta << 4);
+                    var sum = memory + (-delta << 4);
                     if (sum > 0xff)
                     {
-                        settler.Next = 0;
+                        memory = 0;
 
-                        return Fresh(settler);
+                        return Fresh(settler, remaining, ref memory);
                     }
 
-                    settler.Next = sum;
+                    memory = sum;
                 }
                 else if (delta > 0)
                 {
-                    if (settler.Next < delta << 4)
+                    if (memory < delta << 4)
                     {
-                        settler.Next = 0;
+                        memory = 0;
 
                         return direction;
                     }
 
-                    settler.Next -= delta << 4;
+                    memory -= delta << 4;
                 }
 
-                settler.Next = (settler.Next & 0xf8) | (direction + 1);
+                memory = (memory & 0xf8) | (direction + 1);
 
                 return direction;
             }
 
-            settler.Next &= 0xf0;
+            memory &= 0xf0;
 
             return -1;
         }
 
-        return Fresh(settler);
+        return Fresh(settler, remaining, ref memory);
     }
 
     // The choice from the vector's heading class (0x437072).
-    private int Fresh(Settler settler)
+    private int Fresh(Settler settler, Vector remaining, ref int memory)
     {
-        var heading = HeadingClass(StepsEast(settler), StepsSouth(settler));
+        var heading = HeadingClass(remaining.East, remaining.South);
         var first = Candidate(settler, _tables.WalkDirection(heading, 0));
         if (first >= 0)
         {
@@ -353,12 +329,12 @@ public sealed partial class Game
 
             var counter = 5 - candidate;
             var parity = ((heading ^ counter) & 1) != 0 ? 8 : 0;
-            settler.Next = direction + 1 + parity + ((6 - counter) >> 1 << 4);
+            memory = direction + 1 + parity + ((6 - counter) >> 1 << 4);
 
             return direction;
         }
 
-        settler.Next &= 0xf0;
+        memory &= 0xf0;
 
         return -1;
     }
@@ -432,10 +408,11 @@ public sealed partial class Game
     // flag on the way back it lays the log it carries onto the flag and goes into the hut.
     private void Arrive(int slot, Settler settler)
     {
-        if (settler.Job != WoodcutterJob)
+        var trip = ((WalksFree)settler.Activity).Trip;
+        if (settler.Job != Job.Woodcutter)
         {
             // **Not ported:** the arrival of the jobs 7, 8, 11, 14, and 20 where they are not walking home (0x437ddd).
-            if (ArrivesHome(settler.Job) || (Mark(settler) == 0x80 && settler.Heading < 0))
+            if (settler.Job.ArrivesHomeGenerically || trip.Purpose is Home)
             {
                 ArriveHome(slot, settler);
                 RecordWork(slot, EventType.Arrive);
@@ -444,10 +421,10 @@ public sealed partial class Game
             return;
         }
 
-        if (Mark(settler) == 0x80)
+        if (trip.Purpose is not ToTree tree)
         {
-            // A negative count marks the walk home (0x4385ab).
-            if (settler.Heading < 0)
+            // The walk home (0x4385ab).
+            if (trip.Purpose is Home)
             {
                 ArriveHome(slot, settler);
                 RecordWork(slot, EventType.Arrive);
@@ -455,35 +432,30 @@ public sealed partial class Game
                 return;
             }
 
-            if (settler.Heading != 0)
+            if (trip.Purpose is BackToHut { Carrying: true })
             {
                 PutGood(slot, settler, GoodLog);
             }
 
-            settler.Mode = 0;
+            // The vector's east steps are the byte the entry into the hut sets to 0.
+            settler.Activity = new WalksFree(trip with { Remaining = new Vector(0, trip.Remaining.South) });
             EnterHut(slot, settler);
 
             return;
         }
 
-        settler.Mode = Mark(settler);
-        settler.Target = (settler.Target & 0xff00) | (settler.Heading & 0xff);
         var standing = Map.At(settler.X, settler.Y).Object;
         if (standing.Kind == MapObjectKind.Tree)
         {
-            SetMark(settler, standing.HasSecondCutVariant ? 0xff : 0);
-            settler.Heading = 0;
+            settler.Activity = new Cuts(tree.Back, standing.HasSecondCutVariant, 0, trip.Memory);
             settler.Frame = 0x74;
             settler.Timer = 0x3ff;
-            settler.State = 0x11;
             RecordWork(slot, EventType.Arrive);
 
             return;
         }
 
-        SetMark(settler, 0x80);
-        settler.Heading = 0;
-        settler.Next = 0;
+        settler.Activity = new WalksFree(new Trip(tree.Back, new BackToHut(false)));
         settler.Timer = 0;
         RecordWork(slot, EventType.Arrive);
     }
@@ -493,7 +465,7 @@ public sealed partial class Game
     // the time that frame's table word gives. After the fifth the settler starts the way back with the log.
     private void Cut(Settler settler)
     {
-        var slot = _settlers.IndexOf(settler);
+        var slot = _settlers.SlotOf(settler);
         var tree = ThingId.OfObject("tree", settler.X, settler.Y).ToString();
         CutTurn(settler);
         RecordWork(slot, EventType.CutTree, tree);
@@ -506,12 +478,14 @@ public sealed partial class Game
             return;
         }
 
+        var cut = (Cuts)settler.Activity;
         ref var node = ref Map.At(settler.X, settler.Y);
         while (true)
         {
-            settler.Heading = (sbyte)(settler.Heading + 1);
-            var count = settler.Heading;
-            node.Object = MapObject.Falling(count, Mark(settler) != 0);
+            var count = (sbyte)(cut.Count + 1);
+            cut = cut with { Count = count };
+            settler.Activity = cut;
+            node.Object = MapObject.Falling(count, cut.SecondVariant);
             if (count == 5)
             {
                 break;
@@ -526,10 +500,7 @@ public sealed partial class Game
             }
         }
 
-        SetMark(settler, 0x80);
-        settler.Heading = 1;
-        settler.Next = 0;
-        settler.State = 0x10;
+        settler.Activity = new WalksFree(new Trip(cut.Back, new BackToHut(true)));
         settler.Timer = 0;
     }
 
@@ -551,7 +522,11 @@ public sealed partial class Game
     // state 4; else it waits in state 6.
     private void EnterHut(int slot, Settler settler)
     {
-        settler.State = 6;
+        if (settler.Activity is not EntersBuilding)
+        {
+            Become(settler, new EntersBuilding());
+        }
+
         var here = Map.Index(settler.X, settler.Y);
         var (x, y, node) = Neighbour(settler, 4);
         if (Occupant(node) != 0)
@@ -568,9 +543,9 @@ public sealed partial class Game
         settler.Frame = (byte)shape;
         var time = _tables.StepTime(shape);
         settler.Timer = time;
-        settler.Target = (ushort)(time * _tables.DoorSpeed(BuildingAt(node)?.TypeIndex ?? 0)) >> 5;
         settler.Stamp = _clock;
-        settler.State = 4;
+        var storage = ((EntersBuilding)settler.Activity).Storage;
+        Become(settler, new Door((ushort)(time * _tables.DoorSpeed(BuildingAt(node))) >> 5, storage));
         RecordWork(slot, EventType.EnterHut);
     }
 

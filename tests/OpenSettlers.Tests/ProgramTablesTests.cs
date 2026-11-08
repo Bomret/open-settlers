@@ -61,7 +61,7 @@ public sealed class ProgramTablesTests
 
         Load(ProgramTablesImporter.FigureBaseLoadAddress, ProgramTablesImporter.FigureBaseAddress);
         Load(ProgramTablesImporter.FigureOffsetLoadAddress, ProgramTablesImporter.FigureOffsetAddress);
-        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Settler.WoodcutterJob;
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.WoodcutterCode;
         Write(stub, [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.WoodcutterHandlerAddress - (stub + 5))]);
         void Add(int at, int word) => Write(at, [0x66, 0x81, 0x47, 0x08, (byte)word, (byte)(word >> 8)]);
 
@@ -457,7 +457,7 @@ public sealed class ProgramTablesTests
         var exe = Executable(bytes =>
             bytes[
                 FileOffset(
-                    ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Settler.WoodcutterJob
+                    ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.WoodcutterCode
                 ) + 1
             ] ^= 1
         );

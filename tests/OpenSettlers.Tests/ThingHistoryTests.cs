@@ -254,9 +254,9 @@ public sealed class ThingHistoryTests
         var settler = game.Settlers[5];
         game.History.CarryCause(5, command);
 
-        settler.State = 2;
+        settler.Activity = new Walks(new ToStorage(), new Heading(0));
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
-        settler.State = 1;
+        settler.Activity = new WaitsInCastle();
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
 
@@ -272,11 +272,11 @@ public sealed class ThingHistoryTests
         var settler = game.Settlers[5];
 
         game.History.CarryCause(5, command);
-        settler.State = 0x42;
+        settler.Activity = new WaitsAtFlag(0, 0, new Heading(0));
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
         game.History.CarryCause(5, command);
-        settler.State = 2;
+        settler.Activity = new Walks(new ToStorage(), new Heading(0));
         game.History.EndCarry(5);
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
 
@@ -334,7 +334,7 @@ public sealed class ThingHistoryTests
         );
         Assert.AreEqual(hut.Thing.ToString(), inHut.Other);
         Assert.AreEqual(inHut.Thing.ToString(), hut.Other);
-        Assert.AreEqual(game.Settlers[inHut.Thing.Slot].State, inHut.State.Get("state"));
+        Assert.AreEqual(game.Settlers[inHut.Thing.Slot].Activity.Code, inHut.State.Get("state"));
         var onRoad = game.History.Events.All.Where(e => e.Type == EventType.LayoutWaitingOnRoad).ToList();
         Assert.AreEqual(3, onRoad.Count, "the carrier and the flags at the two ends of its road");
         Assert.IsTrue(
@@ -383,7 +383,7 @@ public sealed class ThingHistoryTests
         var line = Lines(game).Single(l => l.StartsWith("building 16,2 ", StringComparison.Ordinal));
 
         Assert.AreEqual(
-            $"building 16,2 type=0x02 constructing=false status=0x{hut.Status:x2} flag=3 worker={hut.Worker} "
+            $"building 16,2 type=0x02 constructing=false status=0x{BuildingEncoder.Status(hut):x2} flag=3 worker={hut.Worker} "
                 + $"id=building#1.1 flag-id=flag#3.1 worker-id={game.History.SettlerId(hut.Worker)} woodcutter-hut",
             line
         );
@@ -405,14 +405,14 @@ public sealed class ThingHistoryTests
     public void ASettlerLineShowsItsIdAndTheFlagItsStateMakesTheTargetAfterEveryRawValue()
     {
         var game = Laid();
-        var carrier = game.Settlers.Select((s, slot) => (s, slot)).Single(e => e.s.State == 0x42);
+        var carrier = game.Settlers.Select((s, slot) => (s, slot)).Single(e => e.s.Activity is WaitsAtFlag);
         var line = Lines(game)
             .Single(l => l.Contains($" id={game.History.SettlerId(carrier.slot)}", StringComparison.Ordinal));
 
         StringAssert.StartsWith(line, $"settler {carrier.s.X},{carrier.s.Y} job=0 ");
         StringAssert.Contains(
             line,
-            $"stamp={carrier.s.Stamp} id=settler#{carrier.slot}.1 flag-id={game.History.FlagId(carrier.s.Target)} "
+            $"stamp={SettlerEncoder.Fields(carrier.s).Stamp} id=settler#{carrier.slot}.1 flag-id={game.History.FlagId(((WaitsAtFlag)carrier.s.Activity).Flag)} "
         );
         var waiting = Lines(game)
             .Count(l =>

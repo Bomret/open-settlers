@@ -236,6 +236,13 @@ public sealed class RuleTables
     /// <summary>The speed of the door of the building type <paramref name="buildingType"/>, in 32nds of a step time.</summary>
     public byte DoorSpeed(int buildingType) => _doorSpeeds[buildingType];
 
+    /// <summary>
+    /// The speed of the door of <paramref name="building"/> (the table is indexed by its type plus 0x20 while it is built), or
+    /// of no building, the first entry, where there is none.
+    /// </summary>
+    public byte DoorSpeed(Building? building) =>
+        _doorSpeeds[building is null ? 0 : building.Type.Code | (building.Constructing ? 0x20 : 0)];
+
     /// <summary>The scan window table as the importer read it.</summary>
     public ushort[] ScanWindows => _scanWindows;
 

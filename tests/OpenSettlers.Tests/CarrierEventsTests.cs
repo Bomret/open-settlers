@@ -111,7 +111,7 @@ public sealed class CarrierEventsTests
         Assert.AreEqual(ThingId.SettlerKind, request.Thing.Kind);
         Assert.AreEqual(Cause.Placed(game.History.FlagId(0)), request.Cause);
         Assert.AreEqual(game.History.FlagId((int)request.State.Get("target")!.Value).ToString(), request.Other);
-        Assert.AreEqual(Settler.CarrierJob, request.State.Get("job"));
+        Assert.AreEqual(Job.CarrierCode, request.State.Get("job"));
     }
 
     [TestMethod]
@@ -207,23 +207,24 @@ public sealed class CarrierEventsTests
             var tick = game.TickCount - 1;
             var settler = game.Settlers[request.Thing.Slot];
             var (state, _) = game.History.StateAt(request.Thing, tick);
+            var raw = SettlerEncoder.Fields(settler);
             compared++;
-            Assert.AreEqual(settler.Job, state!.Get("job"), $"job at tick {tick}");
-            Assert.AreEqual(settler.Mode, state.Get("mode"), $"mode at tick {tick}");
-            Assert.AreEqual(settler.Target, state.Get("target"), $"target at tick {tick}");
+            Assert.AreEqual(settler.Job.Code, state!.Get("job"), $"job at tick {tick}");
+            Assert.AreEqual(raw.Mode, state.Get("mode"), $"mode at tick {tick}");
+            Assert.AreEqual(raw.Target, state.Get("target"), $"target at tick {tick}");
             if (game.History.EventsOf(request.Thing).Any(e => e.Tick == tick))
             {
                 eventTicks++;
             }
 
-            Assert.AreEqual(settler.State, state.Get("state"), $"state at tick {tick}");
-            Assert.AreEqual(settler.Next, state.Get("next"), $"next at tick {tick}");
+            Assert.AreEqual(raw.State, state.Get("state"), $"state at tick {tick}");
+            Assert.AreEqual(raw.Next, state.Get("next"), $"next at tick {tick}");
             Assert.AreEqual((int)settler.Timer, state.Get("timer"), $"timer at tick {tick}");
-            Assert.AreEqual(settler.Heading, state.Get("heading"), $"heading at tick {tick}");
+            Assert.AreEqual(raw.Heading, state.Get("heading"), $"heading at tick {tick}");
             Assert.AreEqual(settler.Frame, state.Get("frame"), $"frame at tick {tick}");
             Assert.AreEqual((settler.X, settler.Y), (state.Get("x"), state.Get("y")), $"node at tick {tick}");
 
-            if (settler.State == 0x42)
+            if (settler.Activity is WaitsAtFlag)
             {
                 break;
             }
@@ -329,7 +330,12 @@ public sealed class CarrierEventsTests
     private static void RunToTheTurn(Game game, ThingId carrier, int turn)
     {
         RunUntil(game, () => game.History.EventsOf(carrier).Count(e => e.Type == EventType.Wait) == turn);
-        game.Settlers[carrier.Slot].Heading = 3;
+        var settler = game.Settlers[carrier.Slot];
+        settler.Activity = settler.Activity switch
+        {
+            WalksRoad road => road with { Heading = new Heading(3) },
+            var other => other.Carrying(other.Residue with { Heading = 3 }),
+        };
     }
 
     // No command gives a road a second carrier in these tests' short setups, so a test sets the count it needs.

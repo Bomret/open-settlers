@@ -15,12 +15,6 @@ public sealed partial class Game
     // routines (FreeWalk, Walk) record the walk home as their cause (SettlerCause; history only, no rule reads it).
     private readonly HashSet<int> _walkingHome = [];
 
-    // The mode of state 2 that walks to a storage along the roads (byte 11 = 0xfe).
-    private const int StorageWalk = 0xfe;
-
-    // The state a settler of the jobs 22 to 26 (the knights) takes where the others take the free walk (0x435821).
-    private const int KnightWalk = 0x35;
-
     // The entries of the spiral table the search reads: 1 to 258, from either end.
     private const int SearchEntries = 258;
 
@@ -38,8 +32,7 @@ public sealed partial class Game
         _walkingHome.Add(slot);
         settler.Frame = 0x52;
         settler.Timer = 0;
-        settler.State = 0x19;
-        settler.Mode = 0;
+        Become(settler, new SearchesHome());
         settler.Stamp = _clock;
         History.RecordSettler(slot, EventType.ClaimedHome, Cause.WalkHome);
     }
@@ -61,17 +54,13 @@ public sealed partial class Game
     private void EnterStorage(int slot, int node, Settler settler)
     {
         _walkingHome.Remove(slot);
-        if (settler.Job is 4 or 21)
+        if (settler.Job == Job.Builder || settler.Job == Job.Jobless)
         {
             return;
         }
 
         _occupant.Remove(node);
-        settler.State = 1;
-        settler.Mode = 0;
-        settler.Target = 0;
-        settler.Heading = 0;
-        settler.Next = 0;
+        settler.Activity = new WaitsInCastle();
         History.RecordSettler(slot, EventType.EnteredStorage, Cause.WalkHome, History.BuildingId(0).ToString());
     }
 
@@ -110,7 +99,7 @@ public sealed partial class Game
 
         var width = Map.Size.Width - 1;
         var height = Map.Size.Height - 1;
-        var far = settler.Mode != 0;
+        var far = ((SearchesHome)settler.Activity).FarEndFirst;
         int dx = 0;
         int dy = 0;
         var found = false;
@@ -126,11 +115,8 @@ public sealed partial class Game
             (dx, dy) = HomeNode(settler);
         }
 
-        SetVector(settler, dx, dy);
-        SetMark(settler, 0x80);
-        settler.Heading = -1;
-        settler.Next = 0;
-        settler.State = settler.Job is >= FirstKnightJob and <= 26 ? KnightWalk : 0x10;
+        var walk = new Trip(new Vector(dx, dy), new Home());
+        settler.Activity = settler.Job.IsKnight ? new KnightWalks(walk) : new WalksFree(walk);
         settler.Timer = 0;
         History.RecordSettler(slot, EventType.SearchedHome, Cause.WalkHome);
     }
@@ -184,11 +170,6 @@ public sealed partial class Game
         }
     }
 
-    // The jobs whose arrival at the end of a free walk is the generic one of 0x4385ab whatever the vector (the table at
-    // 0x437dfb): all but the woodcutter (5), the jobs 7, 8, 11, 14, and 20, and the knights. Those jobs' own branches hand over
-    // to it where the walk is a walk home (byte 13 = 0x80, byte 14 negative).
-    private static bool ArrivesHome(int job) => job is not (5 or 7 or 8 or 11 or 14 or 20 or >= FirstKnightJob);
-
     // The arrival of a settler on the way home (0x4385ab): on a flag of its player with a road it starts the walk to the
     // storage (state 2, mode 0xfe, target 0, heading 0, next 0, timer 0); anywhere else it searches again (state 0x19, mode 0).
     private void ArriveHome(int slot, Settler settler)
@@ -196,18 +177,13 @@ public sealed partial class Game
         settler.Timer = 0;
         if (HomeFlag(settler, settler.X, settler.Y))
         {
-            settler.State = 2;
-            settler.Mode = StorageWalk;
-            settler.Target = 0;
-            settler.Heading = 0;
-            settler.Next = 0;
+            settler.Activity = new Walks(new ToStorage(), new Heading(0));
             History.RecordSettler(slot, EventType.ArrivedHome, Cause.WalkHome, History.BuildingId(0).ToString());
 
             return;
         }
 
-        settler.State = 0x19;
-        settler.Mode = 0;
+        Become(settler, new SearchesHome());
         History.RecordSettler(slot, EventType.ArrivedHome, Cause.WalkHome);
     }
 }

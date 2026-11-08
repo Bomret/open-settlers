@@ -111,18 +111,19 @@ public sealed class GoodsHistoryTests
         {
             game.Tick();
             var s = game.Settlers[id.Slot];
+            var raw = SettlerEncoder.Fields(s);
             int[] engine =
             [
-                s.Job,
-                s.State,
+                s.Job.Code,
+                raw.State,
                 s.Player,
-                s.Mode,
-                s.Target,
-                s.Next,
-                s.Heading,
+                raw.Mode,
+                raw.Target,
+                raw.Next,
+                raw.Heading,
                 s.Frame,
                 s.Timer,
-                s.Stamp,
+                raw.Stamp,
                 s.X,
                 s.Y,
             ];

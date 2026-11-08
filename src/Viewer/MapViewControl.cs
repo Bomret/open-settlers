@@ -372,8 +372,8 @@ public partial class MapViewControl : Control
                     _settlerGraphics = SettlerGraphics.Load(
                         _install,
                         _tables,
-                        Settler.CarrierJob,
-                        Settler.WoodcutterJob,
+                        Job.Carrier.Code,
+                        Job.Woodcutter.Code,
                         RuleTables.TypeOneHutJob
                     );
                     _settlerMaterial = BuildObjectMaterial(

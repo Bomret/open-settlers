@@ -8,17 +8,17 @@ public sealed partial class Game
 {
     // The settler the castle's list of waiting settlers names for a job (the dispatch takes that one, 0x42be63, 0x42b455), else
     // the first of the castle's settlers of the job that waits in the castle (state 1), or -1.
-    private int CastleSettler(int job)
+    private int CastleSettler(Job job)
     {
-        var listed = _waiting[job];
-        if (listed != 0 && _settlers[listed].Job == job && _settlers[listed].State == 1)
+        var listed = _waiting[job.Code];
+        if (listed != 0 && _settlers[listed] is { Activity: WaitsInCastle } waiting && waiting.Job == job)
         {
             return listed;
         }
 
         for (var slot = 1; slot < _settlers.Count; slot++)
         {
-            if (_settlers[slot].Job == job && _settlers[slot].State == 1)
+            if (_settlers[slot].Job == job && _settlers[slot].Activity is WaitsInCastle)
             {
                 return slot;
             }
@@ -30,11 +30,11 @@ public sealed partial class Game
     private int FlagAt(int x, int y) => _flags.SlotAt(x, y);
 
     // The castle's list of waiting settlers no longer names a settler the dispatch takes (0x42be63, 0x42b455 clear the entry).
-    private void TakeFromWaiting(int job, int slot)
+    private void TakeFromWaiting(Job job, int slot)
     {
-        if (_waiting[job] == slot)
+        if (_waiting[job.Code] == slot)
         {
-            _waiting[job] = 0;
+            _waiting[job.Code] = 0;
         }
     }
 
@@ -51,17 +51,17 @@ public sealed partial class Game
     {
         var node = Map.Index(x, y);
         var hut = BuildingAt(node);
-        if (hut is not { Type: Building.WoodcutterType } || hut.IsDemolishing)
+        if (hut is not { IsDemolishing: false } || hut.Type != BuildingType.Woodcutter)
         {
             return "no woodcutter's hut stands on the node";
         }
 
-        if ((hut.Status & 0xc0) != 0)
+        if (hut.WorkerInside || hut.WorkerOnTheWay)
         {
             return "the hut has its worker already";
         }
 
-        var slot = CastleSettler(Settler.WoodcutterJob);
+        var slot = CastleSettler(Job.Woodcutter);
         if (slot < 0)
         {
             return "the castle holds no woodcutter";
@@ -74,14 +74,13 @@ public sealed partial class Game
         }
 
         var settler = _settlers[slot];
-        TakeFromWaiting(Settler.WoodcutterJob, slot);
-        hut.Status |= 0x80;
-        settler.Mode = 0xff;
-        settler.Target = hut.Flag;
+        TakeFromWaiting(Job.Woodcutter, slot);
+        hut.WorkerOnTheWay = true;
+        Become(settler, new Leaving(new ToBuilding(hut.Flag)));
         settler.X = flag.X;
         settler.Y = flag.Y;
         Enter(slot, settler);
-        var hutSlot = _buildings.IndexOf(hut);
+        var hutSlot = _buildings.SlotOf(hut);
         History.RecordSettler(slot, EventType.LayoutInHut, Cause.Layout, History.BuildingId(hutSlot).ToString());
         History.RecordBuilding(hutSlot, EventType.LayoutInHut, Cause.Layout, History.SettlerId(slot).ToString());
 
@@ -118,7 +117,7 @@ public sealed partial class Game
             return "no land road leads from the road to the castle";
         }
 
-        var job = CastleSettler(Settler.CarrierJob) >= 0 ? Settler.CarrierJob : JoblessJob;
+        var job = CastleSettler(Job.Carrier) >= 0 ? Job.Carrier : Job.Jobless;
         var slot = CastleSettler(job);
         if (slot < 0)
         {
@@ -130,17 +129,14 @@ public sealed partial class Game
         var (dx, dy) = RoadBuilding.Steps[waitDirection];
         var settler = _settlers[slot];
         TakeFromWaiting(job, slot);
-        settler.Job = Settler.CarrierJob;
+        settler.Job = Job.Carrier;
         settler.X = (_flags[waitFlag].X + dx) & (Map.Size.Width - 1);
         settler.Y = (_flags[waitFlag].Y + dy) & (Map.Size.Height - 1);
         settler.Frame = (byte)(waitDirection + 0x6e);
         settler.Timer = 0x3f;
-        settler.Stamp = (ushort)((_clock & 0xff00) | (byte)(waitDirection - 6));
-        settler.Mode = waitDirection;
-        settler.Target = waitFlag;
-        settler.Heading = 0;
-        settler.Next = 0;
-        settler.State = WaitingState;
+        // The stamp's low byte holds the approach, which the activity keeps.
+        settler.Stamp = (ushort)(_clock & 0xff00);
+        settler.Activity = new WaitsAtFlag(waitFlag, waitDirection, Heading.Facing(waitDirection).Retried);
         CountCarrier(startSide);
         CountCarrier(farSide);
         History.RecordSettler(slot, EventType.LayoutWaitingOnRoad, Cause.Layout, History.FlagId(waitFlag).ToString());

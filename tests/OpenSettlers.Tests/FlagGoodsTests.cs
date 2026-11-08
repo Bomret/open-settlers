@@ -90,15 +90,16 @@ public sealed class FlagGoodsTests
     // The carrier's 16 bytes as the original's item holds them while it waits and the turn it fetches a good.
     private static string Carrier(Settler s, int width)
     {
-        var bytes = new List<byte> { (byte)(s.Job << 2 | s.Player), (byte)s.Frame };
+        var raw = SettlerEncoder.Fields(s);
+        var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
         bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
-        bytes.AddRange(BitConverter.GetBytes(s.Stamp));
-        bytes.AddRange([(byte)s.State, (byte)s.Mode]);
-        var pointer = 0x23000000 + 0x46 * (s.Target + 1);
-        bytes.AddRange(BitConverter.GetBytes((ushort)(s.State is 0x42 or 0x43 ? pointer : s.Target)));
-        bytes.Add((byte)s.Heading);
-        bytes.Add(s.State is 0x42 or 0x43 ? (byte)(pointer >> 24) : (byte)s.Next);
+        bytes.AddRange(BitConverter.GetBytes(raw.Stamp));
+        bytes.AddRange([(byte)raw.State, (byte)raw.Mode]);
+        var pointer = 0x23000000 + 0x46 * (raw.Target + 1);
+        bytes.AddRange(BitConverter.GetBytes((ushort)(raw.State is 0x42 or 0x43 ? pointer : raw.Target)));
+        bytes.Add((byte)raw.Heading);
+        bytes.Add(raw.State is 0x42 or 0x43 ? (byte)(pointer >> 24) : (byte)raw.Next);
 
         return Convert.ToHexString([.. bytes]);
     }
@@ -200,7 +201,7 @@ public sealed class FlagGoodsTests
                     case 'c':
                         Assert.AreEqual(
                             value,
-                            Convert.ToHexString(BitConverter.GetBytes(game.Buildings[0].Fill)),
+                            Convert.ToHexString(BitConverter.GetBytes((ushort)BuildingEncoder.Fill(game.Buildings[0]))),
                             $"{name}: bytes 8 and 9 of the castle after pass {pass}"
                         );
                         break;

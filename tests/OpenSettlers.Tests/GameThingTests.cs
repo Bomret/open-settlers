@@ -141,14 +141,15 @@ public sealed class GameThingTests
 
         var settlers = Lines(game).Where(line => line.StartsWith("settler ", StringComparison.Ordinal)).ToList();
         var first = game.Settlers[0];
+        var raw = SettlerEncoder.Fields(first);
 
         Assert.AreEqual(game.Settlers.Count, settlers.Count);
         Assert.IsTrue(
             settlers.Contains(
-                $"settler {first.X},{first.Y} job={first.Job} state=0x{first.State:x2} player={first.Player} "
-                    + $"mode=0x{first.Mode:x2} target={first.Target} next=0x{first.Next:x2} heading={first.Heading} "
-                    + $"frame={first.Frame} timer={first.Timer} stamp={first.Stamp} id=settler#0.1 "
-                    + $"{NameTable.JobName(first.Job)} {NameTable.StateName(first.State)}".TrimEnd()
+                $"settler {first.X},{first.Y} job={first.Job} state=0x{raw.State:x2} player={first.Player} "
+                    + $"mode=0x{raw.Mode:x2} target={raw.Target} next=0x{raw.Next:x2} heading={raw.Heading} "
+                    + $"frame={first.Frame} timer={first.Timer} stamp={raw.Stamp} id=settler#0.1 "
+                    + $"{NameTable.JobName(first.Job.Code)} {NameTable.StateName(first.Activity.Code)}".TrimEnd()
             ),
             string.Join("\n", settlers.Take(3))
         );
@@ -225,7 +226,7 @@ public sealed class GameThingTests
         Assert.IsTrue(
             Lines(game)
                 .Contains(
-                    $"building 16,2 type=0x02 constructing=false status=0x{hut.Status:x2} flag=3 worker={hut.Worker} id=building#1.1 flag-id=flag#3.1 woodcutter-hut"
+                    $"building 16,2 type=0x02 constructing=false status=0x{BuildingEncoder.Status(hut):x2} flag=3 worker={BuildingEncoder.Worker(hut)} id=building#1.1 flag-id=flag#3.1 woodcutter-hut"
                 )
         );
     }
@@ -289,8 +290,10 @@ public sealed class GameThingTests
             game.Tick();
         }
 
-        var carrier = game.Settlers.First(s => s.Job == Settler.CarrierJob && NameTable.StateName(s.State) is not null);
-        var carriers = game.Settlers.Count(s => s.Job == Settler.CarrierJob);
+        var carrier = game.Settlers.First(s =>
+            s.Job == Job.Carrier && NameTable.StateName(s.Activity.Code) is not null
+        );
+        var carriers = game.Settlers.Count(s => s.Job == Job.Carrier);
 
         Assert.AreEqual(
             "",
@@ -298,7 +301,7 @@ public sealed class GameThingTests
                 game,
                 $"expect-count carrier = {carriers}\n"
                     + $"expect-at {carrier.X} {carrier.Y} carrier\n"
-                    + $"expect-at {carrier.X} {carrier.Y} {NameTable.StateName(carrier.State)}"
+                    + $"expect-at {carrier.X} {carrier.Y} {NameTable.StateName(carrier.Activity.Code)}"
             )
         );
     }

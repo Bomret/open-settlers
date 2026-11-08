@@ -162,21 +162,21 @@ public sealed class RemovalLogicTests
     public void AJoinedRoadHoldsAsManyCarriersAsItsLengthClassAllowsAndTheOthersAreSentAway()
     {
         var game = World(capacity: 1, hut: false);
-        for (var tick = 0; tick < 4000 && game.Settlers.Count(settler => settler.State == 0x42) < 3; tick++)
+        for (var tick = 0; tick < 4000 && game.Settlers.Count(settler => settler.Activity is WaitsAtFlag) < 3; tick++)
         {
             game.Tick();
         }
 
         Assert.AreEqual(
             3,
-            game.Settlers.Count(settler => settler.State == 0x42),
+            game.Settlers.Count(settler => settler.Activity is WaitsAtFlag),
             "a carrier waits on each of the roads"
         );
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 18, 6));
 
         var states = game
-            .Settlers.Where(settler => settler.Job == Settler.CarrierJob)
-            .Select(settler => settler.State)
+            .Settlers.Where(settler => settler.Job == Job.Carrier)
+            .Select(settler => settler.Activity.Code)
             .Order()
             .ToArray();
         CollectionAssert.AreEqual(
@@ -199,12 +199,12 @@ public sealed class RemovalLogicTests
         var lost = game.Flags.Count - 1;
         game.LayGood(lost, 0, Game.GoodLog, destination: 3);
         var hut = game.Buildings[1];
-        Assert.AreEqual(0, hut.Fill >> 8);
+        Assert.AreEqual(0, hut.FillHigh);
 
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));
 
-        Assert.AreEqual(0xff, hut.Fill >> 8, "the byte of the log's kind counts one less (the byte wraps)");
-        Assert.AreEqual(0, hut.Fill & 0xff);
+        Assert.AreEqual(0xff, hut.FillHigh, "the byte of the log's kind counts one less (the byte wraps)");
+        Assert.AreEqual(0, hut.FillLow);
     }
 
     [TestMethod]
@@ -240,7 +240,7 @@ public sealed class RemovalLogicTests
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
 
         Assert.IsTrue(hut.IsDemolishing);
-        Assert.AreEqual(0x7ff, hut.Worker, "it burns for 0x7ff clock units");
+        Assert.AreEqual(0x7ff, (int)hut.BurnLeft, "it burns for 0x7ff clock units");
         Assert.AreEqual(MapObjectKind.Hut, game.Map.At(node).Object.Kind, "its object stays while it burns");
         Assert.IsFalse(game.Map.At(node).Roads.Has(1), "its node lost the road to its flag");
         Assert.IsFalse(game.Map.At(17, 3).Roads.Has(4), "and its flag the road to it");

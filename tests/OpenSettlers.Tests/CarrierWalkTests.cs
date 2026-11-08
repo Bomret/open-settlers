@@ -58,19 +58,20 @@ public sealed class CarrierWalkTests
     // The settler's 16 bytes as the original's item holds them (Table16), as in WorkerWalkTests.
     private static string Hex(Settler s, int width)
     {
-        var bytes = new List<byte> { (byte)(s.Job << 2 | s.Player), (byte)s.Frame };
+        var raw = SettlerEncoder.Fields(s);
+        var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
         bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
-        bytes.AddRange(BitConverter.GetBytes(s.Stamp));
-        bytes.AddRange([(byte)s.State, (byte)s.Mode]);
-        if (s.State == 0x42)
+        bytes.AddRange(BitConverter.GetBytes(raw.Stamp));
+        bytes.AddRange([(byte)raw.State, (byte)raw.Mode]);
+        if (raw.State == 0x42)
         {
-            bytes.AddRange(BitConverter.GetBytes(0x23000000 + 0x46 * s.Target));
+            bytes.AddRange(BitConverter.GetBytes(0x23000000 + 0x46 * raw.Target));
         }
         else
         {
-            bytes.AddRange(BitConverter.GetBytes((ushort)s.Target));
-            bytes.AddRange([(byte)s.Heading, (byte)s.Next]);
+            bytes.AddRange(BitConverter.GetBytes((ushort)raw.Target));
+            bytes.AddRange([(byte)raw.Heading, (byte)raw.Next]);
         }
 
         return Convert.ToHexString([.. bytes]);
@@ -132,7 +133,7 @@ public sealed class CarrierWalkTests
             {
                 var settler = game.Settlers[slot];
                 var elapsed = (ushort)(game.Clock - settler.Stamp);
-                var walking = settler.State is 2 or 3;
+                var walking = settler.Activity is Walks or WalksRoad;
                 stalls[slot] = walking && settler.Timer <= elapsed ? stalls.GetValueOrDefault(slot) + 1 : 0;
                 longest = Math.Max(longest, stalls[slot]);
             }
@@ -213,13 +214,12 @@ public sealed class CarrierWalkTests
                 else
                 {
                     Assert.AreEqual(
-                        21,
+                        Job.Jobless,
                         game.Settlers[slot].Job,
                         $"{name}: settler {slot} still waits in the castle after pass {pass}"
                     );
-                    Assert.AreEqual(
-                        1,
-                        game.Settlers[slot].State,
+                    Assert.IsInstanceOfType<WaitsInCastle>(
+                        game.Settlers[slot].Activity,
                         $"{name}: settler {slot} still waits in the castle after pass {pass}"
                     );
                 }

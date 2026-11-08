@@ -75,7 +75,7 @@ public sealed class SettlerGraphics
         var goods = Enumerable.Range(0, RuleTables.CarriedFigureCount);
         foreach (
             var (entry, colour) in jobs.SelectMany(job =>
-                (job == Settler.CarrierJob ? goods : [0]).SelectMany(good =>
+                (job == Job.CarrierCode ? goods : [0]).SelectMany(good =>
                     figures.Sprites(job, SettlerFigures.ColourOf(0), good)
                 )
             )

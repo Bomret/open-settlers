@@ -205,7 +205,7 @@ public sealed class WoodcuttingTests
         var ticks = game.TickCount;
         game.Tick();
 
-        Assert.AreEqual(0x12, game.Settlers[10].State, "the worker looks for a tree inside the hut");
+        Assert.IsInstanceOfType<LooksForTree>(game.Settlers[10].Activity, "the worker looks for a tree inside the hut");
         Assert.AreEqual((16, 2), (game.Settlers[10].X, game.Settlers[10].Y));
         Assert.IsTrue(game.Flags[HutFlag].Places.All(place => place.IsEmpty));
         Assert.AreEqual(ticks + 1, game.TickCount);

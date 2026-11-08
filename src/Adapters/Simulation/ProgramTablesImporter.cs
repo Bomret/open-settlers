@@ -195,7 +195,7 @@ public static class ProgramTablesImporter
             [0x8d, 0x35, .. BitConverter.GetBytes(FigureOffsetAddress)],
             "loads the figure offsets"
         );
-        var stub = JobStubAddress + JobStubSize * Settler.WoodcutterJob;
+        var stub = JobStubAddress + JobStubSize * Job.Woodcutter.Code;
         Expect(
             exe,
             stub,

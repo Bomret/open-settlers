@@ -60,8 +60,7 @@ public sealed class CarrierTests
         }
     }
 
-    private static Settler[] Carriers(Game game) =>
-        [.. game.Settlers.Where(settler => settler.Job == Settler.CarrierJob)];
+    private static Settler[] Carriers(Game game) => [.. game.Settlers.Where(settler => settler.Job == Job.Carrier)];
 
     [TestMethod]
     public void ARoadAsksTheCastleForACarrierAtItsFlagsTurnAndTheCastleSendsASettlerWithoutAJob()
@@ -74,9 +73,12 @@ public sealed class CarrierTests
         game.Tick();
 
         var carrier = Carriers(game).Single();
-        Assert.AreEqual(0xf, carrier.State, "the carrier leaves the castle");
-        Assert.AreEqual(0, carrier.Mode, "it takes the road that leaves the castle's flag east");
-        Assert.AreEqual(0, carrier.Target, "it walks to the castle's flag");
+        Assert.IsInstanceOfType<Leaving>(carrier.Activity, "the carrier leaves the castle");
+        Assert.AreEqual(
+            new ToRoad(0, 0),
+            ((Leaving)carrier.Activity).Errand,
+            "it takes the road that leaves the castle's flag east, walking to the castle's flag"
+        );
         Assert.IsTrue(game.Flags[0].Side(0).CarrierOnTheWay, "a carrier is on the way: the near end");
         Assert.IsTrue(game.Flags[1].Side(3).CarrierOnTheWay, "a carrier is on the way: the far end");
     }
@@ -104,10 +106,10 @@ public sealed class CarrierTests
         Run(game, 600);
 
         var carrier = Carriers(game).Single();
-        Assert.AreEqual(0x42, carrier.State);
+        var waiting = (WaitsAtFlag)carrier.Activity;
         Assert.AreEqual((17, 6), (carrier.X, carrier.Y), "the node of the road next to the flag at 18,6");
-        Assert.AreEqual(1, carrier.Target, "the flag it waits next to");
-        Assert.AreEqual(3, carrier.Mode, "the direction in which the road leaves that flag");
+        Assert.AreEqual(1, waiting.Flag, "the flag it waits next to");
+        Assert.AreEqual(new Direction(3), waiting.Direction, "the direction in which the road leaves that flag");
         Assert.AreEqual(0x71, carrier.Frame, "the frame of the idle carrier: 0x6e plus the direction it came by");
     }
 
@@ -121,7 +123,11 @@ public sealed class CarrierTests
 
         Run(game, 27);
         var first = Carriers(game).Single();
-        Assert.AreEqual(0, first.Target, "the first turn is the castle's flag, for the road that leaves it");
+        Assert.AreEqual(
+            0,
+            ((Leaving)first.Activity).Errand.Flag,
+            "the first turn is the castle's flag, for the road that leaves it"
+        );
 
         Run(game, 600);
 
@@ -152,8 +158,8 @@ public sealed class CarrierTests
         // The settlers enter the table as their turns come, so it is emptied before every tick.
         for (var tick = 0; tick < 40; tick++)
         {
-            game.ClearWaiting(Settler.CarrierJob);
-            game.ClearWaiting(21);
+            game.ClearWaiting(Job.Carrier);
+            game.ClearWaiting(Job.Jobless);
             game.Tick();
         }
 

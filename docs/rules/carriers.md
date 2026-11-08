@@ -160,9 +160,10 @@ node is the middle of the road.
 `Game.Carriers.cs`: `FlagPass`, `VisitFlag`, `RequestCarrier`, `EnterRoad`, `WalkRoad`, and `Wait` port the above;
 the flag's typed state is `Flag` (`CarrierRequestFailed`, the status byte's bit 7) with a `FlagSide` for each direction
 (`Length`, `CarrierOnTheWay`, `Carriers`, `HoldsCarrier`, `FarDirection`), kept in the `FlagTable` that `Game.Flags` returns;
-`FlagEncoder.Status` and `FlagEncoder.RoadByte` write them as the flag item's bytes. `Settler.CarrierJob` is job 0. The
-carrier of a road is found by its state: a settler of job 0 in state 0x42 waits next to the flag `Target` on the road that
-leaves it in direction `Mode`. `Game.Digest` holds the flags' status and road bytes (through `FlagEncoder`) and the flag
+`FlagEncoder.Status` and `FlagEncoder.RoadByte` write them as the flag item's bytes. `Job.Carrier` is job 0. The
+carrier of a road is found by its activity: a settler of job 0 in `WaitsAtFlag` (state 0x42) waits next to the flag `Flag` on the road
+that leaves it in direction `Direction`. A carrier on its road is `WalksRoad` with the `Load` it carries; one marked to go
+has `Marked` set (byte 15 = 0xff). `Game.Digest` holds the flags' status and road bytes (through `FlagEncoder`) and the flag
 scan's cursor.
 
 `src/MapView/SettlerFigures.cs` draws a waiting carrier as the tile pass does, from the tables `ProgramTablesImporter` reads

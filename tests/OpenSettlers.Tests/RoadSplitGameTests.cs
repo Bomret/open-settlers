@@ -209,7 +209,9 @@ public sealed class RoadSplitGameTests
         Assert.AreEqual(1, game.Flags[2].Side(3).Carriers, "the castle half has a carrier");
         Assert.AreEqual(
             2,
-            game.Settlers.Count(settler => settler is { Job: Settler.CarrierJob, State: 3 or 0x42 }),
+            game.Settlers.Count(settler =>
+                settler is { Job.Code: Job.CarrierCode, Activity: WalksRoad or WaitsAtFlag }
+            ),
             "two carriers work the two roads"
         );
     }
@@ -219,16 +221,27 @@ public sealed class RoadSplitGameTests
     {
         var game = EastRoad();
         game.LayGood(0, 0, 7, destination: 1);
-        for (var tick = 0; tick < 3000 && !game.Settlers.Any(settler => settler is { State: 3, Mode: 7 }); tick++)
+        for (
+            var tick = 0;
+            tick < 3000 && !game.Settlers.Any(settler => settler is { Activity: WalksRoad { Load.Good.Code: 7 } });
+            tick++
+        )
         {
             game.Tick();
         }
 
-        Assert.IsTrue(game.Settlers.Any(settler => settler is { State: 3, Mode: 7 }), "the carrier carries the good");
+        Assert.IsTrue(
+            game.Settlers.Any(settler => settler is { Activity: WalksRoad { Load.Good.Code: 7 } }),
+            "the carrier carries the good"
+        );
         var total = game.Map.Resource1Total;
         Apply(game, CommandKind.PlaceFlag, 18, 6);
 
-        Assert.AreEqual(1, game.Settlers.Count(settler => settler is { State: 3, Mode: 7 }), "still carried once");
+        Assert.AreEqual(
+            1,
+            game.Settlers.Count(settler => settler is { Activity: WalksRoad { Load.Good.Code: 7 } }),
+            "still carried once"
+        );
         Assert.AreEqual(total, game.Map.Resource1Total);
     }
 
