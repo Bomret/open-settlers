@@ -29,7 +29,7 @@ Each node holds, among others, these bytes: the flag byte (record A byte 0), the
 bits are the height, the top 3 the owner), the terrain byte (byte 2: the upper triangle in the high nibble, the
 lower in the low nibble), and the object byte (byte 3: the low 7 bits are the object code). The owner of a node
 is the player's number plus 4, or 0 for a node nobody owns. The class of an object code is the size byte of
-the program's table (`0x41e640`, read from `Siedler1.exe` at run time by `ProgramTablesImporter`, read as `RuleTables.ClassOf`): the code 1 is a flag (class 3), the codes 2 to 4 are buildings (classes 4, 5,
+the program's table (`0x41e640`; `ProgramTablesImporter` reads it from `Siedler1.exe` at run time, and the rules read it through `RuleTables.ClassOf`): the code 1 is a flag (class 3), the codes 2 to 4 are buildings (classes 4, 5,
 and 6, the castle), the generated trees and stones are classes 1 and 2, and no other object is a class 3 or more.
 
 ## The node state

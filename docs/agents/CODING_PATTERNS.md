@@ -5,7 +5,8 @@ Target audience: LLMs working in this repo. The folder layout is in `README.md` 
 ## Namespace
 
 `OpenSettlers.<Folder>`, one namespace per folder of `src/`. For example, `OpenSettlers.Formats`. Tests use
-`OpenSettlers.Tests`.
+`OpenSettlers.Tests`. The layers are the exception: `src/Domain/` is `OpenSettlers.Domain`, and both
+`src/Application/` and `src/Adapters/Simulation/` are `OpenSettlers.Simulation`.
 
 ## Simulation layers
 
@@ -16,7 +17,7 @@ The simulation is three class-library assemblies under `src/` that depend only i
 - `Application/` (`OpenSettlers.Simulation`): `Game`, the coordinator, the `ICommandHandler` of each command, the
   `CommandQueue`, the history, and the rules as behaviors (`CarrierBehavior`, `GoodsTransport`, `Removal`,
   `WalkHomeBehavior`, `WoodcutterBehavior`, `SettlerMovement`). It references the domain. A behavior takes its parts
-  through its constructor; `GameParts` wires them, and `GameFactory` builds them.
+  through its constructor. `GameParts` holds them wired, and `GameFactory` in the adapters builds them.
 - `Adapters/Simulation/` (`OpenSettlers.Simulation`): the edge. Importers (`ProgramTablesImporter`, `MapImporter`,
   `MapGenerator`, `Layout`), exporters (`GameDigest`, `SnapshotExporter`, `FlagEncoder`, `SettlerEncoder`,
   `BuildingEncoder`, `MapLayerExporter`), and `GameFactory`. It references the domain and the application.

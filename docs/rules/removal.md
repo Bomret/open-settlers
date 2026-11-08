@@ -153,7 +153,7 @@ the castle, the hut's flag, and a flag as a road, a node of no road, and a node 
 
 ## In the engine
 
-- `Removal` (`src/Application/Removal.cs`): the click class (`ClickClass`), the take-downs (`RemoveFlagAt`, `RemoveBuildingAt`, `RemoveRoadAt`, `TakeFlagDown`), the burn of a building, and the split of a road by a flag (`SplitRoad`). `Removal.CommandAt` is the command a click means. `CommandKind.RemoveFlag` (5), `RemoveBuilding` (6), and `RemoveRoad` (7) run through `RemoveFlagHandler`, `RemoveBuildingHandler`, and `RemoveRoadHandler` (`src/Application/`).
+- `Removal` (`src/Application/Removal.cs`), a behavior of the application layer: the click class (`ClickClass`), the take-downs (`RemoveFlagAt`, `RemoveBuildingAt`, `RemoveRoadAt`, `TakeFlagDown`), the burn of a building, and the split of a road by a flag (`SplitRoad`). `Removal.CommandAt` is the command a click means. `CommandKind.RemoveFlag` (5), `RemoveBuilding` (6), and `RemoveRoad` (7) run through `RemoveFlagHandler`, `RemoveBuildingHandler`, and `RemoveRoadHandler` (`src/Application/`).
 - The table slots: a flag's or building's slot freed is `Flag.Free` or `Building.Free()`; the next flag or building takes the first free slot (`0x45d7ad`, `0x45da8f`).
 - `RuleTables.FillCounterOf` (`0x462d6d`) and `RuleTables.RoadCapacity` (`0x462acd`).
 - The states `0x44` and `0x45` (`Dismissed`, `Rejoined`) and the carrier's end-of-road counting (`Wait` in `src/Application/CarrierBehavior.cs`).

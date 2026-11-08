@@ -38,11 +38,12 @@ A rule note never holds decompiler output, assembly, byte sequences, or byte pat
 the program index names as `Name` at `0xaddr` on its first mention, and by name after that.
 
 A note may end with `## In the engine`: the source files that implement the rule and every place where the
-engine departs from the program. The engine holds its state typed and in three layers (ADR 0013): a rule note
-cites a rule's code under `src/Application/` (behaviors, handlers, `Game`), the typed state it reads under
-`src/Domain/` (`Settler` with `Job` and `Activity`, `Flag`, `Road`, `RuleTables`), and the original's encoding
-under `src/Adapters/Simulation/` (importers and exporters). A note states a rule over typed fields and names the
-original's byte, mask, or code only as evidence or as the value an exporter writes.
+engine departs from the program. The engine holds its state typed and in three layers (ADR 0013). A rule note
+cites a rule's code under `src/Application/`, which holds the behaviors, the handlers, and `Game`. It cites the
+typed state the rule reads under `src/Domain/`, such as `Settler`, `Job`, `Activity`, `Flag`, `Road`, and
+`RuleTables`. It cites the original's encoding under `src/Adapters/Simulation/`, which holds the importers and
+exporters. A note states a rule over typed fields. It names the original's byte, mask, or code only as evidence
+or as the value an exporter writes.
 
 ## Program index
 
