@@ -111,6 +111,19 @@ A behavior of the original game that the engine reproduces, recovered from the g
 (`docs/rules/AGENTS.md`).
 _Avoid_: mechanic, logic
 
+**RuleTables**
+The tables of the program data that the rules read, as typed values (`src/Domain/RuleTables.cs`). The importer
+builds them from the bytes of `Siedler1.exe`; a test builds its own.
+_Avoid_: program tables
+
+**ObjectClass**
+The class the rules give an object code (0 nothing, 3 a flag, 4 to 6 buildings), read with `RuleTables.ClassOf`.
+_Avoid_: object size, kind
+
+**FillCounter**
+The counter of a building's stock that a good counts against: low, high, or none (`RuleTables.FillCounterOf`).
+_Avoid_: good kind
+
 **Game code**
 The part of `Siedler1.exe` that the History Edition carries over from the original DOS program: the
 game's rules, its state, and its drawing.

@@ -8,7 +8,8 @@ namespace OpenSettlers.Domain;
 /// the step times, and the others below. They come from the install's <c>Siedler1.exe</c> and are never restated in
 /// source (INV-0001): <c>ProgramTablesImporter</c> in the adapters builds them from the program's bytes, and a test
 /// builds its own from made-up values. The rules read the typed accessors (<see cref="ClassOf"/>, <see cref="StepTime"/>,
-/// <see cref="DoorSpeed"/>, and the others); the arrays that remain public are the figure tables the map view draws from.
+/// <see cref="DoorSpeed"/>, and the others); the arrays that remain public are the raw tables the importer's tests check against the original and the figure tables
+/// the map view draws from.
 /// </summary>
 public sealed class RuleTables
 {

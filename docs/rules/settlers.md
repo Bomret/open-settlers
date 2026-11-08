@@ -202,15 +202,15 @@ address before them, the bytes are no words. Read from the odd one, the bases ru
 0,0 / 1,0 / 2,0 and on. The element is a pair of words (4 bytes).
 - The figure bases at `0x4501a1`: the pair at 4 times the high byte of the word (`(word & 0xff00) >> 6` at `0x44fff3`) holds the
   base of the figure, from the entry 1850, and the base of the second figure, from the entry 3150. A negative second base means
-  no second figure. The table holds 128 pairs in the engine's read (`ProgramTables.FigureBases`). The rows the woodcutter takes
+  no second figure. The table holds 128 pairs in the engine's read (`RuleTables.FigureBases`). The rows the woodcutter takes
   are 0x0b (48, 54), 0x0f (272, none), and 0x10 (48, 60).
 - The figure offsets at `0x4503c5`: the pair at 4 times the low byte of the word is what the figure and the second figure add
-  (`ProgramTables.FigureOffsets`, 256 pairs). The code does not bound the low byte.
+  (`RuleTables.FigureOffsets`, 256 pairs). The code does not bound the low byte.
 
 The figure is the entry 1850 plus the base plus the first offset. The second figure, where there is one, is 3150 plus its base
 plus the second offset. The overlay in the player's colour of the figure 1850 + i is the entry 2500 + i (`0x406610`).
 
-The engine reads both tables and the three constants of the woodcutter's handler from the install (`ProgramTables.Read`). It
+The engine reads both tables and the three constants of the woodcutter's handler from the install (`ProgramTablesImporter.Import`). It
 refuses an install whose draw routine does not load those addresses. It also refuses an install whose stub of job 5 does not jump
 to `0x43fb6b`, or whose handler has no `add word [edi+8], imm16` at the three addresses.
 
@@ -252,7 +252,7 @@ the original's in every recorded pass.
   figure and the overlay stay where they are. A settler draws its figure, then its overlay, then its second figure. A figure
   entry that is absent or no sprite, an overlay with no drawn pixel, or a job with no second figure draws what is left.
 - The record joins the list of the view's row of the settler plus the signed byte of the frame in the table at `0x43f402`
-  (181 bytes, `ProgramTables.FrameRows`). The frames 9 to 26, 63 to 80, 121 and 122, and 125 to 128 hold -1 and move a record up
+  (181 bytes, `RuleTables.FrameRows`). The frames 9 to 26, 63 to 80, 121 and 122, and 125 to 128 hold -1 and move a record up
   one row. Every other frame holds 0. The lists are drawn from the top row to the bottom, so a settler drawn up a row is drawn
   before the settlers of the row it stands in. Records of one row come in the order of the original's scan (below).
 - The frames 0x74 to 0x78 are the cut. `0x438a9e` sets the frame ([Woodcutting](woodcutting.md#the-cut)). The frames 0x74,
@@ -417,7 +417,7 @@ reaches them: the scenarios find a node in the first ring), the ring masks of th
 ## In the engine
 
 `Game.Buildings` and `Game.Settlers` hold the items (`src/Adapters/Simulation/Building.cs`, `Settler.cs`); the pass, the
-request, the route search, and the walk are in `src/Adapters/Simulation/Game.Settlers.cs`. `ProgramTables` reads the step
+request, the route search, and the walk are in `src/Adapters/Simulation/Game.Settlers.cs`. `ProgramTablesImporter` reads the step
 times, the door speeds, and the scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`,
 `ScanWindows`). `Game.Digest` holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's
 waiting list, and the settlers' places. The carriers' part is in `src/Adapters/Simulation/Game.Carriers.cs`

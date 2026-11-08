@@ -5,7 +5,7 @@ namespace OpenSettlers.Domain;
 /// object), 3 a flag, 4 to 6 buildings with 6 the castle (<c>docs/rules/build-sites.md</c>). The program's class table
 /// assigns one to each object code; <see cref="RuleTables.ClassOf"/> reads it.
 /// </summary>
-/// <param name="Value">The class number, 0 to 6.</param>
+/// <param name="Value">The class byte of the table (0 to 6 in the original).</param>
 public readonly record struct ObjectClass(int Value)
 {
     /// <summary>The class of a class number, for the tables a test builds from numbers.</summary>
