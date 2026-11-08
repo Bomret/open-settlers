@@ -291,7 +291,7 @@ After the simulation's passes the verb runs the view pass `0x42f4f1`. For each v
 - It ends the lists with `0x440a53`.
 
 Then, for each row of the view, the row draw `0x44ffe7` draws each record of the row through `0x406610`. Its blits are `0x405590`
-(a sprite) and `0x405880` (a colour fill). The harness skips the shadow of each settler (`0x4061a0`, the mask entry 4). It also
+(a sprite) and `0x405880` (a colour fill). The harness skips the shadow of each settler (`0x4061a0`, the mask entry 4); the engine differs here and draws it ([Map objects](map-objects.md#the-drawing-routines)). It also
 skips the sound request of the felling bytes 0x85 and 0x86 (`0x44fe13`).
 
 For each pass of its windows, in drawing order, the harness records each settler's record: the slot and the sprites blitted. Each

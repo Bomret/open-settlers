@@ -16,6 +16,14 @@ public sealed class SpriteLayerTests
         Assert.AreEqual((255 / 255f, 7 / 255f), SpriteLayer.Channels(2047));
     }
 
+    // The blue channel tells the shaders a shadow layer (1) from a sprite layer (0).
+    [TestMethod]
+    public void BlueIsOneForAShadowLayerAndZeroForASpriteLayer()
+    {
+        Assert.AreEqual((44 / 255f, 1 / 255f, 1f), SpriteLayer.Color(300, shadow: true));
+        Assert.AreEqual((44 / 255f, 1 / 255f, 0f), SpriteLayer.Color(300, shadow: false));
+    }
+
     // The settlers' sprites take more layers than one 8-bit channel holds: the woodcutter's lie past 255.
     [TestMethod]
     public void TheSettlersSpritesTakeMoreLayersThanOneChannelHolds()

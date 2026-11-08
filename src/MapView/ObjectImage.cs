@@ -32,4 +32,23 @@ public sealed record ObjectImage(int Width, int Height, int OffsetX, int OffsetY
             coverage
         );
     }
+
+    /// <summary>
+    /// A shadow mask as an image: every covered pixel in palette index <see cref="Assets.MaskKind.ShadowColor"/>, as
+    /// <c>Gfx_BlitShadow</c> (<c>0x405b80</c>) stores it with no blending.
+    /// </summary>
+    public static ObjectImage Shadow(Mask mask)
+    {
+        var indices = new byte[mask.Covered.Length];
+        Array.Fill(indices, (byte)Assets.MaskKind.ShadowColor);
+
+        return new ObjectImage(
+            mask.Width,
+            mask.Height,
+            mask.Header.OffsetX,
+            mask.Header.OffsetY,
+            indices,
+            Array.ConvertAll(mask.Covered, covered => covered ? (byte)255 : (byte)0)
+        );
+    }
 }

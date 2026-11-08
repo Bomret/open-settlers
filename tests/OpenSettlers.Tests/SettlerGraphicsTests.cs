@@ -21,6 +21,48 @@ public sealed class SettlerGraphicsTests
             RuleTables.TypeOneHutJob
         );
 
+    // An archive of the settler loader's own entries: no sequences, a black palette, and entry 4 as given.
+    private static SettlerGraphics LoadFake(byte[]? shadow, int rows = 6)
+    {
+        var payloads = new Dictionary<int, byte[]> { [2] = [], [3] = new byte[768] };
+        if (shadow is not null)
+        {
+            payloads[SettlerGraphics.ShadowEntry] = shadow;
+        }
+
+        using var fake = new FakeInstall().Put("loca/SPAD.PA", ArchiveBytes.Build(rows, payloads));
+        Assert.IsTrue(
+            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
+        );
+
+        return SettlerGraphics.Load(install, TestProgram.Made());
+    }
+
+    [TestMethod]
+    public void AMalformedShadowMaskNamesTheShadowMaskAndItsEntry()
+    {
+        var problem = Assert.ThrowsExactly<System.IO.InvalidDataException>(() => LoadFake([1, 2, 3]));
+
+        StringAssert.Contains(problem.Message, "the shadow mask");
+        StringAssert.Contains(problem.Message, "entry 4");
+    }
+
+    [TestMethod]
+    public void AWellFormedShadowMaskLoadsIntoItsOwnLayer()
+    {
+        var graphics = LoadFake(MaskFileTests.Entry(2, 1, 1, 1, 0, 0));
+
+        Assert.IsGreaterThanOrEqualTo(0, graphics.ShadowLayer);
+        Assert.AreEqual(2, graphics.Images[graphics.ShadowLayer].Width);
+    }
+
+    [TestMethod]
+    public void AnAbsentShadowMaskLeavesNoShadowLayer()
+    {
+        Assert.AreEqual(-1, LoadFake(null).ShadowLayer);
+        Assert.AreEqual(-1, LoadFake(null, rows: 4).ShadowLayer);
+    }
+
     private static Map Map() =>
         MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
