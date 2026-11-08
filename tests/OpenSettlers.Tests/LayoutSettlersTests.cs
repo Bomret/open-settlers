@@ -49,10 +49,15 @@ public sealed class LayoutSettlersTests
 
     // Made-up tables as the hut and carrier tests have them: every step takes 100 clock units, the flag's object class is 3,
     // and the walk's direction rows hold the heading class's own first direction first.
-    internal static Game NewGame(Layout layout)
+    internal static Game NewGame(Layout layout) => new(MadeTables(), layout.BuildMap());
+
+    // The object class of the building's code (2) is 0 unless `buildingClass` names one: the removal click (0x44b6e6)
+    // takes a building for class 4.
+    internal static ProgramTables MadeTables(byte buildingClass = 0)
     {
         var classes = new byte[ProgramTables.ClassCount];
         classes[FlagPlacement.FlagCode] = 3;
+        classes[2] = buildingClass;
         var rows = new byte[ProgramTables.WalkRowCount * ProgramTables.WalkRowSize];
         for (var row = 0; row < ProgramTables.WalkRowCount; row++)
         {
@@ -63,7 +68,7 @@ public sealed class LayoutSettlersTests
                 .CopyTo(rows, row * ProgramTables.WalkRowSize);
         }
 
-        var tables = new ProgramTables(
+        return new ProgramTables(
             classes,
             Enumerable
                 .Range(0, ProgramTables.StartStockRows)
@@ -74,8 +79,6 @@ public sealed class LayoutSettlersTests
             Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray(),
             walkRows: rows
         );
-
-        return new Game(tables, layout.BuildMap());
     }
 
     static Game Applied(string extra, string objects = "[]")
