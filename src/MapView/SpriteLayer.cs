@@ -9,4 +9,15 @@ public static class SpriteLayer
 {
     /// <summary>The red and green channels of the vertex color that carries <paramref name="layer"/>.</summary>
     public static (float Red, float Green) Channels(int layer) => ((layer & 0xff) / 255f, (layer >> 8) / 255f);
+
+    /// <summary>
+    /// The red, green, and blue channels of the vertex color of a quad: <paramref name="layer"/> as
+    /// <see cref="Channels"/> splits it, and in blue 1 where the layer is one of the shadow array, else 0.
+    /// </summary>
+    public static (float Red, float Green, float Blue) Color(int layer, bool shadow)
+    {
+        var (red, green) = Channels(layer);
+
+        return (red, green, shadow ? 1 : 0);
+    }
 }

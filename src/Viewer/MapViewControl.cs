@@ -1014,45 +1014,63 @@ public partial class MapViewControl : Control
         return material;
     }
 
-    // The vertex color that carries a sprite's array texture layer to Objects.gdshader and Water.gdshader.
-    static Color LayerColor(int layer)
+    // The vertex color that carries a sprite's array texture layer to Objects.gdshader and Water.gdshader, and in
+    // blue whether the layer is one of the shadow array.
+    static Color LayerColor(int layer, bool shadow = false)
     {
-        var (red, green) = SpriteLayer.Channels(layer);
+        var (red, green, blue) = SpriteLayer.Color(layer, shadow);
 
-        return new Color(red, green, 0, 1);
+        return new Color(red, green, blue, 1);
     }
 
     ShaderMaterial BuildObjectMaterial(ObjectGraphics graphics)
     {
-        Godot.Collections.Array<Image> Layers(System.Func<ObjectImage, byte[]> pixels)
+        static Texture2DArray Layers(
+            System.Collections.Generic.IReadOnlyList<ObjectImage> layers,
+            int width,
+            int height,
+            System.Func<ObjectImage, byte[]> pixels
+        )
         {
             var images = new Godot.Collections.Array<Image>();
-            foreach (var image in graphics.Images)
+            foreach (var image in layers)
             {
                 images.Add(
-                    Image.CreateFromData(
-                        Math.Max(graphics.LayerWidth, 1),
-                        Math.Max(graphics.LayerHeight, 1),
-                        false,
-                        Image.Format.R8,
-                        pixels(image)
-                    )
+                    Image.CreateFromData(Math.Max(width, 1), Math.Max(height, 1), false, Image.Format.R8, pixels(image))
                 );
             }
 
-            return images;
+            var array = new Texture2DArray();
+            array.CreateFromImages(images);
+
+            return array;
         }
 
-        var indices = new Texture2DArray();
-        indices.CreateFromImages(Layers(image => image.Indices));
-        var coverage = new Texture2DArray();
-        coverage.CreateFromImages(Layers(image => image.Coverage));
+        // Graphics with no shadow array (the settlers') get one blank layer, so the shader has a texture to bind.
+        var shadows =
+            graphics.ShadowImages.Count > 0 ? graphics.ShadowImages : [ObjectGraphics.Pad(ObjectImage.Empty, 1, 1)];
+        var indices = Layers(graphics.Images, graphics.LayerWidth, graphics.LayerHeight, image => image.Indices);
+        var coverage = Layers(graphics.Images, graphics.LayerWidth, graphics.LayerHeight, image => image.Coverage);
+        var shadowIndices = Layers(
+            shadows,
+            graphics.ShadowLayerWidth,
+            graphics.ShadowLayerHeight,
+            image => image.Indices
+        );
+        var shadowCoverage = Layers(
+            shadows,
+            graphics.ShadowLayerWidth,
+            graphics.ShadowLayerHeight,
+            image => image.Coverage
+        );
         var palette = ImageTexture.CreateFromImage(
             Image.CreateFromData(256, 1, false, Image.Format.Rgba8, graphics.PaletteRgba)
         );
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Objects.gdshader") };
         material.SetShaderParameter("indices", indices);
         material.SetShaderParameter("coverage", coverage);
+        material.SetShaderParameter("shadow_indices", shadowIndices);
+        material.SetShaderParameter("shadow_coverage", shadowCoverage);
         material.SetShaderParameter("palette", palette);
 
         return material;
@@ -1106,7 +1124,7 @@ public partial class MapViewControl : Control
         }
 
         var quads = ObjectQuads
-            .Bands(ObjectDraws.WaterOf(map, _frameCounter), _objects.Images, map.Size.Height, map.Size.Height)
+            .Bands(ObjectDraws.WaterOf(map, _frameCounter), _objects.Images, [], map.Size.Height, map.Size.Height)
             .SelectMany(band => band)
             .Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))
             .ToList();
@@ -1133,12 +1151,13 @@ public partial class MapViewControl : Control
                     _frameCounter
                 ),
                 _objects.Images,
+                _objects.ShadowImages,
                 map.Size.Height,
                 BandRows
             )
         )
         {
-            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))));
+            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer, q.Shadow)))));
         }
 
         return meshes;
