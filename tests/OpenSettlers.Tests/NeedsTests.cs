@@ -5,12 +5,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
-// The focused command (mise.toml, tasks.test) skips the tests that need the install or Ghidra by category name; the
-// categories the tests carry are the constants of Needs. A name the filter lacks leaves its tests in the focused run.
+// The focused command (mise.toml, tasks.test) filters out exactly the categories of Needs; the full command filters none.
 [TestClass]
 public sealed class NeedsTests
 {
-    private static string Task(string name)
+    private static string MiseToml()
     {
         var dir = AppContext.BaseDirectory;
         while (!File.Exists(Path.Combine(dir, "mise.toml")))
@@ -18,31 +17,22 @@ public sealed class NeedsTests
             dir = Path.GetDirectoryName(dir) ?? throw new InvalidOperationException("mise.toml not found");
         }
 
-        var lines = File.ReadAllLines(Path.Combine(dir, "mise.toml"));
-        var start = Array.IndexOf(lines, $"[tasks.{name}]");
-        Assert.AreNotEqual(-1, start, $"mise.toml has no task {name}");
-
-        return string.Join("\n", lines.Skip(start + 1).TakeWhile(l => !l.StartsWith('[')));
+        return File.ReadAllText(Path.Combine(dir, "mise.toml"));
     }
 
-    private static string[] Categories() =>
-        typeof(Needs).GetFields().Where(f => f.IsLiteral).Select(f => (string)f.GetRawConstantValue()!).ToArray();
-
     [TestMethod]
-    public void TheFocusedCommandSkipsEveryCategoryTheTestsCarry()
+    public void TheFocusedFilterNamesExactlyTheCategoriesOfNeeds()
     {
-        var task = Task("test");
+        var names = typeof(Needs).GetFields().Select(f => $"TestCategory!={f.GetRawConstantValue()}");
 
-        Assert.AreNotEqual(0, Categories().Length);
-        foreach (var category in Categories())
-        {
-            StringAssert.Contains(task, $"TestCategory!={category}");
-        }
+        StringAssert.Contains(MiseToml(), $"--filter '{string.Join('&', names)}'");
     }
 
     [TestMethod]
     public void TheFullCommandFiltersNoCategory()
     {
-        StringAssert.DoesNotMatch(Task("check"), new System.Text.RegularExpressions.Regex("--filter"));
+        var check = MiseToml().Split("[tasks.check]")[1].Split("\n[")[0];
+
+        Assert.IsFalse(check.Contains("--filter", StringComparison.Ordinal));
     }
 }

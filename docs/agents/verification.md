@@ -22,8 +22,7 @@ build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on 
 The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
 `[TestCategory(Needs.Install)]` (and `Needs.Ghidra` where the test runs `analyzeHeadless`) on every test
 that needs one, on the class where every test in it does. A test without the category fails or reports
-inconclusive in the focused run without the install. `NeedsTests` checks that `mise.toml`'s focused
-filter names every category of `Needs`.
+inconclusive in the focused run without the install. `NeedsTests` pins the filter to `Needs`.
 
 ## Timing command
 
