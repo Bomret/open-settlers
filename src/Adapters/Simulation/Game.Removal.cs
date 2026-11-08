@@ -446,7 +446,7 @@ public sealed partial class Game
             return;
         }
 
-        _occupant[node] = slot;
+        _movement.Occupy(node, slot);
         settler.Stamp = _clock;
         settler.Timer = 0;
         Become(settler, new SearchesHome());

@@ -297,7 +297,7 @@ public sealed partial class Game
             return;
         }
 
-        _occupant[here] = slot;
+        _movement.Occupy(here, slot);
         Become(settler, new WalksRoad(null, ((ClaimsNode)settler.Activity).Heading));
         settler.Stamp = _clock;
         settler.Timer = 0;

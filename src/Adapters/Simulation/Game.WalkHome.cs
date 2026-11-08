@@ -28,7 +28,7 @@ public sealed partial class Game
             return;
         }
 
-        _occupant[index] = slot;
+        _movement.Occupy(index, slot);
         _walkingHome.Add(slot);
         settler.Frame = 0x52;
         settler.Timer = 0;
@@ -59,7 +59,7 @@ public sealed partial class Game
             return;
         }
 
-        _occupant.Remove(node);
+        _movement.Release(node);
         settler.Activity = new WaitsInCastle();
         History.RecordSettler(slot, EventType.EnteredStorage, Cause.WalkHome, History.BuildingId(0).ToString());
     }
@@ -106,7 +106,7 @@ public sealed partial class Game
         for (var count = 0; count < SearchEntries && !found; count++)
         {
             var entry = far ? SearchEntries - count : 1 + count;
-            (dx, dy) = MapGenerator.SearchOffsets[entry];
+            (dx, dy) = Spiral.SearchOffsets[entry];
             found = HomeFlag(settler, (settler.X + dx) & width, (settler.Y + dy) & height);
         }
 

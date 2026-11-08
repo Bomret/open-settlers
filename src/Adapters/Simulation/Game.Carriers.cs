@@ -353,7 +353,7 @@ public sealed partial class Game
         // The approach moves into the low byte of the stamp, which the encoder writes from the activity.
         settler.Stamp = (ushort)(settler.Stamp & 0xff00);
         settler.Activity = new WaitsAtFlag(flag, back, approach);
-        _occupant.Remove(Map.Index(settler.X, settler.Y));
+        _movement.Release(Map.Index(settler.X, settler.Y));
         History.RecordSettler(slot, EventType.Wait, Cause.Carriers);
     }
 }

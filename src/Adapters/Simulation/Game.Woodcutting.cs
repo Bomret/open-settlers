@@ -73,7 +73,7 @@ public sealed partial class Game
             if (settler.Job == Job.Woodcutter)
             {
                 // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree.
-                _occupant.Remove(node);
+                _movement.Release(node);
                 Become(settler, new LooksForTree());
             }
         }

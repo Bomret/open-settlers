@@ -36,6 +36,7 @@ public sealed partial class Game
         Map = map;
         _stockLevel = stockLevel;
         _random = map.Generator;
+        _movement = new SettlerMovement(map, _buildings, tables, () => _clock, SettlerEncoder.ResidueOf);
         RegisterBehaviours();
         _tablePass = new TablePass(_settlers, _buildings, _behaviours);
         History = new GameHistory(new SnapshotExporter(_settlers, _buildings, _flags), () => TickCount);
