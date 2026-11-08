@@ -52,7 +52,7 @@ public sealed class ExchangeTests
         Assert.AreEqual(Log, carrier.Mode, "the carrier takes the good that waited");
         Assert.AreEqual(Stone, game.FlagGoods(0)[2], "the good it carried is left in that place");
         Assert.AreEqual(1, game.FlagDestinations(0)[2], "its destination goes with it");
-        Assert.AreEqual(0, game.FlagDirectionBytes(0)[Way] & 0x80, "no good waits for the road any more");
+        Assert.IsNull(game.Flags[0].Side(Way).WaitingPlace, "no good waits for the road any more");
         Assert.IsTrue(game.FlagGoodsBit(0), "the flag looks at the new good at its next turn");
     }
 
@@ -110,7 +110,7 @@ public sealed class ExchangeTests
 
         game.Exchange(0, Carrier(game, 0, 0), 0);
 
-        Assert.AreEqual(0x80 | 2, game.FlagDirectionBytes(0)[Way] & 0x87, "the stone waits next");
+        Assert.AreEqual(2, game.Flags[0].Side(Way).WaitingPlace, "the stone waits next");
     }
 
     [TestMethod]
@@ -124,7 +124,7 @@ public sealed class ExchangeTests
 
         game.Exchange(0, Carrier(game, 0, 0), 0);
 
-        Assert.AreEqual(0x80 | 1, game.FlagDirectionBytes(0)[Way] & 0x87);
+        Assert.AreEqual(1, game.Flags[0].Side(Way).WaitingPlace);
     }
 
     [TestMethod]
@@ -137,7 +137,7 @@ public sealed class ExchangeTests
 
         game.Exchange(0, Carrier(game, 0, 0), 0);
 
-        Assert.AreEqual(0, game.FlagDirectionBytes(0)[Way] & 0x80, "no good waits for the road");
+        Assert.IsNull(game.Flags[0].Side(Way).WaitingPlace, "no good waits for the road");
     }
 
     [TestMethod]

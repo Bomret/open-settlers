@@ -186,7 +186,7 @@ public sealed class RemovalLogicTests
         );
         Assert.AreEqual(
             1,
-            game.RoadByte(0, 0) & 0xf,
+            game.Flags[0].Side(0).Carriers,
             "the joined road counts one carrier at its end at the castle's flag"
         );
     }
@@ -228,7 +228,7 @@ public sealed class RemovalLogicTests
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
 
         Assert.AreEqual(board, game.FlagGoods(1)[5], "the good for the hut loses its direction");
-        Assert.AreEqual(0x80 | 2, game.FlagDirectionBytes(1)[way] & 0x87, "the stone waits for the road next");
+        Assert.AreEqual(2, game.Flags[1].Side(way).WaitingPlace, "the stone waits for the road next");
     }
 
     [TestMethod]
@@ -270,7 +270,9 @@ public sealed class RemovalLogicTests
                 string.Concat(
                     Enumerable
                         .Range(2, 2)
-                        .Select(flag => $"{game.FlagStatus(flag)}{game.RoadByte(flag, 0)}{game.RoadByte(flag, 5)}")
+                        .Select(flag =>
+                            $"{FlagEncoder.Status(game.Flags[flag])}{FlagEncoder.RoadByte(game.Flags[flag].Side(0))}{FlagEncoder.RoadByte(game.Flags[flag].Side(5))}"
+                        )
                 ),
                 string.Concat(game.Stock)
             );

@@ -182,11 +182,11 @@ public sealed class RemovalTests
     private static string FlagFields(Game game, int slot) =>
         Convert.ToHexString([
             (byte)(game.FlagGoodsBit(slot) ? 0x80 : 0),
-            game.FlagStatus(slot),
-            .. Enumerable.Range(0, 6).Select(direction => game.RoadByte(slot, direction)),
+            FlagEncoder.Status(game.Flags[slot]),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.RoadByte(game.Flags[slot].Side(direction))),
             .. game.FlagGoods(slot).Select(good => (byte)good),
             .. game.FlagDestinations(slot).SelectMany(word => BitConverter.GetBytes((ushort)word)),
-            .. game.FlagDirectionBytes(slot).Select(value => (byte)value),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[slot].Side(direction))),
         ]);
 
     private static string Fields(string item) =>

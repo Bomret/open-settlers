@@ -177,9 +177,9 @@ public sealed class LayoutSettlersTests
         Assert.AreEqual(0x42, carrier.State);
         Assert.AreEqual((13, 11), (carrier.X, carrier.Y));
         Assert.AreEqual((1, 3), (carrier.Target, carrier.Mode));
-        Assert.AreEqual(1, game.RoadByte(0, 0) & 0xf);
-        Assert.AreEqual(1, game.RoadByte(1, 3) & 0xf);
-        Assert.AreEqual(0, game.RoadByte(0, 0) & 0x80);
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers);
+        Assert.AreEqual(1, game.Flags[1].Side(3).Carriers);
+        Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay);
     }
 
     [TestMethod]

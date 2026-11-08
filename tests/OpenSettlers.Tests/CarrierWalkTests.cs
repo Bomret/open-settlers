@@ -78,8 +78,8 @@ public sealed class CarrierWalkTests
 
     private static string Hex(Game game, int flag) =>
         Convert.ToHexString([
-            game.FlagStatus(flag),
-            .. Enumerable.Range(0, 6).Select(direction => game.RoadByte(flag, direction)),
+            FlagEncoder.Status(game.Flags[flag]),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.RoadByte(game.Flags[flag].Side(direction))),
         ]);
 
     private static List<int[]> Points(string list) =>

@@ -52,10 +52,10 @@ public sealed class RoadLoopTests
         var road = game.Roads.Single();
         Assert.AreEqual((0, 0, 0, 2), (road.FromSlot, road.FromDirection, road.ToSlot, road.ToDirection));
         CollectionAssert.AreEqual(Loop, road.Directions.ToArray());
-        Assert.AreEqual(2, game.RoadByte(0, 0) >> 4 & 7, "class 2 for six steps at the start end");
-        Assert.AreEqual(2, game.RoadByte(0, 2) >> 4 & 7, "and at the other end");
-        Assert.AreEqual(2 << 3, game.FlagDirectionBytes(0)[0] & 0x38, "each end names the direction of the other");
-        Assert.AreEqual(0 << 3, game.FlagDirectionBytes(0)[2] & 0x38);
+        Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length, "class 2 for six steps at the start end");
+        Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(2).Length, "and at the other end");
+        Assert.AreEqual(new Direction(2), game.Flags[0].Side(0).FarDirection, "each end names the direction of the other");
+        Assert.AreEqual(new Direction(0), game.Flags[0].Side(2).FarDirection);
     }
 
     [TestMethod]
@@ -65,8 +65,8 @@ public sealed class RoadLoopTests
 
         Run(game, 1500);
 
-        Assert.AreEqual(1, game.RoadByte(0, 0) & 0xf, "one carrier at the start end");
-        Assert.AreEqual(1, game.RoadByte(0, 2) & 0xf, "and at the other end");
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers, "one carrier at the start end");
+        Assert.AreEqual(1, game.Flags[0].Side(2).Carriers, "and at the other end");
         Assert.AreEqual(1, game.Settlers.Count(s => s is { Job: Settler.CarrierJob, State: 3 or 0x42 }));
     }
 
@@ -82,10 +82,10 @@ public sealed class RoadLoopTests
         Assert.AreEqual(2, game.Roads.Count);
         Assert.IsTrue(game.Roads.All(r => (r.FromSlot == 0 && r.ToSlot == 1) || (r.FromSlot == 1 && r.ToSlot == 0)));
         Assert.AreEqual(Loop.Length, game.Roads.Sum(r => r.Directions.Count));
-        Assert.AreEqual(1, game.RoadByte(0, 0) & 0xf, "the first half");
-        Assert.AreEqual(1, game.RoadByte(1, 5) & 0xf, "the first half at the new flag");
-        Assert.AreEqual(1, game.RoadByte(1, 3) & 0xf, "the second half");
-        Assert.AreEqual(1, game.RoadByte(0, 2) & 0xf, "the second half at the castle flag");
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers, "the first half");
+        Assert.AreEqual(1, game.Flags[1].Side(5).Carriers, "the first half at the new flag");
+        Assert.AreEqual(1, game.Flags[1].Side(3).Carriers, "the second half");
+        Assert.AreEqual(1, game.Flags[0].Side(2).Carriers, "the second half at the castle flag");
         Assert.AreEqual(2, game.Settlers.Count(s => s is { Job: Settler.CarrierJob, State: 3 or 0x42 }));
     }
 
@@ -100,8 +100,8 @@ public sealed class RoadLoopTests
         Run(game, 1500);
 
         Assert.AreEqual(0, game.Roads.Count);
-        Assert.AreEqual(0, game.RoadByte(0, 0) & 0x80, "no carrier is on the way to the road");
-        Assert.AreEqual(0, game.RoadByte(0, 2) & 0x80);
+        Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay, "no carrier is on the way to the road");
+        Assert.IsFalse(game.Flags[0].Side(2).CarrierOnTheWay);
         Assert.AreEqual(
             0,
             game.Settlers.Count(s => s is { Job: Settler.CarrierJob, State: 3 or 0x42 }),
@@ -158,7 +158,7 @@ public sealed class RoadLoopTests
             new[] { road.FromDirection, road.ToDirection },
             "the joined road starts at either end"
         );
-        Assert.AreEqual(2, game.RoadByte(0, 0) >> 4 & 7);
+        Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length);
     }
 
     [TestMethod]

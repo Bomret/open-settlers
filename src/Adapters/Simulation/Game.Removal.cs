@@ -291,9 +291,10 @@ public sealed partial class Game
             Dismiss(standing);
         }
 
-        var carrierOnTheWay = (_roadBytes[slot][back] & 0x80) != 0;
-        _roadBytes[slot][back] &= 0x7f;
-        _flagStatus[slot] &= (byte)~(1 << back);
+        var side = _flags[slot].Side(back);
+        var carrierOnTheWay = side.CarrierOnTheWay;
+        side.CarrierOnTheWay = false;
+        side.HoldsCarrier = false;
         if (carrierOnTheWay)
         {
             for (var walker = 0; walker < _settlers.Count; walker++)
@@ -309,7 +310,7 @@ public sealed partial class Game
             }
         }
 
-        _directionBytes[slot][back] &= 0x78;
+        side.WaitingPlace = null;
         var mark = (back + 1) << DirectionShift;
         for (var place = 7; place >= 0; place--)
         {
@@ -351,12 +352,12 @@ public sealed partial class Game
             }
             else if (mode is >= 0 and < 6)
             {
-                _roadBytes[settler.Target][mode] &= 0x7f;
+                _flags[settler.Target].Side(mode).CarrierOnTheWay = false;
                 TouchFlag(settler.Target, EventType.Dismiss);
                 if (RoadAt(settler.Target, mode) is { } road)
                 {
                     var (far, farDirection) = FarEnd(road, settler.Target, mode);
-                    _roadBytes[far][farDirection] &= 0x7f;
+                    _flags[far].Side(farDirection).CarrierOnTheWay = false;
                     TouchFlag(far, EventType.Dismiss);
                 }
             }
@@ -632,8 +633,8 @@ public sealed partial class Game
             return;
         }
 
-        _flagStatus[a.Flag] |= (byte)(1 << a.Direction);
-        _flagStatus[b.Flag] |= (byte)(1 << b.Direction);
+        _flags[a.Flag].Side(a.Direction).HoldsCarrier = true;
+        _flags[b.Flag].Side(b.Direction).HoldsCarrier = true;
         var kept = carriers.Count;
         if (capacity < carriers.Count)
         {
@@ -664,8 +665,8 @@ public sealed partial class Game
             }
         }
 
-        _roadBytes[a.Flag][a.Direction] |= (byte)kept;
-        _roadBytes[b.Flag][b.Direction] |= (byte)kept;
+        _flags[a.Flag].Side(a.Direction).Carriers = kept;
+        _flags[b.Flag].Side(b.Direction).Carriers = kept;
     }
 
     // The join of the two roads of a flag (0x462153): one road of the summed length between the flags at the far ends. The
@@ -703,19 +704,17 @@ public sealed partial class Game
         _roadCauses.Remove(roadB);
         _roads.Add(new Road(a.Far, a.FarDirection, b.Far, b.FarDirection, path, roadA.Water && roadB.Water));
 
-        _directionBytes[a.Far][a.FarDirection] = (byte)(
-            (_directionBytes[a.Far][a.FarDirection] & 0xc7) | (b.FarDirection << 3)
-        );
-        _directionBytes[b.Far][b.FarDirection] = (byte)(
-            (_directionBytes[b.Far][b.FarDirection] & 0xc7) | (a.FarDirection << 3)
-        );
-        _flagStatus[a.Far] &= (byte)~(1 << a.FarDirection);
-        _flagStatus[b.Far] &= (byte)~(1 << b.FarDirection);
-        var length = LengthClass(path.Count);
-        _roadBytes[a.Far][a.FarDirection] = length;
-        _roadBytes[b.Far][b.FarDirection] = length;
+        var sideA = _flags[a.Far].Side(a.FarDirection);
+        var sideB = _flags[b.Far].Side(b.FarDirection);
+        sideA.FarDirection = b.FarDirection;
+        sideB.FarDirection = a.FarDirection;
+        sideA.HoldsCarrier = false;
+        sideB.HoldsCarrier = false;
+        var length = LengthClass.OfSteps(path.Count);
+        sideA.SetLength(length, carrierOnTheWay: false);
+        sideB.SetLength(length, carrierOnTheWay: false);
         var carriers = a.Settlers.Concat(b.Settlers).ToList();
-        CountCarriers(carriers, (a.Far, a.FarDirection), (b.Far, b.FarDirection), _tables.RoadCapacity(length >> 4));
+        CountCarriers(carriers, (a.Far, a.FarDirection), (b.Far, b.FarDirection), _tables.RoadCapacity(length.Value));
 
         // The flags at the ends of the new road, naming each other, and the carriers now on it, naming its two flags.
         TouchFlag(a.Far, EventType.JoinRoads, History.FlagId(b.Far).ToString());
@@ -858,11 +857,7 @@ public sealed partial class Game
                 }
 
                 var direction = (way >> DirectionShift) - 1;
-                _directionBytes[holder][direction] &= 0x78;
-                if (bestPlace >= 0)
-                {
-                    _directionBytes[holder][direction] |= (byte)(0x80 | bestPlace);
-                }
+                _flags[holder].Side(direction).WaitingPlace = bestPlace >= 0 ? bestPlace : null;
             }
 
             if (released)

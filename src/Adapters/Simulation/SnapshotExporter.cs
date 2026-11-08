@@ -11,9 +11,7 @@ namespace OpenSettlers.Simulation;
 public sealed class SnapshotExporter(
     IReadOnlyList<Settler> settlers,
     IReadOnlyList<Building> buildings,
-    IReadOnlyList<Flag> flags,
-    IReadOnlyList<byte> flagStatus,
-    IReadOnlyList<byte[]> roadBytes,
+    FlagTable flags,
     IReadOnlyList<byte[]> flagGoods
 ) : IThingSnapshots
 {
@@ -38,13 +36,18 @@ public sealed class SnapshotExporter(
     /// <summary>The flag in the slot: its node, status byte, road bytes, and the goods on it.</summary>
     public ThingState Flag(int slot)
     {
+        var flag = flags[slot];
         var fields = new List<(string, int)>
         {
-            ("x", flags[slot].X),
-            ("y", flags[slot].Y),
-            ("status", flagStatus[slot]),
+            ("x", flag.X),
+            ("y", flag.Y),
+            ("status", FlagEncoder.Status(flag)),
         };
-        fields.AddRange(roadBytes[slot].Select((value, direction) => ($"road{direction}", (int)value)));
+        for (var direction = 0; direction < Direction.Count; direction++)
+        {
+            fields.Add(($"road{direction}", FlagEncoder.RoadByte(flag.Side(direction))));
+        }
+
         fields.AddRange(flagGoods[slot].Select((value, place) => ($"good{place}", (int)value)));
         return new ThingState(fields);
     }

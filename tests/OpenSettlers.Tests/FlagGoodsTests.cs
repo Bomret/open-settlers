@@ -78,10 +78,10 @@ public sealed class FlagGoodsTests
     // A flag's goods fields in the order of the fixture's f fields.
     private static string Fields(Game game, int flag) =>
         Convert.ToHexString([
-            .. new[] { (byte)(game.FlagGoodsBit(flag) ? 0x80 : 0), game.FlagStatus(flag) },
+            .. new[] { (byte)(game.FlagGoodsBit(flag) ? 0x80 : 0), FlagEncoder.Status(game.Flags[flag]) },
             .. game.FlagGoods(flag).Select(good => (byte)good),
             .. game.FlagDestinations(flag).SelectMany(word => BitConverter.GetBytes((ushort)word)),
-            .. game.FlagDirectionBytes(flag).Select(value => (byte)value),
+            .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[flag].Side(direction))),
         ]);
 
     private static string Expected(string fields) =>

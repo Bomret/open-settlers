@@ -37,7 +37,7 @@ public sealed partial class Game
         _stockLevel = stockLevel;
         _random = map.Generator;
         History = new GameHistory(
-            new SnapshotExporter(_settlers, _buildings, _flags, _flagStatus, _roadBytes, _flagGoods),
+            new SnapshotExporter(_settlers, _buildings, _flags, _flagGoods),
             () => TickCount
         );
     }
@@ -131,13 +131,9 @@ public sealed partial class Game
             hash = Mix(hash, count);
         }
 
-        for (var slot = 0; slot < _flags.Count; slot++)
+        foreach (var item in FlagEncoder.Items(_flags))
         {
-            hash = Mix(Mix(hash, _flags[slot].X * 65536L + _flags[slot].Y), _flagStatus[slot]);
-            foreach (var value in _roadBytes[slot])
-            {
-                hash = Mix(hash, value);
-            }
+            hash = Mix(hash, item);
         }
 
         hash = Mix(hash, _flagCursor);
@@ -216,7 +212,7 @@ public sealed partial class Game
         }
 
         _roads.Add(road!);
-        SetRoadBytes(road!);
+        SetSides(road!);
         // The road's `placed` cause names the road's start flag (the flag the road was built from).
         var cause = CommandCause(History.FlagId(road!.FromSlot));
         if (cause.IsCommand)

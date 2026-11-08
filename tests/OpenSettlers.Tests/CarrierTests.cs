@@ -77,8 +77,8 @@ public sealed class CarrierTests
         Assert.AreEqual(0xf, carrier.State, "the carrier leaves the castle");
         Assert.AreEqual(0, carrier.Mode, "it takes the road that leaves the castle's flag east");
         Assert.AreEqual(0, carrier.Target, "it walks to the castle's flag");
-        Assert.AreEqual(0x80, game.RoadByte(0, 0) & 0x80, "a carrier is on the way: the near end");
-        Assert.AreEqual(0x80, game.RoadByte(1, 3) & 0x80, "a carrier is on the way: the far end");
+        Assert.IsTrue(game.Flags[0].Side(0).CarrierOnTheWay, "a carrier is on the way: the near end");
+        Assert.IsTrue(game.Flags[1].Side(3).CarrierOnTheWay, "a carrier is on the way: the far end");
     }
 
     [TestMethod]
@@ -90,9 +90,9 @@ public sealed class CarrierTests
         Run(game, 600);
 
         Assert.AreEqual(1, Carriers(game).Length);
-        Assert.AreEqual(1, game.RoadByte(0, 0) & 0xf);
-        Assert.AreEqual(1, game.RoadByte(1, 3) & 0xf);
-        Assert.AreEqual(0, game.RoadByte(0, 0) & 0x80, "the carrier is on the road: no carrier is on the way");
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers);
+        Assert.AreEqual(1, game.Flags[1].Side(3).Carriers);
+        Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay, "the carrier is on the road: no carrier is on the way");
     }
 
     [TestMethod]
@@ -126,7 +126,7 @@ public sealed class CarrierTests
         Run(game, 600);
 
         Assert.AreEqual(2, Carriers(game).Length);
-        Assert.AreEqual(1, game.RoadByte(1, 5) & 0xf, "the second road holds its carrier as well");
+        Assert.AreEqual(1, game.Flags[1].Side(5).Carriers, "the second road holds its carrier as well");
     }
 
     [TestMethod]
@@ -138,7 +138,7 @@ public sealed class CarrierTests
         Run(game, 33);
 
         Assert.AreEqual(0, Carriers(game).Length);
-        Assert.AreEqual(0, game.FlagStatus(1) & 0x80, "the retry scan cleared the mark of the failed request");
+        Assert.IsFalse(game.Flags[1].CarrierRequestFailed, "the retry scan cleared the mark of the failed request");
     }
 
     [TestMethod]
@@ -158,7 +158,8 @@ public sealed class CarrierTests
         }
 
         Assert.AreEqual(0, Carriers(game).Length);
-        Assert.AreEqual(0, game.RoadByte(0, 0) & 0x8f, "no carrier is on the road or on the way");
+        Assert.AreEqual(0, game.Flags[0].Side(0).Carriers, "no carrier is on the road");
+        Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay, "no carrier is on the way");
     }
 
     [TestMethod]
