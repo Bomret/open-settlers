@@ -53,7 +53,7 @@ public sealed record Cause(string Kind, ThingId? Thing = null)
     /// <summary>The cause of a raze command for <paramref name="thing"/>.</summary>
     public static Cause Razed(ThingId thing) => new(RazedKind, thing);
 
-    /// <summary>Whether a player's command is the cause; only such a cause a settler carries on (<see cref="Game.CarryCause"/>).</summary>
+    /// <summary>Whether a player's command is the cause; only such a cause a settler carries on (<see cref="GameHistory.CarryCause"/>).</summary>
     public bool IsCommand => Kind is PlacedKind or RazedKind;
 
     /// <summary>The kind, then the thing commanded where there is one: <c>placed building#1.1</c>.</summary>

@@ -27,7 +27,7 @@ public sealed class HomeWalkHistoryTests
         game.Settlers[Sent].State = 0x1c;
         if (carried is not null)
         {
-            game.CarryCause(Sent, carried);
+            game.History.CarryCause(Sent, carried);
         }
 
         for (var pass = 0; pass < 400 && game.Settlers[Sent].State != 1; pass++)
@@ -41,7 +41,7 @@ public sealed class HomeWalkHistoryTests
     }
 
     private static ThingEvent[] Walk(Game game) =>
-        [.. game.EventsOf(game.SettlerId(Sent)).Where(e => e.Type != EventType.PlaceCastle)];
+        [.. game.History.EventsOf(game.History.SettlerId(Sent)).Where(e => e.Type != EventType.PlaceCastle)];
 
     [TestMethod]
     public void ASettlerWalkingHomeRecordsEachChangeWithTheWalkHomeCause()
@@ -68,7 +68,7 @@ public sealed class HomeWalkHistoryTests
 
         var arrived = walk.Single(e => e.Type == EventType.ArrivedHome);
         Assert.AreEqual(razed, arrived.Cause);
-        Assert.AreEqual(game.BuildingId(0).ToString(), arrived.Other);
+        Assert.AreEqual(game.History.BuildingId(0).ToString(), arrived.Other);
         Assert.IsTrue(walk.Any(e => e.Type == EventType.Walked), "the road walk is recorded");
         Assert.IsTrue(
             walk.All(e => e.Cause == razed),
@@ -91,18 +91,18 @@ public sealed class HomeWalkHistoryTests
         settler.Heading = -1;
         settler.Next = 8;
         settler.Timer = 0;
-        game.CarryCause(Sent, razed);
+        game.History.CarryCause(Sent, razed);
         for (var pass = 0; pass < 200 && settler.State == 0x10; pass++)
         {
             game.Tick();
         }
 
-        var arrived = game.EventsOf(game.SettlerId(Sent)).Last(e => e.Type == EventType.ArrivedHome);
+        var arrived = game.History.EventsOf(game.History.SettlerId(Sent)).Last(e => e.Type == EventType.ArrivedHome);
         Assert.IsNull(arrived.Other);
         Assert.AreEqual(0x19, arrived.State.Get("state"));
         Assert.AreEqual(razed, arrived.Cause);
         game.Tick();
-        Assert.AreEqual(razed, game.EventsOf(game.SettlerId(Sent)).Last().Cause, "the carry goes on");
+        Assert.AreEqual(razed, game.History.EventsOf(game.History.SettlerId(Sent)).Last().Cause, "the carry goes on");
     }
 
     [TestMethod]
@@ -118,7 +118,7 @@ public sealed class HomeWalkHistoryTests
         }
 
         Assert.AreEqual(0x35, knight.State);
-        var searched = game.EventsOf(game.SettlerId(slot)).Last(e => e.Type == EventType.SearchedHome);
+        var searched = game.History.EventsOf(game.History.SettlerId(slot)).Last(e => e.Type == EventType.SearchedHome);
         Assert.AreEqual(0x35, searched.State.Get("state"));
         Assert.AreEqual(Cause.WalkHome, searched.Cause);
     }

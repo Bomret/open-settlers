@@ -51,7 +51,7 @@ public sealed partial class Game
         if (slot == _flags.Count)
         {
             _flags.Add(flag);
-            Fill(_flagFills, slot);
+            History.FillFlag(slot);
             _flagStatus.Add(0);
             _roadBytes.Add(new byte[6]);
             _flagGoods.Add(new byte[8]);
@@ -63,7 +63,7 @@ public sealed partial class Game
         }
 
         _flags[slot] = flag;
-        Fill(_flagFills, slot);
+        History.FillFlag(slot);
         _flagStatus[slot] = 0;
         _roadBytes[slot] = new byte[6];
         _flagGoods[slot] = new byte[8];
@@ -165,7 +165,7 @@ public sealed partial class Game
             _flagStatus[_flagCursor] &= 0x7f;
             if (had)
             {
-                RecordFlag(_flagCursor, EventType.ClearFlagRetryBits, Cause.Carriers);
+                History.RecordFlag(_flagCursor, EventType.ClearFlagRetryBits, Cause.Carriers);
             }
 
             if (had && --left == 0)
@@ -227,7 +227,7 @@ public sealed partial class Game
         if (status != _flagStatus[slot])
         {
             _flagStatus[slot] = status;
-            RecordFlag(slot, EventType.VisitFlag, Cause.Carriers);
+            History.RecordFlag(slot, EventType.VisitFlag, Cause.Carriers);
         }
     }
 
@@ -257,18 +257,18 @@ public sealed partial class Game
         _leaving++;
         _roadBytes[slot][direction] |= 0x80;
         _roadBytes[far][farDirection] |= 0x80;
-        var id = SettlerId(carrier);
-        EndCarry(carrier);
+        var id = History.SettlerId(carrier);
+        History.EndCarry(carrier);
         var cause = Cause.Carriers;
         if (_roadCauses.Remove(road, out var placed))
         {
-            CarryCause(carrier, placed);
+            History.CarryCause(carrier, placed);
             cause = placed;
         }
 
-        RecordSettler(carrier, EventType.CarrierRequested, cause, FlagId(flag).ToString());
-        RecordFlag(slot, EventType.CarrierRequested, cause, id.ToString());
-        RecordFlag(far, EventType.CarrierRequested, cause, id.ToString());
+        History.RecordSettler(carrier, EventType.CarrierRequested, cause, History.FlagId(flag).ToString());
+        History.RecordFlag(slot, EventType.CarrierRequested, cause, id.ToString());
+        History.RecordFlag(far, EventType.CarrierRequested, cause, id.ToString());
 
         return true;
     }
@@ -326,10 +326,10 @@ public sealed partial class Game
         settler.Heading = direction;
         settler.Mode = 0;
         settler.Next = 0;
-        var id = SettlerId(slot);
-        RecordSettler(slot, EventType.EnterRoad, Cause.Carriers, FlagId(settler.Target).ToString());
-        RecordFlag(settler.Target, EventType.EnterRoad, Cause.Carriers, id.ToString());
-        RecordFlag(far, EventType.EnterRoad, Cause.Carriers, id.ToString());
+        var id = History.SettlerId(slot);
+        History.RecordSettler(slot, EventType.EnterRoad, Cause.Carriers, History.FlagId(settler.Target).ToString());
+        History.RecordFlag(settler.Target, EventType.EnterRoad, Cause.Carriers, id.ToString());
+        History.RecordFlag(far, EventType.EnterRoad, Cause.Carriers, id.ToString());
         WalkRoad(slot, settler);
     }
 
@@ -361,7 +361,7 @@ public sealed partial class Game
                 if (direction < 0)
                 {
                     settler.Timer = 0;
-                    RecordSettler(slot, EventType.WalkRoad, Cause.Carriers);
+                    History.RecordSettler(slot, EventType.WalkRoad, Cause.Carriers);
                     return;
                 }
             }
@@ -423,19 +423,19 @@ public sealed partial class Game
                 _roadBytes[flag][back]--;
                 _roadBytes[far][farDirection]--;
                 settler.Next = 0xff;
-                var id = SettlerId(slot);
-                RecordFlag(flag, EventType.Wait, Cause.Carriers, id.ToString());
-                RecordFlag(far, EventType.Wait, Cause.Carriers, id.ToString());
+                var id = History.SettlerId(slot);
+                History.RecordFlag(flag, EventType.Wait, Cause.Carriers, id.ToString());
+                History.RecordFlag(far, EventType.Wait, Cause.Carriers, id.ToString());
             }
 
-            RecordSettler(slot, EventType.Wait, Cause.Carriers);
+            History.RecordSettler(slot, EventType.Wait, Cause.Carriers);
 
             return;
         }
 
         if ((_directionBytes[far][farDirection] & 0x80) != 0)
         {
-            RecordSettler(slot, EventType.Wait, Cause.Carriers);
+            History.RecordSettler(slot, EventType.Wait, Cause.Carriers);
 
             return;
         }
@@ -447,6 +447,6 @@ public sealed partial class Game
         settler.Next = 0;
         settler.State = WaitingState;
         _occupant.Remove(Map.Index(settler.X, settler.Y));
-        RecordSettler(slot, EventType.Wait, Cause.Carriers);
+        History.RecordSettler(slot, EventType.Wait, Cause.Carriers);
     }
 }

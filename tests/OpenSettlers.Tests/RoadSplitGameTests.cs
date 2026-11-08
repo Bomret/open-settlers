@@ -231,19 +231,23 @@ public sealed class RoadSplitGameTests
         var game = EastRoad();
         Run(game, 600);
         Apply(game, CommandKind.PlaceFlag, 18, 6);
-        var cause = Cause.Placed(game.FlagId(2));
+        var cause = Cause.Placed(game.History.FlagId(2));
 
         Run(game, 600);
 
-        var split = game.EventsOf(game.FlagId(2)).Single(e => e.Type == EventType.SplitRoads);
+        var split = game.History.EventsOf(game.History.FlagId(2)).Single(e => e.Type == EventType.SplitRoads);
         Assert.AreEqual(cause, split.Cause);
-        Assert.AreEqual($"{game.FlagId(1)} {game.FlagId(0)}", split.Other, "the far flags, the lower direction first");
+        Assert.AreEqual(
+            $"{game.History.FlagId(1)} {game.History.FlagId(0)}",
+            split.Other,
+            "the far flags, the lower direction first"
+        );
         Assert.IsTrue(
-            game.EventsOf(game.FlagId(1))
-                .Any(e => e.Type == EventType.SplitRoads && e.Other == game.FlagId(2).ToString())
+            game.History.EventsOf(game.History.FlagId(1))
+                .Any(e => e.Type == EventType.SplitRoads && e.Other == game.History.FlagId(2).ToString())
         );
         var requested = game
-            .Events.All.Where(e =>
+            .History.Events.All.Where(e =>
                 e.Type == EventType.CarrierRequested && e.Thing.Kind == ThingId.SettlerKind && e.Tick > split.Tick
             )
             .ToList();
@@ -264,8 +268,8 @@ public sealed class RoadSplitGameTests
         Assert.AreEqual("0.0>2.3 00 False", Show(game.Roads.Single(road => road.FromSlot == 0)));
         Assert.AreEqual("2.0>1.3 00 False", Show(game.Roads.Single(road => road.FromSlot == 2)));
         Assert.AreEqual(2, game.Buildings[1].Flag, "the hut is tied to the flag that split the road");
-        var split = game.EventsOf(game.FlagId(2)).Single(e => e.Type == EventType.SplitRoads);
-        Assert.AreEqual(Cause.Placed(game.FlagId(2)), split.Cause);
+        var split = game.History.EventsOf(game.History.FlagId(2)).Single(e => e.Type == EventType.SplitRoads);
+        Assert.AreEqual(Cause.Placed(game.History.FlagId(2)), split.Cause);
     }
 
     [TestMethod]

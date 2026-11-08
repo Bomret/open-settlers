@@ -57,7 +57,7 @@ public sealed partial class Game
 
     // The cause of a change to the building in the slot: the command that placed it while its worker is on the way, else the rule area.
     private Cause BuildingCause(int slot) =>
-        _buildingCommand.TryGetValue(BuildingId(slot), out var command) ? command : RuleCause;
+        _buildingCommand.TryGetValue(History.BuildingId(slot), out var command) ? command : RuleCause;
 
     // The cause of a change the settler rules make on their own: the rules the layout runs while it builds its entries
     // act for the layout, so inside a layout the cause is `layout` and not `settlers` (a deliberate choice: what a layout
@@ -71,7 +71,7 @@ public sealed partial class Game
     private void RecordBuildingOf(Building building, string type, string? other = null)
     {
         var slot = _buildings.IndexOf(building);
-        RecordBuilding(slot, type, BuildingCause(slot), other);
+        History.RecordBuilding(slot, type, BuildingCause(slot), other);
     }
 
     private ushort _clock;
@@ -180,7 +180,7 @@ public sealed partial class Game
             building.Status &= ~4;
             if (had)
             {
-                RecordBuilding(_scanCursor, EventType.RetryBitsCleared, BuildingCause(_scanCursor));
+                History.RecordBuilding(_scanCursor, EventType.RetryBitsCleared, BuildingCause(_scanCursor));
             }
 
             if (had && --left == 0)
@@ -227,19 +227,19 @@ public sealed partial class Game
         building.Status |= 0x80;
         _leaving++;
         var buildingSlot = _buildings.IndexOf(building);
-        var buildingId = BuildingId(buildingSlot);
-        EndCarry(slot);
+        var buildingId = History.BuildingId(buildingSlot);
+        History.EndCarry(slot);
         if (_buildingCommand.TryGetValue(buildingId, out var command))
         {
-            CarryCause(slot, command);
+            History.CarryCause(slot, command);
         }
 
-        RecordSettler(slot, EventType.WorkerRequested, BuildingCause(buildingSlot), buildingId.ToString());
-        RecordBuilding(
+        History.RecordSettler(slot, EventType.WorkerRequested, BuildingCause(buildingSlot), buildingId.ToString());
+        History.RecordBuilding(
             buildingSlot,
             EventType.WorkerRequested,
             BuildingCause(buildingSlot),
-            SettlerId(slot).ToString()
+            History.SettlerId(slot).ToString()
         );
 
         return true;
@@ -334,7 +334,7 @@ public sealed partial class Game
                     settler.Next = 0;
                 }
 
-                RecordSettler(slot, EventType.Visited, RuleCause);
+                History.RecordSettler(slot, EventType.Visited, RuleCause);
                 break;
             case 2:
                 Walk(slot, settler);
@@ -346,7 +346,7 @@ public sealed partial class Game
                 }
                 else
                 {
-                    RecordSettler(slot, EventType.Visited, RuleCause);
+                    History.RecordSettler(slot, EventType.Visited, RuleCause);
                 }
 
                 break;
@@ -369,7 +369,7 @@ public sealed partial class Game
                 }
                 else
                 {
-                    RecordSettler(slot, EventType.Visited, RuleCause);
+                    History.RecordSettler(slot, EventType.Visited, RuleCause);
                 }
 
                 break;
@@ -452,7 +452,7 @@ public sealed partial class Game
                 }
             }
 
-            RecordSettler(slot, EventType.KnightIdled, RuleCause);
+            History.RecordSettler(slot, EventType.KnightIdled, RuleCause);
         }
 
         _waiting[settler.Job] = (ushort)slot;
@@ -476,8 +476,8 @@ public sealed partial class Game
             castle.Worker = 0;
         }
 
-        RecordSettler(slot, EventType.Builder, RuleCause, BuildingId(0).ToString());
-        RecordBuilding(0, EventType.Builder, BuildingCause(0), SettlerId(slot).ToString());
+        History.RecordSettler(slot, EventType.Builder, RuleCause, History.BuildingId(0).ToString());
+        History.RecordBuilding(0, EventType.Builder, BuildingCause(0), History.SettlerId(slot).ToString());
     }
 
     // The timer of the states that wait: the time since the settler's last turn comes off its timer; true where the
@@ -536,7 +536,7 @@ public sealed partial class Game
         {
             settler.Frame = 0x52;
             settler.Timer = 0;
-            RecordSettler(slot, EventType.Left, RuleCause);
+            History.RecordSettler(slot, EventType.Left, RuleCause);
             return;
         }
 
@@ -551,7 +551,7 @@ public sealed partial class Game
         settler.Timer = (ushort)((ushort)(_tables.StepTime(shape) * speed) >> 5);
         settler.Stamp = _clock;
         settler.State = 5;
-        RecordSettler(slot, EventType.Left, RuleCause);
+        History.RecordSettler(slot, EventType.Left, RuleCause);
     }
 
     // The step onto a node. It records nothing: the rule that moves the settler records the change after it has applied all of
@@ -577,7 +577,7 @@ public sealed partial class Game
     {
         // `walked` records the turn of state 2; a step or entry inside it records its own change first (`stepped`, `entered`).
         WalkTurn(slot, settler);
-        RecordSettler(slot, EventType.Walked, SettlerCause(slot));
+        History.RecordSettler(slot, EventType.Walked, SettlerCause(slot));
     }
 
     private void WalkTurn(int slot, Settler settler)
@@ -666,8 +666,8 @@ public sealed partial class Game
                     if (hut is not null)
                     {
                         hut.Status &= 0x7f;
-                        RecordBuildingOf(hut, EventType.Walked, SettlerId(slot).ToString());
-                        _buildingCommand.Remove(BuildingId(_buildings.IndexOf(hut)));
+                        RecordBuildingOf(hut, EventType.Walked, History.SettlerId(slot).ToString());
+                        _buildingCommand.Remove(History.BuildingId(_buildings.IndexOf(hut)));
                     }
 
                     settler.Mode = 0xfe;
@@ -716,7 +716,7 @@ public sealed partial class Game
             passer.Heading = direction;
             passer.Frame = (byte)back;
             passer.Timer = _tables.StepTime(back);
-            RecordSettler(other, EventType.Stepped, SettlerCause(other), SettlerId(slot).ToString());
+            History.RecordSettler(other, EventType.Stepped, SettlerCause(other), History.SettlerId(slot).ToString());
             shape = 4 + 9 * (direction + 6) + rise;
             settler.Heading = (direction + 3) % 6;
             settler.X = x;
@@ -730,7 +730,7 @@ public sealed partial class Game
             settler.Timer = 0x7f;
             settler.Frame = (byte)(0x51 + direction);
             settler.Heading = direction - 6;
-            RecordSettler(slot, EventType.Stepped, SettlerCause(slot));
+            History.RecordSettler(slot, EventType.Stepped, SettlerCause(slot));
 
             return false;
         }
@@ -744,7 +744,7 @@ public sealed partial class Game
             settler.Frame = (byte)shape;
         }
 
-        RecordSettler(slot, EventType.Stepped, SettlerCause(slot));
+        History.RecordSettler(slot, EventType.Stepped, SettlerCause(slot));
 
         return !finished;
     }
@@ -771,14 +771,14 @@ public sealed partial class Game
             building.Worker = slot;
         }
 
-        var buildingId = BuildingId(_buildings.IndexOf(building));
-        RecordBuildingOf(building, EventType.Entered, SettlerId(slot).ToString());
+        var buildingId = History.BuildingId(_buildings.IndexOf(building));
+        RecordBuildingOf(building, EventType.Entered, History.SettlerId(slot).ToString());
         settler.State = 6;
         if (Occupant(node) != 0)
         {
             settler.Frame = 0x55;
             settler.Timer = 0;
-            RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());
+            History.RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());
             return;
         }
 
@@ -790,7 +790,7 @@ public sealed partial class Game
         settler.Target = (ushort)(time * _tables.DoorSpeed(building.TypeIndex)) >> 5;
         settler.Stamp = _clock;
         settler.State = 4;
-        RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());
+        History.RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());
         _buildingCommand.Remove(buildingId);
     }
 
@@ -799,11 +799,11 @@ public sealed partial class Game
     private void CreateCastleSettlers(int x, int y)
     {
         _buildings.Add(new Building(Building.CastleType, x, y, 0, constructing: true) { Status = 0x50, Fill = 0xffff });
-        Fill(_buildingFills, 0);
+        History.FillBuilding(0);
         foreach (var job in CastleJobs)
         {
             _settlers.Add(new Settler(job, 0, x, y, _clock, job == BuilderJob ? 10 : 1, 0));
-            Fill(_settlerFills, _settlers.Count - 1);
+            History.FillSettler(_settlers.Count - 1);
         }
     }
 
@@ -833,13 +833,13 @@ public sealed partial class Game
         {
             FlagPlacement.Apply(Map, flagX, flagY, NextFlagSlot());
             flag = AddFlag(new Flag(flagX, flagY));
-            RecordFlag(flag, EventType.PlaceFlag, CommandCause(FlagId(flag)));
+            History.RecordFlag(flag, EventType.PlaceFlag, CommandCause(History.FlagId(flag)));
 
             // A flag on a road's node splits the road (0x4662e2), before the hut's mark at the flag is set below: the mark
             // (bit 4 of the flag's direction byte) is no road bit.
             if (site.Node == 6)
             {
-                SplitRoad(Map.Index(flagX, flagY), flag, CommandCause(FlagId(flag)));
+                SplitRoad(Map.Index(flagX, flagY), flag, CommandCause(History.FlagId(flag)));
             }
         }
 
@@ -863,14 +863,14 @@ public sealed partial class Game
             _buildings[slot] = hut;
         }
 
-        Fill(_buildingFills, slot);
-        var cause = CommandCause(BuildingId(slot));
+        History.FillBuilding(slot);
+        var cause = CommandCause(History.BuildingId(slot));
         if (cause.IsCommand)
         {
-            _buildingCommand[BuildingId(slot)] = cause;
+            _buildingCommand[History.BuildingId(slot)] = cause;
         }
 
-        RecordBuilding(slot, EventType.PlaceBuilding, cause, FlagId(flag).ToString());
+        History.RecordBuilding(slot, EventType.PlaceBuilding, cause, History.FlagId(flag).ToString());
 
         return true;
     }

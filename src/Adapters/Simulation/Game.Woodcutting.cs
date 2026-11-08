@@ -121,7 +121,7 @@ public sealed partial class Game
     // (a woodcutter walking home included), woodcutting for another woodcutter, and the settlers' rules for another job that
     // passes through these states.
     private void RecordWork(int slot, string type, string? other = null) =>
-        RecordSettler(
+        History.RecordSettler(
             slot,
             type,
             InLayout || _walkingHome.Contains(slot) || _settlers[slot].Job != WoodcutterJob
@@ -552,7 +552,7 @@ public sealed partial class Game
         if (place >= 0)
         {
             LayGood(flag, place, good);
-            RecordFlag(flag, EventType.PutGood, Cause.Woodcutting, SettlerId(slot).ToString());
+            History.RecordFlag(flag, EventType.PutGood, Cause.Woodcutting, History.SettlerId(slot).ToString());
         }
     }
 

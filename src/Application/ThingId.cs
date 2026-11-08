@@ -8,7 +8,7 @@ namespace OpenSettlers.Simulation;
 /// count, so no ID is handed out twice in one game.
 /// </summary>
 /// <param name="Kind"><see cref="SettlerKind"/>, <see cref="BuildingKind"/>, or <see cref="FlagKind"/>.</param>
-/// <param name="Slot">The slot in <see cref="Game.Settlers"/>, <see cref="Game.Buildings"/>, or <see cref="Game.Flags"/>.</param>
+/// <param name="Slot">The slot in <c>Game.Settlers</c>, <c>Game.Buildings</c>, or <c>Game.Flags</c>.</param>
 /// <param name="Fill">How often the slot was filled, from 1.</param>
 public readonly record struct ThingId(string Kind, int Slot, int Fill)
 {

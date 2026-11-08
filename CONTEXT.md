@@ -93,10 +93,22 @@ _Avoid_: handle, key, index
 
 **Event**
 A record of one change a rule made to a settler, building, or flag: the tick, the rule that made it, the
-thing's state after the change, and its cause. An event names another thing by its ID. The game keeps every
-event in one event store, and the state of a thing at an earlier tick is the state in its last event up to
-that tick.
+thing's state after the change, and its cause. An event names another thing by its ID. The game's history keeps
+every event in one event store, and the state of a thing at an earlier tick is the state in its last event up
+to that tick.
 _Avoid_: log entry, change, history item
+
+**Game history**
+The part of a game that holds the thing IDs, the causes, and the event store (`Game.History`,
+`src/Application/GameHistory.cs`). It sits beside the game state, takes no part in the digest, and no rule
+reads it. It asks the snapshot exporter for a thing's state when a rule records an event.
+_Avoid_: event log, journal
+
+**Snapshot exporter**
+The adapter that writes the state of a settler, building, or flag as the original's named raw values, the
+form each event holds (`SnapshotExporter`, `src/Adapters/Simulation/SnapshotExporter.cs`). The history calls it
+through the `IThingSnapshots` port.
+_Avoid_: serializer, dumper
 
 **Cause**
 Why a change happened: the player's command that started the chain of changes (`placed` or `razed`, with

@@ -77,13 +77,13 @@ public sealed partial class Game
 
         // The new flag, naming the far flags of the halves; each far flag, naming the new flag; the carriers on a half, naming
         // its two flags.
-        TouchFlag(slot, EventType.SplitRoads, $"{FlagId(a.Far)} {FlagId(b.Far)}");
+        TouchFlag(slot, EventType.SplitRoads, $"{History.FlagId(a.Far)} {History.FlagId(b.Far)}");
         foreach (var half in new[] { a, b })
         {
-            TouchFlag(half.Far, EventType.SplitRoads, FlagId(slot).ToString());
+            TouchFlag(half.Far, EventType.SplitRoads, History.FlagId(slot).ToString());
             foreach (var carrierSlot in half.Settlers)
             {
-                Touch(carrierSlot, EventType.SplitRoads, $"{FlagId(half.Far)} {FlagId(slot)}");
+                Touch(carrierSlot, EventType.SplitRoads, $"{History.FlagId(half.Far)} {History.FlagId(slot)}");
             }
         }
 

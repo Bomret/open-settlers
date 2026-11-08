@@ -55,7 +55,7 @@ public sealed class RoadOnRoadTests
         Assert.AreEqual(1, game.Roads.Count);
         Assert.AreEqual(road, game.Roads.Single());
         CollectionAssert.AreEqual(roads, TestMaps.Roads(game.Map));
-        Assert.IsFalse(game.Events.All.Any(e => e.Type == EventType.SplitRoads), "no split");
+        Assert.IsFalse(game.History.Events.All.Any(e => e.Type == EventType.SplitRoads), "no split");
     }
 
     [TestMethod]
@@ -78,7 +78,7 @@ public sealed class RoadOnRoadTests
         var game = Started();
         var roads = TestMaps.Roads(game.Map);
         var road = game.Roads.Single();
-        var events = game.Events.All.Count();
+        var events = game.History.Events.All.Count();
         var drawing = new RoadDrawing(game);
         drawing.Click(18, 8);
         drawing.Click(18, 7);
@@ -96,7 +96,7 @@ public sealed class RoadOnRoadTests
         var game = Started();
         var roads = TestMaps.Roads(game.Map);
         var road = game.Roads.Single();
-        var events = game.Events.All.Count();
+        var events = game.History.Events.All.Count();
         var drawing = new RoadDrawing(game);
         drawing.Click(18, 8);
         drawing.Click(18, 7);
@@ -113,7 +113,7 @@ public sealed class RoadOnRoadTests
         Assert.AreEqual(1, game.Roads.Count);
         Assert.AreEqual(road, game.Roads.Single());
         CollectionAssert.AreEqual(roads, TestMaps.Roads(game.Map));
-        Assert.AreEqual(events, game.Events.All.Count());
+        Assert.AreEqual(events, game.History.Events.All.Count());
     }
 
     [TestMethod]
