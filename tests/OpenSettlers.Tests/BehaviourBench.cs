@@ -9,9 +9,13 @@ namespace OpenSettlers.Tests;
 internal sealed class BehaviourBench
 {
     public BehaviourBench(params ushort[] draws)
+        : this(null, draws) { }
+
+    // The tables hold the made-up transport priorities (index good - 1), or all 0 for none.
+    public BehaviourBench(byte[]? transportPriorities, params ushort[] draws)
     {
         Draws = new QueuedDraws(draws);
-        Tables = LayoutSettlersTests.MadeTables();
+        Tables = LayoutSettlersTests.MadeTables(transportPriorities: transportPriorities);
         Movement = new SettlerMovement(Map, Buildings, Tables, () => Clock, _ => new Residue());
         History = new GameHistory(new NoSnapshots(), () => 0);
         // Slot 0 of the settler table reads as a free node in an occupant list: the settlers under test take later slots.
@@ -45,6 +49,25 @@ internal sealed class BehaviourBench
         Movement.Occupy(Map.Index(settler.X, settler.Y), slot);
 
         return slot;
+    }
+
+    // A road of `steps` steps from the flag `from` in `direction` to the flag `to` (which it leaves in `back`), laid in the road
+    // network and the flags' sides, with a carrier on it or none. The map is not touched: the goods rules read the flag table.
+    public Road Join(int from, int direction, int to, int back, int steps = 2, bool carrier = true)
+    {
+        var road = new Road(from, direction, to, back, [.. System.Linq.Enumerable.Repeat(direction, steps)], false);
+        Roads.Add(road);
+        var length = LengthClass.OfSteps(steps);
+        var start = Flags[from].Side(direction);
+        var end = Flags[to].Side(back);
+        start.SetLength(length, carrierOnTheWay: false);
+        end.SetLength(length, carrierOnTheWay: false);
+        start.FarDirection = back;
+        end.FarDirection = direction;
+        start.HoldsCarrier = carrier;
+        end.HoldsCarrier = carrier;
+
+        return road;
     }
 
     // Every node of the map at a height of 1 and of the player 0: the node a settler may walk home to.

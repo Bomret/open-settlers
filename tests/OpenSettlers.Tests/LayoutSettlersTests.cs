@@ -53,7 +53,7 @@ public sealed class LayoutSettlersTests
 
     // The object class of the building's code (2) is 0 unless `buildingClass` names one: the removal click (0x44b6e6)
     // takes a building for class 4.
-    internal static RuleTables MadeTables(byte buildingClass = 0)
+    internal static RuleTables MadeTables(byte buildingClass = 0, byte[]? transportPriorities = null)
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
@@ -77,7 +77,8 @@ public sealed class LayoutSettlersTests
             Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
             Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
             Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
-            walkRows: rows
+            walkRows: rows,
+            transportPriorities: transportPriorities
         );
     }
 
