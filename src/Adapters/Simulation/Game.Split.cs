@@ -109,7 +109,7 @@ public sealed partial class Game
             half.Settlers,
             (flag, direction),
             (far, farDirection),
-            _tables.RoadCapacities[length >> 4] - (onItsWay ? 1 : 0)
+            _tables.RoadCapacity(length >> 4) - (onItsWay ? 1 : 0)
         );
     }
 }

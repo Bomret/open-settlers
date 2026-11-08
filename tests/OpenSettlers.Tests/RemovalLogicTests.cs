@@ -13,25 +13,25 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RemovalLogicTests
 {
-    internal static ProgramTables Made(byte capacity = 8, byte[]? transportPriorities = null)
+    internal static RuleTables Made(byte capacity = 8, byte[]? transportPriorities = null)
     {
-        var classes = new byte[ProgramTables.ClassCount];
+        var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         classes[2] = 4;
-        var kinds = Enumerable.Repeat((byte)0xff, ProgramTables.GoodKindCount).ToArray();
+        var kinds = Enumerable.Repeat((byte)0xff, RuleTables.GoodKindCount).ToArray();
         kinds[Game.GoodLog] = 1;
 
-        return new ProgramTables(
+        return new RuleTables(
             classes,
             Enumerable
-                .Range(0, ProgramTables.StartStockRows)
+                .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
-            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray(),
+            Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
             goodKinds: kinds,
-            roadCapacities: Enumerable.Repeat(capacity, ProgramTables.RoadCapacityCount).ToArray(),
+            roadCapacities: Enumerable.Repeat(capacity, RuleTables.RoadCapacityCount).ToArray(),
             transportPriorities: transportPriorities
         );
     }

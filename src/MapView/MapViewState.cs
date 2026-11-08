@@ -13,11 +13,11 @@ public sealed class MapViewState
     /// <summary>The seed the view opens with, in the original's screen form.</summary>
     public const string DefaultSeed = "1234567812345678";
 
-    readonly ProgramTables? _tables;
+    readonly RuleTables? _tables;
     readonly string? _tablesProblem;
     bool _layout;
 
-    MapViewState(ProgramTables? tables, string? tablesProblem, string seedText, int sizeValue)
+    MapViewState(RuleTables? tables, string? tablesProblem, string seedText, int sizeValue)
     {
         _tables = tables;
         _tablesProblem = tablesProblem;
@@ -48,7 +48,7 @@ public sealed class MapViewState
     /// Null <paramref name="tables"/> generate no map, and <see cref="Problem"/> names
     /// <paramref name="tablesProblem"/>, why they could not be read.
     /// </summary>
-    public static MapViewState Open(ProgramTables? tables, string seedText, int sizeValue, string? tablesProblem = null)
+    public static MapViewState Open(RuleTables? tables, string seedText, int sizeValue, string? tablesProblem = null)
     {
         var state = new MapViewState(tables, tablesProblem, seedText, sizeValue);
         state.Apply(seedText, sizeValue);

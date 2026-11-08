@@ -25,7 +25,7 @@ public sealed class SpriteLayerTests
             TestProgram.Tables(),
             Settler.CarrierJob,
             Settler.WoodcutterJob,
-            ProgramTables.TypeOneHutJob
+            RuleTables.TypeOneHutJob
         );
 
         Assert.IsGreaterThan(256, graphics.Images.Count);

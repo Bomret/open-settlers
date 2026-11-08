@@ -417,8 +417,7 @@ public sealed partial class Game
     // player, read at 0x43b054): the rank the player's setup at a new game writes for each good 1 to 26 (0x42055e calls
     // 0x445570), read from the program. Good 0 is no good and has none. The bytes for the goods 27 to 31 belong to other fields
     // of the player's block in the original; no good has those numbers, and the engine gives them none.
-    private int TransportPriority(int good) =>
-        good is >= 1 and <= StartStock.Goods ? _tables.TransportPriorities[good - 1] : 0;
+    private int TransportPriority(int good) => _tables.TransportPriority(good);
 
     // A carrier on the flag it carries a good to (0x43c45e): it turns to the building north-west of the flag, state 0xe, with the
     // step's frame from the heights and its time on the timer, and goes on at once where the timer has not run out.

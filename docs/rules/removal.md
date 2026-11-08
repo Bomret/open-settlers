@@ -155,7 +155,7 @@ the castle, the hut's flag, and a flag as a road, a node of no road, and a node 
 
 - `Game.ClickClass`, `Game.RemovalAt` (the command a click means), `CommandKind.RemoveFlag` (5), `RemoveBuilding` (6), and `RemoveRoad` (7): `src/Adapters/Simulation/Game.Removal.cs`.
 - The table slots: a flag's or building's slot freed is `Flag.Free` or `Building.Free()`; the next flag or building takes the first free slot (`0x45d7ad`, `0x45da8f`).
-- `ProgramTables.GoodKinds` (`0x462d6d`) and `RoadCapacities` (`0x462acd`).
+- `RuleTables.FillCounterOf` (`0x462d6d`) and `RuleTables.RoadCapacity` (`0x462acd`).
 - The states `0x44` and `0x45` (`Dismissed`, `Rejoined`) and the carrier's end-of-road counting (`Wait` in `src/Adapters/Simulation/Game.Carriers.cs`).
 - Departures: the engine's flag slot 0 is the castle's flag, so the original's test of a waiting settler's target (state 1) is left out ([Goods at a flag](goods.md) states the dummy); a carrier that waits has the
   flag's slot in the target where the original keeps a pointer, so the bytes of a settler in state `0x19` that was one are masked in the test.

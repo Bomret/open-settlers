@@ -153,7 +153,7 @@ For the goods 27 to 31 the read reaches past the table into two counters of the 
 `Castle_CreateSettlers` adds to; no good has those numbers. Good 0 is no good. A rank of 0 never wins the exchange's scan, which
 starts at 0 and takes only a greater rank.
 
-The port reads the ranks from the routine's instructions in the install's program (`ProgramTables.TransportPriorities`), never
+The port reads the ranks from the routine's instructions in the install's program (`RuleTables.TransportPriority`), never
 from source. It checks that every step starts with the load of a constant and that the ranks are 1 to 26 each once; an install whose program fails either
 check is refused with a message naming the transport priority table, so the game never runs with every rank 0. `Game` gives the
 goods 0 and 27 to 31 the rank 0. **Not ported:** the player's panel that reorders the ranks, and one table per player (the engine
@@ -197,7 +197,7 @@ words they are `0x0000, 0x3000, 0x3500, 0x3b00, 0x4100, 0x4600, 0x4b00, 0x1400, 
 figure byte is drawn in the row `0x14` of the figure bases. A carrier in state 0x42 is not drawn, and its byte 11 is the road
 direction. A carrier with no good (byte 11 0) adds nothing.
 
-`ProgramTables.CarriedFigures` reads the 27 words from `0x43f4b7`. `SettlerFigures` draws a carrier on its road (state 3) or
+`RuleTables.CarriedFigures` holds the 27 words from `0x43f4b7`. `SettlerFigures` draws a carrier on its road (state 3) or
 handing a good over (state 0xe) with a good by the same rule for every good. `Sprites` and `Draws` share one function. The view
 draws it in every wrap copy. A play run of `play/carrier-log.play` shows the carrier holding the log above his head and facing
 the way he walks.
@@ -222,7 +222,7 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 
 `Game.Goods.cs`: `GoodsTurn`, `Destine`, `StorageSearch`, `Direct`, `Fetch` and `Claim` port the above; `LayGood` is the put.
 `Exchange` and `WaitForRoad` are the carrier's exchange at a flag, `TransportPriority` reads a good's rank from
-`ProgramTables.TransportPriorities`, `Deliver` and `Handover` state 0xe, `AddToStock` the castle's
+`RuleTables.TransportPriority`, `Deliver` and `Handover` state 0xe, `AddToStock` the castle's
 count (`Game.CastleLogs` reads the log's). A carrier's byte 11 is `Settler.Mode` and its word at 12 `Settler.Target` (the
 destination as the original numbers the flags while it carries a good). `Building.Fill` holds bytes 8 and 9.
 `Game.FlagGoods(flag)` holds the places' bytes (the direction in bits 5 to 7), `FlagGoodsBit`, `FlagDestinations` (the slot plus

@@ -222,7 +222,7 @@ public sealed class SettlerFiguresTests
     // The handler of the settler of the type 1 hut (0x43fed8) adds, for a figure byte below 0x80, 0x2c00 or 0x2f00 on the way back
     // with a load and, from 0x80, 0x2c80 or, where the heading (byte 14) is 1, 0x2d80; the rows here are made up.
     private static Settler Hut(int frame, int state = 2, int heading = 0, int mark = 0) =>
-        new(ProgramTables.TypeOneHutJob, 0, 4, 3, 0, state, 0)
+        new(RuleTables.TypeOneHutJob, 0, 4, 3, 0, state, 0)
         {
             Frame = frame,
             Heading = heading,
@@ -251,7 +251,7 @@ public sealed class SettlerFiguresTests
     [TestMethod]
     public void TheSpritesOfTheSettlerOfTheTypeOneHutAreThoseOfEveryTripleOfItsSequencesInTheRowsOfHisHandler()
     {
-        var entries = Figures().Sprites(ProgramTables.TypeOneHutJob, 0x40).Select(s => s.Entry).Distinct().ToArray();
+        var entries = Figures().Sprites(RuleTables.TypeOneHutJob, 0x40).Select(s => s.Entry).Distinct().ToArray();
 
         CollectionAssert.IsSubsetOf(new[] { 2453, 2553, 2651, 2751, 3103, 3203, 3301, 3401 }, entries);
     }

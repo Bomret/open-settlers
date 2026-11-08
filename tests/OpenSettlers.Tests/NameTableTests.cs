@@ -87,15 +87,15 @@ public sealed class NameTableTests
 
     private static NameTable Table(params (int Code, int Class)[] classes)
     {
-        var table = new byte[ProgramTables.ClassCount];
+        var table = new ObjectClass[RuleTables.ClassCount];
         foreach (var (code, @class) in classes)
         {
             table[code] = (byte)@class;
         }
 
-        return new NameTable(new ProgramTables(table, ZeroStock()));
+        return new NameTable(new RuleTables(table, ZeroStock()));
     }
 
     private static byte[][] ZeroStock() =>
-        Enumerable.Range(0, ProgramTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
+        Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
 }

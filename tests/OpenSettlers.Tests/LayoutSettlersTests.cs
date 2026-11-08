@@ -53,30 +53,30 @@ public sealed class LayoutSettlersTests
 
     // The object class of the building's code (2) is 0 unless `buildingClass` names one: the removal click (0x44b6e6)
     // takes a building for class 4.
-    internal static ProgramTables MadeTables(byte buildingClass = 0)
+    internal static RuleTables MadeTables(byte buildingClass = 0)
     {
-        var classes = new byte[ProgramTables.ClassCount];
+        var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
         classes[2] = buildingClass;
-        var rows = new byte[ProgramTables.WalkRowCount * ProgramTables.WalkRowSize];
-        for (var row = 0; row < ProgramTables.WalkRowCount; row++)
+        var rows = new byte[RuleTables.WalkRowCount * RuleTables.WalkRowSize];
+        for (var row = 0; row < RuleTables.WalkRowCount; row++)
         {
             var first = row < 12 ? (byte)4 : FirstDirections[row - 12];
             new[] { first }
                 .Concat(new byte[] { 4, 8, 12, 16, 20, 24 }.Where(code => code != first))
                 .ToArray()
-                .CopyTo(rows, row * ProgramTables.WalkRowSize);
+                .CopyTo(rows, row * RuleTables.WalkRowSize);
         }
 
-        return new ProgramTables(
+        return new RuleTables(
             classes,
             Enumerable
-                .Range(0, ProgramTables.StartStockRows)
+                .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            Enumerable.Repeat((ushort)100, ProgramTables.StepTimeCount).ToArray(),
-            Enumerable.Repeat((byte)8, ProgramTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, ProgramTables.ScanWindowCount).ToArray(),
+            Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
             walkRows: rows
         );
     }

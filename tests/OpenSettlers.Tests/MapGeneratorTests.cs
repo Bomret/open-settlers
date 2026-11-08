@@ -107,9 +107,9 @@ public sealed class MapGeneratorTests
     private static int ObjectAfterOverlap(int objectClass, int dx, int dy)
     {
         var made = TestProgram.Made();
-        var classes = new byte[ProgramTables.ClassCount];
+        var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MadeCode] = (byte)objectClass;
-        var tables = new ProgramTables(classes, made.StartStock);
+        var tables = new RuleTables(classes, made.StartStock);
         var tile = -1;
 
         var map = MapGenerator.Generate(

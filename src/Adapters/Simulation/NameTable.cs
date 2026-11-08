@@ -7,16 +7,16 @@ namespace OpenSettlers.Simulation;
 /// Open Settlers' names for the original's bare codes: map object codes, settler jobs, settler states, and building
 /// types (ADR 0010, INV-0006). Each entry cites its evidence beside it. A code with no entry has no name and shows its
 /// raw value. A name several codes share (<c>tree</c>) resolves to all of them through <see cref="CodesNamed"/>. The
-/// object names read the class table the engine loaded (<see cref="ProgramTables"/>): <c>stone</c> names a code the
+/// object names read the class table the engine loaded (<see cref="RuleTables"/>): <c>stone</c> names a code the
 /// docs call a stone only where that table says class 2. The job, state, and building names need no table and are
 /// static.
 /// </summary>
 public sealed class NameTable
 {
-    private readonly ProgramTables tables;
+    private readonly RuleTables tables;
 
     /// <summary>The names of the object codes as the class table <paramref name="tables"/> reads them.</summary>
-    public NameTable(ProgramTables tables) => this.tables = tables;
+    public NameTable(RuleTables tables) => this.tables = tables;
 
     // The object codes the engine and docs/rules/map-object-codes.md name; Game.Woodcutting reads the ranges from here.
     internal const int FirstTree = MapObject.FirstTreeCode;
@@ -31,9 +31,6 @@ public sealed class NameTable
     internal const int BuilderJob = 4;
     internal const int JoblessJob = 21;
     internal const int StorehouseType = 0xa;
-
-    /// <summary>The class of the stones in the original's class table (<c>docs/rules/build-sites.md</c>).</summary>
-    private const int StoneClass = 2;
 
     /// <summary>What a code stands for.</summary>
     internal enum CodeKind
@@ -50,7 +47,7 @@ public sealed class NameTable
     private const string TreeEvidence =
         "the program compares a node's code with 8 and 0x18 (0x438c11, 0x437f8f); docs/rules/woodcutting.md (codes 8 to 0x17); class 1";
     private const string StoneEvidence =
-        "docs/rules/map-object-codes.md (codes 0x48 to 0x4f are stone heaps); named only where class 2 of ProgramTables.Classes agrees (docs/rules/build-sites.md)";
+        "docs/rules/map-object-codes.md (codes 0x48 to 0x4f are stone heaps); named only where class 2 of RuleTables.Classes agrees (docs/rules/build-sites.md)";
 
     /// <summary>Every entry of the table. The <c>stone</c> entries hold only where the class table says class 2.</summary>
     internal static IReadOnlyList<Entry> Entries { get; } = Build();
@@ -67,7 +64,7 @@ public sealed class NameTable
     public string? ObjectName(byte code)
     {
         var name = Find(CodeKind.Object, code & 0x7f);
-        return name == "stone" && tables.Classes[code & 0x7f] != StoneClass ? null : name;
+        return name == "stone" && !tables.ClassOf(new MapObject((byte)(code & 0x7f))).IsStone ? null : name;
     }
 
     /// <summary>The name of the settler job, or null where the table has none.</summary>

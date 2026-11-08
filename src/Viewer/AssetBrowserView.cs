@@ -53,7 +53,7 @@ public partial class AssetBrowserView : Control
             var code = SeedInfo.Run(
                 () =>
                     Install.TryOpen(args, out var install, out var problem)
-                        ? ProgramTables.Read(install.ReadAll(Install.Program))
+                        ? ProgramTablesImporter.Import(install.ReadAll(Install.Program))
                         : throw new System.IO.IOException(problem),
                 args.SeedText!,
                 args.Seed!.Value,

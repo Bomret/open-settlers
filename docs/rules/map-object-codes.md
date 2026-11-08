@@ -9,7 +9,7 @@ strong enough for a name and shows as its raw number.
 **Status:** confirmed for the class and the sprite entry of each code; the sprite descriptions are read from the
 rendered sprites.
 
-- **Class:** the byte of the code in the class table at `0x41e640` of `Siedler1.exe` (`ProgramTables.Classes`).
+- **Class:** the byte of the code in the class table at `0x41e640` of `Siedler1.exe` (`RuleTables.ClassOf`).
   Class 1 and 2 are the trees and stones of the generation, 2 and up are large objects
   ([Map form](map-form.md), `MapGen_ResolveObjectOverlap`), 3 is a flag, 4 to 6 are buildings.
 - **Sprite:** the entry `ObjectSprites.Entry` picks (`1250 + code - 8`, the animated codes 8 to 31 by frame),

@@ -88,7 +88,7 @@ public partial class MapViewControl : Control
     bool _dragging;
     readonly ClickGesture _gesture = new();
     (int X, int Y, float Scale, float Width, float Height) _pressView;
-    ProgramTables? _tables;
+    RuleTables? _tables;
     bool _castleDrawn;
     Vector2 _keyCarry;
     Vector2 _dragCarry;
@@ -354,7 +354,7 @@ public partial class MapViewControl : Control
 
         try
         {
-            _tables = ProgramTables.Read(_install.ReadAll(Install.Program));
+            _tables = ProgramTablesImporter.Import(_install.ReadAll(Install.Program));
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -374,7 +374,7 @@ public partial class MapViewControl : Control
                         _tables,
                         Settler.CarrierJob,
                         Settler.WoodcutterJob,
-                        ProgramTables.TypeOneHutJob
+                        RuleTables.TypeOneHutJob
                     );
                     _settlerMaterial = BuildObjectMaterial(
                         new ObjectGraphics

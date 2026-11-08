@@ -24,7 +24,7 @@ public static class MapGenerator
     /// <exception cref="InvalidOperationException">
     /// No land mass covers a quarter of the map. The original searches for one without end.
     /// </exception>
-    public static Map Generate(ProgramTables tables, MapSeed seed, MapSize size, MapPassObserver? observer = null)
+    public static Map Generate(RuleTables tables, MapSeed seed, MapSize size, MapPassObserver? observer = null)
     {
         ArgumentNullException.ThrowIfNull(tables);
 
@@ -36,7 +36,7 @@ public static class MapGenerator
     /// nothing, when the original offers no such size.
     /// </summary>
     public static bool TryGenerate(
-        ProgramTables tables,
+        RuleTables tables,
         MapSeed seed,
         int sizeValue,
         MapPassObserver? observer,
@@ -160,7 +160,7 @@ public static class MapGenerator
         // The directions of the six sides of a ring around a tile, and the tile after each side.
         private static readonly (int Dx, int Dy)[] RingSides = [(0, 1), (-1, 0), (-1, -1), (0, -1), (1, 0), (1, 1)];
 
-        private readonly byte[] _classes;
+        private readonly RuleTables _tables;
         private readonly MapSeed _seed;
         private readonly MapPassObserver? _observer;
         private readonly MapLayers _map;
@@ -174,9 +174,9 @@ public static class MapGenerator
         private readonly byte[] _resource;
         private RandomGenerator _generator;
 
-        public Generation(ProgramTables tables, MapSeed seed, MapSize size, MapPassObserver? observer)
+        public Generation(RuleTables tables, MapSeed seed, MapSize size, MapPassObserver? observer)
         {
-            _classes = tables.Classes;
+            _tables = tables;
             _seed = seed;
             _observer = observer;
             _map = new MapLayers(size);
@@ -980,7 +980,7 @@ public static class MapGenerator
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
-                if (_classes[_objects[tile] & 0x7f] <= 1)
+                if (!_tables.ClassOf(new MapObject((byte)(_objects[tile] & 0x7f))).IsLarge)
                 {
                     continue;
                 }

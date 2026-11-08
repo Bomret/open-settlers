@@ -58,7 +58,7 @@ settler, with the time of the step times the door's speed `xor 0x1f` over 32, an
 State 0x10 (`0x436c38`) walks the vector. Each step, with byte 15 clear, takes a heading class from the signs and sizes of the
 vector (east, south): 12 plus a part for a vector that points west (2 more when the north part is less than the west part, 1 more
 when the lesser part is under twice the greater) and so on up to 23. The class picks a row of the table at `0x4388ff`, 8 bytes a row
-(read from the install, `ProgramTables.WalkRows`), and the first direction of the row is the step: 4 east, 8 south-east, 12 south,
+(read from the install, `RuleTables.WalkDirection`), and the first direction of the row is the step: 4 east, 8 south-east, 12 south,
 16 west, 20 north-west, 24 north. The step is made when the node is not marked 0x40 (flag bit 6: a building, the hut's node among
 them) and holds no settler. The vector takes the step, byte 15 becomes 8 when it is 0, the node changes, and the timer adds the time
 of the shape `4 + 9 * direction + (height reached - height left)`; the walk goes on while the sum does not wrap the timer, as the road
@@ -166,6 +166,6 @@ read from the registers the decompile shows); an open lead.
 
 `src/Adapters/Simulation/Game.Woodcutting.cs`: `Door`, `SearchTree`, `StepOut`, `FreeWalk`, `Arrive`, `Cut`, `PutGood`, `EnterHut`, and
 `ObjectPass`; `Game.FlagGoods(flag)` reads the 8 places of a flag; `Settler.WoodcutterJob` is job 5, `Building.WoodcutterType` the type
-2; `ProgramTables.WalkRows` holds the rows of `0x4388ff`; `Map.Generator` is the generator the generation leaves, and the game's
+2; `RuleTables.WalkRows` holds the rows of `0x4388ff`; `Map.Generator` is the generator the generation leaves, and the game's
 generator (`Game.Random`, internal) continues from it. `Game.Settlers.cs` runs the knights' idle turns (`KnightIdle`). `Game.Digest`
 holds the generator, the object pass's clock, countdown, and cursor, and the goods on the flags.

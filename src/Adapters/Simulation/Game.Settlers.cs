@@ -171,7 +171,7 @@ public sealed partial class Game
             _scanCursor = 0;
         }
 
-        var window = Math.Min(count - _scanCursor, _tables.ScanWindows[Map.Size.Value]);
+        var window = Math.Min(count - _scanCursor, _tables.ScanWindow(Map.Size.Value));
         var left = 10;
         for (var i = 0; i < window; i++)
         {
@@ -547,7 +547,7 @@ public sealed partial class Game
         Move(slot, settler, x, y, next);
         var shape = Height(next) - Height(here) + 13;
         settler.Frame = (byte)shape;
-        var speed = (byte)(_tables.DoorSpeeds[door?.TypeIndex ?? 0] ^ 0x1f);
+        var speed = (byte)(_tables.DoorSpeed(door?.TypeIndex ?? 0) ^ 0x1f);
         settler.Timer = (ushort)((ushort)(_tables.StepTime(shape) * speed) >> 5);
         settler.Stamp = _clock;
         settler.State = 5;
@@ -787,7 +787,7 @@ public sealed partial class Game
         settler.Frame = (byte)shape;
         var time = _tables.StepTime(shape);
         settler.Timer = time;
-        settler.Target = (ushort)(time * _tables.DoorSpeeds[building.TypeIndex]) >> 5;
+        settler.Target = (ushort)(time * _tables.DoorSpeed(building.TypeIndex)) >> 5;
         settler.Stamp = _clock;
         settler.State = 4;
         RecordSettler(slot, EventType.Entered, SettlerCause(slot), buildingId.ToString());

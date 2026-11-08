@@ -69,7 +69,7 @@ public static class SeedInfo
     /// <see cref="MapGenerator.Generate"/>.
     /// </summary>
     public static int Run(
-        Func<ProgramTables> readTables,
+        Func<RuleTables> readTables,
         string seedText,
         Seed seed,
         MapSize size,
@@ -77,7 +77,7 @@ public static class SeedInfo
         Func<MapSeed, MapSize, Map>? generate = null
     )
     {
-        ProgramTables tables;
+        RuleTables tables;
         try
         {
             tables = readTables();

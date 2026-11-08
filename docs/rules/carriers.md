@@ -162,7 +162,7 @@ node is the middle of the road.
 carrier of a road is found by its state: a settler of job 0 in state 0x42 waits next to the flag `Target` on the road that
 leaves it in direction `Mode`. `Game.Digest` holds the flags' status and road bytes and the flag scan's cursor.
 
-`src/MapView/SettlerFigures.cs` draws a waiting carrier as the tile pass does, from the tables `ProgramTables` reads
+`src/MapView/SettlerFigures.cs` draws a waiting carrier as the tile pass does, from the tables `ProgramTablesImporter` reads
 (`IdlePhases`, `IdleFigures`, `IdleOffsets`). The engine keeps no mark byte: a carrier of job 0 in states 0x42 to 0x45 stands
 for the mark, since the carrier enters those states only from 0x42 and leaves them only by taking its node. **Stand-in:** the
 original picks the phase by the address of the node's record; the engine picks it by the node's column, which gives the
