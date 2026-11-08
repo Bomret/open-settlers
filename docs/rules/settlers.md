@@ -417,29 +417,37 @@ reaches them: the scenarios find a node in the first ring), the ring masks of th
 ## In the engine
 
 `Game.Buildings` (a `BuildingTable` of `Building`s, each with a `BuildingType`) and `Game.Settlers` (a `SettlerTable` of
-`Settler`s) hold the items (`src/Domain/Building.cs`, `Settler.cs`). A `Settler` is one object for its whole life: its
-identity and body (node, player, timer, stamp, frame), a `Job` that can change (a settler without a job becomes a carrier when
-a road takes it, and stays the same settler with the same thing ID), and one `Activity` record that holds only that activity's
-data (`src/Domain/Activity.cs`). Each activity type keeps the code of the original's state it stands for (`Activity.Code`):
-`WaitsInCastle` 1, `Walks` 2, `WalksRoad` 3, `Door` 4, `WaitsOutStep` 5, `EntersBuilding` 6, `StepsOntoFlag` 7, `BuildsCastle`
-0xa, `BuiltCastle` 0xc, `HandsOver` 0xe, `Leaving` 0xf, `WalksFree` 0x10, `Cuts` 0x11, `LooksForTree` 0x12, `SearchesHome`
-0x19, `ClaimsHomeNode` 0x1c, `KnightWalks` 0x35, `WaitsAtFlag` 0x42, `ClaimsNode` 0x43, `WaitsToGoHome` 0x44, and
-`WaitsToRejoin` 0x45; a state code with no activity type is kept as it is in `RawState`, whose turn changes nothing (the original's
-branches for mode `0xfd` to state `0x49`, and for state `0x4a`, are not ported: no rule writes those). The original shares bytes 11 to 15 of the item between its states: an activity names the values it uses
-(an `Errand` for the walk's mode and target, a `Load` for the good a carrier carries and where it goes, a `Heading`, a free
-walk's `Trip`), and the bytes it leaves unused ride along in its `Residue` so that a change of activity keeps them as the original
-does. No rule reads or writes them. A search for a flag home (`SearchesHome`) holds its mode byte itself (`FarEndMark`); a heading gives the
-idle frame of a carrier (`Heading.IdleFrame`), and a job says whether its settler arrives home generically (`Job.ArrivesHomeGenerically`). `SettlerEncoder` (`src/Adapters/Simulation/SettlerEncoder.cs`) writes the state, mode, target, heading,
-next, and stamp of the original's item from the typed settler for the digest, the event snapshots, and the readouts;
-`BuildingEncoder` does the same for the building's status, worker, fill, and type index. The table pass is `TablePass`
-(`src/Application`): it runs the flag, building, and settler slices of a phase in the original's order and hands each settler to the
-behaviour registered for its activity type in `ActivityRegistry`; `GameFactory` registers the behaviours (`Game.Behaviours`), one for
-each activity type. The pass is `MainPass` (`src/Application/MainPass.cs`), the castle's settlers and the request for a worker
-are `CastleRoster`, the walk to an errand is `WalkBehavior` with the step in `RoadStep`, and the route search is
-`RoadNetwork.Route`. `ProgramTablesImporter` reads the step
-times, the door speeds, and the scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`,
-`ScanWindows`). `Game.Digest` (`GameDigest` in the adapters) holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's
-waiting list, and the settlers' places. The carriers' part is in `src/Application/CarrierBehavior.cs`
-([Carriers](carriers.md#in-the-engine)), the woodcutter's and the map's object pass in `src/Application/WoodcutterBehavior.cs`
-([Woodcutting](woodcutting.md#in-the-engine)), the walk home in `src/Application/WalkHomeBehavior.cs`; both build on
-`SettlerMovement` (the settlers' nodes, the step, and the timer).
+`Settler`s) hold the items (`src/Domain/Building.cs`, `Settler.cs`). A `Settler` is one object for its whole life. It has an
+identity and body (node, player, timer, stamp, frame). It has a `Job` that can change: a settler without a job becomes a carrier
+when a road takes it, and stays the same settler with the same thing ID. It has one `Activity` record that holds only that
+activity's data (`src/Domain/Activity.cs`).
+
+Each activity type keeps the code of the original's state it stands for (`Activity.Code`). `src/Domain/Activity.cs` lists the
+types and their codes. A state code with no activity type is kept as it is in `RawState`, whose turn changes nothing. The
+original's branch for mode `0xfd` to state `0x49` and its branch for state `0x4a` are not ported, because no rule writes
+those states.
+
+The original shares bytes 11 to 15 of the item between its states. An activity names the values it uses: an `Errand` for the
+walk's mode and target, a `Load` for the good a carrier carries and where it goes, a `Heading`, and a free walk's `Trip`. The
+bytes it leaves unused ride along in its `Residue`, so that a change of activity keeps them as the original does. No rule reads
+or writes the residue. A search for a flag home (`SearchesHome`) holds its mode byte itself (`FarEndMark`). A heading gives the
+idle frame of a carrier (`Heading.IdleFrame`), and a job says whether its settler arrives home generically
+(`Job.ArrivesHomeGenerically`).
+
+`SettlerEncoder` (`src/Adapters/Simulation/SettlerEncoder.cs`) writes the state, mode, target, heading, next, and stamp of the
+original's item from the typed settler. The digest, the event snapshots, and the thing readouts use it. The readouts show the
+original's encoding as read-only display, and no rule reads it. `BuildingEncoder` does the same for the building's status,
+worker, fill, and type index.
+
+The table pass is `TablePass` (`src/Application`). It runs the flag, building, and settler slices of a phase in the original's
+order and hands each settler to the behavior registered for its activity type in `ActivityRegistry`. `GameFactory` registers
+the behaviors (`Game.Behaviours`), one for each activity type. The pass is `MainPass` (`src/Application/MainPass.cs`). The
+castle's settlers and the request for a worker are `CastleRoster`. The walk to an errand is `WalkBehavior` with the step in
+`RoadStep`, and the route search is `RoadNetwork.Route`. `ProgramTablesImporter` reads the step times, the door speeds, and the
+scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`, `ScanWindows`). `Game.Digest` (`GameDigest` in
+the adapters) holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's waiting list, and the
+settlers' places.
+
+The carriers' part is in `src/Application/CarrierBehavior.cs` ([Carriers](carriers.md#in-the-engine)). The woodcutter's part and
+the map's object pass are in `src/Application/WoodcutterBehavior.cs` ([Woodcutting](woodcutting.md#in-the-engine)). The walk home
+is in `src/Application/WalkHomeBehavior.cs`. Both build on `SettlerMovement` (the settlers' nodes, the step, and the timer).

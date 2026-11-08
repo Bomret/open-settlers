@@ -220,15 +220,17 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 
 ## In the engine
 
-`src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `StorageSearch`, and `Direct` port the above; `LayGood` is the put.
-`Exchange` and `WaitForRoad` are the carrier's exchange at a flag, `TransportPriority` reads a good's rank from
+`src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `StorageSearch`, and `Direct` port the above. `LayGood` is the put.
+`Exchange` and `WaitForRoad` are the carrier's exchange at a flag, and `TransportPriority` reads a good's rank from
 `RuleTables.TransportPriority`. `src/Application/CarrierBehavior.cs` holds `Fetch` and `Claim`, and `Deliver` and `Handover`
-(state 0xe); `CastleStock.Add` is the castle's count (`CastleStock.Logs` reads the log's). `Game.Goods` returns the
-`GoodsTransport`, which a test builds on a hand-made flag table. A carrier's good and destination are the `Load` of its `WalksRoad` or `HandsOver` activity
-(`SettlerEncoder` writes them as byte 11 and the word at 12, the destination as the original numbers the flags while it carries a
-good). `Building.FillLow` and `FillHigh` hold bytes 8 and 9 (`BuildingEncoder.Fill` writes the word).
-`Flag.Places` holds the eight `WaitingGood`s of a flag (`Good`, `Destination` as a flag slot or none, `Way` as a direction or
-none; an empty place keeps its last destination), `Flag.NeedsGoodsTurn` is byte 4 bit 7, and `FlagSide.WaitingPlace` and
+(state 0xe). `CastleStock.Add` is the castle's count, and `CastleStock.Logs` reads the log's. `Game.Goods` returns the
+`GoodsTransport`, which a test builds on a hand-made flag table. A carrier's good and destination are the `Load` of its
+`WalksRoad` or `HandsOver` activity. `SettlerEncoder` writes them as byte 11 and the word at 12, and the destination as the
+original numbers the flags while it carries a good. `Building.FillLow` and `FillHigh` hold bytes 8 and 9, and
+`BuildingEncoder.Fill` writes the word.
+`Flag.Places` holds the eight `WaitingGood`s of a flag. Each has a `Good`, a `Destination` as a flag slot or none, and a
+`Way` as a direction or none. An empty place keeps its last destination.
+`Flag.NeedsGoodsTurn` is byte 4 bit 7. `FlagSide.WaitingPlace` and
 `FlagSide.FarDirection` are the direction bytes at `0x3c` to `0x41`. `FlagEncoder` writes them as the original's bytes: the
 good byte with the direction plus one in bits 5 to 7, and the destination word as the slot plus one (the original numbers its
 flags from 1), 0 for none. `Game.Digest` holds all of them through `FlagEncoder`.

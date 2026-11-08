@@ -296,16 +296,16 @@ matches. The verb `roaddraw:SEED:COUNT` runs the three strip routines on random 
 
 `CommandKind.BuildRoad` takes the start flag in `Command.X` and `Command.Y` and the step of each direction in
 `Command.Directions`. `RoadBuilding.Walk` (`src/Application/RoadBuilding.cs`) draws the road into the map as the
-original does and takes it back unless the road is accepted; `RoadPlanner.Check` (`Game.RoadPlanner`) asks the same without changing the game,
+original does and takes it back unless the road is accepted. `RoadPlanner.Check` (`Game.RoadPlanner`) asks the same without changing the game,
 and `Game.Network.Roads` lists the built roads (`Road`: the slots and directions of the two ends, the steps, and whether it is
 a water road). The digest holds the roads. A refused command, and a road that does not end on a flag, changes nothing.
 The stand-in road button (`src/Viewer/MapViewControl.cs` with `src/MapView/RoadDrawing.cs`) draws a road outside the
 game, a node at a time, and sends one command where the road reaches a flag; Escape, a right click, or the button
 again cancels. `RoadDraws`, `RoadGraphics`, and the control draw the strips over the terrain in every copy of the map;
 the road being drawn is a white line. Departures: the length class, the second bit byte at `+5`, and the items'
-pointers are not kept (a later slice reads the road from the map and from `Game.Network.Roads`); the `+0x37e` option, the
-second-button click that puts a flag on a road ([A flag on a road](#a-flag-on-a-road)); the step back at the start;
-directions after the road reached a flag are refused; the sounds; and the pixel alignment of the strips.
+pointers are not kept (a later slice reads the road from the map and from `Game.Network.Roads`). Also left out are the `+0x37e` option, the
+second-button click that puts a flag on a road ([A flag on a road](#a-flag-on-a-road)), the step back at the start, the sounds, and the
+pixel alignment of the strips. Directions after the road reached a flag are refused.
 
 **A road ending on a road.** The Road button holds no view flag bit 3 and the stand-in offers no second pointer button, so
 a road whose step lands on a node of another road, a node with road bits and no flag, is refused as the original refuses it

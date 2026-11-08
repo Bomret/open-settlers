@@ -63,8 +63,8 @@ the two rows around it (rows 3 and 4 at the levels from 30, and row 4 twice from
 of the level times 0x199a out of 65536. Each count is the lower row's value plus the product of the difference
 and the weight divided by 65536, one more where the fraction of that division is above one half, all in
 16-bit arithmetic. The engine reads the five rows from the install's `Siedler1.exe` at run time, at `0x442e8a`
-through the section headers of the executable (`ProgramTablesImporter`); it holds no copy (the harness verb `stockrows`
-prints them, and `ProgramTablesTests` compares a digest of the rows read with the emulator's).
+through the section headers of the executable (`ProgramTablesImporter`). The engine holds no copy. The harness verb `stockrows`
+prints the rows, and `ProgramTablesTests` compares a digest of the rows read with the emulator's.
 
 The placement then takes from the result what the castle's own construction and the 20 settlers use: 7 of good 7,
 2 of good 9, 1 of good 15, 4 of good 16, 1 each of goods 17 and 20, 2 of good 21, 3 of good 22, and 3 each of goods 24
@@ -88,7 +88,7 @@ the screen. **Emulated:** the harness (`opponents:S0,S1,S2`) gave the level for 
 `Game` takes the program's tables (`RuleTables`), the map, and a start stock level (`MapViewState.StockLevel`
 from the seed). `CommandKind.PlaceCastle`
 with the node in `Command.X` and `Command.Y` places the castle through `BuildSite.Evaluate` and
-`CastlePlacement.Apply`; `Game.CastleStock` holds the result. The game changes the map's layers it was
+`CastlePlacement.Apply`. `Game.CastleStock` holds the result. The game changes the map's layers it was
 given. The placement also adds the castle as building slot 0 and the 20 settlers (`Game.Buildings`, `Game.Settlers`).
 The digest holds the castle, the stock, the buildings, and the settlers. Departures: the storage item and the
 item tables' other fields, the player's flag bits, and the mission changes are not held.

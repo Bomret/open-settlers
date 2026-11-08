@@ -165,8 +165,13 @@ read from the registers the decompile shows); an open lead.
 ## In the engine
 
 `src/Application/WoodcutterBehavior.cs`: `Door`, `SearchTree`, `StepOut`, `FreeWalk`, `Arrive`, `Cut`, `PutGood`, `EnterHut`, and
-`ObjectPass`, built from the settlers' movement, the tables, and a random generator port (`IRandomDraws`); `Flag.Places` holds the 8 places of a flag; `Job.Woodcutter` is job 5, `BuildingType.Woodcutter` the type
-2; the woodcutter's work is the activities `LooksForTree`, `StepsOntoFlag`, `WalksFree` (a `Trip` whose `Purpose` is `ToTree`, `BackToHut`,
-or `Home`), `Cuts`, `EntersBuilding`, and `Door`; `RuleTables.WalkRows` holds the rows of `0x4388ff`; `Map.Generator` is the generator the generation leaves, and the game's
-generator (`Game.Draws.Generator`; `GeneratorDraws` in the adapters) continues from it. `CastleRoster` runs the knights' idle turns (`KnightIdle`). `Game.Digest`
+`ObjectPass`. They are built from the settlers' movement, the tables, and a random generator port (`IRandomDraws`).
+`Flag.Places` holds the 8 places of a flag. `Job.Woodcutter` is job 5, and `BuildingType.Woodcutter` is type 2.
+
+The woodcutter's work is the activities `LooksForTree`, `StepsOntoFlag`, `WalksFree`, `Cuts`, `EntersBuilding`, and `Door`. A
+`WalksFree` carries a `Trip` whose `Purpose` is `ToTree`, `BackToHut`, or `Home`. `RuleTables.WalkRows` holds the rows of
+`0x4388ff`.
+
+`Map.Generator` is the generator that map generation leaves. The game's generator continues from it (`Game.Draws.Generator`,
+with `GeneratorDraws` in the adapters). `CastleRoster` runs the knights' idle turns (`KnightIdle`). `Game.Digest`
 holds the generator, the object pass's clock, countdown, and cursor, and the goods on the flags.

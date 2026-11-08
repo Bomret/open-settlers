@@ -158,12 +158,12 @@ node is the middle of the road.
 ## In the engine
 
 `src/Application/CarrierBehavior.cs` (`Game.Carriers`): `FlagPass`, `VisitFlag`, `RequestCarrier`, `EnterRoad`, `WalkRoad`, and
-`Wait` port the above;
-the flag's typed state is `Flag` (`CarrierRequestFailed`, the status byte's bit 7) with a `FlagSide` for each direction
-(`Length`, `CarrierOnTheWay`, `Carriers`, `HoldsCarrier`, `FarDirection`), kept in the `FlagTable` that `Game.Flags` returns;
+`Wait` port the above.
+The flag's typed state is `Flag` (`CarrierRequestFailed`, the status byte's bit 7) with a `FlagSide` for each direction
+(`Length`, `CarrierOnTheWay`, `Carriers`, `HoldsCarrier`, `FarDirection`). The `FlagTable` that `Game.Flags` returns keeps them.
 `FlagEncoder.Status` and `FlagEncoder.RoadByte` write them as the flag item's bytes. `Job.Carrier` is job 0. The
 carrier of a road is found by its activity: a settler of job 0 in `WaitsAtFlag` (state 0x42) waits next to the flag `Flag` on the road
-that leaves it in direction `Direction`. A carrier on its road is `WalksRoad` with the `Load` it carries; one marked to go
+that leaves it in direction `Direction`. A carrier on its road is `WalksRoad` with the `Load` it carries. A carrier marked to go
 has `Marked` set (byte 15 = 0xff). `Game.Digest` holds the flags' status and road bytes (through `FlagEncoder`) and the flag
 scan's cursor.
 

@@ -32,7 +32,7 @@ Rules read and write typed state: `Settler` with a `Job` and one `Activity`, `Fl
 Never read a packed byte, a bit mask, a map layer, or a bare code in the domain or the application. The original's
 codes sit at the edge: an importer turns them into the typed model and an exporter turns the typed model back, so
 `Game.Digest()` and the events keep the original's encoding. A field with no recovered meaning stays a named raw
-field, so the exporters lose nothing. A test of a rule asserts typed state; only a test of an importer or exporter
+field, so the exporters lose nothing. A test of a rule asserts typed state. Only a test of an importer or exporter
 asserts bytes. A rule reads what it needs through a typed accessor or a port (`IThingSnapshots`, `IRandomDraws`),
 and a test builds a `RuleTables` or a flag table by hand instead of importing the install's.
 
@@ -93,5 +93,6 @@ The repository holds no bytes from an install (INV-0001). Build every fixture in
 
 - Do not split a large class into `partial` files to manage its size. Extract cohesive
   responsibilities into separate collaborator types instead. A class that derives from a Godot type
-  is `partial` because the Godot source generator requires it. That use is the only exception.
+  is `partial` because the Godot source generator requires it. `Layout` is the one other `partial` class:
+  `Layout.cs` parses a layout file and `Layout.Placement.cs` builds its entries in a game.
 - Do not hard-code a value that the install defines.

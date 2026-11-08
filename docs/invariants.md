@@ -60,6 +60,6 @@ Check: a test runs the same seed and commands and compares the digest with a val
 
 Class: architecture
 Concepts: Simulation, Domain, Adapter
-Statement: The simulation's layers are separate assemblies, and each depends only inward. The domain assembly references no other project assembly. The application assembly references only the domain. The adapter assembly references the domain and the application. None of them references a Godot type. The original's packed state bytes, map layers, and bare codes appear only in the adapter assembly; the map view and every other caller read the typed model (ADR 0013).
+Statement: The simulation's layers are separate assemblies, and each depends only inward. The domain assembly references no other project assembly. The application assembly references only the domain. The adapter assembly references the domain and the application. None of them references a Godot type. The original's packed state bytes, map layers, and bare codes appear only in the adapter assembly; the map view and every other caller read the typed model (ADR 0013). The thing readouts of the map view are the one exception: they show the original's encoding of a settler or building through `SettlerEncoder` and `BuildingEncoder` as read-only display, and no rule takes it as input.
 Breaks: loudly
-Check: the project references in each layer's `.csproj`; the compiler refuses a reference that points outward. Reviewers check that no packed byte or bare code of the original enters the domain or the application.
+Check: the project references in each layer's `.csproj`. The compiler refuses a reference that points outward. Reviewers check that no packed byte or bare code of the original enters the domain or the application.

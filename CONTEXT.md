@@ -125,7 +125,7 @@ _Avoid_: mechanic, logic
 
 **RuleTables**
 The tables of the program data that the rules read, as typed values (`src/Domain/RuleTables.cs`). The importer
-builds them from the bytes of `Siedler1.exe`; a test builds its own.
+builds them from the bytes of `Siedler1.exe`. A test builds its own.
 _Avoid_: program tables
 
 **ObjectClass**
@@ -191,7 +191,7 @@ _Avoid_: role, profession, class
 **Activity**
 What a settler does at one moment, with exactly the data that doing it needs: waiting in the castle, walking
 along a road, searching for a tree, walking home. A settler has one activity at a time and leaves it for the
-next; each activity keeps the code of the original's settler state it stands for.
+next. Each activity keeps the code of the original's settler state it stands for.
 _Avoid_: settler state, mode, action
 
 **Settler**
@@ -201,7 +201,7 @@ _Avoid_: worker, unit, figure
 
 **Building**
 A finished building of the player's: its type, its node and flag, whether its worker is inside or on the way, and
-the counters of the goods it takes in. Its slot in the building table is its number; the castle is slot 0.
+the counters of the goods it takes in. Its slot in the building table is its number. The castle is slot 0.
 _Avoid_: house, structure
 
 **Transport priority**
