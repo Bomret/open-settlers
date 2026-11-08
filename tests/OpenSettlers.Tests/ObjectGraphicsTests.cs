@@ -299,7 +299,7 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(1, graphics.ShadowLayerHeight);
         Assert.AreEqual(3, graphics.LayerWidth);
         Assert.AreEqual(2, graphics.ShadowImages[ObjectGraphics.Layer(1251)].Coverage.Length);
-        Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.GoodEntry(7))].Width);
+        Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(7)))].Width);
         Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.WaterFirstEntry)].Width);
     }
 
