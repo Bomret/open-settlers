@@ -159,7 +159,10 @@ public sealed class RoadSplitGameTests
         Apply(game, CommandKind.RemoveFlag, 18, 6);
 
         Assert.AreEqual(Describe(before), Describe(game.Roads.Single()));
-        Assert.AreEqual(bytes, (FlagEncoder.RoadByte(game.Flags[0].Side(0)), FlagEncoder.RoadByte(game.Flags[1].Side(3))));
+        Assert.AreEqual(
+            bytes,
+            (FlagEncoder.RoadByte(game.Flags[0].Side(0)), FlagEncoder.RoadByte(game.Flags[1].Side(3)))
+        );
     }
 
     [TestMethod]

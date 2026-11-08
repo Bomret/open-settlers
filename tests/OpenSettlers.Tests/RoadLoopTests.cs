@@ -54,7 +54,11 @@ public sealed class RoadLoopTests
         CollectionAssert.AreEqual(Loop, road.Directions.ToArray());
         Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length, "class 2 for six steps at the start end");
         Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(2).Length, "and at the other end");
-        Assert.AreEqual(new Direction(2), game.Flags[0].Side(0).FarDirection, "each end names the direction of the other");
+        Assert.AreEqual(
+            new Direction(2),
+            game.Flags[0].Side(0).FarDirection,
+            "each end names the direction of the other"
+        );
         Assert.AreEqual(new Direction(0), game.Flags[0].Side(2).FarDirection);
     }
 

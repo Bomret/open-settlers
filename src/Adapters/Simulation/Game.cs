@@ -36,10 +36,7 @@ public sealed partial class Game
         Map = map;
         _stockLevel = stockLevel;
         _random = map.Generator;
-        History = new GameHistory(
-            new SnapshotExporter(_settlers, _buildings, _flags),
-            () => TickCount
-        );
+        History = new GameHistory(new SnapshotExporter(_settlers, _buildings, _flags), () => TickCount);
     }
 
     /// <summary>

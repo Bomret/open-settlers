@@ -12,7 +12,7 @@ public sealed class SnapshotExporter(
     IReadOnlyList<Settler> settlers,
     IReadOnlyList<Building> buildings,
     FlagTable flags
-): IThingSnapshots
+) : IThingSnapshots
 {
     /// <summary>The building in the slot: its type, node, flag, status, worker, and fill, as the building table holds them.</summary>
     public ThingState Building(int slot)
@@ -36,12 +36,7 @@ public sealed class SnapshotExporter(
     public ThingState Flag(int slot)
     {
         var flag = flags[slot];
-        var fields = new List<(string, int)>
-        {
-            ("x", flag.X),
-            ("y", flag.Y),
-            ("status", FlagEncoder.Status(flag)),
-        };
+        var fields = new List<(string, int)> { ("x", flag.X), ("y", flag.Y), ("status", FlagEncoder.Status(flag)) };
         for (var direction = 0; direction < Direction.Count; direction++)
         {
             fields.Add(($"road{direction}", FlagEncoder.RoadByte(flag.Side(direction))));

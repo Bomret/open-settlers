@@ -255,9 +255,7 @@ public sealed partial class Game
         {
             WaitForRoad(flag, way, place);
         }
-        else if (
-            TransportPriority(_flags[flag].Places[waiting].Good.Code) < TransportPriority(good.Good.Code)
-        )
+        else if (TransportPriority(_flags[flag].Places[waiting].Good.Code) < TransportPriority(good.Good.Code))
         {
             side.WaitingPlace = place;
         }
@@ -363,11 +361,7 @@ public sealed partial class Game
             var found = -1;
             for (var i = 0; i < places.Count; i++)
             {
-                if (
-                    !places[i].IsEmpty
-                    && places[i].Way == way
-                    && TransportPriority(places[i].Good.Code) > best
-                )
+                if (!places[i].IsEmpty && places[i].Way == way && TransportPriority(places[i].Good.Code) > best)
                 {
                     best = TransportPriority(places[i].Good.Code);
                     found = i;
