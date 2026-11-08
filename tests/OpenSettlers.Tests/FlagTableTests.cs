@@ -21,6 +21,20 @@ public sealed class FlagTableTests
     }
 
     [TestMethod]
+    public void TheSlotOfANodeIsFoundAndAFreedFlagsNodeHasNone()
+    {
+        var table = new FlagTable();
+        table.Add(1, 1);
+        table.Add(2, 2);
+        table.Add(3, 3);
+        table.Free(1);
+
+        Assert.AreEqual(2, table.SlotAt(3, 3));
+        Assert.AreEqual(-1, table.SlotAt(2, 2));
+        Assert.AreEqual(-1, table.SlotAt(9, 9));
+    }
+
+    [TestMethod]
     public void AFreedSlotInTheMiddleStaysAndTheNextFlagTakesIt()
     {
         var table = new FlagTable();
