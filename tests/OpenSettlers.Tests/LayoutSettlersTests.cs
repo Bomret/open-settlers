@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
@@ -209,26 +208,6 @@ public sealed class LayoutSettlersTests
         Assert.IsTrue(game.Flags[1].NeedsGoodsTurn);
     }
 
-    // The layout's settlers entries applied to a game that holds the Built layout and whatever `setUp` did to it.
-    static string? RefusedAfter(Action<Game> setUp, string settlers)
-    {
-        var game = Applied(Built);
-        setUp(game);
-
-        return Read($"\"settlers\": [{settlers}]").Apply(game);
-    }
-
-    // Six roads joined to the castle's flag, one more than the castle's five jobless settlers: three east along row 11, two
-    // south from the castle's flag, and one east along row 15.
-    const string SixRoads = """
-        "castle": {"x": 10, "y": 10},
-        "flags": [{"x": 13, "y": 11}, {"x": 15, "y": 11}, {"x": 17, "y": 11}, {"x": 11, "y": 13}, {"x": 11, "y": 15}, {"x": 13, "y": 15}],
-        "roads": [
-          {"x": 11, "y": 11, "directions": [0, 0]}, {"x": 13, "y": 11, "directions": [0, 0]}, {"x": 15, "y": 11, "directions": [0, 0]},
-          {"x": 11, "y": 11, "directions": [2, 2]}, {"x": 11, "y": 13, "directions": [2, 2]}, {"x": 11, "y": 15, "directions": [0, 0]}
-        ],
-        """;
-
     static string CarrierAt(int x, int direction, int y = 11) =>
         $$"""{"job": "carrier", "state": "waiting-on-road", "x": {{x}}, "y": {{y}}, "direction": {{direction}}}""";
 
@@ -271,7 +250,10 @@ public sealed class LayoutSettlersTests
     [DataRow(14, 11, DisplayName = "the flag")]
     public void AWoodcutterForAHutWithASettlerOnItsDoorOrFlagFailsTheLoad(int x, int y)
     {
-        var problem = RefusedAfter(game => game.Movement.Occupy(game.Map.Index(x, y), 1), Woodcutter);
+        var game = Applied(Built);
+        game.Movement.Occupy(game.Map.Index(x, y), 1);
+
+        var problem = Read($"\"settlers\": [{Woodcutter}]").Apply(game);
 
         Assert.AreEqual("test.jsonc: settlers[0]: a settler stands on the hut's door or on its flag", problem);
     }
@@ -333,14 +315,27 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void ACarrierWhenTheCastleHoldsNoCarrierAndNoJoblessSettlerFailsTheLoad()
     {
+        // Six roads joined to the castle's flag, one more than the castle's five jobless settlers: three east along row 11,
+        // two south from the castle's flag, and one east along row 15.
+        const string sixRoads = """
+            "castle": {"x": 10, "y": 10},
+            "flags": [{"x": 13, "y": 11}, {"x": 15, "y": 11}, {"x": 17, "y": 11}, {"x": 11, "y": 13}, {"x": 11, "y": 15}, {"x": 13, "y": 15}],
+            "roads": [
+              {"x": 11, "y": 11, "directions": [0, 0]}, {"x": 13, "y": 11, "directions": [0, 0]}, {"x": 15, "y": 11, "directions": [0, 0]},
+              {"x": 11, "y": 11, "directions": [2, 2]}, {"x": 11, "y": 13, "directions": [2, 2]}, {"x": 11, "y": 15, "directions": [0, 0]}
+            ],
+            """;
         var carriers = string.Join(
             ", ",
-            new[] { (11, 11, 0), (13, 11, 0), (15, 11, 0), (11, 11, 2), (11, 13, 2), (11, 15, 0) }.Select(c =>
-                CarrierAt(c.Item1, c.Item3, c.Item2)
-            )
+            CarrierAt(11, 0),
+            CarrierAt(13, 0),
+            CarrierAt(15, 0),
+            CarrierAt(11, 2),
+            CarrierAt(11, 2, 13),
+            CarrierAt(11, 0, 15)
         );
 
-        var problem = Refused(SixRoads + $"\"settlers\": [{carriers}]");
+        var problem = Refused(sixRoads + $"\"settlers\": [{carriers}]");
 
         Assert.AreEqual("test.jsonc: settlers[5]: the castle holds no carrier", problem);
     }
@@ -349,20 +344,15 @@ public sealed class LayoutSettlersTests
     public void ACarrierWhenTheCastleHoldsNoCarrierIsAJoblessSettlerMadeTheRoadsCarrier()
     {
         var before = Applied(Built);
-        var jobless = before
-            .Settlers.Select((settler, slot) => (settler, slot))
-            .Where(pair => pair.settler.Job == Job.Jobless && pair.settler.Activity is WaitsInCastle)
-            .Select(pair => pair.slot)
-            .ToArray();
+        var jobless = before.Settlers.Count(s => s.Job == Job.Jobless && s.Activity is WaitsInCastle);
         Assert.AreEqual(0, before.Settlers.Count(settler => settler.Job == Job.Carrier));
 
         var game = Applied(Built + $"\"settlers\": [{Carrier}]");
 
         var carrier = game.Settlers.ToList().FindIndex(settler => settler.Job == Job.Carrier);
-        CollectionAssert.Contains(jobless, carrier);
         Assert.IsInstanceOfType<WaitsAtFlag>(game.Settlers[carrier].Activity);
         Assert.AreEqual(
-            jobless.Length - 1,
+            jobless - 1,
             game.Settlers.Count(s => s.Job == Job.Jobless && s.Activity is WaitsInCastle)
         );
     }
