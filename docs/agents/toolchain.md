@@ -19,7 +19,7 @@
   - Format — `mise run format`
   - Check formatting — part of `mise run check`
   - Build — `mise run build`
-  - Unit tests — `mise run test` (MSTest on Microsoft.Testing.Platform, selected in `global.json`)
+  - Unit tests — `mise run test` (skips the `Install` and `Ghidra` test categories; MSTest on Microsoft.Testing.Platform, selected in `global.json`)
   - Asset check, asset browser, Godot editor — `mise run assets`, `mise run browser`, `mise run editor`
   - Ghidra dump — the `ghidra:*` tasks run the scripts in `tools/GhidraDump/`, which build a local Ghidra
     project of `Siedler1.exe` and write a searchable dump into `re-local/`. See `tools/GhidraDump/README.md`.

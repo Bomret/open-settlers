@@ -106,6 +106,7 @@ public sealed class FlagGoodsTests
 
     [TestMethod]
     [DynamicData(nameof(Scenarios))]
+    [TestCategory(Needs.Install)]
     public void AGoodGetsItsDestinationAndDirectionAndTheWaitingCarrierFetchesItAsTheOriginalsPassesDoIt(string name)
     {
         var scenario = Load().Single(candidate => candidate.Name == name);

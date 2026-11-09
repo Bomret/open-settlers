@@ -118,6 +118,8 @@ public sealed class DrawVerbTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
+    [TestCategory(Needs.Ghidra)]
     public void ARunWhoseWindowHoldsAPassWithNoSettlerDrawExitsNonZeroAndPrintsNothing()
     {
         var install = ReferenceInstall();
@@ -129,6 +131,8 @@ public sealed class DrawVerbTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
+    [TestCategory(Needs.Ghidra)]
     public void ARunWhoseWindowsAreBeyondItsLastPassReachesNoDrawPathAndExitsNonZero()
     {
         var install = ReferenceInstall();
@@ -140,6 +144,8 @@ public sealed class DrawVerbTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
+    [TestCategory(Needs.Ghidra)]
     public void ARunOnTheReferenceInstallPrintsTheInstallLineAndOneLineForEachPassOfItsWindow()
     {
         var install = ReferenceInstall();

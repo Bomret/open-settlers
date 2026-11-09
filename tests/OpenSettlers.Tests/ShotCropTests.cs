@@ -71,6 +71,7 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void ARadiusOfZeroFramesTheAimedTileAlone()
     {
         var camera = (300.0, 200.0);
@@ -90,6 +91,7 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheBoxCoversEveryTileWithinTheRadiusAndTheHeadroomAbove()
     {
         var camera = (300.0, 200.0);
@@ -119,6 +121,7 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void ATileAtTheSeamTakesItsRingFromTheSameCopy()
     {
         // Camera on the map's north-west node: column 0 is drawn near the middle, column -1 is the last column.
@@ -130,6 +133,7 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void ABoxReachingPastTheCanvasIsClippedToIt()
     {
         // A tile drawn near the top-left corner of the canvas, with a wide ring.
@@ -145,6 +149,7 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void AnAimedTileThatCannotBeClickedIsTheClickProblem()
     {
         var problem = Box((300.0, 200.0), 1, Map.Size.Width, 0, 1, 0, out _);

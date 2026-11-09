@@ -69,6 +69,7 @@ public sealed class TerrainQuadsTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void EveryTriangleOfAMapLandsInExactlyOneBand()
     {
         var map = MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map;

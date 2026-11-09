@@ -25,6 +25,7 @@ namespace OpenSettlers.Tests;
 // backs them. The expected walk of the woodcutter depends on them (it avoids a node marked 0x40). Open lead in
 // docs/milestones/m3-first-loop.md.
 [TestClass]
+[TestCategory(Needs.Install)]
 public sealed class WoodcutterTests
 {
     private const string Fixture = "wood-walks.txt";

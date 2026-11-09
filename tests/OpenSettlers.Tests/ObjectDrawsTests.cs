@@ -12,6 +12,7 @@ public sealed class ObjectDrawsTests
     static Map Generated() => MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void EveryGeneratedObjectIsDrawnInRowMajorOrderWithTheEntryOfItsCode()
     {
         var map = Generated();
@@ -26,6 +27,7 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void AnObjectIsDrawnAtItsNodeLoweredByItsHeight()
     {
         var draws = ObjectDraws.Of(Generated());
@@ -171,6 +173,7 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void AResourceIsNeverDrawn()
     {
         var map = Generated();
@@ -180,6 +183,7 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void EveryWaterTileDrawsItsWaterFrame16PixelsWestOfItsNodeWithNoHeight()
     {
         var map = Generated();

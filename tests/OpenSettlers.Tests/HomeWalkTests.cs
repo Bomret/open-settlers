@@ -20,6 +20,7 @@ namespace OpenSettlers.Tests;
 // walk, the arrival (0x4385ab), the walk to the storage (state 2 with the mode 0xfe, 0x4398ea with the pick 0x45d09b), the
 // entry into the castle (0x43c7c2), the door (state 4, 0x43c96b), and the job's entry into the storage (0x43cd06).
 [TestClass]
+[TestCategory(Needs.Install)]
 public sealed class HomeWalkTests
 {
     private const string Fixture = "home-walks.txt";
