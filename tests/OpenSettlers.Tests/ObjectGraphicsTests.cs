@@ -101,9 +101,9 @@ public sealed class ObjectGraphicsTests
 
         // Emulator: peek:44fd2f:4 prints 66B8B200, the stub of the building type 0xe0 loading the object number 0xB2
         // (178); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
-        #pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
+#pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
         Assert.AreEqual(1428, ObjectSprites.CastleEntry);
-        #pragma warning restore MSTEST0032
+#pragma warning restore MSTEST0032
         Assert.AreEqual(ObjectGraphics.EntryCount, ObjectGraphics.Layer(ObjectSprites.CastleEntry));
         Assert.AreEqual(7, graphics.Images[ObjectGraphics.Layer(ObjectSprites.CastleEntry)].OffsetX);
     }
@@ -163,9 +163,9 @@ public sealed class ObjectGraphicsTests
 
         // Emulator: peek:44e63b:4 prints 66B8A800, the stub the jump table at 0x44e3aa reaches for the building type 2 (the
         // woodcutter's hut) loading the object number 0xA8 (168); the entry is that plus the 1250 of 0x44da4d (ADR 0008).
-        #pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
+#pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
         Assert.AreEqual(1418, ObjectSprites.WoodcutterEntry);
-        #pragma warning restore MSTEST0032
+#pragma warning restore MSTEST0032
         Assert.AreEqual(ObjectGraphics.EntryCount + 2, ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry));
         Assert.AreEqual(11, graphics.Images[ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry)].OffsetX);
     }
