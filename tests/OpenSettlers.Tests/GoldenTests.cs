@@ -159,13 +159,7 @@ public sealed class GoldenTests
         return hash;
     }
 
-    private sealed record Outcome(
-        Scenario Scenario,
-        bool EveryPass,
-        string Line,
-        Game Game,
-        IReadOnlyList<string> Digests
-    );
+    private sealed record Outcome(string Line, Game Game);
 
     // Plays the scenario once and reads no event until it has ended, so the digests at the checkpoints are those of a run
     // that nothing reads the events of (INV-0007). The events as of each checkpoint are the log's events up to its tick.
@@ -200,7 +194,7 @@ public sealed class GoldenTests
         var line =
             $"{scenario.Name} | {scenario.Where} every-pass={(everyPass ? "on" : "off")} | {string.Join(" ", points)}";
 
-        return new Outcome(scenario, everyPass, line, game, digests);
+        return new Outcome(line, game);
     }
 
     // Each scenario plays once per test run; the tests below assert its properties on this outcome.

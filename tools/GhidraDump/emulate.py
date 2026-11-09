@@ -48,12 +48,16 @@ def find_program(root):
 
 
 def imported(project, digest):
-    """Whether the project folder holds an import of the program with this SHA-256; clears the files of another import."""
+    """Whether the project folder holds an import of the program with this SHA-256."""
     marker = os.path.join(project, DIGEST_FILE)
-    if os.path.isfile(os.path.join(project, PROJECT_NAME + ".gpr")) and os.path.isfile(marker):
-        with open(marker) as file:
-            if file.read().strip() == digest:
-                return True
+    if not (os.path.isfile(os.path.join(project, PROJECT_NAME + ".gpr")) and os.path.isfile(marker)):
+        return False
+    with open(marker) as file:
+        return file.read().strip() == digest
+
+
+def clear(project):
+    """Removes the files of an earlier import: headless -import refuses a program the project already holds."""
     for name in (PROJECT_NAME + ".gpr", PROJECT_NAME + ".rep", DIGEST_FILE):
         path = os.path.join(project, name)
         if os.path.isdir(path):
@@ -61,7 +65,6 @@ def imported(project, digest):
         elif os.path.exists(path):
             os.remove(path)
     os.makedirs(project, exist_ok=True)
-    return False
 
 
 def run(headless, project, mode, script, argv, environment):
@@ -106,6 +109,7 @@ def main(argv):
         if imported(shared, digest):
             result = run(headless, shared, ["-process", os.path.basename(program), "-noanalysis"], script, argv, environment)
         else:
+            clear(shared)
             result = run(headless, shared, ["-import", program, "-noanalysis"], script, argv, environment)
             # The import precedes the script, so a run whose script fails still leaves the program imported.
             if "REPORT: Import succeeded" in result.stdout:
