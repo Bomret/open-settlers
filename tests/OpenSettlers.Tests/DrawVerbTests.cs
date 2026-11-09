@@ -22,9 +22,13 @@ public sealed class DrawVerbTests
     private string _folder = "";
 
     // One Ghidra project for every run of the class that reaches the install: the first run imports the program, the others
-    // run against the import.
+    // run against the import. The Ghidra tests share one batch run in it.
     [ClassInitialize]
-    public static void InitializeClass(TestContext _) => _project = NewFolder();
+    public static void InitializeClass(TestContext _)
+    {
+        _project = NewFolder();
+        _batch = null;
+    }
 
     [ClassCleanup]
     public static void CleanupClass() => Directory.Delete(_project, true);
@@ -161,17 +165,51 @@ public sealed class DrawVerbTests
         Assert.AreEqual("", output);
     }
 
+    // The commands of the Ghidra tests, run as one batch the first time a test that reaches the install asks for it.
+    private const string NoSettlerAtPass3 = $"draw:3-4:17,20:{Game}";
+    private const string BeyondTheLastPass = $"draw:500-501:17,20:{Game}";
+    private const string Reference = $"draw:100-101:17,20:{Game}";
+
+    private static readonly object BatchGate = new();
+
+    private static string[]? _batch;
+
+    private static string[] Batch(string install)
+    {
+        lock (BatchGate)
+        {
+            return _batch ??= Lines(
+                Emulate(install, [NoSettlerAtPass3, BeyondTheLastPass, Reference], _project).Output
+            );
+        }
+    }
+
+    // The command's result in the class's batch: whether it ended, and its lines under the install line.
+    private static (bool Ended, string[] Lines) BatchResult(string command)
+    {
+        var install = ReferenceInstall();
+        var lines = Batch(install);
+        var index = Array.IndexOf(new[] { NoSettlerAtPass3, BeyondTheLastPass, Reference }, command) + 1;
+        var start = Array.FindIndex(lines, line => line.StartsWith($"EMU draw command={index} "));
+        if (start < 0)
+        {
+            Assert.Fail($"the batch gave no result for {command}");
+        }
+
+        var rest = lines.Skip(start + 1).TakeWhile(line => !line.StartsWith("EMU draw command=")).ToArray();
+
+        return (lines[start].EndsWith(" ended"), [lines[0], .. rest]);
+    }
+
     [TestMethod]
     [TestCategory(Needs.Install)]
     [TestCategory(Needs.Ghidra)]
     public void ARunWhoseWindowHoldsAPassWithNoSettlerDrawExitsNonZeroAndPrintsNothing()
     {
-        var install = ReferenceInstall();
+        var (ended, lines) = BatchResult(NoSettlerAtPass3);
 
-        var (exit, output) = Emulate(install, $"draw:3-4:17,20:{Game}", _project);
-
-        Assert.AreNotEqual(0, exit, "no settler is out at pass 3");
-        Assert.AreEqual("", output);
+        Assert.IsFalse(ended, "no settler is out at pass 3");
+        Assert.AreEqual(1, lines.Length, "no recording under the install line");
     }
 
     [TestMethod]
@@ -179,12 +217,10 @@ public sealed class DrawVerbTests
     [TestCategory(Needs.Ghidra)]
     public void ARunWhoseWindowsAreBeyondItsLastPassReachesNoDrawPathAndExitsNonZero()
     {
-        var install = ReferenceInstall();
+        var (ended, lines) = BatchResult(BeyondTheLastPass);
 
-        var (exit, output) = Emulate(install, $"draw:500-501:17,20:{Game}", _project);
-
-        Assert.AreNotEqual(0, exit);
-        Assert.AreEqual("", output);
+        Assert.IsFalse(ended);
+        Assert.AreEqual(1, lines.Length, "no recording under the install line");
     }
 
     [TestMethod]
@@ -192,16 +228,13 @@ public sealed class DrawVerbTests
     [TestCategory(Needs.Ghidra)]
     public void ARunOnTheReferenceInstallPrintsTheInstallLineAndOneLineForEachPassOfItsWindow()
     {
-        var install = ReferenceInstall();
+        var (ended, lines) = BatchResult(Reference);
 
-        var (exit, output) = Emulate(install, $"draw:100-101:17,20:{Game}", _project);
-
-        Assert.AreEqual(0, exit);
+        Assert.IsTrue(ended);
         Assert.IsTrue(
             File.Exists(Path.Combine(_project, "program.sha256")),
             "the first real run records the import (Ghidra's \"REPORT: Import succeeded\" line)"
         );
-        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         StringAssert.StartsWith(lines[0], "EMU draw install=History Edition ");
         CollectionAssert.AreEqual(
             new[] { "EMU draw pass=100 clock=808", "EMU draw pass=101 clock=816" },
