@@ -27,7 +27,7 @@ public sealed class DrawVerbTests
     public static void InitializeClass(TestContext _)
     {
         _project = NewFolder();
-        _batch = new(() => Lines(Emulate(TestProgram.OpenInstall().Root, Commands, _project).Output));
+        _batch = new(() => Lines(Emulate(ReferenceInstall(), Commands, _project).Output));
     }
 
     [ClassCleanup]
