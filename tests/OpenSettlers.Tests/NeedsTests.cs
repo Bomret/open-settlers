@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
@@ -23,9 +24,10 @@ public sealed class NeedsTests
     [TestMethod]
     public void TheFocusedFilterNamesExactlyTheCategoriesOfNeeds()
     {
-        var names = typeof(Needs).GetFields().Select(f => $"TestCategory!={f.GetRawConstantValue()}");
+        var expected = typeof(Needs).GetFields().Select(f => $"TestCategory!={f.GetRawConstantValue()}").Order().ToArray();
+        var filter = Regex.Match(MiseToml(), @"\[tasks\.test\][^\[]*?--filter '([^']*)'").Groups[1].Value;
 
-        StringAssert.Contains(MiseToml(), $"--filter '{string.Join('&', names)}'");
+        CollectionAssert.AreEqual(expected, filter.Split('&').Order().ToArray());
     }
 
     [TestMethod]
