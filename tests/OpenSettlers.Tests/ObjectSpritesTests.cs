@@ -80,14 +80,12 @@ public sealed class ObjectSpritesTests
     }
 
     [TestMethod]
-    public void AFourFrameCodeWrapsAfterFourFrames()
+    public void AFourFrameCodeWrapsAfterFourFramesAndAStillCodeIgnoresTheCounter()
     {
         Assert.AreEqual(1269, ObjectSprites.Entry(new MapObject(24), 32));
         Assert.AreEqual(1266, ObjectSprites.Entry(new MapObject(24), 48));
+        Assert.AreEqual(1274, ObjectSprites.Entry(new MapObject(32), 200));
     }
-
-    [TestMethod]
-    public void AStillCodeIgnoresTheCounter() => Assert.AreEqual(1274, ObjectSprites.Entry(new MapObject(32), 200));
 
     // 0x44ff59: ((((tile * 4) & 0x3c) * 2 ^ 0xa8) + counter) >> 3 & 15, plus 630.
     [TestMethod]

@@ -14,8 +14,9 @@ namespace OpenSettlers.Tests;
 // other). The expected lines live in golden.txt, taken once from the engine as it stood before the onion refactor of
 // the simulation, on made-up tables (LayoutSettlersTests.MadeTables), so it needs no install: paths that depend on the
 // real program tables' step times or building classes are not pinned (INV-0001: digests, not dumps). A change to any rule outcome, the order of two settlers in a pass, or
-// an event field changes a line. INV-0002: a scenario run twice gives the same lines. INV-0007: the digest holds no
-// event store, so the digest of a run is the same whether or not anything reads the events.
+// an event field changes a line. INV-0002: a scenario gives the same lines on every run, as the committed lines pin. INV-0007: the digest holds no
+// event store, so the digest of a run is the same whether or not anything reads the events: each scenario plays once and
+// reads no event until it has ended, and the committed lines, taken from runs that read the events as they went, still match.
 [TestClass]
 public sealed class GoldenTests
 {
@@ -158,10 +159,17 @@ public sealed class GoldenTests
         return hash;
     }
 
-    private sealed record Outcome(string Line, Game Game, IReadOnlyList<string> Digests);
+    private sealed record Outcome(
+        Scenario Scenario,
+        bool EveryPass,
+        string Line,
+        Game Game,
+        IReadOnlyList<string> Digests
+    );
 
-    // readEvents false never touches Game.History.Events, so the line holds only the digests.
-    private static Outcome Run(Scenario scenario, bool everyPass, bool readEvents = true)
+    // Plays the scenario once and reads no event until it has ended, so the digests at the checkpoints are those of a run
+    // that nothing reads the events of (INV-0007). The events as of each checkpoint are the log's events up to its tick.
+    private static Outcome Run(Scenario scenario, bool everyPass)
     {
         var game = scenario.Start(everyPass);
         foreach (var step in scenario.Script)
@@ -169,7 +177,6 @@ public sealed class GoldenTests
             game.Enqueue(new Command(step.Tick, 0, step.Kind, step.X, step.Y, step.Directions));
         }
 
-        var points = new List<string>();
         var digests = new List<string>();
         foreach (var checkpoint in scenario.Checkpoints)
         {
@@ -178,21 +185,28 @@ public sealed class GoldenTests
                 game.Tick();
             }
 
-            var digest = $"{checkpoint}:{game.Digest():x16}";
-            digests.Add(digest);
-            points.Add(
-                readEvents ? $"{digest}:{game.History.Events.Count}:{EventDigest(game.History.Events.All):x16}" : digest
-            );
+            digests.Add($"{checkpoint}:{game.Digest():x16}");
         }
 
+        var events = game.History.Events.All.ToList();
+        var points = scenario.Checkpoints.Select(
+            (checkpoint, i) =>
+            {
+                var upTo = events.TakeWhile(e => e.Tick < checkpoint).ToList();
+
+                return $"{digests[i]}:{upTo.Count}:{EventDigest(upTo):x16}";
+            }
+        );
         var line =
             $"{scenario.Name} | {scenario.Where} every-pass={(everyPass ? "on" : "off")} | {string.Join(" ", points)}";
 
-        return new Outcome(line, game, digests);
+        return new Outcome(scenario, everyPass, line, game, digests);
     }
 
-    private static IEnumerable<(Scenario Scenario, bool EveryPass)> Runs() =>
-        Scenarios.SelectMany(scenario => new[] { true, false }.Select(everyPass => (scenario, everyPass)));
+    // Each scenario plays once per test run; the tests below assert its properties on this outcome.
+    private static readonly Lazy<IReadOnlyList<Outcome>> Outcomes = new(() =>
+        Scenarios.SelectMany(scenario => new[] { true, false }.Select(everyPass => Run(scenario, everyPass))).ToList()
+    );
 
     [TestMethod]
     public void EveryScenarioPlaysAsTheCommittedLinesRecord()
@@ -201,34 +215,13 @@ public sealed class GoldenTests
             .Where(line => line.Length > 0 && !line.StartsWith('#'))
             .ToArray();
 
-        var actual = Runs().Select(r => Run(r.Scenario, r.EveryPass).Line).ToArray();
+        var actual = Outcomes.Value.Select(o => o.Line).ToArray();
 
         CollectionAssert.AreEqual(
             expected,
             actual,
             "the game no longer plays as golden.txt records; actual lines:\n" + string.Join("\n", actual)
         );
-    }
-
-    [TestMethod]
-    public void AScenarioRunTwiceGivesTheSameLines()
-    {
-        foreach (var (scenario, everyPass) in Runs())
-        {
-            Assert.AreEqual(Run(scenario, everyPass).Line, Run(scenario, everyPass).Line, scenario.Name);
-        }
-    }
-
-    [TestMethod]
-    public void TheDigestIsTheSameWhetherOrNotAnythingReadsTheEvents()
-    {
-        foreach (var (scenario, everyPass) in Runs())
-        {
-            var read = Run(scenario, everyPass).Digests;
-            var unread = Run(scenario, everyPass, readEvents: false).Digests;
-
-            CollectionAssert.AreEqual(read.ToArray(), unread.ToArray(), scenario.Name);
-        }
     }
 
     private static Func<ThingEvent, bool> OfType(params string[] types) => e => types.Contains(e.Type);
@@ -273,7 +266,7 @@ public sealed class GoldenTests
     [TestMethod]
     public void EveryBehaviourLeavesItsEventsInTheEventLogOfAScenario()
     {
-        var logs = Runs().Select(r => Run(r.Scenario, r.EveryPass).Game.History.Events.All).ToList();
+        var logs = Outcomes.Value.Select(o => o.Game.History.Events.All).ToList();
 
         var problems = Behaviours
             .Select(b => (b.Behaviour, b.Min, Count: logs.Max(log => log.Count(b.Is))))
