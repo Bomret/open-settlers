@@ -17,6 +17,12 @@ The command draw:WINDOWS:CX,CY:VERB:ARGS... (EmulateDraw.java lists its form) ru
 only on the reference build of Siedler1.exe (the History Edition, docs/rules/AGENTS.md, "Reference build") and
 prints nothing, and exits non-zero, where the run fails, so a failed run leaves no recording. A successful run
 prints the line "EMU draw install=..." that names the build, then the lines of the recording.
+
+Several draw commands run as a batch in one Ghidra launch, each in a new script instance. A batch on another build prints
+nothing and exits non-zero. Otherwise it prints the install line, then for each command, in argument order, the line
+"EMU draw command=N ended" followed by its recording, or "EMU draw command=N failed" with no lines, N counting from 1. A
+command fails where its run does not end, and where the import fails or Ghidra stops before it. A batch exits non-zero
+where any command fails.
 """
 
 import hashlib
@@ -68,10 +74,42 @@ def clear(project):
 
 
 def run(headless, project, mode, script, argv, environment):
+    # Several draw commands each get their own -postScript, so each runs in a new script instance.
+    if script == "EmulateDraw.java" and len(argv) > 1:
+        scripts = [part for command in argv for part in ("-postScript", script, command)]
+    else:
+        scripts = ["-postScript", script, *argv]
     return subprocess.run(
-        [headless, project, PROJECT_NAME, *mode, "-scriptPath", SCRIPTS, "-postScript", script, *argv],
+        [headless, project, PROJECT_NAME, *mode, "-scriptPath", SCRIPTS, *scripts],
         capture_output=True, text=True, env=environment,
     )
+
+
+def batch(commands, result, marker, install):
+    """Prints the result of each draw command of a batch under its own line, in argument order, and exits non-zero where one
+    fails. Ghidra opens each script run with an "INFO  SCRIPT: " line; a command whose run is missing, as after a failed
+    import or a crash, failed."""
+    runs = []
+    for line in result.stdout.splitlines():
+        if line.startswith("INFO  SCRIPT: "):
+            runs.append([])
+        elif marker in line and runs:
+            runs[-1].append(line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip())
+    print(install)
+    failed = False
+    for index in range(len(commands)):
+        lines = runs[index] if index < len(runs) else []
+        # A command counts only if it ends: a failed pass stops its script before its last line.
+        if any(line.startswith("EMU draw end") for line in lines):
+            print(f"EMU draw command={index + 1} ended")
+            for line in lines:
+                print(line)
+        else:
+            print(f"EMU draw command={index + 1} failed")
+            failed = True
+    if failed or result.returncode != 0:
+        sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
+        sys.exit(1)
 
 
 def main(argv):
@@ -116,6 +154,9 @@ def main(argv):
                 with open(os.path.join(shared, DIGEST_FILE), "w") as file:
                     file.write(digest)
     marker = script + "> "
+    if drawing and len(argv) > 1:
+        batch(argv, result, marker, install)
+        return
     lines = [line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip()
              for line in result.stdout.splitlines() if marker in line]
     if drawing:
