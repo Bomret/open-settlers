@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
@@ -208,29 +209,161 @@ public sealed class LayoutSettlersTests
         Assert.IsTrue(game.Flags[1].NeedsGoodsTurn);
     }
 
-    [TestMethod]
-    public void ASecondWoodcutterTheCastleDoesNotHoldFailsTheLoadNamingTheEntry()
+    // The layout's settlers entries applied to a game that holds the Built layout and whatever `setUp` did to it.
+    static string? RefusedAfter(Action<Game> setUp, string settlers)
     {
-        var problem = Refused(Built + $"\"settlers\": [{Woodcutter}, {Woodcutter}]");
+        var game = Applied(Built);
+        setUp(game);
 
-        Assert.IsTrue(problem!.StartsWith("test.jsonc: settlers[1]: "), problem);
+        return Read($"\"settlers\": [{settlers}]").Apply(game);
+    }
+
+    // Six roads joined to the castle's flag, one more than the castle's five jobless settlers: three east along row 11, two
+    // south from the castle's flag, and one east along row 15.
+    const string SixRoads = """
+        "castle": {"x": 10, "y": 10},
+        "flags": [{"x": 13, "y": 11}, {"x": 15, "y": 11}, {"x": 17, "y": 11}, {"x": 11, "y": 13}, {"x": 11, "y": 15}, {"x": 13, "y": 15}],
+        "roads": [
+          {"x": 11, "y": 11, "directions": [0, 0]}, {"x": 13, "y": 11, "directions": [0, 0]}, {"x": 15, "y": 11, "directions": [0, 0]},
+          {"x": 11, "y": 11, "directions": [2, 2]}, {"x": 11, "y": 13, "directions": [2, 2]}, {"x": 11, "y": 15, "directions": [0, 0]}
+        ],
+        """;
+
+    static string CarrierAt(int x, int direction, int y = 11) =>
+        $$"""{"job": "carrier", "state": "waiting-on-road", "x": {{x}}, "y": {{y}}, "direction": {{direction}}}""";
+
+    [TestMethod]
+    [DataRow(20, 20, DisplayName = "an empty node")]
+    [DataRow(10, 10, DisplayName = "the castle")]
+    public void AWoodcutterForANodeWithNoWoodcuttersHutFailsTheLoadNamingTheReason(int x, int y)
+    {
+        var problem = Refused(
+            Built + $"\"settlers\": [{{\"job\": \"woodcutter\", \"state\": \"in-hut\", \"x\": {x}, \"y\": {y}}}]"
+        );
+
+        Assert.AreEqual("test.jsonc: settlers[0]: no woodcutter's hut stands on the node", problem);
     }
 
     [TestMethod]
-    public void ASettlerForAHutOrRoadTheLayoutDoesNotBuildFailsTheLoad()
+    public void ASecondWoodcutterForTheSameHutFailsTheLoadNamingTheEntry()
+    {
+        var problem = Refused(Built + $"\"settlers\": [{Woodcutter}, {Woodcutter}]");
+
+        Assert.AreEqual("test.jsonc: settlers[1]: the hut has its worker already", problem);
+    }
+
+    [TestMethod]
+    public void AWoodcutterForASecondHutWhenTheCastleHoldsOnlyOneFailsTheLoad()
+    {
+        var problem = Refused(
+            Built.Replace(
+                "\"buildings\": [{\"x\": 13, \"y\": 10}]",
+                "\"buildings\": [{\"x\": 13, \"y\": 10}, {\"x\": 17, \"y\": 10}]"
+            )
+                + $"\"settlers\": [{Woodcutter}, {{\"job\": \"woodcutter\", \"state\": \"in-hut\", \"x\": 17, \"y\": 10}}]"
+        );
+
+        Assert.AreEqual("test.jsonc: settlers[1]: the castle holds no woodcutter", problem);
+    }
+
+    [TestMethod]
+    [DataRow(13, 10, DisplayName = "the door")]
+    [DataRow(14, 11, DisplayName = "the flag")]
+    public void AWoodcutterForAHutWithASettlerOnItsDoorOrFlagFailsTheLoad(int x, int y)
+    {
+        var problem = RefusedAfter(game => game.Movement.Occupy(game.Map.Index(x, y), 1), Woodcutter);
+
+        Assert.AreEqual("test.jsonc: settlers[0]: a settler stands on the hut's door or on its flag", problem);
+    }
+
+    [TestMethod]
+    public void ASettlerForAHutOrRoadTheLayoutDoesNotBuildFailsTheLoadNamingTheReason()
     {
         var hutless = Built.Replace("\"buildings\": [{\"x\": 13, \"y\": 10}],", "");
         var roadless = Built.Replace("\"roads\": [{\"x\": 11, \"y\": 11, \"directions\": [0, 0, 0]}],", "");
 
-        Assert.IsTrue(Refused(hutless + $"\"settlers\": [{Woodcutter}]")!.StartsWith("test.jsonc: settlers[0]: "));
-        Assert.IsTrue(Refused(roadless + $"\"settlers\": [{Carrier}]")!.StartsWith("test.jsonc: settlers[0]: "));
+        Assert.AreEqual(
+            "test.jsonc: settlers[0]: no woodcutter's hut stands on the node",
+            Refused(hutless + $"\"settlers\": [{Woodcutter}]")
+        );
+        Assert.AreEqual(
+            "test.jsonc: settlers[0]: no land road leaves a flag there in that direction",
+            Refused(roadless + $"\"settlers\": [{Carrier}]")
+        );
     }
 
     [TestMethod]
-    public void ASecondCarrierForTheSameRoadFailsTheLoad()
+    [DataRow(12, 0, DisplayName = "no flag at the node")]
+    [DataRow(11, 1, DisplayName = "no road in that direction")]
+    public void ACarrierForAFlagAndDirectionWithNoRoadFailsTheLoad(int x, int direction)
     {
-        Assert.IsTrue(
-            Refused(Built + $"\"settlers\": [{Carrier}, {Carrier}]")!.StartsWith("test.jsonc: settlers[1]: ")
+        var problem = Refused(Built + $"\"settlers\": [{CarrierAt(x, direction)}]");
+
+        Assert.AreEqual("test.jsonc: settlers[0]: no land road leaves a flag there in that direction", problem);
+    }
+
+    [TestMethod]
+    [DataRow(11, 0, DisplayName = "from the castle's end")]
+    [DataRow(14, 3, DisplayName = "from the far end")]
+    public void ASecondCarrierForTheSameRoadFailsTheLoad(int x, int direction)
+    {
+        var problem = Refused(Built + $"\"settlers\": [{Carrier}, {CarrierAt(x, direction)}]");
+
+        Assert.AreEqual("test.jsonc: settlers[1]: the road has its carrier already", problem);
+    }
+
+    [TestMethod]
+    public void ACarrierForARoadNoLandRoadJoinsToTheCastleFailsTheLoad()
+    {
+        var apart = Built
+            .Replace(
+                "\"flags\": [{\"x\": 14, \"y\": 11}]",
+                "\"flags\": [{\"x\": 14, \"y\": 11}, {\"x\": 13, \"y\": 15}, {\"x\": 15, \"y\": 15}]"
+            )
+            .Replace(
+                "\"roads\": [{\"x\": 11, \"y\": 11, \"directions\": [0, 0, 0]}]",
+                "\"roads\": [{\"x\": 11, \"y\": 11, \"directions\": [0, 0, 0]}, {\"x\": 13, \"y\": 15, \"directions\": [0, 0]}]"
+            );
+
+        var problem = Refused(apart + $"\"settlers\": [{CarrierAt(13, 0, 15)}]");
+
+        Assert.AreEqual("test.jsonc: settlers[0]: no land road leads from the road to the castle", problem);
+    }
+
+    [TestMethod]
+    public void ACarrierWhenTheCastleHoldsNoCarrierAndNoJoblessSettlerFailsTheLoad()
+    {
+        var carriers = string.Join(
+            ", ",
+            new[] { (11, 11, 0), (13, 11, 0), (15, 11, 0), (11, 11, 2), (11, 13, 2), (11, 15, 0) }.Select(c =>
+                CarrierAt(c.Item1, c.Item3, c.Item2)
+            )
+        );
+
+        var problem = Refused(SixRoads + $"\"settlers\": [{carriers}]");
+
+        Assert.AreEqual("test.jsonc: settlers[5]: the castle holds no carrier", problem);
+    }
+
+    [TestMethod]
+    public void ACarrierWhenTheCastleHoldsNoCarrierIsAJoblessSettlerMadeTheRoadsCarrier()
+    {
+        var before = Applied(Built);
+        var jobless = before
+            .Settlers.Select((settler, slot) => (settler, slot))
+            .Where(pair => pair.settler.Job == Job.Jobless && pair.settler.Activity is WaitsInCastle)
+            .Select(pair => pair.slot)
+            .ToArray();
+        Assert.AreEqual(0, before.Settlers.Count(settler => settler.Job == Job.Carrier));
+
+        var game = Applied(Built + $"\"settlers\": [{Carrier}]");
+
+        var carrier = game.Settlers.ToList().FindIndex(settler => settler.Job == Job.Carrier);
+        CollectionAssert.Contains(jobless, carrier);
+        Assert.IsInstanceOfType<WaitsAtFlag>(game.Settlers[carrier].Activity);
+        Assert.AreEqual(
+            jobless.Length - 1,
+            game.Settlers.Count(s => s.Job == Job.Jobless && s.Activity is WaitsInCastle)
         );
     }
 
