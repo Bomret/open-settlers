@@ -153,5 +153,11 @@ python3 -I tools/GhidraDump/emulate.py --game "$SIEDLER_DIR" \
   "draw:95-110,230-275:17,20:goods:1:1234,5678,9ABC:0:18,20:16,20:19,21,343:16,20,2:276:0::-1:5,0,7"
 ```
 
+Several `draw:` commands in one call run as a batch. A batch runs in one Ghidra launch, each command in a new script
+instance, with `--project` or without. A batch on another build prints nothing and exits non-zero. Otherwise it prints the install line,
+then each command's result in argument order: `EMU draw command=N ended` and its recording, or `EMU draw command=N failed`
+and no lines, with `N` counting from 1. A command fails where its run does not end, and where the import fails or Ghidra
+stops before it. A batch exits non-zero where any command fails. A single `draw:` command prints no `command=` line.
+
 The settler draw turns the settlers in view every pass, so from the first window on a run differs from the verb it wraps. A recording keeps each
 pass's output with the `EMU draw ` prefix removed, under a `# name command` line (`tests/OpenSettlers.Tests/settler-draws.txt`).

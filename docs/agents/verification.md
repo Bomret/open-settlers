@@ -9,26 +9,32 @@ mise run test
 ```
 
 The full command restores the local tools, checks formatting (CSharpier names each unformatted file.
-`mise run format` fixes them), runs every unit test, and builds the project. `mise.toml` holds the
-steps. It needs the reference install (`SIEDLER_DIR`) and Ghidra (`analyzeHeadless` on the path, which
-`mise install` provides). A test whose need is missing reports inconclusive.
+`mise run format` fixes them), runs the unit tests, and builds the project. `mise.toml` holds the
+steps.
 
-The focused command runs the unit tests that need neither the install nor Ghidra. It skips the tests
+Both commands run the unit tests: the tests that need neither the install nor Ghidra. Both skip the tests
 with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
-`TestProgram.Tables`). It also skips the category `Ghidra` (they run `analyzeHeadless`). The filter is
-`TestCategory!=Install&TestCategory!=Ghidra`. It needs neither of them nor Godot. The remaining tests
+`TestProgram.Tables`). Both also skip the category `Ghidra` (they run `analyzeHeadless`). The filter is
+`TestCategory!=Install&TestCategory!=Ghidra`. Neither command needs the install, Ghidra, or Godot. The remaining tests
 build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path.
 
 The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
 `[TestCategory(Needs.Install)]` (and `Needs.Ghidra` where the test runs `analyzeHeadless`) on every test
 that needs one, on the class where every test in it does. A test without the category fails or reports
-inconclusive in the focused run without the install. `NeedsTests` pins the filter to `Needs`.
+inconclusive in either command without the install. `NeedsTests` pins the filters to `Needs`.
+
+## Integration command
+
+`mise run test:integration` runs only the tests of the categories `Install` and `Ghidra`. It needs the reference
+install (`SIEDLER_DIR`) and Ghidra (`analyzeHeadless` on the path, which `mise install` provides). A test whose need is
+missing reports inconclusive. Neither the full command nor the focused one runs these tests. Run this command for a
+change to what they test: the install readers, the emulator tools in `tools/GhidraDump/`.
 
 ## Timing command
 
-`mise exec -- dotnet test --project tests/OpenSettlers.Tests --output detailed`
+`mise exec -- dotnet test --project tests/OpenSettlers.Tests --filter 'TestCategory!=Install&TestCategory!=Ghidra' --output detailed`
 
-It runs the whole suite (over 2 minutes). Microsoft.Testing.Platform prints one `passed <test> (<duration>)`
+It runs the unit tests of the full command. Microsoft.Testing.Platform prints one `passed <test> (<duration>)`
 line per test, then the total duration in the run summary.
 
 ## Test paths

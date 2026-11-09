@@ -22,9 +22,13 @@ public sealed class DrawVerbTests
     private string _folder = "";
 
     // One Ghidra project for every run of the class that reaches the install: the first run imports the program, the others
-    // run against the import.
+    // run against the import. The Ghidra tests share one batch run in it.
     [ClassInitialize]
-    public static void InitializeClass(TestContext _) => _project = NewFolder();
+    public static void InitializeClass(TestContext _)
+    {
+        _project = NewFolder();
+        _batch = new(() => Lines(Emulate(ReferenceInstall(), Commands, _project).Output));
+    }
 
     [ClassCleanup]
     public static void CleanupClass() => Directory.Delete(_project, true);
@@ -64,6 +68,13 @@ public sealed class DrawVerbTests
         string command,
         string? project = null,
         string? path = null
+    ) => Emulate(game, [command], project, path);
+
+    private static (int Exit, string Output) Emulate(
+        string game,
+        string[] commands,
+        string? project = null,
+        string? path = null
     )
     {
         var info = new ProcessStartInfo("python3")
@@ -82,7 +93,11 @@ public sealed class DrawVerbTests
             info.ArgumentList.Add(project);
         }
 
-        info.ArgumentList.Add(command);
+        foreach (var command in commands)
+        {
+            info.ArgumentList.Add(command);
+        }
+
         if (path is not null)
         {
             info.Environment["PATH"] = path + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
@@ -150,17 +165,43 @@ public sealed class DrawVerbTests
         Assert.AreEqual("", output);
     }
 
+    // The commands of the Ghidra tests, run as one batch the first time a test that reaches the install asks for it.
+    private const string NoSettlerAtPass3 = $"draw:3-4:17,20:{Game}";
+    private const string BeyondTheLastPass = $"draw:500-501:17,20:{Game}";
+    private const string Reference = $"draw:100-101:17,20:{Game}";
+
+    private static readonly string[] Commands = [NoSettlerAtPass3, BeyondTheLastPass, Reference];
+
+    // Started by the first test that reaches the install, at most once per class run.
+    private static Lazy<string[]> _batch = null!;
+
+    // The command's result in the class's batch: whether it ended, and its lines under the install line.
+    private static (bool Ended, string[] Lines) BatchResult(string command)
+    {
+        ReferenceInstall();
+        var lines = _batch.Value;
+        var index = Array.IndexOf(Commands, command) + 1;
+        var start = Array.FindIndex(lines, line => line.StartsWith($"EMU draw command={index} "));
+        if (start < 0)
+        {
+            Assert.Fail($"the batch gave no result for {command}");
+        }
+
+        var rest = lines.Skip(start + 1).TakeWhile(line => !line.StartsWith("EMU draw command=")).ToArray();
+
+        return (lines[start].EndsWith(" ended"), [lines[0], .. rest]);
+    }
+
     [TestMethod]
     [TestCategory(Needs.Install)]
     [TestCategory(Needs.Ghidra)]
     public void ARunWhoseWindowHoldsAPassWithNoSettlerDrawExitsNonZeroAndPrintsNothing()
     {
-        var install = ReferenceInstall();
+        var (ended, lines) = BatchResult(NoSettlerAtPass3);
 
-        var (exit, output) = Emulate(install, $"draw:3-4:17,20:{Game}", _project);
-
-        Assert.AreNotEqual(0, exit, "no settler is out at pass 3");
-        Assert.AreEqual("", output);
+        Assert.IsFalse(ended, "no settler is out at pass 3");
+        Assert.AreEqual(1, lines.Length, "no recording under the install line");
+        Assert.IsTrue(BatchResult(Reference).Ended, "the batch itself ran");
     }
 
     [TestMethod]
@@ -168,12 +209,11 @@ public sealed class DrawVerbTests
     [TestCategory(Needs.Ghidra)]
     public void ARunWhoseWindowsAreBeyondItsLastPassReachesNoDrawPathAndExitsNonZero()
     {
-        var install = ReferenceInstall();
+        var (ended, lines) = BatchResult(BeyondTheLastPass);
 
-        var (exit, output) = Emulate(install, $"draw:500-501:17,20:{Game}", _project);
-
-        Assert.AreNotEqual(0, exit);
-        Assert.AreEqual("", output);
+        Assert.IsFalse(ended);
+        Assert.AreEqual(1, lines.Length, "no recording under the install line");
+        Assert.IsTrue(BatchResult(Reference).Ended, "the batch itself ran");
     }
 
     [TestMethod]
@@ -181,16 +221,13 @@ public sealed class DrawVerbTests
     [TestCategory(Needs.Ghidra)]
     public void ARunOnTheReferenceInstallPrintsTheInstallLineAndOneLineForEachPassOfItsWindow()
     {
-        var install = ReferenceInstall();
+        var (ended, lines) = BatchResult(Reference);
 
-        var (exit, output) = Emulate(install, $"draw:100-101:17,20:{Game}", _project);
-
-        Assert.AreEqual(0, exit);
+        Assert.IsTrue(ended);
         Assert.IsTrue(
             File.Exists(Path.Combine(_project, "program.sha256")),
             "the first real run records the import (Ghidra's \"REPORT: Import succeeded\" line)"
         );
-        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         StringAssert.StartsWith(lines[0], "EMU draw install=History Edition ");
         CollectionAssert.AreEqual(
             new[] { "EMU draw pass=100 clock=808", "EMU draw pass=101 clock=816" },
@@ -317,5 +354,165 @@ public sealed class DrawVerbTests
         var calls = Calls();
         Assert.AreEqual(2, calls.Length);
         Assert.IsTrue(calls.All(call => call.Contains("-import") && !call.Contains("-process")));
+    }
+
+    // A stand-in for analyzeHeadless in a draw batch: it logs its arguments and, for each -postScript, prints the line Ghidra
+    // opens a script run with, then a recording that ends, or, for a command holding "fail", a partial one that does not.
+    // With crashes, it exits 1 after the first script run, as a Ghidra that dies part-way.
+    private string FakeDrawHeadless(bool importFails = false, bool crashes = false)
+    {
+        var bin = FakeHeadless();
+        var log = Path.Combine(_folder, "calls.log");
+        var run = importFails
+            ? "echo 'ERROR REPORT: Import failed for file' \nexit 1\n"
+            : "for a in \"$@\"; do [ \"$a\" = -import ] && { touch \"$1/Emu.gpr\"; echo 'INFO  REPORT: Import succeeded (HeadlessAnalyzer)'; }; done\n"
+                + "while [ $# -gt 0 ]; do\n"
+                + "  if [ \"$1\" = -postScript ]; then\n"
+                + "    echo \"INFO  SCRIPT: /scripts/$2 (HeadlessAnalyzer)  \"\n"
+                + "    case \"$3\" in\n"
+                + "      *fail*) echo \"INFO  $2> EMU draw pass=1 partial (GhidraScript)\" ;;\n"
+                + "      *) echo \"INFO  $2> EMU draw pass=1 $3 (GhidraScript)\"; echo \"INFO  $2> EMU draw end passes=1 (GhidraScript)\" ;;\n"
+                + "    esac\n"
+                + (crashes ? "    exit 1\n" : "")
+                + "    shift 3\n"
+                + "  else shift; fi\n"
+                + "done\n";
+        File.WriteAllText(Path.Combine(bin, "analyzeHeadless"), $"#!/bin/sh\necho \"$*\" >> \"{log}\"\n" + run);
+
+        return bin;
+    }
+
+    private static string[] Lines(string output) =>
+        output.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void ABatchOfDrawCommandsStartsOneLaunchWithOneScriptPerCommandInArgumentOrder()
+    {
+        var bin = FakeDrawHeadless();
+
+        var (exit, _) = Emulate(TestProgram.OpenInstall().Root, ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
+
+        Assert.AreEqual(0, exit);
+        var call = Calls().Single();
+        StringAssert.EndsWith(
+            call.TrimEnd(),
+            "-postScript EmulateDraw.java draw:1-1:0,0:a -postScript EmulateDraw.java draw:2-2:0,0:b"
+        );
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void ABatchGivesEachCommandItsOwnResultInArgumentOrderAndExitsNonZeroWhenOneFails()
+    {
+        var bin = FakeDrawHeadless();
+
+        var (exit, output) = Emulate(
+            TestProgram.OpenInstall().Root,
+            ["draw:1-1:0,0:a", "draw:2-2:0,0:fail", "draw:1-1:0,0:a"],
+            path: bin
+        );
+
+        Assert.AreNotEqual(0, exit);
+        var lines = Lines(output);
+        StringAssert.StartsWith(lines[0], "EMU draw install=History Edition ");
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "EMU draw command=1 ended",
+                "EMU draw pass=1 draw:1-1:0,0:a",
+                "EMU draw end passes=1",
+                "EMU draw command=2 failed",
+                "EMU draw command=3 ended",
+                "EMU draw pass=1 draw:1-1:0,0:a",
+                "EMU draw end passes=1",
+            },
+            lines[1..]
+        );
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void EachCommandOfABatchRunsInAScriptRunOfItsOwn()
+    {
+        var bin = FakeDrawHeadless();
+        string[] commands = ["draw:1-1:0,0:a", "draw:2-2:0,0:b", "draw:3-3:0,0:c"];
+
+        Emulate(TestProgram.OpenInstall().Root, commands, path: bin);
+
+        var scripts = Calls().Single().Split("-postScript ")[1..].Select(part => part.Trim()).ToArray();
+        CollectionAssert.AreEqual(commands.Select(command => $"EmulateDraw.java {command}").ToArray(), scripts);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void ABatchWhoseLaunchCrashesPartWayReportsTheRestFailed()
+    {
+        var bin = FakeDrawHeadless(crashes: true);
+
+        var (exit, output) = Emulate(TestProgram.OpenInstall().Root, ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
+
+        Assert.AreNotEqual(0, exit);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "EMU draw command=1 ended",
+                "EMU draw pass=1 draw:1-1:0,0:a",
+                "EMU draw end passes=1",
+                "EMU draw command=2 failed",
+            },
+            Lines(output)[1..]
+        );
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void ABatchWhoseImportFailsReportsEveryCommandFailed()
+    {
+        var bin = FakeDrawHeadless(importFails: true);
+
+        var (exit, output) = Emulate(TestProgram.OpenInstall().Root, ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
+
+        Assert.AreNotEqual(0, exit);
+        CollectionAssert.AreEqual(
+            new[] { "EMU draw command=1 failed", "EMU draw command=2 failed" },
+            Lines(output)[1..]
+        );
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void ABatchInAProjectImportsOnceAndThenRunsAgainstTheImport()
+    {
+        var bin = FakeDrawHeadless();
+        var project = Path.Combine(_folder, "project");
+        string[] commands = ["draw:1-1:0,0:a", "draw:2-2:0,0:b"];
+
+        var (firstExit, _) = Emulate(TestProgram.OpenInstall().Root, commands, project, bin);
+        var (exit, output) = Emulate(TestProgram.OpenInstall().Root, commands, project, bin);
+
+        Assert.AreEqual(0, firstExit);
+        Assert.AreEqual(0, exit);
+        Assert.AreEqual(7, Lines(output).Length, "the install line, then two ended results of three lines each");
+        var calls = Calls();
+        StringAssert.Contains(calls[0], "-import");
+        StringAssert.Contains(calls[1], "-process Siedler1.exe");
+        Assert.IsTrue(calls.All(call => call.Split("-postScript").Length == 3));
+    }
+
+    [TestMethod]
+    public void ABatchOnAProgramOfAnotherBuildExitsNonZeroAndPrintsNothing()
+    {
+        var bin = FakeDrawHeadless();
+
+        var (exit, output) = Emulate(
+            Install("not the history edition"),
+            ["draw:1-1:0,0:a", "draw:2-2:0,0:b"],
+            path: bin
+        );
+
+        Assert.AreNotEqual(0, exit);
+        Assert.AreEqual("", output);
+        Assert.IsFalse(File.Exists(Path.Combine(_folder, "calls.log")), "no launch");
     }
 }
