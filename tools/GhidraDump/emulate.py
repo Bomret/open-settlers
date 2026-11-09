@@ -9,8 +9,9 @@ keeps no program bytes.
 
 With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
 calls run the script against the imported program instead of importing again. The folder records the SHA-256 of the
-imported program, and a call for a program with another SHA-256 imports it again over the old project, replacing only Emu.gpr, Emu.rep, and program.sha256: other files in the
-folder stay. A folder with the marker but no Emu.gpr is imported again. The caller removes the folder.
+imported program, and a call for a program with another SHA-256 imports it again over the old project, replacing
+only Emu.gpr, Emu.rep, and program.sha256: other files in the folder stay. A folder with the marker but no Emu.gpr is
+imported again. The caller removes the folder.
 
 The command draw:WINDOWS:CX,CY:VERB:ARGS... (EmulateDraw.java lists its form) runs EmulateDraw.java instead. It runs
 only on the reference build of Siedler1.exe (the History Edition, docs/rules/AGENTS.md, "Reference build") and
