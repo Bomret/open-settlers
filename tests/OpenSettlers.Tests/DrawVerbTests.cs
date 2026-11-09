@@ -27,7 +27,7 @@ public sealed class DrawVerbTests
     public static void InitializeClass(TestContext _)
     {
         _project = NewFolder();
-        _batch = null;
+        _batch = new(() => Lines(Emulate(TestProgram.OpenInstall().Root, Commands, _project).Output));
     }
 
     [ClassCleanup]
@@ -170,26 +170,17 @@ public sealed class DrawVerbTests
     private const string BeyondTheLastPass = $"draw:500-501:17,20:{Game}";
     private const string Reference = $"draw:100-101:17,20:{Game}";
 
-    private static readonly object BatchGate = new();
+    private static readonly string[] Commands = [NoSettlerAtPass3, BeyondTheLastPass, Reference];
 
-    private static string[]? _batch;
-
-    private static string[] Batch(string install)
-    {
-        lock (BatchGate)
-        {
-            return _batch ??= Lines(
-                Emulate(install, [NoSettlerAtPass3, BeyondTheLastPass, Reference], _project).Output
-            );
-        }
-    }
+    // Started by the first test that reaches the install, at most once per class run.
+    private static Lazy<string[]> _batch = null!;
 
     // The command's result in the class's batch: whether it ended, and its lines under the install line.
     private static (bool Ended, string[] Lines) BatchResult(string command)
     {
-        var install = ReferenceInstall();
-        var lines = Batch(install);
-        var index = Array.IndexOf(new[] { NoSettlerAtPass3, BeyondTheLastPass, Reference }, command) + 1;
+        ReferenceInstall();
+        var lines = _batch.Value;
+        var index = Array.IndexOf(Commands, command) + 1;
         var start = Array.FindIndex(lines, line => line.StartsWith($"EMU draw command={index} "));
         if (start < 0)
         {
@@ -210,6 +201,7 @@ public sealed class DrawVerbTests
 
         Assert.IsFalse(ended, "no settler is out at pass 3");
         Assert.AreEqual(1, lines.Length, "no recording under the install line");
+        Assert.IsTrue(BatchResult(Reference).Ended, "the batch itself ran");
     }
 
     [TestMethod]
@@ -221,6 +213,7 @@ public sealed class DrawVerbTests
 
         Assert.IsFalse(ended);
         Assert.AreEqual(1, lines.Length, "no recording under the install line");
+        Assert.IsTrue(BatchResult(Reference).Ended, "the batch itself ran");
     }
 
     [TestMethod]
@@ -365,7 +358,8 @@ public sealed class DrawVerbTests
 
     // A stand-in for analyzeHeadless in a draw batch: it logs its arguments and, for each -postScript, prints the line Ghidra
     // opens a script run with, then a recording that ends, or, for a command holding "fail", a partial one that does not.
-    private string FakeDrawHeadless(bool importFails = false)
+    // With crashes, it exits 1 after the first script run, as a Ghidra that dies part-way.
+    private string FakeDrawHeadless(bool importFails = false, bool crashes = false)
     {
         var bin = FakeHeadless();
         var log = Path.Combine(_folder, "calls.log");
@@ -379,6 +373,7 @@ public sealed class DrawVerbTests
                 + "      *fail*) echo \"INFO  $2> EMU draw pass=1 partial (GhidraScript)\" ;;\n"
                 + "      *) echo \"INFO  $2> EMU draw pass=1 $3 (GhidraScript)\"; echo \"INFO  $2> EMU draw end passes=1 (GhidraScript)\" ;;\n"
                 + "    esac\n"
+                + (crashes ? "    exit 1\n" : "")
                 + "    shift 3\n"
                 + "  else shift; fi\n"
                 + "done\n";
@@ -433,6 +428,40 @@ public sealed class DrawVerbTests
                 "EMU draw end passes=1",
             },
             lines[1..]
+        );
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void EachCommandOfABatchRunsInAScriptRunOfItsOwn()
+    {
+        var bin = FakeDrawHeadless();
+        string[] commands = ["draw:1-1:0,0:a", "draw:2-2:0,0:b", "draw:3-3:0,0:c"];
+
+        Emulate(TestProgram.OpenInstall().Root, commands, path: bin);
+
+        var scripts = Calls().Single().Split("-postScript ")[1..].Select(part => part.Trim()).ToArray();
+        CollectionAssert.AreEqual(commands.Select(command => $"EmulateDraw.java {command}").ToArray(), scripts);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void ABatchWhoseLaunchCrashesPartWayReportsTheRestFailed()
+    {
+        var bin = FakeDrawHeadless(crashes: true);
+
+        var (exit, output) = Emulate(TestProgram.OpenInstall().Root, ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
+
+        Assert.AreNotEqual(0, exit);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "EMU draw command=1 ended",
+                "EMU draw pass=1 draw:1-1:0,0:a",
+                "EMU draw end passes=1",
+                "EMU draw command=2 failed",
+            },
+            Lines(output)[1..]
         );
     }
 

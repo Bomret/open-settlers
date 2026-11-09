@@ -74,8 +74,8 @@ def clear(project):
 
 
 def run(headless, project, mode, script, argv, environment):
-    # Several draw commands each get their own -postScript, so each runs in a new script instance.
-    if script == "EmulateDraw.java" and len(argv) > 1:
+    # Each draw command gets its own -postScript, so each runs in a new script instance.
+    if script == "EmulateDraw.java":
         scripts = [part for command in argv for part in ("-postScript", script, command)]
     else:
         scripts = ["-postScript", script, *argv]
