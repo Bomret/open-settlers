@@ -73,11 +73,13 @@ def run(headless, project, mode, script, argv, environment):
 
 def main(argv):
     game = os.environ.get("SIEDLER_DIR")
-    if argv[:1] == ["--game"]:
-        game, argv = argv[1], argv[2:]
     shared = None
-    if argv[:1] == ["--project"]:
-        shared, argv = argv[1], argv[2:]
+    while argv[:1] in (["--game"], ["--project"]):
+        if argv[0] == "--game":
+            game = argv[1]
+        else:
+            shared = argv[1]
+        argv = argv[2:]
     if not game or not os.path.isdir(game):
         fail("no install folder: pass --game <dir> or set SIEDLER_DIR")
     if not argv:
@@ -89,9 +91,10 @@ def main(argv):
     program = find_program(game)
     script = "EmulateDraw.java" if drawing else "EmulateMapStart.java"
     environment = {**os.environ, "EMU_GAME": game}
-    with open(program, "rb") as file:
-        data = file.read()
-    digest = hashlib.sha256(data).hexdigest()
+    if drawing or shared is not None:
+        with open(program, "rb") as file:
+            data = file.read()
+        digest = hashlib.sha256(data).hexdigest()
     if drawing:
         if digest != REFERENCE_SHA256:
             fail(f"{program} is not the reference build of the History Edition (SHA-256 {digest})")
