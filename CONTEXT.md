@@ -68,6 +68,23 @@ triangle, objects), a seed for the game's random generator, the castle, flags, r
 commands, and settlers and goods in entry states.
 _Avoid_: scenario, save, fixture
 
+**Graphics source**
+Where the map view gets the image for each draw term: the History Edition source, which reads the install's
+archives, or a content set the repository ships. The launch flag `--graphics` picks one. A source answers a
+term with an RGBA image and its anchor point, or with nothing for an effect it does not draw (ADR 0014).
+_Avoid_: skin, theme, renderer, asset pack
+
+**Draw term**
+What the map view asks a graphics source to draw, named in game terms: a terrain triangle, a map object, a
+settler, or a road, with the data that picks its image, such as a settler's job, activity, heading, and
+animation step. A draw term never holds an entry number (INV-0010).
+_Avoid_: sprite ID, entry, frame number
+
+**Content set**
+A folder under `content/` that holds a graphics source as PNG images and one JSON manifest mapping draw terms
+to images and anchors (ADR 0015). It holds graphics only; rules always come from `Siedler1.exe`.
+_Avoid_: mod, pack, theme
+
 **Entry state**
 A state of a settler or a good that a routine of the original writes at the start of a behaviour, such as a
 woodcutter inside his hut, a carrier on his road, or a good put on a flag. A layout places settlers and

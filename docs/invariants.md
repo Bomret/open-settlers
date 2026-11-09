@@ -63,3 +63,19 @@ Concepts: Simulation, Domain, Adapter
 Statement: The simulation's layers are separate assemblies, and each depends only inward. The domain assembly references no other project assembly. The application assembly references only the domain. The adapter assembly references the domain and the application. None of them references a Godot type. The original's packed state bytes, map layers, and bare codes appear only in the adapter assembly; the map view and every other caller read the typed model (ADR 0013). The thing readouts of the map view are the one exception: they show the original's encoding of a settler or building through `SettlerEncoder` and `BuildingEncoder` as read-only display, and no rule takes it as input.
 Breaks: loudly
 Check: the project references in each layer's `.csproj`. The compiler refuses a reference that points outward. Reviewers check that no packed byte or bare code of the original enters the domain or the application.
+
+### INV-0009
+
+Class: architecture
+Concepts: Graphics source, Simulation
+Statement: The simulation is independent of the graphics source. No domain, application, or adapter type references a graphics source, and the same seed and commands give the same `Game.Digest()` under every graphics source (ADR 0014).
+Breaks: silently
+Check: a test runs one seed and command list under the History Edition source and the Open Settlers source and compares the digests. The project references keep the graphics sources out of the simulation assemblies.
+
+### INV-0010
+
+Class: architecture
+Concepts: Graphics source, Entry
+Statement: The original's graphics encoding stays inside the History Edition source. Entry numbers, archive files, palette indexes, and the slope and figure tables of `Siedler1.exe` used to pick an image appear in no draw term and in no class of the map view outside that source (ADR 0014).
+Breaks: silently
+Check: reviewers check each draw term and every map view class outside the History Edition source. A test of the draw-list builders runs with no install-backed source.
