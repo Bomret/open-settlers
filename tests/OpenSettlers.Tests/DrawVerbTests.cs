@@ -213,7 +213,7 @@ public sealed class DrawVerbTests
         var script = Path.Combine(bin, "analyzeHeadless");
         File.WriteAllText(
             script,
-            "#!/bin/sh\necho \"$*\" >> \"$FAKE_LOG\"\nfor a in \"$@\"; do [ \"$a\" = -import ] && touch \"$1/Emu.gpr\"; done\necho 'EmulateMapStart.java> EMU ok'\n".Replace(
+            "#!/bin/sh\necho \"$*\" >> \"$FAKE_LOG\"\nfor a in \"$@\"; do [ \"$a\" = -import ] && { touch \"$1/Emu.gpr\"; echo 'INFO  REPORT: Import succeeded (HeadlessAnalyzer)'; }; done\necho 'EmulateMapStart.java> EMU ok'\n".Replace(
                 "$FAKE_LOG",
                 Path.Combine(_folder, "calls.log")
             )

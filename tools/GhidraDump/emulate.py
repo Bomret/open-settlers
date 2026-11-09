@@ -106,7 +106,8 @@ def main(argv):
             result = run(headless, shared, ["-process", os.path.basename(program), "-noanalysis"], script, argv, environment)
         else:
             result = run(headless, shared, ["-import", program, "-noanalysis"], script, argv, environment)
-            if result.returncode == 0:
+            # The import precedes the script, so a run whose script fails still leaves the program imported.
+            if "REPORT: Import succeeded" in result.stdout:
                 with open(os.path.join(shared, DIGEST_FILE), "w") as file:
                     file.write(digest)
     marker = script + "> "
