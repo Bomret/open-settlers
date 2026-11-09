@@ -56,7 +56,7 @@ description = "Run the unit tests that need neither the install nor Ghidra"
 run = "dotnet test --project tests/OpenSettlers.Tests --filter 'TestCategory!=Install&TestCategory!=Ghidra'"
 
 [tasks."test:integration"]
-description = "Run the integration tests, which need the install or Ghidra (needs SIEDLER_DIR and Ghidra)"
+description = "Run the integration tests, which need the install (SIEDLER_DIR) and Ghidra"
 run = "dotnet test --project tests/OpenSettlers.Tests --filter 'TestCategory=Install|TestCategory=Ghidra'"
 
 [tasks.check]
