@@ -58,6 +58,20 @@ public sealed class PlayNamedThingTests
     }
 
     [TestMethod]
+    [DataRow("expect-event f place-flag nocause x", "'nocause' is not 'cause'")]
+    [DataRow("events f a/b", "'a/b' is no file name")]
+    [DataRow("events f ..", "'..' is no file name")]
+    [DataRow("expect f.x ~ 1", "unknown operator '~', use one of < <= = >= >")]
+    [DataRow("expect f.x = abc", "'abc' is not a number")]
+    [DataRow("expect f.id < flag#1.1", "'id' takes only '=', not '<'")]
+    public void ABadLineOnANamedThingIsRefusedNamingItsLineAndReason(string line, string reason)
+    {
+        var script = Parse("name f 18 6 flag\n" + line);
+
+        Assert.AreEqual("play/t.play line 2: " + reason, string.Join("\n", script.Problems));
+    }
+
+    [TestMethod]
     public void NameSavesTheOneThingAtTheNode()
     {
         var run = Run("name f 18 6 flag\nexpect f.id = flag#1.1", Castle());
