@@ -51,13 +51,10 @@ def imported(project, digest):
     marker = os.path.join(project, DIGEST_FILE)
     if os.path.isfile(marker):
         with open(marker) as file:
-            same = file.read().strip() == digest
-        if same and os.path.isfile(os.path.join(project, PROJECT_NAME + ".gpr")):
-            return True
-        os.remove(marker)
-    shutil.rmtree(os.path.join(project, PROJECT_NAME + ".rep"), ignore_errors=True)
-    if os.path.isfile(os.path.join(project, PROJECT_NAME + ".gpr")):
-        os.remove(os.path.join(project, PROJECT_NAME + ".gpr"))
+            if file.read().strip() == digest:
+                return True
+    shutil.rmtree(project, ignore_errors=True)
+    os.makedirs(project)
     return False
 
 
@@ -86,11 +83,10 @@ def main(argv):
     program = find_program(game)
     script = "EmulateDraw.java" if drawing else "EmulateMapStart.java"
     environment = {**os.environ, "EMU_GAME": game}
-    install = digest = None
+    with open(program, "rb") as file:
+        data = file.read()
+    digest = hashlib.sha256(data).hexdigest()
     if drawing:
-        with open(program, "rb") as file:
-            data = file.read()
-        digest = hashlib.sha256(data).hexdigest()
         if digest != REFERENCE_SHA256:
             fail(f"{program} is not the reference build of the History Edition (SHA-256 {digest})")
         install = f"EMU draw install=History Edition program=Siedler1.exe bytes={len(data)} sha256={digest}"
@@ -98,10 +94,6 @@ def main(argv):
         with tempfile.TemporaryDirectory(prefix="emulate") as project:
             result = run(headless, project, ["-import", program, "-noanalysis", "-deleteProject"], script, argv, environment)
     else:
-        os.makedirs(shared, exist_ok=True)
-        if digest is None:
-            with open(program, "rb") as file:
-                digest = hashlib.sha256(file.read()).hexdigest()
         if imported(shared, digest):
             result = run(headless, shared, ["-process", os.path.basename(program), "-noanalysis"], script, argv, environment)
         else:

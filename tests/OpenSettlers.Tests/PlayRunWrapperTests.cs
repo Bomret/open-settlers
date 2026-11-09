@@ -50,7 +50,7 @@ public class PlayRunWrapperTests
           prev=$a
         done
         i=0
-        while [ -n "${FAKE_GATE:-}" ] && [ ! -e "$FAKE_GATE" ] && [ $i -lt 600 ]; do
+        while [ -n "${FAKE_GATE:-}" ] && [ ! -e "$FAKE_GATE" ] && [ $i -lt 2400 ]; do
           sleep 0.05
           i=$((i + 1))
         done
@@ -193,11 +193,24 @@ public class PlayRunWrapperTests
 
     static readonly string[] Args = ["demo", "--seed", "abc", "--size", "2", "--fps", "10"];
 
-    // A started process whose output is collected as it arrives, so a test can poll for a line while it runs.
-    sealed class Running(Process process, string name)
+    // A started process whose output is collected as it arrives, so a test can poll for a line while it runs. Disposing
+    // kills a process still alive, so a failing wait leaves none behind.
+    sealed class Running : IDisposable
     {
+        readonly Process process;
+        readonly string name;
         readonly StringBuilder stdout = new();
         readonly StringBuilder stderr = new();
+
+        public Running(Process process, string name)
+        {
+            this.process = process;
+            this.name = name;
+            process.OutputDataReceived += (_, e) => Append(stdout, e.Data);
+            process.ErrorDataReceived += (_, e) => Append(stderr, e.Data);
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+        }
 
         public string Stderr
         {
@@ -208,14 +221,6 @@ public class PlayRunWrapperTests
                     return stderr.ToString();
                 }
             }
-        }
-
-        public void Collect()
-        {
-            process.OutputDataReceived += (_, e) => Append(stdout, e.Data);
-            process.ErrorDataReceived += (_, e) => Append(stderr, e.Data);
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
         }
 
         static void Append(StringBuilder to, string? line)
@@ -230,14 +235,22 @@ public class PlayRunWrapperTests
         {
             if (!process.WaitForExit(30000))
             {
-                process.Kill(true);
                 Assert.Fail($"{name} did not exit within 30 s");
             }
 
             process.WaitForExit();
-            var result = (process.ExitCode, stdout.ToString(), Stderr);
+            return (process.ExitCode, stdout.ToString(), Stderr);
+        }
+
+        public void Dispose()
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(true);
+                process.WaitForExit();
+            }
+
             process.Dispose();
-            return result;
         }
     }
 
@@ -247,20 +260,26 @@ public class PlayRunWrapperTests
             $"timed out after 30 s waiting for {what}"
         );
 
-    Running Launch(string file, string[] args, Dictionary<string, string?> env)
+    Running Start(string[] args, Dictionary<string, string?>? env = null)
     {
-        var info = new ProcessStartInfo(file)
+        var info = new ProcessStartInfo("sh")
         {
             WorkingDirectory = repo,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
+        info.ArgumentList.Add("tools/play-run.sh");
         foreach (var arg in args)
         {
             info.ArgumentList.Add(arg);
         }
 
-        foreach (var (key, value) in env)
+        info.Environment["PLAY_RUN_MISE"] = Path.Combine(fake, "mise");
+        info.Environment["PLAY_RUN_GODOT"] = Path.Combine(fake, "godot");
+        info.Environment["PLAY_RUN_DOTNET"] = Path.Combine(fake, "dotnet");
+        info.Environment["SIEDLER_DIR"] = Siedler;
+        info.Environment["FAKE_DIR"] = fake;
+        foreach (var (key, value) in env ?? [])
         {
             if (value is null)
             {
@@ -272,34 +291,14 @@ public class PlayRunWrapperTests
             }
         }
 
-        var running = new Running(Process.Start(info)!, file);
-        running.Collect();
-        return running;
+        return new Running(Process.Start(info)!, "sh");
     }
 
-    Running Start(string[] args, Dictionary<string, string?>? env = null) =>
-        Launch("sh", ["tools/play-run.sh", .. args], RunEnv(env));
-
-    Dictionary<string, string?> RunEnv(Dictionary<string, string?>? env)
+    (int Status, string Stdout, string Stderr) Run(string[] args, Dictionary<string, string?>? env = null)
     {
-        var all = new Dictionary<string, string?>
-        {
-            ["PLAY_RUN_MISE"] = Path.Combine(fake, "mise"),
-            ["PLAY_RUN_GODOT"] = Path.Combine(fake, "godot"),
-            ["PLAY_RUN_DOTNET"] = Path.Combine(fake, "dotnet"),
-            ["SIEDLER_DIR"] = Siedler,
-            ["FAKE_DIR"] = fake,
-        };
-        foreach (var (key, value) in env ?? [])
-        {
-            all[key] = value;
-        }
-
-        return all;
+        using var running = Start(args, env);
+        return running.Finish();
     }
-
-    (int Status, string Stdout, string Stderr) Run(string[] args, Dictionary<string, string?>? env = null) =>
-        Start(args, env).Finish();
 
     [TestMethod]
     [DataRow(0)]
@@ -453,9 +452,9 @@ public class PlayRunWrapperTests
         );
 
         Run(["demo", "--fps", "10"]);
-        var bare = LaunchLine();
-        CollectionAssert.DoesNotContain(bare, "--seed");
-        CollectionAssert.DoesNotContain(bare, "--size");
+        var whole = File.ReadAllLines(Path.Combine(fake, "args"));
+        CollectionAssert.DoesNotContain(whole, "--seed");
+        CollectionAssert.DoesNotContain(whole, "--size");
         Assert.AreEqual(5, Calls, "a run did not start Godot, so the args file is stale");
     }
 
@@ -612,9 +611,9 @@ public class PlayRunWrapperTests
     {
         var gate = Path.Combine(fake, "gate");
         var env = new Dictionary<string, string?> { ["FAKE_GATE"] = gate };
-        var first = Start(Args, env);
+        using var first = Start(Args, env);
         WaitFor(() => Calls == 1, "the first call to start Godot");
-        var second = Start(Args, env);
+        using var second = Start(Args, env);
         WaitFor(() => second.Stderr.Contains("waiting on"), "the second call to say it waits on the lock");
         File.WriteAllText(gate, "");
         var results = new[] { first.Finish(), second.Finish() };
@@ -632,8 +631,8 @@ public class PlayRunWrapperTests
         Write("play/other.play", "wait 1");
         var gate = Path.Combine(fake, "gate");
         var env = new Dictionary<string, string?> { ["FAKE_GATE"] = gate };
-        var first = Start(Args, env);
-        var second = Start(["other", "--fps", "10"], env);
+        using var first = Start(Args, env);
+        using var second = Start(["other", "--fps", "10"], env);
         // Godot of each call waits on the shut gate, so both starts show only where the calls overlap.
         WaitFor(() => Calls == 2, "both stems to start Godot while the gate is shut");
         File.WriteAllText(gate, "");
@@ -674,7 +673,7 @@ public class PlayRunWrapperTests
         const string waiting = "play-run.sh: waiting on play-out/.lock-demo (remove it if no run is live)";
         Run(Args);
         HoldLock(Environment.ProcessId);
-        var call = Start(Args);
+        using var call = Start(Args);
         WaitFor(() => call.Stderr.Contains(waiting), "the call to say it waits on the lock");
         Write("src/Game.cs", "class Game { int changed; }");
         Directory.Delete(Out(".lock-demo"), true);

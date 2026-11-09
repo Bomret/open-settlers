@@ -186,6 +186,10 @@ public sealed class DrawVerbTests
         var (exit, output) = Emulate(install, $"draw:100-101:17,20:{Game}", _project);
 
         Assert.AreEqual(0, exit);
+        Assert.IsTrue(
+            File.Exists(Path.Combine(_project, "program.sha256")),
+            "the first real run records the import (Ghidra's \"REPORT: Import succeeded\" line)"
+        );
         var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         StringAssert.StartsWith(lines[0], "EMU draw install=History Edition ");
         CollectionAssert.AreEqual(
@@ -211,12 +215,10 @@ public sealed class DrawVerbTests
         var bin = Path.Combine(_folder, "bin");
         Directory.CreateDirectory(bin);
         var script = Path.Combine(bin, "analyzeHeadless");
+        var log = Path.Combine(_folder, "calls.log");
         File.WriteAllText(
             script,
-            "#!/bin/sh\necho \"$*\" >> \"$FAKE_LOG\"\nfor a in \"$@\"; do [ \"$a\" = -import ] && { touch \"$1/Emu.gpr\"; echo 'INFO  REPORT: Import succeeded (HeadlessAnalyzer)'; }; done\necho 'EmulateMapStart.java> EMU ok'\n".Replace(
-                "$FAKE_LOG",
-                Path.Combine(_folder, "calls.log")
-            )
+            $"#!/bin/sh\necho \"$*\" >> \"{log}\"\nfor a in \"$@\"; do [ \"$a\" = -import ] && {{ touch \"$1/Emu.gpr\"; echo 'INFO  REPORT: Import succeeded (HeadlessAnalyzer)'; }}; done\necho 'EmulateMapStart.java> EMU ok'\n"
         );
         if (!OperatingSystem.IsWindows())
         {
@@ -246,8 +248,9 @@ public sealed class DrawVerbTests
 
         Assert.AreEqual(0, exit);
         Assert.AreEqual("EMU ok\n", output.Replace("\r", ""));
-        StringAssert.Contains(Calls().Single(), "-import");
-        StringAssert.Contains(Calls().Single(), "-deleteProject");
+        var call = Calls().Single();
+        StringAssert.Contains(call, "-import");
+        StringAssert.Contains(call, "-deleteProject");
     }
 
     [TestMethod]
@@ -257,12 +260,15 @@ public sealed class DrawVerbTests
         var install = Install("a");
         var project = Path.Combine(_folder, "project");
 
-        Emulate(install, "rng:0000,0000,0000", project, bin);
+        var (firstExit, firstOutput) = Emulate(install, "rng:0000,0000,0000", project, bin);
         var (exit, output) = Emulate(install, "rng:0000,0000,0000", project, bin);
 
+        Assert.AreEqual(0, firstExit);
+        Assert.AreEqual("EMU ok\n", firstOutput.Replace("\r", ""));
         Assert.AreEqual(0, exit);
         Assert.AreEqual("EMU ok\n", output.Replace("\r", ""));
         var calls = Calls();
+        Assert.AreEqual(2, calls.Length);
         StringAssert.Contains(calls[0], "-import");
         StringAssert.Contains(calls[1], "-process Siedler1.exe");
         Assert.IsFalse(calls[1].Contains("-import"));
@@ -279,6 +285,8 @@ public sealed class DrawVerbTests
         Emulate(Install("a"), "rng:0000,0000,0000", project, bin);
         Emulate(Install("b"), "rng:0000,0000,0000", project, bin);
 
-        Assert.IsTrue(Calls().All(call => call.Contains("-import") && !call.Contains("-process")));
+        var calls = Calls();
+        Assert.AreEqual(2, calls.Length);
+        Assert.IsTrue(calls.All(call => call.Contains("-import") && !call.Contains("-process")));
     }
 }
