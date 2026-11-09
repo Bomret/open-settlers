@@ -8,15 +8,15 @@ mise run check
 mise run test
 ```
 
-The full command restores the local tools, checks formatting (CSharpier names each unformatted file;
+The full command restores the local tools, checks formatting (CSharpier names each unformatted file.
 `mise run format` fixes them), runs every unit test, and builds the project. `mise.toml` holds the
 steps. It needs the reference install (`SIEDLER_DIR`) and Ghidra (`analyzeHeadless` on the path, which
-`mise install` provides); a test whose need is missing reports inconclusive.
+`mise install` provides). A test whose need is missing reports inconclusive.
 
 The focused command runs the unit tests that need neither the install nor Ghidra. It skips the tests
 with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
-`TestProgram.Tables`) and the category `Ghidra` (they run `analyzeHeadless`), with the filter
-`TestCategory!=Install&TestCategory!=Ghidra`. It needs neither of them nor Godot: the remaining tests
+`TestProgram.Tables`). It also skips the category `Ghidra` (they run `analyzeHeadless`). The filter is
+`TestCategory!=Install&TestCategory!=Ghidra`. It needs neither of them nor Godot. The remaining tests
 build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path.
 
 The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
