@@ -3,19 +3,23 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Versioning;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.Versioning;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
 // tools/play-run.sh runs in a throwaway git repository against a fake mise (PLAY_RUN_MISE), a fake Godot
 // (PLAY_RUN_GODOT) and a fake dotnet (PLAY_RUN_DOTNET). The fake mise logs a call and runs the command after
-// `exec --`. The fake Godot counts its calls, writes a dump, two named shots, numbered frames, a WAV and log
-// lines, and exits with FAKE_STATUS after FAKE_SLEEP seconds. The fake dotnet exits with FAKE_BUILD_STATUS.
-// Both append their name and arguments to the order file. tools/play-run.sh is a POSIX shell script.
+// `exec --`. The fake Godot counts its calls, waits until the FAKE_GATE file exists (when set), writes a dump,
+// two named shots, numbered frames, a WAV and log lines, and exits with FAKE_STATUS. The fake dotnet exits with
+// FAKE_BUILD_STATUS. Both append their name and arguments to the order file. A test that needs two calls to
+// overlap holds the gate shut and polls for the effect it waits on, so it depends on no sleep and no clock.
+// The git fixture repository is built once per class and copied for each test. tools/play-run.sh is a POSIX
+// shell script.
 [TestClass]
 [OSCondition(ConditionMode.Exclude, OperatingSystems.Windows)]
 public class PlayRunWrapperTests
@@ -45,7 +49,11 @@ public class PlayRunWrapperTests
           [ "$prev" = --write-movie ] && out=$(dirname "$a")
           prev=$a
         done
-        sleep "${FAKE_SLEEP:-0}"
+        i=0
+        while [ -n "${FAKE_GATE:-}" ] && [ ! -e "$FAKE_GATE" ] && [ $i -lt 600 ]; do
+          sleep 0.05
+          i=$((i + 1))
+        done
         echo "state ${FAKE_MARK:-1}" > "$out/end.txt"
         echo shot > "$out/start.png"
         echo shot > "$out/42.png"
@@ -65,6 +73,8 @@ public class PlayRunWrapperTests
         exit "${FAKE_BUILD_STATUS:-0}"
         """;
 
+    static string templateRoot = "";
+
     string root = "";
     string repo = "";
     string fake = "";
@@ -75,6 +85,68 @@ public class PlayRunWrapperTests
         File.WriteAllText(path, text);
         File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
     }
+
+    static void CopyTree(string from, string to)
+    {
+        Directory.CreateDirectory(to);
+        foreach (var dir in Directory.EnumerateDirectories(from, "*", SearchOption.AllDirectories))
+        {
+            Directory.CreateDirectory(Path.Combine(to, Path.GetRelativePath(from, dir)));
+        }
+
+        foreach (var file in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
+        {
+            File.Copy(file, Path.Combine(to, Path.GetRelativePath(from, file)));
+        }
+    }
+
+    [ClassInitialize]
+    public static void BuildFixture(TestContext _)
+    {
+        templateRoot = Path.Combine(Path.GetTempPath(), "play-run-fixture-" + Guid.NewGuid().ToString("N"));
+        var repo = Path.Combine(templateRoot, "repo");
+        void Put(string path, string text)
+        {
+            var full = Path.Combine(repo, path);
+            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+            File.WriteAllText(full, text);
+        }
+
+        Put("tools/play-run.sh", File.ReadAllText(Path.Combine(RepoRoot(), "tools", "play-run.sh")));
+        Put("src/Game.cs", "class Game {}");
+        Put("scenes/main.tscn", "[scene]");
+        Put("project.godot", "config");
+        Put("OpenSettlers.csproj", "<Project />");
+        Put("global.json", "{}");
+        Put("play/demo.play", "wait 1");
+        Put("play/.cache.play", "wait 1");
+        Put("README.md", "readme");
+        Put("tests/T.cs", "class T {}");
+        Put(".gitignore", "play-out/\nsrc/ignored.txt\n");
+        Put("src/ignored.txt", "ignored");
+        foreach (
+            var args in new[]
+            {
+                new[] { "init", "-q", "--template=" },
+                ["add", "-A"],
+                ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "init"],
+            }
+        )
+        {
+            var info = new ProcessStartInfo("git") { WorkingDirectory = repo };
+            foreach (var arg in args)
+            {
+                info.ArgumentList.Add(arg);
+            }
+
+            using var process = Process.Start(info)!;
+            process.WaitForExit();
+            Assert.AreEqual(0, process.ExitCode, $"git {args[^1]} failed in the fixture");
+        }
+    }
+
+    [ClassCleanup]
+    public static void DeleteFixture() => Directory.Delete(templateRoot, true);
 
     [TestInitialize]
     [UnsupportedOSPlatform("windows")]
@@ -87,22 +159,7 @@ public class PlayRunWrapperTests
         Executable(Path.Combine(fake, "mise"), FakeMise);
         Executable(Path.Combine(fake, "godot"), FakeGodot);
         Executable(Path.Combine(fake, "dotnet"), FakeDotnet);
-
-        Write("tools/play-run.sh", File.ReadAllText(Path.Combine(RepoRoot(), "tools", "play-run.sh")));
-        Write("src/Game.cs", "class Game {}");
-        Write("scenes/main.tscn", "[scene]");
-        Write("project.godot", "config");
-        Write("OpenSettlers.csproj", "<Project />");
-        Write("global.json", "{}");
-        Write("play/demo.play", "wait 1");
-        Write("play/.cache.play", "wait 1");
-        Write("README.md", "readme");
-        Write("tests/T.cs", "class T {}");
-        Write(".gitignore", "play-out/\nsrc/ignored.txt\n");
-        Write("src/ignored.txt", "ignored");
-        Git("init", "-q");
-        Git("add", "-A");
-        Git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "init");
+        CopyTree(Path.Combine(templateRoot, "repo"), repo);
     }
 
     [TestCleanup]
@@ -136,9 +193,61 @@ public class PlayRunWrapperTests
 
     static readonly string[] Args = ["demo", "--seed", "abc", "--size", "2", "--fps", "10"];
 
-    void Git(params string[] args) => Exec("git", args, new Dictionary<string, string?>());
+    // A started process whose output is collected as it arrives, so a test can poll for a line while it runs.
+    sealed class Running(Process process, string name)
+    {
+        readonly StringBuilder stdout = new();
+        readonly StringBuilder stderr = new();
 
-    (int Status, string Stdout, string Stderr) Exec(string file, string[] args, Dictionary<string, string?> env)
+        public string Stderr
+        {
+            get
+            {
+                lock (stderr)
+                {
+                    return stderr.ToString();
+                }
+            }
+        }
+
+        public void Collect()
+        {
+            process.OutputDataReceived += (_, e) => Append(stdout, e.Data);
+            process.ErrorDataReceived += (_, e) => Append(stderr, e.Data);
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+        }
+
+        static void Append(StringBuilder to, string? line)
+        {
+            lock (to)
+            {
+                to.AppendLine(line);
+            }
+        }
+
+        public (int Status, string Stdout, string Stderr) Finish()
+        {
+            if (!process.WaitForExit(30000))
+            {
+                process.Kill(true);
+                Assert.Fail($"{name} did not exit within 30 s");
+            }
+
+            process.WaitForExit();
+            var result = (process.ExitCode, stdout.ToString(), Stderr);
+            process.Dispose();
+            return result;
+        }
+    }
+
+    static void WaitFor(Func<bool> condition, string what) =>
+        Assert.IsTrue(
+            SpinWait.SpinUntil(condition, TimeSpan.FromSeconds(30)),
+            $"timed out after 30 s waiting for {what}"
+        );
+
+    Running Launch(string file, string[] args, Dictionary<string, string?> env)
     {
         var info = new ProcessStartInfo(file)
         {
@@ -163,19 +272,15 @@ public class PlayRunWrapperTests
             }
         }
 
-        using var process = Process.Start(info)!;
-        var stdout = process.StandardOutput.ReadToEndAsync();
-        var stderr = process.StandardError.ReadToEndAsync();
-        if (!process.WaitForExit(30000))
-        {
-            process.Kill(true);
-            Assert.Fail($"{file} did not exit within 30 s");
-        }
-
-        return (process.ExitCode, stdout.Result, stderr.Result);
+        var running = new Running(Process.Start(info)!, file);
+        running.Collect();
+        return running;
     }
 
-    (int Status, string Stdout, string Stderr) Run(string[] args, Dictionary<string, string?>? env = null)
+    Running Start(string[] args, Dictionary<string, string?>? env = null) =>
+        Launch("sh", ["tools/play-run.sh", .. args], RunEnv(env));
+
+    Dictionary<string, string?> RunEnv(Dictionary<string, string?>? env)
     {
         var all = new Dictionary<string, string?>
         {
@@ -190,8 +295,11 @@ public class PlayRunWrapperTests
             all[key] = value;
         }
 
-        return Exec("sh", ["tools/play-run.sh", .. args], all);
+        return all;
     }
+
+    (int Status, string Stdout, string Stderr) Run(string[] args, Dictionary<string, string?>? env = null) =>
+        Start(args, env).Finish();
 
     [TestMethod]
     [DataRow(0)]
@@ -218,77 +326,48 @@ public class PlayRunWrapperTests
         Assert.IsFalse(File.Exists(Out("demo/stray.txt")));
     }
 
+    // One run sequence on one repository: each step changes one input against the state the step before it ran
+    // on, so an input the hash misses leaves that step on the previous entry and Godot is not started.
     [TestMethod]
-    [DataRow("src")]
-    [DataRow("untracked-scenes")]
-    [DataRow("deleted")]
-    [DataRow("renamed")]
-    [DataRow("project")]
-    [DataRow("script")]
-    [DataRow("seed")]
-    [DataRow("size")]
-    [DataRow("no-seed")]
-    [DataRow("fps")]
-    [DataRow("version")]
-    [DataRow("siedler")]
-    public void AChangedHashedInputStartsGodotAgain(string input)
+    public void EachChangedHashedInputStartsGodotAgain()
     {
-        Run(Args);
-        var second = Args;
+        var args = new List<string>(Args);
         var env = new Dictionary<string, string?>();
-        switch (input)
+        var steps = new (string Input, Action Change)[]
         {
-            case "src":
-                Write("src/Game.cs", "class Game { int x; }");
-                break;
-            case "untracked-scenes":
-                Write("scenes/new.tscn", "[scene]");
-                break;
-            case "deleted":
-                File.Delete(Path.Combine(repo, "scenes/main.tscn"));
-                break;
-            case "renamed":
-                File.Move(Path.Combine(repo, "src/Game.cs"), Path.Combine(repo, "src/Game2.cs"));
-                break;
-            case "project":
-                Write("project.godot", "config 2");
-                break;
-            case "script":
-                Write("play/demo.play", "wait 2");
-                break;
-            case "seed":
-                second = ["demo", "--seed", "xyz", "--size", "2", "--fps", "10"];
-                break;
-            case "size":
-                second = ["demo", "--seed", "abc", "--size", "3", "--fps", "10"];
-                break;
-            case "no-seed":
-                second = ["demo", "--size", "2", "--fps", "10"];
-                break;
-            case "fps":
-                second = ["demo", "--seed", "abc", "--size", "2", "--fps", "30"];
-                break;
-            case "version":
-                env["FAKE_VERSION"] = "4.8.stable.mono";
-                break;
-            case "siedler":
-                env["SIEDLER_DIR"] = "/games/other";
-                break;
+            ("src", () => Write("src/Game.cs", "class Game { int x; }")),
+            ("untracked-scenes", () => Write("scenes/new.tscn", "[scene]")),
+            ("deleted", () => File.Delete(Path.Combine(repo, "scenes/main.tscn"))),
+            ("renamed", () => File.Move(Path.Combine(repo, "src/Game.cs"), Path.Combine(repo, "src/Game2.cs"))),
+            ("project", () => Write("project.godot", "config 2")),
+            ("script", () => Write("play/demo.play", "wait 2")),
+            ("seed", () => args[2] = "xyz"),
+            ("size", () => args[4] = "3"),
+            ("no-seed", () => args.RemoveRange(1, 2)),
+            ("fps", () => args[^1] = "30"),
+            ("version", () => env["FAKE_VERSION"] = "4.8.stable.mono"),
+            ("siedler", () => env["SIEDLER_DIR"] = "/games/other"),
+        };
+        Run([.. args], env);
+        var expected = 1;
+
+        foreach (var (input, change) in steps)
+        {
+            change();
+            Run([.. args], env);
+            expected++;
+
+            Assert.AreEqual(expected, Calls, $"a changed {input} did not start Godot again");
         }
-
-        Run(second, env);
-
-        Assert.AreEqual(2, Calls);
     }
 
     [TestMethod]
-    [DataRow("README.md")]
-    [DataRow("tests/T.cs")]
-    [DataRow("src/ignored.txt")]
-    public void AnEditOutsideTheHashedInputsReuses(string path)
+    public void AnEditOutsideTheHashedInputsReuses()
     {
         Run(Args);
-        Write(path, "edited");
+        Write("README.md", "edited");
+        Write("tests/T.cs", "edited");
+        Write("src/ignored.txt", "edited");
 
         Run(Args);
 
@@ -331,103 +410,81 @@ public class PlayRunWrapperTests
         Assert.IsTrue(miseCalls >= 2);
     }
 
+    // Each run has its own mode, layout path or seed and size, so none reuses an earlier entry and each
+    // rewrites the args file. A SIEDLER_DIR with spaces is one element of the line.
     [TestMethod]
-    public void GodotGetsTheMapViewLaunchLine()
+    public void GodotGetsTheLaunchLineOfEachMode()
     {
-        Run(Args);
+        string[] LaunchLine()
+        {
+            var args = File.ReadAllLines(Path.Combine(fake, "args"));
+            return args[(Array.IndexOf(args, "--write-movie") + 2)..^2];
+        }
 
-        var args = File.ReadAllLines(Path.Combine(fake, "args"));
-        var movie = Array.IndexOf(args, "--write-movie");
-        Assert.AreEqual("play-out/demo/frame.png", args[movie + 1]);
+        Write("play/a.layout", "layout");
+        Write("play/b.layout", "layout");
+
+        Run(Args);
+        var map = File.ReadAllLines(Path.Combine(fake, "args"));
+        var movie = Array.IndexOf(map, "--write-movie");
+        Assert.AreEqual("play-out/demo/frame.png", map[movie + 1]);
+        CollectionAssert.AreEqual(new[] { "--play", "play/demo.play" }, map[^2..]);
         CollectionAssert.AreEqual(
             new[] { "--fixed-fps", "10", "--", "--game", Siedler, "--map", "--seed", "abc", "--size", "2" },
-            args[(movie + 2)..^2]
+            LaunchLine()
         );
-        CollectionAssert.AreEqual(new[] { "--play", "play/demo.play" }, args[^2..]);
-    }
 
-    [TestMethod]
-    public void GameViewGetsTheGameViewLaunchLineWithSeedAndSize()
-    {
         Run([.. Args, "--game-view"]);
-
-        var args = File.ReadAllLines(Path.Combine(fake, "args"));
-        var movie = Array.IndexOf(args, "--write-movie");
         CollectionAssert.AreEqual(
             new[] { "--fixed-fps", "10", "--", "--game", Siedler, "--game-view", "--seed", "abc", "--size", "2" },
-            args[(movie + 2)..^2]
+            LaunchLine()
         );
-    }
-
-    [TestMethod]
-    public void ALayoutGetsTheGameViewOnTheFileWithoutSeedAndSize()
-    {
-        Write("play/a.layout", "layout");
 
         Run(["demo", "--layout", "play/a.layout", "--fps", "10"]);
-
-        var args = File.ReadAllLines(Path.Combine(fake, "args"));
-        var movie = Array.IndexOf(args, "--write-movie");
         CollectionAssert.AreEqual(
             new[] { "--fixed-fps", "10", "--", "--game", Siedler, "--game-view", "--layout", "play/a.layout" },
-            args[(movie + 2)..^2]
+            LaunchLine()
         );
-    }
 
-    [TestMethod]
-    public void AGameViewFlagWithALayoutPassesTheGameViewFlagOnceAndNoSeedOrSize()
-    {
-        Write("play/a.layout", "layout");
-
-        Run(["demo", "--game-view", "--layout", "play/a.layout", "--fps", "10"]);
-
-        var args = File.ReadAllLines(Path.Combine(fake, "args"));
-        var movie = Array.IndexOf(args, "--write-movie");
+        Run(["demo", "--game-view", "--layout", "play/b.layout", "--fps", "10"]);
         CollectionAssert.AreEqual(
-            new[] { "--fixed-fps", "10", "--", "--game", Siedler, "--game-view", "--layout", "play/a.layout" },
-            args[(movie + 2)..^2]
+            new[] { "--fixed-fps", "10", "--", "--game", Siedler, "--game-view", "--layout", "play/b.layout" },
+            LaunchLine()
         );
+
+        Run(["demo", "--fps", "10"]);
+        var bare = LaunchLine();
+        CollectionAssert.DoesNotContain(bare, "--seed");
+        CollectionAssert.DoesNotContain(bare, "--size");
+        Assert.AreEqual(5, Calls, "a run did not start Godot, so the args file is stale");
     }
 
+    // Mode, layout path and layout bytes are hashed, a repeated call reuses, and the map and the game view
+    // never share an entry.
     [TestMethod]
-    public void AMapViewResultIsNeverReusedForTheGameViewAndBack()
-    {
-        Run(Args);
-        Run([.. Args, "--game-view"]);
-        Assert.AreEqual(2, Calls);
-
-        Run(Args);
-        Run([.. Args, "--game-view"]);
-        Assert.AreEqual(2, Calls);
-        Assert.AreEqual(2, Directory.GetDirectories(Out(".cache")).Length);
-    }
-
-    [TestMethod]
-    public void ALayoutByteChangeStartsGodotAgainAndTheSameLayoutReuses()
-    {
-        string[] layout = ["demo", "--layout", "play/a.layout", "--fps", "10"];
-        Write("play/a.layout", "layout");
-        Run(layout);
-        Run(layout);
-        Assert.AreEqual(1, Calls);
-
-        Write("play/a.layout", "layouu");
-        Run(layout);
-
-        Assert.AreEqual(2, Calls);
-    }
-
-    [TestMethod]
-    public void TheModeAndTheLayoutPathChangeTheHash()
+    public void TheModeAndTheLayoutAreHashedAndARepeatedCallReuses()
     {
         Write("play/a.layout", "layout");
         Write("play/b.layout", "layout");
-        Run(["demo", "--layout", "play/a.layout", "--fps", "10"]);
-        Run(["demo", "--layout", "play/b.layout", "--fps", "10"]);
-        Run(["demo", "--fps", "10"]);
-        Run(["demo", "--game-view", "--fps", "10"]);
+        string[] a = ["demo", "--layout", "play/a.layout", "--fps", "10"];
+        string[] gameView = [.. Args, "--game-view"];
 
-        Assert.AreEqual(4, Calls);
+        Run(Args);
+        Run(gameView);
+        Assert.AreEqual(2, Calls, "the game view reused the map view entry");
+        Run(Args);
+        Run(gameView);
+        Assert.AreEqual(2, Calls, "a repeated call did not reuse");
+        Assert.AreEqual(2, Directory.GetDirectories(Out(".cache")).Length);
+
+        Run(a);
+        Run(a);
+        Assert.AreEqual(3, Calls, "a repeated layout call did not reuse");
+        Run(["demo", "--layout", "play/b.layout", "--fps", "10"]);
+        Assert.AreEqual(4, Calls, "the layout path is not hashed");
+        Write("play/a.layout", "layouu");
+        Run(a);
+        Assert.AreEqual(5, Calls, "the layout bytes are not hashed");
     }
 
     [TestMethod]
@@ -441,16 +498,6 @@ public class PlayRunWrapperTests
         var lines = LogLines.Select(l => l.Split('\t')).ToArray();
         CollectionAssert.AreEqual(new[] { "mode=game-view", "layout=play/a.layout" }, lines[0][5..7]);
         CollectionAssert.AreEqual(new[] { "mode=game-view", "layout=" }, lines[1][5..7]);
-    }
-
-    [TestMethod]
-    public void WithoutSeedAndSizeTheLaunchLineOmitsThem()
-    {
-        Run(["demo", "--fps", "10"]);
-
-        var args = File.ReadAllLines(Path.Combine(fake, "args"));
-        CollectionAssert.DoesNotContain(args, "--seed");
-        CollectionAssert.DoesNotContain(args, "--size");
     }
 
     [TestMethod]
@@ -561,21 +608,18 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
-    public void ASiedlerDirWithSpacesReachesGodotAsOneArgument()
-    {
-        Run(Args);
-
-        CollectionAssert.Contains(File.ReadAllLines(Path.Combine(fake, "args")), Siedler);
-    }
-
-    [TestMethod]
     public void TwoConcurrentCallsForOneStemRunGodotOnceAndStoreOneEntry()
     {
-        var env = new Dictionary<string, string?> { ["FAKE_SLEEP"] = "2" };
-        var calls = new[] { Task.Run(() => Run(Args, env)), Task.Run(() => Run(Args, env)) };
-        Task.WaitAll(calls);
+        var gate = Path.Combine(fake, "gate");
+        var env = new Dictionary<string, string?> { ["FAKE_GATE"] = gate };
+        var first = Start(Args, env);
+        WaitFor(() => Calls == 1, "the first call to start Godot");
+        var second = Start(Args, env);
+        WaitFor(() => second.Stderr.Contains("waiting on"), "the second call to say it waits on the lock");
+        File.WriteAllText(gate, "");
+        var results = new[] { first.Finish(), second.Finish() };
 
-        CollectionAssert.AreEqual(new[] { 0, 0 }, calls.Select(c => c.Result.Status).ToArray());
+        CollectionAssert.AreEqual(new[] { 0, 0 }, results.Select(r => r.Status).ToArray());
         Assert.AreEqual(1, Calls);
         var entry = Directory.GetDirectories(Out(".cache")).Single();
         CollectionAssert.AreEqual(new[] { "out" }, Directory.GetDirectories(entry).Select(Path.GetFileName).ToArray());
@@ -586,13 +630,15 @@ public class PlayRunWrapperTests
     public void CallsOfDifferentStemsRunInParallel()
     {
         Write("play/other.play", "wait 1");
-        var env = new Dictionary<string, string?> { ["FAKE_SLEEP"] = "3" };
-        var watch = Stopwatch.StartNew();
-        var calls = new[] { Task.Run(() => Run(Args, env)), Task.Run(() => Run(["other", "--fps", "10"], env)) };
-        Task.WaitAll(calls);
+        var gate = Path.Combine(fake, "gate");
+        var env = new Dictionary<string, string?> { ["FAKE_GATE"] = gate };
+        var first = Start(Args, env);
+        var second = Start(["other", "--fps", "10"], env);
+        // Godot of each call waits on the shut gate, so both starts show only where the calls overlap.
+        WaitFor(() => Calls == 2, "both stems to start Godot while the gate is shut");
+        File.WriteAllText(gate, "");
 
-        Assert.AreEqual(2, Calls);
-        Assert.IsTrue(watch.Elapsed.TotalSeconds < 5.5, $"the calls ran one after the other ({watch.Elapsed})");
+        CollectionAssert.AreEqual(new[] { 0, 0 }, new[] { first.Finish().Status, second.Finish().Status });
     }
 
     void HoldLock(int pid)
@@ -623,31 +669,19 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
-    public void ACallWaitingOnALiveLockSaysSoAndRunsOnceItIsFree()
+    public void ACallWaitingOnALiveLockSaysSoAndHashesTheInputsOnceItIsFree()
     {
-        HoldLock(Environment.ProcessId);
-        var call = Task.Run(() => Run(Args));
-        Thread.Sleep(1500);
-        Directory.Delete(Out(".lock-demo"), true);
-
-        Assert.AreEqual(0, call.Result.Status);
-        StringAssert.Contains(
-            call.Result.Stderr,
-            "play-run.sh: waiting on play-out/.lock-demo (remove it if no run is live)"
-        );
-    }
-
-    [TestMethod]
-    public void TheHashIsTakenAfterTheLock()
-    {
+        const string waiting = "play-run.sh: waiting on play-out/.lock-demo (remove it if no run is live)";
         Run(Args);
         HoldLock(Environment.ProcessId);
-        var call = Task.Run(() => Run(Args));
-        Thread.Sleep(1500);
+        var call = Start(Args);
+        WaitFor(() => call.Stderr.Contains(waiting), "the call to say it waits on the lock");
         Write("src/Game.cs", "class Game { int changed; }");
         Directory.Delete(Out(".lock-demo"), true);
-        call.Wait();
+        var (status, _, stderr) = call.Finish();
 
-        Assert.AreEqual(2, Calls);
+        Assert.AreEqual(0, status);
+        StringAssert.Contains(stderr, waiting);
+        Assert.AreEqual(2, Calls, "the hash was taken before the lock, so the call reused the stale entry");
     }
 }
