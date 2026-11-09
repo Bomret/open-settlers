@@ -289,4 +289,33 @@ public sealed class DrawVerbTests
         Assert.AreEqual(2, calls.Length);
         Assert.IsTrue(calls.All(call => call.Contains("-import") && !call.Contains("-process")));
     }
+
+    [TestMethod]
+    public void AFirstRunInAFolderWithOtherFilesKeepsThem()
+    {
+        var bin = FakeHeadless();
+        var project = Path.Combine(_folder, "project");
+        Directory.CreateDirectory(project);
+        var other = Path.Combine(project, "notes.txt");
+        File.WriteAllText(other, "mine");
+
+        Emulate(Install("a"), "rng:0000,0000,0000", project, bin);
+
+        Assert.IsTrue(File.Exists(other));
+    }
+
+    [TestMethod]
+    public void AProjectWithTheMarkerButNoProjectFileIsImportedAgain()
+    {
+        var bin = FakeHeadless();
+        var project = Path.Combine(_folder, "project");
+
+        Emulate(Install("a"), "rng:0000,0000,0000", project, bin);
+        File.Delete(Path.Combine(project, "Emu.gpr"));
+        Emulate(Install("a"), "rng:0000,0000,0000", project, bin);
+
+        var calls = Calls();
+        Assert.AreEqual(2, calls.Length);
+        Assert.IsTrue(calls.All(call => call.Contains("-import") && !call.Contains("-process")));
+    }
 }

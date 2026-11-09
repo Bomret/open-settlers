@@ -114,8 +114,8 @@ python3 -I tools/GhidraDump/emulate.py --game "$SIEDLER_DIR" rng:FFFF,FFFF,FFFF 
 ```
 
 `--project <dir>` (before the commands) keeps the project in that folder: the first call imports, later calls run
-against the import. The folder records the program's SHA-256, and a program with another SHA-256 is imported again.
-The caller removes the folder.
+against the import. The folder records the program's SHA-256, and a program with another SHA-256, or a folder with no `Emu.gpr`, is imported again. The import replaces only
+`Emu.gpr`, `Emu.rep`, and `program.sha256`; other files in the folder stay. The caller removes the folder.
 
 Each output line starts with `EMU `. The header of `EmulateMapStart.java` lists the commands. Words are
 hexadecimal, without spaces.

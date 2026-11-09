@@ -24,7 +24,11 @@ public sealed class NeedsTests
     [TestMethod]
     public void TheFocusedFilterNamesExactlyTheCategoriesOfNeeds()
     {
-        var expected = typeof(Needs).GetFields().Select(f => $"TestCategory!={f.GetRawConstantValue()}").Order().ToArray();
+        var expected = typeof(Needs)
+            .GetFields()
+            .Select(f => $"TestCategory!={f.GetRawConstantValue()}")
+            .Order()
+            .ToArray();
         var filter = Regex.Match(MiseToml(), @"\[tasks\.test\][^\[]*?--filter '([^']*)'").Groups[1].Value;
 
         CollectionAssert.AreEqual(expected, filter.Split('&').Order().ToArray());

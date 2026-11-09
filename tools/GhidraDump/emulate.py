@@ -9,8 +9,8 @@ keeps no program bytes.
 
 With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
 calls run the script against the imported program instead of importing again. The folder records the SHA-256 of the
-imported program, and a call for a program with another SHA-256 imports it again over the old project. The caller removes
-the folder.
+imported program, and a call for a program with another SHA-256 imports it again over the old project, replacing only Emu.gpr, Emu.rep, and program.sha256: other files in the
+folder stay. A folder with the marker but no Emu.gpr is imported again. The caller removes the folder.
 
 The command draw:WINDOWS:CX,CY:VERB:ARGS... (EmulateDraw.java lists its form) runs EmulateDraw.java instead. It runs
 only on the reference build of Siedler1.exe (the History Edition, docs/rules/AGENTS.md, "Reference build") and
@@ -47,14 +47,19 @@ def find_program(root):
 
 
 def imported(project, digest):
-    """Whether the project folder holds an import of the program with this SHA-256; clears a project of another program."""
+    """Whether the project folder holds an import of the program with this SHA-256; clears the files of another import."""
     marker = os.path.join(project, DIGEST_FILE)
-    if os.path.isfile(marker):
+    if os.path.isfile(os.path.join(project, PROJECT_NAME + ".gpr")) and os.path.isfile(marker):
         with open(marker) as file:
             if file.read().strip() == digest:
                 return True
-    shutil.rmtree(project, ignore_errors=True)
-    os.makedirs(project)
+    for name in (PROJECT_NAME + ".gpr", PROJECT_NAME + ".rep", DIGEST_FILE):
+        path = os.path.join(project, name)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.exists(path):
+            os.remove(path)
+    os.makedirs(project, exist_ok=True)
     return False
 
 
