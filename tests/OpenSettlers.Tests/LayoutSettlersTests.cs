@@ -351,10 +351,7 @@ public sealed class LayoutSettlersTests
 
         var carrier = game.Settlers.ToList().FindIndex(settler => settler.Job == Job.Carrier);
         Assert.IsInstanceOfType<WaitsAtFlag>(game.Settlers[carrier].Activity);
-        Assert.AreEqual(
-            jobless - 1,
-            game.Settlers.Count(s => s.Job == Job.Jobless && s.Activity is WaitsInCastle)
-        );
+        Assert.AreEqual(jobless - 1, game.Settlers.Count(s => s.Job == Job.Jobless && s.Activity is WaitsInCastle));
     }
 
     [TestMethod]
