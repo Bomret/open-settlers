@@ -124,7 +124,10 @@ hexadecimal, without spaces.
 The `gen` command runs `MapGen_Generate` up to the end of `MapGen_CountResource1` for a size value and a map
 seed, for example `gen:3:1234,5678,9ABC` (the size value is decimal), and prints the generator words and the
 layer digests of the canonical map form after each pass (`docs/rules/map-form.md`). A run takes from 15
-seconds to a few minutes, the longer for the larger sizes. The commands `site`, `castle`, `stockrows`,
+seconds to a few minutes, the longer for the larger sizes. Every other command that starts from a map generates it
+silently, once per size and seed in one Ghidra launch: the first run keeps the memory the generation wrote and the
+registers it left, and later commands of the same launch, `draw:` batch commands among them, start from that state
+instead of generating again. The `gen` command always generates, because it prints each pass. The commands `site`, `castle`, `stockrows`,
 `opponents`, and `peek` run the build-site evaluator, the castle placement, the start stock table, the free-game
 opponent settings, and a byte dump: their forms are in the header of `EmulateMapStart.java`, and the rules they
 check are in `docs/rules/build-sites.md` and `docs/rules/castle.md`. The `flag` command runs the flag button (`0x442244`) on every tile and counts, per pair of node state and site,
