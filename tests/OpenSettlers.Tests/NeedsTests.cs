@@ -6,7 +6,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
-// The focused command (mise.toml, tasks.test) filters out exactly the categories of Needs; the full command filters none.
+// The focused command (mise.toml, tasks.test) and the full command (tasks.check) filter out exactly the categories of Needs;
+// the integration command (tasks."test:integration") selects exactly them.
 [TestClass]
 public sealed class NeedsTests
 {
@@ -34,11 +35,25 @@ public sealed class NeedsTests
         CollectionAssert.AreEqual(expected, filter.Split('&').Order().ToArray());
     }
 
-    [TestMethod]
-    public void TheFullCommandFiltersNoCategory()
-    {
-        var check = MiseToml().Split("[tasks.check]")[1].Split("\n[")[0];
+    // The --filter of the task's section, which ends at the next line that opens a section.
+    private static string Filter(string task) =>
+        Regex.Match(MiseToml().Split($"[tasks.{task}]")[1].Split("\n[")[0], "--filter '([^']*)'").Groups[1].Value;
 
-        Assert.IsFalse(check.Contains("--filter", StringComparison.Ordinal));
+    private static string[] Categories(string prefix) =>
+        typeof(Needs).GetFields().Select(f => $"{prefix}{f.GetRawConstantValue()}").Order().ToArray();
+
+    [TestMethod]
+    public void TheFullCommandRunsTheFocusedFilter()
+    {
+        CollectionAssert.AreEqual(Categories("TestCategory!="), Filter("check").Split('&').Order().ToArray());
+    }
+
+    [TestMethod]
+    public void TheIntegrationFilterSelectsExactlyTheCategoriesOfNeeds()
+    {
+        CollectionAssert.AreEqual(
+            Categories("TestCategory="),
+            Filter("\"test:integration\"").Split('|').Order().ToArray()
+        );
     }
 }

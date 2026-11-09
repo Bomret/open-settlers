@@ -191,4 +191,5 @@ The full verification (`docs/agents/verification.md`) checks formatting, runs th
 mise run check
 ```
 
-`mise run test` runs the unit tests that need neither the install nor Ghidra, and `mise run format` formats the code.
+`mise run test` runs the unit tests alone, and `mise run format` formats the code. The unit tests need neither the install
+nor Ghidra. `mise run test:integration` runs the integration tests, which need the install (`SIEDLER_DIR`) or Ghidra.
