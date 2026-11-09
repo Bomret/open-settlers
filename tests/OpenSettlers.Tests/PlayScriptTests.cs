@@ -176,6 +176,16 @@ public sealed class PlayScriptTests
     }
 
     [TestMethod]
+    [DataRow("mark 5", "'5' is a number, a mark's label is not")]
+    [DataRow("name a/b 18 6 flag", "'a/b' is no alias, use letters, digits, '-', and '_'")]
+    public void ABadMarkOrNameIsAProblemNamingItsLineAndReason(string line, string reason)
+    {
+        var script = Parse("wait 1\n" + line);
+
+        Assert.AreEqual("play/t.play line 2: " + reason, string.Join("\n", script.Problems));
+    }
+
+    [TestMethod]
     public void AListStepReadsItsName()
     {
         var script = Parse("wait 1\nlist start");

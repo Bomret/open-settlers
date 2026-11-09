@@ -378,8 +378,77 @@ public class EmulateMapStart extends GhidraScript {
         generate(rest, true);
     }
 
+    /**
+     * The state a silent map generation leaves, by size and seed: the bytes it wrote and the registers. Static, so every
+     * script instance of one Ghidra launch shares it: a batch generates each map once (about 17 s each).
+     */
+    private static final java.util.Map<String, Generated> GENERATED = new java.util.HashMap<>();
+
+    private record Generated(int[] size, java.util.List<Address> starts, java.util.List<byte[]> bytes,
+            java.util.List<Register> registers, java.util.List<BigInteger> values) {}
+
     /** Runs the map generation; with report it prints the digest lines, and it returns the width and height. */
     private int[] generate(String rest, boolean report) throws Exception {
+        String[] parts = rest.split(":");
+        String key = currentProgram.getExecutableSHA256() + ":" + Integer.parseInt(parts[0]) + ":"
+                + rest.substring(rest.indexOf(':') + 1).toUpperCase();
+        Generated cached = report ? null : GENERATED.get(key);
+        if (cached != null) {
+            for (int i = 0; i < cached.starts().size(); i++) {
+                emu.writeMemory(cached.starts().get(i), cached.bytes().get(i));
+            }
+            for (int i = 0; i < cached.registers().size(); i++) {
+                emu.writeRegister(cached.registers().get(i), cached.values().get(i));
+            }
+            setGenerationBreakpoints();
+            return cached.size().clone();
+        }
+        if (!report) {
+            emu.enableMemoryWriteTracking(true);
+        }
+        int[] result = generateFresh(rest, report);
+        if (!report) {
+            java.util.List<Address> starts = new java.util.ArrayList<>();
+            java.util.List<byte[]> bytes = new java.util.ArrayList<>();
+            // The tracked set holds the emulated code's writes; the harness's own writes (prepare, the stores above, the
+            // map fill) land in the block from REGISTERS to the machine stack and in the map.
+            ghidra.program.model.address.AddressSet written = new ghidra.program.model.address.AddressSet(
+                    emu.getTrackedMemoryWriteSet());
+            written.addRange(toAddr(REGISTERS), toAddr(MACHINE_STACK + 0xffff));
+            written.addRange(toAddr(MAP), toAddr(MAP + result[2] * 8L * result[1] - 1));
+            for (ghidra.program.model.address.AddressRange range : written) {
+                // The write set also holds p-code's scratch (unique) space, which no run carries over.
+                if (!range.getMinAddress().getAddressSpace().isMemorySpace()) {
+                    continue;
+                }
+                starts.add(range.getMinAddress());
+                bytes.add(emu.readMemory(range.getMinAddress(), (int) range.getLength()));
+            }
+            java.util.List<Register> registers = new java.util.ArrayList<>();
+            java.util.List<BigInteger> values = new java.util.ArrayList<>();
+            for (Register register : currentProgram.getLanguage().getRegisters()) {
+                if (register.isBaseRegister() && !register.isProcessorContext()) {
+                    registers.add(register);
+                    values.add(emu.readRegister(register));
+                }
+            }
+            emu.enableMemoryWriteTracking(false);
+            GENERATED.put(key, new Generated(result.clone(), starts, bytes, registers, values));
+        }
+        return result;
+    }
+
+    /** The breakpoints the generation leaves set, which a run from the stored state sets as well. */
+    private void setGenerationBreakpoints() {
+        for (long address : SKIP_CALL) {
+            emu.setBreakpoint(toAddr(address));
+        }
+        for (long address : END_ADDRESS) {
+            emu.setBreakpoint(toAddr(address));
+        }
+    }
+
+    private int[] generateFresh(String rest, boolean report) throws Exception {
         String[] parts = rest.split(":");
         int size = Integer.parseInt(parts[0]);
         int[] seed = words(parts[1]);
@@ -407,12 +476,7 @@ public class EmulateMapStart extends GhidraScript {
                     + getWord(STATE + 0x34));
         }
         emu.writeRegister(emu.getPCRegister(), 0x4216e9);
-        for (long address : SKIP_CALL) {
-            emu.setBreakpoint(toAddr(address));
-        }
-        for (long address : END_ADDRESS) {
-            emu.setBreakpoint(toAddr(address));
-        }
+        setGenerationBreakpoints();
         int recorded = 0;
         while (recorded < END_ADDRESS.length) {
             emu.run(monitor);

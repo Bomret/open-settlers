@@ -47,7 +47,7 @@ that the castle is not reached from first.
 **The woodcutter.** The entry takes the settler through the entering of `0x4398ea`. The hut's status gets bit 6, which
 means it has its worker, and loses bit 7, which means a worker is on the way. The hut's worker is the settler. The
 settler stands on the hut's node, and the node's settler word names him. The hut asks for no second worker, because
-`0x42d945` tests bits 6 and 7 of the status.
+`0x42d945` tests bits 6 and 7 of the status. The engine refuses the entry where a settler stands on the hut's door or on its flag.
 
 At his next turn the door routine (`0x43c96b`) lets him out into the search for a tree
 ([Woodcutting](woodcutting.md#the-start-at-the-hut)), which is state `0x12`. The walk would leave some fields that no
