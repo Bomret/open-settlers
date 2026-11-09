@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Runtime.Versioning;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Assets;
 using OpenSettlers.Launch;

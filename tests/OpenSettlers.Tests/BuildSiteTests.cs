@@ -26,6 +26,7 @@ public sealed class BuildSiteTests
 
     [TestMethod]
     [DynamicData(nameof(Lines))]
+    [TestCategory(Needs.Install)]
     public void TheEvaluatorMatchesTheEmulatorOnEveryNodeOfTheMap(string expected)
     {
         var seedText = expected.Split(' ')[0]["seed=".Length..];
@@ -44,6 +45,7 @@ public sealed class BuildSiteTests
 
     [TestMethod]
     [DynamicData(nameof(AfterLines))]
+    [TestCategory(Needs.Install)]
     public void WithTheCastleStandingTheEvaluatorMatchesTheEmulatorOnEveryNodeOfTheMap(string expected)
     {
         var fields = expected

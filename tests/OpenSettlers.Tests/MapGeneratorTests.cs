@@ -23,6 +23,7 @@ public sealed class MapGeneratorTests
 
     [TestMethod]
     [DynamicData(nameof(Passes))]
+    [TestCategory(Needs.Install)]
     public void EveryPassMatchesTheEmulatorForEverySizeAndSeed(MapPass pass)
     {
         var expected = ExpectedLines().Where(line => line.Pass == pass).ToList();
@@ -223,6 +224,7 @@ public sealed class MapGeneratorTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheObjectsAndDepositsListTheTilesOfTheirLayersAsTheEmulatedMapHasThem()
     {
         // Seed 6359,A0D2,B4FA at size 3. The engine's layer digests and the type 1 total of this map equal the

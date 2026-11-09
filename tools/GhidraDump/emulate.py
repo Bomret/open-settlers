@@ -1,11 +1,17 @@
 """Runs the emulator harness EmulateMapStart.java on Siedler1.exe from the install. See README.md.
 
-Usage: python3 -I emulate.py [--game <dir>] <command>...
+Usage: python3 -I emulate.py [--game <dir>] [--project <dir>] <command>...
 
 Each command is one of the forms EmulateMapStart.java lists, for example rng:0000,0000,0000. Run from the
 repository root. The install is the --game folder or SIEDLER_DIR, as for the game itself. The script imports
 Siedler1.exe into a project in a temporary folder, without analysis, and removes the project afterwards: it
 keeps no program bytes.
+
+With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
+calls run the script against the imported program instead of importing again. The folder records the SHA-256 of the
+imported program, and a call for a program with another SHA-256 imports it again over the old project, replacing
+only Emu.gpr, Emu.rep, and program.sha256: other files in the folder stay. A folder with the marker but no Emu.gpr is
+imported again. The caller removes the folder.
 
 The command draw:WINDOWS:CX,CY:VERB:ARGS... (EmulateDraw.java lists its form) runs EmulateDraw.java instead. It runs
 only on the reference build of Siedler1.exe (the History Edition, docs/rules/AGENTS.md, "Reference build") and
@@ -19,6 +25,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+
+PROJECT_NAME = "Emu"
+DIGEST_FILE = "program.sha256"
 
 SCRIPTS = os.path.join(os.getcwd(), "tools", "GhidraDump")
 
@@ -38,10 +47,42 @@ def find_program(root):
     fail(f"no Siedler1.exe in {root}: pass --game <dir> or set SIEDLER_DIR")
 
 
+def imported(project, digest):
+    """Whether the project folder holds an import of the program with this SHA-256."""
+    marker = os.path.join(project, DIGEST_FILE)
+    if not (os.path.isfile(os.path.join(project, PROJECT_NAME + ".gpr")) and os.path.isfile(marker)):
+        return False
+    with open(marker) as file:
+        return file.read().strip() == digest
+
+
+def clear(project):
+    """Removes the files of an earlier import: headless -import refuses a program the project already holds."""
+    for name in (PROJECT_NAME + ".gpr", PROJECT_NAME + ".rep", DIGEST_FILE):
+        path = os.path.join(project, name)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.exists(path):
+            os.remove(path)
+    os.makedirs(project, exist_ok=True)
+
+
+def run(headless, project, mode, script, argv, environment):
+    return subprocess.run(
+        [headless, project, PROJECT_NAME, *mode, "-scriptPath", SCRIPTS, "-postScript", script, *argv],
+        capture_output=True, text=True, env=environment,
+    )
+
+
 def main(argv):
     game = os.environ.get("SIEDLER_DIR")
-    if argv[:1] == ["--game"]:
-        game, argv = argv[1], argv[2:]
+    shared = None
+    while argv[:1] in (["--game"], ["--project"]):
+        if argv[0] == "--game":
+            game = argv[1]
+        else:
+            shared = argv[1]
+        argv = argv[2:]
     if not game or not os.path.isdir(game):
         fail("no install folder: pass --game <dir> or set SIEDLER_DIR")
     if not argv:
@@ -53,20 +94,27 @@ def main(argv):
     program = find_program(game)
     script = "EmulateDraw.java" if drawing else "EmulateMapStart.java"
     environment = {**os.environ, "EMU_GAME": game}
-    install = None
-    if drawing:
+    if drawing or shared is not None:
         with open(program, "rb") as file:
             data = file.read()
         digest = hashlib.sha256(data).hexdigest()
+    if drawing:
         if digest != REFERENCE_SHA256:
             fail(f"{program} is not the reference build of the History Edition (SHA-256 {digest})")
         install = f"EMU draw install=History Edition program=Siedler1.exe bytes={len(data)} sha256={digest}"
-    with tempfile.TemporaryDirectory(prefix="emulate") as project:
-        result = subprocess.run(
-            [headless, project, "Emu", "-import", program, "-noanalysis", "-deleteProject",
-             "-scriptPath", SCRIPTS, "-postScript", script, *argv],
-            capture_output=True, text=True, env=environment,
-        )
+    if shared is None:
+        with tempfile.TemporaryDirectory(prefix="emulate") as project:
+            result = run(headless, project, ["-import", program, "-noanalysis", "-deleteProject"], script, argv, environment)
+    else:
+        if imported(shared, digest):
+            result = run(headless, shared, ["-process", os.path.basename(program), "-noanalysis"], script, argv, environment)
+        else:
+            clear(shared)
+            result = run(headless, shared, ["-import", program, "-noanalysis"], script, argv, environment)
+            # The import precedes the script, so a run whose script fails still leaves the program imported.
+            if "REPORT: Import succeeded" in result.stdout:
+                with open(os.path.join(shared, DIGEST_FILE), "w") as file:
+                    file.write(digest)
     marker = script + "> "
     lines = [line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip()
              for line in result.stdout.splitlines() if marker in line]

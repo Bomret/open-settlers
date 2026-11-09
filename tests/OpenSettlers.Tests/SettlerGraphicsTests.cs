@@ -76,6 +76,7 @@ public sealed class SettlerGraphicsTests
     // The table rule at the program's addresses (docs/rules/settlers.md): the woodcutter's walk is the row 0x0b of the bases
     // (48, 54), the cut a figure byte from 0x80 in the row 0x0f (272, none), the way back with the log the row 0x10 (48, 60).
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheWoodcuttersWalkAndCutAreDrawnWithTheEntriesTheTableRuleGives()
     {
         var figures = Load().Figures;
@@ -113,6 +114,7 @@ public sealed class SettlerGraphicsTests
     // so each of the six directions (the step shapes 4 + 9 * direction on level ground) is drawn with the figure of the byte
     // the sequence gives in that row: 1850 + base + offset, the overlay 2500 + base + offset.
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void ACarrierCarryingALogIsDrawnInEachDirectionWithTheEntriesTheCarriedRowGives()
     {
         var figures = Load().Figures;
@@ -142,6 +144,7 @@ public sealed class SettlerGraphicsTests
 
     // Draws and Sprites apply the one rule: every entry a carrier holding a log is drawn with was loaded.
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void EveryEntryACarrierCarryingALogIsDrawnWithIsAmongThoseLoaded()
     {
         var graphics = Load();
@@ -167,6 +170,7 @@ public sealed class SettlerGraphicsTests
     // The carrier carries every good the carried table covers, on its road (state 3) and at the castle (state 0xe), in any
     // frame the sequences hold.
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void EveryEntryACarrierCarryingAnyGoodIsDrawnWithIsAmongThoseLoaded()
     {
         var graphics = Load();
@@ -208,6 +212,7 @@ public sealed class SettlerGraphicsTests
     // The settler of the type 1 hut walks to his hut (states 5, 2, 4) in the frames of the step shapes and the claim, and
     // walks back with a load: his rows are those of his handler.
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void EveryEntryTheSettlerOfTheTypeOneHutIsDrawnWithIsAmongThoseLoaded()
     {
         var graphics = Load();
@@ -250,6 +255,7 @@ public sealed class SettlerGraphicsTests
     // LayerOf is what the tests use to assert that a recorded draw has a layer: a sprite with none is a failure there (the
     // viewer asks TryLayerOf instead, below).
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void ADrawWhoseSpriteHasNoLoadedLayerFailsInLayerOf()
     {
         var graphics = Load();
@@ -263,6 +269,7 @@ public sealed class SettlerGraphicsTests
     // The per-frame render loop of the viewer must survive a draw with no layer (another player's colour, a sprite cut at
     // the layer limit): it asks TryLayerOf and skips the draw.
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheViewerCanAskForTheLayerOfADrawWithNoneWithoutAFailure()
     {
         var graphics = Load();
@@ -271,6 +278,7 @@ public sealed class SettlerGraphicsTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void ADrawWhoseSpriteIsLoadedHasItsLayer()
     {
         var graphics = Load();
@@ -282,6 +290,7 @@ public sealed class SettlerGraphicsTests
     // The sequences name figure bytes for every job; the woodcutter draws only those of the frames he takes: the step shapes
     // 4 to 58 (4 + 9 * direction + height difference), the claim's 0x51 and 0x52, and the cut's 0x74 to 0x78.
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void EveryEntryTheWoodcutterIsDrawnWithIsAmongThoseLoadedForHisJob()
     {
         var graphics = Load();
@@ -311,6 +320,7 @@ public sealed class SettlerGraphicsTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheSpritesOfTheCarrierAndTheWoodcutterLoadFromTheInstallInTheLayersAnArrayTextureHolds()
     {
         // The sequences name figures for every job, and some of the entries they reach are no sprites: the load leaves
@@ -327,6 +337,7 @@ public sealed class SettlerGraphicsTests
     // negative offset), so the pairs come from there. A
     // figure byte of another job can reach past 2500, where no overlay range lies; those are left out.
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void EveryFigureOfTheCarrierAndTheWoodcutterLoadsItsColourOverlay()
     {
         var graphics = Load();

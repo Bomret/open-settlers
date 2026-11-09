@@ -17,13 +17,30 @@ public sealed class DrawVerbTests
     // pass 100, the first pass the view finds a settler in; no settler is out before pass 30.
     private const string Game = "goods:1:1234,5678,9ABC:0:18,20:16,20:19,21,343:16,20,2:102:0::-1:5,0,7";
 
+    private static string _project = "";
+
     private string _folder = "";
+
+    // One Ghidra project for every run of the class that reaches the install: the first run imports the program, the others
+    // run against the import.
+    [ClassInitialize]
+    public static void InitializeClass(TestContext _) => _project = NewFolder();
+
+    [ClassCleanup]
+    public static void CleanupClass() => Directory.Delete(_project, true);
+
+    private static string NewFolder()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "draw-verb-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+
+        return folder;
+    }
 
     [TestInitialize]
     public void Initialize()
     {
-        _folder = Path.Combine(Path.GetTempPath(), "draw-verb-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_folder);
+        _folder = NewFolder();
     }
 
     [TestCleanup]
@@ -42,7 +59,12 @@ public sealed class DrawVerbTests
         return dir;
     }
 
-    private static (int Exit, string Output) Emulate(string game, string command)
+    private static (int Exit, string Output) Emulate(
+        string game,
+        string command,
+        string? project = null,
+        string? path = null
+    )
     {
         var info = new ProcessStartInfo("python3")
         {
@@ -54,7 +76,18 @@ public sealed class DrawVerbTests
         info.ArgumentList.Add("tools/GhidraDump/emulate.py");
         info.ArgumentList.Add("--game");
         info.ArgumentList.Add(game);
+        if (project is not null)
+        {
+            info.ArgumentList.Add("--project");
+            info.ArgumentList.Add(project);
+        }
+
         info.ArgumentList.Add(command);
+        if (path is not null)
+        {
+            info.Environment["PATH"] = path + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
+        }
+
         try
         {
             using var process = Process.Start(info)!;
@@ -118,35 +151,45 @@ public sealed class DrawVerbTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
+    [TestCategory(Needs.Ghidra)]
     public void ARunWhoseWindowHoldsAPassWithNoSettlerDrawExitsNonZeroAndPrintsNothing()
     {
         var install = ReferenceInstall();
 
-        var (exit, output) = Emulate(install, $"draw:3-4:17,20:{Game}");
+        var (exit, output) = Emulate(install, $"draw:3-4:17,20:{Game}", _project);
 
         Assert.AreNotEqual(0, exit, "no settler is out at pass 3");
         Assert.AreEqual("", output);
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
+    [TestCategory(Needs.Ghidra)]
     public void ARunWhoseWindowsAreBeyondItsLastPassReachesNoDrawPathAndExitsNonZero()
     {
         var install = ReferenceInstall();
 
-        var (exit, output) = Emulate(install, $"draw:500-501:17,20:{Game}");
+        var (exit, output) = Emulate(install, $"draw:500-501:17,20:{Game}", _project);
 
         Assert.AreNotEqual(0, exit);
         Assert.AreEqual("", output);
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
+    [TestCategory(Needs.Ghidra)]
     public void ARunOnTheReferenceInstallPrintsTheInstallLineAndOneLineForEachPassOfItsWindow()
     {
         var install = ReferenceInstall();
 
-        var (exit, output) = Emulate(install, $"draw:100-101:17,20:{Game}");
+        var (exit, output) = Emulate(install, $"draw:100-101:17,20:{Game}", _project);
 
         Assert.AreEqual(0, exit);
+        Assert.IsTrue(
+            File.Exists(Path.Combine(_project, "program.sha256")),
+            "the first real run records the import (Ghidra's \"REPORT: Import succeeded\" line)"
+        );
         var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         StringAssert.StartsWith(lines[0], "EMU draw install=History Edition ");
         CollectionAssert.AreEqual(
@@ -158,5 +201,121 @@ public sealed class DrawVerbTests
         );
         Assert.IsTrue(lines.All(line => !line.Contains(" pass=") || line.Contains(" d=")));
         StringAssert.StartsWith(lines[^1], "EMU draw end");
+    }
+
+    // A stand-in for analyzeHeadless that logs its arguments, makes the project file an import makes, and prints a line the
+    // script's output filter keeps. Without Ghidra these runs show which program the project holds.
+    private string FakeHeadless()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("the stand-in is a shell script");
+        }
+
+        var bin = Path.Combine(_folder, "bin");
+        Directory.CreateDirectory(bin);
+        var script = Path.Combine(bin, "analyzeHeadless");
+        var log = Path.Combine(_folder, "calls.log");
+        File.WriteAllText(
+            script,
+            $"#!/bin/sh\necho \"$*\" >> \"{log}\"\nfor a in \"$@\"; do [ \"$a\" = -import ] && {{ touch \"$1/Emu.gpr\"; echo 'INFO  REPORT: Import succeeded (HeadlessAnalyzer)'; }}; done\necho 'EmulateMapStart.java> EMU ok'\n"
+        );
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        return bin;
+    }
+
+    private string[] Calls() => File.ReadAllLines(Path.Combine(_folder, "calls.log"));
+
+    private string Install(string content)
+    {
+        var install = Path.Combine(_folder, "install");
+        Directory.CreateDirectory(install);
+        File.WriteAllText(Path.Combine(install, "Siedler1.exe"), content);
+
+        return install;
+    }
+
+    [TestMethod]
+    public void ARunWithoutAProjectImportsIntoATemporaryProjectAndDeletesIt()
+    {
+        var bin = FakeHeadless();
+
+        var (exit, output) = Emulate(Install("a"), "rng:0000,0000,0000", path: bin);
+
+        Assert.AreEqual(0, exit);
+        Assert.AreEqual("EMU ok\n", output.Replace("\r", ""));
+        var call = Calls().Single();
+        StringAssert.Contains(call, "-import");
+        StringAssert.Contains(call, "-deleteProject");
+    }
+
+    [TestMethod]
+    public void ASecondRunInAProjectRunsAgainstTheImportedProgram()
+    {
+        var bin = FakeHeadless();
+        var install = Install("a");
+        var project = Path.Combine(_folder, "project");
+
+        var (firstExit, firstOutput) = Emulate(install, "rng:0000,0000,0000", project, bin);
+        var (exit, output) = Emulate(install, "rng:0000,0000,0000", project, bin);
+
+        Assert.AreEqual(0, firstExit);
+        Assert.AreEqual("EMU ok\n", firstOutput.Replace("\r", ""));
+        Assert.AreEqual(0, exit);
+        Assert.AreEqual("EMU ok\n", output.Replace("\r", ""));
+        var calls = Calls();
+        Assert.AreEqual(2, calls.Length);
+        StringAssert.Contains(calls[0], "-import");
+        StringAssert.Contains(calls[1], "-process Siedler1.exe");
+        Assert.IsFalse(calls[1].Contains("-import"));
+        Assert.IsFalse(calls[1].Contains("-deleteProject"));
+        Assert.IsFalse(calls[0].Contains("-deleteProject"));
+    }
+
+    [TestMethod]
+    public void AProjectOfAnotherProgramIsImportedAgain()
+    {
+        var bin = FakeHeadless();
+        var project = Path.Combine(_folder, "project");
+
+        Emulate(Install("a"), "rng:0000,0000,0000", project, bin);
+        Emulate(Install("b"), "rng:0000,0000,0000", project, bin);
+
+        var calls = Calls();
+        Assert.AreEqual(2, calls.Length);
+        Assert.IsTrue(calls.All(call => call.Contains("-import") && !call.Contains("-process")));
+    }
+
+    [TestMethod]
+    public void AFirstRunInAFolderWithOtherFilesKeepsThem()
+    {
+        var bin = FakeHeadless();
+        var project = Path.Combine(_folder, "project");
+        Directory.CreateDirectory(project);
+        var other = Path.Combine(project, "notes.txt");
+        File.WriteAllText(other, "mine");
+
+        Emulate(Install("a"), "rng:0000,0000,0000", project, bin);
+
+        Assert.IsTrue(File.Exists(other));
+    }
+
+    [TestMethod]
+    public void AProjectWithTheMarkerButNoProjectFileIsImportedAgain()
+    {
+        var bin = FakeHeadless();
+        var project = Path.Combine(_folder, "project");
+
+        Emulate(Install("a"), "rng:0000,0000,0000", project, bin);
+        File.Delete(Path.Combine(project, "Emu.gpr"));
+        Emulate(Install("a"), "rng:0000,0000,0000", project, bin);
+
+        var calls = Calls();
+        Assert.AreEqual(2, calls.Length);
+        Assert.IsTrue(calls.All(call => call.Contains("-import") && !call.Contains("-process")));
     }
 }

@@ -7,6 +7,7 @@ namespace OpenSettlers.Tests;
 // The events of the walk home (ADR 0011): the claim of the node, the search, the arrival, and the entry into the castle, on the
 // game of HomeWalkTests with a settler sent home as the teardown of a building sends it (state 0x1c).
 [TestClass]
+[TestCategory(Needs.Install)]
 public sealed class HomeWalkHistoryTests
 {
     private const int Sent = 12;

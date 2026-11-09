@@ -18,6 +18,7 @@ namespace OpenSettlers.Tests;
 // building table that a real game's start takes, so its slot numbers are the engine's plus one. The engine runs the same
 // commands in the same passes and must hold the same bytes after the click and after each pass.
 [TestClass]
+[TestCategory(Needs.Install)]
 public sealed class RemovalTests
 {
     private const string Fixture = "removals.txt";

@@ -26,6 +26,7 @@ public sealed class RoadBuildingTests
 
     [TestMethod]
     [DynamicData(nameof(Runs))]
+    [TestCategory(Needs.Install)]
     public void EachStepIsAllowedOrRefusedAndTheRoadIsWrittenAsTheEmulatorsRoadDrawingDoes(string run)
     {
         var lines = File.ReadAllLines(Fixture).Where(line => Run(line) == run).ToArray();
@@ -268,6 +269,7 @@ public sealed class RoadBuildingTests
     private const byte SmallBuildingCode = 0x02;
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void ARoadDrawnForwardAcrossATreeNodeCompletesAtAFlag()
     {
         var map = OwnedLandWithFlags();
@@ -282,6 +284,7 @@ public sealed class RoadBuildingTests
     [TestMethod]
     [DataRow((byte)3)]
     [DataRow((byte)4)]
+    [TestCategory(Needs.Install)]
     public void ARoadDrawnForwardAcrossAClassFiveOrSixNodeCompletesAtAFlag(byte code)
     {
         var map = OwnedLandWithFlags();
@@ -295,6 +298,7 @@ public sealed class RoadBuildingTests
     [TestMethod]
     [DataRow(StoneCode)]
     [DataRow(SmallBuildingCode)]
+    [TestCategory(Needs.Install)]
     public void ARoadStepOntoAStoneOrASmallBuildingIsRefused(byte code)
     {
         var map = OwnedLandWithFlags();
@@ -306,6 +310,7 @@ public sealed class RoadBuildingTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void AFlagMayNotBePlacedOnATreeNode()
     {
         var map = OwnedLandWithFlags();

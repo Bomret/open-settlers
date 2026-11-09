@@ -27,6 +27,7 @@ public sealed class FlagPlacementTests
 
     [TestMethod]
     [DynamicData(nameof(Runs))]
+    [TestCategory(Needs.Install)]
     public void TheFlagsAreAllowedAndWrittenAsTheEmulatorsFlagButtonDoes(string run)
     {
         var lines = File.ReadAllLines("flag-placements.txt").Where(line => line.StartsWith(run + ' ')).ToArray();

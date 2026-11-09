@@ -10,6 +10,7 @@ public sealed class MapViewStateTests
     const string Seed = "1234567812345678";
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void OpeningGeneratesTheMapOfTheGivenSeedAndSize()
     {
         var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
@@ -21,6 +22,7 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void AValidNewSeedRegeneratesTheMap()
     {
         var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
@@ -34,6 +36,7 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheAppliedSeedTypedInGroupsDoesNotRegenerate()
     {
         var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
@@ -44,6 +47,7 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void ANewSizeRegeneratesTheMap()
     {
         var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
@@ -56,6 +60,7 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheSameSeedAndSizeKeepTheMap()
     {
         var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
@@ -66,6 +71,7 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void AnInvalidSeedShowsItsReasonAndKeepsTheLastMap()
     {
         var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
@@ -81,6 +87,7 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void AValidChangeClearsTheProblem()
     {
         var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
@@ -92,6 +99,7 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void ASizeTheOriginalDoesNotOfferKeepsTheLastMap()
     {
         var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
@@ -103,6 +111,7 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheStockLevelIsThatOfTheAppliedSeed()
     {
         var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);

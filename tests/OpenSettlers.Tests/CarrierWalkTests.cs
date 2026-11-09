@@ -19,6 +19,7 @@ namespace OpenSettlers.Tests;
 // A carrier waiting there (state 0x42) holds a pointer to its flag item in the dword at 12: the emulator's tables stand at
 // 0x23000000, so the pointer is that plus 0x46 for each slot, and the engine keeps the slot.
 [TestClass]
+[TestCategory(Needs.Install)]
 public sealed class CarrierWalkTests
 {
     private const string Fixture = "carrier-walks.txt";

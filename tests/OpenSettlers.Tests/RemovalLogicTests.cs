@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
@@ -328,5 +329,114 @@ public sealed class RemovalLogicTests
         Run(first, 2);
         Run(second, 2);
         Assert.AreNotEqual(first.Digest(), second.Digest(), "the countdown of the burning building is in the digest");
+    }
+
+    // The removal on a bench: a map, flag table, and road network made by hand, with fake carrier and goods seams, so a test
+    // sees what the removal asks of the carriers without a castle or a game.
+    private const int East = 0;
+    private const int West = 3;
+
+    // The carrier behaviour as the removal sees it: it notes what the removal asks of it.
+    private sealed class FakeCarriers : IRoadCarriers
+    {
+        public List<Road> Forgotten { get; } = [];
+
+        public List<(Road Road, Cause Cause)> Caused { get; } = [];
+
+        public void ForgetCause(Road road) => Forgotten.Add(road);
+
+        public void CarryCause(Road road, Cause command) => Caused.Add((road, command));
+
+        public void Claim(int slot, Settler settler) { }
+    }
+
+    private sealed class FakePriorities : ITransportPriorities
+    {
+        public int TransportPriority(Good good) => good.Code;
+    }
+
+    private sealed class Rig
+    {
+        public Rig()
+        {
+            Bench = new BehaviourBench();
+            Bench.RaiseAndOwn();
+            // Flag 0 and flag 1 at the ends of a road of four steps east, flag 2 on a node of its own.
+            PutFlag(4, 4);
+            PutFlag(8, 4);
+            PutFlag(4, 8);
+            Road = Bench.Join(0, East, 1, West, steps: 4, carrier: false);
+            for (var x = 4; x <= 8; x++)
+            {
+                Bench.Map.At(x, 4).Roads = x switch
+                {
+                    4 => RoadSet.Of(East),
+                    8 => RoadSet.Of(West),
+                    _ => RoadSet.Of(East).With(West),
+                };
+            }
+
+            Removal = new Removal(
+                Bench.Movement,
+                Bench.Settlers,
+                Bench.Buildings,
+                Bench.Flags,
+                Bench.Roads,
+                Bench.History,
+                Carriers,
+                new FakePriorities(),
+                _ => { },
+                () => true,
+                _ => { }
+            );
+        }
+
+        public BehaviourBench Bench { get; }
+
+        public FakeCarriers Carriers { get; } = new();
+
+        public Removal Removal { get; }
+
+        public Road Road { get; }
+
+        private void PutFlag(int x, int y)
+        {
+            var slot = Bench.Flags.Add(x, y);
+            ref var node = ref Bench.Map.At(x, y);
+            node.Object = MapObject.Flag;
+            node.FlagMark = true;
+            node.LinkTo(slot);
+        }
+    }
+
+    [TestMethod]
+    public void ARoadTakenDownIsForgottenByTheCarriersAndFreesTheCarrierMarkOfItsFlags()
+    {
+        var rig = new Rig();
+        rig.Bench.Flags[1].Side(West).HoldsCarrier = true;
+
+        Assert.IsTrue(rig.Removal.RemoveRoadAt(6, 4));
+
+        Assert.IsFalse(rig.Bench.Flags[1].Side(West).HoldsCarrier);
+        CollectionAssert.AreEqual(new[] { rig.Road }, rig.Carriers.Forgotten);
+    }
+
+    [TestMethod]
+    public void ARoadSplitByAFlagIsForgottenByTheCarriersAndEachHalfIsAskedForWithTheCommandsCause()
+    {
+        var rig = new Rig();
+        var slot = rig.Bench.Flags.Add(6, 4);
+        rig.Bench.Map.At(6, 4).FlagMark = true;
+        rig.Bench.Map.At(6, 4).LinkTo(slot);
+        var cause = Cause.Razed(rig.Bench.History.FlagId(slot));
+
+        rig.Removal.SplitRoad(rig.Bench.Map.Index(6, 4), slot, cause);
+
+        CollectionAssert.AreEqual(new[] { rig.Road }, rig.Carriers.Forgotten);
+        Assert.AreEqual(
+            2,
+            rig.Carriers.Caused.Count,
+            "each half without a carrier is asked for with the command's cause"
+        );
     }
 }

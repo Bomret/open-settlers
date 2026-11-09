@@ -139,6 +139,7 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheTablesOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
@@ -190,6 +191,7 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheTablesOfTheWalkOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
@@ -201,6 +203,7 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheFigureTablesOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
@@ -211,6 +214,7 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheCarriedGoodFiguresOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
@@ -282,6 +286,7 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheWalkRowsOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
@@ -304,12 +309,13 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(RuleTables.FrameRowCount, tables.FrameRows.Length);
         Assert.AreEqual(-1, tables.FrameRows[10], "a signed byte for the frame 10");
         Assert.AreEqual(2, tables.FrameRows[11]);
-        #pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
+#pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
         Assert.AreEqual(0x43f402, ProgramTablesImporter.FrameRowAddress);
-        #pragma warning restore MSTEST0032
+#pragma warning restore MSTEST0032
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheFrameRowsOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
@@ -341,6 +347,7 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheTablesOfTheRemovalOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
@@ -389,6 +396,7 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheTransportPrioritiesOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
@@ -398,6 +406,7 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheFigureTablesHoldTheWordsTheDrawRoutineReadsUnaligned()
     {
         var tables = TestProgram.Tables();
@@ -414,6 +423,7 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheWoodcuttersFigureWordsOfTheInstallAreThoseOfHisDrawHandler()
     {
         var adds = TestProgram.Tables().WoodcutterFigureAdds;
@@ -491,6 +501,7 @@ public sealed class ProgramTablesTests
     // The waiting carriers' tables of the reference build (0x44d87d, 0x44d89d, 0x674923): the first phase word, the first
     // figure word (row 0x88), and the offsets of a node whose road runs north and south (directions 2 and 5, bits 0x24).
     [TestMethod]
+    [TestCategory(Needs.Install)]
     public void TheWaitingCarriersTablesAreReadFromTheProgram()
     {
         var tables = TestProgram.Tables();
