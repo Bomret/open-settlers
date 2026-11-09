@@ -238,4 +238,20 @@ public sealed class WoodcuttingTests
 
         Assert.AreNotEqual(game.Digest(), GameFactory.Create(Made(), other).Digest());
     }
+
+    [TestMethod]
+    public void TwoGamesWithTheSameCommandsCutTheSameTrees()
+    {
+        var first = World(true, out var firstMap);
+        var second = World(true, out var secondMap);
+
+        for (var tick = 0; tick < 3000; tick++)
+        {
+            first.Tick();
+            second.Tick();
+        }
+
+        Assert.AreEqual(first.Digest(), second.Digest());
+        CollectionAssert.AreEqual(TestMaps.Objects(firstMap), TestMaps.Objects(secondMap));
+    }
 }
