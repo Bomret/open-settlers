@@ -22,6 +22,11 @@ public sealed class FastForwardTests
         return (FastForwardStep)script.Steps.Single();
     }
 
+    static FastForwardUntilStep UntilStep(string text) => (FastForwardUntilStep)Step(text);
+
+    // The state a job step is handed: it reads the game alone, so building a state fails the test.
+    static PlayState Unread(bool things) => throw new AssertFailedException("a job step builds no play state");
+
     static string Problem(string text)
     {
         var script = PlayScript.Parse(text, "play/t.play");
@@ -48,7 +53,7 @@ public sealed class FastForwardTests
         var step = Step("\nfast-forward woodcutter state 0x11 max 5000");
 
         Assert.AreEqual(
-            new FastForwardStep
+            new FastForwardJobStep
             {
                 Line = 2,
                 Job = Job.Woodcutter,
@@ -66,7 +71,7 @@ public sealed class FastForwardTests
         var step = Step("fast-forward carrier carrying max 7");
 
         Assert.AreEqual(
-            new FastForwardStep
+            new FastForwardJobStep
             {
                 Line = 1,
                 Job = Job.Carrier,
@@ -84,7 +89,7 @@ public sealed class FastForwardTests
     [DataRow("0X11")]
     public void AStateTakesDecimalOrHex(string written)
     {
-        Assert.AreEqual(17, Step($"fast-forward woodcutter state {written} max 1").State);
+        Assert.AreEqual(17, ((FastForwardJobStep)Step($"fast-forward woodcutter state {written} max 1")).State);
     }
 
     [TestMethod]
@@ -92,7 +97,7 @@ public sealed class FastForwardTests
     {
         var game = WoodcuttingTests.World(true, out _);
 
-        var problem = Step("fast-forward woodcutter state 17 max 0").Run(game);
+        var problem = Step("fast-forward woodcutter state 17 max 0").Run(game, Unread);
 
         Assert.AreEqual("fast-forward woodcutter state 17 max 0: not reached after 0 ticks", problem);
     }
@@ -103,7 +108,7 @@ public sealed class FastForwardTests
         var game = WoodcuttingTests.World(true, out _);
         var pacer = new TickPacer();
 
-        var problem = Step("fast-forward woodcutter state 0x11 max 5000").Apply(game, true, pacer);
+        var problem = Step("fast-forward woodcutter state 0x11 max 5000").Apply(game, true, pacer, Unread);
 
         Assert.IsNull(problem);
         Assert.AreEqual(0, pacer.Due(2), "the held game ticks no frame");
@@ -120,7 +125,7 @@ public sealed class FastForwardTests
             PlayScript.Parse("fast-forward woodcutter carrying max 5", "play/t.play"),
             () => new PlayState(5, 6, 1f, "1", 1),
             Path.Combine(Path.GetTempPath(), "ff-unused"),
-            step => step is FastForwardStep f ? f.Apply(null, false, pacer) : null
+            step => step is FastForwardStep f ? f.Apply(null, false, pacer, Unread) : null
         );
 
         run.Advance(1);
@@ -133,7 +138,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AGameViewWithNoGameRefusesTheStep()
     {
-        var problem = Step("fast-forward woodcutter carrying max 5").Apply(null, true, new TickPacer());
+        var problem = Step("fast-forward woodcutter carrying max 5").Apply(null, true, new TickPacer(), Unread);
 
         Assert.AreEqual("fast-forward: no game is running", problem);
     }
@@ -161,7 +166,7 @@ public sealed class FastForwardTests
         var game = WoodcuttingTests.World(true, out _);
         var start = game.TickCount;
 
-        var problem = Step("fast-forward woodcutter state 0x11 max 5000").Run(game);
+        var problem = Step("fast-forward woodcutter state 0x11 max 5000").Run(game, Unread);
 
         Assert.IsNull(problem);
         Assert.AreEqual(first, game.TickCount);
@@ -172,10 +177,10 @@ public sealed class FastForwardTests
     public void AConditionThatHoldsAlreadyRunsNoTick()
     {
         var game = WoodcuttingTests.World(true, out _);
-        Step("fast-forward woodcutter state 0x11 max 5000").Run(game);
+        Step("fast-forward woodcutter state 0x11 max 5000").Run(game, Unread);
         var at = game.TickCount;
 
-        var problem = Step("fast-forward woodcutter state 0x11 max 5000").Run(game);
+        var problem = Step("fast-forward woodcutter state 0x11 max 5000").Run(game, Unread);
 
         Assert.IsNull(problem);
         Assert.AreEqual(at, game.TickCount);
@@ -187,7 +192,7 @@ public sealed class FastForwardTests
         var game = WoodcuttingTests.World(true, out _);
         var start = game.TickCount;
 
-        var problem = Step("fast-forward woodcutter state 0x11 max 3").Run(game);
+        var problem = Step("fast-forward woodcutter state 0x11 max 3").Run(game, Unread);
 
         Assert.AreEqual("fast-forward woodcutter state 0x11 max 3: not reached after 3 ticks", problem);
         Assert.AreEqual(start + 3, game.TickCount);
@@ -198,7 +203,7 @@ public sealed class FastForwardTests
     {
         var game = WoodcuttingTests.World(true, out _);
 
-        var problem = Step("fast-forward woodcutter carrying max 6000").Run(game);
+        var problem = Step("fast-forward woodcutter carrying max 6000").Run(game, Unread);
 
         Assert.IsNull(problem);
         Assert.IsTrue(game.Flags[3].Places.All(place => place.IsEmpty), "the log is not on the flag yet");
@@ -209,7 +214,7 @@ public sealed class FastForwardTests
     {
         var game = WoodcuttingTests.World(true, out _);
 
-        var problem = Step("fast-forward carrier carrying max 6000").Run(game);
+        var problem = Step("fast-forward carrier carrying max 6000").Run(game, Unread);
 
         Assert.IsNull(problem);
         Assert.IsTrue(
@@ -223,7 +228,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AnUntilStepReadsAnExpectCondition()
     {
-        var step = Step("fast-forward until logs >= 5 max 9000");
+        var step = UntilStep("fast-forward until logs >= 5 max 9000");
 
         Assert.AreEqual(
             new ExpectStep
@@ -235,14 +240,13 @@ public sealed class FastForwardTests
             },
             step.Until
         );
-        Assert.IsNull(step.Job);
         Assert.AreEqual(9000, step.MaxTicks);
     }
 
     [TestMethod]
     public void AnUntilStepReadsACountCondition()
     {
-        var step = Step("fast-forward until count carrier = 2 max 9000");
+        var step = UntilStep("fast-forward until count carrier = 2 max 9000");
 
         Assert.IsInstanceOfType<ExpectCountStep>(step.Until);
         Assert.AreEqual(2, ((ExpectCountStep)step.Until).Count);
@@ -317,7 +321,7 @@ public sealed class FastForwardTests
     public void AnUntilCountBelowStopsWhenTheCountDropsAndNotAtOnce()
     {
         var game = WoodcuttingTests.World(true, out _);
-        Step("fast-forward woodcutter state 0x11 max 5000").Run(game);
+        Step("fast-forward woodcutter state 0x11 max 5000").Run(game, Unread);
         var cutting = game.TickCount;
         var asked = new System.Collections.Generic.List<bool>();
 
@@ -332,8 +336,8 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AnExpectReadsNoThingsAndAnExpectCountDoes()
     {
-        Assert.IsFalse(Step("fast-forward until logs >= 5 max 1").Until!.ReadsThings);
-        Assert.IsTrue(Step("fast-forward until count carrier = 2 max 1").Until!.ReadsThings);
+        Assert.IsFalse(UntilStep("fast-forward until logs >= 5 max 1").Until.ReadsThings);
+        Assert.IsTrue(UntilStep("fast-forward until count carrier = 2 max 1").Until.ReadsThings);
     }
 
     [TestMethod]

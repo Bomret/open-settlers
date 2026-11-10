@@ -596,7 +596,7 @@ public sealed class PlayScript
             return (null, $"'{args[^1]}' is not a whole number of zero or more");
 
         return (
-            new FastForwardStep
+            new FastForwardJobStep
             {
                 Line = number,
                 Job = job,
@@ -625,7 +625,7 @@ public sealed class PlayScript
             return (null, $"'{expect.Field}' does not change with the ticks, use a game field");
 
         return (
-            new FastForwardStep
+            new FastForwardUntilStep
             {
                 Line = number,
                 Until = parsed,
