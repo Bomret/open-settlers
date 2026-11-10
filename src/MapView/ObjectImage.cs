@@ -18,6 +18,25 @@ public sealed record ObjectImage(int Width, int Height, int OffsetX, int OffsetY
     /// <summary>An image with no pixel, for an entry the archive leaves out.</summary>
     public static ObjectImage Empty { get; } = new(0, 0, 0, 0, []);
 
+    /// <summary>
+    /// The image with its pixel rows laid out in a <paramref name="width"/> x <paramref name="height"/> layer, at the
+    /// top left; <see cref="Width"/>, <see cref="Height"/> and the offsets stay the image's own, and the rest is
+    /// transparent. An array texture takes images of one size.
+    /// </summary>
+    public ObjectImage Padded(int width, int height)
+    {
+        var padded = new byte[width * height * 4];
+        for (var y = 0; y < Height; y++)
+        {
+            Array.Copy(Rgba, y * Width * 4, padded, y * width * 4, Width * 4);
+        }
+
+        return this with
+        {
+            Rgba = padded,
+        };
+    }
+
     /// <summary>Converts a decoded sprite through <paramref name="palette"/>.</summary>
     public static ObjectImage From(Sprite sprite, Palette palette)
     {

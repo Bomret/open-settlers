@@ -75,15 +75,20 @@ public partial class MapViewControl : Control
     Control _canvas = null!;
     Node2D _world = null!;
 
-    // The graphics source of the terrain and the roads, the images it drew so far, and the material over them.
+    // The graphics source, and for each kind of draw the images it drew so far and the material over them: the terrain
+    // and the roads, the objects, and the water ripples. The ripples keep the surface color their images show over.
     IGraphicsSource? _source;
     readonly ImageLayers _layers = new();
     ShaderMaterial? _surfaceMaterial;
     int _surfaceLayers;
+    readonly ImageLayers _objectLayers = new();
     ShaderMaterial? _objectMaterial;
+    int _objectImages;
+    readonly ImageLayers _rippleLayers = new();
     ShaderMaterial? _waterMaterial;
+    int _rippleImages;
+    byte[]? _rippleSurface;
     readonly System.Collections.Generic.List<MeshInstance2D> _waterNodes = [];
-    ObjectGraphics? _objects;
     string? _graphicsProblem;
     string? _objectsProblem;
     string? _tablesProblem;
@@ -129,10 +134,10 @@ public partial class MapViewControl : Control
     public Map? Map => _state.Map;
 
     /// <summary>
-    /// The height of the tallest object sprite in map pixels (<see cref="ObjectGraphics.LayerHeight"/>), 0 with no
-    /// object graphics loaded. A play run's cropped <c>shot</c> leaves this much room above its tiles.
+    /// The height of the tallest object image the graphics source draws, in map pixels (<see cref="IGraphicsSource.ObjectHeadroom"/>),
+    /// 0 with no source or no object graphics. A play run's cropped <c>shot</c> leaves this much room above its tiles.
     /// </summary>
-    public int ObjectHeadroom => _objects?.LayerHeight ?? 0;
+    public int ObjectHeadroom => _source?.ObjectHeadroom ?? 0;
 
     /// <summary>What a play run observes of the view now.</summary>
     public PlayState Snapshot() =>
@@ -326,33 +331,16 @@ public partial class MapViewControl : Control
                 _roadsProblem = source.RoadsProblem;
                 GD.PrintErr($"map view: {source.RoadsProblem}");
             }
+
+            if (source.ObjectsProblem is not null)
+            {
+                _objectsProblem = source.ObjectsProblem;
+                GD.PrintErr($"map view: {source.ObjectsProblem}");
+            }
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             _graphicsProblem = e.Message;
-            GD.PrintErr($"map view: {e.Message}");
-        }
-
-        try
-        {
-            _objects = ObjectGraphics.Load(_install);
-            _objectMaterial = BuildObjectMaterial(_objects);
-            _waterMaterial = (ShaderMaterial)_objectMaterial.Duplicate();
-            _waterMaterial.Shader = GD.Load<Shader>("res://src/Viewer/Water.gdshader");
-            _waterMaterial.SetShaderParameter(
-                "surface",
-                new Color(
-                    _objects.SurfaceRgba[0] / 255f,
-                    _objects.SurfaceRgba[1] / 255f,
-                    _objects.SurfaceRgba[2] / 255f,
-                    _objects.SurfaceRgba[3] / 255f
-                )
-            );
-        }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _objects = null;
-            _objectsProblem = e.Message;
             GD.PrintErr($"map view: {e.Message}");
         }
 
@@ -381,12 +369,9 @@ public partial class MapViewControl : Control
                         RuleTables.TypeOneHutJob
                     );
                     _settlerMaterial = BuildObjectMaterial(
-                        new ObjectGraphics
-                        {
-                            LayerWidth = _settlerGraphics.LayerWidth,
-                            LayerHeight = _settlerGraphics.LayerHeight,
-                            Images = _settlerGraphics.Images,
-                        }
+                        _settlerGraphics.Images,
+                        _settlerGraphics.LayerWidth,
+                        _settlerGraphics.LayerHeight
                     );
                 }
             }
@@ -619,7 +604,7 @@ public partial class MapViewControl : Control
             _pressView.Height,
             screenX,
             screenY,
-            _objects?.Images[ObjectGraphics.Layer(ObjectSprites.FlagEntry)]
+            ObjectDraws.FlagImage(_source)
         );
         if (_roadButton.ButtonPressed && _drawing is not null)
         {
@@ -750,13 +735,19 @@ public partial class MapViewControl : Control
 
         var meshes = BuildMeshes(_source, TerrainTriangles.Of(_state.Map), _state.Map.Size);
         var roadMesh = BuildRoadMesh(_source, _state.Map);
-        if (SurfaceMaterial() is not { } surface)
+        var objectMeshes = BuildObjectMeshes(_source, _state.Map);
+        var waterMesh = BuildWaterMesh(_source, _state.Map);
+        if (SurfaceMaterial() is not { } surface || ObjectMaterial() is not { } objectMaterial)
         {
             return;
         }
 
-        var objectMeshes = BuildObjectMeshes(_state.Map);
-        var waterMesh = BuildWaterMesh(_state.Map);
+        var waterMaterial = waterMesh is null ? null : WaterMaterial();
+        if (waterMesh is not null && waterMaterial is null)
+        {
+            return;
+        }
+
         _framesDrawn = _frameCounter;
         _objectNodes.Clear();
         _waterNodes.Clear();
@@ -775,12 +766,12 @@ public partial class MapViewControl : Control
                 copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = surface });
             }
 
-            // The water sprites paint over the terrain and the roads of their copy where it shows palette index 8, so the
-            // screen is copied after this copy's terrain and roads are drawn.
-            if (_waterMaterial is not null)
+            // The water ripples paint over the terrain and the roads of their copy where the surface color shows, so the
+            // screen is copied after this copy's terrain and roads are drawn. A source that draws no ripple makes no copy.
+            if (waterMaterial is not null)
             {
                 copy.AddChild(new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Viewport });
-                var water = new MeshInstance2D { Mesh = waterMesh, Material = _waterMaterial };
+                var water = new MeshInstance2D { Mesh = waterMesh, Material = waterMaterial };
                 copy.AddChild(water);
                 _waterNodes.Add(water);
             }
@@ -792,7 +783,7 @@ public partial class MapViewControl : Control
                 var node = new MeshInstance2D
                 {
                     Mesh = mesh,
-                    Material = _objectMaterial,
+                    Material = objectMaterial,
                     ZAsRelative = false,
                     ZIndex = 1,
                 };
@@ -826,18 +817,32 @@ public partial class MapViewControl : Control
     void UpdateObjects()
     {
         _framesDrawn = _frameCounter;
-        if (_state.Map is null || _objectNodes.Count == 0)
+        if (_state.Map is null || _source is null || _objectNodes.Count == 0)
         {
             return;
         }
 
-        var waterMesh = BuildWaterMesh(_state.Map);
+        var waterMesh = BuildWaterMesh(_source, _state.Map);
+        if ((waterMesh is not null) != (_waterNodes.Count > 0))
+        {
+            // The source's ripples came or went with the animation step: the copies of the screen change with them.
+            Redraw();
+            return;
+        }
+
+        var meshes = BuildObjectMeshes(_source, _state.Map);
+        // The step may have drawn images the array does not hold yet: the material is built again then.
+        if (ObjectMaterial() is not { } objectMaterial || (waterMesh is not null && WaterMaterial() is null))
+        {
+            return;
+        }
+
         foreach (var node in _waterNodes)
         {
             node.Mesh = waterMesh;
+            node.Material = _waterMaterial;
         }
 
-        var meshes = BuildObjectMeshes(_state.Map);
         foreach (var nodes in _objectNodes)
         {
             if (nodes.Count != meshes.Count)
@@ -849,6 +854,7 @@ public partial class MapViewControl : Control
             for (var band = 0; band < meshes.Count; band++)
             {
                 nodes[band].Mesh = meshes[band];
+                nodes[band].Material = objectMaterial;
             }
         }
     }
@@ -920,102 +926,104 @@ public partial class MapViewControl : Control
             : BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))));
     }
 
-    // The material of the terrain and the roads: the sprite shader over every image the source has drawn so far,
-    // built again when a draw added one. Null, with the problem shown, where the images pass the GPU's layer limit.
-    ShaderMaterial? SurfaceMaterial()
+    // The material of the terrain and the roads.
+    ShaderMaterial? SurfaceMaterial() =>
+        LayerMaterial(_layers, "Objects", "the terrain and the roads", ref _surfaceMaterial, ref _surfaceLayers);
+
+    // The material of the objects.
+    ShaderMaterial? ObjectMaterial() =>
+        LayerMaterial(_objectLayers, "Objects", "the objects", ref _objectMaterial, ref _objectImages);
+
+    // The material of the water ripples: the ripples' images, and the surface color they show over.
+    ShaderMaterial? WaterMaterial()
     {
-        var images = _layers.Images;
+        var material = LayerMaterial(_rippleLayers, "Water", "the water", ref _waterMaterial, ref _rippleImages);
+        if (material is not null && _rippleSurface is { } surface)
+        {
+            material.SetShaderParameter(
+                "surface",
+                new Color(surface[0] / 255f, surface[1] / 255f, surface[2] / 255f, surface[3] / 255f)
+            );
+        }
+
+        return material;
+    }
+
+    // A material of <paramref name="shader"/> over every image in <paramref name="layers"/>, one array texture layer
+    // each, built again when a draw added one. Null, with the problem shown, where the images pass the GPU's layer limit.
+    ShaderMaterial? LayerMaterial(
+        ImageLayers layers,
+        string shader,
+        string what,
+        ref ShaderMaterial? material,
+        ref int built
+    )
+    {
+        var images = layers.Images;
         if (images.Count > MaxArrayLayers)
         {
-            _graphicsProblem =
-                $"the terrain and the roads need {images.Count} images, more than the {MaxArrayLayers} layers of the GPU";
+            _graphicsProblem = $"{what} need {images.Count} images, more than the {MaxArrayLayers} layers of the GPU";
             GD.PrintErr($"map view: {_graphicsProblem}");
             ShowMessage();
 
             return null;
         }
 
-        if (_surfaceMaterial is null || _surfaceLayers != images.Count)
+        if (material is null || built != images.Count)
         {
             // An empty map has no image: the array then takes one blank layer, so the shader has a texture to bind.
             var width = Math.Max(images.Select(i => i.Width).DefaultIfEmpty().Max(), 1);
             var height = Math.Max(images.Select(i => i.Height).DefaultIfEmpty().Max(), 1);
-            var layers = new Godot.Collections.Array<Image>();
+            var textures = new Godot.Collections.Array<Image>();
             foreach (var image in images)
             {
-                layers.Add(
-                    Image.CreateFromData(
-                        width,
-                        height,
-                        false,
-                        Image.Format.Rgba8,
-                        ObjectGraphics.Pad(image, width, height).Rgba
-                    )
+                textures.Add(
+                    Image.CreateFromData(width, height, false, Image.Format.Rgba8, image.Padded(width, height).Rgba)
                 );
             }
 
-            if (layers.Count == 0)
+            if (textures.Count == 0)
             {
-                layers.Add(Image.CreateFromData(1, 1, false, Image.Format.Rgba8, new byte[4]));
+                textures.Add(Image.CreateFromData(1, 1, false, Image.Format.Rgba8, new byte[4]));
             }
 
             var sprites = new Texture2DArray();
-            sprites.CreateFromImages(layers);
-            // The shader declares a shadow array too; it takes one blank layer here.
-            var blank = new Godot.Collections.Array<Image>
-            {
-                Image.CreateFromData(1, 1, false, Image.Format.Rgba8, new byte[4]),
-            };
-            var shadows = new Texture2DArray();
-            shadows.CreateFromImages(blank);
-            _surfaceMaterial = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Objects.gdshader") };
-            _surfaceMaterial.SetShaderParameter("sprites", sprites);
-            _surfaceMaterial.SetShaderParameter("shadow_sprites", shadows);
-            _surfaceLayers = images.Count;
+            sprites.CreateFromImages(textures);
+            material = new ShaderMaterial { Shader = GD.Load<Shader>($"res://src/Viewer/{shader}.gdshader") };
+            material.SetShaderParameter("sprites", sprites);
+            built = images.Count;
         }
 
-        return _surfaceMaterial;
+        return material;
     }
 
-    // The vertex color that carries a sprite's array texture layer to Objects.gdshader and Water.gdshader, and in
-    // blue whether the layer is one of the shadow array.
-    static Color LayerColor(int layer, bool shadow = false)
+    // The vertex color that carries an image's array texture layer to Objects.gdshader and Water.gdshader.
+    static Color LayerColor(int layer)
     {
-        var (red, green, blue) = SpriteLayer.Color(layer, shadow);
+        var (red, green) = SpriteLayer.Channels(layer);
 
-        return new Color(red, green, blue, 1);
+        return new Color(red, green, 0, 1);
     }
 
-    ShaderMaterial BuildObjectMaterial(ObjectGraphics graphics)
+    // The material of the settlers' sprites, one array texture layer of the given size each.
+    ShaderMaterial BuildObjectMaterial(
+        System.Collections.Generic.IReadOnlyList<ObjectImage> layers,
+        int width,
+        int height
+    )
     {
-        static Texture2DArray Layers(
-            System.Collections.Generic.IReadOnlyList<ObjectImage> layers,
-            int width,
-            int height
-        )
+        var images = new Godot.Collections.Array<Image>();
+        foreach (var image in layers)
         {
-            var images = new Godot.Collections.Array<Image>();
-            foreach (var image in layers)
-            {
-                images.Add(
-                    Image.CreateFromData(Math.Max(width, 1), Math.Max(height, 1), false, Image.Format.Rgba8, image.Rgba)
-                );
-            }
-
-            var array = new Texture2DArray();
-            array.CreateFromImages(images);
-
-            return array;
+            images.Add(
+                Image.CreateFromData(Math.Max(width, 1), Math.Max(height, 1), false, Image.Format.Rgba8, image.Rgba)
+            );
         }
 
-        // Graphics with no shadow array (the settlers') get one blank layer, so the shader has a texture to bind.
-        var shadows =
-            graphics.ShadowImages.Count > 0 ? graphics.ShadowImages : [ObjectGraphics.Pad(ObjectImage.Empty, 1, 1)];
-        var sprites = Layers(graphics.Images, graphics.LayerWidth, graphics.LayerHeight);
-        var shadowSprites = Layers(shadows, graphics.ShadowLayerWidth, graphics.ShadowLayerHeight);
+        var sprites = new Texture2DArray();
+        sprites.CreateFromImages(images);
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Objects.gdshader") };
         material.SetShaderParameter("sprites", sprites);
-        material.SetShaderParameter("shadow_sprites", shadowSprites);
 
         return material;
     }
@@ -1059,32 +1067,22 @@ public partial class MapViewControl : Control
         return mesh;
     }
 
-    // One mesh of the water sprites of the whole map at the frame counter, the layer in COLOR; null for none.
-    ArrayMesh? BuildWaterMesh(Map map)
+    // One mesh of the water ripples of the whole map at the frame counter, the layer in COLOR; null where the source
+    // draws none.
+    ArrayMesh? BuildWaterMesh(IGraphicsSource source, Map map)
     {
-        if (_objects is null)
-        {
-            return null;
-        }
+        var (quads, surface) = ObjectQuads.Ripples(ObjectDraws.WaterOf(map, _frameCounter), source, _rippleLayers);
+        _rippleSurface = surface ?? _rippleSurface;
 
-        var quads = ObjectQuads
-            .Bands(ObjectDraws.WaterOf(map, _frameCounter), _objects.Images, [], map.Size.Height, map.Size.Height)
-            .SelectMany(band => band)
-            .Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))
-            .ToList();
-
-        return quads.Count > 0 ? BuildQuadMesh(quads) : null;
+        return quads.Count > 0
+            ? BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))))
+            : null;
     }
 
-    // One mesh per band of rows, one quad per object sprite: the layer in COLOR.
-    System.Collections.Generic.List<ArrayMesh> BuildObjectMeshes(Map map)
+    // One mesh per band of rows, one quad per object image and shadow: the layer in COLOR.
+    System.Collections.Generic.List<ArrayMesh> BuildObjectMeshes(IGraphicsSource source, Map map)
     {
         var meshes = new System.Collections.Generic.List<ArrayMesh>();
-        if (_objects is null)
-        {
-            return meshes;
-        }
-
         foreach (
             var band in ObjectQuads.Bands(
                 ObjectDraws.Of(
@@ -1094,14 +1092,14 @@ public partial class MapViewControl : Control
                     _game is null ? null : ObjectDraws.FlagGoodsOf(_game),
                     _frameCounter
                 ),
-                _objects.Images,
-                _objects.ShadowImages,
+                source,
+                _objectLayers,
                 map.Size.Height,
                 BandRows
             )
         )
         {
-            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer, q.Shadow)))));
+            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))));
         }
 
         return meshes;

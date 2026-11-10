@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using OpenSettlers.Assets;
+using OpenSettlers.Domain;
 
 namespace OpenSettlers.MapView;
 
@@ -19,33 +20,123 @@ public sealed class HistoryEditionSource : IGraphicsSource
     readonly Dictionary<(int Mask, int Texture), ObjectImage?> _terrainImages = [];
     readonly Dictionary<(int Mask, int Texture), ObjectImage?> _roadImages = [];
 
-    HistoryEditionSource(TerrainGraphics terrain, RoadGraphics? roads, string? roadsProblem)
+    readonly ObjectGraphics? _objects;
+    readonly Dictionary<int, ObjectDrawing?> _drawings = [];
+    readonly Dictionary<int, RippleImage?> _ripples = [];
+
+    HistoryEditionSource(
+        TerrainGraphics terrain,
+        RoadGraphics? roads,
+        string? roadsProblem,
+        ObjectGraphics? objects,
+        string? objectsProblem
+    )
     {
         _terrain = terrain;
         _roads = roads;
         RoadsProblem = roadsProblem;
+        _objects = objects;
+        ObjectsProblem = objectsProblem;
     }
 
     /// <summary>Why the road graphics did not load, or null. The source draws no road then and still draws the terrain.</summary>
     public string? RoadsProblem { get; }
 
+    /// <summary>Why the object graphics did not load, or null. The source draws no object then and still draws the terrain.</summary>
+    public string? ObjectsProblem { get; }
+
     /// <summary>
     /// Reads the graphics from the install. Throws <see cref="FileNotFoundException"/> for a missing archive and
     /// <see cref="InvalidDataException"/>, naming the entry and the reason, where the terrain graphics are absent or
-    /// unreadable. Unreadable road graphics set <see cref="RoadsProblem"/> instead.
+    /// unreadable. Unreadable road graphics set <see cref="RoadsProblem"/>, and unreadable object graphics
+    /// <see cref="ObjectsProblem"/>, instead.
     /// </summary>
     public static HistoryEditionSource Load(Install install)
     {
         var terrain = TerrainGraphics.Load(install);
+        RoadGraphics? roads = null;
+        string? roadsProblem = null;
         try
         {
-            return new HistoryEditionSource(terrain, RoadGraphics.Load(install), null);
+            roads = RoadGraphics.Load(install);
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            return new HistoryEditionSource(terrain, null, e.Message);
+            roadsProblem = e.Message;
         }
+
+        ObjectGraphics? objects = null;
+        string? objectsProblem = null;
+        try
+        {
+            objects = ObjectGraphics.Load(install);
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            objectsProblem = e.Message;
+        }
+
+        return new HistoryEditionSource(terrain, roads, roadsProblem, objects, objectsProblem);
     }
+
+    /// <inheritdoc />
+    public int ObjectHeadroom => _objects?.Headroom ?? 0;
+
+    /// <inheritdoc />
+    public ObjectDrawing? Draw(MapObjectDraw draw) =>
+        ObjectSprites.Entry(draw.Object, draw.Step) is { } entry ? Drawing(entry) : null;
+
+    /// <inheritdoc />
+    public ObjectDrawing? Draw(BuildingDraw draw) =>
+        draw.Type == BuildingType.Castle ? Drawing(ObjectSprites.CastleEntry)
+        : draw.Type == BuildingType.Woodcutter ? Drawing(ObjectSprites.WoodcutterEntry)
+        : null;
+
+    /// <inheritdoc />
+    public ObjectDrawing? Draw(GoodAtFlag draw) => Drawing(ObjectSprites.GoodEntry(draw.Good));
+
+    /// <inheritdoc />
+    public RippleImage? Draw(WaterRipple ripple)
+    {
+        var entry = ObjectSprites.WaterEntry(ripple.Tile, ripple.Step);
+        if (_objects is null)
+        {
+            return null;
+        }
+
+        if (!_ripples.TryGetValue(entry, out var cached))
+        {
+            cached = Usable(_objects.Sprites.GetValueOrDefault(entry)) is { } image
+                ? new RippleImage(image, _objects.SurfaceRgba)
+                : null;
+            _ripples[entry] = cached;
+        }
+
+        return cached;
+    }
+
+    // What the archive draws for an object sprite entry, made once so that equal entries answer with one instance: the
+    // sprite and the shadow mask at its entry plus 250, or null where it has neither.
+    ObjectDrawing? Drawing(int entry)
+    {
+        if (_objects is null)
+        {
+            return null;
+        }
+
+        if (!_drawings.TryGetValue(entry, out var cached))
+        {
+            var image = Usable(_objects.Sprites.GetValueOrDefault(entry));
+            var shadow = Usable(_objects.Shadows.GetValueOrDefault(entry));
+            cached = image is null && shadow is null ? null : new ObjectDrawing(image, shadow);
+            _drawings[entry] = cached;
+        }
+
+        return cached;
+    }
+
+    // A sprite with no pixel draws nothing.
+    static ObjectImage? Usable(ObjectImage? image) => image is { Width: > 0, Height: > 0 } ? image : null;
 
     /// <inheritdoc />
     public ObjectImage? Draw(TerrainTriangle triangle)

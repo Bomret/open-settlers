@@ -15,6 +15,9 @@ public static class ObjectSprites
     /// <summary>The last object code (7 bits).</summary>
     public const int LastCode = 127;
 
+    /// <summary>The number of object sprite entries: those of codes 8 to 127.</summary>
+    public const int EntryCount = LastCode - FirstCode + 1;
+
     /// <summary>The entry of code 8.</summary>
     public const int FirstEntry = 1250;
 
