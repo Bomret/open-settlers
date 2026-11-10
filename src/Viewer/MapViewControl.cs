@@ -157,7 +157,7 @@ public partial class MapViewControl : Control
     /// </summary>
     public string? FastForward(FastForwardStep step)
     {
-        var problem = step.Apply(_game, _gameView, _pacer);
+        var problem = step.Apply(_game, _gameView, _pacer, Snapshot);
         if (_game is null || !_gameView)
             return problem;
 

@@ -11,7 +11,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class FastForwardTests
 {
-    const string Usage = "'fast-forward' takes <job> state <n> max <ticks> or <job> carrying max <ticks>";
+    const string Usage =
+        "'fast-forward' takes <job> state <n> max <ticks>, <job> carrying max <ticks>, or until <condition> max <ticks>";
 
     static FastForwardStep Step(string text)
     {
@@ -214,5 +215,63 @@ public sealed class FastForwardTests
         Assert.IsTrue(
             game.Settlers.Any(s => s is { Job.Code: Job.CarrierCode, Activity: WalksRoad { Load: not null } })
         );
+    }
+
+    // What a play run observes of the game alone: its ticks and the castle's logs.
+    static PlayState Observed(Game game) => new(0, 0, 1, "", 1, game.TickCount, game.CastleStock.Logs);
+
+    [TestMethod]
+    public void AnUntilStepReadsAnExpectCondition()
+    {
+        var step = Step("fast-forward until logs >= 5 max 9000");
+
+        Assert.AreEqual(
+            new ExpectStep
+            {
+                Line = 1,
+                Field = "logs",
+                Op = ">=",
+                Value = "5",
+            },
+            step.Until
+        );
+        Assert.IsNull(step.Job);
+        Assert.AreEqual(9000, step.MaxTicks);
+    }
+
+    [TestMethod]
+    public void AnUntilStepReadsACountCondition()
+    {
+        var step = Step("fast-forward until count carrier = 2 max 9000");
+
+        Assert.IsInstanceOfType<ExpectCountStep>(step.Until);
+        Assert.AreEqual(2, ((ExpectCountStep)step.Until).Count);
+    }
+
+    [TestMethod]
+    public void AnUntilStepRefusesAFieldTheTicksDoNotChange()
+    {
+        Assert.AreEqual(
+            "play/t.play line 1: 'zoom' does not change with the ticks, use a game field",
+            Problem("fast-forward until zoom = 2 max 10")
+        );
+    }
+
+    [TestMethod]
+    public void AnUntilStepWithoutItsLimitIsTheUsage()
+    {
+        Assert.Contains(Usage, Problem("fast-forward until logs >= 5"));
+    }
+
+    [TestMethod]
+    public void AnUntilStepRunsUntilTheLogReachesTheCastle()
+    {
+        var game = WoodcuttingTests.World(true, out _);
+        var logs = game.CastleStock.Logs;
+
+        var problem = Step($"fast-forward until logs > {logs} max 20000").Run(game, () => Observed(game));
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(logs + 1, game.CastleStock.Logs);
     }
 }

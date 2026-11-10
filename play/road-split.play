@@ -35,7 +35,8 @@ expect-event flag place-flag cause placed
 expect-event flag split-roads cause placed
 shot split 24 5 3 3
 list split
-wait 40
+fast-forward until count waits-at-flag = 2 max 1000
+wait 0.3
 expect-count carrier = 2
 expect-at 24 5 carrier
 expect-at 26 5 carrier

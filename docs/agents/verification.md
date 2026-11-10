@@ -134,6 +134,8 @@ The entries follow, and the game applies them in the file's order:
 A refused or repeated entry fails the load with `<file>: <entry>: <reason>`. [The map form](../rules/map-form.md#a-hand-drawn-map)
 holds the grid letters. [The layout rules](../rules/layouts.md) hold the entry states.
 
-**The step.** `fast-forward <job> state <n> max <ticks>` and `fast-forward <job> carrying max <ticks>` tick the game
-without drawing until the condition holds. The game then waits for the next `shot` (`README.md`'s "Run a play script").
+**The step.** `fast-forward <job> state <n> max <ticks>`, `fast-forward <job> carrying max <ticks>`, and
+`fast-forward until <condition> max <ticks>` tick the game without drawing until the condition holds. An `until`
+condition is an `expect` on a game field or `count` with an `expect-count`'s arguments. A `wait` of more than a few
+seconds draws every frame; wait for the state under test with `fast-forward until` instead. The game then waits for the next `shot` (`README.md`'s "Run a play script").
 Zoom in with `scroll` before the shot where the figures are small.

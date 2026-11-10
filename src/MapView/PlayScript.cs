@@ -541,9 +541,14 @@ public sealed class PlayScript
     }
 
     // fast-forward <job> state <n> max <ticks> | fast-forward <job> carrying max <ticks>; <n> is decimal or 0x hex.
+    // | fast-forward until <expect field op value | expect-count what op n> max <ticks>.
     static (PlayStep?, string?) ParseFastForward(string[] args, int number)
     {
-        const string Usage = "'fast-forward' takes <job> state <n> max <ticks> or <job> carrying max <ticks>";
+        const string Usage =
+            "'fast-forward' takes <job> state <n> max <ticks>, <job> carrying max <ticks>, or until <condition> max <ticks>";
+        if (args.Length > 0 && args[0] == "until")
+            return ParseFastForwardUntil(args, number, Usage);
+
         var state = args.Length == 5 && args[1] == "state" && args[3] == "max";
         if (!state && !(args.Length == 4 && args[1] == "carrying" && args[2] == "max"))
             return (null, Usage);
@@ -568,6 +573,34 @@ public sealed class PlayScript
                 Line = number,
                 Job = job,
                 State = state ? n : null,
+                MaxTicks = max,
+                Text = "fast-forward " + string.Join(' ', args),
+            },
+            null
+        );
+    }
+
+    // until <field> <op> <value> max <ticks>, the field a game field; or until count <what> <op> <n> max <ticks>.
+    static (PlayStep?, string?) ParseFastForwardUntil(string[] args, int number, string usage)
+    {
+        if (args.Length < 6 || args[^2] != "max")
+            return (null, usage);
+        if (!Whole(args[^1], out var max))
+            return (null, $"'{args[^1]}' is not a whole number of zero or more");
+
+        var condition = args[1..^2];
+        var (until, problem) =
+            condition[0] == "count" ? ParseExpectCount(condition[1..], number) : ParseExpect(condition, number);
+        if (until is null)
+            return (null, problem);
+        if (until is ExpectStep expect && !PlayFields.IsGame(expect.Field))
+            return (null, $"'{expect.Field}' does not change with the ticks, use a game field");
+
+        return (
+            new FastForwardStep
+            {
+                Line = number,
+                Until = until,
                 MaxTicks = max,
                 Text = "fast-forward " + string.Join(' ', args),
             },

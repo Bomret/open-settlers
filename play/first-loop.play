@@ -1,5 +1,5 @@
 # Builds the first loop through the game view's own clicks: the castle, a flag, a road from the castle's flag to it,
-# and a woodcutter on the node north-west of that flag, then waits until a log has reached the castle.
+# and a woodcutter on the node north-west of that flag, then fast-forwards until a log has reached the castle.
 # Run it on the game view with seed 1234567812345678 and size 1:
 #   --game-view --seed 1234567812345678 --size 1 --play play/first-loop.play
 # On that map the castle stands at 21,4, so its flag is at 22,5. The flag goes to 27,5 on the same row, and the
@@ -45,7 +45,8 @@ dump woodcutter
 shot woodcutter
 
 # The castle starts with 4 logs; a fifth is the woodcutter's.
-wait 240
+fast-forward until logs >= 5 max 6000
+wait 0.3
 expect logs >= 5
 dump log
 shot log
