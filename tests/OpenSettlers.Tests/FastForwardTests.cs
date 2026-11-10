@@ -264,14 +264,120 @@ public sealed class FastForwardTests
     }
 
     [TestMethod]
-    public void AnUntilStepRunsUntilTheLogReachesTheCastle()
+    public void AnUntilStepOnAGameFieldListsNoThingsAndRunsUntilTheLogReachesTheCastle()
     {
         var game = WoodcuttingTests.World(true, out _);
         var logs = game.CastleStock.Logs;
+        var asked = new System.Collections.Generic.List<bool>();
 
-        var problem = Step($"fast-forward until logs > {logs} max 20000").Run(game, () => Observed(game));
+        var problem = Step($"fast-forward until logs >= {logs + 1} max 20000")
+            .Run(
+                game,
+                things =>
+                {
+                    asked.Add(things);
+
+                    return Observed(game);
+                }
+            );
 
         Assert.IsNull(problem);
         Assert.AreEqual(logs + 1, game.CastleStock.Logs);
+        Assert.IsNotEmpty(asked);
+        Assert.IsTrue(asked.All(things => !things), "no tick lists the things");
+    }
+
+    // What a play run observes of the game with its things listed where the condition asks for them.
+    static PlayState Listing(Game game, bool things, System.Collections.Generic.List<bool> asked)
+    {
+        asked.Add(things);
+
+        return Observed(game) with
+        {
+            Things = things ? Thing.Of(game, null) : null,
+        };
+    }
+
+    [TestMethod]
+    public void AnUntilCountSeesTheThingsAtEachTickAndStopsAtTheFirstTickTheCountHolds()
+    {
+        var first = FirstCut();
+        var game = WoodcuttingTests.World(true, out _);
+        var asked = new System.Collections.Generic.List<bool>();
+
+        var problem = Step("fast-forward until count cuts-tree >= 1 max 5000")
+            .Run(game, things => Listing(game, things, asked));
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(first, game.TickCount);
+        Assert.IsTrue(asked.All(things => things), "every tick lists the things");
+    }
+
+    [TestMethod]
+    public void AnUntilCountBelowStopsWhenTheCountDropsAndNotAtOnce()
+    {
+        var game = WoodcuttingTests.World(true, out _);
+        Step("fast-forward woodcutter state 0x11 max 5000").Run(game);
+        var cutting = game.TickCount;
+        var asked = new System.Collections.Generic.List<bool>();
+
+        var problem = Step("fast-forward until count cuts-tree < 1 max 5000")
+            .Run(game, things => Listing(game, things, asked));
+
+        Assert.IsNull(problem);
+        Assert.IsGreaterThan(cutting, game.TickCount);
+        Assert.IsFalse(Cutting(game));
+    }
+
+    [TestMethod]
+    public void AnExpectReadsNoThingsAndAnExpectCountDoes()
+    {
+        Assert.IsFalse(Step("fast-forward until logs >= 5 max 1").Until!.ReadsThings);
+        Assert.IsTrue(Step("fast-forward until count carrier = 2 max 1").Until!.ReadsThings);
+    }
+
+    [TestMethod]
+    public void AnUntilConditionThatHoldsAlreadyRunsNoTickAndBuildsOneState()
+    {
+        var game = WoodcuttingTests.World(true, out _);
+        var start = game.TickCount;
+        var asked = new System.Collections.Generic.List<bool>();
+
+        var problem = Step($"fast-forward until logs >= {game.CastleStock.Logs} max 5000")
+            .Run(game, things => Listing(game, things, asked));
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(start, game.TickCount);
+        Assert.HasCount(1, asked);
+    }
+
+    [TestMethod]
+    public void AnUntilMissNamesTheStepAndTheTicks()
+    {
+        var game = WoodcuttingTests.World(true, out _);
+
+        var problem = Step("fast-forward until logs >= 99 max 3").Run(game, _ => Observed(game));
+
+        Assert.AreEqual("fast-forward until logs >= 99 max 3: not reached after 3 ticks", problem);
+    }
+
+    [TestMethod]
+    public void TheMapViewAndAMissingGameRefuseAnUntilStepBeforeAnyStateIsBuilt()
+    {
+        var step = Step("fast-forward until logs >= 5 max 5");
+        var built = 0;
+        PlayState State(bool things)
+        {
+            built++;
+
+            return new PlayState(0, 0, 1, "", 1);
+        }
+
+        Assert.AreEqual(
+            "fast-forward needs the game view, use --game-view",
+            step.Apply(WoodcuttingTests.World(true, out _), false, new TickPacer(), State)
+        );
+        Assert.AreEqual("fast-forward: no game is running", step.Apply(null, true, new TickPacer(), State));
+        Assert.AreEqual(0, built);
     }
 }

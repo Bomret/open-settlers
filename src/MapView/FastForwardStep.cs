@@ -16,7 +16,7 @@ public sealed record FastForwardStep : PlayStep
     public Job? Job { get; init; }
 
     /// <summary>The condition an <c>until</c> step waits for: an <see cref="ExpectStep"/> or an <see cref="ExpectCountStep"/>.</summary>
-    public PlayStep? Until { get; init; }
+    public IPlayCondition? Until { get; init; }
 
     /// <summary>
     /// The code of the original's settler state the settler's activity stands for, as the play script writes it (a number of
@@ -42,15 +42,18 @@ public sealed record FastForwardStep : PlayStep
 
     /// <summary>
     /// Whether some settler of the job meets the condition, or the <see cref="Until"/> condition holds on what
-    /// <paramref name="state"/> observes.
+    /// <paramref name="state"/> observes. <paramref name="state"/> is called with the condition's
+    /// <see cref="IPlayCondition.ReadsThings"/>, so a condition on a game field lists no things.
     /// </summary>
-    public bool Holds(Game game, Func<PlayState>? state = null)
+    public bool Holds(Game game, Func<bool, PlayState>? state = null)
     {
         if (Until is not null)
         {
-            var now = state?.Invoke() ?? throw new InvalidOperationException("an until step needs the play state");
+            var now =
+                state?.Invoke(Until.ReadsThings)
+                ?? throw new InvalidOperationException("an until step needs the play state");
 
-            return (Until is ExpectStep expect ? now.Check(expect) : now.Check((ExpectCountStep)Until)) is null;
+            return Until.Check(now) is null;
         }
 
         foreach (var settler in game.Settlers)
@@ -68,7 +71,7 @@ public sealed record FastForwardStep : PlayStep
     /// Ticks the game until the condition holds, none where it holds already. Null when it holds; else the problem,
     /// naming the step and the ticks run.
     /// </summary>
-    public string? Run(Game game, Func<PlayState>? state = null)
+    public string? Run(Game game, Func<bool, PlayState>? state = null)
     {
         for (var ticks = 0; !Holds(game, state); ticks++)
         {
@@ -88,7 +91,7 @@ public sealed record FastForwardStep : PlayStep
     /// The step in a view: <see cref="Run"/> on its game, then holds <paramref name="pacer"/> until the next shot. A
     /// view with no game view (the map view) or no game refuses it; null when the step is met, else the problem.
     /// </summary>
-    public string? Apply(Game? game, bool gameView, TickPacer pacer, Func<PlayState>? state = null)
+    public string? Apply(Game? game, bool gameView, TickPacer pacer, Func<bool, PlayState>? state = null)
     {
         if (!gameView)
             return "fast-forward needs the game view, use --game-view";

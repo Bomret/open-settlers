@@ -132,8 +132,14 @@ public partial class MapViewControl : Control
     /// </summary>
     public int ObjectHeadroom => _objects?.LayerHeight ?? 0;
 
-    /// <summary>What a play run observes of the view now.</summary>
-    public PlayState Snapshot() =>
+    /// <summary>What a play run observes of the view now, the things listed.</summary>
+    public PlayState Snapshot() => Snapshot(true);
+
+    /// <summary>
+    /// What a play run observes of the view now; <paramref name="things"/> false leaves <see cref="PlayState.Things"/> null
+    /// and lists nothing.
+    /// </summary>
+    PlayState Snapshot(bool things) =>
         new(
             _camera.X,
             _camera.Y,
@@ -147,7 +153,7 @@ public partial class MapViewControl : Control
                 : ObjectDraws
                     .FlagGoodsOf(_game)
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => !good.IsNone)),
-            ListedThings(),
+            things ? ListedThings() : null,
             _gameView ? _game : null
         );
 
