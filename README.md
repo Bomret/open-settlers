@@ -2,7 +2,7 @@
 
 An open-source engine for Die Siedler (Blue Byte, 1993), built on Godot 4 with C#. It ships no game content: it reads the files of a Die Siedler install the player owns.
 
-Status: milestone M2. The engine reads the data files of an install and generates the map of a seed. It has three modes, the asset check, the asset browser, and the map view.
+Status: the engine reads the data files of an install, generates the map of a seed, and runs a game on it in the game view: a castle, flags, roads, a woodcutter's hut, carriers, and goods. The engine has five modes: the asset check, the asset browser, the map view, the game view, and seed info. [The roadmap](docs/roadmap.md) plans the milestones to the free-play release.
 
 ## Requirements
 
