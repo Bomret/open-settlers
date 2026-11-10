@@ -30,7 +30,8 @@ public partial class MapViewControl : Control
     // Screen pixels per unit of a touchpad swipe's delta.
     const float PanGestureSpeed = 10f;
 
-    // The layer limit of a GPU array texture.
+    // The layer limit the view assumes of a GPU array texture: the 2048 layers Metal allows and desktop Vulkan devices
+    // report. Nothing queries the device (the layers Vulkan guarantees are 256).
     const int MaxArrayLayers = 2048;
 
     readonly Install _install;
@@ -373,7 +374,10 @@ public partial class MapViewControl : Control
         {
             try
             {
-                _settlerFigures = new SettlerFigures(StepOffsets.Load(_install), _tables.FrameRows);
+                _settlerFigures = new SettlerFigures(
+                    (_source as HistoryEditionSource)?.Steps ?? StepOffsets.Load(_install),
+                    _tables.FrameRows
+                );
             }
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {

@@ -31,7 +31,9 @@ The decision weighed these options:
 The decision has these consequences:
 
 - No class of the map view outside the History Edition source reads the install, an archive, or an entry
-  number.
+  number. The one exception is the settlers' step offsets: `StepOffsets` reads entry 2 of the graphics
+  archive from the install under every graphics source, because the placement of a walking settler comes from
+  the install whichever source draws it. `GraphicsSourceBoundaryTests` names the archive types it may hold.
 - Converting palette indexes at load gives the same colors as the shader lookup, because the engine
   never changes the palette while a map is shown.
 - The simulation does not depend on the graphics source.

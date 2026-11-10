@@ -48,6 +48,9 @@ public sealed class HistoryEditionSource : IGraphicsSource
         SettlersProblem = settlersProblem;
     }
 
+    /// <summary>The step offsets the settler graphics parsed, or null where they did not load or no settler is drawn.</summary>
+    public StepOffsets? Steps => _settlers?.Steps;
+
     /// <summary>Why the road graphics did not load, or null. The source draws no road then and still draws the terrain.</summary>
     public string? RoadsProblem { get; }
 

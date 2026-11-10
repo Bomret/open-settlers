@@ -321,8 +321,8 @@ public sealed class MapPickingTests
         StringAssert.Contains(problem, "under the button bar");
     }
 
-    // A flag's sprite of 16 by 19 pixels stands on its node: its left edge 2 west of the node, its top 19 above it.
-    private static readonly ObjectImage FlagImage = new(16, 19, -2, -19, new byte[16 * 19 * 4]);
+    // A flag's box of 16 by 19 pixels stands on its node: its left edge 2 west of the node, its top 19 above it.
+    private static readonly MapPicking.PickBox FlagImage = new(16, 19, -2, -19);
 
     [TestMethod]
     [DynamicData(nameof(Scales))]

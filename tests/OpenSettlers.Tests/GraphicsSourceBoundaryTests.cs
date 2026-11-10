@@ -37,6 +37,19 @@ public sealed class GraphicsSourceBoundaryTests
     [DataRow("src/Viewer/MapViewControl.cs")]
     public void TheSharedTerrainRoadAndObjectCodeReadsNoRulesNoArchiveAndNoEntry(string path)
     {
+        AssertMentions(path, []);
+    }
+
+    // The settlers' step offsets come from the install under every graphics source (ADR 0014, Consequences; INV-0010): the
+    // class reads entry 2 of the graphics archive, and only through the archive reading names below.
+    [TestMethod]
+    public void TheStepOffsetsReadOnlyTheArchiveEntryOfTheWalkSequences()
+    {
+        AssertMentions("src/MapView/StepOffsets.cs", ["TerrainGraphics", "ObjectGraphics"]);
+    }
+
+    static void AssertMentions(string path, string[] excepted)
+    {
         var text = Read(path);
 
         foreach (
@@ -57,7 +70,10 @@ public sealed class GraphicsSourceBoundaryTests
             }
         )
         {
-            Assert.DoesNotContain(forbidden, text, $"{path} mentions {forbidden}");
+            if (Array.IndexOf(excepted, forbidden) < 0)
+            {
+                Assert.DoesNotContain(forbidden, text, $"{path} mentions {forbidden}");
+            }
         }
     }
 }

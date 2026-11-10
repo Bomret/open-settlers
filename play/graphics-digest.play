@@ -2,6 +2,8 @@
 # graphics source. Run it once under each and compare the dumps:
 #   sh tools/play-run.sh graphics-digest --game-view --seed 1234567812345678 --size 1 --fps 10 --graphics history-edition
 #   sh tools/play-run.sh graphics-digest --game-view --seed 1234567812345678 --size 1 --fps 10 --graphics open-settlers
+# Every click names a node (click-tile); a click on a flag's cloth away from its node is pinned by
+# TheFlagGeometryIsTheBoxOfTheHistoryEditionsFlagAtRest and the pick tests, not by this script.
 # On that map the castle stands at 21,4, so its flag is at 22,5. The woodcutter goes to 26,4, its flag to 27,5.
 wait 0.3
 click-tile 21 4
@@ -22,6 +24,9 @@ click-tile 27 5
 button Road
 wait 0.3
 dump built
+expect-at 21 4 building
+expect-at 26 4 building
+expect-at 24 5 road
 
 wait 30
 dump end

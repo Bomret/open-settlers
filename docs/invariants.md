@@ -76,6 +76,6 @@ Check: `play/graphics-digest.play` drives one seed and one click list through th
 
 Class: architecture
 Concepts: Graphics source, Entry
-Statement: The original's graphics encoding stays inside the History Edition source. Entry numbers, archive files, palette indexes, and the slope and figure tables of `Siedler1.exe` used to pick an image appear in no draw term and in no class of the map view outside that source (ADR 0014).
+Statement: The original's graphics encoding stays inside the History Edition source. Entry numbers, archive files, palette indexes, and the slope and figure tables of `Siedler1.exe` used to pick an image appear in no draw term and in no class of the map view outside that source (ADR 0014). The one exception is `StepOffsets`, which reads entry 2 of the graphics archive under every graphics source, because the placement of a walking settler comes from the install.
 Breaks: silently
-Check: reviewers check each draw term and every map view class outside the History Edition source. A test of the draw-list builders runs with no install-backed source.
+Check: `GraphicsSourceBoundaryTests` pins the classes of the map view outside the source and `StepOffsets`'s exception. Reviewers check each draw term and every map view class outside the History Edition source. A test of the draw-list builders runs with no install-backed source.

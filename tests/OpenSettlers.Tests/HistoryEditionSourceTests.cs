@@ -504,6 +504,26 @@ public sealed class HistoryEditionSourceTests
     }
 
     [TestMethod]
+    public void ASecondFigureWhoseFigureEntryTheArchiveLacksIsAnchoredByItsOwnOffsets()
+    {
+        using var fake = SettlerFake(payloads => payloads.Remove(1950));
+
+        var second = OpenWithSettlers(fake).Draw(Term(SettlerPart.SecondFigure))!;
+
+        Assert.AreEqual((5, 6), (second.Image!.OffsetX, second.Image.OffsetY));
+    }
+
+    [TestMethod]
+    public void ASecondFigureWhoseFigureEntryIsNoSpriteIsAnchoredByItsOwnOffsets()
+    {
+        using var fake = SettlerFake(payloads => payloads[1950] = [1, 2, 3]);
+
+        var second = OpenWithSettlers(fake).Draw(Term(SettlerPart.SecondFigure))!;
+
+        Assert.AreEqual((5, 6), (second.Image!.OffsetX, second.Image.OffsetY));
+    }
+
+    [TestMethod]
     public void ASettlerThatIsDrawnTwiceGivesTheSameImageInstance()
     {
         using var fake = SettlerFake();

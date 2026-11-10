@@ -28,9 +28,9 @@ public static class ObjectDraws
     /// <summary>
     /// The geometry of a flag for a click (<see cref="MapPicking.Pick"/>): the box of the History Edition's flag at its
     /// first animation step, 16 by 19 pixels with its top 18 above the node. It is the same under every graphics source
-    /// so that a click names the same node, and so the same command, under each (INV-0009); it holds no pixel.
+    /// so that a click names the same node, and so the same command, under each (INV-0009).
     /// </summary>
-    public static ObjectImage FlagGeometry { get; } = new(16, 19, 0, -18, []);
+    public static MapPicking.PickBox FlagGeometry { get; } = new(16, 19, 0, -18);
 
     /// <summary>The goods that lie on the flags of a game, by the flag's node; a flag with no good is left out.</summary>
     public static Dictionary<(int X, int Y), IReadOnlyList<Good>> FlagGoodsOf(Game game) =>

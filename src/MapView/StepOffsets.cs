@@ -34,14 +34,14 @@ public sealed class StepOffsets
 
     /// <summary>Reads the table from the install. Throws <see cref="System.IO.InvalidDataException"/> where the entry is absent.</summary>
     public static StepOffsets Load(Install install) =>
-        new(
-            ObjectGraphics.Read(
-                ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile)),
-                Entry,
-                "the walk sequences",
-                data => data.ToArray()
-            )
-        );
+        From(ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile)));
+
+    /// <summary>Reads the table from an archive already read. Throws <see cref="System.IO.InvalidDataException"/> where the entry is absent.</summary>
+    public static StepOffsets From(Archive archive) =>
+        new(ObjectGraphics.Read(archive, Entry, "the walk sequences", data => data.ToArray()));
+
+    /// <summary>The bytes of entry 2, which the History Edition's figure tables read the figure bytes from.</summary>
+    internal byte[] Sequences => _data;
 
     /// <summary>
     /// The step of <paramref name="frame"/> with <paramref name="timeLeft"/> clock units left of it, or null where the frame

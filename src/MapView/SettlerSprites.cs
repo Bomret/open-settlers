@@ -28,12 +28,18 @@ public sealed class SettlerSprites
     private readonly ObjectImage? _shadow;
     private readonly Dictionary<int, (ObjectImage Image, int First, int Second)?> _sprites = [];
     private readonly Dictionary<(int Entry, int Colour), ObjectImage?> _filled = [];
-    private readonly Dictionary<(int Entry, int Colour, int X, int Y), ObjectImage?> _anchored = [];
     private readonly Dictionary<(int X, int Y), ObjectImage?> _shadows = [];
     private readonly Dictionary<(SettlerPick Pick, bool Shadowed), ObjectDrawing?> _drawings = [];
 
-    private SettlerSprites(Archive archive, Palette palette, SettlerFigureTables tables, ObjectImage? shadow)
+    private SettlerSprites(
+        Archive archive,
+        Palette palette,
+        SettlerFigureTables tables,
+        ObjectImage? shadow,
+        StepOffsets steps
+    )
     {
+        Steps = steps;
         _archive = archive;
         _palette = palette;
         _tables = tables;
@@ -57,7 +63,7 @@ public sealed class SettlerSprites
 
         var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var palette = ObjectGraphics.Read(archive, 3, "the palette", data => PaletteFile.Read(data.Span));
-        var sequences = ObjectGraphics.Read(archive, 2, "the walk sequences", data => data.ToArray());
+        var steps = StepOffsets.From(archive);
         ObjectImage? shadow = null;
         if (archive.RowCount > ShadowEntry && archive[ShadowEntry].State != EntryState.Absent)
         {
@@ -69,8 +75,11 @@ public sealed class SettlerSprites
             );
         }
 
-        return new SettlerSprites(archive, palette, SettlerFigureTables.From(tables, sequences), shadow);
+        return new SettlerSprites(archive, palette, SettlerFigureTables.From(tables, steps.Sequences), shadow, steps);
     }
+
+    /// <summary>The step offsets of the walk sequences the tables read, parsed once for the view's settler placement.</summary>
+    public StepOffsets Steps { get; }
 
     /// <summary>
     /// What the tables pick for <paramref name="draw"/>: the sprite, with the settler's shadow before a figure; null where
@@ -99,26 +108,19 @@ public sealed class SettlerSprites
         // that does not read shifts nothing.
         var (shiftX, shiftY) =
             pick.ShiftedBy >= 0 && Loaded(pick.ShiftedBy) is { } figure ? (figure.First, figure.Second) : (0, 0);
-        if (Anchored(pick.Entry, pick.Colour, pick.Dx + shiftX, pick.Dy + shiftY) is not { } image)
+        if (Filled(pick.Entry, pick.Colour) is not { } filled)
         {
             return null;
         }
 
-        return new ObjectDrawing(image, shadowed ? Shadow(pick.Dx, pick.Dy) : null);
+        return new ObjectDrawing(
+            Moved(filled, pick.Dx + shiftX, pick.Dy + shiftY),
+            shadowed ? Shadow(pick.Dx, pick.Dy) : null
+        );
     }
 
-    // The image of an entry filled with a colour (-1 for none), hung moved by x and y; one instance for each.
-    private ObjectImage? Anchored(int entry, int colour, int x, int y)
-    {
-        if (!_anchored.TryGetValue((entry, colour, x, y), out var cached))
-        {
-            cached = Filled(entry, colour) is { } image ? Moved(image, x, y) : null;
-            _anchored[(entry, colour, x, y)] = cached;
-        }
-
-        return cached;
-    }
-
+    // The shadow mask hung moved by x and y; one instance for each, so that the picks that share a shadow share one layer of
+    // the view's array texture (ImageLayers keys an image by reference).
     private ObjectImage? Shadow(int x, int y)
     {
         if (_shadow is null)
