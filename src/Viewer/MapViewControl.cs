@@ -13,9 +13,9 @@ namespace OpenSettlers.Viewer;
 /// <summary>
 /// The map view (<c>--map</c>): a seed field and a size picker above the terrain of the generated map. The terrain
 /// is drawn on the GPU (ADR 0007): one triangle mesh per band of rows, the fill masks and textures as array
-/// textures of palette indices, and <c>Terrain.gdshader</c> looking each index up in a palette texture. The
-/// generated objects are quads of sprite layers (<c>Objects.gdshader</c>: the indices and the coverage in their own
-/// array textures) drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
+/// textures of RGBA pixels (the graphics load applies the palette), and <c>Terrain.gdshader</c> sampling them. The
+/// generated objects are quads of sprite layers (<c>Objects.gdshader</c>: RGBA array textures, alpha the coverage)
+/// drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
 /// wraps at the map's edges; the copies of <see cref="Camera.Copies"/> tile the plane around it. The mouse wheel,
 /// and the plus and minus keys, and a touchpad pinch change the <see cref="Zoom"/>; the wheel and the pinch keep
 /// the map point under the pointer in place. A two-finger touchpad swipe moves the camera.
@@ -323,7 +323,7 @@ public partial class MapViewControl : Control
             try
             {
                 _roadGraphics = RoadGraphics.Load(_install);
-                _roadMaterial = BuildRoadMaterial(_roadGraphics, graphics.PaletteRgba);
+                _roadMaterial = BuildRoadMaterial(_roadGraphics);
             }
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
@@ -344,6 +344,15 @@ public partial class MapViewControl : Control
             _objectMaterial = BuildObjectMaterial(_objects);
             _waterMaterial = (ShaderMaterial)_objectMaterial.Duplicate();
             _waterMaterial.Shader = GD.Load<Shader>("res://src/Viewer/Water.gdshader");
+            _waterMaterial.SetShaderParameter(
+                "surface",
+                new Color(
+                    _objects.SurfaceRgba[0] / 255f,
+                    _objects.SurfaceRgba[1] / 255f,
+                    _objects.SurfaceRgba[2] / 255f,
+                    _objects.SurfaceRgba[3] / 255f
+                )
+            );
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -379,7 +388,6 @@ public partial class MapViewControl : Control
                     _settlerMaterial = BuildObjectMaterial(
                         new ObjectGraphics
                         {
-                            PaletteRgba = _settlerGraphics.PaletteRgba,
                             LayerWidth = _settlerGraphics.LayerWidth,
                             LayerHeight = _settlerGraphics.LayerHeight,
                             Images = _settlerGraphics.Images,
@@ -921,8 +929,8 @@ public partial class MapViewControl : Control
             );
     }
 
-    // The terrain's shader with the road masks and textures in place of the terrain's, and the terrain's palette.
-    ShaderMaterial BuildRoadMaterial(RoadGraphics graphics, byte[] paletteRgba)
+    // The terrain's shader with the road masks and textures in place of the terrain's.
+    ShaderMaterial BuildRoadMaterial(RoadGraphics graphics)
     {
         var masks = new Godot.Collections.Array<Image>();
         foreach (var mask in graphics.Masks)
@@ -946,7 +954,7 @@ public partial class MapViewControl : Control
                     TerrainGraphics.LayerWidth,
                     TerrainGraphics.TextureHeight,
                     false,
-                    Image.Format.R8,
+                    Image.Format.Rgba8,
                     texture
                 )
             );
@@ -956,13 +964,9 @@ public partial class MapViewControl : Control
         maskArray.CreateFromImages(masks);
         var textureArray = new Texture2DArray();
         textureArray.CreateFromImages(textures);
-        var palette = ImageTexture.CreateFromImage(
-            Image.CreateFromData(256, 1, false, Image.Format.Rgba8, paletteRgba)
-        );
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Terrain.gdshader") };
         material.SetShaderParameter("masks", maskArray);
         material.SetShaderParameter("textures", textureArray);
-        material.SetShaderParameter("palette", palette);
 
         return material;
     }
@@ -991,7 +995,7 @@ public partial class MapViewControl : Control
                     TerrainGraphics.LayerWidth,
                     TerrainGraphics.TextureHeight,
                     false,
-                    Image.Format.R8,
+                    Image.Format.Rgba8,
                     texture
                 )
             );
@@ -1008,13 +1012,9 @@ public partial class MapViewControl : Control
         maskArray.CreateFromImages(masks);
         var textureArray = new Texture2DArray();
         textureArray.CreateFromImages(textures);
-        var palette = ImageTexture.CreateFromImage(
-            Image.CreateFromData(256, 1, false, Image.Format.Rgba8, graphics.PaletteRgba)
-        );
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Terrain.gdshader") };
         material.SetShaderParameter("masks", maskArray);
         material.SetShaderParameter("textures", textureArray);
-        material.SetShaderParameter("palette", palette);
 
         return material;
     }
@@ -1033,15 +1033,14 @@ public partial class MapViewControl : Control
         static Texture2DArray Layers(
             System.Collections.Generic.IReadOnlyList<ObjectImage> layers,
             int width,
-            int height,
-            System.Func<ObjectImage, byte[]> pixels
+            int height
         )
         {
             var images = new Godot.Collections.Array<Image>();
             foreach (var image in layers)
             {
                 images.Add(
-                    Image.CreateFromData(Math.Max(width, 1), Math.Max(height, 1), false, Image.Format.R8, pixels(image))
+                    Image.CreateFromData(Math.Max(width, 1), Math.Max(height, 1), false, Image.Format.Rgba8, image.Rgba)
                 );
             }
 
@@ -1054,29 +1053,11 @@ public partial class MapViewControl : Control
         // Graphics with no shadow array (the settlers') get one blank layer, so the shader has a texture to bind.
         var shadows =
             graphics.ShadowImages.Count > 0 ? graphics.ShadowImages : [ObjectGraphics.Pad(ObjectImage.Empty, 1, 1)];
-        var indices = Layers(graphics.Images, graphics.LayerWidth, graphics.LayerHeight, image => image.Indices);
-        var coverage = Layers(graphics.Images, graphics.LayerWidth, graphics.LayerHeight, image => image.Coverage);
-        var shadowIndices = Layers(
-            shadows,
-            graphics.ShadowLayerWidth,
-            graphics.ShadowLayerHeight,
-            image => image.Indices
-        );
-        var shadowCoverage = Layers(
-            shadows,
-            graphics.ShadowLayerWidth,
-            graphics.ShadowLayerHeight,
-            image => image.Coverage
-        );
-        var palette = ImageTexture.CreateFromImage(
-            Image.CreateFromData(256, 1, false, Image.Format.Rgba8, graphics.PaletteRgba)
-        );
+        var sprites = Layers(graphics.Images, graphics.LayerWidth, graphics.LayerHeight);
+        var shadowSprites = Layers(shadows, graphics.ShadowLayerWidth, graphics.ShadowLayerHeight);
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Objects.gdshader") };
-        material.SetShaderParameter("indices", indices);
-        material.SetShaderParameter("coverage", coverage);
-        material.SetShaderParameter("shadow_indices", shadowIndices);
-        material.SetShaderParameter("shadow_coverage", shadowCoverage);
-        material.SetShaderParameter("palette", palette);
+        material.SetShaderParameter("sprites", sprites);
+        material.SetShaderParameter("shadow_sprites", shadowSprites);
 
         return material;
     }

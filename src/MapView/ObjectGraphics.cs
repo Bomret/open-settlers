@@ -8,7 +8,7 @@ using OpenSettlers.Formats;
 namespace OpenSettlers.MapView;
 
 /// <summary>
-/// The object sprites of an install as the GPU takes them: the game palette as a lookup texture and each sprite
+/// The object sprites of an install as the GPU takes them: each sprite
 /// (entries 1250 to 1369, the sprites of codes 8 to 127) as an <see cref="ObjectImage"/>, padded to one
 /// <see cref="LayerWidth"/> x <see cref="LayerHeight"/> layer so they fit one array texture.
 /// </summary>
@@ -19,8 +19,14 @@ public sealed class ObjectGraphics
     /// </summary>
     public const int EntryCount = ObjectSprites.LastCode - ObjectSprites.FirstCode + 1;
 
-    /// <summary>The palette of entry 3 as <see cref="PaletteTexture.Rgba"/>.</summary>
-    public required byte[] PaletteRgba { get; init; }
+    /// <summary>
+    /// The color of palette index <see cref="SurfaceIndex"/> as four bytes (red, green, blue, alpha): the surface the
+    /// water sprites draw over (<c>docs/rules/graphics-images.md</c>, "Sprites drawn over color 8").
+    /// </summary>
+    public byte[] SurfaceRgba { get; init; } = new byte[4];
+
+    /// <summary>The palette index of the water surface.</summary>
+    public const int SurfaceIndex = 8;
 
     /// <summary>The widest sprite; the width of every layer.</summary>
     public required int LayerWidth { get; init; }
@@ -102,7 +108,7 @@ public sealed class ObjectGraphics
             images.Add(
                 archive[entry].State == EntryState.Absent
                     ? ObjectImage.Empty
-                    : Read(archive, entry, "the sprite", data => ObjectImage.From(SpriteFile.Read(data)))
+                    : Read(archive, entry, "the sprite", data => ObjectImage.From(SpriteFile.Read(data), palette))
             );
         }
 
@@ -113,7 +119,7 @@ public sealed class ObjectGraphics
                     archive,
                     ObjectSprites.CastleEntry,
                     "the castle sprite",
-                    data => ObjectImage.From(SpriteFile.Read(data))
+                    data => ObjectImage.From(SpriteFile.Read(data), palette)
                 )
         );
 
@@ -124,7 +130,7 @@ public sealed class ObjectGraphics
                     archive,
                     ObjectSprites.FlagEntry,
                     "the flag sprite",
-                    data => ObjectImage.From(SpriteFile.Read(data))
+                    data => ObjectImage.From(SpriteFile.Read(data), palette)
                 )
         );
 
@@ -135,7 +141,7 @@ public sealed class ObjectGraphics
                     archive,
                     ObjectSprites.WoodcutterEntry,
                     "the woodcutter's hut sprite",
-                    data => ObjectImage.From(SpriteFile.Read(data))
+                    data => ObjectImage.From(SpriteFile.Read(data), palette)
                 )
         );
 
@@ -148,7 +154,12 @@ public sealed class ObjectGraphics
             images.Add(
                 archive[entry].State == EntryState.Absent
                     ? ObjectImage.Empty
-                    : Read(archive, entry, "the good's sprite", data => ObjectImage.From(SpriteFile.Read(data)))
+                    : Read(
+                        archive,
+                        entry,
+                        "the good's sprite",
+                        data => ObjectImage.From(SpriteFile.Read(data), palette)
+                    )
             );
         }
 
@@ -161,7 +172,7 @@ public sealed class ObjectGraphics
             images.Add(
                 archive[entry].State == EntryState.Absent
                     ? ObjectImage.Empty
-                    : Read(archive, entry, "the water sprite", data => ObjectImage.From(SpriteFile.Read(data)))
+                    : Read(archive, entry, "the water sprite", data => ObjectImage.From(SpriteFile.Read(data), palette))
             );
         }
 
@@ -174,7 +185,7 @@ public sealed class ObjectGraphics
             images.Add(
                 archive[entry].State == EntryState.Absent
                     ? ObjectImage.Empty
-                    : Read(archive, entry, "the flag sprite", data => ObjectImage.From(SpriteFile.Read(data)))
+                    : Read(archive, entry, "the flag sprite", data => ObjectImage.From(SpriteFile.Read(data), palette))
             );
         }
 
@@ -184,7 +195,7 @@ public sealed class ObjectGraphics
             var shadow = entry + ShadowOffset;
             return shadow >= archive.RowCount || archive[shadow].State == EntryState.Absent
                 ? ObjectImage.Empty
-                : Read(archive, shadow, "the shadow mask", data => ObjectImage.Shadow(MaskFile.Read(data)));
+                : Read(archive, shadow, "the shadow mask", data => ObjectImage.Shadow(MaskFile.Read(data), palette));
         }
 
         var shadows = Enumerable
@@ -212,7 +223,7 @@ public sealed class ObjectGraphics
 
         return new ObjectGraphics
         {
-            PaletteRgba = PaletteTexture.Rgba(palette),
+            SurfaceRgba = palette.Rgba(SurfaceIndex).ToArray(),
             LayerWidth = width,
             LayerHeight = height,
             Images = padded,
@@ -225,18 +236,15 @@ public sealed class ObjectGraphics
     // The pixel arrays grow to the layer size at the top left; Width and Height stay the sprite's own.
     internal static ObjectImage Pad(ObjectImage image, int width, int height)
     {
-        var indices = new byte[width * height];
-        var coverage = new byte[width * height];
+        var rgba = new byte[width * height * 4];
         for (var y = 0; y < image.Height; y++)
         {
-            Array.Copy(image.Indices, y * image.Width, indices, y * width, image.Width);
-            Array.Copy(image.Coverage, y * image.Width, coverage, y * width, image.Width);
+            Array.Copy(image.Rgba, y * image.Width * 4, rgba, y * width * 4, image.Width * 4);
         }
 
         return image with
         {
-            Indices = indices,
-            Coverage = coverage,
+            Rgba = rgba,
         };
     }
 

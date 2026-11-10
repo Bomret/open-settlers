@@ -10,9 +10,9 @@ namespace OpenSettlers.MapView;
 public sealed record MaskImage(int Width, int Height, int OffsetX, int OffsetY, byte[] Layer);
 
 /// <summary>
-/// The terrain graphics of an install as the GPU takes them: the game palette as a lookup texture, each fill mask
+/// The terrain graphics of an install as the GPU takes them: each fill mask
 /// (entries 60 to 221, an empty layer where the archive has none and no triangle needs it) as a <see cref="LayerWidth"/> x <see cref="MaskLayerHeight"/> layer holding 255 on a covered
-/// pixel, and each fill texture (entries 260 to 292) as a 32 x 20 layer of palette indices.
+/// pixel, and each fill texture (entries 260 to 292) as a 32 x 20 layer of RGBA pixels, the palette applied at load.
 /// </summary>
 public sealed class TerrainGraphics
 {
@@ -40,13 +40,10 @@ public sealed class TerrainGraphics
     /// <summary>The height of a texture layer; the texture repeats down after this many rows.</summary>
     public const int TextureHeight = 20;
 
-    /// <summary>The palette of entry 3 as <see cref="PaletteTexture.Rgba"/>.</summary>
-    public required byte[] PaletteRgba { get; init; }
-
     /// <summary>The masks from <see cref="FirstMask"/> on, one per entry.</summary>
     public required IReadOnlyList<MaskImage> Masks { get; init; }
 
-    /// <summary>The textures from <see cref="FirstTexture"/> on, 32 x 20 palette indices each.</summary>
+    /// <summary>The textures from <see cref="FirstTexture"/> on, 32 x 20 RGBA pixels each, four bytes a pixel, all opaque.</summary>
     public required IReadOnlyList<byte[]> Textures { get; init; }
 
     /// <summary>The layer of a mask entry.</summary>
@@ -83,15 +80,10 @@ public sealed class TerrainGraphics
         var textures = new List<byte[]>();
         for (var entry = FirstTexture; entry <= LastTexture; entry++)
         {
-            textures.Add(Entry(archive, entry, "the texture", data => ToTexture(GraphicFile.ReadRaw(data))));
+            textures.Add(Entry(archive, entry, "the texture", data => ToTexture(GraphicFile.ReadRaw(data), palette)));
         }
 
-        return new TerrainGraphics
-        {
-            PaletteRgba = PaletteTexture.Rgba(palette),
-            Masks = masks,
-            Textures = textures,
-        };
+        return new TerrainGraphics { Masks = masks, Textures = textures };
     }
 
     internal static T Entry<T>(Archive archive, int number, string what, Func<ReadOnlyMemory<byte>, T> read)
@@ -133,7 +125,7 @@ public sealed class TerrainGraphics
         return new MaskImage(mask.Width, mask.Height, mask.Header.OffsetX, mask.Header.OffsetY, layer);
     }
 
-    internal static byte[] ToTexture(RawImage image)
+    internal static byte[] ToTexture(RawImage image, Palette palette)
     {
         if (image.Header.Width != LayerWidth || image.Header.Height != TextureHeight)
         {
@@ -142,6 +134,12 @@ public sealed class TerrainGraphics
             );
         }
 
-        return image.Pixels.ToArray();
+        var rgba = new byte[image.Pixels.Length * 4];
+        for (var i = 0; i < image.Pixels.Length; i++)
+        {
+            palette.Rgba(image.Pixels.Span[i]).CopyTo(rgba.AsSpan(i * 4, 4));
+        }
+
+        return rgba;
     }
 }

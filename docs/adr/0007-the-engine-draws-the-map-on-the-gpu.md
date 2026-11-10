@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0014](0014-the-map-view-draws-through-a-graphics-source.md)
+
 The engine draws the map's terrain and objects with Godot on the GPU. It does not copy the original's
 software drawing. The terrain triangles are meshes. The original's fill masks and textures, and the
 object sprites, are textures that hold palette indexes. A shader looks each index up in the palette, so
