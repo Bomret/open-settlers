@@ -262,6 +262,15 @@ public sealed class FastForwardTests
     }
 
     [TestMethod]
+    [DataRow("fast-forward until nosuch >= 1 max 5", "unknown field 'nosuch', use ")]
+    [DataRow("fast-forward until count carrier = max 5", "'expect-count' takes 3 arguments, found 2")]
+    [DataRow("fast-forward until count carrier = x max 5", "'x' is not a whole number of zero or more")]
+    public void AnUntilStepRefusesAMalformedCondition(string text, string reason)
+    {
+        Assert.StartsWith("play/t.play line 1: " + reason, Problem(text));
+    }
+
+    [TestMethod]
     public void AnUntilStepWithoutItsLimitIsTheUsage()
     {
         Assert.Contains(Usage, Problem("fast-forward until logs >= 5"));
@@ -289,6 +298,32 @@ public sealed class FastForwardTests
         Assert.AreEqual(logs + 1, game.CastleStock.Logs);
         Assert.IsNotEmpty(asked);
         Assert.IsTrue(asked.All(things => !things), "no tick lists the things");
+    }
+
+    [TestMethod]
+    public void AnUntilFlagGoodsStepStopsAtTheFirstTickTheFlagHoldsTheCount()
+    {
+        static bool Holds(Game game) => game.Flags[3].Places.Any(place => !place.IsEmpty);
+        var reference = WoodcuttingTests.World(true, out _);
+        while (!Holds(reference))
+            reference.Tick();
+        var game = WoodcuttingTests.World(true, out _);
+        var flag = game.Flags[3];
+
+        var problem = Step($"fast-forward until flag-goods:{flag.X},{flag.Y} = 1 max 6000")
+            .Run(
+                game,
+                _ =>
+                    Observed(game) with
+                    {
+                        FlagGoods = ObjectDraws
+                            .FlagGoodsOf(game)
+                            .ToDictionary(e => e.Key, e => e.Value.Count(good => !good.IsNone)),
+                    }
+            );
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(reference.TickCount, game.TickCount);
     }
 
     // What a play run observes of the game with its things listed where the condition asks for them.
