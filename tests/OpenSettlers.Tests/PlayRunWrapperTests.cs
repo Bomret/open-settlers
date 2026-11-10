@@ -120,6 +120,7 @@ public class PlayRunWrapperTests
         Put("global.json", "{}");
         Put("play/demo.play", "wait 1");
         Put("play/.cache.play", "wait 1");
+        Put("content/open-settlers/manifest.json", "{}");
         Put("README.md", "readme");
         Put("tests/T.cs", "class T {}");
         Put(".gitignore", "play-out/\nsrc/ignored.txt\n");
@@ -487,6 +488,51 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
+    public void GodotGetsTheGraphicsFlagOnlyWhereTheRunGaveOne()
+    {
+        string[] Launch() => File.ReadAllLines(Path.Combine(fake, "args"));
+
+        Run([.. Args, "--graphics", "open-settlers"]);
+        CollectionAssert.AreEqual(
+            new[] { "--size", "2", "--graphics", "open-settlers", "--play", "play/demo.play" },
+            Launch()[^6..]
+        );
+
+        Run(["demo", "--fps", "10", "--graphics", "history-edition"]);
+        CollectionAssert.AreEqual(new[] { "--graphics", "history-edition" }, Launch()[^4..^2]);
+
+        Run(["demo", "--fps", "10", "--seed", "abc"]);
+        CollectionAssert.DoesNotContain(Launch(), "--graphics");
+    }
+
+    // The two sources never share a result, and the default is the History Edition: naming it changes nothing. A
+    // change to the content set, a new file in it included, starts Godot again.
+    [TestMethod]
+    public void TheGraphicsSourceAndTheContentSetAreHashed()
+    {
+        string[] History = [.. Args, "--graphics", "history-edition"];
+        string[] Own = [.. Args, "--graphics", "open-settlers"];
+
+        Run(Args);
+        Run(History);
+        Assert.AreEqual(1, Calls, "naming the History Edition is not the default");
+        Run(Own);
+        Assert.AreEqual(2, Calls, "an open-settlers run reused a History Edition result");
+        Run(Own);
+        Assert.AreEqual(2, Calls, "a repeated open-settlers call did not reuse");
+
+        Write("content/open-settlers/manifest.json", "{ }");
+        Run(Own);
+        Assert.AreEqual(3, Calls, "an edited manifest did not start Godot");
+        Write("content/open-settlers/terrain/new.png", "png");
+        Run(Own);
+        Assert.AreEqual(4, Calls, "a new image did not start Godot");
+        File.Delete(Path.Combine(repo, "content/open-settlers/manifest.json"));
+        Run(Own);
+        Assert.AreEqual(5, Calls, "a removed manifest did not start Godot");
+    }
+
+    [TestMethod]
     public void TheLogLineNamesTheModeAndTheLayout()
     {
         Write("play/a.layout", "layout");
@@ -572,6 +618,8 @@ public class PlayRunWrapperTests
     [DataRow("missing layout", "demo", "--layout", "play/none.layout", "--fps", "10")]
     [DataRow("layout with no value", "demo", "--fps", "10", "--layout")]
     [DataRow("empty layout", "demo", "--layout", "", "--fps", "10")]
+    [DataRow("unknown graphics source", "demo", "--graphics", "retro", "--fps", "10")]
+    [DataRow("graphics with no value", "demo", "--fps", "10", "--graphics")]
     [DataRow("no args")]
     public void BadArgumentsExitTwoAndLeaveNoTrace(string reason, params string[] args) =>
         AssertUsageError(Run(args), reason);
