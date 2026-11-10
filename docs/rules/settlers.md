@@ -219,14 +219,20 @@ door, fells, and walks back with a hat, an axe, and a log.
 
 **In the engine** (`SettlerFigures`, `StepOffsets`, `SettlerFigureTables`, `SettlerSprites`, `src/MapView`): a settler of the job 0,
 5, or 11 in state 2, 3, 4, 5, 0xe, 0x10, 0x11, or 0x19 is drawn. `SettlerFigures` places it and orders it under every graphics
-source, and emits three draw terms for it: the figure, the overlay, and the second figure. A term names the settler's job,
-activity, heading, frame, animation step (the time left), player, and carried good; it holds no entry and no colour index
-(INV-0010). `SettlerFigures` reads the dx and dy of each step from the typed `StepOffsets` table (entry 2 of the archive, the only
-data it reads from the graphics archive) and the rows of the frames from the program's tables. The History Edition source
-(`HistoryEditionSource`, `SettlerFigureTables`, `SettlerSprites`) picks the sprites: the ones the frame's sequence names for the
-time left, by the program's figure tables. It reads them from the install's archive when first asked, fills the overlay with the
-player's colour, anchors the second figure by the header of its figure, and draws the shadow before each figure. A source draws
-nothing for a term it has no image for. A settler in any other state has no record:
+source. It emits three draw terms for it: the figure, the overlay, and the second figure.
+
+A term names the settler's job, activity, heading, frame, animation step (the time left), player, and carried good. It holds no
+entry and no colour index (INV-0010).
+
+`SettlerFigures` reads the dx and dy of each step from the typed `StepOffsets` table. That table is entry 2 of the archive and the
+only data the code reads from the graphics archive. The rows of the frames come from the program's tables.
+
+The History Edition source (`HistoryEditionSource`, `SettlerFigureTables`, `SettlerSprites`) picks the sprites. It takes the ones
+the frame's sequence names for the time left, by the program's figure tables. It reads them from the install's archive when first
+asked and fills the overlay with the player's colour. It anchors the second figure by the header of its figure and draws the shadow
+before each figure. A source draws nothing for a term it has no image for.
+
+A settler in any other state has no record:
 - a carrier that waits next to a flag (0x42),
 - a carrier told to go home (0x44, 0x45),
 - a settler that claims its node on its way home (0x1c),

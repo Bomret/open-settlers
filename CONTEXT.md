@@ -17,6 +17,10 @@ A graphics file of an install, such as `loca/SPAD.PA`, that holds numbered entri
 in it is one asset.
 _Avoid_: pack, container, PA file
 
+**Entry**
+One numbered record in an archive of an install. A draw term never holds its number (INV-0010).
+_Avoid_: record, slot
+
 **Asset kind**
 What an asset is, such as a palette, a sprite, a sound, or rule data. The routine of the program that
 reads an asset decides its kind; nothing in the asset itself states it.
@@ -82,7 +86,8 @@ _Avoid_: sprite ID, entry, frame number
 
 **Content set**
 A folder under `content/` that holds a graphics source as PNG images and one JSON manifest mapping draw terms
-to images and anchors (ADR 0015). It holds graphics only; rules always come from `Siedler1.exe`.
+to images and anchors (ADR 0015). It holds graphics only; rules always come from `Siedler1.exe`. `--graphics`
+names the shipped set `open-settlers`; a new folder under `content/` is not selectable.
 _Avoid_: mod, pack, theme
 
 **Entry state**

@@ -169,7 +169,7 @@ scan's cursor.
 
 `src/MapView/SettlerFigures.cs` places a waiting carrier as the tile pass does, and the History Edition source
 (`SettlerFigureTables`) picks its figure and offset from the tables `ProgramTablesImporter` reads
-(`IdlePhases`, `IdleFigures`, `IdleOffsets`); the term holds the node's column, lake mark, and roads. The engine keeps no mark byte: a carrier of job 0 in states 0x42 to 0x45 stands
+(`IdlePhases`, `IdleFigures`, `IdleOffsets`). The term holds the node's column, lake mark, and roads. The engine keeps no mark byte: a carrier of job 0 in states 0x42 to 0x45 stands
 for the mark, since the carrier enters those states only from 0x42 and leaves them only by taking its node. **Stand-in:** the
 original picks the phase by the address of the node's record; the engine picks it by the node's column, which gives the
 same phase where the map buffer starts on a multiple of 64 bytes.

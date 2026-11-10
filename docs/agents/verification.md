@@ -56,8 +56,8 @@ sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--s
 Without `--game-view` the wrapper runs the map view. `--game-view` runs the game view on `--seed` and `--size`.
 `--layout <file>` runs the game view on a layout and implies `--game-view`. A layout holds its own seed and size.
 The wrapper exits 2 on `--layout` with `--seed` or `--size`, on an empty value, and on a missing file.
-`--graphics history-edition|open-settlers` picks the graphics source of the run (the History Edition without the flag);
-another value, a missing value, and a repeat exit 2.
+`--graphics history-edition|open-settlers` picks the graphics source of the run (the History Edition without the flag).
+Another value, a missing value, and a repeat exit 2.
 `mise run play -- <stem> ...` runs the same wrapper. The wrapper clears `play-out/<stem>/`, builds
 `OpenSettlers.csproj`, and runs the Godot command `README.md`'s "Run a play script" gives, through
 `mise exec`. Read the dumps and open the screenshots in `play-out/<stem>/`. Exit 0 is a finished run, 1 a
