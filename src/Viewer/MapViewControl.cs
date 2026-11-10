@@ -96,6 +96,7 @@ public partial class MapViewControl : Control
     readonly System.Collections.Generic.List<MeshInstance2D> _waterNodes = [];
     string? _graphicsProblem;
     string? _objectsProblem;
+    string? _settlersProblem;
     string? _tablesProblem;
     bool _dragging;
     readonly ClickGesture _gesture = new();
@@ -381,6 +382,7 @@ public partial class MapViewControl : Control
             }
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
+                _settlersProblem = e.Message;
                 GD.PrintErr($"map view: the settlers' sprites: {e.Message}");
             }
         }
@@ -414,6 +416,7 @@ public partial class MapViewControl : Control
 
         if (source.SettlersProblem is not null)
         {
+            _settlersProblem = source.SettlersProblem;
             GD.PrintErr($"map view: the settlers' sprites: {source.SettlersProblem}");
         }
     }
@@ -728,14 +731,13 @@ public partial class MapViewControl : Control
 
     void ShowMessage()
     {
-        _message.Text = _graphicsProblem is not null
-            ? $"Cannot draw the map: {_graphicsProblem}"
-            : _state.Problem
-                ?? (
-                    _objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}"
-                    : _roadsProblem is not null ? $"Cannot draw the roads: {_roadsProblem}"
-                    : ""
-                );
+        _message.Text = ViewMessage.Of(
+            graphics: _graphicsProblem,
+            state: _state.Problem,
+            objects: _objectsProblem,
+            roads: _roadsProblem,
+            settlers: _settlersProblem
+        );
         _message.Modulate = new Color(1, 0.4f, 0.4f);
     }
 
