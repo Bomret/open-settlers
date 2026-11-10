@@ -74,7 +74,19 @@ public sealed class OpenSettlersSourceTests
             var width = int.Parse(text[..cross]);
             var height = int.Parse(text[(cross + 1)..colon]);
             var rgba = new byte[width * height * 4];
-            Array.Fill(rgba, byte.Parse(text[(colon + 1)..]));
+            if (text[(colon + 1)..] == "mark")
+            {
+                // The first pixel carries the mark colour, every other pixel is (10, 20, 30).
+                for (var pixel = 0; pixel < width * height; pixel++)
+                {
+                    byte[] value = pixel == 0 ? [255, 0, 255, 255] : [10, 20, 30, 255];
+                    value.CopyTo(rgba, pixel * 4);
+                }
+            }
+            else
+            {
+                Array.Fill(rgba, byte.Parse(text[(colon + 1)..]));
+            }
 
             return new DecodedImage(width, height, rgba);
         }
@@ -85,7 +97,14 @@ public sealed class OpenSettlersSourceTests
             .Range(0, 16)
             .SelectMany(code => new[] { $"terrain/{code}/upper", $"terrain/{code}/lower" })
             .Concat(["road/east", "road/south-east", "road/south", "object/flag"])
-            .Concat(Enumerable.Range(8, 120).Select(code => $"object/{code}"));
+            .Concat(Enumerable.Range(8, 120).Select(code => $"object/{code}"))
+            .Concat(["building/castle", "building/woodcutter"])
+            .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
+            .Concat(
+                from job in new[] { "carrier", "woodcutter", "type-one-hut" }
+                from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
+                select $"settler/{job}/{kind}"
+            );
 
     static TerrainTriangle Triangle(int code, bool upper) => new(0, 0, upper, new Terrain(code), 0, 0, 0, 100, 50);
 
@@ -169,7 +188,10 @@ public sealed class OpenSettlersSourceTests
         var drawing = source.Draw(new MapObjectDraw(0, 0, 0, new MapObject(13), 0))!;
 
         Assert.IsNull(drawing.Shadow);
-        Assert.AreEqual((5, 7, -2, -6), (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY));
+        Assert.AreEqual(
+            (5, 7, -2, -6),
+            (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY)
+        );
         Assert.AreSame(drawing.Image, source.Draw(new MapObjectDraw(5, 9, 9, new MapObject(13), 77))!.Image);
     }
 
@@ -211,30 +233,247 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
-    public void TheTermsTheSetHasNoArtForYetDrawNothingAndLeaveNoHeadroom()
+    public void TheWaterRippleDrawsNothing()
+    {
+        using var folder = new ContentFolder();
+
+        Assert.IsNull(folder.Load().Draw(new WaterRipple(0, 0, 0, 0, 0)));
+    }
+
+    [TestMethod]
+    [DataRow(0x18, "building/castle")]
+    [DataRow(2, "building/woodcutter")]
+    public void ABuildingDrawsItsOwnImageWithNoShadow(int type, string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Png("building.png", "9x8:6");
+        folder.Entries[key] = ContentFolder.Entry("building.png", "-4, -7");
+
+        var drawing = folder.Load().Draw(new BuildingDraw(0, 0, 0, new BuildingType(type)))!;
+
+        Assert.IsNull(drawing.Shadow);
+        Assert.AreEqual(
+            (9, 8, -4, -7),
+            (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY)
+        );
+    }
+
+    [TestMethod]
+    public void ABuildingTypeTheGameDrawsNoBuildingForDrawsNothing()
+    {
+        using var folder = new ContentFolder();
+
+        Assert.IsNull(folder.Load().Draw(new BuildingDraw(0, 0, 0, BuildingType.None)));
+    }
+
+    [TestMethod]
+    [DataRow("building/castle")]
+    [DataRow("building/woodcutter")]
+    public void ABuildingKeyTheManifestLacksIsRefusedByFileAndKey(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    [TestMethod]
+    public void AGoodDrawsTheImageOfItsLowFiveBitsWithNoShadow()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("log.png", "4x2:7");
+        folder.Entries["good/7"] = ContentFolder.Entry("log.png", "-2, -2");
+        var source = folder.Load();
+
+        var drawing = source.Draw(new GoodAtFlag(0, 0, 0, new Good(7)))!;
+
+        Assert.IsNull(drawing.Shadow);
+        Assert.AreEqual(
+            (4, 2, -2, -2),
+            (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY)
+        );
+        Assert.AreSame(drawing.Image, source.Draw(new GoodAtFlag(0, 0, 0, new Good(7 + 32)))!.Image);
+    }
+
+    [TestMethod]
+    [DataRow("good/0")]
+    [DataRow("good/31")]
+    public void AGoodKeyTheManifestLacksIsRefusedByFileAndKey(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    static SettlerDraw Settler(
+        Job job,
+        Activity activity,
+        SettlerPart part = SettlerPart.Figure,
+        Heading? heading = null,
+        int frame = 0,
+        int step = 0,
+        int player = 0,
+        Good? carried = null
+    ) => new(0, 0, 0, part, job, activity, heading, frame, step, player, carried ?? Good.None);
+
+    static Activity Walking(Heading? heading = null) => new WalksRoad(null, heading ?? new Heading(0));
+
+    static Activity Cutting() => new Cuts(new Vector(0, 0), false, 0, 0);
+
+    [TestMethod]
+    public void AWoodcutterWalkingCuttingAndCarryingEachDrawsItsOwnFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("cuts.png", "2x2:2");
+        folder.Png("carries.png", "2x2:3");
+        folder.Entries["settler/woodcutter/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/woodcutter/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        folder.Entries["settler/woodcutter/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        var source = folder.Load();
+
+        var walks = source.Draw(Settler(Job.Woodcutter, Walking()))!.Image!;
+        var cuts = source.Draw(Settler(Job.Woodcutter, Cutting()))!.Image!;
+        var carries = source.Draw(Settler(Job.Woodcutter, Walking(), carried: new Good(7)))!.Image!;
+
+        Assert.AreEqual((1, 2, 3), (walks.Rgba[0], cuts.Rgba[0], carries.Rgba[0]));
+    }
+
+    [TestMethod]
+    public void TheFrameOfAJobAndActivityStaysTheSameAcrossStepsFramesAndHeadings()
     {
         using var folder = new ContentFolder();
         var source = folder.Load();
-        var settler = new SettlerDraw(
-            0,
-            0,
-            0,
-            SettlerPart.Figure,
-            Job.Carrier,
-            new WalksRoad(null, new Heading(0)),
-            null,
-            0,
-            0,
-            0,
-            Good.None
-        );
 
-        Assert.IsNull(source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0)));
-        Assert.IsNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Castle)));
-        Assert.IsNull(source.Draw(new GoodAtFlag(0, 0, 0, new Good(1))));
-        Assert.IsNull(source.Draw(settler));
-        Assert.IsNull(source.Draw(new WaterRipple(0, 0, 0, 0, 0)));
-        Assert.AreEqual(0, source.ObjectHeadroom);
+        var first = source.Draw(Settler(Job.Woodcutter, Walking(new Heading(0)), frame: 7, step: 0))!.Image;
+        var other = source.Draw(Settler(Job.Woodcutter, Walking(new Heading(3)), frame: 31, step: 40))!.Image;
+        var waiting = source.Draw(Settler(Job.Woodcutter, new WaitsOutStep(Walking()), step: 5))!.Image;
+
+        Assert.AreSame(first, other);
+        Assert.AreSame(first, waiting);
+    }
+
+    [TestMethod]
+    public void ASettlerDrawsItsFigureOnlyAndNoShadow()
+    {
+        using var folder = new ContentFolder();
+        var source = folder.Load();
+
+        Assert.IsNull(source.Draw(Settler(Job.Carrier, Walking()))!.Shadow);
+        Assert.IsNull(source.Draw(Settler(Job.Carrier, Walking(), SettlerPart.Overlay)));
+        Assert.IsNull(source.Draw(Settler(Job.Carrier, Walking(), SettlerPart.SecondFigure)));
+    }
+
+    [TestMethod]
+    public void AJobTheGameDrawsNoFigureForDrawsNothing()
+    {
+        using var folder = new ContentFolder();
+
+        Assert.IsNull(folder.Load().Draw(Settler(Job.Builder, Walking())));
+    }
+
+    [TestMethod]
+    [DataRow("carrier")]
+    [DataRow("woodcutter")]
+    [DataRow("type-one-hut")]
+    public void EachJobDrawsAnImageForEveryActivityKind(string job)
+    {
+        using var folder = new ContentFolder();
+        var source = folder.Load();
+        var jobs = new Dictionary<string, Job>
+        {
+            ["carrier"] = Job.Carrier,
+            ["woodcutter"] = Job.Woodcutter,
+            ["type-one-hut"] = Job.TypeOneHut,
+        };
+        var node = new WaitingNode(0, false, default);
+        Activity[] activities =
+        [
+            Walking(),
+            new Walks(new ToStorage(), new Heading(0)),
+            new Door(0),
+            new HandsOver(null, new Heading(0)),
+            Cutting(),
+            new WalksFree(new Trip(new Vector(0, 0), new BackToHut(false))),
+            new SearchesHome(),
+            new WaitsAtFlag(0, 0, new Heading(0).Retried),
+        ];
+
+        foreach (var activity in activities)
+        {
+            Assert.IsNotNull(source.Draw(Settler(jobs[job], activity))?.Image, activity.ToString());
+        }
+    }
+
+    [TestMethod]
+    [DataRow("settler/carrier/walks")]
+    [DataRow("settler/woodcutter/cuts")]
+    [DataRow("settler/type-one-hut/waits")]
+    public void ASettlerKeyTheManifestLacksIsRefusedByFileAndKey(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    [TestMethod]
+    public void ThePlayerShowsAsItsColourOverTheMarkPixelsOfTheFigureAndNothingElse()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("marked.png", "2x1:mark");
+        folder.Entries["settler/carrier/walks"] = ContentFolder.Entry("marked.png", "0, 0");
+        var source = folder.Load();
+
+        var first = source.Draw(Settler(Job.Carrier, Walking(), player: 0))!.Image!;
+        var second = source.Draw(Settler(Job.Carrier, Walking(), player: 1))!.Image!;
+
+        var (r, g, b) = OpenSettlersSource.PlayerColour(1);
+        CollectionAssert.AreEqual(new byte[] { r, g, b, 255, 10, 20, 30, 255 }, second.Rgba);
+        Assert.AreNotEqual(OpenSettlersSource.PlayerColour(0), OpenSettlersSource.PlayerColour(1));
+        CollectionAssert.AreNotEqual(first.Rgba, second.Rgba);
+        CollectionAssert.AreEqual(new byte[] { 10, 20, 30, 255 }, first.Rgba[4..]);
+    }
+
+    [TestMethod]
+    public void TheSameFrameAndPlayerAnswerOneImageInstance()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("marked.png", "2x1:mark");
+        folder.Entries["settler/carrier/walks"] = ContentFolder.Entry("marked.png", "0, 0");
+        var source = folder.Load();
+
+        var one = source.Draw(Settler(Job.Carrier, Walking(), frame: 3, player: 2))!.Image;
+        var two = source.Draw(Settler(Job.Carrier, Walking(new Heading(4)), frame: 9, step: 12, player: 2))!.Image;
+        var other = source.Draw(Settler(Job.Carrier, Walking(), player: 3))!.Image;
+
+        Assert.AreSame(one, two);
+        Assert.AreNotSame(one, other);
+    }
+
+    [TestMethod]
+    public void ThePlayersBeyondTheColoursTheSetHasShareTheirColours()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("marked.png", "2x1:mark");
+        folder.Entries["settler/carrier/walks"] = ContentFolder.Entry("marked.png", "0, 0");
+        var source = folder.Load();
+
+        var low = source.Draw(Settler(Job.Carrier, Walking(), player: 1))!.Image!;
+        var high = source.Draw(Settler(Job.Carrier, Walking(), player: 1 + OpenSettlersSource.PlayerColours))!.Image!;
+
+        CollectionAssert.AreEqual(low.Rgba, high.Rgba);
+    }
+
+    [TestMethod]
+    public void TheObjectHeadroomIsTheTallestObjectBuildingOrGoodImage()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("tall.png", "3x40:5");
+        folder.Entries["building/castle"] = ContentFolder.Entry("tall.png", "0, 0");
+
+        Assert.AreEqual(40, folder.Load().ObjectHeadroom);
     }
 
     static void Refuses(ContentFolder folder, params string[] parts)
@@ -430,6 +669,101 @@ public sealed class OpenSettlersSourceTests
         {
             Assert.IsNotNull(source.Draw(new RoadStrip(0, 0, direction, 0, 0, new Terrain(5))));
         }
+    }
+
+    // Every term the shared builders can emit, drawn through the checked-in set. A term the set has no entry for fails
+    // here, whether a builder gained a term or the manifest lost a key.
+    [TestMethod]
+    public void TheCheckedInContentSetCoversEveryObjectTermTheBuildersEmit()
+    {
+        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+        var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Tick();
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Tick();
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
+        game.Tick();
+        var goods = Enumerable.Range(0, 8).Select(place => new Good(place + 1)).ToList();
+        var flagGoods = new Dictionary<(int X, int Y), IReadOnlyList<Good>> { [(17, 3)] = goods };
+
+        var terms = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
+
+        Assert.IsTrue(terms.OfType<BuildingDraw>().Any(draw => draw.Type == BuildingType.Castle));
+        Assert.IsTrue(terms.OfType<BuildingDraw>().Any(draw => draw.Type == BuildingType.Woodcutter));
+        Assert.IsTrue(terms.OfType<GoodAtFlag>().Any());
+        foreach (var term in terms)
+        {
+            // The codes 2 to 7 are structures the game draws from its buildings, so the set draws no object for them.
+            var drawsNothing = term is MapObjectDraw { Object.Code: < MapObject.FirstTreeCode and not 1 };
+            Assert.AreEqual(drawsNothing, term.Ask(source) is null, term.ToString());
+        }
+    }
+
+    [TestMethod]
+    public void TheCheckedInContentSetDrawsEveryObjectCodeFlagGoodAndBuildingTheGameCanName()
+    {
+        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+
+        Assert.IsNotNull(source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0))?.Image);
+        for (var code = MapObject.FirstTreeCode; code < 128; code++)
+        {
+            Assert.IsNotNull(source.Draw(new MapObjectDraw(0, 0, 0, new MapObject((byte)code), 0))?.Image, $"{code}");
+        }
+
+        for (var code = 0; code < 32; code++)
+        {
+            Assert.IsNotNull(source.Draw(new GoodAtFlag(0, 0, 0, new Good(code)))?.Image, $"good {code}");
+        }
+
+        Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Castle))?.Image);
+        Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter))?.Image);
+    }
+
+    [TestMethod]
+    public void TheCheckedInContentSetDrawsEverySettlerTheBuildersEmit()
+    {
+        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var figures = new SettlerFigures(new StepOffsets(SettlerFiguresTests.Sequences()), []);
+        var heading = new Heading(0);
+        Activity[] activities =
+        [
+            new Walks(new ToStorage(), heading),
+            new WalksRoad(null, heading),
+            new WalksRoad(new Load(new Good(7), null), heading),
+            new WaitsOutStep(new Walks(new ToStorage(), heading)),
+            new HandsOver(null, heading),
+            new HandsOver(new Load(new Good(7), null), heading),
+            new Door(0),
+            new WalksFree(new Trip(new Vector(0, 0), new BackToHut(false))),
+            new Cuts(new Vector(0, 0), false, 0, 0),
+            new SearchesHome(),
+            new WaitsAtFlag(0, 0, heading.Retried),
+            new ClaimsNode(heading, heading.Retried),
+            new WaitsToGoHome(heading.Retried),
+            new WaitsToRejoin(heading.Retried),
+        ];
+        var jobs = new[] { Job.Carrier, Job.Woodcutter, Job.TypeOneHut };
+
+        var drawn = 0;
+        foreach (var job in jobs)
+        {
+            foreach (var activity in activities)
+            {
+                var settler = new Settler(job, 3, 4, 3, 0, activity) { Frame = 7 };
+                foreach (var term in figures.Draws(map, [settler], 0))
+                {
+                    drawn++;
+                    Assert.AreEqual(term.Part == SettlerPart.Figure, term.Ask(source) is not null, $"{job} {activity}");
+                }
+            }
+        }
+
+        Assert.IsGreaterThan(jobs.Length * 8, drawn);
     }
 
     // A flat image hangs from the triangle's apex whatever the slope, so a node that drops below the apex opens a gap

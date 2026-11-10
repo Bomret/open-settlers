@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Writes the terrain and road art of the Open Settlers content set: content/open-settlers/manifest.json and its PNGs.
+"""Writes the art of the Open Settlers content set: content/open-settlers/manifest.json and its PNGs.
 
-The art is the project's own: a flat color per terrain code and a plain strip per road direction, drawn here from
-nothing but numbers. It holds nothing derived from an install (ADR 0015). Run it from the repository root:
+The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
+flag, the map objects, the castle, the woodcutter's hut, the goods, and one pose per job and kind of activity for the
+settlers, all drawn here from nothing but numbers. It holds nothing derived from an install (ADR 0015). A settler's
+player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
+The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
 
     python3 tools/open-settlers-art.py
 
@@ -85,6 +88,215 @@ def strip(direction):
     return width, height, [bytes(r) for r in rows]
 
 
+class Canvas:
+    """A transparent RGBA canvas with the few shapes the object art is drawn from."""
+
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.pixels = [[(0, 0, 0, 0)] * width for _ in range(height)]
+
+    def dot(self, x, y, color):
+        if 0 <= x < self.width and 0 <= y < self.height:
+            self.pixels[y][x] = (*color, 255)
+
+    def rect(self, x, y, width, height, color):
+        for yy in range(y, y + height):
+            for xx in range(x, x + width):
+                self.dot(xx, yy, color)
+
+    def disc(self, cx, cy, radius, color):
+        for y in range(cy - radius, cy + radius + 1):
+            for x in range(cx - radius, cx + radius + 1):
+                if (x - cx) ** 2 + (y - cy) ** 2 <= radius * radius + radius:
+                    self.dot(x, y, color)
+
+    def triangle(self, top, base_y, half_base, color):
+        """An upright triangle: apex (top = (x, y)), base at base_y, half_base pixels each side."""
+        apex_x, apex_y = top
+        for y in range(apex_y, base_y + 1):
+            half = half_base * (y - apex_y) // max(1, base_y - apex_y)
+            for x in range(apex_x - half, apex_x + half + 1):
+                self.dot(x, y, color)
+
+    def line(self, x0, y0, x1, y1, color, thick=1):
+        steps = max(abs(x1 - x0), abs(y1 - y0), 1)
+        for i in range(steps + 1):
+            x = x0 + (x1 - x0) * i // steps
+            y = y0 + (y1 - y0) * i // steps
+            self.rect(x, y, thick, thick, color)
+
+    def outline(self, color):
+        """Draws a one pixel outline around the covered pixels."""
+        covered = [[p[3] > 0 for p in row] for row in self.pixels]
+        for y in range(self.height):
+            for x in range(self.width):
+                if covered[y][x]:
+                    continue
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < self.width and 0 <= ny < self.height and covered[ny][nx]:
+                        self.dot(x, y, color)
+                        break
+
+    def save(self, path):
+        png(os.path.join(OUT, path), self.width, self.height, [b"".join(bytes(p) for p in row) for row in self.pixels])
+
+
+# The mark colour of a settler's art: the source replaces these pixels with the player's colour (OpenSettlersSource.MarkColour).
+MARK = (255, 0, 255)
+INK = (40, 30, 25)
+WOOD = (110, 75, 40)
+LEAF = (50, 120, 45)
+
+
+def shade(color, amount):
+    return tuple(max(0, min(255, c + amount)) for c in color)
+
+
+def tree(variant):
+    """A tree, 20 by 30: the foot of the trunk is at the term's position."""
+    c = Canvas(20, 30)
+    c.rect(8, 18, 4, 12, WOOD)
+    c.disc(10, 11, 8, shade(LEAF, 25 * variant))
+    c.outline(INK)
+    return c, (-10, -29)
+
+
+def bush(variant):
+    c = Canvas(14, 12)
+    c.disc(7, 7, 5, shade((80, 140, 60), 30 * variant))
+    c.outline(INK)
+    return c, (-7, -11)
+
+
+def rock(size):
+    side = 8 + 4 * size
+    c = Canvas(side, side * 2 // 3)
+    c.triangle((side // 2, 0), side * 2 // 3 - 1, side // 2 - 1, (125, 125, 130))
+    c.outline(INK)
+    return c, (-(side // 2), -(side * 2 // 3 - 1))
+
+
+def stump():
+    c = Canvas(10, 8)
+    c.rect(1, 2, 8, 6, WOOD)
+    c.rect(1, 1, 8, 2, shade(WOOD, 50))
+    c.outline(INK)
+    return c, (-5, -7)
+
+
+def plant(variant):
+    c = Canvas(10, 12)
+    c.line(5, 11, 5, 4, (60, 130, 50))
+    c.disc(5, 3, 2, (230, 200, 60) if variant else (220, 90, 120))
+    c.outline(INK)
+    return c, (-5, -11)
+
+
+def falling(step, second):
+    """A cut tree leaning over: step 1 to 5 of its fall, leaning further each step."""
+    c = Canvas(30, 30)
+    foot_x, foot_y = 6, 28
+    tip_x = foot_x + 3 + 4 * step
+    tip_y = foot_y - 26 + 4 * step
+    c.line(foot_x, foot_y, tip_x, tip_y, WOOD, 3)
+    c.disc(tip_x, tip_y, 6, shade(LEAF, 25 if second else 0))
+    c.outline(INK)
+    return c, (-foot_x, -foot_y)
+
+
+def litter(variant):
+    c = Canvas(12, 8)
+    c.rect(0, 4, 12, 3, shade((120, 100, 80), 12 * (variant % 4)))
+    c.outline(INK)
+    return c, (-6, -7)
+
+
+def flag():
+    """The flag, 16 by 19 with its foot at the term's position: ObjectDraws.FlagGeometry is this box."""
+    c = Canvas(16, 19)
+    c.rect(0, 0, 2, 19, INK)
+    c.rect(2, 0, 14, 9, (210, 50, 50))
+    c.outline(INK)
+    return c, (0, -18)
+
+
+def castle():
+    c = Canvas(64, 52)
+    stone = (150, 150, 155)
+    c.rect(8, 16, 48, 36, stone)
+    for x in (4, 44):
+        c.rect(x, 4, 16, 48, shade(stone, -20))
+        for crenel in range(x, x + 16, 6):
+            c.rect(crenel, 0, 4, 5, shade(stone, -20))
+    c.rect(26, 34, 12, 18, WOOD)
+    c.rect(28, 36, 8, 16, INK)
+    c.rect(30, 22, 4, 6, INK)
+    c.outline(INK)
+    return c, (-32, -51)
+
+
+def hut():
+    c = Canvas(30, 30)
+    c.rect(4, 14, 22, 16, shade(WOOD, 30))
+    c.triangle((15, 2), 14, 15, (150, 60, 40))
+    c.rect(12, 20, 7, 10, INK)
+    c.rect(20, 18, 4, 4, (200, 220, 240))
+    c.outline(INK)
+    return c, (-15, -29)
+
+
+def good(code):
+    """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar."""
+    c = Canvas(8, 8)
+    if code == 7:
+        c.rect(0, 2, 8, 4, WOOD)
+        c.rect(0, 2, 2, 4, shade(WOOD, 60))
+    else:
+        hue = (code * 37) % 255
+        color = (60 + hue % 160, 60 + (hue * 3) % 160, 60 + (hue * 7) % 160)
+        c.rect(1, 1, 6, 6, color)
+    c.outline(INK)
+    return c, (-4, -7)
+
+
+JOBS = {"carrier": (60, 100, 170), "woodcutter": (60, 130, 60), "type-one-hut": (170, 110, 40)}
+KINDS = ("walks", "carries", "cuts", "door", "hands-over", "waits")
+
+
+def figure(job_color, kind):
+    """A settler, 14 by 22 with its feet at the term's position: a head, a body of its job's color, and a player mark on
+    the chest. Each kind of activity has its own pose."""
+    c = Canvas(14, 22)
+    skin = (235, 195, 160)
+    if kind == "waits":
+        c.disc(7, 11, 3, skin)
+        c.rect(3, 14, 8, 8, job_color)
+        c.rect(5, 16, 4, 3, MARK)
+    elif kind == "door":
+        c.disc(7, 4, 3, skin)
+        c.rect(5, 8, 4, 14, job_color)
+        c.rect(6, 11, 2, 3, MARK)
+    else:
+        c.disc(7, 4, 3, skin)
+        c.rect(3, 8, 8, 10, job_color)
+        c.rect(5, 10, 4, 3, MARK)
+        c.rect(3, 18, 3, 4, INK)
+        c.rect(8, 18, 3, 4, INK)
+    if kind == "carries":
+        c.rect(1, 2, 12, 3, WOOD)
+        c.line(3, 8, 2, 4, skin)
+        c.line(10, 8, 11, 4, skin)
+    elif kind == "cuts":
+        c.line(11, 8, 13, 17, skin)
+        c.line(13, 10, 13, 19, (200, 200, 205), 2)
+    elif kind == "hands-over":
+        c.line(10, 10, 13, 12, skin, 2)
+    c.outline(INK)
+    return c, (-7, -21)
+
+
 def main():
     manifest = {}
     for code, color in enumerate(TERRAIN_COLORS):
@@ -104,6 +316,42 @@ def main():
         # The term's position is the strip's top left corner: the map view puts it 2 pixels above the line, which the
         # strip's 5 rows center on.
         manifest[f"road/{direction}"] = {"image": file, "anchor": [0, 0]}
+
+    def add(key, file, art):
+        canvas, anchor = art
+        canvas.save(file)
+        manifest[key] = {"image": file, "anchor": list(anchor)}
+
+    add("object/flag", "object/flag.png", flag())
+    # Map objects by code (docs/rules/map-objects.md): trees 8 to 23, saplings 24 to 31, boulders 32 to 82, the stump 83
+    # (0x53), plants 84 to 92, falling trees 93 to 102 (0x5d to 0x66), anything else a heap. Codes of one kind that look alike
+    # share a file and so an image.
+    for code in range(8, 128):
+        if code < 24:
+            name, art = f"tree-{code // 16}", lambda: tree(code // 16)
+        elif code < 32:
+            name, art = f"bush-{(code - 24) // 4}", lambda: bush((code - 24) // 4)
+        elif code < 83:
+            name, art = f"rock-{code % 3}", lambda: rock(code % 3)
+        elif code == 83:
+            name, art = "stump", stump
+        elif code < 93:
+            name, art = f"plant-{code % 2}", lambda: plant(code % 2)
+        elif code < 103:
+            step, second = (code - 93) % 5 + 1, code >= 98
+            name, art = f"fall-{int(second)}-{step}", lambda: falling(step, second)
+        else:
+            name, art = f"litter-{code % 4}", lambda: litter(code)
+        file = f"object/{name}.png"
+        if f"object/{code}" not in manifest:
+            add(f"object/{code}", file, art())
+    add("building/castle", "building/castle.png", castle())
+    add("building/woodcutter", "building/woodcutter.png", hut())
+    for code in range(32):
+        add(f"good/{code}", f"good/{code}.png", good(code))
+    for job, color in JOBS.items():
+        for kind in KINDS:
+            add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind))
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
         f.write("\n")
