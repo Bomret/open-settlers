@@ -9,13 +9,22 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
-// No static field or static auto-property initializer and no static constructor of a test class may call
-// TestProgram.Tables() or TestProgram.OpenInstall(): qualified, bare under `using static TestProgram`, or through a static
-// method of the same file that calls one of them itself. Without the install, the Assert.Inconclusive they throw then
-// fires during type initialization, where MSTest reports it as a TypeInitializationException that fails every test of
-// the class. A call inside a lambda or local function runs later and is allowed. Build the value inside the test
-// instead, for example through an expression-bodied accessor that caches it. The check reads the syntax of each file
-// alone: a helper that reaches the install through a second helper, or from another file, passes it.
+// No static field or static auto-property initializer and no static constructor of a test class may reach
+// TestProgram.Tables() or TestProgram.OpenInstall(). Without the install, the Assert.Inconclusive they throw then fires
+// during type initialization, where MSTest reports it as a TypeInitializationException that fails every test of the
+// class. Code inside a lambda or local function runs later and is allowed, as is a method group. Build the value inside
+// the test instead, for example through an expression-bodied accessor that caches it.
+//
+// The check flags a call qualified by TestProgram or by a `using` alias of it, a bare call under
+// `using static TestProgram`, and a call of a static method or a read of a static property declared in the same file
+// whose body or getter reaches the install, through any chain of such members. A bare member name resolves through
+// the types around it, a qualified one through its receiver where that is a type of the same file. A method name counts
+// when any overload of it reaches the install. A name in a type position or inside nameof() counts as no read, but a
+// helper property sharing its name with a type is flagged where that type is the receiver (`Map.Create()`).
+//
+// The check reads the syntax of each file alone, so it misses a helper declared in another file or another part of a
+// partial class, a `global using` in another file, a helper reached through an instance or a receiver that is no type
+// of the file, and a delegate stored in a static field and invoked in an initializer.
 [TestClass]
 public sealed class InstallInitializerTests
 {
