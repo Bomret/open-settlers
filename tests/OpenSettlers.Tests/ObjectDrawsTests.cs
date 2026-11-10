@@ -80,8 +80,7 @@ public sealed class ObjectDrawsTests
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
-        game.Tick();
+        Huts.PlaceAndTick(game, 16, 2);
         var height = map.At(16, 2).Height;
 
         var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings);
@@ -174,8 +173,7 @@ public sealed class ObjectDrawsTests
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
-        game.Tick();
+        Huts.PlaceAndTick(game, 16, 2);
         var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [new Good(1)] };
 
         var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);

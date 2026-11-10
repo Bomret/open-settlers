@@ -700,8 +700,7 @@ public sealed class OpenSettlersSourceTests
         game.Tick();
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
-        game.Tick();
+        Huts.PlaceAndTick(game, 16, 2);
         var goods = Enumerable.Range(0, 8).Select(place => new Good(place + 1)).ToList();
         var flagGoods = new Dictionary<(int X, int Y), IReadOnlyList<Good>> { [(17, 3)] = goods };
 

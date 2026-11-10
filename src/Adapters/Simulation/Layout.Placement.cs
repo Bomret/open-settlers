@@ -9,7 +9,7 @@ public sealed partial class Layout
 {
     // One entry of the file that a game takes as a command: its name in the file (flags[1]) and the command; a refusal
     // reports the reason Refusal gives for the command's kind. A building, settler, or good entry is no command a player gives:
-    // its Place puts it in the game directly (BuildingPlacement.PlaceFinished, WalkBehavior.PlaceWoodcutterInHut,
+    // its Place puts it in the game directly (Game.PlaceFinishedBuilding, WalkBehavior.PlaceWoodcutterInHut,
     // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null.
     private sealed record Step(string Name, Command Command, Func<Game, string?>? Place = null);
 
@@ -223,7 +223,7 @@ public sealed partial class Layout
             }
 
             steps.Add(
-                new Step(name, command, game => game.Placement.PlaceFinished(type.Type, x, y) ? null : BuildingRefusal)
+                new Step(name, command, game => game.PlaceFinishedBuilding(type.Type, x, y) ? null : BuildingRefusal)
             );
 
             return true;

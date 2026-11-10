@@ -24,7 +24,11 @@ public sealed class GoldenTests
     private static readonly MapSeed GeneratedSeed = new(0x1234, 0x5678, 0x9ABC);
     private const string GeneratedWhere = "generated seed=1234,5678,9ABC size=1";
 
-    // A command at a tick: the scripts enqueue every command before the first tick.
+    // The kind of a step that stands a finished woodcutter's hut on the node before the tick: no command gives a finished
+    // building, so the script places it through the seam a layout's finished-building entry uses.
+    private const int FinishedHut = -1;
+
+    // A command at a tick: the scripts enqueue every command before the first tick, but a finished hut, which no command gives.
     private sealed record Step(long Tick, int Kind, int X, int Y, int[]? Directions = null);
 
     private sealed record Scenario(
@@ -46,7 +50,7 @@ public sealed class GoldenTests
         new(4, CommandKind.BuildRoad, 16, 6, [0, 0]),
         new(5, CommandKind.BuildRoad, 18, 6, [5, 5, 0]),
         new(6, CommandKind.BuildRoad, 17, 3, [0, 1]),
-        new(7, CommandKind.PlaceBuilding, 16, 2),
+        new(7, FinishedHut, 16, 2),
     ];
 
     // The class 4 the removal click takes a building for.
@@ -138,7 +142,7 @@ public sealed class GoldenTests
             "head-on-pass-layout",
             "layouts/head-on-pass.jsonc size=1",
             OnLayout("head-on-pass.jsonc"),
-            [new(400, CommandKind.RemoveRoad, 15, 11), new(401, CommandKind.PlaceBuilding, 13, 10)],
+            [new(400, CommandKind.RemoveRoad, 15, 11), new(401, FinishedHut, 13, 10)],
             Checkpoints
         ),
     ];
@@ -166,7 +170,7 @@ public sealed class GoldenTests
     private static Outcome Run(Scenario scenario, bool everyPass)
     {
         var game = scenario.Start(everyPass);
-        foreach (var step in scenario.Script)
+        foreach (var step in scenario.Script.Where(step => step.Kind != FinishedHut))
         {
             game.Enqueue(new Command(step.Tick, 0, step.Kind, step.X, step.Y, step.Directions));
         }
@@ -176,6 +180,11 @@ public sealed class GoldenTests
         {
             while (game.TickCount < checkpoint)
             {
+                foreach (var hut in scenario.Script.Where(step => step.Kind == FinishedHut && step.Tick == game.TickCount))
+                {
+                    Assert.IsTrue(Huts.Place(game, hut.X, hut.Y), "the scenario's finished hut has its site");
+                }
+
                 game.Tick();
             }
 

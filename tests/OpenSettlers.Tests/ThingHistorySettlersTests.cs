@@ -55,7 +55,7 @@ public sealed class ThingHistorySettlersTests
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
         Do(game, CommandKind.BuildRoad, 18, 6, [5, 5, 0]);
         Do(game, CommandKind.BuildRoad, 17, 3, [0, 1]);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         hutSlot = 1;
 
         return game;
@@ -178,7 +178,7 @@ public sealed class ThingHistorySettlersTests
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 17, 3);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         var hut = game.History.BuildingId(1);
         for (var i = 0; i < 400; i++)
         {

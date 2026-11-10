@@ -66,7 +66,7 @@ public sealed class LayoutApplyTests
             byHand.ApplyCommands();
         }
 
-        Assert.IsTrue(byHand.Placement.PlaceFinished(BuildingType.Woodcutter, 13, 10));
+        Assert.IsTrue(byHand.PlaceFinishedBuilding(BuildingType.Woodcutter, 13, 10));
 
         Assert.IsNull(problem);
         Assert.AreEqual(0, game.TickCount);

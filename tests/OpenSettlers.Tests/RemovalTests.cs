@@ -100,9 +100,11 @@ public sealed class RemovalTests
             );
         }
 
+        // The finished huts stand as a layout's finished-building entry leaves them, after the roads.
+        game.ApplyCommands();
         foreach (var hut in Points(parts[7]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceBuilding, hut[0] - 1, hut[1] - 1));
+            Assert.IsTrue(Huts.Place(game, hut[0] - 1, hut[1] - 1), "the fixture's hut has its site");
         }
 
         return game;
@@ -200,7 +202,8 @@ public sealed class RemovalTests
 
     // The building's bytes as the item holds them: the node's offset, the type byte, the status, the flag's slot (one more than
     // the engine's), the two bytes of the fill, the worker, the progress, and the word at 14 that a building taken down keeps its
-    // clock in. The castle's bytes from 14 hold a pointer to its storage, which the engine does not keep.
+    // clock in (a building site holds its target height there, and its needs at 16 and 17). The castle's bytes from 14 hold a pointer to its
+    // storage, which the engine does not keep.
     private static string BuildingBytes(Building building, int width)
     {
         var bytes = new List<byte>();
@@ -210,8 +213,17 @@ public sealed class RemovalTests
         bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Fill(building)));
         bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Worker(building)));
         bytes.AddRange(BitConverter.GetBytes(building.Progress));
-        bytes.AddRange(BitConverter.GetBytes(building.Stamp));
-        bytes.AddRange([0, 0]);
+        if (building.Site is { } site)
+        {
+            // A building site holds its target height at 14 and the planks and stones it needs at 16 and 17 (0x449a63).
+            bytes.AddRange(BitConverter.GetBytes((ushort)site.TargetHeight));
+            bytes.AddRange([(byte)site.Planks, (byte)site.Stones]);
+        }
+        else
+        {
+            bytes.AddRange(BitConverter.GetBytes(building.Stamp));
+            bytes.AddRange([0, 0]);
+        }
 
         return Convert.ToHexString([.. bytes]);
     }
@@ -380,14 +392,8 @@ public sealed class RemovalTests
 
             foreach (var (slot, expected) in buildings)
             {
-                // Slot 0 is the dummy of the building table, which has no building of the engine's. A click-only replay leaves out
-                // the hut, which the engine places finished while the original's stands as a site.
-                if (
-                    slot > 0
-                    && slot - 1 < game.Buildings.Count
-                    && !game.Buildings[slot - 1].IsFree
-                    && !(clickOnly && game.Buildings[slot - 1].Type != BuildingType.Castle)
-                )
+                // Slot 0 is the dummy of the building table, which has no building of the engine's.
+                if (slot > 0 && slot - 1 < game.Buildings.Count && !game.Buildings[slot - 1].IsFree)
                 {
                     var length = game.Buildings[slot - 1].Type == BuildingType.Castle ? 28 : 36;
                     Assert.AreEqual(
@@ -440,7 +446,10 @@ public sealed class RemovalTests
                     var digest = game.Digest();
                     foreach (var kind in kindsOf(click.Kind, expectedClass))
                     {
-                        game.Enqueue(new Command(game.TickCount, 0, kind, node[0], node[1]));
+                        // A building click names the type of the building as its third number.
+                        BuildingType? type =
+                            kind == CommandKind.PlaceBuilding && node.Length > 2 ? new BuildingType(node[2]) : null;
+                        game.Enqueue(new Command(game.TickCount, 0, kind, node[0], node[1], Building: type));
                     }
 
                     game.ApplyCommands();
@@ -458,7 +467,8 @@ public sealed class RemovalTests
                     before = Snapshot(map);
                 }
 
-                // The engine's hut stands finished at once (a stand-in), so the passes after the click differ from the original's.
+                // A click-only replay checks the click and stops: the passes after a building site's placement are the
+                // construction's, which the engine does not run yet.
                 if (clickOnly)
                 {
                     return;

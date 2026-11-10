@@ -63,7 +63,7 @@ public sealed class ThingHistoryTests
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
         Do(game, CommandKind.BuildRoad, 18, 6, [5, 5, 0]);
         Do(game, CommandKind.BuildRoad, 17, 3, [0, 1]);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         for (var i = 0; i < 60; i++)
         {
             game.Tick();
@@ -113,7 +113,7 @@ public sealed class ThingHistoryTests
     {
         var game = Castle();
         Do(game, CommandKind.PlaceFlag, 17, 3);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         Assert.AreEqual("building#0.1", game.History.BuildingId(0).ToString());
         Assert.AreEqual("building#1.1", game.History.BuildingId(1).ToString());
 
@@ -125,7 +125,7 @@ public sealed class ThingHistoryTests
 
         Assert.HasCount(1, game.Buildings);
         Do(game, CommandKind.PlaceFlag, 17, 3);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         Assert.AreEqual("building#1.2", game.History.BuildingId(1).ToString());
     }
 
@@ -162,7 +162,7 @@ public sealed class ThingHistoryTests
     {
         var game = Castle();
         Do(game, CommandKind.PlaceFlag, 17, 3);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
 
         var flag = game.History.EventsOf(game.History.FlagId(1)).Single();
         var hut = game.History.EventsOf(game.History.BuildingId(1)).Single();
