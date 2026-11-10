@@ -16,6 +16,10 @@
     <Using Include="OpenSettlers.Domain" />
   </ItemGroup>
   <ItemGroup>
+    <!-- InstallInitializerTests parses the test sources with it. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/Domain/OpenSettlers.Domain.csproj" />
     <ProjectReference Include="../../src/Application/OpenSettlers.Application.csproj" />
     <ProjectReference Include="../../src/Adapters/OpenSettlers.Adapters.csproj" />

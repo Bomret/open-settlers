@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
@@ -15,9 +16,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class InstallInitializerTests
 {
-    private static readonly Regex InstallCall = new(@"\bTestProgram\s*\.\s*(Tables|OpenInstall)\s*\(");
-    private static readonly Regex Container = new(@"\b(class|struct|record|interface|enum|namespace)\b");
-    private static readonly Regex Static = new(@"\bstatic\b");
+    private static readonly string[] InstallCalls = ["Tables", "OpenInstall"];
 
     private static string ProjectDirectory()
     {
@@ -101,6 +100,25 @@ public sealed class InstallInitializerTests
     }
 
     [TestMethod]
+    public void AnInitializerCallingAStaticHelperThatReachesTheInstallIsFlagged()
+    {
+        var source = """
+            class A
+            {
+                static Map Generated() => MapViewState.Open(TestProgram.Tables(), "1", 1).Map!;
+                static Install Opened()
+                {
+                    return TestProgram.OpenInstall();
+                }
+                private static readonly Map Map = Generated();
+                private static readonly Install Game = A.Opened();
+            }
+            """;
+
+        CollectionAssert.AreEqual(new[] { 8, 9 }, Lines(source).ToArray());
+    }
+
+    [TestMethod]
     public void DeferredCallsAndCallTextOutsideCodeAreNotFlagged()
     {
         var source = """
@@ -134,322 +152,53 @@ public sealed class InstallInitializerTests
     }
 
     // The 1-based line of the '=' of every static field or static auto-property initializer in the source that calls
-    // the install outside a lambda.
+    // the install outside a lambda, directly or through a static method of the source that calls it directly.
     private static IEnumerable<int> Lines(string source)
     {
-        var code = Code(source);
-        var offenders = new List<int>();
-        var frames = new Stack<Member>();
-        frames.Push(new Member(0));
+        var root = CSharpSyntaxTree.ParseText(source).GetRoot();
+        var helpers = root.DescendantNodes()
+            .OfType<MethodDeclarationSyntax>()
+            .Where(method => IsStatic(method.Modifiers) && Calls(method, IsInstallCall))
+            .Select(method => method.Identifier.Text)
+            .ToHashSet();
 
-        for (var i = 0; i < code.Length; i++)
-        {
-            var member = frames.Peek();
-            switch (code[i])
-            {
-                case '(' or '[':
-                    member.Depth++;
-                    break;
-                case ')' or ']':
-                    member.Depth--;
-                    break;
-                case '{' when member.Depth == 0 && member.Initializer < 0 && Container.IsMatch(member.Header(code, i)):
-                    frames.Push(new Member(i + 1));
-                    break;
-                case '{':
-                    member.Depth++;
-                    break;
-                case '}' when member.Depth == 0:
-                    frames.Pop();
-                    if (frames.Count == 0)
-                    {
-                        return offenders;
-                    }
-
-                    frames.Peek().Reset(i + 1);
-                    break;
-                case '}':
-                    member.Depth--;
-                    if (member.Depth == 0 && member.Initializer < 0 && NextCode(code, i + 1) != '=')
-                    {
-                        member.Reset(i + 1);
-                    }
-
-                    break;
-                case '=' when member.Depth == 0 && member.Initializer == -1:
-                    if (i + 1 < code.Length && code[i + 1] == '>')
-                    {
-                        member.Initializer = -2;
-                    }
-                    else if (!IsOperator(code, i))
-                    {
-                        member.Initializer = i;
-                        member.IsStatic = Static.IsMatch(member.Header(code, i));
-                    }
-
-                    break;
-                case ';' when member.Depth == 0:
-                    if (member.Initializer >= 0 && member.IsStatic && CallsTheInstall(code, member.Initializer, i))
-                    {
-                        offenders.Add(LineOf(code, member.Initializer));
-                    }
-
-                    member.Reset(i + 1);
-                    break;
-            }
-        }
-
-        return offenders;
+        return root.DescendantNodes()
+            .OfType<EqualsValueClauseSyntax>()
+            .Where(clause => IsStaticInitializer(clause))
+            .Where(clause => Calls(clause, call => IsInstallCall(call) || helpers.Contains(Name(call) ?? "")))
+            .Select(clause => clause.EqualsToken.GetLocation().GetLineSpan().StartLinePosition.Line + 1);
     }
 
-    private sealed class Member(int start)
-    {
-        public int Start = start;
-        public int Depth;
-
-        // The index of the member's initializer '=', -1 while none was seen, -2 once the member is expression-bodied.
-        public int Initializer = -1;
-        public bool IsStatic;
-
-        public string Header(string code, int end) => code[Start..end];
-
-        public void Reset(int start)
+    private static bool IsStaticInitializer(EqualsValueClauseSyntax clause) =>
+        clause.Parent switch
         {
-            Start = start;
-            Depth = 0;
-            Initializer = -1;
-            IsStatic = false;
-        }
-    }
+            VariableDeclaratorSyntax { Parent.Parent: FieldDeclarationSyntax field } => IsStatic(field.Modifiers),
+            PropertyDeclarationSyntax property => IsStatic(property.Modifiers),
+            _ => false,
+        };
 
-    // Whether the '=' at the index is part of ==, !=, <=, or >=.
-    private static bool IsOperator(string code, int i) =>
-        (i + 1 < code.Length && code[i + 1] == '=') || (i > 0 && code[i - 1] is '=' or '!' or '<' or '>');
+    private static bool IsStatic(SyntaxTokenList modifiers) => modifiers.Any(SyntaxKind.StaticKeyword);
 
-    private static char NextCode(string code, int from)
-    {
-        for (var i = from; i < code.Length; i++)
-        {
-            if (!char.IsWhiteSpace(code[i]))
+    // Whether the node holds a call the predicate accepts outside the body of a lambda or local function.
+    private static bool Calls(SyntaxNode node, Func<InvocationExpressionSyntax, bool> accepts) =>
+        node.DescendantNodes(child => child is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+            .OfType<InvocationExpressionSyntax>()
+            .Any(accepts);
+
+    private static bool IsInstallCall(InvocationExpressionSyntax call) =>
+        call.Expression
+            is MemberAccessExpressionSyntax
             {
-                return code[i];
+                Expression: IdentifierNameSyntax { Identifier.Text: "TestProgram" }
+                    or MemberAccessExpressionSyntax { Name.Identifier.Text: "TestProgram" },
             }
-        }
+        && InstallCalls.Contains(Name(call));
 
-        return '\0';
-    }
-
-    private static int LineOf(string code, int index) => code.AsSpan(0, index).Count('\n') + 1;
-
-    // Whether the initializer between the '=' and the ';' calls the install outside the body of a lambda.
-    private static bool CallsTheInstall(string code, int from, int to)
-    {
-        foreach (Match call in InstallCall.Matches(code[..to], from))
+    private static string? Name(InvocationExpressionSyntax call) =>
+        call.Expression switch
         {
-            if (!InLambda(code, from, call.Index))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // Whether the index lies in the body of a lambda that starts after `from`: after a '=>' whose bracket depth the
-    // code has not left, and no ',' at that depth, before the index.
-    private static bool InLambda(string code, int from, int index)
-    {
-        var depth = 0;
-        var bodies = new Stack<int>();
-        for (var i = from + 1; i < index; i++)
-        {
-            switch (code[i])
-            {
-                case '(' or '[' or '{':
-                    depth++;
-                    break;
-                case ')' or ']' or '}':
-                    depth--;
-                    while (bodies.Count > 0 && bodies.Peek() > depth)
-                    {
-                        bodies.Pop();
-                    }
-
-                    break;
-                case ',':
-                    while (bodies.Count > 0 && bodies.Peek() >= depth)
-                    {
-                        bodies.Pop();
-                    }
-
-                    break;
-                case '=' when i + 1 < index && code[i + 1] == '>':
-                    bodies.Push(depth);
-                    i++;
-                    break;
-            }
-        }
-
-        return bodies.Count > 0;
-    }
-
-    // The source with every comment and every string or character literal replaced by spaces, line breaks kept.
-    private static string Code(string source)
-    {
-        var code = new StringBuilder(source);
-        var i = 0;
-        while (i < source.Length)
-        {
-            var end = LiteralEnd(source, i);
-            if (end == i)
-            {
-                i++;
-                continue;
-            }
-
-            for (var j = i; j < end; j++)
-            {
-                if (code[j] != '\n')
-                {
-                    code[j] = ' ';
-                }
-            }
-
-            i = end;
-        }
-
-        return code.ToString();
-    }
-
-    // The index after the comment or literal that starts at the index, or the index itself when none starts there.
-    private static int LiteralEnd(string s, int i)
-    {
-        if (s[i] == '/' && i + 1 < s.Length && s[i + 1] == '/')
-        {
-            var end = s.IndexOf('\n', i);
-            return end < 0 ? s.Length : end;
-        }
-
-        if (s[i] == '/' && i + 1 < s.Length && s[i + 1] == '*')
-        {
-            var end = s.IndexOf("*/", i + 2, StringComparison.Ordinal);
-            return end < 0 ? s.Length : end + 2;
-        }
-
-        if (s[i] == '\'')
-        {
-            var j = i + 1;
-            while (j < s.Length && s[j] != '\'')
-            {
-                j += s[j] == '\\' ? 2 : 1;
-            }
-
-            return Math.Min(j + 1, s.Length);
-        }
-
-        var quote = i;
-        var verbatim = false;
-        var interpolated = false;
-        while (quote < s.Length && s[quote] is '$' or '@')
-        {
-            verbatim |= s[quote] == '@';
-            interpolated |= s[quote] == '$';
-            quote++;
-        }
-
-        if (quote >= s.Length || s[quote] != '"' || (quote > i && IsIdentifierPart(s, i - 1)))
-        {
-            return i;
-        }
-
-        var quotes = 0;
-        while (quote + quotes < s.Length && s[quote + quotes] == '"')
-        {
-            quotes++;
-        }
-
-        if (quotes >= 3)
-        {
-            var closing = new string('"', quotes);
-            var end = s.IndexOf(closing, quote + quotes, StringComparison.Ordinal);
-            return end < 0 ? s.Length : end + quotes;
-        }
-
-        var k = quote + 1;
-        while (k < s.Length)
-        {
-            if (verbatim && s[k] == '"')
-            {
-                if (k + 1 < s.Length && s[k + 1] == '"')
-                {
-                    k += 2;
-                    continue;
-                }
-
-                return k + 1;
-            }
-
-            if (!verbatim && s[k] == '\\')
-            {
-                k += 2;
-                continue;
-            }
-
-            if (!verbatim && s[k] == '"')
-            {
-                return k + 1;
-            }
-
-            if (interpolated && s[k] == '{')
-            {
-                if (k + 1 < s.Length && s[k + 1] == '{')
-                {
-                    k += 2;
-                    continue;
-                }
-
-                k = HoleEnd(s, k + 1);
-                continue;
-            }
-
-            k++;
-        }
-
-        return s.Length;
-    }
-
-    // The index after the '}' that closes the interpolation hole whose code starts at the index.
-    private static int HoleEnd(string s, int i)
-    {
-        var depth = 0;
-        while (i < s.Length)
-        {
-            var end = LiteralEnd(s, i);
-            if (end != i)
-            {
-                i = end;
-                continue;
-            }
-
-            if (s[i] == '{')
-            {
-                depth++;
-            }
-            else if (s[i] == '}')
-            {
-                if (depth == 0)
-                {
-                    return i + 1;
-                }
-
-                depth--;
-            }
-
-            i++;
-        }
-
-        return s.Length;
-    }
-
-    private static bool IsIdentifierPart(string s, int i) => i >= 0 && (char.IsLetterOrDigit(s[i]) || s[i] == '_');
+            SimpleNameSyntax name => name.Identifier.Text,
+            MemberAccessExpressionSyntax access => access.Name.Identifier.Text,
+            _ => null,
+        };
 }
