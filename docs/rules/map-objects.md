@@ -50,8 +50,9 @@ the tile index times 4 plus a constant of the table's start. The engine takes th
 The sprite sits at the tile's horizontal field times 8 and the row's top plus 8, with no height: 16 pixels west of
 where an object of the tile at height 0 sits, the node's position less 16 in x in the engine's layout. It is drawn
 only over pixels of palette index 8 ([Graphics images](graphics-images.md#sprites-drawn-over-color-8)). The engine's
-view (`src/Viewer/Water.gdshader`) draws a pixel where the screen under it has the color of palette index 8, from a
-copy of the screen taken after the terrain and the roads. Unlike the original, a water sprite does not see the
+view (`src/Viewer/Water.gdshader`) draws a pixel where the screen under it has the surface color that the graphics
+source's ripple answer names (palette index 8 for the History Edition source), from a copy of the screen taken after
+the terrain and the roads. A source that draws no ripple makes no copy. Unlike the original, a water sprite does not see the
 pixels another water sprite of the same pass changed (inferred).
 
 ## Where the sprite sits
@@ -74,8 +75,8 @@ no emulator or debugger run of the draw confirms it for the castle.
 Before the sprite, the routine draws the shadow mask of the entry plus 1500 through `Gfx_DrawShadow` (`0x4061a0`),
 which stores palette index `0x80` on the covered pixels with no blending.
 
-The engine draws each object's shadow right before its sprite, from a shadow array texture of its own, sized to the
-largest shadow mask, at the layer of its sprite (`ObjectGraphics.Layer`). It does so for the objects of the map, the
+The engine draws each object's shadow right before its sprite, as an image of its own that the History Edition source
+answers with the sprite (`ObjectDrawing.Shadow`). It does so for the objects of the map, the
 castle, the woodcutter's hut, and the flag. The mask entries are 1678 for the castle, 1668 for the woodcutter's hut, and
 1628 to 1631 for the flag's frames (the sprite frames are 1378 to 1381). The goods on a flag and the water draw no shadow
 (`0x44de9a` and `0x44ff59` draw only the sprite).
@@ -95,10 +96,11 @@ pixel of index 0 shows color 0 of the palette.
 
 ## In the engine
 
-`src/MapView/ObjectSprites.cs` (code to entry), `ObjectDraws.cs` (the tile and the position), `ObjectImage.cs`
-(indices and coverage), `ObjectGraphics.cs` (the install's sprites as array-texture layers), and
-`ObjectQuads.cs` (the quads, in bands of 16 rows). `src/Viewer/MapViewControl.cs` and `Objects.gdshader` draw them
-over the terrain of all nine copies. Resources (`Map.Deposits`) are never drawn. The tile routine
+`src/MapView/ObjectDraws.cs` (the draw terms of `ObjectTerms.cs`: the tile, the position, and the order),
+`ObjectImage.cs` (RGBA pixels), `ObjectQuads.cs` (the quads of the images a graphics source answers, in bands of 16
+rows), and, inside the History Edition source, `ObjectSprites.cs` (code to entry, the phase folding) and
+`ObjectGraphics.cs` (the install's sprites and shadow masks by entry). `src/Viewer/MapViewControl.cs` and
+`Objects.gdshader` draw them over the terrain of all nine copies. Resources (`Map.Deposits`) are never drawn. The tile routine
 `0x44d5b4` reads the flag, height, and object bytes of record A and, at the tile's record-B offset (the state
 `+0x36`), byte 1, none of which is the resource byte (byte 0 of record B). Byte 1 marks a waiting carrier
 ([Carriers](carriers.md#drawing)). The engine departs from the program in two places: it

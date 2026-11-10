@@ -1,15 +1,16 @@
 #!/bin/sh
 # Runs a play script under Movie Maker, from the repository root, and reuses the stored result when its inputs
 # are unchanged:
-#   sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] --fps <n> [--fresh]
+#   sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh]
 # The script is play/<stem>.play and the install is SIEDLER_DIR. Without --game-view the map view runs;
 # --game-view runs the game view with --seed and --size; --layout runs the game view on the layout file and
 # implies --game-view (a layout holds its own seed and size, so --layout with --seed or --size exits 2, and so
 # does a missing layout file or an empty layout value). The input hash covers the mode, the layout's path and
-# content, the content and path of every tracked or untracked, not ignored file under src/ and scenes/, the project
-# files, the play script, the seed, the size, the fps, the Godot version and the SIEDLER_DIR path. A result is stored in
+# content, the content and path of every tracked or untracked, not ignored file under src/, scenes/ and content/, the
+# project files, the play script, the seed, the size, the graphics source (history-edition when none is given), the
+# fps, the Godot version and the SIEDLER_DIR path. --graphics takes history-edition or open-settlers, once. A result is stored in
 # play-out/.cache/<hash>/ only for exit status 0 or 1. Each call past the argument checks appends one line to
-# play-out/runs.log; the line names the mode (map or game-view) and the layout. Bad arguments exit 2 and leave no trace.
+# play-out/runs.log; the line names the mode (map or game-view), the layout, and the graphics source. Bad arguments exit 2 and leave no trace.
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
 # call waits on a live owner, says so once on stderr, and takes over the lock of a dead one under the mutex
 # play-out/.lock-<stem>.takeover. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
@@ -20,7 +21,7 @@ set -u
 
 usage() {
   echo "play-run.sh: $1" >&2
-  echo "usage: sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] --fps <n> [--fresh]" >&2
+  echo "usage: sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh]" >&2
   exit 2
 }
 
@@ -37,15 +38,23 @@ fps=
 fresh=
 mode=map
 layout=
+graphics=
 while [ $# -gt 0 ]; do
   case "$1" in
-    --seed | --size | --fps | --layout)
+    --seed | --size | --fps | --layout | --graphics)
       [ $# -ge 2 ] || usage "$1 needs a value"
       case "$1" in
         --seed) seed=$2 ;;
         --size) size=$2 ;;
         --fps) fps=$2 ;;
         --layout) [ -n "$2" ] || usage "--layout needs a file"; layout=$2 ;;
+        --graphics)
+          [ -z "$graphics" ] || usage "repeated --graphics"
+          case "$2" in
+            history-edition | open-settlers) graphics=$2 ;;
+            *) usage "--graphics takes history-edition or open-settlers" ;;
+          esac
+          ;;
       esac
       shift 2
       ;;
@@ -128,7 +137,7 @@ export LC_ALL=C
 hash=$(
   {
     list=$(mktemp)
-    git ls-files --cached --others --exclude-standard -- src scenes | sort -u | while IFS= read -r f; do
+    git ls-files --cached --others --exclude-standard -- src scenes content | sort -u | while IFS= read -r f; do
       [ -f "$f" ] && printf '%s\n' "$f"
     done >"$list"
     [ -s "$list" ] && git hash-object --stdin-paths <"$list" | paste -d ' ' "$list" -
@@ -142,6 +151,7 @@ hash=$(
     [ -n "$layout" ] && echo "layout-content $(git hash-object -- "$layout")"
     echo "seed $seed"
     echo "size $size"
+    echo "graphics ${graphics:-history-edition}"
     echo "fps $fps"
     echo "godot $version"
     echo "siedler $SIEDLER_DIR"
@@ -174,6 +184,7 @@ else
     [ -n "$layout" ] && set -- "$@" --layout "$layout"
     [ -n "$seed" ] && set -- "$@" --seed "$seed"
     [ -n "$size" ] && set -- "$@" --size "$size"
+    [ -n "$graphics" ] && set -- "$@" --graphics "$graphics"
     godot "$@" --play "$script" >"$log" 2>&1
     status=$?
   fi
@@ -200,6 +211,6 @@ fi
 
 head=$(git rev-parse HEAD 2>/dev/null || echo none)
 if [ -n "$(git status --porcelain)" ]; then dirty=dirty; else dirty=clean; fi
-printf '%s\t%s\t%s\t%s\t%s\tmode=%s\tlayout=%s\tseed=%s\tsize=%s\tfps=%s\texit=%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$hash" \
-  "$head" "$dirty" "$stem" "$mode" "$layout" "$seed" "$size" "$fps" "$status" "$how" >>play-out/runs.log
+printf '%s\t%s\t%s\t%s\t%s\tmode=%s\tlayout=%s\tseed=%s\tsize=%s\tfps=%s\tgraphics=%s\texit=%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$hash" \
+  "$head" "$dirty" "$stem" "$mode" "$layout" "$seed" "$size" "$fps" "${graphics:-history-edition}" "$status" "$how" >>play-out/runs.log
 exit "$status"

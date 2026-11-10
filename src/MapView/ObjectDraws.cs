@@ -5,15 +5,12 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
 
-/// <summary>One object to draw: its tile row, its sprite entry and the draw position in map pixels.</summary>
-public readonly record struct ObjectDraw(int Row, int Entry, int X, int Y);
-
-/// <summary>Where each generated object lies on the map (<c>docs/rules/map-objects.md</c>).</summary>
+/// <summary>Where each generated object lies on the map (<c>docs/rules/map-objects.md</c>), as draw terms.</summary>
 public static class ObjectDraws
 {
     // The places of a flag's goods (bytes 0xc to 0x13 of the flag item) and where each is drawn, in pixels from the flag's
-    // draw position (0x44db26 adds them to the node's x and y; 0x44de9a draws at the object's position the sprite
-    // 320 plus the good). The places 0 to 2 are drawn before the flag, the others after it.
+    // draw position (0x44db26 adds them to the node's x and y; 0x44de9a draws the good at the object's position). The
+    // places 0 to 2 are drawn before the flag, the others after it.
     private static readonly (int X, int Y)[] GoodPlaces =
     [
         (6, -4),
@@ -28,6 +25,13 @@ public static class ObjectDraws
 
     private const int GoodsBeforeFlag = 3;
 
+    /// <summary>
+    /// The geometry of a flag for a click (<see cref="MapPicking.Pick"/>): the box of the History Edition's flag at its
+    /// first animation step, 16 by 19 pixels with its top 18 above the node. It is the same under every graphics source
+    /// so that a click names the same node, and so the same command, under each (INV-0009).
+    /// </summary>
+    public static MapPicking.PickBox FlagGeometry { get; } = new(16, 19, 0, -18);
+
     /// <summary>The goods that lie on the flags of a game, by the flag's node; a flag with no good is left out.</summary>
     public static Dictionary<(int X, int Y), IReadOnlyList<Good>> FlagGoodsOf(Game game) =>
         game
@@ -40,12 +44,12 @@ public static class ObjectDraws
     /// <summary>
     /// The objects of a map in row-major order, which is the order the original paints them. A draw sits at its
     /// tile's node with the node's height taken off, where its roads meet (<c>docs/rules/map-objects.md</c>); the
-    /// sprite's own header offsets apply where the sprite is drawn. A code without a sprite is left out. Resources
-    /// are no objects and are never drawn. With a <paramref name="castle"/>, its sprite is drawn at its node, and each
-    /// woodcutter's hut of <paramref name="buildings"/> likewise. An animated object draws its frame at the frame
-    /// counter <paramref name="counter"/>.
+    /// sprite's own header offsets apply where the sprite is drawn. Every object is a term, and a source that has no
+    /// image for one draws nothing for it. Resources are no objects and are never drawn. With a
+    /// <paramref name="castle"/>, it is drawn at its node, and each woodcutter's hut of <paramref name="buildings"/>
+    /// likewise. An animated object draws its frame at the frame counter <paramref name="counter"/>.
     /// </summary>
-    public static List<ObjectDraw> Of(
+    public static List<ObjectTerm> Of(
         Map map,
         Castle? castle = null,
         IReadOnlyList<Building>? buildings = null,
@@ -54,14 +58,9 @@ public static class ObjectDraws
     )
     {
         var objects = map.Objects;
-        var draws = new List<ObjectDraw>(objects.Count);
+        var draws = new List<ObjectTerm>(objects.Count);
         foreach (var item in objects)
         {
-            if (ObjectSprites.Entry(item.Object, counter) is not { } entry)
-            {
-                continue;
-            }
-
             var (x, y) = Camera.NodePosition(item.X, item.Y);
             var height = map.At(item.X, item.Y).Height;
             var top = y - height * TerrainTriangles.HeightStep;
@@ -70,21 +69,20 @@ public static class ObjectDraws
                     ? flagGoods.GetValueOrDefault((item.X, item.Y))
                     : null;
             AddGoods(draws, goods, item.Y, x, top, 0, GoodsBeforeFlag);
-            draws.Add(new ObjectDraw(item.Y, entry, x, top));
+            draws.Add(new MapObjectDraw(item.Y, x, top, item.Object, counter));
             AddGoods(draws, goods, item.Y, x, top, GoodsBeforeFlag, GoodPlaces.Length);
         }
 
         if (castle is { } placed)
         {
-            // The castle is no map object of code 8 or more; it is drawn at its node in the order of its row, after
-            // the objects of its row. inferred: its alignment to the node is that of an object, which the sprite's own
-            // header offsets then adjust.
+            // The castle is no map object; it is drawn at its node in the order of its row, after the objects of its
+            // row. inferred: its alignment to the node is that of an object, which the image's own offsets then adjust.
             var (x, y) = Camera.NodePosition(placed.X, placed.Y);
             var height = map.At(placed.X, placed.Y).Height;
             var index = draws.FindIndex(draw => draw.Row > placed.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,
-                new ObjectDraw(placed.Y, ObjectSprites.CastleEntry, x, y - height * TerrainTriangles.HeightStep)
+                new BuildingDraw(placed.Y, x, y - height * TerrainTriangles.HeightStep, BuildingType.Castle)
             );
         }
 
@@ -101,7 +99,7 @@ public static class ObjectDraws
             var index = draws.FindIndex(draw => draw.Row > hut.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,
-                new ObjectDraw(hut.Y, ObjectSprites.WoodcutterEntry, x, y - height * TerrainTriangles.HeightStep)
+                new BuildingDraw(hut.Y, x, y - height * TerrainTriangles.HeightStep, BuildingType.Woodcutter)
             );
         }
 
@@ -109,20 +107,20 @@ public static class ObjectDraws
     }
 
     /// <summary>
-    /// The water sprites of a map in row-major order: one on each tile with a water triangle, drawn by <c>0x44ff59</c> at the tile's horizontal field times 8 and its row's top plus 8, with no
+    /// The water ripples of a map in row-major order: one on each tile with a water triangle, drawn by <c>0x44ff59</c> at the tile's horizontal field times 8 and its row's top plus 8, with no
     /// height. That is 16 pixels west of where an object of the tile at height 0 is drawn, so in the engine's layout the
     /// node's position less 16 in x. <b>Inferred:</b> the alignment, as for the objects.
     /// </summary>
-    public static List<ObjectDraw> WaterOf(Map map, ushort counter)
+    public static List<WaterRipple> WaterOf(Map map, ushort counter)
     {
         var width = map.Size.Width;
-        var draws = new List<ObjectDraw>();
+        var draws = new List<WaterRipple>();
         for (var tile = 0; tile < map.Count; tile++)
         {
             if (map.At(tile).WaterTriangle)
             {
                 var (x, y) = Camera.NodePosition(tile % width, tile / width);
-                draws.Add(new ObjectDraw(tile / width, ObjectSprites.WaterEntry(tile, counter), x - 16, y));
+                draws.Add(new WaterRipple(tile / width, x - 16, y, tile, counter));
             }
         }
 
@@ -130,7 +128,7 @@ public static class ObjectDraws
     }
 
     private static void AddGoods(
-        List<ObjectDraw> draws,
+        List<ObjectTerm> draws,
         IReadOnlyList<Good>? goods,
         int row,
         int x,
@@ -143,14 +141,7 @@ public static class ObjectDraws
         {
             if (!goods[place].IsNone)
             {
-                draws.Add(
-                    new ObjectDraw(
-                        row,
-                        ObjectSprites.GoodEntry(goods[place]),
-                        x + GoodPlaces[place].X,
-                        y + GoodPlaces[place].Y
-                    )
-                );
+                draws.Add(new GoodAtFlag(row, x + GoodPlaces[place].X, y + GoodPlaces[place].Y, goods[place]));
             }
         }
     }

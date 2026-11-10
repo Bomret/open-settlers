@@ -45,7 +45,11 @@ public sealed class TerrainGraphicsTests
 
     static Dictionary<int, byte[]> Payloads(Func<int, byte[]?>? replace = null)
     {
-        var payloads = new Dictionary<int, byte[]> { [3] = new byte[768] };
+        // Palette indexes 10 and 11 hold the red components 40 and 44; the rest is black.
+        var palette = new byte[768];
+        palette[3 * 10] = 40;
+        palette[3 * 11] = 44;
+        var payloads = new Dictionary<int, byte[]> { [3] = palette };
         for (var n = 60; n <= 221; n++)
         {
             payloads[n] = replace?.Invoke(n) ?? Mask(32, 9 + n % 3);
@@ -87,9 +91,10 @@ public sealed class TerrainGraphicsTests
         Assert.AreEqual(9 + 60 % 3, graphics.Masks[0].Height);
         Assert.AreEqual(0, graphics.Masks[0].Layer[0]);
         Assert.AreEqual(255, graphics.Masks[0].Layer[1]);
-        Assert.AreEqual(10, graphics.Textures[0][0]);
+        CollectionAssert.AreEqual(new byte[] { 40, 0, 0, 255 }, graphics.Textures[0][..4]);
+        CollectionAssert.AreEqual(new byte[] { 44, 0, 0, 255 }, graphics.Textures[1][^4..]);
+        Assert.HasCount(32 * 20 * 4, graphics.Textures[0]);
         Assert.HasCount(32 * 41, graphics.Masks[0].Layer);
-        Assert.HasCount(256 * 4, graphics.PaletteRgba);
     }
 
     [TestMethod]

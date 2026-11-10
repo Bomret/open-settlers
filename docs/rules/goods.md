@@ -197,9 +197,9 @@ words they are `0x0000, 0x3000, 0x3500, 0x3b00, 0x4100, 0x4600, 0x4b00, 0x1400, 
 figure byte is drawn in the row `0x14` of the figure bases. A carrier in state 0x42 is not drawn, and its byte 11 is the road
 direction. A carrier with no good (byte 11 0) adds nothing.
 
-`RuleTables.CarriedFigures` holds the 27 words from `0x43f4b7`. `SettlerFigures` draws a carrier on its road (state 3) or
-handing a good over (state 0xe) with a good by the same rule for every good. `Sprites` and `Draws` share one function. The view
-draws it in every wrap copy. A play run of `play/carrier-log.play` shows the carrier holding the log above his head and facing
+`RuleTables.CarriedFigures` holds the 27 words from `0x43f4b7`. `SettlerFigures` emits the terms of a carrier on its road (state 3)
+or handing a good over (state 0xe) with the good it carries. `SettlerFigureTables` picks the sprite by the same rule for every
+good. The view draws it in every wrap copy. A play run of `play/carrier-log.play` shows the carrier holding the log above his head and facing
 the way he walks.
 
 **Confirmed** by the draw runs of the `carrier`, `goods`, and `goods-alone` recordings

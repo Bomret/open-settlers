@@ -11,11 +11,12 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Viewer;
 
 /// <summary>
-/// The map view (<c>--map</c>): a seed field and a size picker above the terrain of the generated map. The terrain
-/// is drawn on the GPU (ADR 0007): one triangle mesh per band of rows, the fill masks and textures as array
-/// textures of palette indices, and <c>Terrain.gdshader</c> looking each index up in a palette texture. The
-/// generated objects are quads of sprite layers (<c>Objects.gdshader</c>: the indices and the coverage in their own
-/// array textures) drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
+/// The map view (<c>--map</c>): a seed field and a size picker above the terrain of the generated map. The terrain,
+/// the roads, the objects, and the water are drawn on the GPU (ADR 0007) through a graphics source (ADR 0014): the
+/// shared builders give a draw term for each triangle, strip, object, building, good, and ripple, the source answers
+/// each with an RGBA image, and the images are layers of an array texture that <c>Objects.gdshader</c> (or
+/// <c>Water.gdshader</c> for the ripples) samples (alpha the coverage), one mesh per band of rows. The objects are
+/// quads drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
 /// wraps at the map's edges; the copies of <see cref="Camera.Copies"/> tile the plane around it. The mouse wheel,
 /// and the plus and minus keys, and a touchpad pinch change the <see cref="Zoom"/>; the wheel and the pinch keep
 /// the map point under the pointer in place. A two-finger touchpad swipe moves the camera.
@@ -29,11 +30,13 @@ public partial class MapViewControl : Control
     // Screen pixels per unit of a touchpad swipe's delta.
     const float PanGestureSpeed = 10f;
 
-    // The layer limit of a GPU array texture.
-    const int MaxArrayLayers = 256;
+    // The layer limit the view assumes of a GPU array texture: the 2048 layers Metal allows and desktop Vulkan devices
+    // report. Nothing queries the device (the layers Vulkan guarantees are 256).
+    const int MaxArrayLayers = 2048;
 
     readonly Install _install;
     readonly bool _gameView;
+    readonly GraphicsSourceName _graphics;
     Game? _game;
     readonly TickPacer _pacer = new();
 
@@ -49,12 +52,14 @@ public partial class MapViewControl : Control
     Button _roadButton = null!;
     Button _woodcutterButton = null!;
     Button _removeButton = null!;
-    SettlerGraphics? _settlerGraphics;
-    ShaderMaterial? _settlerMaterial;
-    readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
 
-    // The settler sprites (Entry, Colour) already warned about as having no loaded layer.
-    readonly System.Collections.Generic.HashSet<(int Entry, int Colour)> _warnedSettlerSprites = [];
+    // The placement of the walking settlers (game view only), the images the source drew for them so far, and the material
+    // over them.
+    SettlerFigures? _settlerFigures;
+    readonly ImageLayers _settlerLayers = new();
+    ShaderMaterial? _settlerMaterial;
+    int _settlerImages;
+    readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
     int _flagsDrawn;
     ObjectLayerWatch _objectWatch = new();
     int _buildingsDrawn;
@@ -62,8 +67,6 @@ public partial class MapViewControl : Control
     int _roadsDrawn;
     RoadDrawing? _drawing;
     Node2D _preview = null!;
-    RoadGraphics? _roadGraphics;
-    ShaderMaterial? _roadMaterial;
     string? _roadsProblem;
     readonly string _openSeed;
     readonly int _openSize;
@@ -76,14 +79,24 @@ public partial class MapViewControl : Control
     Label _message = null!;
     Control _canvas = null!;
     Node2D _world = null!;
-    ShaderMaterial? _material;
+
+    // The graphics source, and for each kind of draw the images it drew so far and the material over them: the terrain
+    // and the roads, the objects, and the water ripples. The ripples keep the surface color their images show over.
+    IGraphicsSource? _source;
+    readonly ImageLayers _layers = new();
+    ShaderMaterial? _surfaceMaterial;
+    int _surfaceLayers;
+    readonly ImageLayers _objectLayers = new();
     ShaderMaterial? _objectMaterial;
+    int _objectImages;
+    readonly ImageLayers _rippleLayers = new();
     ShaderMaterial? _waterMaterial;
+    int _rippleImages;
+    byte[]? _rippleSurface;
     readonly System.Collections.Generic.List<MeshInstance2D> _waterNodes = [];
-    ObjectGraphics? _objects;
-    System.Collections.Generic.IReadOnlyList<MaskImage> _masks = [];
     string? _graphicsProblem;
     string? _objectsProblem;
+    string? _settlersProblem;
     string? _tablesProblem;
     bool _dragging;
     readonly ClickGesture _gesture = new();
@@ -97,21 +110,33 @@ public partial class MapViewControl : Control
     /// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
     /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
     /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
+    /// <paramref name="graphics"/> is the source the view draws from; the rules come from the install under both.
     /// </summary>
-    public MapViewControl(Install install, string seedText, int sizeValue, bool gameView = false)
+    public MapViewControl(
+        Install install,
+        string seedText,
+        int sizeValue,
+        bool gameView = false,
+        GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
+    )
     {
         _install = install;
         _openSeed = seedText;
         _openSize = sizeValue;
         _gameView = gameView;
+        _graphics = graphics;
     }
 
     /// <summary>
     /// The game view on the map a <paramref name="layout"/> draws: the seed field shows the layout's seed and the
     /// size picker its size, and neither can change.
     /// </summary>
-    public MapViewControl(Install install, Layout layout)
-        : this(install, layout.Seed.ToScreen(), layout.Size.Value, true)
+    public MapViewControl(
+        Install install,
+        Layout layout,
+        GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
+    )
+        : this(install, layout.Seed.ToScreen(), layout.Size.Value, true, graphics)
     {
         _layout = layout;
     }
@@ -127,10 +152,10 @@ public partial class MapViewControl : Control
     public Map? Map => _state.Map;
 
     /// <summary>
-    /// The height of the tallest object sprite in map pixels (<see cref="ObjectGraphics.LayerHeight"/>), 0 with no
-    /// object graphics loaded. A play run's cropped <c>shot</c> leaves this much room above its tiles.
+    /// The height of the tallest object image the graphics source draws, in map pixels (<see cref="IGraphicsSource.ObjectHeadroom"/>),
+    /// 0 with no source or no object graphics. A play run's cropped <c>shot</c> leaves this much room above its tiles.
     /// </summary>
-    public int ObjectHeadroom => _objects?.LayerHeight ?? 0;
+    public int ObjectHeadroom => _source?.ObjectHeadroom ?? 0;
 
     /// <summary>What a play run observes of the view now.</summary>
     public PlayState Snapshot() =>
@@ -317,43 +342,6 @@ public partial class MapViewControl : Control
 
         try
         {
-            var graphics = TerrainGraphics.Load(_install);
-            _material = BuildMaterial(graphics);
-            _masks = graphics.Masks;
-            try
-            {
-                _roadGraphics = RoadGraphics.Load(_install);
-                _roadMaterial = BuildRoadMaterial(_roadGraphics, graphics.PaletteRgba);
-            }
-            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-            {
-                _roadGraphics = null;
-                _roadsProblem = e.Message;
-                GD.PrintErr($"map view: {e.Message}");
-            }
-        }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _graphicsProblem = e.Message;
-            GD.PrintErr($"map view: {e.Message}");
-        }
-
-        try
-        {
-            _objects = ObjectGraphics.Load(_install);
-            _objectMaterial = BuildObjectMaterial(_objects);
-            _waterMaterial = (ShaderMaterial)_objectMaterial.Duplicate();
-            _waterMaterial.Shader = GD.Load<Shader>("res://src/Viewer/Water.gdshader");
-        }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _objects = null;
-            _objectsProblem = e.Message;
-            GD.PrintErr($"map view: {e.Message}");
-        }
-
-        try
-        {
             _tables = ProgramTablesImporter.Import(_install.ReadAll(Install.Program));
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -362,40 +350,39 @@ public partial class MapViewControl : Control
             GD.PrintErr($"map view: {e.Message}");
         }
 
-        if (_gameView)
+        try
+        {
+            if (_graphics == GraphicsSourceName.OpenSettlers)
+            {
+                // A broken content set names its file and key here, and the view draws no map, as for a missing install file.
+                _source = OpenSettlersSource.Load(
+                    ProjectSettings.GlobalizePath("res://content/open-settlers"),
+                    new GodotImageDecoder()
+                );
+            }
+            else
+            {
+                LoadHistoryEditionSource();
+            }
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _graphicsProblem = e.Message;
+            GD.PrintErr($"map view: {e.Message}");
+        }
+
+        if (_gameView && _tables is not null)
         {
             try
             {
-                if (_tables is not null)
-                {
-                    // The sprites of the jobs whose settlers walk so far: the carrier, the woodcutter, and the settler of the type 1 hut.
-                    _settlerGraphics = SettlerGraphics.Load(
-                        _install,
-                        _tables,
-                        Job.Carrier.Code,
-                        Job.Woodcutter.Code,
-                        RuleTables.TypeOneHutJob
-                    );
-                    _settlerMaterial = BuildObjectMaterial(
-                        new ObjectGraphics
-                        {
-                            PaletteRgba = _settlerGraphics.PaletteRgba,
-                            LayerWidth = _settlerGraphics.LayerWidth,
-                            LayerHeight = _settlerGraphics.LayerHeight,
-                            Images = _settlerGraphics.Images,
-                        }
-                    );
-                }
+                _settlerFigures = new SettlerFigures(
+                    (_source as HistoryEditionSource)?.Steps ?? StepOffsets.Load(_install),
+                    _tables.FrameRows
+                );
             }
-            catch (Exception e)
-                when (e
-                        is IOException
-                            or InvalidDataException
-                            or UnauthorizedAccessException
-                            or InvalidOperationException
-                )
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
-                _settlerGraphics = null;
+                _settlersProblem = e.Message;
                 GD.PrintErr($"map view: the settlers' sprites: {e.Message}");
             }
         }
@@ -407,6 +394,31 @@ public partial class MapViewControl : Control
         StartGame();
         Redraw();
         ShowMessage();
+    }
+
+    // The History Edition source of the install; a problem with the roads, objects, or settlers is kept for the message.
+    void LoadHistoryEditionSource()
+    {
+        // The settlers are drawn in the game view only: the source gets the exe's tables for them there.
+        var source = HistoryEditionSource.Load(_install, _gameView ? _tables : null);
+        _source = source;
+        if (source.RoadsProblem is not null)
+        {
+            _roadsProblem = source.RoadsProblem;
+            GD.PrintErr($"map view: {source.RoadsProblem}");
+        }
+
+        if (source.ObjectsProblem is not null)
+        {
+            _objectsProblem = source.ObjectsProblem;
+            GD.PrintErr($"map view: {source.ObjectsProblem}");
+        }
+
+        if (source.SettlersProblem is not null)
+        {
+            _settlersProblem = source.SettlersProblem;
+            GD.PrintErr($"map view: the settlers' sprites: {source.SettlersProblem}");
+        }
     }
 
     void StartGame()
@@ -616,7 +628,7 @@ public partial class MapViewControl : Control
             _pressView.Height,
             screenX,
             screenY,
-            _objects?.Images[ObjectGraphics.Layer(ObjectSprites.FlagEntry)]
+            ObjectDraws.FlagGeometry
         );
         if (_roadButton.ButtonPressed && _drawing is not null)
         {
@@ -719,14 +731,13 @@ public partial class MapViewControl : Control
 
     void ShowMessage()
     {
-        _message.Text = _graphicsProblem is not null
-            ? $"Cannot draw the map: {_graphicsProblem}"
-            : _state.Problem
-                ?? (
-                    _objectsProblem is not null ? $"Cannot draw the objects: {_objectsProblem}"
-                    : _roadsProblem is not null ? $"Cannot draw the roads: {_roadsProblem}"
-                    : ""
-                );
+        _message.Text = ViewMessage.Of(
+            graphics: _graphicsProblem,
+            state: _state.Problem,
+            objects: _objectsProblem,
+            roads: _roadsProblem,
+            settlers: _settlersProblem
+        );
         _message.Modulate = new Color(1, 0.4f, 0.4f);
     }
 
@@ -740,15 +751,26 @@ public partial class MapViewControl : Control
             }
         }
 
-        if (_state.Map is null || _material is null)
+        if (_state.Map is null || _source is null)
         {
             return;
         }
 
-        var meshes = BuildMeshes(TerrainTriangles.Of(_state.Map), _state.Map.Size);
-        var roadMesh = BuildRoadMesh(_state.Map);
-        var objectMeshes = BuildObjectMeshes(_state.Map);
-        var waterMesh = BuildWaterMesh(_state.Map);
+        var meshes = BuildMeshes(_source, TerrainTriangles.Of(_state.Map), _state.Map.Size);
+        var roadMesh = BuildRoadMesh(_source, _state.Map);
+        var objectMeshes = BuildObjectMeshes(_source, _state.Map);
+        var waterMesh = BuildWaterMesh(_source, _state.Map);
+        if (SurfaceMaterial() is not { } surface || ObjectMaterial() is not { } objectMaterial)
+        {
+            return;
+        }
+
+        var waterMaterial = waterMesh is null ? null : WaterMaterial();
+        if (waterMesh is not null && waterMaterial is null)
+        {
+            return;
+        }
+
         _framesDrawn = _frameCounter;
         _objectNodes.Clear();
         _waterNodes.Clear();
@@ -758,21 +780,21 @@ public partial class MapViewControl : Control
             var copy = new Node2D { Position = new Vector2(x, y) };
             foreach (var mesh in meshes)
             {
-                copy.AddChild(new MeshInstance2D { Mesh = mesh, Material = _material });
+                copy.AddChild(new MeshInstance2D { Mesh = mesh, Material = surface });
             }
 
             // The roads are strips over the terrain of the whole map and under the objects.
             if (roadMesh is not null)
             {
-                copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = _roadMaterial });
+                copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = surface });
             }
 
-            // The water sprites paint over the terrain and the roads of their copy where it shows palette index 8, so the
-            // screen is copied after this copy's terrain and roads are drawn.
-            if (_waterMaterial is not null)
+            // The water ripples paint over the terrain and the roads of their copy where the surface color shows, so the
+            // screen is copied after this copy's terrain and roads are drawn. A source that draws no ripple makes no copy.
+            if (waterMaterial is not null)
             {
                 copy.AddChild(new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Viewport });
-                var water = new MeshInstance2D { Mesh = waterMesh, Material = _waterMaterial };
+                var water = new MeshInstance2D { Mesh = waterMesh, Material = waterMaterial };
                 copy.AddChild(water);
                 _waterNodes.Add(water);
             }
@@ -784,7 +806,7 @@ public partial class MapViewControl : Control
                 var node = new MeshInstance2D
                 {
                     Mesh = mesh,
-                    Material = _objectMaterial,
+                    Material = objectMaterial,
                     ZAsRelative = false,
                     ZIndex = 1,
                 };
@@ -794,15 +816,10 @@ public partial class MapViewControl : Control
 
             _objectNodes.Add(objectNodes);
 
-            // The settlers walk over the objects of every wrap copy; their mesh is rebuilt after each tick.
-            if (_settlerMaterial is not null)
+            // The settlers walk over the objects of every wrap copy; their mesh and material are set after each tick.
+            if (_settlerFigures is not null)
             {
-                var settlers = new MeshInstance2D
-                {
-                    Material = _settlerMaterial,
-                    ZAsRelative = false,
-                    ZIndex = 2,
-                };
+                var settlers = new MeshInstance2D { ZAsRelative = false, ZIndex = 2 };
                 copy.AddChild(settlers);
                 _settlerMeshes.Add(settlers);
             }
@@ -818,18 +835,32 @@ public partial class MapViewControl : Control
     void UpdateObjects()
     {
         _framesDrawn = _frameCounter;
-        if (_state.Map is null || _objectNodes.Count == 0)
+        if (_state.Map is null || _source is null || _objectNodes.Count == 0)
         {
             return;
         }
 
-        var waterMesh = BuildWaterMesh(_state.Map);
+        var waterMesh = BuildWaterMesh(_source, _state.Map);
+        if ((waterMesh is not null) != (_waterNodes.Count > 0))
+        {
+            // The source's ripples came or went with the animation step: the copies of the screen change with them.
+            Redraw();
+            return;
+        }
+
+        var meshes = BuildObjectMeshes(_source, _state.Map);
+        // The step may have drawn images the array does not hold yet: the material takes them in then.
+        if (ObjectMaterial() is not { } objectMaterial || (waterMesh is not null && WaterMaterial() is null))
+        {
+            return;
+        }
+
         foreach (var node in _waterNodes)
         {
             node.Mesh = waterMesh;
+            node.Material = _waterMaterial;
         }
 
-        var meshes = BuildObjectMeshes(_state.Map);
         foreach (var nodes in _objectNodes)
         {
             if (nodes.Count != meshes.Count)
@@ -841,6 +872,7 @@ public partial class MapViewControl : Control
             for (var band = 0; band < meshes.Count; band++)
             {
                 nodes[band].Mesh = meshes[band];
+                nodes[band].Material = objectMaterial;
             }
         }
     }
@@ -849,236 +881,144 @@ public partial class MapViewControl : Control
     // the game's settlers and clock, not from the frame time.
     void UpdateSettlers()
     {
-        if (_game is null || _settlerGraphics is null || _state.Map is null || _settlerMeshes.Count == 0)
+        if (
+            _game is null
+            || _settlerFigures is null
+            || _source is null
+            || _state.Map is null
+            || _settlerMeshes.Count == 0
+        )
         {
             return;
         }
 
-        var quads = new System.Collections.Generic.List<(int X, int Y, int Width, int Height, Color Color)>();
-        foreach (
-            var draw in _settlerGraphics.Figures.Draws(
-                _state.Map,
-                _game.Settlers,
-                _game.Clock.Now,
-                _settlerGraphics.Shifts
-            )
-        )
+        // A term the source has no image for draws nothing: the render loop neither throws nor warns.
+        var quads = ObjectQuads.Flat(
+            _settlerFigures.Draws(_state.Map, _game.Settlers, _game.Clock.Now),
+            _source,
+            _settlerLayers
+        );
+        var material = quads.Count > 0 ? SettlerMaterial() : null;
+        if (quads.Count > 0 && material is null)
         {
-            // A sprite with no loaded layer is skipped and reported once per sprite: the render loop must not throw or
-            // warn every frame. The tests assert that every draw of the recorded scenarios has a layer (LayerOf).
-            if (!_settlerGraphics.TryLayerOf(draw, out var layer))
-            {
-                if (_warnedSettlerSprites.Add((draw.Entry, draw.Colour)))
-                    GD.PushWarning($"No layer holds the settler sprite {draw.Entry}/{draw.Colour}.");
-                continue;
-            }
-
-            // The shadow comes before each settler's figure (0x45007d), at the same position.
-            if (SettlerGraphics.IsFigure(draw) && _settlerGraphics.ShadowLayer >= 0)
-            {
-                AddSettlerQuad(quads, draw, _settlerGraphics.ShadowLayer);
-            }
-
-            AddSettlerQuad(quads, draw, layer);
+            return;
         }
 
-        var mesh = quads.Count > 0 ? BuildQuadMesh(quads) : null;
+        var mesh =
+            quads.Count > 0
+                ? BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))))
+                : null;
         foreach (var node in _settlerMeshes)
         {
             node.Mesh = mesh;
+            node.Material = material;
         }
     }
 
-    void AddSettlerQuad(
-        System.Collections.Generic.List<(int X, int Y, int Width, int Height, Color Color)> quads,
-        SettlerDraw draw,
-        int layer
-    )
-    {
-        var image = _settlerGraphics!.Images[layer];
-        if (image.Width > 0 && image.Height > 0)
-        {
-            quads.Add((draw.X + image.OffsetX, draw.Y + image.OffsetY, image.Width, image.Height, LayerColor(layer)));
-        }
-    }
+    // The material of the settlers' images.
+    ShaderMaterial? SettlerMaterial() =>
+        LayerMaterial(_settlerLayers, "Objects", "the settlers", ref _settlerMaterial, ref _settlerImages);
 
-    // One mesh of every road strip of the map, or null where there is none or the road graphics did not load.
-    ArrayMesh? BuildRoadMesh(Map map)
+    // One mesh of every road strip of the map, or null where there is none or the source draws none.
+    ArrayMesh? BuildRoadMesh(IGraphicsSource source, Map map)
     {
-        if (_roadGraphics is null)
-        {
-            return null;
-        }
-
-        var quads = _roadGraphics.Quads(RoadDraws.Of(map));
+        var quads = TerrainQuads.Strips(RoadDraws.Of(map), source, _layers);
 
         return quads.Count == 0
             ? null
-            : BuildQuadMesh(
-                quads.Select(q =>
-                    (q.X, q.Y, q.Width, q.Height, new Color(q.MaskLayer / 255f, q.TextureLayer / 255f, 0, 1))
-                )
-            );
+            : BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))));
     }
 
-    // The terrain's shader with the road masks and textures in place of the terrain's, and the terrain's palette.
-    ShaderMaterial BuildRoadMaterial(RoadGraphics graphics, byte[] paletteRgba)
+    // The material of the terrain and the roads.
+    ShaderMaterial? SurfaceMaterial() =>
+        LayerMaterial(_layers, "Objects", "the terrain and the roads", ref _surfaceMaterial, ref _surfaceLayers);
+
+    // The material of the objects.
+    ShaderMaterial? ObjectMaterial() =>
+        LayerMaterial(_objectLayers, "Objects", "the objects", ref _objectMaterial, ref _objectImages);
+
+    // The material of the water ripples: the ripples' images, and the surface color they show over.
+    ShaderMaterial? WaterMaterial()
     {
-        var masks = new Godot.Collections.Array<Image>();
-        foreach (var mask in graphics.Masks)
+        var material = LayerMaterial(_rippleLayers, "Water", "the water", ref _waterMaterial, ref _rippleImages);
+        if (material is not null && _rippleSurface is { } surface)
         {
-            masks.Add(
-                Image.CreateFromData(
-                    TerrainGraphics.LayerWidth,
-                    TerrainGraphics.MaskLayerHeight,
-                    false,
-                    Image.Format.R8,
-                    mask.Layer
-                )
+            material.SetShaderParameter(
+                "surface",
+                new Color(surface[0] / 255f, surface[1] / 255f, surface[2] / 255f, surface[3] / 255f)
             );
         }
-
-        var textures = new Godot.Collections.Array<Image>();
-        foreach (var texture in graphics.Textures)
-        {
-            textures.Add(
-                Image.CreateFromData(
-                    TerrainGraphics.LayerWidth,
-                    TerrainGraphics.TextureHeight,
-                    false,
-                    Image.Format.R8,
-                    texture
-                )
-            );
-        }
-
-        var maskArray = new Texture2DArray();
-        maskArray.CreateFromImages(masks);
-        var textureArray = new Texture2DArray();
-        textureArray.CreateFromImages(textures);
-        var palette = ImageTexture.CreateFromImage(
-            Image.CreateFromData(256, 1, false, Image.Format.Rgba8, paletteRgba)
-        );
-        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Terrain.gdshader") };
-        material.SetShaderParameter("masks", maskArray);
-        material.SetShaderParameter("textures", textureArray);
-        material.SetShaderParameter("palette", palette);
 
         return material;
     }
 
-    ShaderMaterial BuildMaterial(TerrainGraphics graphics)
+    // A material of <paramref name="shader"/> over every image in <paramref name="layers"/>, one array texture layer
+    // each. An image a draw added goes into its layer; the texture is built again only where the shape of
+    // <paramref name="layers"/> grew. <paramref name="built"/> counts the images uploaded. Null, with the problem shown,
+    // where the images pass the GPU's layer limit.
+    ShaderMaterial? LayerMaterial(
+        ImageLayers layers,
+        string shader,
+        string what,
+        ref ShaderMaterial? material,
+        ref int built
+    )
     {
-        var masks = new Godot.Collections.Array<Image>();
-        foreach (var mask in graphics.Masks)
+        var images = layers.Images;
+        if (images.Count > MaxArrayLayers)
         {
-            masks.Add(
-                Image.CreateFromData(
-                    TerrainGraphics.LayerWidth,
-                    TerrainGraphics.MaskLayerHeight,
-                    false,
-                    Image.Format.R8,
-                    mask.Layer
-                )
-            );
+            _graphicsProblem = $"{what} need {images.Count} images, more than the {MaxArrayLayers} layers of the GPU";
+            GD.PrintErr($"map view: {_graphicsProblem}");
+            ShowMessage();
+
+            return null;
         }
 
-        var textures = new Godot.Collections.Array<Image>();
-        foreach (var texture in graphics.Textures)
-        {
-            textures.Add(
-                Image.CreateFromData(
-                    TerrainGraphics.LayerWidth,
-                    TerrainGraphics.TextureHeight,
-                    false,
-                    Image.Format.R8,
-                    texture
-                )
-            );
-        }
-
-        if (masks.Count > MaxArrayLayers || textures.Count > MaxArrayLayers)
-        {
-            throw new InvalidDataException(
-                "the terrain graphics need more array texture layers than the GPU limit of 256"
-            );
-        }
-
-        var maskArray = new Texture2DArray();
-        maskArray.CreateFromImages(masks);
-        var textureArray = new Texture2DArray();
-        textureArray.CreateFromImages(textures);
-        var palette = ImageTexture.CreateFromImage(
-            Image.CreateFromData(256, 1, false, Image.Format.Rgba8, graphics.PaletteRgba)
-        );
-        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Terrain.gdshader") };
-        material.SetShaderParameter("masks", maskArray);
-        material.SetShaderParameter("textures", textureArray);
-        material.SetShaderParameter("palette", palette);
-
-        return material;
-    }
-
-    // The vertex color that carries a sprite's array texture layer to Objects.gdshader and Water.gdshader, and in
-    // blue whether the layer is one of the shadow array.
-    static Color LayerColor(int layer, bool shadow = false)
-    {
-        var (red, green, blue) = SpriteLayer.Color(layer, shadow);
-
-        return new Color(red, green, blue, 1);
-    }
-
-    ShaderMaterial BuildObjectMaterial(ObjectGraphics graphics)
-    {
-        static Texture2DArray Layers(
-            System.Collections.Generic.IReadOnlyList<ObjectImage> layers,
-            int width,
-            int height,
-            System.Func<ObjectImage, byte[]> pixels
+        var (count, width, height) = layers.Shape;
+        var sprites = material?.GetShaderParameter("sprites").As<Texture2DArray>();
+        if (
+            material is null
+            || sprites is null
+            || sprites.GetLayers() != count
+            || sprites.GetWidth() != width
+            || sprites.GetHeight() != height
         )
         {
-            var images = new Godot.Collections.Array<Image>();
-            foreach (var image in layers)
+            // The layers past the images are blank: an empty map's one layer gives the shader a texture to bind.
+            var textures = new Godot.Collections.Array<Image>();
+            for (var layer = 0; layer < count; layer++)
             {
-                images.Add(
-                    Image.CreateFromData(Math.Max(width, 1), Math.Max(height, 1), false, Image.Format.R8, pixels(image))
-                );
+                textures.Add(LayerImage(layer < images.Count ? images[layer] : ObjectImage.Empty, width, height));
             }
 
-            var array = new Texture2DArray();
-            array.CreateFromImages(images);
-
-            return array;
+            sprites = new Texture2DArray();
+            sprites.CreateFromImages(textures);
+            material ??= new ShaderMaterial { Shader = GD.Load<Shader>($"res://src/Viewer/{shader}.gdshader") };
+            material.SetShaderParameter("sprites", sprites);
+        }
+        else
+        {
+            for (var layer = built; layer < images.Count; layer++)
+            {
+                sprites.UpdateLayer(LayerImage(images[layer], width, height), layer);
+            }
         }
 
-        // Graphics with no shadow array (the settlers') get one blank layer, so the shader has a texture to bind.
-        var shadows =
-            graphics.ShadowImages.Count > 0 ? graphics.ShadowImages : [ObjectGraphics.Pad(ObjectImage.Empty, 1, 1)];
-        var indices = Layers(graphics.Images, graphics.LayerWidth, graphics.LayerHeight, image => image.Indices);
-        var coverage = Layers(graphics.Images, graphics.LayerWidth, graphics.LayerHeight, image => image.Coverage);
-        var shadowIndices = Layers(
-            shadows,
-            graphics.ShadowLayerWidth,
-            graphics.ShadowLayerHeight,
-            image => image.Indices
-        );
-        var shadowCoverage = Layers(
-            shadows,
-            graphics.ShadowLayerWidth,
-            graphics.ShadowLayerHeight,
-            image => image.Coverage
-        );
-        var palette = ImageTexture.CreateFromImage(
-            Image.CreateFromData(256, 1, false, Image.Format.Rgba8, graphics.PaletteRgba)
-        );
-        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Objects.gdshader") };
-        material.SetShaderParameter("indices", indices);
-        material.SetShaderParameter("coverage", coverage);
-        material.SetShaderParameter("shadow_indices", shadowIndices);
-        material.SetShaderParameter("shadow_coverage", shadowCoverage);
-        material.SetShaderParameter("palette", palette);
+        built = images.Count;
 
         return material;
+    }
+
+    // One array texture layer of <paramref name="image"/>, at the top left of a width x height layer.
+    static Image LayerImage(ObjectImage image, int width, int height) =>
+        Image.CreateFromData(width, height, false, Image.Format.Rgba8, image.Padded(width, height).Rgba);
+
+    // The vertex color that carries an image's array texture layer to Objects.gdshader and Water.gdshader.
+    static Color LayerColor(int layer)
+    {
+        var (red, green) = SpriteLayer.Channels(layer);
+
+        return new Color(red, green, 0, 1);
     }
 
     // The corners of a quad in the order its two triangles use them.
@@ -1120,32 +1060,22 @@ public partial class MapViewControl : Control
         return mesh;
     }
 
-    // One mesh of the water sprites of the whole map at the frame counter, the layer in COLOR; null for none.
-    ArrayMesh? BuildWaterMesh(Map map)
+    // One mesh of the water ripples of the whole map at the frame counter, the layer in COLOR; null where the source
+    // draws none.
+    ArrayMesh? BuildWaterMesh(IGraphicsSource source, Map map)
     {
-        if (_objects is null)
-        {
-            return null;
-        }
+        var (quads, surface) = ObjectQuads.Ripples(ObjectDraws.WaterOf(map, _frameCounter), source, _rippleLayers);
+        _rippleSurface = surface ?? _rippleSurface;
 
-        var quads = ObjectQuads
-            .Bands(ObjectDraws.WaterOf(map, _frameCounter), _objects.Images, [], map.Size.Height, map.Size.Height)
-            .SelectMany(band => band)
-            .Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))
-            .ToList();
-
-        return quads.Count > 0 ? BuildQuadMesh(quads) : null;
+        return quads.Count > 0
+            ? BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))))
+            : null;
     }
 
-    // One mesh per band of rows, one quad per object sprite: the layer in COLOR.
-    System.Collections.Generic.List<ArrayMesh> BuildObjectMeshes(Map map)
+    // One mesh per band of rows, one quad per object image and shadow: the layer in COLOR.
+    System.Collections.Generic.List<ArrayMesh> BuildObjectMeshes(IGraphicsSource source, Map map)
     {
         var meshes = new System.Collections.Generic.List<ArrayMesh>();
-        if (_objects is null)
-        {
-            return meshes;
-        }
-
         foreach (
             var band in ObjectQuads.Bands(
                 ObjectDraws.Of(
@@ -1155,36 +1085,31 @@ public partial class MapViewControl : Control
                     _game is null ? null : ObjectDraws.FlagGoodsOf(_game),
                     _frameCounter
                 ),
-                _objects.Images,
-                _objects.ShadowImages,
+                source,
+                _objectLayers,
                 map.Size.Height,
                 BandRows
             )
         )
         {
-            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer, q.Shadow)))));
+            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))));
         }
 
         return meshes;
     }
 
     // One mesh per band of rows, so the painting order of the rows holds across bands (each band is added after the
-    // one above it) and no mesh grows with the map. A triangle is four vertices: the corners of its mask.
+    // one above it) and no mesh grows with the map. A triangle is four vertices: the corners of its image.
     System.Collections.Generic.List<ArrayMesh> BuildMeshes(
+        IGraphicsSource source,
         System.Collections.Generic.List<TerrainTriangle> triangles,
         MapSize size
     )
     {
         var meshes = new System.Collections.Generic.List<ArrayMesh>();
-        foreach (var band in TerrainQuads.Bands(triangles, _masks, size.Height, BandRows))
+        foreach (var band in TerrainQuads.Bands(triangles, source, _layers, size.Height, BandRows))
         {
-            meshes.Add(
-                BuildQuadMesh(
-                    band.Select(q =>
-                        (q.X, q.Y, q.Width, q.Height, new Color(q.MaskLayer / 255f, q.TextureLayer / 255f, 0, 1))
-                    )
-                )
-            );
+            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))));
         }
 
         return meshes;

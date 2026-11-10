@@ -167,12 +167,13 @@ public partial class AssetBrowserView : Control
         }
 
         var view = layout is not null
-            ? new MapViewControl(install, layout)
+            ? new MapViewControl(install, layout, args.Graphics)
             : new MapViewControl(
                 install,
                 args.SeedText ?? MapViewState.DefaultSeed,
                 args.Size?.Value ?? MapSize.Offered[0].Value,
-                args.Mode == LaunchMode.GameView
+                args.Mode == LaunchMode.GameView,
+                args.Graphics
             );
         AddChild(view);
         if (script is not null)

@@ -1,7 +1,9 @@
 # Open Settlers
 
-An open-source engine for Die Siedler (Blue Byte, 1993) on Godot 4 with C#. It ships no game content and
-reads the files of a Die Siedler install the user owns. See `README.md` for layout and usage.
+An open-source engine for Die Siedler (Blue Byte, 1993) on Godot 4 with C#. It ships no game content of
+the original and reads the files of a Die Siedler install the user owns. The map view and the game view draw
+through a graphics source: the install's art or the repository's own content set (`content/`, ADR 0014,
+ADR 0015). See `README.md` for layout and usage.
 
 ## Where to read
 

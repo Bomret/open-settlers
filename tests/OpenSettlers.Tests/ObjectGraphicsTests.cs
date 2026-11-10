@@ -14,30 +14,36 @@ public sealed class ObjectGraphicsTests
     const string Archive = "loca/SPAD.PA";
 
     // A 3 x 1 sprite: pixel 0 is skipped, pixel 1 is drawn with palette index 0, pixel 2 with index 7.
-    static byte[] Sprite(short offsetX = -1, short offsetY = -2) =>
+    internal static byte[] Sprite(short offsetX = -1, short offsetY = -2) =>
         GraphicFileTests.Entry(1, 0, 3, 1, offsetX, offsetY, [1, 2, 0, 7, 0, 0]);
 
-    static Dictionary<int, byte[]> Payloads(bool flag = false)
+    // A 2 x 2 sprite with the given offsets.
+    internal static byte[] Square(short offsetX, short offsetY) =>
+        GraphicFileTests.Entry(1, 0, 2, 2, offsetX, offsetY, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]);
+
+    // The red components of index 7 and the shadow color 0x80 are 28 and 36. Index 0 reads as black.
+    internal static byte[] Palette()
+    {
+        var palette = new byte[768];
+        palette[3 * 7] = 28;
+        palette[3 * 0x80] = 36;
+
+        return palette;
+    }
+
+    internal static Dictionary<int, byte[]> Payloads(bool flag = false)
     {
         var payloads = new Dictionary<int, byte[]>
         {
-            [3] = new byte[768],
+            [3] = Palette(),
             [1250] = Sprite(),
-            [1251] = GraphicFileTests.Entry(1, 0, 2, 2, 5, 6, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]),
+            [1251] = Square(5, 6),
             [1369] = Sprite(),
-            [ObjectSprites.CastleEntry] = GraphicFileTests.Entry(1, 0, 2, 2, 7, 8, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]),
+            [ObjectSprites.CastleEntry] = Square(7, 8),
         };
         if (flag)
         {
-            payloads[ObjectSprites.FlagEntry] = GraphicFileTests.Entry(
-                1,
-                0,
-                2,
-                2,
-                9,
-                4,
-                [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
-            );
+            payloads[ObjectSprites.FlagEntry] = Square(9, 4);
         }
 
         return payloads;
@@ -60,40 +66,94 @@ public sealed class ObjectGraphicsTests
         new FakeInstall().Put(Archive, ArchiveBytes.Build(rows, payloads));
 
     // A 2 x 1 shadow mask.
-    static byte[] ShadowMask() => MaskFileTests.Entry(2, 1, 1, 1, 0, 0);
+    internal static byte[] ShadowMask() => MaskFileTests.Entry(2, 1, 1, 1, 0, 0);
 
     [TestMethod]
-    public void TheCoverageOfAnImageIsKeptApartFromItsPaletteIndices()
+    public void ACoveredPixelIsOpaqueEvenAtPaletteIndexZeroAndAnUncoveredPixelIsTransparent()
     {
-        var image = ObjectImage.From(SpriteFile.Read(Sprite()));
+        var image = ObjectImage.From(SpriteFile.Read(Sprite()), PaletteFile.Read(Palette()));
 
-        CollectionAssert.AreEqual(new byte[] { 0, 0, 7 }, image.Indices);
-        CollectionAssert.AreEqual(new byte[] { 0, 255, 255 }, image.Coverage);
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0, 0, 0, 0, 255, 28, 0, 0, 255 }, image.Rgba);
         Assert.AreEqual(-1, image.OffsetX);
         Assert.AreEqual(-2, image.OffsetY);
     }
 
     [TestMethod]
-    public void LoadingReadsEverySpriteOfTheObjectsAndPadsThemToOneLayerSize()
+    public void APaddedImageKeepsItsSizeAndOffsetsAndItsRowsMoveToTheLayersStride()
+    {
+        var image = new ObjectImage(2, 2, -1, -2, [1, 1, 1, 255, 2, 2, 2, 255, 3, 3, 3, 255, 4, 4, 4, 255]);
+
+        var padded = image.Padded(3, 3);
+
+        Assert.AreEqual((2, 2, -1, -2), (padded.Width, padded.Height, padded.OffsetX, padded.OffsetY));
+        CollectionAssert.AreEqual(
+            new byte[]
+            {
+                1,
+                1,
+                1,
+                255,
+                2,
+                2,
+                2,
+                255,
+                0,
+                0,
+                0,
+                0,
+                3,
+                3,
+                3,
+                255,
+                4,
+                4,
+                4,
+                255,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            },
+            padded.Rgba
+        );
+    }
+
+    [TestMethod]
+    public void LoadingReadsEverySpriteOfTheObjectsByItsEntryAtItsOwnSize()
     {
         using var fake = Install(Payloads());
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.HasCount(ObjectGraphics.SpriteLayerCount, graphics.Images);
-        Assert.HasCount(ObjectGraphics.SpriteLayerCount, graphics.ShadowImages);
-        Assert.AreEqual(3, graphics.LayerWidth);
-        Assert.AreEqual(2, graphics.LayerHeight);
-        Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
-        Assert.AreEqual(2, graphics.Images[ObjectGraphics.Layer(1251)].Height);
-        Assert.AreEqual(5, graphics.Images[ObjectGraphics.Layer(1251)].OffsetX);
-        Assert.AreEqual(3 * 2, graphics.Images[0].Coverage.Length);
-        Assert.AreEqual(0, ObjectGraphics.Layer(1250));
-        Assert.AreEqual(119, ObjectGraphics.Layer(1369));
+        Assert.AreEqual(3, graphics.Sprites[1250].Width);
+        Assert.AreEqual(2, graphics.Sprites[1251].Height);
+        Assert.AreEqual(5, graphics.Sprites[1251].OffsetX);
+        Assert.AreEqual(3 * 1, graphics.Sprites[1250].Rgba.Length / 4);
+        Assert.AreEqual(3, graphics.Sprites[1369].Width);
     }
 
     [TestMethod]
-    public void TheCastleSpriteIsTheLayerAfterTheObjectSprites()
+    public void TheTallestSpriteIsTheHeadroom()
+    {
+        using var fake = Install(Payloads());
+
+        Assert.AreEqual(2, ObjectGraphics.Load(Open(fake)).Headroom);
+    }
+
+    [TestMethod]
+    public void TheCastleSpriteIsEntry1428()
     {
         using var fake = Install(Payloads());
 
@@ -104,59 +164,40 @@ public sealed class ObjectGraphicsTests
 #pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
         Assert.AreEqual(1428, ObjectSprites.CastleEntry);
 #pragma warning restore MSTEST0032
-        Assert.AreEqual(ObjectGraphics.EntryCount, ObjectGraphics.Layer(ObjectSprites.CastleEntry));
-        Assert.AreEqual(7, graphics.Images[ObjectGraphics.Layer(ObjectSprites.CastleEntry)].OffsetX);
+        Assert.AreEqual(7, graphics.Sprites[ObjectSprites.CastleEntry].OffsetX);
     }
 
     [TestMethod]
-    public void TheFlagSpriteIsTheLayerAfterTheCastlesAndItsImageIsRead()
+    public void TheFlagSpriteIsRead()
     {
         using var fake = Install(Payloads(flag: true));
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.AreEqual(ObjectGraphics.EntryCount + 1, ObjectGraphics.Layer(ObjectSprites.FlagEntry));
-        Assert.AreEqual(9, graphics.Images[ObjectGraphics.Layer(ObjectSprites.FlagEntry)].OffsetX);
+        Assert.AreEqual(9, graphics.Sprites[ObjectSprites.FlagEntry].OffsetX);
     }
 
     [TestMethod]
-    public void TheGoodsSpritesAreTheLayersAfterTheHutsAndTheLogsImageIsRead()
+    public void TheGoodsAndTheFlagsFurtherFramesAndTheWaterAreRead()
     {
         var payloads = Payloads();
-        payloads[ObjectSprites.GoodEntry(new Good(7))] = GraphicFileTests.Entry(
-            1,
-            0,
-            2,
-            2,
-            3,
-            1,
-            [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
-        );
+        payloads[ObjectSprites.GoodEntry(new Good(7))] = Square(3, 1);
+        payloads[ObjectSprites.FlagEntry + 3] = Square(2, 2);
+        payloads[ObjectSprites.WaterFirstEntry] = Square(4, 4);
         using var fake = Install(payloads);
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.AreEqual(ObjectGraphics.EntryCount + 3, ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(0))));
-        Assert.AreEqual(ObjectGraphics.EntryCount + 10, ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(7))));
-        Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(7)))].OffsetX);
-        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32 + 16 + 3, graphics.Images.Count);
-        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32 + 16 + 2, ObjectGraphics.Layer(ObjectSprites.FlagEntry + 3));
-        Assert.AreEqual(ObjectGraphics.EntryCount + 3 + 32, ObjectGraphics.Layer(ObjectSprites.WaterFirstEntry));
+        Assert.AreEqual(3, graphics.Sprites[ObjectSprites.GoodEntry(new Good(7))].OffsetX);
+        Assert.AreEqual(2, graphics.Sprites[ObjectSprites.FlagEntry + 3].OffsetX);
+        Assert.AreEqual(4, graphics.Sprites[ObjectSprites.WaterFirstEntry].OffsetX);
     }
 
     [TestMethod]
-    public void TheHutSpriteIsTheLayerAfterTheFlagsAndItsImageIsRead()
+    public void TheHutSpriteIsRead()
     {
         var payloads = Payloads();
-        payloads[ObjectSprites.WoodcutterEntry] = GraphicFileTests.Entry(
-            1,
-            0,
-            2,
-            2,
-            11,
-            3,
-            [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]
-        );
+        payloads[ObjectSprites.WoodcutterEntry] = Square(11, 3);
         using var fake = Install(payloads);
 
         var graphics = ObjectGraphics.Load(Open(fake));
@@ -166,19 +207,17 @@ public sealed class ObjectGraphicsTests
 #pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
         Assert.AreEqual(1418, ObjectSprites.WoodcutterEntry);
 #pragma warning restore MSTEST0032
-        Assert.AreEqual(ObjectGraphics.EntryCount + 2, ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry));
-        Assert.AreEqual(11, graphics.Images[ObjectGraphics.Layer(ObjectSprites.WoodcutterEntry)].OffsetX);
+        Assert.AreEqual(11, graphics.Sprites[ObjectSprites.WoodcutterEntry].OffsetX);
     }
 
     [TestMethod]
-    public void AnAbsentEntryIsAnEmptyImage()
+    public void AnAbsentEntryHasNoSprite()
     {
         using var fake = Install(Payloads());
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.AreEqual(0, graphics.Images[ObjectGraphics.Layer(1300)].Width);
-        Assert.IsTrue(Array.TrueForAll(graphics.Images[ObjectGraphics.Layer(1300)].Coverage, c => c == 0));
+        Assert.IsFalse(graphics.Sprites.ContainsKey(1300));
     }
 
     [TestMethod]
@@ -215,116 +254,30 @@ public sealed class ObjectGraphicsTests
     }
 
     [TestMethod]
-    public void AQuadHangsFromTheDrawPositionByTheImagesOffsetsAndAnEmptyImageHasNone()
-    {
-        var images = new[]
-        {
-            new ObjectImage(3, 1, -1, -2, new byte[3], new byte[] { 0, 255, 255 }),
-            new ObjectImage(0, 0, 0, 0, [], []),
-        };
-        var draws = new[]
-        {
-            new ObjectDraw(0, 1250, 100, 50),
-            new ObjectDraw(0, 1251, 132, 50),
-            new ObjectDraw(20, 1250, 100, 450),
-        };
-
-        var bands = ObjectQuads.Bands(draws, images, [ObjectImage.Empty, ObjectImage.Empty], 21, 16);
-
-        Assert.HasCount(2, bands);
-        CollectionAssert.AreEqual(new[] { new ObjectQuad(99, 48, 3, 1, 0) }, bands[0]);
-        Assert.AreEqual(448, bands[1][0].Y);
-    }
-
-    [TestMethod]
-    public void AShadowIsDrawnFromTheShadowArrayRightBeforeItsSpriteFromItsOwnOffsets()
-    {
-        var images = new ObjectImage[ObjectGraphics.SpriteLayerCount];
-        Array.Fill(images, ObjectImage.Empty);
-        images[0] = new ObjectImage(3, 1, -1, -2, new byte[3], new byte[] { 0, 255, 255 });
-        images[1] = images[0];
-        var shadows = new ObjectImage[ObjectGraphics.SpriteLayerCount];
-        Array.Fill(shadows, ObjectImage.Empty);
-        shadows[ObjectGraphics.Layer(1250)] = new ObjectImage(4, 2, 1, -1, new byte[8], new byte[8]);
-
-        var bands = ObjectQuads.Bands(
-            [new ObjectDraw(0, 1250, 100, 50), new ObjectDraw(0, 1251, 200, 50)],
-            images,
-            shadows,
-            1,
-            16
-        );
-
-        CollectionAssert.AreEqual(
-            new[]
-            {
-                new ObjectQuad(101, 49, 4, 2, 0, Shadow: true),
-                new ObjectQuad(99, 48, 3, 1, 0),
-                new ObjectQuad(199, 48, 3, 1, 1),
-            },
-            bands[0]
-        );
-    }
-
-    [TestMethod]
-    public void NoShadowListDrawsTheSpritesWithoutShadows()
-    {
-        var images = new ObjectImage[ObjectGraphics.SpriteLayerCount];
-        Array.Fill(images, ObjectImage.Empty);
-        images[0] = new ObjectImage(3, 1, -1, -2, new byte[3], new byte[] { 0, 255, 255 });
-
-        var bands = ObjectQuads.Bands([new ObjectDraw(0, 1250, 100, 50)], images, [], 1, 16);
-
-        CollectionAssert.AreEqual(new[] { new ObjectQuad(99, 48, 3, 1, 0) }, bands[0]);
-    }
-
-    [TestMethod]
-    public void AShadowListOfAnotherLengthThanTheSpritesIsRefused()
-    {
-        var images = new ObjectImage[ObjectGraphics.SpriteLayerCount];
-        Array.Fill(images, ObjectImage.Empty);
-
-        Assert.ThrowsExactly<ArgumentException>(() =>
-            ObjectQuads.Bands([new ObjectDraw(0, 1250, 100, 50)], images, [ObjectImage.Empty], 1, 16)
-        );
-    }
-
-    [TestMethod]
-    public void TheShadowsSitInTheirOwnLayersPaddedToTheLargestShadowMask()
+    public void TheShadowOfAnObjectIsTheMaskAtItsEntryPlus250AndTheGoodsAndWaterHaveNone()
     {
         var payloads = Payloads();
         payloads[1250 + ObjectGraphics.ShadowOffset] = ShadowMask();
+        payloads[ObjectSprites.GoodEntry(new Good(7)) + ObjectGraphics.ShadowOffset] = ShadowMask();
         using var fake = Install(payloads, rows: 1700);
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.AreEqual(2, graphics.ShadowImages[ObjectGraphics.Layer(1250)].Width);
-        Assert.AreEqual(2, graphics.ShadowLayerWidth);
-        Assert.AreEqual(1, graphics.ShadowLayerHeight);
-        Assert.AreEqual(3, graphics.LayerWidth);
-        Assert.AreEqual(2, graphics.ShadowImages[ObjectGraphics.Layer(1251)].Coverage.Length);
-        Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(7)))].Width);
-        Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.WaterFirstEntry)].Width);
+        Assert.AreEqual(2, graphics.Shadows[1250].Width);
+        Assert.IsFalse(graphics.Shadows.ContainsKey(1251));
+        Assert.IsFalse(graphics.Shadows.ContainsKey(ObjectSprites.GoodEntry(new Good(7))));
+        Assert.IsFalse(graphics.Shadows.ContainsKey(ObjectSprites.WaterFirstEntry));
     }
 
     [TestMethod]
-    public void AnArchiveWithNoShadowMaskLoadsAndItsObjectsStillDraw()
+    public void AnArchiveWithNoShadowMaskLoadsWithNoShadows()
     {
         using var fake = Install(Payloads());
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.IsTrue(graphics.ShadowImages.All(image => image.Width == 0));
-        Assert.IsGreaterThanOrEqualTo(1, graphics.ShadowLayerWidth);
-        Assert.IsGreaterThanOrEqualTo(1, graphics.ShadowLayerHeight);
-        var bands = ObjectQuads.Bands(
-            [new ObjectDraw(0, 1250, 100, 50)],
-            graphics.Images,
-            graphics.ShadowImages,
-            1,
-            16
-        );
-        CollectionAssert.AreEqual(new[] { new ObjectQuad(99, 48, 3, 1, 0) }, bands[0]);
+        Assert.IsEmpty(graphics.Shadows);
+        Assert.IsNotEmpty(graphics.Sprites);
     }
 
     [TestMethod]
@@ -357,10 +310,9 @@ public sealed class ObjectGraphicsTests
             Covered = [false, true],
         };
 
-        var image = ObjectImage.Shadow(mask);
+        var image = ObjectImage.Shadow(mask, PaletteFile.Read(Palette()));
 
-        CollectionAssert.AreEqual(new byte[] { 0x80, 0x80 }, image.Indices);
-        CollectionAssert.AreEqual(new byte[] { 0, 255 }, image.Coverage);
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0, 36, 0, 0, 255 }, image.Rgba);
         Assert.AreEqual(3, image.OffsetX);
         Assert.AreEqual(-4, image.OffsetY);
     }

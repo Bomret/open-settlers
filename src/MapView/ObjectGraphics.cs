@@ -8,51 +8,29 @@ using OpenSettlers.Formats;
 namespace OpenSettlers.MapView;
 
 /// <summary>
-/// The object sprites of an install as the GPU takes them: the game palette as a lookup texture and each sprite
-/// (entries 1250 to 1369, the sprites of codes 8 to 127) as an <see cref="ObjectImage"/>, padded to one
-/// <see cref="LayerWidth"/> x <see cref="LayerHeight"/> layer so they fit one array texture.
+/// The object sprites of a History Edition install, by archive entry (ADR 0014): the sprites of codes 8 to 127 (entries
+/// 1250 to 1369), the castle's, the flag's with its further frames, the hut's, the goods', and the water's, and the
+/// shadow masks of those that have one. Only the History Edition source reads it.
 /// </summary>
 public sealed class ObjectGraphics
 {
     /// <summary>
-    /// The number of object sprite entries: those of codes 8 to 127. The castle's sprite follows them, then the flag's, the hut's, and the 32 goods'.
+    /// The color of palette index <see cref="SurfaceIndex"/> as four bytes (red, green, blue, alpha): the surface the
+    /// water sprites draw over (<c>docs/rules/graphics-images.md</c>, "Sprites drawn over color 8").
     /// </summary>
-    public const int EntryCount = ObjectSprites.LastCode - ObjectSprites.FirstCode + 1;
+    public byte[] SurfaceRgba { get; init; } = new byte[4];
 
-    /// <summary>The palette of entry 3 as <see cref="PaletteTexture.Rgba"/>.</summary>
-    public required byte[] PaletteRgba { get; init; }
+    /// <summary>The palette index of the water surface.</summary>
+    public const int SurfaceIndex = 8;
 
-    /// <summary>The widest sprite; the width of every layer.</summary>
-    public required int LayerWidth { get; init; }
+    /// <summary>The sprite of each entry the archive holds, at its own size.</summary>
+    public required IReadOnlyDictionary<int, ObjectImage> Sprites { get; init; }
 
-    /// <summary>The tallest sprite; the height of every layer.</summary>
-    public required int LayerHeight { get; init; }
+    /// <summary>The shadow of each sprite entry that has a mask in the archive. The goods and the water draw no shadow (<c>0x44de9a</c>, <c>0x44ff59</c> draw only the sprite).</summary>
+    public IReadOnlyDictionary<int, ObjectImage> Shadows { get; init; } = new Dictionary<int, ObjectImage>();
 
-    /// <summary>
-    /// One image per entry from <see cref="ObjectSprites.FirstEntry"/> on, then the castle's
-    /// (<see cref="ObjectSprites.CastleEntry"/>), the flag's (<see cref="ObjectSprites.FlagEntry"/>), the hut's, and the
-    /// goods' (<see cref="ObjectSprites.GoodsCount"/> from <see cref="ObjectSprites.GoodsFirstEntry"/>), and the water's
-    /// (<see cref="ObjectSprites.WaterCount"/> from <see cref="ObjectSprites.WaterFirstEntry"/>), each padded to
-    /// the layer size in its pixel arrays, and last the flag's further frames (<see cref="ObjectSprites.FlagFrames"/>).
-    /// </summary>
-    public required IReadOnlyList<ObjectImage> Images { get; init; }
-
-    /// <summary>The widest shadow mask, at least 1; the width of every shadow layer.</summary>
-    public int ShadowLayerWidth { get; init; }
-
-    /// <summary>The tallest shadow mask, at least 1; the height of every shadow layer.</summary>
-    public int ShadowLayerHeight { get; init; }
-
-    /// <summary>
-    /// The shadow mask of each sprite layer at the same index as its sprite (<see cref="Layer"/>), padded to
-    /// <see cref="ShadowLayerWidth"/> x <see cref="ShadowLayerHeight"/>; empty where the sprite draws none. Empty for
-    /// graphics that draw no object shadow.
-    /// </summary>
-    public IReadOnlyList<ObjectImage> ShadowImages { get; init; } = [];
-
-    /// <summary>The number of sprite layers, and of shadow layers.</summary>
-    public const int SpriteLayerCount =
-        EntryCount + 3 + ObjectSprites.GoodsCount + ObjectSprites.WaterCount + ObjectSprites.FlagFrames - 1;
+    /// <summary>The height of the tallest sprite.</summary>
+    public required int Headroom { get; init; }
 
     /// <summary>
     /// The number <c>Gfx_DrawObjectSprite</c> (<c>0x44da4d</c>) adds to an object sprite entry for its shadow mask: it
@@ -62,28 +40,9 @@ public sealed class ObjectGraphics
     public const int ShadowOffset = 1500 - ObjectSprites.FirstEntry;
 
     /// <summary>
-    /// The layer of a sprite entry, in <see cref="Images"/> and of its shadow in <see cref="ShadowImages"/>: the object
-    /// entries in order, then the castle's, the flag's, the hut's, the goods', the water's, and the flag's further
-    /// frames. The goods and the water draw no shadow (<c>0x44de9a</c>, <c>0x44ff59</c> draw only the sprite), so their
-    /// shadow layers are empty.
-    /// </summary>
-    public static int Layer(int entry) =>
-        entry is > ObjectSprites.FlagEntry and < ObjectSprites.FlagEntry + ObjectSprites.FlagFrames
-            ? EntryCount + 3 + ObjectSprites.GoodsCount + ObjectSprites.WaterCount + entry - ObjectSprites.FlagEntry - 1
-        : entry == ObjectSprites.CastleEntry ? EntryCount
-        : entry == ObjectSprites.FlagEntry ? EntryCount + 1
-        : entry == ObjectSprites.WoodcutterEntry ? EntryCount + 2
-        : entry is >= ObjectSprites.WaterFirstEntry and < ObjectSprites.WaterFirstEntry + ObjectSprites.WaterCount
-            ? EntryCount + 3 + ObjectSprites.GoodsCount + entry - ObjectSprites.WaterFirstEntry
-        : entry is >= ObjectSprites.GoodsFirstEntry and < ObjectSprites.GoodsFirstEntry + ObjectSprites.GoodsCount
-            ? EntryCount + 3 + entry - ObjectSprites.GoodsFirstEntry
-        : entry - ObjectSprites.FirstEntry;
-
-    /// <summary>
     /// Reads the sprites from the install. Throws <see cref="FileNotFoundException"/> for a missing archive and
     /// <see cref="InvalidDataException"/>, naming the entry and the reason, for a sprite that is unreadable and for an
-    /// archive with no object sprite at all. An entry the archive leaves out is an empty image: the objects the
-    /// generation places do not reach every code.
+    /// archive that holds no object sprite. An entry the archive leaves out has no sprite.
     /// </summary>
     public static ObjectGraphics Load(Install install)
     {
@@ -96,147 +55,59 @@ public sealed class ObjectGraphics
 
         var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var palette = Read(archive, 3, "the palette", data => PaletteFile.Read(data.Span));
-        var images = new List<ObjectImage>();
-        for (var entry = ObjectSprites.FirstEntry; entry < ObjectSprites.FirstEntry + EntryCount; entry++)
+        var sprites = new Dictionary<int, ObjectImage>();
+
+        bool Holds(int entry) => entry < archive.RowCount && archive[entry].State != EntryState.Absent;
+
+        void AddSprites(IEnumerable<int> entries, string what)
         {
-            images.Add(
-                archive[entry].State == EntryState.Absent
-                    ? ObjectImage.Empty
-                    : Read(archive, entry, "the sprite", data => ObjectImage.From(SpriteFile.Read(data)))
-            );
+            foreach (var entry in entries.Where(Holds))
+            {
+                sprites[entry] = Read(archive, entry, what, data => ObjectImage.From(SpriteFile.Read(data), palette));
+            }
         }
 
-        images.Add(
-            archive[ObjectSprites.CastleEntry].State == EntryState.Absent
-                ? ObjectImage.Empty
-                : Read(
-                    archive,
-                    ObjectSprites.CastleEntry,
-                    "the castle sprite",
-                    data => ObjectImage.From(SpriteFile.Read(data))
-                )
-        );
+        AddSprites(Enumerable.Range(ObjectSprites.FirstEntry, ObjectSprites.EntryCount), "the sprite");
+        AddSprites([ObjectSprites.CastleEntry], "the castle sprite");
+        AddSprites([ObjectSprites.FlagEntry], "the flag sprite");
+        AddSprites([ObjectSprites.WoodcutterEntry], "the woodcutter's hut sprite");
+        AddSprites(Enumerable.Range(ObjectSprites.GoodsFirstEntry, ObjectSprites.GoodsCount), "the good's sprite");
+        AddSprites(Enumerable.Range(ObjectSprites.WaterFirstEntry, ObjectSprites.WaterCount), "the water sprite");
+        AddSprites(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1), "the flag sprite");
 
-        images.Add(
-            archive[ObjectSprites.FlagEntry].State == EntryState.Absent
-                ? ObjectImage.Empty
-                : Read(
-                    archive,
-                    ObjectSprites.FlagEntry,
-                    "the flag sprite",
-                    data => ObjectImage.From(SpriteFile.Read(data))
-                )
-        );
-
-        images.Add(
-            archive[ObjectSprites.WoodcutterEntry].State == EntryState.Absent
-                ? ObjectImage.Empty
-                : Read(
-                    archive,
-                    ObjectSprites.WoodcutterEntry,
-                    "the woodcutter's hut sprite",
-                    data => ObjectImage.From(SpriteFile.Read(data))
-                )
-        );
-
-        for (
-            var entry = ObjectSprites.GoodsFirstEntry;
-            entry < ObjectSprites.GoodsFirstEntry + ObjectSprites.GoodsCount;
-            entry++
-        )
-        {
-            images.Add(
-                archive[entry].State == EntryState.Absent
-                    ? ObjectImage.Empty
-                    : Read(archive, entry, "the good's sprite", data => ObjectImage.From(SpriteFile.Read(data)))
-            );
-        }
-
-        for (
-            var entry = ObjectSprites.WaterFirstEntry;
-            entry < ObjectSprites.WaterFirstEntry + ObjectSprites.WaterCount;
-            entry++
-        )
-        {
-            images.Add(
-                archive[entry].State == EntryState.Absent
-                    ? ObjectImage.Empty
-                    : Read(archive, entry, "the water sprite", data => ObjectImage.From(SpriteFile.Read(data)))
-            );
-        }
-
-        for (
-            var entry = ObjectSprites.FlagEntry + 1;
-            entry < ObjectSprites.FlagEntry + ObjectSprites.FlagFrames;
-            entry++
-        )
-        {
-            images.Add(
-                archive[entry].State == EntryState.Absent
-                    ? ObjectImage.Empty
-                    : Read(archive, entry, "the flag sprite", data => ObjectImage.From(SpriteFile.Read(data)))
-            );
-        }
-
-        // The shadow of each sprite in the order of the sprite layers: the goods and the water draw none.
-        ObjectImage ShadowOf(int entry)
-        {
-            var shadow = entry + ShadowOffset;
-            return shadow >= archive.RowCount || archive[shadow].State == EntryState.Absent
-                ? ObjectImage.Empty
-                : Read(archive, shadow, "the shadow mask", data => ObjectImage.Shadow(MaskFile.Read(data)));
-        }
-
-        var shadows = Enumerable
-            .Range(ObjectSprites.FirstEntry, EntryCount)
+        var shadows = new Dictionary<int, ObjectImage>();
+        var shadowed = Enumerable
+            .Range(ObjectSprites.FirstEntry, ObjectSprites.EntryCount)
             .Append(ObjectSprites.CastleEntry)
             .Append(ObjectSprites.FlagEntry)
             .Append(ObjectSprites.WoodcutterEntry)
-            .Select(ShadowOf)
-            .Concat(Enumerable.Repeat(ObjectImage.Empty, ObjectSprites.GoodsCount + ObjectSprites.WaterCount))
-            .Concat(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1).Select(ShadowOf))
-            .ToList();
-
-        var width = images.Max(image => image.Width);
-        var height = images.Max(image => image.Height);
-        if (width == 0 || height == 0)
+            .Concat(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1));
+        foreach (var entry in shadowed.Where(entry => Holds(entry + ShadowOffset)))
         {
-            throw new InvalidDataException(
-                $"{TerrainGraphics.ArchiveFile} holds no object sprite: entries {ObjectSprites.FirstEntry} to {ObjectSprites.FirstEntry + EntryCount - 1} are all absent"
+            shadows[entry] = Read(
+                archive,
+                entry + ShadowOffset,
+                "the shadow mask",
+                data => ObjectImage.Shadow(MaskFile.Read(data), palette)
             );
         }
 
-        var padded = images.Select(image => Pad(image, width, height)).ToList();
-        var shadowWidth = Math.Max(shadows.Max(image => image.Width), 1);
-        var shadowHeight = Math.Max(shadows.Max(image => image.Height), 1);
+        if (
+            sprites.Values.Select(image => image.Width).DefaultIfEmpty().Max() == 0
+            || sprites.Values.Select(image => image.Height).DefaultIfEmpty().Max() == 0
+        )
+        {
+            throw new InvalidDataException(
+                $"{TerrainGraphics.ArchiveFile} holds no object sprite: entries {ObjectSprites.FirstEntry} to {ObjectSprites.FirstEntry + ObjectSprites.EntryCount - 1} are all absent"
+            );
+        }
 
         return new ObjectGraphics
         {
-            PaletteRgba = PaletteTexture.Rgba(palette),
-            LayerWidth = width,
-            LayerHeight = height,
-            Images = padded,
-            ShadowLayerWidth = shadowWidth,
-            ShadowLayerHeight = shadowHeight,
-            ShadowImages = [.. shadows.Select(image => Pad(image, shadowWidth, shadowHeight))],
-        };
-    }
-
-    // The pixel arrays grow to the layer size at the top left; Width and Height stay the sprite's own.
-    internal static ObjectImage Pad(ObjectImage image, int width, int height)
-    {
-        var indices = new byte[width * height];
-        var coverage = new byte[width * height];
-        for (var y = 0; y < image.Height; y++)
-        {
-            Array.Copy(image.Indices, y * image.Width, indices, y * width, image.Width);
-            Array.Copy(image.Coverage, y * image.Width, coverage, y * width, image.Width);
-        }
-
-        return image with
-        {
-            Indices = indices,
-            Coverage = coverage,
+            SurfaceRgba = palette.Rgba(SurfaceIndex).ToArray(),
+            Sprites = sprites,
+            Shadows = shadows,
+            Headroom = sprites.Values.Max(image => image.Height),
         };
     }
 

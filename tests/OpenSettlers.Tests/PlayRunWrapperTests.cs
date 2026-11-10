@@ -120,6 +120,7 @@ public class PlayRunWrapperTests
         Put("global.json", "{}");
         Put("play/demo.play", "wait 1");
         Put("play/.cache.play", "wait 1");
+        Put("content/open-settlers/manifest.json", "{}");
         Put("README.md", "readme");
         Put("tests/T.cs", "class T {}");
         Put(".gitignore", "play-out/\nsrc/ignored.txt\n");
@@ -487,6 +488,51 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
+    public void GodotGetsTheGraphicsFlagOnlyWhereTheRunGaveOne()
+    {
+        string[] Launch() => File.ReadAllLines(Path.Combine(fake, "args"));
+
+        Run([.. Args, "--graphics", "open-settlers"]);
+        CollectionAssert.AreEqual(
+            new[] { "--size", "2", "--graphics", "open-settlers", "--play", "play/demo.play" },
+            Launch()[^6..]
+        );
+
+        Run(["demo", "--fps", "10", "--graphics", "history-edition"]);
+        CollectionAssert.AreEqual(new[] { "--graphics", "history-edition" }, Launch()[^4..^2]);
+
+        Run(["demo", "--fps", "10", "--seed", "abc"]);
+        CollectionAssert.DoesNotContain(Launch(), "--graphics");
+    }
+
+    // The two sources never share a result, and the default is the History Edition: naming it changes nothing. A
+    // change to the content set, a new file in it included, starts Godot again.
+    [TestMethod]
+    public void TheGraphicsSourceAndTheContentSetAreHashed()
+    {
+        string[] History = [.. Args, "--graphics", "history-edition"];
+        string[] Own = [.. Args, "--graphics", "open-settlers"];
+
+        Run(Args);
+        Run(History);
+        Assert.AreEqual(1, Calls, "naming the History Edition is not the default");
+        Run(Own);
+        Assert.AreEqual(2, Calls, "an open-settlers run reused a History Edition result");
+        Run(Own);
+        Assert.AreEqual(2, Calls, "a repeated open-settlers call did not reuse");
+
+        Write("content/open-settlers/manifest.json", "{ }");
+        Run(Own);
+        Assert.AreEqual(3, Calls, "an edited manifest did not start Godot");
+        Write("content/open-settlers/terrain/new.png", "png");
+        Run(Own);
+        Assert.AreEqual(4, Calls, "a new image did not start Godot");
+        File.Delete(Path.Combine(repo, "content/open-settlers/manifest.json"));
+        Run(Own);
+        Assert.AreEqual(5, Calls, "a removed manifest did not start Godot");
+    }
+
+    [TestMethod]
     public void TheLogLineNamesTheModeAndTheLayout()
     {
         Write("play/a.layout", "layout");
@@ -510,7 +556,7 @@ public class PlayRunWrapperTests
         StringAssert.Contains(stdout, "build output");
         Assert.AreEqual(0, Calls);
         Assert.IsFalse(Directory.Exists(Out(".cache")) && Directory.EnumerateFileSystemEntries(Out(".cache")).Any());
-        CollectionAssert.AreEqual(new[] { "exit=3", "build" }, LogLines.Single().Split('\t')[10..]);
+        CollectionAssert.AreEqual(new[] { "exit=3", "build" }, LogLines.Single().Split('\t')[11..]);
     }
 
     [TestMethod]
@@ -542,16 +588,29 @@ public class PlayRunWrapperTests
         git.WaitForExit();
 
         var first = lines[0].Split('\t');
-        Assert.AreEqual(12, first.Length, lines[0]);
+        Assert.AreEqual(13, first.Length, lines[0]);
         StringAssert.Matches(first[0], new System.Text.RegularExpressions.Regex(@"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$"));
         StringAssert.Matches(first[1], new System.Text.RegularExpressions.Regex("^[0-9a-f]{40}$"));
         CollectionAssert.AreEqual(
-            new[] { head, "clean", "demo", "mode=map", "layout=", "seed=abc", "size=2", "fps=10", "exit=0", "run" },
+            new[]
+            {
+                head,
+                "clean",
+                "demo",
+                "mode=map",
+                "layout=",
+                "seed=abc",
+                "size=2",
+                "fps=10",
+                "graphics=history-edition",
+                "exit=0",
+                "run",
+            },
             first[2..]
         );
         var second = lines[1].Split('\t');
         Assert.AreEqual(first[1], second[1]);
-        CollectionAssert.AreEqual(new[] { "dirty", "reused" }, new[] { second[3], second[11] });
+        CollectionAssert.AreEqual(new[] { "dirty", "reused" }, new[] { second[3], second[12] });
         CollectionAssert.AreEqual(new[] { "seed=", "size=" }, lines[2].Split('\t')[7..9]);
     }
 
@@ -572,6 +631,9 @@ public class PlayRunWrapperTests
     [DataRow("missing layout", "demo", "--layout", "play/none.layout", "--fps", "10")]
     [DataRow("layout with no value", "demo", "--fps", "10", "--layout")]
     [DataRow("empty layout", "demo", "--layout", "", "--fps", "10")]
+    [DataRow("unknown graphics source", "demo", "--graphics", "retro", "--fps", "10")]
+    [DataRow("graphics with no value", "demo", "--fps", "10", "--graphics")]
+    [DataRow("repeated graphics", "demo", "--graphics", "open-settlers", "--graphics", "open-settlers", "--fps", "10")]
     [DataRow("no args")]
     public void BadArgumentsExitTwoAndLeaveNoTrace(string reason, params string[] args) =>
         AssertUsageError(Run(args), reason);

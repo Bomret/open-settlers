@@ -5,41 +5,48 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
 
-/// <summary>
-/// One strip of road to draw: the position of the top left of its mask in map pixels (before the mask's own header
-/// offset), the mask entry, and the texture entry, both of <c>loca/SPAD.PA</c>.
-/// </summary>
-public readonly record struct RoadStrip(int X, int Y, int Mask, int Texture);
+/// <summary>The three directions a road strip is drawn from a node (the other three are drawn from the node at the other end).</summary>
+public enum RoadDirection
+{
+    /// <summary>East.</summary>
+    East,
+
+    /// <summary>South-east.</summary>
+    SouthEast,
+
+    /// <summary>South.</summary>
+    South,
+}
 
 /// <summary>
-/// Where the roads of a map are drawn and with which mask and texture (<c>docs/rules/roads.md</c>). The original draws
+/// One strip of road to draw, named in game terms (INV-0010). <c>X</c> and <c>Y</c> are the position in map pixels the
+/// source's image offsets hang the image from. <c>Difference</c> is the height of the strip's start node less that of
+/// its end node, <c>Slope</c> the slope of the ground across the strip, and <c>Ground</c> the terrain it lies on.
+/// </summary>
+public readonly record struct RoadStrip(
+    int X,
+    int Y,
+    RoadDirection Direction,
+    int Difference,
+    int Slope,
+    Terrain Ground
+);
+
+/// <summary>
+/// Where the roads of a map are drawn and over what (<c>docs/rules/roads.md</c>). The original draws
 /// a road a step at a time, as a strip of the road texture over the terrain, from each node that holds the bit of
 /// the direction east, south-east, or south (<c>0x427d3e</c>, <c>0x427e3a</c>, <c>0x427f1f</c> with <c>0x428008</c>,
 /// <c>0x428105</c>, and <c>0x4281cc</c>); the other three directions are drawn from the node at the other end.
 /// </summary>
 public static class RoadDraws
 {
-    // The first mask entry of a strip for the height difference 0: the east strips take 230 to 238, the south-east
-    // 239 to 247, and the south 248 to 256, a difference of -4 to 4 each.
-    private const int EastMask = 234;
-    private const int SouthEastMask = 243;
-    private const int SouthMask = 252;
-    private const int MaxDifference = 4;
-
     // Pixels the strip reaches above its higher node (0x428008 subtracts 2 more after the height); the level strip is
     // 5 rows high, so it is centered on the line.
     private const int Above = 2;
 
-    // The texture entry for a slope of 5 or more, and the entries of the other two slopes follow it; the entry
-    // of a strip beside water; and the steps up from the land textures to those of mountain and of snow.
-    private const int SteepTexture = 300;
-    private const int WaterTexture = 309;
-    private const int MountainStep = 3;
-    private const int SnowStep = 6;
-
     /// <summary>
-    /// The strips of the map's roads in row-major order of the node each is drawn from. A strip whose height difference
-    /// is more than 4 either way has no mask in the archive and is left out, as the terrain masks are.
+    /// The strips of the map's roads in row-major order of the node each is drawn from. Every strip gives a term; the
+    /// source decides which it draws.
     /// </summary>
     public static List<RoadStrip> Of(Map map)
     {
@@ -52,9 +59,9 @@ public static class RoadDraws
                 var roads = map.At(column, row).Roads;
                 for (var direction = 0; direction < 3; direction++)
                 {
-                    if (roads.Has(direction) && Strip(map, column, row, direction) is { } strip)
+                    if (roads.Has(direction))
                     {
-                        strips.Add(strip);
+                        strips.Add(Strip(map, column, row, (RoadDirection)direction));
                     }
                 }
             }
@@ -64,7 +71,7 @@ public static class RoadDraws
     }
 
     // The strip of the road that leaves a node east, south-east, or south.
-    private static RoadStrip? Strip(Map map, int column, int row, int direction)
+    private static RoadStrip Strip(Map map, int column, int row, RoadDirection direction)
     {
         int H(int dx, int dy) => map.At(column + dx, row + dy).Height;
         Terrain Low(int dx, int dy) => map.At(column + dx, row + dy).Lower;
@@ -74,27 +81,24 @@ public static class RoadDraws
         var here = H(0, 0);
         int difference,
             slope,
-            maskBase,
             top,
             left;
         Terrain ground;
         switch (direction)
         {
-            case 0:
+            case RoadDirection.East:
                 // East: the node and its east neighbour, the strip as high as the higher of them.
                 difference = here - H(1, 0);
                 slope = -3 * difference + H(0, -1) - H(1, 1);
                 ground = Terrain.Higher(Low(0, 0), High(0, -1));
-                maskBase = EastMask;
                 top = y - Math.Max(here, H(1, 0)) * TerrainTriangles.HeightStep;
                 left = x;
                 break;
-            case 1:
+            case RoadDirection.SouthEast:
                 // South-east: the strip starts at the node's own height.
                 difference = here - H(1, 1);
                 slope = 2 * (H(1, 0) - H(0, 1));
                 ground = Terrain.Higher(Low(0, 0), High(0, 0));
-                maskBase = SouthEastMask;
                 top = y - here * TerrainTriangles.HeightStep;
                 left = x;
                 break;
@@ -103,30 +107,11 @@ public static class RoadDraws
                 difference = here - H(0, 1);
                 slope = 3 * difference - H(-1, 0) + H(1, 1);
                 ground = Terrain.Higher(High(0, 0), Low(-1, 0));
-                maskBase = SouthMask;
                 top = y - here * TerrainTriangles.HeightStep;
                 left = x - Camera.NodeSpacing / 2;
                 break;
         }
 
-        if (Math.Abs(difference) > MaxDifference)
-        {
-            return null;
-        }
-
-        var texture =
-            slope >= 5 ? SteepTexture
-            : slope >= -5 ? SteepTexture + 1
-            : SteepTexture + 2;
-        if (ground.IsWater)
-        {
-            texture = WaterTexture;
-        }
-        else if (ground.IsAbovePlain)
-        {
-            texture += ground.IsSnow ? SnowStep : MountainStep;
-        }
-
-        return new RoadStrip(left, top - Above, maskBase + difference, texture);
+        return new RoadStrip(left, top - Above, direction, difference, slope, ground);
     }
 }

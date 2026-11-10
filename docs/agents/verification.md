@@ -16,7 +16,9 @@ Both commands run the unit tests: the tests that need neither the install nor Gh
 with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
 `TestProgram.Tables`). Both also skip the category `Ghidra` (they run `analyzeHeadless`). The filter is
 `TestCategory!=Install&TestCategory!=Ghidra`. Neither command needs the install, Ghidra, or Godot. The remaining tests
-build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path.
+build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path. They need `python3`, which
+`mise install` provides: `RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
+`content/open-settlers/` holds a file the generator does not write the same.
 
 The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
 `[TestCategory(Needs.Install)]` (and `Needs.Ghidra` where the test runs `analyzeHeadless`) on every test
@@ -50,12 +52,14 @@ situation and takes named screenshots and dumps, then run it under Movie Maker t
 wrapper, from the repository root, with `SIEDLER_DIR` set:
 
 ```sh
-sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] --fps <fps>
+sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--graphics <source>] --fps <fps>
 ```
 
 Without `--game-view` the wrapper runs the map view. `--game-view` runs the game view on `--seed` and `--size`.
 `--layout <file>` runs the game view on a layout and implies `--game-view`. A layout holds its own seed and size.
 The wrapper exits 2 on `--layout` with `--seed` or `--size`, on an empty value, and on a missing file.
+`--graphics history-edition|open-settlers` picks the graphics source of the run (the History Edition without the flag).
+Another value, a missing value, and a repeat exit 2.
 `mise run play -- <stem> ...` runs the same wrapper. The wrapper clears `play-out/<stem>/`, builds
 `OpenSettlers.csproj`, and runs the Godot command `README.md`'s "Run a play script" gives, through
 `mise exec`. Read the dumps and open the screenshots in `play-out/<stem>/`. Exit 0 is a finished run, 1 a
@@ -66,15 +70,16 @@ failed `expect` or a problem in the script.
   back into `play-out/<stem>/` (no Movie Maker frames: the store leaves them out, and `--fresh` writes them again), the stored `WARN`/`ERROR` lines printed under a `reused` line that ends
   with the stored exit status, which the wrapper exits with. Only a run that exits 0 or 1 is stored. `--fresh` always runs and replaces the
   stored result.
-- The hash covers every tracked or untracked, not ignored file under `src/` and `scenes/` (content and
+- The hash covers every tracked or untracked, not ignored file under `src/`, `scenes/`, and `content/` (content and
   path). It also covers `project.godot`, `OpenSettlers.csproj`, `global.json`, the play script, the mode, the
-  layout's path and content, the seed, the size, the frame rate, the Godot version, and the `SIEDLER_DIR` path.
+  layout's path and content, the seed, the size, the graphics source, the frame rate, the Godot version, and the
+  `SIEDLER_DIR` path.
   It leaves out the install's content and `.godot/`. After a change to the install, run with `--fresh`.
 - A failed build prints the build output, starts no Godot, stores nothing, and exits 3. Bad arguments
   exit 2 with a message and run, store, and log nothing.
-- Each call appends one tab-separated line of 12 fields to `play-out/runs.log`. The fields are the UTC time, the
+- Each call appends one tab-separated line of 13 fields to `play-out/runs.log`. The fields are the UTC time, the
   input hash, `HEAD`, `clean` or `dirty` (an untracked file counts), the stem, `mode=<map|game-view>`,
-  `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `exit=<status>`, and `run`,
+  `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `graphics=<source>` (`history-edition` without the flag), `exit=<status>`, and `run`,
   `reused`, or `build` (a failed build). A line proves a run at a tip when its `HEAD` equals the tip and it reads
   `clean`.
 - Calls for one stem run one at a time: a second call waits on the lock directory

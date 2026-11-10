@@ -271,7 +271,9 @@ terrain; the texture entries show as raw images. All previews use the game's pal
 ### Terrain drawing
 
 **Status:** confirmed routines (`0x427642`, `0x4278be`, `0x427a25`), tables read from `Siedler1.exe`; the screen layout is
-**inferred** from the masks. The engine's `TerrainRules` holds the tables.
+**inferred** from the masks. The engine's `TerrainRules` holds the tables, and only the History Edition graphics source
+(`src/MapView/HistoryEditionSource.cs`) reads them: the shared builders give a draw term for every triangle, and the source
+draws nothing for a triangle with no mask.
 
 A tile has an upper triangle (apex the tile's node, base the nodes south and south-east of it) and a lower one (apex the
 node south-east of the tile, top the tile's node and the node east of it). Heights are the five low bits of the height byte.
@@ -290,7 +292,8 @@ vertical offset.
 The masks 230 to 256 and the textures 300 to 309 are the strips of the roads, not the edges between terrains
 (`0x428008` and after; [Roads](roads.md#how-a-road-is-drawn)). The map view (`src/Viewer/MapViewControl.cs`, with
 `src/MapView/TerrainQuads.cs` planning each band's rectangles) paints the fill masks 60 to 221 and the fill textures
-260 to 292 as the terrain, and the road strips over it (`src/MapView/RoadDraws.cs`). Not drawn: the borders of the
+260 to 292 as the terrain, and the road strips over it (`src/MapView/RoadDraws.cs`), each as one RGBA image the
+History Edition source bakes from a mask and a texture. Not drawn: the borders of the
 territories that the routines `0x428389`, `0x42846d`, and `0x428528` draw where no road lies (inferred).
 
 ### Corrupt masks

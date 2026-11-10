@@ -24,6 +24,16 @@ public enum LaunchMode
     SeedInfo,
 }
 
+/// <summary>The graphics source the map view draws from (ADR 0014); the <c>--graphics</c> flag names it.</summary>
+public enum GraphicsSourceName
+{
+    /// <summary>The History Edition install's own art, the default (<c>history-edition</c>).</summary>
+    HistoryEdition,
+
+    /// <summary>The repository's own content set <c>content/open-settlers/</c> (<c>open-settlers</c>).</summary>
+    OpenSettlers,
+}
+
 /// <summary>
 /// The user arguments after <c>--</c>, read once. <c>--check</c> selects <see cref="LaunchMode.Check"/>, <c>--map</c>
 /// selects <see cref="LaunchMode.Map"/>, <c>--game-view</c> selects <see cref="LaunchMode.GameView"/>, <c>--seed-info</c>
@@ -32,6 +42,9 @@ public enum LaunchMode
 /// selects <see cref="LaunchMode.Browser"/>. <c>--game &lt;dir&gt;</c> names the install and wins over the
 /// <c>SIEDLER_DIR</c> value. <c>--seed &lt;seed&gt;</c> (every form <see cref="Seed.TryParse"/> takes, quoted when
 /// it holds spaces) and <c>--size &lt;1|2|3&gt;</c> belong to <c>--map</c>, <c>--game-view</c>, and <c>--seed-info</c> only.
+/// <c>--graphics &lt;history-edition|open-settlers&gt;</c> names the <see cref="GraphicsSourceName"/> of the map view and
+/// the game view (the History Edition without it) and belongs to <c>--map</c>, <c>--game-view</c>, and <c>--layout</c>
+/// only.
 /// <para>
 /// Every bad argument is a line in <see cref="Problems"/> and the launch exits with <see cref="BadArgumentExitCode"/>
 /// before it opens the install or a window, so that code wins over the exit code 2 of a missing install. The bad
@@ -40,7 +53,9 @@ public enum LaunchMode
 /// integer the original offers); two different mode flags, which select no mode (the browser); <c>--seed</c> or
 /// <c>--size</c> with <c>--check</c> or without a mode flag; a repeated <c>--seed</c>, <c>--size</c>, or
 /// <c>--play</c>, or <c>--layout</c> (a repeated <c>--game</c> keeps the first); <c>--layout</c> with <c>--seed</c>,
-/// <c>--size</c>, <c>--map</c>, <c>--check</c>, or <c>--seed-info</c> (the layout holds its own seed and size).
+/// <c>--size</c>, <c>--map</c>, <c>--check</c>, or <c>--seed-info</c> (the layout holds its own seed and size); a
+/// <c>--graphics</c> that names no known source, repeats, or comes with <c>--check</c>, <c>--seed-info</c>, or no mode
+/// flag and no layout. Each <c>--graphics</c> problem names the known sources (<see cref="KnownGraphics"/>).
 /// </para>
 /// </summary>
 public sealed class LaunchArgs
@@ -75,6 +90,15 @@ public sealed class LaunchArgs
     /// <summary>The flag that names the layout file of a game view (<see cref="LaunchMode.GameView"/>).</summary>
     public const string LayoutFlag = "--layout";
 
+    /// <summary>The flag that names the graphics source (<see cref="GraphicsSourceName"/>) of the map view.</summary>
+    public const string GraphicsFlag = "--graphics";
+
+    /// <summary>The known graphics sources as the flag spells them, which the refusals name.</summary>
+    const string KnownGraphics = "history-edition, open-settlers";
+
+    // The suffix that names the known sources on every refusal of the graphics flag.
+    static string Known(string flag) => flag == GraphicsFlag ? $" (known sources: {KnownGraphics})" : "";
+
     /// <summary>The environment variable that stands in for <see cref="GameFlag"/>.</summary>
     public const string GameVariable = "SIEDLER_DIR";
 
@@ -92,6 +116,9 @@ public sealed class LaunchArgs
 
     /// <summary>The size the size flag gave; null when no valid size flag was given.</summary>
     public MapSize? Size { get; init; }
+
+    /// <summary>The graphics source the graphics flag named; <see cref="GraphicsSourceName.HistoryEdition"/> without it.</summary>
+    public GraphicsSourceName Graphics { get; init; }
 
     /// <summary>The layout file path as given; null when no valid layout flag was given.</summary>
     public string? Layout { get; init; }
@@ -124,19 +151,22 @@ public sealed class LaunchArgs
         MapSize? size = null;
         var seedGiven = false;
         var sizeGiven = false;
+        var graphics = GraphicsSourceName.HistoryEdition;
+        var graphicsGiven = false;
         for (var i = 0; i < args.Length; i++)
         {
             var flag = args[i];
-            if (flag is GameFlag or SeedFlag or SizeFlag or PlayFlag or LayoutFlag)
+            if (flag is GameFlag or SeedFlag or SizeFlag or PlayFlag or LayoutFlag or GraphicsFlag)
             {
                 // The value is the next argument unless it is missing or another flag; it is not consumed
                 // then, so a mode flag after the flag still selects its mode.
                 if (i + 1 >= args.Length || args[i + 1].StartsWith("--"))
                 {
-                    problems.Add($"{flag} needs a value");
+                    problems.Add($"{flag} needs a value{Known(flag)}");
                     gameGiven |= flag == GameFlag;
                     playGiven |= flag == PlayFlag;
                     layoutGiven |= flag == LayoutFlag;
+                    graphicsGiven |= flag == GraphicsFlag;
 
                     continue;
                 }
@@ -160,9 +190,28 @@ public sealed class LaunchArgs
                     || flag == LayoutFlag && layoutGiven
                     || flag == SeedFlag && seedGiven
                     || flag == SizeFlag && sizeGiven
+                    || flag == GraphicsFlag && graphicsGiven
                 )
                 {
-                    problems.Add($"repeated {flag}");
+                    problems.Add($"repeated {flag}{Known(flag)}");
+                }
+                else if (flag == GraphicsFlag)
+                {
+                    graphicsGiven = true;
+                    var named = value switch
+                    {
+                        "history-edition" => GraphicsSourceName.HistoryEdition,
+                        "open-settlers" => GraphicsSourceName.OpenSettlers,
+                        _ => (GraphicsSourceName?)null,
+                    };
+                    if (named is { } source)
+                    {
+                        graphics = source;
+                    }
+                    else
+                    {
+                        problems.Add($"bad {GraphicsFlag} '{value}'{Known(flag)}");
+                    }
                 }
                 else if (flag == PlayFlag)
                 {
@@ -269,6 +318,14 @@ public sealed class LaunchArgs
             }
         }
 
+        if (graphicsGiven && !layoutGiven && modeFlag is null or CheckFlag or SeedInfoFlag)
+        {
+            var where = modeFlag is null ? "the asset browser" : modeFlag;
+            problems.Add(
+                $"{GraphicsFlag} does not apply to {where}, use {MapFlag} or {GameViewFlag} (known sources: {KnownGraphics})"
+            );
+        }
+
         if (playGiven && modeFlag is not (MapFlag or GameViewFlag) && !(layoutGiven && modeFlag is null))
         {
             problems.Add($"{PlayFlag} needs {MapFlag} or {GameViewFlag}");
@@ -291,6 +348,7 @@ public sealed class LaunchArgs
             SeedText = seedText,
             Seed = seed,
             Size = size,
+            Graphics = graphics,
             Problems = problems,
         };
     }

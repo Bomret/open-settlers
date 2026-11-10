@@ -11,11 +11,19 @@ namespace OpenSettlers.MapView;
 /// <see cref="TerrainTriangles.HeightStep"/> pixels for each unit of its height. The nodes of the copies are the
 /// nodes of the map at columns and rows beyond its edges, so the pick wraps them back. The pick takes the node whose
 /// drawn point lies nearest to the click, unless the click lands on a flag's sprite, which stands on its node and
-/// reaches most of a row above it: then the flag's node. Stand-in: the original's own cursor rule is not recovered, so a click near
-/// the edge of a triangle may pick another node than the original does.
+/// reaches most of a row above it: then the flag's node. The view hands it <see cref="ObjectDraws.FlagGeometry"/> under
+/// every graphics source. Stand-in: the original's own cursor rule is not recovered, so a click near the edge of a
+/// triangle may pick another node than the original does.
 /// </summary>
 public static class MapPicking
 {
+    /// <summary>
+    /// A rectangle of <paramref name="Width"/> by <paramref name="Height"/> pixels whose top-left corner lies
+    /// (<paramref name="OffsetX"/>, <paramref name="OffsetY"/>) from the node it belongs to: the part of a flag's sprite a
+    /// click picks the flag by. It holds no pixel.
+    /// </summary>
+    public readonly record struct PickBox(int Width, int Height, int OffsetX, int OffsetY);
+
     // The tallest lift of a node: the greatest height at 4 pixels a unit.
     private const int MaxLift = Node.MaxHeight * TerrainTriangles.HeightStep;
 
@@ -24,7 +32,7 @@ public static class MapPicking
     /// the view draws at (whole map pixels: the sub-pixel carry of a drag is not drawn), <paramref name="scale"/>
     /// the screen pixels per map pixel, and the click is at (<paramref name="screenX"/>, <paramref name="screenY"/>)
     /// in a view of <paramref name="viewWidth"/> by <paramref name="viewHeight"/> screen pixels. With
-    /// <paramref name="flag"/>, the flag's sprite, a click inside the sprite of a flag on the map picks that flag's node;
+    /// <paramref name="flag"/>, the flag's box, a click inside the box of a flag on the map picks that flag's node;
     /// of two flags drawn there, the one drawn last: the one in the southern row, and within a row the eastern one.
     /// </summary>
     public static (int X, int Y) Pick(
@@ -36,7 +44,7 @@ public static class MapPicking
         double viewHeight,
         double screenX,
         double screenY,
-        ObjectImage? flag = null
+        PickBox? flag = null
     )
     {
         var pointX = cameraX + (screenX - viewWidth / 2) / scale;
@@ -50,7 +58,7 @@ public static class MapPicking
         (int X, int Y)? onFlag = null;
         var best = (X: 0, Y: 0);
         var bestDistance = double.MaxValue;
-        var pickFlag = flag is { Width: > 0 };
+        var pickFlag = flag is not null;
         for (var row = firstRow; row <= lastRow; row++)
         {
             var nearestColumn = (int)Math.Floor((pointX + Camera.RowLean * row) / Camera.NodeSpacing);
@@ -63,10 +71,10 @@ public static class MapPicking
                 if (
                     pickFlag
                     && map.At(wrappedColumn, wrappedRow).Object == MapObject.Flag
-                    && pointX >= x + flag!.OffsetX
-                    && pointX < x + flag.OffsetX + flag.Width
-                    && pointY >= y + flag.OffsetY
-                    && pointY < y + flag.OffsetY + flag.Height
+                    && pointX >= x + flag!.Value.OffsetX
+                    && pointX < x + flag.Value.OffsetX + flag.Value.Width
+                    && pointY >= y + flag.Value.OffsetY
+                    && pointY < y + flag.Value.OffsetY + flag.Value.Height
                 )
                 {
                     onFlag = (wrappedColumn, wrappedRow);

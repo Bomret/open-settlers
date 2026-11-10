@@ -217,9 +217,22 @@ to `0x43fb6b`, or whose handler has no `add word [edi+8], imm16` at the three ad
 Screenshot evidence (`play/woodcutter-figures.play` on `layouts/woodcutter.jsonc`): the woodcutter walks out, steps through his
 door, fells, and walks back with a hat, an axe, and a log.
 
-**In the engine** (`SettlerFigures`, `SettlerGraphics`, `src/MapView`): a settler of the job 0, 5, or 11 in state 2, 3, 4, 5, 0xe,
-0x10, 0x11, or 0x19 is drawn. Its sprites are the ones its frame's sequence names for the time it has left. The engine reads
-them from the install's archive at run time and takes the tables from the program. A settler in any other state has no record:
+**In the engine** (`SettlerFigures`, `StepOffsets`, `SettlerFigureTables`, `SettlerSprites`, `src/MapView`): a settler of the job 0,
+5, or 11 in state 2, 3, 4, 5, 0xe, 0x10, 0x11, or 0x19 is drawn. `SettlerFigures` places it and orders it under every graphics
+source. It emits three draw terms for it: the figure, the overlay, and the second figure.
+
+A term names the settler's job, activity, heading, frame, animation step (the time left), player, and carried good. It holds no
+entry and no colour index (INV-0010).
+
+`SettlerFigures` reads the dx and dy of each step from the typed `StepOffsets` table. That table is entry 2 of the archive and the
+only data the code reads from the graphics archive. The rows of the frames come from the program's tables.
+
+The History Edition source (`HistoryEditionSource`, `SettlerFigureTables`, `SettlerSprites`) picks the sprites. It takes the ones
+the frame's sequence names for the time left, by the program's figure tables. It reads them from the install's archive when first
+asked and fills the overlay with the player's colour. It anchors the second figure by the header of its figure and draws the shadow
+before each figure. A source draws nothing for a term it has no image for.
+
+A settler in any other state has no record:
 - a carrier that waits next to a flag (0x42),
 - a carrier told to go home (0x44, 0x45),
 - a settler that claims its node on its way home (0x1c),
@@ -229,8 +242,8 @@ The tile pass draws the carriers in 0x42 to 0x45 instead ([Carriers](carriers.md
 
 The time left is the timer less the clock units since the settler's turn, so the animation moves with the game's ticks. The view
 draws the settlers of the jobs 0 (carriers, [Carriers](carriers.md#drawing)), 5, and 11 in every wrap copy. It rebuilds them
-after each tick. The viewer skips a sprite of a draw with no loaded layer and reports it once per sprite
-(`SettlerGraphics.TryLayerOf`). The tests fail on it (`SettlerGraphics.LayerOf`). The engine does not draw a settler of another
+after each tick. A term the source has no image for gives no quad, and the viewer neither warns nor throws. The tests fail on a
+term the figure tables pick a sprite for that the archive has no image for (`HistoryEditionSettlersTests`). The engine does not draw a settler of another
 job. That is a limit of the port. The program draws settlers of every job.
 
 The draw runs ([The draw path, emulated](#the-draw-path-emulated)) confirm the rules below. They cover the carrier in states 2,
@@ -318,7 +331,7 @@ window on, each settler in view takes a turn every pass.
   which the first game did not take, laid one at a time at the type 1 hut's flag, where the woodcutter lays no log. Together they hold the carrier with every good
   of the table at `0x43f4b7` (the goods 1 to 26), in both states.
 
-`SettlerDrawTests` gives the engine's `Draws` each pass's settlers, the heights of their nodes, and the clock, and compares the sprites, colours, and
+`SettlerDrawTests` gives `SettlerFigures.Draws` each pass's settlers, the heights of their nodes, and the clock, and compares the sprites the figure tables pick for its terms, their colours, and
 positions with the original's, in order; it names the first pass and settler that differ. The recordings were made on the reference install
 only, the tests skip where none is present, and a `draw:` run that reaches no pass of its windows, or whose pass draws no settler, fails and prints no recording.
 

@@ -17,6 +17,10 @@ A graphics file of an install, such as `loca/SPAD.PA`, that holds numbered entri
 in it is one asset.
 _Avoid_: pack, container, PA file
 
+**Entry**
+One numbered record in an archive of an install. A draw term never holds its number (INV-0010).
+_Avoid_: record, slot
+
 **Asset kind**
 What an asset is, such as a palette, a sprite, a sound, or rule data. The routine of the program that
 reads an asset decides its kind; nothing in the asset itself states it.
@@ -67,6 +71,24 @@ A JSONC file in `layouts/` that sets up a game for the game view: a hand-drawn m
 triangle, objects), a seed for the game's random generator, the castle, flags, roads, and buildings as
 commands, and settlers and goods in entry states.
 _Avoid_: scenario, save, fixture
+
+**Graphics source**
+Where the map view gets the image for each draw term: the History Edition source, which reads the install's
+archives, or a content set the repository ships. The launch flag `--graphics` picks one. A source answers a
+term with an RGBA image and its anchor point, or with nothing for an effect it does not draw (ADR 0014).
+_Avoid_: skin, theme, renderer, asset pack
+
+**Draw term**
+What the map view asks a graphics source to draw, named in game terms: a terrain triangle, a map object, a
+settler, or a road, with the data that picks its image, such as a settler's job, activity, heading, and
+animation step. A draw term never holds an entry number (INV-0010).
+_Avoid_: sprite ID, entry, frame number
+
+**Content set**
+A folder under `content/` that holds a graphics source as PNG images and one JSON manifest mapping draw terms
+to images and anchors (ADR 0015). It holds graphics only; rules always come from `Siedler1.exe`. `--graphics`
+names the shipped set `open-settlers`; a new folder under `content/` is not selectable.
+_Avoid_: mod, pack, theme
 
 **Entry state**
 A state of a settler or a good that a routine of the original writes at the start of a behaviour, such as a

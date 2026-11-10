@@ -1,0 +1,638 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Assets;
+using OpenSettlers.MapView;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+[TestClass]
+public sealed class HistoryEditionSourceTests
+{
+    const string Archive = "loca/SPAD.PA";
+
+    // A mask of width x height whose rows each cover all but the first pixel.
+    static byte[] Mask(int width, int height, short offsetX, short offsetY)
+    {
+        var bytes = new List<byte> { 0, 0 };
+        bytes.AddRange(BitConverter.GetBytes((ushort)width));
+        bytes.AddRange(BitConverter.GetBytes((ushort)height));
+        bytes.AddRange(BitConverter.GetBytes(offsetX));
+        bytes.AddRange(BitConverter.GetBytes(offsetY));
+        for (var row = 0; row < height; row++)
+        {
+            bytes.AddRange([1, (byte)(width - 1), 0, 0]);
+        }
+
+        return [.. bytes];
+    }
+
+    // A 32 x 20 texture whose row y holds the palette index first + 4 y.
+    static byte[] Texture(byte first)
+    {
+        var bytes = new List<byte> { 0, 0 };
+        bytes.AddRange(BitConverter.GetBytes((ushort)32));
+        bytes.AddRange(BitConverter.GetBytes((ushort)20));
+        bytes.AddRange(new byte[4]);
+        for (var y = 0; y < 20; y++)
+        {
+            bytes.AddRange(new byte[32]);
+            for (var x = 0; x < 32; x++)
+            {
+                bytes[^(x + 1)] = (byte)(first + 4 * y);
+            }
+        }
+
+        return [.. bytes];
+    }
+
+    // Palette index i holds the red component i (the palette keeps its upper six bits, so every index here is a
+    // multiple of 4). A terrain mask n is 16 wide, 25 high for entry 100 and 9 otherwise, offset 3 across and n - 100
+    // down; a terrain texture n starts at index 4 (n - 260). A road mask n is 16 x 5, offset 1 across and n - 230
+    // down; a road texture n starts at index 100 + 4 (n - 300).
+    internal static Dictionary<int, byte[]> Payloads()
+    {
+        var palette = new byte[768];
+        for (var i = 0; i < 256; i++)
+        {
+            palette[3 * i] = (byte)i;
+        }
+
+        var payloads = new Dictionary<int, byte[]> { [3] = palette };
+        for (var n = 60; n <= 221; n++)
+        {
+            payloads[n] = Mask(16, n == 100 ? 25 : 9, 3, (short)(n - 100));
+        }
+
+        for (var n = 260; n <= 292; n++)
+        {
+            payloads[n] = Texture((byte)((n - 260) * 4));
+        }
+
+        for (var n = 230; n <= 256; n++)
+        {
+            payloads[n] = Mask(16, 5, 1, (short)(n - 230));
+        }
+
+        for (var n = 300; n <= 309; n++)
+        {
+            payloads[n] = Texture((byte)(100 + (n - 300) * 4));
+        }
+
+        return payloads;
+    }
+
+    static HistoryEditionSource Open(FakeInstall fake)
+    {
+        Assert.IsTrue(
+            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
+        );
+
+        return HistoryEditionSource.Load(install);
+    }
+
+    static FakeInstall Fake(Dictionary<int, byte[]>? payloads = null) =>
+        new FakeInstall().Put(Archive, ArchiveBytes.Build(311, payloads ?? Payloads()));
+
+    static TerrainTriangle Flat(Terrain terrain, bool upper = true) => new(0, 0, upper, terrain, 5, 5, 5, 100, 50);
+
+    static byte[] Pixel(ObjectImage image, int x, int y) => image.Rgba[((y * image.Width + x) * 4)..][..4];
+
+    [TestMethod]
+    public void AFlatUpperTriangleOfGrassIsDrawnWithMask100AndTexture264()
+    {
+        using var fake = Fake();
+
+        var image = Open(fake).Draw(Flat(new Terrain(5)))!;
+
+        Assert.AreEqual(16, image.Width);
+        Assert.AreEqual(25, image.Height);
+        Assert.AreEqual(3 - 16, image.OffsetX);
+        Assert.AreEqual(0, image.OffsetY);
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0 }, Pixel(image, 0, 0));
+        CollectionAssert.AreEqual(new byte[] { 4 * 4, 0, 0, 255 }, Pixel(image, 1, 0));
+    }
+
+    [TestMethod]
+    public void AFlatLowerTriangleOfGrassIsDrawnWithMask181()
+    {
+        using var fake = Fake();
+
+        var image = Open(fake).Draw(Flat(new Terrain(5), upper: false))!;
+
+        Assert.AreEqual(181 - 100, image.OffsetY);
+    }
+
+    [TestMethod]
+    public void TheTextureRepeatsDownEveryTwentyRowsFromTheTopOfTheMask()
+    {
+        using var fake = Fake();
+
+        var image = Open(fake).Draw(Flat(new Terrain(5)))!;
+
+        CollectionAssert.AreEqual(new byte[] { 4 * 4 + 4, 0, 0, 255 }, Pixel(image, 1, 21));
+    }
+
+    [TestMethod]
+    public void WaterIsDrawnWithTheLastTexture()
+    {
+        using var fake = Fake();
+
+        var image = Open(fake).Draw(Flat(new Terrain(0)))!;
+
+        CollectionAssert.AreEqual(new byte[] { 32 * 4, 0, 0, 255 }, Pixel(image, 1, 0));
+    }
+
+    [TestMethod]
+    public void AHeightStepBeyondFourDrawsNothing()
+    {
+        using var fake = Fake();
+        var source = Open(fake);
+
+        Assert.IsNull(source.Draw(new TerrainTriangle(0, 0, true, new Terrain(5), 5, 0, 5, 100, 50)));
+        Assert.IsNull(source.Draw(new TerrainTriangle(0, 0, false, new Terrain(5), 5, 5, 0, 100, 50)));
+    }
+
+    [TestMethod]
+    public void AHeightIsItsFiveLowBits()
+    {
+        using var fake = Fake();
+        var source = Open(fake);
+
+        var low = source.Draw(new TerrainTriangle(0, 0, true, new Terrain(5), 1, 1, 1, 100, 50));
+        var high = source.Draw(new TerrainTriangle(0, 0, true, new Terrain(5), 33, 1, 1, 100, 50));
+
+        Assert.AreSame(low, high);
+    }
+
+    [TestMethod]
+    public void TermsThatPickTheSameMaskAndTextureShareOneImage()
+    {
+        using var fake = Fake();
+        var source = Open(fake);
+
+        var a = source.Draw(Flat(new Terrain(5)));
+        var b = source.Draw(Flat(new Terrain(5)) with { X = 300, Y = 7 });
+        var other = source.Draw(Flat(new Terrain(12)));
+
+        Assert.AreSame(a, b);
+        Assert.AreNotSame(a, other);
+    }
+
+    [TestMethod]
+    public void ALevelEastStripOfPlainLandIsDrawnWithMask234AndTexture301()
+    {
+        using var fake = Fake();
+
+        var image = Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.East, 0, 0, new Terrain(5)))!;
+
+        Assert.AreEqual(234 - 230, image.OffsetY);
+        Assert.AreEqual(1, image.OffsetX);
+        CollectionAssert.AreEqual(new byte[] { 100 + 4, 0, 0, 255 }, Pixel(image, 1, 0));
+    }
+
+    [TestMethod]
+    public void AStripBeyondAHeightDifferenceOfFourDrawsNothing()
+    {
+        using var fake = Fake();
+
+        Assert.IsNull(Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.South, 5, 0, new Terrain(5))));
+        Assert.IsNull(Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.South, -5, 0, new Terrain(5))));
+    }
+
+    [TestMethod]
+    public void TheMaskOfAStripFollowsItsDirectionAndDifference()
+    {
+        using var fake = Fake();
+        var source = Open(fake);
+
+        Assert.AreEqual(
+            243 - 230 + 2,
+            source.Draw(new RoadStrip(0, 0, RoadDirection.SouthEast, 2, 0, new Terrain(5)))!.OffsetY
+        );
+        Assert.AreEqual(
+            252 - 230 - 3, // the south masks start at 248 for -4
+            source.Draw(new RoadStrip(0, 0, RoadDirection.South, -3, 0, new Terrain(5)))!.OffsetY
+        );
+    }
+
+    [TestMethod]
+    public void TheTextureOfAStripFollowsSlopeWaterMountainAndSnow()
+    {
+        using var fake = Fake();
+        var source = Open(fake);
+        byte Red(int slope, int ground) =>
+            Pixel(source.Draw(new RoadStrip(0, 0, RoadDirection.East, 0, slope, new Terrain(ground)))!, 1, 0)[0];
+
+        Assert.AreEqual(100, Red(5, 5));
+        Assert.AreEqual(100 + 4, Red(0, 5));
+        Assert.AreEqual(100 + 8, Red(-6, 5));
+        Assert.AreEqual(100 + 9 * 4, Red(0, 0));
+        Assert.AreEqual(100 + 4 * 4, Red(0, 9));
+        Assert.AreEqual(100 + 7 * 4, Red(0, 15));
+    }
+
+    [TestMethod]
+    public void AnUnreadableRoadMaskLeavesTheRoadsUndrawnAndTheTerrainDrawn()
+    {
+        var payloads = Payloads();
+        payloads.Remove(240);
+        using var fake = Fake(payloads);
+
+        var source = Open(fake);
+
+        StringAssert.Contains(source.RoadsProblem!, "entry 240");
+        Assert.IsNull(source.Draw(new RoadStrip(0, 0, RoadDirection.East, 0, 0, new Terrain(5))));
+        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+    }
+
+    [TestMethod]
+    public void AMissingArchiveNamesItself()
+    {
+        using var fake = new FakeInstall();
+
+        var problem = Assert.ThrowsExactly<FileNotFoundException>(() => Open(fake));
+
+        StringAssert.Contains(problem.Message, Archive);
+    }
+
+    // The terrain and road entries and an object catalog: the sprites of object entries 1250 (3 wide), 1251 (2 wide),
+    // the castle, the flag and its frame 1, a log, and the water entry 635, with the shadow mask of 1250 (entry 1500).
+    // Palette index 8 holds the color 40, 12, 0.
+    static FakeInstall ObjectFake(Action<Dictionary<int, byte[]>>? change = null)
+    {
+        var payloads = Payloads();
+        foreach (var (entry, bytes) in ObjectGraphicsTests.Payloads(flag: true))
+        {
+            payloads[entry] = bytes;
+        }
+
+        payloads[3][3 * 8] = 40;
+        payloads[3][3 * 8 + 1] = 12;
+        payloads[ObjectSprites.FlagEntry + 1] = ObjectGraphicsTests.Square(10, 5);
+        payloads[ObjectSprites.GoodEntry(new Good(7))] = ObjectGraphicsTests.Square(3, 1);
+        payloads[ObjectSprites.WaterEntry(0, 0)] = ObjectGraphicsTests.Square(4, 4);
+        payloads[1250 + ObjectGraphics.ShadowOffset] = ObjectGraphicsTests.ShadowMask();
+        change?.Invoke(payloads);
+
+        return new FakeInstall().Put(Archive, ArchiveBytes.Build(1700, payloads));
+    }
+
+    static MapObjectDraw Object(int code, ushort step = 0) => new(0, 10, 20, new MapObject((byte)code), step);
+
+    [TestMethod]
+    public void AMapObjectDrawsTheSpriteOfItsCodeWithItsShadow()
+    {
+        using var fake = ObjectFake();
+
+        var drawing = Open(fake).Draw(Object(8))!;
+
+        Assert.AreEqual(3, drawing.Image!.Width);
+        Assert.AreEqual(2, drawing.Shadow!.Width);
+    }
+
+    [TestMethod]
+    public void TheAnimationStepFoldsThePhaseIntoTheEntry()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        // Code 8 is entry 1250 for 16 steps and entry 1251 at step 16 (docs/rules/map-objects.md).
+        Assert.AreEqual(3, source.Draw(Object(8, 15))!.Image!.Width);
+        Assert.AreEqual(2, source.Draw(Object(8, 16))!.Image!.Width);
+        Assert.AreEqual(10, source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 8))!.Image!.OffsetX);
+        Assert.AreEqual(9, source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0))!.Image!.OffsetX);
+    }
+
+    [TestMethod]
+    public void TermsThatDrawTheSameImageGetTheSameDrawing()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        Assert.AreSame(source.Draw(Object(8)), source.Draw(Object(15)));
+    }
+
+    [TestMethod]
+    public void AnObjectCodeWithNoImageDrawsNothingWithoutError()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        Assert.IsNull(source.Draw(Object(40)));
+        Assert.IsNull(source.Draw(Object(5)));
+        Assert.IsNull(source.Draw(Object(0)));
+    }
+
+    [TestMethod]
+    public void TheCastleAndTheHutDrawTheirOwnSpritesAndAnotherBuildingDrawsNothing()
+    {
+        using var fake = ObjectFake(payloads =>
+            payloads[ObjectSprites.WoodcutterEntry] = ObjectGraphicsTests.Square(11, 3)
+        );
+        var source = Open(fake);
+
+        Assert.AreEqual(7, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Castle))!.Image!.OffsetX);
+        Assert.AreEqual(11, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter))!.Image!.OffsetX);
+        Assert.IsNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Storehouse)));
+    }
+
+    [TestMethod]
+    public void AGoodDrawsItsSpriteByItsLowFiveBitsAndNoShadow()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        var log = source.Draw(new GoodAtFlag(0, 0, 0, new Good(7)))!;
+
+        Assert.AreEqual(3, log.Image!.OffsetX);
+        Assert.IsNull(log.Shadow);
+        Assert.AreSame(log, source.Draw(new GoodAtFlag(0, 0, 0, new Good(0x27))));
+    }
+
+    [TestMethod]
+    public void ATileWithWaterDrawsTheRippleOfItsTileAndStepOverTheSurfaceColor()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        var ripple = source.Draw(new WaterRipple(0, 0, 0, 0, 0))!;
+
+        Assert.AreEqual(4, ripple.Image.OffsetX);
+        CollectionAssert.AreEqual(new byte[] { 40, 12, 0, 255 }, ripple.Surface);
+        // The tile 1 draws the entry 634, which this install does not hold.
+        Assert.IsNull(source.Draw(new WaterRipple(0, 0, 0, 1, 0)));
+    }
+
+    [TestMethod]
+    public void TheObjectHeadroomIsTheTallestObjectImage()
+    {
+        using var fake = ObjectFake();
+
+        Assert.AreEqual(2, Open(fake).ObjectHeadroom);
+    }
+
+    [TestMethod]
+    public void AnInstallWithNoObjectSpritesDrawsNoObjectAndNamesTheProblem()
+    {
+        using var fake = Fake();
+
+        var source = Open(fake);
+
+        StringAssert.Contains(source.ObjectsProblem!, "no object sprite");
+        Assert.IsNull(source.Draw(Object(8)));
+        Assert.IsNull(source.Draw(new WaterRipple(0, 0, 0, 0, 0)));
+        Assert.AreEqual(0, source.ObjectHeadroom);
+        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+    }
+
+    [TestMethod]
+    public void AnUnreadableObjectSpriteLeavesTheObjectsUndrawnAndTheTerrainDrawn()
+    {
+        using var fake = ObjectFake(payloads => payloads[1260] = [1, 2, 3]);
+
+        var source = Open(fake);
+
+        StringAssert.Contains(source.ObjectsProblem!, "entry 1260");
+        Assert.IsNull(source.Draw(Object(8)));
+        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+    }
+
+    // The settlers: tables whose row 0 holds the figure base 100 and the second base 50 and whose offsets are all 0, so a
+    // carrier's figure is the entry 1950, its overlay 2600, and its second figure 3200 whatever its figure byte. The
+    // sequences are those of SettlerFiguresTests (the frame 7 holds the figure byte 3).
+    static RuleTables SettlerTables(sbyte[]? idleOffsets = null)
+    {
+        var bases = new short[2 * RuleTables.FigureBaseRowCount];
+        bases[0] = 100;
+        bases[1] = 50;
+
+        return new RuleTables(
+            new ObjectClass[RuleTables.ClassCount],
+            TestProgram.Made().StartStock,
+            figureBases: bases,
+            idleOffsets: idleOffsets
+        );
+    }
+
+    // The figure 1950 (3 x 1, header bytes 1 and 0, offsets -1, -2), its overlay 2600, the second figure 3200 (offsets 5, 6),
+    // the sequences in entry 2, and the shadow mask in entry 4 (2 x 1, offsets -1, -2).
+    static FakeInstall SettlerFake(Action<Dictionary<int, byte[]>>? change = null)
+    {
+        var payloads = Payloads();
+        payloads[2] = SettlerFiguresTests.Sequences();
+        payloads[4] = ObjectGraphicsTests.ShadowMask();
+        payloads[1950] = ObjectGraphicsTests.Sprite();
+        payloads[2600] = ObjectGraphicsTests.Sprite();
+        payloads[3200] = ObjectGraphicsTests.Square(5, 6);
+        change?.Invoke(payloads);
+
+        return new FakeInstall().Put(Archive, ArchiveBytes.Build(3300, payloads));
+    }
+
+    static HistoryEditionSource OpenWithSettlers(FakeInstall fake, RuleTables? tables = null)
+    {
+        Assert.IsTrue(
+            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
+        );
+
+        return HistoryEditionSource.Load(install, tables ?? SettlerTables());
+    }
+
+    static SettlerDraw Term(
+        SettlerPart part,
+        int player = 0,
+        int frame = 7,
+        WaitingNode? node = null,
+        Activity? activity = null
+    ) =>
+        new(
+            3,
+            100,
+            50,
+            part,
+            Job.Carrier,
+            activity ?? new WalksRoad(null, new Heading(0)),
+            null,
+            frame,
+            0,
+            player,
+            Good.None,
+            node
+        );
+
+    [TestMethod]
+    public void AFigureDrawsItsSpriteWithTheSettlersShadow()
+    {
+        using var fake = SettlerFake();
+
+        var drawing = OpenWithSettlers(fake).Draw(Term(SettlerPart.Figure))!;
+
+        Assert.AreEqual((3, -1, -2), (drawing.Image!.Width, drawing.Image.OffsetX, drawing.Image.OffsetY));
+        Assert.AreEqual((2, -1, -2), (drawing.Shadow!.Width, drawing.Shadow.OffsetX, drawing.Shadow.OffsetY));
+    }
+
+    [TestMethod]
+    public void TheOverlayIsFilledWithThePlayersColourAndHasNoShadow()
+    {
+        using var fake = SettlerFake();
+        var source = OpenWithSettlers(fake);
+        var palette = Formats.PaletteFile.Read(Payloads()[3]);
+
+        var first = source.Draw(Term(SettlerPart.Overlay))!;
+        var second = source.Draw(Term(SettlerPart.Overlay, player: 1))!;
+
+        Assert.IsNull(first.Shadow);
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0 }, Pixel(first.Image!, 0, 0));
+        CollectionAssert.AreEqual(palette.Rgba(0x40).ToArray(), Pixel(first.Image!, 1, 0));
+        CollectionAssert.AreEqual(palette.Rgba(0x44).ToArray(), Pixel(second.Image!, 2, 0));
+    }
+
+    // The second figure hangs from the settler's position by its own offsets moved by the header bytes 0 and 1 of the figure
+    // (here 1 and 0), and only the second figure is moved.
+    [TestMethod]
+    public void TheSecondFigureIsAnchoredByTheShiftOfItsFiguresHeader()
+    {
+        using var fake = SettlerFake();
+
+        var second = OpenWithSettlers(fake).Draw(Term(SettlerPart.SecondFigure))!;
+
+        Assert.AreEqual((5 + 1, 6 + 0), (second.Image!.OffsetX, second.Image.OffsetY));
+        Assert.IsNull(second.Shadow);
+    }
+
+    [TestMethod]
+    public void ASecondFigureWhoseFigureEntryTheArchiveLacksIsAnchoredByItsOwnOffsets()
+    {
+        using var fake = SettlerFake(payloads => payloads.Remove(1950));
+
+        var second = OpenWithSettlers(fake).Draw(Term(SettlerPart.SecondFigure))!;
+
+        Assert.AreEqual((5, 6), (second.Image!.OffsetX, second.Image.OffsetY));
+    }
+
+    // The figure bytes 3 and 4 of the carrier's walk (steps 0 and 8) pick the figures 1950 and 1951, whose headers carry the
+    // same bytes: both second figures hang at the same place, so they answer one image and take one layer of the view.
+    [TestMethod]
+    public void SecondFiguresThatHangAtTheSamePlaceAnswerOneImageInstance()
+    {
+        var offsets = new short[512];
+        offsets[2 * 4] = 1;
+        var tables = new RuleTables(
+            new ObjectClass[RuleTables.ClassCount],
+            TestProgram.Made().StartStock,
+            figureBases: SettlerTables().FigureBases,
+            figureOffsets: offsets
+        );
+        using var fake = SettlerFake(payloads => payloads[1951] = ObjectGraphicsTests.Sprite());
+        var source = OpenWithSettlers(fake, tables);
+
+        var first = source.Draw(Term(SettlerPart.SecondFigure))!;
+        var second = source.Draw(Term(SettlerPart.SecondFigure) with { Step = 8 })!;
+
+        Assert.AreSame(first.Image, second.Image);
+    }
+
+    [TestMethod]
+    public void ASecondFigureWhoseFigureEntryIsNoSpriteIsAnchoredByItsOwnOffsets()
+    {
+        using var fake = SettlerFake(payloads => payloads[1950] = [1, 2, 3]);
+
+        var second = OpenWithSettlers(fake).Draw(Term(SettlerPart.SecondFigure))!;
+
+        Assert.AreEqual((5, 6), (second.Image!.OffsetX, second.Image.OffsetY));
+    }
+
+    [TestMethod]
+    public void ASettlerThatIsDrawnTwiceGivesTheSameImageInstance()
+    {
+        using var fake = SettlerFake();
+        var source = OpenWithSettlers(fake);
+
+        var a = source.Draw(Term(SettlerPart.Figure))!;
+        var b = source.Draw(Term(SettlerPart.Figure))!;
+
+        Assert.AreSame(a.Image, b.Image);
+        Assert.AreSame(a.Shadow, b.Shadow);
+    }
+
+    [TestMethod]
+    public void ATermWhoseSpriteTheArchiveLacksDrawsNothingAndDoesNotThrow()
+    {
+        using var fake = SettlerFake(payloads => payloads.Remove(1950));
+        var source = OpenWithSettlers(fake);
+
+        Assert.IsNull(source.Draw(Term(SettlerPart.Figure)));
+        Assert.IsNotNull(source.Draw(Term(SettlerPart.Overlay)));
+    }
+
+    [TestMethod]
+    public void ATermWhoseSpriteIsUnreadableDrawsNothingAndDoesNotThrow()
+    {
+        using var fake = SettlerFake(payloads => payloads[2600] = [1, 2, 3]);
+
+        Assert.IsNull(OpenWithSettlers(fake).Draw(Term(SettlerPart.Overlay)));
+    }
+
+    [TestMethod]
+    public void ATermWithNoStepInTheSequencesDrawsNothing()
+    {
+        using var fake = SettlerFake();
+
+        Assert.IsNull(OpenWithSettlers(fake).Draw(Term(SettlerPart.Figure, frame: 9)));
+    }
+
+    [TestMethod]
+    public void ASourceLoadedWithNoTablesDrawsNoSettlerAndHasNoProblem()
+    {
+        using var fake = SettlerFake();
+        var source = Open(fake);
+
+        Assert.IsNull(source.Draw(Term(SettlerPart.Figure)));
+        Assert.IsNull(source.SettlersProblem);
+    }
+
+    [TestMethod]
+    public void AnAbsentShadowMaskLeavesTheFigureWithNoShadow()
+    {
+        using var fake = SettlerFake(payloads => payloads.Remove(4));
+
+        var drawing = OpenWithSettlers(fake).Draw(Term(SettlerPart.Figure))!;
+
+        Assert.IsNotNull(drawing.Image);
+        Assert.IsNull(drawing.Shadow);
+    }
+
+    [TestMethod]
+    public void AMalformedShadowMaskLeavesTheSettlersUndrawnAndNamesTheMaskAndItsEntry()
+    {
+        using var fake = SettlerFake(payloads => payloads[4] = [1, 2, 3]);
+
+        var source = OpenWithSettlers(fake);
+
+        StringAssert.Contains(source.SettlersProblem!, "the shadow mask");
+        StringAssert.Contains(source.SettlersProblem!, "entry 4");
+        Assert.IsNull(source.Draw(Term(SettlerPart.Figure)));
+        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+    }
+
+    // A waiting carrier's road directions move its image, and its shadow, by the table's offsets: the roads 0x09 move them 3
+    // across and 1 up.
+    [TestMethod]
+    public void AWaitingCarriersRoadDirectionsMoveItsImageAndShadow()
+    {
+        var offsets = new sbyte[RuleTables.IdleOffsetCount];
+        offsets[2 * 0x09] = 3;
+        offsets[2 * 0x09 + 1] = -1;
+        using var fake = SettlerFake();
+        var waiting = new WaitingNode(4, false, new RoadSet(0x09));
+
+        var drawing = OpenWithSettlers(fake, SettlerTables(offsets))
+            .Draw(Term(SettlerPart.Figure, node: waiting, activity: new WaitsAtFlag(0, 0, new Heading(0).Retried)))!;
+
+        Assert.AreEqual((-1 + 3, -2 - 1), (drawing.Image!.OffsetX, drawing.Image.OffsetY));
+        Assert.AreEqual((-1 + 3, -2 - 1), (drawing.Shadow!.OffsetX, drawing.Shadow.OffsetY));
+    }
+}
