@@ -9,10 +9,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
-// No static field or static auto-property initializer of a test class may call TestProgram.Tables() or
-// TestProgram.OpenInstall(). Without the install, the Assert.Inconclusive they throw then fires during type
-// initialization, where MSTest reports it as a TypeInitializationException that fails every test of the class.
-// Build the value inside the test instead, for example through an expression-bodied accessor that caches it.
+// No static field or static auto-property initializer and no static constructor of a test class may call
+// TestProgram.Tables() or TestProgram.OpenInstall(): qualified, bare under `using static TestProgram`, or through a static
+// method of the same file that calls one of them itself. Without the install, the Assert.Inconclusive they throw then
+// fires during type initialization, where MSTest reports it as a TypeInitializationException that fails every test of
+// the class. A call inside a lambda or local function runs later and is allowed. Build the value inside the test
+// instead, for example through an expression-bodied accessor that caches it. The check reads the syntax of each file
+// alone: a helper that reaches the install through a second helper, or from another file, passes it.
 [TestClass]
 public sealed class InstallInitializerTests
 {
@@ -185,6 +188,14 @@ public sealed class InstallInitializerTests
                 private static Map? _map;
                 private static Map Map => _map ??= MapViewState.Open(TestProgram.Tables(), "1", 1).Map!;
                 static Map Generated() => MapViewState.Open(TestProgram.Tables(), "1", 1).Map!;
+                private static readonly Lazy<Map> Later = new(() => Generated());
+                private static readonly Lazy<Map> Group = new(Generated);
+                private static readonly Func<RuleTables> Local;
+                static A()
+                {
+                    Local = () => TestProgram.Tables();
+                    RuleTables Deferred() => TestProgram.Tables();
+                }
                 private readonly RuleTables _instance = TestProgram.Tables();
                 public static void Test(int count = 1)
                 {
@@ -204,8 +215,8 @@ public sealed class InstallInitializerTests
     }
 
     // The 1-based line of the '=' of every static field or static auto-property initializer, and of the name of every
-    // static constructor, in the source that calls the install outside a lambda, directly or through a static method
-    // of the source that calls it directly.
+    // static constructor, in the source that calls the install outside a lambda or local function, directly or through
+    // a static method of the source that calls it directly.
     private static IEnumerable<int> Lines(string source)
     {
         var root = CSharpSyntaxTree.ParseText(source).GetRoot();

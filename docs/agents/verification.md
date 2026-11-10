@@ -25,11 +25,14 @@ The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
 that needs one, on the class where every test in it does. A test without the category fails or reports
 inconclusive in either command without the install. `NeedsTests` pins the filters to `Needs`.
 
-No static field or static property initializer of a test class may reach the install (`TestProgram.Tables()`,
-`TestProgram.OpenInstall()`). Without the install the `Assert.Inconclusive` they throw then fires during type
-initialization, and MSTest fails every test of the class with a `TypeInitializationException`. Build the value inside the
-test instead, as the cached `Map` accessor of `MapPickingTests` does. `InstallInitializerTests` fails naming the file and
-line of every such initializer.
+No static field or static property initializer and no static constructor of a test class may reach the install
+(`TestProgram.Tables()`, `TestProgram.OpenInstall()`). Without the install the `Assert.Inconclusive` they throw then fires
+during type initialization, and MSTest fails every test of the class with a `TypeInitializationException`. Build the
+value inside the test instead, as the cached `Map` accessor of `MapPickingTests` does. A call inside a lambda or a local
+function, such as `new Lazy<Map>(() => Generated())`, runs later and is allowed. `InstallInitializerTests` fails naming
+the file and line of every initializer and static constructor that calls one of them: qualified, bare under
+`using static TestProgram`, or through a static method of the same file that calls one itself. It reads each file's syntax
+alone, so a call two helpers deep or through another file passes it.
 
 ## Run one test class
 
@@ -54,8 +57,8 @@ The test host (MSTest on Microsoft.Testing.Platform) has no `--filter-class`: it
 `mise run test:integration` runs only the tests of the categories `Install` and `Ghidra`. It needs the reference
 install (`SIEDLER_DIR`) and Ghidra (`analyzeHeadless` on the path, which `mise install` provides). A test whose need is
 missing reports inconclusive. An install whose `Siedler1.exe` holds no rule tables counts as missing. `mise` sets
-`SIEDLER_DIR` from `mise.local.toml`, also in a worktree below the checkout, so run the tests without the install outside
-`mise`: `env -u SIEDLER_DIR dotnet test --project tests/OpenSettlers.Tests`. Neither the full command nor the focused one runs these tests. Run this command for a
+`SIEDLER_DIR` from `mise.local.toml`, also in a worktree below the checkout, so run the tests without the install with the
+variable removed inside `mise`: `mise exec -- env -u SIEDLER_DIR dotnet test --project tests/OpenSettlers.Tests`. Neither the full command nor the focused one runs these tests. Run this command for a
 change to what they test: the install readers, the emulator tools in `tools/GhidraDump/`.
 
 ## Timing command
