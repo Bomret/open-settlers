@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using OpenSettlers.Domain;
 
 namespace OpenSettlers.MapView;
 
@@ -23,14 +24,30 @@ public sealed class OpenSettlersSource : IGraphicsSource
     /// <summary>The number of terrain codes a triangle can hold, 0 to 15.</summary>
     public const int TerrainCodes = 16;
 
+    /// <summary>The lowest object code with art besides the flag; codes 2 to 7 have none.</summary>
+    public const int FirstObjectCode = 8;
+
+    /// <summary>The highest object code.</summary>
+    public const int LastObjectCode = 127;
+
     readonly ObjectImage[] _terrain;
     readonly ObjectImage[] _roads;
+    readonly ObjectDrawing _flag;
+    readonly ObjectDrawing[] _objects;
 
-    OpenSettlersSource(ObjectImage[] terrain, ObjectImage[] roads)
+    OpenSettlersSource(ObjectImage[] terrain, ObjectImage[] roads, ObjectDrawing flag, ObjectDrawing[] objects)
     {
         _terrain = terrain;
         _roads = roads;
+        _flag = flag;
+        _objects = objects;
     }
+
+    /// <summary>The manifest key of the flag.</summary>
+    public const string FlagKey = "object/flag";
+
+    /// <summary>The manifest key of a map object of code 8 to 127.</summary>
+    public static string ObjectKey(int code) => $"object/{code}";
 
     /// <summary>The manifest key of a terrain code's upper or lower triangle.</summary>
     public static string TerrainKey(int code, bool upper) => $"terrain/{code}/{(upper ? "upper" : "lower")}";
@@ -102,7 +119,14 @@ public sealed class OpenSettlersSource : IGraphicsSource
             roads[direction] = Image(RoadKey((RoadDirection)direction));
         }
 
-        return new OpenSettlersSource(terrain, roads);
+        var flag = new ObjectDrawing(Image(FlagKey), null);
+        var objects = new ObjectDrawing[LastObjectCode - FirstObjectCode + 1];
+        for (var code = FirstObjectCode; code <= LastObjectCode; code++)
+        {
+            objects[code - FirstObjectCode] = new ObjectDrawing(Image(ObjectKey(code)), null);
+        }
+
+        return new OpenSettlersSource(terrain, roads, flag, objects);
     }
 
     // The manifest's entries by key, each as its image path and anchor, checked for everything but the image file.
@@ -209,7 +233,10 @@ public sealed class OpenSettlersSource : IGraphicsSource
     public ObjectImage? Draw(RoadStrip strip) => _roads[(int)strip.Direction];
 
     /// <inheritdoc />
-    public ObjectDrawing? Draw(MapObjectDraw draw) => null;
+    public ObjectDrawing? Draw(MapObjectDraw draw) =>
+        draw.Object == MapObject.Flag ? _flag
+        : draw.Object.Code is >= FirstObjectCode and <= LastObjectCode ? _objects[draw.Object.Code - FirstObjectCode]
+        : null;
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(BuildingDraw draw) => null;

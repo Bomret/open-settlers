@@ -84,7 +84,8 @@ public sealed class OpenSettlersSourceTests
         Enumerable
             .Range(0, 16)
             .SelectMany(code => new[] { $"terrain/{code}/upper", $"terrain/{code}/lower" })
-            .Concat(["road/east", "road/south-east", "road/south"]);
+            .Concat(["road/east", "road/south-east", "road/south", "object/flag"])
+            .Concat(Enumerable.Range(8, 120).Select(code => $"object/{code}"));
 
     static TerrainTriangle Triangle(int code, bool upper) => new(0, 0, upper, new Terrain(code), 0, 0, 0, 100, 50);
 
@@ -155,6 +156,58 @@ public sealed class OpenSettlersSourceTests
         using var folder = new ContentFolder();
 
         Assert.IsNull(folder.Load().Draw(Triangle(16, true)));
+    }
+
+    [TestMethod]
+    public void AMapObjectDrawsTheImageOfItsCodeWithNoShadowWhateverItsStep()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("tree.png", "5x7:4");
+        folder.Entries["object/13"] = ContentFolder.Entry("tree.png", "-2, -6");
+        var source = folder.Load();
+
+        var drawing = source.Draw(new MapObjectDraw(0, 0, 0, new MapObject(13), 0))!;
+
+        Assert.IsNull(drawing.Shadow);
+        Assert.AreEqual((5, 7, -2, -6), (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY));
+        Assert.AreSame(drawing.Image, source.Draw(new MapObjectDraw(5, 9, 9, new MapObject(13), 77))!.Image);
+    }
+
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(2)]
+    [DataRow(4)]
+    [DataRow(7)]
+    [DataRow(128)]
+    public void ACodeTheGameDrawsNoObjectForDrawsNothing(int code)
+    {
+        using var folder = new ContentFolder();
+
+        Assert.IsNull(folder.Load().Draw(new MapObjectDraw(0, 0, 0, new MapObject((byte)code), 0)));
+    }
+
+    [TestMethod]
+    public void TheFlagDrawsItsOwnImage()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("flag.png", "3x4:2");
+        folder.Entries["object/flag"] = ContentFolder.Entry("flag.png", "0, -3");
+
+        var image = folder.Load().Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 8))!.Image!;
+
+        Assert.AreEqual((3, 4, 0, -3), (image.Width, image.Height, image.OffsetX, image.OffsetY));
+    }
+
+    [TestMethod]
+    [DataRow("object/flag")]
+    [DataRow("object/8")]
+    [DataRow("object/127")]
+    public void AnObjectKeyTheManifestLacksIsRefusedByFileAndKey(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
     }
 
     [TestMethod]
