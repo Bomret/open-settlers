@@ -13,7 +13,8 @@ rendered sprites.
   Class 1 and 2 are the trees and stones of the generation, 2 and up are large objects
   ([Map form](map-form.md), `MapGen_ResolveObjectOverlap`), 3 is a flag, 4 to 6 are buildings.
 - **Sprite:** the entry `ObjectSprites.Entry` picks (`1250 + code - 8`, the animated codes 8 to 31 by frame),
-  rendered from the install with `ObjectGraphics.Load`. The images stay outside the repository (INV-0001).
+  rendered from the install by the History Edition source (`ObjectGraphics.Load`). The images stay outside the
+  repository (INV-0001).
 - **Scatter pass:** the generation pass that writes the code ([Map form](map-form.md), passes 16 to 25), with the
   terrain codes it accepts. "none" means no generation pass writes it.
 

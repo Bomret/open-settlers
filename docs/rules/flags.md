@@ -100,6 +100,6 @@ bit 7 set (a water triangle) would draw entry 1386 in the original; the engine a
 (`src/Application/FlagPlacement.cs`) writes it. `Game.Flags` lists the flags by table slot (`Flag(X, Y)`). The
 castle's flag is the first. The digest holds the flags and the total of resource 1. A refused command changes no
 state. The map view's stand-in flag button (`src/Viewer/MapViewControl.cs`) turns a click into `PlaceFlag`;
-`ObjectSprites.FlagEntry` and `ObjectDraws` draw the flags with the objects. Departures: the table limit, the
+`ObjectDraws` draws the flags with the objects (a `MapObjectDraw` of the flag; the History Edition source picks the sprite `ObjectSprites.FlagEntry`). Departures: the table limit, the
 border bits that are not set anyway, the colour bits, the refusal before the castle, and the goods that wait.
 (The engine splits a road under the new flag, as `Game.PlaceFlag` and a building's flag do through `SplitRoad`: [Roads](roads.md#a-flag-on-a-road).)

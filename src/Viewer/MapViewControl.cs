@@ -11,11 +11,12 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Viewer;
 
 /// <summary>
-/// The map view (<c>--map</c>): a seed field and a size picker above the terrain of the generated map. The terrain
-/// and the roads are drawn on the GPU (ADR 0007) through a graphics source (ADR 0014): the shared builders give a
-/// draw term for each triangle and strip, the source answers each with an RGBA image, and the images are layers of an
-/// array texture that <c>Objects.gdshader</c> samples (alpha the coverage), one mesh per band of rows. The
-/// generated objects are quads of sprite layers drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
+/// The map view (<c>--map</c>): a seed field and a size picker above the terrain of the generated map. The terrain,
+/// the roads, the objects, and the water are drawn on the GPU (ADR 0007) through a graphics source (ADR 0014): the
+/// shared builders give a draw term for each triangle, strip, object, building, good, and ripple, the source answers
+/// each with an RGBA image, and the images are layers of an array texture that <c>Objects.gdshader</c> (or
+/// <c>Water.gdshader</c> for the ripples) samples (alpha the coverage), one mesh per band of rows. The objects are
+/// quads drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
 /// wraps at the map's edges; the copies of <see cref="Camera.Copies"/> tile the plane around it. The mouse wheel,
 /// and the plus and minus keys, and a touchpad pinch change the <see cref="Zoom"/>; the wheel and the pinch keep
 /// the map point under the pointer in place. A two-finger touchpad swipe moves the camera.

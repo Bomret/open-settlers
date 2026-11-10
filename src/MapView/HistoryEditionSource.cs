@@ -11,7 +11,9 @@ namespace OpenSettlers.MapView;
 /// slope tables of <see cref="TerrainRules"/> and the texture picks of <see cref="RoadRules"/> choose a mask and a
 /// texture entry of <c>loca/SPAD.PA</c>, and the source bakes the two into one RGBA image. The textured fill repeats the
 /// texture down every <see cref="TerrainGraphics.TextureHeight"/> rows from the top of the mask
-/// (<c>docs/rules/graphics-images.md</c>, "Textured fill"). A term the original has no mask for draws nothing.
+/// (<c>docs/rules/graphics-images.md</c>, "Textured fill"). A term the original has no mask for draws nothing. For the
+/// objects it holds the entry picks and the phase folding of <see cref="ObjectSprites"/>, the shadow mask of each object
+/// sprite, and the surface color of the water ripple; an object code with no sprite draws nothing.
 /// </summary>
 public sealed class HistoryEditionSource : IGraphicsSource
 {
