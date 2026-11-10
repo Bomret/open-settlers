@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Formats;
 using OpenSettlers.MapView;
@@ -11,50 +12,47 @@ namespace OpenSettlers.Tests;
 public sealed class TerrainTests
 {
     [TestMethod]
-    public void AFlatUpperTriangleOfGrassIsMask100WithTexture264()
+    public void AHeightStepBeyondFourStillGivesATermForBothTriangles()
     {
-        var draw = TerrainRules.Upper(5, 5, 5, new Terrain(5));
+        var map = new Map(MapSize.Offered[0]);
+        map.At(3, 3).Height = 10;
 
-        Assert.AreEqual(new TerrainDraw(100, 264), draw);
+        var triangles = TerrainTriangles.Of(map);
+
+        Assert.HasCount(2 * 32 * 32, triangles);
+        var upper = triangles.Single(t => t is { Column: 3, Row: 3, Upper: true });
+        Assert.AreEqual(10, upper.Apex);
+        Assert.AreEqual(0, upper.Left);
+        Assert.AreEqual(0, upper.Right);
     }
 
     [TestMethod]
-    public void AFlatLowerTriangleOfGrassIsMask181WithTexture264()
+    public void ATermNamesTheTerrainAndTheHeightsOfItsThreeNodes()
     {
-        var draw = TerrainRules.Lower(5, 5, 5, new Terrain(5));
+        var map = new Map(MapSize.Offered[0]);
+        map.At(4, 4).Height = 1;
+        map.At(4, 5).Height = 2;
+        map.At(5, 5).Height = 3;
+        map.At(5, 4).Height = 4;
+        map.At(4, 4).Upper = new Terrain(6);
+        map.At(4, 4).Lower = new Terrain(7);
 
-        Assert.AreEqual(new TerrainDraw(181, 264), draw);
+        var triangles = TerrainTriangles.Of(map);
+
+        var upper = triangles.Single(t => t is { Column: 4, Row: 4, Upper: true });
+        Assert.AreEqual((new Terrain(6), 1, 2, 3), (upper.Terrain, upper.Apex, upper.Left, upper.Right));
+        var lower = triangles.Single(t => t is { Column: 4, Row: 4, Upper: false });
+        Assert.AreEqual((new Terrain(7), 3, 1, 4), (lower.Terrain, lower.Apex, lower.Left, lower.Right));
     }
 
     [TestMethod]
-    public void WaterIsDrawnWithTheLastTexture()
-    {
-        Assert.AreEqual(292, TerrainRules.Upper(0, 0, 0, new Terrain(0))!.Value.Texture);
-    }
-
-    [TestMethod]
-    public void AHeightStepBeyondFourHasNoMask()
-    {
-        Assert.IsNull(TerrainRules.Upper(5, 0, 5, new Terrain(5)));
-        Assert.IsNull(TerrainRules.Lower(5, 5, 0, new Terrain(5)));
-    }
-
-    [TestMethod]
-    public void AHeightIsItsFiveLowBits()
-    {
-        Assert.AreEqual(TerrainRules.Upper(1, 1, 1, new Terrain(5)), TerrainRules.Upper(33, 1, 1, new Terrain(5)));
-    }
-
-    [TestMethod]
-    public void EveryTileOfAGeneratedMapGivesTwoTrianglesOrNoMask()
+    public void EveryTileOfAGeneratedMapGivesTwoTriangles()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
 
         var triangles = TerrainTriangles.Of(map);
 
-        Assert.IsLessThanOrEqualTo(2 * 32 * 32, triangles.Count);
-        Assert.IsGreaterThan(32 * 32, triangles.Count);
-        Assert.IsTrue(triangles.TrueForAll(t => t.Mask is >= 60 and <= 221 && t.Texture is >= 260 and <= 292));
+        Assert.HasCount(2 * 32 * 32, triangles);
     }
 
     [TestMethod]

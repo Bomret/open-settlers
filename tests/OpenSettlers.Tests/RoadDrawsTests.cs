@@ -58,19 +58,20 @@ public sealed class RoadDrawsTests
         map.At(Column, Row).Roads = RoadSet.Of(direction);
         var mask = int.Parse(fields["mask"], CultureInfo.InvariantCulture);
         var target = new[] { "e", "se", "s" }[direction];
-        var strips = RoadDraws.Of(map);
+        // The builder gives a term for every strip, also one the archive has no mask for.
+        var strip = RoadDraws.Of(map).Single();
+        var draw = RoadRules.Of(strip);
 
         // The masks of the archive hold a height difference of 4 either way; a strip beyond has none and is not drawn.
         var first = new[] { 230, 239, 248 }[direction];
         if (mask < first || mask > first + 8)
         {
-            Assert.IsEmpty(strips);
+            Assert.IsNull(draw);
             return;
         }
 
-        var strip = strips.Single();
-        Assert.AreEqual(mask, strip.Mask);
-        Assert.AreEqual(int.Parse(fields["texture"], CultureInfo.InvariantCulture), strip.Texture);
+        Assert.AreEqual(mask, draw!.Value.Mask);
+        Assert.AreEqual(int.Parse(fields["texture"], CultureInfo.InvariantCulture), draw.Value.Texture);
         // The routine's row is the pass's row less 38 and less four pixels a unit of the node's height (the higher node's
         // for the east strip), less 2: the strip's top above the node's row of pixels.
         var position = Camera.NodePosition(Column, Row);
@@ -95,16 +96,31 @@ public sealed class RoadDrawsTests
 
         // On flat land the strips are the level masks, each beside the node's pixel position, and rows are in order.
         Assert.AreEqual(3, strips.Count);
+        var land = Terrain.Lowland;
         Assert.AreEqual(
-            new RoadStrip(Camera.NodePosition(5, 5).X, Camera.NodePosition(5, 5).Y - 2, 234, 301),
+            new RoadStrip(Camera.NodePosition(5, 5).X, Camera.NodePosition(5, 5).Y - 2, RoadDirection.East, 0, 0, land),
             strips[0]
         );
         Assert.AreEqual(
-            new RoadStrip(Camera.NodePosition(8, 6).X, Camera.NodePosition(8, 6).Y - 2, 243, 301),
+            new RoadStrip(
+                Camera.NodePosition(8, 6).X,
+                Camera.NodePosition(8, 6).Y - 2,
+                RoadDirection.SouthEast,
+                0,
+                0,
+                land
+            ),
             strips[1]
         );
         Assert.AreEqual(
-            new RoadStrip(Camera.NodePosition(12, 7).X - 16, Camera.NodePosition(12, 7).Y - 2, 252, 301),
+            new RoadStrip(
+                Camera.NodePosition(12, 7).X - 16,
+                Camera.NodePosition(12, 7).Y - 2,
+                RoadDirection.South,
+                0,
+                0,
+                land
+            ),
             strips[2]
         );
     }
@@ -123,7 +139,7 @@ public sealed class RoadDrawsTests
 
         // The strip of the east road leaves the last column and its mask is that of the difference 5 - 3 = 2, which
         // the node at column 0 gives: the heights wrap with the map.
-        Assert.AreEqual(236, strip.Mask);
+        Assert.AreEqual(2, strip.Difference);
         Assert.AreEqual(Camera.NodePosition(last, 3).X, strip.X);
         Assert.AreEqual(Camera.NodePosition(last, 3).Y - 5 * TerrainTriangles.HeightStep - 2, strip.Y);
     }
@@ -134,13 +150,13 @@ public sealed class RoadDrawsTests
         var map = Blank();
         map.At(5, 5).Roads = RoadSet.Of(1);
         SetTerrain(map, 5, 5, 0);
-        Assert.AreEqual(309, RoadDraws.Of(map).Single().Texture);
+        Assert.AreEqual(309, RoadRules.Of(RoadDraws.Of(map).Single())!.Value.Texture);
 
         SetTerrain(map, 5, 5, 9);
-        Assert.AreEqual(304, RoadDraws.Of(map).Single().Texture);
+        Assert.AreEqual(304, RoadRules.Of(RoadDraws.Of(map).Single())!.Value.Texture);
 
         SetTerrain(map, 5, 5, 15);
-        Assert.AreEqual(307, RoadDraws.Of(map).Single().Texture);
+        Assert.AreEqual(307, RoadRules.Of(RoadDraws.Of(map).Single())!.Value.Texture);
     }
 
     [TestMethod]
