@@ -50,12 +50,14 @@ public partial class MapViewControl : Control
     Button _roadButton = null!;
     Button _woodcutterButton = null!;
     Button _removeButton = null!;
-    SettlerGraphics? _settlerGraphics;
-    ShaderMaterial? _settlerMaterial;
-    readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
 
-    // The settler sprites (Entry, Colour) already warned about as having no loaded layer.
-    readonly System.Collections.Generic.HashSet<(int Entry, int Colour)> _warnedSettlerSprites = [];
+    // The placement of the walking settlers (game view only), the images the source drew for them so far, and the material
+    // over them.
+    SettlerFigures? _settlerFigures;
+    readonly ImageLayers _settlerLayers = new();
+    ShaderMaterial? _settlerMaterial;
+    int _settlerImages;
+    readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
     int _flagsDrawn;
     ObjectLayerWatch _objectWatch = new();
     int _buildingsDrawn;
@@ -325,7 +327,18 @@ public partial class MapViewControl : Control
 
         try
         {
-            var source = HistoryEditionSource.Load(_install);
+            _tables = ProgramTablesImporter.Import(_install.ReadAll(Install.Program));
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _tablesProblem = e.Message;
+            GD.PrintErr($"map view: {e.Message}");
+        }
+
+        try
+        {
+            // The settlers are drawn in the game view only: the source gets the exe's tables for them there.
+            var source = HistoryEditionSource.Load(_install, _gameView ? _tables : null);
             _source = source;
             if (source.RoadsProblem is not null)
             {
@@ -338,6 +351,11 @@ public partial class MapViewControl : Control
                 _objectsProblem = source.ObjectsProblem;
                 GD.PrintErr($"map view: {source.ObjectsProblem}");
             }
+
+            if (source.SettlersProblem is not null)
+            {
+                GD.PrintErr($"map view: the settlers' sprites: {source.SettlersProblem}");
+            }
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -345,46 +363,14 @@ public partial class MapViewControl : Control
             GD.PrintErr($"map view: {e.Message}");
         }
 
-        try
-        {
-            _tables = ProgramTablesImporter.Import(_install.ReadAll(Install.Program));
-        }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _tablesProblem = e.Message;
-            GD.PrintErr($"map view: {e.Message}");
-        }
-
-        if (_gameView)
+        if (_gameView && _tables is not null)
         {
             try
             {
-                if (_tables is not null)
-                {
-                    // The sprites of the jobs whose settlers walk so far: the carrier, the woodcutter, and the settler of the type 1 hut.
-                    _settlerGraphics = SettlerGraphics.Load(
-                        _install,
-                        _tables,
-                        Job.Carrier.Code,
-                        Job.Woodcutter.Code,
-                        RuleTables.TypeOneHutJob
-                    );
-                    _settlerMaterial = BuildObjectMaterial(
-                        _settlerGraphics.Images,
-                        _settlerGraphics.LayerWidth,
-                        _settlerGraphics.LayerHeight
-                    );
-                }
+                _settlerFigures = new SettlerFigures(StepOffsets.Load(_install), _tables.FrameRows);
             }
-            catch (Exception e)
-                when (e
-                        is IOException
-                            or InvalidDataException
-                            or UnauthorizedAccessException
-                            or InvalidOperationException
-                )
+            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
-                _settlerGraphics = null;
                 GD.PrintErr($"map view: the settlers' sprites: {e.Message}");
             }
         }
@@ -794,15 +780,10 @@ public partial class MapViewControl : Control
 
             _objectNodes.Add(objectNodes);
 
-            // The settlers walk over the objects of every wrap copy; their mesh is rebuilt after each tick.
-            if (_settlerMaterial is not null)
+            // The settlers walk over the objects of every wrap copy; their mesh and material are set after each tick.
+            if (_settlerFigures is not null)
             {
-                var settlers = new MeshInstance2D
-                {
-                    Material = _settlerMaterial,
-                    ZAsRelative = false,
-                    ZIndex = 2,
-                };
+                var settlers = new MeshInstance2D { ZAsRelative = false, ZIndex = 2 };
                 copy.AddChild(settlers);
                 _settlerMeshes.Add(settlers);
             }
@@ -864,58 +845,43 @@ public partial class MapViewControl : Control
     // the game's settlers and clock, not from the frame time.
     void UpdateSettlers()
     {
-        if (_game is null || _settlerGraphics is null || _state.Map is null || _settlerMeshes.Count == 0)
+        if (
+            _game is null
+            || _settlerFigures is null
+            || _source is null
+            || _state.Map is null
+            || _settlerMeshes.Count == 0
+        )
         {
             return;
         }
 
-        var quads = new System.Collections.Generic.List<(int X, int Y, int Width, int Height, Color Color)>();
-        foreach (
-            var draw in _settlerGraphics.Figures.Draws(
-                _state.Map,
-                _game.Settlers,
-                _game.Clock.Now,
-                _settlerGraphics.Shifts
-            )
-        )
+        // A term the source has no image for draws nothing: the render loop neither throws nor warns.
+        var quads = ObjectQuads.Flat(
+            _settlerFigures.Draws(_state.Map, _game.Settlers, _game.Clock.Now),
+            _source,
+            _settlerLayers
+        );
+        var material = quads.Count > 0 ? SettlerMaterial() : null;
+        if (quads.Count > 0 && material is null)
         {
-            // A sprite with no loaded layer is skipped and reported once per sprite: the render loop must not throw or
-            // warn every frame. The tests assert that every draw of the recorded scenarios has a layer (LayerOf).
-            if (!_settlerGraphics.TryLayerOf(draw, out var layer))
-            {
-                if (_warnedSettlerSprites.Add((draw.Entry, draw.Colour)))
-                    GD.PushWarning($"No layer holds the settler sprite {draw.Entry}/{draw.Colour}.");
-                continue;
-            }
-
-            // The shadow comes before each settler's figure (0x45007d), at the same position.
-            if (SettlerGraphics.IsFigure(draw) && _settlerGraphics.ShadowLayer >= 0)
-            {
-                AddSettlerQuad(quads, draw, _settlerGraphics.ShadowLayer);
-            }
-
-            AddSettlerQuad(quads, draw, layer);
+            return;
         }
 
-        var mesh = quads.Count > 0 ? BuildQuadMesh(quads) : null;
+        var mesh =
+            quads.Count > 0
+                ? BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))))
+                : null;
         foreach (var node in _settlerMeshes)
         {
             node.Mesh = mesh;
+            node.Material = material;
         }
     }
 
-    void AddSettlerQuad(
-        System.Collections.Generic.List<(int X, int Y, int Width, int Height, Color Color)> quads,
-        SettlerDraw draw,
-        int layer
-    )
-    {
-        var image = _settlerGraphics!.Images[layer];
-        if (image.Width > 0 && image.Height > 0)
-        {
-            quads.Add((draw.X + image.OffsetX, draw.Y + image.OffsetY, image.Width, image.Height, LayerColor(layer)));
-        }
-    }
+    // The material of the settlers' images.
+    ShaderMaterial? SettlerMaterial() =>
+        LayerMaterial(_settlerLayers, "Objects", "the settlers", ref _settlerMaterial, ref _settlerImages);
 
     // One mesh of every road strip of the map, or null where there is none or the source draws none.
     ArrayMesh? BuildRoadMesh(IGraphicsSource source, Map map)
@@ -1004,29 +970,6 @@ public partial class MapViewControl : Control
         var (red, green) = SpriteLayer.Channels(layer);
 
         return new Color(red, green, 0, 1);
-    }
-
-    // The material of the settlers' sprites, one array texture layer of the given size each.
-    ShaderMaterial BuildObjectMaterial(
-        System.Collections.Generic.IReadOnlyList<ObjectImage> layers,
-        int width,
-        int height
-    )
-    {
-        var images = new Godot.Collections.Array<Image>();
-        foreach (var image in layers)
-        {
-            images.Add(
-                Image.CreateFromData(Math.Max(width, 1), Math.Max(height, 1), false, Image.Format.Rgba8, image.Rgba)
-            );
-        }
-
-        var sprites = new Texture2DArray();
-        sprites.CreateFromImages(images);
-        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Objects.gdshader") };
-        material.SetShaderParameter("sprites", sprites);
-
-        return material;
     }
 
     // The corners of a quad in the order its two triangles use them.

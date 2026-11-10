@@ -410,4 +410,198 @@ public sealed class HistoryEditionSourceTests
         Assert.IsNull(source.Draw(Object(8)));
         Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
     }
+
+    // The settlers: tables whose row 0 holds the figure base 100 and the second base 50 and whose offsets are all 0, so a
+    // carrier's figure is the entry 1950, its overlay 2600, and its second figure 3200 whatever its figure byte. The
+    // sequences are those of SettlerFiguresTests (the frame 7 holds the figure byte 3).
+    static RuleTables SettlerTables(sbyte[]? idleOffsets = null)
+    {
+        var bases = new short[2 * RuleTables.FigureBaseRowCount];
+        bases[0] = 100;
+        bases[1] = 50;
+
+        return new RuleTables(
+            new ObjectClass[RuleTables.ClassCount],
+            TestProgram.Made().StartStock,
+            figureBases: bases,
+            idleOffsets: idleOffsets
+        );
+    }
+
+    // The figure 1950 (3 x 1, header bytes 1 and 0, offsets -1, -2), its overlay 2600, the second figure 3200 (offsets 5, 6),
+    // the sequences in entry 2, and the shadow mask in entry 4 (2 x 1, offsets -1, -2).
+    static FakeInstall SettlerFake(Action<Dictionary<int, byte[]>>? change = null)
+    {
+        var payloads = Payloads();
+        payloads[2] = SettlerFiguresTests.Sequences();
+        payloads[4] = ObjectGraphicsTests.ShadowMask();
+        payloads[1950] = ObjectGraphicsTests.Sprite();
+        payloads[2600] = ObjectGraphicsTests.Sprite();
+        payloads[3200] = ObjectGraphicsTests.Square(5, 6);
+        change?.Invoke(payloads);
+
+        return new FakeInstall().Put(Archive, ArchiveBytes.Build(3300, payloads));
+    }
+
+    static HistoryEditionSource OpenWithSettlers(FakeInstall fake, RuleTables? tables = null)
+    {
+        Assert.IsTrue(
+            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
+        );
+
+        return HistoryEditionSource.Load(install, tables ?? SettlerTables());
+    }
+
+    static SettlerDraw Term(
+        SettlerPart part,
+        int player = 0,
+        int frame = 7,
+        WaitingNode? node = null,
+        Activity? activity = null
+    ) =>
+        new(
+            3,
+            100,
+            50,
+            part,
+            Job.Carrier,
+            activity ?? new WalksRoad(null, new Heading(0)),
+            null,
+            frame,
+            0,
+            player,
+            Good.None,
+            node
+        );
+
+    [TestMethod]
+    public void AFigureDrawsItsSpriteWithTheSettlersShadow()
+    {
+        using var fake = SettlerFake();
+
+        var drawing = OpenWithSettlers(fake).Draw(Term(SettlerPart.Figure))!;
+
+        Assert.AreEqual((3, -1, -2), (drawing.Image!.Width, drawing.Image.OffsetX, drawing.Image.OffsetY));
+        Assert.AreEqual((2, -1, -2), (drawing.Shadow!.Width, drawing.Shadow.OffsetX, drawing.Shadow.OffsetY));
+    }
+
+    [TestMethod]
+    public void TheOverlayIsFilledWithThePlayersColourAndHasNoShadow()
+    {
+        using var fake = SettlerFake();
+        var source = OpenWithSettlers(fake);
+        var palette = Formats.PaletteFile.Read(Payloads()[3]);
+
+        var first = source.Draw(Term(SettlerPart.Overlay))!;
+        var second = source.Draw(Term(SettlerPart.Overlay, player: 1))!;
+
+        Assert.IsNull(first.Shadow);
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0 }, Pixel(first.Image!, 0, 0));
+        CollectionAssert.AreEqual(palette.Rgba(0x40).ToArray(), Pixel(first.Image!, 1, 0));
+        CollectionAssert.AreEqual(palette.Rgba(0x44).ToArray(), Pixel(second.Image!, 2, 0));
+    }
+
+    // The second figure hangs from the settler's position by its own offsets moved by the header bytes 0 and 1 of the figure
+    // (here 1 and 0), and only the second figure is moved.
+    [TestMethod]
+    public void TheSecondFigureIsAnchoredByTheShiftOfItsFiguresHeader()
+    {
+        using var fake = SettlerFake();
+
+        var second = OpenWithSettlers(fake).Draw(Term(SettlerPart.SecondFigure))!;
+
+        Assert.AreEqual((5 + 1, 6 + 0), (second.Image!.OffsetX, second.Image.OffsetY));
+        Assert.IsNull(second.Shadow);
+    }
+
+    [TestMethod]
+    public void ASettlerThatIsDrawnTwiceGivesTheSameImageInstance()
+    {
+        using var fake = SettlerFake();
+        var source = OpenWithSettlers(fake);
+
+        var a = source.Draw(Term(SettlerPart.Figure))!;
+        var b = source.Draw(Term(SettlerPart.Figure))!;
+
+        Assert.AreSame(a.Image, b.Image);
+        Assert.AreSame(a.Shadow, b.Shadow);
+    }
+
+    [TestMethod]
+    public void ATermWhoseSpriteTheArchiveLacksDrawsNothingAndDoesNotThrow()
+    {
+        using var fake = SettlerFake(payloads => payloads.Remove(1950));
+        var source = OpenWithSettlers(fake);
+
+        Assert.IsNull(source.Draw(Term(SettlerPart.Figure)));
+        Assert.IsNotNull(source.Draw(Term(SettlerPart.Overlay)));
+    }
+
+    [TestMethod]
+    public void ATermWhoseSpriteIsUnreadableDrawsNothingAndDoesNotThrow()
+    {
+        using var fake = SettlerFake(payloads => payloads[2600] = [1, 2, 3]);
+
+        Assert.IsNull(OpenWithSettlers(fake).Draw(Term(SettlerPart.Overlay)));
+    }
+
+    [TestMethod]
+    public void ATermWithNoStepInTheSequencesDrawsNothing()
+    {
+        using var fake = SettlerFake();
+
+        Assert.IsNull(OpenWithSettlers(fake).Draw(Term(SettlerPart.Figure, frame: 9)));
+    }
+
+    [TestMethod]
+    public void ASourceLoadedWithNoTablesDrawsNoSettlerAndHasNoProblem()
+    {
+        using var fake = SettlerFake();
+        var source = Open(fake);
+
+        Assert.IsNull(source.Draw(Term(SettlerPart.Figure)));
+        Assert.IsNull(source.SettlersProblem);
+    }
+
+    [TestMethod]
+    public void AnAbsentShadowMaskLeavesTheFigureWithNoShadow()
+    {
+        using var fake = SettlerFake(payloads => payloads.Remove(4));
+
+        var drawing = OpenWithSettlers(fake).Draw(Term(SettlerPart.Figure))!;
+
+        Assert.IsNotNull(drawing.Image);
+        Assert.IsNull(drawing.Shadow);
+    }
+
+    [TestMethod]
+    public void AMalformedShadowMaskLeavesTheSettlersUndrawnAndNamesTheMaskAndItsEntry()
+    {
+        using var fake = SettlerFake(payloads => payloads[4] = [1, 2, 3]);
+
+        var source = OpenWithSettlers(fake);
+
+        StringAssert.Contains(source.SettlersProblem!, "the shadow mask");
+        StringAssert.Contains(source.SettlersProblem!, "entry 4");
+        Assert.IsNull(source.Draw(Term(SettlerPart.Figure)));
+        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+    }
+
+    // A waiting carrier's road directions move its image, and its shadow, by the table's offsets: the roads 0x09 move them 3
+    // across and 1 up.
+    [TestMethod]
+    public void AWaitingCarriersRoadDirectionsMoveItsImageAndShadow()
+    {
+        var offsets = new sbyte[RuleTables.IdleOffsetCount];
+        offsets[2 * 0x09] = 3;
+        offsets[2 * 0x09 + 1] = -1;
+        using var fake = SettlerFake();
+        var waiting = new WaitingNode(4, false, new RoadSet(0x09));
+
+        var drawing = OpenWithSettlers(fake, SettlerTables(offsets))
+            .Draw(Term(SettlerPart.Figure, node: waiting, activity: new WaitsAtFlag(0, 0, new Heading(0).Retried)))!;
+
+        Assert.AreEqual((-1 + 3, -2 - 1), (drawing.Image!.OffsetX, drawing.Image.OffsetY));
+        Assert.AreEqual((-1 + 3, -2 - 1), (drawing.Shadow!.OffsetX, drawing.Shadow.OffsetY));
+    }
 }

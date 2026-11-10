@@ -35,6 +35,12 @@ public interface IGraphicsSource
     /// <summary>The image and shadow of a good at a flag, or null where the source draws neither.</summary>
     ObjectDrawing? Draw(GoodAtFlag draw);
 
+    /// <summary>
+    /// The image and shadow of one part of a settler, or null where the source draws neither (it has no image for the
+    /// settler's job, activity, or step). Only a figure has a shadow.
+    /// </summary>
+    ObjectDrawing? Draw(SettlerDraw draw);
+
     /// <summary>The ripple of a water tile, or null where the source draws none.</summary>
     RippleImage? Draw(WaterRipple ripple);
 

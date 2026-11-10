@@ -49,6 +49,26 @@ public static class ObjectQuads
     }
 
     /// <summary>
+    /// The rectangles of <c>terms</c> in the order they come, with no banding: the settlers, which the view draws as one
+    /// mesh. A term's shadow, where the source answers with one, comes right before its image. A term the source draws
+    /// nothing for gets no quad and no layer.
+    /// </summary>
+    public static List<ObjectQuad> Flat(IReadOnlyList<ObjectTerm> terms, IGraphicsSource source, ImageLayers layers)
+    {
+        var quads = new List<ObjectQuad>();
+        foreach (var term in terms)
+        {
+            if (term.Ask(source) is { } drawing)
+            {
+                Add(quads, term.X, term.Y, drawing.Shadow, layers);
+                Add(quads, term.X, term.Y, drawing.Image, layers);
+            }
+        }
+
+        return quads;
+    }
+
+    /// <summary>
     /// The rectangles of the water <c>ripples</c> the source draws, in order, and the surface color they show over (null
     /// where the source draws none). They take their layers from <c>layers</c>, which holds the ripples' images alone.
     /// </summary>
