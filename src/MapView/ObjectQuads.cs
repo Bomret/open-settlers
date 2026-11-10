@@ -1,56 +1,42 @@
-using System;
 using System.Collections.Generic;
 
 namespace OpenSettlers.MapView;
 
-/// <summary>
-/// One sprite-sized rectangle to draw: its top-left corner and size in map pixels, its array texture layer, and
-/// whether that layer is one of the shadow array (<see cref="ObjectGraphics.ShadowImages"/>) rather than the sprite array.
-/// </summary>
-public readonly record struct ObjectQuad(int X, int Y, int Width, int Height, int Layer, bool Shadow = false);
+/// <summary>One image-sized rectangle to draw: its top-left corner and size in map pixels, and its array texture layer.</summary>
+public readonly record struct ObjectQuad(int X, int Y, int Width, int Height, int Layer);
 
-/// <summary>The drawing plan of a map's objects: one rectangle per object, grouped into bands of rows.</summary>
+/// <summary>The drawing plan of a map's objects: one rectangle per image the source draws, grouped into bands of rows.</summary>
 public static class ObjectQuads
 {
     /// <summary>
-    /// Turns <c>draws</c>, in row-major order as <see cref="ObjectDraws.Of"/> returns them, into rectangles and
-    /// groups them in bands of <c>bandRows</c> rows, the grouping <see cref="TerrainQuads.Bands"/> uses, so a band's
-    /// objects paint after its terrain. Each sprite's shadow from <c>shadows</c>, where it has one, comes right before it, as
-    /// <c>0x44da4d</c> draws the mask before the sprite. A sprite hangs from the draw position by its header offsets. A draw whose
-    /// image is empty is left out, and so is a band without a draw. An empty <c>shadows</c> draws no shadow; any other
-    /// <c>shadows</c> holds one mask per sprite layer, and one of another length throws <see cref="ArgumentException"/>.
+    /// Asks <c>source</c> for each of <c>terms</c>, in the row-major order <see cref="ObjectDraws.Of"/> returns them,
+    /// and groups the rectangles in bands of <c>bandRows</c> rows, the grouping <see cref="TerrainQuads.Bands"/> uses, so
+    /// a band's objects paint after its terrain. An object's shadow, where the source answers with one, comes right
+    /// before its image, as <c>0x44da4d</c> draws the mask before the sprite. An image hangs from the term's position by
+    /// its offsets and gets its layer from <c>layers</c>. A term the source draws nothing for, and an image with no
+    /// pixel, get no quad and no layer, and a band without a quad is left out.
     /// </summary>
     public static List<List<ObjectQuad>> Bands(
-        IReadOnlyList<ObjectDraw> draws,
-        IReadOnlyList<ObjectImage> images,
-        IReadOnlyList<ObjectImage> shadows,
+        IReadOnlyList<ObjectTerm> terms,
+        IGraphicsSource source,
+        ImageLayers layers,
         int rows,
         int bandRows
     )
     {
-        if (shadows.Count != 0 && shadows.Count != images.Count)
-        {
-            throw new ArgumentException(
-                $"{shadows.Count} shadow masks for {images.Count} sprite layers: pass one per layer, or none",
-                nameof(shadows)
-            );
-        }
-
         var bands = new List<List<ObjectQuad>>();
         var next = 0;
         foreach (var band in TerrainTiling.Chunks(1, rows, bandRows))
         {
             var quads = new List<ObjectQuad>();
-            while (next < draws.Count && draws[next].Row < band.Row + band.Height)
+            while (next < terms.Count && terms[next].Row < band.Row + band.Height)
             {
-                var draw = draws[next++];
-                var layer = ObjectGraphics.Layer(draw.Entry);
-                if (shadows.Count > 0)
+                var term = terms[next++];
+                if (term.Ask(source) is { } drawing)
                 {
-                    Add(quads, draw, shadows, layer, true);
+                    Add(quads, term.X, term.Y, drawing.Shadow, layers);
+                    Add(quads, term.X, term.Y, drawing.Image, layers);
                 }
-
-                Add(quads, draw, images, layer, false);
             }
 
             if (quads.Count > 0)
@@ -62,13 +48,36 @@ public static class ObjectQuads
         return bands;
     }
 
-    static void Add(List<ObjectQuad> quads, ObjectDraw draw, IReadOnlyList<ObjectImage> images, int layer, bool shadow)
+    /// <summary>
+    /// The rectangles of the water <c>ripples</c> the source draws, in order, and the surface color they show over (null
+    /// where the source draws none). They take their layers from <c>layers</c>, which holds the ripples' images alone.
+    /// </summary>
+    public static (List<ObjectQuad> Quads, byte[]? Surface) Ripples(
+        IReadOnlyList<WaterRipple> ripples,
+        IGraphicsSource source,
+        ImageLayers layers
+    )
     {
-        var image = images[layer];
-        if (image.Width > 0 && image.Height > 0)
+        var quads = new List<ObjectQuad>();
+        byte[]? surface = null;
+        foreach (var ripple in ripples)
+        {
+            if (source.Draw(ripple) is { } drawn)
+            {
+                surface ??= drawn.Surface;
+                Add(quads, ripple.X, ripple.Y, drawn.Image, layers);
+            }
+        }
+
+        return (quads, surface);
+    }
+
+    static void Add(List<ObjectQuad> quads, int x, int y, ObjectImage? image, ImageLayers layers)
+    {
+        if (image is { Width: > 0, Height: > 0 })
         {
             quads.Add(
-                new ObjectQuad(draw.X + image.OffsetX, draw.Y + image.OffsetY, image.Width, image.Height, layer, shadow)
+                new ObjectQuad(x + image.OffsetX, y + image.OffsetY, image.Width, image.Height, layers.Of(image))
             );
         }
     }

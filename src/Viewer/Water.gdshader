@@ -1,7 +1,7 @@
-// Draws a water sprite (entries 630 to 645) only where the surface under it shows palette index 8
-// (docs/rules/graphics-images.md, "Sprites drawn over color 8"). The surface is the screen copy under the sprite, so
-// a pixel counts as index 8 when its color is the surface uniform, the color of palette index 8. Otherwise as Objects.gdshader: the layer in
-// COLOR.r and COLOR.g, the pixel inside the sprite in UV.
+// Draws a ripple image only where the screen under it shows the surface uniform, the color the graphics source names
+// (RippleImage.Surface; docs/rules/graphics-images.md, "Sprites drawn over color 8"). The screen is the copy under the
+// image, so a pixel counts as surface when its color is the surface uniform. Otherwise as Objects.gdshader: the layer in
+// COLOR.r and COLOR.g, the pixel inside the image in UV.
 shader_type canvas_item;
 
 uniform sampler2DArray sprites : filter_nearest;

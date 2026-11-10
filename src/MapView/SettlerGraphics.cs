@@ -10,7 +10,7 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.MapView;
 
 /// <summary>
-/// The sprites of the settlers of one job, as array texture layers like <see cref="ObjectGraphics"/>: the figures, the
+/// The sprites of the settlers of one job, as array texture layers: the figures, the
 /// colour overlays filled with the player's colour (player 0's: the game has one player), and the second figures that the
 /// job's walk sequences name, and the <see cref="SettlerFigures"/> that picks them (<c>docs/rules/settlers.md</c>).
 /// </summary>
@@ -154,7 +154,7 @@ public sealed class SettlerGraphics
         {
             LayerWidth = width,
             LayerHeight = height,
-            Images = [.. images.Select(image => ObjectGraphics.Pad(image, width, height))],
+            Images = [.. images.Select(image => image.Padded(width, height))],
             Layers = layers,
             Figures = figures,
             Shifts = shifts,

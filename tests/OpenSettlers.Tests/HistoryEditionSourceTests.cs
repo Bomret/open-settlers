@@ -52,7 +52,7 @@ public sealed class HistoryEditionSourceTests
     // multiple of 4). A terrain mask n is 16 wide, 25 high for entry 100 and 9 otherwise, offset 3 across and n - 100
     // down; a terrain texture n starts at index 4 (n - 260). A road mask n is 16 x 5, offset 1 across and n - 230
     // down; a road texture n starts at index 100 + 4 (n - 300).
-    static Dictionary<int, byte[]> Payloads()
+    internal static Dictionary<int, byte[]> Payloads()
     {
         var palette = new byte[768];
         for (var i = 0; i < 256; i++)
@@ -256,5 +256,158 @@ public sealed class HistoryEditionSourceTests
         var problem = Assert.ThrowsExactly<FileNotFoundException>(() => Open(fake));
 
         StringAssert.Contains(problem.Message, Archive);
+    }
+
+    // The terrain and road entries and an object catalog: the sprites of object entries 1250 (3 wide), 1251 (2 wide),
+    // the castle, the flag and its frame 1, a log, and the water entry 635, with the shadow mask of 1250 (entry 1500).
+    // Palette index 8 holds the color 40, 12, 0.
+    static FakeInstall ObjectFake(Action<Dictionary<int, byte[]>>? change = null)
+    {
+        var payloads = Payloads();
+        foreach (var (entry, bytes) in ObjectGraphicsTests.Payloads(flag: true))
+        {
+            payloads[entry] = bytes;
+        }
+
+        payloads[3][3 * 8] = 40;
+        payloads[3][3 * 8 + 1] = 12;
+        payloads[ObjectSprites.FlagEntry + 1] = ObjectGraphicsTests.Square(10, 5);
+        payloads[ObjectSprites.GoodEntry(new Good(7))] = ObjectGraphicsTests.Square(3, 1);
+        payloads[ObjectSprites.WaterEntry(0, 0)] = ObjectGraphicsTests.Square(4, 4);
+        payloads[1250 + ObjectGraphics.ShadowOffset] = ObjectGraphicsTests.ShadowMask();
+        change?.Invoke(payloads);
+
+        return new FakeInstall().Put(Archive, ArchiveBytes.Build(1700, payloads));
+    }
+
+    static MapObjectDraw Object(int code, ushort step = 0) => new(0, 10, 20, new MapObject((byte)code), step);
+
+    [TestMethod]
+    public void AMapObjectDrawsTheSpriteOfItsCodeWithItsShadow()
+    {
+        using var fake = ObjectFake();
+
+        var drawing = Open(fake).Draw(Object(8))!;
+
+        Assert.AreEqual(3, drawing.Image!.Width);
+        Assert.AreEqual(2, drawing.Shadow!.Width);
+    }
+
+    [TestMethod]
+    public void TheAnimationStepFoldsThePhaseIntoTheEntry()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        // Code 8 is entry 1250 for 16 steps and entry 1251 at step 16 (docs/rules/map-objects.md).
+        Assert.AreEqual(3, source.Draw(Object(8, 15))!.Image!.Width);
+        Assert.AreEqual(2, source.Draw(Object(8, 16))!.Image!.Width);
+        Assert.AreEqual(10, source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 8))!.Image!.OffsetX);
+        Assert.AreEqual(9, source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0))!.Image!.OffsetX);
+    }
+
+    [TestMethod]
+    public void TermsThatDrawTheSameImageGetTheSameDrawing()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        Assert.AreSame(source.Draw(Object(8)), source.Draw(Object(15)));
+    }
+
+    [TestMethod]
+    public void AnObjectCodeWithNoImageDrawsNothingWithoutError()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        Assert.IsNull(source.Draw(Object(40)));
+        Assert.IsNull(source.Draw(Object(5)));
+        Assert.IsNull(source.Draw(Object(0)));
+    }
+
+    [TestMethod]
+    public void TheCastleAndTheHutDrawTheirOwnSpritesAndAnotherBuildingDrawsNothing()
+    {
+        using var fake = ObjectFake(payloads =>
+            payloads[ObjectSprites.WoodcutterEntry] = ObjectGraphicsTests.Square(11, 3)
+        );
+        var source = Open(fake);
+
+        Assert.AreEqual(7, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Castle))!.Image!.OffsetX);
+        Assert.AreEqual(11, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter))!.Image!.OffsetX);
+        Assert.IsNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Storehouse)));
+    }
+
+    [TestMethod]
+    public void AGoodDrawsItsSpriteByItsLowFiveBitsAndNoShadow()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        var log = source.Draw(new GoodAtFlag(0, 0, 0, new Good(7)))!;
+
+        Assert.AreEqual(3, log.Image!.OffsetX);
+        Assert.IsNull(log.Shadow);
+        Assert.AreSame(log, source.Draw(new GoodAtFlag(0, 0, 0, new Good(0x27))));
+    }
+
+    [TestMethod]
+    public void ATileWithWaterDrawsTheRippleOfItsTileAndStepOverTheSurfaceColor()
+    {
+        using var fake = ObjectFake();
+        var source = Open(fake);
+
+        var ripple = source.Draw(new WaterRipple(0, 0, 0, 0, 0))!;
+
+        Assert.AreEqual(4, ripple.Image.OffsetX);
+        CollectionAssert.AreEqual(new byte[] { 40, 12, 0, 255 }, ripple.Surface);
+        // The tile 1 draws the entry 634, which this install does not hold.
+        Assert.IsNull(source.Draw(new WaterRipple(0, 0, 0, 1, 0)));
+    }
+
+    [TestMethod]
+    public void TheObjectHeadroomIsTheTallestObjectImage()
+    {
+        using var fake = ObjectFake();
+
+        Assert.AreEqual(2, Open(fake).ObjectHeadroom);
+    }
+
+    [TestMethod]
+    public void TheFlagAtRestGivesTheFlagsGeometry()
+    {
+        using var fake = ObjectFake();
+
+        var image = ObjectDraws.FlagImage(Open(fake))!;
+
+        Assert.AreEqual((9, 4), (image.OffsetX, image.OffsetY));
+        Assert.IsNull(ObjectDraws.FlagImage(null));
+    }
+
+    [TestMethod]
+    public void AnInstallWithNoObjectSpritesDrawsNoObjectAndNamesTheProblem()
+    {
+        using var fake = Fake();
+
+        var source = Open(fake);
+
+        StringAssert.Contains(source.ObjectsProblem!, "no object sprite");
+        Assert.IsNull(source.Draw(Object(8)));
+        Assert.IsNull(source.Draw(new WaterRipple(0, 0, 0, 0, 0)));
+        Assert.AreEqual(0, source.ObjectHeadroom);
+        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+    }
+
+    [TestMethod]
+    public void AnUnreadableObjectSpriteLeavesTheObjectsUndrawnAndTheTerrainDrawn()
+    {
+        using var fake = ObjectFake(payloads => payloads[1260] = [1, 2, 3]);
+
+        var source = Open(fake);
+
+        StringAssert.Contains(source.ObjectsProblem!, "entry 1260");
+        Assert.IsNull(source.Draw(Object(8)));
+        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
     }
 }

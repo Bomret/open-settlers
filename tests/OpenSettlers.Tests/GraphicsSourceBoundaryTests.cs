@@ -26,8 +26,14 @@ public sealed class GraphicsSourceBoundaryTests
     [DataRow("src/MapView/RoadDraws.cs")]
     [DataRow("src/MapView/ImageLayers.cs")]
     [DataRow("src/MapView/IGraphicsSource.cs")]
+    [DataRow("src/MapView/ObjectDraws.cs")]
+    [DataRow("src/MapView/ObjectQuads.cs")]
+    [DataRow("src/MapView/ObjectTerms.cs")]
+    [DataRow("src/MapView/MapPicking.cs")]
+    [DataRow("src/MapView/ShotCrop.cs")]
+    [DataRow("src/MapView/SpriteLayer.cs")]
     [DataRow("src/Viewer/MapViewControl.cs")]
-    public void TheSharedTerrainAndRoadCodeReadsNoRulesNoArchiveAndNoTexture(string path)
+    public void TheSharedTerrainRoadAndObjectCodeReadsNoRulesNoArchiveAndNoEntry(string path)
     {
         var text = Read(path);
 
@@ -38,6 +44,8 @@ public sealed class GraphicsSourceBoundaryTests
                 "RoadRules",
                 "TerrainGraphics",
                 "RoadGraphics",
+                "ObjectSprites",
+                "ObjectGraphics",
                 "SPAD.PA",
                 "MaskLayer",
             }

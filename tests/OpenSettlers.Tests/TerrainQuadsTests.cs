@@ -22,6 +22,16 @@ public sealed class TerrainQuadsTests
 
         public ObjectImage? Draw(RoadStrip strip) =>
             strip.Difference == 0 ? new ObjectImage(8, 5, 1, -3, new byte[8 * 5 * 4]) : null;
+
+        public ObjectDrawing? Draw(MapObjectDraw draw) => null;
+
+        public ObjectDrawing? Draw(BuildingDraw draw) => null;
+
+        public ObjectDrawing? Draw(GoodAtFlag draw) => null;
+
+        public RippleImage? Draw(WaterRipple ripple) => null;
+
+        public int ObjectHeadroom => 0;
     }
 
     static TerrainTriangle Triangle(int row, int code = 5, int x = 100, int y = 50) =>
