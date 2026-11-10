@@ -30,6 +30,7 @@ expect-at 25 5 road
 shot road
 
 # The castle starts with 4 logs; a fifth is the woodcutter's.
-wait 240
+fast-forward until logs >= 5 max 6000
+wait 0.3
 expect logs >= 5
 shot log

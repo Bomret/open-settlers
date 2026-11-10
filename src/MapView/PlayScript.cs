@@ -146,9 +146,28 @@ public sealed record ListStep : PlayStep
     public required string Name { get; init; }
 }
 
-/// <summary><c>expect &lt;field&gt; &lt;op&gt; &lt;value&gt;</c>: checks one field of the <see cref="PlayState"/>.</summary>
-public sealed record ExpectStep : PlayStep
+/// <summary>
+/// A play condition: an <c>expect</c> on a game field or an <c>expect-count</c>, as a <c>fast-forward until</c> step reads
+/// it on each tick.
+/// </summary>
+public interface IPlayCondition
 {
+    /// <summary>
+    /// Whether <see cref="Check"/> reads <see cref="PlayState.Things"/>; a state built for a condition that does not leaves
+    /// them null.
+    /// </summary>
+    bool ReadsThings { get; }
+
+    /// <summary>Checks the condition on <paramref name="state"/>; null when it holds, else the problem.</summary>
+    string? Check(PlayState state);
+}
+
+/// <summary><c>expect &lt;field&gt; &lt;op&gt; &lt;value&gt;</c>: checks one field of the <see cref="PlayState"/>.</summary>
+public sealed record ExpectStep : PlayStep, IPlayCondition
+{
+    /// <summary>False: a field of the state is no thing.</summary>
+    public bool ReadsThings => false;
+
     /// <summary>A name of <see cref="PlayFields"/>.</summary>
     public required string Field { get; init; }
 
@@ -157,6 +176,9 @@ public sealed record ExpectStep : PlayStep
 
     /// <summary>The value as written: a number, or the seed's words joined by single spaces.</summary>
     public required string Value { get; init; }
+
+    /// <inheritdoc/>
+    public string? Check(PlayState state) => state.Check(this);
 }
 
 /// <summary>
@@ -176,8 +198,11 @@ public sealed record ExpectAtStep : PlayStep
 }
 
 /// <summary><c>expect-count &lt;what&gt; &lt;op&gt; &lt;n&gt;</c>: compares the number of things matching <see cref="What"/> with a count.</summary>
-public sealed record ExpectCountStep : PlayStep
+public sealed record ExpectCountStep : PlayStep, IPlayCondition
 {
+    /// <summary>True: the count is of the listed things.</summary>
+    public bool ReadsThings => true;
+
     /// <summary>What a thing is counted for.</summary>
     public required ThingSelector What { get; init; }
 
@@ -186,6 +211,9 @@ public sealed record ExpectCountStep : PlayStep
 
     /// <summary>The count to compare with; zero or more.</summary>
     public required int Count { get; init; }
+
+    /// <inheritdoc/>
+    public string? Check(PlayState state) => state.Check(this);
 }
 
 /// <summary><c>name &lt;alias&gt; &lt;column&gt; &lt;row&gt; &lt;what&gt;</c>: saves the ID of the one thing at the node that matches <see cref="What"/>.</summary>
@@ -541,9 +569,14 @@ public sealed class PlayScript
     }
 
     // fast-forward <job> state <n> max <ticks> | fast-forward <job> carrying max <ticks>; <n> is decimal or 0x hex.
+    // | fast-forward until <expect field op value | expect-count what op n> max <ticks>.
     static (PlayStep?, string?) ParseFastForward(string[] args, int number)
     {
-        const string Usage = "'fast-forward' takes <job> state <n> max <ticks> or <job> carrying max <ticks>";
+        const string Usage =
+            "'fast-forward' takes <job> state <n> max <ticks>, <job> carrying max <ticks>, or until <condition> max <ticks>";
+        if (args.Length > 0 && args[0] == "until")
+            return ParseFastForwardUntil(args, number, Usage);
+
         var state = args.Length == 5 && args[1] == "state" && args[3] == "max";
         if (!state && !(args.Length == 4 && args[1] == "carrying" && args[2] == "max"))
             return (null, Usage);
@@ -563,11 +596,44 @@ public sealed class PlayScript
             return (null, $"'{args[^1]}' is not a whole number of zero or more");
 
         return (
-            new FastForwardStep
+            new FastForwardJobStep
             {
                 Line = number,
                 Job = job,
                 State = state ? n : null,
+                MaxTicks = max,
+                Text = "fast-forward " + string.Join(' ', args),
+            },
+            null
+        );
+    }
+
+    // until <field> <op> <value> max <ticks>, the field a game field; or until count <what> <op> <n> max <ticks>.
+    static (PlayStep?, string?) ParseFastForwardUntil(string[] args, int number, string usage)
+    {
+        if (args.Length < 6 || args[^2] != "max")
+            return (null, usage);
+        if (!Whole(args[^1], out var max))
+            return (null, $"'{args[^1]}' is not a whole number of zero or more");
+
+        var condition = args[1..^2];
+        if (condition[0] != "count" && !PlayFields.IsKnown(condition[0]))
+            return (
+                null,
+                $"unknown field '{condition[0]}', use {string.Join(", ", PlayFields.Game)}, {PlayFields.FlagGoods}<column>,<row>"
+            );
+        var (until, problem) =
+            condition[0] == "count" ? ParseExpectCount(condition[1..], number) : ParseExpect(condition, number);
+        if (until is not IPlayCondition parsed)
+            return (null, problem);
+        if (until is ExpectStep expect && !PlayFields.IsGame(expect.Field))
+            return (null, $"'{expect.Field}' does not change with the ticks, use a game field");
+
+        return (
+            new FastForwardUntilStep
+            {
+                Line = number,
+                Until = parsed,
                 MaxTicks = max,
                 Text = "fast-forward " + string.Join(' ', args),
             },

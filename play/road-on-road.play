@@ -40,7 +40,6 @@ expect-at 25 5 road
 expect-count flag = 3
 button Road
 wait 0.3
-wait 40
 expect-count carrier >= 1
 shot carrier 25 5 3 3
 list after

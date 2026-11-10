@@ -50,7 +50,8 @@ click-tile 19 6
 click-tile 19 5
 click-tile 20 5
 button Road
-wait 24
+fast-forward until count waits-at-flag = 5 max 2000
+wait 0.3
 dump decoys
 shot decoys
 
@@ -84,7 +85,8 @@ scroll up 2 405 395
 wait 0.3
 
 # Two logs wait on the woodcutter's flag; none has reached the castle.
-wait 245
+fast-forward until flag-goods:27,5 = 2 max 6000
+wait 0.3
 expect logs = 4
 expect flag-goods:27,5 = 2
 dump two-logs
@@ -98,21 +100,24 @@ wait 0.3
 shot removed
 
 # The carrier has lifted the first log; the second still waits on the flag.
-wait 50
+fast-forward until flag-goods:27,5 = 1 max 2000
+wait 0.3
 expect logs = 4
 expect flag-goods:27,5 = 1
 dump one-left
 shot one-left
 
 # The first log reaches the castle. The second still waits (a third the woodcutter cut may lie beside it).
-wait 40
+fast-forward until logs = 5 max 2000
+wait 0.3
 expect logs = 5
 expect flag-goods:27,5 >= 1
 dump first
 shot first
 
 # The second log reaches the castle.
-wait 50
+fast-forward until logs = 6 max 2000
+wait 0.3
 expect logs = 6
 dump second
 shot second
