@@ -556,7 +556,7 @@ public class PlayRunWrapperTests
         StringAssert.Contains(stdout, "build output");
         Assert.AreEqual(0, Calls);
         Assert.IsFalse(Directory.Exists(Out(".cache")) && Directory.EnumerateFileSystemEntries(Out(".cache")).Any());
-        CollectionAssert.AreEqual(new[] { "exit=3", "build" }, LogLines.Single().Split('\t')[10..]);
+        CollectionAssert.AreEqual(new[] { "exit=3", "build" }, LogLines.Single().Split('\t')[11..]);
     }
 
     [TestMethod]
@@ -588,16 +588,29 @@ public class PlayRunWrapperTests
         git.WaitForExit();
 
         var first = lines[0].Split('\t');
-        Assert.AreEqual(12, first.Length, lines[0]);
+        Assert.AreEqual(13, first.Length, lines[0]);
         StringAssert.Matches(first[0], new System.Text.RegularExpressions.Regex(@"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$"));
         StringAssert.Matches(first[1], new System.Text.RegularExpressions.Regex("^[0-9a-f]{40}$"));
         CollectionAssert.AreEqual(
-            new[] { head, "clean", "demo", "mode=map", "layout=", "seed=abc", "size=2", "fps=10", "exit=0", "run" },
+            new[]
+            {
+                head,
+                "clean",
+                "demo",
+                "mode=map",
+                "layout=",
+                "seed=abc",
+                "size=2",
+                "fps=10",
+                "graphics=history-edition",
+                "exit=0",
+                "run",
+            },
             first[2..]
         );
         var second = lines[1].Split('\t');
         Assert.AreEqual(first[1], second[1]);
-        CollectionAssert.AreEqual(new[] { "dirty", "reused" }, new[] { second[3], second[11] });
+        CollectionAssert.AreEqual(new[] { "dirty", "reused" }, new[] { second[3], second[12] });
         CollectionAssert.AreEqual(new[] { "seed=", "size=" }, lines[2].Split('\t')[7..9]);
     }
 
@@ -620,6 +633,7 @@ public class PlayRunWrapperTests
     [DataRow("empty layout", "demo", "--layout", "", "--fps", "10")]
     [DataRow("unknown graphics source", "demo", "--graphics", "retro", "--fps", "10")]
     [DataRow("graphics with no value", "demo", "--fps", "10", "--graphics")]
+    [DataRow("repeated graphics", "demo", "--graphics", "open-settlers", "--graphics", "open-settlers", "--fps", "10")]
     [DataRow("no args")]
     public void BadArgumentsExitTwoAndLeaveNoTrace(string reason, params string[] args) =>
         AssertUsageError(Run(args), reason);

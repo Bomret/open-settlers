@@ -57,7 +57,7 @@ Without `--game-view` the wrapper runs the map view. `--game-view` runs the game
 `--layout <file>` runs the game view on a layout and implies `--game-view`. A layout holds its own seed and size.
 The wrapper exits 2 on `--layout` with `--seed` or `--size`, on an empty value, and on a missing file.
 `--graphics history-edition|open-settlers` picks the graphics source of the run (the History Edition without the flag);
-another value exits 2.
+another value, a missing value, and a repeat exit 2.
 `mise run play -- <stem> ...` runs the same wrapper. The wrapper clears `play-out/<stem>/`, builds
 `OpenSettlers.csproj`, and runs the Godot command `README.md`'s "Run a play script" gives, through
 `mise exec`. Read the dumps and open the screenshots in `play-out/<stem>/`. Exit 0 is a finished run, 1 a
@@ -75,9 +75,9 @@ failed `expect` or a problem in the script.
   It leaves out the install's content and `.godot/`. After a change to the install, run with `--fresh`.
 - A failed build prints the build output, starts no Godot, stores nothing, and exits 3. Bad arguments
   exit 2 with a message and run, store, and log nothing.
-- Each call appends one tab-separated line of 12 fields to `play-out/runs.log`. The fields are the UTC time, the
+- Each call appends one tab-separated line of 13 fields to `play-out/runs.log`. The fields are the UTC time, the
   input hash, `HEAD`, `clean` or `dirty` (an untracked file counts), the stem, `mode=<map|game-view>`,
-  `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `exit=<status>`, and `run`,
+  `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `graphics=<source>` (`history-edition` without the flag), `exit=<status>`, and `run`,
   `reused`, or `build` (a failed build). A line proves a run at a tip when its `HEAD` equals the tip and it reads
   `clean`.
 - Calls for one stem run one at a time: a second call waits on the lock directory

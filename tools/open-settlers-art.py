@@ -7,9 +7,10 @@ nothing but numbers. It holds nothing derived from an install (ADR 0015). Run it
     python3 tools/open-settlers-art.py
 
 The terrain triangles are 32 pixels wide and 20 high, the node spacing and row spacing of the map. An upper triangle
-hangs from its apex at the top, a lower triangle from its apex at the bottom. Each triangle is 2 pixels wider on each
-side than the geometry, so neighbors overlap and leave no seam, and a 12-row skirt of its color below it, which the
-rows painted after it cover. The skirt closes the gaps a slope opens. The images are flat: they ignore the slope.
+hangs from its apex at the top, a lower triangle from its apex at the bottom. Each triangle is 8 pixels wider on each
+side than the geometry, so neighbors overlap and leave no seam where their heights differ, and it carries a skirt of
+its color below it, which the rows painted after it cover. The skirt is as deep as the largest drop a node can have:
+31 height units (Node.MaxHeight) of 4 pixels (TerrainTriangles.HeightStep). The images are flat: they ignore the slope.
 """
 
 import json
@@ -20,8 +21,8 @@ import zlib
 OUT = os.path.join("content", "open-settlers")
 WIDTH = 32
 HEIGHT = 20
-BLEED = 2
-SKIRT = 12
+BLEED = 8
+SKIRT = 31 * 4
 
 # One color per terrain code, 0 to 15: water, plain land, in-between ground, mountain, snow.
 TERRAIN_COLORS = [

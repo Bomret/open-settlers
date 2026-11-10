@@ -8,9 +8,9 @@
 # does a missing layout file or an empty layout value). The input hash covers the mode, the layout's path and
 # content, the content and path of every tracked or untracked, not ignored file under src/, scenes/ and content/, the
 # project files, the play script, the seed, the size, the graphics source (history-edition when none is given), the
-# fps, the Godot version and the SIEDLER_DIR path. --graphics takes history-edition or open-settlers. A result is stored in
+# fps, the Godot version and the SIEDLER_DIR path. --graphics takes history-edition or open-settlers, once. A result is stored in
 # play-out/.cache/<hash>/ only for exit status 0 or 1. Each call past the argument checks appends one line to
-# play-out/runs.log; the line names the mode (map or game-view) and the layout. Bad arguments exit 2 and leave no trace.
+# play-out/runs.log; the line names the mode (map or game-view), the layout, and the graphics source. Bad arguments exit 2 and leave no trace.
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
 # call waits on a live owner, says so once on stderr, and takes over the lock of a dead one under the mutex
 # play-out/.lock-<stem>.takeover. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
@@ -49,6 +49,7 @@ while [ $# -gt 0 ]; do
         --fps) fps=$2 ;;
         --layout) [ -n "$2" ] || usage "--layout needs a file"; layout=$2 ;;
         --graphics)
+          [ -z "$graphics" ] || usage "repeated --graphics"
           case "$2" in
             history-edition | open-settlers) graphics=$2 ;;
             *) usage "--graphics takes history-edition or open-settlers" ;;
@@ -210,6 +211,6 @@ fi
 
 head=$(git rev-parse HEAD 2>/dev/null || echo none)
 if [ -n "$(git status --porcelain)" ]; then dirty=dirty; else dirty=clean; fi
-printf '%s\t%s\t%s\t%s\t%s\tmode=%s\tlayout=%s\tseed=%s\tsize=%s\tfps=%s\texit=%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$hash" \
-  "$head" "$dirty" "$stem" "$mode" "$layout" "$seed" "$size" "$fps" "$status" "$how" >>play-out/runs.log
+printf '%s\t%s\t%s\t%s\t%s\tmode=%s\tlayout=%s\tseed=%s\tsize=%s\tfps=%s\tgraphics=%s\texit=%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$hash" \
+  "$head" "$dirty" "$stem" "$mode" "$layout" "$seed" "$size" "$fps" "${graphics:-history-edition}" "$status" "$how" >>play-out/runs.log
 exit "$status"

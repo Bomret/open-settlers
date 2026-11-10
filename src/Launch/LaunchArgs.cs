@@ -94,7 +94,10 @@ public sealed class LaunchArgs
     public const string GraphicsFlag = "--graphics";
 
     /// <summary>The known graphics sources as the flag spells them, which the refusals name.</summary>
-    public const string KnownGraphics = "history-edition, open-settlers";
+    const string KnownGraphics = "history-edition, open-settlers";
+
+    // The suffix that names the known sources on every refusal of the graphics flag.
+    static string Known(string flag) => flag == GraphicsFlag ? $" (known sources: {KnownGraphics})" : "";
 
     /// <summary>The environment variable that stands in for <see cref="GameFlag"/>.</summary>
     public const string GameVariable = "SIEDLER_DIR";
@@ -159,9 +162,7 @@ public sealed class LaunchArgs
                 // then, so a mode flag after the flag still selects its mode.
                 if (i + 1 >= args.Length || args[i + 1].StartsWith("--"))
                 {
-                    problems.Add(
-                        flag == GraphicsFlag ? $"{flag} needs a value: {KnownGraphics}" : $"{flag} needs a value"
-                    );
+                    problems.Add($"{flag} needs a value{Known(flag)}");
                     gameGiven |= flag == GameFlag;
                     playGiven |= flag == PlayFlag;
                     layoutGiven |= flag == LayoutFlag;
@@ -192,24 +193,24 @@ public sealed class LaunchArgs
                     || flag == GraphicsFlag && graphicsGiven
                 )
                 {
-                    problems.Add(
-                        flag == GraphicsFlag ? $"repeated {flag} (known sources: {KnownGraphics})" : $"repeated {flag}"
-                    );
+                    problems.Add($"repeated {flag}{Known(flag)}");
                 }
                 else if (flag == GraphicsFlag)
                 {
                     graphicsGiven = true;
-                    switch (value)
+                    var named = value switch
                     {
-                        case "history-edition":
-                            graphics = GraphicsSourceName.HistoryEdition;
-                            break;
-                        case "open-settlers":
-                            graphics = GraphicsSourceName.OpenSettlers;
-                            break;
-                        default:
-                            problems.Add($"bad {GraphicsFlag} '{value}': the known sources are {KnownGraphics}");
-                            break;
+                        "history-edition" => GraphicsSourceName.HistoryEdition,
+                        "open-settlers" => GraphicsSourceName.OpenSettlers,
+                        _ => (GraphicsSourceName?)null,
+                    };
+                    if (named is { } source)
+                    {
+                        graphics = source;
+                    }
+                    else
+                    {
+                        problems.Add($"bad {GraphicsFlag} '{value}'{Known(flag)}");
                     }
                 }
                 else if (flag == PlayFlag)
