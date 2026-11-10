@@ -290,7 +290,7 @@ edges of the map, loops, and water roads), 35 roads that did not end on a flag a
 one road refused at its end, 6 starts the original refuses, and 6 of the error above (the engine refuses those steps; the
 harness restores the state before the road). Every step's verdict, every map byte, and every item bit and direction
 matches. The verb `roaddraw:SEED:COUNT` runs the three strip routines on random heights and terrain bytes;
-`RoadDrawsTests` replays 120 cases and matches the mask, the texture, and the height of the strip above the node.
+`RoadDrawsTests` replays 120 cases and matches the mask (`RoadRules`), the texture (`RoadRules`), and the height of the strip above the node.
 
 ## In the engine
 
@@ -301,7 +301,9 @@ and `Game.Network.Roads` lists the built roads (`Road`: the slots and directions
 a water road). The digest holds the roads. A refused command, and a road that does not end on a flag, changes nothing.
 The stand-in road button (`src/Viewer/MapViewControl.cs` with `src/MapView/RoadDrawing.cs`) draws a road outside the
 game, a node at a time, and sends one command where the road reaches a flag; Escape, a right click, or the button
-again cancels. `RoadDraws`, `RoadGraphics`, and the control draw the strips over the terrain in every copy of the map;
+again cancels. `RoadDraws` gives a draw term for each strip (direction, height difference, slope, ground), the History Edition
+source answers it through `RoadRules` and `RoadGraphics` (no image where the difference is over 4), and the control draws
+the strips over the terrain in every copy of the map;
 the road being drawn is a white line. Departures: the length class, the second bit byte at `+5`, and the items'
 pointers are not kept (a later slice reads the road from the map and from `Game.Network.Roads`). Also left out are the `+0x37e` option, the
 second-button click that puts a flag on a road ([A flag on a road](#a-flag-on-a-road)), the step back at the start, the sounds, and the
