@@ -13,7 +13,7 @@ public sealed class LayoutSettlersTests
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
-        "buildings": [{"x": 13, "y": 10}],
+        "buildings": [{"type": "woodcutter", "x": 13, "y": 10}],
         """;
 
     const string Woodcutter = """{"job": "woodcutter", "state": "in-hut", "x": 13, "y": 10}""";
@@ -236,8 +236,8 @@ public sealed class LayoutSettlersTests
     {
         var problem = Refused(
             Built.Replace(
-                "\"buildings\": [{\"x\": 13, \"y\": 10}]",
-                "\"buildings\": [{\"x\": 13, \"y\": 10}, {\"x\": 17, \"y\": 10}]"
+                "\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}]",
+                "\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}, {\"type\": \"woodcutter\", \"x\": 17, \"y\": 10}]"
             )
                 + $"\"settlers\": [{Woodcutter}, {{\"job\": \"woodcutter\", \"state\": \"in-hut\", \"x\": 17, \"y\": 10}}]"
         );
@@ -261,7 +261,7 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void ASettlerForAHutOrRoadTheLayoutDoesNotBuildFailsTheLoadNamingTheReason()
     {
-        var hutless = Built.Replace("\"buildings\": [{\"x\": 13, \"y\": 10}],", "");
+        var hutless = Built.Replace("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}],", "");
         var roadless = Built.Replace("\"roads\": [{\"x\": 11, \"y\": 11, \"directions\": [0, 0, 0]}],", "");
 
         Assert.AreEqual(

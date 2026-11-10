@@ -8,9 +8,9 @@ namespace OpenSettlers.Simulation;
 public sealed partial class Layout
 {
     // One entry of the file that a game takes as a command: its name in the file (flags[1]) and the command; a refusal
-    // reports the reason Refusal gives for the command's kind. A settler or good entry has no command: its Place
-    // puts it in the game directly (WalkBehavior.PlaceWoodcutterInHut, CarrierBehavior.PlaceCarrierOnRoad,
-    // GoodsTransport.PlaceGood) and returns why it refused, or null.
+    // reports the reason Refusal gives for the command's kind. A building, settler, or good entry is no command a player gives:
+    // its Place puts it in the game directly (BuildingPlacement.PlaceFinished, WalkBehavior.PlaceWoodcutterInHut,
+    // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null.
     private sealed record Step(string Name, Command Command, Func<Game, string?>? Place = null);
 
     /// <summary>
@@ -71,8 +71,11 @@ public sealed partial class Layout
             CommandKind.BuildRoad =>
                 "a step is not allowed where the original's road drawing allows it, or the last step reaches no "
                     + "flag; list the flag at the end before the road",
-            _ => "the node is no site for a hut and its flag south-east of it",
+            _ => BuildingRefusal,
         };
+
+    private const string BuildingRefusal =
+        "the node is no site for a building of the type's size with its flag south-east of it, and the castle must stand";
 
     private sealed partial class Reader
     {
@@ -96,7 +99,7 @@ public sealed partial class Layout
                         good &= ReadList(property, CommandKind.BuildRoad, steps);
                         break;
                     case "buildings":
-                        good &= ReadList(property, CommandKind.PlaceBuilding, steps);
+                        good &= ReadEntries(property, ReadBuilding, steps);
                         break;
                     case "settlers":
                         good &= ReadEntries(property, ReadSettler, steps);
@@ -150,6 +153,80 @@ public sealed partial class Layout
             }
 
             return good;
+        }
+
+        // The building types a finished-building entry names (docs/rules/layouts.md), by the names of the build panel.
+        private static readonly (string Name, BuildingType Type)[] BuildingNames =
+        [
+            ("woodcutter", BuildingType.Woodcutter),
+            ("stonecutter", BuildingType.Stonecutter),
+            ("forester", BuildingType.Forester),
+            ("sawmill", BuildingType.Sawmill),
+        ];
+
+        private const string BuildingShape =
+            "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", or \"sawmill\", \"x\", \"y\"} (the node of the building, "
+            + "finished with its flag south-east of it)";
+
+        // A finished-building entry: the building stands finished at tick 0 as the original's mission start leaves a building
+        // (0x41f2d2 places it through 0x449a63 and finishes it).
+        private bool ReadBuilding(string name, JsonElement entry, List<Step> steps)
+        {
+            if (entry.ValueKind != JsonValueKind.Object)
+            {
+                Fail(name, $"must be {BuildingShape}");
+
+                return false;
+            }
+
+            var unknown = entry
+                .EnumerateObject()
+                .Select(p => p.Name)
+                .FirstOrDefault(n => n is not ("type" or "x" or "y"));
+            if (unknown is not null)
+            {
+                Fail(name, $"unknown key {unknown}, a building is {BuildingShape}");
+
+                return false;
+            }
+
+            if (!entry.TryGetProperty("type", out var typeEntry) || typeEntry.ValueKind != JsonValueKind.String)
+            {
+                Fail(name, $"a building needs a \"type\": a building is {BuildingShape}");
+
+                return false;
+            }
+
+            var typeName = typeEntry.GetString();
+            var type = BuildingNames.FirstOrDefault(known => known.Name == typeName);
+            if (type.Name is null)
+            {
+                Fail(name, $"no building type {typeName}: M4 builds woodcutter, stonecutter, forester, or sawmill");
+
+                return false;
+            }
+
+            if (!Whole(entry, "x", out var x) || !Whole(entry, "y", out var y))
+            {
+                Fail(name, "x and y must each be a whole number");
+
+                return false;
+            }
+
+            var command = new Command(0, 0, CommandKind.PlaceBuilding, x, y, Building: type.Type);
+            var repeated = steps.FirstOrDefault(step => step.Command == command);
+            if (repeated is not null)
+            {
+                Fail(name, $"repeats {repeated.Name}");
+
+                return false;
+            }
+
+            steps.Add(
+                new Step(name, command, game => game.Placement.PlaceFinished(type.Type, x, y) ? null : BuildingRefusal)
+            );
+
+            return true;
         }
 
         // The entry states a settler starts in (docs/rules/layouts.md): each job with its states.
