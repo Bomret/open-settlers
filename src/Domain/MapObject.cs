@@ -9,8 +9,11 @@ public enum MapObjectKind
     /// <summary>Code 1: a flag (<c>docs/rules/flags.md</c>).</summary>
     Flag,
 
-    /// <summary>Code 2: the hut of a building the player placed.</summary>
+    /// <summary>Code 2: the node of a small building the player placed, a building site or a finished building.</summary>
     Hut,
+
+    /// <summary>Code 3: the node of a large building the player placed (<c>docs/rules/build-sites.md</c>).</summary>
+    LargeHut,
 
     /// <summary>Code 4: the castle (<c>docs/rules/castle.md</c>).</summary>
     Castle,
@@ -60,8 +63,11 @@ public readonly record struct MapObject(byte Code)
     /// <summary>A flag.</summary>
     public static MapObject Flag => new(1);
 
-    /// <summary>The hut of a building.</summary>
+    /// <summary>The node of a small building.</summary>
     public static MapObject Hut => new(2);
+
+    /// <summary>The node of a large building.</summary>
+    public static MapObject LargeHut => new(3);
 
     /// <summary>The castle.</summary>
     public static MapObject Castle => new(4);
@@ -94,6 +100,7 @@ public readonly record struct MapObject(byte Code)
             0 => MapObjectKind.None,
             1 => MapObjectKind.Flag,
             2 => MapObjectKind.Hut,
+            3 => MapObjectKind.LargeHut,
             4 => MapObjectKind.Castle,
             >= FirstTreeCode and < EndTreeCode => MapObjectKind.Tree,
             StumpCode => MapObjectKind.Stump,

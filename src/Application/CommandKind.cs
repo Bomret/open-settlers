@@ -31,10 +31,11 @@ public static class CommandKind
     public const int BuildRoad = 3;
 
     /// <summary>
-    /// Places a woodcutter's hut on the node of the command. A building brings its flag on the node south-east of it,
-    /// takes the flag already there, or splits the road there (<c>docs/rules/build-sites.md</c>, "Placing a building").
-    /// The hut stands finished at once: a stand-in for the construction (M4), not a rule of the original. Later slices
-    /// add the other types.
+    /// Places a building site of the type <see cref="Command.Building"/> names (a woodcutter, a stonecutter, a forester, or a
+    /// sawmill) on the node of the command. A building brings its flag on the node south-east of it, takes the flag already
+    /// there, or splits the road there (<c>docs/rules/build-sites.md</c>, "Placing a building"). Refused, with no change, for a
+    /// command with no type or a type no placement builds, where the node holds no site for the type's size (a small type
+    /// needs the site 3 or 4, a large type the site 4), and where its flag has no room. No command gives a finished building.
     /// </summary>
     public const int PlaceBuilding = 4;
 

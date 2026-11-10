@@ -113,6 +113,13 @@ public sealed class Game
     /// <summary>The woodcutter's work on the objects and the trees.</summary>
     internal WoodcutterBehavior Woodcutter => _parts.Woodcutter;
 
+    /// <summary>
+    /// The placing of a building with its flag. The command <see cref="CommandKind.PlaceBuilding"/> places a building site
+    /// through it; a layout's finished-building entry places a finished building through it, the one way a building stands
+    /// finished before construction exists.
+    /// </summary>
+    internal BuildingPlacement Placement => _parts.Placement;
+
     /// <summary>The check of the road the player draws.</summary>
     public RoadPlanner RoadPlanner => _parts.RoadPlanner;
 

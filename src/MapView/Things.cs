@@ -83,20 +83,29 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
     }
 
     /// <summary>The building as a thing: its raw type, never the walk's type index, and its raw status.</summary>
-    public static Thing Of(Building building) =>
-        new(
-            BuildingKind,
-            building.X,
-            building.Y,
-            [
-                ("type", Hex(building.Type.Code)),
-                ("constructing", building.Constructing ? "true" : "false"),
-                ("status", Hex(BuildingEncoder.Status(building))),
-                ("flag", building.Flag.ToString(CultureInfo.InvariantCulture)),
-                ("worker", BuildingEncoder.Worker(building).ToString(CultureInfo.InvariantCulture)),
-            ],
-            NameTable.BuildingName(building.Type.Code)
-        );
+    public static Thing Of(Building building)
+    {
+        List<(string, string)> values =
+        [
+            ("type", Hex(building.Type.Code)),
+            ("constructing", building.Constructing ? "true" : "false"),
+            ("status", Hex(BuildingEncoder.Status(building))),
+            ("flag", building.Flag.ToString(CultureInfo.InvariantCulture)),
+            ("worker", BuildingEncoder.Worker(building).ToString(CultureInfo.InvariantCulture)),
+        ];
+        if (building.Site is { } site)
+        {
+            values.AddRange(
+                [
+                    ("planks", site.Planks.ToString(CultureInfo.InvariantCulture)),
+                    ("stones", site.Stones.ToString(CultureInfo.InvariantCulture)),
+                    ("height", site.TargetHeight.ToString(CultureInfo.InvariantCulture)),
+                ]
+            );
+        }
+
+        return new Thing(BuildingKind, building.X, building.Y, values, NameTable.BuildingName(building.Type.Code));
+    }
 
     /// <summary>
     /// The things a <c>list</c> step shows: every thing of <paramref name="game"/> in the game view once a game runs,

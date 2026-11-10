@@ -17,13 +17,18 @@ namespace OpenSettlers.Simulation;
 /// <param name="Directions">
 /// The directions of a road, one of 0 to 5 for each step (<see cref="Road.Directions"/>); null for every other action.
 /// </param>
+/// <param name="Building">
+/// The type of the building a <see cref="CommandKind.PlaceBuilding"/> places; null for every other action. A placement with
+/// no type is refused.
+/// </param>
 public readonly record struct Command(
     long Tick,
     int Player,
     int Kind,
     int X,
     int Y,
-    IReadOnlyList<int>? Directions = null
+    IReadOnlyList<int>? Directions = null,
+    BuildingType? Building = null
 ) : IEquatable<Command>
 {
     /// <inheritdoc/>
@@ -33,12 +38,13 @@ public readonly record struct Command(
         && Kind == other.Kind
         && X == other.X
         && Y == other.Y
+        && Building == other.Building
         && (Directions ?? []).SequenceEqual(other.Directions ?? []);
 
     /// <inheritdoc/>
     public override int GetHashCode()
     {
-        var hash = HashCode.Combine(Tick, Player, Kind, X, Y);
+        var hash = HashCode.Combine(Tick, Player, Kind, X, Y, Building);
         foreach (var direction in Directions ?? [])
         {
             hash = HashCode.Combine(hash, direction);

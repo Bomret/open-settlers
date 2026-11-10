@@ -14,7 +14,8 @@ public sealed class SnapshotExporter(SettlerTable settlers, BuildingTable buildi
     public ThingState Building(int slot)
     {
         var b = buildings[slot];
-        return new ThingState([
+        List<(string, int)> fields =
+        [
             ("type", b.Type.Code),
             ("constructing", b.Constructing ? 1 : 0),
             ("x", b.X),
@@ -25,7 +26,13 @@ public sealed class SnapshotExporter(SettlerTable settlers, BuildingTable buildi
             ("stamp", b.Stamp),
             ("fill", BuildingEncoder.Fill(b)),
             ("progress", b.Progress),
-        ]);
+        ];
+        if (b.Site is { } site)
+        {
+            fields.AddRange([("planks", site.Planks), ("stones", site.Stones), ("height", site.TargetHeight)]);
+        }
+
+        return new ThingState(fields);
     }
 
     /// <summary>The flag in the slot: its node, status byte, road bytes, and the goods on it.</summary>
