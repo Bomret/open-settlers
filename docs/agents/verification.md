@@ -25,6 +25,30 @@ The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
 that needs one, on the class where every test in it does. A test without the category fails or reports
 inconclusive in either command without the install. `NeedsTests` pins the filters to `Needs`.
 
+No static field or static property initializer of a test class may reach the install (`TestProgram.Tables()`,
+`TestProgram.OpenInstall()`). Without the install the `Assert.Inconclusive` they throw then fires during type
+initialization, and MSTest fails every test of the class with a `TypeInitializationException`. Build the value inside the
+test instead, as the cached `Map` accessor of `MapPickingTests` does. `InstallInitializerTests` fails naming the file and
+line of every such initializer.
+
+## Run one test class
+
+`--filter 'ClassName=OpenSettlers.Tests.<Class>'` runs exactly one test class:
+
+```sh
+mise exec -- dotnet test --project tests/OpenSettlers.Tests --filter 'ClassName=OpenSettlers.Tests.ShotCropTests'
+```
+
+`FullyQualifiedName~<Class>` matches by substring: `FullyQualifiedName~GameTests` also selects `RoadSplitGameTests`.
+Without the install, add the category clauses, which run the class's unit tests alone:
+
+```sh
+mise exec -- dotnet test --project tests/OpenSettlers.Tests --filter 'ClassName=OpenSettlers.Tests.ShotCropTests&TestCategory!=Install&TestCategory!=Ghidra'
+```
+
+The test host (MSTest on Microsoft.Testing.Platform) has no `--filter-class`: it exits 5 and lists the test project under
+`Handshake failures:`. A filter that matches no test exits 8.
+
 ## Integration command
 
 `mise run test:integration` runs only the tests of the categories `Install` and `Ghidra`. It needs the reference
