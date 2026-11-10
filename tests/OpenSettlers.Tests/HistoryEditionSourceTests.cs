@@ -513,6 +513,28 @@ public sealed class HistoryEditionSourceTests
         Assert.AreEqual((5, 6), (second.Image!.OffsetX, second.Image.OffsetY));
     }
 
+    // The figure bytes 3 and 4 of the carrier's walk (steps 0 and 8) pick the figures 1950 and 1951, whose headers carry the
+    // same bytes: both second figures hang at the same place, so they answer one image and take one layer of the view.
+    [TestMethod]
+    public void SecondFiguresThatHangAtTheSamePlaceAnswerOneImageInstance()
+    {
+        var offsets = new short[512];
+        offsets[2 * 4] = 1;
+        var tables = new RuleTables(
+            new ObjectClass[RuleTables.ClassCount],
+            TestProgram.Made().StartStock,
+            figureBases: SettlerTables().FigureBases,
+            figureOffsets: offsets
+        );
+        using var fake = SettlerFake(payloads => payloads[1951] = ObjectGraphicsTests.Sprite());
+        var source = OpenWithSettlers(fake, tables);
+
+        var first = source.Draw(Term(SettlerPart.SecondFigure))!;
+        var second = source.Draw(Term(SettlerPart.SecondFigure) with { Step = 8 })!;
+
+        Assert.AreSame(first.Image, second.Image);
+    }
+
     [TestMethod]
     public void ASecondFigureWhoseFigureEntryIsNoSpriteIsAnchoredByItsOwnOffsets()
     {

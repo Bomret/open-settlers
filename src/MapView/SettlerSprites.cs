@@ -28,6 +28,7 @@ public sealed class SettlerSprites
     private readonly ObjectImage? _shadow;
     private readonly Dictionary<int, (ObjectImage Image, int First, int Second)?> _sprites = [];
     private readonly Dictionary<(int Entry, int Colour), ObjectImage?> _filled = [];
+    private readonly Dictionary<(int Entry, int Colour, int X, int Y), ObjectImage?> _anchored = [];
     private readonly Dictionary<(int X, int Y), ObjectImage?> _shadows = [];
     private readonly Dictionary<(SettlerPick Pick, bool Shadowed), ObjectDrawing?> _drawings = [];
 
@@ -108,19 +109,28 @@ public sealed class SettlerSprites
         // that does not read shifts nothing.
         var (shiftX, shiftY) =
             pick.ShiftedBy >= 0 && Loaded(pick.ShiftedBy) is { } figure ? (figure.First, figure.Second) : (0, 0);
-        if (Filled(pick.Entry, pick.Colour) is not { } filled)
+        if (Anchored(pick.Entry, pick.Colour, pick.Dx + shiftX, pick.Dy + shiftY) is not { } image)
         {
             return null;
         }
 
-        return new ObjectDrawing(
-            Moved(filled, pick.Dx + shiftX, pick.Dy + shiftY),
-            shadowed ? Shadow(pick.Dx, pick.Dy) : null
-        );
+        return new ObjectDrawing(image, shadowed ? Shadow(pick.Dx, pick.Dy) : null);
     }
 
-    // The shadow mask hung moved by x and y; one instance for each, so that the picks that share a shadow share one layer of
-    // the view's array texture (ImageLayers keys an image by reference).
+    // The image of an entry filled with a colour (-1 for none), hung moved by x and y; one instance for each, so that the
+    // picks that land on the same image share one layer of the view's array texture (ImageLayers keys an image by reference).
+    private ObjectImage? Anchored(int entry, int colour, int x, int y)
+    {
+        if (!_anchored.TryGetValue((entry, colour, x, y), out var cached))
+        {
+            cached = Filled(entry, colour) is { } image ? Moved(image, x, y) : null;
+            _anchored[(entry, colour, x, y)] = cached;
+        }
+
+        return cached;
+    }
+
+    // The shadow mask hung moved by x and y; one instance for each, for the same reason.
     private ObjectImage? Shadow(int x, int y)
     {
         if (_shadow is null)
