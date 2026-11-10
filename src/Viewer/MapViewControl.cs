@@ -344,6 +344,15 @@ public partial class MapViewControl : Control
             _objectMaterial = BuildObjectMaterial(_objects);
             _waterMaterial = (ShaderMaterial)_objectMaterial.Duplicate();
             _waterMaterial.Shader = GD.Load<Shader>("res://src/Viewer/Water.gdshader");
+            _waterMaterial.SetShaderParameter(
+                "surface",
+                new Color(
+                    _objects.SurfaceRgba[0] / 255f,
+                    _objects.SurfaceRgba[1] / 255f,
+                    _objects.SurfaceRgba[2] / 255f,
+                    _objects.SurfaceRgba[3] / 255f
+                )
+            );
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -1049,15 +1058,6 @@ public partial class MapViewControl : Control
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Objects.gdshader") };
         material.SetShaderParameter("sprites", sprites);
         material.SetShaderParameter("shadow_sprites", shadowSprites);
-        material.SetShaderParameter(
-            "surface",
-            new Color(
-                graphics.SurfaceRgba[0] / 255f,
-                graphics.SurfaceRgba[1] / 255f,
-                graphics.SurfaceRgba[2] / 255f,
-                graphics.SurfaceRgba[3] / 255f
-            )
-        );
 
         return material;
     }

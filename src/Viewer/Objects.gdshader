@@ -2,8 +2,7 @@
 // in COLOR, the sprite's layer as SpriteLayer encodes it: the low byte in red, the high byte in green. Blue picks the
 // array: 0 the sprites (sprites), 1 the shadows (shadow_sprites). The alpha is the coverage: a pixel is
 // transparent where its alpha is 0 and never because its palette index is 0, which is a real color
-// (docs/rules/map-objects.md). The graphics load has applied the palette. The surface uniform is the color of the
-// water surface, which Water.gdshader reads and this shader leaves unused.
+// (docs/rules/map-objects.md). The graphics load has applied the palette.
 shader_type canvas_item;
 
 uniform sampler2DArray sprites : filter_nearest;
