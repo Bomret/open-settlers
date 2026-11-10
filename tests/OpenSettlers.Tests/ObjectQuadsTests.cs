@@ -17,32 +17,17 @@ public sealed class ObjectQuadsTests
     // even tiles only, and nothing else.
     sealed class FakeSource : IGraphicsSource
     {
-        public int Asked { get; private set; }
-
         public ObjectImage? Draw(TerrainTriangle triangle) => null;
 
         public ObjectImage? Draw(RoadStrip strip) => null;
 
-        public ObjectDrawing? Draw(MapObjectDraw draw)
-        {
-            Asked++;
+        public ObjectDrawing? Draw(MapObjectDraw draw) =>
+            draw.Object == MapObject.Flag ? new ObjectDrawing(Flag, FlagShadow) : null;
 
-            return draw.Object == MapObject.Flag ? new ObjectDrawing(Flag, FlagShadow) : null;
-        }
+        public ObjectDrawing? Draw(BuildingDraw draw) =>
+            draw.Type == BuildingType.Woodcutter ? new ObjectDrawing(Flag, null) : null;
 
-        public ObjectDrawing? Draw(BuildingDraw draw)
-        {
-            Asked++;
-
-            return draw.Type == BuildingType.Woodcutter ? new ObjectDrawing(Flag, null) : null;
-        }
-
-        public ObjectDrawing? Draw(GoodAtFlag draw)
-        {
-            Asked++;
-
-            return new ObjectDrawing(GoodImage, null);
-        }
+        public ObjectDrawing? Draw(GoodAtFlag draw) => new ObjectDrawing(GoodImage, null);
 
         public RippleImage? Draw(WaterRipple ripple) =>
             ripple.Tile % 2 == 0 ? new RippleImage(Flag, [1, 2, 3, 255]) : null;

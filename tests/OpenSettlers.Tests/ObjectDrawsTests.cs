@@ -163,6 +163,50 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
+    public void TheCastleAndAHutAreDrawnAfterTheLastTermOfTheirRowAndBeforeTheFirstOfTheNextRow()
+    {
+        // The castle at 15,5 with its flag at 16,6 (goods on it), and the hut at 16,2 tied to the flag at 17,3.
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+        var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Tick();
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Tick();
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
+        game.Tick();
+        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [new Good(1)] };
+
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
+
+        // Map of the seed 1234,5678,9ABC: the objects of rows 2 to 6 in row-major order, the
+        // hut (code 2 at 16,2) and the castle (code 4 at 15,5) among them. Each building follows the last object of its
+        // row, where the next row's first object follows; the flag's good (place 0) precedes the flag.
+        CollectionAssert.AreEqual(
+            new ObjectTerm[]
+            {
+                new MapObjectDraw(2, 480, 8, new MapObject(2), 0),
+                new MapObjectDraw(2, 576, 40, new MapObject(31), 0),
+                new BuildingDraw(2, 480, 8, BuildingType.Woodcutter),
+                new MapObjectDraw(3, 496, 40, MapObject.Flag, 0),
+                new MapObjectDraw(3, 656, 60, new MapObject(89), 0),
+                new MapObjectDraw(3, 720, 60, new MapObject(88), 0),
+                new MapObjectDraw(4, 416, 20, new MapObject(16), 0),
+                new MapObjectDraw(4, 448, 36, new MapObject(9), 0),
+                new MapObjectDraw(5, 400, 40, new MapObject(4), 0),
+                new MapObjectDraw(5, 752, 100, new MapObject(89), 0),
+                new BuildingDraw(5, 400, 40, BuildingType.Castle),
+                new MapObjectDraw(6, 224, 60, new MapObject(9), 0),
+                new MapObjectDraw(6, 256, 60, new MapObject(8), 0),
+                new GoodAtFlag(6, 422, 56, new Good(1)),
+                new MapObjectDraw(6, 416, 60, MapObject.Flag, 0),
+            },
+            draws.Where(draw => draw.Row is >= 2 and <= 6).ToList()
+        );
+    }
+
+    [TestMethod]
     public void AnEmptyPlaceDrawsNoTermAndAGoodIsNamedByItsGoodWhateverItsBits()
     {
         var empty = FlagDrawsWith(0, 0, 0, 0, 0, 0, 0, 0);

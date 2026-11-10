@@ -56,29 +56,28 @@ public sealed class HistoryEditionSource : IGraphicsSource
     public static HistoryEditionSource Load(Install install)
     {
         var terrain = TerrainGraphics.Load(install);
-        RoadGraphics? roads = null;
-        string? roadsProblem = null;
-        try
-        {
-            roads = RoadGraphics.Load(install);
-        }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            roadsProblem = e.Message;
-        }
-
-        ObjectGraphics? objects = null;
-        string? objectsProblem = null;
-        try
-        {
-            objects = ObjectGraphics.Load(install);
-        }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            objectsProblem = e.Message;
-        }
+        var roads = Try(() => RoadGraphics.Load(install), out var roadsProblem);
+        var objects = Try(() => ObjectGraphics.Load(install), out var objectsProblem);
 
         return new HistoryEditionSource(terrain, roads, roadsProblem, objects, objectsProblem);
+    }
+
+    // The loaded graphics, or null with the reason in problem where the install's files are missing or unreadable.
+    static T? Try<T>(Func<T> load, out string? problem)
+        where T : class
+    {
+        try
+        {
+            problem = null;
+
+            return load();
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            problem = e.Message;
+
+            return null;
+        }
     }
 
     /// <inheritdoc />
@@ -100,12 +99,12 @@ public sealed class HistoryEditionSource : IGraphicsSource
     /// <inheritdoc />
     public RippleImage? Draw(WaterRipple ripple)
     {
-        var entry = ObjectSprites.WaterEntry(ripple.Tile, ripple.Step);
         if (_objects is null)
         {
             return null;
         }
 
+        var entry = ObjectSprites.WaterEntry(ripple.Tile, ripple.Step);
         if (!_ripples.TryGetValue(entry, out var cached))
         {
             cached = Usable(_objects.Sprites.GetValueOrDefault(entry)) is { } image
