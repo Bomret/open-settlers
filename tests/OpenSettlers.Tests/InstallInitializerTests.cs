@@ -122,6 +122,84 @@ public sealed class InstallInitializerTests
     }
 
     [TestMethod]
+    public void AnInitializerReadingAStaticPropertyThatReachesTheInstallIsFlagged()
+    {
+        var source = """
+            class A
+            {
+                private static Map? _map;
+                private static Map Map => _map ??= MapViewState.Open(TestProgram.Tables(), "1", 1).Map!;
+                private static readonly int Width = Map.Width;
+                static Map Generated => MapViewState.Open(TestProgram.Tables(), "1", 1).Map!;
+                private static readonly Map Copy = Generated;
+                static Install Game
+                {
+                    get { return TestProgram.OpenInstall(); }
+                }
+                private static readonly Install Opened = A.Game;
+            }
+            """;
+
+        CollectionAssert.AreEqual(new[] { 5, 7, 12 }, Lines(source).ToArray());
+    }
+
+    [TestMethod]
+    public void AHelperReachingTheInstallThroughAnotherHelperIsFlagged()
+    {
+        var source = """
+            class A
+            {
+                static RuleTables Rules => TestProgram.Tables();
+                static Map Generated() => MapViewState.Open(Rules, "1", 1).Map!;
+                static Map Wrapped { get { return Generated(); } }
+                private static readonly Map Map = Wrapped;
+            }
+            """;
+
+        CollectionAssert.AreEqual(new[] { 6 }, Lines(source).ToArray());
+    }
+
+    [TestMethod]
+    public void AHelperPropertyNameInATypePositionOrUnevaluatedIsNotFlagged()
+    {
+        var source = """
+            class A
+            {
+                private static Map? _map;
+                private static Map Map => _map ??= MapViewState.Open(TestProgram.Tables(), "1", 1).Map!;
+                private static readonly Lazy<Map> Later = new Lazy<Map>(() => Map);
+                private static readonly Type Kind = typeof(Map);
+                private static readonly Map? None = default(Map);
+                private static readonly object? Cast = (Map?)null;
+                private static readonly string Named = nameof(Map);
+                private static readonly Settings Options = new Settings { Map = 1 };
+            }
+            """;
+
+        CollectionAssert.AreEqual(Array.Empty<int>(), Lines(source).ToArray());
+    }
+
+    [TestMethod]
+    public void AHelperOfAnotherSameFileTypeIsMatchedByItsReceiver()
+    {
+        var source = """
+            class A
+            {
+                internal static Map Generated() => MapViewState.Open(TestProgram.Tables(), "1", 1).Map!;
+            }
+            class B
+            {
+                internal static Map Generated() => MapViewState.Make("1", 1).Map!;
+                private static readonly Map Own = Generated();
+                private static readonly Map Other = B.Generated();
+                private static readonly Map Install = A.Generated();
+            }
+            """;
+
+        CollectionAssert.AreEqual(new[] { 10 }, Lines(source).ToArray());
+    }
+
+    [TestMethod]
     public void AStaticConstructorThatReachesTheInstallIsFlaggedAtItsName()
     {
         var source = """
@@ -214,9 +292,13 @@ public sealed class InstallInitializerTests
         return first is "bin" or "obj";
     }
 
+    // A static method or property of a type of the source, and the code that runs when it is called or read: the
+    // method's body, the property's expression body or getter.
+    private sealed record Member(string Type, string Name, bool IsProperty, SyntaxNode? Body);
+
     // The 1-based line of the '=' of every static field or static auto-property initializer, and of the name of every
-    // static constructor, in the source that calls the install outside a lambda or local function, directly or through
-    // a static method of the source that calls it directly.
+    // static constructor, in the source that reaches the install outside a lambda or local function: by calling it, or
+    // by calling a static method or reading a static property of the source that reaches it, through any number of them.
     private static IEnumerable<int> Lines(string source)
     {
         var root = CSharpSyntaxTree.ParseText(source).GetRoot();
@@ -225,19 +307,102 @@ public sealed class InstallInitializerTests
             .Any(directive =>
                 directive.StaticKeyword != default && directive.Name is { } name && Name(name) == "TestProgram"
             );
-        var helpers = root.DescendantNodes()
-            .OfType<MethodDeclarationSyntax>()
-            .Where(method => IsStatic(method) && Calls(method, call => IsInstallCall(call, bare)))
-            .Select(method => method.Identifier.Text)
+        var types = root.DescendantNodes()
+            .OfType<TypeDeclarationSyntax>()
+            .Select(type => type.Identifier.Text)
             .ToHashSet();
+        var members = root.DescendantNodes()
+            .OfType<MemberDeclarationSyntax>()
+            .Where(IsStatic)
+            .Select(Declared)
+            .OfType<Member>()
+            .ToList();
+
+        // Grow the helpers until no further member reaches the install through one of them.
+        var helpers = new Dictionary<(string Type, string Name), bool>();
+        bool Reaches(SyntaxNode node) => Runs(node, bare, types, helpers);
+        while (members.FirstOrDefault(m => !helpers.ContainsKey((m.Type, m.Name)) && Reaches(m.Body!)) is { } helper)
+        {
+            helpers[(helper.Type, helper.Name)] = helper.IsProperty;
+        }
 
         return root.DescendantNodes()
-            .Where(node =>
-                Anchor(node) is not null
-                && Calls(node, call => IsInstallCall(call, bare) || helpers.Contains(Name(call.Expression) ?? ""))
-            )
+            .Where(node => Anchor(node) is not null && Reaches(node))
             .Select(node => Anchor(node)!.Value.GetLocation().GetLineSpan().StartLinePosition.Line + 1);
     }
+
+    // The static method or property the declaration declares with the code it runs, null for any other declaration.
+    private static Member? Declared(MemberDeclarationSyntax declaration) =>
+        (declaration.Parent as TypeDeclarationSyntax)?.Identifier.Text is not { } type
+            ? null
+            : declaration switch
+            {
+                MethodDeclarationSyntax method when (method.Body ?? (SyntaxNode?)method.ExpressionBody) is { } body =>
+                    new Member(type, method.Identifier.Text, false, body),
+                PropertyDeclarationSyntax property
+                    when (
+                        property.ExpressionBody
+                        ?? property
+                            .AccessorList?.Accessors.Where(a => a.IsKind(SyntaxKind.GetAccessorDeclaration))
+                            .Select(a => a.Body ?? (SyntaxNode?)a.ExpressionBody)
+                            .FirstOrDefault()
+                    )
+                        is { } body => new Member(type, property.Identifier.Text, true, body),
+                _ => null,
+            };
+
+    // Whether the node, outside the body of a lambda or local function, calls the install or calls or reads a helper.
+    private static bool Runs(
+        SyntaxNode node,
+        bool bare,
+        HashSet<string> types,
+        Dictionary<(string Type, string Name), bool> helpers
+    ) =>
+        node.DescendantNodesAndSelf(child =>
+                child is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax) && !IsNameOf(child)
+            )
+            .Any(child =>
+                child is InvocationExpressionSyntax call && IsInstallCall(call, bare)
+                || child is SimpleNameSyntax name && IsHelperUse(name, types, helpers)
+            );
+
+    // Whether the name calls a helper method or reads a helper property. A name in a type position, a named argument,
+    // or an object initializer's member names no helper. A qualified name resolves through its receiver where that is
+    // a type of the source and resolves to nothing otherwise; a bare name resolves through the types around it. A
+    // method name not called is a method group, which runs nothing yet.
+    private static bool IsHelperUse(
+        SimpleNameSyntax name,
+        HashSet<string> types,
+        Dictionary<(string Type, string Name), bool> helpers
+    )
+    {
+        if (
+            SyntaxFacts.IsInTypeOnlyContext(name)
+            || name.Parent is NameColonSyntax or MemberBindingExpressionSyntax or QualifiedNameSyntax
+            || name.Parent is AssignmentExpressionSyntax { Parent: InitializerExpressionSyntax } assignment
+                && assignment.Left == name
+        )
+        {
+            return false;
+        }
+
+        var qualified = name.Parent is MemberAccessExpressionSyntax access && access.Name == name;
+        var owners = qualified
+            ? Name(((MemberAccessExpressionSyntax)name.Parent!).Expression) is { } receiver && types.Contains(receiver)
+                ? [receiver]
+                : Array.Empty<string>()
+            : name.Ancestors().OfType<TypeDeclarationSyntax>().Select(type => type.Identifier.Text);
+        var use = qualified ? (ExpressionSyntax)name.Parent! : name;
+
+        return owners.Any(owner =>
+            helpers.TryGetValue((owner, name.Identifier.Text), out var isProperty)
+            && (isProperty || use.Parent is InvocationExpressionSyntax invocation && invocation.Expression == use)
+        );
+    }
+
+    // Whether the node is a nameof(...) expression, which evaluates nothing.
+    private static bool IsNameOf(SyntaxNode node) =>
+        node is InvocationExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "nameof" } };
 
     // The token whose line names the node when it runs during type initialization: the '=' of a static field or static
     // auto-property initializer, the name of a static constructor; null for any other node.
