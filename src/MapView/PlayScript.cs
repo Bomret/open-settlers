@@ -617,6 +617,11 @@ public sealed class PlayScript
             return (null, $"'{args[^1]}' is not a whole number of zero or more");
 
         var condition = args[1..^2];
+        if (condition[0] != "count" && !PlayFields.IsKnown(condition[0]))
+            return (
+                null,
+                $"unknown field '{condition[0]}', use {string.Join(", ", PlayFields.Game)}, {PlayFields.FlagGoods}<column>,<row>"
+            );
         var (until, problem) =
             condition[0] == "count" ? ParseExpectCount(condition[1..], number) : ParseExpect(condition, number);
         if (until is not IPlayCondition parsed)

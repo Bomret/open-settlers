@@ -262,7 +262,15 @@ public sealed class FastForwardTests
     }
 
     [TestMethod]
-    [DataRow("fast-forward until nosuch >= 1 max 5", "unknown field 'nosuch', use ")]
+    public void AnUntilStepOnAnUnknownFieldListsOnlyTheGameFields()
+    {
+        Assert.AreEqual(
+            "play/t.play line 1: unknown field 'nosuch', use ticks, logs, flag-goods:<column>,<row>",
+            Problem("fast-forward until nosuch >= 1 max 5")
+        );
+    }
+
+    [TestMethod]
     [DataRow("fast-forward until count carrier = max 5", "'expect-count' takes 3 arguments, found 2")]
     [DataRow("fast-forward until count carrier = x max 5", "'x' is not a whole number of zero or more")]
     public void AnUntilStepRefusesAMalformedCondition(string text, string reason)
