@@ -12,10 +12,10 @@ namespace OpenSettlers.Viewer;
 
 /// <summary>
 /// The map view (<c>--map</c>): a seed field and a size picker above the terrain of the generated map. The terrain
-/// is drawn on the GPU (ADR 0007): one triangle mesh per band of rows, the fill masks and textures as array
-/// textures of RGBA pixels (the graphics load applies the palette), and <c>Terrain.gdshader</c> sampling them. The
-/// generated objects are quads of sprite layers (<c>Objects.gdshader</c>: RGBA array textures, alpha the coverage)
-/// drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
+/// and the roads are drawn on the GPU (ADR 0007) through a graphics source (ADR 0014): the shared builders give a
+/// draw term for each triangle and strip, the source answers each with an RGBA image, and the images are layers of an
+/// array texture that <c>Objects.gdshader</c> samples (alpha the coverage), one mesh per band of rows. The
+/// generated objects are quads of sprite layers drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
 /// wraps at the map's edges; the copies of <see cref="Camera.Copies"/> tile the plane around it. The mouse wheel,
 /// and the plus and minus keys, and a touchpad pinch change the <see cref="Zoom"/>; the wheel and the pinch keep
 /// the map point under the pointer in place. A two-finger touchpad swipe moves the camera.
@@ -30,7 +30,7 @@ public partial class MapViewControl : Control
     const float PanGestureSpeed = 10f;
 
     // The layer limit of a GPU array texture.
-    const int MaxArrayLayers = 256;
+    const int MaxArrayLayers = 2048;
 
     readonly Install _install;
     readonly bool _gameView;
@@ -62,8 +62,6 @@ public partial class MapViewControl : Control
     int _roadsDrawn;
     RoadDrawing? _drawing;
     Node2D _preview = null!;
-    RoadGraphics? _roadGraphics;
-    ShaderMaterial? _roadMaterial;
     string? _roadsProblem;
     readonly string _openSeed;
     readonly int _openSize;
@@ -76,12 +74,16 @@ public partial class MapViewControl : Control
     Label _message = null!;
     Control _canvas = null!;
     Node2D _world = null!;
-    ShaderMaterial? _material;
+
+    // The graphics source of the terrain and the roads, the images it drew so far, and the material over them.
+    IGraphicsSource? _source;
+    readonly ImageLayers _layers = new();
+    ShaderMaterial? _surfaceMaterial;
+    int _surfaceLayers;
     ShaderMaterial? _objectMaterial;
     ShaderMaterial? _waterMaterial;
     readonly System.Collections.Generic.List<MeshInstance2D> _waterNodes = [];
     ObjectGraphics? _objects;
-    System.Collections.Generic.IReadOnlyList<MaskImage> _masks = [];
     string? _graphicsProblem;
     string? _objectsProblem;
     string? _tablesProblem;
@@ -317,19 +319,12 @@ public partial class MapViewControl : Control
 
         try
         {
-            var graphics = TerrainGraphics.Load(_install);
-            _material = BuildMaterial(graphics);
-            _masks = graphics.Masks;
-            try
+            var source = HistoryEditionSource.Load(_install);
+            _source = source;
+            if (source.RoadsProblem is not null)
             {
-                _roadGraphics = RoadGraphics.Load(_install);
-                _roadMaterial = BuildRoadMaterial(_roadGraphics);
-            }
-            catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-            {
-                _roadGraphics = null;
-                _roadsProblem = e.Message;
-                GD.PrintErr($"map view: {e.Message}");
+                _roadsProblem = source.RoadsProblem;
+                GD.PrintErr($"map view: {source.RoadsProblem}");
             }
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -748,13 +743,18 @@ public partial class MapViewControl : Control
             }
         }
 
-        if (_state.Map is null || _material is null)
+        if (_state.Map is null || _source is null)
         {
             return;
         }
 
-        var meshes = BuildMeshes(TerrainTriangles.Of(_state.Map), _state.Map.Size);
-        var roadMesh = BuildRoadMesh(_state.Map);
+        var meshes = BuildMeshes(_source, TerrainTriangles.Of(_state.Map), _state.Map.Size);
+        var roadMesh = BuildRoadMesh(_source, _state.Map);
+        if (SurfaceMaterial() is not { } surface)
+        {
+            return;
+        }
+
         var objectMeshes = BuildObjectMeshes(_state.Map);
         var waterMesh = BuildWaterMesh(_state.Map);
         _framesDrawn = _frameCounter;
@@ -766,13 +766,13 @@ public partial class MapViewControl : Control
             var copy = new Node2D { Position = new Vector2(x, y) };
             foreach (var mesh in meshes)
             {
-                copy.AddChild(new MeshInstance2D { Mesh = mesh, Material = _material });
+                copy.AddChild(new MeshInstance2D { Mesh = mesh, Material = surface });
             }
 
             // The roads are strips over the terrain of the whole map and under the objects.
             if (roadMesh is not null)
             {
-                copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = _roadMaterial });
+                copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = surface });
             }
 
             // The water sprites paint over the terrain and the roads of their copy where it shows palette index 8, so the
@@ -910,113 +910,71 @@ public partial class MapViewControl : Control
         }
     }
 
-    // One mesh of every road strip of the map, or null where there is none or the road graphics did not load.
-    ArrayMesh? BuildRoadMesh(Map map)
+    // One mesh of every road strip of the map, or null where there is none or the source draws none.
+    ArrayMesh? BuildRoadMesh(IGraphicsSource source, Map map)
     {
-        if (_roadGraphics is null)
-        {
-            return null;
-        }
-
-        var quads = _roadGraphics.Quads(RoadDraws.Of(map));
+        var quads = TerrainQuads.Strips(RoadDraws.Of(map), source, _layers);
 
         return quads.Count == 0
             ? null
-            : BuildQuadMesh(
-                quads.Select(q =>
-                    (q.X, q.Y, q.Width, q.Height, new Color(q.MaskLayer / 255f, q.TextureLayer / 255f, 0, 1))
-                )
-            );
+            : BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))));
     }
 
-    // The terrain's shader with the road masks and textures in place of the terrain's.
-    ShaderMaterial BuildRoadMaterial(RoadGraphics graphics)
+    // The material of the terrain and the roads: the sprite shader over every image the source has drawn so far,
+    // built again when a draw added one. Null, with the problem shown, where the images pass the GPU's layer limit.
+    ShaderMaterial? SurfaceMaterial()
     {
-        var masks = new Godot.Collections.Array<Image>();
-        foreach (var mask in graphics.Masks)
+        var images = _layers.Images;
+        if (images.Count > MaxArrayLayers)
         {
-            masks.Add(
-                Image.CreateFromData(
-                    TerrainGraphics.LayerWidth,
-                    TerrainGraphics.MaskLayerHeight,
-                    false,
-                    Image.Format.R8,
-                    mask.Layer
-                )
-            );
+            _graphicsProblem =
+                $"the terrain and the roads need {images.Count} images, more than the {MaxArrayLayers} layers of the GPU";
+            GD.PrintErr($"map view: {_graphicsProblem}");
+            ShowMessage();
+
+            return null;
         }
 
-        var textures = new Godot.Collections.Array<Image>();
-        foreach (var texture in graphics.Textures)
+        if (_surfaceMaterial is null || _surfaceLayers != images.Count)
         {
-            textures.Add(
-                Image.CreateFromData(
-                    TerrainGraphics.LayerWidth,
-                    TerrainGraphics.TextureHeight,
-                    false,
-                    Image.Format.Rgba8,
-                    texture
-                )
-            );
+            // An empty map has no image: the array then takes one blank layer, so the shader has a texture to bind.
+            var width = Math.Max(images.Select(i => i.Width).DefaultIfEmpty().Max(), 1);
+            var height = Math.Max(images.Select(i => i.Height).DefaultIfEmpty().Max(), 1);
+            var layers = new Godot.Collections.Array<Image>();
+            foreach (var image in images)
+            {
+                layers.Add(
+                    Image.CreateFromData(
+                        width,
+                        height,
+                        false,
+                        Image.Format.Rgba8,
+                        ObjectGraphics.Pad(image, width, height).Rgba
+                    )
+                );
+            }
+
+            if (layers.Count == 0)
+            {
+                layers.Add(Image.CreateFromData(1, 1, false, Image.Format.Rgba8, new byte[4]));
+            }
+
+            var sprites = new Texture2DArray();
+            sprites.CreateFromImages(layers);
+            // The shader declares a shadow array too; it takes one blank layer here.
+            var blank = new Godot.Collections.Array<Image>
+            {
+                Image.CreateFromData(1, 1, false, Image.Format.Rgba8, new byte[4]),
+            };
+            var shadows = new Texture2DArray();
+            shadows.CreateFromImages(blank);
+            _surfaceMaterial = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Objects.gdshader") };
+            _surfaceMaterial.SetShaderParameter("sprites", sprites);
+            _surfaceMaterial.SetShaderParameter("shadow_sprites", shadows);
+            _surfaceLayers = images.Count;
         }
 
-        var maskArray = new Texture2DArray();
-        maskArray.CreateFromImages(masks);
-        var textureArray = new Texture2DArray();
-        textureArray.CreateFromImages(textures);
-        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Terrain.gdshader") };
-        material.SetShaderParameter("masks", maskArray);
-        material.SetShaderParameter("textures", textureArray);
-
-        return material;
-    }
-
-    ShaderMaterial BuildMaterial(TerrainGraphics graphics)
-    {
-        var masks = new Godot.Collections.Array<Image>();
-        foreach (var mask in graphics.Masks)
-        {
-            masks.Add(
-                Image.CreateFromData(
-                    TerrainGraphics.LayerWidth,
-                    TerrainGraphics.MaskLayerHeight,
-                    false,
-                    Image.Format.R8,
-                    mask.Layer
-                )
-            );
-        }
-
-        var textures = new Godot.Collections.Array<Image>();
-        foreach (var texture in graphics.Textures)
-        {
-            textures.Add(
-                Image.CreateFromData(
-                    TerrainGraphics.LayerWidth,
-                    TerrainGraphics.TextureHeight,
-                    false,
-                    Image.Format.Rgba8,
-                    texture
-                )
-            );
-        }
-
-        if (masks.Count > MaxArrayLayers || textures.Count > MaxArrayLayers)
-        {
-            throw new InvalidDataException(
-                "the terrain graphics need more array texture layers than the GPU limit of 256"
-            );
-        }
-
-        var maskArray = new Texture2DArray();
-        maskArray.CreateFromImages(masks);
-        var textureArray = new Texture2DArray();
-        textureArray.CreateFromImages(textures);
-        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://src/Viewer/Terrain.gdshader") };
-        material.SetShaderParameter("masks", maskArray);
-        material.SetShaderParameter("textures", textureArray);
-
-        return material;
+        return _surfaceMaterial;
     }
 
     // The vertex color that carries a sprite's array texture layer to Objects.gdshader and Water.gdshader, and in
@@ -1150,22 +1108,17 @@ public partial class MapViewControl : Control
     }
 
     // One mesh per band of rows, so the painting order of the rows holds across bands (each band is added after the
-    // one above it) and no mesh grows with the map. A triangle is four vertices: the corners of its mask.
+    // one above it) and no mesh grows with the map. A triangle is four vertices: the corners of its image.
     System.Collections.Generic.List<ArrayMesh> BuildMeshes(
+        IGraphicsSource source,
         System.Collections.Generic.List<TerrainTriangle> triangles,
         MapSize size
     )
     {
         var meshes = new System.Collections.Generic.List<ArrayMesh>();
-        foreach (var band in TerrainQuads.Bands(triangles, _masks, size.Height, BandRows))
+        foreach (var band in TerrainQuads.Bands(triangles, source, _layers, size.Height, BandRows))
         {
-            meshes.Add(
-                BuildQuadMesh(
-                    band.Select(q =>
-                        (q.X, q.Y, q.Width, q.Height, new Color(q.MaskLayer / 255f, q.TextureLayer / 255f, 0, 1))
-                    )
-                )
-            );
+            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))));
         }
 
         return meshes;

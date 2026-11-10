@@ -7,7 +7,7 @@ namespace OpenSettlers.MapView;
 
 /// <summary>
 /// The road graphics of an install as the GPU takes them, the way <see cref="TerrainGraphics"/> takes the terrain's:
-/// each strip mask (entries 230 to 256; <see cref="RoadDraws"/> says which) as a layer of
+/// each strip mask (entries 230 to 256; <see cref="RoadRules"/> says which) as a layer of
 /// <see cref="TerrainGraphics.LayerWidth"/> x <see cref="TerrainGraphics.MaskLayerHeight"/>, and each road texture (entries
 /// 300 to 309) as a 32 x 20 layer of RGBA pixels through the terrain's palette.
 /// </summary>
@@ -85,34 +85,5 @@ public sealed class RoadGraphics
         }
 
         return new RoadGraphics { Masks = masks, Textures = textures };
-    }
-
-    /// <summary>
-    /// The rectangles to draw for the strips: each mask hangs from the strip's position by its header offsets. A strip
-    /// whose mask is empty is left out.
-    /// </summary>
-    public List<TerrainQuad> Quads(IReadOnlyList<RoadStrip> strips)
-    {
-        var quads = new List<TerrainQuad>(strips.Count);
-        foreach (var strip in strips)
-        {
-            var maskLayer = MaskLayer(strip.Mask);
-            var mask = Masks[maskLayer];
-            if (mask.Width > 0 && mask.Height > 0)
-            {
-                quads.Add(
-                    new TerrainQuad(
-                        strip.X + mask.OffsetX,
-                        strip.Y + mask.OffsetY,
-                        mask.Width,
-                        mask.Height,
-                        maskLayer,
-                        TextureLayer(strip.Texture)
-                    )
-                );
-            }
-        }
-
-        return quads;
     }
 }

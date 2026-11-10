@@ -5,12 +5,24 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.MapView;
 
 /// <summary>
-/// One terrain triangle to draw. <c>Column</c> and <c>Row</c> are the tile's, <c>Upper</c> tells which of its two
-/// triangles. <c>X</c> and <c>Y</c> are the pixel position of the triangle's anchor node: the tile's node for an
-/// upper triangle, the node south-east of it for a lower one, with the node's height already taken off <c>Y</c>.
-/// The mask's own offset and its half width are applied where it is drawn.
+/// One terrain triangle to draw, named in game terms (INV-0010). <c>Column</c> and <c>Row</c> are the tile's,
+/// <c>Upper</c> tells which of its two triangles, <c>Terrain</c> is the triangle's terrain. <c>Apex</c>, <c>Left</c>,
+/// and <c>Right</c> are the heights of its three nodes: the apex is the tile's node for an upper triangle, the node
+/// south-east of it for a lower one; left and right are the nodes south and south-east of the tile's node for an upper
+/// triangle, and the tile's node and the node east of it for a lower one. <c>X</c> and <c>Y</c> are the pixel position
+/// of the apex, with its height already taken off <c>Y</c>. The source's image offsets hang the image from it.
 /// </summary>
-public readonly record struct TerrainTriangle(int Column, int Row, bool Upper, int Mask, int Texture, int X, int Y);
+public readonly record struct TerrainTriangle(
+    int Column,
+    int Row,
+    bool Upper,
+    Terrain Terrain,
+    int Apex,
+    int Left,
+    int Right,
+    int X,
+    int Y
+);
 
 /// <summary>The triangles of a map in the order the original paints them.</summary>
 public static class TerrainTriangles
@@ -20,7 +32,7 @@ public static class TerrainTriangles
 
     /// <summary>
     /// Each tile's upper and then lower triangle, tile by tile along a row and row by row from the north, so that a
-    /// later triangle paints over an earlier. A triangle the original has no mask for is left out.
+    /// later triangle paints over an earlier. Every triangle gives a term; the source decides which it draws.
     /// </summary>
     public static List<TerrainTriangle> Of(Map map)
     {
@@ -37,29 +49,24 @@ public static class TerrainTriangles
                 var south = H(column, row + 1);
                 var southEast = H(column + 1, row + 1);
                 var east = H(column + 1, row);
-                if (TerrainRules.Upper(node, south, southEast, tile.Upper) is { } upper)
-                {
-                    var (x, y) = Camera.NodePosition(column, row);
-                    triangles.Add(
-                        new TerrainTriangle(column, row, true, upper.Mask, upper.Texture, x, y - node * HeightStep)
-                    );
-                }
-
-                if (TerrainRules.Lower(southEast, node, east, tile.Lower) is { } lower)
-                {
-                    var (x, y) = Camera.NodePosition(column + 1, row + 1);
-                    triangles.Add(
-                        new TerrainTriangle(
-                            column,
-                            row,
-                            false,
-                            lower.Mask,
-                            lower.Texture,
-                            x,
-                            y - southEast * HeightStep
-                        )
-                    );
-                }
+                var (x, y) = Camera.NodePosition(column, row);
+                triangles.Add(
+                    new TerrainTriangle(column, row, true, tile.Upper, node, south, southEast, x, y - node * HeightStep)
+                );
+                (x, y) = Camera.NodePosition(column + 1, row + 1);
+                triangles.Add(
+                    new TerrainTriangle(
+                        column,
+                        row,
+                        false,
+                        tile.Lower,
+                        southEast,
+                        node,
+                        east,
+                        x,
+                        y - southEast * HeightStep
+                    )
+                );
             }
         }
 

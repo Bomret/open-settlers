@@ -87,18 +87,6 @@ public sealed class RoadGraphicsTests
     }
 
     [TestMethod]
-    public void AStripMaskHangsFromTheStripsPositionByItsHeaderOffsets()
-    {
-        using var fake = new FakeInstall().Put(Archive, ArchiveBytes.Build(311, Payloads()));
-        var graphics = RoadGraphics.Load(Open(fake));
-
-        var quads = graphics.Quads([new RoadStrip(100, 200, 236, 302)]);
-
-        Assert.HasCount(1, quads);
-        Assert.AreEqual(new TerrainQuad(100, 200 + 236 - 240, 16, 9 + 236 % 4, 6, 2), quads[0]);
-    }
-
-    [TestMethod]
     public void AMissingArchiveAndAnAbsentEntryNameThemselves()
     {
         using var empty = new FakeInstall();
