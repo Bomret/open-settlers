@@ -369,6 +369,9 @@ public sealed class CarrierBehavior(
     // State 3, a carrier on its road (0x43ad78 and the step routines of 0x43b508): when its timer has run out it steps along
     // the road as a settler does in state 2, from a flag in the direction of its heading, from a node of the road in the
     // direction the road goes on. A step that would end at a flag is its last: the carrier stays on the node and waits.
+    // A step tried again (a heading less 6) goes through the retry table at 0x43adea, whose six entries (0x43b83a, 0x43ba9f,
+    // 0x43be55, 0x43c0c0, 0x43c20a, 0x43c350) enter the step routines after their end-of-road check: the carrier steps or
+    // is blocked again, and does not wait a second time.
     private void WalkRoad(int slot, Settler settler)
     {
         while (true)
@@ -376,7 +379,8 @@ public sealed class CarrierBehavior(
             var walks = (WalksRoad)settler.Activity;
             var here = Map.Index(settler.X, settler.Y);
             int direction;
-            if (walks.Heading.IsRetried)
+            var retried = walks.Heading.IsRetried;
+            if (retried)
             {
                 direction = walks.Heading.Direction;
             }
@@ -407,7 +411,8 @@ public sealed class CarrierBehavior(
 
             var (_, _, next) = movement.Neighbour(settler, direction);
             if (
-                Map.At(next).FlagMark
+                !retried
+                && Map.At(next).FlagMark
                 && walks is { Load: null, Marked: false }
                 && flags[Map.At(next).LinkedSlot].Side((direction + 3) % 6).WaitingPlace is null
             )
