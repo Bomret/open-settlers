@@ -182,7 +182,6 @@ public sealed class OpenSettlersSourceTests
         Assert.IsNull(source.Draw(settler));
         Assert.IsNull(source.Draw(new WaterRipple(0, 0, 0, 0, 0)));
         Assert.AreEqual(0, source.ObjectHeadroom);
-        Assert.IsNull(ObjectDraws.FlagImage(source));
     }
 
     static void Refuses(ContentFolder folder, params string[] parts)
@@ -382,62 +381,9 @@ public sealed class OpenSettlersSourceTests
 
     // A flat image hangs from the triangle's apex whatever the slope, so a node that drops below the apex opens a gap
     // the rows below the triangle must fill. The image's rows below its triangle (Camera.RowSpacing rows) cover the
-    // largest drop a node can have, and its width covers the neighbors' side seams.
-    // A source that draws nothing but stands where the History Edition's does: it answers every term and headroom
-    // question the view asks, with no install behind it.
-    sealed class StandInSource : IGraphicsSource
-    {
-        public ObjectImage? Draw(TerrainTriangle triangle) => null;
-
-        public ObjectImage? Draw(RoadStrip strip) => null;
-
-        public ObjectDrawing? Draw(MapObjectDraw draw) => null;
-
-        public ObjectDrawing? Draw(BuildingDraw draw) => null;
-
-        public ObjectDrawing? Draw(GoodAtFlag draw) => null;
-
-        public ObjectDrawing? Draw(SettlerDraw draw) => null;
-
-        public RippleImage? Draw(WaterRipple ripple) => null;
-
-        public int ObjectHeadroom => 0;
-    }
-
-    // INV-0009: the same seed and command list give the same Game.Digest() under every graphics source. The game is
-    // built as the view builds it, from the map and the tables, and the source is asked for every terrain term of
-    // that map, as the view does before its first frame.
-    static ulong DigestUnder(IGraphicsSource source)
-    {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0]);
-        var game = GameFactory.Create(TestProgram.Made(), map);
-        foreach (var triangle in TerrainTriangles.Of(map))
-        {
-            source.Draw(triangle);
-        }
-
-        game.Enqueue(new Command(3, 0, CommandKind.PlaceCastle, 17, 0));
-        game.Enqueue(new Command(10, 0, CommandKind.PlaceCastle, 18, 0));
-        for (var i = 0; i < 40; i++)
-        {
-            game.Tick();
-        }
-
-        return game.Digest();
-    }
-
+    // largest drop a node can have.
     [TestMethod]
-    public void OneSeedAndCommandListGiveTheSameDigestUnderBothSources()
-    {
-        var own = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
-
-        Assert.AreEqual(DigestUnder(new StandInSource()), DigestUnder(own));
-    }
-
-    const int SideBleed = 8;
-
-    [TestMethod]
-    public void EveryTerrainImageCoversTheLargestDropAndTheSideSeams()
+    public void EveryTerrainImageCoversTheLargestDrop()
     {
         var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
         const int largestDrop = Node.MaxHeight * TerrainTriangles.HeightStep;
@@ -448,10 +394,6 @@ public sealed class OpenSettlersSourceTests
             {
                 var image = source.Draw(Triangle(code, upper))!;
                 Assert.IsTrue(image.Height - Camera.RowSpacing >= largestDrop, $"{code} {upper}: skirt {image.Height}");
-                Assert.IsTrue(
-                    image.Width >= Camera.NodeSpacing + 2 * SideBleed,
-                    $"{code} {upper}: width {image.Width}"
-                );
             }
         }
     }

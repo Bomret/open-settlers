@@ -11,7 +11,8 @@ namespace OpenSettlers.MapView;
 /// <summary>
 /// What a play run can observe of the map view: the camera's wrapped integer position, the zoom scale, and the seed
 /// and size last applied. In the game view it also holds the game's tick count, the castle's log count, and the count of
-/// goods on each flag. A <c>dump</c> step writes it and an <c>expect</c> step checks one field of it.
+/// goods on each flag; its dump also gives the game's digest. A <c>dump</c> step writes it and an <c>expect</c> step checks
+/// one field of it.
 /// </summary>
 /// <param name="CameraX">The camera's west-east position in map pixels.</param>
 /// <param name="CameraY">The camera's north-south position in map pixels.</param>
@@ -43,7 +44,7 @@ public sealed record PlayState(
 
     /// <summary>
     /// The state as one <c>field=value</c> line per field, each ending in a newline: <see cref="PlayFields.All"/>, then
-    /// in the game view <see cref="PlayFields.Game"/> and a <see cref="PlayFields.FlagGoods"/> line for each flag that holds
+    /// in the game view <see cref="PlayFields.Game"/>, the <see cref="PlayFields.Digest"/> where a game runs, and a <see cref="PlayFields.FlagGoods"/> line for each flag that holds
     /// goods, by row and then column.
     /// </summary>
     public string Dump()
@@ -52,6 +53,14 @@ public sealed record PlayState(
         foreach (var field in Ticks is null ? PlayFields.All : [.. PlayFields.All, .. PlayFields.Game])
         {
             text.Append(field).Append('=').Append(Text(field)).Append('\n');
+        }
+
+        if (Game is not null)
+        {
+            text.Append(PlayFields.Digest)
+                .Append('=')
+                .Append(Game.Digest().ToString("x16", CultureInfo.InvariantCulture))
+                .Append('\n');
         }
 
         foreach (
@@ -188,6 +197,12 @@ public static class PlayFields
 
     /// <summary>The castle's log count, in the game view only.</summary>
     public const string Logs = "logs";
+
+    /// <summary>
+    /// The game's digest (<c>Game.Digest()</c>) as 16 hex digits, in the game view's dump only after <see cref="Logs"/>. A
+    /// dump only: no <c>expect</c> step names it.
+    /// </summary>
+    public const string Digest = "digest";
 
     /// <summary>Every field of both views, in the order a dump lists them.</summary>
     public static readonly string[] All = [CameraX, CameraY, Zoom, Seed, Size];
