@@ -368,11 +368,14 @@ public sealed class SettlerGraphicsTests
     [TestMethod]
     public void AColourOverlayKeepsItsTransparentPixelsTransparent()
     {
-        var overlay = new ObjectImage(2, 1, 0, 0, [1, 0], [255, 0]);
+        var overlay = new ObjectImage(2, 1, 0, 0, [1, 2, 3, 255, 0, 0, 0, 0]);
+        var bytes = new byte[768];
+        bytes[3 * 0x40] = 64;
+        bytes[3 * 0x40 + 1] = 68;
+        bytes[3 * 0x40 + 2] = 72;
 
-        var filled = SettlerGraphics.Fill(overlay, 0x40);
+        var filled = SettlerGraphics.Fill(overlay, OpenSettlers.Formats.PaletteFile.Read(bytes), 0x40);
 
-        CollectionAssert.AreEqual(new byte[] { 0x40, 0x40 }, filled.Indices);
-        CollectionAssert.AreEqual(new byte[] { 255, 0 }, filled.Coverage);
+        CollectionAssert.AreEqual(new byte[] { 64, 68, 72, 255, 0, 0, 0, 0 }, filled.Rgba);
     }
 }

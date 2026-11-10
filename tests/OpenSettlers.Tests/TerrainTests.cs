@@ -115,20 +115,4 @@ public sealed class TerrainTests
 
         CollectionAssert.AreEqual(new[] { (0, 0, 16, 5), (16, 0, 4, 5) }, chunks);
     }
-
-    [TestMethod]
-    public void ThePaletteTextureHoldsTheColorsAtEightBitsWithAnOpaqueAlpha()
-    {
-        var bytes = new byte[PaletteFile.Size];
-        bytes[3] = 252;
-        bytes[4] = 8;
-        bytes[5] = 0;
-        var palette = PaletteFile.Read(bytes);
-
-        var texture = PaletteTexture.Rgba(palette);
-
-        Assert.HasCount(256 * 4, texture);
-        CollectionAssert.AreEqual(new byte[] { 252, 8, 0, 255 }, texture[4..8]);
-        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 255 }, texture[0..4]);
-    }
 }

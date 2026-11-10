@@ -45,7 +45,11 @@ public sealed class RoadGraphicsTests
 
     static Dictionary<int, byte[]> Payloads()
     {
-        var payloads = new Dictionary<int, byte[]> { [3] = new byte[768] };
+        // Palette indexes 10 and 19 hold the red components 40 and 76; the rest is black.
+        var palette = new byte[768];
+        palette[3 * 10] = 40;
+        palette[3 * 19] = 76;
+        var payloads = new Dictionary<int, byte[]> { [3] = palette };
         for (var n = RoadGraphics.FirstMask; n <= RoadGraphics.LastMask; n++)
         {
             payloads[n] = Mask(16, 9 + n % 4, 0, (short)(n - 240));
@@ -78,8 +82,8 @@ public sealed class RoadGraphicsTests
         Assert.HasCount(27, graphics.Masks);
         Assert.HasCount(10, graphics.Textures);
         Assert.AreEqual(9 + 230 % 4, graphics.Masks[RoadGraphics.MaskLayer(230)].Height);
-        Assert.AreEqual(10, graphics.Textures[RoadGraphics.TextureLayer(300)][0]);
-        Assert.AreEqual(19, graphics.Textures[RoadGraphics.TextureLayer(309)][0]);
+        CollectionAssert.AreEqual(new byte[] { 40, 0, 0, 255 }, graphics.Textures[RoadGraphics.TextureLayer(300)][..4]);
+        CollectionAssert.AreEqual(new byte[] { 76, 0, 0, 255 }, graphics.Textures[RoadGraphics.TextureLayer(309)][..4]);
     }
 
     [TestMethod]

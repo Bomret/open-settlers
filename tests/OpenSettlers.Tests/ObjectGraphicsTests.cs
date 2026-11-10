@@ -17,11 +17,21 @@ public sealed class ObjectGraphicsTests
     static byte[] Sprite(short offsetX = -1, short offsetY = -2) =>
         GraphicFileTests.Entry(1, 0, 3, 1, offsetX, offsetY, [1, 2, 0, 7, 0, 0]);
 
+    // The red components of index 7 and the shadow color 0x80 are 28 and 36. Index 0 reads as black.
+    static byte[] Palette()
+    {
+        var palette = new byte[768];
+        palette[3 * 7] = 28;
+        palette[3 * 0x80] = 36;
+
+        return palette;
+    }
+
     static Dictionary<int, byte[]> Payloads(bool flag = false)
     {
         var payloads = new Dictionary<int, byte[]>
         {
-            [3] = new byte[768],
+            [3] = Palette(),
             [1250] = Sprite(),
             [1251] = GraphicFileTests.Entry(1, 0, 2, 2, 5, 6, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]),
             [1369] = Sprite(),
@@ -63,12 +73,11 @@ public sealed class ObjectGraphicsTests
     static byte[] ShadowMask() => MaskFileTests.Entry(2, 1, 1, 1, 0, 0);
 
     [TestMethod]
-    public void TheCoverageOfAnImageIsKeptApartFromItsPaletteIndices()
+    public void ACoveredPixelIsOpaqueEvenAtPaletteIndexZeroAndAnUncoveredPixelIsTransparent()
     {
-        var image = ObjectImage.From(SpriteFile.Read(Sprite()));
+        var image = ObjectImage.From(SpriteFile.Read(Sprite()), PaletteFile.Read(Palette()));
 
-        CollectionAssert.AreEqual(new byte[] { 0, 0, 7 }, image.Indices);
-        CollectionAssert.AreEqual(new byte[] { 0, 255, 255 }, image.Coverage);
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0, 0, 0, 0, 255, 28, 0, 0, 255 }, image.Rgba);
         Assert.AreEqual(-1, image.OffsetX);
         Assert.AreEqual(-2, image.OffsetY);
     }
@@ -87,7 +96,7 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(3, graphics.Images[ObjectGraphics.Layer(1250)].Width);
         Assert.AreEqual(2, graphics.Images[ObjectGraphics.Layer(1251)].Height);
         Assert.AreEqual(5, graphics.Images[ObjectGraphics.Layer(1251)].OffsetX);
-        Assert.AreEqual(3 * 2, graphics.Images[0].Coverage.Length);
+        Assert.AreEqual(3 * 2, graphics.Images[0].Rgba.Length / 4);
         Assert.AreEqual(0, ObjectGraphics.Layer(1250));
         Assert.AreEqual(119, ObjectGraphics.Layer(1369));
     }
@@ -178,7 +187,7 @@ public sealed class ObjectGraphicsTests
         var graphics = ObjectGraphics.Load(Open(fake));
 
         Assert.AreEqual(0, graphics.Images[ObjectGraphics.Layer(1300)].Width);
-        Assert.IsTrue(Array.TrueForAll(graphics.Images[ObjectGraphics.Layer(1300)].Coverage, c => c == 0));
+        Assert.IsTrue(Array.TrueForAll(graphics.Images[ObjectGraphics.Layer(1300)].Rgba, c => c == 0));
     }
 
     [TestMethod]
@@ -219,8 +228,8 @@ public sealed class ObjectGraphicsTests
     {
         var images = new[]
         {
-            new ObjectImage(3, 1, -1, -2, new byte[3], new byte[] { 0, 255, 255 }),
-            new ObjectImage(0, 0, 0, 0, [], []),
+            new ObjectImage(3, 1, -1, -2, new byte[] { 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 255 }),
+            new ObjectImage(0, 0, 0, 0, []),
         };
         var draws = new[]
         {
@@ -241,11 +250,11 @@ public sealed class ObjectGraphicsTests
     {
         var images = new ObjectImage[ObjectGraphics.SpriteLayerCount];
         Array.Fill(images, ObjectImage.Empty);
-        images[0] = new ObjectImage(3, 1, -1, -2, new byte[3], new byte[] { 0, 255, 255 });
+        images[0] = new ObjectImage(3, 1, -1, -2, new byte[] { 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 255 });
         images[1] = images[0];
         var shadows = new ObjectImage[ObjectGraphics.SpriteLayerCount];
         Array.Fill(shadows, ObjectImage.Empty);
-        shadows[ObjectGraphics.Layer(1250)] = new ObjectImage(4, 2, 1, -1, new byte[8], new byte[8]);
+        shadows[ObjectGraphics.Layer(1250)] = new ObjectImage(4, 2, 1, -1, new byte[32]);
 
         var bands = ObjectQuads.Bands(
             [new ObjectDraw(0, 1250, 100, 50), new ObjectDraw(0, 1251, 200, 50)],
@@ -271,7 +280,7 @@ public sealed class ObjectGraphicsTests
     {
         var images = new ObjectImage[ObjectGraphics.SpriteLayerCount];
         Array.Fill(images, ObjectImage.Empty);
-        images[0] = new ObjectImage(3, 1, -1, -2, new byte[3], new byte[] { 0, 255, 255 });
+        images[0] = new ObjectImage(3, 1, -1, -2, new byte[] { 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 255 });
 
         var bands = ObjectQuads.Bands([new ObjectDraw(0, 1250, 100, 50)], images, [], 1, 16);
 
@@ -302,7 +311,7 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(2, graphics.ShadowLayerWidth);
         Assert.AreEqual(1, graphics.ShadowLayerHeight);
         Assert.AreEqual(3, graphics.LayerWidth);
-        Assert.AreEqual(2, graphics.ShadowImages[ObjectGraphics.Layer(1251)].Coverage.Length);
+        Assert.AreEqual(2, graphics.ShadowImages[ObjectGraphics.Layer(1251)].Rgba.Length / 4);
         Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.GoodEntry(new Good(7)))].Width);
         Assert.AreEqual(0, graphics.ShadowImages[ObjectGraphics.Layer(ObjectSprites.WaterFirstEntry)].Width);
     }
@@ -357,10 +366,9 @@ public sealed class ObjectGraphicsTests
             Covered = [false, true],
         };
 
-        var image = ObjectImage.Shadow(mask);
+        var image = ObjectImage.Shadow(mask, PaletteFile.Read(Palette()));
 
-        CollectionAssert.AreEqual(new byte[] { 0x80, 0x80 }, image.Indices);
-        CollectionAssert.AreEqual(new byte[] { 0, 255 }, image.Coverage);
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0, 36, 0, 0, 255 }, image.Rgba);
         Assert.AreEqual(3, image.OffsetX);
         Assert.AreEqual(-4, image.OffsetY);
     }
