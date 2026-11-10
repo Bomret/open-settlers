@@ -70,7 +70,7 @@ Class: architecture
 Concepts: Graphics source, Simulation
 Statement: The simulation is independent of the graphics source. No domain, application, or adapter type references a graphics source, and the same seed and commands give the same `Game.Digest()` under every graphics source (ADR 0014).
 Breaks: silently
-Check: a test runs one seed and command list under the History Edition source and the Open Settlers source and compares the digests. The project references keep the graphics sources out of the simulation assemblies.
+Check: `play/graphics-digest.play` drives one seed and one click list through the game view under `--graphics history-edition` and `--graphics open-settlers`, and the `digest` lines of the two dumps are equal. A click reaches the game only as the node it picks, so `TheFlagGeometryIsTheBoxOfTheHistoryEditionsFlagAtRest` keeps the flag geometry the view picks with equal to the History Edition's flag sprite. The project references keep the graphics sources out of the simulation assemblies.
 
 ### INV-0010
 

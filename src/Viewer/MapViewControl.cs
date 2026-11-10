@@ -35,6 +35,7 @@ public partial class MapViewControl : Control
 
     readonly Install _install;
     readonly bool _gameView;
+    readonly GraphicsSourceName _graphics;
     Game? _game;
     readonly TickPacer _pacer = new();
 
@@ -107,21 +108,33 @@ public partial class MapViewControl : Control
     /// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
     /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
     /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
+    /// <paramref name="graphics"/> is the source the view draws from; the rules come from the install under both.
     /// </summary>
-    public MapViewControl(Install install, string seedText, int sizeValue, bool gameView = false)
+    public MapViewControl(
+        Install install,
+        string seedText,
+        int sizeValue,
+        bool gameView = false,
+        GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
+    )
     {
         _install = install;
         _openSeed = seedText;
         _openSize = sizeValue;
         _gameView = gameView;
+        _graphics = graphics;
     }
 
     /// <summary>
     /// The game view on the map a <paramref name="layout"/> draws: the seed field shows the layout's seed and the
     /// size picker its size, and neither can change.
     /// </summary>
-    public MapViewControl(Install install, Layout layout)
-        : this(install, layout.Seed.ToScreen(), layout.Size.Value, true)
+    public MapViewControl(
+        Install install,
+        Layout layout,
+        GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
+    )
+        : this(install, layout.Seed.ToScreen(), layout.Size.Value, true, graphics)
     {
         _layout = layout;
     }
@@ -337,24 +350,17 @@ public partial class MapViewControl : Control
 
         try
         {
-            // The settlers are drawn in the game view only: the source gets the exe's tables for them there.
-            var source = HistoryEditionSource.Load(_install, _gameView ? _tables : null);
-            _source = source;
-            if (source.RoadsProblem is not null)
+            if (_graphics == GraphicsSourceName.OpenSettlers)
             {
-                _roadsProblem = source.RoadsProblem;
-                GD.PrintErr($"map view: {source.RoadsProblem}");
+                // A broken content set names its file and key here, and the view draws no map, as for a missing install file.
+                _source = OpenSettlersSource.Load(
+                    ProjectSettings.GlobalizePath("res://content/open-settlers"),
+                    new GodotImageDecoder()
+                );
             }
-
-            if (source.ObjectsProblem is not null)
+            else
             {
-                _objectsProblem = source.ObjectsProblem;
-                GD.PrintErr($"map view: {source.ObjectsProblem}");
-            }
-
-            if (source.SettlersProblem is not null)
-            {
-                GD.PrintErr($"map view: the settlers' sprites: {source.SettlersProblem}");
+                LoadHistoryEditionSource();
             }
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -382,6 +388,30 @@ public partial class MapViewControl : Control
         StartGame();
         Redraw();
         ShowMessage();
+    }
+
+    // The History Edition source of the install; a problem with the roads, objects, or settlers is kept for the message.
+    void LoadHistoryEditionSource()
+    {
+        // The settlers are drawn in the game view only: the source gets the exe's tables for them there.
+        var source = HistoryEditionSource.Load(_install, _gameView ? _tables : null);
+        _source = source;
+        if (source.RoadsProblem is not null)
+        {
+            _roadsProblem = source.RoadsProblem;
+            GD.PrintErr($"map view: {source.RoadsProblem}");
+        }
+
+        if (source.ObjectsProblem is not null)
+        {
+            _objectsProblem = source.ObjectsProblem;
+            GD.PrintErr($"map view: {source.ObjectsProblem}");
+        }
+
+        if (source.SettlersProblem is not null)
+        {
+            GD.PrintErr($"map view: the settlers' sprites: {source.SettlersProblem}");
+        }
     }
 
     void StartGame()
@@ -591,7 +621,7 @@ public partial class MapViewControl : Control
             _pressView.Height,
             screenX,
             screenY,
-            ObjectDraws.FlagImage(_source)
+            ObjectDraws.FlagGeometry
         );
         if (_roadButton.ButtonPressed && _drawing is not null)
         {

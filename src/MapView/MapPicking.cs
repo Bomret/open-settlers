@@ -11,7 +11,7 @@ namespace OpenSettlers.MapView;
 /// <see cref="TerrainTriangles.HeightStep"/> pixels for each unit of its height. The nodes of the copies are the
 /// nodes of the map at columns and rows beyond its edges, so the pick wraps them back. The pick takes the node whose
 /// drawn point lies nearest to the click, unless the click lands on a flag's sprite, which stands on its node and
-/// reaches most of a row above it: then the flag's node. Stand-in: the original's own cursor rule is not recovered, so a click near
+/// reaches most of a row above it: then the flag's node. The view hands it <see cref="ObjectDraws.FlagGeometry"/> under every graphics source. Stand-in: the original's own cursor rule is not recovered, so a click near
 /// the edge of a triangle may pick another node than the original does.
 /// </summary>
 public static class MapPicking

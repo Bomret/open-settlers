@@ -375,17 +375,6 @@ public sealed class HistoryEditionSourceTests
     }
 
     [TestMethod]
-    public void TheFlagAtRestGivesTheFlagsGeometry()
-    {
-        using var fake = ObjectFake();
-
-        var image = ObjectDraws.FlagImage(Open(fake))!;
-
-        Assert.AreEqual((9, 4), (image.OffsetX, image.OffsetY));
-        Assert.IsNull(ObjectDraws.FlagImage(null));
-    }
-
-    [TestMethod]
     public void AnInstallWithNoObjectSpritesDrawsNoObjectAndNamesTheProblem()
     {
         using var fake = Fake();

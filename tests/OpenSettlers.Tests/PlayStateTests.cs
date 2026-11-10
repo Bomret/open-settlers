@@ -59,6 +59,20 @@ public sealed class PlayStateTests
         Assert.AreEqual(expected, GameState.Dump());
     }
 
+    [TestMethod]
+    public void AGameViewDumpEndsItsGameFieldsWithTheGamesDigest()
+    {
+        var game = GameFactory.Create(
+            TestProgram.Made(),
+            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+        );
+        game.Enqueue(new Command(3, 0, CommandKind.PlaceCastle, 17, 0));
+        game.Tick();
+        var dump = (GameState with { Game = game }).Dump();
+
+        StringAssert.EndsWith(dump, $"logs=4\ndigest={game.Digest():x16}\n");
+    }
+
     static readonly PlayState FlagState = GameState with
     {
         FlagGoods = new System.Collections.Generic.Dictionary<(int X, int Y), int> { [(27, 5)] = 2, [(3, 1)] = 1 },

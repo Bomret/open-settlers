@@ -228,9 +228,23 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
-    public void TheFlagAtRestIsTheTermWhoseImageGivesTheGeometryOfAFlag()
+    [TestCategory(Needs.Install)]
+    public void TheFlagGeometryIsTheBoxOfTheHistoryEditionsFlagAtRest()
     {
-        Assert.AreEqual(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0), ObjectDraws.FlagAtRest);
+        var image = HistoryEditionSource
+            .Load(TestProgram.OpenInstall())
+            .Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0))!
+            .Image!;
+
+        Assert.AreEqual(
+            (
+                ObjectDraws.FlagGeometry.Width,
+                ObjectDraws.FlagGeometry.Height,
+                ObjectDraws.FlagGeometry.OffsetX,
+                ObjectDraws.FlagGeometry.OffsetY
+            ),
+            (image.Width, image.Height, image.OffsetX, image.OffsetY)
+        );
     }
 
     [TestMethod]
