@@ -1,0 +1,247 @@
+{
+  "terrain/0/upper": {
+    "image": "terrain/0-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/0/lower": {
+    "image": "terrain/0-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/1/upper": {
+    "image": "terrain/1-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/1/lower": {
+    "image": "terrain/1-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/2/upper": {
+    "image": "terrain/2-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/2/lower": {
+    "image": "terrain/2-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/3/upper": {
+    "image": "terrain/3-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/3/lower": {
+    "image": "terrain/3-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/4/upper": {
+    "image": "terrain/4-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/4/lower": {
+    "image": "terrain/4-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/5/upper": {
+    "image": "terrain/5-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/5/lower": {
+    "image": "terrain/5-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/6/upper": {
+    "image": "terrain/6-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/6/lower": {
+    "image": "terrain/6-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/7/upper": {
+    "image": "terrain/7-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/7/lower": {
+    "image": "terrain/7-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/8/upper": {
+    "image": "terrain/8-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/8/lower": {
+    "image": "terrain/8-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/9/upper": {
+    "image": "terrain/9-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/9/lower": {
+    "image": "terrain/9-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/10/upper": {
+    "image": "terrain/10-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/10/lower": {
+    "image": "terrain/10-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/11/upper": {
+    "image": "terrain/11-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/11/lower": {
+    "image": "terrain/11-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/12/upper": {
+    "image": "terrain/12-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/12/lower": {
+    "image": "terrain/12-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/13/upper": {
+    "image": "terrain/13-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/13/lower": {
+    "image": "terrain/13-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/14/upper": {
+    "image": "terrain/14-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/14/lower": {
+    "image": "terrain/14-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "terrain/15/upper": {
+    "image": "terrain/15-upper.png",
+    "anchor": [
+      -18,
+      0
+    ]
+  },
+  "terrain/15/lower": {
+    "image": "terrain/15-lower.png",
+    "anchor": [
+      -18,
+      -20
+    ]
+  },
+  "road/east": {
+    "image": "road/east.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south-east": {
+    "image": "road/south-east.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south": {
+    "image": "road/south.png",
+    "anchor": [
+      0,
+      0
+    ]
+  }
+}

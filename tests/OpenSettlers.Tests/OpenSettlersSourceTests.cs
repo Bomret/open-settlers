@@ -327,6 +327,64 @@ public sealed class OpenSettlersSourceTests
         Refuses(folder, "manifest.json", "terrain/6/lower", "outside the content set");
     }
 
+    // Reads the size of a PNG from its header; the pixels are a stand-in, since only Godot decodes them.
+    sealed class HeaderDecoder : IImageDecoder
+    {
+        public DecodedImage? Decode(string path)
+        {
+            var bytes = File.ReadAllBytes(path);
+            if (
+                bytes.Length < 24
+                || !bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A })
+            )
+            {
+                return null;
+            }
+
+            var width = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(16, 4));
+            var height = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(20, 4));
+
+            return new DecodedImage(width, height, new byte[width * height * 4]);
+        }
+    }
+
+    static string RepoPath(string relative)
+    {
+        var dir = AppContext.BaseDirectory;
+        while (!File.Exists(Path.Combine(dir, "tools", "play-run.sh")))
+        {
+            dir = Path.GetDirectoryName(dir) ?? throw new InvalidOperationException("tools/play-run.sh not found");
+        }
+
+        return Path.Combine(dir, relative);
+    }
+
+    [TestMethod]
+    public void TheCheckedInContentSetLoadsAndDrawsEveryTerrainCodeAndRoadDirection()
+    {
+        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+
+        for (var code = 0; code < OpenSettlersSource.TerrainCodes; code++)
+        {
+            Assert.AreEqual(
+                (36, 32),
+                (source.Draw(Triangle(code, true))!.Width, source.Draw(Triangle(code, true))!.Height)
+            );
+            Assert.AreEqual(-20, source.Draw(Triangle(code, false))!.OffsetY);
+        }
+
+        foreach (var direction in Enum.GetValues<RoadDirection>())
+        {
+            Assert.IsNotNull(source.Draw(new RoadStrip(0, 0, direction, 0, 0, new Terrain(5))));
+        }
+    }
+
+    [TestMethod]
+    public void TheCheckedInContentSetHoldsTheGdignoreThatKeepsGodotFromImportingIt()
+    {
+        Assert.IsTrue(File.Exists(RepoPath("content/open-settlers/.gdignore")));
+    }
+
     [TestMethod]
     public void APathInASubfolderIsRead()
     {
