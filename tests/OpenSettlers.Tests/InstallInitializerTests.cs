@@ -142,6 +142,35 @@ public sealed class InstallInitializerTests
     }
 
     [TestMethod]
+    public void ABareCallUnderUsingStaticTestProgramIsFlagged()
+    {
+        var source = """
+            using static OpenSettlers.Tests.TestProgram;
+            class A
+            {
+                private static readonly RuleTables First = Tables();
+                private static readonly Install Second = OpenInstall();
+            }
+            """;
+
+        CollectionAssert.AreEqual(new[] { 4, 5 }, Lines(source).ToArray());
+    }
+
+    [TestMethod]
+    public void ABareCallWithoutUsingStaticTestProgramIsNotFlagged()
+    {
+        var source = """
+            class A
+            {
+                static RuleTables Tables() => TestProgram.Made();
+                private static readonly RuleTables Own = Tables();
+            }
+            """;
+
+        CollectionAssert.AreEqual(Array.Empty<int>(), Lines(source).ToArray());
+    }
+
+    [TestMethod]
     public void DeferredCallsAndCallTextOutsideCodeAreNotFlagged()
     {
         var source = """
@@ -180,16 +209,21 @@ public sealed class InstallInitializerTests
     private static IEnumerable<int> Lines(string source)
     {
         var root = CSharpSyntaxTree.ParseText(source).GetRoot();
+        var bare = root.DescendantNodes()
+            .OfType<UsingDirectiveSyntax>()
+            .Any(directive =>
+                directive.StaticKeyword != default && directive.Name is { } name && Name(name) == "TestProgram"
+            );
         var helpers = root.DescendantNodes()
             .OfType<MethodDeclarationSyntax>()
-            .Where(method => IsStatic(method) && Calls(method, IsInstallCall))
+            .Where(method => IsStatic(method) && Calls(method, call => IsInstallCall(call, bare)))
             .Select(method => method.Identifier.Text)
             .ToHashSet();
 
         return root.DescendantNodes()
             .Where(node =>
                 Anchor(node) is not null
-                && Calls(node, call => IsInstallCall(call) || helpers.Contains(Name(call) ?? ""))
+                && Calls(node, call => IsInstallCall(call, bare) || helpers.Contains(Name(call.Expression) ?? ""))
             )
             .Select(node => Anchor(node)!.Value.GetLocation().GetLineSpan().StartLinePosition.Line + 1);
     }
@@ -216,19 +250,23 @@ public sealed class InstallInitializerTests
             .OfType<InvocationExpressionSyntax>()
             .Any(accepts);
 
-    private static bool IsInstallCall(InvocationExpressionSyntax call) =>
-        call.Expression
-            is MemberAccessExpressionSyntax
-            {
-                Expression: IdentifierNameSyntax { Identifier.Text: "TestProgram" }
-                    or MemberAccessExpressionSyntax { Name.Identifier.Text: "TestProgram" },
-            }
-        && InstallCalls.Contains(Name(call));
+    // Whether the call is TestProgram.Tables() or TestProgram.OpenInstall(), qualified or, where the source imports
+    // TestProgram with `using static`, bare.
+    private static bool IsInstallCall(InvocationExpressionSyntax call, bool bare) =>
+        InstallCalls.Contains(Name(call.Expression))
+        && call.Expression switch
+        {
+            MemberAccessExpressionSyntax access => Name(access.Expression) == "TestProgram",
+            SimpleNameSyntax => bare,
+            _ => false,
+        };
 
-    private static string? Name(InvocationExpressionSyntax call) =>
-        call.Expression switch
+    // The rightmost name of a name or member access, null for any other expression.
+    private static string? Name(ExpressionSyntax expression) =>
+        expression switch
         {
             SimpleNameSyntax name => name.Identifier.Text,
+            QualifiedNameSyntax qualified => qualified.Right.Identifier.Text,
             MemberAccessExpressionSyntax access => access.Name.Identifier.Text,
             _ => null,
         };
