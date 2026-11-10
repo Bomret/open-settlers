@@ -53,7 +53,9 @@ The test host (MSTest on Microsoft.Testing.Platform) has no `--filter-class`: it
 
 `mise run test:integration` runs only the tests of the categories `Install` and `Ghidra`. It needs the reference
 install (`SIEDLER_DIR`) and Ghidra (`analyzeHeadless` on the path, which `mise install` provides). A test whose need is
-missing reports inconclusive. Neither the full command nor the focused one runs these tests. Run this command for a
+missing reports inconclusive. An install whose `Siedler1.exe` holds no rule tables counts as missing. `mise` sets
+`SIEDLER_DIR` from `mise.local.toml`, also in a worktree below the checkout, so run the tests without the install outside
+`mise`: `env -u SIEDLER_DIR dotnet test --project tests/OpenSettlers.Tests`. Neither the full command nor the focused one runs these tests. Run this command for a
 change to what they test: the install readers, the emulator tools in `tools/GhidraDump/`.
 
 ## Timing command
