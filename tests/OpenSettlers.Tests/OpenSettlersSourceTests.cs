@@ -387,7 +387,6 @@ public sealed class OpenSettlersSourceTests
             ["woodcutter"] = Job.Woodcutter,
             ["type-one-hut"] = Job.TypeOneHut,
         };
-        var node = new WaitingNode(0, false, default);
         Activity[] activities =
         [
             Walking(),
@@ -404,6 +403,22 @@ public sealed class OpenSettlersSourceTests
         {
             Assert.IsNotNull(source.Draw(Settler(jobs[job], activity))?.Image, activity.ToString());
         }
+    }
+
+    [TestMethod]
+    public void ACarrierWaitingOffTheRoadDrawsTheWaitsFrameAndNotTheWalksFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("waits.png", "2x2:2");
+        folder.Entries["settler/carrier/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/carrier/waits"] = ContentFolder.Entry("waits.png", "0, 0");
+        var source = folder.Load();
+
+        var walks = source.Draw(Settler(Job.Carrier, Walking()))!.Image!;
+        var waits = source.Draw(Settler(Job.Carrier, new WaitsAtFlag(0, 0, new Heading(0).Retried)))!.Image!;
+
+        Assert.AreEqual((1, 2), (walks.Rgba[0], waits.Rgba[0]));
     }
 
     [TestMethod]
@@ -799,6 +814,15 @@ public sealed class OpenSettlersSourceTests
         }
 
         Assert.IsGreaterThanOrEqualTo(3, jobsDrawn);
+
+        // A carrier waiting off the road is drawn by the builder's second path, whose Figure term the source must answer.
+        var waiting = figures.Draws(
+            map,
+            [new Settler(Job.Carrier, 3, 4, 3, 0, new WaitsAtFlag(0, 0, heading.Retried)) { Frame = 7 }],
+            0
+        );
+        Assert.IsTrue(waiting.Any(term => term.Part == SettlerPart.Figure));
+        Assert.IsTrue(waiting.Where(term => term.Part == SettlerPart.Figure).All(term => term.Ask(source) is not null));
     }
 
     // A flat image hangs from the triangle's apex whatever the slope, so a node that drops below the apex opens a gap
