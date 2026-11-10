@@ -204,6 +204,36 @@ public sealed class SettlerDrawTests
         };
     }
 
+    // The header bytes 0 and 1 of each figure entry that reads: the shift of its second figure (0x4066d2, 0x4066e4).
+    private static Dictionary<int, (int X, int Y)> Shifts(Install install)
+    {
+        var archive = Formats.ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
+        var shifts = new Dictionary<int, (int X, int Y)>();
+        for (
+            var entry = SettlerFigureTables.FigureBase;
+            entry < SettlerFigureTables.OverlayBase && entry < archive.RowCount;
+            entry++
+        )
+        {
+            if (archive[entry].State == Formats.EntryState.Absent)
+            {
+                continue;
+            }
+
+            try
+            {
+                var header = Formats.SpriteFile.Read(archive.Data(archive[entry])).Header;
+                shifts[entry] = (header.First, header.Second);
+            }
+            catch (InvalidDataException)
+            {
+                // An entry that is no sprite shifts nothing.
+            }
+        }
+
+        return shifts;
+    }
+
     private static string Describe(IEnumerable<Sprite> sprites) => string.Join(" ", sprites);
 
     [TestMethod]
@@ -234,13 +264,10 @@ public sealed class SettlerDrawTests
             );
         }
 
-        var graphics = SettlerGraphics.Load(
-            install,
-            TestProgram.Tables(),
-            Job.CarrierCode,
-            Job.WoodcutterCode,
-            RuleTables.TypeOneHutJob
-        );
+        var tables = TestProgram.Tables();
+        var pair = SettlerPair.Of(install, tables);
+        var source = HistoryEditionSource.Load(install, tables);
+        var shifts = Shifts(install);
         // draw:WINDOWS:CX,CY:VERB:N:SEED:...
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[4], CultureInfo.InvariantCulture), out var size, out _);
@@ -288,18 +315,18 @@ public sealed class SettlerDrawTests
                 var settlers = state.Values.Select(bytes => FromBytes(bytes, width)).ToList();
                 // The draw verb runs the settlers' draw path only (0x42f4f1, 0x44ffe7), not the tile pass, which draws the
                 // carriers that wait off their node (states 0x42 to 0x45): those are left out.
-                var drawn = graphics.Figures.Draws(
-                    map,
-                    [.. settlers.Where(s => s.Job != Job.Carrier || s.Activity is not WaitsOffRoad)],
-                    pass.Clock,
-                    graphics.Shifts
-                );
+                var drawing = settlers.Where(s => s.Job != Job.Carrier || s.Activity is not WaitsOffRoad).ToList();
+                var drawn = pair.Draws(map, drawing, pass.Clock, shifts);
 
-                // The view draws a sprite from the layers the graphics loaded: a draw with no layer is a failure, not a skip.
-                var unloaded = drawn.Where(draw => !graphics.Layers.ContainsKey((draw.Entry, draw.Colour))).ToList();
+                // The view draws a sprite from the images the source gives: a pick with no image is a failure here, where the
+                // view would draw nothing for it.
+                var unloaded = pair.Terms(map, drawing, pass.Clock)
+                    .Where(term => pair.Pick(term) is not null && source.Draw(term)?.Image is null)
+                    .Select(term => pair.Pick(term)!.Value)
+                    .ToList();
                 Assert.IsEmpty(
                     unloaded,
-                    $"{where}: the engine draws sprites no layer holds: {string.Join(" ", unloaded.Select(draw => $"{draw.Entry}/{draw.Colour}"))}"
+                    $"{where}: the engine draws sprites the source has no image for: {string.Join(" ", unloaded.Select(pick => $"{pick.Entry}/{pick.Colour}"))}"
                 );
 
                 var actual = drawn

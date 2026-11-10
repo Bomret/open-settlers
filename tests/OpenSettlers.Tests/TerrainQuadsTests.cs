@@ -29,6 +29,8 @@ public sealed class TerrainQuadsTests
 
         public ObjectDrawing? Draw(GoodAtFlag draw) => null;
 
+        public ObjectDrawing? Draw(SettlerDraw draw) => null;
+
         public RippleImage? Draw(WaterRipple ripple) => null;
 
         public int ObjectHeadroom => 0;

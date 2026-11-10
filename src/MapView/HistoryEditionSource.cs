@@ -13,7 +13,9 @@ namespace OpenSettlers.MapView;
 /// texture down every <see cref="TerrainGraphics.TextureHeight"/> rows from the top of the mask
 /// (<c>docs/rules/graphics-images.md</c>, "Textured fill"). A term the original has no mask for draws nothing. For the
 /// objects it holds the entry picks and the phase folding of <see cref="ObjectSprites"/>, the shadow mask of each object
-/// sprite, and the surface color of the water ripple; an object code with no sprite draws nothing.
+/// sprite, and the surface color of the water ripple; an object code with no sprite draws nothing. For the settlers it
+/// holds the figure tables of the exe (<see cref="SettlerFigureTables"/>), the colour and entry picks, the second figure's
+/// shift as an image anchor, and the settler shadow (<see cref="SettlerSprites"/>); a settler term with no image draws nothing.
 /// </summary>
 public sealed class HistoryEditionSource : IGraphicsSource
 {
@@ -25,13 +27,16 @@ public sealed class HistoryEditionSource : IGraphicsSource
     readonly ObjectGraphics? _objects;
     readonly Dictionary<int, ObjectDrawing?> _drawings = [];
     readonly Dictionary<int, RippleImage?> _ripples = [];
+    readonly SettlerSprites? _settlers;
 
     HistoryEditionSource(
         TerrainGraphics terrain,
         RoadGraphics? roads,
         string? roadsProblem,
         ObjectGraphics? objects,
-        string? objectsProblem
+        string? objectsProblem,
+        SettlerSprites? settlers,
+        string? settlersProblem
     )
     {
         _terrain = terrain;
@@ -39,6 +44,8 @@ public sealed class HistoryEditionSource : IGraphicsSource
         RoadsProblem = roadsProblem;
         _objects = objects;
         ObjectsProblem = objectsProblem;
+        _settlers = settlers;
+        SettlersProblem = settlersProblem;
     }
 
     /// <summary>Why the road graphics did not load, or null. The source draws no road then and still draws the terrain.</summary>
@@ -47,19 +54,33 @@ public sealed class HistoryEditionSource : IGraphicsSource
     /// <summary>Why the object graphics did not load, or null. The source draws no object then and still draws the terrain.</summary>
     public string? ObjectsProblem { get; }
 
+    /// <summary>Why the settler graphics did not load, or null. The source draws no settler then and still draws the rest.</summary>
+    public string? SettlersProblem { get; }
+
     /// <summary>
     /// Reads the graphics from the install. Throws <see cref="FileNotFoundException"/> for a missing archive and
     /// <see cref="InvalidDataException"/>, naming the entry and the reason, where the terrain graphics are absent or
-    /// unreadable. Unreadable road graphics set <see cref="RoadsProblem"/>, and unreadable object graphics
-    /// <see cref="ObjectsProblem"/>, instead.
+    /// unreadable. Unreadable road graphics set <see cref="RoadsProblem"/>, unreadable object graphics
+    /// <see cref="ObjectsProblem"/>, and unreadable settler graphics <see cref="SettlersProblem"/>, instead. The settlers are
+    /// drawn by the figure tables of the exe's <paramref name="tables"/>; with none the source draws no settler.
     /// </summary>
-    public static HistoryEditionSource Load(Install install)
+    public static HistoryEditionSource Load(Install install, RuleTables? tables = null)
     {
         var terrain = TerrainGraphics.Load(install);
         var roads = Try(() => RoadGraphics.Load(install), out var roadsProblem);
         var objects = Try(() => ObjectGraphics.Load(install), out var objectsProblem);
+        string? settlersProblem = null;
+        var settlers = tables is null ? null : Try(() => SettlerSprites.Load(install, tables), out settlersProblem);
 
-        return new HistoryEditionSource(terrain, roads, roadsProblem, objects, objectsProblem);
+        return new HistoryEditionSource(
+            terrain,
+            roads,
+            roadsProblem,
+            objects,
+            objectsProblem,
+            settlers,
+            settlersProblem
+        );
     }
 
     // The loaded graphics, or null with the reason in problem where the install's files are missing or unreadable.
@@ -95,6 +116,9 @@ public sealed class HistoryEditionSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(GoodAtFlag draw) => Drawing(ObjectSprites.GoodEntry(draw.Good));
+
+    /// <inheritdoc />
+    public ObjectDrawing? Draw(SettlerDraw draw) => _settlers?.Draw(draw);
 
     /// <inheritdoc />
     public RippleImage? Draw(WaterRipple ripple)

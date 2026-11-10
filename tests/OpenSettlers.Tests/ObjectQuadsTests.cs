@@ -29,6 +29,15 @@ public sealed class ObjectQuadsTests
 
         public ObjectDrawing? Draw(GoodAtFlag draw) => new ObjectDrawing(GoodImage, null);
 
+        // A settler's figure has a shadow, its overlay none, and its second figure no image.
+        public ObjectDrawing? Draw(SettlerDraw draw) =>
+            draw.Part switch
+            {
+                SettlerPart.Figure => new ObjectDrawing(Flag, FlagShadow),
+                SettlerPart.Overlay => new ObjectDrawing(GoodImage, null),
+                _ => null,
+            };
+
         public RippleImage? Draw(WaterRipple ripple) =>
             ripple.Tile % 2 == 0 ? new RippleImage(Flag, [1, 2, 3, 255]) : null;
 
@@ -110,6 +119,8 @@ public sealed class ObjectQuadsTests
 
         public ObjectDrawing? Draw(GoodAtFlag draw) => answer;
 
+        public ObjectDrawing? Draw(SettlerDraw draw) => answer;
+
         public RippleImage? Draw(WaterRipple ripple) => null;
 
         public int ObjectHeadroom => 0;
@@ -161,6 +172,51 @@ public sealed class ObjectQuadsTests
         CollectionAssert.AreEqual(new[] { new ObjectQuad(99, 48, 3, 1, 0), new ObjectQuad(99, 68, 3, 1, 0) }, quads);
         CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 255 }, surface);
         Assert.HasCount(1, layers.Images);
+    }
+
+    static SettlerDraw SettlerAt(SettlerPart part, int row, int x, int y) =>
+        new(row, x, y, part, Job.Carrier, new WalksRoad(null, new Heading(0)), null, 7, 0, 0, Good.None);
+
+    // The settlers are one list in the order the terms come: a settler's shadow right before its figure, then its overlay,
+    // and a part the source has no image for leaves no quad.
+    [TestMethod]
+    public void TheSettlersTermsFormOneListInTheOrderTheyComeWithTheShadowBeforeTheFigure()
+    {
+        var layers = new ImageLayers();
+
+        var quads = ObjectQuads.Flat(
+            [
+                SettlerAt(SettlerPart.Figure, 30, 100, 50),
+                SettlerAt(SettlerPart.Overlay, 30, 100, 50),
+                SettlerAt(SettlerPart.SecondFigure, 30, 100, 50),
+                SettlerAt(SettlerPart.Figure, 90, 200, 400),
+            ],
+            new FakeSource(),
+            layers
+        );
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new ObjectQuad(101, 49, 4, 2, 0),
+                new ObjectQuad(99, 48, 3, 1, 1),
+                new ObjectQuad(103, 51, 2, 2, 2),
+                new ObjectQuad(201, 399, 4, 2, 0),
+                new ObjectQuad(199, 398, 3, 1, 1),
+            },
+            quads
+        );
+    }
+
+    [TestMethod]
+    public void NoSettlerTermsGiveNoQuadAndNoLayer()
+    {
+        var layers = new ImageLayers();
+
+        var quads = ObjectQuads.Flat([SettlerAt(SettlerPart.SecondFigure, 0, 0, 0)], new FakeSource(), layers);
+
+        Assert.IsEmpty(quads);
+        Assert.IsEmpty(layers.Images);
     }
 
     [TestMethod]
