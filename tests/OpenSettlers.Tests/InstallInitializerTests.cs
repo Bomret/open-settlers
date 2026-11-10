@@ -238,6 +238,20 @@ public sealed class InstallInitializerTests
     }
 
     [TestMethod]
+    public void ACallThroughATypeAliasOfTestProgramIsFlagged()
+    {
+        var source = """
+            using TP = OpenSettlers.Tests.TestProgram;
+            class A
+            {
+                private static readonly RuleTables Rules = TP.Tables();
+            }
+            """;
+
+        CollectionAssert.AreEqual(new[] { 4 }, Lines(source).ToArray());
+    }
+
+    [TestMethod]
     public void ABareCallWithoutUsingStaticTestProgramIsNotFlagged()
     {
         var source = """
@@ -294,7 +308,11 @@ public sealed class InstallInitializerTests
 
     // A static method or property of a type of the source, and the code that runs when it is called or read: the
     // method's body, the property's expression body or getter.
-    private sealed record Member(string Type, string Name, bool IsProperty, SyntaxNode? Body);
+    private sealed record Member(string Type, string Name, bool IsProperty, SyntaxNode Body);
+
+    // How the source names TestProgram: whether `using static` imports it, and the receivers that name it, its own name
+    // and each alias a using directive gives it.
+    private sealed record TestProgramNames(bool Bare, HashSet<string> Receivers);
 
     // The 1-based line of the '=' of every static field or static auto-property initializer, and of the name of every
     // static constructor, in the source that reaches the install outside a lambda or local function: by calling it, or
@@ -302,11 +320,18 @@ public sealed class InstallInitializerTests
     private static IEnumerable<int> Lines(string source)
     {
         var root = CSharpSyntaxTree.ParseText(source).GetRoot();
-        var bare = root.DescendantNodes()
+        var imports = root.DescendantNodes()
             .OfType<UsingDirectiveSyntax>()
-            .Any(directive =>
-                directive.StaticKeyword != default && directive.Name is { } name && Name(name) == "TestProgram"
-            );
+            .Where(directive => directive.Name is { } name && Name(name) == "TestProgram")
+            .ToList();
+        var testProgram = new TestProgramNames(
+            imports.Any(directive => directive.StaticKeyword != default),
+            imports
+                .Select(directive => directive.Alias?.Name.Identifier.Text)
+                .OfType<string>()
+                .Append("TestProgram")
+                .ToHashSet()
+        );
         var types = root.DescendantNodes()
             .OfType<TypeDeclarationSyntax>()
             .Select(type => type.Identifier.Text)
@@ -320,8 +345,8 @@ public sealed class InstallInitializerTests
 
         // Grow the helpers until no further member reaches the install through one of them.
         var helpers = new Dictionary<(string Type, string Name), bool>();
-        bool Reaches(SyntaxNode node) => Runs(node, bare, types, helpers);
-        while (members.FirstOrDefault(m => !helpers.ContainsKey((m.Type, m.Name)) && Reaches(m.Body!)) is { } helper)
+        bool Reaches(SyntaxNode node) => Runs(node, testProgram, types, helpers);
+        while (members.FirstOrDefault(m => !helpers.ContainsKey((m.Type, m.Name)) && Reaches(m.Body)) is { } helper)
         {
             helpers[(helper.Type, helper.Name)] = helper.IsProperty;
         }
@@ -354,7 +379,7 @@ public sealed class InstallInitializerTests
     // Whether the node, outside the body of a lambda or local function, calls the install or calls or reads a helper.
     private static bool Runs(
         SyntaxNode node,
-        bool bare,
+        TestProgramNames testProgram,
         HashSet<string> types,
         Dictionary<(string Type, string Name), bool> helpers
     ) =>
@@ -362,7 +387,7 @@ public sealed class InstallInitializerTests
                 child is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax) && !IsNameOf(child)
             )
             .Any(child =>
-                child is InvocationExpressionSyntax call && IsInstallCall(call, bare)
+                child is InvocationExpressionSyntax call && IsInstallCall(call, testProgram)
                 || child is SimpleNameSyntax name && IsHelperUse(name, types, helpers)
             );
 
@@ -420,20 +445,14 @@ public sealed class InstallInitializerTests
     private static bool IsStatic(SyntaxNode? node) =>
         node is MemberDeclarationSyntax member && member.Modifiers.Any(SyntaxKind.StaticKeyword);
 
-    // Whether the node holds a call the predicate accepts outside the body of a lambda or local function.
-    private static bool Calls(SyntaxNode node, Func<InvocationExpressionSyntax, bool> accepts) =>
-        node.DescendantNodes(child => child is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
-            .OfType<InvocationExpressionSyntax>()
-            .Any(accepts);
-
-    // Whether the call is TestProgram.Tables() or TestProgram.OpenInstall(), qualified or, where the source imports
-    // TestProgram with `using static`, bare.
-    private static bool IsInstallCall(InvocationExpressionSyntax call, bool bare) =>
+    // Whether the call is TestProgram.Tables() or TestProgram.OpenInstall(): qualified by TestProgram or an alias of it,
+    // or, where the source imports TestProgram with `using static`, bare.
+    private static bool IsInstallCall(InvocationExpressionSyntax call, TestProgramNames testProgram) =>
         InstallCalls.Contains(Name(call.Expression))
         && call.Expression switch
         {
-            MemberAccessExpressionSyntax access => Name(access.Expression) == "TestProgram",
-            SimpleNameSyntax => bare,
+            MemberAccessExpressionSyntax access => testProgram.Receivers.Contains(Name(access.Expression) ?? ""),
+            SimpleNameSyntax => testProgram.Bare,
             _ => false,
         };
 
