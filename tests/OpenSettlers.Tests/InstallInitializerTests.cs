@@ -119,6 +119,29 @@ public sealed class InstallInitializerTests
     }
 
     [TestMethod]
+    public void AStaticConstructorThatReachesTheInstallIsFlaggedAtItsName()
+    {
+        var source = """
+            class A
+            {
+                static Map Generated() => MapViewState.Open(TestProgram.Tables(), "1", 1).Map!;
+                private static readonly Map First;
+                static A()
+                {
+                    First = Generated();
+                }
+            }
+            class B
+            {
+                private static readonly RuleTables Second;
+                static B() => Second = TestProgram.Tables();
+            }
+            """;
+
+        CollectionAssert.AreEqual(new[] { 5, 13 }, Lines(source).ToArray());
+    }
+
+    [TestMethod]
     public void DeferredCallsAndCallTextOutsideCodeAreNotFlagged()
     {
         var source = """
@@ -151,33 +174,41 @@ public sealed class InstallInitializerTests
         return first is "bin" or "obj";
     }
 
-    // The 1-based line of the '=' of every static field or static auto-property initializer in the source that calls
-    // the install outside a lambda, directly or through a static method of the source that calls it directly.
+    // The 1-based line of the '=' of every static field or static auto-property initializer, and of the name of every
+    // static constructor, in the source that calls the install outside a lambda, directly or through a static method
+    // of the source that calls it directly.
     private static IEnumerable<int> Lines(string source)
     {
         var root = CSharpSyntaxTree.ParseText(source).GetRoot();
         var helpers = root.DescendantNodes()
             .OfType<MethodDeclarationSyntax>()
-            .Where(method => IsStatic(method.Modifiers) && Calls(method, IsInstallCall))
+            .Where(method => IsStatic(method) && Calls(method, IsInstallCall))
             .Select(method => method.Identifier.Text)
             .ToHashSet();
 
         return root.DescendantNodes()
-            .OfType<EqualsValueClauseSyntax>()
-            .Where(clause => IsStaticInitializer(clause))
-            .Where(clause => Calls(clause, call => IsInstallCall(call) || helpers.Contains(Name(call) ?? "")))
-            .Select(clause => clause.EqualsToken.GetLocation().GetLineSpan().StartLinePosition.Line + 1);
+            .Where(node =>
+                Anchor(node) is not null
+                && Calls(node, call => IsInstallCall(call) || helpers.Contains(Name(call) ?? ""))
+            )
+            .Select(node => Anchor(node)!.Value.GetLocation().GetLineSpan().StartLinePosition.Line + 1);
     }
 
-    private static bool IsStaticInitializer(EqualsValueClauseSyntax clause) =>
-        clause.Parent switch
+    // The token whose line names the node when it runs during type initialization: the '=' of a static field or static
+    // auto-property initializer, the name of a static constructor; null for any other node.
+    private static SyntaxToken? Anchor(SyntaxNode node) =>
+        node switch
         {
-            VariableDeclaratorSyntax { Parent.Parent: FieldDeclarationSyntax field } => IsStatic(field.Modifiers),
-            PropertyDeclarationSyntax property => IsStatic(property.Modifiers),
-            _ => false,
+            EqualsValueClauseSyntax clause
+                when IsStatic(clause.Parent is VariableDeclaratorSyntax v ? v.Parent?.Parent : clause.Parent) =>
+                clause.EqualsToken,
+            ConstructorDeclarationSyntax constructor when IsStatic(constructor) => constructor.Identifier,
+            _ => null,
         };
 
-    private static bool IsStatic(SyntaxTokenList modifiers) => modifiers.Any(SyntaxKind.StaticKeyword);
+    // Whether the node is a member declared static: a field, property, method, or constructor.
+    private static bool IsStatic(SyntaxNode? node) =>
+        node is MemberDeclarationSyntax member && member.Modifiers.Any(SyntaxKind.StaticKeyword);
 
     // Whether the node holds a call the predicate accepts outside the body of a lambda or local function.
     private static bool Calls(SyntaxNode node, Func<InvocationExpressionSyntax, bool> accepts) =>
