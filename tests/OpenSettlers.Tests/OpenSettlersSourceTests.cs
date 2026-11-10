@@ -730,7 +730,8 @@ public sealed class OpenSettlersSourceTests
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var figures = new SettlerFigures(new StepOffsets(SettlerFiguresTests.Sequences()), []);
         var heading = new Heading(0);
-        Activity[] activities =
+        // The activities the builder draws (a frame that has a step gives each a figure term) and those it does not.
+        Activity[] drawnActivities =
         [
             new Walks(new ToStorage(), heading),
             new WalksRoad(null, heading),
@@ -742,28 +743,62 @@ public sealed class OpenSettlersSourceTests
             new WalksFree(new Trip(new Vector(0, 0), new BackToHut(false))),
             new Cuts(new Vector(0, 0), false, 0, 0),
             new SearchesHome(),
+        ];
+        Activity[] otherActivities =
+        [
             new WaitsAtFlag(0, 0, heading.Retried),
             new ClaimsNode(heading, heading.Retried),
             new WaitsToGoHome(heading.Retried),
             new WaitsToRejoin(heading.Retried),
         ];
-        var jobs = new[] { Job.Carrier, Job.Woodcutter, Job.TypeOneHut };
 
-        var drawn = 0;
-        foreach (var job in jobs)
+        // Every job the item's byte 0 can carry (bits 2 to 6): a job the builder draws a walking settler for must have a figure
+        // in the source for every activity it is drawn in, so the source's job set cannot fall behind the builder's.
+        var jobsDrawn = 0;
+        for (var code = 0; code < 32; code++)
         {
-            foreach (var activity in activities)
+            var job = new Job(code);
+            Settler Of(Activity activity) => new(job, 3, 4, 3, 0, activity) { Frame = 7 };
+
+            if (figures.Draws(map, [Of(drawnActivities[0])], 0).Count == 0)
             {
-                var settler = new Settler(job, 3, 4, 3, 0, activity) { Frame = 7 };
-                foreach (var term in figures.Draws(map, [settler], 0))
+                foreach (var activity in drawnActivities)
                 {
-                    drawn++;
-                    Assert.AreEqual(term.Part == SettlerPart.Figure, term.Ask(source) is not null, $"{job} {activity}");
+                    Assert.IsEmpty(figures.Draws(map, [Of(activity)], 0), $"job {code} {activity}");
+                }
+
+                continue;
+            }
+
+            jobsDrawn++;
+            foreach (var activity in drawnActivities)
+            {
+                var terms = figures.Draws(map, [Of(activity)], 0);
+                Assert.IsTrue(terms.Any(term => term.Part == SettlerPart.Figure), $"job {code} {activity}");
+                foreach (var term in terms)
+                {
+                    Assert.AreEqual(
+                        term.Part == SettlerPart.Figure,
+                        term.Ask(source) is not null,
+                        $"job {code} {activity}"
+                    );
+                }
+            }
+
+            foreach (var activity in otherActivities)
+            {
+                foreach (var term in figures.Draws(map, [Of(activity)], 0))
+                {
+                    Assert.AreEqual(
+                        term.Part == SettlerPart.Figure,
+                        term.Ask(source) is not null,
+                        $"job {code} {activity}"
+                    );
                 }
             }
         }
 
-        Assert.IsGreaterThan(jobs.Length * 8, drawn);
+        Assert.IsGreaterThanOrEqualTo(3, jobsDrawn);
     }
 
     // A flat image hangs from the triangle's apex whatever the slope, so a node that drops below the apex opens a gap

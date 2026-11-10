@@ -327,24 +327,22 @@ def main():
     # (0x53), plants 84 to 92, falling trees 93 to 102 (0x5d to 0x66), anything else a heap. Codes of one kind that look alike
     # share a file and so an image.
     for code in range(8, 128):
+        key = f"object/{code}"
         if code < 24:
-            name, art = f"tree-{code // 16}", lambda: tree(code // 16)
+            add(key, f"object/tree-{code // 16}.png", tree(code // 16))
         elif code < 32:
-            name, art = f"bush-{(code - 24) // 4}", lambda: bush((code - 24) // 4)
+            add(key, f"object/bush-{(code - 24) // 4}.png", bush((code - 24) // 4))
         elif code < 83:
-            name, art = f"rock-{code % 3}", lambda: rock(code % 3)
+            add(key, f"object/rock-{code % 3}.png", rock(code % 3))
         elif code == 83:
-            name, art = "stump", stump
+            add(key, "object/stump.png", stump())
         elif code < 93:
-            name, art = f"plant-{code % 2}", lambda: plant(code % 2)
+            add(key, f"object/plant-{code % 2}.png", plant(code % 2))
         elif code < 103:
             step, second = (code - 93) % 5 + 1, code >= 98
-            name, art = f"fall-{int(second)}-{step}", lambda: falling(step, second)
+            add(key, f"object/fall-{int(second)}-{step}.png", falling(step, second))
         else:
-            name, art = f"litter-{code % 4}", lambda: litter(code)
-        file = f"object/{name}.png"
-        if f"object/{code}" not in manifest:
-            add(f"object/{code}", file, art())
+            add(key, f"object/litter-{code % 4}.png", litter(code))
     add("building/castle", "building/castle.png", castle())
     add("building/woodcutter", "building/woodcutter.png", hut())
     for code in range(32):
