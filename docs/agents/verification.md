@@ -50,12 +50,14 @@ situation and takes named screenshots and dumps, then run it under Movie Maker t
 wrapper, from the repository root, with `SIEDLER_DIR` set:
 
 ```sh
-sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] --fps <fps>
+sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--graphics <source>] --fps <fps>
 ```
 
 Without `--game-view` the wrapper runs the map view. `--game-view` runs the game view on `--seed` and `--size`.
 `--layout <file>` runs the game view on a layout and implies `--game-view`. A layout holds its own seed and size.
 The wrapper exits 2 on `--layout` with `--seed` or `--size`, on an empty value, and on a missing file.
+`--graphics history-edition|open-settlers` picks the graphics source of the run (the History Edition without the flag);
+another value exits 2.
 `mise run play -- <stem> ...` runs the same wrapper. The wrapper clears `play-out/<stem>/`, builds
 `OpenSettlers.csproj`, and runs the Godot command `README.md`'s "Run a play script" gives, through
 `mise exec`. Read the dumps and open the screenshots in `play-out/<stem>/`. Exit 0 is a finished run, 1 a
@@ -66,9 +68,10 @@ failed `expect` or a problem in the script.
   back into `play-out/<stem>/` (no Movie Maker frames: the store leaves them out, and `--fresh` writes them again), the stored `WARN`/`ERROR` lines printed under a `reused` line that ends
   with the stored exit status, which the wrapper exits with. Only a run that exits 0 or 1 is stored. `--fresh` always runs and replaces the
   stored result.
-- The hash covers every tracked or untracked, not ignored file under `src/` and `scenes/` (content and
+- The hash covers every tracked or untracked, not ignored file under `src/`, `scenes/`, and `content/` (content and
   path). It also covers `project.godot`, `OpenSettlers.csproj`, `global.json`, the play script, the mode, the
-  layout's path and content, the seed, the size, the frame rate, the Godot version, and the `SIEDLER_DIR` path.
+  layout's path and content, the seed, the size, the graphics source, the frame rate, the Godot version, and the
+  `SIEDLER_DIR` path.
   It leaves out the install's content and `.godot/`. After a change to the install, run with `--fresh`.
 - A failed build prints the build output, starts no Godot, stores nothing, and exits 3. Bad arguments
   exit 2 with a message and run, store, and log nothing.

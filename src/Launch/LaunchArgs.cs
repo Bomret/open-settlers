@@ -42,6 +42,9 @@ public enum GraphicsSourceName
 /// selects <see cref="LaunchMode.Browser"/>. <c>--game &lt;dir&gt;</c> names the install and wins over the
 /// <c>SIEDLER_DIR</c> value. <c>--seed &lt;seed&gt;</c> (every form <see cref="Seed.TryParse"/> takes, quoted when
 /// it holds spaces) and <c>--size &lt;1|2|3&gt;</c> belong to <c>--map</c>, <c>--game-view</c>, and <c>--seed-info</c> only.
+/// <c>--graphics &lt;history-edition|open-settlers&gt;</c> names the <see cref="GraphicsSourceName"/> of the map view and
+/// the game view (the History Edition without it) and belongs to <c>--map</c>, <c>--game-view</c>, and <c>--layout</c>
+/// only.
 /// <para>
 /// Every bad argument is a line in <see cref="Problems"/> and the launch exits with <see cref="BadArgumentExitCode"/>
 /// before it opens the install or a window, so that code wins over the exit code 2 of a missing install. The bad
@@ -50,7 +53,9 @@ public enum GraphicsSourceName
 /// integer the original offers); two different mode flags, which select no mode (the browser); <c>--seed</c> or
 /// <c>--size</c> with <c>--check</c> or without a mode flag; a repeated <c>--seed</c>, <c>--size</c>, or
 /// <c>--play</c>, or <c>--layout</c> (a repeated <c>--game</c> keeps the first); <c>--layout</c> with <c>--seed</c>,
-/// <c>--size</c>, <c>--map</c>, <c>--check</c>, or <c>--seed-info</c> (the layout holds its own seed and size).
+/// <c>--size</c>, <c>--map</c>, <c>--check</c>, or <c>--seed-info</c> (the layout holds its own seed and size); a
+/// <c>--graphics</c> that names no known source, repeats, or comes with <c>--check</c>, <c>--seed-info</c>, or no mode
+/// flag and no layout. Each <c>--graphics</c> problem names the known sources (<see cref="KnownGraphics"/>).
 /// </para>
 /// </summary>
 public sealed class LaunchArgs
