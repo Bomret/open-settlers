@@ -12,10 +12,14 @@ namespace OpenSettlers.MapView;
 /// holds PNG images and one JSON manifest, <see cref="ManifestFile"/>: an object whose keys name draw terms and whose
 /// values are <c>{ "image": "&lt;path&gt;", "anchor": [x, y] }</c>. The path is relative to the set's folder, and the
 /// anchor is the offset of the image's top left corner from the term's position. The keys: <see cref="TerrainKey"/> for
-/// each terrain code and triangle, and <see cref="RoadKey"/> for each road direction. The art is flat: one image per
-/// terrain code and triangle, one strip per direction, whatever the slope. Terms the set has no art for yet (objects,
-/// buildings, goods, settlers, ripples) draw nothing, and so the source leaves no object headroom and no flag
-/// geometry. Every key above must be in the manifest.
+/// each terrain code and triangle, <see cref="RoadKey"/> for each road direction, <see cref="FlagKey"/> and
+/// <see cref="ObjectKey"/> for the flag and the object codes 8 to 127, <see cref="CastleKey"/> and
+/// <see cref="WoodcutterKey"/> for the buildings, <see cref="GoodKey"/> for each of the 32 goods, and
+/// <see cref="SettlerKey"/> for each job and kind of activity of a settler. The art is flat: one image per terrain code
+/// and triangle, one strip per direction, whatever the slope, one frame per object, and one figure per job and kind of
+/// activity, whatever the settler's heading, step, or frame. A settler's pixels in <see cref="MarkColour"/> show the
+/// player's colour. The source draws no shadow, no water ripple, and no object of the codes 2 to 7. Every key above must
+/// be in the manifest.
 /// </summary>
 public sealed class OpenSettlersSource : IGraphicsSource
 {

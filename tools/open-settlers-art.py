@@ -196,7 +196,7 @@ def plant(variant):
 
 def falling(step, second):
     """A cut tree leaning over: step 1 to 5 of its fall, leaning further each step."""
-    c = Canvas(30, 30)
+    c = Canvas(40, 30)
     foot_x, foot_y = 6, 28
     tip_x = foot_x + 3 + 4 * step
     tip_y = foot_y - 26 + 4 * step
