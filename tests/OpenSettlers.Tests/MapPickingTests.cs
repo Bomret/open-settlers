@@ -14,7 +14,11 @@ public sealed class MapPickingTests
     private const double ViewWidth = 800;
     private const double ViewHeight = 600;
 
-    private static readonly Map Map = MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
+    // Built by the first test that reads it, so that without the install its Assert.Inconclusive fires inside that
+    // test rather than during type initialization.
+    private static Map? _map;
+
+    private static Map Map => _map ??= MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
 
     public static IEnumerable<object[]> Scales =>
         new[] { 0.25, 0.8, 1, 2.5, 4 }.Select(scale => new object[] { scale });

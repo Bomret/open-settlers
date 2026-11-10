@@ -13,7 +13,11 @@ public sealed class ShotCropTests
     private const double OriginX = 0;
     private const double OriginY = 40;
 
-    private static readonly Map Map = MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
+    // Built by the first test that reads it, so that without the install its Assert.Inconclusive fires inside that
+    // test rather than during type initialization.
+    private static Map? _map;
+
+    private static Map Map => _map ??= MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
 
     private static string? Box(
         (double X, double Y) camera,

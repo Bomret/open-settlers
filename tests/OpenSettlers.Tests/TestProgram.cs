@@ -37,7 +37,10 @@ internal static class TestProgram
             transportPriorities: transportPriorities
         );
 
-    /// <summary>The reference install named by <c>SIEDLER_DIR</c>; the test is inconclusive without it.</summary>
+    /// <summary>
+    /// The reference install named by <c>SIEDLER_DIR</c>; the test is inconclusive without it, and where its program
+    /// holds no rule tables.
+    /// </summary>
     public static Install OpenInstall()
     {
         var args = LaunchArgs.Parse([], Environment.GetEnvironmentVariable(LaunchArgs.GameVariable));
@@ -46,26 +49,28 @@ internal static class TestProgram
             Assert.Inconclusive($"The emulator values need the reference install: {problem}");
         }
 
+        if (_tables is null)
+        {
+            try
+            {
+                _tables = ProgramTablesImporter.Import(install.ReadAll(Install.Program));
+            }
+            catch (InvalidDataException e)
+            {
+                Assert.Inconclusive($"The install's program holds no rule tables: {e.Message}");
+            }
+        }
+
         return install;
     }
 
     public static RuleTables Tables()
     {
-        if (_tables is not null)
+        if (_tables is null)
         {
-            return _tables;
+            OpenInstall();
         }
 
-        var install = OpenInstall();
-
-        try
-        {
-            return _tables = ProgramTablesImporter.Import(install.ReadAll(Install.Program));
-        }
-        catch (InvalidDataException e)
-        {
-            Assert.Inconclusive($"The install's program holds no rule tables: {e.Message}");
-            throw;
-        }
+        return _tables!;
     }
 }
