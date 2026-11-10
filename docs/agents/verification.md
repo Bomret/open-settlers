@@ -136,6 +136,6 @@ holds the grid letters. [The layout rules](../rules/layouts.md) hold the entry s
 
 **The step.** `fast-forward <job> state <n> max <ticks>`, `fast-forward <job> carrying max <ticks>`, and
 `fast-forward until <condition> max <ticks>` tick the game without drawing until the condition holds. An `until`
-condition is an `expect` on a game field or `count` with an `expect-count`'s arguments. Every `wait` draws every
-frame, so wait for a state many ticks away with `fast-forward until`. The game then waits for the next `shot` (`README.md`'s "Run a play script").
+condition is an `expect` on a game field, or `count` followed by the arguments of `expect-count`. Every `wait` draws every
+frame, so wait for a state many ticks away with `fast-forward until`. The game then holds its ticks until the next `shot` (`README.md`'s "Run a play script").
 Zoom in with `scroll` before the shot where the figures are small.
