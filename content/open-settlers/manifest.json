@@ -243,5 +243,1216 @@
       0,
       0
     ]
+  },
+  "object/flag": {
+    "image": "object/flag.png",
+    "anchor": [
+      0,
+      -18
+    ]
+  },
+  "object/8": {
+    "image": "object/tree-0.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/9": {
+    "image": "object/tree-0.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/10": {
+    "image": "object/tree-0.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/11": {
+    "image": "object/tree-0.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/12": {
+    "image": "object/tree-0.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/13": {
+    "image": "object/tree-0.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/14": {
+    "image": "object/tree-0.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/15": {
+    "image": "object/tree-0.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/16": {
+    "image": "object/tree-1.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/17": {
+    "image": "object/tree-1.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/18": {
+    "image": "object/tree-1.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/19": {
+    "image": "object/tree-1.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/20": {
+    "image": "object/tree-1.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/21": {
+    "image": "object/tree-1.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/22": {
+    "image": "object/tree-1.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/23": {
+    "image": "object/tree-1.png",
+    "anchor": [
+      -10,
+      -29
+    ]
+  },
+  "object/24": {
+    "image": "object/bush-0.png",
+    "anchor": [
+      -7,
+      -11
+    ]
+  },
+  "object/25": {
+    "image": "object/bush-0.png",
+    "anchor": [
+      -7,
+      -11
+    ]
+  },
+  "object/26": {
+    "image": "object/bush-0.png",
+    "anchor": [
+      -7,
+      -11
+    ]
+  },
+  "object/27": {
+    "image": "object/bush-0.png",
+    "anchor": [
+      -7,
+      -11
+    ]
+  },
+  "object/28": {
+    "image": "object/bush-1.png",
+    "anchor": [
+      -7,
+      -11
+    ]
+  },
+  "object/29": {
+    "image": "object/bush-1.png",
+    "anchor": [
+      -7,
+      -11
+    ]
+  },
+  "object/30": {
+    "image": "object/bush-1.png",
+    "anchor": [
+      -7,
+      -11
+    ]
+  },
+  "object/31": {
+    "image": "object/bush-1.png",
+    "anchor": [
+      -7,
+      -11
+    ]
+  },
+  "object/32": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/33": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/34": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/35": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/36": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/37": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/38": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/39": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/40": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/41": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/42": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/43": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/44": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/45": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/46": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/47": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/48": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/49": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/50": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/51": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/52": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/53": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/54": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/55": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/56": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/57": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/58": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/59": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/60": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/61": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/62": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/63": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/64": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/65": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/66": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/67": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/68": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/69": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/70": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/71": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/72": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/73": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/74": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/75": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/76": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/77": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/78": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/79": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/80": {
+    "image": "object/rock-2.png",
+    "anchor": [
+      -8,
+      -9
+    ]
+  },
+  "object/81": {
+    "image": "object/rock-0.png",
+    "anchor": [
+      -4,
+      -4
+    ]
+  },
+  "object/82": {
+    "image": "object/rock-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/83": {
+    "image": "object/stump.png",
+    "anchor": [
+      -5,
+      -7
+    ]
+  },
+  "object/84": {
+    "image": "object/plant-0.png",
+    "anchor": [
+      -5,
+      -11
+    ]
+  },
+  "object/85": {
+    "image": "object/plant-1.png",
+    "anchor": [
+      -5,
+      -11
+    ]
+  },
+  "object/86": {
+    "image": "object/plant-0.png",
+    "anchor": [
+      -5,
+      -11
+    ]
+  },
+  "object/87": {
+    "image": "object/plant-1.png",
+    "anchor": [
+      -5,
+      -11
+    ]
+  },
+  "object/88": {
+    "image": "object/plant-0.png",
+    "anchor": [
+      -5,
+      -11
+    ]
+  },
+  "object/89": {
+    "image": "object/plant-1.png",
+    "anchor": [
+      -5,
+      -11
+    ]
+  },
+  "object/90": {
+    "image": "object/plant-0.png",
+    "anchor": [
+      -5,
+      -11
+    ]
+  },
+  "object/91": {
+    "image": "object/plant-1.png",
+    "anchor": [
+      -5,
+      -11
+    ]
+  },
+  "object/92": {
+    "image": "object/plant-0.png",
+    "anchor": [
+      -5,
+      -11
+    ]
+  },
+  "object/93": {
+    "image": "object/fall-0-1.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/94": {
+    "image": "object/fall-0-2.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/95": {
+    "image": "object/fall-0-3.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/96": {
+    "image": "object/fall-0-4.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/97": {
+    "image": "object/fall-0-5.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/98": {
+    "image": "object/fall-1-1.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/99": {
+    "image": "object/fall-1-2.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/100": {
+    "image": "object/fall-1-3.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/101": {
+    "image": "object/fall-1-4.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/102": {
+    "image": "object/fall-1-5.png",
+    "anchor": [
+      -6,
+      -28
+    ]
+  },
+  "object/103": {
+    "image": "object/litter-3.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/104": {
+    "image": "object/litter-0.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/105": {
+    "image": "object/litter-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/106": {
+    "image": "object/litter-2.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/107": {
+    "image": "object/litter-3.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/108": {
+    "image": "object/litter-0.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/109": {
+    "image": "object/litter-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/110": {
+    "image": "object/litter-2.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/111": {
+    "image": "object/litter-3.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/112": {
+    "image": "object/litter-0.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/113": {
+    "image": "object/litter-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/114": {
+    "image": "object/litter-2.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/115": {
+    "image": "object/litter-3.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/116": {
+    "image": "object/litter-0.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/117": {
+    "image": "object/litter-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/118": {
+    "image": "object/litter-2.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/119": {
+    "image": "object/litter-3.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/120": {
+    "image": "object/litter-0.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/121": {
+    "image": "object/litter-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/122": {
+    "image": "object/litter-2.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/123": {
+    "image": "object/litter-3.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/124": {
+    "image": "object/litter-0.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/125": {
+    "image": "object/litter-1.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/126": {
+    "image": "object/litter-2.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "object/127": {
+    "image": "object/litter-3.png",
+    "anchor": [
+      -6,
+      -7
+    ]
+  },
+  "building/castle": {
+    "image": "building/castle.png",
+    "anchor": [
+      -32,
+      -51
+    ]
+  },
+  "building/woodcutter": {
+    "image": "building/woodcutter.png",
+    "anchor": [
+      -15,
+      -29
+    ]
+  },
+  "good/0": {
+    "image": "good/0.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/1": {
+    "image": "good/1.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/2": {
+    "image": "good/2.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/3": {
+    "image": "good/3.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/4": {
+    "image": "good/4.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/5": {
+    "image": "good/5.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/6": {
+    "image": "good/6.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/7": {
+    "image": "good/7.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/8": {
+    "image": "good/8.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/9": {
+    "image": "good/9.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/10": {
+    "image": "good/10.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/11": {
+    "image": "good/11.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/12": {
+    "image": "good/12.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/13": {
+    "image": "good/13.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/14": {
+    "image": "good/14.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/15": {
+    "image": "good/15.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/16": {
+    "image": "good/16.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/17": {
+    "image": "good/17.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/18": {
+    "image": "good/18.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/19": {
+    "image": "good/19.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/20": {
+    "image": "good/20.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/21": {
+    "image": "good/21.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/22": {
+    "image": "good/22.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/23": {
+    "image": "good/23.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/24": {
+    "image": "good/24.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/25": {
+    "image": "good/25.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/26": {
+    "image": "good/26.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/27": {
+    "image": "good/27.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/28": {
+    "image": "good/28.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/29": {
+    "image": "good/29.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/30": {
+    "image": "good/30.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "good/31": {
+    "image": "good/31.png",
+    "anchor": [
+      -4,
+      -7
+    ]
+  },
+  "settler/carrier/walks": {
+    "image": "settler/carrier-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/carrier/carries": {
+    "image": "settler/carrier-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/carrier/cuts": {
+    "image": "settler/carrier-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/carrier/door": {
+    "image": "settler/carrier-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/carrier/hands-over": {
+    "image": "settler/carrier-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/carrier/waits": {
+    "image": "settler/carrier-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/woodcutter/walks": {
+    "image": "settler/woodcutter-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/woodcutter/carries": {
+    "image": "settler/woodcutter-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/woodcutter/cuts": {
+    "image": "settler/woodcutter-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/woodcutter/door": {
+    "image": "settler/woodcutter-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/woodcutter/hands-over": {
+    "image": "settler/woodcutter-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/woodcutter/waits": {
+    "image": "settler/woodcutter-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/type-one-hut/walks": {
+    "image": "settler/type-one-hut-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/type-one-hut/carries": {
+    "image": "settler/type-one-hut-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/type-one-hut/cuts": {
+    "image": "settler/type-one-hut-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/type-one-hut/door": {
+    "image": "settler/type-one-hut-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/type-one-hut/hands-over": {
+    "image": "settler/type-one-hut-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/type-one-hut/waits": {
+    "image": "settler/type-one-hut-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
   }
 }
