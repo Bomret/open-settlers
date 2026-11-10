@@ -29,8 +29,8 @@ No static field or static property initializer and no static constructor of a te
 (`TestProgram.Tables()`, `TestProgram.OpenInstall()`). Without the install the `Assert.Inconclusive` they throw then fires
 during type initialization, and MSTest fails every test of the class with a `TypeInitializationException`. Build the
 value inside the test instead, as the cached `Map` accessor of `MapPickingTests` does, and read that accessor only from
-the test. Code inside a lambda or a local function, such as `new Lazy<Map>(() => Generated())`, runs later and is
-allowed, as is a method group. `InstallInitializerTests` fails naming the file and line of every initializer and static
+the test. A lambda, local function, or method group that runs only when called later, such as
+`new Lazy<Map>(() => Generated())`, is allowed. `InstallInitializerTests` fails naming the file and line of every initializer and static
 constructor that reaches one of them: qualified by `TestProgram` or a `using` alias of it, bare under
 `using static TestProgram`, or by calling a static method or reading a static property of the same file whose body or
 getter reaches the install, through any chain of such members. A qualified member name counts where its receiver is a
@@ -38,7 +38,8 @@ type of the same file, and a method name counts where any overload reaches the i
 in `nameof()` counts as no read, but a helper property that shares its name with a type is flagged where that type is
 a receiver (`Map.Create()`). The check reads each file's syntax alone, so it misses a helper in another file or another
 part of a partial class, a `global using` in another file, a helper reached through an instance or a receiver that is
-no type of the file, and a delegate stored in a static field and invoked in an initializer.
+no type of the file, a delegate stored in a static field and invoked in an initializer, and a local function, lambda,
+or method group that a static initializer, static constructor, or helper calls in place.
 
 ## Run one test class
 
@@ -70,7 +71,7 @@ variable removed inside `mise`:
 mise exec -- env -u SIEDLER_DIR dotnet test --project tests/OpenSettlers.Tests
 ```
 
-On Windows, from PowerShell:
+On Windows, with PowerShell 7 (`pwsh`). Where only Windows PowerShell 5.1 is installed, write `powershell` for `pwsh`:
 
 ```powershell
 mise exec -- pwsh -NoProfile -Command 'Remove-Item Env:\SIEDLER_DIR -ErrorAction SilentlyContinue; dotnet test --project tests/OpenSettlers.Tests'

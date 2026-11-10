@@ -12,7 +12,7 @@ namespace OpenSettlers.Tests;
 // No static field or static auto-property initializer and no static constructor of a test class may reach
 // TestProgram.Tables() or TestProgram.OpenInstall(). Without the install, the Assert.Inconclusive they throw then fires
 // during type initialization, where MSTest reports it as a TypeInitializationException that fails every test of the
-// class. Code inside a lambda or local function runs later and is allowed, as is a method group. Build the value inside
+// class. A lambda, local function, or method group that runs only when called later is allowed. Build the value inside
 // the test instead, for example through an expression-bodied accessor that caches it.
 //
 // The check flags a call qualified by TestProgram or by a `using` alias of it, a bare call under
@@ -24,7 +24,8 @@ namespace OpenSettlers.Tests;
 //
 // The check reads the syntax of each file alone, so it misses a helper declared in another file or another part of a
 // partial class, a `global using` in another file, a helper reached through an instance or a receiver that is no type
-// of the file, and a delegate stored in a static field and invoked in an initializer.
+// of the file, a delegate stored in a static field and invoked in an initializer, and a local function, lambda, or
+// method group that a static initializer, static constructor, or helper calls in place.
 [TestClass]
 public sealed class InstallInitializerTests
 {
