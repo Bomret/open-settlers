@@ -92,13 +92,24 @@ public sealed class OpenSettlersSourceTests
         }
     }
 
+    static readonly string[] BuildingKeys =
+    [
+        "building/castle",
+        "building/woodcutter",
+        "building/stonecutter",
+        "building/forester",
+        "building/sawmill",
+        "building/site-small",
+        "building/site-large",
+    ];
+
     static IEnumerable<string> Keys =>
         Enumerable
             .Range(0, 16)
             .SelectMany(code => new[] { $"terrain/{code}/upper", $"terrain/{code}/lower" })
             .Concat(["road/east", "road/south-east", "road/south", "object/flag"])
             .Concat(Enumerable.Range(8, 120).Select(code => $"object/{code}"))
-            .Concat(["building/castle", "building/woodcutter"])
+            .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
             .Concat(
                 from job in new[] { "carrier", "woodcutter", "type-one-hut" }
@@ -243,6 +254,9 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     [DataRow(0x18, "building/castle")]
     [DataRow(2, "building/woodcutter")]
+    [DataRow(4, "building/stonecutter")]
+    [DataRow(9, "building/forester")]
+    [DataRow(0x11, "building/sawmill")]
     public void ABuildingDrawsItsOwnImageWithNoShadow(int type, string key)
     {
         using var folder = new ContentFolder();
@@ -259,6 +273,23 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
+    [DataRow(0, "building/site-large")]
+    [DataRow(1, "building/site-small")]
+    public void ABuildingSiteDrawsTheImageOfItsProgressWhateverItsType(int progress, string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Png("site.png", "9x8:6");
+        folder.Entries[key] = ContentFolder.Entry("site.png", "-4, -7");
+        var source = folder.Load();
+
+        var drawing = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Sawmill, (ushort)progress))!;
+
+        Assert.IsNull(drawing.Shadow);
+        Assert.AreEqual((9, 8), (drawing.Image!.Width, drawing.Image.Height));
+        Assert.AreSame(drawing.Image, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter, (ushort)progress))!.Image);
+    }
+
+    [TestMethod]
     public void ABuildingTypeTheGameDrawsNoBuildingForDrawsNothing()
     {
         using var folder = new ContentFolder();
@@ -269,6 +300,11 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     [DataRow("building/castle")]
     [DataRow("building/woodcutter")]
+    [DataRow("building/stonecutter")]
+    [DataRow("building/forester")]
+    [DataRow("building/sawmill")]
+    [DataRow("building/site-small")]
+    [DataRow("building/site-large")]
     public void ABuildingKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();
@@ -734,7 +770,12 @@ public sealed class OpenSettlersSourceTests
         }
 
         Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Castle))?.Image);
-        Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter))?.Image);
+        foreach (var type in BuildingPlacement.Types)
+        {
+            Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, type))?.Image, $"finished {type}");
+            Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, type, 0))?.Image, $"site of {type}, progress 0");
+            Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, type, 1))?.Image, $"site of {type}, progress 1");
+        }
     }
 
     [TestMethod]

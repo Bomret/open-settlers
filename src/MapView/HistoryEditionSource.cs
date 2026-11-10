@@ -113,8 +113,8 @@ public sealed class HistoryEditionSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(BuildingDraw draw) =>
-        draw.Type == BuildingType.Castle ? Drawing(ObjectSprites.CastleEntry)
-        : draw.Type == BuildingType.Woodcutter ? Drawing(ObjectSprites.WoodcutterEntry)
+        draw.SiteProgress is { } progress ? Drawing(ObjectSprites.SiteEntry(progress))
+        : ObjectSprites.FinishedEntry(draw.Type) is { } entry ? Drawing(entry)
         : null;
 
     /// <inheritdoc />

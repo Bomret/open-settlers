@@ -339,6 +339,28 @@ public sealed class HistoryEditionSourceTests
         Assert.IsNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Storehouse)));
     }
 
+    // The sprites of the finished buildings of M4 and of the sites that have not started (docs/rules/build-sites.md): each entry
+    // holds a sprite of its own offset, so the draw names the entry that the routine at 0x44e329 stores for the building.
+    [TestMethod]
+    public void EachFinishedBuildingOfM4AndEachSiteDrawsTheSpriteOfItsOwnEntry()
+    {
+        using var fake = ObjectFake(payloads =>
+        {
+            payloads[1250 + 169] = ObjectGraphicsTests.Square(21, 3);
+            payloads[1250 + 170] = ObjectGraphicsTests.Square(22, 3);
+            payloads[1250 + 160] = ObjectGraphicsTests.Square(23, 3);
+            payloads[1250 + 144] = ObjectGraphicsTests.Square(24, 3);
+            payloads[1250 + 145] = ObjectGraphicsTests.Square(25, 3);
+        });
+        var source = Open(fake);
+
+        Assert.AreEqual(21, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Stonecutter))!.Image!.OffsetX);
+        Assert.AreEqual(22, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester))!.Image!.OffsetX);
+        Assert.AreEqual(23, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Sawmill))!.Image!.OffsetX);
+        Assert.AreEqual(24, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Sawmill, 0))!.Image!.OffsetX);
+        Assert.AreEqual(25, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter, 1))!.Image!.OffsetX);
+    }
+
     [TestMethod]
     public void AGoodDrawsItsSpriteByItsLowFiveBitsAndNoShadow()
     {

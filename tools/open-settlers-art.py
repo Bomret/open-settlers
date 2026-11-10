@@ -2,7 +2,8 @@
 """Writes the art of the Open Settlers content set: content/open-settlers/manifest.json and its PNGs.
 
 The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
-flag, the map objects, the castle, the woodcutter's hut, the goods, and one pose per job and kind of activity for the
+flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the building
+sites that have not started, the goods, and one pose per job and kind of activity for the
 settlers, all drawn here from nothing but numbers. It holds nothing derived from an install (ADR 0015). A settler's
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
@@ -253,6 +254,54 @@ def hut():
     return c, (-15, -29)
 
 
+def stonecutter():
+    """The stonecutter's hut: a grey hut with a heap of stones at its side."""
+    c = Canvas(34, 30)
+    c.rect(4, 14, 20, 16, (150, 150, 155))
+    c.triangle((14, 2), 13, 14, (110, 110, 120))
+    c.rect(11, 20, 7, 10, INK)
+    c.disc(28, 25, 5, (190, 190, 195))
+    c.disc(24, 27, 3, (170, 170, 175))
+    c.outline(INK)
+    return c, (-14, -29)
+
+
+def forester():
+    """The forester's hut: a hut with a green roof and a sapling at its side."""
+    c = Canvas(34, 30)
+    c.rect(4, 14, 20, 16, shade(WOOD, 30))
+    c.triangle((14, 2), 13, 14, (60, 140, 60))
+    c.rect(11, 20, 7, 10, INK)
+    c.rect(28, 20, 2, 10, WOOD)
+    c.disc(29, 18, 4, LEAF)
+    c.outline(INK)
+    return c, (-14, -29)
+
+
+def sawmill():
+    """The sawmill, a large building: a wide shed with a blade, and a pile of planks."""
+    c = Canvas(52, 36)
+    c.rect(4, 14, 36, 22, shade(WOOD, 20))
+    c.triangle((22, 2), 20, 13, (120, 70, 50))
+    c.rect(16, 22, 10, 14, INK)
+    c.disc(32, 24, 5, (200, 200, 205))
+    c.rect(42, 26, 8, 10, shade(WOOD, 60))
+    c.outline(INK)
+    return c, (-22, -35)
+
+
+def site(large):
+    """A building site that has not started: stakes and a board, wider for a large building."""
+    width = 34 if large else 22
+    c = Canvas(width, 20)
+    c.rect(0, 14, width, 4, shade(WOOD, 40))
+    c.rect(2, 4, 2, 14, WOOD)
+    c.rect(width - 4, 4, 2, 14, WOOD)
+    c.rect(2, 4, width - 4, 2, WOOD)
+    c.outline(INK)
+    return c, (-(width // 2), -19)
+
+
 def good(code):
     """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar."""
     c = Canvas(8, 8)
@@ -351,6 +400,11 @@ def main():
             add(key, f"object/litter-{code % 4}.png", litter(code))
     add("building/castle", "building/castle.png", castle())
     add("building/woodcutter", "building/woodcutter.png", hut())
+    add("building/stonecutter", "building/stonecutter.png", stonecutter())
+    add("building/forester", "building/forester.png", forester())
+    add("building/sawmill", "building/sawmill.png", sawmill())
+    add("building/site-small", "building/site-small.png", site(False))
+    add("building/site-large", "building/site-large.png", site(True))
     for code in range(32):
         add(f"good/{code}", f"good/{code}.png", good(code))
     for job, color in JOBS.items():

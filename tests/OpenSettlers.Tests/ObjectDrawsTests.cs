@@ -96,6 +96,54 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
+    public void ABuildingSiteIsDrawnAtItsNodeWithItsProgressAndAFinishedBuildingWithNone()
+    {
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+        var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
+        sizes[BuildingType.Sawmill.Code] = 2;
+        var game = GameFactory.Create(
+            new RuleTables(classes, TestProgram.Made().StartStock, buildingSizes: sizes),
+            map
+        );
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Tick();
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Tick();
+        game.Enqueue(
+            new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2, Building: BuildingType.Stonecutter)
+        );
+        game.Tick();
+        Assert.IsTrue(game.Buildings[1].Constructing, "the command placed a site");
+
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings).OfType<BuildingDraw>().ToList();
+
+        var height = map.At(16, 2).Height;
+        CollectionAssert.Contains(draws, new BuildingDraw(2, 480, 40 - height * 4, BuildingType.Stonecutter, 1));
+        Assert.IsTrue(
+            draws.Where(draw => draw.Type == BuildingType.Castle).All(draw => draw.SiteProgress is null),
+            "the castle is no site"
+        );
+    }
+
+    [TestMethod]
+    public void AFinishedBuildingOfEachTypeIsDrawnWithItsType()
+    {
+        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+        var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
+        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Tick();
+        Assert.IsTrue(game.PlaceFinishedBuilding(BuildingType.Forester, 16, 2));
+
+        var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings).OfType<BuildingDraw>().ToList();
+
+        Assert.IsTrue(draws.Any(draw => draw.Type == BuildingType.Forester && draw.SiteProgress is null));
+    }
+
+    [TestMethod]
     public void AFlagIsDrawnLikeAnObjectOfTheFlagKindAtItsAnimationStep()
     {
         var (map, game) = CastleWorld();

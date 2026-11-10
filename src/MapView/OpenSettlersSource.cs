@@ -39,8 +39,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     readonly ObjectImage[] _roads;
     readonly ObjectDrawing _flag;
     readonly ObjectDrawing[] _objects;
-    readonly ObjectDrawing _castle;
-    readonly ObjectDrawing _woodcutter;
+    readonly IReadOnlyDictionary<string, ObjectDrawing> _buildings;
     readonly ObjectDrawing[] _goods;
     readonly ObjectImage[] _settlers;
     readonly int _headroom;
@@ -53,8 +52,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         ObjectImage[] roads,
         ObjectDrawing flag,
         ObjectDrawing[] objects,
-        ObjectDrawing castle,
-        ObjectDrawing woodcutter,
+        IReadOnlyDictionary<string, ObjectDrawing> buildings,
         ObjectDrawing[] goods,
         ObjectImage[] settlers,
         int headroom
@@ -66,8 +64,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         _roads = roads;
         _flag = flag;
         _objects = objects;
-        _castle = castle;
-        _woodcutter = woodcutter;
+        _buildings = buildings;
         _goods = goods;
     }
 
@@ -97,6 +94,33 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <summary>The manifest key of the woodcutter's hut.</summary>
     public const string WoodcutterKey = "building/woodcutter";
+
+    /// <summary>The manifest key of the stonecutter's hut.</summary>
+    public const string StonecutterKey = "building/stonecutter";
+
+    /// <summary>The manifest key of the forester's hut.</summary>
+    public const string ForesterKey = "building/forester";
+
+    /// <summary>The manifest key of the sawmill.</summary>
+    public const string SawmillKey = "building/sawmill";
+
+    /// <summary>The manifest key of a building site of a small building that has not started (progress 1).</summary>
+    public const string SiteSmallKey = "building/site-small";
+
+    /// <summary>The manifest key of a building site of a large building that has not started (progress 0).</summary>
+    public const string SiteLargeKey = "building/site-large";
+
+    // The finished buildings the set draws, by type, and the sites by their progress.
+    static readonly (BuildingType Type, string Key)[] FinishedKeys =
+    [
+        (BuildingType.Castle, CastleKey),
+        (BuildingType.Woodcutter, WoodcutterKey),
+        (BuildingType.Stonecutter, StonecutterKey),
+        (BuildingType.Forester, ForesterKey),
+        (BuildingType.Sawmill, SawmillKey),
+    ];
+
+    static readonly string[] BuildingKeys = [.. FinishedKeys.Select(finished => finished.Key), SiteSmallKey, SiteLargeKey];
 
     /// <summary>The number of goods the set draws: a good's low 5 bits select one.</summary>
     public const int GoodCount = 32;
@@ -187,8 +211,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
             objects[code - FirstObjectCode] = new ObjectDrawing(Image(ObjectKey(code)), null);
         }
 
-        var castle = new ObjectDrawing(Image(CastleKey), null);
-        var woodcutter = new ObjectDrawing(Image(WoodcutterKey), null);
+        var buildings = BuildingKeys.ToDictionary(key => key, key => new ObjectDrawing(Image(key), null));
         var goods = new ObjectDrawing[GoodCount];
         for (var code = 0; code < GoodCount; code++)
         {
@@ -204,9 +227,13 @@ public sealed class OpenSettlersSource : IGraphicsSource
             }
         }
 
-        var headroom = objects.Concat([flag, castle, woodcutter]).Concat(goods).Max(drawing => drawing.Image!.Height);
+        var headroom = objects
+            .Concat([flag])
+            .Concat(buildings.Values)
+            .Concat(goods)
+            .Max(drawing => drawing.Image!.Height);
 
-        return new OpenSettlersSource(terrain, roads, flag, objects, castle, woodcutter, goods, settlers, headroom);
+        return new OpenSettlersSource(terrain, roads, flag, objects, buildings, goods, settlers, headroom);
     }
 
     // The jobs the game draws a settler for, by the name their manifest keys carry.
@@ -345,8 +372,9 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(BuildingDraw draw) =>
-        draw.Type == BuildingType.Castle ? _castle
-        : draw.Type == BuildingType.Woodcutter ? _woodcutter
+        draw.SiteProgress is { } progress ? _buildings[progress == 0 ? SiteLargeKey : SiteSmallKey]
+        : FinishedKeys.FirstOrDefault(finished => finished.Type == draw.Type) is { Key: not null } known
+            ? _buildings[known.Key]
         : null;
 
     /// <inheritdoc />
