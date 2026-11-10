@@ -23,6 +23,12 @@ public static class ProgramTablesImporter
     /// <summary>The address of the door speed table: one byte for each building type (<c>0x43c92b</c>).</summary>
     public const int DoorSpeedAddress = 0x43c92b;
 
+    /// <summary>The address of the building size table: one byte for each building type 0 to 0x17, 0 a mine, 1 small, 2 large (<c>0x42d307</c>).</summary>
+    public const int BuildingSizeAddress = 0x42d307;
+
+    /// <summary>The address of the needs table: the planks and the stones, one byte each, for each building type 0 to 0x17 (<c>0x449f18</c>).</summary>
+    public const int BuildingNeedsAddress = 0x449f18;
+
     /// <summary>The address of the table of scan windows: 16-bit words, one for each map size (<c>0x421d28</c>).</summary>
     public const int ScanWindowAddress = 0x421d28;
 
@@ -174,7 +180,9 @@ public static class ProgramTablesImporter
             TypeOneHutAdds(exe),
             Words(Slice(exe, IdlePhaseAddress, 2 * RuleTables.IdlePhaseCount)),
             Words(Slice(exe, IdleFigureAddress, 2 * RuleTables.IdleFigureCount)),
-            [.. Slice(exe, IdleOffsetAddress, RuleTables.IdleOffsetCount).Select(offset => (sbyte)offset)]
+            [.. Slice(exe, IdleOffsetAddress, RuleTables.IdleOffsetCount).Select(offset => (sbyte)offset)],
+            Slice(exe, BuildingSizeAddress, RuleTables.BuildingTypeCount),
+            Slice(exe, BuildingNeedsAddress, 2 * RuleTables.BuildingTypeCount)
         );
     }
 

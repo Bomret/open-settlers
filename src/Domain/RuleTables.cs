@@ -37,6 +37,12 @@ public sealed class RuleTables
     /// <summary>The number of entries of the scan window table, one for each map size value.</summary>
     public const int ScanWindowCount = 8;
 
+    /// <summary>
+    /// The number of building types the size and needs tables cover: the types 0 to 0x17 (the size table at <c>0x42d307</c> and the
+    /// needs table at <c>0x449f18</c> hold no entry of the castle, type 0x18).
+    /// </summary>
+    public const int BuildingTypeCount = 24;
+
     /// <summary>The number of rows of the figure bases (the figure word's high byte, 0 to 0x88).</summary>
     public const int FigureBaseRowCount = 137;
 
@@ -77,6 +83,8 @@ public sealed class RuleTables
     private readonly byte[] _transportPriorities;
     private readonly byte[] _doorSpeeds;
     private readonly ushort[] _scanWindows;
+    private readonly byte[] _buildingSizes;
+    private readonly byte[] _buildingNeeds;
 
     /// <summary>
     /// Creates tables from their contents. The tables of the settlers' walk (<paramref name="stepTimes"/>,
@@ -101,7 +109,9 @@ public sealed class RuleTables
         HutFigureAdds? typeOneHutFigureAdds = null,
         short[]? idlePhases = null,
         short[]? idleFigures = null,
-        sbyte[]? idleOffsets = null
+        sbyte[]? idleOffsets = null,
+        byte[]? buildingSizes = null,
+        byte[]? buildingNeeds = null
     )
     {
         if (
@@ -131,6 +141,9 @@ public sealed class RuleTables
         IdlePhases = idlePhases ?? new short[IdlePhaseCount];
         IdleFigures = idleFigures ?? new short[IdleFigureCount];
         IdleOffsets = idleOffsets ?? new sbyte[IdleOffsetCount];
+        // stand-in: a table a test does not give makes every type small, so a test that places a building needs no table.
+        _buildingSizes = buildingSizes ?? [.. Enumerable.Repeat((byte)1, BuildingTypeCount)];
+        _buildingNeeds = buildingNeeds ?? new byte[2 * BuildingTypeCount];
     }
 
     /// <summary>The class of each object code.</summary>
@@ -242,6 +255,29 @@ public sealed class RuleTables
     /// </summary>
     public byte DoorSpeed(Building? building) =>
         _doorSpeeds[building is null ? 0 : building.Type.Code | (building.Constructing ? 0x20 : 0)];
+
+    /// <summary>The size table as the importer read it: one byte for each building type, 0 a mine, 1 small, 2 large.</summary>
+    public byte[] BuildingSizes => _buildingSizes;
+
+    /// <summary>
+    /// How much room the building type <paramref name="type"/> takes (<c>0x42d307</c>, <c>docs/rules/build-sites.md</c>). A type
+    /// outside the table, the castle included, reads as a mine, which no placement builds.
+    /// </summary>
+    public BuildingSize SizeOf(BuildingType type) =>
+        type.Code is >= 0 and < BuildingTypeCount && _buildingSizes[type.Code] is 1 or 2
+            ? (BuildingSize)_buildingSizes[type.Code]
+            : BuildingSize.Mine;
+
+    /// <summary>The needs table as the importer read it: planks then stones for each building type.</summary>
+    public byte[] BuildingNeedsTable => _buildingNeeds;
+
+    /// <summary>
+    /// The planks and stones the building type <paramref name="type"/> needs (<c>0x449f18</c>); none for a type outside the table.
+    /// </summary>
+    public BuildingNeeds NeedsOf(BuildingType type) =>
+        type.Code is >= 0 and < BuildingTypeCount
+            ? new BuildingNeeds(_buildingNeeds[2 * type.Code], _buildingNeeds[2 * type.Code + 1])
+            : new BuildingNeeds(0, 0);
 
     /// <summary>The scan window table as the importer read it.</summary>
     public ushort[] ScanWindows => _scanWindows;
