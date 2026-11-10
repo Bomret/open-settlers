@@ -7,7 +7,7 @@ dotnet = ["10.0.402", "8.0.427"]
 # Ghidra and the build of its decompiler. Microsoft's build, because it covers Windows on ARM.
 java = "microsoft-25"
 gradle = "9"
-# program_index.py.
+# program_index.py, and tools/open-settlers-art.py, which a unit test runs.
 python = "3.13"
 
 # Godot .NET build. The version must match Godot.NET.Sdk in OpenSettlers.csproj and GODOT below.

@@ -7,7 +7,12 @@ settlers, all drawn here from nothing but numbers. It holds nothing derived from
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
 
-    python3 tools/open-settlers-art.py
+    python3 tools/open-settlers-art.py [<folder>]
+
+It writes into content/open-settlers, or into <folder> where given. The unit test
+RepositoryContentTests.TheOpenSettlersContentSetIsTheGeneratorsOutput writes the set into a temporary folder and fails
+where content/open-settlers holds any file it does not write the same, apart from the .gdignore. Run the script after a
+change to it and commit its output.
 
 The terrain triangles are 32 pixels wide and 20 high, the node spacing and row spacing of the map. An upper triangle
 hangs from its apex at the top, a lower triangle from its apex at the bottom. Each triangle is 8 pixels wider on each
@@ -19,6 +24,7 @@ its color below it, which the rows painted after it cover. The skirt is as deep 
 import json
 import os
 import struct
+import sys
 import zlib
 
 OUT = os.path.join("content", "open-settlers")
@@ -356,4 +362,6 @@ def main():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        OUT = sys.argv[1]
     main()

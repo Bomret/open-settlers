@@ -183,7 +183,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 - `docs/rules/`: the rules recovered from the game's program, each with its address as evidence.
 - `docs/agents/`: instructions for coding agents.
 - `tools/play-run.sh`: the play-run wrapper ("Run a play script").
-- `tools/open-settlers-art.py`: writes the manifest and PNGs of `content/open-settlers/`.
+- `tools/open-settlers-art.py`: writes the manifest and PNGs of `content/open-settlers/`. A unit test runs it into a temporary folder and fails where the checked-in set holds a file it does not write the same.
 - `tools/GhidraDump/`: Ghidra scripts that build a local Ghidra project and write a searchable dump of the game's program, and the emulator harness that runs the original's map-start code for reference values.
 - `tools/WindowsCheck/`: the procedures that run the original in Windows: the check that confirms the emulator's values, and the probe `elapsed-probe.ps1` that tallies the clock units of the main loop's passes.
 
