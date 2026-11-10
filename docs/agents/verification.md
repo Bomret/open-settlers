@@ -29,7 +29,7 @@ No static field or static property initializer and no static constructor of a te
 (`TestProgram.Tables()`, `TestProgram.OpenInstall()`). Without the install the `Assert.Inconclusive` they throw then fires
 during type initialization, and MSTest fails every test of the class with a `TypeInitializationException`. Build the
 value inside the test instead, as the cached `Map` accessor of `MapPickingTests` does, and read that accessor only from
-A lambda, local function, or method group that runs only when called later is allowed, such as
+the test. A lambda, local function, or method group that runs only when called later is allowed, such as
 `new Lazy<Map>(() => Generated())`.
 
 `InstallInitializerTests` fails naming the file and line of every initializer and static constructor that reaches
