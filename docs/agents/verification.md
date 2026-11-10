@@ -30,27 +30,11 @@ No static field or static property initializer and no static constructor of a te
 during type initialization, and MSTest fails every test of the class with a `TypeInitializationException`. Build the
 value inside the test instead, as the cached `Map` accessor of `MapPickingTests` does, and read that accessor only from
 the test. A lambda, local function, or method group that runs only when called later is allowed, such as
-`new Lazy<Map>(() => Generated())`.
+`new Lazy<Map>(() => Generated())`. An instance initializer or constructor is allowed: it runs when MSTest creates the
+instance for a test, which then reports inconclusive.
 
-`InstallInitializerTests` fails naming the file and line of every initializer and static constructor that reaches
-one of them. It counts three forms of reach:
-
-- a member qualified by `TestProgram` or a `using` alias of it, or bare under `using static TestProgram`;
-- a call to a static method, or a read of a static property, of the same file whose body or getter reaches the
-  install;
-- the same reach through any chain of such members.
-
-A qualified member name counts where its receiver is a type of the same file. A method name counts where any
-overload reaches the install. A name in a type position or in `nameof()` counts as no read. A helper property that
-shares its name with a type is flagged where that type is a receiver (`Map.Create()`).
-
-The check reads each file's syntax alone. It misses:
-
-- a helper in another file or another part of a partial class;
-- a `global using` in another file;
-- a helper reached through an instance or a receiver that is no type of the file;
-- a delegate stored in a static field and invoked in an initializer;
-- a local function, lambda, or method group that a static initializer, static constructor, or helper calls in place.
+`InstallInitializerTests` fails naming the file and line of every static initializer and static constructor that
+reaches one of them. Its header comment lists the forms of reach the check catches and the ones it misses.
 
 ## Run one test class
 

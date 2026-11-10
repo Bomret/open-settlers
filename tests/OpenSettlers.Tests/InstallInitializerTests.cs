@@ -12,8 +12,9 @@ namespace OpenSettlers.Tests;
 // No static field or static auto-property initializer and no static constructor of a test class may reach
 // TestProgram.Tables() or TestProgram.OpenInstall(). Without the install, the Assert.Inconclusive they throw then fires
 // during type initialization, where MSTest reports it as a TypeInitializationException that fails every test of the
-// class. A lambda, local function, or method group that runs only when called later is allowed. Build the value inside
-// the test instead, for example through an expression-bodied accessor that caches it.
+// class. Build the value inside the test instead, for example through an expression-bodied accessor that caches it. A
+// lambda, local function, or method group that runs only when called later is allowed. An instance initializer or
+// constructor is allowed: it runs when MSTest creates the instance for a test, which then reports inconclusive.
 //
 // The check flags a call qualified by TestProgram or by a `using` alias of it, a bare call under
 // `using static TestProgram`, and a call of a static method or a read of a static property declared in the same file
@@ -275,6 +276,26 @@ public sealed class InstallInitializerTests
         CollectionAssert.AreEqual(Array.Empty<int>(), Lines(source).ToArray());
     }
 
+    // An instance initializer or constructor runs when MSTest creates the test-class instance for a test, where the
+    // Assert.Inconclusive reaches MSTest as such: without the install that test reports inconclusive and fails nothing.
+    [TestMethod]
+    public void InstanceInitializersAndConstructorsAreNotFlagged()
+    {
+        var source = """
+            class A
+            {
+                private readonly RuleTables _instance = TestProgram.Tables();
+                private RuleTables Rules { get; } = TestProgram.Tables();
+                public A()
+                {
+                    var install = TestProgram.OpenInstall();
+                }
+            }
+            """;
+
+        CollectionAssert.AreEqual(Array.Empty<int>(), Lines(source).ToArray());
+    }
+
     [TestMethod]
     public void DeferredCallsAndCallTextOutsideCodeAreNotFlagged()
     {
@@ -298,7 +319,6 @@ public sealed class InstallInitializerTests
                     Local = () => TestProgram.Tables();
                     RuleTables Deferred() => TestProgram.Tables();
                 }
-                private readonly RuleTables _instance = TestProgram.Tables();
                 public static void Test(int count = 1)
                 {
                     var tables = TestProgram.Tables();
