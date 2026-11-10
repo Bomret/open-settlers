@@ -41,6 +41,7 @@
     <None Include="home-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="road-splits.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="building-sites.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="settler-draws.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="golden.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

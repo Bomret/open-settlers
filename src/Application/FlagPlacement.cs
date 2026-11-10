@@ -32,7 +32,7 @@ internal static class FlagPlacement
     // crosses the column wrap; both are read from 0x449f58 and no emulator run backs them.
     // The link replaces the deposit (or lake detail) of the node. The deposit moves to the nodes around, which add it
     // to theirs where it has the same type; what no node takes is lost, and the total of resource 1 falls by it.
-    private static void MoveDeposit(Map map, int x, int y)
+    internal static void MoveDeposit(Map map, int x, int y)
     {
         var source = map.At(x, y);
         if (source.DepositType == 0 && source.DepositAmount == 0)

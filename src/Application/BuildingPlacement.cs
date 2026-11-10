@@ -63,8 +63,11 @@ public sealed class BuildingPlacement(
             return false;
         }
 
-        // The building's placement (0x449a63) puts its flag down on the south-east node where none stands there, as the
-        // flag placement does (0x4422c5): the flag object and bit, the deposit moved, the link to the new slot.
+        // The placement (0x449a63) first moves the deposit of the building's node to the nodes around it, as it does for a flag's
+        // node (0x449f58), before it writes the building's object and link, then puts the building's flag down on the south-east
+        // node where none stands there, as the flag placement does (0x4422c5): the flag object and bit, the deposit moved, the
+        // link to the new slot.
+        FlagPlacement.MoveDeposit(map, x, y);
         if (!withFlag)
         {
             FlagPlacement.Apply(map, flagX, flagY, flags.NextSlot);

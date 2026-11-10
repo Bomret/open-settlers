@@ -238,7 +238,7 @@ public sealed class RemovalTests
         for (var index = 0; index < width * map.Size.Height; index++)
         {
             // The link byte of a flag or a building holds the slot, one less than the verb's (the dummies of the tables).
-            static int Link(int value, int code) => value != 0 && code is 1 or 2 ? value + 1 : value;
+            static int Link(int value, int code) => value != 0 && code is 1 or 2 or 3 ? value + 1 : value;
             var parts = layers
                 .Where(layer => exported.Layer(layer.Item2)[index] != before[layer.Item1][index])
                 .Select(layer =>
