@@ -24,6 +24,16 @@ public enum LaunchMode
     SeedInfo,
 }
 
+/// <summary>The graphics source the map view draws from (ADR 0014); the <c>--graphics</c> flag names it.</summary>
+public enum GraphicsSourceName
+{
+    /// <summary>The History Edition install's own art, the default (<c>history-edition</c>).</summary>
+    HistoryEdition,
+
+    /// <summary>The repository's own content set <c>content/open-settlers/</c> (<c>open-settlers</c>).</summary>
+    OpenSettlers,
+}
+
 /// <summary>
 /// The user arguments after <c>--</c>, read once. <c>--check</c> selects <see cref="LaunchMode.Check"/>, <c>--map</c>
 /// selects <see cref="LaunchMode.Map"/>, <c>--game-view</c> selects <see cref="LaunchMode.GameView"/>, <c>--seed-info</c>
@@ -75,6 +85,12 @@ public sealed class LaunchArgs
     /// <summary>The flag that names the layout file of a game view (<see cref="LaunchMode.GameView"/>).</summary>
     public const string LayoutFlag = "--layout";
 
+    /// <summary>The flag that names the graphics source (<see cref="GraphicsSourceName"/>) of the map view.</summary>
+    public const string GraphicsFlag = "--graphics";
+
+    /// <summary>The known graphics sources as the flag spells them, which the refusals name.</summary>
+    public const string KnownGraphics = "history-edition, open-settlers";
+
     /// <summary>The environment variable that stands in for <see cref="GameFlag"/>.</summary>
     public const string GameVariable = "SIEDLER_DIR";
 
@@ -92,6 +108,9 @@ public sealed class LaunchArgs
 
     /// <summary>The size the size flag gave; null when no valid size flag was given.</summary>
     public MapSize? Size { get; init; }
+
+    /// <summary>The graphics source the graphics flag named; <see cref="GraphicsSourceName.HistoryEdition"/> without it.</summary>
+    public GraphicsSourceName Graphics { get; init; }
 
     /// <summary>The layout file path as given; null when no valid layout flag was given.</summary>
     public string? Layout { get; init; }
@@ -124,19 +143,24 @@ public sealed class LaunchArgs
         MapSize? size = null;
         var seedGiven = false;
         var sizeGiven = false;
+        var graphics = GraphicsSourceName.HistoryEdition;
+        var graphicsGiven = false;
         for (var i = 0; i < args.Length; i++)
         {
             var flag = args[i];
-            if (flag is GameFlag or SeedFlag or SizeFlag or PlayFlag or LayoutFlag)
+            if (flag is GameFlag or SeedFlag or SizeFlag or PlayFlag or LayoutFlag or GraphicsFlag)
             {
                 // The value is the next argument unless it is missing or another flag; it is not consumed
                 // then, so a mode flag after the flag still selects its mode.
                 if (i + 1 >= args.Length || args[i + 1].StartsWith("--"))
                 {
-                    problems.Add($"{flag} needs a value");
+                    problems.Add(
+                        flag == GraphicsFlag ? $"{flag} needs a value: {KnownGraphics}" : $"{flag} needs a value"
+                    );
                     gameGiven |= flag == GameFlag;
                     playGiven |= flag == PlayFlag;
                     layoutGiven |= flag == LayoutFlag;
+                    graphicsGiven |= flag == GraphicsFlag;
 
                     continue;
                 }
@@ -160,9 +184,28 @@ public sealed class LaunchArgs
                     || flag == LayoutFlag && layoutGiven
                     || flag == SeedFlag && seedGiven
                     || flag == SizeFlag && sizeGiven
+                    || flag == GraphicsFlag && graphicsGiven
                 )
                 {
-                    problems.Add($"repeated {flag}");
+                    problems.Add(
+                        flag == GraphicsFlag ? $"repeated {flag} (known sources: {KnownGraphics})" : $"repeated {flag}"
+                    );
+                }
+                else if (flag == GraphicsFlag)
+                {
+                    graphicsGiven = true;
+                    switch (value)
+                    {
+                        case "history-edition":
+                            graphics = GraphicsSourceName.HistoryEdition;
+                            break;
+                        case "open-settlers":
+                            graphics = GraphicsSourceName.OpenSettlers;
+                            break;
+                        default:
+                            problems.Add($"bad {GraphicsFlag} '{value}': the known sources are {KnownGraphics}");
+                            break;
+                    }
                 }
                 else if (flag == PlayFlag)
                 {
@@ -269,6 +312,14 @@ public sealed class LaunchArgs
             }
         }
 
+        if (graphicsGiven && !layoutGiven && modeFlag is null or CheckFlag or SeedInfoFlag)
+        {
+            var where = modeFlag is null ? "the asset browser" : modeFlag;
+            problems.Add(
+                $"{GraphicsFlag} does not apply to {where}, use {MapFlag} or {GameViewFlag} (known sources: {KnownGraphics})"
+            );
+        }
+
         if (playGiven && modeFlag is not (MapFlag or GameViewFlag) && !(layoutGiven && modeFlag is null))
         {
             problems.Add($"{PlayFlag} needs {MapFlag} or {GameViewFlag}");
@@ -291,6 +342,7 @@ public sealed class LaunchArgs
             SeedText = seedText,
             Seed = seed,
             Size = size,
+            Graphics = graphics,
             Problems = problems,
         };
     }

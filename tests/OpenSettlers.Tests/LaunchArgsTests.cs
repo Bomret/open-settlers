@@ -478,4 +478,62 @@ public sealed class LaunchArgsTests
 
         StringAssert.Contains(string.Join("; ", args.Problems), "--layout needs a value");
     }
+
+    [TestMethod]
+    public void WithoutTheGraphicsFlagTheSourceIsTheHistoryEdition()
+    {
+        var args = LaunchArgs.Parse(["--map"], null);
+
+        Assert.AreEqual(GraphicsSourceName.HistoryEdition, args.Graphics);
+    }
+
+    [TestMethod]
+    [DataRow("history-edition", GraphicsSourceName.HistoryEdition)]
+    [DataRow("open-settlers", GraphicsSourceName.OpenSettlers)]
+    public void TheGraphicsFlagNamesTheSource(string name, GraphicsSourceName source)
+    {
+        var args = LaunchArgs.Parse(["--map", "--graphics", name], null);
+
+        Assert.AreEqual(source, args.Graphics);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    [DataRow(new[] { "--map", "--graphics", "retro" }, "bad --graphics 'retro'")]
+    [DataRow(new[] { "--map", "--graphics" }, "--graphics needs a value")]
+    [DataRow(new[] { "--graphics", "--map" }, "--graphics needs a value")]
+    [DataRow(new[] { "--map", "--graphics", "open-settlers", "--graphics", "open-settlers" }, "repeated --graphics")]
+    [DataRow(new[] { "--graphics", "open-settlers" }, "--graphics does not apply to the asset browser")]
+    [DataRow(new[] { "--check", "--graphics", "open-settlers" }, "--graphics does not apply to --check")]
+    [DataRow(
+        new[] { "--seed-info", "--seed", "1234567812345678", "--graphics", "open-settlers" },
+        "--graphics does not apply to --seed-info"
+    )]
+    public void ABadGraphicsArgumentIsAProblemThatNamesTheKnownSources(string[] flags, string reason)
+    {
+        var args = LaunchArgs.Parse(flags, null);
+
+        var problems = string.Join("; ", args.Problems);
+        StringAssert.Contains(problems, reason);
+        StringAssert.Contains(problems, "history-edition, open-settlers");
+    }
+
+    [TestMethod]
+    [DataRow("--game-view")]
+    [DataRow("--map")]
+    public void TheGraphicsFlagGoesWithTheMapViewAndTheGameView(string mode)
+    {
+        var args = LaunchArgs.Parse([mode, "--graphics", "open-settlers"], null);
+
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    public void TheGraphicsFlagGoesWithALayout()
+    {
+        var args = LaunchArgs.Parse(["--layout", "a.jsonc", "--graphics", "open-settlers"], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
+    }
 }
