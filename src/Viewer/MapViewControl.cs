@@ -847,7 +847,7 @@ public partial class MapViewControl : Control
         }
 
         var meshes = BuildObjectMeshes(_source, _state.Map);
-        // The step may have drawn images the array does not hold yet: the material is built again then.
+        // The step may have drawn images the array does not hold yet: the material takes them in then.
         if (ObjectMaterial() is not { } objectMaterial || (waterMesh is not null && WaterMaterial() is null))
         {
             return;
@@ -951,7 +951,9 @@ public partial class MapViewControl : Control
     }
 
     // A material of <paramref name="shader"/> over every image in <paramref name="layers"/>, one array texture layer
-    // each, built again when a draw added one. Null, with the problem shown, where the images pass the GPU's layer limit.
+    // each. An image a draw added goes into its layer; the texture is built again only where the shape of
+    // <paramref name="layers"/> grew. <paramref name="built"/> counts the images uploaded. Null, with the problem shown,
+    // where the images pass the GPU's layer limit.
     ShaderMaterial? LayerMaterial(
         ImageLayers layers,
         string shader,
@@ -970,33 +972,44 @@ public partial class MapViewControl : Control
             return null;
         }
 
-        if (material is null || built != images.Count)
+        var (count, width, height) = layers.Shape;
+        var sprites = material?.GetShaderParameter("sprites").As<Texture2DArray>();
+        if (
+            material is null
+            || sprites is null
+            || sprites.GetLayers() != count
+            || sprites.GetWidth() != width
+            || sprites.GetHeight() != height
+        )
         {
-            // An empty map has no image: the array then takes one blank layer, so the shader has a texture to bind.
-            var width = Math.Max(images.Select(i => i.Width).DefaultIfEmpty().Max(), 1);
-            var height = Math.Max(images.Select(i => i.Height).DefaultIfEmpty().Max(), 1);
+            // The layers past the images are blank: an empty map's one layer gives the shader a texture to bind.
             var textures = new Godot.Collections.Array<Image>();
-            foreach (var image in images)
+            for (var layer = 0; layer < count; layer++)
             {
-                textures.Add(
-                    Image.CreateFromData(width, height, false, Image.Format.Rgba8, image.Padded(width, height).Rgba)
-                );
+                textures.Add(LayerImage(layer < images.Count ? images[layer] : ObjectImage.Empty, width, height));
             }
 
-            if (textures.Count == 0)
-            {
-                textures.Add(Image.CreateFromData(1, 1, false, Image.Format.Rgba8, new byte[4]));
-            }
-
-            var sprites = new Texture2DArray();
+            sprites = new Texture2DArray();
             sprites.CreateFromImages(textures);
-            material = new ShaderMaterial { Shader = GD.Load<Shader>($"res://src/Viewer/{shader}.gdshader") };
+            material ??= new ShaderMaterial { Shader = GD.Load<Shader>($"res://src/Viewer/{shader}.gdshader") };
             material.SetShaderParameter("sprites", sprites);
-            built = images.Count;
         }
+        else
+        {
+            for (var layer = built; layer < images.Count; layer++)
+            {
+                sprites.UpdateLayer(LayerImage(images[layer], width, height), layer);
+            }
+        }
+
+        built = images.Count;
 
         return material;
     }
+
+    // One array texture layer of <paramref name="image"/>, at the top left of a width x height layer.
+    static Image LayerImage(ObjectImage image, int width, int height) =>
+        Image.CreateFromData(width, height, false, Image.Format.Rgba8, image.Padded(width, height).Rgba);
 
     // The vertex color that carries an image's array texture layer to Objects.gdshader and Water.gdshader.
     static Color LayerColor(int layer)
