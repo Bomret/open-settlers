@@ -917,17 +917,17 @@
     ]
   },
   "object/103": {
-    "image": "object/litter-3.png",
+    "image": "object/sapling-0.png",
     "anchor": [
-      -6,
-      -7
+      -5,
+      -15
     ]
   },
   "object/104": {
-    "image": "object/litter-0.png",
+    "image": "object/sapling-1.png",
     "anchor": [
-      -6,
-      -7
+      -5,
+      -15
     ]
   },
   "object/105": {
@@ -1583,6 +1583,48 @@
   },
   "settler/builder/waits": {
     "image": "settler/builder-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/walks": {
+    "image": "settler/forester-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/carries": {
+    "image": "settler/forester-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/cuts": {
+    "image": "settler/forester-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/door": {
+    "image": "settler/forester-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/hands-over": {
+    "image": "settler/forester-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/waits": {
+    "image": "settler/forester-waits.png",
     "anchor": [
       -7,
       -21

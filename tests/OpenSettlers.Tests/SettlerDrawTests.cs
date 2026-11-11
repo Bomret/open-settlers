@@ -195,6 +195,8 @@ public sealed class SettlerDrawTests
             ),
             0x11 => new Cuts(new Vector((sbyte)mode, (sbyte)target), mark != 0, heading.Value, next),
             0x12 => new LooksForTree(),
+            0x13 => new LooksForSpot(),
+            0x14 => new Plants(vector, bytes[14] != 0, next),
             0x15 => new LooksForStone(),
             0x16 => new WalksFree(
                 new Trip(

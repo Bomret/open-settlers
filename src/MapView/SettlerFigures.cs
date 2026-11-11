@@ -72,6 +72,7 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
                     && settler.Job != Job.Stonecutter
                     && settler.Job != Job.TypeOneHut
                     && settler.Job != Job.Builder
+                    && settler.Job != Job.Forester
                 )
             )
             {

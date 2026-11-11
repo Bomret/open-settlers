@@ -201,6 +201,15 @@ def plant(variant):
     return c, (-5, -11)
 
 
+def sapling(variant):
+    """A young tree a forester planted, 10 by 16: a thin stem and a small crown, the second kind with the crown higher."""
+    c = Canvas(10, 16)
+    c.rect(4, 7 + variant, 2, 9 - variant, WOOD)
+    c.disc(5, 5 + variant, 3, shade(LEAF, 20 + 25 * variant))
+    c.outline(INK)
+    return c, (-5, -15)
+
+
 def falling(step, second):
     """A cut tree leaning over: step 1 to 5 of its fall, leaning further each step."""
     c = Canvas(40, 30)
@@ -354,6 +363,7 @@ JOBS = {
     "stonecutter": (140, 140, 150),
     "type-one-hut": (170, 110, 40),
     "builder": (190, 90, 60),
+    "forester": (90, 160, 80),
 }
 STONE = (185, 185, 190)
 KINDS = ("walks", "carries", "cuts", "door", "hands-over", "waits")
@@ -418,7 +428,7 @@ def main():
 
     add("object/flag", "object/flag.png", flag())
     # Map objects by code (docs/rules/map-objects.md): trees 8 to 23, saplings 24 to 31, boulders 32 to 82, the stump 83
-    # (0x53), plants 84 to 92, falling trees 93 to 102 (0x5d to 0x66), anything else a heap. Codes of one kind that look alike
+    # (0x53), plants 84 to 92, falling trees 93 to 102 (0x5d to 0x66), saplings 103 and 104 (0x67, 0x68), anything else a heap. Codes of one kind that look alike
     # share a file and so an image.
     for code in range(8, 128):
         key = f"object/{code}"
@@ -437,6 +447,8 @@ def main():
         elif code < 103:
             step, second = (code - 93) % 5 + 1, code >= 98
             add(key, f"object/fall-{int(second)}-{step}.png", falling(step, second))
+        elif code in (103, 104):
+            add(key, f"object/sapling-{code - 103}.png", sapling(code - 103))
         else:
             add(key, f"object/litter-{code % 4}.png", litter(code))
     add("building/castle", "building/castle.png", castle())

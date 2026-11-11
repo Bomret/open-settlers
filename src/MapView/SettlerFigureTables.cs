@@ -61,6 +61,7 @@ public sealed class SettlerFigureTables
     private readonly FigureAdds _stonecutter;
     private readonly HutFigureAdds _typeOneHut;
     private readonly BuilderFigureAdds _builder;
+    private readonly ForesterFigureAdds _forester;
     private readonly IdleCarrierTables? _idle;
 
     /// <param name="bases">Two words for each high byte of the figure word: the figure base and the second figure base (negative for none).</param>
@@ -80,10 +81,12 @@ public sealed class SettlerFigureTables
         HutFigureAdds typeOneHut = default,
         IdleCarrierTables? idle = null,
         BuilderFigureAdds builder = default,
-        FigureAdds stonecutter = default
+        FigureAdds stonecutter = default,
+        ForesterFigureAdds forester = default
     )
     {
         _builder = builder;
+        _forester = forester;
         _idle = idle;
         _stonecutter = stonecutter;
         _typeOneHut = typeOneHut;
@@ -105,7 +108,8 @@ public sealed class SettlerFigureTables
             tables.TypeOneHutFigureAdds,
             new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets),
             tables.BuilderFigureAdds,
-            tables.StonecutterFigureAdds
+            tables.StonecutterFigureAdds,
+            tables.ForesterFigureAdds
         );
 
     /// <summary>The palette index of a player's colour.</summary>
@@ -222,6 +226,13 @@ public sealed class SettlerFigureTables
         if (draw.Job == Job.Stonecutter)
         {
             return figure + StonecutterAdd(figure, draw);
+        }
+
+        if (draw.Job == Job.Forester)
+        {
+            // The forester's handler (0x43fd88) adds the work's constant for a figure byte from 0x80 and the walk's below it,
+            // the waiting and planting frames included.
+            return figure + (figure >= HighFigure ? _forester.Work : _forester.Walk);
         }
 
         return figure + WoodcutterAdd(figure, WayBackWithLoad(draw));

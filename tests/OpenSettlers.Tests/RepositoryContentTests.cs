@@ -129,6 +129,20 @@ public sealed class RepositoryContentTests
         Assert.HasCount(8, heaps.Distinct(), "the eight stages of a heap");
     }
 
+    // The two saplings a forester plants (the object codes 0x67 and 0x68) have images of their own, not the litter the generator
+    // draws for the codes it names nothing for, and differ from each other, as the two grow into different trees.
+    [TestMethod]
+    public void EachSaplingHasItsOwnImage()
+    {
+        var manifest = System.Text.Json.JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(RepositoryRoot(), "content", "open-settlers", "manifest.json"))
+        );
+        string Image(string key) => manifest.RootElement.GetProperty(key).GetProperty("image").GetString()!;
+
+        Assert.AreEqual("object/sapling-0.png", Image("object/103"));
+        Assert.AreEqual("object/sapling-1.png", Image("object/104"));
+    }
+
     // The set's files by path relative to the folder, with forward slashes.
     static List<string> SetFiles(string folder) =>
         Directory.Exists(folder)
