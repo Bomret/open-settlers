@@ -15,7 +15,7 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
   height, progress, object code) and its flag; `Flag_MoveDeposit` and `Deposit_MergeInto` move the deposit of
   a node that takes an object. known ([Build sites](../rules/build-sites.md#placing-a-building))
 - `0x42d307`, `0x449f18`: the size table and the needs table of the building types. known
-  ([Build sites](../rules/build-sites.md#the-four-types))
+  ([Build sites](../rules/build-sites.md#the-building-types))
 - `0x4662e2`, `0x466719`: split the road under a node that just took a flag into two roads, and
   link one half to its far flag ([Roads](../rules/roads.md#a-flag-on-a-road)). known
 - `0x41f6a5`: fills the spiral table of map offsets at `+0xc4` from `Map_SpiralTable`; placement and

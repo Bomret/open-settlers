@@ -229,7 +229,7 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 
 ## In the engine
 
-`src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `RequestSearch`, `StorageSearch`, and `Direct` port the above. `LayGood` is the put.
+`src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `StorageSearch`, and `Direct` port the above. `Destine` calls `FlagRequestSearch.Find`, which holds the request search. `LayGood` is the put.
 `Exchange` and `WaitForRoad` are the carrier's exchange at a flag, and `TransportPriority` reads a good's rank from
 `RuleTables.TransportPriority`. `src/Application/CarrierBehavior.cs` holds `Fetch` and `Claim`, and `Deliver` and `Handover`
 (state 0xe). `CastleStock.Add` is the castle's count of a good, in the entry `good - 1` of the list, and `CastleStock.Logs` reads the log's

@@ -85,7 +85,7 @@ player block's counter of goods on flags (`0x436b46`).
 `{"type": "woodcutter" | "stonecutter" | "forester" | "sawmill", "x", "y"}` in the `buildings` list stands a finished building
 of that type on the node, with its flag south-east of it. The entry state is the building the original's mission start
 leaves: `0x41f2d2` places it through `Building_Place` (`0x449a63`, at `0x41f2f6`) and finishes it ([Build
-sites](build-sites.md#the-four-types)). The placement and its refusals are those of the building site, since the evaluator
+sites](build-sites.md#the-building-types)). The placement and its refusals are those of the building site, since the evaluator
 judges the node the same way, and a node that holds no site for the type's size, or no room for the flag, fails the load with
 the entry named. A type that M4 does not build (the storehouse, the castle, any other name) and an entry with no type fail the
 read, naming the types. **Stand-ins:** the finished building has no status bit 4 and no pointer in its item, and its progress
