@@ -48,8 +48,9 @@ public sealed class ForestryTests
 
     // The castle, the flags, the roads, and the forester's hut; every node of his reach and its north-west neighbour is meadow
     // (both triangles of the code 5), and no object stands there but what a test puts.
-    private static Game World(Action<Map>? prepare, out Map map)
+    private static Game World(Action<Map>? prepare, out Map map, BuildingType? type = null)
     {
+        var hut = type ?? BuildingType.Forester;
         var made = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < made.Count; index++)
         {
@@ -67,7 +68,7 @@ public sealed class ForestryTests
 
         map = made;
 
-        var game = GameFactory.Create(WoodcuttingTests.Made(Workers()), made);
+        var game = GameFactory.Create(WoodcuttingTests.Made(hut == BuildingType.Forester ? Workers() : null), made);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
@@ -89,7 +90,7 @@ public sealed class ForestryTests
             game.Tick();
         }
 
-        Huts.PlaceAndTick(game, HutX, HutY, BuildingType.Forester);
+        Huts.PlaceAndTick(game, HutX, HutY, hut);
         prepare?.Invoke(made);
 
         return game;
@@ -230,6 +231,37 @@ public sealed class ForestryTests
         Assert.IsEmpty(Saplings(map));
         Assert.AreEqual(ticks + 1, game.TickCount);
         Assert.AreNotEqual(digest, game.Digest(), "the game state moves on");
+    }
+
+    [TestMethod]
+    public void ASaplingGrowsIntoATreeAndTheWoodcutterFellsItAndLaysALogOnHisFlag()
+    {
+        var saplings = new List<(int X, int Y)>();
+        var game = World(
+            map =>
+            {
+                // A sapling stands on the nodes of the woodcutter's reach whose column plus twice the row is a multiple of 7.
+                foreach (var node in Reach().Where(node => (node.X + 2 * node.Y) % 7 == 0 && Bare(map, node)))
+                {
+                    map.At(node.X, node.Y).Object = new MapObject((byte)(MapObject.SaplingCode + node.X % 2));
+                    saplings.Add(node);
+                }
+            },
+            out var map,
+            BuildingType.Woodcutter
+        );
+        var grown = false;
+        var log = false;
+
+        for (var tick = 0; tick < 120000 && !log; tick++)
+        {
+            game.Tick();
+            grown |= saplings.Any(node => map.At(node.X, node.Y).Object.Kind != MapObjectKind.Sapling);
+            log = game.Flags[3].Places.Any(place => place.Good == new Good(WoodcutterBehavior.GoodLog));
+        }
+
+        Assert.IsTrue(grown, "a sapling of the hut's reach grew");
+        Assert.IsTrue(log, "the woodcutter felled a grown tree and laid its log on the flag");
     }
 
     // The map's object pass with a sapling at the first node its cursor reaches (the column 23 of row 0), and the draws given.
