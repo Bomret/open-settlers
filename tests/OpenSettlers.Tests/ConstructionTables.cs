@@ -52,8 +52,52 @@ internal static class ConstructionTables
         return needs;
     }
 
+    // The made-up tool goods: the forester's worker needs the good 17 from the stock, the builder the good 18.
+    public static readonly Good ForesterTool = new(17);
+    public static readonly Good BuilderTool = new(18);
+
+    // The made-up workers: the woodcutter's hut asks for the woodcutter's job with no tool, the forester's for job 8 with a tool.
+    public static WorkerRequest?[] Workers()
+    {
+        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
+        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(Job.Woodcutter, Good.None);
+        workers[BuildingType.Forester.Code] = new WorkerRequest(new Job(8), ForesterTool);
+
+        return workers;
+    }
+
+    // The made-up order of materials: every type takes planks only, except that the sawmill takes a stone third.
+    public static ushort[] MaterialOrder()
+    {
+        var order = new ushort[RuleTables.BuildingTypeCount];
+        order[BuildingType.Sawmill.Code] = 0b100;
+
+        return order;
+    }
+
+    // The made-up steps of a blow: 0x1000 for the woodcutter and the forester before the progress word's top bit and after it, so
+    // that sixteen blows build them; the sawmill's are 0x800 and 0x556.
+    public static ushort[] BlowSteps()
+    {
+        var steps = new ushort[2 * RuleTables.BuildingTypeCount];
+        foreach (var type in new[] { BuildingType.Woodcutter, BuildingType.Forester })
+        {
+            steps[2 * type.Code] = 0x1000;
+            steps[2 * type.Code + 1] = 0x1000;
+        }
+
+        steps[2 * BuildingType.Sawmill.Code] = 0x800;
+        steps[2 * BuildingType.Sawmill.Code + 1] = 0x556;
+
+        return steps;
+    }
+
     public static RuleTables Tables(byte plankRankBase = 0xff) =>
         LayoutSettlersTests.MadeTables(
+            workers: Workers(),
+            builderRequest: new WorkerRequest(Job.Builder, BuilderTool),
+            materialOrder: MaterialOrder(),
+            blowSteps: BlowSteps(),
             buildingClass: 4,
             // A made-up transport priority for each good (the good's own number): a carrier takes a waiting good only where its
             // priority is above 0.

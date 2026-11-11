@@ -59,7 +59,11 @@ public sealed class LayoutSettlersTests
         byte[]? buildingNeeds = null,
         GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
-        byte plankRankBase = 0
+        byte plankRankBase = 0,
+        WorkerRequest?[]? workers = null,
+        WorkerRequest? builderRequest = null,
+        ushort[]? materialOrder = null,
+        ushort[]? blowSteps = null
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -90,7 +94,11 @@ public sealed class LayoutSettlersTests
             buildingNeeds: buildingNeeds,
             goodClasses: goodClasses,
             distribution: distribution,
-            plankRankBase: plankRankBase
+            plankRankBase: plankRankBase,
+            workers: workers,
+            builderRequest: builderRequest,
+            materialOrder: materialOrder,
+            blowSteps: blowSteps
         );
     }
 

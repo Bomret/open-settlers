@@ -53,7 +53,19 @@ public static class GameFactory
             (flag, place, good) => goods.LayGood(flag, place, good),
             () => causes.InLayout
         );
-        var roster = new CastleRoster(movement, settlers, buildings, flags, network, history, causes, draws, clock);
+        var roster = new CastleRoster(
+            movement,
+            settlers,
+            buildings,
+            flags,
+            network,
+            history,
+            causes,
+            draws,
+            clock,
+            castle,
+            tables
+        );
         var roadStep = new RoadStep(movement, settlers, history, causes);
         var carriers = new CarrierBehavior(
             movement,
