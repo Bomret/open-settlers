@@ -13,11 +13,13 @@ public static class StartStock
     /// <summary>The number of goods the castle counts.</summary>
     public const int Goods = RuleTables.Goods;
 
-    // What the castle's construction and its 20 first settlers take from the stock, by good: the planks and
-    // stones the castle's own site uses (goods 7 and 9) and the tools the settlers carry out. inferred: the
-    // vector is the difference between the interpolated rows and the castle stock of the emulator (castle:, 7 start
-    // stock levels in castle-placements.txt), not read from the routine's own subtractions; docs/rules/castle.md
-    // states its origin. Upgrade path: read the subtractions of 0x442704 and its callees.
+    // What the castle's construction and its 20 first settlers take from the stock, by entry of the list (the 0-based
+    // count of the storage item's word at 6 + 2 * entry, so the entry e is the good e + 1): the planks and stones the
+    // castle's own site uses (the entries 7 and 9, the goods 8 and 10, Good.Plank and Good.Stone) and the tools the
+    // settlers carry out. inferred: the vector is the difference between the interpolated rows and the castle stock of
+    // the emulator (castle:, 7 start stock levels in castle-placements.txt), not read from the routine's own
+    // subtractions; docs/rules/castle.md states its origin. Upgrade path: read the subtractions of 0x442704 and its
+    // callees.
     private static readonly (int Good, int Count)[] Taken =
     [
         (7, 7),
