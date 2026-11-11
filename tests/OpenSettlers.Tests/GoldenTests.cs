@@ -12,8 +12,8 @@ namespace OpenSettlers.Tests;
 // A golden test that pins the game as it plays: fixed scenarios (a seed or a checked-in layout, a command script, the
 // every-pass setting) run on made-up tables, and at several ticks each records the game's digest (Game.Digest) and a
 // short digest of the whole recorded event log (each event's tick, type, thing, raw field=value state, cause, and
-// other). The expected lines live in golden.txt: the event counts were taken once from the engine as it stood before the
-// onion refactor of the simulation, the event-log hashes were regenerated for the castle settler's renamed event
+// other). The expected lines live in golden.txt: the event counts of the original lines were taken once from the engine as it
+// stood before the onion refactor of the simulation (the two site-with-handout lines were taken in the M4 sweep), the event-log hashes were regenerated for the castle settler's renamed event
 // (castle-settler-builds), and the digests were regenerated for the flags' request words, on made-up tables
 // (LayoutSettlersTests.MadeTables; ConstructionTables.Tables() for site-with-handout), so it needs no install: paths that depend on the
 // real program tables' step times or building classes are not pinned (INV-0001: digests, not dumps). A change to any rule outcome, the order of two settlers in a pass, or
