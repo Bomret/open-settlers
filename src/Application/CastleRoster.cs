@@ -77,7 +77,7 @@ public sealed class CastleRoster(
     public void Register(ActivityRegistry registry)
     {
         registry.Register<WaitsInCastle>((slot, settler, _) => Idle(slot, settler));
-        registry.Register<BuildsCastle>((slot, settler, _) => Builder(slot, settler));
+        registry.Register<BuildsCastle>((slot, settler, _) => StandByCastle(slot, settler));
         registry.Register<BuiltCastle>((_, _, _) => { });
         registry.Register<RawState>((_, _, _) => { });
         registry.Register<Leaving>((slot, settler, _) => Leave(slot, settler));
@@ -297,7 +297,7 @@ public sealed class CastleRoster(
     // State 10, the settler that stands by while the castle is built (0x43f17a): each turn adds the elapsed units
     // times 128 to the castle's building progress, and when it wraps past 65536 the castle stands. The settler then
     // takes state 12, which is not ported.
-    private void Builder(int slot, Settler settler)
+    private void StandByCastle(int slot, Settler settler)
     {
         var delta = (ushort)(clock.Now - settler.Stamp);
         settler.Stamp = clock.Now;
