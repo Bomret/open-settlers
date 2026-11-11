@@ -74,11 +74,11 @@ public sealed class BuildingSiteTests
     }
 
     [TestMethod]
-    [DataRow(2)]
-    [DataRow(4)]
-    [DataRow(9)]
-    [DataRow(0x11)]
-    public void EachOfTheFourTypesIsPlacedAsABuildingSiteOfItsNeeds(int code)
+    [DataRow(2, 2, 0)]
+    [DataRow(4, 2, 0)]
+    [DataRow(9, 2, 0)]
+    [DataRow(0x11, 3, 2)]
+    public void EachOfTheFourTypesIsPlacedAsABuildingSiteOfItsNeeds(int code, int planks, int stones)
     {
         var type = new BuildingType(code);
         var game = World();
@@ -89,8 +89,8 @@ public sealed class BuildingSiteTests
         var placed = game.Buildings[1];
         Assert.AreEqual(type, placed.Type);
         Assert.IsTrue(placed.Constructing, "a placed building is a building site, never a finished building");
-        Assert.AreEqual(game.Tables.NeedsOf(type).Planks, placed.Site?.Planks);
-        Assert.AreEqual(game.Tables.NeedsOf(type).Stones, placed.Site?.Stones);
+        Assert.AreEqual(planks, placed.Site?.Planks);
+        Assert.AreEqual(stones, placed.Site?.Stones);
         Assert.AreEqual(site.Height, placed.Site?.TargetHeight);
         Assert.IsFalse(placed.WorkerInside || placed.WorkerOnTheWay);
     }
@@ -152,6 +152,25 @@ public sealed class BuildingSiteTests
 
         Place(game, BuildingType.Stonecutter, x, y);
 
+        var flag = game.Flags[game.Buildings[1].Flag];
+        Assert.AreEqual((x + 1, y + 1), (flag.X, flag.Y));
+    }
+
+    // The node state 5 is a flag with no building standing south-east of the node: the building takes that flag, as the
+    // original's Building_Place does, and puts no second flag down.
+    [TestMethod]
+    public void ALargeSiteOnANodeWhoseSouthEastNodeHoldsAFlagTakesThatFlag()
+    {
+        var game = World();
+        var (x, y, _) = Find(game, 4);
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x + 1, y + 1));
+        game.Tick();
+        var flags = game.Flags.Count;
+        Assert.AreEqual(5, BuildSite.Evaluate(game.Tables, game.Map, x, y, 0, hasCastle: true).Node);
+
+        Assert.IsTrue(Place(game, BuildingType.Sawmill, x, y));
+
+        Assert.AreEqual(flags, game.Flags.Count);
         var flag = game.Flags[game.Buildings[1].Flag];
         Assert.AreEqual((x + 1, y + 1), (flag.X, flag.Y));
     }

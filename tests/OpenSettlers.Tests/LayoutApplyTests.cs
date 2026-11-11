@@ -67,6 +67,7 @@ public sealed class LayoutApplyTests
         }
 
         Assert.IsTrue(byHand.PlaceFinishedBuilding(BuildingType.Woodcutter, 13, 10));
+        Assert.IsNull(byHand.Walks.StandWorkerInHut(13, 10), "the hut's entry stands the worker in it");
 
         Assert.IsNull(problem);
         Assert.AreEqual(0, game.TickCount);
@@ -153,9 +154,10 @@ public sealed class LayoutApplyTests
     }
 
     [TestMethod]
-    public void ALargeTypeOnASiteTheGameRefusesFailsTheLoadNamingTheEntry()
+    public void ABuildingOutsideTheCastlesLandFailsTheLoadNamingTheEntry()
     {
-        // 30,30 lies outside the castle's land, which no building site fits.
+        // 30,30 lies outside the castle's land, where no building site fits. The large type on a small site is refused by
+        // BuildingSiteTests.ALargeTypeOnASiteOfASmallBuildingChangesNoState, the same placement.
         var layout = Read(Castle + """ "buildings": [{"type": "sawmill", "x": 30, "y": 30}] """);
 
         var problem = layout.Apply(NewGameWithALargeSawmill(layout));

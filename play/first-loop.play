@@ -1,54 +1,22 @@
-# Builds the start of the first loop through the game view's own clicks: the castle, a flag, a road from the castle's flag
-# to it, and a woodcutter's building site on the node north-west of that flag. A building site has no worker: the log
-# of the loop waits for the construction (the builder and the delivery of the planks, M4).
-# Run it on the game view with seed 1234567812345678 and size 1:
-#   --game-view --seed 1234567812345678 --size 1 --play play/first-loop.play
-# On that map the castle stands at 21,4, so its flag is at 22,5. The flag goes to 27,5 on the same row, and the
-# woodcutter to 26,4, a free node north-west of it.
-expect seed = 1234567812345678
-expect size = 1
-wait 0.3
-
-# A click with no button pressed places the castle.
-click-tile 21 4
+# The first loop on the woodcutter layout: the castle, the flag and road to the hut's flag, and the woodcutter's finished hut
+# (the layout's finished-building entry stands it with its worker), then fast-forwards until a log has reached the castle.
+# Run it on the layout: sh tools/play-run.sh first-loop --layout layouts/woodcutter.jsonc --fps 10
+# The castle stands at 10,10, so its flag is at 11,11; the road runs three steps east to the hut's flag at 14,11, and the
+# woodcutter's hut stands at 13,10, north-west of it.
 wait 0.3
 dump castle
 shot castle
 
-button Flag
-click-tile 27 5
-button Flag
-wait 0.3
-dump flag
-shot flag
-
-# The road starts on the castle's flag and takes one neighbouring node per click until it reaches the other flag.
-button Road
-click-tile 22 5
-click-tile 23 5
-click-tile 24 5
-click-tile 25 5
-click-tile 26 5
-wait 0.3
-shot road-drawn
-click-tile 27 5
-button Road
-wait 0.3
-dump road
-shot road
-
-button Woodcutter
-click-tile 26 4
-button Woodcutter
-wait 0.3
+expect-at 14 11 flag
+expect-at 12 11 road
+expect-at 13 10 building
 expect logs = 4
-expect-at 26 4 building
 dump woodcutter
 shot woodcutter
 
-# The castle starts with 4 logs; the site has no woodcutter, so no fifth log comes.
-fast-forward until ticks >= 2000 max 2000
+# The castle starts with 4 logs; a fifth is the woodcutter's.
+fast-forward until logs >= 5 max 20000
 wait 0.3
-expect logs = 4
+expect logs >= 5
 dump log
 shot log

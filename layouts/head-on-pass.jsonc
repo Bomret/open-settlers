@@ -1,7 +1,7 @@
 // Two roads with their carriers: the castle stands at 10,10 with its flag at 11,11, a road runs three steps east to a flag at
 // 14,11 and on three steps east to a flag at 17,11. play/head-on-pass.play takes the second road down, so its carrier walks
-// home west along the first, and puts a woodcutter's hut down at 13,10, so its woodcutter walks out east along the same
-// road: the two meet head-on and pass.
+// home west along the first. The golden scenario head-on-pass-layout (GoldenTests) also puts a woodcutter's finished hut down
+// at 13,10, so its woodcutter walks out east along the same road: the two meet head-on and pass.
 {
   "size": 1,
   "seed": "1234567812345678",

@@ -1,8 +1,9 @@
 # The carrier of a road that is taken down walks home west along the first road (docs/rules/settlers.md, "Passing"). The
-# meeting with a woodcutter who walks out east along the same road needs a woodcutter that a layout's finished-building
-# entry cannot set up at that moment: a hut put down in the run is a building site now, which has no worker (the woodcutter
-# of a finished hut comes back with the construction, M4). The golden scenario head-on-pass-layout (GoldenTests) keeps the
-# meeting.
+# woodcutter that meets it head-on on the original's script walked out from the castle to a hut put down by a command; a
+# finished hut stands with its worker inside at tick 0 (the layout's finished-building entry), so no woodcutter walks out
+# east along the road at that moment, and a hut put down in the run is a building site with no worker. The pass with a
+# woodcutter is pinned by the golden scenario head-on-pass-layout (GoldenTests, which puts the finished hut down at tick
+# 401) and by HeadOnPassTests. This script keeps the carrier's walk home.
 # Run it on the layout: sh tools/play-run.sh head-on-pass --layout layouts/head-on-pass.jsonc --fps 10
 wait 32
 name cr 16 11 carrier
@@ -11,9 +12,10 @@ click-tile 15 11
 button Remove
 wait 1
 shot start
-# The carrier has no woodcutter to meet: it walks home to the castle.
+# The carrier walks home west along the first road and enters the castle's storage.
 fast-forward until ticks >= 1000 max 3000
 wait 0.3
-expect-count building = 1
+expect-event cr stepped cause razed
+expect-event cr entered-storage cause razed
 events cr carrier
 shot walks-home 13 11 2 2

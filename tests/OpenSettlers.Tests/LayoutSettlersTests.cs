@@ -254,6 +254,19 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
+    public void AWorkerForAWoodcuttersSiteIsRefused()
+    {
+        var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}],", ""));
+        game.Enqueue(
+            new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 13, 10, Building: BuildingType.Woodcutter)
+        );
+        game.Tick();
+        Assert.IsTrue(game.Buildings[1].Constructing);
+
+        Assert.AreEqual("no woodcutter's hut stands on the node", game.Walks.StandWorkerInHut(13, 10));
+    }
+
+    [TestMethod]
     public void ACarrierForARoadTheLayoutDoesNotBuildFailsTheLoadNamingTheReason()
     {
         var roadless = Built.Replace("\"roads\": [{\"x\": 11, \"y\": 11, \"directions\": [0, 0, 0]}],", "");

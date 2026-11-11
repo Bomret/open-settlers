@@ -4,7 +4,7 @@
 #   sh tools/play-run.sh graphics-digest --game-view --seed 1234567812345678 --size 1 --fps 10 --graphics open-settlers
 # Every click names a node (click-tile); a click on a flag's cloth away from its node is pinned by
 # TheFlagGeometryIsTheBoxOfTheHistoryEditionsFlagAtRest and the pick tests, not by this script.
-# On that map the castle stands at 21,4, so its flag is at 22,5. The woodcutter goes to 26,4, its flag to 27,5.
+# On that map the castle stands at 21,4, so its flag is at 22,5. The woodcutter's building site goes to 26,4, its flag to 27,5.
 wait 0.3
 click-tile 21 4
 wait 0.3
