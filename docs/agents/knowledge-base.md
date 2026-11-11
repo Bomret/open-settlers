@@ -35,18 +35,16 @@ A living skeleton. `/superdev:plan` and `/superdev:document` fill and extend it.
   audience pages, which `/superdev:publish-kb` maintains.
 - **Audience pages** (`Players`, `Modders`, `Developers`). One page per audience. Each holds a section
   `Pages` with the link list to its own pages. Parent: `Home`, section `Pages`.
-- **Player guides** (`Getting started`, `Known limitations`). One task or limitation per page. Parent:
+- **Player guides** (`Getting started`, `Controls`, `Known limitations`). One task, control scheme, or limitation per page. Parent:
   `Players`, section `Pages`.
 - **File formats** (`Graphics archives`, `Graphics images`, `Music file`, `Sound files`, `Text files`,
   `Map start`, `Map form`, `Map objects`). One page per rule note of the same name in `docs/rules/`, which stays the source. Parent:
   `Modders`, section `Pages`.
 - **Modding guides** (`Asset loading`, `Graphics sources`). How a modder reaches and replaces game content. Parent: `Modders`,
   section `Pages`.
-- **Developer pages** (`Architecture`, `Build and setup`, `Game rules`). One topic per page. `Game rules`
+- **Developer pages** (`Architecture`, `Build and setup`, `Game rules`, `Roadmap`). One topic per page. `Game rules`
   summarizes `docs/rules/timing.md` and `docs/rules/game-code.md`; the program index stays in the
-  repository. Parent: `Developers`, section `Pages`. The `Developers` page links to
-  [`docs/roadmap.md`](https://github.com/Bomret/open-settlers/blob/main/docs/roadmap.md) by hand,
-  outside its `Pages` section, instead of a wiki copy.
+  repository. `Roadmap` summarizes `docs/roadmap.md`, which stays the source. Parent: `Developers`, section `Pages`.
 - **`Changelog`.** `(aggregate)`: one `## <feature>` section per shipped feature, never deeper and never
   `#`. Parent: `Developers`, section `Pages`.
 
