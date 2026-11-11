@@ -35,6 +35,16 @@ public readonly record struct SitePart(SiteLayer Layer, int? Fraction);
 /// </summary>
 public static class SiteStages
 {
+    /// <summary>
+    /// The size of the scaffold the site of <paramref name="type"/> grows (the table at <c>0x44fcfe</c>): large for the sawmill, small
+    /// for the woodcutter's, stonecutter's, and forester's huts, and null for a type the view draws none for. Both graphics sources
+    /// pick the scaffold's art by this rule.
+    /// </summary>
+    public static bool? ScaffoldIsLarge(BuildingType type) =>
+        type == BuildingType.Sawmill ? true
+        : type == BuildingType.Woodcutter || type == BuildingType.Stonecutter || type == BuildingType.Forester ? false
+        : null;
+
     /// <summary>The layers the progress word draws, in the order they are drawn.</summary>
     public static IReadOnlyList<SitePart> Parts(ushort progress)
     {

@@ -1,5 +1,6 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Domain;
 using OpenSettlers.MapView;
 
 namespace OpenSettlers.Tests;
@@ -10,6 +11,16 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SiteStagesTests
 {
+    [TestMethod]
+    public void TheScaffoldIsLargeForTheSawmillSmallForTheHutsAndNoneForOtherTypes()
+    {
+        Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.Sawmill));
+        Assert.AreEqual(false, SiteStages.ScaffoldIsLarge(BuildingType.Woodcutter));
+        Assert.AreEqual(false, SiteStages.ScaffoldIsLarge(BuildingType.Stonecutter));
+        Assert.AreEqual(false, SiteStages.ScaffoldIsLarge(BuildingType.Forester));
+        Assert.IsNull(SiteStages.ScaffoldIsLarge(BuildingType.Castle));
+    }
+
     [TestMethod]
     public void AProgressOf0DrawsOnlyTheGroundOfALargeSite()
     {
