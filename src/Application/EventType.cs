@@ -87,7 +87,7 @@ public static class EventType
     public const string KnightIdled = "knight-idled";
 
     /// <summary>The settler that stands by while the castle is built adds to the castle's progress.</summary>
-    public const string Builder = "builder";
+    public const string CastleSettlerBuilds = "castle-settler-builds";
 
     /// <summary>A builder's turn in the building site: a blow, a material taken, or the wait for the next one.</summary>
     public const string Builds = "builds";
@@ -216,7 +216,7 @@ public static class EventType
         RetryBitsCleared,
         Visited,
         KnightIdled,
-        Builder,
+        CastleSettlerBuilds,
         Left,
         Walked,
         Stepped,

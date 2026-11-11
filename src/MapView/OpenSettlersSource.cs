@@ -48,7 +48,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     readonly Dictionary<(int Frame, int Colour), ObjectDrawing> _marked = [];
 
     // The drawings of the building sites by type and progress word.
-    readonly Dictionary<(BuildingType Type, ushort Progress), ObjectDrawing?> _sites = [];
+    readonly SiteDrawings _sites;
 
     OpenSettlersSource(
         ObjectImage[] terrain,
@@ -69,6 +69,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         _objects = objects;
         _buildings = buildings;
         _goods = goods;
+        _sites = new SiteDrawings((type, layer) => SiteLayer(layer, type));
     }
 
     /// <summary>The number of player colours; a player beyond them takes the colour of its number modulo this.</summary>
@@ -145,8 +146,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
         {
             MapView.SiteLayer.Ground => _buildings[SiteLargeKey],
             MapView.SiteLayer.Base => _buildings[SiteSmallKey],
-            MapView.SiteLayer.Stage when ObjectSprites.StageEntry(type) is { } entry => _buildings[
-                entry == ObjectSprites.ScaffoldLargeEntry ? StageLargeKey : StageSmallKey
+            MapView.SiteLayer.Stage when ObjectSprites.StageEntry(type) is not null => _buildings[
+                type == BuildingType.Sawmill ? StageLargeKey : StageSmallKey
             ],
             MapView.SiteLayer.Finished => FinishedKeys.FirstOrDefault(finished => finished.Type == type)
                 is { Key: not null } known
@@ -408,22 +409,10 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(BuildingDraw draw) =>
-        draw.SiteProgress is { } progress ? Site(draw.Type, progress)
+        draw.SiteProgress is { } progress ? _sites.Of(draw.Type, progress)
         : FinishedKeys.FirstOrDefault(finished => finished.Type == draw.Type) is { Key: not null } known
             ? _buildings[known.Key]
         : null;
-
-    // The drawing of a site, made once for each type and progress word (a builder's blows give a few dozen words a building).
-    ObjectDrawing? Site(BuildingType type, ushort progress)
-    {
-        if (!_sites.TryGetValue((type, progress), out var cached))
-        {
-            cached = SiteStages.Compose(progress, layer => SiteLayer(layer, type));
-            _sites[(type, progress)] = cached;
-        }
-
-        return cached;
-    }
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(GoodAtFlag draw) => _goods[draw.Good.Code & (GoodCount - 1)];

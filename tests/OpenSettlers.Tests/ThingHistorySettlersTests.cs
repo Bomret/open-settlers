@@ -101,13 +101,13 @@ public sealed class ThingHistorySettlersTests
         }
 
         var castle = game.History.BuildingId(0);
-        var changes = game.History.EventsOf(castle).Where(e => e.Type == EventType.Builder).ToList();
+        var changes = game.History.EventsOf(castle).Where(e => e.Type == EventType.CastleSettlerBuilds).ToList();
         Assert.IsNotEmpty(changes);
         Assert.AreEqual("settlers", changes[0].Cause.ToString());
         Assert.AreEqual(game.Buildings[0].Progress, changes[^1].State.Get("progress"));
         Assert.IsTrue(
             game.History.EventsOf(game.History.SettlerId(0))
-                .Any(e => e.Type == EventType.Builder && e.Other == castle.ToString())
+                .Any(e => e.Type == EventType.CastleSettlerBuilds && e.Other == castle.ToString())
         );
     }
 

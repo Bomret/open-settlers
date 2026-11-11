@@ -202,10 +202,8 @@ public sealed class BuilderBehavior(
         site.Constructing = false;
         site.Site = null;
         var flag = flags[site.Flag];
-        foreach (var word in new[] { RequestWord.First, RequestWord.Second })
-        {
-            flag.SetRequest(word, flag.RequestOf(word) with { Asks = null });
-        }
+        flag.SetRequest(RequestWord.First, flag.RequestOf(RequestWord.First) with { Asks = null });
+        flag.SetRequest(RequestWord.Second, flag.RequestOf(RequestWord.Second) with { Asks = null });
 
         movement.Become(settler, new LeavesSite());
         settler.Timer = 0;

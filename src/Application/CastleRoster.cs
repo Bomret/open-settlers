@@ -312,8 +312,13 @@ public sealed class CastleRoster(
             castle.Worker = 0;
         }
 
-        history.RecordSettler(slot, EventType.Builder, causes.Rule, history.BuildingId(0).ToString());
-        history.RecordBuilding(0, EventType.Builder, causes.OfBuilding(0), history.SettlerId(slot).ToString());
+        history.RecordSettler(slot, EventType.CastleSettlerBuilds, causes.Rule, history.BuildingId(0).ToString());
+        history.RecordBuilding(
+            0,
+            EventType.CastleSettlerBuilds,
+            causes.OfBuilding(0),
+            history.SettlerId(slot).ToString()
+        );
     }
 
     // State 15, a settler that leaves the castle by its door onto the castle's flag (0x43dd4a): it steps south-east

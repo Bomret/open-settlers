@@ -26,7 +26,7 @@ public sealed class HistoryEditionSource : IGraphicsSource
 
     readonly ObjectGraphics? _objects;
     readonly Dictionary<int, ObjectDrawing?> _drawings = [];
-    readonly Dictionary<(BuildingType Type, ushort Progress), ObjectDrawing?> _sites = [];
+    readonly SiteDrawings _sites;
     readonly Dictionary<int, RippleImage?> _ripples = [];
     readonly SettlerSprites? _settlers;
 
@@ -47,6 +47,9 @@ public sealed class HistoryEditionSource : IGraphicsSource
         ObjectsProblem = objectsProblem;
         _settlers = settlers;
         SettlersProblem = settlersProblem;
+        _sites = new SiteDrawings(
+            (type, layer) => ObjectSprites.SiteLayerEntry(layer, type) is { } entry ? Drawing(entry) : null
+        );
     }
 
     /// <summary>The step offsets the settler graphics parsed, or null where they did not load or no settler is drawn.</summary>
@@ -114,25 +117,9 @@ public sealed class HistoryEditionSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(BuildingDraw draw) =>
-        draw.SiteProgress is { } progress ? Site(draw.Type, progress)
+        draw.SiteProgress is { } progress ? _sites.Of(draw.Type, progress)
         : ObjectSprites.FinishedEntry(draw.Type) is { } entry ? Drawing(entry)
         : null;
-
-    // The drawing of a site, made once for each type and progress word (a builder's blows give a few dozen words a building): the
-    // layers of the progress word drawn one over another (SiteStages).
-    ObjectDrawing? Site(BuildingType type, ushort progress)
-    {
-        if (!_sites.TryGetValue((type, progress), out var cached))
-        {
-            cached = SiteStages.Compose(
-                progress,
-                layer => ObjectSprites.SiteLayerEntry(layer, type) is { } entry ? Drawing(entry) : null
-            );
-            _sites[(type, progress)] = cached;
-        }
-
-        return cached;
-    }
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(GoodAtFlag draw) => Drawing(ObjectSprites.GoodEntry(draw.Good));

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OpenSettlers.Domain;
 
 namespace OpenSettlers.MapView;
 
@@ -86,4 +87,27 @@ public static class SiteStages
         below is null ? above
         : above is null ? below
         : below.Over(above);
+}
+
+/// <summary>
+/// The drawings of the building sites of a graphics source, made once for each type and progress word (a builder's blows give a few
+/// dozen words a building): the layers of the progress word drawn one over another (<see cref="SiteStages.Compose"/>), each layer
+/// taken from the source's art.
+/// </summary>
+/// <param name="layer">The source's art for a layer of the site of a type, or null where it has none.</param>
+public sealed class SiteDrawings(Func<BuildingType, SiteLayer, ObjectDrawing?> layer)
+{
+    private readonly Dictionary<(BuildingType Type, ushort Progress), ObjectDrawing?> _made = [];
+
+    /// <summary>The drawing of the site of <paramref name="type"/> at <paramref name="progress"/>, or null where no layer has art.</summary>
+    public ObjectDrawing? Of(BuildingType type, ushort progress)
+    {
+        if (!_made.TryGetValue((type, progress), out var cached))
+        {
+            cached = SiteStages.Compose(progress, part => layer(type, part));
+            _made[(type, progress)] = cached;
+        }
+
+        return cached;
+    }
 }
