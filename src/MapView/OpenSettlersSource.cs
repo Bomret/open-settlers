@@ -146,8 +146,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
         {
             MapView.SiteLayer.Ground => _buildings[SiteLargeKey],
             MapView.SiteLayer.Base => _buildings[SiteSmallKey],
-            MapView.SiteLayer.Stage when ObjectSprites.StageEntry(type) is not null => _buildings[
-                type == BuildingType.Sawmill ? StageLargeKey : StageSmallKey
+            MapView.SiteLayer.Stage when SiteStages.ScaffoldIsLarge(type) is { } large => _buildings[
+                large ? StageLargeKey : StageSmallKey
             ],
             MapView.SiteLayer.Finished => FinishedKeys.FirstOrDefault(finished => finished.Type == type)
                 is { Key: not null } known
