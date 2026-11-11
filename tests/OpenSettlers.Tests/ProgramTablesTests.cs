@@ -91,6 +91,7 @@ public sealed class ProgramTablesTests
             Write(address, [0xb8, (byte)job, 0, 0, 0, 0x89, 0x07, 0xb8, (byte)tool, 0, 0, 0, 0x89, 0x47, 0x18]);
 
         Request(ProgramTablesImporter.BuilderRequestAddress, 7, 0x30);
+        Request(ProgramTablesImporter.DiggerRequestAddress, 5, 0x24);
         foreach (var (type, address) in ProgramTablesImporter.WorkerRequestAddresses)
         {
             Request(address, type.Code + 10, type == BuildingType.Forester ? 0 : 2 * (type.Code + 3));
@@ -154,6 +155,13 @@ public sealed class ProgramTablesTests
         );
         Add(ProgramTablesImporter.BuilderWalkAddress, 0x1500);
         Add(ProgramTablesImporter.BuilderWorkAddress, 0x1580);
+        var diggerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.DiggerCode;
+        Write(
+            diggerStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.DiggerHandlerAddress - (diggerStub + 5))]
+        );
+        Add(ProgramTablesImporter.DiggerWalkAddress, 0x1600);
+        Add(ProgramTablesImporter.DiggerHighAddress, 0x1680);
     }
 
     private static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -593,6 +601,34 @@ public sealed class ProgramTablesTests
         var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
 
         Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+    }
+
+    [TestMethod]
+    public void TheDiggersRequestAndFigureAddsAreReadFromTheHandlersAndHisStubIsChecked()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        // The made-up handler loads the job 5 and the tool word 0x24: the request is what the handler says, not the digger's own numbers.
+        Assert.AreEqual(new WorkerRequest(new Job(5), new Good(18)), tables.DiggerRequest);
+        Assert.AreEqual(new FigureAdds(0x1600, 0x1600, 0x1680), tables.DiggerFigureAdds);
+
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.DiggerCode;
+        var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
+
+        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheDiggersRequestAndFigureAddsOfTheInstallMatchTheEmulator()
+    {
+        // peek:42d52a:15 (mov eax, 2; mov [edi], eax; mov eax, 0x20; mov [edi+0x18], eax: the tool word halved is the good 16), and
+        // peek:43fa87:100 (the handler: add word [edi+8], 0x380 at 0x43fade and 0x300 at 0x43fae9).
+        var tables = TestProgram.Tables();
+
+        Assert.AreEqual(new WorkerRequest(Job.Digger, new Good(16)), tables.DiggerRequest);
+        Assert.AreEqual(0x300, tables.DiggerFigureAdds.Walk);
+        Assert.AreEqual(0x380, tables.DiggerFigureAdds.Cutting);
     }
 
     [TestMethod]
