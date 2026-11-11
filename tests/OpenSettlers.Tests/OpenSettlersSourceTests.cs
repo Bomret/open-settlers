@@ -114,7 +114,17 @@ public sealed class OpenSettlersSourceTests
             .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
             .Concat(
-                from job in new[] { "carrier", "woodcutter", "stonecutter", "type-one-hut", "builder", "forester", "digger" }
+                from job in new[]
+                {
+                    "carrier",
+                    "woodcutter",
+                    "stonecutter",
+                    "type-one-hut",
+                    "builder",
+                    "forester",
+                    "digger",
+                    "sawmiller",
+                }
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
             );
@@ -501,6 +511,7 @@ public sealed class OpenSettlersSourceTests
     [DataRow("builder")]
     [DataRow("forester")]
     [DataRow("digger")]
+    [DataRow("sawmiller")]
     public void EachJobDrawsAnImageForEveryActivityKind(string job)
     {
         using var folder = new ContentFolder();
@@ -514,12 +525,15 @@ public sealed class OpenSettlersSourceTests
             ["builder"] = Job.Builder,
             ["forester"] = Job.Forester,
             ["digger"] = Job.Digger,
+            ["sawmiller"] = Job.Sawmiller,
         };
         Activity[] activities =
         [
             new CutsStone(new Vector(0, 0), 1, 0),
             new Plants(new Vector(0, 0), true, 8),
             new Digs(15, 10, 6, 1),
+            new Saws(true),
+            new WaitsOutStep(new PutsDownGood(Good.Plank)),
             Walking(),
             new Walks(new ToStorage(), new Heading(0)),
             new Door(0),
@@ -550,6 +564,25 @@ public sealed class OpenSettlersSourceTests
         var waits = source.Draw(Settler(Job.Carrier, new WaitsAtFlag(0, 0, new Heading(0).Retried)))!.Image!;
 
         Assert.AreEqual((1, 2), (walks.Rgba[0], waits.Rgba[0]));
+    }
+
+    [TestMethod]
+    public void ASawmillerSawingDrawsTheCutsFrameAndOneWhoStepsOutWithAPlankTheCarriesFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:2");
+        folder.Png("cuts.png", "2x2:3");
+        folder.Entries["settler/sawmiller/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/sawmiller/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        folder.Entries["settler/sawmiller/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        var source = folder.Load();
+
+        var sawing = source.Draw(Settler(Job.Sawmiller, new Saws(true)))!.Image!;
+        var carrying = source.Draw(Settler(Job.Sawmiller, new WaitsOutStep(new PutsDownGood(Good.Plank))))!.Image!;
+        var walking = source.Draw(Settler(Job.Sawmiller, new Walks(new ToStorage(), new Heading(0))))!.Image!;
+
+        Assert.AreEqual((3, 2, 1), (sawing.Rgba[0], carrying.Rgba[0], walking.Rgba[0]));
     }
 
     [TestMethod]

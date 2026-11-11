@@ -189,8 +189,6 @@ public sealed class SettlerEncoderTests
     public void AHeadingKeptRetriedTwiceTurnsBackByByteArithmetic()
     {
         Assert.AreEqual(new Heading(0xfa + 6 & 0xff), new Heading(-6).Unmarked);
-        Assert.AreEqual(new Heading(3), new Heading(0).Turned);
-        Assert.AreEqual(new Heading(0xfd + 3 & 0xff), new Heading(-3).Turned);
     }
 
     [TestMethod]

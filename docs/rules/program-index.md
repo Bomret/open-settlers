@@ -423,7 +423,7 @@ entries per phase (see "Item tables").
 | `0x42e0b8` | `Building_HandleType1` | The handler of the building type 1: asks for a settler of job 11, whose work (`0x433f71`, state 0x1f) looks for a node with no object and no road by the water. | confirmed | game | Entry 1 of `0x42cd1d`. |
 | `0x42d987` | `Building_HandleType4` | The handler of the building type 4, the stonecutter's building (his work puts the stone, good 10, on the flag): asks for a settler of job 7 with the tool of the stock word `0x2e` (good 23), as `Building_HandleType2` does. | confirmed | game | Entry 4 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
 | `0x42d9c9` | `Building_HandleType9` | The handler of the building type 9, the forester's building (his work puts the saplings `0x67` and `0x68` on the map): asks for a settler of job 8 with no tool. | confirmed | game | Entry 9 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
-| `0x42da0b` | `Building_HandleType17` | The handler of the building type 0x11 (inferred: the sawmill): asks for a settler of job 6 with the tool of the stock word `0x2c` (good 22). | confirmed | game | Entry 0x11 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
+| `0x42da0b` | `Building_HandleType17` | The handler of the building type 0x11, the sawmill: asks for a settler of job 6 with the tool of the stock word `0x2c` (good 22), and with the worker inside (status bit 6) keeps the rank of its flag's request for logs through the pointer at `+0xe` of its item: the byte at `0x45` is `0xff` shifted right by the goods the fill byte 9 counts (both nibbles), 0 where they are 8 or more. | confirmed | game | Entry 0x11 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types), [Sawmilling](sawmilling.md#the-rank-of-the-request-for-logs). |
 | `0x42d55f` | `Building_HandleConstruction` | The handler a building under construction goes to: the entries `0x21` to `0x29` and a few more of `0x42cd1d` jump here instead of to the type's handler. Where the site's status bits 2, 6, and 7 are clear it sets the progress word to 1 and asks for the builder (job 3, tool `0x22`, at `0x42d5fc`; [the builder](construction.md#the-request-for-a-builder)), and it keeps the rank of the site's flag's requests for planks and stones from what the site holds on site and on the way ([Materials](construction-materials.md#the-building-passs-turn-of-a-site)). | confirmed | game | Entries `0x21` and on of `0x42cd1d`; the emulator's `construct:` games show the ranks and the builder's walk. |
 | `0x43ce20` | `Builder_Start` | The start routine of job 3 (entry 3 of `0x43ca54`, the jump at `0x43ca6c`), run where the builder has stepped through the door of a site: with byte 11 `0xfe` it goes into the storage as every job's does; else the builder takes state 9 with the frame `0x62` (`0x64` for the types 10, 17, 19, and 22 by the mask `0x4a0400`), the timer `0x7f`, the site's slot in the word at 12, and no material taken ([the builder](construction.md#the-builders-turn)). | confirmed | game | Entry 3 of `0x43ca54`; the engine's `BuilderBehavior.Start`. |
 | `0x43ec82` | `Builder_Build` | State 9: when the timer has run out the builder takes the next material of the site in the order of `0x43f0ba` or makes a blow that adds a step of `0x43f0fa` to the progress word, draws once from the generator for the figure, and ends the building where the word carries ([the builder](construction.md#the-builders-turn)). | confirmed | game | Entry 9 of `0x42fca1` (the jump at `0x42fce9`); the emulator's `construct:` games show every turn. |
@@ -440,6 +440,11 @@ entries per phase (see "Item tables").
 | `0x43ebac` | `Digger_StepFrames` | Data: two tables of 7 bytes, at `0x43ebac` and `0x43ebb3`, the frame base of the step back to the site's node and of the step onto a neighbour for each node index; the frame is the base plus the height difference. | confirmed | game | Read by `0x43e45e`. |
 | `0x43ebba` | `Digger_PassHeights` | Data: 16 signed bytes, the delta of the pass's height to the site's height for each pass 0 to 15 (-1, +1, -2, +2, and so on to +8). | confirmed | game | Read by `0x43e45e`. |
 | `0x43fa87` | `Digger_FigureWord` | The digger's figure handler (stub 2 of `0x43f744`): adds `0x300` to the figure byte below `0x80` and `0x380` from `0x80`, with a sound request at the frames `0x83` and `0x84` ([the digger](digging.md#the-diggers-figure)). | confirmed | game | Stub 2 of `0x43f744`; `ProgramTablesImporter` reads the adds (`RuleTables.DiggerFigureAdds`). |
+| `0x43cf41` | `Sawmiller_Start` | The start routine of job 6 (entry 6 of `0x43ca54`), run where the sawmiller has stepped through the door: with byte 11 `0xfe` it goes into the storage as every job's does; else the node's settler word is cleared, and where byte 11 is not 0 the flag's class byte at `0x42` is 0, the one at `0x44` is `0x20` (class 5, the logs) and its rank at `0x45` is 0; the settler takes state `0x18` with byte 11 0 ([the start](sawmilling.md#the-start-and-the-request-for-logs)). | confirmed | game | Entry 6 of `0x43ca54`; the engine's `SawmillBehavior.Start`. |
+| `0x4359fe` | `Sawmiller_Saw` | State `0x18`: with byte 11 0 and no log on site (the high nibble of the building's byte 9) it changes nothing; with one it takes it out of the fill, claims the node, and saws: byte 11 `0xff`, frame `0x7c`, timer `0x93f`. With byte 11 negative, when the timer has run out the node is let go and the settler goes on at `0x43e1d0` with the plank (byte 11 8, byte 15 `0xd`) ([state 0x18](sawmilling.md#state-0x18)). | confirmed | game | Entry `0x18` of `0x42fca1`; the engine's `SawmillBehavior.Work`. |
+| `0x43e1d0` | `Settler_StepOutWithGood` | The entry of state `0xb` (the body is at `0x43e228`): counts the good in byte 11 in the player block (**not ported**), then, as `0x43e036` does, steps from the building's node onto the flag south-east of it where no settler stands on either node and the flag has a free place among its eight; else frame `0x52` and timer 0. The step goes on in state 5 ([the step out](sawmilling.md#the-step-out-and-the-plank)). | confirmed | game | Entry `0xb` of `0x42fca1`; the engine's `SawmillBehavior.StepOut`. |
+| `0x43c6aa` | `Settler_PutDownGood` | State `0xd`: puts the good of byte 11 on the first empty one of the first seven places of the flag the settler stands on, or on the last place where those hold goods (no check of that one), with the destination word 0, sets bit 7 of byte 4 of the flag item, clears byte 11, and goes on as state 6 (`0x43c7ca`) ([the put](sawmilling.md#the-step-out-and-the-plank)). | confirmed | game | Entry `0xd` of `0x42fca1`; the engine's `SawmillBehavior.PutDown`. |
+| `0x43fc21` | `Sawmiller_FigureWord` | The sawmiller's figure handler (stub 6 of `0x43f744`): adds `0xc00` to the figure byte below `0x80`, `0x1700` in state 5 with byte 15 `0xd` (the step out with the plank), and `0x1580` from `0x80`, with a sound request at the saw's frames ([drawing](sawmilling.md#drawing)). | confirmed | game | Stub 6 of `0x43f744`; `ProgramTablesImporter` reads the adds (`RuleTables.SawmillerFigureAdds`). |
 | `0x42cd1d` | `Building_TypeJumpTable` | Data: the jump table `Table18_Pass` takes a building's handler from: 8 bytes for each value of the type byte's bits 2 to 7 (the type, plus `0x20` while the building is under construction), each a `jmp`. | confirmed | game | Read by `Table18_Pass` (`0x42cb2d`). |
 | `0x42d307` | `Building_SizeTable` | Data: one byte for each building type 0 to 0x17, the room the type needs: 0 a mine, 1 small, 2 large (`0xff` for the types 0 and `0x18`). | confirmed | game | Read by `Building_Free` (`0x42cf9d`); `ProgramTablesImporter` reads it (`RuleTables.SizeOf`). [Build sites](build-sites.md#the-four-types). |
 | `0x449f18` | `Building_NeedsTable` | Data: two bytes for each building type 0 to 0x17, the planks and the stones the type needs. | confirmed | game | Read by `Building_Place` (`0x449a63`); `ProgramTablesImporter` reads it (`RuleTables.NeedsOf`). [Build sites](build-sites.md#the-four-types). |
@@ -1164,6 +1169,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x434946` | `Settler_ClaimNode` | confirmed | Simulation |
 | `0x4350f8` | — | unknown | Simulation |
 | `0x4353ef` | `Settler_SearchFlag` | confirmed | Simulation |
+| `0x4359fe` | `Sawmiller_Saw` | confirmed | Simulation |
 | `0x435b17` | `Stonecutter_SearchHeap` | confirmed | Simulation |
 | `0x435c5c` | `Stonecutter_Cut` | confirmed | Simulation |
 | `0x436a84` | `Stonecutter_WalkToHeap` | confirmed | Simulation |
@@ -1186,6 +1192,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43b788` | `Settler_StepRoadEast` | confirmed | Simulation |
 | `0x43bc52` | `Carrier_WaitAtEnd` | confirmed | Castle and build sites |
 | `0x43c4ea` | `Settler_DeliverGood` | confirmed | Simulation |
+| `0x43c6aa` | `Settler_PutDownGood` | confirmed | Simulation |
 | `0x43c7c2` | `Settler_EnterBuilding` | confirmed | Simulation |
 | `0x43c92b` | `Building_DoorSpeeds` | confirmed | Simulation |
 | `0x43c96b` | `Settler_PassDoor` | confirmed | Simulation |
@@ -1196,12 +1203,14 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43ce20` | `Builder_Start` | confirmed | Simulation |
 | `0x43ceea` | `Settler_EnterStorageJob4` | inferred | Simulation |
 | `0x43cf15` | `Woodcutter_Start` | confirmed | Simulation |
+| `0x43cf41` | `Sawmiller_Start` | confirmed | Simulation |
 | `0x43cfdd` | `Stonecutter_Start` | confirmed | Simulation |
 | `0x43d009` | `Forester_Start` | confirmed | Simulation |
 | `0x43dceb` | `Settler_WaitStep` | confirmed | Simulation |
 | `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
 | `0x43e008` | `Builder_LeaveSite` | confirmed | Simulation |
 | `0x43e036` | `Settler_StepToFlag` | confirmed | Simulation |
+| `0x43e1d0` | `Settler_StepOutWithGood` | confirmed | Simulation |
 | `0x43e45e` | `Digger_Work` | confirmed | Simulation |
 | `0x43e4d6` | `Digger_NodeJumps` | confirmed | Simulation |
 | `0x43ebac` | `Digger_StepFrames` | confirmed | Simulation |
@@ -1220,6 +1229,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43fa87` | `Digger_FigureWord` | confirmed | Simulation |
 | `0x43faf4` | `Builder_FigureWord` | confirmed | Simulation |
 | `0x43fb6b` | `Woodcutter_FigureWord` | confirmed | Graphics images |
+| `0x43fc21` | `Sawmiller_FigureWord` | confirmed | Simulation |
 | `0x43fcd8` | `Stonecutter_FigureWord` | confirmed | Simulation |
 | `0x43fd88` | `Forester_FigureWord` | confirmed | Simulation |
 | `0x43fed8` | `Settler_FigureJob11` | confirmed | Views, panels, and drawing |
@@ -1452,7 +1462,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 352 routines of the 513 functions in the dump's game code band and lists 63 more without a name: 294 confirmed, 70 inferred, 51 unknown.
+Coverage: the index names 357 routines of the 513 functions in the dump's game code band and lists 63 more without a name: 299 confirmed, 70 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:

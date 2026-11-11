@@ -591,7 +591,7 @@ public sealed partial class WoodcutterBehavior(
     // The step from a flag into the building north-west of it (0x43c7c2, and the turn of state 6): the settler takes the
     // node when no settler stands on it, with the time of the step and the part of it the door's speed leaves, and is in
     // state 4; else it waits in state 6.
-    private void EnterHut(int slot, Settler settler)
+    internal void EnterHut(int slot, Settler settler)
     {
         if (settler.Activity is not EntersBuilding)
         {

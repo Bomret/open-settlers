@@ -208,5 +208,6 @@ the castle, the hut's flag, and a flag as a road, a node of no road, and a node 
 - Departures: the engine's flag slot 0 is the castle's flag, so the original's test of a waiting settler's target (state 1) is left out ([Goods at a flag](goods.md) states the dummy); a carrier that waits has the
   flag's slot in the target where the original keeps a pointer, so the bytes of a settler in state `0x19` that was one are masked in the test.
 - The drawing: the stand-in button "Remove" in `MapViewControl`; a hut that burns is not drawn (its fire is not read).
-- Tests: `RemovalTests` (the verb's games and classes, `removals.txt`) and `RemovalLogicTests` (the engine's own logic, made-up tables).
+- Tests: `RemovalTests` (the verb's games and classes, `removals.txt`) and `RemovalLogicTests` (the engine's own logic, made-up tables);
+  `SawmillRemovalTests` (a sawmill's worker waiting, sawing, and out with the plank, `saw-removals.txt`, [Sawmilling](sawmilling.md#removal)).
 - A site taken down (`Removal.TakeBuildingDown`) keeps its `Building.Site` with the planks it needs set to 0; `BuildSite.Evaluate` reads the clock (`Building.Stamp`) as the height of a large site taken down while it waited. The remove click reaches a site through the same command (`RemoveBuilding`). Tests: `ConstructionRemovalTests` (`construction-removal.txt`, the emulator verb `remove` with clicks written `N=click`).

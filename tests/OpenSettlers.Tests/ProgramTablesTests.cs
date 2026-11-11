@@ -169,6 +169,15 @@ public sealed class ProgramTablesTests
         );
         Add(ProgramTablesImporter.DiggerWalkAddress, 0x1600);
         Add(ProgramTablesImporter.DiggerHighAddress, 0x1680);
+        var sawmillerStub =
+            ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.SawmillerCode;
+        Write(
+            sawmillerStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.SawmillerHandlerAddress - (sawmillerStub + 5))]
+        );
+        Add(ProgramTablesImporter.SawmillerWalkAddress, 0x1700);
+        Add(ProgramTablesImporter.SawmillerCarryingAddress, 0x1780);
+        Add(ProgramTablesImporter.SawmillerSawAddress, 0x1800);
     }
 
     private static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -636,6 +645,29 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(new WorkerRequest(Job.Digger, new Good(16)), tables.DiggerRequest);
         Assert.AreEqual(0x300, tables.DiggerFigureAdds.Walk);
         Assert.AreEqual(0x380, tables.DiggerFigureAdds.Cutting);
+    }
+
+    [TestMethod]
+    public void TheSawmillersFigureAddsAreReadFromHisHandlerAndHisStubIsChecked()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(new SawmillerFigureAdds(0x1700, 0x1780, 0x1800), tables.SawmillerFigureAdds);
+
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.SawmillerCode;
+        var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
+
+        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheSawmillersFigureAddsOfTheInstallMatchTheProgram()
+    {
+        // The handler of the stub of job 6 (0x43fc21, found by objdump of the program's instructions): add word [edi+8], 0x1580 at 0x43fca5
+        // for a figure byte from 0x80, 0x1700 at 0x43fcc2 for the state 5 that lays the plank down next (byte 15 is 0xd), and 0xc00 at 0x43fccd
+        // for the walk; the draw run of the recording (settler-draws.txt, sawmiller) draws with them.
+        Assert.AreEqual(new SawmillerFigureAdds(0xc00, 0x1700, 0x1580), TestProgram.Tables().SawmillerFigureAdds);
     }
 
     [TestMethod]

@@ -497,10 +497,10 @@ public sealed class CarrierBehavior(
                 return;
             }
 
-            // The approach is the heading less 6 (Wait): from -6 (heading 0) to -1 (heading 5). The turned heading is the
-            // opposite direction: approach + 6 - 3, and 6 more where that went below 0 (checked against the emulator's fetches
-            // in road-splits.txt, where the carrier came by 0 and by 3).
-            heading = waiting.Approach.Turned;
+            // The carrier turns round: its heading is the direction opposite to the one the road leaves the flag it waits next to in
+            // (the mode byte less 3, 6 more where that went below 0: 0x430002), whichever way it came by to the road's last node (a
+            // road that bends there is checked in saw-walks.txt; the straight ones in road-splits.txt, where the carrier came by 0 and by 3).
+            heading = Heading.Facing(waiting.Direction.Opposite);
         }
 
         movement.Become(settler, new ClaimsNode(heading, waiting.Approach));

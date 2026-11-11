@@ -104,6 +104,9 @@ public static class EventType
     /// <summary>The digger's last pass: the site starts (its progress word becomes 1) and the digger goes home.</summary>
     public const string Levelled = "levelled";
 
+    /// <summary>A sawmiller's turn in the sawmill: a log taken out of the building's fill, the sawing, or the wait for a log.</summary>
+    public const string Saws = "saws";
+
     /// <summary>The builder's last blow: the building is finished and its flag asks for nothing.</summary>
     public const string BuildingFinished = "building-finished";
 

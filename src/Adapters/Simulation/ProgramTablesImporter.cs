@@ -137,6 +137,18 @@ public static class ProgramTablesImporter
     /// </summary>
     public const int DiggerRequestAddress = 0x42d52a;
 
+    /// <summary>The handler of the sawmiller's figure (<c>0x43fc21</c>, the target of the stub of job 6).</summary>
+    public const int SawmillerHandlerAddress = 0x43fc21;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the sawmiller's handler for a figure byte from 0x80 (the saw).</summary>
+    public const int SawmillerSawAddress = 0x43fca5;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the sawmiller's handler for the step that takes the plank out (state 5, byte 15 0xd).</summary>
+    public const int SawmillerCarryingAddress = 0x43fcc2;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the sawmiller's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int SawmillerWalkAddress = 0x43fccd;
+
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
     private static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
@@ -288,7 +300,26 @@ public static class ProgramTablesImporter
             StonecutterAdds(exe),
             ForesterAdds(exe),
             WorkerRequest(exe, DiggerRequestAddress),
-            DiggerAdds(exe)
+            DiggerAdds(exe),
+            SawmillerAdds(exe)
+        );
+    }
+
+    // The sawmiller's adds from the immediates of his handler, as the digger's are read: the stub of job 6 must jump to the handler.
+    private static SawmillerFigureAdds SawmillerAdds(byte[] exe)
+    {
+        var stub = JobStubAddress + JobStubSize * Job.SawmillerCode;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(SawmillerHandlerAddress - (stub + 5))],
+            "jumps to the sawmiller's handler"
+        );
+
+        return new SawmillerFigureAdds(
+            Immediate(exe, SawmillerWalkAddress),
+            Immediate(exe, SawmillerCarryingAddress),
+            Immediate(exe, SawmillerSawAddress)
         );
     }
 

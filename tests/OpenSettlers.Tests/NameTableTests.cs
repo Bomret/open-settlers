@@ -31,6 +31,15 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
+    public void TheSawmillersJobAndStatesGetTheirNames()
+    {
+        Assert.AreEqual("sawmiller", NameTable.JobName(Job.SawmillerCode));
+        Assert.AreEqual("saws", NameTable.StateName(0x18));
+        Assert.AreEqual("steps-out-with-good", NameTable.StateName(0xb));
+        Assert.AreEqual("puts-down-good", NameTable.StateName(0xd));
+    }
+
+    [TestMethod]
     public void TheStonecuttersJobAndStatesGetTheirNames()
     {
         Assert.AreEqual("stonecutter", NameTable.JobName(Job.StonecutterCode));

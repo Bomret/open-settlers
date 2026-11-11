@@ -131,7 +131,8 @@ public sealed class RuleTables
         FigureAdds? stonecutterFigureAdds = null,
         ForesterFigureAdds? foresterFigureAdds = null,
         WorkerRequest? diggerRequest = null,
-        FigureAdds? diggerFigureAdds = null
+        FigureAdds? diggerFigureAdds = null,
+        SawmillerFigureAdds? sawmillerFigureAdds = null
     )
     {
         if (
@@ -188,6 +189,7 @@ public sealed class RuleTables
         // stand-in: a table a test does not give makes the digger a settler of the digger's job with no tool, drawn in the carrier's row.
         DiggerRequest = diggerRequest ?? new WorkerRequest(Job.Digger, Good.None);
         DiggerFigureAdds = diggerFigureAdds ?? default;
+        SawmillerFigureAdds = sawmillerFigureAdds ?? default;
     }
 
     private static WorkerRequest?[] WoodcutterOnly()
@@ -382,6 +384,9 @@ public sealed class RuleTables
     /// </summary>
     public FigureAdds DiggerFigureAdds { get; }
 
+    /// <summary>What the sawmiller's figure handler adds (<c>0x43fc21</c>, the target of the stub of job 6, <c>docs/rules/sawmilling.md</c>).</summary>
+    public SawmillerFigureAdds SawmillerFigureAdds { get; }
+
     /// <summary>
     /// What a finished building of <paramref name="type"/> asks for as its worker (the handlers of the jump table <c>0x42cd1d</c>); null for
     /// a type whose handler asks for none of this kind, the castle included.
@@ -432,6 +437,12 @@ public enum FillCounter
 /// or <paramref name="Carrying"/> on the way back with the log) and for one from 0x80 (<paramref name="Cutting"/>).
 /// </summary>
 public readonly record struct FigureAdds(ushort Walk, ushort Carrying, ushort Cutting);
+
+/// <summary>
+/// What the sawmiller's handler adds to the figure byte: <paramref name="Walk"/> for a byte below 0x80, <paramref name="Carrying"/> in the
+/// step that takes the plank out (state 5 with state 0xd next), and <paramref name="Saw"/> for a byte from 0x80, the saw's frames.
+/// </summary>
+public readonly record struct SawmillerFigureAdds(ushort Walk, ushort Carrying, ushort Saw);
 
 /// <summary>
 /// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <paramref name="Walk"/>

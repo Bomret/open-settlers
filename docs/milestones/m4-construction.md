@@ -66,6 +66,16 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 - `0x464117`, `0x4644ab` to `0x464a3f`: the classes of the goods and the request search of a flag's turn. known
   ([Materials](../rules/construction-materials.md#the-request-search))
 
+## Sawmill
+
+- `0x43cf41`, `0x4359fe`, `0x43e1d0`, `0x43c6aa`: the sawmiller's start routine (job 6), his state `0x18` (waits for a log, takes one out
+  of the building's fill and saws it for `0x93f` clock units), and the step out and put that carry the plank to the flag. known
+  ([Sawmilling](../rules/sawmilling.md))
+- `0x42da0b`: the sawmill's handler: it asks for the worker and, with him inside, keeps the rank of the flag's request for logs
+  (`0xff` shifted right by the logs held, 0 from eight). known ([Sawmilling](../rules/sawmilling.md#the-rank-of-the-request-for-logs))
+- `0x43fc21`: the sawmiller's figure handler (the adds `0xc00`, `0x1700`, and `0x1580`). known
+  ([Sawmilling](../rules/sawmilling.md#drawing))
+
 ## Wood and stone
 
 - `0x424175` to `0x4246f4`: 15 routines, each setting the scatter parameters of one kind of map object
@@ -83,5 +93,6 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 - The stonecutter, the forester, and the sawmill are the building types 4, 9, and 0x11 (the handlers
   `0x42d987`, `0x42d9c9`, `0x42da0b` of the jump table `0x42cd1d`; the stonecutter's name is known: his work cuts
   the stone heaps and lays the stone on the flag, [Stonecutting](../rules/stonecutting.md); the forester's name is known: his work puts
-  the saplings on the map, [Forestry](../rules/forestry.md); the sawmill's name is inferred, confirmed by the slice that builds its work). The builder is job 3 (known, [the builder](../rules/construction.md))
+  the saplings on the map, [Forestry](../rules/forestry.md); the sawmill's is known too: his work turns the logs the building holds
+  into planks, [Sawmilling](../rules/sawmilling.md)). The builder is job 3 (known, [the builder](../rules/construction.md))
   and the digger is job 2 (known, [the digger](../rules/digging.md)). `0x4312ed` is `Flag_ReleaseGoods`, no table of jobs.

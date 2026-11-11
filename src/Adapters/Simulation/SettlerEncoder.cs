@@ -24,6 +24,7 @@ public static class SettlerEncoder
     private const int SearchingMode = 1;
     private const int SecondFigureBit = 0x80;
     private const int WalksState = 2;
+    private const int PutsDownState = 0xd;
 
     /// <summary>The original's fields for the settler.</summary>
     public static SettlerFields Fields(Settler settler)
@@ -85,6 +86,11 @@ public static class SettlerEncoder
             LeavesSite a => new(a.Code, StorageMode, 0, 0, WalksState),
             // The digger's work: the pass in byte 11, the site's height and the node of the pass in the word at 12, the phase in byte 14.
             Digs a => new(a.Code, a.Pass, a.Target | (a.Node << 8), a.Phase, r.Next),
+            // The sawmiller's work: byte 11 is 0xff while he saws and 0 while he waits for a log; with the plank in his hands it holds the
+            // good, the word at 12 is 0, and byte 15 is the state he lays it down in.
+            Saws a => new(a.Code, a.Sawing ? BlowingMode : 0, r.Target, r.Heading, r.Next),
+            StepsOutWithGood a => new(a.Code, a.Good.Code, 0, r.Heading, PutsDownState),
+            PutsDownGood a => new(a.Code, a.Good.Code, 0, r.Heading, r.Next),
             HandsOver a => new(
                 a.Code,
                 a.Load?.Good.Code ?? 0,

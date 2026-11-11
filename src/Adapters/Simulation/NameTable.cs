@@ -170,6 +170,12 @@ public sealed class NameTable
             "stonecutter",
             "Job.Stonecutter; his work puts good 10 (a stone) on the hut's flag (0x438182) and cuts the stone heaps 0x48 to 0x4f (0x435c5c); docs/rules/stonecutting.md"
         );
+        AddOne(
+            CodeKind.Job,
+            Job.Sawmiller.Code,
+            "sawmiller",
+            "Job.Sawmiller; the handler 0x42da0b of the building type 0x11 asks for job 6 with the tool good 22 and the job's state 0x18 takes a log out of the building (0x4359fe) and carries the plank (good 8) out to the flag (0x43c6aa); docs/rules/sawmilling.md"
+        );
         AddOne(CodeKind.Job, Job.Jobless.Code, "jobless", "Job.Jobless: 21 is a settler without a job yet");
 
         const string State = "the code of the Activity record (src/Domain/Activity.cs)";
@@ -187,6 +193,18 @@ public sealed class NameTable
             "0x43e45e walks the node and its six neighbours of the site and changes the heights one a pass; docs/rules/digging.md"
         );
         AddOne(CodeKind.State, 9, "builds", State);
+        AddOne(
+            CodeKind.State,
+            0xb,
+            "steps-out-with-good",
+            "0x43e228 steps from the door onto the flag where the flag has a free place, with the good in his hands; docs/rules/sawmilling.md"
+        );
+        AddOne(
+            CodeKind.State,
+            0xd,
+            "puts-down-good",
+            "0x43c6aa lays the good in his hands on the first empty place of the flag, then enters the building; docs/rules/sawmilling.md"
+        );
         AddOne(CodeKind.State, 0xf, "leaves-castle", State);
         AddOne(CodeKind.State, 0x10, "walks-free", State);
         AddOne(CodeKind.State, 0x11, "cuts-tree", State);
@@ -221,6 +239,12 @@ public sealed class NameTable
             "cuts-stone",
             "0x435c5c steps onto the heap's node, strikes, and takes a stone off it; docs/rules/stonecutting.md"
         );
+        AddOne(
+            CodeKind.State,
+            0x18,
+            "saws",
+            "0x4359fe takes a log out of the building's fill and saws it for 0x93f clock units; docs/rules/sawmilling.md"
+        );
         AddOne(CodeKind.State, 0x19, "looks-for-flag-home", State);
         AddOne(CodeKind.State, 0x1c, "claims-node-home", State);
         AddOne(CodeKind.State, 0x42, "waits-at-flag", State);
@@ -244,7 +268,7 @@ public sealed class NameTable
             CodeKind.Building,
             BuildingType.Sawmill.Code,
             "sawmill",
-            "BuildingType.Sawmill; handler 0x42da0b asks for job 6 (tool stock word 0x2c, good 22); large, needs 3 planks and 2 stones (0x42d307, 0x449f18); inferred, docs/rules/build-sites.md"
+            "BuildingType.Sawmill; handler 0x42da0b asks for job 6 (tool stock word 0x2c, good 22), whose work turns the logs it takes in into planks (good 8, 0x43c6aa); large, needs 3 planks and 2 stones (0x42d307, 0x449f18); docs/rules/build-sites.md, docs/rules/sawmilling.md"
         );
         AddOne(
             CodeKind.Building,

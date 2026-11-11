@@ -43,11 +43,14 @@ internal static class ConstructionTables
         return sizes;
     }
 
+    // The made-up planks the forester's site needs.
+    public const int ForesterPlanks = 2;
+
     // The made-up needs, a planks byte and a stones byte for each type: the forester two planks and no stone, every other type none.
     public static byte[] Needs()
     {
         var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        needs[2 * BuildingType.Forester.Code] = 2;
+        needs[2 * BuildingType.Forester.Code] = ForesterPlanks;
 
         return needs;
     }
@@ -59,12 +62,17 @@ internal static class ConstructionTables
     // The made-up digger's tool: the good 19.
     public static readonly Good DiggerTool = new(19);
 
-    // The made-up workers: the woodcutter's hut asks for the woodcutter's job with no tool, the forester's for job 8 with a tool.
+    // The made-up sawmiller's tool: the good 20.
+    public static readonly Good SawTool = new(20);
+
+    // The made-up workers: the woodcutter's hut asks for the woodcutter's job with no tool, the forester's for job 8 with a tool, the
+    // sawmill for the sawmiller's job with a tool.
     public static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
         workers[BuildingType.Woodcutter.Code] = new WorkerRequest(Job.Woodcutter, Good.None);
         workers[BuildingType.Forester.Code] = new WorkerRequest(new Job(8), ForesterTool);
+        workers[BuildingType.Sawmill.Code] = new WorkerRequest(Job.Sawmiller, SawTool);
 
         return workers;
     }

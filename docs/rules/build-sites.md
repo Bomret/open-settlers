@@ -154,7 +154,8 @@ The names of the types 4, 9, and 0x11 are **inferred** from the sizes, the needs
 stonecutter needs a pick and a sawmill worker a saw, a forester needs no tool); the slices that build each type's work
 confirm the name from the goods it puts down. The type 4 is **confirmed**: his worker lays the stone, good 10, on the flag
 ([Stonecutting](stonecutting.md#the-building-and-the-job)). The type 9 is **confirmed**: his worker puts the saplings `0x67` and `0x68` on
-nodes of meadow ([Forestry](forestry.md#the-building-and-the-job)). The object numbers are the first instruction of each type's draw stub
+nodes of meadow ([Forestry](forestry.md#the-building-and-the-job)). The type 0x11 is **confirmed** too: his worker takes the logs the building
+holds and lays the plank, good 8, on the flag ([Sawmilling](sawmilling.md#the-building-and-the-job)). The object numbers are the first instruction of each type's draw stub
 (`0x44e329`, the jump table `0x44e3aa`); the engine draws a finished building with it.
 
 **The site that has not started** (read from the code, not emulated). A building under construction goes through the common
