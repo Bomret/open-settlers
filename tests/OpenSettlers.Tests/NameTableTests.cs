@@ -19,6 +19,8 @@ public sealed class NameTableTests
         Assert.AreEqual("castle", NameTable.BuildingName(BuildingType.Castle.Code));
         Assert.AreEqual("storehouse", NameTable.BuildingName(0xa));
         Assert.AreEqual("carrier", NameTable.JobName(Job.CarrierCode));
+        Assert.AreEqual("digger", NameTable.JobName(Job.DiggerCode));
+        Assert.AreEqual("digs", NameTable.StateName(8));
         Assert.AreEqual(3, Job.Builder.Code);
         Assert.AreEqual("builder", NameTable.JobName(3));
         Assert.AreEqual("castle-settler", NameTable.JobName(4));

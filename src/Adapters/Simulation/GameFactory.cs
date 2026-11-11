@@ -110,7 +110,10 @@ public static class GameFactory
         var builder = new BuilderBehavior(movement, buildings, flags, history, draws, woodcutter.StepOut);
         woodcutter.RegisterStart(Job.Builder, builder.Start);
         woodcutter.RegisterStart(Job.Stonecutter, woodcutter.StartStonecutter);
+        var digger = new DiggerBehavior(movement, buildings, history, woodcutter.StepOut);
+        woodcutter.RegisterStart(Job.Digger, digger.Start);
         builder.Register(behaviours);
+        digger.Register(behaviours);
         roster.Register(behaviours);
         walks.Register(behaviours);
         removal.Register(behaviours);
@@ -171,7 +174,7 @@ public static class GameFactory
                 Handlers =
                 [
                     new PlaceCastleHandler(tables, map, castle, startStock, flags, settlers, roster, history, causes),
-                    new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal),
+                    new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal, buildings),
                     new BuildRoadHandler(planner, network, carriers, history, causes),
                     new PlaceBuildingHandler(placement),
                     new RemoveFlagHandler(removal),

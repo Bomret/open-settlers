@@ -426,7 +426,13 @@ entries per phase (see "Item tables").
 | `0x43f0fa` | `Builder_BlowSteps` | Data: two 16-bit words for each building type, what a blow adds to the progress word before it reaches `0x8000` and from there on. | confirmed | game | Read by `0x43ee7d`; `ProgramTablesImporter` reads it (`RuleTables.BlowStep`). |
 | `0x43faf4` | `Builder_FigureWord` | The builder's figure handler (stub 3 of `0x43f744`): adds `0x500` to the figure byte below `0x80` and `0x580` from `0x80`, with a sound request at some of the work figures ([the builder](construction.md#drawing-a-site)). | confirmed | game | Stub 3 of `0x43f744`; `ProgramTablesImporter` reads the adds (`RuleTables.BuilderFigureAdds`). |
 | `0x44fa79` | `Gfx_DrawBuildingSite` | The common part of the draw routine for a building under construction: by the progress word it draws the object 144, or the piles of the goods on site, the object 145, and the type's scaffold grown by twice the word, or the whole scaffold and the finished building grown ([the builder](construction.md#drawing-a-site)). | confirmed | game | Reached from the stubs `0x44f92e` to `0x44fa5d` of the jump table at `0x44e4aa`. Not a Ghidra function. |
-| `0x42d328` | `Building_HandleLargeConstruction` | The handler the other entries under construction go to, the sawmill's among them: while the progress word is 0 it asks for the digger (job 2, tool `0x20`, **not ported**) and tests whether the node and its six neighbours lie at the site's height; where they do it sets the progress word to 1 and goes on at `0x42d55f`. | confirmed | game | Entries `0x2a`, `0x2c` to `0x2e`, and `0x30` to `0x37` of `0x42cd1d`. [Materials](construction-materials.md#the-building-passs-turn-of-a-site). |
+| `0x42d328` | `Building_HandleLargeConstruction` | The handler the other entries under construction go to, the sawmill's among them: while the progress word is 0 it returns where a worker is inside or on the way, tests whether the node and its six neighbours lie at the site's height (where they do it sets the progress word to 1 and goes on at `0x42d55f`), and otherwise asks for the digger (`0x42d52a`: job 2, tool `0x20`) unless the request-failed bit is set. | confirmed | game | Entries `0x2a`, `0x2c` to `0x2e`, and `0x30` to `0x37` of `0x42cd1d`. [Materials](construction-materials.md#the-building-passs-turn-of-a-site), [the digger](digging.md#the-large-site-waits-for-the-ground). |
+| `0x43cd9d` | `Digger_Start` | The start routine of job 2 (entry 2 of `0x43ca54`), run where the digger has stepped through the door of a site: with byte 11 `0xfe` it goes into the storage as every job's does; else he takes state 8 with the pass 15, the site's height, the node index 6, and the phase 1 ([the digger](digging.md#the-start-0x43cd9d)). | confirmed | game | Entry 2 of `0x43ca54`; the engine's `DiggerBehavior.Start`. |
+| `0x43e45e` | `Digger_Work` | State 8: sixteen passes over the site's node and its six neighbours; in a pass each node that holds the pass's height is stepped onto, changed by one, and left again, and after the last pass the site's progress word is 1 and the digger goes home ([the digger](digging.md#state-8-0x43e45e)). | confirmed | game | Entry 8 of `0x42fca1`; the emulator's `construct:` games show every turn. Not a Ghidra function. |
+| `0x43e4d6` | `Digger_NodeJumps` | Data-like code: three tables of 8 bytes for each node index 0 to 6 (`jmp rel32`), at `0x43e4d6`, `0x43e8c3`, and `0x43ebca`, each adding the offset of the node's neighbour to the digger's node: to look again at a busy node, to step back onto the site's node, and to compare the height. | confirmed | game | Read by `0x43e45e`. |
+| `0x43ebac` | `Digger_StepFrames` | Data: two tables of 7 bytes, at `0x43ebac` and `0x43ebb3`, the frame base of the step back to the site's node and of the step onto a neighbour for each node index; the frame is the base plus the height difference. | confirmed | game | Read by `0x43e45e`. |
+| `0x43ebba` | `Digger_PassHeights` | Data: 16 signed bytes, the delta of the pass's height to the site's height for each pass 0 to 15 (-1, +1, -2, +2, and so on to +8). | confirmed | game | Read by `0x43e45e`. |
+| `0x43fa87` | `Digger_FigureWord` | The digger's figure handler (stub 2 of `0x43f744`): adds `0x300` to the figure byte below `0x80` and `0x380` from `0x80`, with a sound request at the frames `0x83` and `0x84` ([the digger](digging.md#the-diggers-figure)). | confirmed | game | Stub 2 of `0x43f744`; `ProgramTablesImporter` reads the adds (`RuleTables.DiggerFigureAdds`). |
 | `0x42cd1d` | `Building_TypeJumpTable` | Data: the jump table `Table18_Pass` takes a building's handler from: 8 bytes for each value of the type byte's bits 2 to 7 (the type, plus `0x20` while the building is under construction), each a `jmp`. | confirmed | game | Read by `Table18_Pass` (`0x42cb2d`). |
 | `0x42d307` | `Building_SizeTable` | Data: one byte for each building type 0 to 0x17, the room the type needs: 0 a mine, 1 small, 2 large (`0xff` for the types 0 and `0x18`). | confirmed | game | Read by `Building_Free` (`0x42cf9d`); `ProgramTablesImporter` reads it (`RuleTables.SizeOf`). [Build sites](build-sites.md#the-four-types). |
 | `0x449f18` | `Building_NeedsTable` | Data: two bytes for each building type 0 to 0x17, the planks and the stones the type needs. | confirmed | game | Read by `Building_Place` (`0x449a63`); `ProgramTablesImporter` reads it (`RuleTables.NeedsOf`). [Build sites](build-sites.md#the-four-types). |
@@ -654,7 +660,7 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x43bc52` | `Carrier_WaitAtEnd` | The end of a carrier's road: with a road that holds two carriers the carrier counts its turns and after four leaves the road; with a good waiting at the far end it does nothing; else it takes state `0x42`. Taking it, it writes the player (low two bits of the settler's byte 0) with bit 7 set (`0x43bcf0`) to byte 1 of record B of its node and clears the node's settler word. | confirmed | game | Called by the step routines of `0x43ad78` (`0x43b788` and siblings). |
 | `0x44b6e6` | `BuildSite_Evaluate` | Judges the node in the player block (`+0xfc`, `+0xfe`) and leaves the node state, the site, and the height at `+0x100` to `+0x102`. | confirmed | game | Called by the click handlers, `Castle_PlaceAtStart`, and the build marker. |
 | `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | A copy of the judgment from the south-east node on, also entered from `0x44b63a`. | inferred | game | Called by `BuildSite_Evaluate` and `0x44b63a`. |
-| `0x44bd72` | `BuildSite_EvaluateBuilding` | The judgment for a node that holds a building, with its own copy of the conditions. | inferred | game | Called by `BuildSite_Evaluate` and `BuildSite_EvaluateFromSouthEast`. |
+| `0x44bd72` | `BuildSite_EvaluateBuilding` | The judgment for a node that holds a building, with its own copy of the conditions; its third-ring term (`0x44c151` to `0x44c204`) widens the range of the heights by the target height of a large site that waits for its digger ([the digger](digging.md#a-site-that-waits-in-the-build-site-evaluator)). | inferred | game | Called by `BuildSite_Evaluate` and `BuildSite_EvaluateFromSouthEast`. |
 | `0x44be72` | `BuildSite_SortTriangle` | Sorts one terrain code into plain land, mountain, or other kind. | confirmed | game | Called by `BuildSite_EvaluateBuilding`. |
 | `0x45e375` | `Territory_Update` | Claims the territory around the new building and updates the border marks. | inferred | game | Called by `Castle_Place`. |
 | `0x442e8a` | `Castle_StartStockRows` | Data: five rows of 26 start stock numbers, for the levels 0, 10, 20, 30, and 40. | confirmed | game | Read by `Castle_Place` through `+0x162` of the player block. |
@@ -1174,6 +1180,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43ca54` | `Settler_JobStartTable` | confirmed | Simulation |
 | `0x43cc5f` | `Settler_EnterStorageJob21` | inferred | Simulation |
 | `0x43cd06` | `Settler_EnterStorage` | confirmed | Simulation |
+| `0x43cd9d` | `Digger_Start` | confirmed | Simulation |
 | `0x43ce20` | `Builder_Start` | confirmed | Simulation |
 | `0x43ceea` | `Settler_EnterStorageJob4` | inferred | Simulation |
 | `0x43cf15` | `Woodcutter_Start` | confirmed | Simulation |
@@ -1182,6 +1189,10 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
 | `0x43e008` | `Builder_LeaveSite` | confirmed | Simulation |
 | `0x43e036` | `Settler_StepToFlag` | confirmed | Simulation |
+| `0x43e45e` | `Digger_Work` | confirmed | Simulation |
+| `0x43e4d6` | `Digger_NodeJumps` | confirmed | Simulation |
+| `0x43ebac` | `Digger_StepFrames` | confirmed | Simulation |
+| `0x43ebba` | `Digger_PassHeights` | confirmed | Simulation |
 | `0x43ec82` | `Builder_Build` | confirmed | Simulation |
 | `0x43ef20` | `Builder_FinishBuilding` | confirmed | Simulation |
 | `0x43f0ba` | `Builder_MaterialOrder` | confirmed | Simulation |
@@ -1193,6 +1204,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43f537` | `Settler_BuildRecord` | confirmed | Simulation |
 | `0x43f744` | `Settler_FigureStubs` | confirmed | Graphics images |
 | `0x43f8ae` | `Carrier_FigureWord` | confirmed | Graphics images |
+| `0x43fa87` | `Digger_FigureWord` | confirmed | Simulation |
 | `0x43faf4` | `Builder_FigureWord` | confirmed | Simulation |
 | `0x43fb6b` | `Woodcutter_FigureWord` | confirmed | Graphics images |
 | `0x43fcd8` | `Stonecutter_FigureWord` | confirmed | Simulation |
@@ -1426,7 +1438,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 339 routines of the 513 functions in the dump's game code band and lists 63 more without a name: 281 confirmed, 70 inferred, 51 unknown.
+Coverage: the index names 345 routines of the 513 functions in the dump's game code band and lists 63 more without a name: 287 confirmed, 70 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:

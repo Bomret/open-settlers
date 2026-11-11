@@ -130,6 +130,22 @@ public sealed record Builds(int Site, bool Blowing, int Materials, bool SecondFi
 }
 
 /// <summary>
+/// State 8: the digger works in the ground of the large site he entered (<c>0x43e45e</c>, <c>docs/rules/digging.md</c>). He makes sixteen
+/// passes, the first with <see cref="Pass"/> 15 and the last with 0, over the site's node and its six neighbours; in each he visits the
+/// nodes whose height is the pass's, walks onto each, and changes its height by one toward the site's height, lowering in the odd passes and
+/// raising in the even ones.
+/// </summary>
+/// <param name="Pass">The pass he is in, 15 down to 0 (byte 11): the height the pass names is the target's plus a delta the pass number gives.</param>
+/// <param name="Target">The site's height (byte 12).</param>
+/// <param name="Node">The node of the pass he works at, 6 (east) down to 0 (the site's node) (byte 13); direction 6 - <see cref="Node"/> leads from the site to it.</param>
+/// <param name="Phase">Where he is in the work of the node (byte 14): 0 the wait for a busy node, 1 the next node, 2 the dig, 3 the step onto the node.</param>
+public sealed record Digs(int Pass, int Target, int Node, int Phase) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 8;
+}
+
+/// <summary>
 /// State 0x4a: the builder has finished the building and waits at its door until the node of the flag is free, then steps onto the flag
 /// to go home (<c>0x43e008</c>).
 /// </summary>
