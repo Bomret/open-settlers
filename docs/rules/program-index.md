@@ -397,20 +397,26 @@ entries per phase (see "Item tables").
 | `0x43c96b` | `Settler_PassDoor` | State 4: waits out the step through a building's door, then runs the job's start routine through the table at `0x43ca54` (8 bytes an entry) when the building's status bit 5 is clear; else the settler takes state 0x19. | confirmed | game | Entry 4 of `0x42fca1`. [Woodcutting](woodcutting.md#the-start-at-the-hut). |
 | `0x43cf15` | `Woodcutter_Start` | The start routine of job 5, entry 5 of `0x43ca54`: where the settler is not sent home (mode `0xfe`) it leaves the hut's node and takes state 0x12; sent home, it goes back into the storage's list (state 1). | confirmed | game | Entry of `0x43ca54` for job 5. |
 | `0x438b8c` | `Woodcutter_SearchTree` | State 0x12: when the timer has run out, draws a node of the spiral table's entries 1 to 128 around the hut until an object code from 8 to 0x17 stands on it, adding 400 to the timer for each miss until that wraps; on a hit sets the vector to the tree and steps to the flag as state 7 does. | confirmed | game | Entry 0x12 of `0x42fca1`; draws through `0x44257a`. |
+| `0x43cfdd` | `Stonecutter_Start` | The start routine of job 7, entry 7 of `0x43ca54`: where the settler is not sent home (mode `0xfe`) it leaves the hut's node and takes state 0x15; sent home, it goes to `0x43cd06`. | confirmed | game | Entry of `0x43ca54` for job 7. [Stonecutting](stonecutting.md#the-start-at-the-building). |
+| `0x435b17` | `Stonecutter_SearchHeap` | State 0x15: when the timer has run out, draws a node of the spiral table's entries 1 to 128 around the building until a node with the flag bit 6 clear has an object code from `0x48` to `0x4f` on the node north-west of it, adding 100 to the timer for each miss until that wraps; on a hit sets the vector to that node and goes to `0x43e02e` (the step to the flag, state 7) with the state 0x16 after it. | confirmed | game | Entry 0x15 of `0x42fca1`; draws through `0x44257a`. [Stonecutting](stonecutting.md#choosing-a-heap). |
+| `0x436a84` | `Stonecutter_WalkToHeap` | State 0x16: the free walk of `0x436c38`, with a check before each step: where no settler stands on the node north-west of the settler and that node holds a heap, what is left of the vector joins the way back (bytes 13 and 14), the vector is 0, and byte 15 is 8, so the walk has arrived. | confirmed | game | Entry 0x16 of `0x42fca1`; goes on at `0x436c70`. [Stonecutting](stonecutting.md#the-walk-out). |
+| `0x438025` | `Stonecutter_FreeWalkArrived` | The arrival of job 7 at the end of the free walk, entry 7 of `0x437dfb`: on the flag (byte 13 equal `0x80`) puts a stone (good 10, `0x438182` through `0x436b46`) on the flag where byte 14 is more than 0 and enters the building; beside a heap steps onto the heap's node where no settler stands on it and the object is still a heap, with the step's time as timer and state 0x17, else turns back with no stone. | confirmed | game | Reached from `0x437ddd`. [Stonecutting](stonecutting.md#the-stone-on-the-flag). |
+| `0x435c5c` | `Stonecutter_Cut` | State 0x17: the step onto the heap's node is waited out to its last quarter, then 0x600 units of the stroke (frame `0x7b`), then the heap's object code goes up by one (the code `0x4f` is removed, with bit 6 of the node's flag byte) and the settler steps back south-east, taking three quarters of the step's time, and starts the way back with the stone (state 0x10, byte 13 `0x80`, byte 14 1). | confirmed | game | Entry 0x17 of `0x42fca1`. [Stonecutting](stonecutting.md#the-cut). |
+| `0x43fcd8` | `Stonecutter_FigureWord` | The stonecutter's figure handler: a figure byte below 0x80 gets `0x0d00` (`0x43fd7d`), or `0x1200` (`0x43fd55`) on the way back with the stone (byte 13 0x80, byte 14 1, state 0x10) and in the step back off the heap (state 0x17, byte 13 2, `0x43fd72`); a byte from 0x80 gets `0x1280` (`0x43fd2f`). | confirmed | game | Reached by the stub at `0x43f77c`. |
 | `0x43e036` | `Settler_StepToFlag` | State 7: the step from a building's node onto its flag (south-east) when the nodes are free; the time of the step is scaled by the door's speed and the settler waits it out in state 5. | confirmed | game | Entry 7 of `0x42fca1`. |
 | `0x436c38` | `Settler_FreeWalk` | State 0x10: the walk along a vector of east and south steps kept in bytes 11 and 12 of the settler item; each step takes the first direction of the row `0x4388ff` names for the vector's heading class, and the arrival (vector 0, byte 15 equal 8) goes to `0x437ddd`. | confirmed | game | Entry 0x10 of `0x42fca1`. |
 | `0x4388ff` | `Settler_WalkRows` | Data: 8 bytes for each heading class of the free walk, the directions to try in order, each as 4 times its number plus 4. | confirmed | game | Read by `0x436c38`. |
-| `0x437ddd` | `Settler_FreeWalkArrived` | The arrival of the free walk: jumps by the job to the job's end of the walk; for job 5 to `0x437f53` (at the tree: start cutting; back at the flag: put the log on the flag and enter the hut). | confirmed | game | Reached from `0x436c38`. |
+| `0x437ddd` | `Settler_FreeWalkArrived` | The arrival of the free walk: jumps by the job to the job's end of the walk; for job 5 to `0x437f53` (at the tree: start cutting; back at the flag: put the log on the flag and enter the hut), for job 7 to `0x438025`. | confirmed | game | Reached from `0x436c38`. |
 | `0x438a9e` | `Woodcutter_Cut` | State 0x11: each time the timer runs out writes the next code of the felled tree (`0x5d` to `0x66`) into the object byte and sets the frame; after the fifth the settler walks back with the log (byte 13 = `0x80`, state 0x10). | confirmed | game | Entry 0x11 of `0x42fca1`. |
-| `0x436b46` | `Flag_PutGood` | Puts a good (the byte in the first register) on the first empty one of the 8 places of the flag the settler stands on (item bytes `0xc` to `0x13`), clears the place's word at `0x14` plus twice the place, sets bit 7 of byte 4 of the flag item, and counts the good up in the player block. | confirmed | game | Called by `0x437ffd`. |
+| `0x436b46` | `Flag_PutGood` | Puts a good (the byte in the first register) on the first empty one of the 8 places of the flag the settler stands on (item bytes `0xc` to `0x13`), clears the place's word at `0x14` plus twice the place, sets bit 7 of byte 4 of the flag item, and counts the good up in the player block. | confirmed | game | Called by `0x437ffd` (a log) and `0x438182` (a stone). |
 | `0x43cd06` | `Settler_EnterStorage` | The routine the job entries of `0x43ca54` (all but those of the jobs 4 and 21) go on at for the mode `0xfe`: clears the node's settler word and puts the settler into the storage of the building it stands in (state 1, mode 0, word 12 0, storage slot as bytes 14 and 15). | confirmed | game | Jump target of the job entries of `0x43ca54`. [Settlers](settlers.md#walking-home). |
 | `0x45d09b` | `Storage_Pick` | The walk home's choice of a storage: a breadth-first search over the flags (directions 5 to 0), from the flag a settler stands on, for the nearest flag whose item has bit 7 in byte `0x42`; the result is the word at 6 of the building at that flag (its flag slot), or -1. | confirmed | game | Called by `Settler_Walk` (`0x4398ea`) at `0x439b75`. [Settlers](settlers.md#walking-home). |
 | `0x43c7c2` | `Settler_EnterBuilding` | The step from a flag into the building north-west of it, and the turn of state 6 (`0x43c7ca`): takes the node when no settler stands on it, the step's time as timer, the part of it the door's speed leaves in word 12, and state 4; else frame `0x55` and state 6. | confirmed | game | Entry 6 of `0x42fca1`. |
 | `0x42d945` | `Building_HandleType2` | The handler of the building type 2, the woodcutter's hut: asks for a settler of job 5 when bits 2, 6, and 7 of its status are clear. | confirmed | game | Entry 2 of `0x42cd1d`. |
 | `0x42e0b8` | `Building_HandleType1` | The handler of the building type 1: asks for a settler of job 11, whose work (`0x433f71`, state 0x1f) looks for a node with no object and no road by the water. | confirmed | game | Entry 1 of `0x42cd1d`. |
-| `0x42d987` | `Building_HandleType4` | The handler of the building type 4 (inferred: the stonecutter's hut): asks for a settler of job 7 with the tool of good `0x2e`, as `Building_HandleType2` does. | confirmed | game | Entry 4 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
+| `0x42d987` | `Building_HandleType4` | The handler of the building type 4, the stonecutter's building (his work puts the stone, good 10, on the flag): asks for a settler of job 7 with the tool of the stock word `0x2e` (good 23), as `Building_HandleType2` does. | confirmed | game | Entry 4 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
 | `0x42d9c9` | `Building_HandleType9` | The handler of the building type 9 (inferred: the forester's hut): asks for a settler of job 8 with no tool. | confirmed | game | Entry 9 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
-| `0x42da0b` | `Building_HandleType17` | The handler of the building type 0x11 (inferred: the sawmill): asks for a settler of job 6 with the tool of good `0x2c`. | confirmed | game | Entry 0x11 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
+| `0x42da0b` | `Building_HandleType17` | The handler of the building type 0x11 (inferred: the sawmill): asks for a settler of job 6 with the tool of the stock word `0x2c` (good 22). | confirmed | game | Entry 0x11 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
 | `0x42d55f` | `Building_HandleConstruction` | The handler a building under construction goes to: the entries `0x21` to `0x29` and a few more of `0x42cd1d` jump here instead of to the type's handler. Where the site's status bits 2, 6, and 7 are clear it sets the progress word to 1 and asks for the builder (job 3, tool `0x22`, at `0x42d5fc`; [the builder](construction.md#the-request-for-a-builder)), and it keeps the rank of the site's flag's requests for planks and stones from what the site holds on site and on the way ([Materials](construction-materials.md#the-building-passs-turn-of-a-site)). | confirmed | game | Entries `0x21` and on of `0x42cd1d`; the emulator's `construct:` games show the ranks and the builder's walk. |
 | `0x43ce20` | `Builder_Start` | The start routine of job 3 (entry 3 of `0x43ca54`, the jump at `0x43ca6c`), run where the builder has stepped through the door of a site: with byte 11 `0xfe` it goes into the storage as every job's does; else the builder takes state 9 with the frame `0x62` (`0x64` for the types 10, 17, 19, and 22 by the mask `0x4a0400`), the timer `0x7f`, the site's slot in the word at 12, and no material taken ([the builder](construction.md#the-builders-turn)). | confirmed | game | Entry 3 of `0x43ca54`; the engine's `BuilderBehavior.Start`. |
 | `0x43ec82` | `Builder_Build` | State 9: when the timer has run out the builder takes the next material of the site in the order of `0x43f0ba` or makes a blow that adds a step of `0x43f0fa` to the progress word, draws once from the generator for the figure, and ends the building where the word carries ([the builder](construction.md#the-builders-turn)). | confirmed | game | Entry 9 of `0x42fca1` (the jump at `0x42fce9`); the emulator's `construct:` games show every turn. |
@@ -1143,10 +1149,14 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x434946` | `Settler_ClaimNode` | confirmed | Simulation |
 | `0x4350f8` | — | unknown | Simulation |
 | `0x4353ef` | `Settler_SearchFlag` | confirmed | Simulation |
+| `0x435b17` | `Stonecutter_SearchHeap` | confirmed | Simulation |
+| `0x435c5c` | `Stonecutter_Cut` | confirmed | Simulation |
+| `0x436a84` | `Stonecutter_WalkToHeap` | confirmed | Simulation |
 | `0x436b46` | `Flag_PutGood` | confirmed | Simulation |
 | `0x436c38` | `Settler_FreeWalk` | confirmed | Simulation |
 | `0x437ddd` | `Settler_FreeWalkArrived` | confirmed | Simulation |
 | `0x437dfb` | `Settler_ArrivalByJob` | confirmed | Simulation |
+| `0x438025` | `Stonecutter_FreeWalkArrived` | confirmed | Simulation |
 | `0x4385ab` | `Settler_ArriveHome` | confirmed | Simulation |
 | `0x4388ff` | `Settler_WalkRows` | confirmed | Simulation |
 | `0x438a9e` | `Woodcutter_Cut` | confirmed | Simulation |
@@ -1167,6 +1177,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43ce20` | `Builder_Start` | confirmed | Simulation |
 | `0x43ceea` | `Settler_EnterStorageJob4` | inferred | Simulation |
 | `0x43cf15` | `Woodcutter_Start` | confirmed | Simulation |
+| `0x43cfdd` | `Stonecutter_Start` | confirmed | Simulation |
 | `0x43dceb` | `Settler_WaitStep` | confirmed | Simulation |
 | `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
 | `0x43e008` | `Builder_LeaveSite` | confirmed | Simulation |
@@ -1184,6 +1195,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43f8ae` | `Carrier_FigureWord` | confirmed | Graphics images |
 | `0x43faf4` | `Builder_FigureWord` | confirmed | Simulation |
 | `0x43fb6b` | `Woodcutter_FigureWord` | confirmed | Graphics images |
+| `0x43fcd8` | `Stonecutter_FigureWord` | confirmed | Simulation |
 | `0x43fed8` | `Settler_FigureJob11` | confirmed | Views, panels, and drawing |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
 | `0x440c24` | `View_HandleClick` | inferred | Roads |
@@ -1414,7 +1426,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 333 routines of the 513 functions in the dump's game code band and lists 63 more without a name: 275 confirmed, 70 inferred, 51 unknown.
+Coverage: the index names 339 routines of the 513 functions in the dump's game code band and lists 63 more without a name: 281 confirmed, 70 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:

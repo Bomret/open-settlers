@@ -145,14 +145,15 @@ type's handler) names the work of each type: the handler asks for a settler of a
 
 | Type | Name | Size | Planks, stones | Handler | Job, tool | Finished sprite (object) |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2 | woodcutter | small | 2, 0 | `0x42d945` | job 5, tool good `0x2a` | 168 |
-| 4 | stonecutter | small | 2, 0 | `0x42d987` | job 7, tool good `0x2e` | 169 |
+| 2 | woodcutter | small | 2, 0 | `0x42d945` | job 5, tool stock word `0x2a` (good 21) | 168 |
+| 4 | stonecutter | small | 2, 0 | `0x42d987` | job 7, tool stock word `0x2e` (good 23) | 169 |
 | 9 | forester | small | 2, 0 | `0x42d9c9` | job 8, no tool | 170 |
-| 0x11 | sawmill | large | 3, 2 | `0x42da0b` | job 6, tool good `0x2c` | 160 |
+| 0x11 | sawmill | large | 3, 2 | `0x42da0b` | job 6, tool stock word `0x2c` (good 22) | 160 |
 
 The names of the types 4, 9, and 0x11 are **inferred** from the sizes, the needs, the jobs, and the game's manual (a
 stonecutter needs a pick and a sawmill worker a saw, a forester needs no tool); the slices that build each type's work
-confirm the name from the goods it puts down. The object numbers are the first instruction of each type's draw stub
+confirm the name from the goods it puts down. The type 4 is **confirmed**: his worker lays the stone, good 10, on the flag
+([Stonecutting](stonecutting.md#the-building-and-the-job)). The object numbers are the first instruction of each type's draw stub
 (`0x44e329`, the jump table `0x44e3aa`); the engine draws a finished building with it.
 
 **The site that has not started** (read from the code, not emulated). A building under construction goes through the common

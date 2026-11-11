@@ -106,6 +106,7 @@ public sealed class MainPass(
                     or HandsOver
                     or WalksFree
                     or Cuts
+                    or CutsStone
                     or SearchesHome
             )
             {

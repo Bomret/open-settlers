@@ -274,6 +274,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     [
         ("carrier", Job.Carrier),
         ("woodcutter", Job.Woodcutter),
+        ("stonecutter", Job.Stonecutter),
         ("type-one-hut", Job.TypeOneHut),
         ("builder", Job.Builder),
     ];
@@ -281,17 +282,18 @@ public sealed class OpenSettlersSource : IGraphicsSource
     // The kinds of activity a settler is drawn in; one frame each, whatever the heading, step, or frame.
     static readonly string[] Kinds = ["walks", "carries", "cuts", "door", "hands-over", "waits"];
 
-    /// <summary>The manifest key of the frame of a job (<c>carrier</c>, <c>woodcutter</c>, <c>type-one-hut</c>) in an activity kind.</summary>
+    /// <summary>The manifest key of the frame of a job (<c>carrier</c>, <c>woodcutter</c>, <c>stonecutter</c>, <c>type-one-hut</c>) in an activity kind.</summary>
     public static string SettlerKey(string job, string kind) => $"settler/{job}/{kind}";
 
     // The kind of activity a settler term is drawn in: what it does, or that it carries a good.
     static int KindOf(SettlerDraw draw) =>
         draw.Activity switch
         {
-            Cuts or Builds => 2,
+            Cuts or CutsStone or Builds => 2,
             Door => 3,
             HandsOver => 4,
             WaitsOffRoad => 5,
+            WalksFree { Trip.Purpose: BackToHut { Carrying: true } } => 1,
             _ => draw.Carried.IsNone ? 0 : 1,
         };
 

@@ -29,6 +29,15 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
+    public void TheStonecuttersJobAndStatesGetTheirNames()
+    {
+        Assert.AreEqual("stonecutter", NameTable.JobName(Job.StonecutterCode));
+        Assert.AreEqual("looks-for-heap", NameTable.StateName(0x15));
+        Assert.AreEqual("walks-to-heap", NameTable.StateName(0x16));
+        Assert.AreEqual("cuts-stone", NameTable.StateName(0x17));
+    }
+
+    [TestMethod]
     public void AnUnknownCodeGetsNoName()
     {
         Assert.IsNull(NameTable.StateName(0x43));

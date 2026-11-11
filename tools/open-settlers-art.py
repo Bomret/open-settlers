@@ -318,12 +318,28 @@ def scaffold(large):
     return c, ((-22, -35) if large else (-14, -29))
 
 
+def heap(stage):
+    """A heap of stones, stage 0 (code 0x48) the largest to stage 7 (0x4f) the last stone: a pile of grey stones that shrinks."""
+    c = Canvas(22, 16)
+    size = 8 - stage
+    c.disc(11, 15 - size, size, shade(STONE, -25))
+    if stage < 6:
+        c.disc(5 + stage, 14 - size // 2, (size + 1) // 2, STONE)
+    if stage < 3:
+        c.disc(17 - stage, 14 - size // 2, (size + 1) // 2, shade(STONE, 15))
+    c.outline(INK)
+    return c, (-11, -15)
+
+
 def good(code):
-    """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar."""
+    """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar and the stone (10) a grey stone."""
     c = Canvas(8, 8)
     if code == 7:
         c.rect(0, 2, 8, 4, WOOD)
         c.rect(0, 2, 2, 4, shade(WOOD, 60))
+    elif code == 10:
+        c.disc(4, 4, 3, STONE)
+        c.disc(3, 3, 1, shade(STONE, 40))
     else:
         hue = (code * 37) % 255
         color = (60 + hue % 160, 60 + (hue * 3) % 160, 60 + (hue * 7) % 160)
@@ -335,15 +351,17 @@ def good(code):
 JOBS = {
     "carrier": (60, 100, 170),
     "woodcutter": (60, 130, 60),
+    "stonecutter": (140, 140, 150),
     "type-one-hut": (170, 110, 40),
     "builder": (190, 90, 60),
 }
+STONE = (185, 185, 190)
 KINDS = ("walks", "carries", "cuts", "door", "hands-over", "waits")
 
 
-def figure(job_color, kind):
+def figure(job_color, kind, load=WOOD):
     """A settler, 14 by 22 with its feet at the term's position: a head, a body of its job's color, and a player mark on
-    the chest. Each kind of activity has its own pose."""
+    the chest. Each kind of activity has its own pose; the load of the pose that carries is the job's."""
     c = Canvas(14, 22)
     skin = (235, 195, 160)
     if kind == "waits":
@@ -361,7 +379,7 @@ def figure(job_color, kind):
         c.rect(3, 18, 3, 4, INK)
         c.rect(8, 18, 3, 4, INK)
     if kind == "carries":
-        c.rect(1, 2, 12, 3, WOOD)
+        c.rect(1, 2, 12, 3, load)
         c.line(3, 8, 2, 4, skin)
         c.line(10, 8, 11, 4, skin)
     elif kind == "cuts":
@@ -408,6 +426,8 @@ def main():
             add(key, f"object/tree-{code // 16}.png", tree(code // 16))
         elif code < 32:
             add(key, f"object/bush-{(code - 24) // 4}.png", bush((code - 24) // 4))
+        elif 72 <= code < 80:
+            add(key, f"object/heap-{code - 72}.png", heap(code - 72))
         elif code < 83:
             add(key, f"object/rock-{code % 3}.png", rock(code % 3))
         elif code == 83:
@@ -432,7 +452,8 @@ def main():
         add(f"good/{code}", f"good/{code}.png", good(code))
     for job, color in JOBS.items():
         for kind in KINDS:
-            add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind))
+            load = STONE if job == "stonecutter" else WOOD
+            add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind, load))
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
         f.write("\n")

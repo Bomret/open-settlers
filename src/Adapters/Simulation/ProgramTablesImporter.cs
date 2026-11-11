@@ -74,6 +74,21 @@ public static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of the handler for any other figure byte below 0x80 (the walk).</summary>
     public const int WoodcutterWalkAddress = 0x43fc16;
 
+    /// <summary>The handler of the stonecutter's figure (<c>0x43fcd8</c>, the target of the stub of job 7).</summary>
+    public const int StonecutterHandlerAddress = 0x43fcd8;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 (the stroke).</summary>
+    public const int StonecutterCuttingAddress = 0x43fd2f;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the way back with the stone (state 0x10, byte 13 0x80, byte 14 1).</summary>
+    public const int StonecutterCarryingAddress = 0x43fd55;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the step back off the heap (state 0x17, byte 13 2), which adds what the way back adds.</summary>
+    public const int StonecutterStepBackAddress = 0x43fd72;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int StonecutterWalkAddress = 0x43fd7d;
+
     /// <summary>The handler of the figure of the settler of the type 1 hut (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
     public const int TypeOneHutHandlerAddress = 0x43fed8;
 
@@ -245,7 +260,8 @@ public static class ProgramTablesImporter
             WorkerRequest(exe, BuilderRequestAddress),
             [.. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
-            BuilderAdds(exe)
+            BuilderAdds(exe),
+            StonecutterAdds(exe)
         );
     }
 
@@ -387,6 +403,32 @@ public static class ProgramTablesImporter
             Immediate(exe, WoodcutterWalkAddress),
             Immediate(exe, WoodcutterCarryingAddress),
             Immediate(exe, WoodcutterCuttingAddress)
+        );
+    }
+
+    // The stonecutter's adds, read as the woodcutter's are: the stub of job 7 must jump to his handler, and the add of his step
+    // back off the heap must be the add of his way back with the stone.
+    private static FigureAdds StonecutterAdds(byte[] exe)
+    {
+        var stub = JobStubAddress + JobStubSize * Job.StonecutterCode;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(StonecutterHandlerAddress - (stub + 5))],
+            "jumps to the stonecutter's handler"
+        );
+        var carrying = Immediate(exe, StonecutterCarryingAddress);
+        if (Immediate(exe, StonecutterStepBackAddress) != carrying)
+        {
+            throw new InvalidDataException(
+                "Siedler1.exe holds no figure routine as expected: the stonecutter's step back no longer adds what his way back with the stone adds."
+            );
+        }
+
+        return new FigureAdds(
+            Immediate(exe, StonecutterWalkAddress),
+            carrying,
+            Immediate(exe, StonecutterCuttingAddress)
         );
     }
 

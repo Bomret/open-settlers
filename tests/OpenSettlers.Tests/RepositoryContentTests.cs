@@ -106,6 +106,29 @@ public sealed class RepositoryContentTests
         }
     }
 
+    // The stages of a stone heap (the object codes 0x48 to 0x4f) shrink as the stonecutter cuts it, so each stage has an image of its
+    // own.
+    [TestMethod]
+    public void EachStageOfAStoneHeapHasItsOwnImage()
+    {
+        var manifest = System.Text.Json.JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(RepositoryRoot(), "content", "open-settlers", "manifest.json"))
+        );
+        byte[] Image(string key) =>
+            File.ReadAllBytes(
+                Path.Combine(
+                    RepositoryRoot(),
+                    "content",
+                    "open-settlers",
+                    manifest.RootElement.GetProperty(key).GetProperty("image").GetString()!
+                )
+            );
+
+        var heaps = Enumerable.Range(0x48, 8).Select(code => Convert.ToHexString(Image($"object/{code}"))).ToList();
+
+        Assert.HasCount(8, heaps.Distinct(), "the eight stages of a heap");
+    }
+
     // The set's files by path relative to the folder, with forward slashes.
     static List<string> SetFiles(string folder) =>
         Directory.Exists(folder)

@@ -409,7 +409,7 @@ slot 0 and has no dummy; the engine treats every building on the node as a build
   **Emulated:** a carrier and a worker go home from the states `0x44` and `0x19` and `0x1c`.
 
 **Not ported:** the commands that tear down, the boatman's state `0x1a` (`0x4350f8`; water roads are not ported), state `0x35`
-of the knights, the arrivals of the jobs 7, 8, 11, 14, and 20 where they do not walk home, the entry of the jobs 4 and 21 into
+of the knights, the arrivals of the jobs 8, 11, 14, and 20 where they do not walk home, the entry of the jobs 4 and 21 into
 a storage (`0x43ceea`, and `0x43cc5f`, which also counts the settler in the word `0x40` of the storage item), the chain of
 blocked settlers, and a storage other than the castle. **Confirmed** by the `walk-home`, `dismissed`, and `dismissed-with-log` recordings: the
 state `0x19` is drawn (the frame `0x52` picks the sequence) and the state `0x1c` is not. **Inferred:** the second and third rings of the random search and its last phase without end (no run

@@ -48,6 +48,7 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
                 or Door
                 or WalksFree
                 or Cuts
+                or CutsStone
                 or SearchesHome
                 or Builds
                 or LeavesSite;
@@ -67,6 +68,7 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
                 || (
                     settler.Job != Job.Carrier
                     && settler.Job != Job.Woodcutter
+                    && settler.Job != Job.Stonecutter
                     && settler.Job != Job.TypeOneHut
                     && settler.Job != Job.Builder
                 )

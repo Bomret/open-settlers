@@ -127,7 +127,8 @@ public sealed class RuleTables
         WorkerRequest? builderRequest = null,
         ushort[]? materialOrder = null,
         ushort[]? blowSteps = null,
-        BuilderFigureAdds? builderFigureAdds = null
+        BuilderFigureAdds? builderFigureAdds = null,
+        FigureAdds? stonecutterFigureAdds = null
     )
     {
         if (
@@ -152,6 +153,7 @@ public sealed class RuleTables
         _roadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
         _transportPriorities = transportPriorities ?? new byte[Goods];
         WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
+        StonecutterFigureAdds = stonecutterFigureAdds ?? default;
         FrameRows = frameRows ?? new sbyte[FrameRowCount];
         TypeOneHutFigureAdds = typeOneHutFigureAdds ?? default;
         IdlePhases = idlePhases ?? new short[IdlePhaseCount];
@@ -264,6 +266,9 @@ public sealed class RuleTables
 
     /// <summary>What the woodcutter's handler adds to the figure byte to make the figure word.</summary>
     public FigureAdds WoodcutterFigureAdds { get; }
+
+    /// <summary>What the stonecutter's handler (<c>0x43fcd8</c>) adds to the figure byte; all 0 draws him in the carrier's row.</summary>
+    public FigureAdds StonecutterFigureAdds { get; }
 
     /// <summary>What the handler of the settler of the type 1 hut adds to the figure byte to make the figure word.</summary>
     public HutFigureAdds TypeOneHutFigureAdds { get; }

@@ -74,13 +74,16 @@
 //                            bytes that changed (o=x,y:old>new;...), the flag items of slots 0 to 15 that changed (f<slot>=), and
 //                            the random generator's words (rng=) when they moved. A building of type 2 is the woodcutter's hut.
 //                            worker, wood, and goods lines also carry m= as carrier does.
-//   goods:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PUT;PUT...]]]
+//   goods:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PUT;PUT...[:SET;SET...]]]]
 //                            wood: in a game that starts as the original's game start leaves its tables: flag slot 0 is the
 //                            dummy the allocator 0x45d7ad takes at the end of MapGen_InitParams (0x421530), so the castle's
 //                            flag is slot 1 (wood: has it in slot 0, where a destination word 0 means none, and no good ever
-//                            leaves a flag). The last field lays goods on the places of a flag by hand before a pass,
+//                            leaves a flag). The PUT field lays goods on the places of a flag by hand before a pass,
 //                            as the put of 0x436b46 lays them (docs/rules/goods.md): each PUT is PASS,PLACE,GOOD for the hut's
-//                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The lines also list the castle's item
+//                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The SET field writes an object code into
+//                            a node's object byte before a pass (bit 7 of the byte kept): each SET is PASS,X,Y,CODE with the
+//                            code in decimal, as a stone heap's stage is set for the stonecutter's scenarios
+//                            (docs/rules/stonecutting.md). The lines also list the castle's item
 //                            (c=) where it changed, and the start lines the castle's item and the transport priorities
 //                            (prio=, 32 bytes for the goods 0 to 31) that the flag exchange reads (0x43b054). Before the
 //                            castle the verb runs 0x445570 on the player block, as the player setup of a new game (0x42055e)
@@ -1253,12 +1256,24 @@ public class EmulateMapStart extends GhidraScript {
             println("EMU " + label + " prio=" + hex(getInt(STATE + 0x64) - 0x55, 32) + " at=" + Long.toHexString(getInt(STATE + 0x64)));
         }
         String[] puts = parts.length > 11 ? parts[11].split(";") : new String[0];
+        String[] sets = parts.length > 12 ? parts[12].split(";") : new String[0];
         byte[] castle = emu.readMemory(toAddr(item - 0x12), 0x12).clone();
         for (int pass = 0; pass < passes; pass++) {
             if (pass == lateAt && !late.isEmpty()) {
                 for (String road : late.split(";")) {
                     println("EMU " + label + " late-road=" + road + (silentRoad(width, road) ? " BUILT" : " REFUSED"));
                 }
+            }
+            for (String text : sets) {
+                // An object code written by hand into a node's object byte before a pass (bit 7 of the byte kept): PASS,X,Y,CODE
+                // with the code in decimal (a stone heap's code is 72 to 79).
+                String[] set = text.split(",");
+                if (pass != Integer.parseInt(set[0])) {
+                    continue;
+                }
+                long at = layerA + (((long) Integer.parseInt(set[2]) << bits) + Integer.parseInt(set[1])) * 4 + 3;
+                int old = emu.readMemory(toAddr(at), 1)[0] & 0x80;
+                emu.writeMemory(toAddr(at), new byte[] {(byte) (old | Integer.parseInt(set[3]))});
             }
             for (String text : puts) {
                 // A good laid on a flag by hand, as the put of 0x436b46 lays it: the good on a place, the place's

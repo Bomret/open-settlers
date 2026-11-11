@@ -145,6 +145,12 @@ public sealed class NameTable
             "Job.CastleSettler; the castle's first settler stands by while the castle is built (state 10, 0x43f17a) and no building asks for job 4; Game.Removal reads job 4 as a settler that goes home as a carrier; docs/rules/settlers.md"
         );
         AddOne(CodeKind.Job, Job.Woodcutter.Code, "woodcutter", "Job.Woodcutter; docs/rules/woodcutting.md");
+        AddOne(
+            CodeKind.Job,
+            Job.Stonecutter.Code,
+            "stonecutter",
+            "Job.Stonecutter; his work puts good 10 (a stone) on the hut's flag (0x438182) and cuts the stone heaps 0x48 to 0x4f (0x435c5c); docs/rules/stonecutting.md"
+        );
         AddOne(CodeKind.Job, Job.Jobless.Code, "jobless", "Job.Jobless: 21 is a settler without a job yet");
 
         const string State = "the code of the Activity record (src/Domain/Activity.cs)";
@@ -160,6 +166,24 @@ public sealed class NameTable
         AddOne(CodeKind.State, 0x10, "walks-free", State);
         AddOne(CodeKind.State, 0x11, "cuts-tree", State);
         AddOne(CodeKind.State, 0x12, "looks-for-tree", State);
+        AddOne(
+            CodeKind.State,
+            0x15,
+            "looks-for-heap",
+            "0x435b17 draws nodes of the spiral until a stone heap stands beside one; docs/rules/stonecutting.md"
+        );
+        AddOne(
+            CodeKind.State,
+            0x16,
+            "walks-to-heap",
+            "0x436a84 walks the vector out to the heap and stops where one stands north-west; docs/rules/stonecutting.md"
+        );
+        AddOne(
+            CodeKind.State,
+            0x17,
+            "cuts-stone",
+            "0x435c5c steps onto the heap's node, strikes, and takes a stone off it; docs/rules/stonecutting.md"
+        );
         AddOne(CodeKind.State, 0x19, "looks-for-flag-home", State);
         AddOne(CodeKind.State, 0x1c, "claims-node-home", State);
         AddOne(CodeKind.State, 0x42, "waits-at-flag", State);
@@ -171,7 +195,7 @@ public sealed class NameTable
             CodeKind.Building,
             BuildingType.Stonecutter.Code,
             "stonecutter-hut",
-            "BuildingType.Stonecutter; handler 0x42d987 asks for job 7 (tool good 0x2e); size and needs 0x42d307, 0x449f18; inferred, docs/rules/build-sites.md"
+            "BuildingType.Stonecutter; handler 0x42d987 asks for job 7 (tool stock word 0x2e, good 23), whose work puts the stone (good 10) on the flag (0x438182); size and needs 0x42d307, 0x449f18; docs/rules/build-sites.md, docs/rules/stonecutting.md"
         );
         AddOne(
             CodeKind.Building,
@@ -183,7 +207,7 @@ public sealed class NameTable
             CodeKind.Building,
             BuildingType.Sawmill.Code,
             "sawmill",
-            "BuildingType.Sawmill; handler 0x42da0b asks for job 6 (tool good 0x2c); large, needs 3 planks and 2 stones (0x42d307, 0x449f18); inferred, docs/rules/build-sites.md"
+            "BuildingType.Sawmill; handler 0x42da0b asks for job 6 (tool stock word 0x2c, good 22); large, needs 3 planks and 2 stones (0x42d307, 0x449f18); inferred, docs/rules/build-sites.md"
         );
         AddOne(
             CodeKind.Building,

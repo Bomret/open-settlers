@@ -109,7 +109,10 @@ public sealed class RemovalTests
         game.ApplyCommands();
         foreach (var hut in Points(parts[7]))
         {
-            Assert.IsTrue(Huts.Place(game, hut[0] - 1, hut[1] - 1), "the fixture's hut has its site");
+            Assert.IsTrue(
+                Huts.Place(game, hut[0] - 1, hut[1] - 1, new BuildingType(hut[2])),
+                "the fixture's hut has its site"
+            );
         }
 
         return game;

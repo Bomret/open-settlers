@@ -171,12 +171,16 @@ public sealed record Leaving(Errand Errand) : HasErrand(Errand)
     public override int Code => 0xf;
 }
 
-/// <summary>State 16: the settler walks free along a vector.</summary>
+/// <summary>State 16, or state 22 for the stonecutter's walk: the settler walks free along a vector.</summary>
 /// <param name="Trip">The walk.</param>
-public sealed record WalksFree(Trip Trip) : Activity
+/// <param name="EyesHeaps">
+/// Whether the stonecutter looks for a stone heap beside his node at each turn of the walk (state 22, <c>0x436a84</c>): he
+/// stops where one stands north-west of him. The walk of every other settler, and the stonecutter's way back, is state 16.
+/// </param>
+public sealed record WalksFree(Trip Trip, bool EyesHeaps = false) : Activity
 {
     /// <inheritdoc />
-    public override int Code => 0x10;
+    public override int Code => EyesHeaps ? 0x16 : 0x10;
 }
 
 /// <summary>State 17: the woodcutter cuts the tree it stands on, one falling step at a time.</summary>
@@ -195,6 +199,26 @@ public sealed record LooksForTree : Activity
 {
     /// <inheritdoc />
     public override int Code => 0x12;
+}
+
+/// <summary>State 21: the stonecutter inside his hut looks for a stone heap.</summary>
+public sealed record LooksForStone : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x15;
+}
+
+/// <summary>
+/// State 23: the stonecutter stands on the node of the heap he cuts, steps back onto the node he came by, and takes the stone
+/// with him (<c>0x435c5c</c>).
+/// </summary>
+/// <param name="Back">The steps of the way back to the hut's flag, east and south (bytes 11 and 12).</param>
+/// <param name="Phase">The part of the cut: 0 the step onto the heap, 1 the stroke, 2 the step back (byte 13).</param>
+/// <param name="Quarter">A quarter of the step onto the heap's time, the point where the stroke begins (the word at 14).</param>
+public sealed record CutsStone(Vector Back, int Phase, int Quarter) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x17;
 }
 
 /// <summary>State 25: the settler looks for the nearest flag on the way home.</summary>

@@ -58,6 +58,7 @@ public sealed class SettlerFigureTables
     private readonly byte[] _data;
     private readonly short[] _carried;
     private readonly FigureAdds _woodcutter;
+    private readonly FigureAdds _stonecutter;
     private readonly HutFigureAdds _typeOneHut;
     private readonly BuilderFigureAdds _builder;
     private readonly IdleCarrierTables? _idle;
@@ -69,6 +70,7 @@ public sealed class SettlerFigureTables
     /// <param name="woodcutter">What the woodcutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
     /// <param name="typeOneHut">What the handler of the settler of the type 1 hut adds to the figure byte (<c>0x43fed8</c>).</param>
     /// <param name="idle">The tables of the waiting carriers; none draws no waiting carrier.</param>
+    /// <param name="stonecutter">What the stonecutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
     public SettlerFigureTables(
         short[] bases,
         short[] offsets,
@@ -77,11 +79,13 @@ public sealed class SettlerFigureTables
         FigureAdds woodcutter = default,
         HutFigureAdds typeOneHut = default,
         IdleCarrierTables? idle = null,
-        BuilderFigureAdds builder = default
+        BuilderFigureAdds builder = default,
+        FigureAdds stonecutter = default
     )
     {
         _builder = builder;
         _idle = idle;
+        _stonecutter = stonecutter;
         _typeOneHut = typeOneHut;
         _woodcutter = woodcutter;
         _carried = carried ?? [];
@@ -100,7 +104,8 @@ public sealed class SettlerFigureTables
             tables.WoodcutterFigureAdds,
             tables.TypeOneHutFigureAdds,
             new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets),
-            tables.BuilderFigureAdds
+            tables.BuilderFigureAdds,
+            tables.StonecutterFigureAdds
         );
 
     /// <summary>The palette index of a player's colour.</summary>
@@ -214,8 +219,20 @@ public sealed class SettlerFigureTables
             return figure + (WayBackWithLoad(draw) ? _typeOneHut.Carrying : _typeOneHut.Walk);
         }
 
+        if (draw.Job == Job.Stonecutter)
+        {
+            return figure + StonecutterAdd(figure, draw);
+        }
+
         return figure + WoodcutterAdd(figure, WayBackWithLoad(draw));
     }
+
+    // What the stonecutter's handler (0x43fcd8) adds to a figure byte: the stroke's constant from 0x80, below it the way back's
+    // with the stone, also for the step back off the heap (state 0x17, byte 13 2), or the walk's.
+    private int StonecutterAdd(int figure, SettlerDraw draw) =>
+        figure >= HighFigure ? _stonecutter.Cutting
+        : WayBackWithLoad(draw) || draw.Activity is CutsStone { Phase: 2 } ? _stonecutter.Carrying
+        : _stonecutter.Walk;
 
     // What the woodcutter's handler (0x43fb6b) adds to a figure byte: the felling's constant from 0x80, below it the way
     // back's with a load or the walk's.
