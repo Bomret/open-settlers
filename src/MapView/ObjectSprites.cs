@@ -76,9 +76,9 @@ public static class ObjectSprites
     public const int SiteLargeEntry = FirstEntry + 144;
 
     /// <summary>
-    /// The sprite entry of a building site whose progress word is 1, a small building that has not started: with no goods
-    /// delivered yet the draw routine stores the object number 145 (<c>0x44fbf9</c>), plus the 1250, and ends. The stages after it
-    /// belong to the construction slices.
+    /// The sprite entry of the base of a building site whose progress word is not 0, small or large (a large one once its ground is
+    /// levelled): after the piles of the goods on site the draw routine stores the object number 145 (<c>0x44fbf9</c>), plus the 1250;
+    /// the scaffold follows it (<see cref="SiteStages"/>).
     /// </summary>
     public const int SiteSmallEntry = FirstEntry + 145;
 

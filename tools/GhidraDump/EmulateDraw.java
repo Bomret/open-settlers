@@ -25,6 +25,11 @@
 //                            request (0x44fe13) are skipped.
 //                            The run fails, and prints no line, where a pass of a window draws no settler or no window pass
 //                            is reached.
+//   draw:WINDOWS:site@X,Y:VERB:ARGS...
+//                            the same game and passes, but each pass of a window draws the building of the node X,Y alone, as the
+//                            row draw 0x44d5b4 does for an object code of 2 or 3: 0x44e329, which reaches the draw of a building
+//                            under construction (0x44fa79). A line lists the building's 18 bytes (b=) and the calls the draw made (d=,
+//                            drawSite below). The run fails where a pass of a window draws nothing at the node.
 //
 // The graphics archive is read from the install (loca/SPAD.PA) into the emulator and the rule data of its entry 2 is
 // prepared as RuleData_Load (0x41e8e0) does, because that routine reaches the archive through the register block at its
@@ -58,6 +63,24 @@ public class EmulateDraw extends EmulateMapStart {
     private static final long[] STOPS = {
         RETURN, DRAW_SETTLER, BLIT, BLIT_COLOUR, SHADOW, SOUND, RECORD_BUILDER, RECORD_BUILT
     };
+
+    // The building draw of a tile (0x44e329, which 0x44d5b4 calls for the object codes 2 and 3) and the routines it reaches that draw:
+    // the shadows (0x4061a0 through 0x44da4d, 0x406210 through 0x44fee2), the sprite (0x4062e0), the grown sprite (0x406350), and the
+    // sprite of a good (0x44de9a); and the sound requests (0x44fe13, 0x44fd5f).
+    private static final long BUILDING_DRAW = 0x44e329L;
+    private static final long SPRITE = 0x4062e0L;
+    private static final long GROWN_SHADOW = 0x406210L;
+    private static final long GROWN = 0x406350L;
+    private static final long GOOD_SPRITE = 0x44de9aL;
+    private static final long SOUND_REQUEST = 0x44fd5fL;
+    private static final long[] SITE_STOPS = {
+        RETURN, SHADOW, SPRITE, GROWN_SHADOW, GROWN, GOOD_SPRITE, SOUND, SOUND_REQUEST, BLIT, BLIT_COLOUR
+    };
+
+    // site@X,Y in place of the camera: the building of the node X,Y is drawn alone (0x44e329) instead of the settler draw path.
+    private boolean siteMode;
+    private int siteX;
+    private int siteY;
 
     // The 640 by 480 view (0x4200b6): 38 columns, 28 rows, the scan starts 0x10 columns and 0x0e rows before the node.
     private static final int VIEW_COLUMNS = 0x26;
@@ -102,9 +125,12 @@ public class EmulateDraw extends EmulateMapStart {
     protected void draw(String rest) throws Exception {
         String[] parts = rest.split(":", 3);
         windows = windows(parts[0]);
-        String[] camera = parts[1].split(",");
+        siteMode = parts[1].startsWith("site@");
+        String[] camera = parts[1].substring(siteMode ? 5 : 0).split(",");
         cameraX = Integer.parseInt(camera[0]);
         cameraY = Integer.parseInt(camera[1]);
+        siteX = cameraX;
+        siteY = cameraY;
         String verb = parts[2].substring(0, parts[2].indexOf(':'));
         String args = parts[2].substring(parts[2].indexOf(':') + 1);
         archive = Files.readAllBytes(archiveFile().toPath());
@@ -197,6 +223,12 @@ public class EmulateDraw extends EmulateMapStart {
             prepareView();
             viewReady = true;
         }
+        if (siteMode) {
+            if (inside) {
+                drawSite(pass, clock);
+            }
+            return;
+        }
         drawn.clear();
         byte[] before = emu.readMemory(toAddr(TABLES + 0x40000), SETTLER_BYTES);
         rowSettlers.clear();
@@ -243,6 +275,69 @@ public class EmulateDraw extends EmulateMapStart {
         }
         line.append(" d=").append(String.join("|", drawn));
         lines.add(line.toString());
+        recorded++;
+    }
+
+    /**
+     * Draws the building of the node siteX,siteY as the row draw 0x44d5b4 does for a tile whose object code is 2 or 3: 0x44e329 with
+     * the tile's record (EDI +0x30) and its position, the column in units of 8 pixels (EDI +0, 32 * x - 16 * y over 8) and the row less
+     * four times the height (EDI +4). A line lists the building's 18 bytes and what the draw drew (d=): for each call, in order,
+     * sh<entry> for a shadow, <entry>/-1/x,y for a sprite drawn whole, <entry>/<fraction>/x,y for a sprite grown by the fraction (EDI
+     * +0xc), and good<entry> for the sprite of a good, with the entry the call reads (EDI +8).
+     */
+    private void drawSite(int pass, int clock) throws Exception {
+        long layerA = getInt(STATE + 0x24);
+        int bits = getWord(STATE + 0x30);
+        long record = layerA + (((long) siteY << bits) + siteX) * 4;
+        int slot = getWord(record + getWord(STATE + 0x36));
+        long item = getInt(STATE + 0x9c) + 0x12L * slot;
+        int height = emu.readMemory(toAddr(record + 1), 1)[0] & 0x1f;
+        putInt(REGISTERS + 0x20, GAME_VIEW);
+        putInt(REGISTERS + 0x30, record);
+        putWord(REGISTERS, 4 * siteX - 2 * siteY);
+        putWord(REGISTERS + 4, 20 * siteY - 4 * height);
+        List<String> calls = new ArrayList<>();
+        long esp = emu.readRegister("ESP").longValue() - 4;
+        emu.writeRegister("ESP", esp);
+        putInt(esp, RETURN);
+        emu.writeRegister(emu.getPCRegister(), BUILDING_DRAW);
+        for (long stop : SITE_STOPS) {
+            emu.setBreakpoint(toAddr(stop));
+        }
+        try {
+            while (true) {
+                emu.run(monitor);
+                if (emu.getLastError() != null) {
+                    throw new IllegalStateException("emulation failed: " + emu.getLastError());
+                }
+                long pc = emu.readRegister(emu.getPCRegister()).longValue();
+                int entry = (short) getWord(REGISTERS + 8);
+                String at = (short) getWord(REGISTERS) + "," + (short) getWord(REGISTERS + 4);
+                if (pc == RETURN) {
+                    break;
+                } else if (pc == SHADOW || pc == GROWN_SHADOW) {
+                    calls.add("sh" + entry);
+                } else if (pc == SPRITE) {
+                    calls.add(entry + "/-1/" + at);
+                } else if (pc == GROWN) {
+                    calls.add(entry + "/" + getWord(REGISTERS + 0xc) + "/" + at);
+                } else if (pc == GOOD_SPRITE) {
+                    calls.add("good" + entry);
+                } else if (pc != SOUND && pc != SOUND_REQUEST) {
+                    throw new IllegalStateException("the building draw reached " + Long.toHexString(pc));
+                }
+                ret();
+            }
+        } finally {
+            for (long stop : SITE_STOPS) {
+                emu.clearBreakpoint(toAddr(stop));
+            }
+        }
+        emu.writeRegister("ESP", esp + 4);
+        if (calls.isEmpty()) {
+            throw new IllegalStateException("pass " + pass + " draws nothing at the site");
+        }
+        lines.add("EMU draw pass=" + pass + " clock=" + clock + " b=" + hex(item, 0x12) + " d=" + String.join(";", calls));
         recorded++;
     }
 

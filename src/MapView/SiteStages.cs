@@ -10,7 +10,7 @@ public enum SiteLayer
     /// <summary>The ground of a large site that has not started (object 144, <c>0x44fa69</c>).</summary>
     Ground,
 
-    /// <summary>The base of a small site (object 145, <c>0x44fbf9</c>).</summary>
+    /// <summary>The base of a site that has started, small or large (object 145, <c>0x44fbf9</c>).</summary>
     Base,
 
     /// <summary>The scaffold of the building's type (the table at <c>0x44fcfe</c>), which grows with the progress.</summary>

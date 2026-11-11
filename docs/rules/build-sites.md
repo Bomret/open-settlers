@@ -158,10 +158,10 @@ nodes of meadow ([Forestry](forestry.md#the-building-and-the-job)). The type 0x1
 holds and lays the plank, good 8, on the flag ([Sawmilling](sawmilling.md#the-building-and-the-job)). The object numbers are the first instruction of each type's draw stub
 (`0x44e329`, the jump table `0x44e3aa`); the engine draws a finished building with it.
 
-**The site that has not started** (read from the code, not emulated). A building under construction goes through the common
+**The site that has not started** (emulated: `site-draws.txt`). A building under construction goes through the common
 part of the draw routine (from `0x44fa79`). It tests the progress word: 0 draws the object 144 and nothing else (`0x44fa69`), a large site waiting to be
-levelled. Any other word first draws the piles of goods delivered (none yet), then the object 145 (`0x44fbf9`) for a small
-site. The stages that follow are in [The builder](construction.md#drawing-a-site).
+levelled. Any other word first draws the piles of goods delivered (none yet), then the object 145 (`0x44fbf9`), for a small site and for a
+large one once its ground is levelled. The stages that follow are in [The builder](construction.md#drawing-a-site).
 
 **The start of a mission** places a building through the same routine (`0x41f2d2`, which calls it at `0x41f2f6`): the type
 is the one at `+0x27a`, the object code 2 for the type 0xb and 3 for any other, the same evaluator result. It then finishes

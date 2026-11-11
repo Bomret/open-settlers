@@ -107,7 +107,9 @@ The job table of the program has the builder as job 3 (the request above), the d
 
 ## Drawing a site
 
-**Status:** confirmed from the code of the draw routine for a building under construction (`0x44fa79`); no draw run of the program exists for it. The images
+**Status:** confirmed from the code of the draw routine for a building under construction (`0x44fa79`); **emulated:** `site-draws.txt` holds draw runs of
+the building draw (`0x44e329`) on the forester's site and the sawmill's site through their progress words, and `SiteDrawTests` compares the engine's layers
+with them. The images
 are drawn through the sprite routines of the platform layer (`0x44da4d`, `Gfx_DrawSpriteGrowing` `0x406350`).
 
 The routine takes the building's type as its index `k` into two byte tables of object numbers, the scaffold's (`0x44fcfe`: 186 for the types 2, 4, and 9, 181 for the type 0x11) and the finished buildings' (`0x44fd16`: 168, 169, 170, and 160), and

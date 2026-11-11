@@ -51,6 +51,7 @@
     <None Include="construction-digger.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="construction-removal.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="settler-draws.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="site-draws.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="golden.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
