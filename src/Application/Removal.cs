@@ -810,6 +810,15 @@ public sealed class Removal(
         building.OtherStatus &= ~0x18;
         building.FillLow = 0;
         building.FillHigh = 0;
+        if (building.Site is { } site)
+        {
+            // The byte of the planks a site needs (+0x10) is cleared with the fills; the stones it needs stay, and nothing reads them.
+            building.Site = site with
+            {
+                Planks = 0,
+            };
+        }
+
         // The flag's request words lose their classes (0x4617fd clears the bytes at flag +0x42 and +0x44; the ranks stay), so no
         // search finds the flag any more.
         foreach (var word in new[] { RequestWord.First, RequestWord.Second })

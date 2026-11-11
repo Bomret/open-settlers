@@ -217,11 +217,14 @@ public static class BuildSite
                     nodes[i].Object == MapObject.LargeHut
                     && nodes[i].LinkedSlot is var slot
                     && slot < buildings.Count
-                    && buildings[slot] is { Constructing: true, Progress: 0, Site: { } waiting }
+                    && buildings[slot] is { Constructing: true, Progress: 0, Site: { } waiting } waitingBuilding
                 )
                 {
-                    low = Math.Min(low, waiting.TargetHeight);
-                    high = Math.Max(high, waiting.TargetHeight);
+                    // The word at 14 holds the target height of a site, and the clock of its take-down once it is taken down (0x4617fd);
+                    // the program reads its low byte whole.
+                    var height = waitingBuilding.IsDemolishing ? waitingBuilding.Stamp & 0xff : waiting.TargetHeight;
+                    low = Math.Min(low, height);
+                    high = Math.Max(high, height);
                 }
             }
         }
