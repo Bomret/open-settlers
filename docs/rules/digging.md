@@ -97,7 +97,7 @@ draw of the dig (no draw run of the program holds a digger). The `open-settlers`
 **Status:** confirmed, and emulated.
 
 The evaluator judges a node for a large building from the heights of the 12 nodes of its second ring: they may differ by less than 9 ([Build sites](build-sites.md)). The routine also folds in the third ring (18 nodes, `0x44c151` to `0x44c204` in `0x44bd72`):
-a node of the ring that holds the map object code 3 (a large building) whose building is under construction and whose progress word is still 0 (a site that waits for its digger) contributes its target height (the word at 14) to the lowest and the highest height of the range. A large site that has started, and a finished large building, contribute nothing.
+a node of the ring that holds the map object code 3 (a large building) whose building is under construction and whose progress word is still 0 (a site that waits for its digger) contributes its target height (the word at 14) to the lowest and the highest height of the range. A large site that has started, and a finished large building, contribute nothing. A large site taken down while it waited still contributes, with the clock its take-down put into that word ([Removal](removal.md#taking-a-building-site-down)).
 **Emulated:** with a site of the height 15 at 14,8 and the ground west of it levelled to 5, the node 12,9 (the site lies in its third ring) reads the site 3 where without the site it reads 4 at the height 5. `BuildSite.Evaluate` takes the building table to read the site; the flag button and the building placement hand it.
 
 ## In the engine
