@@ -316,7 +316,6 @@ public sealed class RemovalTests
         string name,
         Func<char, int, int[]> kindsOf,
         Func<Dictionary<string, string>, bool> isRefused,
-        bool clickOnly = false,
         Func<Settler, int, string>? hexOf = null,
         bool construct = false
     )
@@ -497,13 +496,6 @@ public sealed class RemovalTests
                     Take(line);
                     Check($"after the click on {node[0]},{node[1]}", line, before);
                     before = Snapshot(map);
-                }
-
-                // A click-only replay checks the click and stops: the passes after a building site's placement are the
-                // construction's, which the engine does not run yet.
-                if (clickOnly)
-                {
-                    return;
                 }
             }
 
