@@ -89,7 +89,10 @@ a later cycle: with two roads at the castle's flag, the road in the higher direc
   the one of state 2 (the shape `4 + 9 * direction + height difference`, the time of the step added to the timer, the carrier going
   on at once where the sum did not wrap). **Blocked:** where the next node holds a settler, the timer is 0x7f, the frame
   `0x51 + direction`, and the heading the direction less 6; at the next turn after the timer the carrier tries the same
-  direction again. A step east, south-east, or south onto a settler coming the other way, whose own heading is that direction's opposite
+  direction again. A step tried again goes through the table at `0x43adea`, whose six entries (`0x43b83a`, `0x43ba9f`,
+  `0x43be55`, `0x43c0c0`, `0x43c20a`, `0x43c350`) enter the step routines after their check for the flag at the end of the
+  road: a step tried again is never a last step. A step in state 3 leaves byte 15 as it is; only the step of state 2
+  (`0x43a64c`) clears it. A step east, south-east, or south onto a settler coming the other way, whose own heading is that direction's opposite
   less 6, passes it instead ([Settlers](settlers.md#walking-home), *Passing*; `HeadOnPassTests` reaches it with two carriers).
 - **The last step.** Where the next node is the flag at the end of the road and the carrier's mode is 0, the carrier stays on
   its node: its timer takes 0x3f, its frame `0x6e` plus its heading, the low byte of its stamp the heading less 6, its mode the
@@ -97,7 +100,9 @@ a later cycle: with two roads at the castle's flag, the road in the higher direc
   engine keeps the slot as the target); the node's settler word is cleared, so the carrier does not hold the node against
   others; and it takes **state 0x42**. At a road that already holds two carriers (the road's byte, low nibble; two come about where two
   roads are joined, [Removal](removal.md#taking-a-flag-down)) the carrier does not wait: its timer takes 0x3f, its frame is the heading's,
-  its heading goes down by 6 as for any step that is tried again, and it counts the turn in byte 15 (the next state). At the fourth turn the count
+  its heading goes down by 6 as for any step that is tried again, and it counts the turn in byte 15 (the next state). The heading held the
+  direction back along the road, so at its next turn the carrier steps back the way it came and walks to its next turn next to the flag at
+  the other end; the count outlasts those steps. At the fourth turn the count
   starts again, and if the road still holds two the carrier leaves it: both ends' road bytes count one carrier less and byte 15 takes `0xff`
   (`0x43bc52`). With a good waiting at the flag at the far end the carrier does nothing more than set the timer, frame, and heading.
   **Emulated** for the two carriers of a joined road (the game `join`, [Removal](removal.md)); the fourth turn and the far end's

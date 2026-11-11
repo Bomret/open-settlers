@@ -324,19 +324,8 @@ public sealed class CarrierEventsTests
         Assert.AreEqual(3, walk.State.Get("state"));
     }
 
-    // A carrier that waits takes its heading down by 6 and the next turn goes by that heading (WalkRoad): a second wait without a
-    // step in between does not repeat the first, and a third walks off the table. The tests that let a carrier wait on for
-    // several turns put its heading back to the direction it came by (3 on this road), as at its arrival.
-    private static void RunToTheTurn(Game game, ThingId carrier, int turn)
-    {
+    private static void RunToTheTurn(Game game, ThingId carrier, int turn) =>
         RunUntil(game, () => game.History.EventsOf(carrier).Count(e => e.Type == EventType.Wait) == turn);
-        var settler = game.Settlers[carrier.Slot];
-        settler.Activity = settler.Activity switch
-        {
-            WalksRoad road => road with { Heading = new Heading(3) },
-            var other => other.Carrying(other.Residue with { Heading = 3 }),
-        };
-    }
 
     // No command gives a road a second carrier in these tests' short setups, so a test sets the count it needs.
     private static void SetRoadCount(Game game, int count)
@@ -372,23 +361,52 @@ public sealed class CarrierEventsTests
     }
 
     [TestMethod]
-    public void ACarrierWaitsOnWhileAGoodWaitsAtTheFlagAtTheFarEndOfItsRoadAndLeavesItWhenTheGoodIsGone()
+    public void ACarrierOnARoadOfTwoCarriersStepsOnAfterEachTurnAtTheEndOfItsRoad()
     {
         var game = RoadBuilt();
         RunToTheRequest(game);
         SetRoadCount(game, 2);
         var carrier = game.History.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
+
+        RunUntil(game, () => game.History.EventsOf(carrier).Count(e => e.Type == EventType.Wait) == 3);
+
+        var events = game.History.EventsOf(carrier).ToList();
+        var waits = events.Select((e, i) => (e, i)).Where(p => p.e.Type == EventType.Wait).Select(p => p.i).ToList();
+        for (var turn = 1; turn < waits.Count; turn++)
+        {
+            Assert.IsTrue(
+                events
+                    .Skip(waits[turn - 1] + 1)
+                    .Take(waits[turn] - waits[turn - 1] - 1)
+                    .Any(e => e.Type == EventType.Stepped),
+                $"the carrier stepped between turn {turn} and turn {turn + 1}"
+            );
+        }
+    }
+
+    [TestMethod]
+    public void ACarrierWaitsOnWhileAGoodWaitsAtTheFlagAtTheFarEndOfItsRoadAndLeavesItWhenTheGoodIsGone()
+    {
+        // A road of four steps from the castle's flag to a flag at 20,6. A turn at the end of the road sends the carrier back the
+        // way it came, to its next turn next to the flag at the other end: the first is next to the flag at 20,6, the second next
+        // to the castle's flag, whose far end is the flag at 20,6.
+        var game = NewGame();
+        Do(game, CommandKind.PlaceCastle, 15, 5);
+        Do(game, CommandKind.PlaceFlag, 20, 6);
+        Do(game, CommandKind.BuildRoad, 16, 6, [0, 0, 0, 0]);
+        RunToTheRequest(game);
+        SetRoadCount(game, 2);
+        var carrier = game.History.Events.All.First(e => e.Type == EventType.CarrierRequested).Thing;
         RunToTheTurn(game, carrier, 1);
-        // The road holds one carrier again, and a good waits at the castle's flag for it (the carrier's swap at that flag has
-        // come and gone).
+        // The road holds one carrier again, and a good waits at the flag at 20,6 for it.
         SetRoadCount(game, 1);
-        game.Flags[0].Side(0).WaitingPlace = 0;
+        game.Flags[1].Side(3).WaitingPlace = 0;
 
         RunToTheTurn(game, carrier, 2);
 
         Assert.AreNotEqual(0x42, game.History.EventsOf(carrier).Last().State.Get("state"), "the carrier waits on");
 
-        game.Flags[0].Side(0).WaitingPlace = null;
+        game.Flags[1].Side(3).WaitingPlace = null;
         RunToTheTurn(game, carrier, 3);
 
         Assert.AreEqual(0x42, game.History.EventsOf(carrier).Last().State.Get("state"), "it waits at the flag");

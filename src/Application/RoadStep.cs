@@ -15,6 +15,11 @@ public sealed class RoadStep(SettlerMovement movement, SettlerTable settlers, Ga
             _ => activity,
         };
 
+    // A step clears byte 15 of a settler in state 2 (0x43a64c); the carrier's step in state 3 (0x43b788 and its siblings)
+    // leaves it, so the carrier's count of turns at the end of its road and its mark to go outlast its steps.
+    private static Activity Cleared(Activity activity) =>
+        activity is Walks ? WalkingActivity.Cleared(activity) : activity;
+
     /// <summary>One step on a road; false where the settler waits out the rest of the step's time or the step is blocked.</summary>
     public bool Step(int slot, Settler settler, int direction)
     {
@@ -27,7 +32,7 @@ public sealed class RoadStep(SettlerMovement movement, SettlerTable settlers, Ga
         if (other == 0)
         {
             shape = 4 + 9 * direction + movement.Height(next) - movement.Height(here);
-            settler.Activity = WalkingActivity.Cleared(WithHeading(settler.Activity, forward));
+            settler.Activity = Cleared(WithHeading(settler.Activity, forward));
             movement.Move(slot, settler, x, y, next);
         }
         else if (
@@ -73,7 +78,7 @@ public sealed class RoadStep(SettlerMovement movement, SettlerTable settlers, Ga
             return false;
         }
 
-        settler.Activity = WalkingActivity.Cleared(settler.Activity);
+        settler.Activity = Cleared(settler.Activity);
         var old = settler.Timer;
         settler.Timer = (ushort)(old + tables.StepTime(shape));
         var finished = settler.Timer < old;
