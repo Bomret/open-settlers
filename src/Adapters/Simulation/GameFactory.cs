@@ -174,7 +174,7 @@ public static class GameFactory
                 Handlers =
                 [
                     new PlaceCastleHandler(tables, map, castle, startStock, flags, settlers, roster, history, causes),
-                    new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal),
+                    new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal, buildings),
                     new BuildRoadHandler(planner, network, carriers, history, causes),
                     new PlaceBuildingHandler(placement),
                     new RemoveFlagHandler(removal),

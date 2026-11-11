@@ -102,6 +102,87 @@ public sealed class ConstructionDiggerTests
         }
     }
 
+    [TestMethod]
+    [DataRow("sweep-site")]
+    [DataRow("sweep-site-flat")]
+    public void ANodeNextToALargeSiteThatWaitsForItsDiggerIsJudgedAsTheOriginalJudgesIt(string name)
+    {
+        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
+        var game = Clicked(scenario.Command.Split(':'), withSite: true);
+
+        var expected = scenario
+            .Lines[0]["verdicts"]
+            .Split(';')
+            .Select(entry => entry.Split(':'))
+            .ToDictionary(entry => entry[0], entry => entry[1]);
+        var differences = new List<string>();
+        for (var y = 0; y < game.Map.Size.Height; y++)
+        {
+            for (var x = 0; x < game.Map.Size.Width; x++)
+            {
+                var result = BuildSite.Evaluate(game.Tables, game.Map, x, y, 0, hasCastle: true, game.Buildings);
+                var judged = result.Node == 0 ? null : $"{result.Node}/{result.Site}/{result.Height}";
+                if (judged != expected.GetValueOrDefault($"{x},{y}"))
+                {
+                    differences.Add($"{x},{y}: the engine {judged ?? "-"}, the original {expected.GetValueOrDefault($"{x},{y}") ?? "-"}");
+                }
+            }
+        }
+
+        Assert.IsEmpty(differences, string.Join("; ", differences));
+    }
+
+    [TestMethod]
+    public void ALargeBuildingIsRefusedWhereTheWaitingSiteWidensTheRangeOfTheHeightsAndPlacedWhereNoSiteDoes()
+    {
+        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == "sweep-site-flat");
+        var parts = scenario.Command.Split(':');
+
+        foreach (var (withSite, placed) in new[] { (true, false), (false, true) })
+        {
+            var game = Clicked(parts, withSite);
+            var revision = game.Revision;
+            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 12, 9, Building: BuildingType.Sawmill));
+            game.Tick();
+
+            Assert.AreEqual(placed, game.Revision != revision, withSite ? "the waiting site refuses it" : "no site refuses it");
+        }
+    }
+
+    // The game of the scenario's command at the pass after its clicks: the site's click only where `withSite`, the heights of the clicks
+    // l@x,y,H (the verb's click sets the node and its six neighbours to H), and none of the sweep's clicks v@.
+    private static Game Clicked(string[] parts, bool withSite)
+    {
+        // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS
+        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
+        for (var pass = 0; pass < int.Parse(parts[9], CultureInfo.InvariantCulture); pass++)
+        {
+            if (pass == at)
+            {
+                foreach (var click in parts[10].Split(';').Where(click => click[0] != 'v' && (withSite || click[0] != 'b')))
+                {
+                    if (click[0] == 'l')
+                    {
+                        var level = click[2..].Split(',').Select(number => int.Parse(number, CultureInfo.InvariantCulture)).ToArray();
+                        foreach (var (x, y) in Seven(level[0], level[1]))
+                        {
+                            game.Map.At(x, y).Height = level[2];
+                        }
+                    }
+                    else
+                    {
+                        Place(game, click);
+                    }
+                }
+            }
+
+            game.Tick();
+        }
+
+        return game;
+    }
+
     private static (int X, int Y) SiteNode(string click)
     {
         var node = click[2..].Split(',');
