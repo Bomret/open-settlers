@@ -49,6 +49,16 @@ public readonly record struct Job(int Code)
     /// <summary>The stonecutter, who cuts stone heaps and carries the stones to his hut's flag (<c>docs/rules/stonecutting.md</c>).</summary>
     public static Job Stonecutter => new(StonecutterCode);
 
+    /// <summary>The number of the sawmiller's job, for a <c>case</c> label.</summary>
+    public const int SawmillerCode = 6;
+
+    /// <summary>
+    /// The sawmiller, who saws the logs the sawmill holds into planks and carries each plank out to the flag
+    /// (<c>docs/rules/sawmilling.md</c>). The handler of the building type 0x11 (<c>0x42da0b</c>) asks for job 6 with the stock word of the tool good 22,
+    /// and his work puts the good 8 on the flag.
+    /// </summary>
+    public static Job Sawmiller => new(SawmillerCode);
+
     /// <summary>A settler without a job yet.</summary>
     public static Job Jobless => new(21);
 

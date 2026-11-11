@@ -23,6 +23,7 @@ public sealed class MainPass(
     Removal removal,
     CastleRoster roster,
     SitePass sites,
+    SawmillBehavior sawmill,
     StorageDistribution? distribution = null
 )
 {
@@ -82,6 +83,10 @@ public sealed class MainPass(
                     else
                     {
                         roster.HandleBuilding(building);
+                        if (building.Type == BuildingType.Sawmill && !building.Constructing)
+                        {
+                            sawmill.KeepRank(building);
+                        }
                     }
                 }
             );

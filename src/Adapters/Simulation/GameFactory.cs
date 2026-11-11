@@ -112,8 +112,17 @@ public static class GameFactory
         woodcutter.RegisterStart(Job.Stonecutter, woodcutter.StartStonecutter);
         var digger = new DiggerBehavior(movement, buildings, history, woodcutter.StepOut);
         woodcutter.RegisterStart(Job.Digger, digger.Start);
+        var sawmill = new SawmillBehavior(
+            movement,
+            flags,
+            history,
+            (flag, place, good) => goods.LayGood(flag, place, good),
+            woodcutter.EnterHut
+        );
+        woodcutter.RegisterStart(Job.Sawmiller, sawmill.Start);
         builder.Register(behaviours);
         digger.Register(behaviours);
+        sawmill.Register(behaviours);
         roster.Register(behaviours);
         walks.Register(behaviours);
         removal.Register(behaviours);
@@ -134,6 +143,7 @@ public static class GameFactory
             removal,
             roster,
             new SitePass(map, flags, tables, roster.AskForWorker),
+            sawmill,
             handsOutGoods
                 ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
                 : null

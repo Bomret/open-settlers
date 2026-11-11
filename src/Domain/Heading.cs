@@ -29,21 +29,6 @@ public readonly record struct Heading(int Value)
     /// </summary>
     public Heading Unmarked => new((byte)((byte)Value + Direction.Count));
 
-    /// <summary>
-    /// The heading opposite the one a settler kept as a retried heading in the low byte of its stamp: the carrier that waits
-    /// next to the flag at the far end of its road turns round (<c>0x42ff81</c>; checked against the emulator's fetches in
-    /// <c>road-splits.txt</c>, where the carrier came by 0 and by 3).
-    /// </summary>
-    public Heading Turned
-    {
-        get
-        {
-            var turned = (sbyte)Value + Direction.Count / 2;
-
-            return new((byte)(turned < 0 ? turned + Direction.Count : turned));
-        }
-    }
-
     /// <inheritdoc />
     public override string ToString() => Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 }

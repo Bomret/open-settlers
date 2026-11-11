@@ -146,6 +146,36 @@ public sealed record Digs(int Pass, int Target, int Node, int Phase) : Activity
 }
 
 /// <summary>
+/// State 0x18: the sawmiller works in the sawmill he stands in (<c>0x4359fe</c>, <c>docs/rules/sawmilling.md</c>). Without a log on site he waits
+/// for one; with one, he takes it out of the building's fill and saws for 0x93f clock units, then carries a plank out to the flag.
+/// </summary>
+/// <param name="Sawing">Whether he saws a log (byte 11 is 0xff) and not waits for one (byte 11 is 0).</param>
+public sealed record Saws(bool Sawing) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x18;
+}
+
+/// <summary>
+/// State 0xb: the sawmiller waits at the sawmill's door with the plank in his hands until the node of the flag is free and the flag has a
+/// free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the plank down.
+/// </summary>
+/// <param name="Good">The good he carries out (byte 11), the plank.</param>
+public sealed record StepsOutWithGood(Good Good) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0xb;
+}
+
+/// <summary>State 0xd: the settler stands on the flag with a good in his hands and lays it on the flag (<c>0x43c6aa</c>), then enters the building.</summary>
+/// <param name="Good">The good he lays down (byte 11).</param>
+public sealed record PutsDownGood(Good Good) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0xd;
+}
+
+/// <summary>
 /// State 0x4a: the builder has finished the building and waits at its door until the node of the flag is free, then steps onto the flag
 /// to go home (<c>0x43e008</c>).
 /// </summary>

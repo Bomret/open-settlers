@@ -1224,6 +1224,11 @@ public class EmulateMapStart extends GhidraScript {
         emu.writeMemory(toAddr(item + 4), new byte[] {(byte) (type << 2)});
         putWord(item + 6, flagSlot);
         putInt(flag + 0x34, item);
+        if (type == 17) {
+            // The flag pointer a building holds at +0xe once its site is built (0x43ef82); the sawmill's handler (0x42da0b)
+            // keeps its log request's rank through it.
+            putInt(item + 0xe, flag);
+        }
         emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x40)});
         putWord(layerA + layerB + node, slot);
         emu.writeMemory(toAddr(layerA + node + 3), new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | 2)});
@@ -1545,6 +1550,9 @@ public class EmulateMapStart extends GhidraScript {
                 emu.writeMemory(toAddr(item + 4), new byte[] {(byte) (type << 2)});
                 putWord(item + 6, flagSlot);
                 putInt(flag + 0x34, item);
+                if (type == 17) {
+                    putInt(item + 0xe, flag);
+                }
                 emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x40)});
                 putWord(layerA + layerB + node, slot);
                 emu.writeMemory(toAddr(layerA + node + 3),
