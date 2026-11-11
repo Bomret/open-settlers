@@ -60,10 +60,12 @@ direction does one of two things:
    direction at once (`0x464539`) and keeps its destination word 0; the flag's bit 7 is not set again, and where the road's byte has no
    bit 7 the good takes its place. **Emulated:** a plank and a stone on the castle's flag, released from a site taken down
    ([Removal](removal.md#taking-a-building-site-down)), each take the direction of the only road that holds a carrier. **Emulated** (`removals.txt`, `cut-off`): a stone laid on a flag of a network that a removed road cut off
-   from the castle takes the direction of a road that holds a carrier at the flag's next turn and keeps the destination 0. A second good on such a
-   flag is pinned on made-up tables only (`GoodsTransportTests`): the first good takes the road at once, the next good the direction only. **Stand-in:** the road
+   from the castle takes the direction of a road that holds a carrier at the flag's next turn and keeps the destination 0. **Emulated** (`cut-off-two`):
+   of two stones on such a flag both take the direction and keep the destination 0, and the one at the later place (4, the places run from the last)
+   takes the road, the other the direction only (`GoodsTransportTests` holds the same on made-up tables). **Stand-in:** the road
    is the first with a carrier from the east, then from the north-west round to the south-east; the original starts from a register's
-   leftover (the result of the request search), which is not recovered, so the choice between several roads that hold a carrier is not confirmed.
+   leftover (the result of the request search), which is not recovered. **Emulated** (`cut-off-two-roads`): on a cut-off flag with a carrier on its
+   east road and on its north road the stone takes the east road, as the stand-in's order does; the choice for other pairs of roads is not confirmed.
 2. **A destination.** The search for the direction (`0x464aa8`, `0x464bb2`, `0x464c36`) starts at the flag. It seeds the roads
    that hold a carrier by load: first those with no good heading that way, then those with exactly one, two, three, and last
    those with four or more (a seed marks the flag at the road's far end with the direction), as long as a road with a carrier is
