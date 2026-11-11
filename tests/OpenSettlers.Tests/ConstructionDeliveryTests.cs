@@ -109,4 +109,39 @@ public sealed class ConstructionDeliveryTests
         );
         Assert.AreEqual(0, GoodsOnFlags(game));
     }
+
+    // A site whose flag no road joins to the castle: the request search and the hand-out travel only over roads, and the request for
+    // its builder finds no way to the castle (CastleRoster.RequestWorker sets the request-failed bit), so the site gets no good and no
+    // builder while the stock stays and the game runs on. ConstructionWorld's flag 17,3 is joined to no road; the site's door is 16,2.
+    [TestMethod]
+    public void ASiteWhoseFlagNoRoadReachesGetsNoGoodAndNoBuilderAndTheGameRunsOn()
+    {
+        var game = ConstructionWorld.Create(handsOutGoods: true);
+        for (var good = 0; good < 5; good++)
+        {
+            game.CastleStock.Add(Good.Plank);
+            game.CastleStock.Add(Good.Stone);
+        }
+
+        var planks = game.CastleStock.Planks;
+        var stones = game.CastleStock.Stones;
+        ConstructionWorld.Site(game, BuildingType.Woodcutter, 16, 2);
+        var site = game.Buildings.Single(building => building.Type == BuildingType.Woodcutter);
+        var failed = false;
+        var builderSent = false;
+        var start = game.TickCount;
+
+        for (var tick = 0; tick < 3000; tick++)
+        {
+            game.Tick();
+            failed |= site.RequestFailed;
+            builderSent |= site.WorkerOnTheWay || site.WorkerInside;
+        }
+
+        Assert.IsTrue(failed, "the request for the builder fails");
+        Assert.IsFalse(builderSent, "no builder sets out");
+        Assert.AreEqual((planks, stones), (game.CastleStock.Planks, game.CastleStock.Stones), "the stock stays");
+        Assert.AreEqual(0, GoodsOnFlags(game), "no good is handed out");
+        Assert.AreEqual(start + 3000, game.TickCount);
+    }
 }
