@@ -84,7 +84,9 @@
 //                            (c=) where it changed, and the start lines the castle's item and the transport priorities
 //                            (prio=, 32 bytes for the goods 0 to 31) that the flag exchange reads (0x43b054). Before the
 //                            castle the verb runs 0x445570 on the player block, as the player setup of a new game (0x42055e)
-//                            does, so the priorities hold the original's default ranks
+//                            does, so the priorities hold the original's default ranks; it then runs 0x445752, which writes the
+//                            player words at +0x148 to +0x150 (the high byte of the word at +0x148 is the rank a building site's
+//                            request for planks starts from, docs/rules/construction-materials.md)
 //   carrier:N:S0,S1,S2:L:cx,cy:x,y;...:sx,sy,D;...:PASSES[:sx,sy,D;...:AT]
 //                            the passes of worker (docs/rules/carriers.md) on a game with a castle, flags, and roads and no
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
@@ -125,6 +127,9 @@
 //                            i=5) (m=x,y:i=old>new), the settlers (s<slot>=, 16
 //                            bytes), the flag items (f<slot>=, 70 bytes), the building items (b<slot>=, 18 bytes), the storage item
 //                            (st=), the counts of the tables (c=), the total of resource 1 (r1=), and the generator (rng=).
+//   construct:...           remove: (the same arguments and lines) with the phase routine 0x42965c run at the last phase of each
+//                            phase cycle, as Sim_StepPhase (0x4291c2) runs it while the clock runs: the castle's goods go out to the
+//                            flags whose requests rank highest, and the pass draws once from the random generator
 //   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -197,6 +202,13 @@ public class EmulateMapStart extends GhidraScript {
                         reserveFlagZero = true;
                         defaultPriorities = true;
                         reserveBuildingZero = true;
+                        remove(rest);
+                    }
+                    case "construct" -> {
+                        reserveFlagZero = true;
+                        defaultPriorities = true;
+                        reserveBuildingZero = true;
+                        phaseRoutine = true;
                         remove(rest);
                     }
                     case "stockrows" -> stockrows();
@@ -1032,6 +1044,17 @@ public class EmulateMapStart extends GhidraScript {
         putInt(REGISTERS + 0x30, player);
         if (defaultPriorities) {
             call(0x445570);
+            call(0x445752);
+        }
+        if (phaseRoutine) {
+            // The clock step (+0x1fe, 2.0 while the clock runs) that the phase 32 routine tests.
+            putInt(STATE + 0x1fe, 0x20000);
+            // The three work buffers the searches use (+0xb4 and +0xb8 the queues, +0xbc the list the phase routine builds): the
+            // other verbs leave the pointers 0, which the routine would use for all three at once.
+            putInt(STATE + 0xb4, 0x26000000L);
+            putInt(STATE + 0xb8, 0x26010000L);
+            putInt(STATE + 0xbc, 0x26020000L);
+            zero(0x26000000L, 0x30000);
         }
         String[] centre = parts[3].split(",");
         putWord(player + 0xfc, Integer.parseInt(centre[0]));
@@ -1804,9 +1827,17 @@ public class EmulateMapStart extends GhidraScript {
 
     /**
      * Whether startWorld runs the default transport priority routine 0x445570 on the player block, as the player setup of a new
-     * game (0x42055e) does: it writes the rank of each good 1 to 26 at the player's block -0x55 + good.
+     * game (0x42055e) does: it writes the rank of each good 1 to 26 at the player's block -0x55 + good. It also runs 0x445752,
+     * the next default routine of that setup (the words at +0x148 to +0x150).
      */
     protected boolean defaultPriorities;
+
+    /**
+     * Whether a pass at the last phase (32) runs the phase routine 0x42965c as Sim_StepPhase (0x4291c2) does while the clock
+     * runs: it draws from the generator, then each storage hands a good to the flag whose request ranks highest
+     * (docs/rules/construction-materials.md). The clock step it tests (+0x1fe) is set at the start.
+     */
+    protected boolean phaseRoutine;
 
     /**
      * Whether startWorld takes building slot 0 for the dummy the original's game start takes (the allocator 0x45da8f at the
@@ -1824,6 +1855,9 @@ public class EmulateMapStart extends GhidraScript {
         }
         int phase = (getWord(STATE + PHASE) + 1) % PHASE_COUNT;
         putWord(STATE + PHASE, phase);
+        if (phaseRoutine && phase == PHASE_COUNT - 1) {
+            call(0x42965c);
+        }
         call(0x46414d);
         call(0x42cb2d);
         call(0x42f3d9);
