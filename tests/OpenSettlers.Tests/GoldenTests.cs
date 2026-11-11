@@ -32,7 +32,14 @@ public sealed class GoldenTests
     private const int FinishedHut = -1;
 
     // A command at a tick: the scripts enqueue every command before the first tick, but a finished hut, which no command gives.
-    private sealed record Step(long Tick, int Kind, int X, int Y, int[]? Directions = null, BuildingType? Building = null);
+    private sealed record Step(
+        long Tick,
+        int Kind,
+        int X,
+        int Y,
+        int[]? Directions = null,
+        BuildingType? Building = null
+    );
 
     private sealed record Scenario(
         string Name,
@@ -191,7 +198,8 @@ public sealed class GoldenTests
 
     // Plays the scenario once and reads no event until it has ended, so the digests at the checkpoints are those of a run
     // that nothing reads the events of (INV-0007). The events as of each checkpoint are the log's events up to its tick.
-    private static Outcome Run(Scenario scenario, bool everyPass)
+    // eachTick, where given, runs after every tick.
+    private static Outcome Run(Scenario scenario, bool everyPass, Action<Game>? eachTick = null)
     {
         var game = scenario.Start(everyPass);
         foreach (var step in scenario.Script.Where(step => step.Kind != FinishedHut))
@@ -212,6 +220,7 @@ public sealed class GoldenTests
                 }
 
                 game.Tick();
+                eachTick?.Invoke(game);
             }
 
             digests.Add($"{checkpoint}:{game.Digest():x16}");
@@ -257,13 +266,53 @@ public sealed class GoldenTests
     [TestMethod]
     public void TheSiteOfSiteWithHandoutIsAccepted()
     {
-        var runs = Outcomes.Value.Where(o => o.Line.StartsWith("site-with-handout |", StringComparison.Ordinal)).ToList();
+        var runs = Outcomes
+            .Value.Where(o => o.Line.StartsWith("site-with-handout |", StringComparison.Ordinal))
+            .ToList();
 
         Assert.HasCount(2, runs);
         foreach (var run in runs)
         {
             Assert.AreEqual(1, run.Game.History.Events.All.Count(e => e.Type == EventType.PlaceBuilding), run.Line);
         }
+    }
+
+    // INV-0007 with construction under way: site-with-handout, played while after every tick each building's and each
+    // settler's events and its state at that tick are read, gives the committed lines, digests and event logs alike.
+    [TestMethod]
+    public void ReadingEveryThingsEventsEachTickOfSiteWithHandoutGivesTheCommittedLines()
+    {
+        var scenario = Scenarios.Single(s => s.Name == "site-with-handout");
+        var expected = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, Fixture))
+            .Where(line => line.StartsWith("site-with-handout |", StringComparison.Ordinal))
+            .ToArray();
+        var reads = 0;
+        var siteBuilt = false;
+
+        void ReadEveryThing(Game game)
+        {
+            var tick = game.TickCount - 1;
+            for (var slot = 0; slot < game.Buildings.Count; slot++)
+            {
+                var id = game.History.BuildingId(slot);
+                reads += game.History.EventsOf(id).Count;
+                _ = game.History.StateAt(id, tick);
+                siteBuilt |= game.Buildings[slot].Constructing && game.Buildings[slot].Progress > 0;
+            }
+
+            for (var slot = 0; slot < game.Settlers.Count; slot++)
+            {
+                var id = game.History.SettlerId(slot);
+                reads += game.History.EventsOf(id).Count;
+                _ = game.History.StateAt(id, tick);
+            }
+        }
+
+        var actual = new[] { true, false }.Select(everyPass => Run(scenario, everyPass, ReadEveryThing).Line).ToArray();
+
+        Assert.IsTrue(siteBuilt, "the site's construction was under way while the events were read");
+        Assert.IsGreaterThan(0, reads);
+        CollectionAssert.AreEqual(expected, actual);
     }
 
     private static Func<ThingEvent, bool> OfType(params string[] types) => e => types.Contains(e.Type);
