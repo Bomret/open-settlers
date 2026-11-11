@@ -56,7 +56,7 @@ public sealed class ActivityRegistryTests
         registry.Register<BuildsCastle>((slot, _, _) => seen.Add($"builds {slot}"));
 
         registry.Handle(5, new Settler(Job.Carrier, 0, 0, 0, 0, new WaitsInCastle(2)));
-        registry.Handle(6, new Settler(Job.Builder, 0, 0, 0, 0, new BuildsCastle()));
+        registry.Handle(6, new Settler(Job.CastleSettler, 0, 0, 0, 0, new BuildsCastle()));
 
         CollectionAssert.AreEqual(new[] { "castle 5 2", "builds 6" }, seen);
     }

@@ -142,7 +142,7 @@ public sealed class CastleRoster(
         foreach (var job in CastleJobs)
         {
             settlers.Add(
-                new Settler(job, 0, x, y, clock.Now, job == Job.Builder ? new BuildsCastle() : new WaitsInCastle())
+                new Settler(job, 0, x, y, clock.Now, job == Job.CastleSettler ? new BuildsCastle() : new WaitsInCastle())
             );
             history.FillSettler(settlers.Count - 1);
         }

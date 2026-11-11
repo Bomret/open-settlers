@@ -136,7 +136,13 @@ public sealed class NameTable
             CodeKind.Job,
             Job.Builder.Code,
             "builder",
-            "Job.Builder; Game.Removal reads job 4 as the builder; docs/rules/settlers.md"
+            "Job.Builder; the under-construction handler 0x42d55f asks for job 3 with the tool good 17 (request at 0x42d5fc) and the job's state 9 builds the site (0x43ec82); docs/rules/construction.md"
+        );
+        AddOne(
+            CodeKind.Job,
+            Job.CastleSettler.Code,
+            "castle-settler",
+            "Job.CastleSettler; the castle's first settler stands by while the castle is built (state 10, 0x43f17a) and no building asks for job 4; Game.Removal reads job 4 as a settler that goes home as a carrier; docs/rules/settlers.md"
         );
         AddOne(CodeKind.Job, Job.Woodcutter.Code, "woodcutter", "Job.Woodcutter; docs/rules/woodcutting.md");
         AddOne(CodeKind.Job, Job.Jobless.Code, "jobless", "Job.Jobless: 21 is a settler without a job yet");

@@ -409,7 +409,7 @@ public sealed class OpenSettlersSourceTests
     {
         using var folder = new ContentFolder();
 
-        Assert.IsNull(folder.Load().Draw(Settler(Job.Builder, Walking())));
+        Assert.IsNull(folder.Load().Draw(Settler(Job.CastleSettler, Walking())));
     }
 
     [TestMethod]

@@ -93,7 +93,7 @@ public sealed class SettlerJobTests
         var id = game.History.SettlerId(slot);
         // The engine has no builder outside the castle, so the hut's woodcutter is given the builder's job: the test shows
         // that the removal of a building turns a builder worker into a carrier of the same settler, not a builder's path.
-        worker.Job = Job.Builder;
+        worker.Job = Job.CastleSettler;
 
         Do(game, CommandKind.RemoveBuilding, 16, 2);
 
