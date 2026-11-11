@@ -179,6 +179,9 @@ public static class EventType
     /// <summary>A carrier gives a good to a building, and the building's storage gains it.</summary>
     public const string Handover = "handover";
 
+    /// <summary>The castle hands a good of its stock out to a request: the good lies on the castle's flag, bound for the request's flag.</summary>
+    public const string Handout = "handout";
+
     /// <summary>Every type, for a check of a name.</summary>
     public static IReadOnlyList<string> All { get; } =
     [
@@ -239,5 +242,6 @@ public static class EventType
         Exchange,
         Deliver,
         Handover,
+        Handout,
     ];
 }
