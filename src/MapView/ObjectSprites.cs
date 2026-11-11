@@ -94,10 +94,12 @@ public static class ObjectSprites
 
     /// <summary>The sprite entry of the scaffold of the site of <paramref name="type"/>, or null for a type the view draws none for.</summary>
     public static int? StageEntry(BuildingType type) =>
-        type == BuildingType.Sawmill ? ScaffoldLargeEntry
-        : type == BuildingType.Woodcutter || type == BuildingType.Stonecutter || type == BuildingType.Forester
-            ? ScaffoldSmallEntry
-        : null;
+        SiteStages.ScaffoldIsLarge(type) switch
+        {
+            true => ScaffoldLargeEntry,
+            false => ScaffoldSmallEntry,
+            null => null,
+        };
 
     /// <summary>The sprite entry of a layer of the site of <paramref name="type"/> (<see cref="SiteStages"/>), or null for none.</summary>
     public static int? SiteLayerEntry(SiteLayer layer, BuildingType type) =>
