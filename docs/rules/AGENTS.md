@@ -121,4 +121,12 @@ When the dump is missing, build it before you investigate.
 - [Settlers](settlers.md): how a building asks for a worker, the route search, and the worker's walk.
 - [Goods](goods.md): how a good on a flag gets its destination, and how carriers lift, hand over, and deliver it.
 - [Woodcutting](woodcutting.md): the woodcutter's work cycle and how a felled tree leaves the map.
+- [Construction](construction.md): how a building site asks for its builder, how he builds in state 9, how a finished building asks
+  for its worker, and how a site is drawn as it grows.
+- [Construction materials](construction-materials.md): how a site asks for planks and stones, how the castle hands them out, and how a
+  delivery counts into the site.
+- [Digging](digging.md): how a large building site asks for a digger and how he levels the site's ground.
+- [Forestry](forestry.md): the forester's work cycle and how a sapling grows into a tree.
+- [Stonecutting](stonecutting.md): the stonecutter's work cycle and how a stone heap leaves the map.
+- [Sawmilling](sawmilling.md): the sawmiller's work cycle and how a sawmill turns logs into planks.
 - [Removal](removal.md): what taking down a flag, a road, or a building does.
