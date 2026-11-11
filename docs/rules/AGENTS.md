@@ -97,6 +97,8 @@ When the dump is missing, build it before you investigate.
 - [Timing](timing.md): the timer, the game clock, and how the main loop advances the simulation.
 - [Map start](map-start.md): the random generator, the free-game seed, and where the seed enters the
   map generation.
+- [Map form](map-form.md): the map sizes, the layout of the map in memory, the canonical form the engine and the
+  emulator harness write for comparison, and the generation passes.
 - [Map objects](map-objects.md): which sprite an object code draws, where it sits on its tile, and its
   transparency.
 - [Map object codes](map-object-codes.md): what each object code 1 to 127 is, its class, sprite, scatter pass,
@@ -130,3 +132,4 @@ When the dump is missing, build it before you investigate.
 - [Stonecutting](stonecutting.md): the stonecutter's work cycle and how a stone heap leaves the map.
 - [Sawmilling](sawmilling.md): the sawmiller's work cycle and how a sawmill turns logs into planks.
 - [Removal](removal.md): what taking down a flag, a road, or a building does.
+- [Layouts](layouts.md): how a layout starts settlers and puts goods on flags, and the entry states the engine allows.
