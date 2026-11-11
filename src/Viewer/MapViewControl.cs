@@ -184,7 +184,9 @@ public partial class MapViewControl : Control
                     .FlagGoodsOf(_game)
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => !good.IsNone)),
             things ? ListedThings() : null,
-            _gameView ? _game : null
+            _gameView ? _game : null,
+            _gameView ? _game?.CastleStock.Planks ?? 0 : null,
+            _gameView ? _game?.CastleStock.Stones ?? 0 : null
         );
 
     /// <summary>
@@ -198,7 +200,7 @@ public partial class MapViewControl : Control
             return problem;
 
         _ticks.Text = $"Tick {_game.TickCount}";
-        _logs.Text = CastleReadout.Text(_game.CastleStock.Logs);
+        _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);
         UpdateSettlers();
         Redraw();
 
@@ -457,7 +459,7 @@ public partial class MapViewControl : Control
             // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
             var exit = LayoutLoad.Start(
                 _layout,
-                GameFactory.Create(_tables, _state.Map, _state.StockLevel, everyPassTurns: true),
+                GameFactory.Create(_tables, _state.Map, _state.StockLevel, everyPassTurns: true, handsOutGoods: true),
                 out _game,
                 out var layoutProblem
             );
@@ -497,7 +499,7 @@ public partial class MapViewControl : Control
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
-            _logs.Text = CastleReadout.Text(_game.CastleStock.Logs);
+            _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);
             UpdateSettlers();
             // Evaluated each frame, so the watch sees every change.
             var objectsChanged = _objectWatch.Changed(_game);

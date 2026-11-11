@@ -49,14 +49,65 @@ public sealed class PlayStateTests
         Assert.AreEqual("expect camera-x > 200 failed: actual 120", problem);
     }
 
-    static readonly PlayState GameState = State with { Ticks = 300, Logs = 4 };
+    static readonly PlayState GameState = State with { Ticks = 300, Logs = 4, Planks = 9, Stones = 2 };
 
     [TestMethod]
-    public void AGameViewDumpAddsTheTicksAndLogsAfterTheMapViewFields()
+    public void AGameViewDumpAddsTheTicksLogsPlanksAndStonesAfterTheMapViewFields()
     {
-        var expected = "camera-x=120\ncamera-y=40\nzoom=1.2500\nseed=1234567812345678\nsize=2\nticks=300\nlogs=4\n";
+        var expected =
+            "camera-x=120\ncamera-y=40\nzoom=1.2500\nseed=1234567812345678\nsize=2\nticks=300\nlogs=4\nplanks=9\nstones=2\n";
 
         Assert.AreEqual(expected, GameState.Dump());
+    }
+
+    [TestMethod]
+    [DataRow("planks", "=", "9", true)]
+    [DataRow("planks", "=", "8", false)]
+    [DataRow("planks", ">=", "9", true)]
+    [DataRow("planks", "<", "9", false)]
+    [DataRow("stones", "=", "2", true)]
+    [DataRow("stones", ">", "2", false)]
+    [DataRow("stones", "<=", "2", true)]
+    public void AGameViewExpectOnPlanksOrStonesComparesWithEveryOperator(
+        string field,
+        string op,
+        string value,
+        bool holds
+    )
+    {
+        var problem = GameState.Check(Expect(field, op, value));
+
+        Assert.AreEqual(holds, problem is null, problem);
+    }
+
+    [TestMethod]
+    public void AFailedPlanksExpectStatesTheActualCount()
+    {
+        var problem = GameState.Check(Expect("planks", ">", "20"));
+
+        Assert.AreEqual("expect planks > 20 failed: actual 9", problem);
+    }
+
+    [TestMethod]
+    public void TheCastlesPlanksAndStonesAreTheGoodsEightAndTenOfItsStock()
+    {
+        var stock = new int[StartStock.Goods];
+        stock[6] = 3;
+        stock[7] = 53;
+        stock[9] = 28;
+        var castle = new CastleStock();
+        castle.Place(new Castle(1, 1, 1), stock);
+        var state = State with
+        {
+            Ticks = 1,
+            Logs = castle.Logs,
+            Planks = castle.Planks,
+            Stones = castle.Stones,
+        };
+
+        StringAssert.EndsWith(state.Dump(), "ticks=1\nlogs=3\nplanks=53\nstones=28\n");
+        Assert.IsNull(state.Check(Expect("planks", "=", "53")));
+        Assert.IsNull(state.Check(Expect("stones", "=", "28")));
     }
 
     [TestMethod]
@@ -70,7 +121,7 @@ public sealed class PlayStateTests
         game.Tick();
         var dump = (GameState with { Game = game }).Dump();
 
-        StringAssert.EndsWith(dump, $"logs=4\ndigest={game.Digest():x16}\n");
+        StringAssert.EndsWith(dump, $"stones=2\ndigest={game.Digest():x16}\n");
     }
 
     static readonly PlayState FlagState = GameState with
@@ -82,7 +133,7 @@ public sealed class PlayStateTests
     public void AGameViewDumpListsTheGoodsOfEachFlagThatHoldsSomeByRowThenColumn()
     {
         var expected =
-            "camera-x=120\ncamera-y=40\nzoom=1.2500\nseed=1234567812345678\nsize=2\nticks=300\nlogs=4\n"
+            "camera-x=120\ncamera-y=40\nzoom=1.2500\nseed=1234567812345678\nsize=2\nticks=300\nlogs=4\nplanks=9\nstones=2\n"
             + "flag-goods:3,1=1\nflag-goods:27,5=2\n";
 
         Assert.AreEqual(expected, FlagState.Dump());
@@ -138,6 +189,8 @@ public sealed class PlayStateTests
     [TestMethod]
     [DataRow("ticks")]
     [DataRow("logs")]
+    [DataRow("planks")]
+    [DataRow("stones")]
     [DataRow("flag-goods:27,5")]
     public void AMapViewExpectOnAGameFieldFails(string field)
     {
@@ -163,7 +216,15 @@ public sealed class PlayStateTests
                 game.Tick();
             }
 
-            return (State with { Ticks = game.TickCount, Logs = game.CastleStock.Logs }).Dump();
+            return (
+                State with
+                {
+                    Ticks = game.TickCount,
+                    Logs = game.CastleStock.Logs,
+                    Planks = game.CastleStock.Planks,
+                    Stones = game.CastleStock.Stones,
+                }
+            ).Dump();
         }
 
         Assert.AreEqual(Dump(), Dump());

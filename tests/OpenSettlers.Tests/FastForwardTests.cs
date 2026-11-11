@@ -265,7 +265,7 @@ public sealed class FastForwardTests
     public void AnUntilStepOnAnUnknownFieldListsOnlyTheGameFields()
     {
         Assert.AreEqual(
-            "play/t.play line 1: unknown field 'nosuch', use ticks, logs, flag-goods:<column>,<row>",
+            "play/t.play line 1: unknown field 'nosuch', use ticks, logs, planks, stones, flag-goods:<column>,<row>",
             Problem("fast-forward until nosuch >= 1 max 5")
         );
     }
