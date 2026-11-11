@@ -114,13 +114,6 @@ public sealed class Game
     internal WoodcutterBehavior Woodcutter => _parts.Woodcutter;
 
     /// <summary>
-    /// The placing of a building with its flag. The command <see cref="CommandKind.PlaceBuilding"/> places a building site
-    /// through it; a layout's finished-building entry places a finished building through it, the one way a building stands
-    /// finished before construction exists.
-    /// </summary>
-    internal BuildingPlacement Placement => _parts.Placement;
-
-    /// <summary>
     /// Stands a finished building of <paramref name="type"/> on the node, as a layout's finished-building entry does
     /// (<see cref="BuildingPlacement.PlaceFinished"/>), and tells whether the placement allowed it. No command gives a finished
     /// building. Stand-in: the placement is logged among the commands applied, as the placement command it replaces, with no type,
@@ -128,7 +121,7 @@ public sealed class Game
     /// </summary>
     internal bool PlaceFinishedBuilding(BuildingType type, int x, int y)
     {
-        if (!Placement.PlaceFinished(type, x, y))
+        if (!_parts.Placement.PlaceFinished(type, x, y))
         {
             return false;
         }

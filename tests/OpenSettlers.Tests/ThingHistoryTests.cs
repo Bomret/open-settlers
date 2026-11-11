@@ -297,10 +297,7 @@ public sealed class ThingHistoryTests
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
         "buildings": [{"type": "woodcutter", "x": 13, "y": 10}],
-        "settlers": [
-          {"job": "woodcutter", "state": "in-hut", "x": 13, "y": 10},
-          {"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}
-        ],
+        "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}],
         "goods": [{"x": 14, "y": 11, "place": 0, "good": 7}]
         """;
 
