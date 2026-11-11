@@ -95,6 +95,15 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.WoodcutterWalkAddress, 0x0b00);
         Add(ProgramTablesImporter.WoodcutterCarryingAddress, 0x1000);
         Add(ProgramTablesImporter.WoodcutterCuttingAddress, 0x0e80);
+        var stonecutterStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.StonecutterCode;
+        Write(
+            stonecutterStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.StonecutterHandlerAddress - (stonecutterStub + 5))]
+        );
+        Add(ProgramTablesImporter.StonecutterWalkAddress, 0x0d00);
+        Add(ProgramTablesImporter.StonecutterCarryingAddress, 0x1200);
+        Add(ProgramTablesImporter.StonecutterStepBackAddress, 0x1200);
+        Add(ProgramTablesImporter.StonecutterCuttingAddress, 0x1280);
         var hutStub =
             ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * RuleTables.TypeOneHutJob;
         Write(
@@ -605,6 +614,34 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), tables.WoodcutterFigureAdds);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheStonecuttersFigureWordsOfTheInstallAreThoseOfHisDrawHandler()
+    {
+        var adds = TestProgram.Tables().StonecutterFigureAdds;
+
+        // 0x43fcd8, the handler of job 7: add word [edi+8], imm16 at 0x43fd7d (walk), 0x43fd55 (way back with the stone), 0x43fd2f
+        // (figure byte from 0x80).
+        Assert.AreEqual(new FigureAdds(0x0d00, 0x1200, 0x1280), adds);
+    }
+
+    [TestMethod]
+    public void TheStonecuttersFigureWordsAreTheImmediatesOfHisHandler()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(new FigureAdds(0x0d00, 0x1200, 0x1280), tables.StonecutterFigureAdds);
+    }
+
+    [TestMethod]
+    public void AStonecuttersStepBackThatAddsOtherThanHisWayBackIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.StonecutterStepBackAddress) + 5] ^= 1);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "figure");
     }
 
     [TestMethod]

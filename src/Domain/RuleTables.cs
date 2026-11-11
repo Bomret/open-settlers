@@ -119,7 +119,8 @@ public sealed class RuleTables
         byte[]? buildingNeeds = null,
         GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
-        byte plankRankBase = 0
+        byte plankRankBase = 0,
+        FigureAdds? stonecutterFigureAdds = null
     )
     {
         if (
@@ -144,6 +145,7 @@ public sealed class RuleTables
         _roadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
         _transportPriorities = transportPriorities ?? new byte[Goods];
         WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
+        StonecutterFigureAdds = stonecutterFigureAdds ?? default;
         FrameRows = frameRows ?? new sbyte[FrameRowCount];
         TypeOneHutFigureAdds = typeOneHutFigureAdds ?? default;
         IdlePhases = idlePhases ?? new short[IdlePhaseCount];
@@ -240,6 +242,9 @@ public sealed class RuleTables
 
     /// <summary>What the woodcutter's handler adds to the figure byte to make the figure word.</summary>
     public FigureAdds WoodcutterFigureAdds { get; }
+
+    /// <summary>What the stonecutter's handler (<c>0x43fcd8</c>) adds to the figure byte; all 0 draws him in the carrier's row.</summary>
+    public FigureAdds StonecutterFigureAdds { get; }
 
     /// <summary>What the handler of the settler of the type 1 hut adds to the figure byte to make the figure word.</summary>
     public HutFigureAdds TypeOneHutFigureAdds { get; }
