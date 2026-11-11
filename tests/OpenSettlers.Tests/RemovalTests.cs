@@ -317,7 +317,8 @@ public sealed class RemovalTests
         Func<char, int, int[]> kindsOf,
         Func<Dictionary<string, string>, bool> isRefused,
         bool clickOnly = false,
-        Func<Settler, int, string>? hexOf = null
+        Func<Settler, int, string>? hexOf = null,
+        bool construct = false
     )
     {
         var scenario = Load(fixture).Single(candidate => candidate.Name == name);
@@ -325,7 +326,11 @@ public sealed class RemovalTests
         var parts = scenario.Command.Split(':');
         var map = MapOf(parts);
         var width = map.Size.Width;
-        var game = Started(parts, map);
+        // A construct scenario runs the castle's hand-out, which lays a good on the castle's flag at once where the original carries it
+        // out and lays it down about 130 passes later (ConstructionBuilderTests): the castle keeps no planks or stones, so no good the
+        // original has on the way exists in the engine, and the lines' "fill<slot>+=NN" add the counts the original's goods give the
+        // site at the passes it counted or received them.
+        var game = Started(parts, map, handsOutGoods: construct);
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
         // A click written N=click is made before the pass N, any other before the pass AT.
@@ -366,7 +371,16 @@ public sealed class RemovalTests
                 switch (key[0], key.Length > 1 && char.IsDigit(key[1]))
                 {
                     case ('s', true):
-                        settlers[int.Parse(key[1..], CultureInfo.InvariantCulture)] = value;
+                        // A settler with no bytes in the line ("s14=") is not compared from that pass on.
+                        if (value.Length == 0)
+                        {
+                            settlers.Remove(int.Parse(key[1..], CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            settlers[int.Parse(key[1..], CultureInfo.InvariantCulture)] = value;
+                        }
+
                         break;
                     case ('f', true):
                         flags[int.Parse(key[1..], CultureInfo.InvariantCulture)] = value;
@@ -505,10 +519,20 @@ public sealed class RemovalTests
                 );
             }
 
+            if (construct)
+            {
+                while (game.CastleStock.Take(Good.Plank) || game.CastleStock.Take(Good.Stone)) { }
+            }
+
             game.Tick();
             if (pass >= at)
             {
                 var line = passLines.GetValueOrDefault(pass) ?? [];
+                if (construct)
+                {
+                    ConstructionBuilderTests.Apply(game, line);
+                }
+
                 Take(line);
                 Check($"after pass {pass}", line, before);
             }

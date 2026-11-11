@@ -76,7 +76,7 @@ public sealed class ConstructionBuilderTests
     }
 
     // A line "fill<slot>+=NN" adds to byte 8 of the building in that slot: a good the original has handed out or delivered.
-    private static void Apply(Game game, Dictionary<string, string> line)
+    internal static void Apply(Game game, Dictionary<string, string> line)
     {
         foreach (var (key, value) in line.Where(pair => pair.Key.StartsWith("fill", StringComparison.Ordinal)))
         {

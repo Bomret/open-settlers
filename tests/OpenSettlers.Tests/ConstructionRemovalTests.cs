@@ -27,13 +27,24 @@ public sealed class ConstructionRemovalTests
     [DataRow("goods-waiting")]
     [DataRow("goods-carried")]
     [DataRow("goods-at-the-flag")]
-    public void RemovingABuildingSiteChangesTheGameAsTheOriginalDoes(string name) =>
+    public void RemovingABuildingSiteChangesTheGameAsTheOriginalDoes(string name) => Replay(name, construct: false);
+
+    // A site that holds goods when it is taken down: the castle has handed out planks, which the site counts as on the way (the low
+    // nibble of its byte 8), and one has arrived, which it counts as on site (the high nibble). The click clears both counts with the
+    // site; the fixture's header says why only the site's bytes, the builder, the map, and the generator are compared.
+    [TestMethod]
+    [DataRow("fill-on-the-way")]
+    [DataRow("fill-on-site")]
+    public void RemovingASiteThatHoldsGoodsClearsItsCountsAsTheOriginalDoes(string name) => Replay(name, construct: true);
+
+    private static void Replay(string name, bool construct) =>
         RemovalTests.Replay(
             Fixture,
             name,
             (click, _) => click == 'b' ? [CommandKind.PlaceBuilding] : [CommandKind.RemoveBuilding],
             line => line["sound"] == "4",
-            hexOf: Settler
+            hexOf: Settler,
+            construct: construct
         );
 
     // The program's ring-3 term (0x44c151 to 0x44c204) reads the word at 14 of every large building with the construction bit and the
