@@ -1,0 +1,39 @@
+# The build panel's four toggles place a building site of their type: a woodcutter, a forester, a stonecutter, and a
+# sawmill (a large building, which needs the site of a large building) on a map with the castle placed. Each site shows
+# as the original draws a site that has not started; the list holds the site's needs and target height.
+# Run it on the game view with seed 1234567812345678 and size 1, under either graphics source:
+#   sh tools/play-run.sh building-sites --game-view --seed 1234567812345678 --size 1 --fps 10
+#   sh tools/play-run.sh building-sites --game-view --seed 1234567812345678 --size 1 --fps 10 --graphics open-settlers
+# On that map the castle stands at 21,4, so its flag is at 22,5. Each building brings its flag south-east of it.
+expect seed = 1234567812345678
+expect size = 1
+wait 0.3
+click-tile 21 4
+wait 0.3
+
+button Woodcutter
+click-tile 26 4
+button Forester
+click-tile 22 7
+button Stonecutter
+click-tile 20 2
+button Sawmill
+click-tile 23 1
+button Sawmill
+wait 0.3
+expect-at 26 4 woodcutter-hut
+expect-at 22 7 forester-hut
+expect-at 20 2 stonecutter-hut
+expect-at 23 1 sawmill
+expect-at 27 5 flag
+expect-count building = 5
+shot sites 22 4 6 2
+list sites
+dump sites
+
+# A large building on a small site is refused: the node 22,3 holds a site for a small building only.
+button Sawmill
+click-tile 22 3
+button Sawmill
+wait 0.3
+expect-count building = 5

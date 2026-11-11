@@ -69,6 +69,11 @@ public sealed class GameDigest : IGameDigest
             {
                 applied = Mix(applied, direction);
             }
+
+            if (command.Building is { } type)
+            {
+                applied = Mix(applied, type.Code);
+            }
         }
 
         return applied;
@@ -115,6 +120,11 @@ public sealed class GameDigest : IGameDigest
             )
             {
                 hash = Mix(hash, value);
+            }
+
+            if (building.Site is { } site)
+            {
+                hash = Mix(Mix(Mix(hash, site.Planks), site.Stones), site.TargetHeight);
             }
         }
 

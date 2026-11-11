@@ -108,8 +108,7 @@ public sealed class WoodcuttingTests
             game.Tick();
         }
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
-        game.Tick();
+        Huts.PlaceAndTick(game, 16, 2);
 
         return game;
     }

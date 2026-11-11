@@ -90,6 +90,40 @@ public sealed class RuleTablesTests
     }
 
     [TestMethod]
+    public void ABuildingTypeTakesTheSizeAndTheNeedsOfItsTableEntries()
+    {
+        var sizes = new byte[RuleTables.BuildingTypeCount];
+        sizes[5] = 1;
+        sizes[6] = 2;
+        var needs = new byte[2 * RuleTables.BuildingTypeCount];
+        needs[2 * 6] = 7;
+        needs[2 * 6 + 1] = 3;
+
+        var tables = new RuleTables(
+            new ObjectClass[RuleTables.ClassCount],
+            TestProgram.Made().StartStock,
+            buildingSizes: sizes,
+            buildingNeeds: needs
+        );
+
+        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(new BuildingType(4)));
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(new BuildingType(5)));
+        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(new BuildingType(6)));
+        Assert.AreEqual(new BuildingNeeds(7, 3), tables.NeedsOf(new BuildingType(6)));
+        Assert.AreEqual(new BuildingNeeds(0, 0), tables.NeedsOf(new BuildingType(5)));
+    }
+
+    [TestMethod]
+    public void ATypeOutsideTheTablesIsNoSizeAndNeedsNothing()
+    {
+        var tables = TestProgram.Made();
+
+        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.Castle));
+        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.None));
+        Assert.AreEqual(new BuildingNeeds(0, 0), tables.NeedsOf(BuildingType.Castle));
+    }
+
+    [TestMethod]
     public void TheTableSizesSpanTheAddressesOfTheirTables()
     {
         var baseSpan = ProgramTablesImporter.FigureOffsetAddress - ProgramTablesImporter.FigureBaseAddress;

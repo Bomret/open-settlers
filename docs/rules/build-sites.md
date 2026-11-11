@@ -95,7 +95,8 @@ sets two bits of the player's flags that tell the screen where to draw its marke
 
 ## Placing a building
 
-**Status:** confirmed for what `0x449a63` writes and for the node states it takes; the click that reaches it is **open**.
+**Status:** confirmed for what `Building_Place` (`0x449a63`) writes and for the node states it takes; the click of a
+building panel that reaches it is **stand-in** (not recovered, below).
 
 A building comes with its flag. `0x449a63` takes a slot of the building table and, unless the node state is 5, a slot
 of the flag table. Where the node state is 5, a flag stands on the south-east node and the building takes it. Otherwise
@@ -107,7 +108,63 @@ to the others with a road.
 mission (`0x41f2d2`), which takes the node as the evaluator leaves it, and the end of a building's timer (`0x42cf9d`),
 which judges the node again and places a building only where the node state is 5, 6, or 7. So the program places a
 building on a node of state 5, 6, or 7. The building buttons of the game view (actions 2, 3, 4, `0x11`, `0x12`, and
-`0x17` of `0x440d23`) only open the building panels, and the click on a panel's building is not recovered.
+`0x17` of `0x440d23`) only open the building panels, and the click on a panel's building is not recovered: the engine's
+build panel is a **stand-in** that asks for the building the toggle names on the node, and the judgment it makes is that of
+`0x42cf9d` (below).
+
+**What `0x449a63` writes.** The routine reads the building's type from the word at `+0x27a` of the game state and the object
+code (2 or 3) from its caller, takes a building slot, and writes the item of a building site. The item's bytes are:
+
+- the node's offset (4 bytes), then the type shifted left by 2 with bit 7 set, the mark of a building under construction
+  (byte 4);
+- the slot of its flag plus one (word at 6), the progress word (at 12): 1 for the object code 2 and 0 for the object code
+  3, the height the evaluator left at `+0x102` (word at 14), and the planks and the stones the type needs (bytes 16 and
+  17, from the table `0x449f18`, two bytes for each type 0 to 0x17);
+- no worker, no fill, and a status of 0.
+
+On the map the routine first moves the deposit of the building's node to the nodes around it (`Flag_MoveDeposit`,
+`0x449f58`, as for a flag), then writes the object code (2 or 3), the flag byte bits `0x42`, and the building's slot as
+the node's link; the flag's node takes the flag, or the road split, as above, and its flag byte the building's mark `0x10`.
+The routine also notes the slot of the first woodcutter, sawmill, and stonecutter of a player in the player block (`+0x166`,
+`+0x168`, `+0x16a`) where the player block's byte at `+0x163` has bit 0 clear (**inferred:** the computer opponent's
+bookkeeping), **not ported**.
+
+**Confirmed, emulated:** the harness (`b@x,y,T` of the verb `remove`, `building-sites.txt`) placed a sawmill, a
+woodcutter, a stonecutter, and a forester on four nodes of one game: the map bytes, the flag items, and the building items
+match the engine's (`BuildingSitePlacementTests`).
+
+## The four types
+
+**Status:** confirmed for the table values and the handlers' jobs; the names are **inferred** (INV-0006).
+
+The size table (`0x42d307`, one byte for each type 0 to 0x17) says what a type needs of the site: 0 a mine (site 2), 1 a
+small building (site 3 or 4), 2 a large building (site 4); `Building_Free` (`0x42cf9d`) reads it to judge a node again. The
+needs table (`0x449f18`) gives the planks and the stones. The jump table of the type handlers (`0x42cd1d`, 8 bytes for each
+type with the bit `0x20` set while the building is under construction, which sends it to `0x42d55f` instead of the
+type's handler) names the work of each type: the handler asks for a settler of a job (`0x42be63`) with the tool of a good.
+
+| Type | Name | Size | Planks, stones | Handler | Job, tool | Finished sprite (object) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2 | woodcutter | small | 2, 0 | `0x42d945` | job 5, tool good `0x2a` | 168 |
+| 4 | stonecutter | small | 2, 0 | `0x42d987` | job 7, tool good `0x2e` | 169 |
+| 9 | forester | small | 2, 0 | `0x42d9c9` | job 8, no tool | 170 |
+| 0x11 | sawmill | large | 3, 2 | `0x42da0b` | job 6, tool good `0x2c` | 160 |
+
+The names of the types 4, 9, and 0x11 are **inferred** from the sizes, the needs, the jobs, and the game's manual (a
+stonecutter needs a pick and a sawmill worker a saw, a forester needs no tool); the slices that build each type's work
+confirm the name from the goods it puts down. The object numbers are the first instruction of each type's draw stub
+(`0x44e329`, the jump table `0x44e3aa`); the engine draws a finished building with it.
+
+**The site that has not started** (read from the code, not emulated). A building under construction goes through the common
+part of the draw routine (from `0x44fa79`). It tests the progress word: 0 draws the object 144 and nothing else (`0x44fa69`), a large site waiting to be
+levelled. Any other word first draws the piles of goods delivered (none yet), then the object 145 (`0x44fbf9`) for a small
+site. The stages that follow belong to the construction's slices.
+
+**The start of a mission** places a building through the same routine (`0x41f2d2`, which calls it at `0x41f2f6`): the type
+is the one at `+0x27a`, the object code 2 for the type 0xb and 3 for any other, the same evaluator result. It then finishes
+the building: byte 5 gets bit 4, byte 4 loses bit 7, the item's word at 14 takes the pointer of the flag item, and the
+building's settlers (3, 6, or 12 by type) are created inside it. That is the entry state a layout's finished-building entry
+stands on ([Layouts](layouts.md)). The types 0xb, 0x15, and 0x16 are the start's buildings; no type of M4 is one.
 
 **Node state 6: the flag node holds a road.** The state means the south-east node (the building's flag node) has road
 bits and no flag. `0x449a63` writes the flag there like any other, then, where the node state is 6, calls the split of
@@ -122,8 +179,19 @@ is slot 3.
 
 `OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Application/BuildSite.cs`). The engine departs from the program
 in two places: a node with a flag or a building object gives 0, 0, 0, and the code 3 height term is left out
-(above). `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md). `Game.PlaceBuilding`
-places a woodcutter's hut on a site of 3 or more with the node state 5 (a flag with no building), 6, or 7. It puts the
+(above). `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md).
+`BuildingPlacement` (`src/Application/BuildingPlacement.cs`) is `Building_Place`: the command `PlaceBuilding` carries a
+`BuildingType` and places a building site (`BuildingPlacement.PlaceSite`), and no command places a finished building. A small
+type is placed on a site of 3 or 4, a large type on a site of 4, with the node state 5 (a flag with no building), 6, or 7;
+`BuildingPlacement.Types` lists the four types of M4 and a command naming another type, or none, is refused. The size and the needs
+come from `RuleTables.SizeOf` and `RuleTables.NeedsOf` (`ProgramTablesImporter` reads `0x42d307` and `0x449f18`). The engine puts the
 flag down for the node states 6 and 7, and for 6 it splits the road under the flag (`Removal.SplitRoad`) before it sets the
-hut's mark (bit `0x10`) at the flag, so the mark is never read as a road bit. The click's map bytes and the flag items
-are those of `building-state6` (`RoadSplitTests`).
+building's mark (bit `0x10`) at the flag, so the mark is never read as a road bit. A building site is a `Building` whose `Site`
+(`BuildingSite`: planks, stones, target height) is set and whose `Constructing` is true, with the progress word 1 or 0; a finished
+building has no `Site`. The click's map bytes and the items are those of `building-state6` (`RoadSplitTests`) and `building-sites.txt`
+(`BuildingSitePlacementTests`). A building site asks for no worker: the type's handler (`CastleRoster.HandleBuilding`) runs for a
+finished building only, as the pass of the building table sends a building under construction to `0x42d55f`, **not ported**.
+**Stand-in:** `Game.PlaceFinishedBuilding`, which a layout's finished-building entry calls, places the same building finished with
+no site and the progress word 0, and logs the placement among the applied commands as the placement command that the M3 layouts
+used, so their digests are unchanged. The original's finished building also has status bit 4, the progress word as placed, and
+the pointer of its flag item at byte 14; the engine's does not.

@@ -63,8 +63,7 @@ public sealed class RemovalLogicTests
         Build(game, 17, 3, 0, 1);
         if (hut)
         {
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
-            game.Tick();
+            Huts.PlaceAndTick(game, 16, 2);
         }
 
         return game;
@@ -251,7 +250,7 @@ public sealed class RemovalLogicTests
         Assert.AreEqual(1, game.Buildings.Count, "the castle only");
         Assert.IsFalse(game.Map.At(node).Object.Exists);
         Assert.IsFalse(game.Map.At(node).LakeMark);
-        Assert.IsTrue(Applied(game, CommandKind.PlaceBuilding, 16, 2), "a hut may stand there again");
+        Assert.IsTrue(Huts.Place(game, 16, 2), "a hut may stand there again");
     }
 
     // Acceptance: a removal changes nothing else. The terrain and the heights, the stock, and the second road with its flags, the

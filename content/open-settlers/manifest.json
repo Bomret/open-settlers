@@ -1105,6 +1105,41 @@
       -29
     ]
   },
+  "building/stonecutter": {
+    "image": "building/stonecutter.png",
+    "anchor": [
+      -14,
+      -29
+    ]
+  },
+  "building/forester": {
+    "image": "building/forester.png",
+    "anchor": [
+      -14,
+      -29
+    ]
+  },
+  "building/sawmill": {
+    "image": "building/sawmill.png",
+    "anchor": [
+      -22,
+      -35
+    ]
+  },
+  "building/site-small": {
+    "image": "building/site-small.png",
+    "anchor": [
+      -11,
+      -19
+    ]
+  },
+  "building/site-large": {
+    "image": "building/site-large.png",
+    "anchor": [
+      -17,
+      -19
+    ]
+  },
   "good/0": {
     "image": "good/0.png",
     "anchor": [

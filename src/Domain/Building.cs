@@ -22,8 +22,14 @@ public sealed class Building
     /// <summary>The building type.</summary>
     public BuildingType Type { get; }
 
-    /// <summary>True while the building is built, which only the castle is at the start.</summary>
+    /// <summary>True while the building is built: the castle at the start, and every building site.</summary>
     public bool Constructing { get; set; }
+
+    /// <summary>
+    /// What a building site still needs and the height it is levelled to; null for a finished building and for the castle,
+    /// which is no <c>Building_Place</c> building (<c>docs/rules/build-sites.md</c>).
+    /// </summary>
+    public BuildingSite? Site { get; set; }
 
     /// <summary>The node the building stands on, column.</summary>
     public int X { get; }

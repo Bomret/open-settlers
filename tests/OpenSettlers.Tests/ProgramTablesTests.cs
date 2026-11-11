@@ -203,6 +203,53 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    public void TheSizeAndNeedsTablesOfTheBuildingTypesAreFoundByTheirAddress()
+    {
+        var exe = Executable(bytes =>
+        {
+            for (var type = 0; type < RuleTables.BuildingTypeCount; type++)
+            {
+                bytes[FileOffset(ProgramTablesImporter.BuildingSizeAddress) + type] = (byte)(type % 3);
+                bytes[FileOffset(ProgramTablesImporter.BuildingNeedsAddress) + 2 * type] = (byte)(type + 1);
+                bytes[FileOffset(ProgramTablesImporter.BuildingNeedsAddress) + 2 * type + 1] = (byte)(type + 2);
+            }
+        });
+
+        var tables = ProgramTablesImporter.Import(exe);
+
+        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(new BuildingType(5)));
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(new BuildingType(7)));
+        Assert.AreEqual(new BuildingNeeds(9, 10), tables.NeedsOf(new BuildingType(8)));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheBuildingSizeAndNeedsTablesOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:449f18:48 (planks and stones of the types 0 to 0x17) and peek:42d307:24 (their sizes).
+        Assert.AreEqual(0x6649B1F9CA0A7982UL, Fnv(tables.BuildingNeedsTable));
+        Assert.AreEqual(0xE5A6690EA07D4A89UL, Fnv(tables.BuildingSizes));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheFourTypesOfTheSlicesTakeTheSizeAndNeedsOfTheOriginal()
+    {
+        var tables = TestProgram.Tables();
+
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(BuildingType.Woodcutter));
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(BuildingType.Stonecutter));
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(BuildingType.Forester));
+        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(BuildingType.Sawmill));
+        Assert.AreEqual(new BuildingNeeds(2, 0), tables.NeedsOf(BuildingType.Woodcutter));
+        Assert.AreEqual(new BuildingNeeds(2, 0), tables.NeedsOf(BuildingType.Stonecutter));
+        Assert.AreEqual(new BuildingNeeds(2, 0), tables.NeedsOf(BuildingType.Forester));
+        Assert.AreEqual(new BuildingNeeds(3, 2), tables.NeedsOf(BuildingType.Sawmill));
+    }
+
+    [TestMethod]
     [TestCategory(Needs.Install)]
     public void TheFigureTablesOfTheInstallMatchTheEmulator()
     {

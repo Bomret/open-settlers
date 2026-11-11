@@ -116,7 +116,7 @@
 //                            the flag fx,fy, with the marks the castle leaves as wood does). The passes of wood run; before the
 //                            pass AT the CLICKS run in order, each the click handler's routine on a node: f:x,y the remove click
 //                            0x4615cf (a flag by 0x462153, a building by 0x4617fd, anything else refused), r:x,y the road click
-//                            0x462d88 (road take-down 0x462e1d), p:x,y the flag button 0x442244 (a flag put on a node of a road splits the road: docs/rules/roads.md), b:x,y the building placement 0x449a63 (type 2) after the check, c:x,y only the classification 0x44b6e6 (the class at +0x100 and
+//                            0x462d88 (road take-down 0x462e1d), p:x,y the flag button 0x442244 (a flag put on a node of a road splits the road: docs/rules/roads.md), b:x,y[,T] the building placement 0x449a63 (object code 2, or the object code of the type T by the size table 0x42d307) after the check, c:x,y only the classification 0x44b6e6 (the class at +0x100 and
 //                            +0x101 of the player), and s:0,0 the classification of every tile of the territory. The sound
 //                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
@@ -1548,10 +1548,18 @@ public class EmulateMapStart extends GhidraScript {
                         continue;
                     }
                     if (kind.equals("b")) {
-                        // b:x,y the building placement 0x449a63 for a building of type 2 on the node x,y, after the check
-                        // 0x44b6e6 judged it (a node state of 5, 6, or 7 is what its callers hand it).
+                        // b@x,y the building placement 0x449a63 with the object code 2 on the node x,y, after the check
+                        // 0x44b6e6 judged it (a node state of 5, 6, or 7 is what its callers hand it). b@x,y,T places the
+                        // building of the type T as the table at 0x42d307 sizes it: the type goes to +0x27a of the game state,
+                        // and the object code is 2 for a small type, 3 for a large one (0x42cf9d does the same).
                         call(0x44b6e6);
-                        putInt(REGISTERS + 0x14, 2);
+                        int objectCode = 2;
+                        if (xy.length > 2) {
+                            int type = Integer.parseInt(xy[2]);
+                            putWord(STATE + 0x27a, type);
+                            objectCode = (emu.readMemory(toAddr(0x42d307L + type), 1)[0] & 0xff) == 2 ? 3 : 2;
+                        }
+                        putInt(REGISTERS + 0x14, objectCode);
                     }
                     int sound = runClick(kind.equals("f") ? 0x4615cfL : kind.equals("p") ? 0x442244L
                             : kind.equals("b") ? 0x449a63L : 0x462d88L);

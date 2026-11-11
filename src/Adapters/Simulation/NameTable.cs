@@ -161,6 +161,24 @@ public sealed class NameTable
         AddOne(CodeKind.Building, BuildingType.Woodcutter.Code, "woodcutter-hut", "BuildingType.Woodcutter");
         AddOne(
             CodeKind.Building,
+            BuildingType.Stonecutter.Code,
+            "stonecutter-hut",
+            "BuildingType.Stonecutter; handler 0x42d987 asks for job 7 (tool good 0x2e); size and needs 0x42d307, 0x449f18; inferred, docs/rules/build-sites.md"
+        );
+        AddOne(
+            CodeKind.Building,
+            BuildingType.Forester.Code,
+            "forester-hut",
+            "BuildingType.Forester; handler 0x42d9c9 asks for job 8 (no tool); size and needs 0x42d307, 0x449f18; inferred, docs/rules/build-sites.md"
+        );
+        AddOne(
+            CodeKind.Building,
+            BuildingType.Sawmill.Code,
+            "sawmill",
+            "BuildingType.Sawmill; handler 0x42da0b asks for job 6 (tool good 0x2c); large, needs 3 planks and 2 stones (0x42d307, 0x449f18); inferred, docs/rules/build-sites.md"
+        );
+        AddOne(
+            CodeKind.Building,
             BuildingType.Storehouse.Code,
             "storehouse",
             "BuildingType.Storehouse; Game.Removal storage types: the castle and type 0xa"

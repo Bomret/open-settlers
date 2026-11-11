@@ -281,7 +281,7 @@ public sealed class RoadSplitGameTests
     {
         var game = EastRoad();
 
-        Apply(game, CommandKind.PlaceBuilding, 17, 5);
+        Huts.PlaceAndTick(game, 17, 5);
 
         Assert.AreEqual(2, game.Buildings.Count(building => !building.IsFree), "the castle and the hut");
         Assert.AreEqual(3, game.Flags.Count);
@@ -299,7 +299,7 @@ public sealed class RoadSplitGameTests
         Apply(byButton, CommandKind.PlaceFlag, 18, 6);
         var byHut = EastRoad();
 
-        Apply(byHut, CommandKind.PlaceBuilding, 17, 5);
+        Huts.PlaceAndTick(byHut, 17, 5);
 
         Assert.AreEqual(Describe(byButton.Network.Roads[0]), Describe(byHut.Network.Roads[0]));
         Assert.AreEqual(Describe(byButton.Network.Roads[1]), Describe(byHut.Network.Roads[1]));
@@ -315,8 +315,7 @@ public sealed class RoadSplitGameTests
         var digest = game.Digest();
 
         // The flag node 17,6 is beside the castle's flag at 16,6.
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 5));
-        game.ApplyCommands();
+        Assert.IsFalse(Huts.Place(game, 16, 5));
 
         Assert.AreEqual(digest, game.Digest());
         Assert.AreEqual(1, game.Network.Roads.Count);
@@ -333,8 +332,7 @@ public sealed class RoadSplitGameTests
         Assert.AreEqual((6, 1), (site.Node, site.Site), "a road on the flag node, a site for a flag only");
         var digest = game.Digest();
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 17, 5));
-        game.ApplyCommands();
+        Assert.IsFalse(Huts.Place(game, 17, 5));
 
         Assert.AreEqual(digest, game.Digest());
         Assert.AreEqual(1, game.Network.Roads.Count);
@@ -345,7 +343,7 @@ public sealed class RoadSplitGameTests
     public void TheMarkOfAHutAtItsFlagIsNoRoadForALaterRoadAtThatFlag()
     {
         var game = EastRoad();
-        Apply(game, CommandKind.PlaceBuilding, 17, 5);
+        Huts.PlaceAndTick(game, 17, 5);
         Apply(game, CommandKind.PlaceFlag, 18, 8);
 
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 6, [2, 2]));
@@ -364,7 +362,7 @@ public sealed class RoadSplitGameTests
     {
         var game = EastRoad();
         var before = game.Network.Roads.Single();
-        Apply(game, CommandKind.PlaceBuilding, 17, 5);
+        Huts.PlaceAndTick(game, 17, 5);
         Apply(game, CommandKind.RemoveBuilding, 17, 5);
 
         Apply(game, CommandKind.RemoveFlag, 18, 6);
@@ -378,7 +376,7 @@ public sealed class RoadSplitGameTests
     {
         var game = EastRoad();
         var before = game.Network.Roads.Single();
-        Apply(game, CommandKind.PlaceBuilding, 17, 5);
+        Huts.PlaceAndTick(game, 17, 5);
         var node = game.Map.Index(18, 6);
         Assert.IsTrue(game.Map.At(node).Roads.Has(4), "the hut's mark is set");
 
@@ -392,7 +390,7 @@ public sealed class RoadSplitGameTests
     {
         var game = EastRoad();
         Run(game, 600);
-        Apply(game, CommandKind.PlaceBuilding, 17, 5);
+        Huts.PlaceAndTick(game, 17, 5);
 
         Run(game, 900);
 

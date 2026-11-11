@@ -89,11 +89,11 @@ If the search reaches no storage, or the storage has neither, the request fails 
 
 The type of the woodcutter's hut is 2: its handler (`0x42d945`) asks for job 5, whose work is cutting trees, and the castle holds
 one settler of job 5 ([Woodcutting](woodcutting.md#the-hut-and-the-job)). The first walk of this note was read with the type 1 and
-job 11 as the woodcutter's, which are another hut's and worker's; the walk is the same for either. The engine's stand-in command
-`CommandKind.PlaceBuilding` places a hut of that type finished at once, on a node whose south-east neighbor holds a
-flag and whose site is small or large (**inferred**: node state 5, site 3 or 4; no run places a building). The hut is
-a **stand-in** for the construction slice (M4), not a rule of the original. It marks the map as the castle does: the
-building's node gets flag bits `0x42`, the flag's node bit `0x10`, the object code 2 (**inferred** for a small
+job 11 as the woodcutter's, which are another hut's and worker's; the walk is the same for either. A layout's finished-building
+entry ([Layouts](layouts.md#finished-buildings)) stands a finished hut of that type on a node whose south-east neighbor holds a
+flag or takes one, and whose site is small or large. The command `CommandKind.PlaceBuilding` places a building site, which
+asks for no worker ([Build sites](build-sites.md#placing-a-building)). The placement marks the map as the original's
+`Building_Place` does: the building's node gets flag bits `0x42`, the flag's node bit `0x10`, the object code 2 (3 for a large
 building), and the building's slot in the node's link byte.
 
 ## The route search

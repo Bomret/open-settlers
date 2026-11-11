@@ -114,6 +114,7 @@ public static class GameFactory
         {
             EveryPassTurns = everyPassTurns,
         };
+        var placement = new BuildingPlacement(tables, map, castle, flags, buildings, history, causes, removal);
         var planner = new RoadPlanner(tables, map, castle);
         var startStock = StartStock.At(tables, stockLevel);
         game = new Game(
@@ -140,6 +141,7 @@ public static class GameFactory
                 WalkHome = walkHome,
                 Walks = walks,
                 Woodcutter = woodcutter,
+                Placement = placement,
                 RoadPlanner = planner,
                 Queue = new CommandQueue(),
                 Handlers =
@@ -147,7 +149,7 @@ public static class GameFactory
                     new PlaceCastleHandler(tables, map, castle, startStock, flags, settlers, roster, history, causes),
                     new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal),
                     new BuildRoadHandler(planner, network, carriers, history, causes),
-                    new PlaceBuildingHandler(tables, map, castle, flags, buildings, history, causes, removal),
+                    new PlaceBuildingHandler(placement),
                     new RemoveFlagHandler(removal),
                     new RemoveBuildingHandler(removal),
                     new RemoveRoadHandler(removal),

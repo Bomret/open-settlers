@@ -408,6 +408,17 @@ entries per phase (see "Item tables").
 | `0x43c7c2` | `Settler_EnterBuilding` | The step from a flag into the building north-west of it, and the turn of state 6 (`0x43c7ca`): takes the node when no settler stands on it, the step's time as timer, the part of it the door's speed leaves in word 12, and state 4; else frame `0x55` and state 6. | confirmed | game | Entry 6 of `0x42fca1`. |
 | `0x42d945` | `Building_HandleType2` | The handler of the building type 2, the woodcutter's hut: asks for a settler of job 5 when bits 2, 6, and 7 of its status are clear. | confirmed | game | Entry 2 of `0x42cd1d`. |
 | `0x42e0b8` | `Building_HandleType1` | The handler of the building type 1: asks for a settler of job 11, whose work (`0x433f71`, state 0x1f) looks for a node with no object and no road by the water. | confirmed | game | Entry 1 of `0x42cd1d`. |
+| `0x42d987` | `Building_HandleType4` | The handler of the building type 4 (inferred: the stonecutter's hut): asks for a settler of job 7 with the tool of good `0x2e`, as `Building_HandleType2` does. | confirmed | game | Entry 4 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
+| `0x42d9c9` | `Building_HandleType9` | The handler of the building type 9 (inferred: the forester's hut): asks for a settler of job 8 with no tool. | confirmed | game | Entry 9 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
+| `0x42da0b` | `Building_HandleType17` | The handler of the building type 0x11 (inferred: the sawmill): asks for a settler of job 6 with the tool of good `0x2c`. | confirmed | game | Entry 0x11 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
+| `0x42d55f` | `Building_HandleConstruction` | The handler a building under construction goes to: the entries `0x21` to `0x29` and a few more of `0x42cd1d` jump here instead of to the type's handler. Not read yet (the construction slices read it). | unknown | game | Entries `0x21` and on of `0x42cd1d`. |
+| `0x42cd1d` | `Building_TypeJumpTable` | Data: the jump table `Table18_Pass` takes a building's handler from: 8 bytes for each value of the type byte's bits 2 to 7 (the type, plus `0x20` while the building is under construction), each a `jmp`. | confirmed | game | Read by `Table18_Pass` (`0x42cb2d`). |
+| `0x42d307` | `Building_SizeTable` | Data: one byte for each building type 0 to 0x17, the room the type needs: 0 a mine, 1 small, 2 large (`0xff` for the types 0 and `0x18`). | confirmed | game | Read by `Building_Free` (`0x42cf9d`); `ProgramTablesImporter` reads it (`RuleTables.SizeOf`). [Build sites](build-sites.md#the-four-types). |
+| `0x449f18` | `Building_NeedsTable` | Data: two bytes for each building type 0 to 0x17, the planks and the stones the type needs. | confirmed | game | Read by `Building_Place` (`0x449a63`); `ProgramTablesImporter` reads it (`RuleTables.NeedsOf`). [Build sites](build-sites.md#the-four-types). |
+| `0x42fca1` | `Settler_StateJumpTable` | Data: the jump table of `Settler_Dispatch`: 8 bytes for each value of the settler's state byte, each a `jmp` to the state's routine. | confirmed | game | Read by `Settler_Dispatch` (`0x42fc81`). |
+| `0x43ca54` | `Settler_JobStartTable` | Data: the jump table of the job's start routine that `Settler_PassDoor` runs, 8 bytes for each job. | confirmed | game | Read by `Settler_PassDoor` (`0x43c96b`). |
+| `0x44e3aa` | `Building_DrawJumpTable` | Data: the jump table of the building draw routine `0x44e329`: 8 bytes for each value of byte 4 of the building's item with its low two bits cleared (the type shifted left 2, with bit 7 while under construction), each a `jmp` to a stub that stores the object number. | confirmed | game | Read by `0x44e329`; the stubs lie from `0x44e62b`. [Build sites](build-sites.md#the-four-types). |
+| `0x44fa79` | — | The common part of the draw of a building under construction: tests the progress word at `+0xc` of its item (0 draws the object 144, `0x44fa69`), draws the goods delivered, then the stage. Entry inferred. | inferred | game | Jumped to by the stubs of the types with bit 7 set, from `0x44f92e`. |
 | `0x44257a` | `Rng_StepSettler` | The draw the settlers' routines use: the same step as `Rng_Step`, the new first word left in item word `+0x14` of the EDI block. | confirmed | game | Called by `0x438b8c` and the other searches. |
 | `0x428d10` | `Map_ObjectPass` | Every 20 clock units takes the next nodes of a cursor that moves 23 columns on (a row down where it wraps), as many as the map's size gives (`+0x21c`): a lake node with detail may move its detail (one draw); an object code from `0x53` goes through the table at `0x428eb8`, 8 bytes an entry: `0x53` vanishes when a draw's low two bits are 0, `0x5d` to `0x66` become `0x53`, the codes from `0x67` grow or decay. | confirmed | game | Called by `0x4286d8`; draws through `Rng_Step`. [Woodcutting](woodcutting.md#the-object-pass). |
 | `0x428a75` | — | Counts down three timers of a player block; the timer at `+0x120` repeats its work once per period that has elapsed. | unknown | game | Called by `0x4286d8`. |
@@ -1095,8 +1106,14 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42be63` | `Building_RequestWorker` | confirmed | Simulation |
 | `0x42ca7a` | `Route_NextGeneration` | confirmed | Simulation |
 | `0x42cb2d` | `Table18_Pass` | confirmed | Simulation |
+| `0x42cd1d` | `Building_TypeJumpTable` | confirmed | Simulation |
 | `0x42cf9d` | `Building_Free` | inferred | Castle and build sites |
+| `0x42d307` | `Building_SizeTable` | confirmed | Simulation |
+| `0x42d55f` | `Building_HandleConstruction` | unknown | Simulation |
 | `0x42d945` | `Building_HandleType2` | confirmed | Simulation |
+| `0x42d987` | `Building_HandleType4` | confirmed | Simulation |
+| `0x42d9c9` | `Building_HandleType9` | confirmed | Simulation |
+| `0x42da0b` | `Building_HandleType17` | confirmed | Simulation |
 | `0x42e0b8` | `Building_HandleType1` | confirmed | Simulation |
 | `0x42e7e0` | `Building_HandleCastle` | inferred | Simulation |
 | `0x42f3d9` | `Table16_Pass` | confirmed | Simulation |
@@ -1104,6 +1121,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42f512` | `View_ScanSettlers` | confirmed | Simulation |
 | `0x42f7ea` | — | unknown | Graphics images |
 | `0x42fc81` | `Settler_Dispatch` | confirmed | Simulation |
+| `0x42fca1` | `Settler_StateJumpTable` | confirmed | Simulation |
 | `0x42ff81` | `Settler_CarrierWaits` | confirmed | Simulation |
 | `0x43007b` | `Settler_StateDismissed` | confirmed | Castle and build sites |
 | `0x4300f1` | `Settler_StateRejoined` | confirmed | Castle and build sites |
@@ -1133,6 +1151,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43c7c2` | `Settler_EnterBuilding` | confirmed | Simulation |
 | `0x43c92b` | `Building_DoorSpeeds` | confirmed | Simulation |
 | `0x43c96b` | `Settler_PassDoor` | confirmed | Simulation |
+| `0x43ca54` | `Settler_JobStartTable` | confirmed | Simulation |
 | `0x43cc5f` | `Settler_EnterStorageJob21` | inferred | Simulation |
 | `0x43cd06` | `Settler_EnterStorage` | confirmed | Simulation |
 | `0x43ceea` | `Settler_EnterStorageJob4` | inferred | Simulation |
@@ -1187,6 +1206,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x448418` | `Game_ConfirmEnd` | inferred | Program start and game flow |
 | `0x448436` | `Game_EndToStartScreen` | confirmed | Program start and game flow |
 | `0x449a63` | `Building_Place` | confirmed | Castle and build sites |
+| `0x449f18` | `Building_NeedsTable` | confirmed | Simulation |
 | `0x449f58` | `Flag_MoveDeposit` | confirmed | Castle and build sites |
 | `0x44a0aa` | `Deposit_MergeInto` | confirmed | Castle and build sites |
 | `0x44b6ce` | `Road_UpdateCursor` | confirmed | Roads |
@@ -1212,7 +1232,9 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44db26` | `Render_DrawFlag` | inferred | Castle and build sites |
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
 | `0x44e114` | `Gfx_SpriteLists` | inferred | Graphics images |
+| `0x44e3aa` | `Building_DrawJumpTable` | confirmed | Simulation |
 | `0x44f225` | `Gfx_BuildingPairTable` | confirmed | Graphics images |
+| `0x44fa79` | — | inferred | Simulation |
 | `0x44fd16` | `Gfx_ObjectNumberTable` | confirmed | Graphics images |
 | `0x44fd4a` | `Gfx_DrawSpriteBase320Low` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
@@ -1375,7 +1397,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 310 routines of the 513 functions in the dump's game code band and lists 67 more without a name: 253 confirmed, 73 inferred, 51 unknown.
+Coverage: the index names 320 routines of the 513 functions in the dump's game code band and lists 68 more without a name: 262 confirmed, 74 inferred, 52 unknown.
 <!-- coverage:end -->
 
 Open anchors:

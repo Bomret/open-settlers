@@ -13,10 +13,9 @@ public sealed class LayoutSettlersTests
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
-        "buildings": [{"x": 13, "y": 10}],
+        "buildings": [{"type": "woodcutter", "x": 13, "y": 10}],
         """;
 
-    const string Woodcutter = """{"job": "woodcutter", "state": "in-hut", "x": 13, "y": 10}""";
     const string Carrier = """{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}""";
 
     // Trees (code 8) on the nodes of the hut's reach that lie east of its flag, on its row or the next two, where the walk goes
@@ -107,9 +106,9 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
-    public void AWoodcutterPlacedInHisHutIsInTheDoorAndTheCastleHoldsNoOtherWoodcutter()
+    public void AFinishedWoodcutterEntryStandsHisWorkerInTheDoorAndTheCastleHoldsNoOtherWoodcutter()
     {
-        var game = Applied(Built + $"\"settlers\": [{Woodcutter}]");
+        var game = Applied(Built);
 
         var worker = game.Settlers.Single(settler => settler.Job == Job.Woodcutter);
         Assert.IsInstanceOfType<Door>(worker.Activity);
@@ -155,7 +154,7 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void APlacedWoodcutterComesOutAndFellsATreeAndNoSecondWoodcutterLeavesForTheHut()
     {
-        var game = Applied(Built + $"\"settlers\": [{Woodcutter}]", Tree);
+        var game = Applied(Built, Tree);
         var leftTheCastle = false;
 
         for (var tick = 0; tick < 4000; tick++)
@@ -212,62 +211,66 @@ public sealed class LayoutSettlersTests
         $$"""{"job": "carrier", "state": "waiting-on-road", "x": {{x}}, "y": {{y}}, "direction": {{direction}}}""";
 
     [TestMethod]
-    [DataRow(20, 20, DisplayName = "an empty node")]
-    [DataRow(10, 10, DisplayName = "the castle")]
-    public void AWoodcutterForANodeWithNoWoodcuttersHutFailsTheLoadNamingTheReason(int x, int y)
-    {
-        var problem = Refused(
-            Built + $"\"settlers\": [{{\"job\": \"woodcutter\", \"state\": \"in-hut\", \"x\": {x}, \"y\": {y}}}]"
-        );
-
-        Assert.AreEqual("test.jsonc: settlers[0]: no woodcutter's hut stands on the node", problem);
-    }
-
-    [TestMethod]
-    public void ASecondWoodcutterForTheSameHutFailsTheLoadNamingTheEntry()
-    {
-        var problem = Refused(Built + $"\"settlers\": [{Woodcutter}, {Woodcutter}]");
-
-        Assert.AreEqual("test.jsonc: settlers[1]: the hut has its worker already", problem);
-    }
-
-    [TestMethod]
-    public void AWoodcutterForASecondHutWhenTheCastleHoldsOnlyOneFailsTheLoad()
+    public void AWoodcutterEntryWhenTheCastleHoldsOnlyOneWoodcutterFailsTheLoadAtTheSecondHut()
     {
         var problem = Refused(
             Built.Replace(
-                "\"buildings\": [{\"x\": 13, \"y\": 10}]",
-                "\"buildings\": [{\"x\": 13, \"y\": 10}, {\"x\": 17, \"y\": 10}]"
+                "\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}]",
+                "\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}, {\"type\": \"woodcutter\", \"x\": 17, \"y\": 10}]"
             )
-                + $"\"settlers\": [{Woodcutter}, {{\"job\": \"woodcutter\", \"state\": \"in-hut\", \"x\": 17, \"y\": 10}}]"
         );
 
-        Assert.AreEqual("test.jsonc: settlers[1]: the castle holds no woodcutter", problem);
+        Assert.AreEqual("test.jsonc: buildings[1]: the castle holds no woodcutter", problem);
     }
 
     [TestMethod]
     [DataRow(13, 10, DisplayName = "the door")]
     [DataRow(14, 11, DisplayName = "the flag")]
-    public void AWoodcutterForAHutWithASettlerOnItsDoorOrFlagFailsTheLoad(int x, int y)
+    public void AWoodcutterEntryForAHutWithASettlerOnItsDoorOrFlagFailsTheLoad(int x, int y)
     {
-        var game = Applied(Built);
+        var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}],", ""));
         game.Movement.Occupy(game.Map.Index(x, y), 1);
 
-        var problem = Read($"\"settlers\": [{Woodcutter}]").Apply(game);
+        var problem = Read("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}]").Apply(game);
 
-        Assert.AreEqual("test.jsonc: settlers[0]: a settler stands on the hut's door or on its flag", problem);
+        Assert.AreEqual("test.jsonc: buildings[0]: a settler stands on the hut's door or on its flag", problem);
     }
 
     [TestMethod]
-    public void ASettlerForAHutOrRoadTheLayoutDoesNotBuildFailsTheLoadNamingTheReason()
+    [DataRow("stonecutter")]
+    [DataRow("forester")]
+    [DataRow("sawmill")]
+    public void AFinishedEntryOfAnotherTypeStandsWithNoWorker(string type)
     {
-        var hutless = Built.Replace("\"buildings\": [{\"x\": 13, \"y\": 10}],", "");
+        var game = Applied(
+            Built.Replace(
+                "\"type\": \"woodcutter\", \"x\": 13, \"y\": 10",
+                $"\"type\": \"{type}\", \"x\": 13, \"y\": 10"
+            )
+        );
+
+        Assert.IsFalse(game.Buildings[1].WorkerInside || game.Buildings[1].WorkerOnTheWay);
+        Assert.AreEqual(1, game.Settlers.Count(s => s.Job == Job.Woodcutter && s.Activity is WaitsInCastle));
+    }
+
+    [TestMethod]
+    public void AWorkerForAWoodcuttersSiteIsRefused()
+    {
+        var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}],", ""));
+        game.Enqueue(
+            new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 13, 10, Building: BuildingType.Woodcutter)
+        );
+        game.Tick();
+        Assert.IsTrue(game.Buildings[1].Constructing);
+
+        Assert.AreEqual("no woodcutter's hut stands on the node", game.Walks.StandWorkerInHut(13, 10));
+    }
+
+    [TestMethod]
+    public void ACarrierForARoadTheLayoutDoesNotBuildFailsTheLoadNamingTheReason()
+    {
         var roadless = Built.Replace("\"roads\": [{\"x\": 11, \"y\": 11, \"directions\": [0, 0, 0]}],", "");
 
-        Assert.AreEqual(
-            "test.jsonc: settlers[0]: no woodcutter's hut stands on the node",
-            Refused(hutless + $"\"settlers\": [{Woodcutter}]")
-        );
         Assert.AreEqual(
             "test.jsonc: settlers[0]: no land road leaves a flag there in that direction",
             Refused(roadless + $"\"settlers\": [{Carrier}]")
@@ -362,6 +365,7 @@ public sealed class LayoutSettlersTests
             var entry in new[]
             {
                 """{"job": "woodcutter", "state": "felling", "x": 13, "y": 10}""",
+                """{"job": "woodcutter", "state": "in-hut", "x": 13, "y": 10}""",
                 """{"job": "carrier", "state": "in-hut", "x": 11, "y": 11, "direction": 0}""",
                 """{"job": "builder", "state": "in-hut", "x": 13, "y": 10}""",
                 """{"job": "woodcutter", "state": "in-hut", "x": 13, "y": 10, "direction": 0}""",
@@ -415,8 +419,7 @@ public sealed class LayoutSettlersTests
     public void TheSameLayoutGivesTheSameDigestOnEveryRun()
     {
         var text =
-            Built
-            + $"\"settlers\": [{Woodcutter}, {Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": 7}}]";
+            Built + $"\"settlers\": [{Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": 7}}]";
         var first = Applied(text, Tree);
         var second = Applied(text, Tree);
         Run(first, 500);

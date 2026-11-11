@@ -149,11 +149,13 @@ public sealed class CastleRoster(
     }
 
     // The handler of a building type (the table at 0x42cd1d). Only the woodcutter asks for a worker; the castle's
-    // handler (0x42e7e0, knights and defence) is not ported.
+    // handler (0x42e7e0, knights and defence) is not ported. A building under construction has the construction's handler
+    // instead (the entries 0x21 and on of the table go to 0x42d55f), which asks for no worker.
     public void HandleBuilding(Building building)
     {
         if (
             building.Type == BuildingType.Woodcutter
+            && !building.Constructing
             && !(building.RequestFailed || building.WorkerInside || building.WorkerOnTheWay)
             && !RequestWorker(building, Job.Woodcutter)
         )

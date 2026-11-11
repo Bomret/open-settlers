@@ -1,28 +1,6 @@
 # The carrier and the woodcutter walk as whole figures: the first loop of play/first-loop.play, then shots while they
 # walk, zoomed in and out, and with the view panned once around the map so the settlers show on its wrapped copy.
-# Run it on the game view with seed 1234567812345678 and size 1:
-#   --game-view --seed 1234567812345678 --size 1 --play play/settler-bodies.play
-expect seed = 1234567812345678
-expect size = 1
-wait 0.3
-click-tile 21 4
-wait 0.3
-button Flag
-click-tile 27 5
-button Flag
-wait 0.3
-button Road
-click-tile 22 5
-click-tile 23 5
-click-tile 24 5
-click-tile 25 5
-click-tile 26 5
-click-tile 27 5
-button Road
-wait 0.3
-button Woodcutter
-click-tile 26 4
-button Woodcutter
+# Run it on the layout: sh tools/play-run.sh settler-bodies --layout layouts/woodcutter.jsonc --fps 10
 wait 0.3
 
 # The carrier walks to its road and the woodcutter out to a tree.

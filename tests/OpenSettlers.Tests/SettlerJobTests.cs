@@ -82,7 +82,7 @@ public sealed class SettlerJobTests
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
         Do(game, CommandKind.BuildRoad, 18, 6, [5, 5, 0]);
         Do(game, CommandKind.BuildRoad, 17, 3, [0, 1]);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         for (var tick = 0; tick < 400; tick++)
         {
             game.Tick();
