@@ -22,6 +22,12 @@ public readonly record struct Job(int Code)
     /// <summary>The woodcutter, who cuts trees and carries the logs to his hut's flag (<c>docs/rules/woodcutting.md</c>).</summary>
     public static Job Woodcutter => new(WoodcutterCode);
 
+    /// <summary>The number of the stonecutter's job, for a <c>case</c> label.</summary>
+    public const int StonecutterCode = 7;
+
+    /// <summary>The stonecutter, who cuts stone heaps and carries the stones to his hut's flag (<c>docs/rules/stonecutting.md</c>).</summary>
+    public static Job Stonecutter => new(StonecutterCode);
+
     /// <summary>A settler without a job yet.</summary>
     public static Job Jobless => new(21);
 
@@ -44,7 +50,8 @@ public readonly record struct Job(int Code)
     /// the vector (the table at <c>0x437dfb</c>): all but the woodcutter, the jobs 7, 8, 11 (the settler of the type 1 hut, <c>docs/rules/settlers.md</c>), 14, and
     /// 20, and the knights. Those jobs' own branches hand over to it where the walk is a walk home.
     /// </summary>
-    public bool ArrivesHomeGenerically => Code is not (WoodcutterCode or 7 or 8 or 11 or 14 or 20) && !IsKnightOrAbove;
+    public bool ArrivesHomeGenerically =>
+        Code is not (WoodcutterCode or StonecutterCode or 8 or 11 or 14 or 20) && !IsKnightOrAbove;
 
     /// <summary>The level of a knight's job: 0 for the first.</summary>
     public int KnightLevel => Code - FirstKnight;

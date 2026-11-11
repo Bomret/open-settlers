@@ -148,16 +148,21 @@ public sealed class CastleRoster(
         }
     }
 
-    // The handler of a building type (the table at 0x42cd1d). Only the woodcutter asks for a worker; the castle's
-    // handler (0x42e7e0, knights and defence) is not ported. A building under construction has the construction's handler
-    // instead (the entries 0x21 and on of the table go to 0x42d55f), which asks for no worker.
+    // The handler of a building type (the table at 0x42cd1d). Only the woodcutter (job 5, 0x42d945) and the stonecutter (job 7,
+    // 0x42d987) ask for a worker; the castle's handler (0x42e7e0, knights and defence) is not ported. A building under
+    // construction has the construction's handler instead (the entries 0x21 and on of the table go to 0x42d55f), which asks for
+    // no worker.
     public void HandleBuilding(Building building)
     {
+        var job =
+            building.Type == BuildingType.Woodcutter ? Job.Woodcutter
+            : building.Type == BuildingType.Stonecutter ? Job.Stonecutter
+            : (Job?)null;
         if (
-            building.Type == BuildingType.Woodcutter
+            job is { } asked
             && !building.Constructing
             && !(building.RequestFailed || building.WorkerInside || building.WorkerOnTheWay)
-            && !RequestWorker(building, Job.Woodcutter)
+            && !RequestWorker(building, asked)
         )
         {
             building.RequestFailed = true;
@@ -168,7 +173,7 @@ public sealed class CastleRoster(
     // 0x42be63: the building asks the castle for a settler of a job. The search runs over the roads from the building's
     // flag; the castle's flag is the only storage, so it finds the settler where the flag is reached and the castle
     // holds a waiting settler of the job. **Not ported:** the second way, a new settler made of one that has no job
-    // and a tool from the stock; the castle's 20 first settlers hold one woodcutter.
+    // and a tool from the stock; the castle's 20 first settlers hold one woodcutter and one stonecutter.
     private bool RequestWorker(Building building, Job job)
     {
         if (roads.Route(flags.Count, building.Flag, 0) < 0 || Entry(job) == 0)

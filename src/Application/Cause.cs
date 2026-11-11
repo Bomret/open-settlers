@@ -31,6 +31,9 @@ public sealed record Cause(string Kind, ThingId? Thing = null)
     /// <summary>The rule area of the woodcutter's work (<c>woodcutting</c>).</summary>
     public static Cause Woodcutting { get; } = new("woodcutting");
 
+    /// <summary>The rule area of the stonecutter's work (<c>stonecutting</c>).</summary>
+    public static Cause Stonecutting { get; } = new("stonecutting");
+
     /// <summary>The rule area of the walk home to a storage (<c>walk-home</c>).</summary>
     public static Cause WalkHome { get; } = new("walk-home");
 
@@ -45,7 +48,18 @@ public sealed record Cause(string Kind, ThingId? Thing = null)
 
     /// <summary>Every kind a cause has, for a check of a name.</summary>
     public static IReadOnlyList<string> Kinds { get; } =
-    [PlacedKind, RazedKind, "settlers", "carriers", "woodcutting", "walk-home", "goods", "removal", LayoutKind];
+    [
+        PlacedKind,
+        RazedKind,
+        "settlers",
+        "carriers",
+        "woodcutting",
+        "stonecutting",
+        "walk-home",
+        "goods",
+        "removal",
+        LayoutKind,
+    ];
 
     /// <summary>The cause of a place command for <paramref name="thing"/>.</summary>
     public static Cause Placed(ThingId thing) => new(PlacedKind, thing);

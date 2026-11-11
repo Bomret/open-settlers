@@ -21,6 +21,9 @@ public enum MapObjectKind
     /// <summary>Codes 8 to 23: a tree a woodcutter can fell (<c>docs/rules/woodcutting.md</c>).</summary>
     Tree,
 
+    /// <summary>Codes 0x48 to 0x4f: a heap of stone a stonecutter can cut, the largest at 0x48 (<c>docs/rules/stonecutting.md</c>).</summary>
+    StoneHeap,
+
     /// <summary>Code 0x53: the stump of a felled tree, which the object pass lets vanish by chance.</summary>
     Stump,
 
@@ -44,6 +47,12 @@ public readonly record struct MapObject(byte Code)
 
     /// <summary>The object code after the last tree.</summary>
     public const int EndTreeCode = 0x18;
+
+    /// <summary>The first object code of a stone heap, the heap with the most stones.</summary>
+    public const int FirstHeapCode = 0x48;
+
+    /// <summary>The last object code of a stone heap, the heap with one stone left; the cut after it removes the heap.</summary>
+    public const int LastHeapCode = 0x4f;
 
     /// <summary>The object code of a stump.</summary>
     public const int StumpCode = 0x53;
@@ -103,6 +112,7 @@ public readonly record struct MapObject(byte Code)
             3 => MapObjectKind.LargeHut,
             4 => MapObjectKind.Castle,
             >= FirstTreeCode and < EndTreeCode => MapObjectKind.Tree,
+            >= FirstHeapCode and <= LastHeapCode => MapObjectKind.StoneHeap,
             StumpCode => MapObjectKind.Stump,
             >= FirstFallingCode and < EndFallingCode => MapObjectKind.FallingTree,
             _ => MapObjectKind.Other,
