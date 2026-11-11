@@ -137,7 +137,7 @@ spiral table and the object codes of the large objects.
 ### The draw verb
 
 `draw:WINDOWS:CX,CY:VERB:ARGS...` runs the settler draw path of the original's main loop. That is `0x42f4f1`, then `0x44ffe7` for
-each row of the view. It runs after the passes of a `carrier:`, `wood:`, `goods:`, `home:`, or `remove:` game. `WINDOWS` is a list
+each row of the view. It runs after the passes of a `carrier:`, `wood:`, `goods:`, `home:`, `remove:`, or `construct:` game. `WINDOWS` is a list
 of `FROM-TO` pass ranges, with pass numbers from 0. For each pass in `WINDOWS` it prints the settlers' bytes and what the original
 blits for them. That is each settler's sprite entries, fill colour, and position, in drawing order
 (`docs/rules/settlers.md`, "The draw path, emulated"). It runs `EmulateDraw.java`, a script that extends `EmulateMapStart.java`.

@@ -181,6 +181,14 @@ public sealed class SettlerDrawTests
             2 => new Walks(new ToStorage(), heading, next),
             3 => new WalksRoad(load, heading, next == 0xff ? 0 : next, next == 0xff),
             4 => new Door(target, mode == 0xfe),
+            9 => new Builds(
+                BitConverter.ToUInt16(bytes, 12),
+                mode == 0xff,
+                bytes[14] & 0x0f,
+                (bytes[14] & 0x80) != 0,
+                next
+            ),
+            0x4a => new LeavesSite(),
             5 => new WaitsOutStep(next == 0xd ? new PutsDownGood(new Good(mode)) : new Walks(new ToStorage(), heading)),
             0xb => new StepsOutWithGood(new Good(mode)),
             0xd => new PutsDownGood(new Good(mode)),

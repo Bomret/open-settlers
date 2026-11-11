@@ -101,7 +101,7 @@
 //                            as x,y:BB,FF with that byte and byte 0 of record A, when that set changed (a waiting carrier's
 //                            mark, docs/rules/carriers.md).
 //   draw:WINDOWS:CX,CY:VERB...
-//                            the settler draw path (docs/rules/settlers.md) after the passes of carrier, wood, goods, home, or remove in
+//                            the settler draw path (docs/rules/settlers.md) after the passes of carrier, wood, goods, home, remove, or construct in
 //                            the windows, a verb of EmulateDraw.java (see its header); this script refuses it
 //   home:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:SLOT[@x,y]:AT:PASSES[:STATE,MODE[:WATCH]]
 //                            the passes of wood: (docs/rules/settlers.md) on a game with a castle, flags, and roads and no
@@ -128,7 +128,8 @@
 //                            0x462d88 (road take-down 0x462e1d), p:x,y the flag button 0x442244 (a flag put on a node of a road splits the road: docs/rules/roads.md), b:x,y[,T] the building placement 0x449a63 (object code 2, or the object code of the type T by the size table 0x42d307) after the check, c:x,y only the classification 0x44b6e6 (the class at +0x100 and
 //                            +0x101 of the player), s:0,0 the classification of every tile of the territory, v:0,0 the same with the height the
 //                            evaluator leaves (the word at +0x102), and l:x,y,H the heights of
-//                            the node and its six neighbours set to H (the ground a digger leaves a large site). The sound
+//                            the node and its six neighbours set to H (the ground a digger leaves a large site), and k:G,N the castle
+//                            storage's stock word of the good G set to N (a stock written by hand). The sound
 //                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
 //                            before that pass, as goods does, with the destination word DEST. A line per click and per pass lists
@@ -1652,6 +1653,15 @@ public class EmulateMapStart extends GhidraScript {
                             }
                         }
                         println("EMU " + label + " classes=" + classes);
+                        continue;
+                    }
+                    if (kind.equals("k")) {
+                        // k@G,N sets the castle storage's stock word of the good G (the word at +4 + 2 * G of the storage item) to N:
+                        // a stock written by hand, as PUTS lays goods by hand, to reach a request that finds no tool.
+                        putWord(TABLES + 0x60000 + 4 + 2L * x, y);
+                        Snapshot now = snapshot(width, height);
+                        println("EMU " + label + " click=k@" + x + "," + y + difference(seen, now, width, height));
+                        seen = now;
                         continue;
                     }
                     putWord(player + 0xfc, x);

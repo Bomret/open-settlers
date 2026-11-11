@@ -291,8 +291,8 @@ exchange them.
 ### The draw path, emulated
 
 The harness verb `draw:` (`tools/GhidraDump/emulate.py`, `EmulateDraw.java`; [the harness](../../tools/GhidraDump/README.md#emulator-harness))
-runs the settler draw of the main loop (`0x425a10`). It runs after the passes of a `carrier:`, `wood:`, `goods:`, `home:`, or
-`remove:` game, on the reference install only.
+runs the settler draw of the main loop (`0x425a10`). It runs after the passes of a `carrier:`, `wood:`, `goods:`, `home:`,
+`remove:`, or `construct:` game, on the reference install only.
 
 Use `draw:` instead of a screenshot or a `play` run to check what a settler draws. A screenshot shows a picture that a reader
 judges by eye. `draw:` gives the original's sprite entries, fill colours, and positions for each pass, and the tests compare the
