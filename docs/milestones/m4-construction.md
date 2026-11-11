@@ -49,7 +49,8 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 ## Open questions
 
 - The stonecutter, the forester, and the sawmill are the building types 4, 9, and 0x11 (the handlers
-  `0x42d987`, `0x42d9c9`, `0x42da0b` of the jump table `0x42cd1d`; names inferred, confirmed by the slices that
-  build each type's work). Where are the builder and the digger? Start from the jump tables `0x42cd1d`
+  `0x42d987`, `0x42d9c9`, `0x42da0b` of the jump table `0x42cd1d`; the stonecutter's name is known: his work cuts
+  the stone heaps and lays the stone on the flag, [Stonecutting](../rules/stonecutting.md); the other names are
+  inferred, confirmed by the slices that build each type's work). Where are the builder and the digger? Start from the jump tables `0x42cd1d`
   (building types), `0x42fca1` (settler states), and `0x43ca54` (job start routines), and the construction
   handler `0x42d55f`. `0x4312ed` is `Flag_ReleaseGoods`, no table of jobs.

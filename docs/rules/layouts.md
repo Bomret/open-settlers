@@ -24,7 +24,7 @@ in its list of waiting settlers ([the request](settlers.md#the-request)). A plac
 where it names him. The castle's counter of settlers sent out rises with the request and falls with the departure from
 the castle (`0x43dd4a`). A placed settler therefore leaves the counter as it was.
 
-A castle that holds no such settler refuses the entry. A second woodcutter is one the castle does not hold.
+A castle that holds no such settler refuses the entry. A second woodcutter or stonecutter is one the castle does not hold.
 
 The original sends the settler its list names, the one that last took its turn in state 1. The engine takes that
 settler where the list names one. **Stand-in:** where the list names none, the engine takes the lowest slot of the
@@ -35,7 +35,7 @@ takes one of job 21, which is a jobless settler, and makes him a carrier, as `0x
 
 | Entry | Key | Routine that writes it |
 | --- | --- | --- |
-| Woodcutter in his hut | the woodcutter's `buildings` entry (below), the hut's node | the entering of `Settler_Walk` (`0x4398ea`), which hands over to `Settler_PassDoor` (`0x43c96b`, then `0x43cf15`) |
+| Woodcutter or stonecutter in his building | the `buildings` entry of the type (below), the building's node | the entering of `Settler_Walk` (`0x4398ea`), which hands over to `Settler_PassDoor` (`0x43c96b`, then `0x43cf15`) |
 | Carrier waiting on his road | `{"job": "carrier", "state": "waiting-on-road", "x", "y", "direction"}`, a flag of the road and the direction the road leaves it | `Carrier_WaitAtEnd` (`0x43bc52`), after the road's entering in `Settler_Walk` (`0x4398ea`) |
 
 The woodcutter is in state 4 at the hut's node, with the step through the door just taken. The timer holds the step's
@@ -44,8 +44,9 @@ time. The target holds the part of it that the door's speed leaves. The stamp ho
 The carrier is in state `0x42` on the node of the road next to the flag at the road's far end. The far end is the end
 that the castle is not reached from first.
 
-**The woodcutter.** The mission start (`0x41f2d2`) creates a building's settlers inside the finished building, so a
-woodcutter's finished-building entry stands his worker in the hut and the `settlers` list has no woodcutter entry. The
+**The woodcutter and the stonecutter.** The mission start (`0x41f2d2`) creates a building's settlers inside the finished building, so a
+woodcutter's or a stonecutter's finished-building entry stands his worker in the building and the `settlers` list has no entry for
+either. The stonecutter's goes on at `0x43cfdd` into the search for a heap, state `0x15` ([Stonecutting](stonecutting.md)). The
 entry takes the settler through the entering of `0x4398ea`. The hut's status gets bit 6, which
 means it has its worker, and loses bit 7, which means a worker is on the way. The hut's worker is the settler. The
 settler stands on the hut's node, and the node's settler word names him. The hut asks for no second worker, because
@@ -89,19 +90,19 @@ the entry named. A type that M4 does not build (the storehouse, the castle, any 
 read, naming the types. **Stand-ins:** the finished building has no status bit 4 and no pointer in its item, and its progress
 word is 0, so the digests of the M3 layouts stay (`Game.PlaceFinishedBuilding`). Its object code is 2 for the three small
 types, following the size-table caller `0x42cf9d` of `Building_Place`, where the mission start writes 2 only for type `0xb` and
-3 for every other type. The woodcutter's worker is the castle's woodcutter walked in as above, where the mission start creates
-a new settler. The stonecutter, forester, and sawmill stand with no worker (their workers are slices 04 to 06). A player's command places a building site and
+3 for every other type. The woodcutter's worker is the castle's woodcutter, and the stonecutter's the castle's stonecutter, walked in as above, where the mission
+start creates a new settler. The forester and the sawmill stand with no worker (their workers are slices 05 and 07). A player's command places a building site and
 never a finished building.
 
 ## Not supported
 
 Some settlers have no entry state here. These are every other state of a settler, every other job, and custom castle
-contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut, and a woodcutter apart from his finished-building entry. The file reader refuses the entry.
+contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut or the stonecutter's, and a woodcutter or a stonecutter apart from his finished-building entry. The file reader refuses the entry.
 
 ## In the engine
 
 `Layout.Placement.cs` reads the `buildings`, `settlers`, and `goods` keys. `Game.PlaceFinishedBuilding` stands the finished building
-(`BuildingPlacement.PlaceFinished`). For a woodcutter the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
+(`BuildingPlacement.PlaceFinished`). For a woodcutter or a stonecutter the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
 the settler in his hut.
 `CarrierBehavior.PlaceCarrierOnRoad` and `GoodsTransport.PlaceGood` are the carrier's and the good's. A settler for a road that the layout has not built before it fails the
 load with the entry named. A good on a flag that does not stand fails it the same way.
