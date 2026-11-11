@@ -35,6 +35,12 @@ public static class EventType
     /// <summary>The woodcutter's search for a tree.</summary>
     public const string SearchTree = "search-tree";
 
+    /// <summary>The stonecutter's search for a stone heap.</summary>
+    public const string SearchStone = "search-stone";
+
+    /// <summary>The stonecutter's cut; the other thing is the heap, named by its node.</summary>
+    public const string CutStone = "cut-stone";
+
     /// <summary>The woodcutter's step from the hut onto its flag.</summary>
     public const string StepOut = "step-out";
 
@@ -225,6 +231,8 @@ public static class EventType
         FreeFlagSlot,
         Door,
         SearchTree,
+        SearchStone,
+        CutStone,
         StepOut,
         FreeWalk,
         Arrive,

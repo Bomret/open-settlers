@@ -88,6 +88,14 @@ public static class SettlerEncoder
                 a.Count,
                 a.Memory
             ),
+            // The stonecutter's cut: the way back in bytes 11 and 12, the part of the cut in byte 13, the quarter in the word at 14.
+            CutsStone a => new(
+                a.Code,
+                a.Back.East & 0xff,
+                (a.Phase << 8) | (a.Back.South & 0xff),
+                a.Quarter & 0xff,
+                a.Quarter >> 8
+            ),
             SearchesHome a => new(a.Code, a.FarEndFirst ? a.FarEndMark : 0, r.Target, r.Heading, r.Next),
             WaitsAtFlag a => new(a.Code, a.Direction.Value, a.Flag, r.Heading, r.Next),
             ClaimsNode a => new(a.Code, r.Mode, r.Target, a.Heading.Value, r.Next),
@@ -112,6 +120,7 @@ public static class SettlerEncoder
         var (mark, heading) = trip.Purpose switch
         {
             ToTree tree => (tree.Back.East & 0xff, tree.Back.South),
+            ToHeap heap => (heap.Back.East & 0xff, heap.Back.South),
             BackToHut back => (WayBackMark, back.Carrying ? 1 : 0),
             _ => (WayBackMark, -1),
         };

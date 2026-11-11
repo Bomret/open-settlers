@@ -1,0 +1,20 @@
+# A stonecutter cuts a stone heap and his stone reaches the castle, on layouts/stonecutter.jsonc.
+# Run it on the layout: sh tools/play-run.sh stonecutter --layout layouts/stonecutter.jsonc --fps 10
+# The castle stands at 10,10, so its flag is at 11,11. The stonecutter's building at 13,10 has its flag at 14,11, a road of three
+# steps leads west to the castle's flag, and his worker stands inside. Heaps stand at 16,10, 17,12, and 18,10. The first stone lies on
+# his flag, and then the carrier takes it to the castle.
+wait 0.3
+expect-at 13 10 building
+expect-at 14 11 flag
+shot placed 13 10 1 2
+
+fast-forward until flag-goods:14,11 = 1 max 40000
+wait 0.3
+expect flag-goods:14,11 = 1
+dump stone-on-flag
+shot stone-on-flag 14 11 1 2
+
+fast-forward until flag-goods:14,11 = 0 max 40000
+wait 0.3
+dump stone-taken
+shot stone-taken

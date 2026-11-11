@@ -19,7 +19,7 @@ namespace OpenSettlers.Simulation;
 /// <param name="walkHome">The walk home, where the free walk arrives and the door leads into the storage.</param>
 /// <param name="layGood">Lays a good on a place of a flag: the flag slot, the place, and the good.</param>
 /// <param name="inLayout">Whether a layout is being built: its rules record their events with the cause layout.</param>
-public sealed class WoodcutterBehavior(
+public sealed partial class WoodcutterBehavior(
     SettlerMovement movement,
     SettlerTable settlers,
     FlagTable flags,
@@ -59,6 +59,8 @@ public sealed class WoodcutterBehavior(
         registry.Register<WalksFree>((slot, settler, _) => FreeWalk(slot, settler));
         registry.Register<Cuts>((slot, settler, _) => Cut(settler));
         registry.Register<LooksForTree>((slot, settler, _) => SearchTree(slot, settler));
+        registry.Register<LooksForStone>((slot, settler, _) => SearchStone(slot, settler));
+        registry.Register<CutsStone>((slot, settler, _) => CutStone(slot, settler));
     }
 
     // The cause of a change the settler rules make to the settler in the slot: the walk home while it walks to a storage, else
@@ -104,6 +106,12 @@ public sealed class WoodcutterBehavior(
                 movement.Release(node);
                 movement.Become(settler, new LooksForTree());
             }
+            else if (settler.Job == Job.Stonecutter)
+            {
+                // 0x43cfdd: the stonecutter leaves the hut's node and looks for a heap.
+                movement.Release(node);
+                movement.Become(settler, new LooksForStone());
+            }
         }
         else
         {
@@ -116,17 +124,20 @@ public sealed class WoodcutterBehavior(
 
     // Records the change a rule of this file made to the settler in the slot (ADR 0011): its state now, the rule's type, and the
     // rule's area where the settler carries no command cause: the layout while one builds, the walk home for a settler on it
-    // (a woodcutter walking home included), woodcutting for another woodcutter, and the settlers' rules for another job that
-    // passes through these states.
+    // (a woodcutter walking home included), woodcutting for another woodcutter, stonecutting for a stonecutter, and the
+    // settlers' rules for another job that passes through these states.
     private void RecordWork(int slot, string type, string? other = null) =>
-        history.RecordSettler(
-            slot,
-            type,
-            inLayout() || walkHome.IsWalking(slot) || settlers[slot].Job != Job.Woodcutter
-                ? SettlerCause(slot)
-                : Cause.Woodcutting,
-            other
-        );
+        history.RecordSettler(slot, type, WorkCause(slot), other);
+
+    private Cause WorkCause(int slot)
+    {
+        var job = settlers[slot].Job;
+
+        return inLayout() || walkHome.IsWalking(slot) ? SettlerCause(slot)
+            : job == Job.Woodcutter ? Cause.Woodcutting
+            : job == Job.Stonecutter ? Cause.Stonecutting
+            : SettlerCause(slot);
+    }
 
     // State 0x12, the woodcutter's search (0x438b8c). When its timer has run out it draws a node of the spiral around the
     // hut, entries 1 to 128, until a tree stands on one; each node without a tree adds 400 to the timer, and the search
@@ -225,7 +236,15 @@ public sealed class WoodcutterBehavior(
             return false;
         }
 
-        var trip = ((WalksFree)settler.Activity).Trip;
+        var walk = (WalksFree)settler.Activity;
+        var trip = walk.Trip;
+        if (walk.EyesHeaps)
+        {
+            var heap = movement.Neighbour(settler, HeapDirection).Index;
+            trip = EyeHeaps(trip, movement.Occupant(heap) == 0 && HeapAt(heap));
+            settler.Activity = walk with { Trip = trip };
+        }
+
         while (true)
         {
             var memory = trip.Memory;
@@ -243,7 +262,7 @@ public sealed class WoodcutterBehavior(
             trip = trip with { Memory = memory };
             if (direction < 0)
             {
-                settler.Activity = new WalksFree(trip);
+                settler.Activity = walk with { Trip = trip };
                 settler.Frame = 0x52;
                 settler.Timer = 0x7f;
 
@@ -257,7 +276,7 @@ public sealed class WoodcutterBehavior(
                 trip = trip with { Memory = 8 };
             }
 
-            settler.Activity = new WalksFree(trip);
+            settler.Activity = walk with { Trip = trip };
             var here = Map.Index(settler.X, settler.Y);
             var shape = 4 + 9 * direction + movement.Height(next) - movement.Height(here);
             movement.Move(slot, settler, x, y, next);
@@ -437,9 +456,16 @@ public sealed class WoodcutterBehavior(
     private void Arrive(int slot, Settler settler)
     {
         var trip = ((WalksFree)settler.Activity).Trip;
+        if (settler.Job == Job.Stonecutter)
+        {
+            ArriveStonecutter(slot, settler);
+
+            return;
+        }
+
         if (settler.Job != Job.Woodcutter)
         {
-            // **Not ported:** the arrival of the jobs 7, 8, 11, 14, and 20 where they are not walking home (0x437ddd).
+            // **Not ported:** the arrival of the jobs 8, 11, 14, and 20 where they are not walking home (0x437ddd).
             if (settler.Job.ArrivesHomeGenerically || trip.Purpose is Home)
             {
                 walkHome.ArriveHome(slot, settler);
@@ -462,7 +488,7 @@ public sealed class WoodcutterBehavior(
 
             if (trip.Purpose is BackToHut { Carrying: true })
             {
-                PutGood(slot, settler, GoodLog);
+                PutGood(slot, settler, GoodLog, Cause.Woodcutting);
             }
 
             // The vector's east steps are the byte the entry into the hut sets to 0.
@@ -534,14 +560,14 @@ public sealed class WoodcutterBehavior(
 
     // The settler lays a good on the first empty place of the flag it stands on (0x436b46). The flag changes and records; the
     // settler does not.
-    private void PutGood(int slot, Settler settler, int good)
+    private void PutGood(int slot, Settler settler, int good, Cause cause)
     {
         var flag = Map.At(settler.X, settler.Y).LinkedSlot;
         var place = flags[flag].FirstEmptyPlace();
         if (place >= 0)
         {
             layGood(flag, place, good);
-            history.RecordFlag(flag, EventType.PutGood, Cause.Woodcutting, history.SettlerId(slot).ToString());
+            history.RecordFlag(flag, EventType.PutGood, cause, history.SettlerId(slot).ToString());
         }
     }
 

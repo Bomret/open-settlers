@@ -80,7 +80,7 @@ public sealed class WoodcutterTests
     // The word of the bytes at the hex offset holds a flag in the settler's states that walk to a flag (2, 5, 6, 0xf)
     // and in the hut's item; there it is the engine's slot plus one, and 0 where there is none. A word beyond the
     // flags (the engine has flagCount) is no flag, and neither is the word of a settler in another state.
-    private static string InEngineNumbers(string bytes, int offset, int flagCount)
+    internal static string InEngineNumbers(string bytes, int offset, int flagCount)
     {
         var isFlagWord = offset == 12 || Convert.ToInt32(bytes[20..22], 16) is 2 or 5 or 6 or 0xf;
         var word = Convert.ToInt32(string.Concat(bytes.AsSpan(offset + 2, 2), bytes.AsSpan(offset, 2)), 16);

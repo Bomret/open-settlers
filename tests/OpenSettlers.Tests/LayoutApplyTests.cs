@@ -78,6 +78,19 @@ public sealed class LayoutApplyTests
         Assert.AreEqual(byHand.Digest(), game.Digest());
     }
 
+    [TestMethod]
+    public void AStonecuttersBuildingEntryStandsHisWorkerInsideAsTheWoodcuttersDoes()
+    {
+        var layout = Read(Castle + Flag + Road + Hut.Replace("woodcutter", "stonecutter"));
+        var game = NewGame(layout);
+
+        Assert.IsNull(layout.Apply(game));
+
+        var worker = game.Settlers.Single(settler => settler.Job == Job.Stonecutter && settler.Activity is Door);
+        Assert.AreEqual((13, 10), (worker.X, worker.Y), "he stands in the doorway of his building");
+        Assert.IsTrue(game.Buildings.Single(building => building.Type == BuildingType.Stonecutter).WorkerInside);
+    }
+
     // The made tables of the layout tests with the sawmill large, as the original's size table makes it.
     static Game NewGameWithALargeSawmill(Layout layout)
     {
