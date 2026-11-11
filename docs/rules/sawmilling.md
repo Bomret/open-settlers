@@ -74,7 +74,7 @@ State `0x18` (`0x4359fe`) has two parts, in byte 11:
 the step of state 7 from the building's node onto the flag south-east of it ([Woodcutting](woodcutting.md#the-start-at-the-hut)) with one more
 condition: the flag item's eight places (bytes `0xc` to `0x13`) must not all hold goods. A settler on either node or a full flag gives
 the frame `0x52` and the timer 0, and he tries again at his next turn (in the first emulated game he waits about 100 passes for a carrier to
-leave the flag's node). Else he takes the flag's node, the frame is `0x0d` plus the height reached less the height left, the timer is the step's time scaled
+leave the flag's node; in `flag-full` of `saw-walks.txt` he waits about 240 passes while eight goods lie on the flag). Else he takes the flag's node, the frame is `0x0d` plus the height reached less the height left, the timer is the step's time scaled
 by the door's speed, and he waits it out in state 5, which goes on in state `0xd` (byte 15).
 
 State `0xd` (`0x43c6aa`) puts the good of byte 11 on the first empty one of the first seven places of the flag, or, where those hold

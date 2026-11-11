@@ -80,3 +80,15 @@ pass=1181 s11=187C3F0938080000F02418FFBF000000 b=380800004440020000070B000000000
 pass=1187 req=00002001 rng=3F4F,F695,517B
 pass=1198 s11=187CB70838080000782518FFBF000000 rng=3F4F,F695,517B
 pass=1214 s11=187C370838080000F82518FFBF000000 rng=3F4F,F695,517B
+// flag-full: two-logs with the sawmill's flag (slot 2) filled with eight stones the pass before the sawmiller, who waits at the door with
+// his first plank, would step out (pass 1362). He waits on in state 0xb with the frame 0x52 while the flag is full, and no line lists him
+// up to the pass 1604, where a carrier takes the first stone. The lines list the passes from 1250 to 1604. Later the original's busy road
+// has a second carrier (a settler without a job of the castle takes the job 0 at the pass 1385), which stands on the flag's node until the
+// pass 1685 and keeps the sawmiller at the door until the pass 1693; the engine does not port the second carrier of a busy road
+// (docs/rules/carriers.md), so its sawmiller steps out at the pass 1610.
+# flag-full goods:1:1234,5678,9ABC:0:15,5:15,9;18,6:16,6,00;16,6,2223:15,9,17:1700:0::-1:600,0,7,1;600,1,7,1;1362,0,10,2;1362,1,10,2;1362,2,10,2;1362,3,10,2;1362,4,10,2;1362,5,10,2;1362,6,10,2;1362,7,10,2
+pass=1264 s11=185200003808000088270B080000000D rng=67E9,6E04,01A5
+pass=1324 b=380800004440020000100B00000000000000 rng=67E9,6E04,01A5
+pass=1362 g=C1/0A0A0A0A0A0A0A0A rng=235D,9256,BC49
+pass=1418 g=41/2A2A2A2A2A2A2A2A rng=235D,9256,BC49
+pass=1604 s11=185200003808000088270B080000000D g=41/2A2A2A2A2A2A2A00 rng=CB4F,7B7A,A95D
