@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
@@ -9,13 +10,17 @@ namespace OpenSettlers.Tests;
 internal sealed class BehaviourBench
 {
     public BehaviourBench(params ushort[] draws)
-        : this(null, draws) { }
+        : this((byte[]?)null, draws) { }
 
     // The tables hold the made-up transport priorities (index good - 1), or all 0 for none.
     public BehaviourBench(byte[]? transportPriorities, params ushort[] draws)
+        : this(LayoutSettlersTests.MadeTables(transportPriorities: transportPriorities), draws) { }
+
+    // The rule tables are the given ones: a test of the materials that reach a building site gives tables that name the goods' classes.
+    public BehaviourBench(RuleTables tables, params ushort[] draws)
     {
         Draws = new QueuedDraws(draws);
-        Tables = LayoutSettlersTests.MadeTables(transportPriorities: transportPriorities);
+        Tables = tables;
         Movement = new SettlerMovement(Map, Buildings, Tables, () => Clock, _ => new Residue());
         History = new GameHistory(new NoSnapshots(), () => 0);
         // Slot 0 of the settler table reads as a free node in an occupant list: the settlers under test take later slots.

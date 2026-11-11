@@ -93,6 +93,14 @@ public sealed class BuildingPlacement(
         flagNode.Roads = flagNode.Roads.With(4);
 
         var needs = tables.NeedsOf(type);
+        if (!finished)
+        {
+            // The placement (0x449a63) sets the flag's request words: planks (class 1 of the word at 0x42) and stones (class 4 of the
+            // word at 0x44), at rank 0 until the building pass gives the site's requests their rank.
+            flags[flag].SetRequest(RequestWord.First, new Request(0x02, 0));
+            flags[flag].SetRequest(RequestWord.Second, new Request(0x10, 0));
+        }
+
         buildings.Add(
             new Building(type, x, y, flag, constructing: !finished)
             {

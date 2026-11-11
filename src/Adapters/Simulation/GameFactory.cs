@@ -36,7 +36,7 @@ public static class GameFactory
         var movement = new SettlerMovement(map, buildings, tables, () => clock.Now, SettlerEncoder.ResidueOf);
         int Route(int from, int to) => network.Route(flags.Count, from, to);
 
-        var goods = new GoodsTransport(movement, flags, network, history);
+        var goods = new GoodsTransport(movement, flags, network, history, buildings);
         var walkHome = new WalkHomeBehavior(movement, buildings, flags, network, history, draws, Route);
         var causes = new Causes(history, buildings, walkHome);
         var woodcutter = new WoodcutterBehavior(
@@ -109,7 +109,8 @@ public static class GameFactory
             carriers,
             woodcutter,
             removal,
-            roster
+            roster,
+            new SitePass(map, flags, tables)
         )
         {
             EveryPassTurns = everyPassTurns,

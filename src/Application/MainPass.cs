@@ -20,7 +20,8 @@ public sealed class MainPass(
     CarrierBehavior carriers,
     WoodcutterBehavior woodcutter,
     Removal removal,
-    CastleRoster roster
+    CastleRoster roster,
+    SitePass sites
 )
 {
     // The phases of a pass cycle (docs/rules/timing.md). **Inferred** for a game with no computer opponent: the
@@ -65,6 +66,10 @@ public sealed class MainPass(
                     if (building.IsDemolishing)
                     {
                         removal.Burn(slot, building);
+                    }
+                    else if (building.Site is not null)
+                    {
+                        sites.Turn(building);
                     }
                     else
                     {
