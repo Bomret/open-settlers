@@ -160,8 +160,19 @@ public sealed class CastleRoster(
             tables.WorkerOf(building.Type) is { } request
             && !building.Constructing
             && !(building.RequestFailed || building.WorkerInside || building.WorkerOnTheWay)
-            && !RequestWorker(building, request)
         )
+        {
+            AskForWorker(building, request);
+        }
+    }
+
+    /// <summary>
+    /// The request of a building's handler (<c>0x42be63</c> as <c>0x42d5fc</c> and the handlers of the types call it): where the request
+    /// finds no worker the building's request-failed bit is set, and the retry scan of the main pass clears it again.
+    /// </summary>
+    public void AskForWorker(Building building, WorkerRequest request)
+    {
+        if (!RequestWorker(building, request))
         {
             building.RequestFailed = true;
             causes.RecordBuilding(building, EventType.BuildingHandled);

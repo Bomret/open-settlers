@@ -20,6 +20,10 @@ public static class SettlerEncoder
     private const int StorageMode = 0xfe;
     private const int BuildingMode = 0xff;
     private const int WayBackMark = 0x80;
+    private const int BlowingMode = 0xff;
+    private const int SearchingMode = 1;
+    private const int SecondFigureBit = 0x80;
+    private const int WalksState = 2;
 
     /// <summary>The original's fields for the settler.</summary>
     public static SettlerFields Fields(Settler settler)
@@ -71,6 +75,14 @@ public static class SettlerEncoder
             WaitsOutStep a => Of(a.Then) with { State = a.Code, Next = a.Then.Code },
             EntersBuilding a => new(a.Code, a.Storage ? StorageMode : r.Mode, r.Target, r.Heading, r.Next),
             StepsOntoFlag a => Of(a.Then) with { State = a.Code, Next = a.Then.Code },
+            Builds a => new(
+                a.Code,
+                a.Blowing ? BlowingMode : SearchingMode,
+                a.Site,
+                a.Materials | (a.SecondFigure ? SecondFigureBit : 0),
+                a.Blows
+            ),
+            LeavesSite a => new(a.Code, StorageMode, 0, 0, WalksState),
             HandsOver a => new(
                 a.Code,
                 a.Load?.Good.Code ?? 0,

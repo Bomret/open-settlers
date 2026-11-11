@@ -113,6 +113,32 @@ public sealed record StepsOntoFlag(Activity Then) : StepsBefore(Then)
     public override int Code => 7;
 }
 
+/// <summary>
+/// State 9: the builder works in the building site he stands in (<c>0x43ec82</c>, <c>docs/rules/construction.md</c>): he takes the site's
+/// materials one after the other in the order of the type's order word, and for each makes eight blows that add a step to the site's
+/// progress word.
+/// </summary>
+/// <param name="Site">The slot of the building site in the building table (the word at 12).</param>
+/// <param name="Blowing">Whether he is making the blows of a material (byte 11 is 0xff) and not looking for the next one (byte 11 is 1).</param>
+/// <param name="Materials">The materials he has taken so far, the index of the next in the order (the low four bits of byte 14).</param>
+/// <param name="SecondFigure">Whether his figure is the second one the types 10, 17, 19, and 22 take (bit 7 of byte 14, the frames 0x64 and 0x6a to 0x6d).</param>
+/// <param name="Blows">The blows left of the material (byte 15).</param>
+public sealed record Builds(int Site, bool Blowing, int Materials, bool SecondFigure, int Blows) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 9;
+}
+
+/// <summary>
+/// State 0x4a: the builder has finished the building and waits at its door until the node of the flag is free, then steps onto the flag
+/// to go home (<c>0x43e008</c>).
+/// </summary>
+public sealed record LeavesSite : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x4a;
+}
+
 /// <summary>State 10: the settler stands by while the castle is built.</summary>
 public sealed record BuildsCastle : Activity
 {
@@ -200,7 +226,7 @@ public sealed record KnightWalks(Trip Trip) : Activity
 
 /// <summary>
 /// A state code the engine has no name for, kept as it is: no rule takes a settler into it and its turn changes nothing. The
-/// original's branches that reach the states 0x49 and 0x4a are not ported, and a settler a layout or a snapshot places in
+/// original's branches that reach the state 0x49 are not ported, and a settler a layout or a snapshot places in
 /// another state keeps it raw (INV-0006).
 /// </summary>
 /// <param name="StateCode">The code of the original's state.</param>

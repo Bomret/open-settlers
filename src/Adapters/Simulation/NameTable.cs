@@ -155,6 +155,7 @@ public sealed class NameTable
         AddOne(CodeKind.State, 5, "waits-out-step", State);
         AddOne(CodeKind.State, 6, "enters-building", State);
         AddOne(CodeKind.State, 7, "steps-onto-flag", State);
+        AddOne(CodeKind.State, 9, "builds", State);
         AddOne(CodeKind.State, 0xf, "leaves-castle", State);
         AddOne(CodeKind.State, 0x10, "walks-free", State);
         AddOne(CodeKind.State, 0x11, "cuts-tree", State);
@@ -162,6 +163,7 @@ public sealed class NameTable
         AddOne(CodeKind.State, 0x19, "looks-for-flag-home", State);
         AddOne(CodeKind.State, 0x1c, "claims-node-home", State);
         AddOne(CodeKind.State, 0x42, "waits-at-flag", State);
+        AddOne(CodeKind.State, 0x4a, "leaves-site", State);
 
         AddOne(CodeKind.Building, BuildingType.Castle.Code, "castle", "BuildingType.Castle");
         AddOne(CodeKind.Building, BuildingType.Woodcutter.Code, "woodcutter-hut", "BuildingType.Woodcutter");

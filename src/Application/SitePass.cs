@@ -1,3 +1,4 @@
+using System;
 using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
@@ -6,13 +7,15 @@ namespace OpenSettlers.Simulation;
 /// The building pass's turn of a building site (<c>0x42d328</c>, <c>0x42d55f</c>, <c>docs/rules/construction-materials.md</c>): a large
 /// site that has not started waits until the ground around it is levelled; then the pass keeps the rank of the requests of the site's
 /// flag for planks and stones from what the site holds on site and on the way against what it needs, so that it never asks for more
-/// than it needs. **Not ported:** the worker requests of the turn (the digger of a large site, the builder), and the branch of the
-/// computer player (player byte <c>+0x163</c>).
+/// than it needs. A site with no worker inside or on the way, whose last request did not fail, asks for its builder (<c>0x42d5fc</c>) and
+/// takes the progress word 1. **Not ported:** the digger of a large site, and the branch of the computer player (player byte
+/// <c>+0x163</c>).
 /// </summary>
 /// <param name="map">The map: the heights of the ground around a large site.</param>
 /// <param name="flags">The flag table: the site's flag holds its requests.</param>
-/// <param name="tables">The rule tables: the size of a type and the rank the planks start from.</param>
-public sealed class SitePass(Map map, FlagTable flags, RuleTables tables)
+/// <param name="tables">The rule tables: the size of a type, the rank the planks start from, and the builder's request.</param>
+/// <param name="askForWorker">The request of a worker for a building (the castle's), or null where the site asks for none.</param>
+public sealed class SitePass(Map map, FlagTable flags, RuleTables tables, Action<Building, WorkerRequest>? askForWorker = null)
 {
     // The rank the stones start from: a constant of the routine (0x42d8ff), unlike the planks', which the player word gives.
     private const byte StoneRankStart = 0xff;
@@ -32,8 +35,14 @@ public sealed class SitePass(Map map, FlagTable flags, RuleTables tables)
             {
                 return;
             }
+        }
 
+        // 0x42d55f: a site whose bits 2, 6, and 7 are clear (no failed request, no worker inside or on the way) takes the progress word 1
+        // and asks for its builder.
+        if (!(site.RequestFailed || site.WorkerInside || site.WorkerOnTheWay))
+        {
             site.Progress = 1;
+            askForWorker?.Invoke(site, tables.BuilderRequest);
         }
 
         var flag = flags[site.Flag];

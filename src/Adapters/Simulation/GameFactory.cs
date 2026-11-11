@@ -107,6 +107,9 @@ public static class GameFactory
             roster,
             settlers
         );
+        var builder = new BuilderBehavior(movement, buildings, flags, history, draws, woodcutter.StepOut);
+        woodcutter.RegisterStart(Job.Builder, builder.Start);
+        builder.Register(behaviours);
         roster.Register(behaviours);
         walks.Register(behaviours);
         removal.Register(behaviours);
@@ -126,7 +129,7 @@ public static class GameFactory
             woodcutter,
             removal,
             roster,
-            new SitePass(map, flags, tables),
+            new SitePass(map, flags, tables, roster.AskForWorker),
             handsOutGoods
                 ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
                 : null

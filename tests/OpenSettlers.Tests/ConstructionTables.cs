@@ -92,8 +92,9 @@ internal static class ConstructionTables
         return steps;
     }
 
-    public static RuleTables Tables(byte plankRankBase = 0xff) =>
+    public static RuleTables Tables(byte plankRankBase = 0xff, ushort stepTime = 100) =>
         LayoutSettlersTests.MadeTables(
+            stepTime: stepTime,
             workers: Workers(),
             builderRequest: new WorkerRequest(Job.Builder, BuilderTool),
             materialOrder: MaterialOrder(),

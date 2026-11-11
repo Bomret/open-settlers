@@ -24,6 +24,8 @@ public sealed class NameTableTests
         Assert.AreEqual("castle-settler", NameTable.JobName(4));
         Assert.AreEqual("jobless", NameTable.JobName(21));
         Assert.AreEqual("walks-along-road", NameTable.StateName(3));
+        Assert.AreEqual("builds", NameTable.StateName(9));
+        Assert.AreEqual("leaves-site", NameTable.StateName(0x4a));
     }
 
     [TestMethod]

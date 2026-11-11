@@ -63,7 +63,8 @@ public sealed class LayoutSettlersTests
         WorkerRequest?[]? workers = null,
         WorkerRequest? builderRequest = null,
         ushort[]? materialOrder = null,
-        ushort[]? blowSteps = null
+        ushort[]? blowSteps = null,
+        ushort stepTime = 100
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -85,7 +86,7 @@ public sealed class LayoutSettlersTests
                 .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat(stepTime, RuleTables.StepTimeCount).ToArray(),
             Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
             Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
             walkRows: rows,

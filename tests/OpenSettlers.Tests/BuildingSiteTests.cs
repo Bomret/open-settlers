@@ -95,10 +95,11 @@ public sealed class BuildingSiteTests
         Assert.IsFalse(placed.WorkerInside || placed.WorkerOnTheWay);
     }
 
-    // The pass of the building table gives a finished building to the handler of its type (0x42cd1d), which asks for a worker;
-    // a building under construction goes to the construction's own handler (0x42d55f), so a site asks for no worker.
+    // The pass of the building table gives a finished building to the handler of its type (0x42cd1d), which asks for its worker; a
+    // building under construction goes to the construction's own handler (0x42d55f), which asks for a builder. Both ask the castle
+    // through a road to their flag: with none, the request finds no worker and sets the request-failed bit.
     [TestMethod]
-    public void AWoodcutterSiteAsksForNoWorkerWhereAFinishedHutDoes()
+    public void AWoodcutterSiteAsksForItsBuilderAsAFinishedHutAsksForItsWorker()
     {
         var game = World();
         var (x, y, _) = Find(game, 4);
@@ -112,7 +113,7 @@ public sealed class BuildingSiteTests
         }
 
         Assert.IsTrue(game.Buildings[2].RequestFailed, "a finished hut with no road to it asked and found no worker");
-        Assert.IsFalse(game.Buildings[1].RequestFailed, "a building site asked for none");
+        Assert.IsTrue(game.Buildings[1].RequestFailed, "a building site with no road to it asked and found no builder");
         Assert.IsFalse(game.Buildings[1].WorkerOnTheWay);
     }
 
