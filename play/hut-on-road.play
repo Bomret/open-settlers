@@ -1,5 +1,5 @@
-# A woodcutter whose flag lands on a road is placed, and its flag splits the road into two roads that meet at it; a carrier
-# works each half and the woodcutter walks out to its hut.
+# A woodcutter's building site whose flag lands on a road is placed, and its flag splits the road into two roads that meet
+# at it; a carrier works each half.
 # Run it on the game view with seed 1234567812345678 and size 1:
 #   sh tools/play-run.sh hut-on-road --game-view --seed 1234567812345678 --size 1 --fps 10
 # On that map the castle stands at 21,4, so its flag is at 22,5. A flag goes on 28,7 (the territory ends near column 28) and a
@@ -43,12 +43,8 @@ expect-event flag split-roads cause placed
 shot split 26 5 5 4
 list split
 
-# The woodcutter walks out along the roads to its hut and fells a tree; by then each half of the road holds a carrier.
-fast-forward woodcutter state 2 max 20000
-wait 0.3
-shot walks-out 26 5 5 4
-
-fast-forward woodcutter state 0x11 max 40000
+# Each half of the road holds a carrier (the site has no woodcutter to walk out: the construction, M4, sends the builder).
+fast-forward until count carrier = 2 max 20000
 wait 0.3
 expect-count carrier = 2
 shot two-carriers 26 5 5 4
