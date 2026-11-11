@@ -35,7 +35,8 @@ public sealed class ConstructionRemovalTests
     [TestMethod]
     [DataRow("fill-on-the-way")]
     [DataRow("fill-on-site")]
-    public void RemovingASiteThatHoldsGoodsClearsItsCountsAsTheOriginalDoes(string name) => Replay(name, construct: true);
+    public void RemovingASiteThatHoldsGoodsClearsItsCountsAsTheOriginalDoes(string name) =>
+        Replay(name, construct: true);
 
     private static void Replay(string name, bool construct) =>
         RemovalTests.Replay(
