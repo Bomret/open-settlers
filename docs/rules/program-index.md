@@ -81,7 +81,7 @@ the quit request returns.
 | `0x41edf0` | `StartScreen_DrawList` | Draws the list at `0x674824` (entry, x, y words, ended by a negative entry) to the surface record `0x6744b6` through `Gfx_DrawSprite`. | confirmed | game | Called by `Game_InitSettings`; entries 42 to 57. |
 | `0x445643` | `Player_SetGoodsOrder` | Writes a default order of the 26 goods into player `+0x60` to `+0x79`. | confirmed | game | Called by `0x42055e`. |
 | `0x445716` | `Player_SetDefaults1` | Writes default words into player `+0x140` to `+0x146`; their role is open. | confirmed | game | Called by `0x42055e`. |
-| `0x445752` | `Player_SetDefaults2` | Writes default words into player `+0x148` to `+0x150`; their role is open. | confirmed | game | Called by `0x42055e`. |
+| `0x445752` | `Player_SetDefaults2` | Writes default words into player `+0x148` to `+0x150`; the high byte of the word at `+0x148` (`0xffdc`) is the rank a building site's request for planks starts from ([Materials](construction-materials.md#the-building-passs-turn-of-a-site)); the others' roles are open. | confirmed | game | Called by `0x42055e`; `ProgramTablesImporter` reads the word (`RuleTables.PlankRankBase`). |
 | `0x44579c` | `Player_SetDefaults3` | Writes default words into player `+0x152` to `+0x15a`; their role is open. | confirmed | game | Called by `0x42055e`. |
 | `0x466cc7` | `StartScreen_BuildPage` | Builds the start and load screen pages. | inferred | game | Only caller is `0x4679e2`; calls `0x406730`, `0x467b9f`. |
 | `0x46736c` | — | Lays out part of the lists and text of the start screen. | unknown | game | Only caller is `StartScreen_ShowSeed`; calls `0x451111`. |
@@ -411,7 +411,8 @@ entries per phase (see "Item tables").
 | `0x42d987` | `Building_HandleType4` | The handler of the building type 4 (inferred: the stonecutter's hut): asks for a settler of job 7 with the tool of good `0x2e`, as `Building_HandleType2` does. | confirmed | game | Entry 4 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
 | `0x42d9c9` | `Building_HandleType9` | The handler of the building type 9 (inferred: the forester's hut): asks for a settler of job 8 with no tool. | confirmed | game | Entry 9 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
 | `0x42da0b` | `Building_HandleType17` | The handler of the building type 0x11 (inferred: the sawmill): asks for a settler of job 6 with the tool of good `0x2c`. | confirmed | game | Entry 0x11 of `0x42cd1d`. [Build sites](build-sites.md#the-four-types). |
-| `0x42d55f` | `Building_HandleConstruction` | The handler a building under construction goes to: the entries `0x21` to `0x29` and a few more of `0x42cd1d` jump here instead of to the type's handler. Not read yet (the construction slices read it). | unknown | game | Entries `0x21` and on of `0x42cd1d`. |
+| `0x42d55f` | `Building_HandleConstruction` | The handler a building under construction goes to: the entries `0x21` to `0x29` and a few more of `0x42cd1d` jump here instead of to the type's handler. It asks for the builder (job 3, tool `0x22`, **not ported**) and keeps the rank of the site's flag's requests for planks and stones from what the site holds on site and on the way ([Materials](construction-materials.md#the-building-passs-turn-of-a-site)). | confirmed | game | Entries `0x21` and on of `0x42cd1d`; the emulator's `construct:` games show the ranks. |
+| `0x42d328` | `Building_HandleLargeConstruction` | The handler the other entries under construction go to, the sawmill's among them: while the progress word is 0 it asks for the digger (job 2, tool `0x20`, **not ported**) and tests whether the node and its six neighbours lie at the site's height; where they do it sets the progress word to 1 and goes on at `0x42d55f`. | confirmed | game | Entries `0x2a`, `0x2c` to `0x2e`, and `0x30` to `0x37` of `0x42cd1d`. [Materials](construction-materials.md#the-building-passs-turn-of-a-site). |
 | `0x42cd1d` | `Building_TypeJumpTable` | Data: the jump table `Table18_Pass` takes a building's handler from: 8 bytes for each value of the type byte's bits 2 to 7 (the type, plus `0x20` while the building is under construction), each a `jmp`. | confirmed | game | Read by `Table18_Pass` (`0x42cb2d`). |
 | `0x42d307` | `Building_SizeTable` | Data: one byte for each building type 0 to 0x17, the room the type needs: 0 a mine, 1 small, 2 large (`0xff` for the types 0 and `0x18`). | confirmed | game | Read by `Building_Free` (`0x42cf9d`); `ProgramTablesImporter` reads it (`RuleTables.SizeOf`). [Build sites](build-sites.md#the-four-types). |
 | `0x449f18` | `Building_NeedsTable` | Data: two bytes for each building type 0 to 0x17, the planks and the stones the type needs. | confirmed | game | Read by `Building_Place` (`0x449a63`); `ProgramTablesImporter` reads it (`RuleTables.NeedsOf`). [Build sites](build-sites.md#the-four-types). |
@@ -423,7 +424,7 @@ entries per phase (see "Item tables").
 | `0x428d10` | `Map_ObjectPass` | Every 20 clock units takes the next nodes of a cursor that moves 23 columns on (a row down where it wraps), as many as the map's size gives (`+0x21c`): a lake node with detail may move its detail (one draw); an object code from `0x53` goes through the table at `0x428eb8`, 8 bytes an entry: `0x53` vanishes when a draw's low two bits are 0, `0x5d` to `0x66` become `0x53`, the codes from `0x67` grow or decay. | confirmed | game | Called by `0x4286d8`; draws through `Rng_Step`. [Woodcutting](woodcutting.md#the-object-pass). |
 | `0x428a75` | — | Counts down three timers of a player block; the timer at `+0x120` repeats its work once per period that has elapsed. | unknown | game | Called by `0x4286d8`. |
 | `0x42a74a` | — | Copies `Clock_ElapsedTotal` and resets it, then calls `0x42a7ac` for each player block. | unknown | game | Called by `0x42965c` while the clock runs. |
-| `0x42965c` | — | Phase 32: calls `0x42b18d`, also while the clock is stopped; only while the clock runs, `0x42a3f1`, `0x42a74a`, `0x42abac`, and further routines ([Timing](timing.md#rules-that-count-passes)). | confirmed | game | Entry 0 of the phase table at `0x4292ee`. |
+| `0x42965c` | `Storage_HandOutGoods` | Phase 32: calls `0x42b18d`, also while the clock is stopped; only while the clock runs it calls `0x42a3f1`, `0x42a74a`, and `0x42abac` (player statistics), draws once from the generator, and runs one of the three orders of hand-out steps (`0x42a313`, `0x42a35d`, `0x42a3a7`, picked by the draw): for each step each storage whose stock holds the step's good hands one to the flag whose request ranks highest ([Materials for a building site](construction-materials.md#the-castles-hand-out), [Timing](timing.md#rules-that-count-passes)). | confirmed | game | Entry 0 of the phase table at `0x4292ee`; the stock words of the storage fall in the emulator's `construct:` games. |
 | `0x4293f6` | — | Phases 33 to 48, with `0x42944d`, `0x4294a4`, and `0x4294fb` for the player blocks at `+0x64` to `+0x70`: for a block with bits 7 and 6 of byte 2 set (inferred: an active computer player), draws through `Rng_Step` and may call `0x46986d`; otherwise advances `Sim_Phase` within the same pass ([Timing](timing.md#rules-that-count-passes)). | confirmed | game | Entries 1 to 16 of the phase table at `0x4292ee`; writes `Sim_Phase` at `0x429445`, `0x42949c`, `0x4294f3`, `0x42954a`, `0x429578`. |
 | `0x429580` | `Ai_PhaseUpdate` | Phase-table entry: runs `Ai_UpdatePlayer` when the player block at `+0x64` has bits 7 and 6 of byte 2 set. | confirmed | game | Entry of the phase table at `0x42923c`. |
 | `0x42a3f1` | — | Counts the player blocks with bit 6 of byte 2 set, sums their `+0x112`, compares the count with `+0x48`, then scales the sum and calls `0x42a567`. | unknown | game | Called by `0x42965c`. |
@@ -475,9 +476,9 @@ entries per phase (see "Item tables").
 
 | Address | Name | Role | Status | Layer |
 | --- | --- | --- | --- | --- |
-| `0x42a313` | — | Data: byte table of steps read by `0x42965c` (first of three, with `0x42a35d` and `0x42a3a7`). | inferred | game |
-| `0x42a35d` | — | Data: second byte table of steps read by `0x42965c`. | inferred | game |
-| `0x42a3a7` | — | Data: third byte table of steps read by `0x42965c`. | inferred | game |
+| `0x42a313` | `Storage_HandOutOrder1` | Data: the first of three orders of hand-out steps read by `Storage_HandOutGoods` (`0x42965c`): steps of three words (a request word's offset, a class, a stock word's offset or -1), ended by a negative word; the order for any draw but 0 and 1. | confirmed | game | `ProgramTablesImporter` reads it (`RuleTables.Distribution`). [Materials](construction-materials.md#the-castles-hand-out). |
+| `0x42a35d` | `Storage_HandOutOrder2` | Data: the order the draw 0 picks. | confirmed | game | As `0x42a313`. |
+| `0x42a3a7` | `Storage_HandOutOrder3` | Data: the order the draw 1 picks. | confirmed | game | As `0x42a313`. |
 | `0x437dfb` | `Settler_ArrivalByJob` | Data: the 8-byte jumps by job to each job's end of the free walk. | confirmed | game |
 | `0x43c92b` | `Building_DoorSpeeds` | Data: one byte for each building type, the door speed (xor `0x1f` scales a step time). | confirmed | game |
 | `0x43f248` | `Settler_StepTimes` | Data: 16-bit words, the time of a step for each step shape. | confirmed | game |
@@ -1092,10 +1093,10 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4291c2` | `Sim_StepPhase` | confirmed | Simulation |
 | `0x4293f6` | — | confirmed | Simulation |
 | `0x429580` | `Ai_PhaseUpdate` | confirmed | Simulation |
-| `0x42965c` | — | confirmed | Simulation |
-| `0x42a313` | — | inferred | Simulation |
-| `0x42a35d` | — | inferred | Simulation |
-| `0x42a3a7` | — | inferred | Simulation |
+| `0x42965c` | `Storage_HandOutGoods` | confirmed | Simulation |
+| `0x42a313` | `Storage_HandOutOrder1` | confirmed | Simulation |
+| `0x42a35d` | `Storage_HandOutOrder2` | confirmed | Simulation |
+| `0x42a3a7` | `Storage_HandOutOrder3` | confirmed | Simulation |
 | `0x42a3f1` | — | unknown | Simulation |
 | `0x42a567` | — | unknown | Simulation |
 | `0x42a74a` | — | unknown | Simulation |
@@ -1109,7 +1110,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42cd1d` | `Building_TypeJumpTable` | confirmed | Simulation |
 | `0x42cf9d` | `Building_Free` | inferred | Castle and build sites |
 | `0x42d307` | `Building_SizeTable` | confirmed | Simulation |
-| `0x42d55f` | `Building_HandleConstruction` | unknown | Simulation |
+| `0x42d328` | `Building_HandleLargeConstruction` | confirmed | Simulation |
+| `0x42d55f` | `Building_HandleConstruction` | confirmed | Simulation |
 | `0x42d945` | `Building_HandleType2` | confirmed | Simulation |
 | `0x42d987` | `Building_HandleType4` | confirmed | Simulation |
 | `0x42d9c9` | `Building_HandleType9` | confirmed | Simulation |
@@ -1397,7 +1399,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 320 routines of the 513 functions in the dump's game code band and lists 68 more without a name: 262 confirmed, 74 inferred, 52 unknown.
+Coverage: the index names 325 routines of the 513 functions in the dump's game code band and lists 64 more without a name: 267 confirmed, 71 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:

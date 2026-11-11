@@ -27,8 +27,17 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 - `0x42cf9d`: `Building_Free`, the end of a burning building: clears the tile's object, frees the slot, and
   judges the node again; where the node state is 5, 6, or 7 and the site fits the type from the size table
   `0x42d307`, it places a building through `0x449a63`. known ([program index](../rules/program-index.md))
-- `0x42d55f`: the handler a building under construction goes to, instead of its type's handler. guess
-  (the construction slices read it)
+- `0x42d55f`: the handler a building under construction goes to, instead of its type's handler: it keeps the
+  rank of the site's requests for planks and stones, and asks for the builder (not ported until the builder's slice). known
+  ([Materials](../rules/construction-materials.md#the-building-passs-turn-of-a-site))
+- `0x42d328`: the handler of the large types under construction: it waits until the ground around the site is levelled (and
+  asks for the digger), then goes on at `0x42d55f`. known ([Materials](../rules/construction-materials.md#the-building-passs-turn-of-a-site))
+- `0x42965c`, `0x42a313`, `0x42a35d`, `0x42a3a7`: the phase routine and its three orders of steps, by which the castle hands its
+  goods out to the flags whose requests rank highest; the castle's first settler carries each good out and lays it on the castle's
+  flag. known for the routine and its order, the carrying out is read from the emulator's runs only
+  ([Materials](../rules/construction-materials.md#the-castles-hand-out))
+- `0x464117`, `0x4644ab` to `0x464a3f`: the classes of the goods and the request search of a flag's turn. known
+  ([Materials](../rules/construction-materials.md#the-request-search))
 
 ## Wood and stone
 
