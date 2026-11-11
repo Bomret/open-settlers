@@ -95,7 +95,8 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.WoodcutterWalkAddress, 0x0b00);
         Add(ProgramTablesImporter.WoodcutterCarryingAddress, 0x1000);
         Add(ProgramTablesImporter.WoodcutterCuttingAddress, 0x0e80);
-        var stonecutterStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.StonecutterCode;
+        var stonecutterStub =
+            ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.StonecutterCode;
         Write(
             stonecutterStub,
             [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.StonecutterHandlerAddress - (stonecutterStub + 5))]

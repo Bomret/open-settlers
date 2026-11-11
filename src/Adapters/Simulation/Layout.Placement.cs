@@ -221,14 +221,16 @@ public sealed partial class Layout
                 return false;
             }
 
-            // The mission start creates a building's settlers inside it: the woodcutter's hut stands with its worker.
+            // The mission start creates a building's settlers inside it: the woodcutter's hut and the stonecutter's stand with their
+            // workers.
             steps.Add(
                 new Step(
                     name,
                     command,
                     game =>
                         !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
-                        : type == BuildingType.Woodcutter ? game.Walks.StandWorkerInHut(x, y)
+                        : type == BuildingType.Woodcutter || type == BuildingType.Stonecutter
+                            ? game.Walks.StandWorkerInHut(x, y)
                         : null
                 )
             );

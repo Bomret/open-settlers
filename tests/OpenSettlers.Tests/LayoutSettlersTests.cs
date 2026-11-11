@@ -233,7 +233,7 @@ public sealed class LayoutSettlersTests
             )
         );
 
-        Assert.AreEqual("test.jsonc: buildings[1]: the castle holds no woodcutter", problem);
+        Assert.AreEqual("test.jsonc: buildings[1]: the castle holds no worker for the building", problem);
     }
 
     [TestMethod]
@@ -250,7 +250,6 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
-    [DataRow("stonecutter")]
     [DataRow("forester")]
     [DataRow("sawmill")]
     public void AFinishedEntryOfAnotherTypeStandsWithNoWorker(string type)
@@ -276,7 +275,10 @@ public sealed class LayoutSettlersTests
         game.Tick();
         Assert.IsTrue(game.Buildings[1].Constructing);
 
-        Assert.AreEqual("no woodcutter's hut stands on the node", game.Walks.StandWorkerInHut(13, 10));
+        Assert.AreEqual(
+            "no finished woodcutter's or stonecutter's building stands on the node",
+            game.Walks.StandWorkerInHut(13, 10)
+        );
     }
 
     [TestMethod]
