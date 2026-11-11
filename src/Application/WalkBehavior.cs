@@ -208,14 +208,15 @@ public sealed class WalkBehavior(
     }
 
     /// <summary>
-    /// The worker a finished woodcutter's or stonecutter's building stands with (docs/rules/layouts.md, ADR 0009, INV-0005), as the
-    /// mission start (<c>0x41f2d2</c>) creates a building's settlers inside it: the castle's woodcutter (or stonecutter) has
+    /// The worker a finished woodcutter's, stonecutter's, or forester's building stands with (docs/rules/layouts.md, ADR 0009, INV-0005), as the
+    /// mission start (<c>0x41f2d2</c>) creates a building's settlers inside it: the castle's woodcutter (or stonecutter, or a
+    /// settler without a job that becomes the forester, the castle holding none) has
     /// walked from the castle to the hut and stepped through its door (state 4, <c>0x4398ea</c> with the building's status bit
     /// 6 set and bit 7 cleared, then the door's step: timer, frame, target, and stamp). The request that sent him
     /// (<c>0x42be63</c>) is made as the original makes it: the castle's list of waiting woodcutters loses him, the hut is
     /// marked as served so it asks for no second worker. The castle's counter of settlers sent out rises with the request and
     /// falls again where he leaves the castle (<c>0x43dd4a</c>), so it is the same as before. Refused for a node that is no
-    /// finished woodcutter's hut or stonecutter's building, a hut that has its worker or has one on the way, a hut whose door node
+    /// finished woodcutter's, stonecutter's, or forester's building, a hut that has its worker or has one on the way, a hut whose door node
     /// is taken, and a castle that holds no worker of the job. Returns why it refused, or null.
     /// </summary>
     public string? StandWorkerInHut(int x, int y)
@@ -225,10 +226,11 @@ public sealed class WalkBehavior(
         var job =
             hut?.Type == BuildingType.Woodcutter ? Job.Woodcutter
             : hut?.Type == BuildingType.Stonecutter ? Job.Stonecutter
+            : hut?.Type == BuildingType.Forester ? Job.Forester
             : (Job?)null;
         if (hut is not { IsDemolishing: false, Site: null } || job is not { } asked)
         {
-            return "no finished woodcutter's or stonecutter's building stands on the node";
+            return "no finished woodcutter's, stonecutter's, or forester's building stands on the node";
         }
 
         if (hut.WorkerInside || hut.WorkerOnTheWay)
@@ -237,6 +239,16 @@ public sealed class WalkBehavior(
         }
 
         var slot = roster.CastleSettler(asked);
+        var made = slot < 0 && asked == Job.Forester;
+        if (made)
+        {
+            // The castle holds no forester: the request's second way (0x42be63) makes one of a settler without a job, and the
+            // forester's job needs no tool (docs/rules/forestry.md). simplicity: the request's tool (RuleTables.WorkerOf) is not
+            // read, because a made-up table gives the woodcutter no tool and the forester no request, so the request cannot
+            // tell the two apart there; a later job that needs no tool and is made in a layout needs this test widened.
+            slot = roster.CastleSettler(Job.Jobless);
+        }
+
         if (slot < 0)
         {
             return "the castle holds no worker for the building";
@@ -249,7 +261,12 @@ public sealed class WalkBehavior(
         }
 
         var settler = settlers[slot];
-        roster.Take(asked, slot);
+        roster.Take(made ? Job.Jobless : asked, slot);
+        if (made)
+        {
+            settler.Job = asked;
+        }
+
         hut.WorkerOnTheWay = true;
         movement.Become(settler, new Leaving(new ToBuilding(hut.Flag)));
         settler.X = flag.X;

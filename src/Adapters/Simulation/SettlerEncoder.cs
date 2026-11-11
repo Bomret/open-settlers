@@ -116,6 +116,15 @@ public static class SettlerEncoder
                 a.Quarter & 0xff,
                 a.Quarter >> 8
             ),
+            // The forester's wait: the way back in bytes 11 and 12 (and again, as the arrival left it, in byte 13 and the next word's
+            // low byte), byte 14 not 0 once the sapling is down, and the walk's memory in byte 15.
+            Plants a => new(
+                a.Code,
+                a.Back.East & 0xff,
+                ((a.Back.East & 0xff) << 8) | (a.Back.South & 0xff),
+                a.Planted ? 0xff : 0,
+                a.Memory
+            ),
             SearchesHome a => new(a.Code, a.FarEndFirst ? a.FarEndMark : 0, r.Target, r.Heading, r.Next),
             WaitsAtFlag a => new(a.Code, a.Direction.Value, a.Flag, r.Heading, r.Next),
             ClaimsNode a => new(a.Code, r.Mode, r.Target, a.Heading.Value, r.Next),
@@ -141,6 +150,7 @@ public static class SettlerEncoder
         {
             ToTree tree => (tree.Back.East & 0xff, tree.Back.South),
             ToHeap heap => (heap.Back.East & 0xff, heap.Back.South),
+            ToSpot spot => (spot.Back.East & 0xff, spot.Back.South),
             BackToHut back => (WayBackMark, back.Carrying ? 1 : 0),
             _ => (WayBackMark, -1),
         };

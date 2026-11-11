@@ -14,6 +14,10 @@ public sealed record ToTree(Vector Back) : Purpose;
 /// <param name="Back">The steps of the way back, east and south.</param>
 public sealed record ToHeap(Vector Back) : Purpose;
 
+/// <summary>The walk of a forester out to the node he found to plant on; the vector is the way back to the hut's flag.</summary>
+/// <param name="Back">The steps of the way back, east and south.</param>
+public sealed record ToSpot(Vector Back) : Purpose;
+
 /// <summary>The way back to the hut's flag after the cut, or at once where the tree was gone.</summary>
 /// <param name="Carrying">Whether the woodcutter carries the log, which it lays on the flag.</param>
 public sealed record BackToHut(bool Carrying) : Purpose;

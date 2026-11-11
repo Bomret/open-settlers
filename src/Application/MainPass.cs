@@ -112,6 +112,7 @@ public sealed class MainPass(
                     or WalksFree
                     or Cuts
                     or CutsStone
+                    or Plants
                     or SearchesHome
             )
             {

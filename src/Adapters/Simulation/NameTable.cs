@@ -151,6 +151,19 @@ public sealed class NameTable
             "Job.CastleSettler; the castle's first settler stands by while the castle is built (state 10, 0x43f17a) and no building asks for job 4; Game.Removal reads job 4 as a settler that goes home as a carrier; docs/rules/settlers.md"
         );
         AddOne(CodeKind.Job, Job.Woodcutter.Code, "woodcutter", "Job.Woodcutter; docs/rules/woodcutting.md");
+        Add(
+            CodeKind.Object,
+            MapObject.SaplingCode,
+            MapObject.SecondSaplingCode + 1,
+            "sapling",
+            "the planting 0x4389bf puts 0x67 or 0x68 on the node, and the object pass grows each into a tree of the codes 0x10 to 0x17 or 8 to 0xf (0x4290d5, 0x42910f); docs/rules/forestry.md"
+        );
+        AddOne(
+            CodeKind.Job,
+            Job.Forester.Code,
+            "forester",
+            "Job.Forester; the type 9 handler 0x42d9c9 asks for job 8 with no tool, and his work plants the saplings 0x67 and 0x68 (0x4389bf); docs/rules/forestry.md"
+        );
         AddOne(
             CodeKind.Job,
             Job.Stonecutter.Code,
@@ -198,6 +211,18 @@ public sealed class NameTable
         AddOne(CodeKind.State, 0x12, "looks-for-tree", State);
         AddOne(
             CodeKind.State,
+            0x13,
+            "looks-for-spot",
+            "0x438c9f draws nodes of the spiral until a free node of lowland terrain comes up; docs/rules/forestry.md"
+        );
+        AddOne(
+            CodeKind.State,
+            0x14,
+            "plants",
+            "0x4389bf waits on the node and puts the sapling down; docs/rules/forestry.md"
+        );
+        AddOne(
+            CodeKind.State,
             0x15,
             "looks-for-heap",
             "0x435b17 draws nodes of the spiral until a stone heap stands beside one; docs/rules/stonecutting.md"
@@ -237,7 +262,7 @@ public sealed class NameTable
             CodeKind.Building,
             BuildingType.Forester.Code,
             "forester-hut",
-            "BuildingType.Forester; handler 0x42d9c9 asks for job 8 (no tool); size and needs 0x42d307, 0x449f18; inferred, docs/rules/build-sites.md"
+            "BuildingType.Forester; handler 0x42d9c9 asks for job 8 (no tool), whose work plants the saplings 0x67 and 0x68 (0x4389bf); size and needs 0x42d307, 0x449f18; docs/rules/build-sites.md, docs/rules/forestry.md"
         );
         AddOne(
             CodeKind.Building,

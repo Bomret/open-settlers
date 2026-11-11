@@ -129,6 +129,7 @@ public sealed class RuleTables
         ushort[]? blowSteps = null,
         BuilderFigureAdds? builderFigureAdds = null,
         FigureAdds? stonecutterFigureAdds = null,
+        ForesterFigureAdds? foresterFigureAdds = null,
         WorkerRequest? diggerRequest = null,
         FigureAdds? diggerFigureAdds = null,
         SawmillerFigureAdds? sawmillerFigureAdds = null
@@ -157,6 +158,7 @@ public sealed class RuleTables
         _transportPriorities = transportPriorities ?? new byte[Goods];
         WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
         StonecutterFigureAdds = stonecutterFigureAdds ?? default;
+        ForesterFigureAdds = foresterFigureAdds ?? default;
         FrameRows = frameRows ?? new sbyte[FrameRowCount];
         TypeOneHutFigureAdds = typeOneHutFigureAdds ?? default;
         IdlePhases = idlePhases ?? new short[IdlePhaseCount];
@@ -276,6 +278,9 @@ public sealed class RuleTables
 
     /// <summary>What the stonecutter's handler (<c>0x43fcd8</c>) adds to the figure byte; all 0 draws him in the carrier's row.</summary>
     public FigureAdds StonecutterFigureAdds { get; }
+
+    /// <summary>What the forester's handler (<c>0x43fd88</c>) adds to the figure byte; all 0 draws him in the carrier's row.</summary>
+    public ForesterFigureAdds ForesterFigureAdds { get; }
 
     /// <summary>What the handler of the settler of the type 1 hut adds to the figure byte to make the figure word.</summary>
     public HutFigureAdds TypeOneHutFigureAdds { get; }
@@ -451,3 +456,9 @@ public readonly record struct HutFigureAdds(ushort Walk, ushort Carrying, ushort
 /// <paramref name="Work"/> for one from 0x80 (the blows).
 /// </summary>
 public readonly record struct BuilderFigureAdds(ushort Walk, ushort Work);
+
+/// <summary>
+/// What the forester's figure handler (<c>0x43fd88</c>) adds to the figure byte: <paramref name="Walk"/> for a byte below 0x80
+/// (the walk, and the waiting and planting frames), <paramref name="Work"/> for one from 0x80.
+/// </summary>
+public readonly record struct ForesterFigureAdds(ushort Walk, ushort Work);

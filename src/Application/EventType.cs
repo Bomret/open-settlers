@@ -41,6 +41,12 @@ public static class EventType
     /// <summary>The stonecutter's cut; the other thing is the heap, named by its node.</summary>
     public const string CutStone = "cut-stone";
 
+    /// <summary>The forester's search for a node to plant on.</summary>
+    public const string SearchSpot = "search-spot";
+
+    /// <summary>The forester's planting; the other thing is the sapling, named by its node.</summary>
+    public const string PlantSapling = "plant-sapling";
+
     /// <summary>The woodcutter's step from the hut onto its flag.</summary>
     public const string StepOut = "step-out";
 
@@ -269,5 +275,7 @@ public static class EventType
         Deliver,
         Handover,
         Handout,
+        SearchSpot,
+        PlantSapling,
     ];
 }
