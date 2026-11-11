@@ -58,11 +58,11 @@ public sealed record Cause(string Kind, ThingId? Thing = null)
         "carriers",
         "woodcutting",
         "stonecutting",
-        "forestry",
         "walk-home",
         "goods",
         "removal",
         LayoutKind,
+        "forestry",
     ];
 
     /// <summary>The cause of a place command for <paramref name="thing"/>.</summary>

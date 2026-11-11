@@ -248,8 +248,6 @@ public static class EventType
         SearchTree,
         SearchStone,
         CutStone,
-        SearchSpot,
-        PlantSapling,
         StepOut,
         FreeWalk,
         Arrive,
@@ -268,5 +266,7 @@ public static class EventType
         Deliver,
         Handover,
         Handout,
+        SearchSpot,
+        PlantSapling,
     ];
 }
