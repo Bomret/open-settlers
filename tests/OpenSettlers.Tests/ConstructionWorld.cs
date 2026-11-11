@@ -55,5 +55,6 @@ internal static class ConstructionWorld
     }
 
     // The settlers of a job, in the order of their slots.
-    public static Settler[] OfJob(Game game, Job job) => [.. game.Settlers.Skip(1).Where(settler => settler.Job == job)];
+    public static Settler[] OfJob(Game game, Job job) =>
+        [.. game.Settlers.Skip(1).Where(settler => settler.Job == job)];
 }

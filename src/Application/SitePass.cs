@@ -15,7 +15,12 @@ namespace OpenSettlers.Simulation;
 /// <param name="flags">The flag table: the site's flag holds its requests.</param>
 /// <param name="tables">The rule tables: the size of a type, the rank the planks start from, and the builder's request.</param>
 /// <param name="askForWorker">The request of a worker for a building (the castle's), or null where the site asks for none.</param>
-public sealed class SitePass(Map map, FlagTable flags, RuleTables tables, Action<Building, WorkerRequest>? askForWorker = null)
+public sealed class SitePass(
+    Map map,
+    FlagTable flags,
+    RuleTables tables,
+    Action<Building, WorkerRequest>? askForWorker = null
+)
 {
     // The rank the stones start from: a constant of the routine (0x42d8ff), unlike the planks', which the player word gives.
     private const byte StoneRankStart = 0xff;

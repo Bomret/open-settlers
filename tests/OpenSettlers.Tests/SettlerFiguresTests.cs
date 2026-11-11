@@ -462,10 +462,7 @@ public sealed class SettlerFiguresTests
             new(Job.Builder, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
 
         var walk = figures.Draws(map, [Builder(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
-        var work = figures
-            .Draws(map, [Builder(8, new Builds(1, true, 0, false, 8))], 0)
-            .Select(d => d.Entry)
-            .ToArray();
+        var work = figures.Draws(map, [Builder(8, new Builds(1, true, 0, false, 8))], 0).Select(d => d.Entry).ToArray();
 
         // Figure byte 3 in the row 0x15 (base 1000, the walk's constant 0x1500), figure byte 0x81 at work: the word 0x1580 + 0x81 = 0x1601,
         // the row 0x16 (base 1100) and the offset 1; no second figure.

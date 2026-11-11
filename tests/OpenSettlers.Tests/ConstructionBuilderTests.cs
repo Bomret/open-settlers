@@ -44,9 +44,19 @@ public sealed class ConstructionBuilderTests
                 game.ApplyCommands();
                 foreach (var click in parts[10].Split(';'))
                 {
-                    var node = click[2..].Split(',').Select(number => int.Parse(number, CultureInfo.InvariantCulture)).ToArray();
+                    var node = click[2..]
+                        .Split(',')
+                        .Select(number => int.Parse(number, CultureInfo.InvariantCulture))
+                        .ToArray();
                     game.Enqueue(
-                        new Command(game.TickCount, 0, CommandKind.PlaceBuilding, node[0], node[1], Building: new BuildingType(node[2]))
+                        new Command(
+                            game.TickCount,
+                            0,
+                            CommandKind.PlaceBuilding,
+                            node[0],
+                            node[1],
+                            Building: new BuildingType(node[2])
+                        )
                     );
                     game.ApplyCommands();
                 }

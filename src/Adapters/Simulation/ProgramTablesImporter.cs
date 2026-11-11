@@ -243,14 +243,8 @@ public static class ProgramTablesImporter
             PlankRankBase(exe),
             Workers(exe),
             WorkerRequest(exe, BuilderRequestAddress),
-            [
-                .. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word =>
-                    (ushort)word
-                ),
-            ],
-            [
-                .. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word),
-            ],
+            [.. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
+            [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             BuilderAdds(exe)
         );
     }

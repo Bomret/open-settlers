@@ -367,7 +367,9 @@ public sealed class RuleTables
     /// plank (the order words at <c>0x43f0ba</c>, one for each type: a set bit means a stone, <c>docs/rules/construction.md</c>).
     /// </summary>
     public bool StoneAt(BuildingType type, int index) =>
-        type.Code is >= 0 and < BuildingTypeCount && index is >= 0 and < 16 && (_materialOrder[type.Code] >> index & 1) != 0;
+        type.Code is >= 0 and < BuildingTypeCount
+        && index is >= 0 and < 16
+        && (_materialOrder[type.Code] >> index & 1) != 0;
 
     /// <summary>
     /// What a blow of the builder adds to the building's progress word (<c>0x43f0fa</c>, two words for each type): the first before the word

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Assets;
 using OpenSettlers.MapView;
@@ -359,6 +360,65 @@ public sealed class HistoryEditionSourceTests
         Assert.AreEqual(23, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Sawmill))!.Image!.OffsetX);
         Assert.AreEqual(24, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Sawmill, 0))!.Image!.OffsetX);
         Assert.AreEqual(25, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter, 1))!.Image!.OffsetX);
+    }
+
+    // A site's stages (docs/rules/construction.md): the base (object 145) with the scaffold of the type (object 186 for the small types)
+    // grown over it below the progress word 0x8000, then the whole scaffold with the finished building (the forester's object 170) grown.
+    [TestMethod]
+    public void ASiteDrawsItsScaffoldGrownOverItsBaseAndThenTheFinishedBuildingGrownOverTheScaffold()
+    {
+        using var fake = ObjectFake(payloads =>
+        {
+            payloads[1250 + 145] = ObjectGraphicsTests.Square(25, 3);
+            payloads[1250 + 186] = ObjectGraphicsTests.Square(26, 3);
+            payloads[1250 + 170] = ObjectGraphicsTests.Square(22, 3);
+        });
+        var source = Open(fake);
+
+        var first = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x4000))!.Image!;
+        var second = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x8001))!.Image!;
+
+        // The union of the images that draw starts at the left edge of the leftmost: 25 where the base and the scaffold draw, 22 where
+        // the finished building grows over the scaffold.
+        Assert.AreEqual(25, first.OffsetX);
+        Assert.AreEqual(22, second.OffsetX);
+        Assert.AreSame(second, source.Draw(new BuildingDraw(0, 5, 5, BuildingType.Forester, 0x8001))!.Image);
+    }
+
+    // The install's own archive holds the scaffold and the finished building of each type, so a site draws its stages as it grows: the
+    // drawing of a larger progress word covers at least the rows of a smaller one's, and the last one covers the finished building.
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheInstallsArchiveGivesEachTypeItsGrowingSite()
+    {
+        var source = HistoryEditionSource.Load(TestProgram.OpenInstall(), TestProgram.Tables());
+
+        foreach (
+            var type in new[]
+            {
+                BuildingType.Woodcutter,
+                BuildingType.Stonecutter,
+                BuildingType.Forester,
+                BuildingType.Sawmill,
+            }
+        )
+        {
+            var heights = new[] { 0x0400, 0x2000, 0x7fff, 0x8100, 0xc000, 0xff00 }
+                .Select(progress => source.Draw(new BuildingDraw(0, 0, 0, type, (ushort)progress))?.Image)
+                .ToArray();
+
+            Assert.IsTrue(heights.All(image => image is not null), $"{type} draws a stage at each progress word");
+            // Within each half of the word the drawing grows; the second half draws no base, so it may start lower than the first ended.
+            foreach (var i in new[] { 1, 2, 4, 5 })
+            {
+                Assert.IsTrue(
+                    heights[i]!.Height >= heights[i - 1]!.Height,
+                    $"{type}: the drawing grows as the progress rises"
+                );
+            }
+
+            Assert.IsTrue(heights[^1]!.Height >= source.Draw(new BuildingDraw(0, 0, 0, type))!.Image!.Height - 1);
+        }
     }
 
     [TestMethod]

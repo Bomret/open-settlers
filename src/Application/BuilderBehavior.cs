@@ -209,8 +209,18 @@ public sealed class BuilderBehavior(
 
         movement.Become(settler, new LeavesSite());
         settler.Timer = 0;
-        history.RecordBuilding(siteSlot, EventType.BuildingFinished, Cause.Settlers, history.SettlerId(slot).ToString());
-        history.RecordFlag(site.Flag, EventType.BuildingFinished, Cause.Settlers, history.BuildingId(siteSlot).ToString());
+        history.RecordBuilding(
+            siteSlot,
+            EventType.BuildingFinished,
+            Cause.Settlers,
+            history.SettlerId(slot).ToString()
+        );
+        history.RecordFlag(
+            site.Flag,
+            EventType.BuildingFinished,
+            Cause.Settlers,
+            history.BuildingId(siteSlot).ToString()
+        );
         Leave(slot, settler);
     }
 

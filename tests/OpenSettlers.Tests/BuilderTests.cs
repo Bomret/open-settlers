@@ -28,7 +28,8 @@ public sealed class BuilderTests
         return (game, site);
     }
 
-    private static string Words(IEnumerable<ushort> words) => string.Join(",", words.Select(word => word.ToString("x4")));
+    private static string Words(IEnumerable<ushort> words) =>
+        string.Join(",", words.Select(word => word.ToString("x4")));
 
     // The distinct values of the site's progress word the ticks give, in order.
     private static List<ushort> Progress(Game game, Building site, int ticks, System.Action? each = null)
@@ -112,7 +113,9 @@ public sealed class BuilderTests
         Assert.AreEqual(1, site.Progress);
         Assert.IsTrue(failed, "the request found no builder");
         Assert.IsTrue(site.Constructing);
-        Assert.IsEmpty(ConstructionWorld.OfJob(game, Job.Builder).Where(settler => settler.Activity is not WaitsInCastle));
+        Assert.IsEmpty(
+            ConstructionWorld.OfJob(game, Job.Builder).Where(settler => settler.Activity is not WaitsInCastle)
+        );
     }
 
     [TestMethod]
