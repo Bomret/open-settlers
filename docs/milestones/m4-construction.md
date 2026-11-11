@@ -35,7 +35,8 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
   settler without a job takes the job and the tool of the request from the stock (the second way). known
   ([the worker request](../rules/construction.md#the-worker-request))
 - `0x43ce20`, `0x43ec82`, `0x43ef20`, `0x43e008`: the builder's start routine (job 3), state 9 (the materials and the blows), the end
-  of the building, and state `0x4a` (he steps onto the flag and goes home). known
+  of the building, and state `0x4a` (he steps onto the flag and goes home, or waits at the door while the flag's node holds a settler). known,
+  with emulator runs of both ways of state `0x4a` and a draw run of the wait
   ([the builder's turn](../rules/construction.md#the-builders-turn))
 - `0x43f0ba`, `0x43f0fa`: the order of the materials (a bit set for a stone) and the step of a blow, per type. known
   ([the builder's turn](../rules/construction.md#the-builders-turn))

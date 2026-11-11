@@ -95,6 +95,8 @@ buildings of a mission's start) the routine calls `0x45f402`: **not ported**. Th
 (`0x43e036`, [Woodcutting](woodcutting.md#the-start-at-the-hut)) in the same turn; state 7 waits out the step and takes state 2 with mode `0xfe`, the walk to the storage. The
 walk and the entry into the castle are the walk home's ([Settlers](settlers.md#the-walk)): job 3's start routine begins with the test of mode `0xfe`, which sends him
 into the storage (`0x43cd06`) as every job's but the jobs 4 and 21 does. **Emulated:** the builder is in the castle's list again 165 passes after the building stands.
+**Emulated** (`construction-builder.txt`, `builder-waits-at-the-door`): where the carrier of the flag's road stands on the flag for a good at the end, the
+builder keeps state `0x4a` at the building's node at each of his turns, and the first turn after the carrier has left steps him onto the flag.
 
 ## The finished building asks for its worker
 
@@ -130,7 +132,8 @@ takes the entries of the objects plus the 1250 (`ObjectSprites.SiteLayerEntry`) 
 (the engine leaves sounds out); the word's high byte picks the row of figure bases ([Settlers](settlers.md#drawing-the-walk-leads)). `RuleTables.BuilderFigureAdds` holds both adds, read from `0x43fb60` and `0x43fb55`.
 The record of a settler is made where the node holds his slot, so the builder inside the building is drawn at its node with the frame of his state: `SettlerFigures` draws the activities `Builds` and `LeavesSite` for job 3.
 **Confirmed** (draw run, the `builder` recording of `settler-draws.txt` on a `construct:` game): the builder walking out, building with
-both adds, and walking home, drawn as the engine draws him. No recording holds the state `0x4a`.
+both adds, and walking home, drawn as the engine draws him. The `builder-waits` recording holds him in state `0x4a` at the building's node while a
+carrier stands on the flag, and his step onto it, drawn as the engine draws him.
 
 ## In the engine
 

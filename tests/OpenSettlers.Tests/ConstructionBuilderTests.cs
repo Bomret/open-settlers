@@ -11,9 +11,10 @@ namespace OpenSettlers.Tests;
 // The lines of construction-builder.txt are the output of the emulator verb construct (tools/GhidraDump/emulate.py, ADR 0008): the
 // original's passes of a game with a castle, flags, roads, and building sites, in which the castle's builder walks out to a site, takes its
 // planks, and builds it, and the finished forester's worker, a settler without a job, walks out to it (docs/rules/construction.md). The
-// engine runs the same commands and must hold the same bytes at each checkpoint: the builder's and the worker's 16 bytes (with the
-// draw of each blow), the site's 18 bytes, its flag's request bytes, and the generator. The fixture's header says what the test lends the
-// engine (the delivery of the planks, which the engine's hand-out does at once). The rules on made-up tables are in BuilderTests.
+// engine runs the same commands, with the goods a scenario lays on a flag by hand, and must hold the same bytes at each checkpoint: the
+// 16 bytes of the builder, the worker, and a carrier (with the draw of each blow), the site's 18 bytes, its flag's request bytes, and the
+// generator. The fixture's header says what the test lends the engine (the delivery of the planks, which the engine's hand-out does at
+// once). The rules on made-up tables are in BuilderTests.
 [TestClass]
 [TestCategory(Needs.Install)]
 public sealed class ConstructionBuilderTests
@@ -25,10 +26,11 @@ public sealed class ConstructionBuilderTests
     [DataRow("builder-two-sites")]
     [DataRow("builder-no-hammer")]
     [DataRow("builder-no-jobless")]
+    [DataRow("builder-waits-at-the-door")]
     public void TheBuilderBuildsTheSiteAsTheOriginalDoes(string name)
     {
         var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
-        // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS
+        // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
         var parts = scenario.Command.Split(':');
         var map = RemovalTests.MapOf(parts);
         var width = map.Size.Width;
@@ -51,6 +53,16 @@ public sealed class ConstructionBuilderTests
                     : (Pass: at, Click: spec)
             )
             .ToList();
+        // PASS,FLAG,PLACE,GOOD,DEST: a good laid by hand on a place of the flag of that slot before that pass, as RemovalTests lays it.
+        var puts =
+            parts.Length > 11
+                ? parts[11]
+                    .Split(';')
+                    .Select(text =>
+                        text.Split(',').Select(number => int.Parse(number, CultureInfo.InvariantCulture)).ToArray()
+                    )
+                    .ToList()
+                : [];
 
         for (var pass = 0; pass < passes; pass++)
         {
@@ -92,6 +104,17 @@ public sealed class ConstructionBuilderTests
                 game.ApplyCommands();
             }
 
+            foreach (var put in puts.Where(candidate => candidate[0] == pass))
+            {
+                game.Goods.LayGood(
+                    put[1] - 1,
+                    put[2],
+                    put[3] & 0x1f,
+                    put[4] == 0 ? null : put[4] - 1,
+                    put[3] >> 5 == 0 ? null : (put[3] >> 5) - 1
+                );
+            }
+
             // The castle hands out nothing the engine could lay on a flag at once: the original delivers after 130 passes, so the fixture
             // names the passes of its deliveries. The hand-out still takes its draw from the generator each cycle.
             while (game.CastleStock.Take(Good.Plank) || game.CastleStock.Take(Good.Stone)) { }
@@ -130,6 +153,13 @@ public sealed class ConstructionBuilderTests
                         // The walk to the storage has no target word until the first flag, where the original writes its storage's flag
                         // slot (1 for the castle, the dummy before it); the engine's walk keeps the castle's flag, slot 0, in its errand.
                         expected = value[..24] + "0000" + value[28..];
+                    }
+
+                    if (value[20..24] == "0300")
+                    {
+                        // A carrier that walks his road with no good keeps in the word at 12 the low word of the pointer to the flag item he
+                        // waited for (0x46 for each slot); the engine keeps no such word.
+                        expected = value[..24] + Settler(settler, width)[24..28] + value[28..];
                     }
 
                     Assert.AreEqual(expected, Settler(settler, width), $"{when}: the settler {slot}");
