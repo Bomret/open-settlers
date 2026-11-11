@@ -23,6 +23,7 @@ public sealed class ConstructionMaterialsTests
 
     [TestMethod]
     [DataRow("two-sites")]
+    [DataRow("two-sites-carried")]
     [DataRow("stock-empty")]
     public void TheRequestsTheGoodsOnSiteAndOnTheWayAndTheStockMatchTheEmulator(string name)
     {
@@ -134,9 +135,9 @@ public sealed class ConstructionMaterialsTests
             Assert.AreEqual(
                 Convert.ToHexString(bytes[0x42..0x46]),
                 Convert.ToHexString([
-                    flag.RequestOf(RequestWord.First).Classes,
+                    ClassByte(flag.RequestOf(RequestWord.First)),
                     flag.RequestOf(RequestWord.First).Rank,
-                    flag.RequestOf(RequestWord.Second).Classes,
+                    ClassByte(flag.RequestOf(RequestWord.Second)),
                     flag.RequestOf(RequestWord.Second).Rank,
                 ]),
                 $"{when}: the request words of flag {slot}"
@@ -189,6 +190,9 @@ public sealed class ConstructionMaterialsTests
             Assert.AreEqual(rng, $"{words.W0:X4},{words.W1:X4},{words.W2:X4}", $"{when}: the generator");
         }
     }
+
+    // The emulator's class byte of a request word: bit k set asks for the class k.
+    private static byte ClassByte(Request request) => request.Asks is { } asked ? (byte)(1 << asked.Class) : (byte)0;
 
     // The goods a fill byte holds: the high nibble is on site, the low nibble on the way.
     private static int Held(int fill) => (fill >> 4) + (fill & 0xf);

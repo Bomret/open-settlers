@@ -56,7 +56,8 @@ public sealed class LayoutSettlersTests
         byte buildingClass = 0,
         byte[]? transportPriorities = null,
         byte[]? buildingSizes = null,
-        byte[]? goodClasses = null,
+        byte[]? buildingNeeds = null,
+        GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0
     )
@@ -86,6 +87,7 @@ public sealed class LayoutSettlersTests
             walkRows: rows,
             transportPriorities: transportPriorities,
             buildingSizes: buildingSizes,
+            buildingNeeds: buildingNeeds,
             goodClasses: goodClasses,
             distribution: distribution,
             plankRankBase: plankRankBase

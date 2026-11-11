@@ -10,7 +10,11 @@ last phase of each cycle, as `Sim_StepPhase` (`0x4291c2`) runs it while the cloc
 (`0x445752`) written at the game's start. The other verbs skip both: the castle hands nothing out in them, and a site's request for
 planks has the rank 0. The click `l@x,y,H` of the verb sets the heights of a node and its six neighbours (the ground a digger leaves
 a large site). `tests/OpenSettlers.Tests/construction-materials.txt` holds the request words, the goods on site and on the way, the
-castle's stock, and the generator after the passes of two games, and the engine matches them (`ConstructionMaterialsTests`).
+castle's stock, and the generator after the passes of three games, and the engine matches them (`ConstructionMaterialsTests`). In the game
+`two-sites-carried` the sites are placed at the pass 400, when both roads hold their carriers, and both requests are reachable at the
+first hand-out: the forester's and the sawmill's requests rank alike (`0x3e`), and the castle hands that cycle's plank and stone to the
+sawmill's flag, not to the forester's: both flags lie on the first level of the search, and of equal ranks the flag met first (the
+directions are tried from 5 down to 0) keeps the lead.
 
 ## The request words
 
@@ -22,6 +26,10 @@ classes at `0x44` with its rank at `0x45`. Bit k of a class byte means the flag 
 site's flag asks for planks in the first word and for stones in the second. The castle's flag holds `0xc0` and `0x80` (classes 6 and 7
 and class 7), and the storage search reads bit 7 of the second word. A rank of 0 asks for nothing: every search takes only a rank above
 the best it has, and the storage's hand-out only one above 15.
+
+Taking the building down (`Building_Remove`, `0x4617fd`, [Removal](removal.md#taking-a-building-down)) clears the class bytes at `0x42` and
+`0x44` of its flag (the ranks stay), so no search finds the flag afterwards and a plank in the castle's stock is not handed to a site that is
+gone. The building pass no longer turns for a building that is taken down, so a rank above 15 that stood would otherwise stand for good.
 
 A good's class and the word it is looked for in come from a table with two bytes for each good, `Good_DestinationClasses` (`0x464117`):
 the plank (good 8) is class 1 of the first word, the stone (good 10) class 4 of the second, the log (good 7) class 5 of the second,
@@ -121,8 +129,11 @@ outstanding slots are full the castle hands nothing more out.
 
 ## In the engine
 
-`RuleTables.ClassOfGood`, `RuleTables.DistributionOrder`, and `RuleTables.PlankRankBase` hold the program's tables (`ProgramTablesImporter`
-reads `0x464117`, the three tables at `0x42a313`, and the word of `0x445752`). `Flag.RequestOf` and `Request` are the request words.
+`RuleTables.ClassOfGood`, `RuleTables.DistributionOrder`, and `RuleTables.PlankRankBase` hold the program's tables as typed values
+(`ProgramTablesImporter` reads `0x464117`, the three tables at `0x42a313`, and the word of `0x445752`, and turns the class bytes, the
+request word offsets, and the stock offsets into a `GoodClass`, a `DistributionStep` with its goods, and a rank). `Flag.RequestOf` and
+`Request` are the request words: the class a word asks for is a `GoodClass`, which a site's placement takes from the table's rows of the
+plank and the stone. `FlagRequestSearch` is the level-by-level search both the good's request search and the hand-out run.
 `SitePass` is the building pass's turn of a site. `GoodsTransport.Destine` runs the request search and the storage search,
 `GoodsTransport.ReleaseRequest` releases a request. `StorageDistribution` is the phase routine's hand-out; `MainPass` runs it at the last
 phase. `CastleStock.Count`, `Take`, and `Add` count a good in the entry `good - 1` of the stock list (the storage word of the good g lies at

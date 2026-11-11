@@ -57,8 +57,8 @@ public sealed class StorageDistributionTests
 
     private static Building Site(Rig rig, int flag, byte plankRank, byte stoneRank = 0)
     {
-        rig.Bench.Flags[flag].SetRequest(RequestWord.First, new Request(0x02, plankRank));
-        rig.Bench.Flags[flag].SetRequest(RequestWord.Second, new Request(0x10, stoneRank));
+        rig.Bench.Flags[flag].SetRequest(RequestWord.First, new Request(ConstructionTables.PlankClass, plankRank));
+        rig.Bench.Flags[flag].SetRequest(RequestWord.Second, new Request(ConstructionTables.StoneClass, stoneRank));
         var site = new Building(BuildingType.Woodcutter, 3 + 2 * flag, 3, flag, constructing: true)
         {
             Progress = 1,
@@ -161,7 +161,7 @@ public sealed class StorageDistributionTests
     }
 
     [TestMethod]
-    public void ARequestOverRoadsWithNoCarrierIsNotReached()
+    public void ARequestOverRoadsWithNoCarrierIsNotReachedUntilACarrierComes()
     {
         var rig = Started(planks: 5, stones: 0, carriers: false);
         var site = Site(rig, 1, 0x3e);
@@ -170,6 +170,15 @@ public sealed class StorageDistributionTests
 
         Assert.AreEqual(5, rig.Castle.Planks);
         Assert.AreEqual(0, site.FillLow);
+
+        // A carrier on the road makes the request reachable: the next cycle serves it.
+        rig.Bench.Flags[0].Side(East).HoldsCarrier = true;
+        rig.Bench.Flags[1].Side(West).HoldsCarrier = true;
+        rig.Bench.Draws.Enqueue(2);
+        rig.Distribution.Run();
+
+        Assert.AreEqual(4, rig.Castle.Planks);
+        Assert.AreEqual(1, site.FillLow);
     }
 
     [TestMethod]

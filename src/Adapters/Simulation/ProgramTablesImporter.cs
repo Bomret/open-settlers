@@ -204,14 +204,32 @@ public static class ProgramTablesImporter
             [.. Slice(exe, IdleOffsetAddress, RuleTables.IdleOffsetCount).Select(offset => (sbyte)offset)],
             Slice(exe, BuildingSizeAddress, RuleTables.BuildingTypeCount),
             Slice(exe, BuildingNeedsAddress, 2 * RuleTables.BuildingTypeCount),
-            Slice(exe, GoodClassAddress, 2 * RuleTables.GoodClassCount),
+            GoodClasses(Slice(exe, GoodClassAddress, 2 * RuleTables.GoodClassCount)),
             [.. DistributionAddresses.Select(address => DistributionOrder(exe, address))],
             PlankRankBase(exe)
         );
     }
 
+    // The request word a flag item offset names: 0x42 is the first word, 0x44 the second (the class table's second byte takes the
+    // second for 0x44 and the first for any other offset, as the flag pass does).
+    private static RequestWord WordAt(int offset) => offset == 0x44 ? RequestWord.Second : RequestWord.First;
+
+    // The good class table: for each good a class byte and a request word offset. A class byte with its high bit set sends the good
+    // to storage at once, which is no class.
+    private static GoodClass?[] GoodClasses(byte[] table) =>
+        [
+            .. Enumerable
+                .Range(0, RuleTables.GoodClassCount)
+                .Select(good =>
+                    (sbyte)table[2 * good] < 0
+                        ? (GoodClass?)null
+                        : new GoodClass(table[2 * good], WordAt(table[2 * good + 1]))
+                ),
+        ];
+
     // One order of the storage's hand-out: the steps up to the word that is negative. The request word's offset must be the first or
-    // the second word's (0x42 or 0x44), else the table is not where it is expected.
+    // the second word's (0x42 or 0x44), else the table is not where it is expected. The third word of a step is the offset of the
+    // stock word from the first one (the good is the offset halved, plus 1), or -1 for the step of the food goods 1, 3, and 6.
     private static DistributionStep[] DistributionOrder(byte[] exe, int address)
     {
         var steps = new List<DistributionStep>();
@@ -231,7 +249,10 @@ public static class ProgramTablesImporter
             }
 
             steps.Add(
-                new DistributionStep(words[0] == 0x44 ? RequestWord.Second : RequestWord.First, words[1], words[2])
+                new DistributionStep(
+                    new GoodClass(words[1], WordAt(words[0])),
+                    words[2] < 0 ? [new Good(1), new Good(3), new Good(6)] : [new Good(words[2] / 2 + 1)]
+                )
             );
         }
 

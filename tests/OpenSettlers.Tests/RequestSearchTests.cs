@@ -39,8 +39,8 @@ public sealed class RequestSearchTests
 
     private static Building Site(BehaviourBench bench, int flag, byte rank)
     {
-        bench.Flags[flag].SetRequest(RequestWord.First, new Request(0x02, rank));
-        bench.Flags[flag].SetRequest(RequestWord.Second, new Request(0x10, 0));
+        bench.Flags[flag].SetRequest(RequestWord.First, new Request(ConstructionTables.PlankClass, rank));
+        bench.Flags[flag].SetRequest(RequestWord.Second, new Request(ConstructionTables.StoneClass, 0));
         var site = new Building(BuildingType.Woodcutter, 3 + 2 * flag, 3, flag, constructing: true)
         {
             Progress = 1,
@@ -75,7 +75,7 @@ public sealed class RequestSearchTests
     public void AStoneIsLookedForInTheSecondWordOnly()
     {
         var (bench, goods, near, _) = Line(0x3e, 0);
-        bench.Flags[2].SetRequest(RequestWord.Second, new Request(0x10, 0x3e));
+        bench.Flags[2].SetRequest(RequestWord.Second, new Request(ConstructionTables.StoneClass, 0x3e));
         goods.LayGood(1, 0, Good.Stone.Code);
 
         Turn(goods, 1);

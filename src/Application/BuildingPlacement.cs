@@ -95,10 +95,15 @@ public sealed class BuildingPlacement(
         var needs = tables.NeedsOf(type);
         if (!finished)
         {
-            // The placement (0x449a63) sets the flag's request words: planks (class 1 of the word at 0x42) and stones (class 4 of the
-            // word at 0x44), at rank 0 until the building pass gives the site's requests their rank.
-            flags[flag].SetRequest(RequestWord.First, new Request(0x02, 0));
-            flags[flag].SetRequest(RequestWord.Second, new Request(0x10, 0));
+            // The placement (0x449a63) sets the flag's request words: the plank's class and the stone's class, each in the request
+            // word the good class table gives it, at rank 0 until the building pass gives the site's requests their rank.
+            foreach (var good in new[] { Good.Plank, Good.Stone })
+            {
+                if (tables.ClassOfGood(good) is { } asked)
+                {
+                    flags[flag].SetRequest(asked.Word, new Request(asked, 0));
+                }
+            }
         }
 
         buildings.Add(

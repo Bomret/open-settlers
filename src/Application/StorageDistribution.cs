@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Linq;
 using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
@@ -54,107 +54,34 @@ public sealed class StorageDistribution(
 
         foreach (var step in order)
         {
-            if (Stocked(step) is { } good && flags[CastleFlag].FirstEmptyPlace() >= 0)
+            // The good of the step the castle holds most of (the first of equals); none where the stock holds none.
+            var good = step.Goods.MaxBy(castle.Count);
+            if (castle.Count(good) > 0 && flags[CastleFlag].FirstEmptyPlace() >= 0)
             {
                 Serve(step, good);
             }
         }
     }
 
-    // The good of the step the castle holds: the one its stock word names, or for the food step (offset -1) the good of goods 1, 3,
-    // and 6 whose count is greatest (the first of equals). None where the stock holds none.
-    private Good? Stocked(DistributionStep step)
-    {
-        if (step.StockOffset >= 0)
-        {
-            var good = new Good(step.StockOffset / 2 + 1);
-
-            return castle.Count(good) > 0 ? good : null;
-        }
-
-        Good[] food = [new(1), new(3), new(6)];
-        var best = food[0];
-        foreach (var candidate in food)
-        {
-            if (castle.Count(candidate) > castle.Count(best))
-            {
-                best = candidate;
-            }
-        }
-
-        return castle.Count(best) > 0 ? best : null;
-    }
-
     // 0x429a05 to 0x42a0ad for the search, 0x42a0ad to 0x42a2f4 for the hand-out.
     private void Serve(DistributionStep step, Good good)
     {
-        if (Search(step) is not { } asking)
+        var asking = FlagRequestSearch.Find(flags, roads, CastleFlag, step.Class, LowestRank);
+        if (asking < 0)
         {
             return;
         }
 
-        var request = flags[asking].RequestOf(step.Word);
-        flags[asking].SetRequest(step.Word, request with { Rank = 0 });
+        var word = step.Class.Word;
+        flags[asking].SetRequest(word, flags[asking].RequestOf(word) with { Rank = 0 });
         if (buildings.OfFlag(asking) is { } building)
         {
-            var counter = step.Word == RequestWord.First ? FillCounter.Low : FillCounter.High;
-            building.SetFill(counter, building.FillOf(counter) + 1);
+            building.SetFill(word.Counter(), building.FillOf(word.Counter()) + 1);
         }
 
         castle.Take(good);
         var place = flags[CastleFlag].FirstEmptyPlace();
         goods.LayGood(CastleFlag, place, good.Code, destination: asking);
         history.RecordFlag(CastleFlag, EventType.Handout, Cause.Goods, $"{history.FlagId(asking)} good {good}");
-    }
-
-    // The search from the castle's flag: the flag asking for the step's class with a rank above 15 and above the best so far, which
-    // grows by a quarter and one after each level (to 255 where it carries out of the byte, and then no flag is searched further).
-    private int? Search(DistributionStep step)
-    {
-        var marked = new bool[flags.Count];
-        marked[CastleFlag] = true;
-        var level = new List<int> { CastleFlag };
-        var best = 0;
-        int? found = null;
-        while (best != 0xff)
-        {
-            var next = new List<int>();
-            foreach (var current in level)
-            {
-                for (var direction = 5; direction >= 0; direction--)
-                {
-                    if (
-                        !flags[current].Side(direction).HoldsCarrier
-                        || roads.FlagNeighbour(current, direction) is not (>= 0 and var other)
-                        || marked[other]
-                    )
-                    {
-                        continue;
-                    }
-
-                    marked[other] = true;
-                    next.Add(other);
-                    var request = flags[other].RequestOf(step.Word);
-                    if (request.Asks(step.Class) && request.Rank > LowestRank && best < request.Rank)
-                    {
-                        best = request.Rank;
-                        found = other;
-                    }
-                }
-            }
-
-            if (next.Count == 0)
-            {
-                break;
-            }
-
-            level = next;
-            if (best != 0)
-            {
-                best = System.Math.Min(best + (best >> 2) + 1, 0xff);
-            }
-        }
-
-        return best == 0 ? null : found;
     }
 }

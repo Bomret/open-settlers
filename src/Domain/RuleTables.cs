@@ -46,9 +46,6 @@ public sealed class RuleTables
     /// <summary>The number of goods of the class table at <c>0x464117</c> (good numbers are 5 bits).</summary>
     public const int GoodClassCount = 32;
 
-    /// <summary>The number of orders in which a storage hands its goods out, and the number of tables that hold them.</summary>
-    public const int DistributionOrderCount = 3;
-
     /// <summary>The number of rows of the figure bases (the figure word's high byte, 0 to 0x88).</summary>
     public const int FigureBaseRowCount = 137;
 
@@ -91,7 +88,7 @@ public sealed class RuleTables
     private readonly ushort[] _scanWindows;
     private readonly byte[] _buildingSizes;
     private readonly byte[] _buildingNeeds;
-    private readonly byte[] _goodClasses;
+    private readonly GoodClass?[] _goodClasses;
     private readonly DistributionStep[][] _distribution;
 
     /// <summary>
@@ -120,7 +117,7 @@ public sealed class RuleTables
         sbyte[]? idleOffsets = null,
         byte[]? buildingSizes = null,
         byte[]? buildingNeeds = null,
-        byte[]? goodClasses = null,
+        GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0
     )
@@ -156,7 +153,7 @@ public sealed class RuleTables
         _buildingSizes = buildingSizes ?? [.. Enumerable.Repeat((byte)1, BuildingTypeCount)];
         _buildingNeeds = buildingNeeds ?? new byte[2 * BuildingTypeCount];
         // stand-in: a table a test does not give sends every good to storage at once, and no storage hands any good out.
-        _goodClasses = goodClasses ?? [.. Enumerable.Repeat((byte)0xff, 2 * GoodClassCount)];
+        _goodClasses = goodClasses ?? new GoodClass?[GoodClassCount];
         _distribution =
             distribution
             ??
@@ -301,27 +298,11 @@ public sealed class RuleTables
             ? new BuildingNeeds(_buildingNeeds[2 * type.Code], _buildingNeeds[2 * type.Code + 1])
             : new BuildingNeeds(0, 0);
 
-    /// <summary>The good class table as the importer read it: two bytes for each good, a class and the offset of a request word.</summary>
-    public byte[] GoodClasses => _goodClasses;
-
     /// <summary>
     /// The request a good with no destination looks for (<c>0x464117</c>): its class and the request word of the flags that ask for
-    /// it; null for a good that goes to storage at once (a class byte with its high bit set).
+    /// it; null for a good that goes to storage at once. The importer turns the program's table into these values.
     /// </summary>
-    public GoodClass? ClassOfGood(Good good)
-    {
-        var index = 2 * (good.Code & 0x1f);
-
-        return (sbyte)_goodClasses[index] < 0
-            ? null
-            : new GoodClass(
-                _goodClasses[index],
-                _goodClasses[index + 1] == 0x44 ? RequestWord.Second : RequestWord.First
-            );
-    }
-
-    /// <summary>The orders in which a storage hands its goods out, as the importer read them (<see cref="DistributionOrder"/>).</summary>
-    public DistributionStep[][] Distribution => _distribution;
+    public GoodClass? ClassOfGood(Good good) => _goodClasses[good.Code & 0x1f];
 
     /// <summary>
     /// The order a storage serves the requests in, by the draw the phase routine takes at each cycle (<c>0x42965c</c>): the draw taken

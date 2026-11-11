@@ -438,13 +438,46 @@ public sealed class ProgramTablesTests
 
         Assert.AreEqual(new GoodClass(1, RequestWord.First), tables.ClassOfGood(Good.Plank));
         Assert.IsNull(tables.ClassOfGood(Good.Stone), "a class byte of 0xff sends the good to storage at once");
-        CollectionAssert.AreEqual(new[] { new DistributionStep(RequestWord.First, 1, 14) }, tables.Distribution[0]);
-        CollectionAssert.AreEqual(new[] { new DistributionStep(RequestWord.Second, 2, 18) }, tables.Distribution[1]);
-        CollectionAssert.AreEqual(new[] { new DistributionStep(RequestWord.First, 3, 22) }, tables.Distribution[2]);
-        Assert.AreSame(tables.Distribution[1], tables.DistributionOrder(0), "the draw 0 picks the second order");
-        Assert.AreSame(tables.Distribution[2], tables.DistributionOrder(1), "the draw 1 picks the third");
-        Assert.AreSame(tables.Distribution[0], tables.DistributionOrder(2), "any other draw picks the first");
-        Assert.AreSame(tables.Distribution[1], tables.DistributionOrder(8), "the draw is taken to 0 to 7");
+        // The synthetic orders hold one step each: order 0 the class 1 of the first word and the good 8 (stock offset 14), order 1
+        // the class 2 of the second word and the good 10 (offset 18), order 2 the class 3 of the first word and the good 12 (offset 22).
+        CollectionAssert.AreEqual(
+            new[] { "First 1: 8" },
+            Steps(tables.DistributionOrder(2)),
+            "any other draw picks the first order"
+        );
+        CollectionAssert.AreEqual(
+            new[] { "Second 2: 10" },
+            Steps(tables.DistributionOrder(0)),
+            "the draw 0 picks the second order"
+        );
+        CollectionAssert.AreEqual(
+            new[] { "First 3: 12" },
+            Steps(tables.DistributionOrder(1)),
+            "the draw 1 picks the third"
+        );
+        CollectionAssert.AreEqual(
+            Steps(tables.DistributionOrder(0)),
+            Steps(tables.DistributionOrder(8)),
+            "the draw is taken to 0 to 7"
+        );
+    }
+
+    // A step as text: its request word, its class, and the goods it hands out.
+    private static string[] Steps(DistributionStep[] order) =>
+        [.. order.Select(step => $"{step.Class.Word} {step.Class.Class}: {string.Join(',', step.Goods)}")];
+
+    [TestMethod]
+    public void AFoodStepOfTheTableNamesTheThreeFoodGoods()
+    {
+        var exe = Executable(bytes =>
+        {
+            bytes[FileOffset(ProgramTablesImporter.DistributionAddresses[0]) + 4] = 0xff;
+            bytes[FileOffset(ProgramTablesImporter.DistributionAddresses[0]) + 5] = 0xff;
+        });
+
+        var tables = ProgramTablesImporter.Import(exe);
+
+        CollectionAssert.AreEqual(new[] { "First 1: 1,3,6" }, Steps(tables.DistributionOrder(2)));
     }
 
     [TestMethod]
@@ -479,12 +512,15 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         // peek:464117:64, peek:42a313:150 (the three orders of 12 steps), and peek:445752:16 (mov ax, 0xffdc, stored at +0x148).
-        Assert.AreEqual(0xF9A2A5F29992593BUL, Fnv(tables.GoodClasses));
-        CollectionAssert.AreEqual(new[] { 12, 12, 12 }, tables.Distribution.Select(order => order.Length).ToArray());
-        Assert.AreEqual(new DistributionStep(RequestWord.First, 1, 14), tables.Distribution[0][0]);
-        Assert.AreEqual(new DistributionStep(RequestWord.Second, 4, 18), tables.Distribution[0][1]);
-        Assert.AreEqual(new DistributionStep(RequestWord.Second, 4, 18), tables.Distribution[1][0]);
-        Assert.AreEqual(new DistributionStep(RequestWord.First, 0, -1), tables.Distribution[2][0]);
+        Assert.AreEqual(new GoodClass(1, RequestWord.First), tables.ClassOfGood(Good.Plank));
+        Assert.AreEqual(new GoodClass(4, RequestWord.Second), tables.ClassOfGood(Good.Stone));
+        var first = tables.DistributionOrder(2);
+        var second = tables.DistributionOrder(0);
+        var third = tables.DistributionOrder(1);
+        CollectionAssert.AreEqual(new[] { 12, 12, 12 }, new[] { first.Length, second.Length, third.Length });
+        CollectionAssert.AreEqual(new[] { "First 1: 8", "Second 4: 10" }, Steps(first[..2]));
+        CollectionAssert.AreEqual(new[] { "Second 4: 10" }, Steps(second[..1]));
+        CollectionAssert.AreEqual(new[] { "First 0: 1,3,6" }, Steps(third[..1]));
         Assert.AreEqual(0xff, tables.PlankRankBase);
     }
 

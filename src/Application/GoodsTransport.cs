@@ -138,7 +138,10 @@ public sealed class GoodsTransport(
     private void Destine(int flag, int place)
     {
         var good = flags[flag].Places[place].Good;
-        if (movement.Tables.ClassOfGood(good) is { } goodClass && RequestSearch(flag, goodClass) is >= 0 and var asking)
+        if (
+            movement.Tables.ClassOfGood(good) is { } goodClass
+            && FlagRequestSearch.Find(flags, roads, flag, goodClass, floor: 0) is >= 0 and var asking
+        )
         {
             Serve(asking, goodClass.Word);
             flags[flag].Places[place].Destination = asking;
@@ -161,64 +164,6 @@ public sealed class GoodsTransport(
         // once, chosen from what its registers hold (0x464539); the engine lets it wait as it does with none.
     }
 
-    // 0x4644ab to 0x464a3f: the search from a flag, level by level over the roads that hold a carrier (the directions from north
-    // to east), for the flag whose request word asks for the class with a rank above the best so far. Each level after one in which
-    // a request was found the best rank grows by a quarter and one (0x464906), and the search ends where that carries out of the
-    // byte or no flag is left, so a farther request must rank above what the nearer has grown to. It gives the flag, or -1.
-    private int RequestSearch(int start, GoodClass goodClass)
-    {
-        var marked = new bool[flags.Count];
-        marked[start] = true;
-        var level = new List<int> { start };
-        var best = 0;
-        var found = -1;
-        while (true)
-        {
-            var next = new List<int>();
-            foreach (var current in level)
-            {
-                for (var direction = 5; direction >= 0; direction--)
-                {
-                    if (
-                        !flags[current].Side(direction).HoldsCarrier
-                        || roads.FlagNeighbour(current, direction) is not (>= 0 and var other)
-                        || marked[other]
-                    )
-                    {
-                        continue;
-                    }
-
-                    marked[other] = true;
-                    next.Add(other);
-                    var request = flags[other].RequestOf(goodClass.Word);
-                    if (request.Asks(goodClass.Class) && best < request.Rank)
-                    {
-                        best = request.Rank;
-                        found = other;
-                    }
-                }
-            }
-
-            if (next.Count == 0)
-            {
-                return best == 0 ? -1 : found;
-            }
-
-            level = next;
-            if (best == 0)
-            {
-                continue;
-            }
-
-            var grown = best + (best >> 2) + 1;
-            best = (byte)grown;
-            if (grown > 0xff)
-            {
-                return found;
-            }
-        }
-    }
-
     // 0x464999 to 0x4649e0: the flag that was found is served: its rank, shifted right by one where bit 0 is set, else 0, and the
     // building of the flag counts one more good on the way, in the fill byte of the word's kind (the first word is the planks').
     private void Serve(int asking, RequestWord word)
@@ -228,8 +173,7 @@ public sealed class GoodsTransport(
             .SetRequest(word, request with { Rank = (request.Rank & 1) != 0 ? (byte)(request.Rank >> 1) : (byte)0 });
         if (buildings?.OfFlag(asking) is { } building)
         {
-            var counter = word == RequestWord.First ? FillCounter.Low : FillCounter.High;
-            building.SetFill(counter, building.FillOf(counter) + 1);
+            building.SetFill(word.Counter(), building.FillOf(word.Counter()) + 1);
         }
     }
 

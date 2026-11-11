@@ -12,3 +12,11 @@ public enum RequestWord
     /// <summary>The word at <c>0x44</c>.</summary>
     Second,
 }
+
+/// <summary>What a request word counts in a building's fill byte.</summary>
+public static class RequestWordExtensions
+{
+    /// <summary>The fill byte of the goods asked in the word: the first word is the planks' (the low byte), the second the stones' (the high byte).</summary>
+    public static FillCounter Counter(this RequestWord word) =>
+        word == RequestWord.First ? FillCounter.Low : FillCounter.High;
+}

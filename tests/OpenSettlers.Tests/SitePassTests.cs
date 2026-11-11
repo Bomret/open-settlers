@@ -11,8 +11,8 @@ namespace OpenSettlers.Tests;
 public sealed class SitePassTests
 {
     private const int SiteFlag = 1;
-    private static readonly Request Planks = new(0x02, 0);
-    private static readonly Request Stones = new(0x10, 0);
+    private static readonly Request Planks = new(ConstructionTables.PlankClass, 0);
+    private static readonly Request Stones = new(ConstructionTables.StoneClass, 0);
 
     private static (BehaviourBench Bench, SitePass Pass, Building Site) Bench(
         BuildingType type,
