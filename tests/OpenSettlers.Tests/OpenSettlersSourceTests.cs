@@ -112,7 +112,7 @@ public sealed class OpenSettlersSourceTests
             .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
             .Concat(
-                from job in new[] { "carrier", "woodcutter", "type-one-hut" }
+                from job in new[] { "carrier", "woodcutter", "stonecutter", "type-one-hut" }
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
             );
@@ -405,6 +405,27 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
+    public void AStonecutterWalkingCuttingAndCarryingTheStoneEachDrawsItsOwnFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("cuts.png", "2x2:2");
+        folder.Png("carries.png", "2x2:3");
+        folder.Entries["settler/stonecutter/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/stonecutter/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        folder.Entries["settler/stonecutter/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        var source = folder.Load();
+        var outbound = new WalksFree(new Trip(new Vector(2, 1), new ToHeap(new Vector(-2, -1))), true);
+        var back = new WalksFree(new Trip(new Vector(2, 1), new BackToHut(true)));
+
+        var walks = source.Draw(Settler(Job.Stonecutter, outbound))!.Image!;
+        var cuts = source.Draw(Settler(Job.Stonecutter, new CutsStone(new Vector(0, 0), 1, 0)))!.Image!;
+        var carries = source.Draw(Settler(Job.Stonecutter, back))!.Image!;
+
+        Assert.AreEqual((1, 2, 3), (walks.Rgba[0], cuts.Rgba[0], carries.Rgba[0]));
+    }
+
+    [TestMethod]
     public void AJobTheGameDrawsNoFigureForDrawsNothing()
     {
         using var folder = new ContentFolder();
@@ -415,6 +436,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     [DataRow("carrier")]
     [DataRow("woodcutter")]
+    [DataRow("stonecutter")]
     [DataRow("type-one-hut")]
     public void EachJobDrawsAnImageForEveryActivityKind(string job)
     {
@@ -424,10 +446,12 @@ public sealed class OpenSettlersSourceTests
         {
             ["carrier"] = Job.Carrier,
             ["woodcutter"] = Job.Woodcutter,
+            ["stonecutter"] = Job.Stonecutter,
             ["type-one-hut"] = Job.TypeOneHut,
         };
         Activity[] activities =
         [
+            new CutsStone(new Vector(0, 0), 1, 0),
             Walking(),
             new Walks(new ToStorage(), new Heading(0)),
             new Door(0),

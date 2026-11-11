@@ -700,59 +700,59 @@
     ]
   },
   "object/72": {
-    "image": "object/rock-0.png",
+    "image": "object/heap-0.png",
     "anchor": [
-      -4,
-      -4
+      -11,
+      -15
     ]
   },
   "object/73": {
-    "image": "object/rock-1.png",
+    "image": "object/heap-1.png",
     "anchor": [
-      -6,
-      -7
+      -11,
+      -15
     ]
   },
   "object/74": {
-    "image": "object/rock-2.png",
+    "image": "object/heap-2.png",
     "anchor": [
-      -8,
-      -9
+      -11,
+      -15
     ]
   },
   "object/75": {
-    "image": "object/rock-0.png",
+    "image": "object/heap-3.png",
     "anchor": [
-      -4,
-      -4
+      -11,
+      -15
     ]
   },
   "object/76": {
-    "image": "object/rock-1.png",
+    "image": "object/heap-4.png",
     "anchor": [
-      -6,
-      -7
+      -11,
+      -15
     ]
   },
   "object/77": {
-    "image": "object/rock-2.png",
+    "image": "object/heap-5.png",
     "anchor": [
-      -8,
-      -9
+      -11,
+      -15
     ]
   },
   "object/78": {
-    "image": "object/rock-0.png",
+    "image": "object/heap-6.png",
     "anchor": [
-      -4,
-      -4
+      -11,
+      -15
     ]
   },
   "object/79": {
-    "image": "object/rock-1.png",
+    "image": "object/heap-7.png",
     "anchor": [
-      -6,
-      -7
+      -11,
+      -15
     ]
   },
   "object/80": {
@@ -1443,6 +1443,48 @@
   },
   "settler/woodcutter/waits": {
     "image": "settler/woodcutter-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/walks": {
+    "image": "settler/stonecutter-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/carries": {
+    "image": "settler/stonecutter-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/cuts": {
+    "image": "settler/stonecutter-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/door": {
+    "image": "settler/stonecutter-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/hands-over": {
+    "image": "settler/stonecutter-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/waits": {
+    "image": "settler/stonecutter-waits.png",
     "anchor": [
       -7,
       -21
