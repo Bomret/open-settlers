@@ -21,7 +21,7 @@ draws him as the original does in the passes of one recording (`settler-draws.tx
 **Status:** confirmed.
 
 The handler of the building type 4 (`0x42d987`, entry 4 of the table at `0x42cd1d`) asks for a settler of job 7 with the tool of
-good `0x2e`, as the handler of the type 2 asks for job 5 ([Woodcutting](woodcutting.md#the-hut-and-the-job)). Job 7's work is the
+the stock word `0x2e` (good 23, [Construction](construction.md)), as the handler of the type 2 asks for job 5 ([Woodcutting](woodcutting.md#the-hut-and-the-job)). Job 7's work is the
 one below: it cuts the objects `0x48` to `0x4f` (class 2, the grey stone heaps the map generation places) and lays the good 10
 (a stone, [Goods](goods.md)) on the flag with the put `0x436b46` at `0x438182`. So the type 4 is the stonecutter's building and
 job 7 the stonecutter. The castle's 20 first settlers hold one of job 7, in slot 12. The building's sprite is the object `0xa9`,

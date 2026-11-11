@@ -145,10 +145,10 @@ type's handler) names the work of each type: the handler asks for a settler of a
 
 | Type | Name | Size | Planks, stones | Handler | Job, tool | Finished sprite (object) |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2 | woodcutter | small | 2, 0 | `0x42d945` | job 5, tool good `0x2a` | 168 |
-| 4 | stonecutter | small | 2, 0 | `0x42d987` | job 7, tool good `0x2e` | 169 |
+| 2 | woodcutter | small | 2, 0 | `0x42d945` | job 5, tool stock word `0x2a` (good 21) | 168 |
+| 4 | stonecutter | small | 2, 0 | `0x42d987` | job 7, tool stock word `0x2e` (good 23) | 169 |
 | 9 | forester | small | 2, 0 | `0x42d9c9` | job 8, no tool | 170 |
-| 0x11 | sawmill | large | 3, 2 | `0x42da0b` | job 6, tool good `0x2c` | 160 |
+| 0x11 | sawmill | large | 3, 2 | `0x42da0b` | job 6, tool stock word `0x2c` (good 22) | 160 |
 
 The names of the types 4, 9, and 0x11 are **inferred** from the sizes, the needs, the jobs, and the game's manual (a
 stonecutter needs a pick and a sawmill worker a saw, a forester needs no tool); the slices that build each type's work
@@ -159,7 +159,7 @@ confirm the name from the goods it puts down. The type 4 is **confirmed**: his w
 **The site that has not started** (read from the code, not emulated). A building under construction goes through the common
 part of the draw routine (from `0x44fa79`). It tests the progress word: 0 draws the object 144 and nothing else (`0x44fa69`), a large site waiting to be
 levelled. Any other word first draws the piles of goods delivered (none yet), then the object 145 (`0x44fbf9`) for a small
-site. The stages that follow belong to the construction's slices.
+site. The stages that follow are in [The builder](construction.md#drawing-a-site).
 
 **The start of a mission** places a building through the same routine (`0x41f2d2`, which calls it at `0x41f2f6`): the type
 is the one at `+0x27a`, the object code 2 for the type 0xb and 3 for any other, the same evaluator result. It then finishes
@@ -190,8 +190,9 @@ flag down for the node states 6 and 7, and for 6 it splits the road under the fl
 building's mark (bit `0x10`) at the flag, so the mark is never read as a road bit. A building site is a `Building` whose `Site`
 (`BuildingSite`: planks, stones, target height) is set and whose `Constructing` is true, with the progress word 1 or 0; a finished
 building has no `Site`. The click's map bytes and the items are those of `building-state6` (`RoadSplitTests`) and `building-sites.txt`
-(`BuildingSitePlacementTests`). A building site asks for no worker: the type's handler (`CastleRoster.HandleBuilding`) runs for a
-finished building only, as the pass of the building table sends a building under construction to `0x42d55f`, **not ported**.
+(`BuildingSitePlacementTests`). A building site asks for its builder, not its type's worker: the type's handler (`CastleRoster.HandleBuilding`) runs for a
+finished building only, as the pass of the building table sends a building under construction to `0x42d55f` (`SitePass.Turn`), which asks for
+job 3 ([The builder](construction.md#the-request-for-a-builder)).
 **Stand-in:** `Game.PlaceFinishedBuilding`, which a layout's finished-building entry calls, places the same building finished with
 no site and the progress word 0, and logs the placement among the applied commands as the placement command that the M3 layouts
 used, so their digests are unchanged. The original's finished building also has status bit 4, the progress word as placed, and

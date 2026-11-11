@@ -19,7 +19,7 @@ public sealed class WoodcuttingTests
     // 22 and 23 east and north.
     private static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
 
-    internal static RuleTables Made()
+    internal static RuleTables Made(WorkerRequest?[]? workers = null)
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -41,7 +41,8 @@ public sealed class WoodcuttingTests
             Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
             Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
             Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
-            walkRows: rows
+            walkRows: rows,
+            workers: workers
         );
     }
 

@@ -136,7 +136,13 @@ public sealed class NameTable
             CodeKind.Job,
             Job.Builder.Code,
             "builder",
-            "Job.Builder; Game.Removal reads job 4 as the builder; docs/rules/settlers.md"
+            "Job.Builder; the under-construction handler 0x42d55f asks for job 3 with the tool good 17 (request at 0x42d5fc) and the job's state 9 builds the site (0x43ec82); docs/rules/construction.md"
+        );
+        AddOne(
+            CodeKind.Job,
+            Job.CastleSettler.Code,
+            "castle-settler",
+            "Job.CastleSettler; the castle's first settler stands by while the castle is built (state 10, 0x43f17a) and no building asks for job 4; Game.Removal reads job 4 as a settler that goes home as a carrier; docs/rules/settlers.md"
         );
         AddOne(CodeKind.Job, Job.Woodcutter.Code, "woodcutter", "Job.Woodcutter; docs/rules/woodcutting.md");
         AddOne(
@@ -155,6 +161,7 @@ public sealed class NameTable
         AddOne(CodeKind.State, 5, "waits-out-step", State);
         AddOne(CodeKind.State, 6, "enters-building", State);
         AddOne(CodeKind.State, 7, "steps-onto-flag", State);
+        AddOne(CodeKind.State, 9, "builds", State);
         AddOne(CodeKind.State, 0xf, "leaves-castle", State);
         AddOne(CodeKind.State, 0x10, "walks-free", State);
         AddOne(CodeKind.State, 0x11, "cuts-tree", State);
@@ -180,6 +187,7 @@ public sealed class NameTable
         AddOne(CodeKind.State, 0x19, "looks-for-flag-home", State);
         AddOne(CodeKind.State, 0x1c, "claims-node-home", State);
         AddOne(CodeKind.State, 0x42, "waits-at-flag", State);
+        AddOne(CodeKind.State, 0x4a, "leaves-site", State);
 
         AddOne(CodeKind.Building, BuildingType.Castle.Code, "castle", "BuildingType.Castle");
         AddOne(CodeKind.Building, BuildingType.Woodcutter.Code, "woodcutter-hut", "BuildingType.Woodcutter");
@@ -187,7 +195,7 @@ public sealed class NameTable
             CodeKind.Building,
             BuildingType.Stonecutter.Code,
             "stonecutter-hut",
-            "BuildingType.Stonecutter; handler 0x42d987 asks for job 7 (tool good 0x2e), whose work puts the stone (good 10) on the flag (0x438182); size and needs 0x42d307, 0x449f18; docs/rules/build-sites.md, docs/rules/stonecutting.md"
+            "BuildingType.Stonecutter; handler 0x42d987 asks for job 7 (tool stock word 0x2e, good 23), whose work puts the stone (good 10) on the flag (0x438182); size and needs 0x42d307, 0x449f18; docs/rules/build-sites.md, docs/rules/stonecutting.md"
         );
         AddOne(
             CodeKind.Building,
@@ -199,7 +207,7 @@ public sealed class NameTable
             CodeKind.Building,
             BuildingType.Sawmill.Code,
             "sawmill",
-            "BuildingType.Sawmill; handler 0x42da0b asks for job 6 (tool good 0x2c); large, needs 3 planks and 2 stones (0x42d307, 0x449f18); inferred, docs/rules/build-sites.md"
+            "BuildingType.Sawmill; handler 0x42da0b asks for job 6 (tool stock word 0x2c, good 22); large, needs 3 planks and 2 stones (0x42d307, 0x449f18); inferred, docs/rules/build-sites.md"
         );
         AddOne(
             CodeKind.Building,

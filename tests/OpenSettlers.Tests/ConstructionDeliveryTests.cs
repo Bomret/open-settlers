@@ -56,7 +56,7 @@ public sealed class ConstructionDeliveryTests
         Enumerable.Range(0, game.Flags.Count).Sum(flag => game.Flags[flag].Places.Count(place => !place.IsEmpty));
 
     [TestMethod]
-    public void AForesterSiteEndsWithItsTwoPlanksOnSiteAndNoStoneAndTheCastleLosesJustThose()
+    public void AForesterSiteTakesItsTwoPlanksAndNoStoneAndTheCastleLosesJustThose()
     {
         var game = Started();
         for (var plank = 0; plank < 5; plank++)
@@ -72,7 +72,8 @@ public sealed class ConstructionDeliveryTests
         Run(game, 3000);
 
         var site = game.Buildings.Single(building => building.Type == BuildingType.Forester);
-        Assert.AreEqual(0x20, site.FillLow, "two planks on site and none on the way");
+        // The builder takes the planks from the site's fill as they arrive, so none is on the way and none is left over.
+        Assert.AreEqual(0, site.FillLow & 0x0f, "none on the way");
         Assert.AreEqual(0x00, site.FillHigh, "no stone");
         Assert.AreEqual(planks - 2, game.CastleStock.Planks);
         Assert.AreEqual(stones, game.CastleStock.Stones);

@@ -212,7 +212,7 @@ public sealed class RemovalTests
     // the engine's), the two bytes of the fill, the worker, the progress, and the word at 14 that a building taken down keeps its
     // clock in (a building site holds its target height there, and its needs at 16 and 17). The castle's bytes from 14 hold a pointer to its
     // storage, which the engine does not keep.
-    private static string BuildingBytes(Building building, int width)
+    internal static string BuildingBytes(Building building, int width)
     {
         var bytes = new List<byte>();
         bytes.AddRange(BitConverter.GetBytes((building.Y * 2 * width + building.X) * 4));

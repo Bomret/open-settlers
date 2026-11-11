@@ -16,8 +16,20 @@ public readonly record struct Job(int Code)
     /// <summary>The carrier, who takes a road and waits on it (<c>docs/rules/carriers.md</c>).</summary>
     public static Job Carrier => new(CarrierCode);
 
-    /// <summary>The builder, who stands by while the castle is built.</summary>
-    public static Job Builder => new(4);
+    /// <summary>The number of the builder's job, for a <c>case</c> label.</summary>
+    public const int BuilderCode = 3;
+
+    /// <summary>
+    /// The builder, who walks out to a building site and builds it from the planks and stones on site (<c>docs/rules/construction.md</c>).
+    /// The program's request for it (<c>0x42d5fc</c>) names job 3 and the stock word of the tool good 17.
+    /// </summary>
+    public static Job Builder => new(BuilderCode);
+
+    /// <summary>
+    /// The castle's own first settler, who stands by while the castle is built (state 10, <c>0x43f17a</c>) and carries the goods the castle
+    /// hands out onto its flag. No building asks for it: only the castle's placement creates it (<c>docs/rules/castle.md</c>).
+    /// </summary>
+    public static Job CastleSettler => new(4);
 
     /// <summary>The woodcutter, who cuts trees and carries the logs to his hut's flag (<c>docs/rules/woodcutting.md</c>).</summary>
     public static Job Woodcutter => new(WoodcutterCode);

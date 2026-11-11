@@ -74,16 +74,17 @@ clears bit 7 of the status of a window of flags the same way, which the carriers
 
 ## The request
 
-**Status:** confirmed for the first way; **not ported** for the second.
+**Status:** confirmed for both ways ([The builder](construction.md#the-worker-request)).
 
-A building of the woodcutter's type (2) asks, at its turn when bits 2, 6, and 7 of its status are clear (`0xc4`), for a
-settler of job 5 (`0x42be63`). The search starts at the building's flag and runs over the roads breadth first (below).
+A building asks, at its turn when bits 2, 6, and 7 of its status are clear (`0xc4`), for a settler of the job its handler names:
+the woodcutter's hut (type 2) for job 5 (`0x42be63`), the other types and the site for the jobs of
+[The builder](construction.md#the-worker-request). The search starts at the building's flag and runs over the roads breadth first (below).
 At a storage's flag it looks at the storage's list of waiting settlers:
 
 1. A settler of the job waits: the storage clears its entry, the settler takes state 15, mode 255, and the building's
    flag as its target, the building's status gets bit 7, and the storage counts the settler as sent out.
-2. None waits: a jobless settler (job 21) and the tool of the job from the stock become one (not ported: the castle
-   holds one woodcutter, so a second hut gets no worker).
+2. None waits: a jobless settler (job 21) and the tool of the job from the stock become one (so a second woodcutter's hut gets a
+   settler made of one without a job and an axe, the tool good 21).
 
 If the search reaches no storage, or the storage has neither, the request fails and the building sets bit 2.
 
@@ -92,7 +93,7 @@ one settler of job 5 ([Woodcutting](woodcutting.md#the-hut-and-the-job)). The fi
 job 11 as the woodcutter's, which are another hut's and worker's; the walk is the same for either. A layout's finished-building
 entry ([Layouts](layouts.md#finished-buildings)) stands a finished hut of that type on a node whose south-east neighbor holds a
 flag or takes one, and whose site is small or large. The command `CommandKind.PlaceBuilding` places a building site, which
-asks for no worker ([Build sites](build-sites.md#placing-a-building)). The placement marks the map as the original's
+asks for its builder ([Build sites](build-sites.md#placing-a-building), [The builder](construction.md)). The placement marks the map as the original's
 `Building_Place` does: the building's node gets flag bits `0x42`, the flag's node bit `0x10`, the object code 2 (3 for a large
 building), and the building's slot in the node's link byte.
 
@@ -146,7 +147,9 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
 - **State 1, waiting in the castle** (`0x438eeb`): the settler enters its slot in the storage's list of waiting settlers
   every turn (job 10 takes another branch: not ported; the knights, jobs 22 to 26, draw too:
   [Woodcutting](woodcutting.md#the-random-generator)).
-- **State 10, the castle's builder** (`0x43f17a`): the settler with the job 4, slot 0, adds the elapsed units times 128 to
+- **State 9, the builder** (`0x43ec82`) and **state `0x4a`** (`0x43e008`): the settler with the job 3 works in a building site and
+  goes home when it stands ([The builder](construction.md#the-builders-turn)).
+- **State 10, the castle's settler** (`0x43f17a`): the settler with the job 4, slot 0, adds the elapsed units times 128 to
   the castle's build progress each turn; when that wraps (about 64 passes after the castle is placed) the castle
   stands: bit 7 of its type goes out, which changes the door speed index from 0x38 to 0x18, and the settler takes state 12.
 - **A blocked step:** where the next node holds a settler, the timer is 0x7f, the frame `0x51 + direction`, and the heading
@@ -437,8 +440,8 @@ activity's data (`src/Domain/Activity.cs`).
 
 Each activity type keeps the code of the original's state it stands for (`Activity.Code`). `src/Domain/Activity.cs` lists the
 types and their codes. A state code with no activity type is kept as it is in `RawState`, whose turn changes nothing. The
-original's branch for mode `0xfd` to state `0x49` and its branch for state `0x4a` are not ported, because no rule writes
-those states.
+original's branch for mode `0xfd` to state `0x49` is not ported, because no rule writes that state. The builder's states 9 and
+`0x4a` are the activities `Builds` and `LeavesSite`.
 
 The original shares bytes 11 to 15 of the item between its states. An activity names the values it uses: an `Errand` for the
 walk's mode and target, a `Load` for the good a carrier carries and where it goes, a `Heading`, and a free walk's `Trip`. The

@@ -83,10 +83,31 @@ public static class ObjectSprites
     public const int SiteSmallEntry = FirstEntry + 145;
 
     /// <summary>
-    /// The sprite entry of a building site by its progress word: 0 draws <see cref="SiteLargeEntry"/>, any other word
-    /// <see cref="SiteSmallEntry"/> (the stages from progress 2 on are not read yet).
+    /// The sprite entry of the scaffold a small building's site grows (<c>docs/rules/construction.md</c>): the common part of the draw routine
+    /// for a building under construction picks the object at the building's type in the table at <c>0x44fcfe</c> (<c>0x44fc3d</c>), 186 for
+    /// the types 2, 4, and 9, plus the 1250.
     /// </summary>
-    public static int SiteEntry(ushort progress) => progress == 0 ? SiteLargeEntry : SiteSmallEntry;
+    public const int ScaffoldSmallEntry = FirstEntry + 186;
+
+    /// <summary>The sprite entry of the scaffold the sawmill's site grows: the table at <c>0x44fcfe</c> holds the object 181 for the type 0x11.</summary>
+    public const int ScaffoldLargeEntry = FirstEntry + 181;
+
+    /// <summary>The sprite entry of the scaffold of the site of <paramref name="type"/>, or null for a type the view draws none for.</summary>
+    public static int? StageEntry(BuildingType type) =>
+        type == BuildingType.Sawmill ? ScaffoldLargeEntry
+        : type == BuildingType.Woodcutter || type == BuildingType.Stonecutter || type == BuildingType.Forester
+            ? ScaffoldSmallEntry
+        : null;
+
+    /// <summary>The sprite entry of a layer of the site of <paramref name="type"/> (<see cref="SiteStages"/>), or null for none.</summary>
+    public static int? SiteLayerEntry(SiteLayer layer, BuildingType type) =>
+        layer switch
+        {
+            SiteLayer.Ground => SiteLargeEntry,
+            SiteLayer.Base => SiteSmallEntry,
+            SiteLayer.Stage => StageEntry(type),
+            _ => FinishedEntry(type),
+        };
 
     /// <summary>
     /// The sprite entry of the finished building of <paramref name="type"/>, or null for a type the view draws no sprite for.

@@ -96,7 +96,7 @@ public sealed class WalkHomeBehavior(
     public void EnterStorage(int slot, int node, Settler settler)
     {
         _walking.Remove(slot);
-        if (settler.Job == Job.Builder || settler.Job == Job.Jobless)
+        if (settler.Job == Job.CastleSettler || settler.Job == Job.Jobless)
         {
             return;
         }

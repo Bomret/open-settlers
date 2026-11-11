@@ -31,6 +31,15 @@ public sealed class StonecuttingTests
                 ),
         ];
 
+    // The made-up workers: the stonecutter's building asks for the stonecutter's job with no tool.
+    private static WorkerRequest?[] Workers()
+    {
+        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
+        workers[BuildingType.Stonecutter.Code] = new WorkerRequest(Job.Stonecutter, Good.None);
+
+        return workers;
+    }
+
     private static int Heaps(Map map) =>
         Reach().Count(node => map.At(node.X, node.Y).Object.Kind == MapObjectKind.StoneHeap);
 
@@ -62,7 +71,7 @@ public sealed class StonecuttingTests
 
         map = made;
 
-        var game = GameFactory.Create(tables ?? WoodcuttingTests.Made(), made);
+        var game = GameFactory.Create(tables ?? WoodcuttingTests.Made(Workers()), made);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
@@ -161,7 +170,8 @@ public sealed class StonecuttingTests
             buildingNeeds: needs,
             goodClasses: ConstructionTables.Classes(),
             distribution: ConstructionTables.Orders(),
-            plankRankBase: 0xff
+            plankRankBase: 0xff,
+            workers: Workers()
         );
     }
 

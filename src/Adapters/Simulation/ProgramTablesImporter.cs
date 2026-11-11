@@ -104,6 +104,15 @@ public static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
     public const int TypeOneHutWalkAddress = 0x43ff4b;
 
+    /// <summary>The handler of the builder's figure (<c>0x43faf4</c>, the target of the stub of job 3).</summary>
+    public const int BuilderHandlerAddress = 0x43faf4;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the builder's handler for a figure byte from 0x80 (the blows).</summary>
+    public const int BuilderWorkAddress = 0x43fb55;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the builder's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int BuilderWalkAddress = 0x43fb60;
+
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
     private static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
@@ -176,6 +185,31 @@ public static class ProgramTablesImporter
     /// </summary>
     public const int PlankRankAddress = 0x445752;
 
+    /// <summary>
+    /// The instructions of the building under construction's request for a builder (<c>0x42d5fc</c>, in <c>0x42d55f</c>): <c>mov eax, job</c> and
+    /// <c>mov [edi], eax</c>, <c>mov eax, tool</c> and <c>mov [edi+0x18], eax</c> before the call of <c>0x42be63</c>. The tool is the offset of the
+    /// stock word in the storage item (from +4), which is twice the good's number.
+    /// </summary>
+    public const int BuilderRequestAddress = 0x42d5fc;
+
+    /// <summary>
+    /// The same instructions in the handlers of the four types: the woodcutter's (<c>0x42d945</c>), the stonecutter's (<c>0x42d987</c>), the
+    /// forester's (<c>0x42d9c9</c>), and the sawmill's (<c>0x42da0b</c>), each 13 bytes in.
+    /// </summary>
+    public static readonly (BuildingType Type, int Address)[] WorkerRequestAddresses =
+    [
+        (BuildingType.Woodcutter, 0x42d952),
+        (BuildingType.Stonecutter, 0x42d994),
+        (BuildingType.Forester, 0x42d9d6),
+        (BuildingType.Sawmill, 0x42da18),
+    ];
+
+    /// <summary>The address of the builder's order of materials: a 16-bit word for each building type 0 to 0x17, a set bit meaning a stone (<c>0x43f0ba</c>).</summary>
+    public const int MaterialOrderAddress = 0x43f0ba;
+
+    /// <summary>The address of the builder's steps: two 16-bit words for each building type, one before the progress word reaches <c>0x8000</c> and one after (<c>0x43f0fa</c>).</summary>
+    public const int BlowStepAddress = 0x43f0fa;
+
     /// <summary>The bytes of the routine for one good: the rank of good g is the immediate at <see cref="TransportPriorityAddress"/> + 8 * (g - 1) + 1.</summary>
     public const int TransportPriorityStep = 8;
 
@@ -222,8 +256,58 @@ public static class ProgramTablesImporter
             GoodClasses(Slice(exe, GoodClassAddress, 2 * RuleTables.GoodClassCount)),
             [.. DistributionAddresses.Select(address => DistributionOrder(exe, address))],
             PlankRankBase(exe),
+            Workers(exe),
+            WorkerRequest(exe, BuilderRequestAddress),
+            [.. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
+            [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
+            BuilderAdds(exe),
             StonecutterAdds(exe)
         );
+    }
+
+    // The builder's adds from the immediates of his handler, as the woodcutter's are read: the stub of job 3 must jump to the handler.
+    private static BuilderFigureAdds BuilderAdds(byte[] exe)
+    {
+        var stub = JobStubAddress + JobStubSize * Job.BuilderCode;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(BuilderHandlerAddress - (stub + 5))],
+            "jumps to the builder's handler"
+        );
+
+        return new BuilderFigureAdds(Immediate(exe, BuilderWalkAddress), Immediate(exe, BuilderWorkAddress));
+    }
+
+    // The worker each of the four types asks for, from the instructions of its handler.
+    private static WorkerRequest?[] Workers(byte[] exe)
+    {
+        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
+        foreach (var (type, address) in WorkerRequestAddresses)
+        {
+            workers[type.Code] = WorkerRequest(exe, address);
+        }
+
+        return workers;
+    }
+
+    // A request for a worker: mov eax, job; mov [edi], eax; mov eax, tool; mov [edi+0x18], eax. The tool word halved is the good.
+    private static WorkerRequest WorkerRequest(byte[] exe, int address)
+    {
+        var code = Slice(exe, address, 15);
+        if (
+            code[0] != 0xb8
+            || !code[5..7].SequenceEqual<byte>([0x89, 0x07])
+            || code[7] != 0xb8
+            || !code[12..15].SequenceEqual<byte>([0x89, 0x47, 0x18])
+        )
+        {
+            throw new InvalidDataException(
+                $"Siedler1.exe holds no request for a worker at 0x{address:x}: the code does not load a job and a tool as the handlers do."
+            );
+        }
+
+        return new WorkerRequest(new Job(code[1]), new Good(BitConverter.ToInt32(code, 8) / 2));
     }
 
     // The request word a flag item offset names: 0x42 is the first word, 0x44 the second (the class table's second byte takes the

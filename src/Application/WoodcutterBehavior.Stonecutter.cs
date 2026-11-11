@@ -25,6 +25,16 @@ public sealed partial class WoodcutterBehavior
     // takes three quarters of the step's time (0x435e0d).
     private const int StrokeTime = 0x600;
 
+    /// <summary>
+    /// The start routine of job 7 (<c>0x43cfdd</c>), run where the stonecutter has stepped through the door: he leaves the hut's node
+    /// and looks for a heap.
+    /// </summary>
+    public void StartStonecutter(int slot, Settler settler, Building hut)
+    {
+        movement.Release(Map.Index(settler.X, settler.Y));
+        movement.Become(settler, new LooksForStone());
+    }
+
     // The node a heap stands on for a stonecutter at the node (x, y).
     private int HeapOf(int x, int y)
     {

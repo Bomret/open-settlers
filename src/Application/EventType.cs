@@ -87,7 +87,16 @@ public static class EventType
     public const string KnightIdled = "knight-idled";
 
     /// <summary>The settler that stands by while the castle is built adds to the castle's progress.</summary>
-    public const string Builder = "builder";
+    public const string CastleSettlerBuilds = "castle-settler-builds";
+
+    /// <summary>A builder's turn in the building site: a blow, a material taken, or the wait for the next one.</summary>
+    public const string Builds = "builds";
+
+    /// <summary>The builder's last blow: the building is finished and its flag asks for nothing.</summary>
+    public const string BuildingFinished = "building-finished";
+
+    /// <summary>The builder of a finished building waits at its door for the node of the flag, or steps onto the flag.</summary>
+    public const string LeavesSite = "leaves-site";
 
     /// <summary>A settler leaves the castle by its door, or waits for a busy node.</summary>
     public const string Left = "left";
@@ -207,7 +216,7 @@ public static class EventType
         RetryBitsCleared,
         Visited,
         KnightIdled,
-        Builder,
+        CastleSettlerBuilds,
         Left,
         Walked,
         Stepped,

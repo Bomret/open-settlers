@@ -59,7 +59,12 @@ public sealed class LayoutSettlersTests
         byte[]? buildingNeeds = null,
         GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
-        byte plankRankBase = 0
+        byte plankRankBase = 0,
+        WorkerRequest?[]? workers = null,
+        WorkerRequest? builderRequest = null,
+        ushort[]? materialOrder = null,
+        ushort[]? blowSteps = null,
+        ushort stepTime = 100
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -81,7 +86,7 @@ public sealed class LayoutSettlersTests
                 .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
+            Enumerable.Repeat(stepTime, RuleTables.StepTimeCount).ToArray(),
             Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
             Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
             walkRows: rows,
@@ -90,7 +95,11 @@ public sealed class LayoutSettlersTests
             buildingNeeds: buildingNeeds,
             goodClasses: goodClasses,
             distribution: distribution,
-            plankRankBase: plankRankBase
+            plankRankBase: plankRankBase,
+            workers: workers,
+            builderRequest: builderRequest,
+            materialOrder: materialOrder,
+            blowSteps: blowSteps
         );
     }
 

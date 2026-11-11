@@ -843,7 +843,7 @@ public sealed class Removal(
     {
         var settler = settlers[slot];
         var residue = movement.ResidueOf(settler.Activity);
-        if (settler.Job == Job.Builder)
+        if (settler.Job == Job.CastleSettler)
         {
             // The settler keeps its identity and takes the carrier's job; the mode byte of its item is cleared.
             settler.Job = Job.Carrier;

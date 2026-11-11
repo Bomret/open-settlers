@@ -90,6 +90,9 @@ public sealed class RuleTables
     private readonly byte[] _buildingNeeds;
     private readonly GoodClass?[] _goodClasses;
     private readonly DistributionStep[][] _distribution;
+    private readonly WorkerRequest?[] _workers;
+    private readonly ushort[] _materialOrder;
+    private readonly ushort[] _blowSteps;
 
     /// <summary>
     /// Creates tables from their contents. The tables of the settlers' walk (<paramref name="stepTimes"/>,
@@ -120,6 +123,11 @@ public sealed class RuleTables
         GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0,
+        WorkerRequest?[]? workers = null,
+        WorkerRequest? builderRequest = null,
+        ushort[]? materialOrder = null,
+        ushort[]? blowSteps = null,
+        BuilderFigureAdds? builderFigureAdds = null,
         FigureAdds? stonecutterFigureAdds = null
     )
     {
@@ -165,6 +173,22 @@ public sealed class RuleTables
                 [],
             ];
         PlankRankBase = plankRankBase;
+        // stand-in: a table a test does not give makes only the woodcutter's hut ask for a worker, of the woodcutter's job and no tool,
+        // and the builder a settler of the builder's job with no tool.
+        _workers = workers ?? WoodcutterOnly();
+        BuilderRequest = builderRequest ?? new WorkerRequest(Job.Builder, Good.None);
+        // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
+        _materialOrder = materialOrder ?? new ushort[BuildingTypeCount];
+        _blowSteps = blowSteps ?? new ushort[2 * BuildingTypeCount];
+        BuilderFigureAdds = builderFigureAdds ?? default;
+    }
+
+    private static WorkerRequest?[] WoodcutterOnly()
+    {
+        var workers = new WorkerRequest?[BuildingTypeCount];
+        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(Job.Woodcutter, Good.None);
+
+        return workers;
     }
 
     /// <summary>The class of each object code.</summary>
@@ -327,6 +351,38 @@ public sealed class RuleTables
     /// </summary>
     public byte PlankRankBase { get; }
 
+    /// <summary>What the builder's figure handler adds to the figure byte (<c>0x43faf4</c>); all 0 draws him in the carrier's row.</summary>
+    public BuilderFigureAdds BuilderFigureAdds { get; }
+
+    /// <summary>
+    /// What a building site asks for as its builder (<c>0x42d5fc</c>): the builder's job and the tool good a jobless settler takes from the
+    /// stock to become one.
+    /// </summary>
+    public WorkerRequest BuilderRequest { get; }
+
+    /// <summary>
+    /// What a finished building of <paramref name="type"/> asks for as its worker (the handlers of the jump table <c>0x42cd1d</c>); null for
+    /// a type whose handler asks for none of this kind, the castle included.
+    /// </summary>
+    public WorkerRequest? WorkerOf(BuildingType type) =>
+        type.Code is >= 0 and < BuildingTypeCount ? _workers[type.Code] : null;
+
+    /// <summary>
+    /// Whether the material the builder takes in turn <paramref name="index"/> of a building of <paramref name="type"/> is a stone, not a
+    /// plank (the order words at <c>0x43f0ba</c>, one for each type: a set bit means a stone, <c>docs/rules/construction.md</c>).
+    /// </summary>
+    public bool StoneAt(BuildingType type, int index) =>
+        type.Code is >= 0 and < BuildingTypeCount
+        && index is >= 0 and < 16
+        && (_materialOrder[type.Code] >> index & 1) != 0;
+
+    /// <summary>
+    /// What a blow of the builder adds to the building's progress word (<c>0x43f0fa</c>, two words for each type): the first before the word
+    /// reaches <c>0x8000</c>, the second from there on; 0 for a type outside the table.
+    /// </summary>
+    public ushort BlowStep(BuildingType type, bool late) =>
+        type.Code is >= 0 and < BuildingTypeCount ? _blowSteps[2 * type.Code + (late ? 1 : 0)] : (ushort)0;
+
     /// <summary>The scan window table as the importer read it.</summary>
     public ushort[] ScanWindows => _scanWindows;
 
@@ -361,3 +417,9 @@ public readonly record struct FigureAdds(ushort Walk, ushort Carrying, ushort Cu
 /// (<paramref name="HighFacing"/> where the settler's heading, byte 14, is 1).
 /// </summary>
 public readonly record struct HutFigureAdds(ushort Walk, ushort Carrying, ushort High, ushort HighFacing);
+
+/// <summary>
+/// What the builder's figure handler (<c>0x43faf4</c>) adds to the figure byte: <paramref name="Walk"/> for a byte below 0x80,
+/// <paramref name="Work"/> for one from 0x80 (the blows).
+/// </summary>
+public readonly record struct BuilderFigureAdds(ushort Walk, ushort Work);

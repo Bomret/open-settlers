@@ -53,7 +53,19 @@ public static class GameFactory
             (flag, place, good) => goods.LayGood(flag, place, good),
             () => causes.InLayout
         );
-        var roster = new CastleRoster(movement, settlers, buildings, flags, network, history, causes, draws, clock);
+        var roster = new CastleRoster(
+            movement,
+            settlers,
+            buildings,
+            flags,
+            network,
+            history,
+            causes,
+            draws,
+            clock,
+            castle,
+            tables
+        );
         var roadStep = new RoadStep(movement, settlers, history, causes);
         var carriers = new CarrierBehavior(
             movement,
@@ -95,6 +107,10 @@ public static class GameFactory
             roster,
             settlers
         );
+        var builder = new BuilderBehavior(movement, buildings, flags, history, draws, woodcutter.StepOut);
+        woodcutter.RegisterStart(Job.Builder, builder.Start);
+        woodcutter.RegisterStart(Job.Stonecutter, woodcutter.StartStonecutter);
+        builder.Register(behaviours);
         roster.Register(behaviours);
         walks.Register(behaviours);
         removal.Register(behaviours);
@@ -114,7 +130,7 @@ public static class GameFactory
             woodcutter,
             removal,
             roster,
-            new SitePass(map, flags, tables),
+            new SitePass(map, flags, tables, roster.AskForWorker),
             handsOutGoods
                 ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
                 : null

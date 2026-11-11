@@ -26,6 +26,7 @@ public sealed class HistoryEditionSource : IGraphicsSource
 
     readonly ObjectGraphics? _objects;
     readonly Dictionary<int, ObjectDrawing?> _drawings = [];
+    readonly SiteDrawings _sites;
     readonly Dictionary<int, RippleImage?> _ripples = [];
     readonly SettlerSprites? _settlers;
 
@@ -46,6 +47,9 @@ public sealed class HistoryEditionSource : IGraphicsSource
         ObjectsProblem = objectsProblem;
         _settlers = settlers;
         SettlersProblem = settlersProblem;
+        _sites = new SiteDrawings(
+            (type, layer) => ObjectSprites.SiteLayerEntry(layer, type) is { } entry ? Drawing(entry) : null
+        );
     }
 
     /// <summary>The step offsets the settler graphics parsed, or null where they did not load or no settler is drawn.</summary>
@@ -113,7 +117,7 @@ public sealed class HistoryEditionSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(BuildingDraw draw) =>
-        draw.SiteProgress is { } progress ? Drawing(ObjectSprites.SiteEntry(progress))
+        draw.SiteProgress is { } progress ? _sites.Of(draw.Type, progress)
         : ObjectSprites.FinishedEntry(draw.Type) is { } entry ? Drawing(entry)
         : null;
 

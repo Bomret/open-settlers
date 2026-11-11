@@ -19,7 +19,7 @@ public readonly record struct BuildingType(int Code)
 
     /// <summary>
     /// The stonecutter's hut, a small building (<c>docs/rules/build-sites.md</c>, "The four types"). **Inferred** name: the
-    /// handler of the type 4 (<c>0x42d987</c>) asks for the job 7 with the tool of good 0x2e; a later slice confirms the name
+    /// handler of the type 4 (<c>0x42d987</c>) asks for the job 7 with the tool of the stock word 0x2e (good 23); a later slice confirms the name
     /// from the goods the job puts down.
     /// </summary>
     public static BuildingType Stonecutter => new(4);
@@ -33,7 +33,7 @@ public readonly record struct BuildingType(int Code)
 
     /// <summary>
     /// The sawmill, a large building (<c>docs/rules/build-sites.md</c>, "The four types"). **Inferred** name: the handler of
-    /// the type 0x11 (<c>0x42da0b</c>) asks for the job 6 with the tool of good 0x2c; a later slice confirms the name from
+    /// the type 0x11 (<c>0x42da0b</c>) asks for the job 6 with the tool of the stock word 0x2c (good 22); a later slice confirms the name from
     /// the goods the job puts down.
     /// </summary>
     public static BuildingType Sawmill => new(0x11);

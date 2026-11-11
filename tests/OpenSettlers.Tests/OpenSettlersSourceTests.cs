@@ -101,6 +101,8 @@ public sealed class OpenSettlersSourceTests
         "building/sawmill",
         "building/site-small",
         "building/site-large",
+        "building/stage-small",
+        "building/stage-large",
     ];
 
     static IEnumerable<string> Keys =>
@@ -112,7 +114,7 @@ public sealed class OpenSettlersSourceTests
             .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
             .Concat(
-                from job in new[] { "carrier", "woodcutter", "stonecutter", "type-one-hut" }
+                from job in new[] { "carrier", "woodcutter", "stonecutter", "type-one-hut", "builder" }
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
             );
@@ -293,6 +295,45 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
+    public void ASiteGrowsItsScaffoldOverItsBaseAsItsProgressRises()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("base.png", "9x2:6");
+        folder.Png("scaffold.png", "9x8:5");
+        folder.Entries["building/site-small"] = ContentFolder.Entry("base.png", "-4, -1");
+        folder.Entries["building/stage-small"] = ContentFolder.Entry("scaffold.png", "-4, -7");
+        var source = folder.Load();
+
+        // Twice the progress word is the fraction of the scaffold's height that shows from the bottom: (0x200 * 8 >> 16) + 1 = 1 row, and
+        // (0x6000 * 8 >> 16) + 1 = 4 rows; the base is 2 rows high and its bottom row is the scaffold's.
+        var low = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x0100))!.Image!;
+        var high = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x3000))!.Image!;
+
+        Assert.AreEqual((2, -1), (low.Height, low.OffsetY));
+        Assert.AreEqual((4, -3), (high.Height, high.OffsetY));
+        Assert.AreEqual(5, high.Rgba[0], "the scaffold shows in the rows above the base");
+    }
+
+    [TestMethod]
+    public void ASiteInTheSecondHalfDrawsTheWholeScaffoldAndTheFinishedBuildingGrowingOverIt()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("scaffold.png", "9x8:5");
+        folder.Png("hut.png", "9x8:4");
+        folder.Entries["building/stage-small"] = ContentFolder.Entry("scaffold.png", "-4, -7");
+        folder.Entries["building/forester"] = ContentFolder.Entry("hut.png", "-4, -7");
+        var source = folder.Load();
+
+        var first = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x8000))!.Image!;
+        var later = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0xc000))!.Image!;
+
+        // The whole scaffold alone at 0x8000; then the building's bottom (0x8000 * 8 >> 16) + 1 = 5 rows over it.
+        Assert.AreEqual(5, first.Rgba[0]);
+        Assert.AreEqual(5, later.Rgba[0], "the rows above the grown building still show the scaffold");
+        Assert.AreEqual(4, later.Rgba[(7 * 9) * 4], "the building's rows cover the scaffold's at the bottom");
+    }
+
+    [TestMethod]
     public void ABuildingTypeTheGameDrawsNoBuildingForDrawsNothing()
     {
         using var folder = new ContentFolder();
@@ -308,6 +349,8 @@ public sealed class OpenSettlersSourceTests
     [DataRow("building/sawmill")]
     [DataRow("building/site-small")]
     [DataRow("building/site-large")]
+    [DataRow("building/stage-small")]
+    [DataRow("building/stage-large")]
     public void ABuildingKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();
@@ -430,7 +473,7 @@ public sealed class OpenSettlersSourceTests
     {
         using var folder = new ContentFolder();
 
-        Assert.IsNull(folder.Load().Draw(Settler(Job.Builder, Walking())));
+        Assert.IsNull(folder.Load().Draw(Settler(Job.CastleSettler, Walking())));
     }
 
     [TestMethod]
@@ -438,6 +481,7 @@ public sealed class OpenSettlersSourceTests
     [DataRow("woodcutter")]
     [DataRow("stonecutter")]
     [DataRow("type-one-hut")]
+    [DataRow("builder")]
     public void EachJobDrawsAnImageForEveryActivityKind(string job)
     {
         using var folder = new ContentFolder();
@@ -448,6 +492,7 @@ public sealed class OpenSettlersSourceTests
             ["woodcutter"] = Job.Woodcutter,
             ["stonecutter"] = Job.Stonecutter,
             ["type-one-hut"] = Job.TypeOneHut,
+            ["builder"] = Job.Builder,
         };
         Activity[] activities =
         [

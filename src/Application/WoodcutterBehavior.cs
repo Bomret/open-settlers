@@ -48,7 +48,16 @@ public sealed partial class WoodcutterBehavior(
     public (ushort Stamp, ushort Timer, int X, int Y) ObjectPassState =>
         (_objectStamp, _objectTimer, _objectX, _objectY);
 
+    // The start routines of the other jobs (the table at 0x43ca54), which a settler runs where its step through a door ends.
+    private readonly System.Collections.Generic.Dictionary<Job, Action<int, Settler, Building>> _starts = [];
+
     private Map Map => movement.Map;
+
+    /// <summary>
+    /// Registers the start routine of a job (the table at <c>0x43ca54</c>): the settler of the job runs it with its slot, itself, and the
+    /// building it stepped into, where its step through the door ends in a building that is not taken down.
+    /// </summary>
+    public void RegisterStart(Job job, Action<int, Settler, Building> start) => _starts.Add(job, start);
 
     /// <summary>Registers the behaviour of the activities of the woodcutter's work cycle.</summary>
     public void Register(ActivityRegistry registry)
@@ -106,11 +115,9 @@ public sealed partial class WoodcutterBehavior(
                 movement.Release(node);
                 movement.Become(settler, new LooksForTree());
             }
-            else if (settler.Job == Job.Stonecutter)
+            else if (_starts.TryGetValue(settler.Job, out var start))
             {
-                // 0x43cfdd: the stonecutter leaves the hut's node and looks for a heap.
-                movement.Release(node);
-                movement.Become(settler, new LooksForStone());
+                start(slot, settler, building);
             }
         }
         else
@@ -187,7 +194,7 @@ public sealed partial class WoodcutterBehavior(
 
     // State 7, the step from the hut onto its flag (0x43e036): south-east, when the settler's node and that node are free
     // of other settlers; the time of the step is scaled by the door's speed, and the settler waits it out in state 5.
-    private void StepOut(int slot, Settler settler)
+    internal void StepOut(int slot, Settler settler)
     {
         var here = Map.Index(settler.X, settler.Y);
         var (x, y, next) = movement.Neighbour(settler, 1);
