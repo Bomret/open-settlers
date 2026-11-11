@@ -62,6 +62,7 @@ public sealed class SettlerFigureTables
     private readonly HutFigureAdds _typeOneHut;
     private readonly BuilderFigureAdds _builder;
     private readonly FigureAdds _digger;
+    private readonly SawmillerFigureAdds _sawmiller;
     private readonly IdleCarrierTables? _idle;
 
     /// <param name="bases">Two words for each high byte of the figure word: the figure base and the second figure base (negative for none).</param>
@@ -73,6 +74,7 @@ public sealed class SettlerFigureTables
     /// <param name="idle">The tables of the waiting carriers; none draws no waiting carrier.</param>
     /// <param name="stonecutter">What the stonecutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
     /// <param name="digger">What the digger's handler adds to the figure byte (<c>0x43fa87</c>); all 0 draws him in the carrier's row.</param>
+    /// <param name="sawmiller">What the sawmiller's handler adds to the figure byte (<c>0x43fc21</c>) and how far it moves the saw's second figure; all 0 draws him in the carrier's row.</param>
     public SettlerFigureTables(
         short[] bases,
         short[] offsets,
@@ -83,9 +85,11 @@ public sealed class SettlerFigureTables
         IdleCarrierTables? idle = null,
         BuilderFigureAdds builder = default,
         FigureAdds stonecutter = default,
-        FigureAdds digger = default
+        FigureAdds digger = default,
+        SawmillerFigureAdds sawmiller = default
     )
     {
+        _sawmiller = sawmiller;
         _digger = digger;
         _builder = builder;
         _idle = idle;
@@ -110,7 +114,8 @@ public sealed class SettlerFigureTables
             new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets),
             tables.BuilderFigureAdds,
             tables.StonecutterFigureAdds,
-            tables.DiggerFigureAdds
+            tables.DiggerFigureAdds,
+            tables.SawmillerFigureAdds
         );
 
     /// <summary>The palette index of a player's colour.</summary>
@@ -216,6 +221,18 @@ public sealed class SettlerFigureTables
         {
             // The digger's handler (0x43fa87) adds the constant of a figure byte from 0x80 and the walk's below it.
             return figure + (figure >= HighFigure ? _digger.Cutting : _digger.Walk);
+        }
+
+        if (draw.Job == Job.Sawmiller)
+        {
+            // The sawmiller's handler (0x43fc21) adds the saw's constant for a figure byte from 0x80, the plank's for the step that takes
+            // it out (state 5 with state 0xd next), and the walk's for every other.
+            return figure
+                + (
+                    figure >= HighFigure ? _sawmiller.Saw
+                    : draw.Activity is WaitsOutStep { Then: PutsDownGood } ? _sawmiller.Carrying
+                    : _sawmiller.Walk
+                );
         }
 
         if (draw.Job == Job.TypeOneHut)

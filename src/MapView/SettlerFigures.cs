@@ -52,7 +52,9 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
                 or SearchesHome
                 or Builds
                 or LeavesSite
-                or Digs;
+                or Digs
+                or Saws { Sawing: true }
+                or PutsDownGood;
 
     /// <summary>
     /// The terms of the settlers that walk, in the order of their rows, each settler's figure, overlay, and second figure in
@@ -73,6 +75,7 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
                     && settler.Job != Job.TypeOneHut
                     && settler.Job != Job.Builder
                     && settler.Job != Job.Digger
+                    && settler.Job != Job.Sawmiller
                 )
             )
             {
