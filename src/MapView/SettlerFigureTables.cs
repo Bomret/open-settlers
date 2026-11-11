@@ -58,7 +58,12 @@ public sealed class SettlerFigureTables
     private readonly byte[] _data;
     private readonly short[] _carried;
     private readonly FigureAdds _woodcutter;
+    private readonly FigureAdds _stonecutter;
     private readonly HutFigureAdds _typeOneHut;
+    private readonly BuilderFigureAdds _builder;
+    private readonly ForesterFigureAdds _forester;
+    private readonly FigureAdds _digger;
+    private readonly SawmillerFigureAdds _sawmiller;
     private readonly IdleCarrierTables? _idle;
 
     /// <param name="bases">Two words for each high byte of the figure word: the figure base and the second figure base (negative for none).</param>
@@ -68,6 +73,9 @@ public sealed class SettlerFigureTables
     /// <param name="woodcutter">What the woodcutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
     /// <param name="typeOneHut">What the handler of the settler of the type 1 hut adds to the figure byte (<c>0x43fed8</c>).</param>
     /// <param name="idle">The tables of the waiting carriers; none draws no waiting carrier.</param>
+    /// <param name="stonecutter">What the stonecutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
+    /// <param name="digger">What the digger's handler adds to the figure byte (<c>0x43fa87</c>); all 0 draws him in the carrier's row.</param>
+    /// <param name="sawmiller">What the sawmiller's handler adds to the figure byte (<c>0x43fc21</c>) and how far it moves the saw's second figure; all 0 draws him in the carrier's row.</param>
     public SettlerFigureTables(
         short[] bases,
         short[] offsets,
@@ -75,10 +83,20 @@ public sealed class SettlerFigureTables
         short[]? carried = null,
         FigureAdds woodcutter = default,
         HutFigureAdds typeOneHut = default,
-        IdleCarrierTables? idle = null
+        IdleCarrierTables? idle = null,
+        BuilderFigureAdds builder = default,
+        FigureAdds stonecutter = default,
+        ForesterFigureAdds forester = default,
+        FigureAdds digger = default,
+        SawmillerFigureAdds sawmiller = default
     )
     {
+        _sawmiller = sawmiller;
+        _digger = digger;
+        _builder = builder;
+        _forester = forester;
         _idle = idle;
+        _stonecutter = stonecutter;
         _typeOneHut = typeOneHut;
         _woodcutter = woodcutter;
         _carried = carried ?? [];
@@ -96,7 +114,12 @@ public sealed class SettlerFigureTables
             tables.CarriedFigures,
             tables.WoodcutterFigureAdds,
             tables.TypeOneHutFigureAdds,
-            new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets)
+            new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets),
+            tables.BuilderFigureAdds,
+            tables.StonecutterFigureAdds,
+            tables.ForesterFigureAdds,
+            tables.DiggerFigureAdds,
+            tables.SawmillerFigureAdds
         );
 
     /// <summary>The palette index of a player's colour.</summary>
@@ -192,6 +215,30 @@ public sealed class SettlerFigureTables
             return figure + CarriedFigure(draw);
         }
 
+        if (draw.Job == Job.Builder)
+        {
+            // The builder's handler (0x43faf4) adds the blows' constant for a figure byte from 0x80 and the walk's below it.
+            return figure + (figure >= HighFigure ? _builder.Work : _builder.Walk);
+        }
+
+        if (draw.Job == Job.Digger)
+        {
+            // The digger's handler (0x43fa87) adds the constant of a figure byte from 0x80 and the walk's below it.
+            return figure + (figure >= HighFigure ? _digger.Cutting : _digger.Walk);
+        }
+
+        if (draw.Job == Job.Sawmiller)
+        {
+            // The sawmiller's handler (0x43fc21) adds the saw's constant for a figure byte from 0x80, the plank's for the step that takes
+            // it out (state 5 with state 0xd next), and the walk's for every other.
+            return figure
+                + (
+                    figure >= HighFigure ? _sawmiller.Saw
+                    : draw.Activity is WaitsOutStep { Then: PutsDownGood } ? _sawmiller.Carrying
+                    : _sawmiller.Walk
+                );
+        }
+
         if (draw.Job == Job.TypeOneHut)
         {
             // The handler of the type 1 hut's settler (0x43fed8) adds by the heading for a figure byte from 0x80 and by the
@@ -204,8 +251,27 @@ public sealed class SettlerFigureTables
             return figure + (WayBackWithLoad(draw) ? _typeOneHut.Carrying : _typeOneHut.Walk);
         }
 
+        if (draw.Job == Job.Stonecutter)
+        {
+            return figure + StonecutterAdd(figure, draw);
+        }
+
+        if (draw.Job == Job.Forester)
+        {
+            // The forester's handler (0x43fd88) adds the work's constant for a figure byte from 0x80 and the walk's below it,
+            // the waiting and planting frames included.
+            return figure + (figure >= HighFigure ? _forester.Work : _forester.Walk);
+        }
+
         return figure + WoodcutterAdd(figure, WayBackWithLoad(draw));
     }
+
+    // What the stonecutter's handler (0x43fcd8) adds to a figure byte: the stroke's constant from 0x80, below it the way back's
+    // with the stone, also for the step back off the heap (state 0x17, byte 13 2), or the walk's.
+    private int StonecutterAdd(int figure, SettlerDraw draw) =>
+        figure >= HighFigure ? _stonecutter.Cutting
+        : WayBackWithLoad(draw) || draw.Activity is CutsStone { Phase: 2 } ? _stonecutter.Carrying
+        : _stonecutter.Walk;
 
     // What the woodcutter's handler (0x43fb6b) adds to a figure byte: the felling's constant from 0x80, below it the way
     // back's with a load or the walk's.

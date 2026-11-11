@@ -181,7 +181,18 @@ public sealed class SettlerDrawTests
             2 => new Walks(new ToStorage(), heading, next),
             3 => new WalksRoad(load, heading, next == 0xff ? 0 : next, next == 0xff),
             4 => new Door(target, mode == 0xfe),
-            5 => new WaitsOutStep(new Walks(new ToStorage(), heading)),
+            9 => new Builds(
+                BitConverter.ToUInt16(bytes, 12),
+                mode == 0xff,
+                bytes[14] & 0x0f,
+                (bytes[14] & 0x80) != 0,
+                next
+            ),
+            0x4a => new LeavesSite(),
+            8 => new Digs(mode, bytes[12], bytes[13], bytes[14]),
+            5 => new WaitsOutStep(next == 0xd ? new PutsDownGood(new Good(mode)) : new Walks(new ToStorage(), heading)),
+            0xb => new StepsOutWithGood(new Good(mode)),
+            0xd => new PutsDownGood(new Good(mode)),
             0xe => new HandsOver(load, heading, next == 0xff),
             0xf => new Leaving(new ToStorage()),
             0x10 => new WalksFree(
@@ -195,6 +206,21 @@ public sealed class SettlerDrawTests
             ),
             0x11 => new Cuts(new Vector((sbyte)mode, (sbyte)target), mark != 0, heading.Value, next),
             0x12 => new LooksForTree(),
+            0x13 => new LooksForSpot(),
+            0x14 => new Plants(vector, bytes[14] != 0, next),
+            0x15 => new LooksForStone(),
+            0x16 => new WalksFree(
+                new Trip(
+                    vector,
+                    mark != 0x80 ? new ToHeap(new Vector((sbyte)mark, heading.Value))
+                        : heading.Value < 0 ? new Home()
+                        : new BackToHut(heading.Value != 0),
+                    next
+                ),
+                true
+            ),
+            0x17 => new CutsStone(vector, mark, (bytes[14] | (next << 8))),
+            0x18 => new Saws(mode != 0),
             0x19 => new SearchesHome(mode != 0, mode),
             0x42 => new WaitsAtFlag(target, mode, approach),
             0x43 => new ClaimsNode(heading, approach),

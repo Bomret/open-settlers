@@ -57,7 +57,7 @@ _Avoid_: map summary, map dump
 **Play script**
 A text file of steps, one per line, that drive the map view or the game view through its own input
 handlers (keys, the mouse, a click on a tile by `click-tile`, a click on a button by `button`), take
-screenshots, and check its state (in the game view also the tick count, the castle's log count, and the goods on a
+screenshots, and check its state (in the game view also the tick count, the castle's log, plank, and stone counts, and the goods on a
 flag).
 _Avoid_: test script, macro
 
@@ -222,9 +222,21 @@ one activity. Its slot in the settler table is its number and the slot of its th
 _Avoid_: worker, unit, figure
 
 **Building**
-A finished building of the player's: its type, its node and flag, whether its worker is inside or on the way, and
-the counters of the goods it takes in. Its slot in the building table is its number. The castle is slot 0.
+A building of the player's, finished or a building site: its type, its node and flag, whether its worker is inside
+or on the way, and the counters of the goods it takes in. Its slot in the building table is its number. The castle
+is slot 0.
 _Avoid_: house, structure
+
+**Building site**
+A building that a person placed and that is not finished yet. It waits for a digger to level it (large buildings
+only), for the planks and stones its type needs, and for a builder who builds it from them.
+_Avoid_: construction site, site (alone), unfinished building
+
+**Request**
+A building's standing ask, held at its flag, for one kind of good, with a rank that falls as goods of that kind
+arrive or are on their way. A good without a destination goes to a building that the request search finds asking
+for it; with no request, it goes to storage.
+_Avoid_: order, demand, need
 
 **Transport priority**
 A player's rank for each kind of good. Where several goods at one flag wait for the same road, the good

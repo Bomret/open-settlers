@@ -151,8 +151,13 @@ script alone. Add a layout only where none of them holds the situation.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the
-  second road down and puts a woodcutter's hut down at the first flag, so the road's carrier walking home and the
-  woodcutter walking out meet head-on and pass, and checks both at the pass (tick 499).
+  second road down, so its carrier walks home along the first road, and checks that it enters the castle. The pass with a
+  woodcutter walking out is pinned by the golden scenario `head-on-pass-layout` (it puts a finished hut down at tick 401)
+  and by `HeadOnPassTests`: a hut a layout stands has its worker inside from tick 0.
+- `layouts/hut-flag.jsonc`, `layouts/hut-on-road.jsonc`, and `layouts/two-logs.jsonc` with `play/hut-flag.play`,
+  `play/hut-on-road.play`, and `play/two-logs.play`: a finished hut whose flag the entry puts down, a hut whose flag splits a
+  road, and a woodcutter's flag whose road no carrier works until a decoy road is taken down. `play/first-loop.play` and
+  `play/settler-bodies.play` run on `layouts/woodcutter.jsonc`.
 
 ```sh
 sh tools/play-run.sh woodcutter-cut --layout layouts/woodcutter.jsonc --fps 10
@@ -175,8 +180,9 @@ The entries follow, and the game applies them in the file's order:
 - `castle`: `{"x","y"}`.
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
-- `buildings`: a woodcutter's hut.
-- `settlers`: a woodcutter in his hut or a carrier waiting on a road.
+- `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, or sawmill (a
+  woodcutter's, stonecutter's, or forester's with its worker inside).
+- `settlers`: a carrier waiting on a road.
 - `goods`: `{"x","y","place","good"}` on a flag.
 
 A refused or repeated entry fails the load with `<file>: <entry>: <reason>`. [The map form](../rules/map-form.md#a-hand-drawn-map)

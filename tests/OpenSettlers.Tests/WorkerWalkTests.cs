@@ -123,7 +123,8 @@ public sealed class WorkerWalkTests
             );
         }
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceBuilding, hut[0] - 1, hut[1] - 1));
+        game.ApplyCommands();
+        Assert.IsTrue(Huts.Place(game, hut[0] - 1, hut[1] - 1), "the fixture's hut has its site");
         if (late.Length > 0)
         {
             foreach (var road in late.Split(';').Select(text => text.Split(',')))

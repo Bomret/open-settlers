@@ -20,6 +20,11 @@ public static class SettlerEncoder
     private const int StorageMode = 0xfe;
     private const int BuildingMode = 0xff;
     private const int WayBackMark = 0x80;
+    private const int BlowingMode = 0xff;
+    private const int SearchingMode = 1;
+    private const int SecondFigureBit = 0x80;
+    private const int WalksState = 2;
+    private const int PutsDownState = 0xd;
 
     /// <summary>The original's fields for the settler.</summary>
     public static SettlerFields Fields(Settler settler)
@@ -71,6 +76,21 @@ public static class SettlerEncoder
             WaitsOutStep a => Of(a.Then) with { State = a.Code, Next = a.Then.Code },
             EntersBuilding a => new(a.Code, a.Storage ? StorageMode : r.Mode, r.Target, r.Heading, r.Next),
             StepsOntoFlag a => Of(a.Then) with { State = a.Code, Next = a.Then.Code },
+            Builds a => new(
+                a.Code,
+                a.Blowing ? BlowingMode : SearchingMode,
+                a.Site,
+                a.Materials | (a.SecondFigure ? SecondFigureBit : 0),
+                a.Blows
+            ),
+            LeavesSite a => new(a.Code, StorageMode, 0, 0, WalksState),
+            // The digger's work: the pass in byte 11, the site's height and the node of the pass in the word at 12, the phase in byte 14.
+            Digs a => new(a.Code, a.Pass, a.Target | (a.Node << 8), a.Phase, r.Next),
+            // The sawmiller's work: byte 11 is 0xff while he saws and 0 while he waits for a log; with the plank in his hands it holds the
+            // good, the word at 12 is 0, and byte 15 is the state he lays it down in.
+            Saws a => new(a.Code, a.Sawing ? BlowingMode : 0, r.Target, r.Heading, r.Next),
+            StepsOutWithGood a => new(a.Code, a.Good.Code, 0, r.Heading, PutsDownState),
+            PutsDownGood a => new(a.Code, a.Good.Code, 0, r.Heading, r.Next),
             HandsOver a => new(
                 a.Code,
                 a.Load?.Good.Code ?? 0,
@@ -86,6 +106,23 @@ public static class SettlerEncoder
                 a.Back.East & 0xff,
                 ((a.SecondVariant ? 0xff : 0) << 8) | (a.Back.South & 0xff),
                 a.Count,
+                a.Memory
+            ),
+            // The stonecutter's cut: the way back in bytes 11 and 12, the part of the cut in byte 13, the quarter in the word at 14.
+            CutsStone a => new(
+                a.Code,
+                a.Back.East & 0xff,
+                (a.Phase << 8) | (a.Back.South & 0xff),
+                a.Quarter & 0xff,
+                a.Quarter >> 8
+            ),
+            // The forester's wait: the way back in bytes 11 and 12 (and again, as the arrival left it, in byte 13 and the next word's
+            // low byte), byte 14 not 0 once the sapling is down, and the walk's memory in byte 15.
+            Plants a => new(
+                a.Code,
+                a.Back.East & 0xff,
+                ((a.Back.East & 0xff) << 8) | (a.Back.South & 0xff),
+                a.Planted ? 0xff : 0,
                 a.Memory
             ),
             SearchesHome a => new(a.Code, a.FarEndFirst ? a.FarEndMark : 0, r.Target, r.Heading, r.Next),
@@ -112,6 +149,8 @@ public static class SettlerEncoder
         var (mark, heading) = trip.Purpose switch
         {
             ToTree tree => (tree.Back.East & 0xff, tree.Back.South),
+            ToHeap heap => (heap.Back.East & 0xff, heap.Back.South),
+            ToSpot spot => (spot.Back.East & 0xff, spot.Back.South),
             BackToHut back => (WayBackMark, back.Carrying ? 1 : 0),
             _ => (WayBackMark, -1),
         };

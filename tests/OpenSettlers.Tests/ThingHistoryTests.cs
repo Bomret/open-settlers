@@ -63,7 +63,7 @@ public sealed class ThingHistoryTests
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
         Do(game, CommandKind.BuildRoad, 18, 6, [5, 5, 0]);
         Do(game, CommandKind.BuildRoad, 17, 3, [0, 1]);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         for (var i = 0; i < 60; i++)
         {
             game.Tick();
@@ -75,7 +75,8 @@ public sealed class ThingHistoryTests
     [TestMethod]
     public void TheDigestOfAFixedGameIsTheOneTakenBeforeThingHistory()
     {
-        Assert.AreEqual(15684556580687199582UL, World().Digest());
+        // The digest takes each flag's two request words (FlagEncoder.Requests); the value was regenerated for them.
+        Assert.AreEqual(7057416915496346654UL, World().Digest());
     }
 
     private static Game Castle()
@@ -113,7 +114,7 @@ public sealed class ThingHistoryTests
     {
         var game = Castle();
         Do(game, CommandKind.PlaceFlag, 17, 3);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         Assert.AreEqual("building#0.1", game.History.BuildingId(0).ToString());
         Assert.AreEqual("building#1.1", game.History.BuildingId(1).ToString());
 
@@ -125,7 +126,7 @@ public sealed class ThingHistoryTests
 
         Assert.HasCount(1, game.Buildings);
         Do(game, CommandKind.PlaceFlag, 17, 3);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         Assert.AreEqual("building#1.2", game.History.BuildingId(1).ToString());
     }
 
@@ -162,7 +163,7 @@ public sealed class ThingHistoryTests
     {
         var game = Castle();
         Do(game, CommandKind.PlaceFlag, 17, 3);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
 
         var flag = game.History.EventsOf(game.History.FlagId(1)).Single();
         var hut = game.History.EventsOf(game.History.BuildingId(1)).Single();
@@ -296,11 +297,8 @@ public sealed class ThingHistoryTests
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
-        "buildings": [{"x": 13, "y": 10}],
-        "settlers": [
-          {"job": "woodcutter", "state": "in-hut", "x": 13, "y": 10},
-          {"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}
-        ],
+        "buildings": [{"type": "woodcutter", "x": 13, "y": 10}],
+        "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}],
         "goods": [{"x": 14, "y": 11, "place": 0, "good": 7}]
         """;
 

@@ -45,9 +45,19 @@ public static class BuildSite
     /// Judges a node for a player. <paramref name="hasCastle"/> tells whether the player's castle stands; the
     /// original then compares owners with the player's own and ends in site 4 where it ends in site 5 without one.
     /// A node whose object is a flag or a building gives the result 0, 0, 0: the original judges those from its
-    /// flag and building tables, which this port does not hold yet.
+    /// flag and building tables, which this port does not hold yet. <paramref name="buildings"/> is the building table, which a
+    /// large site that waits for its digger within the third ring of the node is read from (<c>docs/rules/digging.md</c>); none
+    /// reads no such site.
     /// </summary>
-    public static BuildSiteResult Evaluate(RuleTables tables, Map map, int x, int y, int player, bool hasCastle)
+    public static BuildSiteResult Evaluate(
+        RuleTables tables,
+        Map map,
+        int x,
+        int y,
+        int player,
+        bool hasCastle,
+        IReadOnlyList<Building>? buildings = null
+    )
     {
         var owner = hasCastle ? Owner.Player(player) : Owner.Nobody;
 
@@ -187,9 +197,9 @@ public static class BuildSite
         )
             return new(node, site, 0);
 
-        // The heights of the 12 nodes of the second ring bound the levelled height. simplicity: the original also
-        // folds in the height of a code 3 building within the third ring; no such object exists before the
-        // construction slices, so that term is left out.
+        // The heights of the 12 nodes of the second ring bound the levelled height, and so do the target heights of the large building
+        // sites that wait for their digger within the third ring (0x44c151 to 0x44c204, in 0x44bd72): a node holding the object code 3
+        // whose building is under construction and whose progress word is still 0.
         int low = 0x1f,
             high = 0;
         for (var i = 7; i <= 18; i++)
@@ -197,6 +207,26 @@ public static class BuildSite
             var h = Height(i);
             low = Math.Min(low, h);
             high = Math.Max(high, h);
+        }
+
+        if (buildings is not null)
+        {
+            for (var i = 19; i < Nodes; i++)
+            {
+                if (
+                    nodes[i].Object == MapObject.LargeHut
+                    && nodes[i].LinkedSlot is var slot
+                    && slot < buildings.Count
+                    && buildings[slot] is { Constructing: true, Progress: 0, Site: { } waiting } waitingBuilding
+                )
+                {
+                    // The word at 14 holds the target height of a site, and the clock of its take-down once it is taken down (0x4617fd);
+                    // the program reads its low byte whole.
+                    var height = waitingBuilding.IsDemolishing ? waitingBuilding.Stamp & 0xff : waiting.TargetHeight;
+                    low = Math.Min(low, height);
+                    high = Math.Max(high, height);
+                }
+            }
         }
 
         if (high - low >= 9)

@@ -41,6 +41,9 @@ public sealed class SettlerFiguresTests
     // way back with a load, 0x13 and 0x14 for a figure byte from 0x80.
     private static readonly HutFigureAdds HutAdds = new(0x1100, 0x1200, 0x1280, 0x1380);
 
+    // The adds of the builder's handler (0x43faf4), made up: 0x1500 for the walk and 0x1580 for a figure byte from 0x80.
+    private static readonly BuilderFigureAdds BuilderAdds = new(0x1500, 0x1580);
+
     // The woodcutter: the figure base 100 and the second base 50 in the row 0x0b, 200 and none in the row 0x10, 300 and
     // none in the row 0x0f; each figure byte adds its own number and, to the second, 1. The carrier's row 0: 100, none.
     private static SettlerPair Figures(sbyte[]? frameRows = null) =>
@@ -82,8 +85,47 @@ public sealed class SettlerFiguresTests
         bases[2 * 2] = 400;
         bases[2 * 2 + 1] = -1;
 
-        return new SettlerFigureTables(bases, offsets, Sequences(), carried, Adds, HutAdds, Idle());
+        // The builder's rows (0x43faf4): 0x15 for the walk and 0x16 for a figure byte from 0x80 (made up).
+        bases[2 * 0x15] = 1000;
+        bases[2 * 0x15 + 1] = -1;
+        bases[2 * 0x16] = 1100;
+        bases[2 * 0x16 + 1] = -1;
+
+        // The digger's rows (0x43fa87): 0x17 for the walk and the dig and 0x18 for a figure byte from 0x80 (made up).
+        bases[2 * 0x17] = 1200;
+        bases[2 * 0x17 + 1] = -1;
+        bases[2 * 0x18] = 1300;
+        bases[2 * 0x18 + 1] = -1;
+
+        // The sawmiller's rows (0x43fc21): 0x19 for the walk, 0x1a for the step that takes the plank out, and 0x1c for a figure byte
+        // from 0x80 (made up).
+        bases[2 * 0x19] = 1400;
+        bases[2 * 0x19 + 1] = -1;
+        bases[2 * 0x1a] = 1500;
+        bases[2 * 0x1a + 1] = -1;
+        bases[2 * 0x1c] = 1600;
+        bases[2 * 0x1c + 1] = -1;
+
+        return new SettlerFigureTables(
+            bases,
+            offsets,
+            Sequences(),
+            carried,
+            Adds,
+            HutAdds,
+            Idle(),
+            BuilderAdds,
+            digger: DiggerAdds,
+            sawmiller: SawmillerAdds
+        );
     }
+
+    // The adds of the sawmiller's handler (0x43fc21), made up: 0x1900 for a figure byte below 0x80, 0x1a00 for the step that takes the
+    // plank out, and 0x1b80 from 0x80 on.
+    private static readonly SawmillerFigureAdds SawmillerAdds = new(0x1900, 0x1a00, 0x1b80);
+
+    // The adds of the digger's handler (0x43fa87), made up: 0x1700 for a figure byte below 0x80 and 0x1780 from there on.
+    private static readonly FigureAdds DiggerAdds = new(0x1700, 0x1700, 0x1780);
 
     // The waiting carriers' tables: the phase of the column c is 8 * c, the figure word of the index i is i (row 0), and the
     // road directions 0x09 (east and west) move the figure 3 right and 1 up.
@@ -442,6 +484,64 @@ public sealed class SettlerFiguresTests
             new[] { 1953, 2603, 3201 },
             Figures().Draws(Map(), [home], 0).Select(d => d.Entry).ToArray()
         );
+    }
+
+    [TestMethod]
+    public void ABuilderWalkingAndAtWorkIsDrawnInTheRowsOfHisHandler()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Builder(int frame, Activity activity) =>
+            new(Job.Builder, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Builder(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var work = figures.Draws(map, [Builder(8, new Builds(1, true, 0, false, 8))], 0).Select(d => d.Entry).ToArray();
+
+        // Figure byte 3 in the row 0x15 (base 1000, the walk's constant 0x1500), figure byte 0x81 at work: the word 0x1580 + 0x81 = 0x1601,
+        // the row 0x16 (base 1100) and the offset 1; no second figure.
+        CollectionAssert.AreEqual(new[] { 2853, 3503 }, walk);
+        CollectionAssert.AreEqual(new[] { 2951, 3601 }, work);
+    }
+
+    [TestMethod]
+    public void ADiggerWalkingAndAtWorkIsDrawnInTheRowsOfHisHandler()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Digger(int frame, Activity activity) =>
+            new(Job.Digger, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Digger(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var work = figures.Draws(map, [Digger(8, new Digs(15, 10, 6, 1))], 0).Select(d => d.Entry).ToArray();
+
+        // Figure byte 3 in the row 0x17 (base 1200, the constant 0x1700), figure byte 0x81 in the work state: the word 0x1780 + 0x81 =
+        // 0x1801, the row 0x18 (base 1300) and the offset 1; no second figure.
+        CollectionAssert.AreEqual(new[] { 3053, 3703 }, walk);
+        CollectionAssert.AreEqual(new[] { 3151, 3801 }, work);
+    }
+
+    [TestMethod]
+    public void ASawmillerWalkingSawingAndCarryingAPlankOutIsDrawnInTheRowsOfHisHandlerAndNotWhereHeWaitsForALog()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Sawmiller(int frame, Activity activity) =>
+            new(Job.Sawmiller, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Sawmiller(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var saws = figures.Draws(map, [Sawmiller(8, new Saws(true))], 0).Select(d => d.Entry).ToArray();
+        var carries = figures
+            .Draws(map, [Sawmiller(7, new WaitsOutStep(new PutsDownGood(Good.Plank)))], 0)
+            .Select(d => d.Entry)
+            .ToArray();
+        var waits = figures.Draws(map, [Sawmiller(8, new Saws(false))], 0);
+
+        // Figure byte 3 in the row 0x19 (base 1400) for the walk and in the row 0x1a (base 1500) for the step with the plank, figure byte
+        // 0x81 in the work state: the word 0x1b80 + 0x81 = 0x1c01, the row 0x1c (base 1600) and the offset 1; waiting inside draws nothing.
+        CollectionAssert.AreEqual(new[] { 3253, 3903 }, walk);
+        CollectionAssert.AreEqual(new[] { 3353, 4003 }, carries);
+        CollectionAssert.AreEqual(new[] { 3451, 4101 }, saws);
+        Assert.IsEmpty(waits);
     }
 
     [TestMethod]

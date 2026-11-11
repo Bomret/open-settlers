@@ -37,6 +37,62 @@ public sealed record ObjectImage(int Width, int Height, int OffsetX, int OffsetY
         };
     }
 
+    /// <summary>
+    /// The part of the image a growing draw shows (<c>Gfx_DrawSpriteGrowing</c>, <c>0x406350</c>): the bottom <c>(fraction * height >> 16) + 1</c>
+    /// rows, the top of the clip moved up from the bottom row by that fraction of the height. A fraction of 0xffff shows the whole image.
+    /// </summary>
+    /// <param name="fraction">How much shows, in 65536ths of the height from the bottom up.</param>
+    public ObjectImage Grown(int fraction)
+    {
+        var rows = Math.Min(Height, (fraction * Height >> 16) + 1);
+        if (rows >= Height)
+        {
+            return this;
+        }
+
+        var cut = Height - rows;
+
+        return this with
+        {
+            Height = rows,
+            OffsetY = OffsetY + cut,
+            Rgba = Rgba[(cut * Width * 4)..],
+        };
+    }
+
+    /// <summary>
+    /// This image with <paramref name="above"/> drawn over it: an image that covers the union of both, where a pixel <paramref name="above"/>
+    /// covers shows it and any other shows this image's.
+    /// </summary>
+    public ObjectImage Over(ObjectImage above)
+    {
+        var left = Math.Min(OffsetX, above.OffsetX);
+        var top = Math.Min(OffsetY, above.OffsetY);
+        var width = Math.Max(OffsetX + Width, above.OffsetX + above.Width) - left;
+        var height = Math.Max(OffsetY + Height, above.OffsetY + above.Height) - top;
+        var rgba = new byte[width * height * 4];
+        Blit(this, rgba);
+        Blit(above, rgba);
+
+        return new ObjectImage(width, height, left, top, rgba);
+
+        void Blit(ObjectImage image, byte[] target)
+        {
+            for (var y = 0; y < image.Height; y++)
+            {
+                for (var x = 0; x < image.Width; x++)
+                {
+                    var from = (y * image.Width + x) * 4;
+                    if (image.Rgba[from + 3] != 0)
+                    {
+                        var to = ((image.OffsetY - top + y) * width + image.OffsetX - left + x) * 4;
+                        Array.Copy(image.Rgba, from, target, to, 4);
+                    }
+                }
+            }
+        }
+    }
+
     /// <summary>Converts a decoded sprite through <paramref name="palette"/>.</summary>
     public static ObjectImage From(Sprite sprite, Palette palette)
     {

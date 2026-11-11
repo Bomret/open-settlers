@@ -1,5 +1,6 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
@@ -186,6 +187,22 @@ public sealed class FlagEncoderTests
         CollectionAssert.AreEqual(
             new long[] { 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0x80 | 1 | 5 << 3, 0, 0, 0 },
             FlagEncoder.Words(table).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void TheDigestRequestsOfAFlagAreTheClassAndRankOfEachOfItsTwoRequestWords()
+    {
+        var table = new FlagTable();
+        table.Add(4, 5);
+        table[0].SetRequest(RequestWord.First, new Request(new GoodClass(3, RequestWord.First), 0x3e));
+        table[0].SetRequest(RequestWord.Second, new Request(new GoodClass(0, RequestWord.Second), 7));
+        table.Add(6, 5);
+
+        CollectionAssert.AreEqual(
+            new long[] { 3, 0x3e, 0, 7, -1, 0, -1, 0 },
+            FlagEncoder.Requests(table).ToArray(),
+            "a class of 0 differs from no class"
         );
     }
 

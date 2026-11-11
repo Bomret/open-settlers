@@ -39,8 +39,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     readonly ObjectImage[] _roads;
     readonly ObjectDrawing _flag;
     readonly ObjectDrawing[] _objects;
-    readonly ObjectDrawing _castle;
-    readonly ObjectDrawing _woodcutter;
+    readonly IReadOnlyDictionary<string, ObjectDrawing> _buildings;
     readonly ObjectDrawing[] _goods;
     readonly ObjectImage[] _settlers;
     readonly int _headroom;
@@ -48,13 +47,15 @@ public sealed class OpenSettlersSource : IGraphicsSource
     // The figure of a job and kind in a player's colour, one instance per job, kind, and colour.
     readonly Dictionary<(int Frame, int Colour), ObjectDrawing> _marked = [];
 
+    // The drawings of the building sites by type and progress word.
+    readonly SiteDrawings _sites;
+
     OpenSettlersSource(
         ObjectImage[] terrain,
         ObjectImage[] roads,
         ObjectDrawing flag,
         ObjectDrawing[] objects,
-        ObjectDrawing castle,
-        ObjectDrawing woodcutter,
+        IReadOnlyDictionary<string, ObjectDrawing> buildings,
         ObjectDrawing[] goods,
         ObjectImage[] settlers,
         int headroom
@@ -66,9 +67,9 @@ public sealed class OpenSettlersSource : IGraphicsSource
         _roads = roads;
         _flag = flag;
         _objects = objects;
-        _castle = castle;
-        _woodcutter = woodcutter;
+        _buildings = buildings;
         _goods = goods;
+        _sites = new SiteDrawings((type, layer) => SiteLayer(layer, type));
     }
 
     /// <summary>The number of player colours; a player beyond them takes the colour of its number modulo this.</summary>
@@ -97,6 +98,63 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <summary>The manifest key of the woodcutter's hut.</summary>
     public const string WoodcutterKey = "building/woodcutter";
+
+    /// <summary>The manifest key of the stonecutter's hut.</summary>
+    public const string StonecutterKey = "building/stonecutter";
+
+    /// <summary>The manifest key of the forester's hut.</summary>
+    public const string ForesterKey = "building/forester";
+
+    /// <summary>The manifest key of the sawmill.</summary>
+    public const string SawmillKey = "building/sawmill";
+
+    /// <summary>The manifest key of a building site of a small building that has not started (progress 1).</summary>
+    public const string SiteSmallKey = "building/site-small";
+
+    /// <summary>The manifest key of a building site of a large building that has not started (progress 0).</summary>
+    public const string SiteLargeKey = "building/site-large";
+
+    // The finished buildings the set draws, by type, and the sites by their progress.
+    static readonly (BuildingType Type, string Key)[] FinishedKeys =
+    [
+        (BuildingType.Castle, CastleKey),
+        (BuildingType.Woodcutter, WoodcutterKey),
+        (BuildingType.Stonecutter, StonecutterKey),
+        (BuildingType.Forester, ForesterKey),
+        (BuildingType.Sawmill, SawmillKey),
+    ];
+
+    /// <summary>The manifest key of the scaffold a small building's site grows as its progress rises (the stage object 186 of the program).</summary>
+    public const string StageSmallKey = "building/stage-small";
+
+    /// <summary>The manifest key of the scaffold a large building's site grows (the stage object 181 of the program).</summary>
+    public const string StageLargeKey = "building/stage-large";
+
+    static readonly string[] BuildingKeys =
+    [
+        .. FinishedKeys.Select(finished => finished.Key),
+        SiteSmallKey,
+        SiteLargeKey,
+        StageSmallKey,
+        StageLargeKey,
+    ];
+
+    // The art of a layer of a building site (SiteStages): the ground and the base of a site, the scaffold of the size of the type's
+    // building, and the finished building.
+    ObjectDrawing? SiteLayer(SiteLayer layer, BuildingType type) =>
+        layer switch
+        {
+            MapView.SiteLayer.Ground => _buildings[SiteLargeKey],
+            MapView.SiteLayer.Base => _buildings[SiteSmallKey],
+            MapView.SiteLayer.Stage when SiteStages.ScaffoldIsLarge(type) is { } large => _buildings[
+                large ? StageLargeKey : StageSmallKey
+            ],
+            MapView.SiteLayer.Finished => FinishedKeys.FirstOrDefault(finished => finished.Type == type)
+                is { Key: not null } known
+                ? _buildings[known.Key]
+                : null,
+            _ => null,
+        };
 
     /// <summary>The number of goods the set draws: a good's low 5 bits select one.</summary>
     public const int GoodCount = 32;
@@ -187,8 +245,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
             objects[code - FirstObjectCode] = new ObjectDrawing(Image(ObjectKey(code)), null);
         }
 
-        var castle = new ObjectDrawing(Image(CastleKey), null);
-        var woodcutter = new ObjectDrawing(Image(WoodcutterKey), null);
+        var buildings = BuildingKeys.ToDictionary(key => key, key => new ObjectDrawing(Image(key), null));
         var goods = new ObjectDrawing[GoodCount];
         for (var code = 0; code < GoodCount; code++)
         {
@@ -204,9 +261,13 @@ public sealed class OpenSettlersSource : IGraphicsSource
             }
         }
 
-        var headroom = objects.Concat([flag, castle, woodcutter]).Concat(goods).Max(drawing => drawing.Image!.Height);
+        var headroom = objects
+            .Concat([flag])
+            .Concat(buildings.Values)
+            .Concat(goods)
+            .Max(drawing => drawing.Image!.Height);
 
-        return new OpenSettlersSource(terrain, roads, flag, objects, castle, woodcutter, goods, settlers, headroom);
+        return new OpenSettlersSource(terrain, roads, flag, objects, buildings, goods, settlers, headroom);
     }
 
     // The jobs the game draws a settler for, by the name their manifest keys carry.
@@ -214,23 +275,31 @@ public sealed class OpenSettlersSource : IGraphicsSource
     [
         ("carrier", Job.Carrier),
         ("woodcutter", Job.Woodcutter),
+        ("stonecutter", Job.Stonecutter),
         ("type-one-hut", Job.TypeOneHut),
+        ("builder", Job.Builder),
+        ("forester", Job.Forester),
+        ("digger", Job.Digger),
+        ("sawmiller", Job.Sawmiller),
     ];
 
     // The kinds of activity a settler is drawn in; one frame each, whatever the heading, step, or frame.
     static readonly string[] Kinds = ["walks", "carries", "cuts", "door", "hands-over", "waits"];
 
-    /// <summary>The manifest key of the frame of a job (<c>carrier</c>, <c>woodcutter</c>, <c>type-one-hut</c>) in an activity kind.</summary>
+    /// <summary>The manifest key of the frame of a job (<c>carrier</c>, <c>woodcutter</c>, <c>stonecutter</c>, <c>type-one-hut</c>) in an activity kind.</summary>
     public static string SettlerKey(string job, string kind) => $"settler/{job}/{kind}";
 
     // The kind of activity a settler term is drawn in: what it does, or that it carries a good.
     static int KindOf(SettlerDraw draw) =>
         draw.Activity switch
         {
-            Cuts => 2,
+            Cuts or CutsStone or Builds or Plants or Digs or Saws => 2,
             Door => 3,
             HandsOver => 4,
             WaitsOffRoad => 5,
+            WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
+            or WaitsOutStep { Then: PutsDownGood }
+            or PutsDownGood => 1,
             _ => draw.Carried.IsNone ? 0 : 1,
         };
 
@@ -345,8 +414,9 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(BuildingDraw draw) =>
-        draw.Type == BuildingType.Castle ? _castle
-        : draw.Type == BuildingType.Woodcutter ? _woodcutter
+        draw.SiteProgress is { } progress ? _sites.Of(draw.Type, progress)
+        : FinishedKeys.FirstOrDefault(finished => finished.Type == draw.Type) is { Key: not null } known
+            ? _buildings[known.Key]
         : null;
 
     /// <inheritdoc />

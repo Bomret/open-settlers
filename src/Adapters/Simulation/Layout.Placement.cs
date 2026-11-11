@@ -8,9 +8,9 @@ namespace OpenSettlers.Simulation;
 public sealed partial class Layout
 {
     // One entry of the file that a game takes as a command: its name in the file (flags[1]) and the command; a refusal
-    // reports the reason Refusal gives for the command's kind. A settler or good entry has no command: its Place
-    // puts it in the game directly (WalkBehavior.PlaceWoodcutterInHut, CarrierBehavior.PlaceCarrierOnRoad,
-    // GoodsTransport.PlaceGood) and returns why it refused, or null.
+    // reports the reason Refusal gives for the command's kind. A building, settler, or good entry is no command a player gives:
+    // its Place puts it in the game directly (Game.PlaceFinishedBuilding, WalkBehavior.StandWorkerInHut,
+    // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null.
     private sealed record Step(string Name, Command Command, Func<Game, string?>? Place = null);
 
     /// <summary>
@@ -71,8 +71,11 @@ public sealed partial class Layout
             CommandKind.BuildRoad =>
                 "a step is not allowed where the original's road drawing allows it, or the last step reaches no "
                     + "flag; list the flag at the end before the road",
-            _ => "the node is no site for a hut and its flag south-east of it",
+            _ => BuildingRefusal,
         };
+
+    private const string BuildingRefusal =
+        "the node is no site for a building of the type's size with its flag south-east of it, and the castle must stand";
 
     private sealed partial class Reader
     {
@@ -96,7 +99,7 @@ public sealed partial class Layout
                         good &= ReadList(property, CommandKind.BuildRoad, steps);
                         break;
                     case "buildings":
-                        good &= ReadList(property, CommandKind.PlaceBuilding, steps);
+                        good &= ReadEntries(property, ReadBuilding, steps);
                         break;
                     case "settlers":
                         good &= ReadEntries(property, ReadSettler, steps);
@@ -152,10 +155,94 @@ public sealed partial class Layout
             return good;
         }
 
+        // The building types a finished-building entry names (docs/rules/layouts.md), by the names of the build panel.
+        private static readonly Dictionary<string, BuildingType> BuildingNames = new()
+        {
+            ["woodcutter"] = BuildingType.Woodcutter,
+            ["stonecutter"] = BuildingType.Stonecutter,
+            ["forester"] = BuildingType.Forester,
+            ["sawmill"] = BuildingType.Sawmill,
+        };
+
+        private const string BuildingShape =
+            "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", or \"sawmill\", \"x\", \"y\"} (the node of the building, "
+            + "finished with its flag south-east of it)";
+
+        // A finished-building entry: the building stands finished at tick 0 as the original's mission start leaves a building
+        // (0x41f2d2 places it through 0x449a63 and finishes it).
+        private bool ReadBuilding(string name, JsonElement entry, List<Step> steps)
+        {
+            if (entry.ValueKind != JsonValueKind.Object)
+            {
+                Fail(name, $"must be {BuildingShape}");
+
+                return false;
+            }
+
+            var unknown = entry
+                .EnumerateObject()
+                .Select(p => p.Name)
+                .FirstOrDefault(n => n is not ("type" or "x" or "y"));
+            if (unknown is not null)
+            {
+                Fail(name, $"unknown key {unknown}, a building is {BuildingShape}");
+
+                return false;
+            }
+
+            if (!entry.TryGetProperty("type", out var typeEntry) || typeEntry.ValueKind != JsonValueKind.String)
+            {
+                Fail(name, $"a building needs a \"type\": a building is {BuildingShape}");
+
+                return false;
+            }
+
+            var typeName = typeEntry.GetString();
+            if (typeName is null || !BuildingNames.TryGetValue(typeName, out var type))
+            {
+                Fail(name, $"no building type {typeName}: M4 builds woodcutter, stonecutter, forester, or sawmill");
+
+                return false;
+            }
+
+            if (!Whole(entry, "x", out var x) || !Whole(entry, "y", out var y))
+            {
+                Fail(name, "x and y must each be a whole number");
+
+                return false;
+            }
+
+            var command = new Command(0, 0, CommandKind.PlaceBuilding, x, y, Building: type);
+            var repeated = steps.FirstOrDefault(step => step.Command == command);
+            if (repeated is not null)
+            {
+                Fail(name, $"repeats {repeated.Name}");
+
+                return false;
+            }
+
+            // The mission start creates a building's settlers inside it: the woodcutter's hut, the stonecutter's, and the forester's
+            // stand with their workers.
+            steps.Add(
+                new Step(
+                    name,
+                    command,
+                    game =>
+                        !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
+                        : type == BuildingType.Woodcutter
+                        || type == BuildingType.Stonecutter
+                        || type == BuildingType.Forester
+                            ? game.Walks.StandWorkerInHut(x, y)
+                        : null
+                )
+            );
+
+            return true;
+        }
+
         // The entry states a settler starts in (docs/rules/layouts.md): each job with its states.
         private const string SettlerShape =
-            "{\"job\": \"woodcutter\", \"state\": \"in-hut\", \"x\", \"y\"} (the hut's node) or "
-            + "{\"job\": \"carrier\", \"state\": \"waiting-on-road\", \"x\", \"y\", \"direction\"} (a flag of the road and "
+            "{\"job\": \"carrier\", \"state\": \"waiting-on-road\", \"x\", \"y\", \"direction\"} (a flag of the road and "
             + "the direction the road leaves it)";
 
         private bool ReadSettler(string name, JsonElement entry, List<Step> steps)
@@ -174,9 +261,7 @@ public sealed partial class Layout
 
             var job = Text("job");
             var state = Text("state");
-            var woodcutter = job == "woodcutter" && state == "in-hut";
-            var carrier = job == "carrier" && state == "waiting-on-road";
-            if (!woodcutter && !carrier)
+            if (job != "carrier" || state != "waiting-on-road")
             {
                 Fail(name, $"no entry state: a settler is {SettlerShape}");
 
@@ -186,7 +271,7 @@ public sealed partial class Layout
             var unknown = entry
                 .EnumerateObject()
                 .Select(p => p.Name)
-                .FirstOrDefault(n => n is not ("job" or "state" or "x" or "y") && !(carrier && n == "direction"));
+                .FirstOrDefault(n => n is not ("job" or "state" or "x" or "y") && n != "direction");
             if (unknown is not null)
             {
                 Fail(name, $"unknown key {unknown}, a settler is {SettlerShape}");
@@ -198,23 +283,16 @@ public sealed partial class Layout
             if (
                 !Whole(entry, "x", out var x)
                 || !Whole(entry, "y", out var y)
-                || (carrier && (!Whole(entry, "direction", out direction) || direction is < 0 or > 5))
+                || !Whole(entry, "direction", out direction)
+                || direction is < 0 or > 5
             )
             {
-                Fail(name, $"x, y{(carrier ? ", and a direction from 0 to 5" : "")} must be whole numbers");
+                Fail(name, "x, y, and a direction from 0 to 5 must be whole numbers");
 
                 return false;
             }
 
-            steps.Add(
-                new Step(
-                    name,
-                    default,
-                    woodcutter
-                        ? game => game.Walks.PlaceWoodcutterInHut(x, y)
-                        : game => game.Carriers.PlaceCarrierOnRoad(x, y, direction)
-                )
-            );
+            steps.Add(new Step(name, default, game => game.Carriers.PlaceCarrierOnRoad(x, y, direction)));
 
             return true;
         }

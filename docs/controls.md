@@ -33,13 +33,13 @@ has the focus.
 
 ## Game view
 
-The bar shows the tick count and the castle's log count. A new seed or size starts a new game on the new map.
+The bar shows the tick count and the castle's log, plank, and stone counts. A new seed or size starts a new game on the new map.
 
 A click is a press and release of the left mouse button, or a tap on a touchpad, that does not move the view. A
 press that moves the view by more than a few pixels is a drag and places nothing. A click goes to the node whose
 point is nearest to it. A click on a flag's picture goes to that flag's node. Where two flag pictures overlap, the click goes to the southern flag. If both flags are in one row, it goes to the eastern one.
 
-The Flag, Road, Woodcutter, and Remove buttons are on/off buttons. At most one is on: pressing one turns the others
+The Flag, Road, Woodcutter, Forester, Stonecutter, Sawmill, and Remove buttons are on/off buttons. At most one is on: pressing one turns the others
 off.
 
 ### No button on
@@ -72,13 +72,15 @@ the new road at the flag.
 Escape, a right click, a click on the Road button, another button, or a new map drops a road that is not finished.
 Nothing of it is left on the map. Escape also turns the Road button off.
 
-### Woodcutter
+### Woodcutter, Forester, Stonecutter, and Sawmill
 
-A click puts a woodcutter's hut on the node and its flag on the node south-east of it. Where a flag with no building
-stands there already, the hut takes that flag. Where a road runs through the node south-east of the hut, the flag splits that road like the
-Flag button does. The node must be a site for a small or a large building: for example,
-not a tree or a stone, and with nothing on or around the node south-east of it but such a flag. Connect the hut's flag
-to the castle with a road. The hut stands finished at once, and its worker walks to it from the castle.
+These four buttons are the stand-in for the original's build panel. A click puts a building site of the button's type on the
+node and its flag on the node south-east of it. Where a flag with no building stands there already, the site takes that flag.
+Where a road runs through the node south-east of the site, the flag splits that road like the Flag button does. The node must
+be a site for the type's size: a woodcutter, a forester, and a stonecutter are small buildings and need a site for a small or a
+large building, and the sawmill is a large building and needs a site for a large building. For example, not a tree or a stone,
+and with nothing on or around the node south-east of it but such a flag. Connect the site's flag to the castle with a road. A
+building site has no worker. The site shows as the original draws a site that has not started.
 
 ### Remove
 

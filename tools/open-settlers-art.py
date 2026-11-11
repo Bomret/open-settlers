@@ -2,7 +2,8 @@
 """Writes the art of the Open Settlers content set: content/open-settlers/manifest.json and its PNGs.
 
 The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
-flag, the map objects, the castle, the woodcutter's hut, the goods, and one pose per job and kind of activity for the
+flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the building
+sites that have not started with the scaffolds they grow, the goods, and one pose per job and kind of activity for the
 settlers, all drawn here from nothing but numbers. It holds nothing derived from an install (ADR 0015). A settler's
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
@@ -200,6 +201,15 @@ def plant(variant):
     return c, (-5, -11)
 
 
+def sapling(variant):
+    """A young tree a forester planted, 10 by 16: a thin stem and a small crown, the second kind with the crown higher."""
+    c = Canvas(10, 16)
+    c.rect(4, 7 + variant, 2, 9 - variant, WOOD)
+    c.disc(5, 5 + variant, 3, shade(LEAF, 20 + 25 * variant))
+    c.outline(INK)
+    return c, (-5, -15)
+
+
 def falling(step, second):
     """A cut tree leaning over: step 1 to 5 of its fall, leaning further each step."""
     c = Canvas(40, 30)
@@ -253,12 +263,92 @@ def hut():
     return c, (-15, -29)
 
 
+def stonecutter():
+    """The stonecutter's hut: a grey hut with a heap of stones at its side."""
+    c = Canvas(34, 30)
+    c.rect(4, 14, 20, 16, (150, 150, 155))
+    c.triangle((14, 2), 13, 14, (110, 110, 120))
+    c.rect(11, 20, 7, 10, INK)
+    c.disc(28, 25, 5, (190, 190, 195))
+    c.disc(24, 27, 3, (170, 170, 175))
+    c.outline(INK)
+    return c, (-14, -29)
+
+
+def forester():
+    """The forester's hut: a hut with a green roof and a sapling at its side."""
+    c = Canvas(34, 30)
+    c.rect(4, 14, 20, 16, shade(WOOD, 30))
+    c.triangle((14, 2), 13, 14, (60, 140, 60))
+    c.rect(11, 20, 7, 10, INK)
+    c.rect(28, 20, 2, 10, WOOD)
+    c.disc(29, 18, 4, LEAF)
+    c.outline(INK)
+    return c, (-14, -29)
+
+
+def sawmill():
+    """The sawmill, a large building: a wide shed with a blade, and a pile of planks."""
+    c = Canvas(52, 36)
+    c.rect(4, 14, 36, 22, shade(WOOD, 20))
+    c.triangle((22, 2), 20, 13, (120, 70, 50))
+    c.rect(16, 22, 10, 14, INK)
+    c.disc(32, 24, 5, (200, 200, 205))
+    c.rect(42, 26, 8, 10, shade(WOOD, 60))
+    c.outline(INK)
+    return c, (-22, -35)
+
+
+def site(large):
+    """A building site that has not started: stakes and a board, wider for a large building."""
+    width = 34 if large else 22
+    c = Canvas(width, 20)
+    c.rect(0, 14, width, 4, shade(WOOD, 40))
+    c.rect(2, 4, 2, 14, WOOD)
+    c.rect(width - 4, 4, 2, 14, WOOD)
+    c.rect(2, 4, width - 4, 2, WOOD)
+    c.outline(INK)
+    return c, (-(width // 2), -19)
+
+
+def scaffold(large):
+    """The scaffold of a building under construction, the size of the finished building of its kind (34 by 30, or 52 by 36 for a
+    large one): wooden posts and beams that a site grows from the bottom up as its progress rises."""
+    width, height = (52, 36) if large else (34, 30)
+    c = Canvas(width, height)
+    left, right = 4, width - 12
+    c.rect(left, 8, 2, height - 8, WOOD)
+    c.rect(right, 8, 2, height - 8, WOOD)
+    c.rect((left + right) // 2, 8, 2, height - 8, WOOD)
+    for beam in (10, 18, 26):
+        c.rect(left, beam, right - left + 2, 2, shade(WOOD, 30))
+    c.line(left, height - 2, right, 12, WOOD)
+    c.outline(INK)
+    return c, ((-22, -35) if large else (-14, -29))
+
+
+def heap(stage):
+    """A heap of stones, stage 0 (code 0x48) the largest to stage 7 (0x4f) the last stone: a pile of grey stones that shrinks."""
+    c = Canvas(22, 16)
+    size = 8 - stage
+    c.disc(11, 15 - size, size, shade(STONE, -25))
+    if stage < 6:
+        c.disc(5 + stage, 14 - size // 2, (size + 1) // 2, STONE)
+    if stage < 3:
+        c.disc(17 - stage, 14 - size // 2, (size + 1) // 2, shade(STONE, 15))
+    c.outline(INK)
+    return c, (-11, -15)
+
+
 def good(code):
-    """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar."""
+    """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar and the stone (10) a grey stone."""
     c = Canvas(8, 8)
     if code == 7:
         c.rect(0, 2, 8, 4, WOOD)
         c.rect(0, 2, 2, 4, shade(WOOD, 60))
+    elif code == 10:
+        c.disc(4, 4, 3, STONE)
+        c.disc(3, 3, 1, shade(STONE, 40))
     else:
         hue = (code * 37) % 255
         color = (60 + hue % 160, 60 + (hue * 3) % 160, 60 + (hue * 7) % 160)
@@ -267,13 +357,23 @@ def good(code):
     return c, (-4, -7)
 
 
-JOBS = {"carrier": (60, 100, 170), "woodcutter": (60, 130, 60), "type-one-hut": (170, 110, 40)}
+JOBS = {
+    "carrier": (60, 100, 170),
+    "woodcutter": (60, 130, 60),
+    "stonecutter": (140, 140, 150),
+    "type-one-hut": (170, 110, 40),
+    "builder": (190, 90, 60),
+    "forester": (90, 160, 80),
+    "digger": (120, 90, 50),
+    "sawmiller": (200, 160, 90),
+}
+STONE = (185, 185, 190)
 KINDS = ("walks", "carries", "cuts", "door", "hands-over", "waits")
 
 
-def figure(job_color, kind):
+def figure(job_color, kind, load=WOOD):
     """A settler, 14 by 22 with its feet at the term's position: a head, a body of its job's color, and a player mark on
-    the chest. Each kind of activity has its own pose."""
+    the chest. Each kind of activity has its own pose; the load of the pose that carries is the job's."""
     c = Canvas(14, 22)
     skin = (235, 195, 160)
     if kind == "waits":
@@ -291,7 +391,7 @@ def figure(job_color, kind):
         c.rect(3, 18, 3, 4, INK)
         c.rect(8, 18, 3, 4, INK)
     if kind == "carries":
-        c.rect(1, 2, 12, 3, WOOD)
+        c.rect(1, 2, 12, 3, load)
         c.line(3, 8, 2, 4, skin)
         c.line(10, 8, 11, 4, skin)
     elif kind == "cuts":
@@ -329,8 +429,9 @@ def main():
         manifest[key] = {"image": file, "anchor": list(anchor)}
 
     add("object/flag", "object/flag.png", flag())
-    # Map objects by code (docs/rules/map-objects.md): trees 8 to 23, saplings 24 to 31, boulders 32 to 82, the stump 83
-    # (0x53), plants 84 to 92, falling trees 93 to 102 (0x5d to 0x66), anything else a heap. Codes of one kind that look alike
+    # Map objects by code (docs/rules/map-objects.md): trees 8 to 23, palms 24 to 27 and plants 28 to 31 (drawn as
+    # bushes), boulders 32 to 71 and 80 to 82, stone heaps 72 to 79, the stump 83 (0x53), plants 84 to 92, falling trees
+    # 93 to 102 (0x5d to 0x66), saplings 103 and 104 (0x67, 0x68), and litter from 105. Codes of one kind that look alike
     # share a file and so an image.
     for code in range(8, 128):
         key = f"object/{code}"
@@ -338,6 +439,8 @@ def main():
             add(key, f"object/tree-{code // 16}.png", tree(code // 16))
         elif code < 32:
             add(key, f"object/bush-{(code - 24) // 4}.png", bush((code - 24) // 4))
+        elif 72 <= code < 80:
+            add(key, f"object/heap-{code - 72}.png", heap(code - 72))
         elif code < 83:
             add(key, f"object/rock-{code % 3}.png", rock(code % 3))
         elif code == 83:
@@ -347,15 +450,25 @@ def main():
         elif code < 103:
             step, second = (code - 93) % 5 + 1, code >= 98
             add(key, f"object/fall-{int(second)}-{step}.png", falling(step, second))
+        elif code in (103, 104):
+            add(key, f"object/sapling-{code - 103}.png", sapling(code - 103))
         else:
             add(key, f"object/litter-{code % 4}.png", litter(code))
     add("building/castle", "building/castle.png", castle())
     add("building/woodcutter", "building/woodcutter.png", hut())
+    add("building/stonecutter", "building/stonecutter.png", stonecutter())
+    add("building/forester", "building/forester.png", forester())
+    add("building/sawmill", "building/sawmill.png", sawmill())
+    add("building/site-small", "building/site-small.png", site(False))
+    add("building/site-large", "building/site-large.png", site(True))
+    add("building/stage-small", "building/stage-small.png", scaffold(False))
+    add("building/stage-large", "building/stage-large.png", scaffold(True))
     for code in range(32):
         add(f"good/{code}", f"good/{code}.png", good(code))
     for job, color in JOBS.items():
         for kind in KINDS:
-            add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind))
+            load = STONE if job == "stonecutter" else WOOD
+            add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind, load))
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
         f.write("\n")

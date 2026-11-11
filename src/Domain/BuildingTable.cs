@@ -53,6 +53,30 @@ public sealed class BuildingTable : IReadOnlyList<Building>
     public Building? OfFlag(int flag) =>
         _buildings.FirstOrDefault(building => !building.IsFree && !building.IsDemolishing && building.Flag == flag);
 
+    /// <summary>
+    /// A good destined for the flag no longer comes (0x462ca4, called by 0x462c8d): the building at the flag counts one good less
+    /// on the way in the fill byte of the kind, unless it is a finished castle or storehouse, which counts none. Returns the
+    /// building whose fill fell, or null where the kind is none, no building stands at the flag, or the building is a storage.
+    /// </summary>
+    public Building? CountOneLess(int flag, FillCounter kind)
+    {
+        if (
+            kind == FillCounter.None
+            || OfFlag(flag) is not { } building
+            || (
+                !building.Constructing
+                && (building.Type == BuildingType.Castle || building.Type == BuildingType.Storehouse)
+            )
+        )
+        {
+            return null;
+        }
+
+        building.SetFill(kind, building.FillOf(kind) - 1);
+
+        return building;
+    }
+
     /// <summary>Frees the slot and lets the count fall past the free slots at the table's end.</summary>
     public void Free(int slot)
     {

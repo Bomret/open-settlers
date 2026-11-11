@@ -10,7 +10,9 @@ namespace OpenSettlers.Tests;
 public sealed class GoodsTransportTests
 {
     private const int Log = 7;
-    private const int Stone = 9;
+
+    // A good of the made-up ranks (the ninth: the program gives it no class, so it goes to storage at once).
+    private const int Ninth = 9;
     private const int West = 3;
     private const int East = 0;
 
@@ -53,21 +55,68 @@ public sealed class GoodsTransportTests
         Assert.IsTrue(bench.Flags[1].NeedsGoodsTurn, "the flag is asked again at its next turn");
     }
 
+    // A flag 2 east of flag 1 whose only road holds a carrier, while the road from flag 1 to the castle's flag holds none: the storage
+    // search reaches no storage from flag 2, and the road with a carrier is the one a good takes at once (0x464539).
+    private static (BehaviourBench Bench, GoodsTransport Goods) CutOff()
+    {
+        var bench = new BehaviourBench();
+        bench.Flags.Add(4, 4);
+        bench.Flags.Add(6, 4);
+        bench.Flags.Add(8, 4);
+        bench.Join(0, East, 1, West, carrier: false);
+        bench.Join(1, East, 2, West);
+
+        return (bench, new GoodsTransport(bench.Movement, bench.Flags, bench.Roads, bench.History));
+    }
+
+    [TestMethod]
+    public void AGoodOnAFlagCutOffFromTheCastleTakesTheRoadThatHoldsACarrierAtOnceAndKeepsNoDestination()
+    {
+        var (bench, goods) = CutOff();
+        goods.LayGood(2, 4, Ninth);
+
+        goods.Turn(2);
+
+        Assert.IsNull(bench.Flags[2].Places[4].Destination, "no storage is reached");
+        Assert.AreEqual(West, bench.Flags[2].Places[4].Way, "the road with a carrier");
+        Assert.AreEqual(4, bench.Flags[2].Side(West).WaitingPlace, "the good waits for the free road");
+        Assert.IsFalse(bench.Flags[2].NeedsGoodsTurn, "the flag is not asked again");
+    }
+
+    [TestMethod]
+    public void ASecondGoodOnAFlagCutOffFromTheCastleTakesTheDirectionAndLeavesTheTakenRoadToTheFirst()
+    {
+        var (bench, goods) = CutOff();
+        goods.LayGood(2, 4, Ninth);
+        goods.LayGood(2, 1, Ninth);
+
+        goods.Turn(2);
+
+        // The places are visited from the last to the first: the good at place 4 takes the road first.
+        Assert.AreEqual(4, bench.Flags[2].Side(West).WaitingPlace);
+        Assert.AreEqual(West, bench.Flags[2].Places[1].Way, "the second good takes the direction");
+        Assert.IsNull(bench.Flags[2].Places[1].Destination);
+    }
+
     [TestMethod]
     public void TheGoodOfTheHigherTransportPriorityTakesTheRoadFromOneThatWaitsForIt()
     {
         var ranks = new byte[StartStock.Goods];
         ranks[Log - 1] = 5;
-        ranks[Stone - 1] = 9;
+        ranks[Ninth - 1] = 9;
         var (bench, goods) = Chain(ranks);
         goods.LayGood(1, 6, Log, destination: 0);
         goods.Turn(1);
         Assert.AreEqual(6, bench.Flags[1].Side(West).WaitingPlace, "the log waits for the road");
-        goods.LayGood(1, 2, Stone, destination: 0);
+        goods.LayGood(1, 2, Ninth, destination: 0);
 
         goods.Turn(1);
 
-        Assert.AreEqual(2, bench.Flags[1].Side(West).WaitingPlace, "the stone has the higher rank and takes the place");
+        Assert.AreEqual(
+            2,
+            bench.Flags[1].Side(West).WaitingPlace,
+            "the ninth good has the higher rank and takes the place"
+        );
         Assert.AreEqual(West, bench.Flags[1].Places[6].Way, "the log keeps its direction and waits");
     }
 
@@ -76,9 +125,9 @@ public sealed class GoodsTransportTests
     {
         var ranks = new byte[StartStock.Goods];
         ranks[Log - 1] = 5;
-        ranks[Stone - 1] = 9;
+        ranks[Ninth - 1] = 9;
         var (bench, goods) = Chain(ranks);
-        goods.LayGood(1, 6, Stone, destination: 0);
+        goods.LayGood(1, 6, Ninth, destination: 0);
         goods.Turn(1);
         goods.LayGood(1, 2, Log, destination: 0);
 
@@ -107,6 +156,6 @@ public sealed class GoodsTransportTests
         Assert.IsNotNull(goods.PlaceGood(9, 9, 0, Log), "no flag stands on the node");
         Assert.IsNull(goods.PlaceGood(6, 4, 0, Log));
         Assert.AreEqual(new Good(Log), bench.Flags[1].Places[0].Good);
-        Assert.IsNotNull(goods.PlaceGood(6, 4, 0, Stone), "the place holds a good already");
+        Assert.IsNotNull(goods.PlaceGood(6, 4, 0, Ninth), "the place holds a good already");
     }
 }

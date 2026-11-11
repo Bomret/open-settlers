@@ -71,6 +71,9 @@ public sealed class GameParts
     /// <summary>The woodcutter.</summary>
     public required WoodcutterBehavior Woodcutter { get; init; }
 
+    /// <summary>The placing of a building with its flag: sites by command, finished buildings by a layout.</summary>
+    public required BuildingPlacement Placement { get; init; }
+
     /// <summary>The check of a road the player draws.</summary>
     public required RoadPlanner RoadPlanner { get; init; }
 

@@ -40,7 +40,22 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
     // (docs/rules/woodcutting.md). A settler that searches for the nearest flag on its way home is drawn with the frame 0x52
     // the claim sets, as a walking settler is. **Confirmed** (draw run, the woodcutter and the dismissed carrier).
     private static bool IsDrawn(Activity activity) =>
-        activity is Walks or WaitsOutStep or WalksRoad or HandsOver or Door or WalksFree or Cuts or SearchesHome;
+        activity
+            is Walks
+                or WaitsOutStep
+                or WalksRoad
+                or HandsOver
+                or Door
+                or WalksFree
+                or Cuts
+                or CutsStone
+                or Plants
+                or SearchesHome
+                or Builds
+                or LeavesSite
+                or Digs
+                or Saws { Sawing: true }
+                or PutsDownGood;
 
     /// <summary>
     /// The terms of the settlers that walk, in the order of their rows, each settler's figure, overlay, and second figure in
@@ -54,7 +69,16 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
         {
             if (
                 !IsDrawn(settler.Activity)
-                || (settler.Job != Job.Carrier && settler.Job != Job.Woodcutter && settler.Job != Job.TypeOneHut)
+                || (
+                    settler.Job != Job.Carrier
+                    && settler.Job != Job.Woodcutter
+                    && settler.Job != Job.Stonecutter
+                    && settler.Job != Job.TypeOneHut
+                    && settler.Job != Job.Builder
+                    && settler.Job != Job.Forester
+                    && settler.Job != Job.Digger
+                    && settler.Job != Job.Sawmiller
+                )
             )
             {
                 continue;

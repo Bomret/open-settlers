@@ -71,6 +71,16 @@ public sealed class ObjectGraphics
         AddSprites([ObjectSprites.CastleEntry], "the castle sprite");
         AddSprites([ObjectSprites.FlagEntry], "the flag sprite");
         AddSprites([ObjectSprites.WoodcutterEntry], "the woodcutter's hut sprite");
+        AddSprites(
+            [
+                ObjectSprites.StonecutterEntry,
+                ObjectSprites.ForesterEntry,
+                ObjectSprites.SawmillEntry,
+                ObjectSprites.SiteLargeEntry,
+                ObjectSprites.SiteSmallEntry,
+            ],
+            "the building's sprite"
+        );
         AddSprites(Enumerable.Range(ObjectSprites.GoodsFirstEntry, ObjectSprites.GoodsCount), "the good's sprite");
         AddSprites(Enumerable.Range(ObjectSprites.WaterFirstEntry, ObjectSprites.WaterCount), "the water sprite");
         AddSprites(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1), "the flag sprite");
@@ -81,6 +91,11 @@ public sealed class ObjectGraphics
             .Append(ObjectSprites.CastleEntry)
             .Append(ObjectSprites.FlagEntry)
             .Append(ObjectSprites.WoodcutterEntry)
+            .Append(ObjectSprites.StonecutterEntry)
+            .Append(ObjectSprites.ForesterEntry)
+            .Append(ObjectSprites.SawmillEntry)
+            .Append(ObjectSprites.SiteLargeEntry)
+            .Append(ObjectSprites.SiteSmallEntry)
             .Concat(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1));
         foreach (var entry in shadowed.Where(entry => Holds(entry + ShadowOffset)))
         {

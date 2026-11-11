@@ -19,7 +19,9 @@ public sealed class CastleRoster(
     GameHistory history,
     Causes causes,
     IRandomDraws draws,
-    GameClock clock
+    GameClock clock,
+    CastleStock stock,
+    RuleTables tables
 ) : ICastleRoster
 {
     // The jobs of the castle's 20 first settlers in the order of their slots (docs/rules/castle.md); a job is the
@@ -75,7 +77,7 @@ public sealed class CastleRoster(
     public void Register(ActivityRegistry registry)
     {
         registry.Register<WaitsInCastle>((slot, settler, _) => Idle(slot, settler));
-        registry.Register<BuildsCastle>((slot, settler, _) => Builder(slot, settler));
+        registry.Register<BuildsCastle>((slot, settler, _) => StandByCastle(slot, settler));
         registry.Register<BuiltCastle>((_, _, _) => { });
         registry.Register<RawState>((_, _, _) => { });
         registry.Register<Leaving>((slot, settler, _) => Leave(slot, settler));
@@ -142,41 +144,80 @@ public sealed class CastleRoster(
         foreach (var job in CastleJobs)
         {
             settlers.Add(
-                new Settler(job, 0, x, y, clock.Now, job == Job.Builder ? new BuildsCastle() : new WaitsInCastle())
+                new Settler(
+                    job,
+                    0,
+                    x,
+                    y,
+                    clock.Now,
+                    job == Job.CastleSettler ? new BuildsCastle() : new WaitsInCastle()
+                )
             );
             history.FillSettler(settlers.Count - 1);
         }
     }
 
-    // The handler of a building type (the table at 0x42cd1d). Only the woodcutter asks for a worker; the castle's
-    // handler (0x42e7e0, knights and defence) is not ported.
+    // The handler of a building type (the table at 0x42cd1d): a finished building of a type that asks for a worker (RuleTables.WorkerOf)
+    // asks for it unless it has one, has one on the way, or its last request failed; the castle's own handler (0x42e7e0, knights and
+    // defence) is not ported. A building under construction has the construction's handler instead (the entries 0x21 and on of the
+    // table go to 0x42d55f, SitePass).
     public void HandleBuilding(Building building)
     {
         if (
-            building.Type == BuildingType.Woodcutter
+            tables.WorkerOf(building.Type) is { } request
+            && !building.Constructing
             && !(building.RequestFailed || building.WorkerInside || building.WorkerOnTheWay)
-            && !RequestWorker(building, Job.Woodcutter)
         )
+        {
+            AskForWorker(building, request);
+        }
+    }
+
+    /// <summary>
+    /// The request of a building's handler (<c>0x42be63</c> as <c>0x42d5fc</c> and the handlers of the types call it): where the request
+    /// finds no worker the building's request-failed bit is set, and the retry scan of the main pass clears it again.
+    /// </summary>
+    public void AskForWorker(Building building, WorkerRequest request)
+    {
+        if (!RequestWorker(building, request))
         {
             building.RequestFailed = true;
             causes.RecordBuilding(building, EventType.BuildingHandled);
         }
     }
 
-    // 0x42be63: the building asks the castle for a settler of a job. The search runs over the roads from the building's
-    // flag; the castle's flag is the only storage, so it finds the settler where the flag is reached and the castle
-    // holds a waiting settler of the job. **Not ported:** the second way, a new settler made of one that has no job
-    // and a tool from the stock; the castle's 20 first settlers hold one woodcutter.
-    private bool RequestWorker(Building building, Job job)
+    /// <summary>
+    /// 0x42be63: the building asks the castle for a worker, and tells whether it got one. The search runs over the roads from the
+    /// building's flag; the castle's flag is the only storage, so it finds a settler where the flag is reached. The settler is the one
+    /// the castle's list of waiting settlers holds for the job; where there is none, a settler without a job takes the job and the tool
+    /// of the request from the stock (the second way, <c>docs/rules/construction.md</c>), where one waits and the stock holds the tool.
+    /// A request that finds neither returns false and changes nothing. **Not ported:** the second tool word (the five requests of the
+    /// program pass none), the storage's counter of settlers (word at <c>0x40</c>), and the player's counts per job.
+    /// </summary>
+    public bool RequestWorker(Building building, WorkerRequest request)
     {
-        if (roads.Route(flags.Count, building.Flag, 0) < 0 || Entry(job) == 0)
+        var job = request.Job;
+        if (roads.Route(flags.Count, building.Flag, 0) < 0)
         {
             return false;
         }
 
-        var slot = Entry(job);
+        var jobless = Entry(Job.Jobless);
+        var made = Entry(job) == 0;
+        if (made && (jobless == 0 || (!request.Tool.IsNone && stock.Count(request.Tool) == 0)))
+        {
+            return false;
+        }
+
+        var slot = made ? jobless : Entry(job);
         var settler = settlers[slot];
-        Entry(job) = 0;
+        Entry(made ? Job.Jobless : job) = 0;
+        if (made)
+        {
+            settler.Job = job;
+            stock.Take(request.Tool);
+        }
+
         movement.Become(settler, new Leaving(new ToBuilding(building.Flag)));
         building.WorkerOnTheWay = true;
         LeavingCount++;
@@ -256,7 +297,7 @@ public sealed class CastleRoster(
     // State 10, the settler that stands by while the castle is built (0x43f17a): each turn adds the elapsed units
     // times 128 to the castle's building progress, and when it wraps past 65536 the castle stands. The settler then
     // takes state 12, which is not ported.
-    private void Builder(int slot, Settler settler)
+    private void StandByCastle(int slot, Settler settler)
     {
         var delta = (ushort)(clock.Now - settler.Stamp);
         settler.Stamp = clock.Now;
@@ -271,8 +312,13 @@ public sealed class CastleRoster(
             castle.Worker = 0;
         }
 
-        history.RecordSettler(slot, EventType.Builder, causes.Rule, history.BuildingId(0).ToString());
-        history.RecordBuilding(0, EventType.Builder, causes.OfBuilding(0), history.SettlerId(slot).ToString());
+        history.RecordSettler(slot, EventType.CastleSettlerBuilds, causes.Rule, history.BuildingId(0).ToString());
+        history.RecordBuilding(
+            0,
+            EventType.CastleSettlerBuilds,
+            causes.OfBuilding(0),
+            history.SettlerId(slot).ToString()
+        );
     }
 
     // State 15, a settler that leaves the castle by its door onto the castle's flag (0x43dd4a): it steps south-east

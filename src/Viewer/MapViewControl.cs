@@ -50,7 +50,7 @@ public partial class MapViewControl : Control
     Label _logs = null!;
     Button _flagButton = null!;
     Button _roadButton = null!;
-    Button _woodcutterButton = null!;
+    (Button Button, BuildingType Type)[] _buildButtons = [];
     Button _removeButton = null!;
 
     // The placement of the walking settlers (game view only), the images the source drew for them so far, and the material
@@ -146,7 +146,12 @@ public partial class MapViewControl : Control
 
     /// <summary>The game-view buttons on show, in bar order; none in the map view. A play run's <c>button</c> step clicks one.</summary>
     public System.Collections.Generic.IReadOnlyList<Button> ShownButtons =>
-        [.. new[] { _flagButton, _roadButton, _woodcutterButton, _removeButton }.Where(b => b.IsVisibleInTree())];
+        [
+            .. new[] { _flagButton, _roadButton }
+                .Concat(_buildButtons.Select(entry => entry.Button))
+                .Append(_removeButton)
+                .Where(b => b.IsVisibleInTree()),
+        ];
 
     /// <summary>The map shown; null when the seed has none. A play run's <c>click-tile</c> step aims at its tiles.</summary>
     public Map? Map => _state.Map;
@@ -179,7 +184,9 @@ public partial class MapViewControl : Control
                     .FlagGoodsOf(_game)
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => !good.IsNone)),
             things ? ListedThings() : null,
-            _gameView ? _game : null
+            _gameView ? _game : null,
+            _gameView ? _game?.CastleStock.Planks ?? 0 : null,
+            _gameView ? _game?.CastleStock.Stones ?? 0 : null
         );
 
     /// <summary>
@@ -193,7 +200,7 @@ public partial class MapViewControl : Control
             return problem;
 
         _ticks.Text = $"Tick {_game.TickCount}";
-        _logs.Text = CastleReadout.Text(_game.CastleStock.Logs);
+        _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);
         UpdateSettlers();
         Redraw();
 
@@ -275,7 +282,7 @@ public partial class MapViewControl : Control
             if (pressed)
             {
                 _flagButton.ButtonPressed = false;
-                _woodcutterButton.ButtonPressed = false;
+                ReleaseBuildButtons();
                 _removeButton.ButtonPressed = false;
             }
             else
@@ -288,30 +295,48 @@ public partial class MapViewControl : Control
             if (pressed)
             {
                 _roadButton.ButtonPressed = false;
-                _woodcutterButton.ButtonPressed = false;
+                ReleaseBuildButtons();
                 _removeButton.ButtonPressed = false;
             }
         };
         bar.AddChild(_roadButton);
-        // Stand-in for the original's build panel: while it is pressed a click asks for a woodcutter's hut on the node
-        // under it, tied to the flag south-east of it. The hut stands finished at once (M4 builds it).
-        _woodcutterButton = new Button
-        {
-            Text = "Woodcutter",
-            ToggleMode = true,
-            Visible = _gameView,
-            FocusMode = FocusModeEnum.None,
-        };
-        _woodcutterButton.Toggled += pressed =>
-        {
-            if (pressed)
+        // Stand-in for the original's build panel: one toggle for each building type of M4. While one is pressed a click
+        // asks for a building site of that type on the node under it, tied to the flag south-east of it (docs/rules/build-sites.md).
+        _buildButtons =
+        [
+            .. new (string Text, BuildingType Type)[]
             {
-                _flagButton.ButtonPressed = false;
-                _roadButton.ButtonPressed = false;
-                _removeButton.ButtonPressed = false;
-            }
-        };
-        bar.AddChild(_woodcutterButton);
+                ("Woodcutter", BuildingType.Woodcutter),
+                ("Forester", BuildingType.Forester),
+                ("Stonecutter", BuildingType.Stonecutter),
+                ("Sawmill", BuildingType.Sawmill),
+            }.Select(entry =>
+            {
+                var button = new Button
+                {
+                    Text = entry.Text,
+                    ToggleMode = true,
+                    Visible = _gameView,
+                    FocusMode = FocusModeEnum.None,
+                };
+                button.Toggled += pressed =>
+                {
+                    if (pressed)
+                    {
+                        _flagButton.ButtonPressed = false;
+                        _roadButton.ButtonPressed = false;
+                        _removeButton.ButtonPressed = false;
+                        foreach (var other in _buildButtons.Where(other => other.Button != button))
+                        {
+                            other.Button.ButtonPressed = false;
+                        }
+                    }
+                };
+                bar.AddChild(button);
+
+                return (button, entry.Type);
+            }),
+        ];
         // Stand-in for the original's remove click (0x4615cf for a flag or a building, 0x462d88 for a road): while
         // it is pressed a click on a node takes down the flag, the building, or the road the original's check lets
         // it (docs/rules/removal.md).
@@ -328,7 +353,7 @@ public partial class MapViewControl : Control
             {
                 _flagButton.ButtonPressed = false;
                 _roadButton.ButtonPressed = false;
-                _woodcutterButton.ButtonPressed = false;
+                ReleaseBuildButtons();
             }
         };
         bar.AddChild(_removeButton);
@@ -434,7 +459,7 @@ public partial class MapViewControl : Control
             // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
             var exit = LayoutLoad.Start(
                 _layout,
-                GameFactory.Create(_tables, _state.Map, _state.StockLevel, everyPassTurns: true),
+                GameFactory.Create(_tables, _state.Map, _state.StockLevel, everyPassTurns: true, handsOutGoods: true),
                 out _game,
                 out var layoutProblem
             );
@@ -454,7 +479,7 @@ public partial class MapViewControl : Control
             _buildingsDrawn = 0;
             _flagButton.ButtonPressed = false;
             _roadButton.ButtonPressed = false;
-            _woodcutterButton.ButtonPressed = false;
+            ReleaseBuildButtons();
             _removeButton.ButtonPressed = false;
             _revisionDrawn = 0;
             DrawPreview();
@@ -474,7 +499,7 @@ public partial class MapViewControl : Control
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
-            _logs.Text = CastleReadout.Text(_game.CastleStock.Logs);
+            _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);
             UpdateSettlers();
             // Evaluated each frame, so the watch sees every change.
             var objectsChanged = _objectWatch.Changed(_game);
@@ -659,11 +684,25 @@ public partial class MapViewControl : Control
             return;
         }
 
-        var kind =
-            _flagButton.ButtonPressed ? CommandKind.PlaceFlag
-            : _woodcutterButton.ButtonPressed ? CommandKind.PlaceBuilding
-            : CommandKind.PlaceCastle;
+        var building = _buildButtons.Where(entry => entry.Button.ButtonPressed).Select(entry => entry.Type).ToList();
+        if (building.Count > 0)
+        {
+            _game.Enqueue(new Command(_game.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: building[0]));
+
+            return;
+        }
+
+        var kind = _flagButton.ButtonPressed ? CommandKind.PlaceFlag : CommandKind.PlaceCastle;
         _game.Enqueue(new Command(_game.TickCount, 0, kind, x, y));
+    }
+
+    // Releases every toggle of the build panel.
+    void ReleaseBuildButtons()
+    {
+        foreach (var (button, _) in _buildButtons)
+        {
+            button.ButtonPressed = false;
+        }
     }
 
     // Drops the road being drawn: nothing was built, so nothing is left behind.

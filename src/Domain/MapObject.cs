@@ -9,8 +9,11 @@ public enum MapObjectKind
     /// <summary>Code 1: a flag (<c>docs/rules/flags.md</c>).</summary>
     Flag,
 
-    /// <summary>Code 2: the hut of a building the player placed.</summary>
+    /// <summary>Code 2: the node of a small building the player placed, a building site or a finished building.</summary>
     Hut,
+
+    /// <summary>Code 3: the node of a large building the player placed (<c>docs/rules/build-sites.md</c>).</summary>
+    LargeHut,
 
     /// <summary>Code 4: the castle (<c>docs/rules/castle.md</c>).</summary>
     Castle,
@@ -18,11 +21,17 @@ public enum MapObjectKind
     /// <summary>Codes 8 to 23: a tree a woodcutter can fell (<c>docs/rules/woodcutting.md</c>).</summary>
     Tree,
 
+    /// <summary>Codes 0x48 to 0x4f: a heap of stone a stonecutter can cut, the largest at 0x48 (<c>docs/rules/stonecutting.md</c>).</summary>
+    StoneHeap,
+
     /// <summary>Code 0x53: the stump of a felled tree, which the object pass lets vanish by chance.</summary>
     Stump,
 
     /// <summary>Codes 0x5d to 0x66: a tree falling under the axe, in the steps of its cut.</summary>
     FallingTree,
+
+    /// <summary>Codes 0x67 and 0x68: a small sapling a forester plants, which the object pass grows into a tree (<c>docs/rules/forestry.md</c>).</summary>
+    Sapling,
 
     /// <summary>A code the engine has no name for: a stone, a plant, or a code not recovered yet.</summary>
     Other,
@@ -42,6 +51,12 @@ public readonly record struct MapObject(byte Code)
     /// <summary>The object code after the last tree.</summary>
     public const int EndTreeCode = 0x18;
 
+    /// <summary>The first object code of a stone heap, the heap with the most stones.</summary>
+    public const int FirstHeapCode = 0x48;
+
+    /// <summary>The last object code of a stone heap, the heap with one stone left; the cut after it removes the heap.</summary>
+    public const int LastHeapCode = 0x4f;
+
     /// <summary>The object code of a stump.</summary>
     public const int StumpCode = 0x53;
 
@@ -50,6 +65,22 @@ public readonly record struct MapObject(byte Code)
 
     /// <summary>The object code after the last falling tree.</summary>
     public const int EndFallingCode = 0x67;
+
+    /// <summary>The object code of the first sapling, the one that grows into the trees 0x10 to 0x17 (<c>0x4290d5</c>).</summary>
+    public const int SaplingCode = 0x67;
+
+    /// <summary>The object code of the second sapling, the one that grows into the trees 8 to 0xf (<c>0x42910f</c>).</summary>
+    public const int SecondSaplingCode = 0x68;
+
+    /// <summary>The first sapling.</summary>
+    public static MapObject Sapling => new(SaplingCode);
+
+    /// <summary>
+    /// The tree a sapling grows into where the object pass's draw allows it (<c>0x4290d5</c>, <c>0x42910f</c>): the sapling's own
+    /// range of trees, 0x10 or 8, plus the draw's low three bits.
+    /// </summary>
+    public static MapObject Grown(MapObject sapling, int draw) =>
+        new((byte)((sapling.Code == SaplingCode ? 0x10 : 8) + (draw & 7)));
 
     /// <summary>No object on the node.</summary>
     public static MapObject None => default;
@@ -60,8 +91,11 @@ public readonly record struct MapObject(byte Code)
     /// <summary>A flag.</summary>
     public static MapObject Flag => new(1);
 
-    /// <summary>The hut of a building.</summary>
+    /// <summary>The node of a small building.</summary>
     public static MapObject Hut => new(2);
+
+    /// <summary>The node of a large building.</summary>
+    public static MapObject LargeHut => new(3);
 
     /// <summary>The castle.</summary>
     public static MapObject Castle => new(4);
@@ -94,10 +128,13 @@ public readonly record struct MapObject(byte Code)
             0 => MapObjectKind.None,
             1 => MapObjectKind.Flag,
             2 => MapObjectKind.Hut,
+            3 => MapObjectKind.LargeHut,
             4 => MapObjectKind.Castle,
             >= FirstTreeCode and < EndTreeCode => MapObjectKind.Tree,
+            >= FirstHeapCode and <= LastHeapCode => MapObjectKind.StoneHeap,
             StumpCode => MapObjectKind.Stump,
             >= FirstFallingCode and < EndFallingCode => MapObjectKind.FallingTree,
+            SaplingCode or SecondSaplingCode => MapObjectKind.Sapling,
             _ => MapObjectKind.Other,
         };
 }

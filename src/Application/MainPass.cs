@@ -5,8 +5,9 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// One pass of the original's main loop for the item tables (ADR 0005): the clock step, the scan that clears the retry bits
 /// (<c>0x428728</c>), the objects' turn, the phase step (<c>0x4291c2</c>), then the slices of the flag table (<c>0x46414d</c>,
-/// the carriers' requests only), the building table (<c>0x42cb2d</c>), and the settler table (<c>0x42f3d9</c>). The original's
-/// other passes (the players' timers, the sound) are not ported.
+/// the carriers' requests only), the building table (<c>0x42cb2d</c>), and the settler table (<c>0x42f3d9</c>); at the last phase of the
+/// cycle, where one is given, the castle's hand-out of goods (<c>0x42965c</c>). The original's other passes (the players' timers, the
+/// sound) are not ported.
 /// </summary>
 public sealed class MainPass(
     GameClock clock,
@@ -20,7 +21,10 @@ public sealed class MainPass(
     CarrierBehavior carriers,
     WoodcutterBehavior woodcutter,
     Removal removal,
-    CastleRoster roster
+    CastleRoster roster,
+    SitePass sites,
+    SawmillBehavior sawmill,
+    StorageDistribution? distribution = null
 )
 {
     // The phases of a pass cycle (docs/rules/timing.md). **Inferred** for a game with no computer opponent: the
@@ -55,6 +59,12 @@ public sealed class MainPass(
         carriers.ClearFlagRetryBits();
         woodcutter.ObjectPass();
         Phase = (Phase + 1) % PhaseCount;
+        if (Phase == TablePhases)
+        {
+            // The phase routine (0x42965c) at the last phase of the cycle: the castle's goods go out to the requests.
+            distribution?.Run();
+        }
+
         if (Phase < TablePhases)
         {
             tablePass.Run(
@@ -66,9 +76,17 @@ public sealed class MainPass(
                     {
                         removal.Burn(slot, building);
                     }
+                    else if (building.Site is not null)
+                    {
+                        sites.Turn(building);
+                    }
                     else
                     {
                         roster.HandleBuilding(building);
+                        if (building.Type == BuildingType.Sawmill && !building.Constructing)
+                        {
+                            sawmill.KeepRank(building);
+                        }
                     }
                 }
             );
@@ -93,6 +111,8 @@ public sealed class MainPass(
                     or HandsOver
                     or WalksFree
                     or Cuts
+                    or CutsStone
+                    or Plants
                     or SearchesHome
             )
             {

@@ -113,6 +113,78 @@ public sealed record StepsOntoFlag(Activity Then) : StepsBefore(Then)
     public override int Code => 7;
 }
 
+/// <summary>
+/// State 9: the builder works in the building site he stands in (<c>0x43ec82</c>, <c>docs/rules/construction.md</c>): he takes the site's
+/// materials one after the other in the order of the type's order word, and for each makes eight blows that add a step to the site's
+/// progress word.
+/// </summary>
+/// <param name="Site">The slot of the building site in the building table (the word at 12).</param>
+/// <param name="Blowing">Whether he is making the blows of a material (byte 11 is 0xff) and not looking for the next one (byte 11 is 1).</param>
+/// <param name="Materials">The materials he has taken so far, the index of the next in the order (the low four bits of byte 14).</param>
+/// <param name="SecondFigure">Whether his figure is the second one the types 10, 17, 19, and 22 take (bit 7 of byte 14, the frames 0x64 and 0x6a to 0x6d).</param>
+/// <param name="Blows">The blows left of the material (byte 15).</param>
+public sealed record Builds(int Site, bool Blowing, int Materials, bool SecondFigure, int Blows) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 9;
+}
+
+/// <summary>
+/// State 8: the digger works in the ground of the large site he entered (<c>0x43e45e</c>, <c>docs/rules/digging.md</c>). He makes sixteen
+/// passes, the first with <see cref="Pass"/> 15 and the last with 0, over the site's node and its six neighbours; in each he visits the
+/// nodes whose height is the pass's, walks onto each, and changes its height by one toward the site's height, lowering in the odd passes and
+/// raising in the even ones.
+/// </summary>
+/// <param name="Pass">The pass he is in, 15 down to 0 (byte 11): the height the pass names is the target's plus a delta the pass number gives.</param>
+/// <param name="Target">The site's height (byte 12).</param>
+/// <param name="Node">The node of the pass he works at, 6 (east) down to 0 (the site's node) (byte 13); direction 6 - <see cref="Node"/> leads from the site to it.</param>
+/// <param name="Phase">Where he is in the work of the node (byte 14): 0 the wait for a busy node, 1 the next node, 2 the dig, 3 the step onto the node.</param>
+public sealed record Digs(int Pass, int Target, int Node, int Phase) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 8;
+}
+
+/// <summary>
+/// State 0x18: the sawmiller works in the sawmill he stands in (<c>0x4359fe</c>, <c>docs/rules/sawmilling.md</c>). Without a log on site he waits
+/// for one; with one, he takes it out of the building's fill and saws for 0x93f clock units, then carries a plank out to the flag.
+/// </summary>
+/// <param name="Sawing">Whether he saws a log (byte 11 is 0xff) and not waits for one (byte 11 is 0).</param>
+public sealed record Saws(bool Sawing) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x18;
+}
+
+/// <summary>
+/// State 0xb: the sawmiller waits at the sawmill's door with the plank in his hands until the node of the flag is free and the flag has a
+/// free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the plank down.
+/// </summary>
+/// <param name="Good">The good he carries out (byte 11), the plank.</param>
+public sealed record StepsOutWithGood(Good Good) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0xb;
+}
+
+/// <summary>State 0xd: the settler stands on the flag with a good in his hands and lays it on the flag (<c>0x43c6aa</c>), then enters the building.</summary>
+/// <param name="Good">The good he lays down (byte 11).</param>
+public sealed record PutsDownGood(Good Good) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0xd;
+}
+
+/// <summary>
+/// State 0x4a: the builder has finished the building and waits at its door until the node of the flag is free, then steps onto the flag
+/// to go home (<c>0x43e008</c>).
+/// </summary>
+public sealed record LeavesSite : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x4a;
+}
+
 /// <summary>State 10: the settler stands by while the castle is built.</summary>
 public sealed record BuildsCastle : Activity
 {
@@ -145,12 +217,16 @@ public sealed record Leaving(Errand Errand) : HasErrand(Errand)
     public override int Code => 0xf;
 }
 
-/// <summary>State 16: the settler walks free along a vector.</summary>
+/// <summary>State 16, or state 22 for the stonecutter's walk: the settler walks free along a vector.</summary>
 /// <param name="Trip">The walk.</param>
-public sealed record WalksFree(Trip Trip) : Activity
+/// <param name="EyesHeaps">
+/// Whether the stonecutter looks for a stone heap beside his node at each turn of the walk (state 22, <c>0x436a84</c>): he
+/// stops where one stands north-west of him. The walk of every other settler, and the stonecutter's way back, is state 16.
+/// </param>
+public sealed record WalksFree(Trip Trip, bool EyesHeaps = false) : Activity
 {
     /// <inheritdoc />
-    public override int Code => 0x10;
+    public override int Code => EyesHeaps ? 0x16 : 0x10;
 }
 
 /// <summary>State 17: the woodcutter cuts the tree it stands on, one falling step at a time.</summary>
@@ -169,6 +245,43 @@ public sealed record LooksForTree : Activity
 {
     /// <inheritdoc />
     public override int Code => 0x12;
+}
+
+/// <summary>State 19: the forester inside his hut looks for a free meadow node to plant on.</summary>
+public sealed record LooksForSpot : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x13;
+}
+
+/// <summary>State 20: the forester stands on the node he plants on, waits, and puts the sapling down (<c>0x4389bf</c>).</summary>
+/// <param name="Back">The steps of the way back to the hut's flag, east and south (bytes 11 and 12).</param>
+/// <param name="Planted">Whether the sapling is down and he waits to turn back (byte 14 not 0).</param>
+/// <param name="Memory">The memory the free walk to the node left (byte 15).</param>
+public sealed record Plants(Vector Back, bool Planted, int Memory) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x14;
+}
+
+/// <summary>State 21: the stonecutter inside his hut looks for a stone heap.</summary>
+public sealed record LooksForStone : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x15;
+}
+
+/// <summary>
+/// State 23: the stonecutter stands on the node of the heap he cuts, steps back onto the node he came by, and takes the stone
+/// with him (<c>0x435c5c</c>).
+/// </summary>
+/// <param name="Back">The steps of the way back to the hut's flag, east and south (bytes 11 and 12).</param>
+/// <param name="Phase">The part of the cut: 0 the step onto the heap, 1 the stroke, 2 the step back (byte 13).</param>
+/// <param name="Quarter">A quarter of the step onto the heap's time, the point where the stroke begins (the word at 14).</param>
+public sealed record CutsStone(Vector Back, int Phase, int Quarter) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x17;
 }
 
 /// <summary>State 25: the settler looks for the nearest flag on the way home.</summary>
@@ -200,7 +313,7 @@ public sealed record KnightWalks(Trip Trip) : Activity
 
 /// <summary>
 /// A state code the engine has no name for, kept as it is: no rule takes a settler into it and its turn changes nothing. The
-/// original's branches that reach the states 0x49 and 0x4a are not ported, and a settler a layout or a snapshot places in
+/// original's branches that reach the state 0x49 are not ported, and a settler a layout or a snapshot places in
 /// another state keeps it raw (INV-0006).
 /// </summary>
 /// <param name="StateCode">The code of the original's state.</param>

@@ -32,8 +32,8 @@ pass 5 before any carrier is on the road, and on a road of three flags logs and 
   leaves its start flag in direction 3 and ends at a flag it leaves in direction 0 holds `0x00` at the first and `0x18` at the
   second).
 - Bytes `0x42` to `0x45`: two request words with a priority byte after each (`0x42` and `0x43`, `0x44` and `0x45`); the castle's
-  flag holds `0x00c0` and `0x0080`. Bit 7 of the word at `0x44` marks a flag with a storage. **Inferred** for the
-  request words: the table below names them, no building asks for a good yet.
+  flag holds `0x00c0` and `0x0080`. Bit 7 of the word at `0x44` marks a flag with a storage. A building site's placement sets
+  the words to ask for planks and stones, and the building pass keeps their ranks: [Materials for a building site](construction-materials.md#the-request-words).
 
 ## The turn of a flag's goods
 
@@ -49,14 +49,23 @@ direction does one of two things:
 1. **No destination (word 0).** The table at `0x464117` (two bytes for each good: a class and the offset of a request word;
    `0xff` for a class marks a good that goes to storage at once) sends the good to the request search for a log (class 5, word
    at `0x44`): a search over the roads that hold a carrier for a flag whose request word has the class's bit set, and a
-   priority above the best so far. When none is found, as long as no building requests a good, the storage search (`0x45d3ea`)
-   runs from the flag: the flags are reached over the roads of which the status byte (byte 5, bit `d`) shows a carrier, from
+   priority above the best so far, which grows by a quarter and one after each level that found a request
+   ([Materials for a building site](construction-materials.md#the-request-search)); a found flag is the destination. When none is
+   found, the storage search (`0x45d3ea`) runs from the flag: the flags are reached over the roads of which the status byte (byte 5, bit `d`) shows a carrier, from
    north to east, level by level; a flag whose byte `0x44` has bit 7 is the storage's, and the building's flag slot (item `+6`)
    is the answer. A flag that is a storage itself finds none. The answer goes into the place's destination word and the flag's
    bit 7 is set again, so the direction comes at the next turn. Where the search finds none, with no road of the flag holding a
    carrier (status bits 0 to 5 all clear), the bit is set again and the good waits: this is the good that lies at a flag until a
-   carrier comes. **Not ported:** with some road of the flag holding a carrier and no storage reached, the original gives the
-   good a direction at once (`0x464539`, from the leftover of a register).
+   carrier comes. With some road of the flag holding a carrier (status bits 0 to 5 not all clear) and no storage reached, the good takes a
+   direction at once (`0x464539`) and keeps its destination word 0; the flag's bit 7 is not set again, and where the road's byte has no
+   bit 7 the good takes its place. **Emulated:** a plank and a stone on the castle's flag, released from a site taken down
+   ([Removal](removal.md#taking-a-building-site-down)), each take the direction of the only road that holds a carrier. **Emulated** (`removals.txt`, `cut-off`): a stone laid on a flag of a network that a removed road cut off
+   from the castle takes the direction of a road that holds a carrier at the flag's next turn and keeps the destination 0. **Emulated** (`cut-off-two`):
+   of two stones on such a flag both take the direction and keep the destination 0, and the one at the later place (4, the places run from the last)
+   takes the road, the other the direction only (`GoodsTransportTests` holds the same on made-up tables). **Stand-in:** the road
+   is the first with a carrier from the east, then from the north-west round to the south-east; the original starts from a register's
+   leftover (the result of the request search), which is not recovered. **Emulated** (`cut-off-two-roads`): on a cut-off flag with a carrier on its
+   east road and on its north road the stone takes the east road, as the stand-in's order does; the choice for other pairs of roads is not confirmed.
 2. **A destination.** The search for the direction (`0x464aa8`, `0x464bb2`, `0x464c36`) starts at the flag. It seeds the roads
    that hold a carrier by load: first those with no good heading that way, then those with exactly one, two, three, and last
    those with four or more (a seed marks the flag at the road's far end with the direction), as long as a road with a carrier is
@@ -88,10 +97,11 @@ flag's item:
 - **Bit 7 set** (a good waits here to go along this road): the carrier's heading (byte 14) is the low byte of its stamp plus 6,
   the heading it came in: it goes on toward the flag.
 - **Else** the byte's bits 3 to 5 name the direction in which the road leaves the flag at its far end; byte `0x3c` plus that
-  direction of that flag, with bit 7 set (a good waits at the far end), gives the heading the low byte of the stamp (a signed
-  byte, the heading less 6) plus 3, plus 6 where that went below 0: the carrier turns round (`split-good-*` in
-  `road-splits.txt`, a carrier that came by 0 and one that came by 3). Where it has no bit 7 either, the carrier stays in state 0x42 and
-  nothing changes.
+  direction of that flag, with bit 7 set (a good waits at the far end), gives the heading the mode less 3, plus 6 where that went
+  below 0 (`0x430002`): the carrier turns round, the heading being the direction opposite to the one the road leaves the flag it
+  stands next to, whichever way it came by to the road's last node (`split-good-*` in `road-splits.txt`, a carrier that came by 0 and
+  one that came by 3; `saw-walks.txt`, `two-logs`, a carrier on a road that bends at its last node, which came by 5 and takes the
+  heading 3). Where it has no bit 7 either, the carrier stays in state 0x42 and nothing changes.
 
 It then takes state 0x43, which every turn does the rest: where the node the carrier stands on holds no settler (the word at
 `+2` of the node's second record), the carrier takes the node, its stamp becomes the clock, its timer 0, its mode 0, its byte 15
@@ -209,21 +219,21 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 
 ## Open leads
 
-- The request words at `0x42` to `0x45` of a flag item and the priority bytes: no building asks for a good yet (milestone 4).
 - The counter in the player block that the put adds to (`+good - 0x6f`).
-- What the original does with some road holding a carrier and no storage reached (`0x464539`).
+- Which road a good takes when several hold a carrier and no storage was reached (`0x464539`, the register it starts from).
 - A carrier sent home (byte 15 negative, `0x43aea4`), and state 0x44 and later (`0x43007b`, `0x4300f1`).
 - The passing of two settlers that come the other way at a flag (the emulated game of several carriers shows it at a flag where
   a carrier with a log and a carrier that is to fetch one meet): the swap of a step east, south-east, or south is ported with the
-  walk home ([Settlers](settlers.md#walking-home)). `layouts/head-on-pass.jsonc` with `play/head-on-pass.play` meets a carrier
+  walk home ([Settlers](settlers.md#walking-home)). The golden scenario `head-on-pass-layout` (`layouts/head-on-pass.jsonc`) meets a carrier
   walking home and a woodcutter walking out head on along one road, and `HeadOnPassTests` meets two carriers the same way.
 
 ## In the engine
 
-`src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `StorageSearch`, and `Direct` port the above. `LayGood` is the put.
+`src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `StorageSearch`, and `Direct` port the above. `Destine` calls `FlagRequestSearch.Find`, which holds the request search. `LayGood` is the put.
 `Exchange` and `WaitForRoad` are the carrier's exchange at a flag, and `TransportPriority` reads a good's rank from
 `RuleTables.TransportPriority`. `src/Application/CarrierBehavior.cs` holds `Fetch` and `Claim`, and `Deliver` and `Handover`
-(state 0xe). `CastleStock.Add` is the castle's count, and `CastleStock.Logs` reads the log's. `Game.Goods` returns the
+(state 0xe). `CastleStock.Add` is the castle's count of a good, in the entry `good - 1` of the list, and `CastleStock.Logs` reads the log's
+(the planks' and stones' counts are in [Materials for a building site](construction-materials.md)). `Game.Goods` returns the
 `GoodsTransport`, which a test builds on a hand-made flag table. A carrier's good and destination are the `Load` of its
 `WalksRoad` or `HandsOver` activity. `SettlerEncoder` writes them as byte 11 and the word at 12, and the destination as the
 original numbers the flags while it carries a good. `Building.FillLow` and `FillHigh` hold bytes 8 and 9, and

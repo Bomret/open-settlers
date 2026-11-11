@@ -10,7 +10,7 @@ namespace OpenSettlers.Tests;
 public sealed class ExchangeTests
 {
     private const int Log = 7;
-    private const int Stone = 9;
+    private const int Ninth = 9;
     private const int Way = 3;
 
     private const int Board = 1;
@@ -52,12 +52,12 @@ public sealed class ExchangeTests
         var (bench, goods) = WithFlag();
         goods.LayGood(0, 2, Log);
         goods.WaitForRoad(0, Way, 2);
-        var carrier = Carrier(bench, Stone, 0);
+        var carrier = Carrier(bench, Ninth, 0);
 
         Exchange(goods, carrier);
 
         Assert.AreEqual(Log, Carried(carrier), "the carrier takes the good that waited");
-        Assert.AreEqual(new Good(Stone), bench.Flags[0].Places[2].Good, "the good it carried is left in that place");
+        Assert.AreEqual(new Good(Ninth), bench.Flags[0].Places[2].Good, "the good it carried is left in that place");
         Assert.AreEqual(0, bench.Flags[0].Places[2].Destination, "its destination goes with it");
         Assert.IsNull(bench.Flags[0].Side(Way).WaitingPlace, "no good waits for the road any more");
         Assert.IsTrue(bench.Flags[0].NeedsGoodsTurn, "the flag looks at the new good at its next turn");
@@ -82,21 +82,21 @@ public sealed class ExchangeTests
     {
         var (bench, goods) = WithFlag();
         goods.LayGood(0, 0, Log);
-        var carrier = Carrier(bench, Stone, 0);
+        var carrier = Carrier(bench, Ninth, 0);
 
         Exchange(goods, carrier);
 
         Assert.AreEqual(0, Carried(carrier), "the carrier has nothing left");
-        Assert.AreEqual(new Good(Stone), bench.Flags[0].Places[1].Good);
+        Assert.AreEqual(new Good(Ninth), bench.Flags[0].Places[1].Good);
         Assert.AreEqual(0, bench.Flags[0].Places[1].Destination);
     }
 
-    // Made-up ranks for the goods 1 to 26 (index good - 1): the stone ranks above the log, the board below it.
-    private static byte[] Ranks(int log, int stone, int board)
+    // Made-up ranks for the goods 1 to 26 (index good - 1): the ninth ranks above the log, the board below it.
+    private static byte[] Ranks(int log, int ninth, int board)
     {
         var ranks = new byte[StartStock.Goods];
         ranks[Log - 1] = (byte)log;
-        ranks[Stone - 1] = (byte)stone;
+        ranks[Ninth - 1] = (byte)ninth;
         ranks[Board - 1] = (byte)board;
 
         return ranks;
@@ -109,23 +109,23 @@ public sealed class ExchangeTests
     [TestMethod]
     public void AfterACarrierTakesAGoodTheGoodOfTheHighestTransportPriorityForTheSameRoadWaitsNext()
     {
-        var (bench, goods) = WithFlag(Ranks(log: 5, stone: 9, board: 2));
+        var (bench, goods) = WithFlag(Ranks(log: 5, ninth: 9, board: 2));
         LayDirected(goods, 0, Board);
         LayDirected(goods, 1, Log);
-        LayDirected(goods, 2, Stone);
+        LayDirected(goods, 2, Ninth);
         LayDirected(goods, 4, Log);
         goods.WaitForRoad(0, Way, 4);
 
         Exchange(goods, Carrier(bench, 0, null));
 
-        Assert.AreEqual(2, bench.Flags[0].Side(Way).WaitingPlace, "the stone waits next");
+        Assert.AreEqual(2, bench.Flags[0].Side(Way).WaitingPlace, "the ninth waits next");
     }
 
     [TestMethod]
     public void AmongGoodsOfEqualTransportPriorityTheOneOnTheLowestPlaceWaitsNext()
     {
-        var (bench, goods) = WithFlag(Ranks(log: 5, stone: 5, board: 2));
-        LayDirected(goods, 3, Stone);
+        var (bench, goods) = WithFlag(Ranks(log: 5, ninth: 5, board: 2));
+        LayDirected(goods, 3, Ninth);
         LayDirected(goods, 1, Log);
         LayDirected(goods, 6, Log);
         goods.WaitForRoad(0, Way, 6);
@@ -138,9 +138,9 @@ public sealed class ExchangeTests
     [TestMethod]
     public void AGoodWithNoTransportPriorityIsNeverLinedUp()
     {
-        var (bench, goods) = WithFlag(Ranks(log: 0, stone: 0, board: 0));
+        var (bench, goods) = WithFlag(Ranks(log: 0, ninth: 0, board: 0));
         LayDirected(goods, 1, Log);
-        LayDirected(goods, 6, Stone);
+        LayDirected(goods, 6, Ninth);
         goods.WaitForRoad(0, Way, 6);
 
         Exchange(goods, Carrier(bench, 0, null));
@@ -157,10 +157,10 @@ public sealed class ExchangeTests
             goods.LayGood(0, place, Log);
         }
 
-        var carrier = Carrier(bench, Stone, 0);
+        var carrier = Carrier(bench, Ninth, 0);
 
         Exchange(goods, carrier);
 
-        Assert.AreEqual(Stone, Carried(carrier));
+        Assert.AreEqual(Ninth, Carried(carrier));
     }
 }

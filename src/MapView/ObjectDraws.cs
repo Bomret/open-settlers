@@ -86,20 +86,29 @@ public static class ObjectDraws
             );
         }
 
-        // A hut that was taken down burns (docs/rules/removal.md); the burning is not drawn (the sprites of the fire are not read).
+        // A building that was taken down burns (docs/rules/removal.md); the burning is not drawn (the sprites of the fire are not
+        // read).
         foreach (
-            var hut in buildings?.Where(building => building.Type == BuildingType.Woodcutter && !building.IsDemolishing)
+            var hut in buildings?.Where(building =>
+                BuildingPlacement.Types.Contains(building.Type) && !building.IsDemolishing
+            )
                 ?? []
         )
         {
-            // A hut is drawn like the castle: at its node in the order of its row. inferred: the alignment is that of an
-            // object, as for the castle.
+            // A building is drawn like the castle: at its node in the order of its row. inferred: the alignment is that of an
+            // object, as for the castle. A site is drawn by its progress word (0x44e329 reads it at 0x44fa7c).
             var (x, y) = Camera.NodePosition(hut.X, hut.Y);
             var height = map.At(hut.X, hut.Y).Height;
             var index = draws.FindIndex(draw => draw.Row > hut.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,
-                new BuildingDraw(hut.Y, x, y - height * TerrainTriangles.HeightStep, BuildingType.Woodcutter)
+                new BuildingDraw(
+                    hut.Y,
+                    x,
+                    y - height * TerrainTriangles.HeightStep,
+                    hut.Type,
+                    hut.Constructing ? hut.Progress : null
+                )
             );
         }
 

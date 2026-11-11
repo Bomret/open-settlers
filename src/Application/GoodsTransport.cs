@@ -16,8 +16,14 @@ namespace OpenSettlers.Simulation;
 /// <param name="flags">The flag table: the places of each flag and the sides of its roads.</param>
 /// <param name="roads">The roads between the flags.</param>
 /// <param name="history">The history the behaviour records its changes in (no rule reads it).</param>
-public sealed class GoodsTransport(SettlerMovement movement, FlagTable flags, RoadNetwork roads, GameHistory history)
-    : ITransportPriorities
+/// <param name="buildings">The building table: the building a request's flag belongs to counts the goods on their way to it.</param>
+public sealed class GoodsTransport(
+    SettlerMovement movement,
+    FlagTable flags,
+    RoadNetwork roads,
+    GameHistory history,
+    BuildingTable? buildings = null
+) : ITransportPriorities
 {
     /// <summary>
     /// A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that
@@ -125,24 +131,92 @@ public sealed class GoodsTransport(SettlerMovement movement, FlagTable flags, Ro
         return sets;
     }
 
-    // The destination of a good with none (0x464364 to 0x46444c, 0x45d3ea). The table at 0x464117 sends a log to the request
-    // search first: it looks for a flag whose request word asks for the good, and none does until buildings ask for goods
-    // (not ported), so the search that follows is the one that counts: the storage search over the roads that hold a
-    // carrier. It gives the castle's flag, or none.
+    // The order the first road that holds a carrier is chosen in when a good reaches no storage (0x464539): the east, then the
+    // directions counted down from 5 to 1. A stand-in for the register the original starts from (see Destine).
+    private static readonly int[] CarrierRoadOrder = [0, 5, 4, 3, 2, 1];
+
+    // The destination of a good with none (0x464364 to 0x46444c, 0x45d3ea). The table at 0x464117 gives a good a class and the
+    // request word it is looked for in, or sends it to storage at once. A good with a class looks first for the flag whose request
+    // asks for it (the request search); where none does, the storage search follows: over the roads that hold a carrier, to the
+    // castle's flag, or none.
     private void Destine(int flag, int place)
     {
+        var good = flags[flag].Places[place].Good;
+        if (
+            movement.Tables.ClassOfGood(good) is { } goodClass
+            && FlagRequestSearch.Find(flags, roads, flag, goodClass, floor: 0) is >= 0 and var asking
+        )
+        {
+            Serve(asking, goodClass.Word);
+            flags[flag].Places[place].Destination = asking;
+            flags[flag].NeedsGoodsTurn = true;
+
+            return;
+        }
+
         var found = StorageSearch(flag);
-        flags[flag].NeedsGoodsTurn = true;
         if (found >= 0)
         {
+            flags[flag].NeedsGoodsTurn = true;
             flags[flag].Places[place].Destination = found;
 
             return;
         }
 
-        // No storage is reached over the roads that hold a carrier: the good waits and the flag is asked again at its next
-        // turn. **Not ported:** where some road of the flag holds a carrier, the original gives the good a direction at
-        // once, chosen from what its registers hold (0x464539); the engine lets it wait as it does with none.
+        // No storage is reached over the roads that hold a carrier. With no such road the good waits and the flag is asked again
+        // at its next turn. With one, the good takes a direction at once (0x464539) and keeps no destination: the first road that
+        // holds a carrier, counted down from the east and round (the original starts from what a register holds, which is not
+        // recovered, so the choice among several roads is a stand-in); where the road has no good waiting, the good waits for it.
+        var roadsWithCarrier = CarrierRoads(flag);
+        if (roadsWithCarrier.IsEmpty)
+        {
+            flags[flag].NeedsGoodsTurn = true;
+
+            return;
+        }
+
+        foreach (var way in CarrierRoadOrder)
+        {
+            if (!roadsWithCarrier.Has(way))
+            {
+                continue;
+            }
+
+            if (flags[flag].Side(way).WaitingPlace is null)
+            {
+                WaitForRoad(flag, way, place);
+            }
+
+            flags[flag].Places[place].Way = way;
+
+            return;
+        }
+    }
+
+    // 0x464999 to 0x4649e0: the flag that was found is served: its rank, shifted right by one where bit 0 is set, else 0, and the
+    // building of the flag counts one more good on the way, in the fill byte of the word's kind (the first word is the planks').
+    private void Serve(int asking, RequestWord word)
+    {
+        var request = flags[asking].RequestOf(word);
+        flags[asking]
+            .SetRequest(word, request with { Rank = (request.Rank & 1) != 0 ? (byte)(request.Rank >> 1) : (byte)0 });
+        if (buildings?.OfFlag(asking) is { } building)
+        {
+            building.SetFill(word.Counter(), building.FillOf(word.Counter()) + 1);
+        }
+    }
+
+    /// <summary>
+    /// A good that was on its way to a request and loses its destination (0x462ca4, <c>docs/rules/construction-materials.md</c>): the
+    /// building at the destination flag counts one good less on the way, in the fill byte the good's kind names, unless it is a
+    /// storage's building. A good of no kind, or with no destination, changes nothing.
+    /// </summary>
+    public void ReleaseRequest(Good good, int? destination)
+    {
+        if (destination is { } flag)
+        {
+            buildings?.CountOneLess(flag, movement.Tables.FillCounterOf(good));
+        }
     }
 
     // 0x45d3ea: the search from a flag over the roads that hold a carrier (from north to east) for
@@ -280,6 +354,7 @@ public sealed class GoodsTransport(SettlerMovement movement, FlagTable flags, Ro
         if (!marked[destination] || label[destination] == 6)
         {
             // The destination cannot be reached: the good gives it up (0x462ca4 releases a request, and a storage counts none).
+            ReleaseRequest(good.Good, good.Destination);
             good.Destination = null;
             flags[flag].NeedsGoodsTurn = true;
 

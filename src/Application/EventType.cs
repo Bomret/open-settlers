@@ -35,6 +35,18 @@ public static class EventType
     /// <summary>The woodcutter's search for a tree.</summary>
     public const string SearchTree = "search-tree";
 
+    /// <summary>The stonecutter's search for a stone heap.</summary>
+    public const string SearchStone = "search-stone";
+
+    /// <summary>The stonecutter's cut; the other thing is the heap, named by its node.</summary>
+    public const string CutStone = "cut-stone";
+
+    /// <summary>The forester's search for a node to plant on.</summary>
+    public const string SearchSpot = "search-spot";
+
+    /// <summary>The forester's planting; the other thing is the sapling, named by its node.</summary>
+    public const string PlantSapling = "plant-sapling";
+
     /// <summary>The woodcutter's step from the hut onto its flag.</summary>
     public const string StepOut = "step-out";
 
@@ -81,7 +93,25 @@ public static class EventType
     public const string KnightIdled = "knight-idled";
 
     /// <summary>The settler that stands by while the castle is built adds to the castle's progress.</summary>
-    public const string Builder = "builder";
+    public const string CastleSettlerBuilds = "castle-settler-builds";
+
+    /// <summary>A builder's turn in the building site: a blow, a material taken, or the wait for the next one.</summary>
+    public const string Builds = "builds";
+
+    /// <summary>A digger's turn in the ground of a large site: a node's height changed by one, a step between the nodes, or the wait for a busy node.</summary>
+    public const string Digs = "digs";
+
+    /// <summary>The digger's last pass: the site starts (its progress word becomes 1) and the digger goes home.</summary>
+    public const string Levelled = "levelled";
+
+    /// <summary>A sawmiller's turn in the sawmill: a log taken out of the building's fill, the sawing, or the wait for a log.</summary>
+    public const string Saws = "saws";
+
+    /// <summary>The builder's last blow: the building is finished and its flag asks for nothing.</summary>
+    public const string BuildingFinished = "building-finished";
+
+    /// <summary>The builder of a finished building waits at its door for the node of the flag, or steps onto the flag.</summary>
+    public const string LeavesSite = "leaves-site";
 
     /// <summary>A settler leaves the castle by its door, or waits for a busy node.</summary>
     public const string Left = "left";
@@ -179,6 +209,9 @@ public static class EventType
     /// <summary>A carrier gives a good to a building, and the building's storage gains it.</summary>
     public const string Handover = "handover";
 
+    /// <summary>The castle hands a good of its stock out to a request: the good lies on the castle's flag, bound for the request's flag.</summary>
+    public const string Handout = "handout";
+
     /// <summary>Every type, for a check of a name.</summary>
     public static IReadOnlyList<string> All { get; } =
     [
@@ -198,7 +231,7 @@ public static class EventType
         RetryBitsCleared,
         Visited,
         KnightIdled,
-        Builder,
+        CastleSettlerBuilds,
         Left,
         Walked,
         Stepped,
@@ -222,6 +255,8 @@ public static class EventType
         FreeFlagSlot,
         Door,
         SearchTree,
+        SearchStone,
+        CutStone,
         StepOut,
         FreeWalk,
         Arrive,
@@ -239,5 +274,8 @@ public static class EventType
         Exchange,
         Deliver,
         Handover,
+        Handout,
+        SearchSpot,
+        PlantSapling,
     ];
 }

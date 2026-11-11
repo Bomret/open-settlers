@@ -30,15 +30,15 @@ public sealed class RoadSplitTests
     public void AFlagOnARoadSplitsItAsTheOriginalDoes(string name) =>
         RemovalTests.Replay(Fixture, name, (_, _) => [CommandKind.PlaceFlag], line => !line.ContainsKey("m"));
 
-    // The building button's click (0x449a63) on a node whose flag node holds a road splits the road under the hut's flag; the
-    // click's map bytes and the flags' items are the original's. The passes after it differ (the hut stands finished at once).
+    // The building button's click (0x449a63) on a node whose flag node holds a road splits the road under the building's flag;
+    // the click's map bytes, the flags' items, and the building site's item are the original's, and so are the bytes after each
+    // pass that follows it.
     [TestMethod]
     public void AHutWhoseFlagLandsOnARoadSplitsItAsTheOriginalDoes() =>
         RemovalTests.Replay(
             Fixture,
             "building-state6",
             (click, _) => [click == 'b' ? CommandKind.PlaceBuilding : CommandKind.PlaceFlag],
-            line => false,
-            clickOnly: true
+            line => false
         );
 }

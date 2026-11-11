@@ -55,7 +55,7 @@ public sealed class ThingHistorySettlersTests
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
         Do(game, CommandKind.BuildRoad, 18, 6, [5, 5, 0]);
         Do(game, CommandKind.BuildRoad, 17, 3, [0, 1]);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         hutSlot = 1;
 
         return game;
@@ -101,13 +101,13 @@ public sealed class ThingHistorySettlersTests
         }
 
         var castle = game.History.BuildingId(0);
-        var changes = game.History.EventsOf(castle).Where(e => e.Type == EventType.Builder).ToList();
+        var changes = game.History.EventsOf(castle).Where(e => e.Type == EventType.CastleSettlerBuilds).ToList();
         Assert.IsNotEmpty(changes);
         Assert.AreEqual("settlers", changes[0].Cause.ToString());
         Assert.AreEqual(game.Buildings[0].Progress, changes[^1].State.Get("progress"));
         Assert.IsTrue(
             game.History.EventsOf(game.History.SettlerId(0))
-                .Any(e => e.Type == EventType.Builder && e.Other == castle.ToString())
+                .Any(e => e.Type == EventType.CastleSettlerBuilds && e.Other == castle.ToString())
         );
     }
 
@@ -178,7 +178,7 @@ public sealed class ThingHistorySettlersTests
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 17, 3);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         var hut = game.History.BuildingId(1);
         for (var i = 0; i < 400; i++)
         {

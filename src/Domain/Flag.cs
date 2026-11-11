@@ -12,6 +12,7 @@ namespace OpenSettlers.Domain;
 public sealed class Flag
 {
     private readonly FlagSide[] _sides = [.. Enumerable.Range(0, Direction.Count).Select(_ => new FlagSide())];
+    private readonly Request[] _requests = new Request[2];
     private readonly WaitingGood[] _places = [.. Enumerable.Range(0, PlaceCount).Select(_ => new WaitingGood())];
 
     /// <summary>The number of places for goods on a flag.</summary>
@@ -41,6 +42,15 @@ public sealed class Flag
 
     /// <summary>Whether goods on the flag still need their turn: a put sets it, a turn clears it, a turn that could not finish sets it again.</summary>
     public bool NeedsGoodsTurn { get; internal set; }
+
+    /// <summary>
+    /// The request of the flag in a request word (bytes <c>0x42</c> to <c>0x45</c> of the flag item, <c>docs/rules/construction-materials.md</c>):
+    /// none until a building site's placement sets them.
+    /// </summary>
+    public Request RequestOf(RequestWord word) => _requests[(int)word];
+
+    /// <summary>Sets the request of the flag in a request word.</summary>
+    internal void SetRequest(RequestWord word, Request request) => _requests[(int)word] = request;
 
     /// <summary>The eight places of the flag, for the goods that lie on it.</summary>
     public IReadOnlyList<WaitingGood> Places => _places;

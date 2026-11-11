@@ -47,6 +47,81 @@ public static class ObjectSprites
     /// </summary>
     public const int WoodcutterEntry = FirstEntry + 168;
 
+    /// <summary>
+    /// The sprite entry of the finished building of type 4, the stonecutter's hut: the first instruction of the draw routine's
+    /// stub of the type (<c>0x44e329</c>, the jump table at <c>0x44e3aa</c>, the stub at <c>0x44e6cb</c>) stores the object
+    /// number 169, plus the 1250. **Inferred** name of the type (<c>docs/rules/build-sites.md</c>). The routine then draws a
+    /// second sprite while the building works, which a later slice reads.
+    /// </summary>
+    public const int StonecutterEntry = FirstEntry + 169;
+
+    /// <summary>
+    /// The sprite entry of the finished building of type 9, the forester's hut: the stub at <c>0x44ec0f</c> stores the object
+    /// number 170, plus the 1250. **Inferred** name of the type.
+    /// </summary>
+    public const int ForesterEntry = FirstEntry + 170;
+
+    /// <summary>
+    /// The sprite entry of the finished building of type 0x11, the sawmill: the stub at <c>0x44f443</c> stores the object number
+    /// 160, plus the 1250. **Inferred** name of the type.
+    /// </summary>
+    public const int SawmillEntry = FirstEntry + 160;
+
+    /// <summary>
+    /// The sprite entry of a building site that has not started and whose progress word is 0, a large building waiting to be
+    /// levelled: the draw routine of a building under construction (<c>0x44e329</c>, the jump table at <c>0x44e3aa</c>, the common
+    /// part from <c>0x44fa79</c>) tests the progress word and, where it is 0, stores the object number 144 (<c>0x44fa69</c>) and
+    /// draws nothing else, plus the 1250.
+    /// </summary>
+    public const int SiteLargeEntry = FirstEntry + 144;
+
+    /// <summary>
+    /// The sprite entry of the base of a building site whose progress word is not 0, small or large (a large one once its ground is
+    /// levelled): after the piles of the goods on site the draw routine stores the object number 145 (<c>0x44fbf9</c>), plus the 1250;
+    /// the scaffold follows it (<see cref="SiteStages"/>).
+    /// </summary>
+    public const int SiteSmallEntry = FirstEntry + 145;
+
+    /// <summary>
+    /// The sprite entry of the scaffold a small building's site grows (<c>docs/rules/construction.md</c>): the common part of the draw routine
+    /// for a building under construction picks the object at the building's type in the table at <c>0x44fcfe</c> (<c>0x44fc3d</c>), 186 for
+    /// the types 2, 4, and 9, plus the 1250.
+    /// </summary>
+    public const int ScaffoldSmallEntry = FirstEntry + 186;
+
+    /// <summary>The sprite entry of the scaffold the sawmill's site grows: the table at <c>0x44fcfe</c> holds the object 181 for the type 0x11.</summary>
+    public const int ScaffoldLargeEntry = FirstEntry + 181;
+
+    /// <summary>The sprite entry of the scaffold of the site of <paramref name="type"/>, or null for a type the view draws none for.</summary>
+    public static int? StageEntry(BuildingType type) =>
+        SiteStages.ScaffoldIsLarge(type) switch
+        {
+            true => ScaffoldLargeEntry,
+            false => ScaffoldSmallEntry,
+            null => null,
+        };
+
+    /// <summary>The sprite entry of a layer of the site of <paramref name="type"/> (<see cref="SiteStages"/>), or null for none.</summary>
+    public static int? SiteLayerEntry(SiteLayer layer, BuildingType type) =>
+        layer switch
+        {
+            SiteLayer.Ground => SiteLargeEntry,
+            SiteLayer.Base => SiteSmallEntry,
+            SiteLayer.Stage => StageEntry(type),
+            _ => FinishedEntry(type),
+        };
+
+    /// <summary>
+    /// The sprite entry of the finished building of <paramref name="type"/>, or null for a type the view draws no sprite for.
+    /// </summary>
+    public static int? FinishedEntry(BuildingType type) =>
+        type == BuildingType.Castle ? CastleEntry
+        : type == BuildingType.Woodcutter ? WoodcutterEntry
+        : type == BuildingType.Stonecutter ? StonecutterEntry
+        : type == BuildingType.Forester ? ForesterEntry
+        : type == BuildingType.Sawmill ? SawmillEntry
+        : null;
+
     /// <summary>The entry of the sprite of good 0; a good lying on a flag draws entry 320 plus the good (<c>0x44de9a</c>).</summary>
     public const int GoodsFirstEntry = 320;
 

@@ -700,59 +700,59 @@
     ]
   },
   "object/72": {
-    "image": "object/rock-0.png",
+    "image": "object/heap-0.png",
     "anchor": [
-      -4,
-      -4
+      -11,
+      -15
     ]
   },
   "object/73": {
-    "image": "object/rock-1.png",
+    "image": "object/heap-1.png",
     "anchor": [
-      -6,
-      -7
+      -11,
+      -15
     ]
   },
   "object/74": {
-    "image": "object/rock-2.png",
+    "image": "object/heap-2.png",
     "anchor": [
-      -8,
-      -9
+      -11,
+      -15
     ]
   },
   "object/75": {
-    "image": "object/rock-0.png",
+    "image": "object/heap-3.png",
     "anchor": [
-      -4,
-      -4
+      -11,
+      -15
     ]
   },
   "object/76": {
-    "image": "object/rock-1.png",
+    "image": "object/heap-4.png",
     "anchor": [
-      -6,
-      -7
+      -11,
+      -15
     ]
   },
   "object/77": {
-    "image": "object/rock-2.png",
+    "image": "object/heap-5.png",
     "anchor": [
-      -8,
-      -9
+      -11,
+      -15
     ]
   },
   "object/78": {
-    "image": "object/rock-0.png",
+    "image": "object/heap-6.png",
     "anchor": [
-      -4,
-      -4
+      -11,
+      -15
     ]
   },
   "object/79": {
-    "image": "object/rock-1.png",
+    "image": "object/heap-7.png",
     "anchor": [
-      -6,
-      -7
+      -11,
+      -15
     ]
   },
   "object/80": {
@@ -917,17 +917,17 @@
     ]
   },
   "object/103": {
-    "image": "object/litter-3.png",
+    "image": "object/sapling-0.png",
     "anchor": [
-      -6,
-      -7
+      -5,
+      -15
     ]
   },
   "object/104": {
-    "image": "object/litter-0.png",
+    "image": "object/sapling-1.png",
     "anchor": [
-      -6,
-      -7
+      -5,
+      -15
     ]
   },
   "object/105": {
@@ -1103,6 +1103,55 @@
     "anchor": [
       -15,
       -29
+    ]
+  },
+  "building/stonecutter": {
+    "image": "building/stonecutter.png",
+    "anchor": [
+      -14,
+      -29
+    ]
+  },
+  "building/forester": {
+    "image": "building/forester.png",
+    "anchor": [
+      -14,
+      -29
+    ]
+  },
+  "building/sawmill": {
+    "image": "building/sawmill.png",
+    "anchor": [
+      -22,
+      -35
+    ]
+  },
+  "building/site-small": {
+    "image": "building/site-small.png",
+    "anchor": [
+      -11,
+      -19
+    ]
+  },
+  "building/site-large": {
+    "image": "building/site-large.png",
+    "anchor": [
+      -17,
+      -19
+    ]
+  },
+  "building/stage-small": {
+    "image": "building/stage-small.png",
+    "anchor": [
+      -14,
+      -29
+    ]
+  },
+  "building/stage-large": {
+    "image": "building/stage-large.png",
+    "anchor": [
+      -22,
+      -35
     ]
   },
   "good/0": {
@@ -1413,6 +1462,48 @@
       -21
     ]
   },
+  "settler/stonecutter/walks": {
+    "image": "settler/stonecutter-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/carries": {
+    "image": "settler/stonecutter-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/cuts": {
+    "image": "settler/stonecutter-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/door": {
+    "image": "settler/stonecutter-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/hands-over": {
+    "image": "settler/stonecutter-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/stonecutter/waits": {
+    "image": "settler/stonecutter-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
   "settler/type-one-hut/walks": {
     "image": "settler/type-one-hut-walks.png",
     "anchor": [
@@ -1450,6 +1541,174 @@
   },
   "settler/type-one-hut/waits": {
     "image": "settler/type-one-hut-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/walks": {
+    "image": "settler/builder-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/carries": {
+    "image": "settler/builder-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/cuts": {
+    "image": "settler/builder-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/door": {
+    "image": "settler/builder-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/hands-over": {
+    "image": "settler/builder-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/waits": {
+    "image": "settler/builder-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/walks": {
+    "image": "settler/forester-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/carries": {
+    "image": "settler/forester-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/cuts": {
+    "image": "settler/forester-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/door": {
+    "image": "settler/forester-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/hands-over": {
+    "image": "settler/forester-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/forester/waits": {
+    "image": "settler/forester-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/walks": {
+    "image": "settler/digger-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/carries": {
+    "image": "settler/digger-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/cuts": {
+    "image": "settler/digger-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/door": {
+    "image": "settler/digger-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/hands-over": {
+    "image": "settler/digger-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/waits": {
+    "image": "settler/digger-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/walks": {
+    "image": "settler/sawmiller-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/carries": {
+    "image": "settler/sawmiller-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/cuts": {
+    "image": "settler/sawmiller-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/door": {
+    "image": "settler/sawmiller-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/hands-over": {
+    "image": "settler/sawmiller-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/waits": {
+    "image": "settler/sawmiller-waits.png",
     "anchor": [
       -7,
       -21

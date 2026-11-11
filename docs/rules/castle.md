@@ -66,9 +66,11 @@ and the weight divided by 65536, one more where the fraction of that division is
 through the section headers of the executable (`ProgramTablesImporter`). The engine holds no copy. The harness verb `stockrows`
 prints the rows, and `ProgramTablesTests` compares a digest of the rows read with the emulator's.
 
-The placement then takes from the result what the castle's own construction and the 20 settlers use: 7 of good 7,
-2 of good 9, 1 of good 15, 4 of good 16, 1 each of goods 17 and 20, 2 of good 21, 3 of good 22, and 3 each of goods 24
-and 25. **Inferred:** the vector is the difference between the interpolated rows and the stock the emulator leaves,
+The 26 counts start at the word at 6 of the storage item, so the entry e (counted from 0) is the good e + 1; a log, the good 7,
+counts in the entry 6 (the word at `0x12`). The placement then takes from the result what the castle's own construction and the 20
+settlers use, by entry: 7 of the entry 7 (the planks, good 8), 2 of the entry 9 (the stones, good 10), 1 of the entry 15, 4 of the
+entry 16, 1 each of the entries 17 and 20, 2 of the entry 21, 3 of the entry 22, and 3 each of the entries 24 and 25 (the tools the
+settlers carry out are among them). **Inferred:** the vector is the difference between the interpolated rows and the stock the emulator leaves,
 not read from the subtractions of `0x442704` and its callees. **Emulated:** at the levels 0, 5, 9, 10, 25, 40, and 49
 the stock the emulator leaves is the interpolated row less this; the levels from 40 give one stock.
 

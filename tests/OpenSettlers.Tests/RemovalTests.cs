@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
@@ -72,9 +73,14 @@ public sealed class RemovalTests
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]: the game before the first pass.
-    private static Game Started(string[] parts, Map map)
+    internal static Game Started(string[] parts, Map map, bool handsOutGoods = false)
     {
-        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(
+            TestProgram.Tables(),
+            map,
+            int.Parse(parts[3], CultureInfo.InvariantCulture),
+            handsOutGoods: handsOutGoods
+        );
         var castle = Points(parts[4]).Single();
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         // The flags take their slots in the order the verb lists them, which the order of the commands of one tick (by node) would
@@ -100,15 +106,20 @@ public sealed class RemovalTests
             );
         }
 
+        // The finished huts stand as a layout's finished-building entry leaves them, after the roads.
+        game.ApplyCommands();
         foreach (var hut in Points(parts[7]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceBuilding, hut[0] - 1, hut[1] - 1));
+            Assert.IsTrue(
+                Huts.Place(game, hut[0] - 1, hut[1] - 1, new BuildingType(hut[2])),
+                "the fixture's hut has its site"
+            );
         }
 
         return game;
     }
 
-    private static Map MapOf(string[] parts)
+    internal static Map MapOf(string[] parts)
     {
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
@@ -200,8 +211,9 @@ public sealed class RemovalTests
 
     // The building's bytes as the item holds them: the node's offset, the type byte, the status, the flag's slot (one more than
     // the engine's), the two bytes of the fill, the worker, the progress, and the word at 14 that a building taken down keeps its
-    // clock in. The castle's bytes from 14 hold a pointer to its storage, which the engine does not keep.
-    private static string BuildingBytes(Building building, int width)
+    // clock in (a building site holds its target height there, and its needs at 16 and 17). The castle's bytes from 14 hold a pointer to its
+    // storage, which the engine does not keep.
+    internal static string BuildingBytes(Building building, int width)
     {
         var bytes = new List<byte>();
         bytes.AddRange(BitConverter.GetBytes((building.Y * 2 * width + building.X) * 4));
@@ -210,8 +222,18 @@ public sealed class RemovalTests
         bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Fill(building)));
         bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Worker(building)));
         bytes.AddRange(BitConverter.GetBytes(building.Progress));
-        bytes.AddRange(BitConverter.GetBytes(building.Stamp));
-        bytes.AddRange([0, 0]);
+        if (building.Site is { } site)
+        {
+            // A building site holds its target height at 14 and the planks and stones it needs at 16 and 17 (0x449a63); taken down it
+            // holds the clock there (0x4617fd).
+            bytes.AddRange(BitConverter.GetBytes(building.IsDemolishing ? building.Stamp : (ushort)site.TargetHeight));
+            bytes.AddRange([(byte)site.Planks, (byte)site.Stones]);
+        }
+        else
+        {
+            bytes.AddRange(BitConverter.GetBytes(building.Stamp));
+            bytes.AddRange([0, 0]);
+        }
 
         return Convert.ToHexString([.. bytes]);
     }
@@ -226,7 +248,7 @@ public sealed class RemovalTests
         for (var index = 0; index < width * map.Size.Height; index++)
         {
             // The link byte of a flag or a building holds the slot, one less than the verb's (the dummies of the tables).
-            static int Link(int value, int code) => value != 0 && code is 1 or 2 ? value + 1 : value;
+            static int Link(int value, int code) => value != 0 && code is 1 or 2 or 3 ? value + 1 : value;
             var parts = layers
                 .Where(layer => exported.Layer(layer.Item2)[index] != before[layer.Item1][index])
                 .Select(layer =>
@@ -294,7 +316,8 @@ public sealed class RemovalTests
         string name,
         Func<char, int, int[]> kindsOf,
         Func<Dictionary<string, string>, bool> isRefused,
-        bool clickOnly = false
+        Func<Settler, int, string>? hexOf = null,
+        bool construct = false
     )
     {
         var scenario = Load(fixture).Single(candidate => candidate.Name == name);
@@ -302,13 +325,24 @@ public sealed class RemovalTests
         var parts = scenario.Command.Split(':');
         var map = MapOf(parts);
         var width = map.Size.Width;
-        var game = Started(parts, map);
+        // A construct scenario empties the castle of planks and stones before every pass (below), so the castle's hand-out, which
+        // would lay a good on the castle's flag at once where the original carries it out and lays it down about 130 passes later
+        // (ConstructionBuilderTests), hands nothing out: no good the original has on the way exists in the engine, and the lines'
+        // "fill<slot>+=NN" lend the counts the original's goods give the site at the passes it counted or received them.
+        var game = Started(parts, map, handsOutGoods: construct);
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
+        // A click written N=click is made before the pass N, any other before the pass AT.
         var clicks = parts[10]
             .Split(';')
-            .Where(text => text[0] != 'c')
-            .Select(text => (Kind: text[0], Node: text[2..].Split(',').Select(int.Parse).ToArray()))
+            .Select(text => text.Split('=', 2))
+            .Select(pair =>
+                (When: pair.Length > 1 ? int.Parse(pair[0], CultureInfo.InvariantCulture) : at, Text: pair[^1])
+            )
+            .Where(click => click.Text[0] != 'c')
+            .Select(click =>
+                (click.When, Kind: click.Text[0], Node: click.Text[2..].Split(',').Select(int.Parse).ToArray())
+            )
             .ToList();
         var puts =
             parts.Length > 11 && parts[11].Length > 0
@@ -336,7 +370,16 @@ public sealed class RemovalTests
                 switch (key[0], key.Length > 1 && char.IsDigit(key[1]))
                 {
                     case ('s', true):
-                        settlers[int.Parse(key[1..], CultureInfo.InvariantCulture)] = value;
+                        // A settler with no bytes in the line ("s14=") is not compared from that pass on.
+                        if (value.Length == 0)
+                        {
+                            settlers.Remove(int.Parse(key[1..], CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            settlers[int.Parse(key[1..], CultureInfo.InvariantCulture)] = value;
+                        }
+
                         break;
                     case ('f', true):
                         flags[int.Parse(key[1..], CultureInfo.InvariantCulture)] = value;
@@ -364,7 +407,7 @@ public sealed class RemovalTests
                 {
                     Assert.AreEqual(
                         Masked(expected, expected),
-                        Masked(expected, WorkerWalkTests.Hex(game.Settlers[slot], width)),
+                        Masked(expected, (hexOf ?? WorkerWalkTests.Hex)(game.Settlers[slot], width)),
                         $"{name}: settler {slot} {when}"
                     );
                 }
@@ -380,14 +423,8 @@ public sealed class RemovalTests
 
             foreach (var (slot, expected) in buildings)
             {
-                // Slot 0 is the dummy of the building table, which has no building of the engine's. A click-only replay leaves out
-                // the hut, which the engine places finished while the original's stands as a site.
-                if (
-                    slot > 0
-                    && slot - 1 < game.Buildings.Count
-                    && !game.Buildings[slot - 1].IsFree
-                    && !(clickOnly && game.Buildings[slot - 1].Type != BuildingType.Castle)
-                )
+                // Slot 0 is the dummy of the building table, which has no building of the engine's.
+                if (slot > 0 && slot - 1 < game.Buildings.Count && !game.Buildings[slot - 1].IsFree)
                 {
                     var length = game.Buildings[slot - 1].Type == BuildingType.Castle ? 28 : 36;
                     Assert.AreEqual(
@@ -425,9 +462,9 @@ public sealed class RemovalTests
             }
 
             var before = Snapshot(map);
-            if (pass == at)
+            if (clicks.Any(click => click.When == pass))
             {
-                foreach (var click in clicks)
+                foreach (var click in clicks.Where(click => click.When == pass))
                 {
                     var line = clickLines[clickIndex++];
                     var node = click.Node;
@@ -440,7 +477,10 @@ public sealed class RemovalTests
                     var digest = game.Digest();
                     foreach (var kind in kindsOf(click.Kind, expectedClass))
                     {
-                        game.Enqueue(new Command(game.TickCount, 0, kind, node[0], node[1]));
+                        // A building click names the type of the building as its third number.
+                        BuildingType? type =
+                            kind == CommandKind.PlaceBuilding && node.Length > 2 ? new BuildingType(node[2]) : null;
+                        game.Enqueue(new Command(game.TickCount, 0, kind, node[0], node[1], Building: type));
                     }
 
                     game.ApplyCommands();
@@ -457,12 +497,6 @@ public sealed class RemovalTests
                     Check($"after the click on {node[0]},{node[1]}", line, before);
                     before = Snapshot(map);
                 }
-
-                // The engine's hut stands finished at once (a stand-in), so the passes after the click differ from the original's.
-                if (clickOnly)
-                {
-                    return;
-                }
             }
 
             foreach (var put in puts.Where(candidate => candidate[0] == pass))
@@ -477,10 +511,20 @@ public sealed class RemovalTests
                 );
             }
 
+            if (construct)
+            {
+                while (game.CastleStock.Take(Good.Plank) || game.CastleStock.Take(Good.Stone)) { }
+            }
+
             game.Tick();
             if (pass >= at)
             {
                 var line = passLines.GetValueOrDefault(pass) ?? [];
+                if (construct)
+                {
+                    ConstructionBuilderTests.Apply(game, line);
+                }
+
                 Take(line);
                 Check($"after pass {pass}", line, before);
             }

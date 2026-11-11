@@ -20,8 +20,13 @@ public sealed record MapObjectDraw(int Row, int X, int Y, MapObject Object, usho
     public override ObjectDrawing? Ask(IGraphicsSource source) => source.Draw(this);
 }
 
-/// <summary>A finished building: the castle or a woodcutter's hut, by its type.</summary>
-public sealed record BuildingDraw(int Row, int X, int Y, BuildingType Type) : ObjectTerm(Row, X, Y)
+/// <summary>
+/// A building, by its type: the castle, a finished building of one of the four types of M4, or a building site. A site carries
+/// the progress word of its building (<c>SiteProgress</c>, null for a finished building), which picks the drawing of its
+/// construction stage: a source draws the stage a site that has not started shows (<c>docs/rules/build-sites.md</c>).
+/// </summary>
+public sealed record BuildingDraw(int Row, int X, int Y, BuildingType Type, ushort? SiteProgress = null)
+    : ObjectTerm(Row, X, Y)
 {
     /// <inheritdoc />
     public override ObjectDrawing? Ask(IGraphicsSource source) => source.Draw(this);

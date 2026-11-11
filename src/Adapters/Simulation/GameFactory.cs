@@ -12,14 +12,18 @@ public static class GameFactory
     /// (<see cref="StartStock.At"/>). The game changes the map it is given: placing the castle writes the castle, its flag,
     /// the heights, and the territory into the map. With <paramref name="everyPassTurns"/> each pass gives the settlers in
     /// motion one more turn (<see cref="MainPass.EveryPassTurns"/>). <paramref name="digest"/> is the game's digest port,
-    /// <see cref="GameDigest"/> by default.
+    /// <see cref="GameDigest"/> by default. With <paramref name="handsOutGoods"/> the pass of the last phase of each cycle runs the
+    /// original's phase routine, which draws once from the generator and hands the castle's goods out to the requests of building
+    /// sites (<see cref="StorageDistribution"/>); the scenarios that compare a game with an emulator verb that skips the phase routine
+    /// leave it off.
     /// </summary>
     public static Game Create(
         RuleTables tables,
         Map map,
         int stockLevel = 0,
         bool everyPassTurns = false,
-        IGameDigest? digest = null
+        IGameDigest? digest = null,
+        bool handsOutGoods = false
     )
     {
         var clock = new GameClock();
@@ -36,7 +40,7 @@ public static class GameFactory
         var movement = new SettlerMovement(map, buildings, tables, () => clock.Now, SettlerEncoder.ResidueOf);
         int Route(int from, int to) => network.Route(flags.Count, from, to);
 
-        var goods = new GoodsTransport(movement, flags, network, history);
+        var goods = new GoodsTransport(movement, flags, network, history, buildings);
         var walkHome = new WalkHomeBehavior(movement, buildings, flags, network, history, draws, Route);
         var causes = new Causes(history, buildings, walkHome);
         var woodcutter = new WoodcutterBehavior(
@@ -49,7 +53,19 @@ public static class GameFactory
             (flag, place, good) => goods.LayGood(flag, place, good),
             () => causes.InLayout
         );
-        var roster = new CastleRoster(movement, settlers, buildings, flags, network, history, causes, draws, clock);
+        var roster = new CastleRoster(
+            movement,
+            settlers,
+            buildings,
+            flags,
+            network,
+            history,
+            causes,
+            draws,
+            clock,
+            castle,
+            tables
+        );
         var roadStep = new RoadStep(movement, settlers, history, causes);
         var carriers = new CarrierBehavior(
             movement,
@@ -91,6 +107,23 @@ public static class GameFactory
             roster,
             settlers
         );
+        var builder = new BuilderBehavior(movement, buildings, flags, history, draws, woodcutter.StepOut);
+        woodcutter.RegisterStart(Job.Builder, builder.Start);
+        woodcutter.RegisterStart(Job.Stonecutter, woodcutter.StartStonecutter);
+        woodcutter.RegisterStart(Job.Forester, woodcutter.StartForester);
+        var digger = new DiggerBehavior(movement, buildings, history, woodcutter.StepOut);
+        woodcutter.RegisterStart(Job.Digger, digger.Start);
+        var sawmill = new SawmillBehavior(
+            movement,
+            flags,
+            history,
+            (flag, place, good) => goods.LayGood(flag, place, good),
+            woodcutter.EnterHut
+        );
+        woodcutter.RegisterStart(Job.Sawmiller, sawmill.Start);
+        builder.Register(behaviours);
+        digger.Register(behaviours);
+        sawmill.Register(behaviours);
         roster.Register(behaviours);
         walks.Register(behaviours);
         removal.Register(behaviours);
@@ -109,11 +142,17 @@ public static class GameFactory
             carriers,
             woodcutter,
             removal,
-            roster
+            roster,
+            new SitePass(map, flags, tables, roster.AskForWorker),
+            sawmill,
+            handsOutGoods
+                ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
+                : null
         )
         {
             EveryPassTurns = everyPassTurns,
         };
+        var placement = new BuildingPlacement(tables, map, castle, flags, buildings, history, causes, removal);
         var planner = new RoadPlanner(tables, map, castle);
         var startStock = StartStock.At(tables, stockLevel);
         game = new Game(
@@ -140,14 +179,15 @@ public static class GameFactory
                 WalkHome = walkHome,
                 Walks = walks,
                 Woodcutter = woodcutter,
+                Placement = placement,
                 RoadPlanner = planner,
                 Queue = new CommandQueue(),
                 Handlers =
                 [
                     new PlaceCastleHandler(tables, map, castle, startStock, flags, settlers, roster, history, causes),
-                    new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal),
+                    new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal, buildings),
                     new BuildRoadHandler(planner, network, carriers, history, causes),
-                    new PlaceBuildingHandler(tables, map, castle, flags, buildings, history, causes, removal),
+                    new PlaceBuildingHandler(placement),
                     new RemoveFlagHandler(removal),
                     new RemoveBuildingHandler(removal),
                     new RemoveRoadHandler(removal),

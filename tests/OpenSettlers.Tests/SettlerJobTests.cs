@@ -82,7 +82,7 @@ public sealed class SettlerJobTests
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0]);
         Do(game, CommandKind.BuildRoad, 18, 6, [5, 5, 0]);
         Do(game, CommandKind.BuildRoad, 17, 3, [0, 1]);
-        Do(game, CommandKind.PlaceBuilding, 16, 2);
+        Huts.PlaceAndTick(game, 16, 2);
         for (var tick = 0; tick < 400; tick++)
         {
             game.Tick();
@@ -93,7 +93,7 @@ public sealed class SettlerJobTests
         var id = game.History.SettlerId(slot);
         // The engine has no builder outside the castle, so the hut's woodcutter is given the builder's job: the test shows
         // that the removal of a building turns a builder worker into a carrier of the same settler, not a builder's path.
-        worker.Job = Job.Builder;
+        worker.Job = Job.CastleSettler;
 
         Do(game, CommandKind.RemoveBuilding, 16, 2);
 

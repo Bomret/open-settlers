@@ -65,11 +65,7 @@ public sealed class HutTests
         game.Tick();
     }
 
-    private static void PlaceHut(Game game)
-    {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2));
-        game.Tick();
-    }
+    private static void PlaceHut(Game game) => Huts.PlaceAndTick(game, 16, 2);
 
     private static void Run(Game game, int ticks)
     {
@@ -93,7 +89,7 @@ public sealed class HutTests
     }
 
     [TestMethod]
-    public void AHutPlacedAtAFlagStandsFinishedAtOnce()
+    public void AFinishedHutPlacedAtAFlagStandsFinished()
     {
         var game = World();
 
@@ -116,8 +112,7 @@ public sealed class HutTests
         var game = World();
         var (x, y) = FreeSite(game);
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, x, y));
-        game.Tick();
+        Huts.PlaceAndTick(game, x, y);
 
         Assert.AreEqual(2, game.Buildings.Count);
         var hut = game.Buildings[1];
@@ -134,12 +129,11 @@ public sealed class HutTests
         var control = World();
 
         // 17,2 has the flag at 17,3 as its south neighbour, which leaves it no site for a building.
-        refused.Enqueue(new Command(refused.TickCount, 0, CommandKind.PlaceBuilding, 17, 2));
-        refused.Tick();
+        Assert.IsFalse(Huts.PlaceAndTick(refused, 17, 2));
         control.Tick();
 
         Assert.AreEqual(1, refused.Buildings.Count);
-        Assert.AreEqual(control.Digest(), refused.Digest(), "a refused command changes no state");
+        Assert.AreEqual(control.Digest(), refused.Digest(), "a refused placement changes no state");
     }
 
     // A node of the castle's land with a site for a building and nothing on or around its south-east node (node state 7).

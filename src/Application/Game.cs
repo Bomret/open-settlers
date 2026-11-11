@@ -113,6 +113,24 @@ public sealed class Game
     /// <summary>The woodcutter's work on the objects and the trees.</summary>
     internal WoodcutterBehavior Woodcutter => _parts.Woodcutter;
 
+    /// <summary>
+    /// Stands a finished building of <paramref name="type"/> on the node, as a layout's finished-building entry does
+    /// (<see cref="BuildingPlacement.PlaceFinished"/>), and tells whether the placement allowed it. No command gives a finished
+    /// building. Stand-in: the placement is logged among the commands applied, as the placement command it replaces, with no type,
+    /// so the digests the layouts and scenarios of M3 gave stay.
+    /// </summary>
+    internal bool PlaceFinishedBuilding(BuildingType type, int x, int y)
+    {
+        if (!_parts.Placement.PlaceFinished(type, x, y))
+        {
+            return false;
+        }
+
+        _applied.Add(new Command(TickCount, 0, CommandKind.PlaceBuilding, x, y));
+
+        return true;
+    }
+
     /// <summary>The check of the road the player draws.</summary>
     public RoadPlanner RoadPlanner => _parts.RoadPlanner;
 

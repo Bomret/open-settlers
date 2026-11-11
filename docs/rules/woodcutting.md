@@ -95,7 +95,7 @@ and the waiting carrier is told to fetch it: [Goods at a flag](goods.md).
 
 ## The object pass
 
-**Status:** confirmed for the codes 0x53 to 0x66 and the lake detail; the handlers of the codes from 0x67 are **not ported**.
+**Status:** confirmed for the codes 0x53 to 0x68 and the lake detail; **emulated**; the handlers of the codes from 0x69 are **not ported**.
 
 `0x428d10`, called by the main loop's `0x4286d8` after `0x428728` and before the phase step, each pass: every 20 clock units (a
 countdown that wraps as a debt, so a late pass catches up) it takes as many nodes as the map's size gives, `(columns / 32) * (rows /
@@ -105,12 +105,13 @@ countdown that wraps as a debt, so a late pass catches up) it takes as many node
   takes a draw; where the detail is below 10 it grows by one when the draw's bits 8 to 13 are 0, and one moves to the neighbour that
   the draw's bits 2 and 3 pick (south-east, south, north-west, north) when that is a lake node too.
 - An object code from 0x53 goes through the table at `0x428eb8`: 0x53 vanishes (bit 7 kept) when a draw's low two bits are 0; the cut
-  tree's codes `0x5d` to `0x66` become `0x53`; 0x54 to 0x5c do nothing; the codes from 0x67 grow (saplings to trees) or decay and are
-  not ported, because the generation places none and there is no planting yet.
+  tree's codes `0x5d` to `0x66` become `0x53`; 0x54 to 0x5c do nothing; the saplings 0x67 and 0x68 grow into trees where a draw's bits 8
+  and 9 are clear ([Forestry](forestry.md#growth)); the codes from 0x69 grow or decay and are not ported, because the generation places
+  none and no work puts them down.
 
 So a felled tree stands as a cut tree until the cursor passes its node, then as the object 0x53, and vanishes at a later pass of the
 cursor with the chance 1 in 4, so a stump stays 1 to 2 cursor rounds and more on a 32 by 32 map (a round is about 2560 passes). The
-generation's own 0x53 objects vanish the same way. There is no regrowth: the original's growth (0x67 and up) needs a forester.
+generation's own 0x53 objects vanish the same way. A felled tree grows back only where a forester plants a sapling ([Forestry](forestry.md)).
 
 ## The random generator
 
@@ -132,7 +133,8 @@ simulation must not depend on or does not port, so a real game's tree choices di
 `1250 + code - 8`); the woodcutter is drawn as the walking settlers are ([Settlers](settlers.md#drawing-the-walk-leads)) with the
 figure rows of job 5. The engine draws him in the states 2, 3, 4, 5, 0xe, 0x10, 0x11, and 0x19, the full list in
 [Settlers](settlers.md#drawing-the-walk-leads). The rows cover the walk, the way back with the log (byte 13 0x80, byte 14 1,
-state 0x10), and the felling at the cut (figure bytes from 0x80, frames `0x74` to `0x78`).
+state 0x10), and the felling at the cut (figure bytes from 0x80, frames `0x74` to `0x78`). The `open-settlers` set draws the way
+back with a log in the carries pose (`settler/woodcutter/carries`), as it does the stonecutter's way back with a stone.
 
 The frames `0x74` to `0x78` are **confirmed** by the draw run of the `woodcutter` recording
 ([Settlers](settlers.md#the-draw-path-emulated), `tests/OpenSettlers.Tests/settler-draws.txt`, every pass of the cut). A screenshot
