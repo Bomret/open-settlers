@@ -35,8 +35,7 @@ public sealed record LayoutResult(Layout? Layout, IReadOnlyList<string> Problems
 /// placed finished as the original's mission start places one, a woodcutter's hut with its worker inside (<c>docs/rules/layouts.md</c>); <c>roads</c>: a list of <c>{"x", "y", "directions"}</c>, the flag the road starts at and one
 /// direction, 0 to 5, for each step. <see cref="Apply"/> builds these in the order the file lists them, key by key and
 /// entry by entry.</item>
-/// <item><c>settlers</c> (optional): entries in an entry state (<c>docs/rules/layouts.md</c>): a woodcutter
-/// <c>{"job": "woodcutter", "state": "in-hut", "x", "y"}</c> in the hut at the node, or a carrier
+/// <item><c>settlers</c> (optional): entries in an entry state (<c>docs/rules/layouts.md</c>): a carrier
 /// <c>{"job": "carrier", "state": "waiting-on-road", "x", "y", "direction"}</c> on the road that leaves the flag at the
 /// node in the direction; <c>goods</c> (optional): <c>{"x", "y", "place", "good"}</c>, a good put on a place (0 to 7) of the
 /// flag at the node.</item>
