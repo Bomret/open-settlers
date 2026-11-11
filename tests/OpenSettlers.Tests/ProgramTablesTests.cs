@@ -480,10 +480,7 @@ public sealed class ProgramTablesTests
 
         // peek:464117:64, peek:42a313:150 (the three orders of 12 steps), and peek:445752:16 (mov ax, 0xffdc, stored at +0x148).
         Assert.AreEqual(0xF9A2A5F29992593BUL, Fnv(tables.GoodClasses));
-        CollectionAssert.AreEqual(
-            new[] { 12, 12, 12 },
-            tables.Distribution.Select(order => order.Length).ToArray()
-        );
+        CollectionAssert.AreEqual(new[] { 12, 12, 12 }, tables.Distribution.Select(order => order.Length).ToArray());
         Assert.AreEqual(new DistributionStep(RequestWord.First, 1, 14), tables.Distribution[0][0]);
         Assert.AreEqual(new DistributionStep(RequestWord.Second, 4, 18), tables.Distribution[0][1]);
         Assert.AreEqual(new DistributionStep(RequestWord.Second, 4, 18), tables.Distribution[1][0]);

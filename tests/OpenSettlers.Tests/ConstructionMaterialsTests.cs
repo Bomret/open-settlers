@@ -92,7 +92,14 @@ public sealed class ConstructionMaterialsTests
         if (kind == 'b')
         {
             game.Enqueue(
-                new Command(game.TickCount, 0, CommandKind.PlaceBuilding, node[0], node[1], Building: new BuildingType(node[2]))
+                new Command(
+                    game.TickCount,
+                    0,
+                    CommandKind.PlaceBuilding,
+                    node[0],
+                    node[1],
+                    Building: new BuildingType(node[2])
+                )
             );
             game.ApplyCommands();
 
@@ -126,14 +133,12 @@ public sealed class ConstructionMaterialsTests
             var flag = game.Flags[slot - 1];
             Assert.AreEqual(
                 Convert.ToHexString(bytes[0x42..0x46]),
-                Convert.ToHexString(
-                    [
-                        flag.RequestOf(RequestWord.First).Classes,
-                        flag.RequestOf(RequestWord.First).Rank,
-                        flag.RequestOf(RequestWord.Second).Classes,
-                        flag.RequestOf(RequestWord.Second).Rank,
-                    ]
-                ),
+                Convert.ToHexString([
+                    flag.RequestOf(RequestWord.First).Classes,
+                    flag.RequestOf(RequestWord.First).Rank,
+                    flag.RequestOf(RequestWord.Second).Classes,
+                    flag.RequestOf(RequestWord.Second).Rank,
+                ]),
                 $"{when}: the request words of flag {slot}"
             );
         }
@@ -148,8 +153,16 @@ public sealed class ConstructionMaterialsTests
 
             var bytes = Convert.FromHexString(expected);
             var building = game.Buildings[slot - 1];
-            Assert.AreEqual(Held(bytes[8]), Held(building.FillLow), $"{when}: the planks of site {slot}, on site and on the way");
-            Assert.AreEqual(Held(bytes[9]), Held(building.FillHigh), $"{when}: the stones of site {slot}, on site and on the way");
+            Assert.AreEqual(
+                Held(bytes[8]),
+                Held(building.FillLow),
+                $"{when}: the planks of site {slot}, on site and on the way"
+            );
+            Assert.AreEqual(
+                Held(bytes[9]),
+                Held(building.FillHigh),
+                $"{when}: the stones of site {slot}, on site and on the way"
+            );
             Assert.AreEqual(
                 bytes[12] | bytes[13] << 8,
                 (int)building.Progress,

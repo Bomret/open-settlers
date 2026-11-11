@@ -157,7 +157,14 @@ public sealed class RuleTables
         _buildingNeeds = buildingNeeds ?? new byte[2 * BuildingTypeCount];
         // stand-in: a table a test does not give sends every good to storage at once, and no storage hands any good out.
         _goodClasses = goodClasses ?? [.. Enumerable.Repeat((byte)0xff, 2 * GoodClassCount)];
-        _distribution = distribution ?? [[], [], []];
+        _distribution =
+            distribution
+            ??
+            [
+                [],
+                [],
+                [],
+            ];
         PlankRankBase = plankRankBase;
     }
 
@@ -307,7 +314,10 @@ public sealed class RuleTables
 
         return (sbyte)_goodClasses[index] < 0
             ? null
-            : new GoodClass(_goodClasses[index], _goodClasses[index + 1] == 0x44 ? RequestWord.Second : RequestWord.First);
+            : new GoodClass(
+                _goodClasses[index],
+                _goodClasses[index + 1] == 0x44 ? RequestWord.Second : RequestWord.First
+            );
     }
 
     /// <summary>The orders in which a storage hands its goods out, as the importer read them (<see cref="DistributionOrder"/>).</summary>

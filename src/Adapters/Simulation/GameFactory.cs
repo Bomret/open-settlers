@@ -115,7 +115,9 @@ public static class GameFactory
             removal,
             roster,
             new SitePass(map, flags, tables),
-            handsOutGoods ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history) : null
+            handsOutGoods
+                ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
+                : null
         )
         {
             EveryPassTurns = everyPassTurns,

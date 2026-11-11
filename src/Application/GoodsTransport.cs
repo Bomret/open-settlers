@@ -224,13 +224,8 @@ public sealed class GoodsTransport(
     private void Serve(int asking, RequestWord word)
     {
         var request = flags[asking].RequestOf(word);
-        flags[asking].SetRequest(
-            word,
-            request with
-            {
-                Rank = (request.Rank & 1) != 0 ? (byte)(request.Rank >> 1) : (byte)0,
-            }
-        );
+        flags[asking]
+            .SetRequest(word, request with { Rank = (request.Rank & 1) != 0 ? (byte)(request.Rank >> 1) : (byte)0 });
         if (buildings?.OfFlag(asking) is { } building)
         {
             var counter = word == RequestWord.First ? FillCounter.Low : FillCounter.High;
@@ -250,7 +245,10 @@ public sealed class GoodsTransport(
             kind == FillCounter.None
             || destination is not { } flag
             || buildings?.OfFlag(flag) is not { } building
-            || (!building.Constructing && (building.Type == BuildingType.Castle || building.Type == BuildingType.Storehouse))
+            || (
+                !building.Constructing
+                && (building.Type == BuildingType.Castle || building.Type == BuildingType.Storehouse)
+            )
         )
         {
             return;

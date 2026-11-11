@@ -97,13 +97,7 @@ public sealed class PlayStateTests
         stock[9] = 28;
         var castle = new CastleStock();
         castle.Place(new Castle(1, 1, 1), stock);
-        var state = State with
-        {
-            Ticks = 1,
-            Logs = castle.Logs,
-            Planks = castle.Planks,
-            Stones = castle.Stones,
-        };
+        var state = State with { Ticks = 1, Logs = castle.Logs, Planks = castle.Planks, Stones = castle.Stones };
 
         StringAssert.EndsWith(state.Dump(), "ticks=1\nlogs=3\nplanks=53\nstones=28\n");
         Assert.IsNull(state.Check(Expect("planks", "=", "53")));

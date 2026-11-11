@@ -16,7 +16,12 @@ public sealed class StorageDistributionTests
     private const int Planks = 8;
     private const int Stones = 10;
 
-    private sealed record Rig(BehaviourBench Bench, CastleStock Castle, StorageDistribution Distribution, GoodsTransport Goods);
+    private sealed record Rig(
+        BehaviourBench Bench,
+        CastleStock Castle,
+        StorageDistribution Distribution,
+        GoodsTransport Goods
+    );
 
     // Flag 0 is the castle's; flags 1 and 2 are sites' flags on roads that hold a carrier (flag 2 beyond flag 1). The castle holds
     // the planks and stones given.
@@ -81,7 +86,11 @@ public sealed class StorageDistributionTests
         Assert.AreEqual(Planks, rig.Bench.Flags[0].Places[0].Good.Code, "the plank lies on the castle's flag");
         Assert.AreEqual(1, rig.Bench.Flags[0].Places[0].Destination, "bound for the site's flag");
         Assert.AreEqual(1, site.FillLow, "and counted on its way to the site");
-        Assert.AreEqual(0, rig.Bench.Flags[1].RequestOf(RequestWord.First).Rank, "the request that was served keeps no rank");
+        Assert.AreEqual(
+            0,
+            rig.Bench.Flags[1].RequestOf(RequestWord.First).Rank,
+            "the request that was served keeps no rank"
+        );
         Assert.IsTrue(rig.Bench.Flags[0].NeedsGoodsTurn, "the flag's turn gives the plank its direction");
     }
 

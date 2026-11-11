@@ -230,7 +230,9 @@ public static class ProgramTablesImporter
                 );
             }
 
-            steps.Add(new DistributionStep(words[0] == 0x44 ? RequestWord.Second : RequestWord.First, words[1], words[2]));
+            steps.Add(
+                new DistributionStep(words[0] == 0x44 ? RequestWord.Second : RequestWord.First, words[1], words[2])
+            );
         }
 
         return [.. steps];

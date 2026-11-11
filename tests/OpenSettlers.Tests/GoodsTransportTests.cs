@@ -10,6 +10,7 @@ namespace OpenSettlers.Tests;
 public sealed class GoodsTransportTests
 {
     private const int Log = 7;
+
     // A good of the made-up ranks (the ninth: the program gives it no class, so it goes to storage at once).
     private const int Ninth = 9;
     private const int West = 3;
@@ -68,7 +69,11 @@ public sealed class GoodsTransportTests
 
         goods.Turn(1);
 
-        Assert.AreEqual(2, bench.Flags[1].Side(West).WaitingPlace, "the ninth good has the higher rank and takes the place");
+        Assert.AreEqual(
+            2,
+            bench.Flags[1].Side(West).WaitingPlace,
+            "the ninth good has the higher rank and takes the place"
+        );
         Assert.AreEqual(West, bench.Flags[1].Places[6].Way, "the log keeps its direction and waits");
     }
 

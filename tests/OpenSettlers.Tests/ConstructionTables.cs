@@ -29,11 +29,9 @@ internal static class ConstructionTables
 
     // The made-up order: planks first, then stones (the program's tables hold twelve steps; a storage that holds nothing else
     // serves these two alike).
-    public static DistributionStep[] PlanksFirst() =>
-        [new(RequestWord.First, 1, 14), new(RequestWord.Second, 4, 18)];
+    public static DistributionStep[] PlanksFirst() => [new(RequestWord.First, 1, 14), new(RequestWord.Second, 4, 18)];
 
-    public static DistributionStep[] StonesFirst() =>
-        [new(RequestWord.Second, 4, 18), new(RequestWord.First, 1, 14)];
+    public static DistributionStep[] StonesFirst() => [new(RequestWord.Second, 4, 18), new(RequestWord.First, 1, 14)];
 
     // Every draw picks the first table below 0 and 1, so the draw 2 picks PlanksFirst, the draw 0 StonesFirst.
     public static DistributionStep[][] Orders() => [PlanksFirst(), StonesFirst(), PlanksFirst()];
