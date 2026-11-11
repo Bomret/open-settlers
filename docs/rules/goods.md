@@ -59,8 +59,9 @@ direction does one of two things:
    carrier comes. With some road of the flag holding a carrier (status bits 0 to 5 not all clear) and no storage reached, the good takes a
    direction at once (`0x464539`) and keeps its destination word 0; the flag's bit 7 is not set again, and where the road's byte has no
    bit 7 the good takes its place. **Emulated:** a plank and a stone on the castle's flag, released from a site taken down
-   ([Removal](removal.md#taking-a-building-site-down)), each take the direction of the only road that holds a carrier. A flag cut off from the castle (its road to the next flag holds a carrier, that flag's road to the
-   castle none) is pinned on made-up tables only (`GoodsTransportTests`): the good takes the road at once, the next good on the flag the direction only. **Stand-in:** the road
+   ([Removal](removal.md#taking-a-building-site-down)), each take the direction of the only road that holds a carrier. **Emulated** (`removals.txt`, `cut-off`): a stone laid on a flag of a network that a removed road cut off
+   from the castle takes the direction of a road that holds a carrier at the flag's next turn and keeps the destination 0. A second good on such a
+   flag is pinned on made-up tables only (`GoodsTransportTests`): the first good takes the road at once, the next good the direction only. **Stand-in:** the road
    is the first with a carrier from the east, then from the north-west round to the south-east; the original starts from a register's
    leftover (the result of the request search), which is not recovered, so the choice between several roads that hold a carrier is not confirmed.
 2. **A destination.** The search for the direction (`0x464aa8`, `0x464bb2`, `0x464c36`) starts at the flag. It seeds the roads
