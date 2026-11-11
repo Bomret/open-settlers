@@ -155,6 +155,13 @@ public sealed class ProgramTablesTests
         );
         Add(ProgramTablesImporter.BuilderWalkAddress, 0x1500);
         Add(ProgramTablesImporter.BuilderWorkAddress, 0x1580);
+        var foresterStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.ForesterCode;
+        Write(
+            foresterStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.ForesterHandlerAddress - (foresterStub + 5))]
+        );
+        Add(ProgramTablesImporter.ForesterWalkAddress, 0x0e00);
+        Add(ProgramTablesImporter.ForesterWorkAddress, 0x1080);
         var diggerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.DiggerCode;
         Write(
             diggerStub,
@@ -791,6 +798,38 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(new FigureAdds(0x0d00, 0x1200, 0x1280), tables.StonecutterFigureAdds);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheForestersFigureWordsOfTheInstallAreThoseOfHisDrawHandler()
+    {
+        var adds = TestProgram.Tables().ForesterFigureAdds;
+
+        // 0x43fd88, the handler of job 8: add word [edi+8], imm16 at 0x43fdea (walk) and 0x43fddf (figure byte from 0x80).
+        Assert.AreEqual(new ForesterFigureAdds(0x0e00, 0x1080), adds);
+    }
+
+    [TestMethod]
+    public void TheForestersFigureWordsAreTheImmediatesOfHisHandler()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(new ForesterFigureAdds(0x0e00, 0x1080), tables.ForesterFigureAdds);
+    }
+
+    [TestMethod]
+    public void AForestersStubThatJumpsElsewhereIsRefused()
+    {
+        var exe = Executable(bytes =>
+            bytes[
+                FileOffset(ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.ForesterCode)
+                    + 1
+            ] ^= 1
+        );
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "forester");
     }
 
     [TestMethod]

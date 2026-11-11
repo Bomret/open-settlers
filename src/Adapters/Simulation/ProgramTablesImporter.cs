@@ -89,6 +89,15 @@ public static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
     public const int StonecutterWalkAddress = 0x43fd7d;
 
+    /// <summary>The handler of the forester's figure (<c>0x43fd88</c>, the target of the stub of job 8).</summary>
+    public const int ForesterHandlerAddress = 0x43fd88;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80.</summary>
+    public const int ForesterWorkAddress = 0x43fddf;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte below 0x80 (the walk).</summary>
+    public const int ForesterWalkAddress = 0x43fdea;
+
     /// <summary>The handler of the figure of the settler of the type 1 hut (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
     public const int TypeOneHutHandlerAddress = 0x43fed8;
 
@@ -277,9 +286,24 @@ public static class ProgramTablesImporter
             [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             BuilderAdds(exe),
             StonecutterAdds(exe),
+            ForesterAdds(exe),
             WorkerRequest(exe, DiggerRequestAddress),
             DiggerAdds(exe)
         );
+    }
+
+    // The forester's adds from the immediates of his handler: the stub of job 8 must jump to it.
+    private static ForesterFigureAdds ForesterAdds(byte[] exe)
+    {
+        var stub = JobStubAddress + JobStubSize * Job.ForesterCode;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(ForesterHandlerAddress - (stub + 5))],
+            "jumps to the forester's handler"
+        );
+
+        return new ForesterFigureAdds(Immediate(exe, ForesterWalkAddress), Immediate(exe, ForesterWorkAddress));
     }
 
     // The digger's adds from the immediates of his handler, as the builder's are read: the stub of job 2 must jump to the handler. Every

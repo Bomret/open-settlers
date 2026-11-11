@@ -66,12 +66,17 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 - `0x424175` to `0x4246f4`: 15 routines, each setting the scatter parameters of one kind of map object
   for `MapGen_ScatterObjects` (known). Their order lists the map object kinds, such as trees and stones.
   likely
-- `0x428d10`: known. Changes tiles at a random cursor every 20 clock units; tree growth is one reading.
+- `0x428d10`: known. Changes tiles at a random cursor every 20 clock units; the saplings `0x67` and `0x68` grow into trees
+  there (`0x4290d5`, `0x42910f`, [Forestry](../rules/forestry.md#growth)).
+- `0x43d009`, `0x438c9f`, `0x4389bf`, `0x438194`: the forester's start routine (job 8), his search for a free meadow node (state `0x13`),
+  his planting (state `0x14`), and the arrival of his job. known ([Forestry](../rules/forestry.md))
+- `0x43fd88`: the forester's figure handler (the adds `0xe00` and `0x1080`). known, a draw run
+  ([Forestry](../rules/forestry.md#drawing))
 
 ## Open questions
 
 - The stonecutter, the forester, and the sawmill are the building types 4, 9, and 0x11 (the handlers
   `0x42d987`, `0x42d9c9`, `0x42da0b` of the jump table `0x42cd1d`; the stonecutter's name is known: his work cuts
-  the stone heaps and lays the stone on the flag, [Stonecutting](../rules/stonecutting.md); the other names are
-  inferred, confirmed by the slices that build each type's work). The builder is job 3 (known, [the builder](../rules/construction.md))
+  the stone heaps and lays the stone on the flag, [Stonecutting](../rules/stonecutting.md); the forester's name is known: his work puts
+  the saplings on the map, [Forestry](../rules/forestry.md); the sawmill's name is inferred, confirmed by the slice that builds its work). The builder is job 3 (known, [the builder](../rules/construction.md))
   and the digger is job 2 (known, [the digger](../rules/digging.md)). `0x4312ed` is `Flag_ReleaseGoods`, no table of jobs.

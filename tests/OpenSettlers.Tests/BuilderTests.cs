@@ -183,11 +183,16 @@ public sealed class BuilderTests
         var (game, site) = World();
         game.CastleStock.Add(ConstructionTables.ForesterTool);
 
-        ConstructionWorld.Run(game, 6000);
+        // The forester goes into his building and out again to his work, so the test watches for the moment he stands in the doorway.
+        var inside = false;
+        for (var tick = 0; tick < 6000 && !inside; tick++)
+        {
+            game.Tick();
+            inside = ConstructionWorld.OfJob(game, new Job(8)).Any(worker => (worker.X, worker.Y) == (SiteX, SiteY));
+        }
 
-        var worker = ConstructionWorld.OfJob(game, new Job(8)).Single();
         Assert.IsTrue(site.WorkerInside || site.WorkerOnTheWay);
-        Assert.AreEqual((SiteX, SiteY), (worker.X, worker.Y), "the worker stands in his building");
+        Assert.IsTrue(inside, "the worker stands in his building");
     }
 
     [TestMethod]

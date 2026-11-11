@@ -34,6 +34,9 @@ public sealed record Cause(string Kind, ThingId? Thing = null)
     /// <summary>The rule area of the stonecutter's work (<c>stonecutting</c>).</summary>
     public static Cause Stonecutting { get; } = new("stonecutting");
 
+    /// <summary>The rule area of the forester's work (<c>forestry</c>).</summary>
+    public static Cause Forestry { get; } = new("forestry");
+
     /// <summary>The rule area of the walk home to a storage (<c>walk-home</c>).</summary>
     public static Cause WalkHome { get; } = new("walk-home");
 
@@ -59,6 +62,7 @@ public sealed record Cause(string Kind, ThingId? Thing = null)
         "goods",
         "removal",
         LayoutKind,
+        "forestry",
     ];
 
     /// <summary>The cause of a place command for <paramref name="thing"/>.</summary>
