@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
 
@@ -728,6 +729,17 @@ public sealed class ProgramTablesTests
         CollectionAssert.AreEqual(new[] { "Second 4: 10" }, Steps(second[..1]));
         CollectionAssert.AreEqual(new[] { "First 0: 1,3,6" }, Steps(third[..1]));
         Assert.AreEqual(0xff, tables.PlankRankBase);
+        // The whole class table (the class and request word of each of the 32 goods, the log's included) and all 36 steps of the three
+        // orders, as text (the draws 0, 1, and 2 in turn): the digest is of that text built from the same peeks, decoded as the reader does.
+        var classes = Enumerable
+            .Range(0, RuleTables.GoodClassCount)
+            .Select(good => tables.ClassOfGood(new Good(good)) is { } c ? $"{c.Word} {c.Class}" : "storage");
+        var orders = Enumerable.Range(0, 3).SelectMany(draw => Steps(tables.DistributionOrder(draw)));
+        Assert.AreEqual(
+            0xC2431101D4476AF0UL,
+            Fnv(Encoding.UTF8.GetBytes(string.Join('|', classes) + "#" + string.Join('|', orders))),
+            "the class table and the three orders"
+        );
     }
 
     [TestMethod]

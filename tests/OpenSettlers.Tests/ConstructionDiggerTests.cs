@@ -112,6 +112,41 @@ public sealed class ConstructionDiggerTests
         var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
         var game = Clicked(scenario.Command.Split(':'), withSite: true);
 
+        AssertJudgedAsTheOriginalJudges(game, scenario);
+    }
+
+    // The sawmill's site the digger has levelled, started, and left (the pass 1959 of digger-sawmill, where the digger is in the castle
+    // again): the engine's evaluator gives the verdict the emulator's gives on every node.
+    [TestMethod]
+    public void ANodeNextToALargeSiteTheDiggerHasStartedIsJudgedAsTheOriginalJudgesIt()
+    {
+        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == "sweep-site-started");
+        var parts = scenario.Command.Split(':');
+        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
+        var sweep = int.Parse(parts[10].Split(';')[1].Split('=')[0], CultureInfo.InvariantCulture);
+        for (var pass = 0; pass < sweep; pass++)
+        {
+            if (pass == at)
+            {
+                Place(game, parts[10].Split(';')[0]);
+            }
+
+            // As TheDiggerLevelsTheSiteAsTheOriginalDoes: the hand-out is taken out of the stock.
+            while (game.CastleStock.Take(Good.Plank) || game.CastleStock.Take(Good.Stone)) { }
+
+            game.Tick();
+        }
+
+        var site = game.Buildings[SiteSlot - 1];
+        Assert.IsTrue(site.Constructing, "the site is no finished building");
+        Assert.AreEqual((ushort)1, site.Progress, "the digger's end has started the site");
+
+        AssertJudgedAsTheOriginalJudges(game, scenario);
+    }
+
+    private static void AssertJudgedAsTheOriginalJudges(Game game, RemovalTests.Scenario scenario)
+    {
         var expected = scenario
             .Lines[0]["verdicts"]
             .Split(';')
@@ -160,7 +195,8 @@ public sealed class ConstructionDiggerTests
     }
 
     // The program's term (0x44c151 to 0x44c204) counts the site only while it is under construction and its progress word is 0: a site
-    // the digger's end has started (progress 1), and a finished large building, leave the heights of the judged node alone.
+    // the digger's end has started (progress 1), and a finished large building, leave the heights of the judged node alone. The rows
+    // set the state by hand; the emulator's verdict on a started site is the sweep-site-started of the test above.
     [TestMethod]
     [DataRow("waits", false)]
     [DataRow("started", true)]

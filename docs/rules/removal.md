@@ -157,12 +157,12 @@ What the routine does to the parts of a site:
   the player's goods rises or falls (a good counted lost is one that lay on a flag or on a carrier, [below](#a-good-that-is-lost)). **Emulated:** the verb `construct`
   (the castle hands goods out) with the remove click before the pass 300 (`fill-on-the-way`: byte 8 reads `02`, two goods counted on the way) and before the pass 485
   (`fill-on-site`: `11`, one delivered and one on the way): byte 8 reads `00` after the click, and the site's bytes, the builder's walk home to the pass of its first wait, the map
-  bytes, the counts of the tables, and the generator match to the end of the burn. The comparison leaves out the flags' items and the castle's stock: the engine lays a hand-out
-  on the castle's flag at once where the original's carriers bring it about 130 passes later, so the goods on the flags and carriers are the stand-in's (the
-  goods the click releases are compared in `goods-waiting`, `goods-carried`, and `goods-at-the-flag`, which lay them by hand). The original's builder
-  differs from the engine's in its state bytes for a pass at 409 (`fill-on-the-way`) and 541 (`fill-on-site`) on its way home, past a settler of the original (slot 4, a carrier on a trip
-  for the goods) that the engine's stand-in has no trip for; the walk home matches without the hand-out (`builder-at-work`), so the cause is taken to be the hand-out's goods (not
-  recovered), and the builder's bytes are compared up to the pass before.
+  bytes, the counts of the tables, and the generator match to the end of the burn. The comparison leaves out the flags' items and the castle's stock: the test empties the
+  castle of planks and stones before every pass, so the engine hands nothing out, and lends the site's fill counts at the listed passes (the goods the click releases are
+  compared in `goods-waiting`, `goods-carried`, and `goods-at-the-flag`, which lay them by hand). The original's hand-out carrier (a settler of the original, slot 4, on a trip
+  for the goods) is the only difference: the original's builder differs from the engine's in its state bytes for a pass at 409 (`fill-on-the-way`) and 541 (`fill-on-site`) on
+  its way home, past him, a trip the engine has no settler for; the walk home matches without the hand-out (`builder-at-work`), so the cause is taken to be the hand-out's
+  goods (not recovered), and the builder's bytes are compared up to the pass before.
 - **The request classes.** The class bytes at `+0x42` and `+0x44` of the site's flag are cleared, their ranks stay ([Materials](construction-materials.md#the-request-words)), so no
   flag's turn serves the site any more.
 - **The goods on the way.** A carrier that carries a good for the flag has the destination 0, and each good that waits on any flag with the flag as its destination loses

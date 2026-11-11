@@ -433,6 +433,22 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
+    public void AWoodcuttersWayBackWithALogIsDrawnInTheCarriesPose()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:3");
+        folder.Entries["settler/woodcutter/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/woodcutter/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        var source = folder.Load();
+
+        var withLog = source.Draw(Settler(Job.Woodcutter, new WalksFree(new Trip(new Vector(2, 1), new BackToHut(true)))))!.Image!;
+        var withoutLog = source.Draw(Settler(Job.Woodcutter, new WalksFree(new Trip(new Vector(2, 1), new BackToHut(false)))))!.Image!;
+
+        Assert.AreEqual((3, 1), (withLog.Rgba[0], withoutLog.Rgba[0]));
+    }
+
+    [TestMethod]
     public void TheFrameOfAJobAndActivityStaysTheSameAcrossStepsFramesAndHeadings()
     {
         using var folder = new ContentFolder();

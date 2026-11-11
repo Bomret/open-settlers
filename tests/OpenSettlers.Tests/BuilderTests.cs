@@ -102,7 +102,8 @@ public sealed class BuilderTests
     }
 
     // A forester's site that needs one plank and one stone, in the order plank first, then stone (the order word 0b10), with the plank
-    // on site and the stone as the test sets it. The fill byte holds the planks in its low nibble and the stones in its high one.
+    // on site and the stone as the test sets it. The planks' fill byte (FillLow, byte 8) and the stones' (FillHigh, byte 9) each hold the
+    // goods on site in the high nibble.
     private static (Game Game, Building Site) StoneWorld(ushort order = 0b10, int plankOnSite = 1, int stoneOnSite = 0)
     {
         var needs = new byte[2 * RuleTables.BuildingTypeCount];
@@ -122,14 +123,14 @@ public sealed class BuilderTests
     }
 
     [TestMethod]
-    public void TheBuilderWaitsForTheStoneThatTheOrderNamesAfterThePlankAndTakesItFromTheHighNibble()
+    public void TheBuilderWaitsForTheStoneThatTheOrderNamesAfterThePlankAndTakesItFromTheStonesFillByte()
     {
         var (game, site) = StoneWorld();
 
         var seen = Progress(game, site, 1500);
 
         Assert.AreEqual(Words(Enumerable.Range(0, 9).Select(blow => (ushort)(1 + 0x1000 * blow))), Words(seen));
-        Assert.AreEqual(0, site.FillLow, "the plank went out of the low nibble");
+        Assert.AreEqual(0, site.FillLow, "the plank went out of the planks' fill byte");
         Assert.AreEqual(0, site.Site!.Planks);
         Assert.AreEqual(1, site.Site.Stones, "no stone was taken");
 
@@ -139,7 +140,7 @@ public sealed class BuilderTests
             game.Tick();
         }
 
-        Assert.AreEqual(0, site.FillHigh, "the stone went out of the high nibble");
+        Assert.AreEqual(0, site.FillHigh, "the stone went out of the stones' fill byte");
         Assert.AreEqual(0, site.Site!.Stones);
         Assert.AreEqual(0, site.Site.Planks);
         Assert.IsTrue(site.Constructing, "the eight blows of the stone are not yet made");

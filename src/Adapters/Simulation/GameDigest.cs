@@ -94,6 +94,11 @@ public sealed class GameDigest : IGameDigest
         {
             hash = Mix(hash, good);
         }
+
+        foreach (var request in FlagEncoder.Requests(game.Flags))
+        {
+            hash = Mix(hash, request);
+        }
     }
 
     private static void MixSettlers(Game game, ref ulong hash)

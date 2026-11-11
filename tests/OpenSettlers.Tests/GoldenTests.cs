@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
@@ -11,8 +12,9 @@ namespace OpenSettlers.Tests;
 // A golden test that pins the game as it plays: fixed scenarios (a seed or a checked-in layout, a command script, the
 // every-pass setting) run on made-up tables, and at several ticks each records the game's digest (Game.Digest) and a
 // short digest of the whole recorded event log (each event's tick, type, thing, raw field=value state, cause, and
-// other). The expected lines live in golden.txt, taken once from the engine as it stood before the onion refactor of
-// the simulation, on made-up tables (LayoutSettlersTests.MadeTables), so it needs no install: paths that depend on the
+// other). The expected lines live in golden.txt: the digests and event counts were taken once from the engine as it stood before the
+// onion refactor of the simulation, and the event-log hashes were regenerated for the castle settler's renamed event
+// (castle-settler-builds), on made-up tables (LayoutSettlersTests.MadeTables), so it needs no install: paths that depend on the
 // real program tables' step times or building classes are not pinned (INV-0001: digests, not dumps). A change to any rule outcome, the order of two settlers in a pass, or
 // an event field changes a line. INV-0002: a scenario gives the same lines on every run, as the committed lines pin. INV-0007: the digest holds no
 // event store, so the digest of a run is the same whether or not anything reads the events: each scenario plays once and
@@ -29,7 +31,7 @@ public sealed class GoldenTests
     private const int FinishedHut = -1;
 
     // A command at a tick: the scripts enqueue every command before the first tick, but a finished hut, which no command gives.
-    private sealed record Step(long Tick, int Kind, int X, int Y, int[]? Directions = null);
+    private sealed record Step(long Tick, int Kind, int X, int Y, int[]? Directions = null, BuildingType? Building = null);
 
     private sealed record Scenario(
         string Name,
@@ -65,6 +67,15 @@ public sealed class GoldenTests
         var map = MapGenerator.Generate(TestProgram.Made(), GeneratedSeed, MapSize.Offered[0]);
 
         return GameFactory.Create(LayoutSettlersTests.MadeTables(BuildingClass), map, everyPassTurns: everyPass);
+    }
+
+    // The game as the game view runs it (the castle's hand-out on, GameFactory.Create's handsOutGoods), on the made-up tables of the
+    // construction rules.
+    private static Game HandingOut(bool everyPass)
+    {
+        var map = MapGenerator.Generate(TestProgram.Made(), GeneratedSeed, MapSize.Offered[0]);
+
+        return GameFactory.Create(ConstructionTables.Tables(), map, everyPassTurns: everyPass, handsOutGoods: true);
     }
 
     private static Func<bool, Game> OnLayout(string file) =>
@@ -127,6 +138,18 @@ public sealed class GoldenTests
             Checkpoints
         ),
         new(
+            "site-with-handout",
+            GeneratedWhere + " hands-out-goods=on",
+            HandingOut,
+            [
+                new(0, CommandKind.PlaceCastle, 15, 5),
+                new(1, CommandKind.PlaceFlag, 18, 6),
+                new(2, CommandKind.BuildRoad, 16, 6, [0, 0]),
+                new(3, CommandKind.PlaceBuilding, 17, 5, Building: BuildingType.Woodcutter),
+            ],
+            Checkpoints
+        ),
+        new(
             "woodcutter-layout",
             "layouts/woodcutter.jsonc size=1",
             OnLayout("woodcutter.jsonc"),
@@ -172,7 +195,7 @@ public sealed class GoldenTests
         var game = scenario.Start(everyPass);
         foreach (var step in scenario.Script.Where(step => step.Kind != FinishedHut))
         {
-            game.Enqueue(new Command(step.Tick, 0, step.Kind, step.X, step.Y, step.Directions));
+            game.Enqueue(new Command(step.Tick, 0, step.Kind, step.X, step.Y, step.Directions, step.Building));
         }
 
         var digests = new List<string>();

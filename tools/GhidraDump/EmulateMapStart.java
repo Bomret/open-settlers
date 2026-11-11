@@ -1101,7 +1101,6 @@ public class EmulateMapStart extends GhidraScript {
         return size;
     }
 
-    /** Draws one road as road does, silently: a start flag and its directions; returns whether it was built. */
     // The sawmill's building type, a large building (size table 0x42d307).
     private static final int SAWMILL = 17;
 
@@ -1115,6 +1114,7 @@ public class EmulateMapStart extends GhidraScript {
         emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL ? 3 : 2))});
     }
 
+    /** Draws one road as road does, silently: a start flag and its directions; returns whether it was built. */
     private boolean silentRoad(int width, String road) throws Exception {
         long player = PLAYERS + 0x1000;
         putInt(REGISTERS + 0x30, player);

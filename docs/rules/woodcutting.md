@@ -133,7 +133,8 @@ simulation must not depend on or does not port, so a real game's tree choices di
 `1250 + code - 8`); the woodcutter is drawn as the walking settlers are ([Settlers](settlers.md#drawing-the-walk-leads)) with the
 figure rows of job 5. The engine draws him in the states 2, 3, 4, 5, 0xe, 0x10, 0x11, and 0x19, the full list in
 [Settlers](settlers.md#drawing-the-walk-leads). The rows cover the walk, the way back with the log (byte 13 0x80, byte 14 1,
-state 0x10), and the felling at the cut (figure bytes from 0x80, frames `0x74` to `0x78`).
+state 0x10), and the felling at the cut (figure bytes from 0x80, frames `0x74` to `0x78`). The `open-settlers` set draws the way
+back with a log in the carries pose (`settler/woodcutter/carries`), as it does the stonecutter's way back with a stone.
 
 The frames `0x74` to `0x78` are **confirmed** by the draw run of the `woodcutter` recording
 ([Settlers](settlers.md#the-draw-path-emulated), `tests/OpenSettlers.Tests/settler-draws.txt`, every pass of the cut). A screenshot

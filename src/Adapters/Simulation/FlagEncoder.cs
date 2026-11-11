@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
 
@@ -72,6 +73,24 @@ public static class FlagEncoder
             for (var direction = 0; direction < Direction.Count; direction++)
             {
                 yield return DirectionByte(flag.Side(direction));
+            }
+        }
+    }
+
+    /// <summary>
+    /// The items the digest takes of each flag slot's two request words in turn (the first, then the second): the class the word
+    /// asks for (-1 where it asks for none) and its rank, the class byte and the rank byte of the flag item that the building pass
+    /// and the hand-out read and write.
+    /// </summary>
+    public static IEnumerable<long> Requests(FlagTable flags)
+    {
+        foreach (var flag in flags)
+        {
+            foreach (var word in new[] { RequestWord.First, RequestWord.Second })
+            {
+                var request = flag.RequestOf(word);
+                yield return request.Asks is { } asks ? asks.Class : -1;
+                yield return request.Rank;
             }
         }
     }

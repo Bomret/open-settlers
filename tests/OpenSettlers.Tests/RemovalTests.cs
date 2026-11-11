@@ -326,10 +326,10 @@ public sealed class RemovalTests
         var parts = scenario.Command.Split(':');
         var map = MapOf(parts);
         var width = map.Size.Width;
-        // A construct scenario runs the castle's hand-out, which lays a good on the castle's flag at once where the original carries it
-        // out and lays it down about 130 passes later (ConstructionBuilderTests): the castle keeps no planks or stones, so no good the
-        // original has on the way exists in the engine, and the lines' "fill<slot>+=NN" add the counts the original's goods give the
-        // site at the passes it counted or received them.
+        // A construct scenario empties the castle of planks and stones before every pass (below), so the castle's hand-out, which
+        // would lay a good on the castle's flag at once where the original carries it out and lays it down about 130 passes later
+        // (ConstructionBuilderTests), hands nothing out: no good the original has on the way exists in the engine, and the lines'
+        // "fill<slot>+=NN" lend the counts the original's goods give the site at the passes it counted or received them.
         var game = Started(parts, map, handsOutGoods: construct);
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);

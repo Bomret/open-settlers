@@ -163,7 +163,14 @@ public sealed partial class WoodcutterBehavior
     // and its mark. He waits to step back while another settler stands on that node.
     private void CutStone(int slot, Settler settler)
     {
-        var heap = ThingId.OfObject("stone", settler.X, settler.Y).ToString();
+        // The heap's node: his own until the step back, and the neighbour he stepped back from during part 2.
+        var (heapX, heapY) = (settler.X, settler.Y);
+        if (((CutsStone)settler.Activity).Phase == 2)
+        {
+            (heapX, heapY, _) = movement.Neighbour(settler, HeapDirection);
+        }
+
+        var heap = ThingId.OfObject("stone", heapX, heapY).ToString();
         CutStoneTurn(slot, settler);
         RecordWork(slot, EventType.CutStone, heap);
     }
@@ -229,7 +236,7 @@ public sealed partial class WoodcutterBehavior
             settler.Stamp = movement.Clock;
             cut = cut with { Phase = 2 };
             settler.Activity = cut;
-            if (Wraps(settler, (ushort)(quarter + 2 * quarter)))
+            if (Wraps(settler, 3 * quarter))
             {
                 return;
             }

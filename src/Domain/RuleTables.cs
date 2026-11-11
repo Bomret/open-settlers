@@ -178,8 +178,9 @@ public sealed class RuleTables
                 [],
             ];
         PlankRankBase = plankRankBase;
-        // stand-in: a table a test does not give makes only the woodcutter's hut ask for a worker, of the woodcutter's job and no tool,
-        // and the builder a settler of the builder's job with no tool.
+        // stand-in: a table a test does not give makes only the woodcutter's hut and the forester's building ask for a worker, the
+        // woodcutter's of the woodcutter's job and a made-up tool, the forester's of the forester's job and no tool, and the builder a
+        // settler of the builder's job with no tool.
         _workers = workers ?? WoodcutterOnly();
         BuilderRequest = builderRequest ?? new WorkerRequest(Job.Builder, Good.None);
         // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
@@ -195,7 +196,8 @@ public sealed class RuleTables
     private static WorkerRequest?[] WoodcutterOnly()
     {
         var workers = new WorkerRequest?[BuildingTypeCount];
-        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(Job.Woodcutter, Good.None);
+        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(Job.Woodcutter, new Good(1));
+        workers[BuildingType.Forester.Code] = new WorkerRequest(Job.Forester, Good.None);
 
         return workers;
     }

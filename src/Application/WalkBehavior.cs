@@ -223,12 +223,7 @@ public sealed class WalkBehavior(
     {
         var node = movement.Map.Index(x, y);
         var hut = movement.BuildingAt(node);
-        var job =
-            hut?.Type == BuildingType.Woodcutter ? Job.Woodcutter
-            : hut?.Type == BuildingType.Stonecutter ? Job.Stonecutter
-            : hut?.Type == BuildingType.Forester ? Job.Forester
-            : (Job?)null;
-        if (hut is not { IsDemolishing: false, Site: null } || job is not { } asked)
+        if (hut is not { IsDemolishing: false, Site: null } || JobOf(hut.Type) is not { } worker)
         {
             return "no finished woodcutter's, stonecutter's, or forester's building stands on the node";
         }
@@ -238,20 +233,19 @@ public sealed class WalkBehavior(
             return "the hut has its worker already";
         }
 
+        var (asked, name) = worker;
         var slot = roster.CastleSettler(asked);
-        var made = slot < 0 && asked == Job.Forester;
+        // The castle holds none of the job: the request's second way (0x42be63) makes one of a settler without a job where the
+        // request names no tool (the forester's, docs/rules/forestry.md). A job whose request names a tool is not made in a layout.
+        var made = slot < 0 && movement.Tables.WorkerOf(hut.Type) is { Tool.IsNone: true };
         if (made)
         {
-            // The castle holds no forester: the request's second way (0x42be63) makes one of a settler without a job, and the
-            // forester's job needs no tool (docs/rules/forestry.md). simplicity: the request's tool (RuleTables.WorkerOf) is not
-            // read, because a made-up table gives the woodcutter no tool and the forester no request, so the request cannot
-            // tell the two apart there; a later job that needs no tool and is made in a layout needs this test widened.
             slot = roster.CastleSettler(Job.Jobless);
         }
 
         if (slot < 0)
         {
-            return "the castle holds no worker for the building";
+            return $"the castle holds no {name} for the building";
         }
 
         var flag = flags[hut.Flag];
@@ -277,5 +271,21 @@ public sealed class WalkBehavior(
         history.RecordBuilding(hutSlot, EventType.LayoutInHut, Cause.Layout, history.SettlerId(slot).ToString());
 
         return null;
+    }
+
+    // The job (and its name, for a refusal) of the worker a layout stands inside a finished building of the type; null for any other type.
+    private static (Job Job, string Name)? JobOf(BuildingType type)
+    {
+        if (type == BuildingType.Woodcutter)
+        {
+            return (Job.Woodcutter, "woodcutter");
+        }
+
+        if (type == BuildingType.Stonecutter)
+        {
+            return (Job.Stonecutter, "stonecutter");
+        }
+
+        return type == BuildingType.Forester ? (Job.Forester, "forester") : null;
     }
 }

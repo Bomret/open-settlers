@@ -244,7 +244,7 @@ public sealed class LayoutSettlersTests
             )
         );
 
-        Assert.AreEqual("test.jsonc: buildings[1]: the castle holds no worker for the building", problem);
+        Assert.AreEqual("test.jsonc: buildings[1]: the castle holds no woodcutter for the building", problem);
     }
 
     [TestMethod]

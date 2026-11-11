@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
@@ -25,9 +26,16 @@ public sealed class StorageDistributionTests
 
     // Flag 0 is the castle's; flags 1 and 2 are sites' flags on roads that hold a carrier (flag 2 beyond flag 1). The castle holds
     // the planks and stones given.
-    private static Rig Started(int planks, int stones, ushort draw = 2, bool carriers = true)
+    private static Rig Started(
+        int planks,
+        int stones,
+        ushort draw = 2,
+        bool carriers = true,
+        RuleTables? tables = null,
+        int[]? food = null
+    )
     {
-        var bench = new BehaviourBench(ConstructionTables.Tables(), draw);
+        var bench = new BehaviourBench(tables ?? ConstructionTables.Tables(), draw);
         for (var column = 0; column < 3; column++)
         {
             bench.Flags.Add(4 + 2 * column, 4);
@@ -38,6 +46,11 @@ public sealed class StorageDistributionTests
         var stock = new int[StartStock.Goods];
         stock[Planks - 1] = planks;
         stock[Stones - 1] = stones;
+        for (var index = 0; index < (food?.Length ?? 0); index++)
+        {
+            stock[FoodGoods[index] - 1] = food![index];
+        }
+
         var castle = new CastleStock();
         castle.Place(new Castle(3, 3, 1), stock);
         var goods = new GoodsTransport(bench.Movement, bench.Flags, bench.Roads, bench.History, bench.Buildings);
@@ -92,6 +105,27 @@ public sealed class StorageDistributionTests
             "the request that was served keeps no rank"
         );
         Assert.IsTrue(rig.Bench.Flags[0].NeedsGoodsTurn, "the flag's turn gives the plank its direction");
+    }
+
+    // The food step of the program's orders hands out the one of the food goods 1, 3, and 6 that the castle holds most of.
+    private static readonly int[] FoodGoods = [1, 3, 6];
+
+    [TestMethod]
+    public void AFoodStepHandsOutTheFoodGoodTheCastleHoldsMostOf()
+    {
+        var food = new GoodClass(7, RequestWord.First);
+        var tables = LayoutSettlersTests.MadeTables(
+            distribution: [[new DistributionStep(food, [.. FoodGoods.Select(good => new Good(good))])], [], []]
+        );
+        var rig = Started(planks: 0, stones: 0, tables: tables, food: [2, 5, 3]);
+        rig.Bench.Flags[1].SetRequest(RequestWord.First, new Request(food, 0x3e));
+
+        rig.Distribution.Run();
+
+        Assert.AreEqual(3, rig.Bench.Flags[0].Places[0].Good.Code, "the good 3, of which the castle holds 5, lies on the flag");
+        Assert.AreEqual(4, rig.Castle.Count(new Good(3)), "its count fell by one");
+        Assert.AreEqual(2, rig.Castle.Count(new Good(1)), "the other foods stay");
+        Assert.AreEqual(3, rig.Castle.Count(new Good(6)), "the other foods stay");
     }
 
     [TestMethod]

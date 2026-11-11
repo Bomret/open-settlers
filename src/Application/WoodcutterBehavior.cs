@@ -4,8 +4,10 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.Simulation;
 
 /// <summary>
-/// The woodcutter's work cycle and the map's object pass (docs/rules/woodcutting.md): the worker at its hut picks a node
-/// of the first 128 around the hut with a random draw until a tree stands on it, walks there, cuts the tree, walks back
+/// The work cycles of the workers who go out from a hut and come back to it: the woodcutter's (this file), the stonecutter's
+/// (<c>WoodcutterBehavior.Stonecutter.cs</c>), and the forester's (<c>WoodcutterBehavior.Forester.cs</c>), which share the step out,
+/// the free walk, and the entry into the hut. The woodcutter's cycle and the map's object pass (docs/rules/woodcutting.md): the
+/// worker at its hut picks a node of the first 128 around the hut with a random draw until a tree stands on it, walks there, cuts the tree, walks back
 /// to the hut's flag with a log, lays the log on the flag, and goes into the hut to start again. The object pass walks a
 /// cursor over the map and turns a felled tree into nothing in the time the original takes. The behaviour takes the
 /// activities of the steps through a door, the search for a tree, the step onto the flag, the free walk (the walk home's

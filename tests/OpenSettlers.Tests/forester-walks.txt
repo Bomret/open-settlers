@@ -4,8 +4,8 @@
 // bytes of the forester (slot 4, s4=: the settler without a job the castle sends out) where his state or the way-back mark changed
 // (and at a checkpoint every 500 passes), the 18 bytes of the building (b=) where they changed, the object bytes that changed
 // (o=x,y:old>new;...), and the generator's words (rng=) as they stand. A sapling is the object 0x67 or 0x68; a node whose object byte
-// has bit 7 (a water triangle) keeps it. The scenario saplings-grow sets saplings by hand before pass 2 (the verb's SET field), and goal-taken sets one on the node he walks to at pass 600, while he is on the way. Not
-// production code: no routine of the program is transcribed here, only values the original gives.
+// has bit 7 (a water triangle) keeps it. The scenario saplings-grow sets saplings by hand before pass 2 (the verb's SET field), and
+// goal-taken sets one on the node he walks to at pass 600, while he is on the way. Not production code: no routine of the program is transcribed here, only values the original gives.
 # forest-meadow goods:1:1234,5678,9ABC:0:18,20:16,20:19,21,343:16,20,9:6000
 pass=0 rng=AEC7,C7E8,B97D
 pass=32 b=3C1300002404020000000000000000000000 rng=57DA,9D96,A117

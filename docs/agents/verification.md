@@ -180,8 +180,9 @@ The entries follow, and the game applies them in the file's order:
 - `castle`: `{"x","y"}`.
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
-- `buildings`: a woodcutter's hut.
-- `settlers`: a woodcutter in his hut or a carrier waiting on a road.
+- `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, or sawmill (a
+  woodcutter's or stonecutter's with its worker inside).
+- `settlers`: a carrier waiting on a road.
 - `goods`: `{"x","y","place","good"}` on a flag.
 
 A refused or repeated entry fails the load with `<file>: <entry>: <reason>`. [The map form](../rules/map-form.md#a-hand-drawn-map)

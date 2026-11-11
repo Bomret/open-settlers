@@ -124,13 +124,13 @@ pass=395 b2=44050000A4A0020000004F000100600C0000
 # goods out to the site and byte 8 of the site's item holds a count: the low nibble the goods counted on the way, the high nibble the
 # goods delivered on site. The lines are cut to what the engine reproduces: the site's bytes (b2, whose bytes 8 and 9 are the counts), the
 # castle's builder (s14), the map bytes (m), the generator (rng), and the counts of the tables (c). The flag items, the other settlers, and
-# the castle's stock are left out: the engine lays a hand-out on the castle's flag at once where the original's first settler carries it
-# out about 130 passes later, so the goods on the flags and carriers differ by that stand-in, and the test empties the castle of planks and
-# stones as ConstructionBuilderTests does. A line "pass=N fill2+=NN" adds to byte 8 of the site the growth of its counts that the engine
-# does not model (+01 a good counted on the way, +0F a good delivered), taken from the b2 bytes of the emulator at the pass the original
-# changed them. The click clears both nibbles, and the goods the stand-in puts on the flags decide nothing the lines list. A line "s14="
-# ends the comparison of the builder: its walk home differs from the engine's in its state bytes for a pass from that pass on (the original's
-# settler 4 walks on a trip past it, a settler the engine's stand-in has no trip for), which the scenarios without the hand-out do not show.
+# the castle's stock are left out: the test empties the castle of planks and stones before every pass (as ConstructionBuilderTests does),
+# so the engine hands nothing out, and it lends the site's fill counts at the listed passes instead. A line "pass=N fill2+=NN" adds to
+# byte 8 of the site the growth of its counts that the engine does not model (+01 a good counted on the way, +0F a good delivered), taken
+# from the b2 bytes of the emulator at the pass the original changed them. The click clears both nibbles. The only difference left is the
+# original's hand-out carrier (settler 4, who walks on a trip for the goods). A line "s14=" ends the comparison of the builder where it
+# meets him (the passes 409 and 541): its walk home differs from the engine's in its state bytes from that pass on, which the scenarios
+# without the hand-out do not show.
 
 # fill-on-the-way construct:1:1234,5678,9ABC:25:15,5:18,6;15,9:16,6,00;16,6,2223::40:700:b@17,5,9;300=f@17,5
 click=b@17,5 class=5 sound=-1 m=17,5:0=00>42/3=00>02/4=00>02;18,6:0=88>98 b2=44050000A400020000000000010000000200 c=0004,0003,0014,0
