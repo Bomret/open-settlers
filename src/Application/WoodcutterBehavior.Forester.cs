@@ -11,8 +11,8 @@ public sealed partial class WoodcutterBehavior
     // The time a node he may not plant on adds to the search's timer (0x438de7), where the woodcutter's adds 400.
     private const int SpotMiss = 0x2bc;
 
-    // The terrain byte of a tile whose two triangles are both lowland (0x438d4a): the node and its north-west neighbour need it.
-    private static readonly Terrain Meadow = Terrain.Lowland;
+    // The direction of the tile north-west of a node (the offset at +0x14 of the state block, 0x438d4a to 0x438d75).
+    private const int NorthWest = 4;
 
     // The time he waits on the node before the sapling goes down (0x4381de), and after it (0x438a6a).
     private const int ArrivalWait = 0xbf;
@@ -38,12 +38,13 @@ public sealed partial class WoodcutterBehavior
             return false;
         }
 
-        var (dx, dy) = Direction.Steps[HeapDirection];
+        var (dx, dy) = Direction.Steps[NorthWest];
 
         return IsMeadow(ref Map.At(x + dx, y + dy));
     }
 
-    private static bool IsMeadow(ref Node node) => node.Upper == Meadow && node.Lower == Meadow;
+    // A tile whose two triangles are both lowland (the terrain byte 0x55): the node and its north-west neighbour need it.
+    private static bool IsMeadow(ref Node node) => node.Upper == Terrain.Lowland && node.Lower == Terrain.Lowland;
 
     // State 0x13, the forester's search (0x438c9f). When its timer has run out he draws a node of the spiral around the hut, entries 1
     // to 128, until a node he may plant on comes up; each node he may not adds 0x2bc to the timer, and the search ends for this turn

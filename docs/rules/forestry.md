@@ -69,8 +69,8 @@ State `0x10` is the free walk ([Woodcutting](woodcutting.md#the-walk)) with no c
 
 The arrival at the goal, with byte 13 not `0x80`: the way back (bytes 13 and 14) becomes the vector (bytes 11 and 12). Where the
 object byte of the node he stands on, without its bit 7, is 0, byte 14 is cleared (the sapling is not down), the frame is `0x79`, the
-timer is `0xbf`, and he takes state `0x14`. Else bytes 13, 14, and 15 are cleared and he walks back at once, still in state `0x10`
-(a goal that took an object between the search and the arrival).
+timer is `0xbf`, and he takes state `0x14`. Else byte 13 is set to `0x80` (the way-back mark), bytes 14 and 15 are cleared, the timer is 0, and he walks back at once, still in
+state `0x10` (`0x4381f4`; a goal that took an object between the search and the arrival, scenario `goal-taken`).
 
 State `0x14` (`0x4389bf`), when the timer has run out and byte 14 is 0:
 

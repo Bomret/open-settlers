@@ -75,9 +75,6 @@ public readonly record struct MapObject(byte Code)
     /// <summary>The first sapling.</summary>
     public static MapObject Sapling => new(SaplingCode);
 
-    /// <summary>The second sapling.</summary>
-    public static MapObject SecondSapling => new(SecondSaplingCode);
-
     /// <summary>
     /// The tree a sapling grows into where the object pass's draw allows it (<c>0x4290d5</c>, <c>0x42910f</c>): the sapling's own
     /// range of trees, 0x10 or 8, plus the draw's low three bits.

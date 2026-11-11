@@ -239,11 +239,11 @@ public sealed class WalkBehavior(
         }
 
         var slot = roster.CastleSettler(asked);
-        var made = slot < 0 && asked == Job.Forester;
+        var made = slot < 0 && movement.Tables.WorkerOf(hut.Type) is { Tool.IsNone: true };
         if (made)
         {
-            // The castle holds no forester: the request's second way (0x42be63) makes one of a settler without a job, and the
-            // forester's job needs no tool (docs/rules/forestry.md).
+            // The castle holds none of the job: the request's second way (0x42be63) makes one of a settler without a job where the
+            // request names no tool, as the forester's does (docs/rules/forestry.md).
             slot = roster.CastleSettler(Job.Jobless);
         }
 

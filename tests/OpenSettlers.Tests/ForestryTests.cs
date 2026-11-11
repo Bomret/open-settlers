@@ -130,7 +130,10 @@ public sealed class ForestryTests
             game.Tick();
         }
 
-        Assert.IsInstanceOfType<WalksFree>(Forester(game).Activity, "he walks back to the hut's flag");
+        Assert.IsTrue(
+            Forester(game).Activity is WalksFree { Trip.Purpose: BackToHut { Carrying: false } },
+            "he walks back to the hut's flag, carrying nothing"
+        );
     }
 
     [TestMethod]

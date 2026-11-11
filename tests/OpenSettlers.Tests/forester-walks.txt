@@ -4,7 +4,7 @@
 // bytes of the forester (slot 4, s4=: the settler without a job the castle sends out) where his state or the way-back mark changed
 // (and at a checkpoint every 500 passes), the 18 bytes of the building (b=) where they changed, the object bytes that changed
 // (o=x,y:old>new;...), and the generator's words (rng=) as they stand. A sapling is the object 0x67 or 0x68; a node whose object byte
-// has bit 7 (a water triangle) keeps it. The scenario saplings-grow sets saplings by hand before pass 2 (the verb's SET field). Not
+// has bit 7 (a water triangle) keeps it. The scenario saplings-grow sets saplings by hand before pass 2 (the verb's SET field), and goal-taken sets one on the node he walks to at pass 600, while he is on the way. Not
 // production code: no routine of the program is transcribed here, only values the original gives.
 # forest-meadow goods:1:1234,5678,9ABC:0:18,20:16,20:19,21,343:16,20,9:6000
 pass=0 rng=AEC7,C7E8,B97D
@@ -112,3 +112,18 @@ pass=2148 s4=200D670040140000284305FAFD060310 rng=CAFF,5D15,49F3
 pass=2164 s4=200D000040140000A84310FAFD060300 rng=61E7,FD0E,5384
 pass=2382 s4=2028C2002C110000604A10FF00060300 o=22,13:68>0C rng=C8DC,38EC,AB13
 pass=2478 s4=2079BF0028110000784D140603060008 rng=B223,02D3,26A2
+# goal-taken goods:1:1234,5678,9ABC:0:18,20:16,20:19,21,343:16,20,9:1100:0::-1:9999,0,7:600,13,13,103
+pass=0 rng=AEC7,C7E8,B97D
+pass=32 b=3C1300002404020000000000000000000000 rng=57DA,9D96,A117
+pass=33 b=3C1300002400020000000000000000000000 rng=57DA,9D96,A117
+pass=65 s4=200000004814000000000FFF02000000 b=3C1300002480020000000000000000000000 rng=5467,D19D,9F56
+pass=102 s4=200D67004C150000380305FF02000002 rng=5467,D19D,9F56
+pass=118 s4=200D00004C150000B80302FF02000000 rng=B270,ACC3,0498
+pass=217 s4=2028FF003C130000D00604FF8F000000 b=3C1300002440020000000400000000000000 rng=B2DA,F4DA,F3BC
+pass=234 s4=20288F003C130000580713FF8F000000 rng=5408,0E26,744B
+pass=267 s4=200D670040140000600805FDF9030710 rng=1DA8,20A4,C3B1
+pass=283 s4=200D000040140000E00810FDF9030700 rng=1DA8,20A4,C3B1
+pass=600 o=13,13:00>67 rng=F6E5,CA90,5B66
+pass=679 s4=20270000340D00004015100307800000 rng=449C,DEB5,A1F2
+pass=1075 s4=2028FF003C130000A02104008F000008 rng=374B,3988,6CAA
+pass=1092 s4=20288F003C130000282213008F000008 rng=374B,3988,6CAA
