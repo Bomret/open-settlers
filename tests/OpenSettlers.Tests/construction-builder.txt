@@ -65,3 +65,25 @@ pass=565 fill3+=0F
 pass=580 fill2+=0F
 pass=640 phase=14 rng=1C79,4FDD,5319 s14=0C691E0144050000081409FF02000108 s3=0C673E0038080000B01309FF03000108 b2=44050000A440020001000E00010000000100 f2=02001000 b3=38080000884003000100030001000F000100 f3=02001000
 pass=699 phase=7 rng=5F11,BDEB,CAD9 s14=0C67950144050000901509FF02000107 s3=0C692D0138080000C01509FF03000107 b2=44050000A440020001000E00011000000100 f2=02001000 b3=38080000884003000100030001100F000100 f3=02001000
+
+# The two sites of builder-two-sites with no hammer in the stock (the click k@17,0 writes the stock word of the good 17 to 0 before the
+# sites are placed, and k@17,1 gives it one hammer before the pass 300). The castle's builder takes the forester's site; the second site's
+# request finds a settler without a job and no hammer, so it fails: the site's status byte 5 takes bit 2 (0x04), the retry scan clears it
+# the next pass, and the site asks again at its next turn, 33 passes later. Once the hammer is there the request makes the settler of the
+# slot 3 a builder (0x80, a worker on the way), and the stock word falls to 0. The lines stop at that pass: the original's castle settler
+# then stands on the castle's flag with a good of the hand-out until the pass 345, so the new builder waits in the castle until the pass
+# 348, where the engine's hand-out lays its goods at once and he steps out at the pass 332 (docs/rules/construction-materials.md).
+# builder-no-hammer construct:1:1234,5678,9ABC:25:15,5:18,6;15,9:16,6,00;16,6,2223::40:420:k@17,0;b@17,5,9;b@14,8,2;300=k@17,1
+pass=65 phase=0 rng=B270,ACC3,0498 b3=38080000880403000000000001000F000200 f3=023E1000
+pass=66 phase=1 rng=B270,ACC3,0498 b3=38080000880003000000000001000F000200 f3=023E1000
+pass=98 phase=0 rng=5BAB,0ECC,D8AD b3=38080000880403000000000001000F000200 f3=023E1000
+pass=99 phase=1 rng=5BAB,0ECC,D8AD b3=38080000880003000000000001000F000200 f3=023E1000
+pass=130 fill3+=01
+pass=131 phase=0 rng=1665,C62B,C138 b3=38080000880403000100000001000F000200 f3=021E1000
+pass=132 phase=1 rng=1DA8,20A4,C3B1 b3=38080000880003000100000001000F000200 f3=021E1000
+pass=163 fill3+=01
+pass=229 fill2+=01
+pass=262 fill2+=01
+pass=296 phase=0 rng=404D,23ED,92DF b3=38080000880403000200000001000F000200 f3=02001000
+pass=297 phase=1 rng=404D,23ED,92DF b3=38080000880003000200000001000F000200 f3=02001000
+pass=329 phase=0 rng=9A13,77B3,12FB s3=0C0000003C05000000000FFF03000000 b3=38080000888003000200000001000F000200 f3=02001000

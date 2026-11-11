@@ -52,8 +52,10 @@ second site placed at once gets a settler without a job and a hammer (the stock 
 without a job. The names of the tool goods are **inferred** from the job that asks for each (INV-0006); the engine names the builder's tool `Good 17` in the
 fixture and names none of the others.
 
-**Not ported:** the second tool word, the storage's counter of settlers (the word at `0x40`), the player's counts per job, and the request-failed path's
-emulator run (read from the instructions: the sign flag the routine leaves sets bit 2 at `0x42d61a`; the engine's tests on made-up tables hold it).
+**Emulated:** with no hammer in the stock, the second site's request fails at each of its turns: bit 2 is set (the sign flag the routine leaves,
+`0x42d61a`), the retry scan clears it the next pass, and the site asks again 33 passes later; once a hammer is in the stock the next request makes a
+settler without a job the builder (`construction-builder.txt`, `builder-no-hammer`).
+**Not ported:** the second tool word, the storage's counter of settlers (the word at `0x40`), and the player's counts per job.
 
 ## The builder's turn
 

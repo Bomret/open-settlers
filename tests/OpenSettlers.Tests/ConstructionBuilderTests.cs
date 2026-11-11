@@ -23,6 +23,7 @@ public sealed class ConstructionBuilderTests
     [TestMethod]
     [DataRow("builder-forester")]
     [DataRow("builder-two-sites")]
+    [DataRow("builder-no-hammer")]
     public void TheBuilderBuildsTheSiteAsTheOriginalDoes(string name)
     {
         var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
@@ -37,29 +38,57 @@ public sealed class ConstructionBuilderTests
             .Lines.GroupBy(line => int.Parse(line["pass"], CultureInfo.InvariantCulture))
             .ToDictionary(group => group.Key, group => group.ToList());
 
+        // A click written PASS=click runs before that pass instead of before AT, as the verb runs it.
+        var clicks = parts[10]
+            .Split(';')
+            .Select(spec =>
+                spec.Contains('=')
+                    ? (
+                        Pass: int.Parse(spec[..spec.IndexOf('=')], CultureInfo.InvariantCulture),
+                        Click: spec[(spec.IndexOf('=') + 1)..]
+                    )
+                    : (Pass: at, Click: spec)
+            )
+            .ToList();
+
         for (var pass = 0; pass < passes; pass++)
         {
             if (pass == at)
             {
                 game.ApplyCommands();
-                foreach (var click in parts[10].Split(';'))
+            }
+
+            foreach (var (_, click) in clicks.Where(click => click.Pass == pass))
+            {
+                var node = click[2..]
+                    .Split(',')
+                    .Select(number => int.Parse(number, CultureInfo.InvariantCulture))
+                    .ToArray();
+                if (click[0] == 'k')
                 {
-                    var node = click[2..]
-                        .Split(',')
-                        .Select(number => int.Parse(number, CultureInfo.InvariantCulture))
-                        .ToArray();
-                    game.Enqueue(
-                        new Command(
-                            game.TickCount,
-                            0,
-                            CommandKind.PlaceBuilding,
-                            node[0],
-                            node[1],
-                            Building: new BuildingType(node[2])
-                        )
-                    );
-                    game.ApplyCommands();
+                    // k@G,N: the castle's stock of the good G written by hand to N.
+                    var good = new Good(node[0]);
+                    while (game.CastleStock.Take(good)) { }
+
+                    for (var i = 0; i < node[1]; i++)
+                    {
+                        game.CastleStock.Add(good);
+                    }
+
+                    continue;
                 }
+
+                game.Enqueue(
+                    new Command(
+                        game.TickCount,
+                        0,
+                        CommandKind.PlaceBuilding,
+                        node[0],
+                        node[1],
+                        Building: new BuildingType(node[2])
+                    )
+                );
+                game.ApplyCommands();
             }
 
             // The castle hands out nothing the engine could lay on a flag at once: the original delivers after 130 passes, so the fixture
