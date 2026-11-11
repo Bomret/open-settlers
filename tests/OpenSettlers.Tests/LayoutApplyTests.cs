@@ -145,7 +145,9 @@ public sealed class LayoutApplyTests
         var read = Layout.Read(LayoutTests.Text(extra: "\n" + """ "buildings": [{"x": 13, "y": 10}] """), "test.jsonc");
 
         Assert.IsTrue(
-            read.Problems.Any(problem => problem.StartsWith("test.jsonc: buildings[0]: ") && problem.Contains("\"type\"")),
+            read.Problems.Any(problem =>
+                problem.StartsWith("test.jsonc: buildings[0]: ") && problem.Contains("\"type\"")
+            ),
             string.Join("; ", read.Problems)
         );
     }

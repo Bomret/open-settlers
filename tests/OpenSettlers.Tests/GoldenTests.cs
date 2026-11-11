@@ -180,7 +180,9 @@ public sealed class GoldenTests
         {
             while (game.TickCount < checkpoint)
             {
-                foreach (var hut in scenario.Script.Where(step => step.Kind == FinishedHut && step.Tick == game.TickCount))
+                foreach (
+                    var hut in scenario.Script.Where(step => step.Kind == FinishedHut && step.Tick == game.TickCount)
+                )
                 {
                     Assert.IsTrue(Huts.Place(game, hut.X, hut.Y), "the scenario's finished hut has its site");
                 }

@@ -91,7 +91,8 @@ public static class ObjectDraws
         foreach (
             var hut in buildings?.Where(building =>
                 BuildingPlacement.Types.Contains(building.Type) && !building.IsDemolishing
-            ) ?? []
+            )
+                ?? []
         )
         {
             // A building is drawn like the castle: at its node in the order of its row. inferred: the alignment is that of an

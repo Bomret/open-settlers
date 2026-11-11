@@ -32,12 +32,7 @@ public sealed class BuildingSiteTests
             needs[2 * type.Code + 1] = (byte)(type == BuildingType.Sawmill ? 2 : 0);
         }
 
-        return new RuleTables(
-            classes,
-            TestProgram.Made().StartStock,
-            buildingSizes: sizes,
-            buildingNeeds: needs
-        );
+        return new RuleTables(classes, TestProgram.Made().StartStock, buildingSizes: sizes, buildingNeeds: needs);
     }
 
     private static Game World()
@@ -259,6 +254,24 @@ public sealed class BuildingSiteTests
         Assert.AreNotEqual(wood, stone);
         Assert.AreEqual(wood, wood with { });
         Assert.AreEqual(wood.GetHashCode(), (wood with { }).GetHashCode());
+    }
+
+    [TestMethod]
+    [DataRow(2, "woodcutter-hut", "planks=2 stones=0")]
+    [DataRow(4, "stonecutter-hut", "planks=2 stones=0")]
+    [DataRow(9, "forester-hut", "planks=2 stones=0")]
+    [DataRow(0x11, "sawmill", "planks=3 stones=2")]
+    public void TheThingReadoutOfASiteNamesItsTypeAndShowsItsNeeds(int code, string name, string needs)
+    {
+        var game = World();
+        var (x, y, _) = Find(game, 4);
+        Place(game, new BuildingType(code), x, y);
+
+        var line = OpenSettlers.MapView.Thing.Of(game.Buildings[1]).Line();
+
+        StringAssert.Contains(line, "constructing=true");
+        StringAssert.Contains(line, needs);
+        Assert.IsTrue(line.EndsWith(name), line);
     }
 
     [TestMethod]

@@ -120,7 +120,12 @@ public sealed class OpenSettlersSource : IGraphicsSource
         (BuildingType.Sawmill, SawmillKey),
     ];
 
-    static readonly string[] BuildingKeys = [.. FinishedKeys.Select(finished => finished.Key), SiteSmallKey, SiteLargeKey];
+    static readonly string[] BuildingKeys =
+    [
+        .. FinishedKeys.Select(finished => finished.Key),
+        SiteSmallKey,
+        SiteLargeKey,
+    ];
 
     /// <summary>The number of goods the set draws: a good's low 5 bits select one.</summary>
     public const int GoodCount = 32;

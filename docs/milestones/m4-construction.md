@@ -5,14 +5,17 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 ## Placement
 
 - `0x44b6e6`: computes what a player can build at the cursor and stores it at player `+0x100` and
-  `+0x101`. It has more than ten callers. likely
+  `+0x101`. It has more than ten callers. known ([Build sites](../rules/build-sites.md))
 - `0x44ba52`, `0x44bd72`, `0x44be72`: its checks on neighbor tiles; they read the owner bits of tile
-  byte 1 and an offset list at `0x674a30`. likely
+  byte 1 and an offset list at `0x674a30`. known ([Build sites](../rules/build-sites.md))
 - `0x45e375`: runs five checks on the tiles around a position: `0x45080d`, `0x45e44b`, `0x45e4ca`,
   `0x45eb4c`, and `0x45f154`. guess
 - `0x45f402`: another neighborhood check. guess
-- `0x449a63`, `0x449f58`, `0x44a0aa`: update the tiles around the cursor after a placement change.
-  guess
+- `0x449a63`, `0x449f58`, `0x44a0aa`: `Building_Place` writes a building site (its type, needs, target
+  height, progress, object code) and its flag; `Flag_MoveDeposit` and `Deposit_MergeInto` move the deposit of
+  a node that takes an object. known ([Build sites](../rules/build-sites.md#placing-a-building))
+- `0x42d307`, `0x449f18`: the size table and the needs table of the building types. known
+  ([Build sites](../rules/build-sites.md#the-four-types))
 - `0x4662e2`, `0x466719`: split the road under a node that just took a flag into two roads, and
   link one half to its far flag ([Roads](../rules/roads.md#a-flag-on-a-road)). known
 - `0x41f6a5`: fills the spiral table of map offsets at `+0xc4` from `Map_SpiralTable`; placement and
@@ -21,8 +24,11 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 ## Construction
 
 - `0x45ed5f`: creates or connects objects after a check passes. guess
-- `0x42cf9d`: when a `Table18` timer runs out, clears the tile's object and reruns the placement check.
-  A building that burns or is removed, or a temporary object. guess
+- `0x42cf9d`: `Building_Free`, the end of a burning building: clears the tile's object, frees the slot, and
+  judges the node again; where the node state is 5, 6, or 7 and the site fits the type from the size table
+  `0x42d307`, it places a building through `0x449a63`. known ([program index](../rules/program-index.md))
+- `0x42d55f`: the handler a building under construction goes to, instead of its type's handler. guess
+  (the construction slices read it)
 
 ## Wood and stone
 
@@ -33,5 +39,8 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 
 ## Open questions
 
-- Where are the builder, the digger, the forester, the sawmill, and the stonecutter? No lead names them.
-  Start from the job types in `0x4312ed` (see [M3](m3-first-loop.md)) and the object dispatch `0x42fc81`.
+- The stonecutter, the forester, and the sawmill are the building types 4, 9, and 0x11 (the handlers
+  `0x42d987`, `0x42d9c9`, `0x42da0b` of the jump table `0x42cd1d`; names inferred, confirmed by the slices that
+  build each type's work). Where are the builder and the digger? Start from the jump tables `0x42cd1d`
+  (building types), `0x42fca1` (settler states), and `0x43ca54` (job start routines), and the construction
+  handler `0x42d55f`. `0x4312ed` is `Flag_ReleaseGoods`, no table of jobs.

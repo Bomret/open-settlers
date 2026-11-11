@@ -76,6 +76,18 @@ The original's put takes the first empty place and checks nothing. The layout na
 node with no flag, a place outside the flag's 8 places, and a place that holds a good. The engine does not port the
 player block's counter of goods on flags (`0x436b46`).
 
+## Finished buildings
+
+`{"type": "woodcutter" | "stonecutter" | "forester" | "sawmill", "x", "y"}` in the `buildings` list stands a finished building
+of that type on the node, with its flag south-east of it. The entry state is the building the original's mission start
+leaves: `0x41f2d2` places it through `Building_Place` (`0x449a63`, at `0x41f2f6`) and finishes it ([Build
+sites](build-sites.md#the-four-types)). The placement and its refusals are those of the building site, since the evaluator
+judges the node the same way, and a node that holds no site for the type's size, or no room for the flag, fails the load with
+the entry named. A type that M4 does not build (the storehouse, the castle, any other name) and an entry with no type fail the
+read, naming the types. **Stand-in:** the finished building has no status bit 4 and no pointer in its item, and its progress
+word is 0, so the digests of the M3 layouts stay (`Game.PlaceFinishedBuilding`). A player's command places a building site and
+never a finished building.
+
 ## Not supported
 
 Some settlers have no entry state here. These are every other state of a settler, every other job, and custom castle
@@ -83,6 +95,8 @@ contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut. 
 
 ## In the engine
 
-`Layout.Placement.cs` reads the `settlers` and `goods` keys. `WalkBehavior` (`Game.Walks`) holds `PlaceWoodcutterInHut`.
+`Layout.Placement.cs` reads the `buildings`, `settlers`, and `goods` keys. `Game.PlaceFinishedBuilding` stands the finished building
+(`BuildingPlacement.PlaceFinished`). `WalkBehavior` (`Game.Walks`) holds `PlaceWoodcutterInHut`, the entry state of the settler
+in his hut: the hut it names is one a finished-building entry set up.
 `CarrierBehavior.PlaceCarrierOnRoad` and `GoodsTransport.PlaceGood` are the carrier's and the good's. A settler for a hut or road that the layout has not built before it fails the
 load with the entry named. A good on a flag that does not stand fails it the same way.

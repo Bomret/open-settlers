@@ -286,7 +286,10 @@ public sealed class OpenSettlersSourceTests
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual((9, 8), (drawing.Image!.Width, drawing.Image.Height));
-        Assert.AreSame(drawing.Image, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter, (ushort)progress))!.Image);
+        Assert.AreSame(
+            drawing.Image,
+            source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter, (ushort)progress))!.Image
+        );
     }
 
     [TestMethod]

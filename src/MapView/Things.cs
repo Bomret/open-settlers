@@ -95,13 +95,11 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
         ];
         if (building.Site is { } site)
         {
-            values.AddRange(
-                [
-                    ("planks", site.Planks.ToString(CultureInfo.InvariantCulture)),
-                    ("stones", site.Stones.ToString(CultureInfo.InvariantCulture)),
-                    ("height", site.TargetHeight.ToString(CultureInfo.InvariantCulture)),
-                ]
-            );
+            values.AddRange([
+                ("planks", site.Planks.ToString(CultureInfo.InvariantCulture)),
+                ("stones", site.Stones.ToString(CultureInfo.InvariantCulture)),
+                ("height", site.TargetHeight.ToString(CultureInfo.InvariantCulture)),
+            ]);
         }
 
         return new Thing(BuildingKind, building.X, building.Y, values, NameTable.BuildingName(building.Type.Code));
