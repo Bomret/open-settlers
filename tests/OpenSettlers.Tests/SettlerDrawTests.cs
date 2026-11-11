@@ -195,6 +195,18 @@ public sealed class SettlerDrawTests
             ),
             0x11 => new Cuts(new Vector((sbyte)mode, (sbyte)target), mark != 0, heading.Value, next),
             0x12 => new LooksForTree(),
+            0x15 => new LooksForStone(),
+            0x16 => new WalksFree(
+                new Trip(
+                    vector,
+                    mark != 0x80 ? new ToHeap(new Vector((sbyte)mark, heading.Value))
+                        : heading.Value < 0 ? new Home()
+                        : new BackToHut(heading.Value != 0),
+                    next
+                ),
+                true
+            ),
+            0x17 => new CutsStone(vector, mark, (bytes[14] | (next << 8))),
             0x19 => new SearchesHome(mode != 0, mode),
             0x42 => new WaitsAtFlag(target, mode, approach),
             0x43 => new ClaimsNode(heading, approach),
