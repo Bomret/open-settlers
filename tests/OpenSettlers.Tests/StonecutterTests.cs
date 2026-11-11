@@ -76,10 +76,11 @@ public sealed class StonecutterTests
         out Map map,
         out int hutFlag,
         out int passes,
-        out List<(int Pass, int Place, int Good)> puts
+        out List<(int Pass, int Place, int Good)> puts,
+        out List<(int Pass, int X, int Y, int Code)> sets
     )
     {
-        // goods:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PASS,PLACE,GOOD;...]]]
+        // goods:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PASS,PLACE,GOOD;...[:PASS,X,Y,CODE;...]]]]
         var parts = command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
@@ -97,6 +98,17 @@ public sealed class StonecutterTests
                     .Split(';')
                     .Select(text => text.Split(',').Select(int.Parse).ToArray())
                     .Select(put => (put[0], put[1], put[2]))
+                : [],
+        ];
+
+        // Each set writes an object code (decimal) into a node's object byte before the pass.
+        sets =
+        [
+            .. parts.Length > 13
+                ? parts[13]
+                    .Split(';')
+                    .Select(text => text.Split(',').Select(int.Parse).ToArray())
+                    .Select(set => (set[0], set[1], set[2], set[3]))
                 : [],
         ];
 
@@ -136,7 +148,7 @@ public sealed class StonecutterTests
     public void TheStonecutterWorksAsTheOriginalsPassesRunIt(string name)
     {
         var scenario = Load().Single(candidate => candidate.Name == name);
-        var game = Start(scenario.Command, out var map, out var hutFlag, out var passes, out var puts);
+        var game = Start(scenario.Command, out var map, out var hutFlag, out var passes, out var puts, out var sets);
         var width = map.Size.Width;
         var last = scenario.Lines.Max(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
 
@@ -146,6 +158,11 @@ public sealed class StonecutterTests
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
                 game.Goods.LayGood(hutFlag, put.Place, put.Good);
+            }
+
+            foreach (var set in sets.Where(set => set.Pass == pass))
+            {
+                map.At(set.X, set.Y).Object = new MapObject((byte)set.Code);
             }
 
             game.Tick();
