@@ -100,6 +100,27 @@ public sealed class BuildingSiteTests
         Assert.IsFalse(placed.WorkerInside || placed.WorkerOnTheWay);
     }
 
+    // The pass of the building table gives a finished building to the handler of its type (0x42cd1d), which asks for a worker;
+    // a building under construction goes to the construction's own handler (0x42d55f), so a site asks for no worker.
+    [TestMethod]
+    public void AWoodcutterSiteAsksForNoWorkerWhereAFinishedHutDoes()
+    {
+        var game = World();
+        var (x, y, _) = Find(game, 4);
+        Place(game, BuildingType.Woodcutter, x, y);
+        var (hutX, hutY, _) = Find(game, 4);
+        Assert.IsTrue(game.PlaceFinishedBuilding(BuildingType.Woodcutter, hutX, hutY));
+
+        for (var tick = 0; tick < 300; tick++)
+        {
+            game.Tick();
+        }
+
+        Assert.IsTrue(game.Buildings[2].RequestFailed, "a finished hut with no road to it asked and found no worker");
+        Assert.IsFalse(game.Buildings[1].RequestFailed, "a building site asked for none");
+        Assert.IsFalse(game.Buildings[1].WorkerOnTheWay);
+    }
+
     [TestMethod]
     public void ASmallSiteStartsWithProgress1AndALargeOneWith0()
     {
