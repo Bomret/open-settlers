@@ -97,6 +97,15 @@ public sealed class SettlerFiguresTests
         bases[2 * 0x18] = 1300;
         bases[2 * 0x18 + 1] = -1;
 
+        // The sawmiller's rows (0x43fc21): 0x19 for the walk, 0x1a for the step that takes the plank out, and 0x1c for a figure byte
+        // from 0x80 (made up).
+        bases[2 * 0x19] = 1400;
+        bases[2 * 0x19 + 1] = -1;
+        bases[2 * 0x1a] = 1500;
+        bases[2 * 0x1a + 1] = -1;
+        bases[2 * 0x1c] = 1600;
+        bases[2 * 0x1c + 1] = -1;
+
         return new SettlerFigureTables(
             bases,
             offsets,
@@ -106,9 +115,14 @@ public sealed class SettlerFiguresTests
             HutAdds,
             Idle(),
             BuilderAdds,
-            digger: DiggerAdds
+            digger: DiggerAdds,
+            sawmiller: SawmillerAdds
         );
     }
+
+    // The adds of the sawmiller's handler (0x43fc21), made up: 0x1900 for a figure byte below 0x80, 0x1a00 for the step that takes the
+    // plank out, and 0x1b80 from 0x80 on.
+    private static readonly SawmillerFigureAdds SawmillerAdds = new(0x1900, 0x1a00, 0x1b80);
 
     // The adds of the digger's handler (0x43fa87), made up: 0x1700 for a figure byte below 0x80 and 0x1780 from there on.
     private static readonly FigureAdds DiggerAdds = new(0x1700, 0x1700, 0x1780);
@@ -504,6 +518,30 @@ public sealed class SettlerFiguresTests
         // 0x1801, the row 0x18 (base 1300) and the offset 1; no second figure.
         CollectionAssert.AreEqual(new[] { 3053, 3703 }, walk);
         CollectionAssert.AreEqual(new[] { 3151, 3801 }, work);
+    }
+
+    [TestMethod]
+    public void ASawmillerWalkingSawingAndCarryingAPlankOutIsDrawnInTheRowsOfHisHandlerAndNotWhereHeWaitsForALog()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Sawmiller(int frame, Activity activity) =>
+            new(Job.Sawmiller, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Sawmiller(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var saws = figures.Draws(map, [Sawmiller(8, new Saws(true))], 0).Select(d => d.Entry).ToArray();
+        var carries = figures
+            .Draws(map, [Sawmiller(7, new WaitsOutStep(new PutsDownGood(Good.Plank)))], 0)
+            .Select(d => d.Entry)
+            .ToArray();
+        var waits = figures.Draws(map, [Sawmiller(8, new Saws(false))], 0);
+
+        // Figure byte 3 in the row 0x19 (base 1400) for the walk and in the row 0x1a (base 1500) for the step with the plank, figure byte
+        // 0x81 in the work state: the word 0x1b80 + 0x81 = 0x1c01, the row 0x1c (base 1600) and the offset 1; waiting inside draws nothing.
+        CollectionAssert.AreEqual(new[] { 3253, 3903 }, walk);
+        CollectionAssert.AreEqual(new[] { 3353, 4003 }, carries);
+        CollectionAssert.AreEqual(new[] { 3451, 4101 }, saws);
+        Assert.IsEmpty(waits);
     }
 
     [TestMethod]

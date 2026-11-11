@@ -1629,5 +1629,47 @@
       -7,
       -21
     ]
+  },
+  "settler/sawmiller/walks": {
+    "image": "settler/sawmiller-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/carries": {
+    "image": "settler/sawmiller-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/cuts": {
+    "image": "settler/sawmiller-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/door": {
+    "image": "settler/sawmiller-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/hands-over": {
+    "image": "settler/sawmiller-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/sawmiller/waits": {
+    "image": "settler/sawmiller-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
   }
 }
