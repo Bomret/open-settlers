@@ -59,8 +59,9 @@ inside `0xfe`.
 A site never asks for more than it needs, and with no builder it stops asking at the second good (`0x0e` is below the 15 the hand-out
 requires).
 
-**Not ported:** the worker requests of the same routine (a digger for a large site, the builder), and the branch of a player whose
-player-block byte `+0x163` has bit 1 set, which takes the site down at random (the computer opponent, an epic non-goal).
+The same routine asks for the builder ([The builder](construction.md#the-request-for-a-builder)). **Not ported:** the digger of a large site, and
+the branch of a player whose player-block byte `+0x163` has bit 1 set, which takes the site down at random (the computer opponent, an epic
+non-goal).
 
 ## The request search
 
@@ -119,8 +120,9 @@ outstanding slots are full the castle hands nothing more out.
 
 - **Stand-in:** the engine lays the good on the castle's flag at once, on its first empty place, with the destination, and hands nothing out
   where the flag has none. It keeps no outstanding slots and runs no settler of the castle, so it hands out where the original's slots are
-  still full. `ConstructionMaterialsTests` therefore stops at the passes before the first lay, and before the builder arrives
-  (the original's builder reaches the forester site at pass 211, and a rank with the builder inside is `0xfe`, not `0x3e`).
+  still full. `ConstructionMaterialsTests` therefore stops at the passes before the first lay. The builder reaches the forester site at the pass
+  211 in the engine as in the original (a rank with the builder inside is `0xfe`, not `0x3e`); `ConstructionBuilderTests` empties the castle of planks and
+  stones and adds the goods to the site's fill at the passes the original delivered them ([The builder](construction.md)).
 - The engine runs the phase routine only where a game asks for it (`GameFactory.Create(..., handsOutGoods: true)`, which the game view
   passes): the routine draws from the generator once in every cycle, which the emulator verbs other than `construct:` do not, so the
   scenarios that compare a game with those verbs leave it off.

@@ -28,8 +28,22 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
   judges the node again; where the node state is 5, 6, or 7 and the site fits the type from the size table
   `0x42d307`, it places a building through `0x449a63`. known ([program index](../rules/program-index.md))
 - `0x42d55f`: the handler a building under construction goes to, instead of its type's handler: it keeps the
-  rank of the site's requests for planks and stones, and asks for the builder (not ported until the builder's slice). known
-  ([Materials](../rules/construction-materials.md#the-building-passs-turn-of-a-site))
+  rank of the site's requests for planks and stones, and asks for the builder (job 3, request at `0x42d5fc`). known
+  ([Materials](../rules/construction-materials.md#the-building-passs-turn-of-a-site),
+  [the builder](../rules/construction.md#the-request-for-a-builder))
+- `0x42be63`: `Building_RequestWorker`: a building asks the castle for a settler of a job; where none of the job waits, a
+  settler without a job takes the job and the tool of the request from the stock (the second way). known
+  ([the worker request](../rules/construction.md#the-worker-request))
+- `0x43ce20`, `0x43ec82`, `0x43ef20`, `0x43e008`: the builder's start routine (job 3), state 9 (the materials and the blows), the end
+  of the building, and state `0x4a` (he steps onto the flag and goes home). known
+  ([the builder's turn](../rules/construction.md#the-builders-turn))
+- `0x43f0ba`, `0x43f0fa`: the order of the materials (a bit set for a stone) and the step of a blow, per type. known
+  ([the builder's turn](../rules/construction.md#the-builders-turn))
+- `0x44fa79`: the draw routine's common part for a building under construction: the base, the type's scaffold and the
+  finished building grown by the progress word; the object tables `0x44fcfe` and `0x44fd16`. known from the code, no draw run
+  ([drawing a site](../rules/construction.md#drawing-a-site))
+- `0x43faf4`: the builder's figure handler (the adds `0x500` and `0x580`). known from the code
+  ([drawing a site](../rules/construction.md#drawing-a-site))
 - `0x42d328`: the handler of the large types under construction: it waits until the ground around the site is levelled (and
   asks for the digger), then goes on at `0x42d55f`. known ([Materials](../rules/construction-materials.md#the-building-passs-turn-of-a-site))
 - `0x42965c`, `0x42a313`, `0x42a35d`, `0x42a3a7`: the phase routine and its three orders of steps, by which the castle hands its
@@ -50,6 +64,6 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 
 - The stonecutter, the forester, and the sawmill are the building types 4, 9, and 0x11 (the handlers
   `0x42d987`, `0x42d9c9`, `0x42da0b` of the jump table `0x42cd1d`; names inferred, confirmed by the slices that
-  build each type's work). Where are the builder and the digger? Start from the jump tables `0x42cd1d`
-  (building types), `0x42fca1` (settler states), and `0x43ca54` (job start routines), and the construction
-  handler `0x42d55f`. `0x4312ed` is `Flag_ReleaseGoods`, no table of jobs.
+  build each type's work). The builder is job 3 (known, [the builder](../rules/construction.md)). Where is the digger (job 2,
+  the large site's request at `0x42d328`)? Start from the jump tables `0x42fca1` (settler states) and `0x43ca54` (job start
+  routines): the entry of job 2 is `0x43cd9d`. `0x4312ed` is `Flag_ReleaseGoods`, no table of jobs.
