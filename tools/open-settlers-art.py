@@ -429,9 +429,9 @@ def main():
         manifest[key] = {"image": file, "anchor": list(anchor)}
 
     add("object/flag", "object/flag.png", flag())
-    # Map objects by code (docs/rules/map-objects.md): trees 8 to 23, saplings 24 to 31, boulders 32 to 82, the stump 83
-    # (0x53), plants 84 to 92, falling trees 93 to 102 (0x5d to 0x66), saplings 103 and 104 (0x67, 0x68), anything else a heap. Codes of one kind that look alike
-    # share a file and so an image.
+    # Map objects by code (docs/rules/map-objects.md): trees 8 to 23, palms 24 to 27 and plants 28 to 31 (drawn as
+    # bushes), boulders 32 to 82, the stump 83 (0x53), plants 84 to 92, falling trees 93 to 102 (0x5d to 0x66), saplings
+    # 103 and 104 (0x67, 0x68), anything else a heap. Codes of one kind that look alike share a file and so an image.
     for code in range(8, 128):
         key = f"object/{code}"
         if code < 24:
