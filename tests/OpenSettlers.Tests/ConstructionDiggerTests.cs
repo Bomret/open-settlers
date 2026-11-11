@@ -24,11 +24,17 @@ public sealed class ConstructionDiggerTests
 
     [TestMethod]
     [DataRow("digger-sawmill")]
+    [DataRow("digger-busy-node")]
     public void TheDiggerLevelsTheSiteAsTheOriginalDoes(string name)
     {
         var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
-        // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS
+        // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
         var parts = scenario.Command.Split(':');
+        // PASS,FLAG,PLACE,GOOD,DEST: a good laid on a flag before the pass, the slots the original's (one higher than the engine's).
+        var puts =
+            parts.Length > 11
+                ? parts[11].Split(';').Select(text => text.Split(',').Select(int.Parse).ToArray()).ToList()
+                : [];
         var map = RemovalTests.MapOf(parts);
         var width = map.Size.Width;
         var game = RemovalTests.Started(parts, map, handsOutGoods: true);
@@ -45,6 +51,11 @@ public sealed class ConstructionDiggerTests
             {
                 Place(game, parts[10]);
                 heights = Seven(siteX, siteY).ToDictionary(node => node, node => game.Map.At(node.X, node.Y).Height);
+            }
+
+            foreach (var put in puts.Where(candidate => candidate[0] == pass))
+            {
+                game.Goods.LayGood(put[1] - 1, put[2], put[3], put[4] == 0 ? null : put[4] - 1);
             }
 
             // The castle hands out nothing the engine could lay on a flag at once: the original delivers after 130 passes, so the planks and

@@ -74,6 +74,8 @@ The phase a round finds (before it falls) says what the round does:
 The loop goes on at once where adding a time to the timer does not carry out of the word; a time added to a timer that ran negative ends the turn where it brings the timer back above 0.
 
 **Emulated:** the digger of the fixture works 1350 passes: a node takes a step onto it, the dig's figure, the dig, and the step back, each a few turns of a settler (a turn comes every 16 or 17 passes), and the sixteen passes find only 11 changes to make on that ground.
+**Emulated** (`digger-busy-node`): a carrier on the site's flag, its south-east neighbour, when the pass names that node gives the frame `0x52`
+(`0x57` less the index 5), the timer `0x7f`, and the phase 0; the digger steps onto the node at his next turn, once the carrier has left it.
 
 **Not ported:** the repaint of the changed node (`0x45086a`, which marks the tiles around the node dirty for the view and changes no rule). A frame from 128 on (a height difference of 5 or more downhill on the east step, or a larger sum) reads a word past the step time table in the program; the engine reads 0 there.
 
