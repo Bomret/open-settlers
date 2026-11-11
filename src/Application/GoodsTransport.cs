@@ -131,6 +131,10 @@ public sealed class GoodsTransport(
         return sets;
     }
 
+    // The order the first road that holds a carrier is chosen in when a good reaches no storage (0x464539): the east, then the
+    // directions counted down from 5 to 1. A stand-in for the register the original starts from (see Destine).
+    private static readonly int[] CarrierRoadOrder = [0, 5, 4, 3, 2, 1];
+
     // The destination of a good with none (0x464364 to 0x46444c, 0x45d3ea). The table at 0x464117 gives a good a class and the
     // request word it is looked for in, or sends it to storage at once. A good with a class looks first for the flag whose request
     // asks for it (the request search); where none does, the storage search follows: over the roads that hold a carrier, to the
@@ -151,17 +155,42 @@ public sealed class GoodsTransport(
         }
 
         var found = StorageSearch(flag);
-        flags[flag].NeedsGoodsTurn = true;
         if (found >= 0)
         {
+            flags[flag].NeedsGoodsTurn = true;
             flags[flag].Places[place].Destination = found;
 
             return;
         }
 
-        // No storage is reached over the roads that hold a carrier: the good waits and the flag is asked again at its next
-        // turn. **Not ported:** where some road of the flag holds a carrier, the original gives the good a direction at
-        // once, chosen from what its registers hold (0x464539); the engine lets it wait as it does with none.
+        // No storage is reached over the roads that hold a carrier. With no such road the good waits and the flag is asked again
+        // at its next turn. With one, the good takes a direction at once (0x464539) and keeps no destination: the first road that
+        // holds a carrier, counted down from the east and round (the original starts from what a register holds, which is not
+        // recovered, so the choice among several roads is a stand-in); where the road has no good waiting, the good waits for it.
+        var roadsWithCarrier = CarrierRoads(flag);
+        if (roadsWithCarrier.IsEmpty)
+        {
+            flags[flag].NeedsGoodsTurn = true;
+
+            return;
+        }
+
+        foreach (var way in CarrierRoadOrder)
+        {
+            if (!roadsWithCarrier.Has(way))
+            {
+                continue;
+            }
+
+            if (flags[flag].Side(way).WaitingPlace is null)
+            {
+                WaitForRoad(flag, way, place);
+            }
+
+            flags[flag].Places[place].Way = way;
+
+            return;
+        }
     }
 
     // 0x464999 to 0x4649e0: the flag that was found is served: its rank, shifted right by one where bit 0 is set, else 0, and the

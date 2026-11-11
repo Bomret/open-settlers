@@ -115,7 +115,8 @@ flag's. It clears the building's fill bytes, clears the class bytes at `0x42` an
 [Materials for a building site](construction-materials.md#the-request-words)), takes the status bits 3 and 4 off, puts `0x7ff` in the word that held the worker's slot
 and the clock in the word at 14. If the worker is inside (bit 6) the bit goes and the worker walks home: a settler of the job 4
 loses its job and mode, its timer is 0, and it takes state `0x19` where its node's settler word is its own slot, else `0x1c` (the
-claim of the node, then `0x19`). A worker that is outside (walking to the hut, or cutting) is not touched by this routine.
+claim of the node, then `0x19`). A worker that is outside (walking to the hut, or cutting) is not touched by this routine. A building site is taken down by the same
+routine ([below](#taking-a-building-site-down)).
 
 Then what waits for the building at its flag is released (`Flag_ReleaseGoods`, `0x4312ed`): a settler on its way to the flag with the
 mode `0xff` or `0xfe` takes the mode `0xfe` and target 0; a carrier that carries a good to the flag has the destination 0; each good on a
@@ -133,6 +134,52 @@ burns until its slot is free at the pass 857) and `hut-flag-freed` match. **Infe
 the player block, the storage items' request fields (the last loop of `0x4312ed`), a worker that is outside the hut (what it does when
 it comes back to a hut that is gone is not recovered), the military buildings' and the castle's branches (the territory), and a good whose
 destination flag holds no building (the program reads a null pointer there; the engine leaves it).
+
+## Taking a building site down
+
+**Status:** confirmed, emulated for the forester's site (small) and the sawmill's (large).
+
+A building site is a building with the construction bit, and `Building_Remove` (`0x4617fd`) has no branch of its own for it: the
+take-down above runs unchanged, and the remove click reaches the site as it reaches a hut (the check gives the node class 3).
+What the routine does to the parts of a site:
+
+- **The worker at work.** The builder at work (job 3, state 9) and the digger at work (job 2, state 8) hold the status byte's worker bit
+  (bit 6, set while the worker is inside or at work). The routine clears the bit and sends the worker home as it does a woodcutter: where its node's
+  settler word is its own slot it takes state `0x19` with mode 0, else `0x1c`; the job stays. **Emulated:** the games `builder-at-work` (the
+  builder at the pass 400, state 9, takes state `0x19` at once and walks home) and `digger-at-work` (the digger in state 8 at the pass 600) match
+  the settlers' 16 bytes and the site's bytes after every pass.
+- **The worker on the way.** The routine does not touch a worker that has not yet come in (its bit is clear), but the release of what waits for the
+  site's flag (`Flag_ReleaseGoods`, `0x4312ed`, [above](#taking-a-building-down)) does: a settler on its way to the flag with the mode `0xff` takes the mode `0xfe` and
+  the target 0, and walks home by its own walk. The request-failed bit (`0x80`) of the site's status stays. **Emulated:** `builder-on-the-way` and `digger-on-the-way`.
+- **The site's bytes.** The fill bytes (`+8`, `+9`: the planks and stones on site, each as the count on site times 16 plus the count on the way), the byte of the planks the site needs
+  (`+0x10`), and status bits 3 and 4 are cleared; the byte of the stones it needs (`+0x11`) stays and nothing reads it; the word at 14, which held the target height,
+  takes the clock; the worker word takes `0x7ff` and counts down as the burn of a hut does. The planks and stones on site therefore end with the site, and no count of
+  the player's goods rises or falls (a good counted lost is one that lay on a flag or on a carrier, [below](#a-good-that-is-lost)). **Emulated:** the verb `construct`
+  (the castle hands goods out) with the remove click before the pass 300 (`fill-on-the-way`: byte 8 reads `02`, two goods counted on the way) and before the pass 485
+  (`fill-on-site`: `11`, one delivered and one on the way): byte 8 reads `00` after the click, and the site's bytes, the builder's walk home to the pass of its first wait, the map
+  bytes, the counts of the tables, and the generator match to the end of the burn. The comparison leaves out the flags' items and the castle's stock: the engine lays a hand-out
+  on the castle's flag at once where the original's carriers bring it about 130 passes later, so the goods on the flags and carriers are the stand-in's (the
+  goods the click releases are compared in `goods-waiting`, `goods-carried`, and `goods-at-the-flag`, which lay them by hand). The original's builder
+  differs from the engine's in its state bytes for a pass at 409 (`fill-on-the-way`) and 541 (`fill-on-site`) on its way home, past a settler of the original (slot 4, a carrier on a trip
+  for the goods) that the engine's stand-in has no trip for; the walk home matches without the hand-out (`builder-at-work`), so the cause is taken to be the hand-out's goods (not
+  recovered), and the builder's bytes are compared up to the pass before.
+- **The request classes.** The class bytes at `+0x42` and `+0x44` of the site's flag are cleared, their ranks stay ([Materials](construction-materials.md#the-request-words)), so no
+  flag's turn serves the site any more.
+- **The goods on the way.** A carrier that carries a good for the flag has the destination 0, and each good that waits on any flag with the flag as its destination loses
+  it and its direction (`Flag_ReleaseGoods`). The goods then get their turn at their flag: a good with no destination is searched a storage ([Goods at a flag](goods.md)),
+  and where the storage is the flag's own (a good that lies on the castle's flag) with a road holding a carrier, it takes that road's direction at once and keeps no
+  destination (`0x464539`). **Emulated:** `goods-waiting` (a plank and a stone on the castle's flag, destined for the site, at the pass 110), `goods-carried` (the plank on
+  its carrier, the pass 140), and `goods-at-the-flag` (the pass 180, the goods past the castle's flag on their way to the site's, the builder still on the way): each matches
+  the flags' items (goods, destinations, directions), the carriers, the site, and the generator after every pass.
+- **A site nobody has reached.** The flag of a site with no road is taken down with it, as a hut's flag is (`0x462153`): `site-unreached` (a forester's site with a flag of its own, taken down at
+  the pass 45) frees the flag's slot and the node, and the burn frees the site's slot after 264 passes.
+- **The burning large site.** The evaluator's third-ring term (`0x44c151` to `0x44c204`, [the digger](digging.md#a-site-that-waits-in-the-build-site-evaluator)) tests only the
+  construction bit and the progress word 0, so a large site taken down before its digger finished still counts, and it reads the word at 14, which now holds the clock of the
+  take-down, by its low byte as a height. **Emulated:** `sweep-removed-site` (the sawmill's site taken down at the pass 100): the four nodes that read the site 4 with the heights 12 to 15 while it waited
+  read the site 3 with the height 0, and the engine's evaluator matches every node of the verdict.
+- **The heights a digger changed** stay as the digger left them: nothing in the routine writes a height.
+
+**Not ported:** the player block's counts of buildings by type and the request words that name the building (as for a hut, above).
 
 ## A good that is lost
 
@@ -163,3 +210,4 @@ the castle, the hut's flag, and a flag as a road, a node of no road, and a node 
 - The drawing: the stand-in button "Remove" in `MapViewControl`; a hut that burns is not drawn (its fire is not read).
 - Tests: `RemovalTests` (the verb's games and classes, `removals.txt`) and `RemovalLogicTests` (the engine's own logic, made-up tables);
   `SawmillRemovalTests` (a sawmill's worker waiting, sawing, and out with the plank, `saw-removals.txt`, [Sawmilling](sawmilling.md#removal)).
+- A site taken down (`Removal.TakeBuildingDown`) keeps its `Building.Site` with the planks it needs set to 0; `BuildSite.Evaluate` reads the clock (`Building.Stamp`) as the height of a large site taken down while it waited. The remove click reaches a site through the same command (`RemoveBuilding`). Tests: `ConstructionRemovalTests` (`construction-removal.txt`, the emulator verb `remove` with clicks written `N=click`).

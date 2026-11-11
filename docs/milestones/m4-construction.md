@@ -54,6 +54,11 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
   ([the digger](../rules/digging.md#the-diggers-figure))
 - `0x44c151` to `0x44c204`, in `0x44bd72`: the evaluator's third-ring term for a large site that waits for its digger. known
   ([the digger](../rules/digging.md#a-site-that-waits-in-the-build-site-evaluator))
+- `0x4617fd`, `0x4312ed`: the site's removal. A site goes through the same take-down as a hut: its worker at work (worker bit) goes home,
+  one on the way goes home through the release of the goods at its flag, the fills and the planks needed are cleared, the word at 14 takes the clock,
+  and the goods for the site lose their destination. known ([Removal](../rules/removal.md#taking-a-building-site-down))
+- `0x464539`: the direction a good takes at once when some road holds a carrier and no storage was reached. known for one road with a
+  carrier, the choice among several not recovered ([Goods at a flag](../rules/goods.md))
 - `0x42965c`, `0x42a313`, `0x42a35d`, `0x42a3a7`: the phase routine and its three orders of steps, by which the castle hands its
   goods out to the flags whose requests rank highest; the castle's first settler carries each good out and lays it on the castle's
   flag. known for the routine and its order, the carrying out is read from the emulator's runs only

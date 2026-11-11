@@ -56,8 +56,13 @@ direction does one of two things:
    is the answer. A flag that is a storage itself finds none. The answer goes into the place's destination word and the flag's
    bit 7 is set again, so the direction comes at the next turn. Where the search finds none, with no road of the flag holding a
    carrier (status bits 0 to 5 all clear), the bit is set again and the good waits: this is the good that lies at a flag until a
-   carrier comes. **Not ported:** with some road of the flag holding a carrier and no storage reached, the original gives the
-   good a direction at once (`0x464539`, from the leftover of a register).
+   carrier comes. With some road of the flag holding a carrier (status bits 0 to 5 not all clear) and no storage reached, the good takes a
+   direction at once (`0x464539`) and keeps its destination word 0; the flag's bit 7 is not set again, and where the road's byte has no
+   bit 7 the good takes its place. **Emulated:** a plank and a stone on the castle's flag, released from a site taken down
+   ([Removal](removal.md#taking-a-building-site-down)), each take the direction of the only road that holds a carrier. A flag cut off from the castle (its road to the next flag holds a carrier, that flag's road to the
+   castle none) is pinned on made-up tables only (`GoodsTransportTests`): the good takes the road at once, the next good on the flag the direction only. **Stand-in:** the road
+   is the first with a carrier from the east, then from the north-west round to the south-east; the original starts from a register's
+   leftover (the result of the request search), which is not recovered, so the choice between several roads that hold a carrier is not confirmed.
 2. **A destination.** The search for the direction (`0x464aa8`, `0x464bb2`, `0x464c36`) starts at the flag. It seeds the roads
    that hold a carrier by load: first those with no good heading that way, then those with exactly one, two, three, and last
    those with four or more (a seed marks the flag at the road's far end with the direction), as long as a road with a carrier is
@@ -212,7 +217,7 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 ## Open leads
 
 - The counter in the player block that the put adds to (`+good - 0x6f`).
-- What the original does with some road holding a carrier and no storage reached (`0x464539`).
+- Which road a good takes when several hold a carrier and no storage was reached (`0x464539`, the register it starts from).
 - A carrier sent home (byte 15 negative, `0x43aea4`), and state 0x44 and later (`0x43007b`, `0x4300f1`).
 - The passing of two settlers that come the other way at a flag (the emulated game of several carriers shows it at a flag where
   a carrier with a log and a carrier that is to fetch one meet): the swap of a step east, south-east, or south is ported with the
