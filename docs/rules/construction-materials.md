@@ -46,7 +46,8 @@ progress word is 0 the routine returns at once where a settler stands inside it 
 otherwise tests the ground: the node and its six neighbours must all lie at the height the site was given (the word at 14 of the
 item). Only then does the progress word become 1, and the routine goes on. **Emulated:** the sawmill of the fixture `two-sites` has
 the progress word 0 and rank 0 until the harness levels its ground; the same pass then sets 1 and its requests take their ranks. No
-node of the generated map near the castle is level, so a large site waits for a digger, which a later slice builds.
+node of the generated map near the castle is level, so a large site waits for a digger ([The digger](digging.md#the-large-site-waits-for-the-ground)), who
+levels the seven nodes and sets the progress word to 1 himself ([The digger](digging.md#the-end)).
 
 Then for each good, the planks first and then the stones, the pass keeps the rank of the flag's request from the fill byte of the site
 (byte 8 for the planks, byte 9 for the stones): its high nibble counts the goods on site, its low nibble the goods on the way. The
@@ -59,8 +60,7 @@ inside `0xfe`.
 A site never asks for more than it needs, and with no builder it stops asking at the second good (`0x0e` is below the 15 the hand-out
 requires).
 
-The same routine asks for the builder ([The builder](construction.md#the-request-for-a-builder)). **Not ported:** the digger of a large site, and
-the branch of a player whose player-block byte `+0x163` has bit 1 set, which takes the site down at random (the computer opponent, an epic
+The same routine asks for the builder ([The builder](construction.md#the-request-for-a-builder)). **Not ported:** the branch of a player whose player-block byte `+0x163` has bit 1 set, which takes the site down at random (the computer opponent, an epic
 non-goal).
 
 ## The request search

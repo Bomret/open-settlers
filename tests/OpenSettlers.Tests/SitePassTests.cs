@@ -43,7 +43,11 @@ public sealed class SitePassTests
         bench.Buildings.Add(site);
         var tables = ConstructionTables.Tables();
 
-        return (bench, new SitePass(bench.Map, bench.Flags, tables, (building, request) => Asked.Add((building, request))), site);
+        return (
+            bench,
+            new SitePass(bench.Map, bench.Flags, tables, (building, request) => Asked.Add((building, request))),
+            site
+        );
     }
 
     // The node of the site and its six neighbours at one height, then the node itself at another.

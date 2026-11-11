@@ -5,11 +5,12 @@ namespace OpenSettlers.Simulation;
 
 /// <summary>
 /// The building pass's turn of a building site (<c>0x42d328</c>, <c>0x42d55f</c>, <c>docs/rules/construction-materials.md</c>): a large
-/// site that has not started waits until the ground around it is levelled; then the pass keeps the rank of the requests of the site's
-/// flag for planks and stones from what the site holds on site and on the way against what it needs, so that it never asks for more
-/// than it needs. A site with no worker inside or on the way, whose last request did not fail, asks for its builder (<c>0x42d5fc</c>) and
-/// takes the progress word 1. **Not ported:** the digger of a large site, and the branch of the computer player (player byte
-/// <c>+0x163</c>).
+/// site that has not started waits until the ground around it is levelled, and asks for a digger (<c>0x42d52a</c>,
+/// <c>docs/rules/digging.md</c>) where none is inside or on the way and its last request did not fail; then the pass keeps the rank of the
+/// requests of the site's flag for planks and stones from what the site holds on site and on the way against what it needs, so that it never
+/// asks for more than it needs. A site with no worker inside or on the way, whose last request did not fail, asks for its builder
+/// (<c>0x42d5fc</c>) and takes the progress word 1. **Not ported:** the branch of the computer player (player byte <c>+0x163</c>) and the
+/// branch of the digger's request for a player whose byte <c>+0x163</c> has bit 6 set.
 /// </summary>
 /// <param name="map">The map: the heights of the ground around a large site.</param>
 /// <param name="flags">The flag table: the site's flag holds its requests.</param>

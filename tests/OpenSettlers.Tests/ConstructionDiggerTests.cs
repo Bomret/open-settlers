@@ -69,7 +69,9 @@ public sealed class ConstructionDiggerTests
                     );
                 }
 
-                foreach (var change in line.GetValueOrDefault("h", "").Split(';', StringSplitOptions.RemoveEmptyEntries))
+                foreach (
+                    var change in line.GetValueOrDefault("h", "").Split(';', StringSplitOptions.RemoveEmptyEntries)
+                )
                 {
                     // x,y:old>new
                     var (node, from, to) = Change(change);
@@ -124,7 +126,9 @@ public sealed class ConstructionDiggerTests
                 var judged = result.Node == 0 ? null : $"{result.Node}/{result.Site}/{result.Height}";
                 if (judged != expected.GetValueOrDefault($"{x},{y}"))
                 {
-                    differences.Add($"{x},{y}: the engine {judged ?? "-"}, the original {expected.GetValueOrDefault($"{x},{y}") ?? "-"}");
+                    differences.Add(
+                        $"{x},{y}: the engine {judged ?? "-"}, the original {expected.GetValueOrDefault($"{x},{y}") ?? "-"}"
+                    );
                 }
             }
         }
@@ -142,10 +146,16 @@ public sealed class ConstructionDiggerTests
         {
             var game = Clicked(parts, withSite);
             var revision = game.Revision;
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 12, 9, Building: BuildingType.Sawmill));
+            game.Enqueue(
+                new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 12, 9, Building: BuildingType.Sawmill)
+            );
             game.Tick();
 
-            Assert.AreEqual(placed, game.Revision != revision, withSite ? "the waiting site refuses it" : "no site refuses it");
+            Assert.AreEqual(
+                placed,
+                game.Revision != revision,
+                withSite ? "the waiting site refuses it" : "no site refuses it"
+            );
         }
     }
 
@@ -160,11 +170,16 @@ public sealed class ConstructionDiggerTests
         {
             if (pass == at)
             {
-                foreach (var click in parts[10].Split(';').Where(click => click[0] != 'v' && (withSite || click[0] != 'b')))
+                foreach (
+                    var click in parts[10].Split(';').Where(click => click[0] != 'v' && (withSite || click[0] != 'b'))
+                )
                 {
                     if (click[0] == 'l')
                     {
-                        var level = click[2..].Split(',').Select(number => int.Parse(number, CultureInfo.InvariantCulture)).ToArray();
+                        var level = click[2..]
+                            .Split(',')
+                            .Select(number => int.Parse(number, CultureInfo.InvariantCulture))
+                            .ToArray();
                         foreach (var (x, y) in Seven(level[0], level[1]))
                         {
                             game.Map.At(x, y).Height = level[2];
@@ -225,7 +240,12 @@ public sealed class ConstructionDiggerTests
     private static string Settler(Settler settler, int width)
     {
         var bytes = Convert.FromHexString(WorkerWalkTests.Hex(settler, width));
-        if (settler.Activity is Leaving or Walks { Errand: not ToStorage } or WaitsOutStep { Then: Walks { Errand: not ToStorage } })
+        if (
+            settler.Activity
+            is Leaving
+                or Walks { Errand: not ToStorage }
+                or WaitsOutStep { Then: Walks { Errand: not ToStorage } }
+        )
         {
             var target = BitConverter.ToUInt16(bytes, 12) + 1;
             bytes[12] = (byte)target;

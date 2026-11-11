@@ -107,7 +107,10 @@ public sealed class DiggerTests
             levelled = Heights(game).SequenceEqual(Levelled(target)) && site.Progress != 0;
             if (!levelled)
             {
-                Assert.IsInstanceOfType<WaitsInCastle>(builder.Activity, "no builder leaves before the ground is levelled");
+                Assert.IsInstanceOfType<WaitsInCastle>(
+                    builder.Activity,
+                    "no builder leaves before the ground is levelled"
+                );
             }
         }
 
@@ -152,7 +155,11 @@ public sealed class DiggerTests
             game.Tick();
         }
 
-        Assert.AreEqual(2, ConstructionWorld.OfJob(game, Job.Digger).Length, "a settler without a job took the job: the site asked again");
+        Assert.AreEqual(
+            2,
+            ConstructionWorld.OfJob(game, Job.Digger).Length,
+            "a settler without a job took the job: the site asked again"
+        );
         Assert.AreEqual(0, game.CastleStock.Count(ConstructionTables.DiggerTool), "and the shovel");
         Assert.AreEqual(target, game.Map.At(SiteX, SiteY).Height);
     }

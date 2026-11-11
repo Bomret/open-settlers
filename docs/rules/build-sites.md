@@ -89,8 +89,8 @@ If every condition holds the site is 4, or 5 for a player without a castle, and 
 of the node (counted twice) and its six neighbors, divided by 8 and then kept between the second ring's largest
 height less 4 (not below 0) and its smallest plus 4, and at least 1.
 
-**Not ported (`simplicity:`):** a building of code 3 within the third ring widens the range of heights in step 9
-through its own height field (condition 10). No building of that code exists before the construction slices. The evaluator also
+A large building site that waits for its digger (the map object code 3, under construction, the progress word 0) within the third ring of the node widens
+the range of condition 10 by its target height: [The digger](digging.md#a-site-that-waits-in-the-build-site-evaluator) has the rule and its run. The evaluator also
 sets two bits of the player's flags that tell the screen where to draw its marker; they change no result.
 
 ## Placing a building
@@ -179,8 +179,8 @@ is slot 3.
 ## In the engine
 
 `OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Application/BuildSite.cs`). The engine departs from the program
-in two places: a node with a flag or a building object gives 0, 0, 0, and the code 3 height term is left out
-(above). `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md).
+in one place: a node with a flag or a building object gives 0, 0, 0 (above). The code 3 height term reads the building table, which the
+flag button and the building placement hand to `BuildSite.Evaluate`. `BuildSiteResult.AllowsFlag` is the flag button's rule; the flag placement is in [Flags](flags.md).
 `BuildingPlacement` (`src/Application/BuildingPlacement.cs`) is `Building_Place`: the command `PlaceBuilding` carries a
 `BuildingType` and places a building site (`BuildingPlacement.PlaceSite`), and no command places a finished building. A small
 type is placed on a site of 3 or 4, a large type on a site of 4, with the node state 5 (a flag with no building), 6, or 7;

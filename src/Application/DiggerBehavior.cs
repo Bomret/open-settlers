@@ -104,9 +104,7 @@ public sealed class DiggerBehavior(
 
     // 0x43e62d: the next node of the pass; after the site's node the next pass starts at the first node.
     private bool NextNode(int slot, Settler settler, Digs digs) =>
-        digs.Node >= 1
-            ? Visit(slot, settler, digs with { Node = digs.Node - 1 })
-            : NextPass(slot, settler, digs);
+        digs.Node >= 1 ? Visit(slot, settler, digs with { Node = digs.Node - 1 }) : NextPass(slot, settler, digs);
 
     // 0x43e63a: the next pass; after the last the digger is done.
     private bool NextPass(int slot, Settler settler, Digs digs)

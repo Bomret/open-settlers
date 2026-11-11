@@ -45,7 +45,9 @@ public static class BuildSite
     /// Judges a node for a player. <paramref name="hasCastle"/> tells whether the player's castle stands; the
     /// original then compares owners with the player's own and ends in site 4 where it ends in site 5 without one.
     /// A node whose object is a flag or a building gives the result 0, 0, 0: the original judges those from its
-    /// flag and building tables, which this port does not hold yet.
+    /// flag and building tables, which this port does not hold yet. <paramref name="buildings"/> is the building table, which a
+    /// large site that waits for its digger within the third ring of the node is read from (<c>docs/rules/digging.md</c>); none
+    /// reads no such site.
     /// </summary>
     public static BuildSiteResult Evaluate(
         RuleTables tables,
