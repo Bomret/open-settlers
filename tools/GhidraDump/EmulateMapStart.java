@@ -128,7 +128,7 @@
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
 //                            before that pass, as goods does, with the destination word DEST. A line per click and per pass lists
 //                            what changed: the map bytes of flags, object, link, and the waiting carrier's mark (record B byte 1,
-//                            i=5) (m=x,y:i=old>new), the settlers (s<slot>=, 16
+//                            i=5) (m=x,y:i=old>new), the heights of the nodes (h=x,y:old>new), the settlers (s<slot>=, 16
 //                            bytes), the flag items (f<slot>=, 70 bytes), the building items (b<slot>=, 18 bytes), the storage item
 //                            (st=), the counts of the tables (c=), the total of resource 1 (r1=), and the generator (rng=).
 //   construct:...           remove: (the same arguments and lines) with the phase routine 0x42965c run at the last phase of each
@@ -1465,6 +1465,23 @@ public class EmulateMapStart extends GhidraScript {
         }
         if (map.length() > 0) {
             line.append(" m=").append(map);
+        }
+        // h= lists the nodes whose height (the low five bits of byte 1 of record A) changed, as x,y:old>new in decimal: the ground
+        // a digger levels.
+        StringBuilder heights = new StringBuilder();
+        for (int ty = 0; ty < height; ty++) {
+            for (int tx = 0; tx < width; tx++) {
+                int at = ty * 8 * width + tx * 4 + 1;
+                int was = before.map[at] & 0x1f;
+                int is = after.map[at] & 0x1f;
+                if (was != is) {
+                    heights.append(heights.length() == 0 ? "" : ";").append(tx).append(",").append(ty).append(":")
+                            .append(was).append(">").append(is);
+                }
+            }
+        }
+        if (heights.length() > 0) {
+            line.append(" h=").append(heights);
         }
         line.append(chunks("s", before.settlers, after.settlers, 16));
         line.append(chunks("f", before.flags, after.flags, ITEM_SIZE));

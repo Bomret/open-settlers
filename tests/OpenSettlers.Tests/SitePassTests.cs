@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
@@ -14,12 +15,16 @@ public sealed class SitePassTests
     private static readonly Request Planks = new(ConstructionTables.PlankClass, 0);
     private static readonly Request Stones = new(ConstructionTables.StoneClass, 0);
 
+    // The requests the site's pass sent to the castle, in order, with the building each came from.
+    private static readonly List<(Building Site, WorkerRequest Request)> Asked = [];
+
     private static (BehaviourBench Bench, SitePass Pass, Building Site) Bench(
         BuildingType type,
         BuildingNeeds needs,
         ushort progress = 1
     )
     {
+        Asked.Clear();
         var bench = new BehaviourBench();
         bench.Flags.Add(4, 4);
         bench.Flags.Add(8, 6);
@@ -38,7 +43,19 @@ public sealed class SitePassTests
         bench.Buildings.Add(site);
         var tables = ConstructionTables.Tables();
 
-        return (bench, new SitePass(bench.Map, bench.Flags, tables), site);
+        return (bench, new SitePass(bench.Map, bench.Flags, tables, (building, request) => Asked.Add((building, request))), site);
+    }
+
+    // The node of the site and its six neighbours at one height, then the node itself at another.
+    private static void Uneven(BehaviourBench bench, int ground = 3, int node = 2)
+    {
+        for (var direction = 0; direction < Direction.Count; direction++)
+        {
+            var (dx, dy) = Direction.Steps[direction];
+            bench.Map.At(7 + dx, 5 + dy).Height = ground;
+        }
+
+        bench.Map.At(7, 5).Height = node;
     }
 
     private static int Rank(BehaviourBench bench, RequestWord word) => bench.Flags[SiteFlag].RequestOf(word).Rank;
@@ -139,5 +156,72 @@ public sealed class SitePassTests
 
         Assert.AreEqual((ushort)1, site.Progress, "the levelled site starts");
         Assert.AreEqual(0x3e, Rank(bench, RequestWord.First));
+    }
+
+    [TestMethod]
+    public void ALargeSiteOnUnevenGroundAsksForADiggerAndNotForItsBuilder()
+    {
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0);
+        Uneven(bench);
+
+        pass.Turn(site);
+
+        Assert.AreEqual(1, Asked.Count);
+        Assert.AreSame(site, Asked[0].Site);
+        Assert.AreEqual(new WorkerRequest(Job.Digger, ConstructionTables.DiggerTool), Asked[0].Request);
+        Assert.AreEqual((ushort)0, site.Progress, "the site waits for the ground");
+    }
+
+    [TestMethod]
+    public void ASiteWhoseLastRequestFailedWaitsForTheRetryScanBeforeItAsksAgain()
+    {
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0);
+        Uneven(bench);
+        site.RequestFailed = true;
+
+        pass.Turn(site);
+        Assert.AreEqual(0, Asked.Count);
+
+        site.RequestFailed = false;
+        pass.Turn(site);
+        Assert.AreEqual(1, Asked.Count);
+    }
+
+    [TestMethod]
+    public void ADiggerInsideOrOnTheWayLeavesTheGroundToHim()
+    {
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0);
+        Uneven(bench);
+        site.WorkerOnTheWay = true;
+        pass.Turn(site);
+        site.WorkerOnTheWay = false;
+        site.WorkerInside = true;
+        pass.Turn(site);
+
+        Assert.AreEqual(0, Asked.Count);
+        Assert.AreEqual((ushort)0, site.Progress);
+    }
+
+    [TestMethod]
+    public void ALevelLargeSiteAsksForNoDiggerBeforeItStartsAndAsksForItsBuilder()
+    {
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0);
+        Uneven(bench, node: 3);
+
+        pass.Turn(site);
+
+        Assert.AreEqual(1, Asked.Count);
+        Assert.AreEqual(Job.Builder, Asked[0].Request.Job);
+    }
+
+    [TestMethod]
+    public void ASmallSiteOnUnevenGroundNeverAsksForADigger()
+    {
+        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds(2, 0));
+        Uneven(bench);
+
+        pass.Turn(site);
+
+        Assert.IsTrue(Asked.TrueForAll(asked => asked.Request.Job != Job.Digger));
     }
 }

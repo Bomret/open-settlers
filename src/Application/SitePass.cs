@@ -35,9 +35,16 @@ public sealed class SitePass(
 
         if (tables.SizeOf(site.Type) == BuildingSize.Large && site.Progress == 0)
         {
-            // A digger inside or on the way (status bits 6 and 7) leaves the ground to him.
-            if (site.WorkerInside || site.WorkerOnTheWay || !Levelled(site, needs.TargetHeight))
+            // A digger inside or on the way (status bits 6 and 7) leaves the ground to him (0x42d33b).
+            if (site.WorkerInside || site.WorkerOnTheWay)
             {
+                return;
+            }
+
+            if (!Levelled(site, needs.TargetHeight))
+            {
+                AskForDigger(site);
+
                 return;
             }
         }
@@ -53,6 +60,16 @@ public sealed class SitePass(
         var flag = flags[site.Flag];
         Keep(flag, RequestWord.First, needs.Planks, site.FillLow, tables.PlankRankBase, site.WorkerInside);
         Keep(flag, RequestWord.Second, needs.Stones, site.FillHigh, StoneRankStart, site.WorkerInside);
+    }
+
+    // 0x42d4a3: a site whose last request failed (status bit 2) waits for the retry scan to clear the bit; else it asks the castle for a
+    // digger (0x42d52a), and the failing request sets the bit (CastleRoster.AskForWorker).
+    private void AskForDigger(Building site)
+    {
+        if (!site.RequestFailed)
+        {
+            askForWorker?.Invoke(site, tables.DiggerRequest);
+        }
     }
 
     // The ground is levelled where the node and its six neighbours all lie at the site's height (0x42d34e to 0x42d490).
