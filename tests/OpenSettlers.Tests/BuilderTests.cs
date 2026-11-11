@@ -73,9 +73,108 @@ public sealed class BuilderTests
         var flag = game.Flags[site.Flag];
         Assert.IsNull(flag.RequestOf(RequestWord.First).Asks);
         Assert.IsNull(flag.RequestOf(RequestWord.Second).Asks);
-        Assert.IsFalse(site.WorkerInside && site.Worker == 0);
+        Assert.IsFalse(site.Constructing);
         var builder = ConstructionWorld.OfJob(game, Job.Builder).Single();
         Assert.IsInstanceOfType<WaitsInCastle>(builder.Activity, "the builder entered the castle again");
+    }
+
+    [TestMethod]
+    public void TheFinishingBlowTakesTheBuilderOutOfTheSiteAndHeLeavesIt()
+    {
+        var (game, site) = World();
+        var builder = ConstructionWorld.OfJob(game, Job.Builder).Single();
+        var inside = false;
+        for (var tick = 0; tick < 3000 && site.Constructing; tick++)
+        {
+            game.Tick();
+            inside |= site.WorkerInside && site.Worker == game.Settlers.ToList().IndexOf(builder);
+        }
+
+        Assert.IsTrue(inside, "while the builder works the site holds him as its worker");
+        Assert.IsFalse(site.Constructing);
+        Assert.IsFalse(site.WorkerInside, "the worker bit goes with the building's end");
+        Assert.AreEqual(0, site.Worker, "so does the worker's slot");
+        Assert.IsNotInstanceOfType<Builds>(builder.Activity, "he no longer builds");
+        Assert.IsTrue(
+            builder.Activity is LeavesSite or WaitsOutStep { GoingTo: ToStorage },
+            "he waits at the door for the flag, or has taken the step onto it, on his way to the castle"
+        );
+    }
+
+    // A forester's site that needs one plank and one stone, in the order plank first, then stone (the order word 0b10), with the plank
+    // on site and the stone as the test sets it. The fill byte holds the planks in its low nibble and the stones in its high one.
+    private static (Game Game, Building Site) StoneWorld(ushort order = 0b10, int plankOnSite = 1, int stoneOnSite = 0)
+    {
+        var needs = new byte[2 * RuleTables.BuildingTypeCount];
+        needs[2 * BuildingType.Forester.Code] = 1;
+        needs[(2 * BuildingType.Forester.Code) + 1] = 1;
+        var materialOrder = new ushort[RuleTables.BuildingTypeCount];
+        materialOrder[BuildingType.Forester.Code] = order;
+        var game = ConstructionWorld.Create(
+            ConstructionTables.Tables(stepTime: 300, needs: needs, materialOrder: materialOrder)
+        );
+        ConstructionWorld.Site(game, BuildingType.Forester, SiteX, SiteY);
+        var site = game.Buildings[1];
+        site.FillLow = plankOnSite << 4;
+        site.FillHigh = stoneOnSite << 4;
+
+        return (game, site);
+    }
+
+    [TestMethod]
+    public void TheBuilderWaitsForTheStoneThatTheOrderNamesAfterThePlankAndTakesItFromTheHighNibble()
+    {
+        var (game, site) = StoneWorld();
+
+        var seen = Progress(game, site, 1500);
+
+        Assert.AreEqual(Words(Enumerable.Range(0, 9).Select(blow => (ushort)(1 + 0x1000 * blow))), Words(seen));
+        Assert.AreEqual(0, site.FillLow, "the plank went out of the low nibble");
+        Assert.AreEqual(0, site.Site!.Planks);
+        Assert.AreEqual(1, site.Site.Stones, "no stone was taken");
+
+        site.FillHigh = 0x10;
+        for (var tick = 0; tick < 1500 && site.Progress <= 0x8001; tick++)
+        {
+            game.Tick();
+        }
+
+        Assert.AreEqual(0, site.FillHigh, "the stone went out of the high nibble");
+        Assert.AreEqual(0, site.Site!.Stones);
+        Assert.AreEqual(0, site.Site.Planks);
+        Assert.IsTrue(site.Constructing, "the eight blows of the stone are not yet made");
+        Assert.IsGreaterThan(0x8001, site.Progress);
+    }
+
+    [TestMethod]
+    public void AStoneOnSiteDoesNotLetTheBuilderGoOnWhereTheOrderNamesAPlankNext()
+    {
+        var (game, site) = StoneWorld(plankOnSite: 0, stoneOnSite: 1);
+
+        var seen = Progress(game, site, 1500);
+
+        Assert.AreEqual(Words([1]), Words(seen), "he waits for the plank, with no blow");
+        Assert.AreEqual(0x10, site.FillHigh, "the stone stays on site");
+        Assert.AreEqual(1, site.Site!.Stones);
+        Assert.AreEqual(1, site.Site.Planks);
+    }
+
+    [TestMethod]
+    public void AStoneComesFirstWhereTheOrderWordHasItsLowBitSet()
+    {
+        var (game, site) = StoneWorld(order: 0b01, plankOnSite: 1, stoneOnSite: 0);
+
+        var seen = Progress(game, site, 1500);
+
+        Assert.AreEqual(Words([1]), Words(seen), "the plank on site is no use before the stone");
+
+        site.FillHigh = 0x10;
+        seen = Progress(game, site, 1500);
+
+        Assert.AreEqual((ushort)0, seen[^1], "the stone, then the plank, build it");
+        Assert.AreEqual(0, site.FillHigh);
+        Assert.AreEqual(0, site.FillLow);
+        Assert.IsFalse(site.Constructing);
     }
 
     [TestMethod]
