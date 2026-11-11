@@ -40,9 +40,9 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 - `0x43f0ba`, `0x43f0fa`: the order of the materials (a bit set for a stone) and the step of a blow, per type. known
   ([the builder's turn](../rules/construction.md#the-builders-turn))
 - `0x44fa79`: the draw routine's common part for a building under construction: the base, the type's scaffold and the
-  finished building grown by the progress word; the object tables `0x44fcfe` and `0x44fd16`. known from the code, no draw run
+  finished building grown by the progress word; the object tables `0x44fcfe` and `0x44fd16`. known, with draw runs
   ([drawing a site](../rules/construction.md#drawing-a-site))
-- `0x43faf4`: the builder's figure handler (the adds `0x500` and `0x580`). known from the code
+- `0x43faf4`: the builder's figure handler (the adds `0x500` and `0x580`). known, with a draw run
   ([drawing a site](../rules/construction.md#drawing-a-site))
 - `0x42d328`: the handler of the large types under construction: it waits until the ground around the site is levelled (and
   asks for the digger, job 2 with the tool good 16, at `0x42d52a`), then goes on at `0x42d55f`. known
