@@ -442,8 +442,12 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/woodcutter/carries"] = ContentFolder.Entry("carries.png", "0, 0");
         var source = folder.Load();
 
-        var withLog = source.Draw(Settler(Job.Woodcutter, new WalksFree(new Trip(new Vector(2, 1), new BackToHut(true)))))!.Image!;
-        var withoutLog = source.Draw(Settler(Job.Woodcutter, new WalksFree(new Trip(new Vector(2, 1), new BackToHut(false)))))!.Image!;
+        var withLog = source
+            .Draw(Settler(Job.Woodcutter, new WalksFree(new Trip(new Vector(2, 1), new BackToHut(true)))))!
+            .Image!;
+        var withoutLog = source
+            .Draw(Settler(Job.Woodcutter, new WalksFree(new Trip(new Vector(2, 1), new BackToHut(false)))))!
+            .Image!;
 
         Assert.AreEqual((3, 1), (withLog.Rgba[0], withoutLog.Rgba[0]));
     }

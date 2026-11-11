@@ -115,14 +115,23 @@ public sealed class StorageDistributionTests
     {
         var food = new GoodClass(7, RequestWord.First);
         var tables = LayoutSettlersTests.MadeTables(
-            distribution: [[new DistributionStep(food, [.. FoodGoods.Select(good => new Good(good))])], [], []]
+            distribution:
+            [
+                [new DistributionStep(food, [.. FoodGoods.Select(good => new Good(good))])],
+                [],
+                [],
+            ]
         );
         var rig = Started(planks: 0, stones: 0, tables: tables, food: [2, 5, 3]);
         rig.Bench.Flags[1].SetRequest(RequestWord.First, new Request(food, 0x3e));
 
         rig.Distribution.Run();
 
-        Assert.AreEqual(3, rig.Bench.Flags[0].Places[0].Good.Code, "the good 3, of which the castle holds 5, lies on the flag");
+        Assert.AreEqual(
+            3,
+            rig.Bench.Flags[0].Places[0].Good.Code,
+            "the good 3, of which the castle holds 5, lies on the flag"
+        );
         Assert.AreEqual(4, rig.Castle.Count(new Good(3)), "its count fell by one");
         Assert.AreEqual(2, rig.Castle.Count(new Good(1)), "the other foods stay");
         Assert.AreEqual(3, rig.Castle.Count(new Good(6)), "the other foods stay");
