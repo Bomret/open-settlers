@@ -83,6 +83,8 @@ public static class SettlerEncoder
                 a.Blows
             ),
             LeavesSite a => new(a.Code, StorageMode, 0, 0, WalksState),
+            // The digger's work: the pass in byte 11, the site's height and the node of the pass in the word at 12, the phase in byte 14.
+            Digs a => new(a.Code, a.Pass, a.Target | (a.Node << 8), a.Phase, r.Next),
             HandsOver a => new(
                 a.Code,
                 a.Load?.Good.Code ?? 0,
