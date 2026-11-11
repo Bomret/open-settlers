@@ -98,6 +98,12 @@ public static class EventType
     /// <summary>A builder's turn in the building site: a blow, a material taken, or the wait for the next one.</summary>
     public const string Builds = "builds";
 
+    /// <summary>A digger's turn in the ground of a large site: a node's height changed by one, a step between the nodes, or the wait for a busy node.</summary>
+    public const string Digs = "digs";
+
+    /// <summary>The digger's last pass: the site starts (its progress word becomes 1) and the digger goes home.</summary>
+    public const string Levelled = "levelled";
+
     /// <summary>The builder's last blow: the building is finished and its flag asks for nothing.</summary>
     public const string BuildingFinished = "building-finished";
 

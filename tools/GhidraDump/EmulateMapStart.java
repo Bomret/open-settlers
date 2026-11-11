@@ -122,13 +122,14 @@
 //                            pass AT the CLICKS run in order, each the click handler's routine on a node: f:x,y the remove click
 //                            0x4615cf (a flag by 0x462153, a building by 0x4617fd, anything else refused), r:x,y the road click
 //                            0x462d88 (road take-down 0x462e1d), p:x,y the flag button 0x442244 (a flag put on a node of a road splits the road: docs/rules/roads.md), b:x,y[,T] the building placement 0x449a63 (object code 2, or the object code of the type T by the size table 0x42d307) after the check, c:x,y only the classification 0x44b6e6 (the class at +0x100 and
-//                            +0x101 of the player), s:0,0 the classification of every tile of the territory, and l:x,y,H the heights of
+//                            +0x101 of the player), s:0,0 the classification of every tile of the territory, v:0,0 the same with the height the
+//                            evaluator leaves (the word at +0x102), and l:x,y,H the heights of
 //                            the node and its six neighbours set to H (the ground a digger leaves a large site). The sound
 //                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
 //                            before that pass, as goods does, with the destination word DEST. A line per click and per pass lists
 //                            what changed: the map bytes of flags, object, link, and the waiting carrier's mark (record B byte 1,
-//                            i=5) (m=x,y:i=old>new), the settlers (s<slot>=, 16
+//                            i=5) (m=x,y:i=old>new), the heights of the nodes (h=x,y:old>new), the settlers (s<slot>=, 16
 //                            bytes), the flag items (f<slot>=, 70 bytes), the building items (b<slot>=, 18 bytes), the storage item
 //                            (st=), the counts of the tables (c=), the total of resource 1 (r1=), and the generator (rng=).
 //   construct:...           remove: (the same arguments and lines) with the phase routine 0x42965c run at the last phase of each
@@ -1466,6 +1467,23 @@ public class EmulateMapStart extends GhidraScript {
         if (map.length() > 0) {
             line.append(" m=").append(map);
         }
+        // h= lists the nodes whose height (the low five bits of byte 1 of record A) changed, as x,y:old>new in decimal: the ground
+        // a digger levels.
+        StringBuilder heights = new StringBuilder();
+        for (int ty = 0; ty < height; ty++) {
+            for (int tx = 0; tx < width; tx++) {
+                int at = ty * 8 * width + tx * 4 + 1;
+                int was = before.map[at] & 0x1f;
+                int is = after.map[at] & 0x1f;
+                if (was != is) {
+                    heights.append(heights.length() == 0 ? "" : ";").append(tx).append(",").append(ty).append(":")
+                            .append(was).append(">").append(is);
+                }
+            }
+        }
+        if (heights.length() > 0) {
+            line.append(" h=").append(heights);
+        }
         line.append(chunks("s", before.settlers, after.settlers, 16));
         line.append(chunks("f", before.flags, after.flags, ITEM_SIZE));
         line.append(chunks("b", before.buildings, after.buildings, 0x12));
@@ -1558,6 +1576,27 @@ public class EmulateMapStart extends GhidraScript {
                     putInt(RECORD + 0x82, player);
                     emu.writeMemory(toAddr(RECORD), new byte[0x100]);
                     putInt(RECORD + 0x82, player);
+                    if (kind.equals("v")) {
+                        // v@0,0 the classification of every tile as s does, with the height the evaluator leaves (the word at +0x102 of
+                        // the player), as "x,y:node/site/height".
+                        StringBuilder verdicts = new StringBuilder();
+                        for (int ty = 0; ty < height; ty++) {
+                            for (int tx = 0; tx < width; tx++) {
+                                putWord(player + 0xfc, tx);
+                                putWord(player + 0xfe, ty);
+                                emu.writeMemory(toAddr(player + 0x100), new byte[4]);
+                                call(0x44b6e6);
+                                int node = emu.readMemory(toAddr(player + 0x100), 1)[0] & 0xff;
+                                if (node != 0) {
+                                    verdicts.append(verdicts.length() == 0 ? "" : ";").append(tx).append(",").append(ty).append(":")
+                                            .append(node).append("/").append(emu.readMemory(toAddr(player + 0x101), 1)[0] & 0xff)
+                                            .append("/").append(getWord(player + 0x102));
+                                }
+                            }
+                        }
+                        println("EMU " + label + " verdicts=" + verdicts);
+                        continue;
+                    }
                     if (kind.equals("s")) {
                         StringBuilder classes = new StringBuilder();
                         for (int ty = 0; ty < height; ty++) {

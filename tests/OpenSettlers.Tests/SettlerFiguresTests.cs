@@ -91,8 +91,27 @@ public sealed class SettlerFiguresTests
         bases[2 * 0x16] = 1100;
         bases[2 * 0x16 + 1] = -1;
 
-        return new SettlerFigureTables(bases, offsets, Sequences(), carried, Adds, HutAdds, Idle(), BuilderAdds);
+        // The digger's rows (0x43fa87): 0x17 for the walk and the dig and 0x18 for a figure byte from 0x80 (made up).
+        bases[2 * 0x17] = 1200;
+        bases[2 * 0x17 + 1] = -1;
+        bases[2 * 0x18] = 1300;
+        bases[2 * 0x18 + 1] = -1;
+
+        return new SettlerFigureTables(
+            bases,
+            offsets,
+            Sequences(),
+            carried,
+            Adds,
+            HutAdds,
+            Idle(),
+            BuilderAdds,
+            digger: DiggerAdds
+        );
     }
+
+    // The adds of the digger's handler (0x43fa87), made up: 0x1700 for a figure byte below 0x80 and 0x1780 from there on.
+    private static readonly FigureAdds DiggerAdds = new(0x1700, 0x1700, 0x1780);
 
     // The waiting carriers' tables: the phase of the column c is 8 * c, the figure word of the index i is i (row 0), and the
     // road directions 0x09 (east and west) move the figure 3 right and 1 up.
@@ -468,6 +487,23 @@ public sealed class SettlerFiguresTests
         // the row 0x16 (base 1100) and the offset 1; no second figure.
         CollectionAssert.AreEqual(new[] { 2853, 3503 }, walk);
         CollectionAssert.AreEqual(new[] { 2951, 3601 }, work);
+    }
+
+    [TestMethod]
+    public void ADiggerWalkingAndAtWorkIsDrawnInTheRowsOfHisHandler()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Digger(int frame, Activity activity) =>
+            new(Job.Digger, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Digger(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var work = figures.Draws(map, [Digger(8, new Digs(15, 10, 6, 1))], 0).Select(d => d.Entry).ToArray();
+
+        // Figure byte 3 in the row 0x17 (base 1200, the constant 0x1700), figure byte 0x81 in the work state: the word 0x1780 + 0x81 =
+        // 0x1801, the row 0x18 (base 1300) and the offset 1; no second figure.
+        CollectionAssert.AreEqual(new[] { 3053, 3703 }, walk);
+        CollectionAssert.AreEqual(new[] { 3151, 3801 }, work);
     }
 
     [TestMethod]

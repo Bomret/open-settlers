@@ -16,6 +16,15 @@ public readonly record struct Job(int Code)
     /// <summary>The carrier, who takes a road and waits on it (<c>docs/rules/carriers.md</c>).</summary>
     public static Job Carrier => new(CarrierCode);
 
+    /// <summary>The number of the digger's job, for a <c>case</c> label.</summary>
+    public const int DiggerCode = 2;
+
+    /// <summary>
+    /// The digger, who levels the ground of a large building site before its builder starts (<c>docs/rules/digging.md</c>). The program's
+    /// request for him (<c>0x42d52a</c>, in the large site's handler <c>0x42d328</c>) names job 2 and the stock word of the tool good 16.
+    /// </summary>
+    public static Job Digger => new(DiggerCode);
+
     /// <summary>The number of the builder's job, for a <c>case</c> label.</summary>
     public const int BuilderCode = 3;
 

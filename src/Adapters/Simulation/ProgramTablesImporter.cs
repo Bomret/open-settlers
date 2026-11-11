@@ -122,6 +122,21 @@ public static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of the builder's handler for any other figure byte below 0x80 (the walk).</summary>
     public const int BuilderWalkAddress = 0x43fb60;
 
+    /// <summary>The handler of the digger's figure (<c>0x43fa87</c>, the target of the stub of job 2).</summary>
+    public const int DiggerHandlerAddress = 0x43fa87;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the digger's handler for a figure byte from 0x80.</summary>
+    public const int DiggerHighAddress = 0x43fade;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the digger's handler for any other figure byte below 0x80 (his walk and his dig).</summary>
+    public const int DiggerWalkAddress = 0x43fae9;
+
+    /// <summary>
+    /// The instructions of the large site's request for a digger (<c>0x42d52a</c>, in <c>0x42d328</c>): the same form as the builder's request
+    /// (<see cref="BuilderRequestAddress"/>).
+    /// </summary>
+    public const int DiggerRequestAddress = 0x42d52a;
+
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
     private static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
@@ -271,7 +286,9 @@ public static class ProgramTablesImporter
             [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             BuilderAdds(exe),
             StonecutterAdds(exe),
-            ForesterAdds(exe)
+            ForesterAdds(exe),
+            WorkerRequest(exe, DiggerRequestAddress),
+            DiggerAdds(exe)
         );
     }
 
@@ -287,6 +304,22 @@ public static class ProgramTablesImporter
         );
 
         return new ForesterFigureAdds(Immediate(exe, ForesterWalkAddress), Immediate(exe, ForesterWorkAddress));
+    }
+
+    // The digger's adds from the immediates of his handler, as the builder's are read: the stub of job 2 must jump to the handler. Every
+    // frame of his work is below 0x80, so the walk's add is the one he is drawn by.
+    private static FigureAdds DiggerAdds(byte[] exe)
+    {
+        var stub = JobStubAddress + JobStubSize * Job.DiggerCode;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(DiggerHandlerAddress - (stub + 5))],
+            "jumps to the digger's handler"
+        );
+        var walk = Immediate(exe, DiggerWalkAddress);
+
+        return new FigureAdds(walk, walk, Immediate(exe, DiggerHighAddress));
     }
 
     // The builder's adds from the immediates of his handler, as the woodcutter's are read: the stub of job 3 must jump to the handler.

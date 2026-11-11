@@ -279,6 +279,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         ("type-one-hut", Job.TypeOneHut),
         ("builder", Job.Builder),
         ("forester", Job.Forester),
+        ("digger", Job.Digger),
     ];
 
     // The kinds of activity a settler is drawn in; one frame each, whatever the heading, step, or frame.
@@ -291,7 +292,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     static int KindOf(SettlerDraw draw) =>
         draw.Activity switch
         {
-            Cuts or CutsStone or Builds or Plants => 2,
+            Cuts or CutsStone or Builds or Plants or Digs => 2,
             Door => 3,
             HandsOver => 4,
             WaitsOffRoad => 5,

@@ -100,8 +100,8 @@ is made at the first building turn after the end (19 passes after it), by a sett
 
 ## The job numbers
 
-The job table of the program has the builder as job 3 (the request above), the digger as job 2 (`0x42d328`, tool good 16), and the castle's own first settler as job 4: the settler that stands by while the castle is built
-(state 10, `0x43f17a`) and carries goods out of the castle. No building asks for job 4. The engine's `Job.Builder` is job 3 and `Job.CastleSettler` job 4.
+The job table of the program has the builder as job 3 (the request above), the digger as job 2 (`0x42d328`, tool good 16, [The digger](digging.md)), and the castle's own first settler as job 4: the settler that stands by while the castle is built
+(state 10, `0x43f17a`) and carries goods out of the castle. No building asks for job 4. The engine's `Job.Digger` is job 2, `Job.Builder` job 3, and `Job.CastleSettler` job 4.
 
 ## Drawing a site
 

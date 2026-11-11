@@ -45,7 +45,15 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 - `0x43faf4`: the builder's figure handler (the adds `0x500` and `0x580`). known from the code
   ([drawing a site](../rules/construction.md#drawing-a-site))
 - `0x42d328`: the handler of the large types under construction: it waits until the ground around the site is levelled (and
-  asks for the digger), then goes on at `0x42d55f`. known ([Materials](../rules/construction-materials.md#the-building-passs-turn-of-a-site))
+  asks for the digger, job 2 with the tool good 16, at `0x42d52a`), then goes on at `0x42d55f`. known
+  ([the digger](../rules/digging.md#the-large-site-waits-for-the-ground))
+- `0x43cd9d`, `0x43e45e`: the digger's start routine (job 2) and state 8: sixteen passes over the site's node and its six neighbours,
+  each changing by one the nodes that stand at the height the pass names, then the site starts. known
+  ([the digger](../rules/digging.md#state-8-0x43e45e))
+- `0x43fa87`: the digger's figure handler (the adds `0x300` and `0x380`). known from the code
+  ([the digger](../rules/digging.md#the-diggers-figure))
+- `0x44c151` to `0x44c204`, in `0x44bd72`: the evaluator's third-ring term for a large site that waits for its digger. known
+  ([the digger](../rules/digging.md#a-site-that-waits-in-the-build-site-evaluator))
 - `0x42965c`, `0x42a313`, `0x42a35d`, `0x42a3a7`: the phase routine and its three orders of steps, by which the castle hands its
   goods out to the flags whose requests rank highest; the castle's first settler carries each good out and lays it on the castle's
   flag. known for the routine and its order, the carrying out is read from the emulator's runs only
@@ -70,6 +78,5 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 - The stonecutter, the forester, and the sawmill are the building types 4, 9, and 0x11 (the handlers
   `0x42d987`, `0x42d9c9`, `0x42da0b` of the jump table `0x42cd1d`; the stonecutter's name is known: his work cuts
   the stone heaps and lays the stone on the flag, [Stonecutting](../rules/stonecutting.md); the forester's name is known: his work puts
-  the saplings on the map, [Forestry](../rules/forestry.md); the sawmill's name is inferred, confirmed by the slice that builds its work). The builder is job 3 (known, [the builder](../rules/construction.md)).
-  Where is the digger (job 2, the large site's request at `0x42d328`)? Start from the jump tables `0x42fca1` (settler states) and
-  `0x43ca54` (job start routines): the entry of job 2 is `0x43cd9d`. `0x4312ed` is `Flag_ReleaseGoods`, no table of jobs.
+  the saplings on the map, [Forestry](../rules/forestry.md); the sawmill's name is inferred, confirmed by the slice that builds its work). The builder is job 3 (known, [the builder](../rules/construction.md))
+  and the digger is job 2 (known, [the digger](../rules/digging.md)). `0x4312ed` is `Flag_ReleaseGoods`, no table of jobs.

@@ -64,7 +64,8 @@ public sealed class LayoutSettlersTests
         WorkerRequest? builderRequest = null,
         ushort[]? materialOrder = null,
         ushort[]? blowSteps = null,
-        ushort stepTime = 100
+        ushort stepTime = 100,
+        WorkerRequest? diggerRequest = null
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -99,7 +100,8 @@ public sealed class LayoutSettlersTests
             workers: workers,
             builderRequest: builderRequest,
             materialOrder: materialOrder,
-            blowSteps: blowSteps
+            blowSteps: blowSteps,
+            diggerRequest: diggerRequest
         );
     }
 

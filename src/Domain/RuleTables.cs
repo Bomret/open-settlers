@@ -129,7 +129,9 @@ public sealed class RuleTables
         ushort[]? blowSteps = null,
         BuilderFigureAdds? builderFigureAdds = null,
         FigureAdds? stonecutterFigureAdds = null,
-        ForesterFigureAdds? foresterFigureAdds = null
+        ForesterFigureAdds? foresterFigureAdds = null,
+        WorkerRequest? diggerRequest = null,
+        FigureAdds? diggerFigureAdds = null
     )
     {
         if (
@@ -183,6 +185,9 @@ public sealed class RuleTables
         _materialOrder = materialOrder ?? new ushort[BuildingTypeCount];
         _blowSteps = blowSteps ?? new ushort[2 * BuildingTypeCount];
         BuilderFigureAdds = builderFigureAdds ?? default;
+        // stand-in: a table a test does not give makes the digger a settler of the digger's job with no tool, drawn in the carrier's row.
+        DiggerRequest = diggerRequest ?? new WorkerRequest(Job.Digger, Good.None);
+        DiggerFigureAdds = diggerFigureAdds ?? default;
     }
 
     private static WorkerRequest?[] WoodcutterOnly()
@@ -364,6 +369,18 @@ public sealed class RuleTables
     /// stock to become one.
     /// </summary>
     public WorkerRequest BuilderRequest { get; }
+
+    /// <summary>
+    /// What a large building site whose ground is not level asks for as its digger (<c>0x42d52a</c>, in <c>0x42d328</c>): the digger's job
+    /// and the tool good a jobless settler takes from the stock to become one.
+    /// </summary>
+    public WorkerRequest DiggerRequest { get; }
+
+    /// <summary>
+    /// What the digger's figure handler adds to the figure byte (<c>0x43fa87</c>): <see cref="FigureAdds.Walk"/> for a figure byte below 0x80,
+    /// which every frame of his work is, and <see cref="FigureAdds.Cutting"/> for one from 0x80 (no state of his sets one).
+    /// </summary>
+    public FigureAdds DiggerFigureAdds { get; }
 
     /// <summary>
     /// What a finished building of <paramref name="type"/> asks for as its worker (the handlers of the jump table <c>0x42cd1d</c>); null for

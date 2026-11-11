@@ -364,6 +364,7 @@ JOBS = {
     "type-one-hut": (170, 110, 40),
     "builder": (190, 90, 60),
     "forester": (90, 160, 80),
+    "digger": (120, 90, 50),
 }
 STONE = (185, 185, 190)
 KINDS = ("walks", "carries", "cuts", "door", "hands-over", "waits")

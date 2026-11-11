@@ -56,6 +56,9 @@ internal static class ConstructionTables
     public static readonly Good ForesterTool = new(17);
     public static readonly Good BuilderTool = new(18);
 
+    // The made-up digger's tool: the good 19.
+    public static readonly Good DiggerTool = new(19);
+
     // The made-up workers: the woodcutter's hut asks for the woodcutter's job with no tool, the forester's for job 8 with a tool.
     public static WorkerRequest?[] Workers()
     {
@@ -112,6 +115,7 @@ internal static class ConstructionTables
             buildingNeeds: needs ?? Needs(),
             goodClasses: Classes(),
             distribution: Orders(),
-            plankRankBase: plankRankBase
+            plankRankBase: plankRankBase,
+            diggerRequest: new WorkerRequest(Job.Digger, DiggerTool)
         );
 }

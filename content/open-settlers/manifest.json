@@ -1629,5 +1629,47 @@
       -7,
       -21
     ]
+  },
+  "settler/digger/walks": {
+    "image": "settler/digger-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/carries": {
+    "image": "settler/digger-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/cuts": {
+    "image": "settler/digger-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/door": {
+    "image": "settler/digger-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/hands-over": {
+    "image": "settler/digger-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/digger/waits": {
+    "image": "settler/digger-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
   }
 }

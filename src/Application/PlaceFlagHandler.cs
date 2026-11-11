@@ -11,7 +11,8 @@ public sealed class PlaceFlagHandler(
     FlagTable flags,
     GameHistory history,
     Causes causes,
-    Removal removal
+    Removal removal,
+    BuildingTable? buildings = null
 ) : ICommandHandler
 {
     /// <inheritdoc/>
@@ -26,7 +27,7 @@ public sealed class PlaceFlagHandler(
             return false;
         }
 
-        var site = BuildSite.Evaluate(tables, map, x, y, 0, hasCastle: true);
+        var site = BuildSite.Evaluate(tables, map, x, y, 0, hasCastle: true, buildings);
         if (!site.AllowsFlag)
         {
             return false;

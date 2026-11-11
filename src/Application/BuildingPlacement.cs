@@ -51,7 +51,9 @@ public sealed class BuildingPlacement(
         var flagX = (x + 1) & (width - 1);
         var flagY = (y + 1) & (height - 1);
         var flag = flags.SlotAt(flagX, flagY);
-        var site = castle.Castle is null ? default : BuildSite.Evaluate(tables, map, x, y, 0, hasCastle: true);
+        var site = castle.Castle is null
+            ? default
+            : BuildSite.Evaluate(tables, map, x, y, 0, hasCastle: true, buildings);
         // A small type needs the site of a small or a large building (3 or 4), a large type the site of a large one (4) (the
         // size table 0x42d307, as 0x42cf9d reads it). **Inferred:** the building takes either the flag standing south-east of
         // it (node state 5), a road's bits on that node (6), or nothing on or around it (7); the flag button takes the same
