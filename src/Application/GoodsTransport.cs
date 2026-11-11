@@ -213,21 +213,10 @@ public sealed class GoodsTransport(
     /// </summary>
     public void ReleaseRequest(Good good, int? destination)
     {
-        var kind = movement.Tables.FillCounterOf(good);
-        if (
-            kind == FillCounter.None
-            || destination is not { } flag
-            || buildings?.OfFlag(flag) is not { } building
-            || (
-                !building.Constructing
-                && (building.Type == BuildingType.Castle || building.Type == BuildingType.Storehouse)
-            )
-        )
+        if (destination is { } flag)
         {
-            return;
+            buildings?.CountOneLess(flag, movement.Tables.FillCounterOf(good));
         }
-
-        building.SetFill(kind, building.FillOf(kind) - 1);
     }
 
     // 0x45d3ea: the search from a flag over the roads that hold a carrier (from north to east) for

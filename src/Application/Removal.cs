@@ -516,21 +516,13 @@ public sealed class Removal(
             Map.Resource1Total--;
         }
 
-        var kind = movement.Tables.FillCounterOf(good);
-        if (kind == FillCounter.None || destination is not { } flag || buildings.OfFlag(flag) is not { } building)
-        {
-            return;
-        }
-
         if (
-            !building.Constructing && (building.Type == BuildingType.Castle || building.Type == BuildingType.Storehouse)
+            destination is { } flag
+            && buildings.CountOneLess(flag, movement.Tables.FillCounterOf(good)) is { } building
         )
         {
-            return;
+            TouchBuilding(building, EventType.CountLost);
         }
-
-        building.SetFill(kind, building.FillOf(kind) - 1);
-        TouchBuilding(building, EventType.CountLost);
     }
 
     private sealed record Walked(int Steps, List<int> Settlers, int Far, int FarDirection);
