@@ -47,6 +47,7 @@ public sealed class ProgramTablesTests
 
         WriteFigureRoutines(exe);
         WriteConstructionTables(exe);
+        WriteWorkerTables(exe);
         fill(exe);
 
         return exe;
@@ -76,6 +77,37 @@ public sealed class ProgramTablesTests
             ProgramTablesImporter.PlankRankAddress,
             [0x66, 0xb8, 0x34, 0x92, 0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x48, 0x01, 0x00, 0x00]
         );
+    }
+
+    // The handlers that ask for a worker, made up: each loads a job into [edi] and a tool word into [edi+0x18]; the builder's asks for
+    // the job 7 and the tool word 0x30, the building of the type t for the job t + 10 and the tool word 2 * (t + 3) (none for the
+    // forester). The builder's order of materials and steps of blows are made up: the order word of the type t has the bit t % 5 set,
+    // and its steps are 0x100 * (2t + 1) and one more.
+    private static void WriteWorkerTables(byte[] exe)
+    {
+        void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
+
+        void Request(int address, int job, int tool) =>
+            Write(address, [0xb8, (byte)job, 0, 0, 0, 0x89, 0x07, 0xb8, (byte)tool, 0, 0, 0, 0x89, 0x47, 0x18]);
+
+        Request(ProgramTablesImporter.BuilderRequestAddress, 7, 0x30);
+        foreach (var (type, address) in ProgramTablesImporter.WorkerRequestAddresses)
+        {
+            Request(address, type.Code + 10, type == BuildingType.Forester ? 0 : 2 * (type.Code + 3));
+        }
+
+        for (var type = 0; type < RuleTables.BuildingTypeCount; type++)
+        {
+            BitConverter
+                .GetBytes((ushort)(1 << (type % 5)))
+                .CopyTo(exe, FileOffset(ProgramTablesImporter.MaterialOrderAddress) + 2 * type);
+            BitConverter
+                .GetBytes((ushort)(0x100 * (2 * type + 1)))
+                .CopyTo(exe, FileOffset(ProgramTablesImporter.BlowStepAddress) + 4 * type);
+            BitConverter
+                .GetBytes((ushort)(0x100 * (2 * type + 1) + 1))
+                .CopyTo(exe, FileOffset(ProgramTablesImporter.BlowStepAddress) + 4 * type + 2);
+        }
     }
 
     // The instructions of the draw routine and the woodcutter's handler that Read checks: the loads of the two tables,
@@ -495,6 +527,68 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(0x92, tables.PlankRankBase);
+    }
+
+    [TestMethod]
+    public void TheJobAndToolEachBuildingAsksForAreReadFromItsHandler()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(new WorkerRequest(new Job(7), new Good(0x18)), tables.BuilderRequest);
+        Assert.AreEqual(new WorkerRequest(new Job(12), new Good(5)), tables.WorkerOf(BuildingType.Woodcutter));
+        Assert.AreEqual(new WorkerRequest(new Job(14), new Good(7)), tables.WorkerOf(BuildingType.Stonecutter));
+        Assert.AreEqual(new WorkerRequest(new Job(19), Good.None), tables.WorkerOf(BuildingType.Forester));
+        Assert.AreEqual(new WorkerRequest(new Job(27), new Good(20)), tables.WorkerOf(BuildingType.Sawmill));
+        Assert.IsNull(tables.WorkerOf(BuildingType.Castle), "the castle's handler asks for no worker of this kind");
+    }
+
+    [TestMethod]
+    public void AHandlerThatDoesNotLoadItsJobIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.BuilderRequestAddress)] = 0x31);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "worker");
+    }
+
+    [TestMethod]
+    public void TheBuildersOrderOfMaterialsAndStepsOfBlowsAreReadForEachType()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        // The made-up order word of type t has the bit t % 5 set: a set bit means a stone.
+        Assert.IsTrue(tables.StoneAt(BuildingType.Woodcutter, 2));
+        Assert.IsFalse(tables.StoneAt(BuildingType.Woodcutter, 0));
+        Assert.IsTrue(tables.StoneAt(BuildingType.Forester, 4));
+        // The made-up steps of type t are 0x100 * (2t + 1) before the progress word's top bit is set and one more after.
+        Assert.AreEqual(0x500, tables.BlowStep(BuildingType.Woodcutter, late: false));
+        Assert.AreEqual(0x501, tables.BlowStep(BuildingType.Woodcutter, late: true));
+        Assert.AreEqual(0x1300, tables.BlowStep(BuildingType.Forester, late: false));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheWorkerRequestsAndTheBuildersTablesOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:42d5fc:15, peek:42d952:15, peek:42d994:15, peek:42d9d6:15, peek:42da18:15 (the handlers' job and tool words; the tool
+        // word halved is the good whose stock word lies at 4 plus the word in the storage item), peek:43f0ba:48 (the order words), and
+        // peek:43f0fa:96 (the steps).
+        Assert.AreEqual(new WorkerRequest(Job.Builder, new Good(17)), tables.BuilderRequest);
+        Assert.AreEqual(new WorkerRequest(Job.Woodcutter, new Good(21)), tables.WorkerOf(BuildingType.Woodcutter));
+        Assert.AreEqual(new WorkerRequest(new Job(7), new Good(23)), tables.WorkerOf(BuildingType.Stonecutter));
+        Assert.AreEqual(new WorkerRequest(new Job(8), Good.None), tables.WorkerOf(BuildingType.Forester));
+        Assert.AreEqual(new WorkerRequest(new Job(6), new Good(22)), tables.WorkerOf(BuildingType.Sawmill));
+        Assert.IsFalse(tables.StoneAt(BuildingType.Woodcutter, 0));
+        Assert.IsFalse(tables.StoneAt(BuildingType.Sawmill, 0));
+        Assert.IsFalse(tables.StoneAt(BuildingType.Sawmill, 1));
+        Assert.IsTrue(tables.StoneAt(BuildingType.Sawmill, 2));
+        Assert.IsTrue(tables.StoneAt(BuildingType.Sawmill, 3));
+        Assert.AreEqual(0x1000, tables.BlowStep(BuildingType.Forester, late: false));
+        Assert.AreEqual(0x1000, tables.BlowStep(BuildingType.Forester, late: true));
+        Assert.AreEqual(0x0800, tables.BlowStep(BuildingType.Sawmill, late: false));
+        Assert.AreEqual(0x0556, tables.BlowStep(BuildingType.Sawmill, late: true));
     }
 
     [TestMethod]
