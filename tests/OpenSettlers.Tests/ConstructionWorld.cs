@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 // to 18,6 and from there to 19,4, as HutTests lays them. A building at 17,5 has its flag at 18,6, which a road joins to the castle.
 internal static class ConstructionWorld
 {
-    public static Game Create(RuleTables? tables = null)
+    public static Game Create(RuleTables? tables = null, bool handsOutGoods = false)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < map.Count; index++)
@@ -20,7 +20,7 @@ internal static class ConstructionWorld
             }
         }
 
-        var game = GameFactory.Create(tables ?? ConstructionTables.Tables(), map);
+        var game = GameFactory.Create(tables ?? ConstructionTables.Tables(), map, handsOutGoods: handsOutGoods);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
