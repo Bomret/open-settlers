@@ -41,6 +41,9 @@ public sealed class SettlerFiguresTests
     // way back with a load, 0x13 and 0x14 for a figure byte from 0x80.
     private static readonly HutFigureAdds HutAdds = new(0x1100, 0x1200, 0x1280, 0x1380);
 
+    // The adds of the builder's handler (0x43faf4), made up: 0x1500 for the walk and 0x1580 for a figure byte from 0x80.
+    private static readonly BuilderFigureAdds BuilderAdds = new(0x1500, 0x1580);
+
     // The woodcutter: the figure base 100 and the second base 50 in the row 0x0b, 200 and none in the row 0x10, 300 and
     // none in the row 0x0f; each figure byte adds its own number and, to the second, 1. The carrier's row 0: 100, none.
     private static SettlerPair Figures(sbyte[]? frameRows = null) =>
@@ -82,7 +85,13 @@ public sealed class SettlerFiguresTests
         bases[2 * 2] = 400;
         bases[2 * 2 + 1] = -1;
 
-        return new SettlerFigureTables(bases, offsets, Sequences(), carried, Adds, HutAdds, Idle());
+        // The builder's rows (0x43faf4): 0x15 for the walk and 0x16 for a figure byte from 0x80 (made up).
+        bases[2 * 0x15] = 1000;
+        bases[2 * 0x15 + 1] = -1;
+        bases[2 * 0x16] = 1100;
+        bases[2 * 0x16 + 1] = -1;
+
+        return new SettlerFigureTables(bases, offsets, Sequences(), carried, Adds, HutAdds, Idle(), BuilderAdds);
     }
 
     // The waiting carriers' tables: the phase of the column c is 8 * c, the figure word of the index i is i (row 0), and the
@@ -442,6 +451,26 @@ public sealed class SettlerFiguresTests
             new[] { 1953, 2603, 3201 },
             Figures().Draws(Map(), [home], 0).Select(d => d.Entry).ToArray()
         );
+    }
+
+    [TestMethod]
+    public void ABuilderWalkingAndAtWorkIsDrawnInTheRowsOfHisHandler()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Builder(int frame, Activity activity) =>
+            new(Job.Builder, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Builder(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var work = figures
+            .Draws(map, [Builder(8, new Builds(1, true, 0, false, 8))], 0)
+            .Select(d => d.Entry)
+            .ToArray();
+
+        // Figure byte 3 in the row 0x15 (base 1000, the walk's constant 0x1500), figure byte 0x81 at work: the word 0x1580 + 0x81 = 0x1601,
+        // the row 0x16 (base 1100) and the offset 1; no second figure.
+        CollectionAssert.AreEqual(new[] { 2853, 3503 }, walk);
+        CollectionAssert.AreEqual(new[] { 2951, 3601 }, work);
     }
 
     [TestMethod]

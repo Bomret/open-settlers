@@ -126,7 +126,8 @@ public sealed class RuleTables
         WorkerRequest?[]? workers = null,
         WorkerRequest? builderRequest = null,
         ushort[]? materialOrder = null,
-        ushort[]? blowSteps = null
+        ushort[]? blowSteps = null,
+        BuilderFigureAdds? builderFigureAdds = null
     )
     {
         if (
@@ -177,6 +178,7 @@ public sealed class RuleTables
         // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
         _materialOrder = materialOrder ?? new ushort[BuildingTypeCount];
         _blowSteps = blowSteps ?? new ushort[2 * BuildingTypeCount];
+        BuilderFigureAdds = builderFigureAdds ?? default;
     }
 
     private static WorkerRequest?[] WoodcutterOnly()
@@ -344,6 +346,9 @@ public sealed class RuleTables
     /// </summary>
     public byte PlankRankBase { get; }
 
+    /// <summary>What the builder's figure handler adds to the figure byte (<c>0x43faf4</c>); all 0 draws him in the carrier's row.</summary>
+    public BuilderFigureAdds BuilderFigureAdds { get; }
+
     /// <summary>
     /// What a building site asks for as its builder (<c>0x42d5fc</c>): the builder's job and the tool good a jobless settler takes from the
     /// stock to become one.
@@ -405,3 +410,9 @@ public readonly record struct FigureAdds(ushort Walk, ushort Carrying, ushort Cu
 /// (<paramref name="HighFacing"/> where the settler's heading, byte 14, is 1).
 /// </summary>
 public readonly record struct HutFigureAdds(ushort Walk, ushort Carrying, ushort High, ushort HighFacing);
+
+/// <summary>
+/// What the builder's figure handler (<c>0x43faf4</c>) adds to the figure byte: <paramref name="Walk"/> for a byte below 0x80,
+/// <paramref name="Work"/> for one from 0x80 (the blows).
+/// </summary>
+public readonly record struct BuilderFigureAdds(ushort Walk, ushort Work);

@@ -1140,6 +1140,20 @@
       -19
     ]
   },
+  "building/stage-small": {
+    "image": "building/stage-small.png",
+    "anchor": [
+      -14,
+      -29
+    ]
+  },
+  "building/stage-large": {
+    "image": "building/stage-large.png",
+    "anchor": [
+      -22,
+      -35
+    ]
+  },
   "good/0": {
     "image": "good/0.png",
     "anchor": [
@@ -1485,6 +1499,48 @@
   },
   "settler/type-one-hut/waits": {
     "image": "settler/type-one-hut-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/walks": {
+    "image": "settler/builder-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/carries": {
+    "image": "settler/builder-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/cuts": {
+    "image": "settler/builder-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/door": {
+    "image": "settler/builder-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/hands-over": {
+    "image": "settler/builder-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/builder/waits": {
+    "image": "settler/builder-waits.png",
     "anchor": [
       -7,
       -21

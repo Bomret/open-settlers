@@ -3,7 +3,7 @@
 
 The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
 flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the building
-sites that have not started, the goods, and one pose per job and kind of activity for the
+sites that have not started with the scaffolds they grow, the goods, and one pose per job and kind of activity for the
 settlers, all drawn here from nothing but numbers. It holds nothing derived from an install (ADR 0015). A settler's
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
@@ -302,6 +302,22 @@ def site(large):
     return c, (-(width // 2), -19)
 
 
+def scaffold(large):
+    """The scaffold of a building under construction, the size of the finished building of its kind (34 by 30, or 52 by 36 for a
+    large one): wooden posts and beams that a site grows from the bottom up as its progress rises."""
+    width, height = (52, 36) if large else (34, 30)
+    c = Canvas(width, height)
+    left, right = 4, width - 12
+    c.rect(left, 8, 2, height - 8, WOOD)
+    c.rect(right, 8, 2, height - 8, WOOD)
+    c.rect((left + right) // 2, 8, 2, height - 8, WOOD)
+    for beam in (10, 18, 26):
+        c.rect(left, beam, right - left + 2, 2, shade(WOOD, 30))
+    c.line(left, height - 2, right, 12, WOOD)
+    c.outline(INK)
+    return c, ((-22, -35) if large else (-14, -29))
+
+
 def good(code):
     """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar."""
     c = Canvas(8, 8)
@@ -316,7 +332,12 @@ def good(code):
     return c, (-4, -7)
 
 
-JOBS = {"carrier": (60, 100, 170), "woodcutter": (60, 130, 60), "type-one-hut": (170, 110, 40)}
+JOBS = {
+    "carrier": (60, 100, 170),
+    "woodcutter": (60, 130, 60),
+    "type-one-hut": (170, 110, 40),
+    "builder": (190, 90, 60),
+}
 KINDS = ("walks", "carries", "cuts", "door", "hands-over", "waits")
 
 
@@ -405,6 +426,8 @@ def main():
     add("building/sawmill", "building/sawmill.png", sawmill())
     add("building/site-small", "building/site-small.png", site(False))
     add("building/site-large", "building/site-large.png", site(True))
+    add("building/stage-small", "building/stage-small.png", scaffold(False))
+    add("building/stage-large", "building/stage-large.png", scaffold(True))
     for code in range(32):
         add(f"good/{code}", f"good/{code}.png", good(code))
     for job, color in JOBS.items():

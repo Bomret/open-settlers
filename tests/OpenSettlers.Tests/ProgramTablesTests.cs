@@ -137,6 +137,13 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.TypeOneHutCarryingAddress, 0x2f00);
         Add(ProgramTablesImporter.TypeOneHutHighAddress, 0x2c80);
         Add(ProgramTablesImporter.TypeOneHutHighFacingAddress, 0x2d80);
+        var builderStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.BuilderCode;
+        Write(
+            builderStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.BuilderHandlerAddress - (builderStub + 5))]
+        );
+        Add(ProgramTablesImporter.BuilderWalkAddress, 0x1500);
+        Add(ProgramTablesImporter.BuilderWorkAddress, 0x1580);
     }
 
     private static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -564,6 +571,26 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(0x500, tables.BlowStep(BuildingType.Woodcutter, late: false));
         Assert.AreEqual(0x501, tables.BlowStep(BuildingType.Woodcutter, late: true));
         Assert.AreEqual(0x1300, tables.BlowStep(BuildingType.Forester, late: false));
+    }
+
+    [TestMethod]
+    public void TheBuildersFigureAddsAreReadFromItsHandlerAndItsStubIsChecked()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+        Assert.AreEqual(new BuilderFigureAdds(0x1500, 0x1580), tables.BuilderFigureAdds);
+
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.BuilderCode;
+        var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
+
+        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheBuildersFigureAddsOfTheInstallMatchTheEmulator()
+    {
+        // peek:43faf4:120 (the handler: add word [edi+8], 0x580 at 0x43fb55 and 0x500 at 0x43fb60).
+        Assert.AreEqual(new BuilderFigureAdds(0x500, 0x580), TestProgram.Tables().BuilderFigureAdds);
     }
 
     [TestMethod]

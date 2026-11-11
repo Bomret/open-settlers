@@ -47,6 +47,9 @@ public sealed class OpenSettlersSource : IGraphicsSource
     // The figure of a job and kind in a player's colour, one instance per job, kind, and colour.
     readonly Dictionary<(int Frame, int Colour), ObjectDrawing> _marked = [];
 
+    // The drawings of the building sites by type and progress word.
+    readonly Dictionary<(BuildingType Type, ushort Progress), ObjectDrawing?> _sites = [];
+
     OpenSettlersSource(
         ObjectImage[] terrain,
         ObjectImage[] roads,
@@ -120,12 +123,35 @@ public sealed class OpenSettlersSource : IGraphicsSource
         (BuildingType.Sawmill, SawmillKey),
     ];
 
+    /// <summary>The manifest key of the scaffold a small building's site grows as its progress rises (the stage object 186 of the program).</summary>
+    public const string StageSmallKey = "building/stage-small";
+
+    /// <summary>The manifest key of the scaffold a large building's site grows (the stage object 181 of the program).</summary>
+    public const string StageLargeKey = "building/stage-large";
+
     static readonly string[] BuildingKeys =
     [
         .. FinishedKeys.Select(finished => finished.Key),
         SiteSmallKey,
         SiteLargeKey,
+        StageSmallKey,
+        StageLargeKey,
     ];
+
+    // The art of a layer of a building site (SiteStages): the ground and the base of a site, the scaffold of the size of the type's
+    // building, and the finished building.
+    ObjectDrawing? SiteLayer(SiteLayer layer, BuildingType type) =>
+        layer switch
+        {
+            MapView.SiteLayer.Ground => _buildings[SiteLargeKey],
+            MapView.SiteLayer.Base => _buildings[SiteSmallKey],
+            MapView.SiteLayer.Stage when ObjectSprites.StageEntry(type) is { } entry =>
+                _buildings[entry == ObjectSprites.ScaffoldLargeEntry ? StageLargeKey : StageSmallKey],
+            MapView.SiteLayer.Finished => FinishedKeys.FirstOrDefault(finished => finished.Type == type) is { Key: not null } known
+                ? _buildings[known.Key]
+                : null,
+            _ => null,
+        };
 
     /// <summary>The number of goods the set draws: a good's low 5 bits select one.</summary>
     public const int GoodCount = 32;
@@ -247,6 +273,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         ("carrier", Job.Carrier),
         ("woodcutter", Job.Woodcutter),
         ("type-one-hut", Job.TypeOneHut),
+        ("builder", Job.Builder),
     ];
 
     // The kinds of activity a settler is drawn in; one frame each, whatever the heading, step, or frame.
@@ -259,7 +286,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     static int KindOf(SettlerDraw draw) =>
         draw.Activity switch
         {
-            Cuts => 2,
+            Cuts or Builds => 2,
             Door => 3,
             HandsOver => 4,
             WaitsOffRoad => 5,
@@ -377,10 +404,22 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(BuildingDraw draw) =>
-        draw.SiteProgress is { } progress ? _buildings[progress == 0 ? SiteLargeKey : SiteSmallKey]
+        draw.SiteProgress is { } progress ? Site(draw.Type, progress)
         : FinishedKeys.FirstOrDefault(finished => finished.Type == draw.Type) is { Key: not null } known
             ? _buildings[known.Key]
         : null;
+
+    // The drawing of a site, made once for each type and progress word (a builder's blows give a few dozen words a building).
+    ObjectDrawing? Site(BuildingType type, ushort progress)
+    {
+        if (!_sites.TryGetValue((type, progress), out var cached))
+        {
+            cached = SiteStages.Compose(progress, layer => SiteLayer(layer, type));
+            _sites[(type, progress)] = cached;
+        }
+
+        return cached;
+    }
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(GoodAtFlag draw) => _goods[draw.Good.Code & (GoodCount - 1)];

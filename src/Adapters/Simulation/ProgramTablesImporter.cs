@@ -89,6 +89,15 @@ public static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
     public const int TypeOneHutWalkAddress = 0x43ff4b;
 
+    /// <summary>The handler of the builder's figure (<c>0x43faf4</c>, the target of the stub of job 3).</summary>
+    public const int BuilderHandlerAddress = 0x43faf4;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the builder's handler for a figure byte from 0x80 (the blows).</summary>
+    public const int BuilderWorkAddress = 0x43fb55;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the builder's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int BuilderWalkAddress = 0x43fb60;
+
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
     private static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
@@ -241,8 +250,23 @@ public static class ProgramTablesImporter
             ],
             [
                 .. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word),
-            ]
+            ],
+            BuilderAdds(exe)
         );
+    }
+
+    // The builder's adds from the immediates of his handler, as the woodcutter's are read: the stub of job 3 must jump to the handler.
+    private static BuilderFigureAdds BuilderAdds(byte[] exe)
+    {
+        var stub = JobStubAddress + JobStubSize * Job.BuilderCode;
+        Expect(
+            exe,
+            stub,
+            [0xe9, .. BitConverter.GetBytes(BuilderHandlerAddress - (stub + 5))],
+            "jumps to the builder's handler"
+        );
+
+        return new BuilderFigureAdds(Immediate(exe, BuilderWalkAddress), Immediate(exe, BuilderWorkAddress));
     }
 
     // The worker each of the four types asks for, from the instructions of its handler.
