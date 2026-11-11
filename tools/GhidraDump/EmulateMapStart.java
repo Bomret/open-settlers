@@ -119,7 +119,7 @@
 //                            written, as for goods, with the prio= start line): a castle at cx,cy, the
 //                            flags, the roads, and the finished huts HUTS (fx,fy,T;..., the building of type T north-west of
 //                            the flag fx,fy, with the marks the castle leaves as wood does). The passes of wood run; before the
-//                            pass AT the CLICKS run in order, each the click handler's routine on a node: f:x,y the remove click
+//                            pass AT (a click written N=click, as 600=f@17,5, before the pass N) the CLICKS run in order, each the click handler's routine on a node: f:x,y the remove click
 //                            0x4615cf (a flag by 0x462153, a building by 0x4617fd, anything else refused), r:x,y the road click
 //                            0x462d88 (road take-down 0x462e1d), p:x,y the flag button 0x442244 (a flag put on a node of a road splits the road: docs/rules/roads.md), b:x,y[,T] the building placement 0x449a63 (object code 2, or the object code of the type T by the size table 0x42d307) after the check, c:x,y only the classification 0x44b6e6 (the class at +0x100 and
 //                            +0x101 of the player), s:0,0 the classification of every tile of the territory, v:0,0 the same with the height the
@@ -1565,8 +1565,15 @@ public class EmulateMapStart extends GhidraScript {
         println("EMU " + label + " prio=" + hex(getInt(STATE + 0x64) - 0x55, 32));
         int clock = 0;
         for (int pass = 0; pass < passes; pass++) {
-            if (pass == at) {
-                for (String click : parts[9].split(";")) {
+            if (pass == at || parts[9].contains("=")) {
+                for (String spec : parts[9].split(";")) {
+                    // A click written PASS=click runs before that pass instead of before AT.
+                    int when = spec.contains("=") ? Integer.parseInt(spec.substring(0, spec.indexOf('='))) : at;
+                    if (when != pass) {
+                        continue;
+                    }
+
+                    String click = spec.substring(spec.indexOf('=') + 1);
                     String kind = click.substring(0, 1);
                     String[] xy = click.substring(2).split(",");
                     int x = Integer.parseInt(xy[0]);

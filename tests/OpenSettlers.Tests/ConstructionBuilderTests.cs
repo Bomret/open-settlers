@@ -135,7 +135,7 @@ public sealed class ConstructionBuilderTests
 
     // The settler's 16 bytes as the original's item holds them. The slots the item names (a flag or a building) are one higher than the
     // engine's, the dummies of the original's tables.
-    private static string Settler(Settler settler, int width)
+    internal static string Settler(Settler settler, int width)
     {
         var bytes = Convert.FromHexString(WorkerWalkTests.Hex(settler, width));
         var slot = settler.Activity switch
