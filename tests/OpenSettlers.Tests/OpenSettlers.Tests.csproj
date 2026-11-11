@@ -39,6 +39,7 @@
     <None Include="wood-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="stone-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="saw-walks.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="saw-removals.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="flag-goods.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="home-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />

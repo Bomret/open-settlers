@@ -1231,7 +1231,8 @@ public class EmulateMapStart extends GhidraScript {
         }
         emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x40)});
         putWord(layerA + layerB + node, slot);
-        emu.writeMemory(toAddr(layerA + node + 3), new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | 2)});
+        // The object code of the building: 2 for a small building, 3 for a large one (the sawmill, size table 0x42d307).
+        emu.writeMemory(toAddr(layerA + node + 3), new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | (type == 17 ? 3 : 2))});
         if (wood) {
             // The marks the castle's placement leaves at its node and its flag (docs/rules/settlers.md): the woodcutter's
             // walk avoids a node marked 0x40, so the hut's node is one it may not step onto. **Inferred:** these two writes
@@ -1556,7 +1557,7 @@ public class EmulateMapStart extends GhidraScript {
                 emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x40)});
                 putWord(layerA + layerB + node, slot);
                 emu.writeMemory(toAddr(layerA + node + 3),
-                        new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | 2)});
+                        new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | (type == 17 ? 3 : 2))});
                 emu.writeMemory(toAddr(layerA + node),
                         new byte[] {(byte) (emu.readMemory(toAddr(layerA + node), 1)[0] | 0x42)});
                 emu.writeMemory(toAddr(layerA + fnode),
