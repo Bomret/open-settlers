@@ -30,6 +30,9 @@ public enum MapObjectKind
     /// <summary>Codes 0x5d to 0x66: a tree falling under the axe, in the steps of its cut.</summary>
     FallingTree,
 
+    /// <summary>Codes 0x67 and 0x68: a small sapling a forester plants, which the object pass grows into a tree (<c>docs/rules/forestry.md</c>).</summary>
+    Sapling,
+
     /// <summary>A code the engine has no name for: a stone, a plant, or a code not recovered yet.</summary>
     Other,
 }
@@ -62,6 +65,25 @@ public readonly record struct MapObject(byte Code)
 
     /// <summary>The object code after the last falling tree.</summary>
     public const int EndFallingCode = 0x67;
+
+    /// <summary>The object code of the first sapling, the one that grows into the trees 0x10 to 0x17 (<c>0x4290d5</c>).</summary>
+    public const int SaplingCode = 0x67;
+
+    /// <summary>The object code of the second sapling, the one that grows into the trees 8 to 0xf (<c>0x42910f</c>).</summary>
+    public const int SecondSaplingCode = 0x68;
+
+    /// <summary>The first sapling.</summary>
+    public static MapObject Sapling => new(SaplingCode);
+
+    /// <summary>The second sapling.</summary>
+    public static MapObject SecondSapling => new(SecondSaplingCode);
+
+    /// <summary>
+    /// The tree a sapling grows into where the object pass's draw allows it (<c>0x4290d5</c>, <c>0x42910f</c>): the sapling's own
+    /// range of trees, 0x10 or 8, plus the draw's low three bits.
+    /// </summary>
+    public static MapObject Grown(MapObject sapling, int draw) =>
+        new((byte)((sapling.Code == SaplingCode ? 0x10 : 8) + (draw & 7)));
 
     /// <summary>No object on the node.</summary>
     public static MapObject None => default;
@@ -115,6 +137,7 @@ public readonly record struct MapObject(byte Code)
             >= FirstHeapCode and <= LastHeapCode => MapObjectKind.StoneHeap,
             StumpCode => MapObjectKind.Stump,
             >= FirstFallingCode and < EndFallingCode => MapObjectKind.FallingTree,
+            SaplingCode or SecondSaplingCode => MapObjectKind.Sapling,
             _ => MapObjectKind.Other,
         };
 }

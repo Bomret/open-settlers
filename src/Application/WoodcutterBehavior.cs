@@ -70,6 +70,8 @@ public sealed partial class WoodcutterBehavior(
         registry.Register<LooksForTree>((slot, settler, _) => SearchTree(slot, settler));
         registry.Register<LooksForStone>((slot, settler, _) => SearchStone(slot, settler));
         registry.Register<CutsStone>((slot, settler, _) => CutStone(slot, settler));
+        registry.Register<LooksForSpot>((slot, settler, _) => SearchSpot(slot, settler));
+        registry.Register<Plants>((slot, settler, _) => Plant(slot, settler));
     }
 
     // The cause of a change the settler rules make to the settler in the slot: the walk home while it walks to a storage, else
@@ -143,6 +145,7 @@ public sealed partial class WoodcutterBehavior(
         return inLayout() || walkHome.IsWalking(slot) ? SettlerCause(slot)
             : job == Job.Woodcutter ? Cause.Woodcutting
             : job == Job.Stonecutter ? Cause.Stonecutting
+            : job == Job.Forester ? Cause.Forestry
             : SettlerCause(slot);
     }
 
@@ -470,9 +473,16 @@ public sealed partial class WoodcutterBehavior(
             return;
         }
 
+        if (settler.Job == Job.Forester)
+        {
+            ArriveForester(slot, settler);
+
+            return;
+        }
+
         if (settler.Job != Job.Woodcutter)
         {
-            // **Not ported:** the arrival of the jobs 8, 11, 14, and 20 where they are not walking home (0x437ddd).
+            // **Not ported:** the arrival of the jobs 11, 14, and 20 where they are not walking home (0x437ddd).
             if (settler.Job.ArrivesHomeGenerically || trip.Purpose is Home)
             {
                 walkHome.ArriveHome(slot, settler);
@@ -616,8 +626,9 @@ public sealed partial class WoodcutterBehavior(
     // The map's object pass (0x428d10, called by the main loop's 0x4286d8 each pass). Each 20 clock units it takes the next
     // nodes of a cursor that moves 23 columns on and a row down where it wraps: on a lake node with detail it may move the
     // detail (the draws of the original), a node with an object code of 0x53 or more takes its handler: the cut tree codes
-    // 0x5d to 0x66 become 0x53, and 0x53 vanishes when the draw's low two bits are 0. **Not ported:** the handlers of the codes
-    // 0x67 and up (the original's growth and decay; the generation places none).
+    // 0x5d to 0x66 become 0x53, and 0x53 vanishes when the draw's low two bits are 0; the saplings 0x67 and 0x68 grow into trees
+    // (GrowSapling). **Not ported:** the handlers of the codes 0x69 and up (the original's growth and decay; the generation
+    // places none).
     /// <summary>The map's object pass, run once each pass of the main loop.</summary>
     public void ObjectPass()
     {
@@ -666,6 +677,10 @@ public sealed partial class WoodcutterBehavior(
             else if (kind == MapObjectKind.FallingTree)
             {
                 at.Object = MapObject.Stump;
+            }
+            else if (kind == MapObjectKind.Sapling)
+            {
+                GrowSapling(ref at);
             }
         }
     }

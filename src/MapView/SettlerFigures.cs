@@ -49,6 +49,7 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
                 or WalksFree
                 or Cuts
                 or CutsStone
+                or Plants
                 or SearchesHome
                 or Builds
                 or LeavesSite;

@@ -110,6 +110,7 @@ public static class GameFactory
         var builder = new BuilderBehavior(movement, buildings, flags, history, draws, woodcutter.StepOut);
         woodcutter.RegisterStart(Job.Builder, builder.Start);
         woodcutter.RegisterStart(Job.Stonecutter, woodcutter.StartStonecutter);
+        woodcutter.RegisterStart(Job.Forester, woodcutter.StartForester);
         builder.Register(behaviours);
         roster.Register(behaviours);
         walks.Register(behaviours);

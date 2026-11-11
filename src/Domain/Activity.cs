@@ -201,6 +201,23 @@ public sealed record LooksForTree : Activity
     public override int Code => 0x12;
 }
 
+/// <summary>State 19: the forester inside his hut looks for a free meadow node to plant on.</summary>
+public sealed record LooksForSpot : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x13;
+}
+
+/// <summary>State 20: the forester stands on the node he plants on, waits, and puts the sapling down (<c>0x4389bf</c>).</summary>
+/// <param name="Back">The steps of the way back to the hut's flag, east and south (bytes 11 and 12).</param>
+/// <param name="Planted">Whether the sapling is down and he waits to turn back (byte 14 not 0).</param>
+/// <param name="Memory">The memory the free walk to the node left (byte 15).</param>
+public sealed record Plants(Vector Back, bool Planted, int Memory) : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x14;
+}
+
 /// <summary>State 21: the stonecutter inside his hut looks for a stone heap.</summary>
 public sealed record LooksForStone : Activity
 {
