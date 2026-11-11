@@ -181,7 +181,7 @@ The entries follow, and the game applies them in the file's order:
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
 - `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, or sawmill (a
-  woodcutter's or stonecutter's with its worker inside).
+  woodcutter's, stonecutter's, or forester's with its worker inside).
 - `settlers`: a carrier waiting on a road.
 - `goods`: `{"x","y","place","good"}` on a flag.
 

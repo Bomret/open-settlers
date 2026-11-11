@@ -49,7 +49,7 @@ public sealed class StonecuttingTests
 
     // The castle, the flags, the roads, and the stonecutter's hut; a heap of the code stands on each such free node of his reach
     // where a code is given, and the generated trees and heaps are gone from the whole map.
-    private static Game World(byte? heap, out Map map, RuleTables? tables = null)
+    private static Game World(byte? heap, out Map map, RuleTables? tables = null, bool everyPass = false)
     {
         var made = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < made.Count; index++)
@@ -71,7 +71,7 @@ public sealed class StonecuttingTests
 
         map = made;
 
-        var game = GameFactory.Create(tables ?? WoodcuttingTests.Made(Workers()), made);
+        var game = GameFactory.Create(tables ?? WoodcuttingTests.Made(Workers()), made, everyPassTurns: everyPass);
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
@@ -114,6 +114,29 @@ public sealed class StonecuttingTests
         var cut = Reach().Where(node => map.At(node.X, node.Y).Object.Code == 0x4e).ToArray();
         Assert.HasCount(1, cut, "one heap is one stage smaller");
         Assert.AreEqual(Heaps(map), Reach().Count(node => map.At(node.X, node.Y).Object.Code is 0x4d or 0x4e));
+    }
+
+    // With a turn at every pass the step back (part 2 of the cut) spans turns, and the turns after the first are on the node he
+    // stepped back to, so the cut names the heap by the neighbour of that node.
+    [TestMethod]
+    public void EveryCutStoneEventOfACutNamesTheHeapEvenWhileTheStepBackSpansTurns()
+    {
+        var game = World(0x4d, out var map, everyPass: true);
+
+        for (var tick = 0; tick < 6000 && !HoldsStone(game); tick++)
+        {
+            game.Tick();
+        }
+
+        var heap = Reach().Single(node => map.At(node.X, node.Y).Object.Code == 0x4e);
+        var named = game
+            .History.Events.All.Where(e => e.Type == EventType.CutStone)
+            .Select(e => e.Other)
+            .Distinct()
+            .ToArray();
+
+        Assert.HasCount(1, named, "every cut-stone event names the one heap");
+        Assert.AreEqual(ThingId.OfObject("stone", heap.X, heap.Y).ToString(), named[0]);
     }
 
     [TestMethod]

@@ -181,7 +181,7 @@ public sealed class RuleTables
         // stand-in: a table a test does not give makes only the woodcutter's hut and the forester's building ask for a worker, the
         // woodcutter's of the woodcutter's job and a made-up tool, the forester's of the forester's job and no tool, and the builder a
         // settler of the builder's job with no tool.
-        _workers = workers ?? WoodcutterOnly();
+        _workers = workers ?? MadeUpWorkers();
         BuilderRequest = builderRequest ?? new WorkerRequest(Job.Builder, Good.None);
         // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
         _materialOrder = materialOrder ?? new ushort[BuildingTypeCount];
@@ -193,7 +193,7 @@ public sealed class RuleTables
         SawmillerFigureAdds = sawmillerFigureAdds ?? default;
     }
 
-    private static WorkerRequest?[] WoodcutterOnly()
+    private static WorkerRequest?[] MadeUpWorkers()
     {
         var workers = new WorkerRequest?[BuildingTypeCount];
         workers[BuildingType.Woodcutter.Code] = new WorkerRequest(Job.Woodcutter, new Good(1));

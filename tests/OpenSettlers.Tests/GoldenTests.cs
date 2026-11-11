@@ -12,9 +12,10 @@ namespace OpenSettlers.Tests;
 // A golden test that pins the game as it plays: fixed scenarios (a seed or a checked-in layout, a command script, the
 // every-pass setting) run on made-up tables, and at several ticks each records the game's digest (Game.Digest) and a
 // short digest of the whole recorded event log (each event's tick, type, thing, raw field=value state, cause, and
-// other). The expected lines live in golden.txt: the digests and event counts were taken once from the engine as it stood before the
-// onion refactor of the simulation, and the event-log hashes were regenerated for the castle settler's renamed event
-// (castle-settler-builds), on made-up tables (LayoutSettlersTests.MadeTables), so it needs no install: paths that depend on the
+// other). The expected lines live in golden.txt: the event counts were taken once from the engine as it stood before the
+// onion refactor of the simulation, the event-log hashes were regenerated for the castle settler's renamed event
+// (castle-settler-builds), and the digests were regenerated for the flags' request words, on made-up tables
+// (LayoutSettlersTests.MadeTables; ConstructionTables.Tables() for site-with-handout), so it needs no install: paths that depend on the
 // real program tables' step times or building classes are not pinned (INV-0001: digests, not dumps). A change to any rule outcome, the order of two settlers in a pass, or
 // an event field changes a line. INV-0002: a scenario gives the same lines on every run, as the committed lines pin. INV-0007: the digest holds no
 // event store, so the digest of a run is the same whether or not anything reads the events: each scenario plays once and
@@ -250,6 +251,19 @@ public sealed class GoldenTests
             actual,
             "the game no longer plays as golden.txt records; actual lines:\n" + string.Join("\n", actual)
         );
+    }
+
+    // The golden lines of site-with-handout pin a game with a site only where the site at 17,5 is accepted.
+    [TestMethod]
+    public void TheSiteOfSiteWithHandoutIsAccepted()
+    {
+        var runs = Outcomes.Value.Where(o => o.Line.StartsWith("site-with-handout |", StringComparison.Ordinal)).ToList();
+
+        Assert.HasCount(2, runs);
+        foreach (var run in runs)
+        {
+            Assert.AreEqual(1, run.Game.History.Events.All.Count(e => e.Type == EventType.PlaceBuilding), run.Line);
+        }
     }
 
     private static Func<ThingEvent, bool> OfType(params string[] types) => e => types.Contains(e.Type);
