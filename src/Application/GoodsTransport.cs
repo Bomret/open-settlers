@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
@@ -132,6 +131,10 @@ public sealed class GoodsTransport(
         return sets;
     }
 
+    // The order the first road that holds a carrier is chosen in when a good reaches no storage (0x464539): the east, then the
+    // directions counted down from 5 to 1. A stand-in for the register the original starts from (see Destine).
+    private static readonly int[] CarrierRoadOrder = [0, 5, 4, 3, 2, 1];
+
     // The destination of a good with none (0x464364 to 0x46444c, 0x45d3ea). The table at 0x464117 gives a good a class and the
     // request word it is looked for in, or sends it to storage at once. A good with a class looks first for the flag whose request
     // asks for it (the request search); where none does, the storage search follows: over the roads that hold a carrier, to the
@@ -172,13 +175,22 @@ public sealed class GoodsTransport(
             return;
         }
 
-        var way = new[] { 0, 5, 4, 3, 2, 1 }.First(roadsWithCarrier.Has);
-        if (flags[flag].Side(way).WaitingPlace is null)
+        foreach (var way in CarrierRoadOrder)
         {
-            WaitForRoad(flag, way, place);
-        }
+            if (!roadsWithCarrier.Has(way))
+            {
+                continue;
+            }
 
-        flags[flag].Places[place].Way = way;
+            if (flags[flag].Side(way).WaitingPlace is null)
+            {
+                WaitForRoad(flag, way, place);
+            }
+
+            flags[flag].Places[place].Way = way;
+
+            return;
+        }
     }
 
     // 0x464999 to 0x4649e0: the flag that was found is served: its rank, shifted right by one where bit 0 is set, else 0, and the

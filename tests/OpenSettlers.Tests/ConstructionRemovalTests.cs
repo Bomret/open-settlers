@@ -49,7 +49,10 @@ public sealed class ConstructionRemovalTests
 
     // The program's ring-3 term (0x44c151 to 0x44c204) reads the word at 14 of every large building with the construction bit and the
     // progress 0, and a large site taken down still has both: the word then holds the clock of its take-down, whose low byte widens the
-    // range of the heights where the target height widened it before.
+    // range of the heights where the target height widened it before. One sweep after the take-down is the check: Removal rewrites the
+    // clock at every burn step, but the emulator's sweeps at five later passes of the burn (low bytes of the clock 0x18 to 0x40) and
+    // with the take-down at passes 96, 98, and 100 (low bytes 0x00 to 0x20) list the same verdicts as this one: the low byte
+    // of the clock changes no verdict in this terrain, so a later sweep would pin nothing this one does not.
     [TestMethod]
     public void ALargeSiteTakenDownWidensTheHeightsOfItsRingByTheClockItHoldsAsTheOriginalDoes()
     {

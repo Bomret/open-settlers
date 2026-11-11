@@ -128,8 +128,9 @@ pass=395 b2=44050000A4A0020000004F000100600C0000
 # out about 130 passes later, so the goods on the flags and carriers differ by that stand-in, and the test empties the castle of planks and
 # stones as ConstructionBuilderTests does. A line "pass=N fill2+=NN" adds to byte 8 of the site the growth of its counts that the engine
 # does not model (+01 a good counted on the way, +0F a good delivered), taken from the b2 bytes of the emulator at the pass the original
-# changed them. The window of the comparison is the counts' own: the click clears both nibbles, and the goods the stand-in puts on the
-# flags decide nothing the lines list.
+# changed them. The click clears both nibbles, and the goods the stand-in puts on the flags decide nothing the lines list. A line "s14="
+# ends the comparison of the builder: its walk home differs from the engine's in its state bytes for a pass from that pass on (the original's
+# settler 4 walks on a trip past it, a settler the engine's stand-in has no trip for), which the scenarios without the hand-out do not show.
 
 # fill-on-the-way construct:1:1234,5678,9ABC:25:15,5:18,6;15,9:16,6,00;16,6,2223::40:700:b@17,5,9;300=f@17,5
 click=b@17,5 class=5 sound=-1 m=17,5:0=00>42/3=00>02/4=00>02;18,6:0=88>98 b2=44050000A400020000000000010000000200 c=0004,0003,0014,0
