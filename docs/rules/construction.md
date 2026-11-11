@@ -54,7 +54,9 @@ fixture and names none of the others.
 
 **Emulated:** with no hammer in the stock, the second site's request fails at each of its turns: bit 2 is set (the sign flag the routine leaves,
 `0x42d61a`), the retry scan clears it the next pass, and the site asks again 33 passes later; once a hammer is in the stock the next request makes a
-settler without a job the builder (`construction-builder.txt`, `builder-no-hammer`).
+settler without a job the builder (`construction-builder.txt`, `builder-no-hammer`). **Emulated:** with five roads whose carriers take the five
+settlers without a job, a second site's request fails at each of its turns in the same way, also at a turn where the castle's list of settlers without a
+job is empty because the next one has not entered it yet; the castle's goods still go out to both sites (`builder-no-jobless`).
 **Not ported:** the second tool word, the storage's counter of settlers (the word at `0x40`), and the player's counts per job.
 
 ## The builder's turn

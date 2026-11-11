@@ -24,6 +24,7 @@ public sealed class ConstructionBuilderTests
     [DataRow("builder-forester")]
     [DataRow("builder-two-sites")]
     [DataRow("builder-no-hammer")]
+    [DataRow("builder-no-jobless")]
     public void TheBuilderBuildsTheSiteAsTheOriginalDoes(string name)
     {
         var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
