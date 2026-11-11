@@ -11,7 +11,7 @@ wait 0.3
 dump decoys
 shot decoys
 
-expect logs = 4
+expect logs = 0
 expect-at 8 12 building
 expect-at 9 13 flag
 dump woodcutter
@@ -20,7 +20,7 @@ shot woodcutter
 # Two logs wait on the woodcutter's flag; none has reached the castle.
 fast-forward until flag-goods:9,13 = 2 max 20000
 wait 0.3
-expect logs = 4
+expect logs = 0
 expect flag-goods:9,13 = 2
 dump two-logs
 shot two-logs
@@ -35,22 +35,22 @@ shot removed
 # The carrier has lifted the first log; the second still waits on the flag.
 fast-forward until flag-goods:9,13 = 1 max 2000
 wait 0.3
-expect logs = 4
+expect logs = 0
 expect flag-goods:9,13 = 1
 dump one-left
 shot one-left
 
 # The first log reaches the castle. The second still waits (a third the woodcutter cut may lie beside it).
-fast-forward until logs = 5 max 2000
+fast-forward until logs = 1 max 2000
 wait 0.3
-expect logs = 5
+expect logs = 1
 expect flag-goods:9,13 >= 1
 dump first
 shot first
 
 # The second log reaches the castle.
-fast-forward until logs = 6 max 2000
+fast-forward until logs = 2 max 2000
 wait 0.3
-expect logs = 6
+expect logs = 2
 dump second
 shot second

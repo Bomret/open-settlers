@@ -119,7 +119,8 @@
 //                            pass AT the CLICKS run in order, each the click handler's routine on a node: f:x,y the remove click
 //                            0x4615cf (a flag by 0x462153, a building by 0x4617fd, anything else refused), r:x,y the road click
 //                            0x462d88 (road take-down 0x462e1d), p:x,y the flag button 0x442244 (a flag put on a node of a road splits the road: docs/rules/roads.md), b:x,y[,T] the building placement 0x449a63 (object code 2, or the object code of the type T by the size table 0x42d307) after the check, c:x,y only the classification 0x44b6e6 (the class at +0x100 and
-//                            +0x101 of the player), and s:0,0 the classification of every tile of the territory. The sound
+//                            +0x101 of the player), s:0,0 the classification of every tile of the territory, and l:x,y,H the heights of
+//                            the node and its six neighbours set to H (the ground a digger leaves a large site). The sound
 //                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
 //                            before that pass, as goods does, with the destination word DEST. A line per click and per pass lists
@@ -1568,6 +1569,25 @@ public class EmulateMapStart extends GhidraScript {
                         call(0x44b6e6);
                         println("EMU " + label + " class@" + x + "," + y + "=" + (emu.readMemory(toAddr(player + 0x100), 1)[0] & 0xff)
                                 + "/" + (emu.readMemory(toAddr(player + 0x101), 1)[0] & 0xff));
+                        continue;
+                    }
+                    if (kind.equals("l")) {
+                        // l@x,y,H sets the heights (the low five bits of byte 1 of record A) of the node x,y and its six
+                        // neighbours to H: the ground a digger leaves a large site, which the building pass tests (0x42d34e) before
+                        // it asks for materials. A stand-in for the digger's work, which the original gives to a settler.
+                        int level = Integer.parseInt(xy[2]);
+                        int heightBits = getWord(STATE + 0x30);
+                        long heightLayer = getInt(STATE + MAP_BUFFER);
+                        int[][] around = {{0, 0}, {1, 0}, {1, 1}, {0, 1}, {-1, 0}, {-1, -1}, {0, -1}};
+                        for (int[] step : around) {
+                            int nx = (x + step[0] + width) % width;
+                            int ny = (y + step[1] + height) % height;
+                            long heightAt = heightLayer + (((long) ny << heightBits) + nx) * 4 + 1;
+                            int old = emu.readMemory(toAddr(heightAt), 1)[0] & 0xff;
+                            emu.writeMemory(toAddr(heightAt), new byte[] {(byte) ((old & 0xe0) | (level & 0x1f))});
+                        }
+
+                        println("EMU " + label + " click=l@" + x + "," + y + " class=0 sound=-1 level=" + level);
                         continue;
                     }
                     if (kind.equals("b")) {
