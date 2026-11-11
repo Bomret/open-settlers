@@ -114,7 +114,7 @@ public sealed class OpenSettlersSourceTests
             .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
             .Concat(
-                from job in new[] { "carrier", "woodcutter", "stonecutter", "type-one-hut", "builder" }
+                from job in new[] { "carrier", "woodcutter", "stonecutter", "type-one-hut", "builder", "digger" }
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
             );
@@ -482,6 +482,7 @@ public sealed class OpenSettlersSourceTests
     [DataRow("stonecutter")]
     [DataRow("type-one-hut")]
     [DataRow("builder")]
+    [DataRow("digger")]
     public void EachJobDrawsAnImageForEveryActivityKind(string job)
     {
         using var folder = new ContentFolder();
@@ -493,10 +494,12 @@ public sealed class OpenSettlersSourceTests
             ["stonecutter"] = Job.Stonecutter,
             ["type-one-hut"] = Job.TypeOneHut,
             ["builder"] = Job.Builder,
+            ["digger"] = Job.Digger,
         };
         Activity[] activities =
         [
             new CutsStone(new Vector(0, 0), 1, 0),
+            new Digs(15, 10, 6, 1),
             Walking(),
             new Walks(new ToStorage(), new Heading(0)),
             new Door(0),

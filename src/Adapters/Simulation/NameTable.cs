@@ -134,6 +134,12 @@ public sealed class NameTable
         AddOne(CodeKind.Job, Job.Carrier.Code, "carrier", "Job.Carrier; docs/rules/carriers.md");
         AddOne(
             CodeKind.Job,
+            Job.Digger.Code,
+            "digger",
+            "Job.Digger; the large site's handler 0x42d328 asks for job 2 with the tool good 16 (request at 0x42d52a) and the job's state 8 changes the heights of the site's node and its six neighbours by one a pass (0x43e45e); docs/rules/digging.md"
+        );
+        AddOne(
+            CodeKind.Job,
             Job.Builder.Code,
             "builder",
             "Job.Builder; the under-construction handler 0x42d55f asks for job 3 with the tool good 17 (request at 0x42d5fc) and the job's state 9 builds the site (0x43ec82); docs/rules/construction.md"
@@ -161,6 +167,12 @@ public sealed class NameTable
         AddOne(CodeKind.State, 5, "waits-out-step", State);
         AddOne(CodeKind.State, 6, "enters-building", State);
         AddOne(CodeKind.State, 7, "steps-onto-flag", State);
+        AddOne(
+            CodeKind.State,
+            8,
+            "digs",
+            "0x43e45e walks the node and its six neighbours of the site and changes the heights one a pass; docs/rules/digging.md"
+        );
         AddOne(CodeKind.State, 9, "builds", State);
         AddOne(CodeKind.State, 0xf, "leaves-castle", State);
         AddOne(CodeKind.State, 0x10, "walks-free", State);
