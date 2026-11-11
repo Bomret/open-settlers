@@ -10,7 +10,9 @@ namespace OpenSettlers.Tests;
 public sealed class GoodsTransportTests
 {
     private const int Log = 7;
-    private const int Stone = 9;
+
+    // A good of the made-up ranks (the ninth: the program gives it no class, so it goes to storage at once).
+    private const int Ninth = 9;
     private const int West = 3;
     private const int East = 0;
 
@@ -58,16 +60,20 @@ public sealed class GoodsTransportTests
     {
         var ranks = new byte[StartStock.Goods];
         ranks[Log - 1] = 5;
-        ranks[Stone - 1] = 9;
+        ranks[Ninth - 1] = 9;
         var (bench, goods) = Chain(ranks);
         goods.LayGood(1, 6, Log, destination: 0);
         goods.Turn(1);
         Assert.AreEqual(6, bench.Flags[1].Side(West).WaitingPlace, "the log waits for the road");
-        goods.LayGood(1, 2, Stone, destination: 0);
+        goods.LayGood(1, 2, Ninth, destination: 0);
 
         goods.Turn(1);
 
-        Assert.AreEqual(2, bench.Flags[1].Side(West).WaitingPlace, "the stone has the higher rank and takes the place");
+        Assert.AreEqual(
+            2,
+            bench.Flags[1].Side(West).WaitingPlace,
+            "the ninth good has the higher rank and takes the place"
+        );
         Assert.AreEqual(West, bench.Flags[1].Places[6].Way, "the log keeps its direction and waits");
     }
 
@@ -76,9 +82,9 @@ public sealed class GoodsTransportTests
     {
         var ranks = new byte[StartStock.Goods];
         ranks[Log - 1] = 5;
-        ranks[Stone - 1] = 9;
+        ranks[Ninth - 1] = 9;
         var (bench, goods) = Chain(ranks);
-        goods.LayGood(1, 6, Stone, destination: 0);
+        goods.LayGood(1, 6, Ninth, destination: 0);
         goods.Turn(1);
         goods.LayGood(1, 2, Log, destination: 0);
 
@@ -107,6 +113,6 @@ public sealed class GoodsTransportTests
         Assert.IsNotNull(goods.PlaceGood(9, 9, 0, Log), "no flag stands on the node");
         Assert.IsNull(goods.PlaceGood(6, 4, 0, Log));
         Assert.AreEqual(new Good(Log), bench.Flags[1].Places[0].Good);
-        Assert.IsNotNull(goods.PlaceGood(6, 4, 0, Stone), "the place holds a good already");
+        Assert.IsNotNull(goods.PlaceGood(6, 4, 0, Ninth), "the place holds a good already");
     }
 }

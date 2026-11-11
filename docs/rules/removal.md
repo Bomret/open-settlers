@@ -111,7 +111,8 @@ byte's low nibble, the mark `0xff`); `RemovalLogicTests` holds a test of the eng
 
 `Building_Remove` marks the building (bit 5 of its status byte, the mark of a building that is taken down; the castle's node's class 0
 and the other types' branches are not reached by the click) and clears the bit `0x02` of the node's flag byte and the bit `0x10` of the
-flag's. It clears the building's fill bytes, takes the status bits 3 and 4 off, puts `0x7ff` in the word that held the worker's slot
+flag's. It clears the building's fill bytes, clears the class bytes at `0x42` and `0x44` of its flag (a building site's requests, whose ranks stay,
+[Materials for a building site](construction-materials.md#the-request-words)), takes the status bits 3 and 4 off, puts `0x7ff` in the word that held the worker's slot
 and the clock in the word at 14. If the worker is inside (bit 6) the bit goes and the worker walks home: a settler of the job 4
 loses its job and mode, its timer is 0, and it takes state `0x19` where its node's settler word is its own slot, else `0x1c` (the
 claim of the node, then `0x19`). A worker that is outside (walking to the hut, or cutting) is not touched by this routine.

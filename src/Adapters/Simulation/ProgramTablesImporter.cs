@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -140,6 +141,26 @@ public static class ProgramTablesImporter
     /// </summary>
     public const int TransportPriorityAddress = 0x445570;
 
+    /// <summary>
+    /// The address of the good class table: two bytes for each good 0 to 31, a class and the offset of a request word (<c>0x464117</c>,
+    /// read by the flag pass at <c>0x46440e</c> and <c>0x4644ab</c>); a class with its high bit set sends the good to storage at once.
+    /// </summary>
+    public const int GoodClassAddress = 0x464117;
+
+    /// <summary>
+    /// The addresses of the three orders in which a storage hands its goods out, each a list of steps of three words (the request
+    /// word's offset, the class, and the stock word's offset or -1) that a negative word ends (<c>0x42a313</c>, <c>0x42a35d</c>,
+    /// <c>0x42a3a7</c>, read by the phase routine at <c>0x42965c</c>).
+    /// </summary>
+    public static readonly int[] DistributionAddresses = [0x42a313, 0x42a35d, 0x42a3a7];
+
+    /// <summary>
+    /// The address of the routine that writes the player's default words at a new game (<c>0x445752</c>, called by <c>0x42055e</c>): it
+    /// loads the word <c>0xffdc</c> and stores it at <c>+0x148</c> of the player block, whose high byte is the rank a site's request for
+    /// planks starts from (<c>docs/rules/construction-materials.md</c>).
+    /// </summary>
+    public const int PlankRankAddress = 0x445752;
+
     /// <summary>The bytes of the routine for one good: the rank of good g is the immediate at <see cref="TransportPriorityAddress"/> + 8 * (g - 1) + 1.</summary>
     public const int TransportPriorityStep = 8;
 
@@ -182,8 +203,75 @@ public static class ProgramTablesImporter
             Words(Slice(exe, IdleFigureAddress, 2 * RuleTables.IdleFigureCount)),
             [.. Slice(exe, IdleOffsetAddress, RuleTables.IdleOffsetCount).Select(offset => (sbyte)offset)],
             Slice(exe, BuildingSizeAddress, RuleTables.BuildingTypeCount),
-            Slice(exe, BuildingNeedsAddress, 2 * RuleTables.BuildingTypeCount)
+            Slice(exe, BuildingNeedsAddress, 2 * RuleTables.BuildingTypeCount),
+            GoodClasses(Slice(exe, GoodClassAddress, 2 * RuleTables.GoodClassCount)),
+            [.. DistributionAddresses.Select(address => DistributionOrder(exe, address))],
+            PlankRankBase(exe)
         );
+    }
+
+    // The request word a flag item offset names: 0x42 is the first word, 0x44 the second (the class table's second byte takes the
+    // second for 0x44 and the first for any other offset, as the flag pass does).
+    private static RequestWord WordAt(int offset) => offset == 0x44 ? RequestWord.Second : RequestWord.First;
+
+    // The good class table: for each good a class byte and a request word offset. A class byte with its high bit set sends the good
+    // to storage at once, which is no class.
+    private static GoodClass?[] GoodClasses(byte[] table) =>
+        [
+            .. Enumerable
+                .Range(0, RuleTables.GoodClassCount)
+                .Select(good =>
+                    (sbyte)table[2 * good] < 0
+                        ? (GoodClass?)null
+                        : new GoodClass(table[2 * good], WordAt(table[2 * good + 1]))
+                ),
+        ];
+
+    // One order of the storage's hand-out: the steps up to the word that is negative. The request word's offset must be the first or
+    // the second word's (0x42 or 0x44), else the table is not where it is expected. The third word of a step is the offset of the
+    // stock word from the first one (the good is the offset halved, plus 1), or -1 for the step of the food goods 1, 3, and 6.
+    private static DistributionStep[] DistributionOrder(byte[] exe, int address)
+    {
+        var steps = new List<DistributionStep>();
+        while (true)
+        {
+            var words = Words(Slice(exe, address + 6 * steps.Count, 6));
+            if (words[0] < 0)
+            {
+                break;
+            }
+
+            if (steps.Count >= 2 * RuleTables.Goods || words[0] is not (0x42 or 0x44))
+            {
+                throw new InvalidDataException(
+                    $"Siedler1.exe holds no order of the storage's hand-out at 0x{address:x}: step {steps.Count} is no step."
+                );
+            }
+
+            steps.Add(
+                new DistributionStep(
+                    new GoodClass(words[1], WordAt(words[0])),
+                    words[2] < 0 ? [new Good(1), new Good(3), new Good(6)] : [new Good(words[2] / 2 + 1)]
+                )
+            );
+        }
+
+        return [.. steps];
+    }
+
+    // The rank the planks start from: the high byte of the word the player setup loads and stores at +0x148 of the player block
+    // (0x445752: mov ax, imm16; mov ebx, [edi+0x30]; mov [ebx+0x148], ax).
+    private static byte PlankRankBase(byte[] exe)
+    {
+        Expect(exe, PlankRankAddress, [0x66, 0xb8], "loads the word of the player's default");
+        Expect(
+            exe,
+            PlankRankAddress + 4,
+            [0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x48, 0x01, 0x00, 0x00],
+            "stores the word at +0x148 of the player block"
+        );
+
+        return Slice(exe, PlankRankAddress + 2, 2)[1];
     }
 
     // The woodcutter's adds from the immediates of his handler. The draw routine must load the tables read here, and the

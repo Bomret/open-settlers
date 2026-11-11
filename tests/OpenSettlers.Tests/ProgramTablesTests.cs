@@ -46,9 +46,36 @@ public sealed class ProgramTablesTests
         }
 
         WriteFigureRoutines(exe);
+        WriteConstructionTables(exe);
         fill(exe);
 
         return exe;
+    }
+
+    // The tables of the materials that reach a building site, made up: the good class table (only the good 8 has a class), three orders
+    // of the storage's hand-out of one step each that a word of -1 ends, and the player setup's routine that loads the word 0x9234 and
+    // stores it at +0x148 of the player block.
+    private static void WriteConstructionTables(byte[] exe)
+    {
+        void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
+
+        var classes = new byte[2 * RuleTables.GoodClassCount];
+        Array.Fill(classes, (byte)0xff);
+        classes[16] = 1;
+        classes[17] = 0x42;
+        Write(ProgramTablesImporter.GoodClassAddress, classes);
+        for (var order = 0; order < ProgramTablesImporter.DistributionAddresses.Length; order++)
+        {
+            Write(
+                ProgramTablesImporter.DistributionAddresses[order],
+                [(byte)(order == 1 ? 0x44 : 0x42), 0, (byte)(order + 1), 0, (byte)(14 + 4 * order), 0, 0xff, 0xff]
+            );
+        }
+
+        Write(
+            ProgramTablesImporter.PlankRankAddress,
+            [0x66, 0xb8, 0x34, 0x92, 0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x48, 0x01, 0x00, 0x00]
+        );
     }
 
     // The instructions of the draw routine and the woodcutter's handler that Read checks: the loads of the two tables,
@@ -402,6 +429,99 @@ public sealed class ProgramTablesTests
         // peek:462d6d:32 (a byte for each of 32 goods) and peek:462acd:8 (a count for each of 8 length classes).
         Assert.AreEqual(0x1C7E05E97572CBCBUL, Fnv(tables.GoodKinds));
         Assert.AreEqual(0x6FC87DA442D34B9DUL, Fnv(tables.RoadCapacities));
+    }
+
+    [TestMethod]
+    public void TheGoodClassesAndTheHandoutOrdersAreReadFromTheirAddresses()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(new GoodClass(1, RequestWord.First), tables.ClassOfGood(Good.Plank));
+        Assert.IsNull(tables.ClassOfGood(Good.Stone), "a class byte of 0xff sends the good to storage at once");
+        // The synthetic orders hold one step each: order 0 the class 1 of the first word and the good 8 (stock offset 14), order 1
+        // the class 2 of the second word and the good 10 (offset 18), order 2 the class 3 of the first word and the good 12 (offset 22).
+        CollectionAssert.AreEqual(
+            new[] { "First 1: 8" },
+            Steps(tables.DistributionOrder(2)),
+            "any other draw picks the first order"
+        );
+        CollectionAssert.AreEqual(
+            new[] { "Second 2: 10" },
+            Steps(tables.DistributionOrder(0)),
+            "the draw 0 picks the second order"
+        );
+        CollectionAssert.AreEqual(
+            new[] { "First 3: 12" },
+            Steps(tables.DistributionOrder(1)),
+            "the draw 1 picks the third"
+        );
+        CollectionAssert.AreEqual(
+            Steps(tables.DistributionOrder(0)),
+            Steps(tables.DistributionOrder(8)),
+            "the draw is taken to 0 to 7"
+        );
+    }
+
+    // A step as text: its request word, its class, and the goods it hands out.
+    private static string[] Steps(DistributionStep[] order) =>
+        [.. order.Select(step => $"{step.Class.Word} {step.Class.Class}: {string.Join(',', step.Goods)}")];
+
+    [TestMethod]
+    public void AFoodStepOfTheTableNamesTheThreeFoodGoods()
+    {
+        var exe = Executable(bytes =>
+        {
+            bytes[FileOffset(ProgramTablesImporter.DistributionAddresses[0]) + 4] = 0xff;
+            bytes[FileOffset(ProgramTablesImporter.DistributionAddresses[0]) + 5] = 0xff;
+        });
+
+        var tables = ProgramTablesImporter.Import(exe);
+
+        CollectionAssert.AreEqual(new[] { "First 1: 1,3,6" }, Steps(tables.DistributionOrder(2)));
+    }
+
+    [TestMethod]
+    public void AnOrderWhoseStepNamesNoRequestWordIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.DistributionAddresses[0])] = 0x43);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "hand-out");
+    }
+
+    [TestMethod]
+    public void ThePlankRankStartIsTheHighByteOfTheWordThePlayerSetupStores()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(0x92, tables.PlankRankBase);
+    }
+
+    [TestMethod]
+    public void APlayerSetupThatDoesNotStoreItsWordAtTheRankOffsetIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.PlankRankAddress) + 10] = 0x4a);
+
+        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheGoodClassesHandoutOrdersAndPlankRankStartOfTheInstallMatchTheEmulator()
+    {
+        var tables = TestProgram.Tables();
+
+        // peek:464117:64, peek:42a313:150 (the three orders of 12 steps), and peek:445752:16 (mov ax, 0xffdc, stored at +0x148).
+        Assert.AreEqual(new GoodClass(1, RequestWord.First), tables.ClassOfGood(Good.Plank));
+        Assert.AreEqual(new GoodClass(4, RequestWord.Second), tables.ClassOfGood(Good.Stone));
+        var first = tables.DistributionOrder(2);
+        var second = tables.DistributionOrder(0);
+        var third = tables.DistributionOrder(1);
+        CollectionAssert.AreEqual(new[] { 12, 12, 12 }, new[] { first.Length, second.Length, third.Length });
+        CollectionAssert.AreEqual(new[] { "First 1: 8", "Second 4: 10" }, Steps(first[..2]));
+        CollectionAssert.AreEqual(new[] { "Second 4: 10" }, Steps(second[..1]));
+        CollectionAssert.AreEqual(new[] { "First 0: 1,3,6" }, Steps(third[..1]));
+        Assert.AreEqual(0xff, tables.PlankRankBase);
     }
 
     [TestMethod]

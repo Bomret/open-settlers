@@ -26,6 +26,8 @@ namespace OpenSettlers.MapView;
 /// </param>
 /// <param name="Things">The things a <c>list</c> step writes; null lists none.</param>
 /// <param name="Game">The running game the named-thing steps read events from; null in the map view.</param>
+/// <param name="Planks">The castle's plank count, 0 before a castle stands; null in the map view.</param>
+/// <param name="Stones">The castle's stone count, 0 before a castle stands; null in the map view.</param>
 public sealed record PlayState(
     int CameraX,
     int CameraY,
@@ -36,7 +38,9 @@ public sealed record PlayState(
     int? Logs = null,
     IReadOnlyDictionary<(int X, int Y), int>? FlagGoods = null,
     IReadOnlyList<Thing>? Things = null,
-    Game? Game = null
+    Game? Game = null,
+    int? Planks = null,
+    int? Stones = null
 )
 {
     /// <summary>The decimals zoom is written with and compared at.</summary>
@@ -142,6 +146,8 @@ public sealed record PlayState(
             PlayFields.Size => Size,
             PlayFields.Ticks => Ticks ?? throw new InvalidOperationException("the map view has no ticks"),
             PlayFields.Logs => Logs ?? throw new InvalidOperationException("the map view has no logs"),
+            PlayFields.Planks => Planks ?? throw new InvalidOperationException("the map view has no planks"),
+            PlayFields.Stones => Stones ?? throw new InvalidOperationException("the map view has no stones"),
             _ when PlayFields.FlagNode(field) is { } node => FlagGoods?.GetValueOrDefault(node)
                 ?? throw new InvalidOperationException("the map view has no flag goods"),
             _ => throw new ArgumentOutOfRangeException(nameof(field), field, "no numeric play field"),
@@ -198,8 +204,14 @@ public static class PlayFields
     /// <summary>The castle's log count, in the game view only.</summary>
     public const string Logs = "logs";
 
+    /// <summary>The castle's plank count, in the game view only.</summary>
+    public const string Planks = "planks";
+
+    /// <summary>The castle's stone count, in the game view only.</summary>
+    public const string Stones = "stones";
+
     /// <summary>
-    /// The game's digest (<c>Game.Digest()</c>) as 16 hex digits, in the game view's dump only after <see cref="Logs"/>. A
+    /// The game's digest (<c>Game.Digest()</c>) as 16 hex digits, in the game view's dump only after <see cref="Stones"/>. A
     /// dump only: no <c>expect</c> step names it.
     /// </summary>
     public const string Digest = "digest";
@@ -208,7 +220,7 @@ public static class PlayFields
     public static readonly string[] All = [CameraX, CameraY, Zoom, Seed, Size];
 
     /// <summary>The fields the game view dumps after <see cref="All"/>.</summary>
-    public static readonly string[] Game = [Ticks, Logs];
+    public static readonly string[] Game = [Ticks, Logs, Planks, Stones];
 
     /// <summary>
     /// The start of the field of a flag's goods, in the game view only: <c>flag-goods:&lt;column&gt;,&lt;row&gt;</c> is the

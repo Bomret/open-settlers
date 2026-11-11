@@ -32,8 +32,8 @@ pass 5 before any carrier is on the road, and on a road of three flags logs and 
   leaves its start flag in direction 3 and ends at a flag it leaves in direction 0 holds `0x00` at the first and `0x18` at the
   second).
 - Bytes `0x42` to `0x45`: two request words with a priority byte after each (`0x42` and `0x43`, `0x44` and `0x45`); the castle's
-  flag holds `0x00c0` and `0x0080`. Bit 7 of the word at `0x44` marks a flag with a storage. **Inferred** for the
-  request words: the table below names them, no building asks for a good yet.
+  flag holds `0x00c0` and `0x0080`. Bit 7 of the word at `0x44` marks a flag with a storage. A building site's placement sets
+  the words to ask for planks and stones, and the building pass keeps their ranks: [Materials for a building site](construction-materials.md#the-request-words).
 
 ## The turn of a flag's goods
 
@@ -49,8 +49,9 @@ direction does one of two things:
 1. **No destination (word 0).** The table at `0x464117` (two bytes for each good: a class and the offset of a request word;
    `0xff` for a class marks a good that goes to storage at once) sends the good to the request search for a log (class 5, word
    at `0x44`): a search over the roads that hold a carrier for a flag whose request word has the class's bit set, and a
-   priority above the best so far. When none is found, as long as no building requests a good, the storage search (`0x45d3ea`)
-   runs from the flag: the flags are reached over the roads of which the status byte (byte 5, bit `d`) shows a carrier, from
+   priority above the best so far, which grows by a quarter and one after each level that found a request
+   ([Materials for a building site](construction-materials.md#the-request-search)); a found flag is the destination. When none is
+   found, the storage search (`0x45d3ea`) runs from the flag: the flags are reached over the roads of which the status byte (byte 5, bit `d`) shows a carrier, from
    north to east, level by level; a flag whose byte `0x44` has bit 7 is the storage's, and the building's flag slot (item `+6`)
    is the answer. A flag that is a storage itself finds none. The answer goes into the place's destination word and the flag's
    bit 7 is set again, so the direction comes at the next turn. Where the search finds none, with no road of the flag holding a
@@ -209,7 +210,6 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 
 ## Open leads
 
-- The request words at `0x42` to `0x45` of a flag item and the priority bytes: no building asks for a good yet (milestone 4).
 - The counter in the player block that the put adds to (`+good - 0x6f`).
 - What the original does with some road holding a carrier and no storage reached (`0x464539`).
 - A carrier sent home (byte 15 negative, `0x43aea4`), and state 0x44 and later (`0x43007b`, `0x4300f1`).
@@ -220,10 +220,11 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 
 ## In the engine
 
-`src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `StorageSearch`, and `Direct` port the above. `LayGood` is the put.
+`src/Application/GoodsTransport.cs`: `Turn`, `Destine`, `RequestSearch`, `StorageSearch`, and `Direct` port the above. `LayGood` is the put.
 `Exchange` and `WaitForRoad` are the carrier's exchange at a flag, and `TransportPriority` reads a good's rank from
 `RuleTables.TransportPriority`. `src/Application/CarrierBehavior.cs` holds `Fetch` and `Claim`, and `Deliver` and `Handover`
-(state 0xe). `CastleStock.Add` is the castle's count, and `CastleStock.Logs` reads the log's. `Game.Goods` returns the
+(state 0xe). `CastleStock.Add` is the castle's count of a good, in the entry `good - 1` of the list, and `CastleStock.Logs` reads the log's
+(the planks' and stones' counts are in [Materials for a building site](construction-materials.md)). `Game.Goods` returns the
 `GoodsTransport`, which a test builds on a hand-made flag table. A carrier's good and destination are the `Load` of its
 `WalksRoad` or `HandsOver` activity. `SettlerEncoder` writes them as byte 11 and the word at 12, and the destination as the
 original numbers the flags while it carries a good. `Building.FillLow` and `FillHigh` hold bytes 8 and 9, and

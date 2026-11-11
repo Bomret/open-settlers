@@ -43,6 +43,9 @@ public sealed class RuleTables
     /// </summary>
     public const int BuildingTypeCount = 24;
 
+    /// <summary>The number of goods of the class table at <c>0x464117</c> (good numbers are 5 bits).</summary>
+    public const int GoodClassCount = 32;
+
     /// <summary>The number of rows of the figure bases (the figure word's high byte, 0 to 0x88).</summary>
     public const int FigureBaseRowCount = 137;
 
@@ -85,6 +88,8 @@ public sealed class RuleTables
     private readonly ushort[] _scanWindows;
     private readonly byte[] _buildingSizes;
     private readonly byte[] _buildingNeeds;
+    private readonly GoodClass?[] _goodClasses;
+    private readonly DistributionStep[][] _distribution;
 
     /// <summary>
     /// Creates tables from their contents. The tables of the settlers' walk (<paramref name="stepTimes"/>,
@@ -111,7 +116,10 @@ public sealed class RuleTables
         short[]? idleFigures = null,
         sbyte[]? idleOffsets = null,
         byte[]? buildingSizes = null,
-        byte[]? buildingNeeds = null
+        byte[]? buildingNeeds = null,
+        GoodClass?[]? goodClasses = null,
+        DistributionStep[][]? distribution = null,
+        byte plankRankBase = 0
     )
     {
         if (
@@ -144,6 +152,17 @@ public sealed class RuleTables
         // stand-in: a table a test does not give makes every type small, so a test that places a building needs no table.
         _buildingSizes = buildingSizes ?? [.. Enumerable.Repeat((byte)1, BuildingTypeCount)];
         _buildingNeeds = buildingNeeds ?? new byte[2 * BuildingTypeCount];
+        // stand-in: a table a test does not give sends every good to storage at once, and no storage hands any good out.
+        _goodClasses = goodClasses ?? new GoodClass?[GoodClassCount];
+        _distribution =
+            distribution
+            ??
+            [
+                [],
+                [],
+                [],
+            ];
+        PlankRankBase = plankRankBase;
     }
 
     /// <summary>The class of each object code.</summary>
@@ -278,6 +297,30 @@ public sealed class RuleTables
         type.Code is >= 0 and < BuildingTypeCount
             ? new BuildingNeeds(_buildingNeeds[2 * type.Code], _buildingNeeds[2 * type.Code + 1])
             : new BuildingNeeds(0, 0);
+
+    /// <summary>
+    /// The request a good with no destination looks for (<c>0x464117</c>): its class and the request word of the flags that ask for
+    /// it; null for a good that goes to storage at once. The importer turns the program's table into these values.
+    /// </summary>
+    public GoodClass? ClassOfGood(Good good) => _goodClasses[good.Code & 0x1f];
+
+    /// <summary>
+    /// The order a storage serves the requests in, by the draw the phase routine takes at each cycle (<c>0x42965c</c>): the draw taken
+    /// to 0 to 7 picks the second table at 0, the third at 1, and the first at any other value.
+    /// </summary>
+    public DistributionStep[] DistributionOrder(int draw) =>
+        (draw & 7) switch
+        {
+            0 => _distribution[1],
+            1 => _distribution[2],
+            _ => _distribution[0],
+        };
+
+    /// <summary>
+    /// The rank a building site's request for planks starts from: the high byte of the player word at <c>+0x148</c>, which the
+    /// player setup of a new game writes (<c>0x445752</c>, <c>docs/rules/construction-materials.md</c>).
+    /// </summary>
+    public byte PlankRankBase { get; }
 
     /// <summary>The scan window table as the importer read it.</summary>
     public ushort[] ScanWindows => _scanWindows;

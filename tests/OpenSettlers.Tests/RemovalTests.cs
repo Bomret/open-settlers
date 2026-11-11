@@ -72,9 +72,14 @@ public sealed class RemovalTests
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]: the game before the first pass.
-    private static Game Started(string[] parts, Map map)
+    internal static Game Started(string[] parts, Map map, bool handsOutGoods = false)
     {
-        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var game = GameFactory.Create(
+            TestProgram.Tables(),
+            map,
+            int.Parse(parts[3], CultureInfo.InvariantCulture),
+            handsOutGoods: handsOutGoods
+        );
         var castle = Points(parts[4]).Single();
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         // The flags take their slots in the order the verb lists them, which the order of the commands of one tick (by node) would
@@ -110,7 +115,7 @@ public sealed class RemovalTests
         return game;
     }
 
-    private static Map MapOf(string[] parts)
+    internal static Map MapOf(string[] parts)
     {
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();

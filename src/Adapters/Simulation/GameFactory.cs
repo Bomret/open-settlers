@@ -12,14 +12,18 @@ public static class GameFactory
     /// (<see cref="StartStock.At"/>). The game changes the map it is given: placing the castle writes the castle, its flag,
     /// the heights, and the territory into the map. With <paramref name="everyPassTurns"/> each pass gives the settlers in
     /// motion one more turn (<see cref="MainPass.EveryPassTurns"/>). <paramref name="digest"/> is the game's digest port,
-    /// <see cref="GameDigest"/> by default.
+    /// <see cref="GameDigest"/> by default. With <paramref name="handsOutGoods"/> the pass of the last phase of each cycle runs the
+    /// original's phase routine, which draws once from the generator and hands the castle's goods out to the requests of building
+    /// sites (<see cref="StorageDistribution"/>); the scenarios that compare a game with an emulator verb that skips the phase routine
+    /// leave it off.
     /// </summary>
     public static Game Create(
         RuleTables tables,
         Map map,
         int stockLevel = 0,
         bool everyPassTurns = false,
-        IGameDigest? digest = null
+        IGameDigest? digest = null,
+        bool handsOutGoods = false
     )
     {
         var clock = new GameClock();
@@ -36,7 +40,7 @@ public static class GameFactory
         var movement = new SettlerMovement(map, buildings, tables, () => clock.Now, SettlerEncoder.ResidueOf);
         int Route(int from, int to) => network.Route(flags.Count, from, to);
 
-        var goods = new GoodsTransport(movement, flags, network, history);
+        var goods = new GoodsTransport(movement, flags, network, history, buildings);
         var walkHome = new WalkHomeBehavior(movement, buildings, flags, network, history, draws, Route);
         var causes = new Causes(history, buildings, walkHome);
         var woodcutter = new WoodcutterBehavior(
@@ -109,7 +113,11 @@ public static class GameFactory
             carriers,
             woodcutter,
             removal,
-            roster
+            roster,
+            new SitePass(map, flags, tables),
+            handsOutGoods
+                ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
+                : null
         )
         {
             EveryPassTurns = everyPassTurns,

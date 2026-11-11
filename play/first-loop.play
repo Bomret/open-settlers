@@ -10,13 +10,14 @@ shot castle
 expect-at 14 11 flag
 expect-at 12 11 road
 expect-at 13 10 building
-expect logs = 4
+expect logs = 0
+expect planks = 4
 dump woodcutter
 shot woodcutter
 
-# The castle starts with 4 logs; a fifth is the woodcutter's.
-fast-forward until logs >= 5 max 20000
+# The castle starts with no log; the first is the woodcutter's.
+fast-forward until logs >= 1 max 20000
 wait 0.3
-expect logs >= 5
+expect logs >= 1
 dump log
 shot log
