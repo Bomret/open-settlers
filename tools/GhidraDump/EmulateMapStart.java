@@ -83,7 +83,9 @@
 //                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The SET field writes an object code into
 //                            a node's object byte before a pass (bit 7 of the byte kept): each SET is PASS,X,Y,CODE with the
 //                            code in decimal, as a stone heap's stage is set for the stonecutter's scenarios
-//                            (docs/rules/stonecutting.md). The lines also list the castle's item
+//                            (docs/rules/stonecutting.md). A building of type 17 (the sawmill) is a large building: its node takes
+//                            the object code 3 and its item the pointer to its flag at +0xe that a built site leaves (0x43ef82),
+//                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). The lines also list the castle's item
 //                            (c=) where it changed, and the start lines the castle's item and the transport priorities
 //                            (prio=, 32 bytes for the goods 0 to 31) that the flag exchange reads (0x43b054). Before the
 //                            castle the verb runs 0x445570 on the player block, as the player setup of a new game (0x42055e)

@@ -162,7 +162,8 @@ public sealed class ProgramTablesTests
         );
         Add(ProgramTablesImporter.DiggerWalkAddress, 0x1600);
         Add(ProgramTablesImporter.DiggerHighAddress, 0x1680);
-        var sawmillerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.SawmillerCode;
+        var sawmillerStub =
+            ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.SawmillerCode;
         Write(
             sawmillerStub,
             [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.SawmillerHandlerAddress - (sawmillerStub + 5))]

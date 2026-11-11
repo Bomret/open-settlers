@@ -296,7 +296,9 @@ public sealed class OpenSettlersSource : IGraphicsSource
             Door => 3,
             HandsOver => 4,
             WaitsOffRoad => 5,
-            WalksFree { Trip.Purpose: BackToHut { Carrying: true } } or WaitsOutStep { Then: PutsDownGood } or PutsDownGood => 1,
+            WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
+            or WaitsOutStep { Then: PutsDownGood }
+            or PutsDownGood => 1,
             _ => draw.Carried.IsNone ? 0 : 1,
         };
 

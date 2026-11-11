@@ -20,10 +20,5 @@ public sealed class SawmillRemovalTests
     [TestMethod]
     [DynamicData(nameof(Scenarios))]
     public void RemovingASawmillSendsItsWorkerHomeAsTheOriginalDoes(string name) =>
-        RemovalTests.Replay(
-            Fixture,
-            name,
-            (_, _) => [CommandKind.RemoveBuilding],
-            line => line["sound"] == "4"
-        );
+        RemovalTests.Replay(Fixture, name, (_, _) => [CommandKind.RemoveBuilding], line => line["sound"] == "4");
 }

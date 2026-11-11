@@ -28,7 +28,10 @@ public sealed class SawmillSiteTests
         needs[2 * BuildingType.Sawmill.Code + 1] = Stones;
         var order = new ushort[RuleTables.BuildingTypeCount];
         order[BuildingType.Sawmill.Code] = 0x000c;
-        var game = ConstructionWorld.Create(ConstructionTables.Tables(needs: needs, materialOrder: order), handsOutGoods: true);
+        var game = ConstructionWorld.Create(
+            ConstructionTables.Tables(needs: needs, materialOrder: order),
+            handsOutGoods: true
+        );
         game.CastleStock.Add(ConstructionTables.DiggerTool);
         for (var count = 0; count < 5; count++)
         {
@@ -89,7 +92,10 @@ public sealed class SawmillSiteTests
         Assert.AreEqual(planks - Planks, game.CastleStock.Planks, "the castle lost the 3 planks that went out");
         Assert.AreEqual(stones - Stones, game.CastleStock.Stones, "the castle lost the 2 stones that went out");
         Assert.IsNull(site.Site);
-        Assert.IsNull(game.Flags[site.Flag].RequestOf(RequestWord.First).Asks, "the built sawmill's flag asks for no plank");
+        Assert.IsNull(
+            game.Flags[site.Flag].RequestOf(RequestWord.First).Asks,
+            "the built sawmill's flag asks for no plank"
+        );
         Assert.IsNull(game.Flags[site.Flag].RequestOf(RequestWord.Second).Asks, "nor for a stone");
     }
 }
