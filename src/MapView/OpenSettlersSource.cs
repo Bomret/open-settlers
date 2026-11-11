@@ -278,6 +278,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         ("stonecutter", Job.Stonecutter),
         ("type-one-hut", Job.TypeOneHut),
         ("builder", Job.Builder),
+        ("forester", Job.Forester),
         ("digger", Job.Digger),
     ];
 
@@ -291,7 +292,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     static int KindOf(SettlerDraw draw) =>
         draw.Activity switch
         {
-            Cuts or CutsStone or Builds or Digs => 2,
+            Cuts or CutsStone or Builds or Plants or Digs => 2,
             Door => 3,
             HandsOver => 4,
             WaitsOffRoad => 5,

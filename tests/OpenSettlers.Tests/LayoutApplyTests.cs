@@ -91,6 +91,24 @@ public sealed class LayoutApplyTests
         Assert.IsTrue(game.Buildings.Single(building => building.Type == BuildingType.Stonecutter).WorkerInside);
     }
 
+    [TestMethod]
+    public void AForestersBuildingEntryStandsAJoblessSettlerInsideAsTheForester()
+    {
+        var layout = Read(Castle + Flag + Road + Hut.Replace("woodcutter", "forester"));
+        var game = NewGame(layout);
+        var without = NewGame(Read(Castle + Flag + Road));
+        Assert.IsNull(Read(Castle + Flag + Road).Apply(without));
+        var jobless = without.Settlers.Count(settler => settler.Job == Job.Jobless);
+
+        Assert.IsNull(layout.Apply(game));
+
+        var worker = game.Settlers.Single(settler => settler.Job == Job.Forester);
+        Assert.IsInstanceOfType<Door>(worker.Activity, "he stands in the doorway of his building");
+        Assert.AreEqual((13, 10), (worker.X, worker.Y));
+        Assert.IsTrue(game.Buildings.Single(building => building.Type == BuildingType.Forester).WorkerInside);
+        Assert.AreEqual(jobless - 1, game.Settlers.Count(settler => settler.Job == Job.Jobless));
+    }
+
     // The made tables of the layout tests with the sawmill large, as the original's size table makes it.
     static Game NewGameWithALargeSawmill(Layout layout)
     {

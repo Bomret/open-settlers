@@ -48,6 +48,16 @@ public sealed class CheckedInLayoutsTests
     }
 
     [TestMethod]
+    public void TheForesterPlayScriptReadsWithoutAProblem()
+    {
+        var path = Path.Combine(Path.GetDirectoryName(LayoutsFolder())!, "play", "forester.play");
+
+        var script = OpenSettlers.MapView.PlayScript.Parse(File.ReadAllText(path), "play/forester.play");
+
+        Assert.AreEqual("", string.Join("\n", script.Problems));
+    }
+
+    [TestMethod]
     public void ALayoutThatDoesNotLoadIsAProblemNamingTheFile()
     {
         Assert.IsTrue(Problem("{ \"size\": 1 }", "broken.jsonc")!.StartsWith("broken.jsonc: "));

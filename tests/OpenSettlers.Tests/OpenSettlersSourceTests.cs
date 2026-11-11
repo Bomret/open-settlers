@@ -114,7 +114,7 @@ public sealed class OpenSettlersSourceTests
             .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
             .Concat(
-                from job in new[] { "carrier", "woodcutter", "stonecutter", "type-one-hut", "builder", "digger" }
+                from job in new[] { "carrier", "woodcutter", "stonecutter", "type-one-hut", "builder", "forester", "digger" }
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
             );
@@ -469,6 +469,23 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
+    public void AForesterWalkingAndPlantingEachDrawsItsOwnFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("cuts.png", "2x2:2");
+        folder.Entries["settler/forester/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/forester/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        var source = folder.Load();
+        var outbound = new WalksFree(new Trip(new Vector(2, 1), new ToSpot(new Vector(-2, -1))));
+
+        var walks = source.Draw(Settler(Job.Forester, outbound))!.Image!;
+        var plants = source.Draw(Settler(Job.Forester, new Plants(new Vector(-2, -1), false, 8)))!.Image!;
+
+        Assert.AreEqual((1, 2), (walks.Rgba[0], plants.Rgba[0]));
+    }
+
+    [TestMethod]
     public void AJobTheGameDrawsNoFigureForDrawsNothing()
     {
         using var folder = new ContentFolder();
@@ -482,6 +499,7 @@ public sealed class OpenSettlersSourceTests
     [DataRow("stonecutter")]
     [DataRow("type-one-hut")]
     [DataRow("builder")]
+    [DataRow("forester")]
     [DataRow("digger")]
     public void EachJobDrawsAnImageForEveryActivityKind(string job)
     {
@@ -494,11 +512,13 @@ public sealed class OpenSettlersSourceTests
             ["stonecutter"] = Job.Stonecutter,
             ["type-one-hut"] = Job.TypeOneHut,
             ["builder"] = Job.Builder,
+            ["forester"] = Job.Forester,
             ["digger"] = Job.Digger,
         };
         Activity[] activities =
         [
             new CutsStone(new Vector(0, 0), 1, 0),
+            new Plants(new Vector(0, 0), true, 8),
             new Digs(15, 10, 6, 1),
             Walking(),
             new Walks(new ToStorage(), new Heading(0)),

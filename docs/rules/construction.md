@@ -95,8 +95,8 @@ into the storage (`0x43cd06`) as every job's but the jobs 4 and 21 does. **Emula
 ## The finished building asks for its worker
 
 A building whose construction mark has gone goes to the handler of its type in the next building pass (`0x42cd1d`), which asks for its worker as above. **Emulated:** the forester's request
-is made at the first building turn after the end (19 passes after it), by a settler without a job who walks out and goes in. The work of the types (the forester's, the stonecutter's, the sawmill's) is
-not ported here: a worker whose job has no start routine in the engine stays in state 4 at the door.
+is made at the first building turn after the end (19 passes after it), by a settler without a job who walks out and goes in. The work of the types is in their own notes
+([Stonecutting](stonecutting.md), [Forestry](forestry.md)); a worker whose job has no start routine in the engine (the sawmill's) stays in state 4 at the door.
 
 ## The job numbers
 

@@ -1,0 +1,16 @@
+# A forester plants a sapling on a free meadow node near his building, on layouts/forester.jsonc.
+# Run it on the layout: sh tools/play-run.sh forester --layout layouts/forester.jsonc --fps 10
+# The castle stands at 10,10, so its flag is at 11,11. The forester's building at 13,10 has its flag at 14,11, a road of three steps
+# leads west to the castle's flag, and his worker stands inside. He searches the nodes around the building, walks to a free one,
+# waits, and puts a sapling down.
+wait 0.3
+expect-at 13 10 building
+expect-at 14 11 flag
+expect-count sapling = 0
+shot placed 13 10 1 2
+
+fast-forward until count sapling >= 1 max 20000
+wait 0.3
+expect-count sapling >= 1
+dump sapling-planted
+shot sapling-planted 13 10 1 2

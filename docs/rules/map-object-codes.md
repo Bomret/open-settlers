@@ -130,8 +130,8 @@ The table gives what the sprite shows in either case, so a later rule can name i
 | 100 (`0x64`) | 1 | broad-leaved tree falling, stages 1 to 5 | none | `felled-tree` | the cut writes 0x62 to 0x66 for codes 8 to 15 ([Woodcutting](woodcutting.md)) |
 | 101 (`0x65`) | 1 | broad-leaved tree falling, stages 1 to 5 | none | `felled-tree` | the cut writes 0x62 to 0x66 for codes 8 to 15 ([Woodcutting](woodcutting.md)) |
 | 102 (`0x66`) | 0 | broad-leaved tree falling, stages 1 to 5 | none | `felled-tree` | the cut writes 0x62 to 0x66 for codes 8 to 15 ([Woodcutting](woodcutting.md)) |
-| 103 (`0x67`) | 1 | small sapling (103 smaller) | none | unnamed | class 1; [Woodcutting](woodcutting.md) says codes from 0x67 grow, saplings to trees, without naming each code; not ported |
-| 104 (`0x68`) | 1 | small sapling (103 smaller) | none | unnamed | class 1; [Woodcutting](woodcutting.md) says codes from 0x67 grow, saplings to trees, without naming each code; not ported |
+| 103 (`0x67`) | 1 | small sapling (103 smaller) | none | `sapling` | class 1; the forester's planting `0x4389bf` puts it down and the object pass `0x4290d5` grows it into the trees `0x10` to `0x17` ([Forestry](forestry.md)) |
+| 104 (`0x68`) | 1 | small sapling (103 smaller) | none | `sapling` | class 1; the forester's planting `0x4389bf` puts it down and the object pass `0x42910f` grows it into the trees 8 to `0xf` ([Forestry](forestry.md)) |
 | 105 (`0x69`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | unnamed | class 2; sprite only; no handler ported |
 | 106 (`0x6a`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | unnamed | class 2; sprite only; no handler ported |
 | 107 (`0x6b`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | unnamed | class 2; sprite only; no handler ported |
@@ -158,5 +158,5 @@ The table gives what the sprite shows in either case, so a later rule can name i
 
 ## Open leads
 
-- The codes 28 to 31 (in water), 84 to 89, the saplings 103 and 104, the fields 105 to 111 and 121 to 126, and the
+- The codes 28 to 31 (in water), 84 to 89, the fields 105 to 111 and 121 to 126, and the
   signs 112 to 120 need the handler that creates or reads them before they get a name.
