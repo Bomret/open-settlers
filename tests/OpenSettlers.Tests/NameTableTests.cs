@@ -38,6 +38,18 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
+    public void TheForestersJobStatesAndSaplingsGetTheirNames()
+    {
+        Assert.AreEqual("forester", NameTable.JobName(Job.ForesterCode));
+        Assert.AreEqual("looks-for-spot", NameTable.StateName(0x13));
+        Assert.AreEqual("plants", NameTable.StateName(0x14));
+        var names = Table((0x67, 1), (0x68, 1));
+        Assert.AreEqual("sapling", names.ObjectName(MapObject.SaplingCode));
+        Assert.AreEqual("sapling", names.ObjectName(MapObject.SecondSaplingCode));
+        CollectionAssert.AreEqual(new[] { 0x67, 0x68 }, names.CodesNamed("sapling").ToArray());
+    }
+
+    [TestMethod]
     public void AnUnknownCodeGetsNoName()
     {
         Assert.IsNull(NameTable.StateName(0x43));

@@ -259,7 +259,6 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
-    [DataRow("forester")]
     [DataRow("sawmill")]
     public void AFinishedEntryOfAnotherTypeStandsWithNoWorker(string type)
     {
@@ -285,7 +284,7 @@ public sealed class LayoutSettlersTests
         Assert.IsTrue(game.Buildings[1].Constructing);
 
         Assert.AreEqual(
-            "no finished woodcutter's or stonecutter's building stands on the node",
+            "no finished woodcutter's, stonecutter's, or forester's building stands on the node",
             game.Walks.StandWorkerInHut(13, 10)
         );
     }
