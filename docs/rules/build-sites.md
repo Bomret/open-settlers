@@ -153,7 +153,8 @@ type's handler) names the work of each type: the handler asks for a settler of a
 The names of the types 4, 9, and 0x11 are **inferred** from the sizes, the needs, the jobs, and the game's manual (a
 stonecutter needs a pick and a sawmill worker a saw, a forester needs no tool); the slices that build each type's work
 confirm the name from the goods it puts down. The type 4 is **confirmed**: his worker lays the stone, good 10, on the flag
-([Stonecutting](stonecutting.md#the-building-and-the-job)). The object numbers are the first instruction of each type's draw stub
+([Stonecutting](stonecutting.md#the-building-and-the-job)). The type 9 is **confirmed**: his worker puts the saplings `0x67` and `0x68` on
+nodes of meadow ([Forestry](forestry.md#the-building-and-the-job)). The object numbers are the first instruction of each type's draw stub
 (`0x44e329`, the jump table `0x44e3aa`); the engine draws a finished building with it.
 
 **The site that has not started** (read from the code, not emulated). A building under construction goes through the common
