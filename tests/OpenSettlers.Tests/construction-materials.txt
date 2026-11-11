@@ -8,8 +8,8 @@
 # item st (the stock word of good g at 4 + 2 * g). The flag and building slots are one higher than the engine's (the dummies of the tables).
 # The engine hands a good out by laying it on the castle's flag at once, where the original's first settler carries it out and lays it there
 # about 130 passes later, and the original's storage keeps two goods at most outstanding (+0x3a, +0x3b), which the engine does not model;
-# the engine runs no builder yet (the builder of slice 03 reaches the site at pass 211). So the checks cover the passes up to the
-# first hand-out's carrying (the passes the fixture lists), and the rank of a site's request until the builder arrives.
+# the checks stop before pass 211, where the builder arrives. So the checks cover the passes up to the first hand-out's carrying (the
+# passes the fixture lists), and the rank of a site's request until the builder arrives.
 # Not production code: no routine of the program is transcribed here, only values the program produced.
 
 # two-sites construct:1:1234,5678,9ABC:25:15,5:18,6;15,9:16,6,00;16,6,2223::40:163:b@17,5,9;b@14,8,17;l@14,8,15
