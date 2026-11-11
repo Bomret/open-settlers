@@ -63,9 +63,11 @@ public sealed class SawmillBehavior(
 
         var held = (mill.FillHigh >> 4) + (mill.FillHigh & 0xf);
         var rank = held < StoreFull ? (byte)(0xff >> held) : (byte)0;
-        var word = LogWord();
-        var flag = flags[mill.Flag];
-        flag.SetRequest(word, flag.RequestOf(word) with { Rank = rank });
+        if (movement.Tables.ClassOfGood(Good.Log) is { } asked)
+        {
+            var flag = flags[mill.Flag];
+            flag.SetRequest(asked.Word, flag.RequestOf(asked.Word) with { Rank = rank });
+        }
     }
 
     /// <summary>
@@ -95,46 +97,34 @@ public sealed class SawmillBehavior(
         movement.Become(settler, new Saws(false));
     }
 
-    // The word the log is looked for in: the program's table says the second, a made-up table may say the first.
-    private RequestWord LogWord() => movement.Tables.ClassOfGood(Good.Log)?.Word ?? RequestWord.Second;
-
     // State 0x18 (0x4359fe). Without a log on site (the high nibble of the fill byte) the sawmiller waits and changes nothing. With
     // one he takes it out of the fill, claims the node, and saws: the frame 0x7c, the timer 0x93f, the stamp the clock. When the timer has
     // run out he lets the node go and steps out with a plank.
     private void Work(int slot, Settler settler)
     {
         var node = movement.Map.Index(settler.X, settler.Y);
-        if (((Saws)settler.Activity).Sawing)
+        var sawing = ((Saws)settler.Activity).Sawing;
+        var done = sawing && movement.TimerRan(settler);
+        if (done)
         {
-            if (!movement.TimerRan(settler))
-            {
-                history.RecordSettler(slot, EventType.Saws, Cause.Settlers);
-
-                return;
-            }
-
             movement.Release(node);
             movement.Become(settler, new StepsOutWithGood(Good.Plank));
-            history.RecordSettler(slot, EventType.Saws, Cause.Settlers);
-            StepOut(slot, settler);
-
-            return;
         }
-
-        if (movement.BuildingAt(node) is not { } mill || (mill.FillHigh & OnSite) == 0)
+        else if (!sawing && movement.BuildingAt(node) is { } mill && (mill.FillHigh & OnSite) != 0)
         {
-            history.RecordSettler(slot, EventType.Saws, Cause.Settlers);
-
-            return;
+            mill.SetFill(FillCounter.High, mill.FillHigh - OneOnSite);
+            movement.Become(settler, new Saws(true));
+            movement.Occupy(node, slot);
+            settler.Frame = SawFrame;
+            settler.Timer = SawTime;
+            settler.Stamp = movement.Clock;
         }
 
-        mill.SetFill(FillCounter.High, mill.FillHigh - OneOnSite);
-        movement.Become(settler, new Saws(true));
-        movement.Occupy(node, slot);
-        settler.Frame = SawFrame;
-        settler.Timer = SawTime;
-        settler.Stamp = movement.Clock;
         history.RecordSettler(slot, EventType.Saws, Cause.Settlers);
+        if (done)
+        {
+            StepOut(slot, settler);
+        }
     }
 
     // State 0xb (0x43e228): the step from the door onto the flag south-east of it, as the step of state 7 is (0x43e036), with one more
@@ -161,13 +151,13 @@ public sealed class SawmillBehavior(
             settler.Timer = (ushort)((ushort)(movement.Tables.StepTime(shape) * speed) >> 5);
             settler.Stamp = movement.Clock;
             settler.Activity = new WaitsOutStep(new PutsDownGood(carried));
-            history.RecordSettler(slot, EventType.StepOut, Cause.Settlers);
-
-            return;
+        }
+        else
+        {
+            settler.Frame = WaitFrame;
+            settler.Timer = 0;
         }
 
-        settler.Frame = WaitFrame;
-        settler.Timer = 0;
         history.RecordSettler(slot, EventType.StepOut, Cause.Settlers);
     }
 

@@ -1102,6 +1102,19 @@ public class EmulateMapStart extends GhidraScript {
     }
 
     /** Draws one road as road does, silently: a start flag and its directions; returns whether it was built. */
+    // The sawmill's building type, a large building (size table 0x42d307).
+    private static final int SAWMILL = 17;
+
+    // What a placed building holds beyond the small building's: the object code at the node (2 for a small building, 3 for a large one,
+    // its top bit kept) and, for the sawmill, the flag pointer a building holds at +0xe once its site is built (0x43ef82), through which
+    // the sawmill's handler (0x42da0b) keeps its log request's rank.
+    private void markBuilding(int type, long item, long flag, long codeAddress) throws Exception {
+        if (type == SAWMILL) {
+            putInt(item + 0xe, flag);
+        }
+        emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL ? 3 : 2))});
+    }
+
     private boolean silentRoad(int width, String road) throws Exception {
         long player = PLAYERS + 0x1000;
         putInt(REGISTERS + 0x30, player);
@@ -1227,15 +1240,9 @@ public class EmulateMapStart extends GhidraScript {
         emu.writeMemory(toAddr(item + 4), new byte[] {(byte) (type << 2)});
         putWord(item + 6, flagSlot);
         putInt(flag + 0x34, item);
-        if (type == 17) {
-            // The flag pointer a building holds at +0xe once its site is built (0x43ef82); the sawmill's handler (0x42da0b)
-            // keeps its log request's rank through it.
-            putInt(item + 0xe, flag);
-        }
         emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x40)});
         putWord(layerA + layerB + node, slot);
-        // The object code of the building: 2 for a small building, 3 for a large one (the sawmill, size table 0x42d307).
-        emu.writeMemory(toAddr(layerA + node + 3), new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | (type == 17 ? 3 : 2))});
+        markBuilding(type, item, flag, layerA + node + 3);
         if (wood) {
             // The marks the castle's placement leaves at its node and its flag (docs/rules/settlers.md): the woodcutter's
             // walk avoids a node marked 0x40, so the hut's node is one it may not step onto. **Inferred:** these two writes
@@ -1554,13 +1561,9 @@ public class EmulateMapStart extends GhidraScript {
                 emu.writeMemory(toAddr(item + 4), new byte[] {(byte) (type << 2)});
                 putWord(item + 6, flagSlot);
                 putInt(flag + 0x34, item);
-                if (type == 17) {
-                    putInt(item + 0xe, flag);
-                }
                 emu.writeMemory(toAddr(flag + 4), new byte[] {(byte) (emu.readMemory(toAddr(flag + 4), 1)[0] | 0x40)});
                 putWord(layerA + layerB + node, slot);
-                emu.writeMemory(toAddr(layerA + node + 3),
-                        new byte[] {(byte) ((emu.readMemory(toAddr(layerA + node + 3), 1)[0] & 0x80) | (type == 17 ? 3 : 2))});
+                markBuilding(type, item, flag, layerA + node + 3);
                 emu.writeMemory(toAddr(layerA + node),
                         new byte[] {(byte) (emu.readMemory(toAddr(layerA + node), 1)[0] | 0x42)});
                 emu.writeMemory(toAddr(layerA + fnode),

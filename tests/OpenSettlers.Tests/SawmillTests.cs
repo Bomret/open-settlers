@@ -102,9 +102,93 @@ public sealed class SawmillTests
 
         ConstructionWorld.Run(game, 12000);
 
-        var held = (site.FillLow >> 4) + (site.FillLow & 0xf) + (2 - (site.Site?.Planks ?? 0));
-        Assert.IsGreaterThanOrEqualTo(1, held, "the site got the plank");
+        Assert.IsTrue(site.Constructing, "one plank does not finish the site");
+        var held = (site.FillLow >> 4) + (site.FillLow & 0xf) + (ConstructionTables.ForesterPlanks - site.Site!.Planks);
+        Assert.AreEqual(1, held, "the site got the one plank the log made");
         Assert.AreEqual(planks, game.CastleStock.Planks, "the castle got none");
+    }
+
+    // Lays a stone on every empty place of the sawmill's flag and returns how many it laid.
+    private static int FillFlag(Game game)
+    {
+        var laid = 0;
+        for (var place = 0; place < game.Flags[SawmillFlag].Places.Count; place++)
+        {
+            if (game.Flags[SawmillFlag].Places[place].IsEmpty)
+            {
+                game.Goods.LayGood(SawmillFlag, place, Good.Stone.Code);
+                laid++;
+            }
+        }
+
+        return laid;
+    }
+
+    [TestMethod]
+    public void WhereTheFlagIsFullThePlankWaitsInTheDoorAndIsLaidOnceAPlaceFreesWithoutLosingAGood()
+    {
+        var (game, _) = World();
+        var sawmiller = SawmillerInside(game);
+        var stones = game.CastleStock.Count(Good.Stone);
+        var planks = game.CastleStock.Planks;
+        game.Goods.LayGood(CastleFlag, 0, Good.Log.Code);
+        var laid = 0;
+        var tick = 0;
+        while (sawmiller.Activity is not StepsOutWithGood && tick++ < 12000)
+        {
+            laid += FillFlag(game);
+            game.Tick();
+        }
+
+        Assert.IsInstanceOfType<StepsOutWithGood>(sawmiller.Activity, "the plank is out of the saw");
+        Assert.AreEqual(WaitFrame, sawmiller.Frame, "the flag has no free place: he waits in the door");
+        Assert.IsTrue(
+            game.Flags[SawmillFlag].Places.All(place => place.Good == Good.Stone),
+            "no plank lies on the full flag"
+        );
+
+        // He leaves the door only through a free place; a plank put on the place 7 over a good would lose that good.
+        for (var i = 0; i < 12000 && sawmiller.Activity is StepsOutWithGood; i++)
+        {
+            game.Tick();
+        }
+
+        Assert.IsNotInstanceOfType<StepsOutWithGood>(sawmiller.Activity, "a place freed and he stepped out");
+        ConstructionWorld.Run(game, 3000);
+        Assert.AreEqual(
+            laid,
+            game.CastleStock.Count(Good.Stone) - stones,
+            "every good laid on the flag reached the castle"
+        );
+        Assert.AreEqual(planks + 1, game.CastleStock.Planks, "and so did the plank");
+    }
+
+    private const int WaitFrame = 0x52;
+
+    [TestMethod]
+    public void WhereTheFlagFillsDuringTheStepOutThePlankIsLaidOnThePlaceSeven()
+    {
+        var (game, _) = World();
+        var sawmiller = SawmillerInside(game);
+        game.Goods.LayGood(CastleFlag, 0, Good.Log.Code);
+        for (var tick = 0; tick < 12000 && sawmiller.Activity is not WaitsOutStep; tick++)
+        {
+            game.Tick();
+        }
+
+        Assert.IsInstanceOfType<WaitsOutStep>(sawmiller.Activity, "he stepped out onto the flag with the plank");
+        for (var tick = 0; tick < 100 && sawmiller.Activity is WaitsOutStep or PutsDownGood; tick++)
+        {
+            FillFlag(game);
+            game.Tick();
+        }
+
+        Assert.IsNotInstanceOfType<PutsDownGood>(sawmiller.Activity, "the plank is down");
+        Assert.AreEqual(
+            Good.Plank,
+            game.Flags[SawmillFlag].Places[7].Good,
+            "no place was free: the plank lies on the last place"
+        );
     }
 
     [TestMethod]
