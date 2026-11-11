@@ -50,7 +50,7 @@ Goal and done condition: [roadmap, M4](../roadmap.md#m4-construction). Marks: [L
 - `0x43cd9d`, `0x43e45e`: the digger's start routine (job 2) and state 8: sixteen passes over the site's node and its six neighbours,
   each changing by one the nodes that stand at the height the pass names, then the site starts. known
   ([the digger](../rules/digging.md#state-8-0x43e45e))
-- `0x43fa87`: the digger's figure handler (the adds `0x300` and `0x380`). known from the code
+- `0x43fa87`: the digger's figure handler (the adds `0x300` and `0x380`). known, with a draw run
   ([the digger](../rules/digging.md#the-diggers-figure))
 - `0x44c151` to `0x44c204`, in `0x44bd72`: the evaluator's third-ring term for a large site that waits for its digger. known
   ([the digger](../rules/digging.md#a-site-that-waits-in-the-build-site-evaluator))

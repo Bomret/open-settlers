@@ -88,11 +88,11 @@ the builder starts only after the levelling. **Emulated:** the builder is reques
 
 ## The digger's figure
 
-**Status:** confirmed from the code; the figure frames are the walk's and the dig's two.
+**Status:** confirmed from the code and by a draw run; the figure frames are the walk's and the dig's two.
 
 His figure handler (stub 2 of `0x43f744`, `0x43fa87`) adds `0x300` to the figure byte for a byte below `0x80` and `0x380` from `0x80` (with a sound request at the frames `0x83` and `0x84`). Every frame of state 8 is below `0x80`, so only the
-walk's add draws him; `RuleTables.DiggerFigureAdds` holds both, read from `0x43fae9` and `0x43fade`. The draw of the walk and of the dig is the settlers' ([Settlers](settlers.md#drawing-the-walk-leads)): `SettlerFigures` draws the activity `Digs` for job 2, lifted by the height of the node he stands on. **Inferred:** the
-draw of the dig (no draw run of the program holds a digger). The `open-settlers` content set draws him with the `settler/digger/*` images (`tools/open-settlers-art.py`), the dig as the "cuts" image.
+walk's add draws him; `RuleTables.DiggerFigureAdds` holds both, read from `0x43fae9` and `0x43fade`. The draw of the walk and of the dig is the settlers' ([Settlers](settlers.md#drawing-the-walk-leads)): `SettlerFigures` draws the activity `Digs` for job 2, lifted by the height of the node he stands on. **Confirmed** (draw run, the
+`digger` recording of `settler-draws.txt` on a `construct:` game): his walk out, his steps onto the nodes, and the dig, drawn as the engine draws him. The `open-settlers` content set draws him with the `settler/digger/*` images (`tools/open-settlers-art.py`), the dig as the "cuts" image.
 
 ## A site that waits, in the build-site evaluator
 

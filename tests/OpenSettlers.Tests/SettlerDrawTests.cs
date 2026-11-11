@@ -189,6 +189,7 @@ public sealed class SettlerDrawTests
                 next
             ),
             0x4a => new LeavesSite(),
+            8 => new Digs(mode, bytes[12], bytes[13], bytes[14]),
             5 => new WaitsOutStep(next == 0xd ? new PutsDownGood(new Good(mode)) : new Walks(new ToStorage(), heading)),
             0xb => new StepsOutWithGood(new Good(mode)),
             0xd => new PutsDownGood(new Good(mode)),
