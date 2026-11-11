@@ -71,7 +71,8 @@
 //   wood:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT]]
 //                            worker for the woodcutter (docs/rules/woodcutting.md): the passes also run the map object pass
 //                            0x428d10 after 0x428728, as the main loop 0x4286d8 does, the hut node and its flag take the marks the castle leaves, and a line per pass also lists the object
-//                            bytes that changed (o=x,y:old>new;...), the flag items of slots 0 to 15 that changed (f<slot>=), and
+//                            bytes that changed (o=x,y:old>new;...), the flag bytes (byte 0 of record A) that changed
+//                            (fl=x,y:old>new;...), the flag items of slots 0 to 15 that changed (f<slot>=), and
 //                            the random generator's words (rng=) when they moved. A building of type 2 is the woodcutter's hut.
 //                            worker, wood, and goods lines also carry m= as carrier does.
 //   goods:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PUT;PUT...[:SET;SET...]]]]
@@ -1324,6 +1325,20 @@ public class EmulateMapStart extends GhidraScript {
                 }
                 if (objects.length() > 0) {
                     line.append(" o=").append(objects);
+                }
+                // fl= lists the nodes whose flag byte (byte 0 of record A) changed, as o= lists the object bytes.
+                StringBuilder flagBytes = new StringBuilder();
+                for (int ty = 0; ty < height; ty++) {
+                    for (int tx = 0; tx < width; tx++) {
+                        int at = ty * 8 * width + tx * 4;
+                        if (mapNow[at] != mapSeen[at]) {
+                            flagBytes.append(flagBytes.length() == 0 ? "" : ";").append(tx).append(",").append(ty).append(":")
+                                    .append(String.format("%02X>%02X", mapSeen[at] & 0xff, mapNow[at] & 0xff));
+                        }
+                    }
+                }
+                if (flagBytes.length() > 0) {
+                    line.append(" fl=").append(flagBytes);
                 }
                 mapSeen = mapNow.clone();
                 byte[] flagsNow = emu.readMemory(toAddr(TABLES), ITEM_SIZE * 16);

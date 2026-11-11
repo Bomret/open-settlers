@@ -56,10 +56,10 @@ public sealed class StonecutterTests
     private static string Words(RandomGenerator generator) =>
         string.Join(',', new[] { generator.W0, generator.W1, generator.W2 }.Select(word => word.ToString("X4")));
 
-    // The object bytes of a map that differ from a copy, as the verb lists them: "x,y:old>new" joined by ";".
-    private static string Changes(byte[] before, Map map)
+    // The bytes of a map layer that differ from a copy, as the verb lists them: "x,y:old>new" joined by ";".
+    private static string Changes(byte[] before, Map map, MapLayer layer = MapLayer.Object)
     {
-        var now = Layers.Of(map, MapLayer.Object);
+        var now = Layers.Of(map, layer);
         var width = map.Size.Width;
 
         return string.Join(
@@ -151,10 +151,13 @@ public sealed class StonecutterTests
         var game = Start(scenario.Command, out var map, out var hutFlag, out var passes, out var puts, out var sets);
         var width = map.Size.Width;
         var last = scenario.Lines.Max(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
+        // A scenario recorded with the flag bytes (fl=) lists every change of them, as o= does the object bytes.
+        var listsFlags = scenario.Lines.Any(line => line.ContainsKey("fl"));
 
         for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
         {
             var before = Layers.Of(map, MapLayer.Object);
+            var flagsBefore = Layers.Of(map, MapLayer.Flags);
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
                 game.Goods.LayGood(hutFlag, put.Place, put.Good);
@@ -170,6 +173,7 @@ public sealed class StonecutterTests
             {
                 // The commands of the first tick put the castle, the flags, and the building on the map; the verb lists changes from there.
                 before = Layers.Of(map, MapLayer.Object);
+                flagsBefore = Layers.Of(map, MapLayer.Flags);
             }
 
             var line = scenario.Lines.SingleOrDefault(candidate =>
@@ -180,6 +184,15 @@ public sealed class StonecutterTests
                 Changes(before, map),
                 $"{name}: the objects that changed at pass {pass}"
             );
+            if (listsFlags)
+            {
+                Assert.AreEqual(
+                    line?.GetValueOrDefault("fl") ?? "",
+                    Changes(flagsBefore, map, MapLayer.Flags),
+                    $"{name}: the flag bytes that changed at pass {pass}"
+                );
+            }
+
             if (line is null)
             {
                 continue;

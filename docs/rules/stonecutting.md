@@ -76,7 +76,8 @@ State `0x17` (`0x435c5c`) has three parts, in byte 13:
 1. **0, the step onto the heap's node.** The timer is waited out until it has fallen to the quarter. Then the frame is `0x7b`, the
    timer takes away the quarter plus 1, and the part is 1 with 0x600 added to the timer.
 2. **1, the stroke.** When the timer has run out and no settler stands on the node south-east (the node he came by), the heap's
-   object code goes up by one; the code `0x4f` is taken off the node with its flag bit 6. He steps onto the south-east node
+   object code goes up by one; the code `0x4f` is taken off the node with its flag bit 6 (`0x435d4f`; **emulated:** the bit is the one
+   flag byte the 1100 passes of `last-stone` in `stone-walks.txt` change, at the last cut). He steps onto the south-east node
    (frame `0x0d` plus the height reached less the height left), the stamp is the clock, the part is 2, and the timer takes three
    quarters of that step's time. He waits there while a settler stands on that node (timer 0).
 3. **2, the step back.** When the timer has run out he walks back: byte 13 `0x80`, byte 14 1 (a stone is carried), byte 15 0, state
@@ -132,8 +133,6 @@ searches for the nearest flag of his player, and walks from there to the castle 
 - The check of state `0x16` on the way back after a failed cut. likely
 - A second stonecutter: the request's second way, a new settler made of a jobless one with a pick (good `0x2e`) from the stock
   ([Settlers](settlers.md#the-request)); the castle holds one worker of job 7. guess
-- The flag bit 6 of a heap's node: the generation sets it, and the last cut takes it off (`0x435d4f`); no emulator run lists the
-  flag byte, so the engine's clearing is read from the code. likely
 
 ## In the engine
 
