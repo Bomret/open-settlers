@@ -159,6 +159,36 @@ public sealed class ConstructionDiggerTests
         }
     }
 
+    // The program's term (0x44c151 to 0x44c204) counts the site only while it is under construction and its progress word is 0: a site
+    // the digger's end has started (progress 1), and a finished large building, leave the heights of the judged node alone.
+    [TestMethod]
+    [DataRow("waits", false)]
+    [DataRow("started", true)]
+    [DataRow("finished", true)]
+    public void ALargeBuildingInTheThirdRingWidensTheRangeOnlyWhileItWaitsForItsDigger(string state, bool placed)
+    {
+        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == "sweep-site-flat");
+        var game = Clicked(scenario.Command.Split(':'), withSite: true);
+        var site = game.Buildings[SiteSlot - 1];
+        Assert.IsTrue(site.Constructing);
+        Assert.AreEqual((ushort)0, site.Progress);
+        switch (state)
+        {
+            case "started":
+                site.Progress = 1;
+                break;
+            case "finished":
+                site.Constructing = false;
+                break;
+        }
+
+        var revision = game.Revision;
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 12, 9, Building: BuildingType.Sawmill));
+        game.Tick();
+
+        Assert.AreEqual(placed, game.Revision != revision, $"the {state} site");
+    }
+
     // The game of the scenario's command at the pass after its clicks: the site's click only where `withSite`, the heights of the clicks
     // l@x,y,H (the verb's click sets the node and its six neighbours to H), and none of the sweep's clicks v@.
     private static Game Clicked(string[] parts, bool withSite)

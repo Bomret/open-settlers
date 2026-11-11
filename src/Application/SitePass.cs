@@ -44,7 +44,12 @@ public sealed class SitePass(
 
             if (!Levelled(site, needs.TargetHeight))
             {
-                AskForDigger(site);
+                // 0x42d4a3: a site whose last request failed (status bit 2) waits for the retry scan to clear the bit; else it asks the
+                // castle for a digger (0x42d52a), and the failing request sets the bit (CastleRoster.AskForWorker).
+                if (!site.RequestFailed)
+                {
+                    askForWorker?.Invoke(site, tables.DiggerRequest);
+                }
 
                 return;
             }
@@ -61,16 +66,6 @@ public sealed class SitePass(
         var flag = flags[site.Flag];
         Keep(flag, RequestWord.First, needs.Planks, site.FillLow, tables.PlankRankBase, site.WorkerInside);
         Keep(flag, RequestWord.Second, needs.Stones, site.FillHigh, StoneRankStart, site.WorkerInside);
-    }
-
-    // 0x42d4a3: a site whose last request failed (status bit 2) waits for the retry scan to clear the bit; else it asks the castle for a
-    // digger (0x42d52a), and the failing request sets the bit (CastleRoster.AskForWorker).
-    private void AskForDigger(Building site)
-    {
-        if (!site.RequestFailed)
-        {
-            askForWorker?.Invoke(site, tables.DiggerRequest);
-        }
     }
 
     // The ground is levelled where the node and its six neighbours all lie at the site's height (0x42d34e to 0x42d490).

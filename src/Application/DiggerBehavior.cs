@@ -149,13 +149,6 @@ public sealed class DiggerBehavior(
             return NextNode(slot, settler, digs);
         }
 
-        if (movement.Occupant(next) != 0)
-        {
-            Wait(settler, digs);
-
-            return false;
-        }
-
         return StepOnto(slot, settler, digs.Node);
     }
 
@@ -177,7 +170,7 @@ public sealed class DiggerBehavior(
     // heights, the phase is 3, and the time of the step goes onto the timer. False where that time ends his turn.
     private bool StepOnto(int slot, Settler settler, int node)
     {
-        var direction = node == 0 ? DirectionCount - 1 : DirectionOf(node);
+        var direction = DirectionOf(node);
         var (x, y, next) = movement.Neighbour(settler, direction);
         if (movement.Occupant(next) != 0)
         {

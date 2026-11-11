@@ -209,17 +209,20 @@ public static class BuildSite
             high = Math.Max(high, h);
         }
 
-        for (var i = 19; i < Nodes && buildings is not null; i++)
+        if (buildings is not null)
         {
-            if (
-                nodes[i].Object == MapObject.LargeHut
-                && nodes[i].LinkedSlot is var slot
-                && slot < buildings.Count
-                && buildings[slot] is { Constructing: true, Progress: 0, Site: { } waiting }
-            )
+            for (var i = 19; i < Nodes; i++)
             {
-                low = Math.Min(low, waiting.TargetHeight);
-                high = Math.Max(high, waiting.TargetHeight);
+                if (
+                    nodes[i].Object == MapObject.LargeHut
+                    && nodes[i].LinkedSlot is var slot
+                    && slot < buildings.Count
+                    && buildings[slot] is { Constructing: true, Progress: 0, Site: { } waiting }
+                )
+                {
+                    low = Math.Min(low, waiting.TargetHeight);
+                    high = Math.Max(high, waiting.TargetHeight);
+                }
             }
         }
 

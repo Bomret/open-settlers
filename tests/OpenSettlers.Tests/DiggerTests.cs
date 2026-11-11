@@ -117,6 +117,42 @@ public sealed class DiggerTests
         Assert.IsTrue(levelled);
     }
 
+    // The node of the pass is busy (0x43e7ac): the digger takes the frame 0x57 less the node's index (6 for the east neighbour), the timer
+    // 0x7f, and the phase 0; when the timer has run out he looks again, and steps onto the node once it is free.
+    [TestMethod]
+    public void ADiggerWhoseNodeIsBusyWaitsInPhase0AndStepsOntoItOnceItIsFree()
+    {
+        var (game, site, target) = World(0, 2, 0, 0, 0, 0, 0);
+        var east = game.Map.Index(SiteX + 1, SiteY);
+        var digger = ConstructionWorld.OfJob(game, Job.Digger).Single();
+        const int stranger = 200;
+        game.Movement.Occupy(east, stranger);
+
+        Digs? waiting = null;
+        for (var tick = 0; tick < 6000 && waiting is null; tick++)
+        {
+            game.Tick();
+            waiting = digger.Activity as Digs is { Phase: 0 } digs ? digs : null;
+        }
+
+        Assert.IsNotNull(waiting, "the digger reaches the busy node");
+        Assert.AreEqual(6, waiting.Node);
+        Assert.AreEqual(0x57 - 6, digger.Frame);
+        Assert.AreEqual((ushort)0x7f, digger.Timer);
+
+        ConstructionWorld.Run(game, 2000);
+
+        Assert.AreEqual(target + 2, Neighbour(game, 0).Height, "he has not stepped onto the busy node");
+        Assert.AreEqual(0, ((Digs)digger.Activity).Phase, "he looks again and waits again");
+        Assert.AreEqual(0x57 - 6, digger.Frame);
+
+        game.Movement.Occupy(east, 0);
+        ConstructionWorld.Run(game, 6000);
+
+        CollectionAssert.AreEqual(Levelled(target), Heights(game));
+        Assert.IsGreaterThanOrEqualTo(1, site.Progress);
+    }
+
     [TestMethod]
     public void ANodeMoreThanEightFromTheTargetIsLeftAsItIs()
     {

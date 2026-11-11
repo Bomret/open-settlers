@@ -15,16 +15,15 @@ public sealed class SitePassTests
     private static readonly Request Planks = new(ConstructionTables.PlankClass, 0);
     private static readonly Request Stones = new(ConstructionTables.StoneClass, 0);
 
-    // The requests the site's pass sent to the castle, in order, with the building each came from.
-    private static readonly List<(Building Site, WorkerRequest Request)> Asked = [];
+    // The requests the site's pass sent to the castle, in order, with the building each came from (MSTest makes an instance for each test).
+    private readonly List<(Building Site, WorkerRequest Request)> Asked = [];
 
-    private static (BehaviourBench Bench, SitePass Pass, Building Site) Bench(
+    private (BehaviourBench Bench, SitePass Pass, Building Site) Bench(
         BuildingType type,
         BuildingNeeds needs,
         ushort progress = 1
     )
     {
-        Asked.Clear();
         var bench = new BehaviourBench();
         bench.Flags.Add(4, 4);
         bench.Flags.Add(8, 6);
