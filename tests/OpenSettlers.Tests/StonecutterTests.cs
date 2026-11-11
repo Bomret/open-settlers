@@ -71,9 +71,15 @@ public sealed class StonecutterTests
         );
     }
 
-    private static Game Start(string command, out Map map, out int hutFlag, out int passes)
+    private static Game Start(
+        string command,
+        out Map map,
+        out int hutFlag,
+        out int passes,
+        out List<(int Pass, int Place, int Good)> puts
+    )
     {
-        // goods:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES
+        // goods:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PASS,PLACE,GOOD;...]]]
         var parts = command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
@@ -83,6 +89,16 @@ public sealed class StonecutterTests
         var flags = Points(parts[5]);
         var hut = parts[7].Split(',').Select(int.Parse).ToArray();
         passes = int.Parse(parts[8], CultureInfo.InvariantCulture);
+        // Each put lays a good on a place of the building's flag before the pass.
+        puts =
+        [
+            .. parts.Length > 12
+                ? parts[12]
+                    .Split(';')
+                    .Select(text => text.Split(',').Select(int.Parse).ToArray())
+                    .Select(put => (put[0], put[1], put[2]))
+                : [],
+        ];
 
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
         foreach (var flag in flags)
@@ -120,13 +136,18 @@ public sealed class StonecutterTests
     public void TheStonecutterWorksAsTheOriginalsPassesRunIt(string name)
     {
         var scenario = Load().Single(candidate => candidate.Name == name);
-        var game = Start(scenario.Command, out var map, out var hutFlag, out var passes);
+        var game = Start(scenario.Command, out var map, out var hutFlag, out var passes, out var puts);
         var width = map.Size.Width;
         var last = scenario.Lines.Max(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
 
         for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
         {
             var before = Layers.Of(map, MapLayer.Object);
+            foreach (var put in puts.Where(put => put.Pass == pass))
+            {
+                game.Goods.LayGood(hutFlag, put.Place, put.Good);
+            }
+
             game.Tick();
             if (pass == 0)
             {
