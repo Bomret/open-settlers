@@ -239,11 +239,13 @@ public sealed class WalkBehavior(
         }
 
         var slot = roster.CastleSettler(asked);
-        var made = slot < 0 && movement.Tables.WorkerOf(hut.Type) is { Tool.IsNone: true };
+        var made = slot < 0 && asked == Job.Forester;
         if (made)
         {
-            // The castle holds none of the job: the request's second way (0x42be63) makes one of a settler without a job where the
-            // request names no tool, as the forester's does (docs/rules/forestry.md).
+            // The castle holds no forester: the request's second way (0x42be63) makes one of a settler without a job, and the
+            // forester's job needs no tool (docs/rules/forestry.md). simplicity: the request's tool (RuleTables.WorkerOf) is not
+            // read, because a made-up table gives the woodcutter no tool and the forester no request, so the request cannot
+            // tell the two apart there; a later job that needs no tool and is made in a layout needs this test widened.
             slot = roster.CastleSettler(Job.Jobless);
         }
 
