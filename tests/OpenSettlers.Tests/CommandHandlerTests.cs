@@ -142,4 +142,22 @@ public sealed class CommandHandlerTests
 
         Assert.AreEqual(0, game.Revision);
     }
+
+    [TestMethod]
+    public void ABuildRoadCommandWithNoDirectionsBuildsNoRoadAndChangesNothingOnTheMap()
+    {
+        var game = NewGame();
+        game.Enqueue(Of(CommandKind.PlaceCastle, 17, 0));
+        game.Tick();
+        var before = game.Digest();
+        var revision = game.Revision;
+        var roads = game.Network.Roads.Count;
+
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 1));
+        game.ApplyCommands();
+
+        Assert.AreEqual(roads, game.Network.Roads.Count);
+        Assert.AreEqual(revision, game.Revision);
+        Assert.AreEqual(before, game.Digest());
+    }
 }

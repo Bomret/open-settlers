@@ -54,4 +54,25 @@ public sealed class CastleStockTests
         Assert.IsFalse(castle.Take(Good.Plank), "no plank is left to take");
         Assert.AreEqual(0, castle.Planks);
     }
+
+    [TestMethod]
+    public void AnAdditionAtTheCapLeavesTheCountAt50000()
+    {
+        var castle = Stocked((8, 50000));
+
+        castle.Add(Good.Plank);
+
+        Assert.AreEqual(50000, castle.Planks);
+    }
+
+    [TestMethod]
+    public void AdditionsFrom49999PastTheCapStopAt50000()
+    {
+        var castle = Stocked((8, 49999));
+
+        castle.Add(Good.Plank);
+        Assert.AreEqual(50000, castle.Planks);
+        castle.Add(Good.Plank);
+        Assert.AreEqual(50000, castle.Planks);
+    }
 }
