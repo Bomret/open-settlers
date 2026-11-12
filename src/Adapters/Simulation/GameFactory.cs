@@ -141,6 +141,7 @@ public static class GameFactory
             causes,
             new TablePass(settlers, buildings, behaviours),
             carriers,
+            hut,
             removal,
             roster,
             new SitePass(map, flags, tables, modules, roster.AskForWorker),

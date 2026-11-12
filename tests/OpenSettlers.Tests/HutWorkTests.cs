@@ -147,7 +147,7 @@ public sealed class HutWorkTests
     }
 
     [TestMethod]
-    public void TheGameRunsTheObjectPassOncePerPassThroughTheWoodcuttersPassHook()
+    public void TheGameRunsTheObjectPassOncePerPass()
     {
         const int passes = 50;
         var game = StonecuttingTests.World(null, out var map);
@@ -168,7 +168,7 @@ public sealed class HutWorkTests
     }
 
     [TestMethod]
-    public void TheObjectPassOfTheGameReachesAFallingTreeThroughTheWoodcuttersPassHook()
+    public void TheObjectPassOfTheGameReachesAFallingTree()
     {
         var game = StonecuttingTests.World(null, out var map);
         map.At(9, 20).Object = MapObject.Falling(5, secondVariant: false);

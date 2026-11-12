@@ -477,8 +477,8 @@ public sealed class HutWork(
     }
 
     /// <summary>
-    /// The map's object pass (0x428d10, called by the main loop's 0x4286d8 each pass), run once each pass of the main loop through the
-    /// pass hook of the woodcutter's rules. Each 20 clock units it takes the next nodes of a cursor that moves 23 columns on and a row down
+    /// The map's object pass (0x428d10, called by the main loop's 0x4286d8 each pass), run once each pass of the main loop by
+    /// <see cref="MainPass"/>, before the job modules' pass hooks. Each 20 clock units it takes the next nodes of a cursor that moves 23 columns on and a row down
     /// where it wraps: on a lake node with detail it may move the detail (the draws of the original), a node with an object code of 0x53
     /// or more takes its handler: the cut tree codes 0x5d to 0x66 become 0x53, and 0x53 vanishes when the draw's low two bits are 0; the
     /// saplings 0x67 and 0x68 grow into trees (GrowSapling), so a felled tree turns into nothing in the time the original takes.

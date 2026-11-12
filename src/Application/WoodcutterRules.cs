@@ -6,7 +6,7 @@ namespace OpenSettlers.Simulation;
 /// The woodcutter's work cycle (docs/rules/woodcutting.md): the worker at his hut picks a node of the first 128 around the hut with a
 /// random draw until a tree stands on it, walks there, cuts the tree, walks back to the hut's flag with a log, lays the log on the flag,
 /// and goes into the hut to start again. It is the rules module of the woodcutter job (<see cref="JobRules{TJob}"/>): the door, the step
-/// out, the free walk, and the entry into the hut are <see cref="HutWork"/>'s. The module's pass hook runs the map's object pass, which
+/// out, the free walk, and the entry into the hut are <see cref="HutWork"/>'s. The map's object pass (<see cref="HutWork.ObjectPass"/>)
 /// turns a felled tree into nothing in the time the original takes. The trees are the object codes 8 to 0x17 (0x438c11, 0x437f8f;
 /// <see cref="MapObjectKind.Tree"/>), and the class table calls them class 1 (docs/rules/build-sites.md). The trees of the codes 8 to 15
 /// take the second cutting variant (the animation with the byte 13 set).
@@ -35,9 +35,6 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
         registry.Register<Cuts>((slot, settler, _) => Cut(slot, settler));
         registry.Register<LooksForTree>((slot, settler, _) => SearchTree(slot, settler));
     }
-
-    /// <summary>Runs the map's object pass, once each pass of the main loop.</summary>
-    public override void Pass() => hut.ObjectPass();
 
     /// <summary>0x43cf15: the woodcutter leaves the hut's node and looks for a tree.</summary>
     public override void Start(int slot, Settler settler, Building building)

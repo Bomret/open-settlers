@@ -20,6 +20,7 @@ public sealed class MainPass(
     Causes causes,
     TablePass tablePass,
     CarrierBehavior carriers,
+    HutWork hut,
     Removal removal,
     CastleRoster roster,
     SitePass sites,
@@ -57,6 +58,7 @@ public sealed class MainPass(
         clock.Advance();
         ClearRetryBits();
         carriers.ClearFlagRetryBits();
+        hut.ObjectPass();
         foreach (var module in modules)
         {
             module.Pass();
