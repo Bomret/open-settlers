@@ -228,7 +228,7 @@ public sealed class WalkBehavior(
         var hut = movement.BuildingAt(node);
         if (hut is not { IsDemolishing: false, Site: null } || !StandsWorker(hut.Type))
         {
-            return $"no finished {HutJobs()} building stands on the node";
+            return NoHutRefusal(modules);
         }
 
         if (hut.WorkerInside || hut.WorkerOnTheWay)
@@ -288,9 +288,10 @@ public sealed class WalkBehavior(
     // What a sentence calls a settler of the module's job: the job type's name in lower case.
     private static string NameOf(JobRules rules) => rules.JobType.Name.ToLowerInvariant();
 
-    // The jobs whose buildings a layout stands a worker in, as the refusal names them: "woodcutter's, stonecutter's, or forester's"
-    // (the names last first).
-    private string HutJobs()
+    // The refusal for a node with no building that stands a worker. It names the jobs whose modules let their settler stand in the hut:
+    // "no finished woodcutter's, stonecutter's, or forester's building stands on the node" for three, "a's or b's" for two, "a's" for
+    // one, and no job for none. The names are in descending ordinal order, which gives today's order of the three.
+    internal static string NoHutRefusal(IEnumerable<JobRules> modules)
     {
         var names = modules
             .Where(rules => rules.CanStandInHut)
@@ -298,9 +299,14 @@ public sealed class WalkBehavior(
             .OrderByDescending(name => name, System.StringComparer.Ordinal)
             .Select(name => name + "'s")
             .ToList();
+        var jobs = names.Count switch
+        {
+            0 => "",
+            1 => names[0] + " ",
+            2 => names[0] + " or " + names[1] + " ",
+            _ => string.Join(", ", names.Take(names.Count - 1)) + ", or " + names[^1] + " ",
+        };
 
-        return names.Count < 2
-            ? string.Concat(names)
-            : string.Join(", ", names.Take(names.Count - 1)) + ", or " + names[^1];
+        return $"no finished {jobs}building stands on the node";
     }
 }

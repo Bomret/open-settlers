@@ -77,10 +77,7 @@ public sealed class FixtureJobTests
         {
             using OpenSettlers.Domain;
             public abstract class HistoryEditionLook { }
-            public abstract class HistoryEditionLook<TJob> : HistoryEditionLook where TJob : Job
-            {
-                protected HistoryEditionLook(RuleTables tables) { }
-            }
+            public abstract class HistoryEditionLook<TJob> : HistoryEditionLook where TJob : Job { }
             public abstract class OpenSettlersLook { }
             public abstract class OpenSettlersLook<TJob> : OpenSettlersLook where TJob : Job
             {
@@ -125,7 +122,7 @@ public sealed class FixtureJobTests
     private const string FixtureMapView = """
         namespace OpenSettlers.MapView;
         using OpenSettlers.Domain;
-        public sealed class FixtureLook(RuleTables tables) : HistoryEditionLook<Fixture>(tables);
+        public sealed class FixtureLook(RuleTables tables) : HistoryEditionLook<Fixture>;
         public sealed class FixtureKey() : OpenSettlersLook<Fixture>("fixture");
         """;
 

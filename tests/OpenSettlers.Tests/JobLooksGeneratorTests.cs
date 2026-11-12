@@ -26,10 +26,7 @@ public sealed class JobLooksGeneratorTests
         {
             using OpenSettlers.Domain;
             public abstract class HistoryEditionLook { }
-            public abstract class HistoryEditionLook<TJob> : HistoryEditionLook where TJob : Job
-            {
-                protected HistoryEditionLook(RuleTables tables) { }
-            }
+            public abstract class HistoryEditionLook<TJob> : HistoryEditionLook where TJob : Job { }
             public abstract class OpenSettlersLook { }
             public abstract class OpenSettlersLook<TJob> : OpenSettlersLook where TJob : Job
             {
@@ -67,13 +64,13 @@ public sealed class JobLooksGeneratorTests
         """
             namespace OpenSettlers.MapView;
             using OpenSettlers.Domain;
-            public sealed class BetaLook(RuleTables tables) : HistoryEditionLook<Beta>(tables);
+            public sealed class BetaLook(RuleTables tables) : HistoryEditionLook<Beta>;
             public sealed class BetaKey() : OpenSettlersLook<Beta>("beta");
             """,
         """
             namespace OpenSettlers.MapView;
             using OpenSettlers.Domain;
-            public sealed class AlphaLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+            public sealed class AlphaLook(RuleTables tables) : HistoryEditionLook<Alpha>;
             public sealed class AlphaKey() : OpenSettlersLook<Alpha>("alpha");
             """,
     ];
@@ -137,7 +134,7 @@ public sealed class JobLooksGeneratorTests
             using OpenSettlers.Domain;
             public sealed class LoneLook : HistoryEditionLook<Alpha>
             {
-                public LoneLook() : base(new RuleTables()) { }
+                public LoneLook() { }
             }
             """
         );
@@ -177,8 +174,8 @@ public sealed class JobLooksGeneratorTests
             """
             namespace OpenSettlers.MapView;
             using OpenSettlers.Domain;
-            public sealed class FirstLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
-            public sealed class SecondLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+            public sealed class FirstLook(RuleTables tables) : HistoryEditionLook<Alpha>;
+            public sealed class SecondLook(RuleTables tables) : HistoryEditionLook<Alpha>;
             """
         );
 
@@ -213,7 +210,7 @@ public sealed class JobLooksGeneratorTests
             """
             namespace OpenSettlers.MapView;
             using OpenSettlers.Domain;
-            public sealed class GenericLook<T>(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+            public sealed class GenericLook<T>(RuleTables tables) : HistoryEditionLook<Alpha>;
             public sealed class GenericKey<T>() : OpenSettlersLook<Beta>("beta");
             """
         );
@@ -236,7 +233,7 @@ public sealed class JobLooksGeneratorTests
             using OpenSettlers.Domain;
             public class Holder
             {
-                {{access}} sealed class HiddenLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+                {{access}} sealed class HiddenLook(RuleTables tables) : HistoryEditionLook<Alpha>;
                 {{access}} sealed class HiddenKey() : OpenSettlersLook<Beta>("beta");
             }
             """
@@ -249,6 +246,51 @@ public sealed class JobLooksGeneratorTests
     }
 
     [TestMethod]
+    [DataRow("private", "public")]
+    [DataRow("private", "internal")]
+    [DataRow("protected", "public")]
+    public void ALookNestedInAPrivateOrProtectedTypeIsABuildErrorNamingTheClass(string outer, string inner)
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            $$"""
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public class Holder
+            {
+                {{outer}} class Mid
+                {
+                    {{inner}} sealed class DeepLook(RuleTables tables) : HistoryEditionLook<Alpha>;
+                    {{inner}} sealed class DeepKey() : OpenSettlersLook<Beta>("beta");
+                }
+            }
+            """
+        );
+
+        CollectionAssert.AreEqual(new[] { "LOOK004", "LOOK004" }, diagnostics.Select(d => d.Id).ToArray());
+        Assert.IsFalse(text.Contains("Deep"));
+    }
+
+    [TestMethod]
+    public void APrivateProtectedLookIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public class Holder
+            {
+                private protected sealed class HiddenLook(RuleTables tables) : HistoryEditionLook<Alpha>;
+            }
+            """
+        );
+
+        StringAssert.Contains(diagnostics.Single(d => d.Id == "LOOK004").GetMessage(), "HiddenLook");
+        Assert.IsFalse(text.Contains("HiddenLook"));
+    }
+
+    [TestMethod]
     public void OneJobMayHaveALookUnderEachSource()
     {
         var (diagnostics, _, _) = Run(
@@ -256,7 +298,7 @@ public sealed class JobLooksGeneratorTests
             """
             namespace OpenSettlers.MapView;
             using OpenSettlers.Domain;
-            public sealed class AlphaLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+            public sealed class AlphaLook(RuleTables tables) : HistoryEditionLook<Alpha>;
             public sealed class AlphaKey() : OpenSettlersLook<Alpha>("alpha");
             """
         );

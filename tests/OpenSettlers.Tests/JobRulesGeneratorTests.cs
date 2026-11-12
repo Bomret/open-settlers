@@ -178,6 +178,67 @@ public sealed class JobRulesGeneratorTests
     }
 
     [TestMethod]
+    [DataRow("private", "public")]
+    [DataRow("private", "internal")]
+    [DataRow("protected", "public")]
+    public void AModuleNestedInAPrivateOrProtectedTypeIsABuildErrorNamingTheClass(string outer, string inner)
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            $$"""
+            namespace OpenSettlers.Simulation;
+            public class Holder
+            {
+                {{outer}} class Mid
+                {
+                    {{inner}} sealed class DeepRules(JobParts parts) : JobRules<OpenSettlers.Domain.Alpha>(parts);
+                }
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "RUL004");
+        StringAssert.Contains(error.GetMessage(), "DeepRules");
+        Assert.IsFalse(text.Contains("DeepRules"));
+    }
+
+    [TestMethod]
+    public void APrivateProtectedModuleIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.Simulation;
+            public class Holder
+            {
+                private protected sealed class HiddenRules(JobParts parts) : JobRules<OpenSettlers.Domain.Alpha>(parts);
+            }
+            """
+        );
+
+        StringAssert.Contains(diagnostics.Single(d => d.Id == "RUL004").GetMessage(), "HiddenRules");
+        Assert.IsFalse(text.Contains("HiddenRules"));
+    }
+
+    [TestMethod]
+    public void AModuleNestedInAGenericTypeIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.Simulation;
+            public class Outer<T>
+            {
+                public sealed class InnerRules(JobParts parts) : JobRules<OpenSettlers.Domain.Alpha>(parts);
+            }
+            """
+        );
+
+        StringAssert.Contains(diagnostics.Single(d => d.Id == "RUL003").GetMessage(), "InnerRules");
+        Assert.IsFalse(text.Contains("InnerRules"));
+    }
+
+    [TestMethod]
     public void AModuleNestedAsInternalOrPublicInAPublicTypeIsBuilt()
     {
         var (diagnostics, text, output) = Run(
