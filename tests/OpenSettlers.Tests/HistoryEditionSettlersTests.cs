@@ -54,14 +54,7 @@ public sealed class HistoryEditionSettlersTests
     }
 
     private static Settler LoadedCarrier(int frame, int timer = 0) =>
-        new(
-            Job.Carrier,
-            0,
-            4,
-            3,
-            0,
-            new WalksRoad(new Load(new Good(WoodcutterBehavior.GoodLog), null), new Heading(0))
-        )
+        new(Job.Carrier, 0, 4, 3, 0, new WalksRoad(new Load(new Good(WoodcutterRules.GoodLog), null), new Heading(0)))
         {
             Frame = frame,
             Timer = (ushort)timer,

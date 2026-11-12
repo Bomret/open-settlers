@@ -129,6 +129,6 @@ A large site taken down while it waited still contributes. It contributes the cl
 
 ## In the engine
 
-`DiggerRules` (`src/Application/DiggerRules.cs`), the rules module of the digger (`JobRules<Digger>`), holds the start routine and state 8. `Start` is registered with `WoodcutterBehavior.RegisterModule` for the digger. The activity `Digs` has `Pass`, `Target`, `Node`, and `Phase`, which keep the bytes 11 to 14 for the exporters.
+`DiggerRules` (`src/Application/DiggerRules.cs`), the rules module of the digger (`JobRules<Digger>`), holds the start routine and state 8. `Start` is registered with `HutWork.RegisterModule` for the digger. The activity `Digs` has `Pass`, `Target`, `Node`, and `Phase`, which keep the bytes 11 to 14 for the exporters.
 
 `SitePass.Turn` asks for the digger through `CastleRoster.AskForWorker`, with `RuleTables.DiggerRequest`. `ProgramTablesImporter` reads that table from `0x42d52a`. `EventType.Digs` and `Levelled` record the digger's turns and his end. `BuildSite.Evaluate` has the third-ring term. The tests on made-up tables are `DiggerTests` and `SitePassTests`.

@@ -110,8 +110,8 @@ public sealed class Game
     /// <summary>The walk to an errand and the entry into the building at its end.</summary>
     internal WalkBehavior Walks => _parts.Walks;
 
-    /// <summary>The woodcutter's work on the objects and the trees.</summary>
-    internal WoodcutterBehavior Woodcutter => _parts.Woodcutter;
+    /// <summary>The states the workers of the huts share, and the map's object pass.</summary>
+    internal HutWork Hut => _parts.Hut;
 
     /// <summary>
     /// Stands a finished building of <paramref name="type"/> on the node, as a layout's finished-building entry does

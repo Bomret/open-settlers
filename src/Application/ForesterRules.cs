@@ -2,12 +2,19 @@ using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
 
-// The forester's work cycle (docs/rules/forestry.md), the woodcutter's with the node's own search and an arrival that plants: the
-// worker at his hut draws nodes of the first 128 around the hut until one is free meadow, walks there, waits, puts a sapling
-// down, and walks back to the hut's flag and into the hut. The step out, the free walk, the arrival at the flag, and the entry into
-// the hut are the woodcutter's. The sapling's growth is the object pass's.
-public sealed partial class WoodcutterBehavior
+/// <summary>
+/// The forester's work cycle (docs/rules/forestry.md), the woodcutter's with the node's own search and an arrival that plants: the
+/// worker at his hut draws nodes of the first 128 around the hut until one is free meadow, walks there, waits, puts a sapling
+/// down, and walks back to the hut's flag and into the hut. It is the rules module of the forester job (<see cref="JobRules{TJob}"/>):
+/// the step out, the free walk, and the entry into the hut are <see cref="HutWork"/>'s, and so is the sapling's growth (the object pass).
+/// </summary>
+/// <param name="parts">The shared parts.</param>
+public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
 {
+    private readonly SettlerMovement movement = parts.Movement;
+    private readonly IRandomDraws draws = parts.Draws;
+    private readonly HutWork hut = parts.Hut;
+
     // The time a node he may not plant on adds to the search's timer (0x438de7), where the woodcutter's adds 400.
     private const int SpotMiss = 0x2bc;
 
@@ -18,11 +25,26 @@ public sealed partial class WoodcutterBehavior
     private const int ArrivalWait = 0xbf;
     private const int PlantWait = 0x80;
 
+    private Map Map => movement.Map;
+
+    /// <inheritdoc />
+    public override bool CanStandInHut => true;
+
+    /// <inheritdoc />
+    public override Cause Cause => Cause.Forestry;
+
+    /// <summary>Registers the behaviour of the forester's search and planting.</summary>
+    public override void Register(ActivityRegistry registry)
+    {
+        registry.Register<LooksForSpot>((slot, settler, _) => SearchSpot(slot, settler));
+        registry.Register<Plants>((slot, settler, _) => Plant(slot, settler));
+    }
+
     /// <summary>
     /// The start routine of job 8 (<c>0x43d009</c>), run where the forester has stepped through the door: he leaves the hut's node and
     /// looks for a node to plant on.
     /// </summary>
-    public void StartForester(int slot, Settler settler, Building hut)
+    public override void Start(int slot, Settler settler, Building building)
     {
         movement.Release(Map.Index(settler.X, settler.Y));
         movement.Become(settler, new LooksForSpot());
@@ -52,10 +74,10 @@ public sealed partial class WoodcutterBehavior
     private void SearchSpot(int slot, Settler settler)
     {
         var found = SearchSpotTurn(settler);
-        RecordWork(slot, EventType.SearchSpot);
+        hut.RecordWork(slot, EventType.SearchSpot);
         if (found)
         {
-            StepOut(slot, settler);
+            hut.StepOut(slot, settler);
         }
     }
 
@@ -91,27 +113,25 @@ public sealed partial class WoodcutterBehavior
         }
     }
 
-    // The walk's arrival of job 8 (0x438194). On the node he found he takes the way back as his vector and, where the node still
-    // holds no object, waits to plant (state 0x14, frame 0x79); else he turns back at once. At the flag on the way back he goes into
-    // the hut.
-    private void ArriveForester(int slot, Settler settler)
+    /// <summary>
+    /// The walk's arrival of job 8 (0x438194). On the node he found he takes the way back as his vector and, where the node still
+    /// holds no object, waits to plant (state 0x14, frame 0x79); else he turns back at once. At the flag on the way back he goes into
+    /// the hut.
+    /// </summary>
+    public override void Arrive(int slot, Settler settler)
     {
-        var walk = (WalksFree)settler.Activity;
-        var trip = walk.Trip;
+        var trip = ((WalksFree)settler.Activity).Trip;
         if (trip.Purpose is Home)
         {
             // The walk home (0x4385ab).
-            walkHome.ArriveHome(slot, settler);
-            RecordWork(slot, EventType.Arrive);
+            hut.ArriveHome(slot, settler);
 
             return;
         }
 
         if (trip.Purpose is not ToSpot spot)
         {
-            // The vector's east steps are the byte the entry into the hut sets to 0.
-            settler.Activity = new WalksFree(trip with { Remaining = new Vector(0, trip.Remaining.South) });
-            EnterHut(slot, settler);
+            hut.ReturnToHut(slot, settler, trip);
 
             return;
         }
@@ -120,7 +140,7 @@ public sealed partial class WoodcutterBehavior
         {
             settler.Activity = new WalksFree(new Trip(spot.Back, new BackToHut(false)));
             settler.Timer = 0;
-            RecordWork(slot, EventType.Arrive);
+            hut.RecordWork(slot, EventType.Arrive);
 
             return;
         }
@@ -128,7 +148,7 @@ public sealed partial class WoodcutterBehavior
         settler.Activity = new Plants(spot.Back, false, trip.Memory);
         settler.Frame = 0x79;
         settler.Timer = ArrivalWait;
-        RecordWork(slot, EventType.Arrive);
+        hut.RecordWork(slot, EventType.Arrive);
     }
 
     // State 0x14 (0x4389bf). When the timer has run out the first turn puts the sapling down: the code 0x67, or 0x68 by a draw's low
@@ -137,7 +157,7 @@ public sealed partial class WoodcutterBehavior
     private void Plant(int slot, Settler settler)
     {
         PlantTurn(settler);
-        RecordWork(slot, EventType.PlantSapling, ThingId.OfObject("sapling", settler.X, settler.Y).ToString());
+        hut.RecordWork(slot, EventType.PlantSapling, ThingId.OfObject("sapling", settler.X, settler.Y).ToString());
     }
 
     private void PlantTurn(Settler settler)
@@ -170,16 +190,5 @@ public sealed partial class WoodcutterBehavior
 
         settler.Activity = new WalksFree(new Trip(plants.Back, new BackToHut(false)));
         settler.Timer = 0;
-    }
-
-    // The object pass's handler of the saplings (0x4290d5, 0x42910f): one draw; where its bits 8 and 9 are clear the sapling is
-    // a tree of its own range, picked by the draw's low three bits, and keeps the node's water mark.
-    private void GrowSapling(ref Node node)
-    {
-        var draw = draws.Draw();
-        if ((draw & 0x300) == 0)
-        {
-            node.Object = MapObject.Grown(node.Object, draw);
-        }
     }
 }

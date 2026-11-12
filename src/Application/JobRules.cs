@@ -19,7 +19,7 @@ public abstract class JobRules
     public abstract Type JobType { get; }
 
     /// <summary>
-    /// Whether the settler of the job may stand in its hut while another settler stands on the hut's node. Default: no.
+    /// Whether a layout stands a settler of the job inside a finished building of its own (a hut, as the mission start does). Default: no.
     /// </summary>
     public virtual bool CanStandInHut => false;
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 namespace OpenSettlers.Simulation;
@@ -18,7 +19,8 @@ public sealed class WalkBehavior(
     CarrierBehavior carriers,
     RoadStep roadStep,
     CastleRoster roster,
-    SettlerTable settlers
+    SettlerTable settlers,
+    IReadOnlyList<JobRules> modules
 )
 {
     /// <summary>Registers the behaviours of the activities that walk to an errand.</summary>
@@ -223,7 +225,7 @@ public sealed class WalkBehavior(
     {
         var node = movement.Map.Index(x, y);
         var hut = movement.BuildingAt(node);
-        if (hut is not { IsDemolishing: false, Site: null } || JobOf(hut.Type) is not { } worker)
+        if (hut is not { IsDemolishing: false, Site: null } || !StandsWorker(hut.Type))
         {
             return "no finished woodcutter's, stonecutter's, or forester's building stands on the node";
         }
@@ -233,7 +235,7 @@ public sealed class WalkBehavior(
             return "the hut has its worker already";
         }
 
-        var (asked, name) = worker;
+        var (asked, name) = JobOf(hut.Type)!.Value;
         var slot = roster.CastleSettler(asked);
         // The castle holds none of the job: the request's second way (0x42be63) makes one of a settler without a job where the
         // request names no tool (the forester's, docs/rules/forestry.md). A job whose request names a tool is not made in a layout.
@@ -273,7 +275,14 @@ public sealed class WalkBehavior(
         return null;
     }
 
-    // The job (and its name, for a refusal) of the worker a layout stands inside a finished building of the type; null for any other type.
+    /// <summary>
+    /// Whether a layout stands a worker inside a finished building of the type: the building's job has a module whose rules let its
+    /// settler stand in the hut (<see cref="JobRules.CanStandInHut"/>).
+    /// </summary>
+    public bool StandsWorker(BuildingType type) =>
+        JobOf(type) is { } worker && modules.Any(rules => rules.JobType == worker.Job.GetType() && rules.CanStandInHut);
+
+    // The job (and its name, for a refusal) of the worker of a building of the type; null for a type that has none of these.
     private static (Job Job, string Name)? JobOf(BuildingType type)
     {
         if (type == BuildingType.Woodcutter)
@@ -286,6 +295,11 @@ public sealed class WalkBehavior(
             return (Job.Stonecutter, "stonecutter");
         }
 
-        return type == BuildingType.Forester ? (Job.Forester, "forester") : null;
+        if (type == BuildingType.Forester)
+        {
+            return (Job.Forester, "forester");
+        }
+
+        return type == BuildingType.Sawmill ? (Job.Sawmiller, "sawmiller") : null;
     }
 }

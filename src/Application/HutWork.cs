@@ -4,24 +4,23 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.Simulation;
 
 /// <summary>
-/// The work cycles of the workers who go out from a hut and come back to it: the woodcutter's (this file), the stonecutter's
-/// (<c>WoodcutterBehavior.Stonecutter.cs</c>), and the forester's (<c>WoodcutterBehavior.Forester.cs</c>), which share the step out,
-/// the free walk, and the entry into the hut. The woodcutter's cycle and the map's object pass (docs/rules/woodcutting.md): the
-/// worker at its hut picks a node of the first 128 around the hut with a random draw until a tree stands on it, walks there, cuts the tree, walks back
-/// to the hut's flag with a log, lays the log on the flag, and goes into the hut to start again. The object pass walks a
-/// cursor over the map and turns a felled tree into nothing in the time the original takes. The behaviour takes the
-/// activities of the steps through a door, the search for a tree, the step onto the flag, the free walk (the walk home's
-/// too), the cut, and the entry into a hut.
+/// The states the workers who go out from a hut and come back to it share: the woodcutter's, the stonecutter's, the forester's, and the
+/// type 1 hut's settler (their rules modules hold what each does). The shared states are the door, the step out onto the hut's flag, the
+/// free walk (the walk home's too), the entry into a hut, the search home, and the map's object pass (docs/rules/woodcutting.md). At the
+/// door a settler entering a storage goes first, then the start routine of the module of its job runs; at the end of a free walk the
+/// module's arrival runs; an event's cause is the layout's or the walk home's before the module's. The object pass walks a cursor over the
+/// map and turns a felled tree into nothing in the time the original takes. The behaviour takes the activities of a door, the step onto the
+/// flag, the free walk, and the entry into a hut.
 /// </summary>
 /// <param name="movement">The settlers' ground: the node of each settler, the timer, the change of activity, the tables.</param>
 /// <param name="settlers">The settler table.</param>
 /// <param name="flags">The flag table.</param>
 /// <param name="history">The history the behaviour records its changes in (no rule reads it).</param>
-/// <param name="draws">The random generator the search and the object pass draw from.</param>
+/// <param name="draws">The random generator the object pass draws from.</param>
 /// <param name="walkHome">The walk home, where the free walk arrives and the door leads into the storage.</param>
 /// <param name="layGood">Lays a good on a place of a flag: the flag slot, the place, and the good.</param>
 /// <param name="inLayout">Whether a layout is being built: its rules record their events with the cause layout.</param>
-public sealed partial class WoodcutterBehavior(
+public sealed class HutWork(
     SettlerMovement movement,
     SettlerTable settlers,
     FlagTable flags,
@@ -32,13 +31,6 @@ public sealed partial class WoodcutterBehavior(
     Func<bool> inLayout
 )
 {
-    // The trees are the object codes 8 to 0x17 (0x438c11, 0x437f8f; MapObjectKind.Tree), and the class table calls them
-    // class 1 (docs/rules/build-sites.md). The trees of the codes 8 to 15 take the second cutting variant (the animation
-    // with the byte 13 set).
-
-    /// <summary>The good of a log (the byte 7 the settler writes onto the flag, 0x438011).</summary>
-    public const int GoodLog = 7;
-
     // The object pass (0x428d10): the clock at its last run, its countdown (a debt that wraps while 20 units are due),
     // and the cursor's column and row.
     private ushort _objectStamp;
@@ -50,43 +42,32 @@ public sealed partial class WoodcutterBehavior(
     public (ushort Stamp, ushort Timer, int X, int Y) ObjectPassState =>
         (_objectStamp, _objectTimer, _objectX, _objectY);
 
-    // The start routines of the other jobs (the table at 0x43ca54), which a settler runs where its step through a door ends.
-    private readonly System.Collections.Generic.Dictionary<Type, Action<int, Settler, Building>> _starts = [];
-
-    // The job rules modules by the type of their job: the hooks the shared states call.
+    // The job rules modules by the type of their job: the hooks the shared states call. A job without a module takes the unruled rules.
     private readonly System.Collections.Generic.Dictionary<Type, JobRules> _modules = [];
+    private JobRules? _unruled;
 
     private Map Map => movement.Map;
 
     /// <summary>
-    /// Registers a job rules module: its start routine as <see cref="RegisterStart"/> does, and its arrival and cause hooks, which the free
-    /// walk and the records of the shared states call for a settler of its job.
+    /// Registers a job rules module: the start routine, the arrival, and the cause the shared states call for a settler of its job.
     /// </summary>
-    public void RegisterModule(JobRules rules)
-    {
-        _modules.Add(rules.JobType, rules);
-        _starts.Add(rules.JobType, rules.Start);
-    }
+    public void RegisterModule(JobRules rules) => _modules.Add(rules.JobType, rules);
 
-    /// <summary>
-    /// Registers the start routine of a job (the table at <c>0x43ca54</c>): the settler of the job runs it with its slot, itself, and the
-    /// building it stepped into, where its step through the door ends in a building that is not taken down.
-    /// </summary>
-    public void RegisterStart(Job job, Action<int, Settler, Building> start) => _starts.Add(job.GetType(), start);
+    /// <summary>Registers the rules of the jobs that have no module: they start nothing, record as the settlers' rules, and arrive as <see cref="JobRules.Arrive"/> does.</summary>
+    public void RegisterUnruled(JobRules rules) => _unruled = rules;
 
-    /// <summary>Registers the behaviour of the activities of the woodcutter's work cycle.</summary>
+    private JobRules RulesOf(Job job) =>
+        _modules.TryGetValue(job.GetType(), out var rules)
+            ? rules
+            : _unruled ?? throw new InvalidOperationException("no unruled rules are registered");
+
+    /// <summary>Registers the behaviour of the shared activities: the door, the entry into a hut, the step onto the flag, and the free walk.</summary>
     public void Register(ActivityRegistry registry)
     {
         registry.Register<Door>((slot, settler, _) => PassDoor(slot, settler));
         registry.Register<EntersBuilding>((slot, settler, _) => EnterHut(slot, settler));
         registry.Register<StepsOntoFlag>((slot, settler, _) => StepOut(slot, settler));
         registry.Register<WalksFree>((slot, settler, _) => FreeWalk(slot, settler));
-        registry.Register<Cuts>((slot, settler, _) => Cut(settler));
-        registry.Register<LooksForTree>((slot, settler, _) => SearchTree(slot, settler));
-        registry.Register<LooksForStone>((slot, settler, _) => SearchStone(slot, settler));
-        registry.Register<CutsStone>((slot, settler, _) => CutStone(slot, settler));
-        registry.Register<LooksForSpot>((slot, settler, _) => SearchSpot(slot, settler));
-        registry.Register<Plants>((slot, settler, _) => Plant(slot, settler));
     }
 
     // The cause of a change the settler rules make to the settler in the slot: the walk home while it walks to a storage, else
@@ -126,16 +107,7 @@ public sealed partial class WoodcutterBehavior(
                 return;
             }
 
-            if (settler.Job == Job.Woodcutter)
-            {
-                // 0x43cf15: the woodcutter leaves the hut's node and looks for a tree.
-                movement.Release(node);
-                movement.Become(settler, new LooksForTree());
-            }
-            else if (_starts.TryGetValue(settler.Job.GetType(), out var start))
-            {
-                start(slot, settler, building);
-            }
+            RulesOf(settler.Job).Start(slot, settler, building);
         }
         else
         {
@@ -146,77 +118,23 @@ public sealed partial class WoodcutterBehavior(
         RecordWork(slot, EventType.Door);
     }
 
-    // Records the change a rule of this file made to the settler in the slot (ADR 0011): its state now, the rule's type, and the
-    // rule's area where the settler carries no command cause: the layout while one builds, the walk home for a settler on it
-    // (a woodcutter walking home included), woodcutting for another woodcutter, stonecutting for a stonecutter, and the
-    // settlers' rules for another job that passes through these states.
-    private void RecordWork(int slot, string type, string? other = null) =>
+    /// <summary>
+    /// Records the change a rule of the huts' modules made to the settler in the slot (ADR 0011): its state now, the rule's type, and the
+    /// rule's area where the settler carries no command cause: the layout while one builds, the walk home for a settler on it, and else
+    /// the cause of the settler's job (woodcutting, stonecutting, forestry, or the settlers' rules).
+    /// </summary>
+    internal void RecordWork(int slot, string type, string? other = null) =>
         history.RecordSettler(slot, type, WorkCause(slot), other);
 
     // The rules of the settler's job name their cause where no layout is built and no walk home is walked.
-    private Cause WorkCause(int slot)
-    {
-        var job = settlers[slot].Job;
-
-        return inLayout() || walkHome.IsWalking(slot) ? SettlerCause(slot)
-            : job == Job.Woodcutter ? Cause.Woodcutting
-            : job == Job.Stonecutter ? Cause.Stonecutting
-            : job == Job.Forester ? Cause.Forestry
-            : _modules.TryGetValue(job.GetType(), out var rules) ? rules.Cause
-            : SettlerCause(slot);
-    }
+    private Cause WorkCause(int slot) =>
+        inLayout() || walkHome.IsWalking(slot) ? SettlerCause(slot) : RulesOf(settlers[slot].Job).Cause;
 
     // The generic arrival at the end of a free walk home (0x4385ab); the job rules modules take it through the JobParts.
     internal void ArriveHome(int slot, Settler settler)
     {
         walkHome.ArriveHome(slot, settler);
         RecordWork(slot, EventType.Arrive);
-    }
-
-    // State 0x12, the woodcutter's search (0x438b8c). When its timer has run out it draws a node of the spiral around the
-    // hut, entries 1 to 128, until a tree stands on one; each node without a tree adds 400 to the timer, and the search
-    // ends for this turn when that wraps the timer.
-    private void SearchTree(int slot, Settler settler)
-    {
-        var found = SearchTurn(settler);
-        RecordWork(slot, EventType.SearchTree);
-        if (found)
-        {
-            StepOut(slot, settler);
-        }
-    }
-
-    // One turn of the search; true where it found a tree and took state 7.
-    private bool SearchTurn(Settler settler)
-    {
-        if (!movement.TimerRan(settler))
-        {
-            return false;
-        }
-
-        while (true)
-        {
-            var entry = ((draws.Draw() & 0x1fc) + 4) >> 2;
-            var (dx, dy) = Spiral.Offsets[entry];
-            var x = (settler.X + dx) & (Map.Size.Width - 1);
-            var y = (settler.Y + dy) & (Map.Size.Height - 1);
-            if (Map.At(x, y).Object.Kind == MapObjectKind.Tree)
-            {
-                // The vector to the tree is taken from the flag the first step reaches: one less each way. The way back is
-                // the same vector turned round.
-                var way = new Trip(new Vector(dx - 1, dy - 1), new ToTree(new Vector(-(dx - 1), -(dy - 1))));
-                settler.Activity = new StepsOntoFlag(new WalksFree(way));
-
-                return true;
-            }
-
-            var old = settler.Timer;
-            settler.Timer = (ushort)(old + 400);
-            if (old > 0xfe6f)
-            {
-                return false;
-            }
-        }
     }
 
     // State 7, the step from the hut onto its flag (0x43e036): south-east, when the settler's node and that node are free
@@ -258,7 +176,7 @@ public sealed partial class WoodcutterBehavior(
         RecordWork(slot, EventType.FreeWalk);
         if (arrived)
         {
-            Arrive(slot, settler);
+            RulesOf(settler.Job).Arrive(slot, settler);
         }
     }
 
@@ -274,8 +192,8 @@ public sealed partial class WoodcutterBehavior(
         var trip = walk.Trip;
         if (walk.EyesHeaps)
         {
-            var heap = movement.Neighbour(settler, HeapDirection).Index;
-            trip = EyeHeaps(trip, movement.Occupant(heap) == 0 && HeapAt(heap));
+            var heap = movement.Neighbour(settler, StoneHeaps.Direction).Index;
+            trip = StoneHeaps.Eye(trip, movement.Occupant(heap) == 0 && StoneHeaps.At(Map, heap));
             settler.Activity = walk with { Trip = trip };
         }
 
@@ -484,130 +402,21 @@ public sealed partial class WoodcutterBehavior(
         return hint;
     }
 
-    // The walk has used up its vector (0x437ddd, the woodcutter's branch at 0x437f53). On the tree's node the settler takes
-    // the way back as its vector and starts cutting where the tree still stands; else it turns back at once. At the
-    // flag on the way back it lays the log it carries onto the flag and goes into the hut.
-    private void Arrive(int slot, Settler settler)
+    /// <summary>
+    /// The settler arrived at the flag on the way back from its work: the vector's east steps are the byte the entry into the hut sets to
+    /// 0, and the settler goes into the hut.
+    /// </summary>
+    internal void ReturnToHut(int slot, Settler settler, Trip trip)
     {
-        var trip = ((WalksFree)settler.Activity).Trip;
-        if (settler.Job == Job.Stonecutter)
-        {
-            ArriveStonecutter(slot, settler);
-
-            return;
-        }
-
-        if (settler.Job == Job.Forester)
-        {
-            ArriveForester(slot, settler);
-
-            return;
-        }
-
-        if (settler.Job != Job.Woodcutter)
-        {
-            if (_modules.TryGetValue(settler.Job.GetType(), out var rules))
-            {
-                rules.Arrive(slot, settler);
-
-                return;
-            }
-
-            // **Not ported:** the arrival of the jobs 11, 14, and 20 where they are not walking home (0x437ddd).
-            if (settler.Job.ArrivesHomeGenerically || trip.Purpose is Home)
-            {
-                ArriveHome(slot, settler);
-            }
-
-            return;
-        }
-
-        if (trip.Purpose is not ToTree tree)
-        {
-            // The walk home (0x4385ab).
-            if (trip.Purpose is Home)
-            {
-                walkHome.ArriveHome(slot, settler);
-                RecordWork(slot, EventType.Arrive);
-
-                return;
-            }
-
-            if (trip.Purpose is BackToHut { Carrying: true })
-            {
-                PutGood(slot, settler, GoodLog, Cause.Woodcutting);
-            }
-
-            // The vector's east steps are the byte the entry into the hut sets to 0.
-            settler.Activity = new WalksFree(trip with { Remaining = new Vector(0, trip.Remaining.South) });
-            EnterHut(slot, settler);
-
-            return;
-        }
-
-        var standing = Map.At(settler.X, settler.Y).Object;
-        if (standing.Kind == MapObjectKind.Tree)
-        {
-            settler.Activity = new Cuts(tree.Back, standing.HasSecondCutVariant, 0, trip.Memory);
-            settler.Frame = 0x74;
-            settler.Timer = 0x3ff;
-            RecordWork(slot, EventType.Arrive);
-
-            return;
-        }
-
-        settler.Activity = new WalksFree(new Trip(tree.Back, new BackToHut(false)));
-        settler.Timer = 0;
-        RecordWork(slot, EventType.Arrive);
+        settler.Activity = new WalksFree(trip with { Remaining = new Vector(0, trip.Remaining.South) });
+        EnterHut(slot, settler);
     }
 
-    // State 0x11, the cut (0x438a9e): each time the timer runs out the tree takes the next of its falling codes (0x5d to
-    // 0x66, the second variant after 0x61 for the codes 8 to 15), the frame is 0x74 plus the count and the timer takes
-    // the time that frame's table word gives. After the fifth the settler starts the way back with the log.
-    private void Cut(Settler settler)
-    {
-        var slot = settlers.SlotOf(settler);
-        var tree = ThingId.OfObject("tree", settler.X, settler.Y).ToString();
-        CutTurn(settler);
-        RecordWork(slot, EventType.CutTree, tree);
-    }
-
-    private void CutTurn(Settler settler)
-    {
-        if (!movement.TimerRan(settler))
-        {
-            return;
-        }
-
-        var cut = (Cuts)settler.Activity;
-        ref var node = ref Map.At(settler.X, settler.Y);
-        while (true)
-        {
-            var count = (sbyte)(cut.Count + 1);
-            cut = cut with { Count = count };
-            settler.Activity = cut;
-            node.Object = MapObject.Falling(count, cut.SecondVariant);
-            if (count == 5)
-            {
-                break;
-            }
-
-            settler.Frame = (byte)(count + 0x74);
-            var old = settler.Timer;
-            settler.Timer = (ushort)(old + movement.Tables.StepTime(settler.Frame));
-            if (settler.Timer < old)
-            {
-                return;
-            }
-        }
-
-        settler.Activity = new WalksFree(new Trip(cut.Back, new BackToHut(true)));
-        settler.Timer = 0;
-    }
-
-    // The settler lays a good on the first empty place of the flag it stands on (0x436b46). The flag changes and records; the
-    // settler does not.
-    private void PutGood(int slot, Settler settler, int good, Cause cause)
+    /// <summary>
+    /// The settler lays a good on the first empty place of the flag it stands on (0x436b46). The flag changes and records with
+    /// <paramref name="cause"/>; the settler does not.
+    /// </summary>
+    internal void PutGood(int slot, Settler settler, int good, Cause cause)
     {
         var flag = Map.At(settler.X, settler.Y).LinkedSlot;
         var place = flags[flag].FirstEmptyPlace();
@@ -659,7 +468,7 @@ public sealed partial class WoodcutterBehavior(
     // 0x5d to 0x66 become 0x53, and 0x53 vanishes when the draw's low two bits are 0; the saplings 0x67 and 0x68 grow into trees
     // (GrowSapling). **Not ported:** the handlers of the codes 0x69 and up (the original's growth and decay; the generation
     // places none).
-    /// <summary>The map's object pass, run once each pass of the main loop.</summary>
+    /// <summary>The map's object pass, run once each pass of the main loop (the pass hook of the woodcutter's rules).</summary>
     public void ObjectPass()
     {
         var delta = (ushort)(movement.Clock - _objectStamp);
@@ -712,6 +521,17 @@ public sealed partial class WoodcutterBehavior(
             {
                 GrowSapling(ref at);
             }
+        }
+    }
+
+    // The object pass's handler of the saplings (0x4290d5, 0x42910f): one draw; where its bits 8 and 9 are clear the sapling is
+    // a tree of its own range, picked by the draw's low three bits, and keeps the node's water mark.
+    private void GrowSapling(ref Node node)
+    {
+        var draw = draws.Draw();
+        if ((draw & 0x300) == 0)
+        {
+            node.Object = MapObject.Grown(node.Object, draw);
         }
     }
 

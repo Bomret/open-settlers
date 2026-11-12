@@ -14,6 +14,7 @@ namespace OpenSettlers.Simulation;
 /// <param name="EnterHut">The step from a flag into the building north-west of it (the turn of state 6).</param>
 /// <param name="StepOut">The step from a building onto its flag (the turn of state 7).</param>
 /// <param name="ArriveHome">The generic arrival at the end of a free walk home (<c>0x4385ab</c>), which records its change.</param>
+/// <param name="Hut">The states the workers of the huts share: the modules of those jobs record their changes and lay their goods through it.</param>
 public sealed record JobParts(
     SettlerMovement Movement,
     BuildingTable Buildings,
@@ -23,5 +24,6 @@ public sealed record JobParts(
     Action<int, int, int> LayGood,
     Action<int, Settler> EnterHut,
     Action<int, Settler> StepOut,
-    Action<int, Settler> ArriveHome
+    Action<int, Settler> ArriveHome,
+    HutWork Hut
 );
