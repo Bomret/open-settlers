@@ -8,7 +8,7 @@ namespace OpenSettlers.MapView;
 /// load, as the woodcutter's does, below it.
 /// </summary>
 /// <param name="tables">The tables of the exe: the hut's adds.</param>
-public sealed class TypeOneHutLook(RuleTables tables) : HistoryEditionLook<TypeOneHut>(tables)
+public sealed class TypeOneHutLook(RuleTables tables) : HistoryEditionLook<TypeOneHut>
 {
     private readonly HutFigureAdds _adds = tables.Get<HutFigureAdds>(new TypeOneHut());
 

@@ -50,7 +50,7 @@ constant of `Job`. Add a job as its own files, layer by layer:
 3. Adapters, `src/Adapters/Simulation/Jobs/XTables.cs`: `public sealed class XTables : JobTables<X>` with `[JobName]` and
    `[StateName]` (each carries its evidence, INV-0006) and a `Read` override that adds the job's data records from
    `Siedler1.exe`. `JobTablesRegistry` lists the modules and `NameTable` the names.
-4. Map view: `src/MapView/HistoryEditionLooks/XLook.cs` with `XLook(RuleTables tables) : HistoryEditionLook<X>(tables)`
+4. Map view: `src/MapView/HistoryEditionLooks/XLook.cs` with `XLook(RuleTables tables) : HistoryEditionLook<X>`
    for the History Edition source and `src/MapView/OpenSettlersLooks/XKey.cs` with
    `XKey() : OpenSettlersLook<X>("x")` for the content set (`HistoryEditionLookRegistry`, `OpenSettlersLookRegistry`).
    A job without a look draws nothing; `JobCoverageTests` fails a job that has rules and no look under a source.
@@ -66,7 +66,7 @@ A malformed module fails the build with a message that names the class:
 | `JOB001`–`JOB003` | A job type that is not sealed; two job types with one number; a job type with no `public const int Number` the generator can read. |
 | `TAB001`–`TAB006` | A tables module with no parameterless constructor; two tables modules for one job; two that name one job; two that name one state; one that names a state twice; one that names a state of the core (`CoreStateCodes`, which `NameTable` names itself). |
 | `RUL001`–`RUL004` | A rules module with no constructor that takes the `JobParts` alone; two rules modules for one job; a generic module; a module that is private or protected or nested in such a type. |
-| `LOOK001`–`LOOK002` | A look with no constructor the registry can call; two looks for one job under one graphics source. |
+| `LOOK001`–`LOOK004` | A look with no constructor the registry can call; two looks for one job under one graphics source; a generic look; a look that is private or protected or nested in such a type. |
 
 ## Typed vocabulary
 

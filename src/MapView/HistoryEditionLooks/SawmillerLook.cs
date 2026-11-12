@@ -8,7 +8,7 @@ namespace OpenSettlers.MapView;
 /// out (state 5 with state 0xd next), and the walk's for every other.
 /// </summary>
 /// <param name="tables">The tables of the exe: the sawmiller's adds.</param>
-public sealed class SawmillerLook(RuleTables tables) : HistoryEditionLook<Sawmiller>(tables)
+public sealed class SawmillerLook(RuleTables tables) : HistoryEditionLook<Sawmiller>
 {
     private readonly SawmillerFigureAdds _adds = tables.Get<SawmillerFigureAdds>(new Sawmiller());
 

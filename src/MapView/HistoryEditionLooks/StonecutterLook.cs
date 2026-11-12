@@ -8,7 +8,7 @@ namespace OpenSettlers.MapView;
 /// step back off the heap (state 0x17, byte 13 2), or the walk's.
 /// </summary>
 /// <param name="tables">The tables of the exe: the stonecutter's adds.</param>
-public sealed class StonecutterLook(RuleTables tables) : HistoryEditionLook<Stonecutter>(tables)
+public sealed class StonecutterLook(RuleTables tables) : HistoryEditionLook<Stonecutter>
 {
     private readonly FigureAdds _adds = tables.Get<FigureAdds>(new Stonecutter());
 

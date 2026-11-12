@@ -8,7 +8,7 @@ namespace OpenSettlers.MapView;
 /// and the walk's below it.
 /// </summary>
 /// <param name="tables">The tables of the exe: the forester's adds.</param>
-public sealed class ForesterLook(RuleTables tables) : HistoryEditionLook<Forester>(tables)
+public sealed class ForesterLook(RuleTables tables) : HistoryEditionLook<Forester>
 {
     private readonly ForesterFigureAdds _adds = tables.Get<ForesterFigureAdds>(new Forester());
 

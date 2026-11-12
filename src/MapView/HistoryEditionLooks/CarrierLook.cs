@@ -10,7 +10,7 @@ namespace OpenSettlers.MapView;
 /// direction there, no good).
 /// </summary>
 /// <param name="tables">The tables of the exe: for each good the word a carrier carrying it adds.</param>
-public sealed class CarrierLook(RuleTables tables) : HistoryEditionLook<Carrier>(tables)
+public sealed class CarrierLook(RuleTables tables) : HistoryEditionLook<Carrier>
 {
     private readonly short[] _carried = tables.CarriedFigures;
 

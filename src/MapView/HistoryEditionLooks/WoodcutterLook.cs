@@ -8,7 +8,7 @@ namespace OpenSettlers.MapView;
 /// byte 14 1, state 0x10) or the walk's.
 /// </summary>
 /// <param name="tables">The tables of the exe: the woodcutter's adds.</param>
-public sealed class WoodcutterLook(RuleTables tables) : HistoryEditionLook<Woodcutter>(tables)
+public sealed class WoodcutterLook(RuleTables tables) : HistoryEditionLook<Woodcutter>
 {
     private readonly FigureAdds _adds = tables.Get<FigureAdds>(new Woodcutter());
 

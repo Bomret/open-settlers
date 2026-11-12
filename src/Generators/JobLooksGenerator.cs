@@ -13,7 +13,7 @@ namespace OpenSettlers.Generators;
 /// that declare <c>OpenSettlers.MapView.HistoryEditionLook&lt;TJob&gt;</c> or <c>OpenSettlers.MapView.OpenSettlersLook&lt;TJob&gt;</c>.
 /// A registry builds each look of its source in the order of the looks' full type names. A History Edition look needs a constructor
 /// that takes the <c>RuleTables</c> alone and an Open Settlers look a constructor without parameters. A look without its
-/// constructor, and a second look for one job under one source, are build errors.
+/// constructor, a second look for one job under one source, a generic look, and a look the registry cannot reach are build errors.
 /// </summary>
 [Generator]
 public sealed class JobLooksGenerator : IIncrementalGenerator
@@ -38,36 +38,62 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
         true
     );
 
-    /// <summary>A graphics source: its look type, how a look is built, and the registry it gets.</summary>
+    /// <summary>
+    /// A graphics source: its look type (the generic base's metadata name and the name the registry lists), how a look is built, and
+    /// the registry it gets. A look of a source that takes the tables is built from the <c>RuleTables</c> alone, else from nothing.
+    /// </summary>
     private sealed record Source(
-        int Index,
         string Label,
         string LookMetadataName,
+        string LookType,
         string Registry,
         string Signature,
-        string Arguments
-    );
+        bool TakesTables
+    )
+    {
+        public string Parameter => TakesTables ? "global::OpenSettlers.Domain.RuleTables tables" : "";
+
+        public string Arguments => TakesTables ? "tables" : "";
+    }
 
     // The History Edition source comes first: its registry is written first.
     private static readonly Source[] Sources =
     [
         new(
-            0,
             "History Edition source",
             "OpenSettlers.MapView.HistoryEditionLook`1",
+            "HistoryEditionLook",
             "HistoryEditionLookRegistry",
             "takes the RuleTables alone",
-            "tables"
+            true
         ),
         new(
-            1,
             "Open Settlers source",
             "OpenSettlers.MapView.OpenSettlersLook`1",
+            "OpenSettlersLook",
             "OpenSettlersLookRegistry",
             "takes no parameters",
-            ""
+            false
         ),
     ];
+
+    private static readonly DiagnosticDescriptor GenericLook = new(
+        "LOOK003",
+        "A job look is generic",
+        "The job look '{0}' is generic, or nested in a generic type, which the registry cannot build",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
+
+    private static readonly DiagnosticDescriptor UnreachableLook = new(
+        "LOOK004",
+        "A job look is not reachable from the registry",
+        "The job look '{0}' is private or protected, or nested in a type that is, so the registry cannot build it",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
 
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -106,7 +132,17 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
             var ns = look.ContainingNamespace.ToDisplayString();
             if (SymbolEqualityComparer.Default.Equals(type, look))
             {
-                return new Declaration(type.ToDisplayString(), ns, source.Index, true, null, false, place);
+                return new Declaration(
+                    type.ToDisplayString(),
+                    ns,
+                    source.Registry,
+                    true,
+                    null,
+                    false,
+                    false,
+                    false,
+                    place
+                );
             }
 
             if (type.IsAbstract)
@@ -121,20 +157,34 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
                     var constructed = type.InstanceConstructors.Any(constructor =>
                         constructor.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal
                         && (
-                            source.Index == 0
+                            source.TakesTables
                                 ? tables is not null
                                     && constructor.Parameters.Length == 1
                                     && SymbolEqualityComparer.Default.Equals(constructor.Parameters[0].Type, tables)
                                 : constructor.Parameters.Length == 0
                         )
                     );
+                    var generic = false;
+                    var unreachable = false;
+                    for (var holder = type; holder is not null; holder = holder.ContainingType)
+                    {
+                        generic |= holder.IsGenericType;
+                        unreachable |=
+                            holder.DeclaredAccessibility
+                                is Accessibility.Private
+                                    or Accessibility.Protected
+                                    or Accessibility.ProtectedAndInternal;
+                    }
+
                     return new Declaration(
                         type.ToDisplayString(),
                         ns,
-                        source.Index,
+                        source.Registry,
                         false,
                         parent.TypeArguments[0].ToDisplayString(),
                         constructed,
+                        generic,
+                        unreachable,
                         place
                     );
                 }
@@ -149,7 +199,7 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
         foreach (var source in Sources)
         {
             var look = declarations.FirstOrDefault(declaration =>
-                declaration.IsLook && declaration.Source == source.Index
+                declaration.IsLook && declaration.Source == source.Registry
             );
             if (look is null)
             {
@@ -158,7 +208,7 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
 
             // A partial look has a declaration per part: the first part by file and position stands for it.
             var modules = declarations
-                .Where(declaration => !declaration.IsLook && declaration.Source == source.Index)
+                .Where(declaration => !declaration.IsLook && declaration.Source == source.Registry)
                 .OrderBy(declaration => declaration.Name, System.StringComparer.Ordinal)
                 .ThenBy(declaration => declaration.Place.Path, System.StringComparer.Ordinal)
                 .ThenBy(declaration => declaration.Place.Span.Start)
@@ -186,7 +236,15 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
                 }
 
                 drawn.Add(module.Job!, module);
-                if (module.HasConstructor)
+                if (module.Generic)
+                {
+                    output.ReportDiagnostic(Diagnostic.Create(GenericLook, module.Place.ToLocation(), module.Name));
+                }
+                else if (module.Unreachable)
+                {
+                    output.ReportDiagnostic(Diagnostic.Create(UnreachableLook, module.Place.ToLocation(), module.Name));
+                }
+                else if (module.HasConstructor)
                 {
                     kept.Add(module);
                 }
@@ -207,11 +265,6 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
 
     private static string Write(Source source, string ns, List<Declaration> modules)
     {
-        var lookType = source.LookMetadataName.Substring(
-            source.LookMetadataName.LastIndexOf('.') + 1,
-            source.LookMetadataName.IndexOf('`') - source.LookMetadataName.LastIndexOf('.') - 1
-        );
-        var parameter = source.Index == 0 ? "global::OpenSettlers.Domain.RuleTables tables" : "";
         var text = new StringBuilder();
         text.AppendLine("// <auto-generated/>");
         text.AppendLine("#nullable enable");
@@ -224,9 +277,9 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
         text.AppendLine("{");
         text.AppendLine("    /// <summary>Builds every look of the source.</summary>");
         text.AppendLine(
-            $"    public static global::System.Collections.Generic.IReadOnlyList<{lookType}> Build({parameter}) =>"
+            $"    public static global::System.Collections.Generic.IReadOnlyList<{source.LookType}> Build({source.Parameter}) =>"
         );
-        text.AppendLine($"        new {lookType}[]");
+        text.AppendLine($"        new {source.LookType}[]");
         text.AppendLine("        {");
         foreach (var module in modules)
         {
@@ -252,15 +305,19 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
 
     /// <summary>
     /// What the generator keeps of a declaration: the look type of a source itself, or a concrete class derived from it with the job it
-    /// draws and whether it declares the constructor the registry calls.
+    /// draws, whether it declares the constructor the registry calls, whether it or a type it is nested in is generic, and whether it or
+    /// a type it is nested in is private or protected, which the registry cannot build. <c>Source</c> is the registry of its graphics
+    /// source.
     /// </summary>
     private sealed record Declaration(
         string Name,
         string Namespace,
-        int Source,
+        string Source,
         bool IsLook,
         string? Job,
         bool HasConstructor,
+        bool Generic,
+        bool Unreachable,
         Place Place
     );
 }

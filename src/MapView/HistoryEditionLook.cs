@@ -19,18 +19,14 @@ public abstract class HistoryEditionLook
 
 /// <summary>
 /// The History Edition look of the job <typeparamref name="TJob"/> (ADR 0016, glossary: Job module), read from the job's data in the
-/// <see cref="RuleTables"/>. A look derives from this type and declares a constructor that takes the <see cref="RuleTables"/> alone;
-/// the generator writes <c>HistoryEditionLookRegistry</c> from the looks it finds, and fails the build for a look with no such
-/// constructor and for a second look of one job.
+/// <see cref="RuleTables"/>. A look derives from this type and declares a constructor that takes the <see cref="RuleTables"/> alone,
+/// from which it reads the job's data; the generator writes <c>HistoryEditionLookRegistry</c> from the looks it finds, and fails the
+/// build for a look with no such constructor and for a second look of one job.
 /// </summary>
 /// <typeparam name="TJob">The job the look is for.</typeparam>
-/// <param name="tables">The tables of the exe.</param>
-public abstract class HistoryEditionLook<TJob>(RuleTables tables) : HistoryEditionLook
+public abstract class HistoryEditionLook<TJob> : HistoryEditionLook
     where TJob : Job, new()
 {
-    /// <summary>The tables of the exe.</summary>
-    protected RuleTables Tables { get; } = tables;
-
     /// <inheritdoc />
     public sealed override Job Job { get; } = new TJob();
 }

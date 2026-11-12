@@ -206,6 +206,49 @@ public sealed class JobLooksGeneratorTests
     }
 
     [TestMethod]
+    public void AGenericLookOfEitherSourceIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public sealed class GenericLook<T>(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+            public sealed class GenericKey<T>() : OpenSettlersLook<Beta>("beta");
+            """
+        );
+
+        CollectionAssert.AreEqual(new[] { "LOOK003", "LOOK003" }, diagnostics.Select(d => d.Id).ToArray());
+        StringAssert.Contains(diagnostics[0].GetMessage(), "GenericLook");
+        StringAssert.Contains(diagnostics[1].GetMessage(), "GenericKey");
+        Assert.IsFalse(text.Contains("GenericLook<"));
+    }
+
+    [TestMethod]
+    [DataRow("private")]
+    [DataRow("protected")]
+    public void ALookNestedAsPrivateOrProtectedIsABuildErrorNamingTheClass(string access)
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            $$"""
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public class Holder
+            {
+                {{access}} sealed class HiddenLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+                {{access}} sealed class HiddenKey() : OpenSettlersLook<Beta>("beta");
+            }
+            """
+        );
+
+        CollectionAssert.AreEqual(new[] { "LOOK004", "LOOK004" }, diagnostics.Select(d => d.Id).ToArray());
+        StringAssert.Contains(diagnostics[0].GetMessage(), "HiddenLook");
+        StringAssert.Contains(diagnostics[1].GetMessage(), "HiddenKey");
+        Assert.IsFalse(text.Contains("Hidden"));
+    }
+
+    [TestMethod]
     public void OneJobMayHaveALookUnderEachSource()
     {
         var (diagnostics, _, _) = Run(
