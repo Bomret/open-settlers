@@ -146,7 +146,8 @@ failed `expect` or a problem in the script.
   call removes it on exit only while it holds that call's pid. A stale mutex is cleared in place and never moved,
   by one reaper per holder: the directory `play-out/.lock-<stem>.takeover.reap.<holder>` (`<holder>` is the pid in
   the mutex, or `nopid`) holds the reaper's pid, and its reaper judges the mutex stale again with the same holder
-  in it before it removes it. A reap directory is stale by the mutex's rule, and the next call that judges a mutex of that holder removes it; one whose mutex is gone stays until removed by hand, and blocks nothing. A call
+  in it before it removes it. A reap directory is stale by the mutex's rule, and the next call that judges a mutex
+  of that holder removes it; one whose mutex is gone stays until removed by hand, and blocks nothing. A call
   removes a mutex that holds its own pid outside its critical section instead of waiting on it. Two gaps are left,
   and each needs a call that stalls or is killed. A holder that stalls more than 5 seconds between creating the
   mutex and writing its pid reads as holding none, so a reaper can remove it and a third call can take the path:
