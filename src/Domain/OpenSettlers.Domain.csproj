@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
   <ItemGroup>
     <!-- The rules write the flag tables; the layers and the tests that build state by hand see the setters too. -->
     <InternalsVisibleTo Include="OpenSettlers.Application" />

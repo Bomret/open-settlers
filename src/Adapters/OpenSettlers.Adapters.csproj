@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
   <ItemGroup>
     <!-- The simulation's internal members, such as Map.Index, are read by the game and the tests. -->
     <InternalsVisibleTo Include="OpenSettlers" />
