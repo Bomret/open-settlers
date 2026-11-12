@@ -804,11 +804,15 @@ public class PlayRunWrapperTests
     const string FakePs = """
         #!/bin/sh
         [ -n "${FAKE_PS_EXIT:-}" ] && exit "$FAKE_PS_EXIT"
+        if [ "$2" = "${FAKE_PS_MSWAP_PID:-x}" ]; then
+          if [ -d play-out/.lock-demo.takeover ]; then echo present; else echo absent; fi >> "$FAKE_DIR/ps-swapped-log"
+          exit 1
+        fi
         if [ "$2" = "${FAKE_PS_MDEAD:-x}" ]; then
           if [ -n "${FAKE_PS_MLOG:-}" ]; then
             if [ -d play-out/.lock-demo.takeover ]; then echo present; else echo absent; fi >> "$FAKE_DIR/ps-mutex-log"
           fi
-          [ -n "${FAKE_PS_MSWAP:-}" ] && echo "$FAKE_PS_LIVE" > play-out/.lock-demo.takeover/pid
+          [ -n "${FAKE_PS_MSWAP:-}" ] && echo "${FAKE_PS_MSWAP_PID:-$FAKE_PS_LIVE}" > play-out/.lock-demo.takeover/pid
           exit 1
         fi
         if [ -n "${FAKE_PS_OWN:-}" ] && [ "$2" != "$FAKE_PS_DEAD" ] && [ ! -e "$FAKE_DIR/own-done" ] && [ ! -d play-out/.lock-demo.takeover ]; then
@@ -947,6 +951,40 @@ public class PlayRunWrapperTests
         Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo.takeover/pid")));
         Assert.AreEqual(1, Directory.GetFileSystemEntries(Out(""), ".lock-demo.takeover*").Length, "no sibling of the mutex is left");
         Assert.AreEqual(0, Calls);
+    }
+
+    // The reaper of dead holder D judges the mutex stale a second time, and by then another dead holder E has taken
+    // the path (the fake ps puts E's pid into the mutex). D's reaper must leave E's mutex in place: the call goes on
+    // through E's reaper, which judges the mutex stale (ps-swapped-log) before it clears it.
+    [TestMethod]
+    public void AReaperOfOneDeadHolderLeavesTheMutexOfAnotherDeadHolderToItsOwnReaper()
+    {
+        var holderD = DeadPid();
+        var holderE = DeadPid();
+        var deadOwner = DeadPid();
+        HoldLock(deadOwner);
+        HoldTakeover(holderD, TimeSpan.Zero);
+        var call = Run(
+            Args,
+            FakePsEnv(
+                deadOwner,
+                new()
+                {
+                    ["FAKE_PS_MDEAD"] = holderD.ToString(),
+                    ["FAKE_PS_MSWAP"] = "1",
+                    ["FAKE_PS_MSWAP_PID"] = holderE.ToString(),
+                }
+            )
+        );
+
+        Assert.AreEqual(0, call.Status);
+        Assert.AreEqual(1, Calls);
+        var log = File.ReadAllLines(Path.Combine(fake, "ps-swapped-log"));
+        Assert.IsTrue(
+            log.Length >= 3 && log.All(l => l == "present"),
+            "E's mutex stood through D's reaper and was judged again by E's reaper: " + string.Join(",", log)
+        );
+        Assert.AreEqual(0, Directory.GetFileSystemEntries(Out(""), ".lock-demo.takeover*").Length);
     }
 
     // The mutex is never moved off its path: while the call judges it stale a second time, the path still stands, so
