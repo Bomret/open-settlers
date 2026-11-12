@@ -154,6 +154,8 @@ public sealed class MapLaunchTests
         Assert.AreEqual("a/b.dat: crashed: InvalidOperationException: boom", text);
     }
 
+    sealed record TextPreview : Preview;
+
     sealed class OneKind(string name, params Asset[] assets) : AssetKind
     {
         public override string Name => name;
@@ -170,7 +172,7 @@ public sealed class MapLaunchTests
             Kind = "text",
             File = "x/a",
             Name = "a",
-            Load = () => throw new InvalidOperationException("unused"),
+            Load = () => new TextPreview { Summary = "s" },
         };
         var state = AssetBrowserState.Open(
             LaunchArgs.Parse(["--game", fake.Root], null),
