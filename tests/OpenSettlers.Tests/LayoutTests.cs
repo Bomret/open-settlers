@@ -212,6 +212,24 @@ public sealed class LayoutTests
     }
 
     [TestMethod]
+    [DataRow(0)]
+    [DataRow(13)]
+    [DataRow(31)]
+    public void ALakeGridRowWithANulCharacterIsAProblemNamingTheRowAndColumn(int column)
+    {
+        // The JSON escape \u0000 reads as one NUL character in the row.
+        var row = new string('.', column) + "\\u0000" + new string('.', 31 - column);
+
+        var read = Layout.Read(Text(lakes: Grid('.', (4, row))), "test.jsonc");
+
+        Assert.IsNull(read.Layout);
+        CollectionAssert.AreEqual(
+            new[] { $"test.jsonc: lakes[4]: column {column}: '\0' is not a lake character, . or L" },
+            read.Problems.ToArray()
+        );
+    }
+
+    [TestMethod]
     public void ADrawnTileCarriesTheWaterMarkTheGeneratorGivesATileOfTheSameTerrain()
     {
         // The generated map's heights and terrain, drawn again: the object layer's bit 7 (MapGen_MarkWaterAdjacent)
