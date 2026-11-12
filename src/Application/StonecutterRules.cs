@@ -2,21 +2,53 @@ using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
 
-// The stonecutter's work cycle (docs/rules/stonecutting.md), the woodcutter's with the heap's own search, walk, and cut: the
-// worker at his hut draws nodes of the first 128 around the hut until a stone heap stands beside one, walks there, steps onto
-// the heap's node, cuts, steps back with a stone, lays it on the flag as good 10, and goes into the hut. The step out, the free
-// walk, the arrival at the flag, and the entry into the hut are the woodcutter's.
-public sealed partial class WoodcutterBehavior
+/// <summary>
+/// What the free walk needs of the stone heaps: the direction from a node to the node a heap stands on for a stonecutter who stands on it,
+/// whether a heap stands on a node, and the check at each turn of his walk out.
+/// </summary>
+internal static class StoneHeaps
 {
+    /// <summary>The direction from a node to the node a heap stands on for a stonecutter who stands on it: north-west (0x435b9a, the state's offset +0x14).</summary>
+    public const int Direction = 4;
+
+    /// <summary>Whether a stone heap stands on the node.</summary>
+    public static bool At(Map map, int index) => map.At(index).Object.Kind == MapObjectKind.StoneHeap;
+
+    // State 0x16, at each turn of the stonecutter's walk out (0x436a84): where a node north-west of him holds a heap and no
+    // settler stands on it, he is there: what is left of the vector joins the way back, the vector is used up, and the walk's
+    // memory marks it so. The walk goes on from there as the free walk does. **Not ported:** the same check on the way back
+    // after a cut that failed (state 0x16 too, with the vector of the way back).
+    public static Trip Eye(Trip trip, bool heapBeside)
+    {
+        if (!heapBeside || trip.Purpose is not ToHeap heap)
+        {
+            return trip;
+        }
+
+        var back = new Vector(heap.Back.East + trip.Remaining.East, heap.Back.South + trip.Remaining.South);
+
+        return new Trip(new Vector(0, 0), new ToHeap(back), 8);
+    }
+}
+
+/// <summary>
+/// The stonecutter's work cycle (docs/rules/stonecutting.md), the woodcutter's with the heap's own search, walk, and cut: the
+/// worker at his hut draws nodes of the first 128 around the hut until a stone heap stands beside one, walks there, steps onto
+/// the heap's node, cuts, steps back with a stone, lays it on the flag as good 10, and goes into the hut. It is the rules module of the
+/// stonecutter job (<see cref="JobRules{TJob}"/>): the step out, the free walk, and the entry into the hut are <see cref="HutWork"/>'s.
+/// </summary>
+/// <param name="parts">The shared parts.</param>
+public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(parts)
+{
+    private readonly SettlerMovement movement = parts.Movement;
+    private readonly IRandomDraws draws = parts.Draws;
+    private readonly HutWork hut = parts.Hut;
+
     /// <summary>The good of a stone (the byte 10 the settler writes onto the flag, 0x438180).</summary>
     public const int GoodStone = 10;
 
     // The time a node without a heap adds to the search's timer (0x435c50), where the woodcutter's adds 400.
     private const int HeapMiss = 100;
-
-    // The direction from a node to the node a heap stands on for a stonecutter who stands on it: north-west (0x435b9a, the
-    // state's offset +0x14).
-    private const int HeapDirection = 4;
 
     // The direction from the heap's node back to the node the stonecutter came by: south-east.
     private const int WayOut = 1;
@@ -25,11 +57,26 @@ public sealed partial class WoodcutterBehavior
     // takes three quarters of the step's time (0x435e0d).
     private const int StrokeTime = 0x600;
 
+    private Map Map => movement.Map;
+
+    /// <inheritdoc />
+    public override bool CanStandInHut => true;
+
+    /// <inheritdoc />
+    public override Cause Cause => Cause.Stonecutting;
+
+    /// <summary>Registers the behaviour of the stonecutter's search and cut.</summary>
+    public override void Register(ActivityRegistry registry)
+    {
+        registry.Register<LooksForStone>((slot, settler, _) => SearchStone(slot, settler));
+        registry.Register<CutsStone>((slot, settler, _) => CutStone(slot, settler));
+    }
+
     /// <summary>
     /// The start routine of job 7 (<c>0x43cfdd</c>), run where the stonecutter has stepped through the door: he leaves the hut's node
     /// and looks for a heap.
     /// </summary>
-    public void StartStonecutter(int slot, Settler settler, Building hut)
+    public override void Start(int slot, Settler settler, Building building)
     {
         movement.Release(Map.Index(settler.X, settler.Y));
         movement.Become(settler, new LooksForStone());
@@ -38,12 +85,10 @@ public sealed partial class WoodcutterBehavior
     // The node a heap stands on for a stonecutter at the node (x, y).
     private int HeapOf(int x, int y)
     {
-        var (dx, dy) = Direction.Steps[HeapDirection];
+        var (dx, dy) = Direction.Steps[StoneHeaps.Direction];
 
         return Map.Index((x + dx) & (Map.Size.Width - 1), (y + dy) & (Map.Size.Height - 1));
     }
-
-    private bool HeapAt(int index) => Map.At(index).Object.Kind == MapObjectKind.StoneHeap;
 
     // State 0x15, the stonecutter's search (0x435b17). When its timer has run out he draws a node of the spiral around the
     // hut, entries 1 to 128, until a node not marked solid has a heap north-west of it; each node without adds 100 to the
@@ -51,10 +96,10 @@ public sealed partial class WoodcutterBehavior
     private void SearchStone(int slot, Settler settler)
     {
         var found = SearchStoneTurn(settler);
-        RecordWork(slot, EventType.SearchStone);
+        hut.RecordWork(slot, EventType.SearchStone);
         if (found)
         {
-            StepOut(slot, settler);
+            hut.StepOut(slot, settler);
         }
     }
 
@@ -72,7 +117,7 @@ public sealed partial class WoodcutterBehavior
             var (dx, dy) = Spiral.Offsets[entry];
             var x = (settler.X + dx) & (Map.Size.Width - 1);
             var y = (settler.Y + dy) & (Map.Size.Height - 1);
-            if (!Map.At(x, y).LakeMark && HeapAt(HeapOf(x, y)))
+            if (!Map.At(x, y).LakeMark && StoneHeaps.At(Map, HeapOf(x, y)))
             {
                 // The vector to the node beside the heap is taken from the flag the first step reaches: one less each way.
                 var way = new Trip(new Vector(dx - 1, dy - 1), new ToHeap(new Vector(-(dx - 1), -(dy - 1))));
@@ -90,34 +135,19 @@ public sealed partial class WoodcutterBehavior
         }
     }
 
-    // State 0x16, at each turn of the stonecutter's walk out (0x436a84): where a node north-west of him holds a heap and no
-    // settler stands on it, he is there: what is left of the vector joins the way back, the vector is used up, and the walk's
-    // memory marks it so. The walk goes on from there as the free walk does. **Not ported:** the same check on the way back
-    // after a cut that failed (state 0x16 too, with the vector of the way back).
-    private static Trip EyeHeaps(Trip trip, bool heapBeside)
-    {
-        if (!heapBeside || trip.Purpose is not ToHeap heap)
-        {
-            return trip;
-        }
-
-        var back = new Vector(heap.Back.East + trip.Remaining.East, heap.Back.South + trip.Remaining.South);
-
-        return new Trip(new Vector(0, 0), new ToHeap(back), 8);
-    }
-
-    // The walk's arrival of job 7 (0x438025). On the node beside the heap, with the way back as the vector, he steps onto
-    // the heap's node where it still holds a heap and no settler, and takes state 0x17; else he turns back at once, with
-    // no stone. At the flag on the way back he lays the stone he carries onto the flag and goes into the hut.
-    private void ArriveStonecutter(int slot, Settler settler)
+    /// <summary>
+    /// The walk's arrival of job 7 (0x438025). On the node beside the heap, with the way back as the vector, he steps onto
+    /// the heap's node where it still holds a heap and no settler, and takes state 0x17; else he turns back at once, with
+    /// no stone. At the flag on the way back he lays the stone he carries onto the flag and goes into the hut.
+    /// </summary>
+    public override void Arrive(int slot, Settler settler)
     {
         var walk = (WalksFree)settler.Activity;
         var trip = walk.Trip;
         if (trip.Purpose is Home)
         {
             // The walk home (0x4385ab).
-            walkHome.ArriveHome(slot, settler);
-            RecordWork(slot, EventType.Arrive);
+            hut.ArriveHome(slot, settler);
 
             return;
         }
@@ -126,23 +156,21 @@ public sealed partial class WoodcutterBehavior
         {
             if (trip.Purpose is BackToHut { Carrying: true })
             {
-                PutGood(slot, settler, GoodStone, Cause.Stonecutting);
+                hut.PutGood(slot, settler, GoodStone, Cause);
             }
 
-            // The vector's east steps are the byte the entry into the hut sets to 0.
-            settler.Activity = new WalksFree(trip with { Remaining = new Vector(0, trip.Remaining.South) });
-            EnterHut(slot, settler);
+            hut.ReturnToHut(slot, settler, trip);
 
             return;
         }
 
         var here = Map.Index(settler.X, settler.Y);
-        var (x, y, node) = movement.Neighbour(settler, HeapDirection);
-        if (movement.Occupant(node) != 0 || !HeapAt(node))
+        var (x, y, node) = movement.Neighbour(settler, StoneHeaps.Direction);
+        if (movement.Occupant(node) != 0 || !StoneHeaps.At(Map, node))
         {
             settler.Activity = new WalksFree(new Trip(heap.Back, new BackToHut(false)), walk.EyesHeaps);
             settler.Timer = 0;
-            RecordWork(slot, EventType.Arrive);
+            hut.RecordWork(slot, EventType.Arrive);
 
             return;
         }
@@ -153,7 +181,7 @@ public sealed partial class WoodcutterBehavior
         var time = movement.Tables.StepTime(shape);
         settler.Timer = time;
         settler.Activity = new CutsStone(heap.Back, 0, time >> 2);
-        RecordWork(slot, EventType.Arrive);
+        hut.RecordWork(slot, EventType.Arrive);
     }
 
     // State 0x17, the cut (0x435c5c), in three parts. The step onto the heap's node (part 0) is waited out until a quarter of
@@ -167,12 +195,12 @@ public sealed partial class WoodcutterBehavior
         var (heapX, heapY) = (settler.X, settler.Y);
         if (((CutsStone)settler.Activity).Phase == 2)
         {
-            (heapX, heapY, _) = movement.Neighbour(settler, HeapDirection);
+            (heapX, heapY, _) = movement.Neighbour(settler, StoneHeaps.Direction);
         }
 
         var heap = ThingId.OfObject("stone", heapX, heapY).ToString();
         CutStoneTurn(slot, settler);
-        RecordWork(slot, EventType.CutStone, heap);
+        hut.RecordWork(slot, EventType.CutStone, heap);
     }
 
     private void CutStoneTurn(int slot, Settler settler)

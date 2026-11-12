@@ -68,8 +68,8 @@ public sealed class GameParts
     /// <summary>The walk to an errand.</summary>
     public required WalkBehavior Walks { get; init; }
 
-    /// <summary>The woodcutter.</summary>
-    public required WoodcutterBehavior Woodcutter { get; init; }
+    /// <summary>The states the workers of the huts share.</summary>
+    public required HutWork Hut { get; init; }
 
     /// <summary>The placing of a building with its flag: sites by command, finished buildings by a layout.</summary>
     public required BuildingPlacement Placement { get; init; }

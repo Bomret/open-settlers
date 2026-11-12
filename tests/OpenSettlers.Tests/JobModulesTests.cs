@@ -9,22 +9,42 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class JobModulesTests
 {
-    [TestMethod]
-    public void TheRegistryHoldsTheBuilderTheDiggerAndTheSawmillerInTheOrderOfTheirTypeNames()
-    {
-        var modules = JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!, null!, null!));
+    private static System.Collections.Generic.IReadOnlyList<JobRules> Modules() =>
+        JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!, null!, null!, null!));
 
+    [TestMethod]
+    public void TheRegistryHoldsTheModulesOfTheHutsAndTheBuildingJobsInTheOrderOfTheirTypeNames()
+    {
         CollectionAssert.AreEqual(
-            new[] { typeof(Builder), typeof(Digger), typeof(Sawmiller) },
-            modules.Select(module => module.JobType).ToArray()
+            new[]
+            {
+                typeof(Builder),
+                typeof(Digger),
+                typeof(Forester),
+                typeof(Sawmiller),
+                typeof(Stonecutter),
+                typeof(TypeOneHut),
+                typeof(Woodcutter),
+            },
+            Modules().Select(module => module.JobType).ToArray()
         );
     }
 
     [TestMethod]
-    public void AModuleDoesNotLetItsSettlerStandInTheHutByDefault()
+    public void OnlyTheModulesOfTheWoodcutterTheStonecutterAndTheForesterLetTheirSettlerStandInTheHut()
     {
-        var modules = JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!, null!, null!));
+        CollectionAssert.AreEqual(
+            new[] { typeof(Forester), typeof(Stonecutter), typeof(Woodcutter) },
+            Modules().Where(module => module.CanStandInHut).Select(module => module.JobType).ToArray()
+        );
+    }
 
-        Assert.IsTrue(modules.All(module => !module.CanStandInHut));
+    [TestMethod]
+    public void TheModulesOfTheHutsNameTheCauseOfTheirWork()
+    {
+        CollectionAssert.AreEqual(
+            new[] { Cause.Forestry, Cause.Stonecutting, Cause.Woodcutting },
+            Modules().Where(module => module.CanStandInHut).Select(module => module.Cause).ToArray()
+        );
     }
 }

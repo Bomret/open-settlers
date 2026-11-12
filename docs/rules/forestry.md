@@ -130,7 +130,7 @@ A worker out at his goal is sent home where he stands. He takes state `0x19`, se
 
 ## In the engine
 
-The file `src/Application/WoodcutterBehavior.Forester.cs` is the forester's part of `WoodcutterBehavior`. It holds `StartForester`, `SearchSpot`, `ArriveForester`, `Plant`, and `GrowSapling`. `ObjectPass` calls `GrowSapling` as the object pass's handler.
+The file `src/Application/ForesterRules.cs` holds `ForesterRules`, the rules module of the forester (`JobRules<Forester>`). It holds `Start`, `SearchSpot`, `Arrive`, and `Plant`. `HutWork.ObjectPass` calls `GrowSapling` as the object pass's handler.
 
 The activities are `LooksForSpot` (state `0x13`) and `Plants`. `Plants` is state `0x14`, with the way back, whether the sapling is down, and the walk's memory. The walk to the node is a `WalksFree` whose purpose is `ToSpot`.
 

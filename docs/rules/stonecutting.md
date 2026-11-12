@@ -129,7 +129,7 @@ A worker out at a heap is sent home where he stands. He takes state `0x19`, sear
 
 ## In the engine
 
-The file `src/Application/WoodcutterBehavior.Stonecutter.cs` is the stonecutter's part of `WoodcutterBehavior`. It holds `SearchStone`, `EyeHeaps`, `ArriveStonecutter`, and `CutStone`.
+The file `src/Application/StonecutterRules.cs` holds `StonecutterRules`, the rules module of the stonecutter (`JobRules<Stonecutter>`). It holds `Start`, `SearchStone`, `Arrive`, and `CutStone`, and `StoneHeaps.Eye` is the check at each turn of his walk out. The step out, the free walk, and the entry into the hut are `HutWork`'s.
 
 The activities are:
 
@@ -137,4 +137,4 @@ The activities are:
 - `WalksFree` with `EyesHeaps` set, state `0x16`. It is a trip whose purpose is `ToHeap`.
 - `CutsStone`, state `0x17`, with the part of the cut and the quarter.
 
-`Job.Stonecutter` is job 7. `MapObjectKind.StoneHeap` holds the codes `0x48` to `0x4f`. `WoodcutterBehavior.GoodStone` is the stone. `CastleRoster` asks for his worker for a building of type 4. A layout's `stonecutter` entry stands his worker in the building (`WalkBehavior.StandWorkerInHut`).
+`Job.Stonecutter` is job 7. `MapObjectKind.StoneHeap` holds the codes `0x48` to `0x4f`. `StonecutterRules.GoodStone` is the stone. `CastleRoster` asks for his worker for a building of type 4. A layout's `stonecutter` entry stands his worker in the building (`WalkBehavior.StandWorkerInHut`), because the module declares `CanStandInHut`.

@@ -20,7 +20,6 @@ public sealed class MainPass(
     Causes causes,
     TablePass tablePass,
     CarrierBehavior carriers,
-    WoodcutterBehavior woodcutter,
     Removal removal,
     CastleRoster roster,
     SitePass sites,
@@ -58,7 +57,6 @@ public sealed class MainPass(
         clock.Advance();
         ClearRetryBits();
         carriers.ClearFlagRetryBits();
-        woodcutter.ObjectPass();
         foreach (var module in modules)
         {
             module.Pass();

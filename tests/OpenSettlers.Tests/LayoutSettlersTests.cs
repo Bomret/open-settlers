@@ -148,6 +148,27 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
+    public void ALayoutStandsAWorkerOnlyInTheHutOfAJobWhoseRulesLetItsSettlerStandInTheHut()
+    {
+        var game = Applied(Built);
+
+        CollectionAssert.AreEqual(
+            new[] { true, true, true, false, false, false },
+            new[]
+            {
+                BuildingType.Woodcutter,
+                BuildingType.Stonecutter,
+                BuildingType.Forester,
+                BuildingType.Sawmill,
+                BuildingType.Castle,
+                BuildingType.Storehouse,
+            }
+                .Select(game.Walks.StandsWorker)
+                .ToArray()
+        );
+    }
+
+    [TestMethod]
     public void ACarrierPlacedOnARoadIsTheSettlerTheCastlesWaitingListNamesWhereItNamesOne()
     {
         var jobless = Job.Jobless;

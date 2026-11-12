@@ -16,7 +16,7 @@ The simulation is three class-library assemblies under `src/` that depend only i
   tables, `Job`, `Activity`, `RuleTables`, and the value types they use. It references no other project.
 - `Application/` (`OpenSettlers.Simulation`): `Game`, the coordinator, the `ICommandHandler` of each command, the
   `CommandQueue`, the history, and the rules as behaviors (`CarrierBehavior`, `GoodsTransport`, `Removal`,
-  `WalkHomeBehavior`, `WoodcutterBehavior`, `SettlerMovement`). It references the domain. A behavior takes its parts
+  `WalkHomeBehavior`, `HutWork`, `SettlerMovement`). It references the domain. A behavior takes its parts
   through its constructor. `GameParts` holds them wired, and `GameFactory` in the adapters builds them.
 - `Adapters/Simulation/` (`OpenSettlers.Simulation`): the edge. Importers (`ProgramTablesImporter`, `MapImporter`,
   `MapGenerator`, `Layout`), exporters (`GameDigest`, `SnapshotExporter`, `FlagEncoder`, `SettlerEncoder`,

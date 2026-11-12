@@ -35,14 +35,14 @@ The table gives what the sprite shows in either case, so a later rule can name i
 | 5 (`0x05`) | 0 | none (the draw routine draws nothing) | none | unnamed | no class, no sprite, no pass |
 | 6 (`0x06`) | 0 | none (the draw routine draws nothing) | none | unnamed | no class, no sprite, no pass |
 | 7 (`0x07`) | 0 | none (the draw routine draws nothing) | none | unnamed | no class, no sprite, no pass |
-| 8 (`0x08`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterBehavior` `EndTree`/`EndFirstTrees`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
-| 9 (`0x09`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterBehavior` `EndTree`/`EndFirstTrees`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
-| 10 (`0x0a`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterBehavior` `EndTree`/`EndFirstTrees`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
-| 11 (`0x0b`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterBehavior` `EndTree`/`EndFirstTrees`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
-| 12 (`0x0c`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterBehavior` `EndTree`/`EndFirstTrees`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
-| 13 (`0x0d`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterBehavior` `EndTree`/`EndFirstTrees`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
-| 14 (`0x0e`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterBehavior` `EndTree`/`EndFirstTrees`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
-| 15 (`0x0f`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterBehavior` `EndTree`/`EndFirstTrees`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
+| 8 (`0x08`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterRules`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
+| 9 (`0x09`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterRules`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
+| 10 (`0x0a`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterRules`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
+| 11 (`0x0b`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterRules`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
+| 12 (`0x0c`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterRules`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
+| 13 (`0x0d`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterRules`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
+| 14 (`0x0e`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterRules`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
+| 15 (`0x0f`) | 1 | broad-leaved tree (frames 1250 to 1257) | `0x424175`, `0x4241e3`, `0x4242ab` (terrain 5 to 6) | `tree` | `WoodcutterRules`; [Woodcutting](woodcutting.md) (codes 8 to 0x17) |
 | 16 (`0x10`) | 1 | conifer (frames 1258 to 1265) | `0x424175`, `0x4242ab` (terrain 5 to 6); `0x424247` (terrain 4 to 6) | `tree` | as codes 8 to 15 |
 | 17 (`0x11`) | 1 | conifer (frames 1258 to 1265) | `0x424175`, `0x4242ab` (terrain 5 to 6); `0x424247` (terrain 4 to 6) | `tree` | as codes 8 to 15 |
 | 18 (`0x12`) | 1 | conifer (frames 1258 to 1265) | `0x424175`, `0x4242ab` (terrain 5 to 6); `0x424247` (terrain 4 to 6) | `tree` | as codes 8 to 15 |
@@ -110,7 +110,7 @@ The table gives what the sprite shows in either case, so a later rule can name i
 | 80 (`0x50`) | 2 | brown rock (80 tall, 81 low) | `0x42443b` (terrain 5 to 6) | `rock` | class 2; sprite |
 | 81 (`0x51`) | 2 | brown rock (80 tall, 81 low) | `0x42443b` (terrain 5 to 6) | `rock` | class 2; sprite |
 | 82 (`0x52`) | 1 | wooden cross | none; `MapGen_MarkPeaks` writes it on peaks | `cross` | sprite; `MapGen_MarkPeaks` puts it on peaks ([Map form](map-form.md)) |
-| 83 (`0x53`) | 0 | tree stump | `0x424503` (terrain 5 to 6) | `stump` | `FirstHandledObject` 0x53 in `WoodcutterBehavior`; [Woodcutting](woodcutting.md) calls it the stump |
+| 83 (`0x53`) | 0 | tree stump | `0x424503` (terrain 5 to 6) | `stump` | `FirstHandledObject` 0x53 in `HutWork`; [Woodcutting](woodcutting.md) calls it the stump |
 | 84 (`0x54`) | 0 | small stone with grass (84 grey, 85 brown) | `0x424567` (terrain 5 to 6) | unnamed | class 0; sprite only |
 | 85 (`0x55`) | 0 | small stone with grass (84 grey, 85 brown) | `0x424567` (terrain 5 to 6) | unnamed | class 0; sprite only |
 | 86 (`0x56`) | 0 | pale bones (86) and a small pale piece (87) | `0x4245cb` (terrain 10) | unnamed | class 0; sprite only |

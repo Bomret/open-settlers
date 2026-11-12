@@ -465,6 +465,7 @@ scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`, 
 the adapters) holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's waiting list, and the
 settlers' places.
 
-The carriers' part is in `src/Application/CarrierBehavior.cs` ([Carriers](carriers.md#in-the-engine)). The woodcutter's part and
-the map's object pass are in `src/Application/WoodcutterBehavior.cs` ([Woodcutting](woodcutting.md#in-the-engine)). The walk home
+The carriers' part is in `src/Application/CarrierBehavior.cs` ([Carriers](carriers.md#in-the-engine)). The huts' shared
+states and the map's object pass are in `src/Application/HutWork.cs`, and the woodcutter's part is in `src/Application/WoodcutterRules.cs`
+([Woodcutting](woodcutting.md#in-the-engine)). The walk home
 is in `src/Application/WalkHomeBehavior.cs`. Both build on `SettlerMovement` (the settlers' nodes, the step, and the timer).

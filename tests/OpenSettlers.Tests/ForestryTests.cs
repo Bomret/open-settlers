@@ -260,7 +260,7 @@ public sealed class ForestryTests
         {
             game.Tick();
             grown |= saplings.Any(node => map.At(node.X, node.Y).Object.Kind != MapObjectKind.Sapling);
-            log = game.Flags[3].Places.Any(place => place.Good == new Good(WoodcutterBehavior.GoodLog));
+            log = game.Flags[3].Places.Any(place => place.Good == new Good(WoodcutterRules.GoodLog));
         }
 
         Assert.IsTrue(grown, "a sapling of the hut's reach grew");
@@ -271,7 +271,7 @@ public sealed class ForestryTests
     private static (MapObject After, int Taken) Grow(byte sapling, params ushort[] draws)
     {
         var bench = new BehaviourBench(draws);
-        var behaviour = new WoodcutterBehavior(
+        var work = new HutWork(
             bench.Movement,
             bench.Settlers,
             bench.Flags,
@@ -292,7 +292,7 @@ public sealed class ForestryTests
         bench.Map.At(23, 0).Object = new MapObject(sapling);
         bench.Clock = 8 * 40;
 
-        behaviour.ObjectPass();
+        work.ObjectPass();
 
         return (bench.Map.At(23, 0).Object, bench.Draws.Taken);
     }
