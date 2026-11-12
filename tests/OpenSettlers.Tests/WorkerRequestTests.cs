@@ -12,7 +12,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class WorkerRequestTests
 {
-    private static readonly Job ForesterJob = new(8);
+    private static readonly Job ForesterJob = Job.Of(8);
     private static readonly Good Tool = ConstructionTables.ForesterTool;
 
     private static Building PlaceForester(Game game)

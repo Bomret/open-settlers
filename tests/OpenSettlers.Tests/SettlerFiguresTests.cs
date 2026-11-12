@@ -207,7 +207,7 @@ public sealed class SettlerFiguresTests
     public void ASettlerOfAJobWithoutAFigureHandlerIsNotDrawn(int job)
     {
         var walker = Walker(7, 0);
-        var other = new Settler(new Job(job), 0, 4, 3, 0, walker.Activity)
+        var other = new Settler(Job.Of(job), 0, 4, 3, 0, walker.Activity)
         {
             Frame = walker.Frame,
             Timer = walker.Timer,

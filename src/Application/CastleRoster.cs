@@ -28,13 +28,13 @@ public sealed class CastleRoster(
     // byte 0 of the original's item shifted right by 2.
     private static readonly Job[] CastleJobs =
     [
-        .. new[] { 4, 21, 21, 21, 21, 21, 22, 22, 22, 18, 5, 6, 7, 2, 3, 11, 20, 20, 9, 9 }.Select(code => new Job(
-            code
-        )),
+        .. new[] { 4, 21, 21, 21, 21, 21, 22, 22, 22, 18, 5, 6, 7, 2, 3, 11, 20, 20, 9, 9 }.Select(code =>
+            Job.Of(code)
+        ),
     ];
 
     // The job whose waiting settler's turn in the castle takes another branch (not ported): the original's job 10.
-    private static readonly Job UnportedWaitingJob = new(10);
+    private static readonly Job UnportedWaitingJob = Job.Of(10);
 
     // The number of jobs the castle's list of waiting settlers has an entry for (0x42 + 2 times the job, up to 0x82).
     private const int JobCount = 32;
@@ -68,7 +68,7 @@ public sealed class CastleRoster(
 
     /// <summary>The castle's list of waiting settlers, by job: the slot of the settler that waits there, 0 for none.</summary>
     public IReadOnlyList<ushort> WaitingList =>
-        [.. Enumerable.Range(0, JobCount).Select(code => _waiting.GetValueOrDefault(new Job(code)))];
+        [.. Enumerable.Range(0, JobCount).Select(code => _waiting.GetValueOrDefault(Job.Of(code)))];
 
     /// <summary>The settlers a request has sent out that have not left the castle yet (word at 0x4a of the storage item).</summary>
     public int LeavingCount { get; private set; }

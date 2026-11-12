@@ -13,6 +13,14 @@
     <Using Include="OpenSettlers.Domain.RoadNetwork" Static="true" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The generator runs in the compiler and is no run-time dependency (ADR 0016). -->
+    <ProjectReference
+      Include="../Generators/OpenSettlers.Generators.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
     <ProjectReference Include="../Application/OpenSettlers.Application.csproj" />
   </ItemGroup>

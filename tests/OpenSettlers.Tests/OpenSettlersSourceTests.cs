@@ -962,7 +962,7 @@ public sealed class OpenSettlersSourceTests
         var jobsDrawn = 0;
         for (var code = 0; code < 32; code++)
         {
-            var job = new Job(code);
+            var job = Job.Of(code);
             Settler Of(Activity activity) => new(job, 3, 4, 3, 0, activity) { Frame = 7 };
 
             if (!handlers.HasHandler(job))
