@@ -208,6 +208,7 @@ public sealed class TextFileTests
         var rejected = file.Rejected.Single();
         Assert.AreEqual(2, rejected.Line);
         StringAssert.Contains(rejected.Reason, "too long");
+        StringAssert.Contains(rejected.Reason, "loads no key of the file");
     }
 
     [TestMethod]
