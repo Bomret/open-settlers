@@ -118,6 +118,7 @@ public class PlayRunWrapperTests
         Put("project.godot", "config");
         Put("OpenSettlers.csproj", "<Project />");
         Put("global.json", "{}");
+        Put("Directory.Build.props", "<Project />");
         Put("play/demo.play", "wait 1");
         Put("play/.cache.play", "wait 1");
         Put("content/open-settlers/manifest.json", "{}");
@@ -340,6 +341,7 @@ public class PlayRunWrapperTests
             ("deleted", () => File.Delete(Path.Combine(repo, "scenes/main.tscn"))),
             ("renamed", () => File.Move(Path.Combine(repo, "src/Game.cs"), Path.Combine(repo, "src/Game2.cs"))),
             ("project", () => Write("project.godot", "config 2")),
+            ("build-props", () => Write("Directory.Build.props", "<Project><!-- 2 --></Project>")),
             ("script", () => Write("play/demo.play", "wait 2")),
             ("seed", () => args[2] = "xyz"),
             ("size", () => args[4] = "3"),
@@ -622,6 +624,8 @@ public class PlayRunWrapperTests
     [DataRow("text fps", "demo", "--fps", "ten")]
     [DataRow("zero size", "demo", "--size", "0", "--fps", "10")]
     [DataRow("text size", "demo", "--size", "big", "--fps", "10")]
+    [DataRow("empty size", "demo", "--size", "", "--fps", "10")]
+    [DataRow("empty seed", "demo", "--seed", "", "--fps", "10")]
     [DataRow("slash stem", "play/demo", "--fps", "10")]
     [DataRow("dots stem", "..", "--fps", "10")]
     [DataRow("parent stem", "../x", "--fps", "10")]
@@ -642,13 +646,15 @@ public class PlayRunWrapperTests
     [DataRow("layout with seed", "--layout", "play/a.layout", "--seed", "abc")]
     [DataRow("layout with size", "--layout", "play/a.layout", "--size", "2")]
     [DataRow("seed before layout", "--seed", "abc", "--layout", "play/a.layout")]
+    [DataRow("layout with empty size", "--layout", "play/a.layout", "--size", "")]
+    [DataRow("layout with empty seed", "--layout", "play/a.layout", "--seed", "")]
     public void ALayoutWithSeedOrSizeExitsTwoAndLeavesNoTrace(string reason, params string[] args)
     {
         Write("play/a.layout", "layout");
         var result = Run(["demo", .. args, "--fps", "10"]);
 
         AssertUsageError(result, reason);
-        StringAssert.Contains(result.Stderr, "own seed and size", reason);
+        StringAssert.Contains(result.Stderr, reason.Contains("empty") ? "needs a value" : "own seed and size", reason);
     }
 
     [TestMethod]
@@ -732,7 +738,8 @@ public class PlayRunWrapperTests
     [TestMethod]
     public void ACallWaitingOnALiveLockSaysSoAndHashesTheInputsOnceItIsFree()
     {
-        const string waiting = "play-run.sh: waiting on play-out/.lock-demo (remove it if no run is live)";
+        const string waiting =
+            "play-run.sh: waiting on play-out/.lock-demo or play-out/.lock-demo.takeover (remove them if no run is live)";
         Run(Args);
         HoldLock(Environment.ProcessId);
         using var call = Start(Args);
@@ -744,5 +751,68 @@ public class PlayRunWrapperTests
         Assert.AreEqual(0, status);
         StringAssert.Contains(stderr, waiting);
         Assert.AreEqual(2, Calls, "the hash was taken before the lock, so the call reused the stale entry");
+    }
+
+    void HoldTakeover(TimeSpan age)
+    {
+        Directory.CreateDirectory(Out(".lock-demo.takeover"));
+        Directory.SetLastWriteTimeUtc(Out(".lock-demo.takeover"), DateTime.UtcNow - age);
+    }
+
+    static int DeadPid()
+    {
+        using var gone = Process.Start("true")!;
+        gone.WaitForExit();
+        return gone.Id;
+    }
+
+    [TestMethod]
+    public void ATakeoverMutexOlderThanFiveSecondsIsClearedAndTheCallGoesOn()
+    {
+        HoldLock(DeadPid());
+        HoldTakeover(TimeSpan.FromMinutes(5));
+
+        Assert.AreEqual(0, Run(Args).Status);
+        Assert.AreEqual(1, Calls);
+        Assert.IsFalse(Directory.Exists(Out(".lock-demo.takeover")));
+    }
+
+    [TestMethod]
+    public void AFreshTakeoverMutexMakesTheCallWaitAndTheMessageNamesIt()
+    {
+        HoldLock(DeadPid());
+        HoldTakeover(TimeSpan.Zero);
+        using var call = Start(Args);
+        WaitFor(() => call.Stderr.Contains("play-out/.lock-demo.takeover"), "the call to name the takeover mutex");
+        Assert.AreEqual(0, Calls);
+        Directory.Delete(Out(".lock-demo.takeover"));
+
+        Assert.AreEqual(0, call.Finish().Status);
+        Assert.AreEqual(1, Calls);
+    }
+
+    [TestMethod]
+    public void CallsRacingOnAStaleTakeoverMutexLeaveALiveOwnersLockInPlace()
+    {
+        HoldLock(Environment.ProcessId);
+        HoldTakeover(TimeSpan.FromMinutes(5));
+        using var first = Start(Args);
+        using var second = Start(Args);
+        WaitFor(() => first.Stderr.Contains("waiting on") && second.Stderr.Contains("waiting on"), "both calls to wait");
+
+        Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo/pid")));
+        Assert.AreEqual(0, Calls);
+    }
+
+    // kill -0 on pid 1 fails with EPERM for a user other than root, which a liveness check by kill -0 reads as dead.
+    [TestMethod]
+    public void ALockHeldByAnotherUsersLiveProcessMakesTheCallWait()
+    {
+        HoldLock(1);
+        using var call = Start(Args);
+        WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait on pid 1's lock");
+
+        Assert.AreEqual("1\n", File.ReadAllText(Out(".lock-demo/pid")));
+        Assert.AreEqual(0, Calls);
     }
 }

@@ -7,13 +7,14 @@
 # implies --game-view (a layout holds its own seed and size, so --layout with --seed or --size exits 2, and so
 # does a missing layout file or an empty layout value). The input hash covers the mode, the layout's path and
 # content, the content and path of every tracked or untracked, not ignored file under src/, scenes/ and content/, the
-# project files, the play script, the seed, the size, the graphics source (history-edition when none is given), the
+# project files (project.godot, OpenSettlers.csproj, global.json, Directory.Build.props), the play script, the seed, the size, the graphics source (history-edition when none is given), the
 # fps, the Godot version and the SIEDLER_DIR path. --graphics takes history-edition or open-settlers, once. A result is stored in
 # play-out/.cache/<hash>/ only for exit status 0 or 1. Each call past the argument checks appends one line to
 # play-out/runs.log; the line names the mode (map or game-view), the layout, and the graphics source. Bad arguments exit 2 and leave no trace.
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
-# call waits on a live owner, says so once on stderr, and takes over the lock of a dead one under the mutex
-# play-out/.lock-<stem>.takeover. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
+# call waits on a live owner (a process of another user counts as live), says so once on stderr, and takes over
+# the lock of a dead one under the mutex play-out/.lock-<stem>.takeover; a mutex older than 5 seconds is stale
+# and cleared. An empty --size or --seed exits 2. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
 # failed build starts no Godot, stores nothing, and exits 3. Build and Godot run through `mise exec`, which
 # supplies the pinned tools and $GODOT. PLAY_RUN_MISE replaces the mise binary (default mise), PLAY_RUN_GODOT
 # the Godot binary (default $GODOT from mise.toml), PLAY_RUN_DOTNET the dotnet binary (default dotnet).
@@ -44,8 +45,8 @@ while [ $# -gt 0 ]; do
     --seed | --size | --fps | --layout | --graphics)
       [ $# -ge 2 ] || usage "$1 needs a value"
       case "$1" in
-        --seed) seed=$2 ;;
-        --size) size=$2 ;;
+        --seed) [ -n "$2" ] || usage "--seed needs a value"; seed=$2 ;;
+        --size) [ -n "$2" ] || usage "--size needs a value"; size=$2 ;;
         --fps) fps=$2 ;;
         --layout) [ -n "$2" ] || usage "--layout needs a file"; layout=$2 ;;
         --graphics)
@@ -96,15 +97,21 @@ version=$(godot --version 2>/dev/null) || usage "cannot read the Godot version"
 
 # One call per stem at a time, locked before the hash so a waiting call hashes the inputs it runs on. The lock
 # holds the owner's pid; a lock whose pid is dead is taken over, and so is a lock with no pid after a grace of
-# 5 seconds (its owner was killed between creating it and writing the pid).
+# 5 seconds (its owner was killed between creating it and writing the pid). `ps -p` finds a live process of
+# another user, which kill -0 reports as gone (EPERM), and needs no locale. The takeover mutex has the same
+# 5 seconds grace.
 lock=play-out/.lock-$stem
+older() {
+  m=$(stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null) || return 1
+  [ $(($(date +%s) - m)) -gt 5 ]
+}
 stale() {
-  p=$(cat "$lock/pid" 2>/dev/null)
+  d=${1:-$lock}
+  p=$(cat "$d/pid" 2>/dev/null)
   if [ -n "$p" ]; then
-    ! kill -0 "$p" 2>/dev/null
+    ! ps -p "$p" >/dev/null 2>&1
   else
-    m=$(stat -c %Y "$lock" 2>/dev/null || stat -f %m "$lock" 2>/dev/null) || return 1
-    [ $(($(date +%s) - m)) -gt 5 ]
+    older "$d"
   fi
 }
 waited=
@@ -118,13 +125,23 @@ until mkdir "$lock" 2>/dev/null; do
     # Only the holder of the takeover mutex removes a lock, after judging it stale again while holding it. No
     # other call can create the lock path while the stale lock still stands there.
     if mkdir "$lock.takeover" 2>/dev/null; then
-      if stale; then rm -rf "$lock"; fi
+      # A call that cleared a stale mutex may hold it beside this one, so the lock is renamed away and judged
+      # again there: a lock whose owner is alive goes back.
+      if stale && mv "$lock" "$lock.gone.$$" 2>/dev/null; then
+        if stale "$lock.gone.$$"; then rm -rf "$lock.gone.$$"; else mv "$lock.gone.$$" "$lock"; fi
+      fi
       rmdir "$lock.takeover"
+      continue
+    fi
+    # A mutex left by a killed call is renamed away, which one of several calls wins. The rename never touches
+    # the lock, so a live owner's lock stays whatever calls race here.
+    if [ -d "$lock.takeover" ] && older "$lock.takeover"; then
+      mv "$lock.takeover" "$lock.takeover.$$" 2>/dev/null && rm -rf "$lock.takeover.$$"
       continue
     fi
   fi
   if [ -z "$waited" ]; then
-    echo "play-run.sh: waiting on $lock (remove it if no run is live)" >&2
+    echo "play-run.sh: waiting on $lock or $lock.takeover (remove them if no run is live)" >&2
     waited=1
   fi
   sleep 1
@@ -142,7 +159,7 @@ hash=$(
     done >"$list"
     [ -s "$list" ] && git hash-object --stdin-paths <"$list" | paste -d ' ' "$list" -
     rm -f "$list"
-    for f in project.godot OpenSettlers.csproj global.json; do
+    for f in project.godot OpenSettlers.csproj global.json Directory.Build.props; do
       if [ -f "$f" ]; then echo "$f $(git hash-object -- "$f")"; else echo "$f missing"; fi
     done
     echo "script $(git hash-object -- "$script")"

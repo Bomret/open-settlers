@@ -121,7 +121,7 @@ failed `expect` or a problem in the script.
   with the stored exit status, which the wrapper exits with. Only a run that exits 0 or 1 is stored. `--fresh` always runs and replaces the
   stored result.
 - The hash covers every tracked or untracked, not ignored file under `src/`, `scenes/`, and `content/` (content and
-  path). It also covers `project.godot`, `OpenSettlers.csproj`, `global.json`, the play script, the mode, the
+  path). It also covers `project.godot`, `OpenSettlers.csproj`, `global.json`, `Directory.Build.props`, the play script, the mode, the
   layout's path and content, the seed, the size, the graphics source, the frame rate, the Godot version, and the
   `SIEDLER_DIR` path.
   It leaves out the install's content and `.godot/`. After a change to the install, run with `--fresh`.
@@ -135,7 +135,11 @@ failed `expect` or a problem in the script.
 - Calls for one stem run one at a time: a second call waits on the lock directory
   `play-out/.lock-<stem>`, says so once on stderr, then hashes its inputs and reuses what the first
   stored. Other stems run in parallel. The lock holds its owner's pid, and a call takes over the lock of
-  a dead owner, and of a lock with no pid older than 5 seconds. Remove a lock by hand only when no run is live.
+  a dead owner, and of a lock with no pid older than 5 seconds. A process of another user counts as live (the
+  check is `ps -p`, which needs no locale). The takeover happens under the mutex `play-out/.lock-<stem>.takeover`,
+  which counts as stale after 5 seconds and is then cleared; the wait message names the lock and the mutex, and
+  a lock whose owner is alive is never removed. Remove them by hand only when no run is live.
+- An empty `--size` or `--seed` exits 2 with the usage message, as an empty `--fps` or `--layout` does.
 
 When a line is about one place, take a cropped shot, `shot <name> <column> <row> [radius] [scale]`, rather
 than the whole frame: it keeps the tiles within `radius` steps of the tile (default 1) and the room above them
