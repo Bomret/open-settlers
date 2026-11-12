@@ -16,6 +16,15 @@ public sealed class SeedTests
     }
 
     [TestMethod]
+    [DataRow("1234567812345\0" + "78")]
+    [DataRow("1234 5678 1234 56\0" + "8")]
+    public void ANulCharacterIsNotADigitFrom1To8(string screen)
+    {
+        Assert.IsFalse(Seed.TryParse(screen, out _, out var problem));
+        Assert.AreEqual("'\0' is not a digit from 1 to 8", problem);
+    }
+
+    [TestMethod]
     public void GroupsOfZeroGiveAllZeroWords()
     {
         // Emulator: parse:1111111111111111 gives 0000,0000,0000 (digit 1 is the value 0).
