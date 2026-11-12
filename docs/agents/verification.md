@@ -136,12 +136,16 @@ failed `expect` or a problem in the script.
   `play-out/.lock-<stem>`, says so once on stderr, then hashes its inputs and reuses what the first
   stored. Other stems run in parallel. The lock holds its owner's pid, and a call takes over the lock of
   a dead owner, and of a lock with no pid older than 5 seconds. A process of another user counts as live (the
-  check is `ps -p`, which needs no locale; only its exit status 1 reads as dead, so a missing or failing `ps` makes a
-  call wait). The takeover happens under the mutex `play-out/.lock-<stem>.takeover`, which counts as stale after 5
-  seconds and is then cleared; the wait message names the lock and the mutex. A call removes a lock only after it
-  judged the lock dead a second time under the mutex and found the pid it judged still in it, and it never moves a
-  lock off its path; the lock's own call removes it on exit only while it holds that call's pid. Remove them by hand
-  only when no run is live.
+  check is `ps -p <pid> -o pid=`, which needs no locale). A pid reads as dead only when that `ps` exits 1 with no
+  output and the same `ps` lists the call's own pid, so a missing `ps`, a `ps` without `-p`, and any other result make
+  a call wait. The takeover happens under the mutex `play-out/.lock-<stem>.takeover`, which holds its holder's pid. The
+  mutex is stale, and is then cleared, when that pid reads as dead, or when it holds no pid and is older than 5
+  seconds; a mutex of a live holder is never cleared and the call waits. The wait message names the lock and the
+  mutex. A call removes a lock only while its own pid is in the mutex, after it judged the lock dead a second time
+  under the mutex and found the pid it judged still in it, and it never moves a lock off its path; the lock's own
+  call removes it on exit only while it holds that call's pid. A clearer renames a stale mutex away and judges it
+  again; a live one is renamed back when its path is free, and in the moment between, a third call can take the
+  path. Remove the lock and the mutex by hand only when no run is live.
 - An empty `--size` or `--seed` exits 2 with the usage message, as an empty `--fps` or `--layout` does.
 
 When a line is about one place, take a cropped shot, `shot <name> <column> <row> [radius] [scale]`, rather

@@ -793,16 +793,23 @@ public class PlayRunWrapperTests
         Assert.AreEqual(1, Calls);
     }
 
-    // A `ps` that judges the dead owner's pid dead and numbers its calls. At call FAKE_PS_SWAP_AT it also replaces the
-    // lock's pid with a live owner's, as another call does between this call's judgment and its removal of the lock.
-    // Asked about a live pid while the lock path is free, it creates a lock for FAKE_PS_W, as a waiting call does.
+    // A `ps` that prints a live pid and exits 0, and judges the dead owner's pid dead (empty output, exit 1) and
+    // numbers those judgments. At judgment FAKE_PS_SWAP_AT it also replaces the lock's pid with a live owner's, as
+    // another call does between this call's judgment and its removal of the lock. Asked about FAKE_PS_MDEAD it
+    // replaces the takeover mutex's pid with a live holder's, as a call does that takes the mutex between another
+    // call's judgment of the mutex and its rename of it. Asked about a live pid while the lock path is free, it
+    // creates a lock for FAKE_PS_W, as a waiting call does.
     const string FakePs = """
         #!/bin/sh
-        n=$(cat "$FAKE_DIR/ps-count" 2>/dev/null || echo 0)
-        n=$((n + 1))
-        echo "$n" > "$FAKE_DIR/ps-count"
         [ -n "${FAKE_PS_EXIT:-}" ] && exit "$FAKE_PS_EXIT"
+        if [ "$2" = "${FAKE_PS_MDEAD:-x}" ]; then
+          echo "$FAKE_PS_LIVE" > play-out/.lock-demo.takeover/pid
+          exit 1
+        fi
         if [ "$2" = "$FAKE_PS_DEAD" ]; then
+          n=$(cat "$FAKE_DIR/ps-count" 2>/dev/null || echo 0)
+          n=$((n + 1))
+          echo "$n" > "$FAKE_DIR/ps-count"
           [ "$n" = "${FAKE_PS_SWAP_AT:-0}" ] && echo "$FAKE_PS_LIVE" > play-out/.lock-demo/pid
           exit 1
         fi
@@ -810,6 +817,7 @@ public class PlayRunWrapperTests
           mkdir play-out/.lock-demo
           echo "$FAKE_PS_W" > play-out/.lock-demo/pid
         fi
+        echo "$2"
         exit 0
         """;
 
@@ -870,6 +878,81 @@ public class PlayRunWrapperTests
 
         Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo/pid")));
         Assert.AreEqual(0, Calls);
+    }
+
+    // A `ps` without -p (BusyBox) prints its usage and exits 1, which is no proof that the owner is dead.
+    [TestMethod]
+    public void APsThatRejectsItsArgumentsWithExitOneIsNoProofThatAnOwnerIsDead()
+    {
+        HoldLock(Environment.ProcessId);
+        using var call = Start(Args, FakePsEnv(DeadPid(), new() { ["FAKE_PS_EXIT"] = "1" }));
+        WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait when ps rejects -p");
+
+        Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo/pid")));
+        Assert.AreEqual(0, Calls);
+    }
+
+    void HoldTakeover(int holder, TimeSpan age)
+    {
+        HoldTakeover(age);
+        File.WriteAllText(Out(".lock-demo.takeover/pid"), holder + "\n");
+        Directory.SetLastWriteTimeUtc(Out(".lock-demo.takeover"), DateTime.UtcNow - age);
+    }
+
+    [TestMethod]
+    public void AFreshTakeoverMutexOfADeadHolderIsClearedAndTheCallGoesOn()
+    {
+        HoldLock(DeadPid());
+        HoldTakeover(DeadPid(), TimeSpan.Zero);
+
+        Assert.AreEqual(0, Run(Args).Status);
+        Assert.AreEqual(1, Calls);
+        Assert.IsFalse(Directory.Exists(Out(".lock-demo.takeover")));
+    }
+
+    [TestMethod]
+    public void AnOldTakeoverMutexOfALiveHolderMakesTheCallWait()
+    {
+        HoldLock(DeadPid());
+        HoldTakeover(Environment.ProcessId, TimeSpan.FromMinutes(5));
+        using var call = Start(Args);
+        WaitFor(() => call.Stderr.Contains("play-out/.lock-demo.takeover"), "the call to wait on the live holder's mutex");
+
+        Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo.takeover/pid")));
+        Assert.AreEqual(0, Calls);
+    }
+
+    // The call judges the mutex of a dead holder stale, and before it renames the mutex a live call takes the path
+    // (the fake ps puts a live pid into the mutex). The call must leave that holder's mutex in place, with nothing
+    // renamed beside it, and wait.
+    [TestMethod]
+    public void AMutexThatTurnsLiveBeforeItsRenameIsRestoredAndTheCallWaits()
+    {
+        var deadHolder = DeadPid();
+        var deadOwner = DeadPid();
+        HoldLock(deadOwner);
+        HoldTakeover(deadHolder, TimeSpan.FromMinutes(5));
+        using var call = Start(Args, FakePsEnv(deadOwner, new() { ["FAKE_PS_MDEAD"] = deadHolder.ToString() }));
+        WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait on the live holder's mutex");
+
+        Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo.takeover/pid")));
+        Assert.AreEqual(1, Directory.GetFileSystemEntries(Out(""),".lock-demo.takeover*").Length, "no renamed mutex is left");
+        Assert.AreEqual(0, Calls);
+    }
+
+    // Two calls find a dead lock beside a stale mutex. The lock is taken over once: one Godot call, one stored entry.
+    [TestMethod]
+    public void TwoCallsOnADeadLockAndAStaleMutexRunGodotOnceAndStoreOneEntry()
+    {
+        HoldLock(DeadPid());
+        HoldTakeover(TimeSpan.FromMinutes(5));
+        using var first = Start(Args);
+        using var second = Start(Args);
+        var results = new[] { first.Finish(), second.Finish() };
+
+        CollectionAssert.AreEqual(new[] { 0, 0 }, results.Select(r => r.Status).ToArray());
+        Assert.AreEqual(1, Calls);
+        Assert.AreEqual(1, Directory.GetDirectories(Out(".cache")).Length);
     }
 
     // kill -0 on pid 1 fails with EPERM for a user other than root, which a liveness check by kill -0 reads as dead.
