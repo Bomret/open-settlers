@@ -206,9 +206,15 @@ A settler who walks one road and carries goods between its two flags.
 _Avoid_: porter, transporter, worker
 
 **Job**
-What a settler is employed as, such as carrier, woodcutter, or builder. A settler keeps its identity when its
-job changes: a settler without a job becomes a carrier when it takes a road.
+What a settler is employed as, such as carrier, woodcutter, or builder, with the number the original gives it.
+A settler keeps its identity when its job changes: a settler without a job takes up the carrier's job when it
+takes a road. A number the engine does not port yet is an unported job.
 _Avoid_: role, profession, class
+
+**Job module**
+The code one layer holds for one job, found by that layer without a list: the job and its data in the domain,
+its rules in the application, its tables and names in the adapters, its look in the map view.
+_Avoid_: plugin, handler, job class
 
 **Activity**
 What a settler does at one moment, with exactly the data that doing it needs: waiting in the castle, walking
