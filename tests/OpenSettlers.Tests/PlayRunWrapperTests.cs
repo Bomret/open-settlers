@@ -727,6 +727,17 @@ public class PlayRunWrapperTests
         Assert.AreEqual(1, Calls);
     }
 
+    // `ps -p abc` exits 1 with no output, so a pid that names no process reads as dead.
+    [TestMethod]
+    public void ALockWhosePidIsNotANumberIsTakenOver()
+    {
+        Directory.CreateDirectory(Out(".lock-demo"));
+        File.WriteAllText(Out(".lock-demo/pid"), "abc\n");
+
+        Assert.AreEqual(0, Run(Args).Status);
+        Assert.AreEqual(1, Calls);
+    }
+
     [TestMethod]
     [UnsupportedOSPlatform("windows")]
     public void AnUnwritablePlayOutExitsWithTwoAndLogsNoRun()
