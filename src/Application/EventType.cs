@@ -277,5 +277,11 @@ public static class EventType
         Handout,
         SearchSpot,
         PlantSapling,
+        Builds,
+        Digs,
+        Levelled,
+        Saws,
+        BuildingFinished,
+        LeavesSite,
     ];
 }

@@ -217,6 +217,71 @@ public sealed class PlayNamedThingTests
     }
 
     [TestMethod]
+    [DataRow("builds")]
+    [DataRow("digs")]
+    [DataRow("levelled")]
+    [DataRow("saws")]
+    [DataRow("building-finished")]
+    [DataRow("leaves-site")]
+    public void ExpectEventAcceptsTheConstructionTypes(string type)
+    {
+        var problems = Parse($"name f 18 6 flag\nexpect-event f {type}").Problems;
+
+        Assert.AreEqual("", string.Join("\n", problems));
+    }
+
+    [TestMethod]
+    public void ExpectEventBuildsPassesOnTheBuilderOnceHeHasWorked()
+    {
+        var (game, _) = BuilderTests.World();
+        Settler? builder = null;
+        for (var tick = 0; tick < 3000 && builder is null; tick++)
+        {
+            game.Tick();
+            builder = game.Settlers.FirstOrDefault(settler => settler.Activity is Builds);
+        }
+        Assert.IsNotNull(builder, "the builder works");
+        ConstructionWorld.Run(game, 600);
+
+        var text = $"name b {builder.X} {builder.Y} settler\nexpect-event b builds";
+        var run = Run(text, game);
+
+        Assert.AreEqual("", string.Join("\n", Parse(text).Problems), "the script reads");
+        Assert.AreEqual("", string.Join("\n", run.Problems));
+    }
+
+    [TestMethod]
+    public void EveryEventTypeConstantIsListedOnce()
+    {
+        var declared = typeof(EventType)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(field => field.IsLiteral && field.FieldType == typeof(string))
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .ToList();
+
+        CollectionAssert.AreEquivalent(declared, EventType.All.ToList());
+    }
+
+    [TestMethod]
+    public void EveryCauseRuleAreaAndKindIsListed()
+    {
+        var kinds = typeof(Cause)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(field => field.IsLiteral && field.FieldType == typeof(string))
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .Concat(
+                typeof(Cause)
+                    .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                    .Where(property => property.PropertyType == typeof(Cause))
+                    .Select(property => ((Cause)property.GetValue(null)!).Kind)
+            )
+            .Distinct()
+            .ToList();
+
+        CollectionAssert.AreEquivalent(kinds, Cause.Kinds.ToList());
+    }
+
+    [TestMethod]
     public void ExpectGoneFailsOnALiveThing()
     {
         StringAssert.Contains(Problem(Run("name f 18 6 flag\nexpect-gone f", Castle())), "live");
