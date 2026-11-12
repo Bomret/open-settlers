@@ -8,21 +8,19 @@ namespace OpenSettlers.Simulation;
 /// (<c>0x42da0b</c>), the start routine of job 6 at the door makes that request (<c>0x43cf41</c>), and state 0x18 (<c>0x4359fe</c>) takes a log out
 /// of the building's fill, saws it for 0x93f clock units, and sends the sawmiller out with a plank (state 0xb, <c>0x43e1d0</c>), who lays it on
 /// the flag (state 0xd, <c>0x43c6aa</c>) and goes back in. **Not ported:** the player statistic the step out counts (the goods made, byte
-/// <c>-0x6f</c> plus the good of the player's block) and the sound of the saw's frames (<c>0x43fc85</c>).
+/// <c>-0x6f</c> plus the good of the player's block) and the sound of the saw's frames (<c>0x43fc85</c>). It is the rules module of the
+/// sawmiller job (<see cref="JobRules{TJob}"/>) and takes the movement, the flag table (the sawmill's flag holds its request and takes the
+/// planks), the history, the laying of a good, and the entry into the hut (which the put runs at once) from the <see cref="JobParts"/>.
 /// </summary>
-/// <param name="movement">The settlers' ground: the nodes, the timer, the clock, and the tables.</param>
-/// <param name="flags">The flag table: the sawmill's flag holds its request and takes the planks.</param>
-/// <param name="history">The history the behaviour records its changes in (no rule reads it).</param>
-/// <param name="layGood">Lays a good on a place of a flag: the flag slot, the place, and the good.</param>
-/// <param name="enterBuilding">The step from a flag into the building north-west of it (the turn of state 6), which the put runs at once.</param>
-public sealed class SawmillBehavior(
-    SettlerMovement movement,
-    FlagTable flags,
-    GameHistory history,
-    Action<int, int, int> layGood,
-    Action<int, Settler> enterBuilding
-)
+/// <param name="parts">The shared parts.</param>
+public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
 {
+    private readonly SettlerMovement movement = parts.Movement;
+    private readonly FlagTable flags = parts.Flags;
+    private readonly GameHistory history = parts.History;
+    private readonly Action<int, int, int> layGood = parts.LayGood;
+    private readonly Action<int, Settler> enterBuilding = parts.EnterHut;
+
     // The time a log takes to saw, which the timer is set to (0x435a75), and the frame of the work (0x435a6d).
     private const ushort SawTime = 0x93f;
     private const int SawFrame = 0x7c;
@@ -42,7 +40,7 @@ public sealed class SawmillBehavior(
     private const int FlagPlaces = 8;
 
     /// <summary>Registers the behaviour of the sawmiller's activities.</summary>
-    public void Register(ActivityRegistry registry)
+    public override void Register(ActivityRegistry registry)
     {
         registry.Register<Saws>((slot, settler, _) => Work(slot, settler));
         registry.Register<StepsOutWithGood>((slot, settler, _) => StepOut(slot, settler));
@@ -50,13 +48,13 @@ public sealed class SawmillBehavior(
     }
 
     /// <summary>
-    /// The handler of the sawmill's type (<c>0x42da0b</c>) after its request for a worker: with the worker inside, the rank of the flag's
-    /// request for logs is the full rank shifted right by the logs the building holds, on site and on the way, and 0 where it holds
-    /// eight or more.
+    /// The handler of the sawmill's type (<c>0x42da0b</c>) after its request for a worker, in the turn of each building that is no site:
+    /// with the worker inside, the rank of the flag's request for logs is the full rank shifted right by the logs the building holds, on
+    /// site and on the way, and 0 where it holds eight or more. A building of another type is left alone.
     /// </summary>
-    public void KeepRank(Building mill)
+    public override void Turn(Building mill)
     {
-        if (!mill.WorkerInside)
+        if (mill.Type != BuildingType.Sawmill || mill.Constructing || !mill.WorkerInside)
         {
             return;
         }
@@ -75,7 +73,7 @@ public sealed class SawmillBehavior(
     /// where the mode byte he walked in with is not 0 (the first time, not after he put a plank down) the flag asks for logs, with rank 0,
     /// and for nothing in the other word. He then waits for a log.
     /// </summary>
-    public void Start(int slot, Settler settler, Building mill)
+    public override void Start(int slot, Settler settler, Building mill)
     {
         movement.Release(movement.Map.Index(settler.X, settler.Y));
         if (movement.ResidueOf(settler.Activity).Mode != 0)

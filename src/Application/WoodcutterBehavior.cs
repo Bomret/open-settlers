@@ -51,15 +51,28 @@ public sealed partial class WoodcutterBehavior(
         (_objectStamp, _objectTimer, _objectX, _objectY);
 
     // The start routines of the other jobs (the table at 0x43ca54), which a settler runs where its step through a door ends.
-    private readonly System.Collections.Generic.Dictionary<Job, Action<int, Settler, Building>> _starts = [];
+    private readonly System.Collections.Generic.Dictionary<Type, Action<int, Settler, Building>> _starts = [];
+
+    // The job rules modules by the type of their job: the hooks the shared states call.
+    private readonly System.Collections.Generic.Dictionary<Type, JobRules> _modules = [];
 
     private Map Map => movement.Map;
+
+    /// <summary>
+    /// Registers a job rules module: its start routine as <see cref="RegisterStart"/> does, and its arrival and cause hooks, which the free
+    /// walk and the records of the shared states call for a settler of its job.
+    /// </summary>
+    public void RegisterModule(JobRules rules)
+    {
+        _modules.Add(rules.JobType, rules);
+        _starts.Add(rules.JobType, rules.Start);
+    }
 
     /// <summary>
     /// Registers the start routine of a job (the table at <c>0x43ca54</c>): the settler of the job runs it with its slot, itself, and the
     /// building it stepped into, where its step through the door ends in a building that is not taken down.
     /// </summary>
-    public void RegisterStart(Job job, Action<int, Settler, Building> start) => _starts.Add(job, start);
+    public void RegisterStart(Job job, Action<int, Settler, Building> start) => _starts.Add(job.GetType(), start);
 
     /// <summary>Registers the behaviour of the activities of the woodcutter's work cycle.</summary>
     public void Register(ActivityRegistry registry)
@@ -119,7 +132,7 @@ public sealed partial class WoodcutterBehavior(
                 movement.Release(node);
                 movement.Become(settler, new LooksForTree());
             }
-            else if (_starts.TryGetValue(settler.Job, out var start))
+            else if (_starts.TryGetValue(settler.Job.GetType(), out var start))
             {
                 start(slot, settler, building);
             }
@@ -140,6 +153,7 @@ public sealed partial class WoodcutterBehavior(
     private void RecordWork(int slot, string type, string? other = null) =>
         history.RecordSettler(slot, type, WorkCause(slot), other);
 
+    // The rules of the settler's job name their cause where no layout is built and no walk home is walked.
     private Cause WorkCause(int slot)
     {
         var job = settlers[slot].Job;
@@ -148,7 +162,15 @@ public sealed partial class WoodcutterBehavior(
             : job == Job.Woodcutter ? Cause.Woodcutting
             : job == Job.Stonecutter ? Cause.Stonecutting
             : job == Job.Forester ? Cause.Forestry
+            : _modules.TryGetValue(job.GetType(), out var rules) ? rules.Cause
             : SettlerCause(slot);
+    }
+
+    // The generic arrival at the end of a free walk home (0x4385ab); the job rules modules take it through the JobParts.
+    internal void ArriveHome(int slot, Settler settler)
+    {
+        walkHome.ArriveHome(slot, settler);
+        RecordWork(slot, EventType.Arrive);
     }
 
     // State 0x12, the woodcutter's search (0x438b8c). When its timer has run out it draws a node of the spiral around the
@@ -484,11 +506,17 @@ public sealed partial class WoodcutterBehavior(
 
         if (settler.Job != Job.Woodcutter)
         {
+            if (_modules.TryGetValue(settler.Job.GetType(), out var rules))
+            {
+                rules.Arrive(slot, settler);
+
+                return;
+            }
+
             // **Not ported:** the arrival of the jobs 11, 14, and 20 where they are not walking home (0x437ddd).
             if (settler.Job.ArrivesHomeGenerically || trip.Purpose is Home)
             {
-                walkHome.ArriveHome(slot, settler);
-                RecordWork(slot, EventType.Arrive);
+                ArriveHome(slot, settler);
             }
 
             return;

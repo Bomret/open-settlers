@@ -12,19 +12,18 @@ namespace OpenSettlers.Simulation;
 /// pass's node and raises an even one's by one, and steps back onto the site's node. After the last pass the site's progress word is
 /// 1, the worker bits go, and he steps onto the flag and goes home. A node more than eight from the site's height is never named. **Not
 /// ported:** the cursor's repaint that marks the changed node (<c>0x45086a</c>) and the branch of a player whose block byte <c>+0x163</c>
-/// has bit 6 set (<c>0x42d4e9</c>, <c>SitePass</c>).
+/// has bit 6 set (<c>0x42d4e9</c>, <c>SitePass</c>). It is the rules module of the digger job (<see cref="JobRules{TJob}"/>) and takes the
+/// movement, the building table (the site he works in), the history, and the step out (which his end runs at once) from the
+/// <see cref="JobParts"/>.
 /// </summary>
-/// <param name="movement">The settlers' ground: the clock, the timer, the nodes, and the tables.</param>
-/// <param name="buildings">The building table: the site he works in.</param>
-/// <param name="history">The history the behaviour records its changes in (no rule reads it).</param>
-/// <param name="stepOut">The step from the building onto its flag (the turn of state 7), which his end runs at once.</param>
-public sealed class DiggerBehavior(
-    SettlerMovement movement,
-    BuildingTable buildings,
-    GameHistory history,
-    Action<int, Settler> stepOut
-)
+/// <param name="parts">The shared parts.</param>
+public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
 {
+    private readonly SettlerMovement movement = parts.Movement;
+    private readonly BuildingTable buildings = parts.Buildings;
+    private readonly GameHistory history = parts.History;
+    private readonly Action<int, Settler> stepOut = parts.StepOut;
+
     // The first pass and the first node of a pass; the start routine gives them (0x43cdb2, 0x43ce0d), and phase 1 (the next node).
     private const int FirstPass = 15;
     private const int FirstNode = 6;
@@ -55,7 +54,7 @@ public sealed class DiggerBehavior(
     private const int DirectionCount = 6;
 
     /// <summary>Registers the behaviour of the digger's activity.</summary>
-    public void Register(ActivityRegistry registry) =>
+    public override void Register(ActivityRegistry registry) =>
         registry.Register<Digs>((slot, settler, _) => Turn(slot, settler));
 
     /// <summary>
@@ -63,7 +62,7 @@ public sealed class DiggerBehavior(
     /// with the first pass, the site's height, the first node, and the phase of the next node. His frame, timer, and stamp stay as the
     /// step through the door left them.
     /// </summary>
-    public void Start(int slot, Settler settler, Building site) =>
+    public override void Start(int slot, Settler settler, Building site) =>
         movement.Become(settler, new Digs(FirstPass, site.Site?.TargetHeight ?? 0, FirstNode, NextNodePhase));
 
     // State 8: the time since the last turn comes off the timer; when it has run out the digger works until the timer is positive again.

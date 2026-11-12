@@ -106,12 +106,12 @@ A sawmill is taken down as every finished building is ([Removal](removal.md)), a
 
 ## In the engine
 
-The file `src/Application/SawmillBehavior.cs` holds these routines:
+The file `src/Application/SawmillerRules.cs` holds these routines. `SawmillerRules` is the rules module of the sawmiller (`JobRules<Sawmiller>`):
 
-- `Start` is job 6. `GameFactory` registers it with `WoodcutterBehavior.RegisterStart`.
+- `Start` is job 6. `GameFactory` registers each module of the generated `JobModules` registry with `WoodcutterBehavior.RegisterModule`.
 - `Work` is state `0x18`.
 - `StepOut` is state `0xb`.
 - `PutDown` is state `0xd`.
-- `KeepRank` runs from `MainPass` for a finished sawmill, after `CastleRoster.HandleBuilding`.
+- `Turn` is the module's building hook. `MainPass` calls it for each building after `CastleRoster.HandleBuilding`, and it keeps the rank of a finished sawmill.
 
 The activities are `Saws` (state `0x18`, with a flag for the part), `StepsOutWithGood` (state `0xb`), and `PutsDownGood` (state `0xd`). `Job.Sawmiller` is job 6. The plank is laid through `GoodsTransport.LayGood`, as the woodcutter's log is. Logs and planks go by the request search and the storage search of the goods, which need no rule of their own.

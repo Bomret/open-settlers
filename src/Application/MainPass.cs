@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace OpenSettlers.Simulation;
 
@@ -23,7 +24,7 @@ public sealed class MainPass(
     Removal removal,
     CastleRoster roster,
     SitePass sites,
-    SawmillBehavior sawmill,
+    IReadOnlyList<JobRules> modules,
     StorageDistribution? distribution = null
 )
 {
@@ -58,6 +59,11 @@ public sealed class MainPass(
         ClearRetryBits();
         carriers.ClearFlagRetryBits();
         woodcutter.ObjectPass();
+        foreach (var module in modules)
+        {
+            module.Pass();
+        }
+
         Phase = (Phase + 1) % PhaseCount;
         if (Phase == TablePhases)
         {
@@ -83,9 +89,9 @@ public sealed class MainPass(
                     else
                     {
                         roster.HandleBuilding(building);
-                        if (building.Type == BuildingType.Sawmill && !building.Constructing)
+                        foreach (var module in modules)
                         {
-                            sawmill.KeepRank(building);
+                            module.Turn(building);
                         }
                     }
                 }

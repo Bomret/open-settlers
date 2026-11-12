@@ -9,23 +9,21 @@ namespace OpenSettlers.Simulation;
 /// for each, every blow adding a step to the site's progress word, and the end of the building (<c>0x43ef20</c>), after which state 0x4a
 /// (<c>0x43e008</c>) lets him step onto the flag and go home. A blow needs the material on site: he waits for it, a quarter of a step
 /// at a time. **Not ported:** the player's counts of buildings and the call of <c>0x45f402</c> for the types 0xb, 0x15, and 0x16, the
-/// buildings of a mission's start.
+/// buildings of a mission's start. It is the rules module of the builder job (<see cref="JobRules{TJob}"/>) and takes the movement, the
+/// building table (the site he works in), the flag table (the finished building's flag stops asking for materials), the history, the random
+/// generator (each blow draws one value that picks the figure), and the step out (which the end of the building runs at once) from the
+/// <see cref="JobParts"/>.
 /// </summary>
-/// <param name="movement">The settlers' ground: the clock, the timer, the change of activity, and the tables.</param>
-/// <param name="buildings">The building table: the site the builder works in.</param>
-/// <param name="flags">The flag table: the finished building's flag stops asking for materials.</param>
-/// <param name="history">The history the behaviour records its changes in (no rule reads it).</param>
-/// <param name="draws">The random generator: each blow draws one value that picks the figure.</param>
-/// <param name="stepOut">The step from the building onto its flag (the turn of state 7), which the end of the building runs at once.</param>
-public sealed class BuilderBehavior(
-    SettlerMovement movement,
-    BuildingTable buildings,
-    FlagTable flags,
-    GameHistory history,
-    IRandomDraws draws,
-    Action<int, Settler> stepOut
-)
+/// <param name="parts">The shared parts.</param>
+public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
 {
+    private readonly SettlerMovement movement = parts.Movement;
+    private readonly BuildingTable buildings = parts.Buildings;
+    private readonly FlagTable flags = parts.Flags;
+    private readonly GameHistory history = parts.History;
+    private readonly IRandomDraws draws = parts.Draws;
+    private readonly Action<int, Settler> stepOut = parts.StepOut;
+
     // The types whose builder takes the second figure: the mask 0x4a0400 tests the type's bit (0x43ceb4).
     private const int SecondFigureTypes = 0x4a0400;
 
@@ -51,7 +49,7 @@ public sealed class BuilderBehavior(
     private const int ToFlag = 1;
 
     /// <summary>Registers the behaviour of the builder's activities.</summary>
-    public void Register(ActivityRegistry registry)
+    public override void Register(ActivityRegistry registry)
     {
         registry.Register<Builds>((slot, settler, _) => Turn(slot, settler));
         registry.Register<LeavesSite>((slot, settler, _) => Leave(slot, settler));
@@ -61,7 +59,7 @@ public sealed class BuilderBehavior(
     /// The start routine of job 3 (<c>0x43ce20</c>), run where the builder has stepped through the door of the site's node: he takes state 9
     /// with the frame of his figure, a timer of 0x7f, the site's slot, and no material taken yet. He stays on the node.
     /// </summary>
-    public void Start(int slot, Settler settler, Building site)
+    public override void Start(int slot, Settler settler, Building site)
     {
         var secondFigure = (SecondFigureTypes >> site.Type.Code & 1) != 0;
         movement.Become(settler, new Builds(buildings.SlotOf(site), false, 0, secondFigure, 0));
