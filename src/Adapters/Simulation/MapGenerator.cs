@@ -10,9 +10,11 @@ namespace OpenSettlers.Simulation;
 public delegate void MapPassObserver(MapPass pass, MapLayers layers, RandomGenerator generator);
 
 /// <summary>
-/// The original's map generation, <c>MapGen_Generate</c> (<c>0x4216e9</c>), as far as the height and terrain
-/// passes <c>MapGen_ClearMap</c> to <c>MapGen_ScaleHeights</c> (<c>docs/rules/map-form.md</c>). The generation is
-/// deterministic: it uses integers only, visits tiles in a fixed order, and reads no clock (INV-0002).
+/// The original's map generation, <c>MapGen_Generate</c> (<c>0x4216e9</c>), the whole pipeline
+/// (<c>docs/rules/map-form.md</c>): the seeding, the height and terrain passes <c>MapGen_ClearMap</c> to
+/// <c>MapGen_ScaleHeights</c>, the passes of <c>MapGen_PlaceTerrainAndObjects</c> (water depth, shore terrain,
+/// patches, patch edges, peaks, the 15 object scatter passes, the four deposit passes, and the object overlap
+/// resolution), the water-adjacent marking, and the resource count. The generation is deterministic: it uses integers only, visits tiles in a fixed order, and reads no clock (INV-0002).
 /// </summary>
 public static class MapGenerator
 {

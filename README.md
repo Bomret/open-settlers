@@ -2,7 +2,7 @@
 
 An open-source engine for Die Siedler (Blue Byte, 1993), built on Godot 4 with C#. It ships no game content: it reads the files of a Die Siedler install the player owns.
 
-Status: the engine reads the data files of an install and generates the map of a seed. It runs a game on that map in the game view. The game has a castle, flags, roads, a woodcutter's hut, carriers, and goods. The engine has five modes: the asset check, the asset browser, the map view, the game view, and seed info. [The roadmap](docs/roadmap.md) plans the milestones to the free-play release.
+Status: the engine reads the data files of an install and generates the map of a seed. It runs a game on that map in the game view. The game has a castle, flags, roads, construction, a woodcutter's hut, digging, forestry, stonecutting, carriers, and goods. The engine has five modes: the asset check, the asset browser, the map view, the game view, and seed info. [The roadmap](docs/roadmap.md) plans the milestones to the free-play release.
 
 ## Requirements
 
@@ -172,12 +172,12 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 
 - `OpenSettlers.csproj`, `project.godot`: the Godot project.
 - `mise.toml`: the pinned development tools and the tasks.
-- `src/`: the engine code. `Domain/` holds the typed model and the random generator, `Application/` the game with its commands, roads, settlers, carriers, goods, woodcutting, and removal, and `Adapters/Simulation/` the importers and exporters of the original's bytes, the seed, and the map generator (three assemblies, ADR 0013). `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `MapView/` the terrain, object, road, and settler drawing plans, the click handling, and the camera, and `Viewer/` the asset browser, the map view (`MapViewControl.cs`, which also shows the game view), the play driver, and the shaders.
+- `src/`: the engine code. `Domain/` holds the typed model and the random generator, `Application/` the game with its commands, roads, settlers, carriers, goods, construction, digging, woodcutting, forestry, stonecutting, and removal, and `Adapters/Simulation/` the importers and exporters of the original's bytes, the seed, and the map generator (three assemblies, ADR 0013). `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `MapView/` the terrain, object, road, and settler drawing plans, the click handling, and the camera, and `Viewer/` the asset browser, the map view (`MapViewControl.cs`, which also shows the game view), the play driver, and the shaders.
 - `.gdignore` files: the C# folders outside the Godot assembly (`src/Domain/`, `src/Application/`, `src/Adapters/`, `src/Generators/`, `tests/`) carry one, so the Godot editor does not scan them. The editor writes a `.uid` file beside each script and shader it scans; those are committed with their source.
 - `content/`: the content sets the repository ships (ADR 0015). `content/open-settlers/` is the Open Settlers graphics source: a manifest, PNGs, and a `.gdignore`.
 - `play/`: the checked-in play scripts ("Run a play script").
 - `layouts/`: the checked-in layouts ("Layouts" under "Run a play script").
-- `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
+- `tests/OpenSettlers.Tests/`: the unit tests (MSTest). The project also holds the `Install` and `Ghidra` test categories, which the unit commands filter out; the unit tests need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.
 - `docs/controls.md`: the controls of the map view and the game view.

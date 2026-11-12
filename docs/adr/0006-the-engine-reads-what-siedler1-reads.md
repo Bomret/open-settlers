@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0015](0015-the-repository-ships-content-sets.md)
+
 Amends [ADR 0004](0004-history-edition-is-the-reference-install.md): it settles the question that ADR
 0004 left open until the asset milestone.
 

@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0015](0015-the-repository-ships-content-sets.md)
+
 The engine loads every asset straight from the player's install, through its own parsers, each time it
 needs it. It does not convert the install into Godot resources first. One code path means a check of the
 install exercises exactly what the game runs, and nothing derived from copyrighted data is written to

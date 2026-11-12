@@ -31,18 +31,26 @@ public sealed class TextFile
         _values = entries.ToDictionary(e => e.Key, e => e.Value);
     }
 
-    /// <summary>The keys in order of first appearance, each with the value of its last line.</summary>
+    /// <summary>
+    /// The keys in order of first appearance, each with the value of its last line. A file with a too-long line
+    /// shows its keys here, though the program loads none of them.
+    /// </summary>
     public IReadOnlyList<TextEntry> Entries { get; }
 
-    /// <summary>The lines the program does not accept, in file order.</summary>
+    /// <summary>
+    /// The lines the program does not accept, in file order. A too-long line ends the program, so the keys of its
+    /// file are what this reader shows, not what the program loads.
+    /// </summary>
     public IReadOnlyList<RejectedLine> Rejected { get; }
 
     /// <summary>The value of <c>key</c>, or null when the file has no such key. Keys are case-sensitive.</summary>
     public string? Get(string key) => _values.GetValueOrDefault(key);
 
     /// <summary>
-    /// Reads a text file the way the program does. Never throws: a line the program does not accept is listed in
-    /// <see cref="Rejected"/> and reading goes on. Each byte is one character.
+    /// Reads a text file the way the program does, except after a too-long line: the program ends there and loads
+    /// no key of the file, while this reader goes on and keeps the keys of the lines it accepts. Never throws: a line
+    /// the program does not accept is listed in <see cref="Rejected"/> and reading goes on. Each byte is one
+    /// character.
     /// </summary>
     public static TextFile Read(byte[] bytes)
     {
@@ -99,7 +107,7 @@ public sealed class TextFile
         key = value = null;
         if (length > LongestLine)
         {
-            return $"too long: {length} bytes, the program stops on a line over {LongestLine}";
+            return $"too long: {length} bytes, the program ends on a line over {LongestLine} and loads no key of the file";
         }
 
         if (length < ShortestLine)
