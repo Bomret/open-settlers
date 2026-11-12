@@ -9,7 +9,8 @@ namespace OpenSettlers.Simulation;
 /// raw value. A name several codes share (<c>tree</c>) resolves to all of them through <see cref="CodesNamed"/>. The
 /// object names read the class table the engine loaded (<see cref="RuleTables"/>): <c>stone</c> names a code the
 /// docs call a stone only where that table says class 2. The job, state, and building names need no table and are
-/// static.
+/// static. The names of the jobs, and of the states a job owns, come from the jobs' tables modules
+/// (<see cref="JobTables{TJob}"/>); the states that belong to no one job are stated here.
 /// </summary>
 public sealed class NameTable
 {
@@ -38,6 +39,9 @@ public sealed class NameTable
 
     /// <summary>One entry: the code, its name, and the evidence for the name.</summary>
     internal readonly record struct Entry(CodeKind Kind, int Code, string Name, string Evidence);
+
+    /// <summary>The evidence of a state whose name rests on the code of the Activity record alone.</summary>
+    internal const string StateEvidence = "the code of the Activity record (src/Domain/Activity.cs)";
 
     private const string TreeEvidence =
         "the program compares a node's code with 8 and 0x18 (0x438c11, 0x437f8f); docs/rules/woodcutting.md (codes 8 to 0x17); class 1";
@@ -131,26 +135,18 @@ public sealed class NameTable
             "docs/rules/woodcutting.md (the cut writes 0x5d to 0x66, the object pass turns each into 0x53, 0x428eb8)"
         );
 
-        AddOne(CodeKind.Job, Job.Carrier.Code, "carrier", "Job.Carrier; docs/rules/carriers.md");
-        AddOne(
-            CodeKind.Job,
-            Job.Digger.Code,
-            "digger",
-            "Job.Digger; the large site's handler 0x42d328 asks for job 2 with the tool good 16 (request at 0x42d52a) and the job's state 8 changes the heights of the site's node and its six neighbours by one a pass (0x43e45e); docs/rules/digging.md"
-        );
-        AddOne(
-            CodeKind.Job,
-            Job.Builder.Code,
-            "builder",
-            "Job.Builder; the under-construction handler 0x42d55f asks for job 3 with the tool good 17 (request at 0x42d5fc) and the job's state 9 builds the site (0x43ec82); docs/rules/construction.md"
-        );
-        AddOne(
-            CodeKind.Job,
-            Job.CastleSettler.Code,
-            "castle-settler",
-            "Job.CastleSettler; the castle's first settler stands by while the castle is built (state 10, 0x43f17a) and no building asks for job 4; Game.Removal reads job 4 as a settler that goes home as a carrier; docs/rules/settlers.md"
-        );
-        AddOne(CodeKind.Job, Job.Woodcutter.Code, "woodcutter", "Job.Woodcutter; docs/rules/woodcutting.md");
+        // The names of the jobs and of the states a job owns come from the tables modules (JobTablesRegistry); the states that
+        // belong to no one job, the walks and the door among them, are here.
+        foreach (var (code, name, evidence) in JobTablesRegistry.JobNames)
+        {
+            AddOne(CodeKind.Job, code, name, evidence);
+        }
+
+        foreach (var (code, name, evidence) in JobTablesRegistry.StateNames)
+        {
+            AddOne(CodeKind.State, code, name, evidence);
+        }
+
         Add(
             CodeKind.Object,
             MapObject.SaplingCode,
@@ -158,27 +154,7 @@ public sealed class NameTable
             "sapling",
             "the planting 0x4389bf puts 0x67 or 0x68 on the node, and the object pass grows each into a tree of the codes 0x10 to 0x17 or 8 to 0xf (0x4290d5, 0x42910f); docs/rules/forestry.md"
         );
-        AddOne(
-            CodeKind.Job,
-            Job.Forester.Code,
-            "forester",
-            "Job.Forester; the type 9 handler 0x42d9c9 asks for job 8 with no tool, and his work plants the saplings 0x67 and 0x68 (0x4389bf); docs/rules/forestry.md"
-        );
-        AddOne(
-            CodeKind.Job,
-            Job.Stonecutter.Code,
-            "stonecutter",
-            "Job.Stonecutter; his work puts good 10 (a stone) on the hut's flag (0x438182) and cuts the stone heaps 0x48 to 0x4f (0x435c5c); docs/rules/stonecutting.md"
-        );
-        AddOne(
-            CodeKind.Job,
-            Job.Sawmiller.Code,
-            "sawmiller",
-            "Job.Sawmiller; the handler 0x42da0b of the building type 0x11 asks for job 6 with the tool good 22 and the job's state 0x18 takes a log out of the building (0x4359fe) and carries the plank (good 8) out to the flag (0x43c6aa); docs/rules/sawmilling.md"
-        );
-        AddOne(CodeKind.Job, Job.Jobless.Code, "jobless", "Job.Jobless: 21 is a settler without a job yet");
-
-        const string State = "the code of the Activity record (src/Domain/Activity.cs)";
+        const string State = StateEvidence;
         AddOne(CodeKind.State, 1, "waits-in-castle", State);
         AddOne(CodeKind.State, 2, "walks", State);
         AddOne(CodeKind.State, 3, "walks-along-road", State);
@@ -186,65 +162,8 @@ public sealed class NameTable
         AddOne(CodeKind.State, 5, "waits-out-step", State);
         AddOne(CodeKind.State, 6, "enters-building", State);
         AddOne(CodeKind.State, 7, "steps-onto-flag", State);
-        AddOne(
-            CodeKind.State,
-            8,
-            "digs",
-            "0x43e45e walks the node and its six neighbours of the site and changes the heights one a pass; docs/rules/digging.md"
-        );
-        AddOne(CodeKind.State, 9, "builds", State);
-        AddOne(
-            CodeKind.State,
-            0xb,
-            "steps-out-with-good",
-            "0x43e228 steps from the door onto the flag where the flag has a free place, with the good in his hands; docs/rules/sawmilling.md"
-        );
-        AddOne(
-            CodeKind.State,
-            0xd,
-            "puts-down-good",
-            "0x43c6aa lays the good in his hands on the first empty place of the flag, then enters the building; docs/rules/sawmilling.md"
-        );
         AddOne(CodeKind.State, 0xf, "leaves-castle", State);
         AddOne(CodeKind.State, 0x10, "walks-free", State);
-        AddOne(CodeKind.State, 0x11, "cuts-tree", State);
-        AddOne(CodeKind.State, 0x12, "looks-for-tree", State);
-        AddOne(
-            CodeKind.State,
-            0x13,
-            "looks-for-spot",
-            "0x438c9f draws nodes of the spiral until a free node of lowland terrain comes up; docs/rules/forestry.md"
-        );
-        AddOne(
-            CodeKind.State,
-            0x14,
-            "plants",
-            "0x4389bf waits on the node and puts the sapling down; docs/rules/forestry.md"
-        );
-        AddOne(
-            CodeKind.State,
-            0x15,
-            "looks-for-heap",
-            "0x435b17 draws nodes of the spiral until a stone heap stands beside one; docs/rules/stonecutting.md"
-        );
-        AddOne(
-            CodeKind.State,
-            0x16,
-            "walks-to-heap",
-            "0x436a84 walks the vector out to the heap and stops where one stands north-west; docs/rules/stonecutting.md"
-        );
-        AddOne(
-            CodeKind.State,
-            0x17,
-            "cuts-stone",
-            "0x435c5c steps onto the heap's node, strikes, and takes a stone off it; docs/rules/stonecutting.md"
-        );
-        AddOne(
-            CodeKind.State,
-            0x18,
-            "saws",
-            "0x4359fe takes a log out of the building's fill and saws it for 0x93f clock units; docs/rules/sawmilling.md"
-        );
         AddOne(CodeKind.State, 0x19, "looks-for-flag-home", State);
         AddOne(CodeKind.State, 0x1c, "claims-node-home", State);
         AddOne(CodeKind.State, 0x42, "waits-at-flag", State);

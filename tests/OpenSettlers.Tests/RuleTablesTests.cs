@@ -1,3 +1,4 @@
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
 
@@ -131,5 +132,48 @@ public sealed class RuleTablesTests
 
         Assert.AreEqual(4 * RuleTables.FigureBaseRowCount, baseSpan);
         Assert.AreEqual(RuleTables.FrameRowCount, frameSpan);
+    }
+
+    private static RuleTables WithJobData(params (Job, object)[] data) =>
+        new(new ObjectClass[RuleTables.ClassCount], TestProgram.Made().StartStock, jobData: data);
+
+    [TestMethod]
+    public void JobDataIsKeptByJobAndByType()
+    {
+        var woodcutter = new FigureAdds(1, 2, 3);
+        var stonecutter = new FigureAdds(4, 5, 6);
+        var tables = WithJobData(
+            (Job.Woodcutter, woodcutter),
+            (Job.Stonecutter, stonecutter),
+            (Job.Digger, new FigureAdds(7, 8, 9)),
+            (Job.Digger, new WorkerRequest(Job.Digger, new Good(16))),
+            (Job.Builder, new WorkerRequest(Job.Builder, new Good(17)))
+        );
+
+        Assert.AreEqual(woodcutter, tables.Get<FigureAdds>(Job.Woodcutter));
+        Assert.AreEqual(stonecutter, tables.Get<FigureAdds>(Job.Stonecutter));
+        Assert.AreEqual(new FigureAdds(7, 8, 9), tables.Get<FigureAdds>(Job.Digger));
+        Assert.AreEqual(new WorkerRequest(Job.Digger, new Good(16)), tables.Get<WorkerRequest>(Job.Digger));
+        Assert.AreEqual(new WorkerRequest(Job.Builder, new Good(17)), tables.Get<WorkerRequest>(Job.Builder));
+    }
+
+    [TestMethod]
+    public void AJobWhoseDataTheTablesLackIsAnErrorAndNoDefault()
+    {
+        var tables = WithJobData((Job.Woodcutter, new FigureAdds(1, 2, 3)));
+
+        var missingJob = Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<FigureAdds>(Job.Stonecutter));
+        Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<WorkerRequest>(Job.Woodcutter));
+        StringAssert.Contains(missingJob.Message, "Stonecutter");
+    }
+
+    [TestMethod]
+    public void TablesThatGiveNoJobDataHoldTheMadeUpDataOfEveryJob()
+    {
+        var tables = TestProgram.Made();
+
+        Assert.AreEqual(default, tables.Get<FigureAdds>(Job.Woodcutter));
+        Assert.AreEqual(new WorkerRequest(Job.Builder, Good.None), tables.Get<WorkerRequest>(Job.Builder));
+        Assert.AreEqual(new WorkerRequest(Job.Digger, Good.None), tables.Get<WorkerRequest>(Job.Digger));
     }
 }

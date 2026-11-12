@@ -70,6 +70,42 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
+    public void TheTypeOneHutSettlerHasNoNameAndEveryOtherPortedJobHasOne()
+    {
+        Assert.IsNull(NameTable.JobName(RuleTables.TypeOneHutJob));
+        foreach (var number in new[] { 0, 2, 3, 4, 5, 6, 7, 8, 21 })
+        {
+            Assert.IsNotNull(NameTable.JobName(number), $"job {number}");
+        }
+    }
+
+    [TestMethod]
+    public void TheNamesTheJobModulesStateAreInTheTableWithTheirEvidence()
+    {
+        var jobs = NameTable.Entries.Where(entry => entry.Kind == NameTable.CodeKind.Job).ToArray();
+
+        CollectionAssert.AreEquivalent(
+            new[]
+            {
+                "carrier",
+                "digger",
+                "builder",
+                "castle-settler",
+                "woodcutter",
+                "sawmiller",
+                "stonecutter",
+                "forester",
+                "jobless",
+            },
+            jobs.Select(entry => entry.Name).ToArray()
+        );
+        Assert.AreEqual(
+            "the code of the Activity record (src/Domain/Activity.cs)",
+            NameTable.Entries.Single(entry => entry.Kind == NameTable.CodeKind.State && entry.Code == 0x11).Evidence
+        );
+    }
+
+    [TestMethod]
     public void EveryEntryCitesItsEvidence()
     {
         Assert.IsTrue(NameTable.Entries.Any());

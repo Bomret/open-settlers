@@ -106,14 +106,14 @@ public sealed class SettlerFigureTables
             tables.FigureOffsets,
             sequences,
             tables.CarriedFigures,
-            tables.WoodcutterFigureAdds,
-            tables.TypeOneHutFigureAdds,
+            tables.Get<FigureAdds>(Job.Woodcutter),
+            tables.Get<HutFigureAdds>(Job.TypeOneHut),
             new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets),
-            tables.BuilderFigureAdds,
-            tables.StonecutterFigureAdds,
-            tables.ForesterFigureAdds,
-            tables.DiggerFigureAdds,
-            tables.SawmillerFigureAdds
+            tables.Get<BuilderFigureAdds>(Job.Builder),
+            tables.Get<FigureAdds>(Job.Stonecutter),
+            tables.Get<ForesterFigureAdds>(Job.Forester),
+            tables.Get<FigureAdds>(Job.Digger),
+            tables.Get<SawmillerFigureAdds>(Job.Sawmiller)
         );
 
     /// <summary>Whether the tables hold the figure handler of <paramref name="job"/>: a job without one has no drawn figure.</summary>
