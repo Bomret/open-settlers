@@ -565,27 +565,24 @@ public partial class MapViewControl : Control
     public override void _UnhandledKeyInput(InputEvent input)
     {
         // An echo is a repeat of a held key (a play run re-presses a hold after a focus loss), not a new zoom step.
-        if (input is not InputEventKey { Pressed: true, Echo: false } key || _seed.HasFocus())
+        if (input is not InputEventKey key)
         {
             return;
         }
 
-        if (key.Keycode == Key.Escape)
+        // Keycode holds the bare key: a held Shift or Ctrl is not part of it.
+        switch (MapKeys.Action(key.Keycode.ToString(), key.Pressed, key.Echo, _seed.HasFocus()))
         {
-            _roadButton.ButtonPressed = false;
-            CancelRoad();
-            return;
-        }
-
-        var factor = key.Keycode switch
-        {
-            Key.Plus or Key.Equal or Key.KpAdd => Zoom.Step,
-            Key.Minus or Key.KpSubtract => 1 / Zoom.Step,
-            _ => 1,
-        };
-        if (factor != 1)
-        {
-            ZoomAt(factor, _canvas.Size / 2f);
+            case MapKeyAction.LeaveRoadMode:
+                _roadButton.ButtonPressed = false;
+                CancelRoad();
+                break;
+            case MapKeyAction.ZoomIn:
+                ZoomAt(Zoom.Step, _canvas.Size / 2f);
+                break;
+            case MapKeyAction.ZoomOut:
+                ZoomAt(1 / Zoom.Step, _canvas.Size / 2f);
+                break;
         }
     }
 
@@ -661,39 +658,20 @@ public partial class MapViewControl : Control
             screenY,
             ObjectDraws.FlagGeometry
         );
-        if (_roadButton.ButtonPressed && _drawing is not null)
+        // ClickDecision decides from the pressed buttons: the road is drawn outside the game, a node at a time, and one
+        // command builds it where it reaches a flag.
+        var mode = new ClickMode(
+            _roadButton.ButtonPressed,
+            _removeButton.ButtonPressed,
+            _flagButton.ButtonPressed,
+            _buildButtons.Where(entry => entry.Button.ButtonPressed).Select(entry => entry.Type).ToList()
+        );
+        if (ClickDecision.Decide(mode, _game, _state.Map, _drawing, _game.Removal.CommandAt, x, y) is { } command)
         {
-            // The road is drawn outside the game, a node at a time, and one command builds it where it reaches a flag.
-            if (_drawing.Click(x, y) is { } build)
-            {
-                _game.Enqueue(build);
-            }
-
-            DrawPreview();
-            return;
+            _game.Enqueue(command);
         }
 
-        if (_removeButton.ButtonPressed)
-        {
-            // The check decides what the click takes down; a click it refuses asks for nothing.
-            if (_game.Removal.CommandAt(x, y) is { } removal)
-            {
-                _game.Enqueue(new Command(_game.TickCount, 0, removal, x, y));
-            }
-
-            return;
-        }
-
-        var building = _buildButtons.Where(entry => entry.Button.ButtonPressed).Select(entry => entry.Type).ToList();
-        if (building.Count > 0)
-        {
-            _game.Enqueue(new Command(_game.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: building[0]));
-
-            return;
-        }
-
-        var kind = _flagButton.ButtonPressed ? CommandKind.PlaceFlag : CommandKind.PlaceCastle;
-        _game.Enqueue(new Command(_game.TickCount, 0, kind, x, y));
+        DrawPreview();
     }
 
     // Releases every toggle of the build panel.

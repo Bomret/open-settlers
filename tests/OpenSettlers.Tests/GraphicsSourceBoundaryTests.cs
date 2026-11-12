@@ -22,6 +22,8 @@ public sealed class GraphicsSourceBoundaryTests
     [DataRow("src/MapView/ObjectTerms.cs")]
     [DataRow("src/MapView/SettlerFigures.cs")]
     [DataRow("src/MapView/MapPicking.cs")]
+    [DataRow("src/MapView/ClickDecision.cs")]
+    [DataRow("src/MapView/MapKeys.cs")]
     [DataRow("src/MapView/ShotCrop.cs")]
     [DataRow("src/MapView/SpriteLayer.cs")]
     [DataRow("src/MapView/OpenSettlersSource.cs")]
