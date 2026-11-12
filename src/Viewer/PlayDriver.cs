@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Godot;
@@ -21,13 +20,17 @@ public partial class PlayDriver : Node
     /// <summary>The window and content size of a play run.</summary>
     public static readonly Vector2I WindowSize = new(1280, 720);
 
-    // The bits of a Godot key value that hold the key code; the bits above them hold the modifier flags.
-    const long CodeMask = 0x007FFFFF;
+    static readonly KeyMasks Masks = new(
+        (long)KeyModifierMask.MaskShift,
+        (long)KeyModifierMask.MaskCtrl,
+        (long)KeyModifierMask.MaskAlt,
+        (long)KeyModifierMask.MaskMeta
+    );
 
     readonly MapViewControl _view;
     readonly PlayRun _run;
     readonly string _outputFolder;
-    readonly HashSet<Key> _held = [];
+    readonly HeldKeys _held = new();
 
     /// <summary>The driver of a run of <c>script</c> on the view; shots go to <c>outputFolder</c>.</summary>
     public PlayDriver(MapViewControl view, PlayScript script, string outputFolder)
@@ -198,33 +201,31 @@ public partial class PlayDriver : Node
     // see it until the release.
     string? SendKey(string name, bool pressed)
     {
-        var code = OS.FindKeycodeFromString(name);
-        var key = (Key)((long)code & CodeMask);
-        if (key == Key.None)
-            return $"'{name}' is no Godot key name";
+        var code = (long)OS.FindKeycodeFromString(name);
+        if (PlayKeys.Split(name, code, Masks, out var chord) is { } problem)
+            return problem;
 
         if (pressed)
-            _held.Add(key);
+            _held.Hold(chord.Key);
         else
-            _held.Remove(key);
-        Press(code, pressed, echo: false);
+            _held.Release(chord.Key);
+        Press(chord, pressed, echo: false);
 
         return null;
     }
 
-    static void Press(Key code, bool pressed, bool echo)
+    static void Press(KeyChord chord, bool pressed, bool echo)
     {
-        var key = (Key)((long)code & CodeMask);
-        var modifiers = (long)code & ~CodeMask;
+        var key = (Key)chord.Key;
         Godot.Input.ParseInputEvent(
             new InputEventKey
             {
                 Keycode = key,
                 PhysicalKeycode = key,
-                ShiftPressed = (modifiers & (long)KeyModifierMask.MaskShift) != 0,
-                CtrlPressed = (modifiers & (long)KeyModifierMask.MaskCtrl) != 0,
-                AltPressed = (modifiers & (long)KeyModifierMask.MaskAlt) != 0,
-                MetaPressed = (modifiers & (long)KeyModifierMask.MaskMeta) != 0,
+                ShiftPressed = chord.Shift,
+                CtrlPressed = chord.Ctrl,
+                AltPressed = chord.Alt,
+                MetaPressed = chord.Meta,
                 Pressed = pressed,
                 Echo = echo,
             }
@@ -238,10 +239,9 @@ public partial class PlayDriver : Node
     // pressed again, as an echo, before the frame's steps.
     void KeepHeld()
     {
-        foreach (var key in _held)
+        foreach (var key in _held.ToPressAgain(key => Godot.Input.IsKeyPressed((Key)key)))
         {
-            if (!Godot.Input.IsKeyPressed(key))
-                Press(key, true, echo: true);
+            Press(new KeyChord(key, false, false, false, false), true, echo: true);
         }
     }
 
