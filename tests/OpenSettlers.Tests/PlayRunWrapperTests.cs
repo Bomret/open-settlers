@@ -797,14 +797,24 @@ public class PlayRunWrapperTests
     // numbers those judgments. At judgment FAKE_PS_SWAP_AT it also replaces the lock's pid with a live owner's, as
     // another call does between this call's judgment and its removal of the lock. Asked about FAKE_PS_MDEAD it
     // replaces the takeover mutex's pid with a live holder's, as a call does that takes the mutex between another
-    // call's judgment of the mutex and its rename of it. Asked about a live pid while the lock path is free, it
-    // creates a lock for FAKE_PS_W, as a waiting call does.
+    // call's judgment of the mutex and the clearing of it, and with FAKE_PS_MLOG it appends to ps-mutex-log whether
+    // the mutex path stands. FAKE_PS_OWN makes the first self-probe (a pid that is neither dead nor FAKE_PS_MDEAD)
+    // leave a mutex holding that pid, which the wrapper's own pid is, as a clearer that was stalled leaves one.
+    // Asked about a live pid while the lock path is free, it creates a lock for FAKE_PS_W, as a waiting call does.
     const string FakePs = """
         #!/bin/sh
         [ -n "${FAKE_PS_EXIT:-}" ] && exit "$FAKE_PS_EXIT"
         if [ "$2" = "${FAKE_PS_MDEAD:-x}" ]; then
-          echo "$FAKE_PS_LIVE" > play-out/.lock-demo.takeover/pid
+          if [ -n "${FAKE_PS_MLOG:-}" ]; then
+            if [ -d play-out/.lock-demo.takeover ]; then echo present; else echo absent; fi >> "$FAKE_DIR/ps-mutex-log"
+          fi
+          [ -n "${FAKE_PS_MSWAP:-}" ] && echo "$FAKE_PS_LIVE" > play-out/.lock-demo.takeover/pid
           exit 1
+        fi
+        if [ -n "${FAKE_PS_OWN:-}" ] && [ "$2" != "$FAKE_PS_DEAD" ] && [ ! -e "$FAKE_DIR/own-done" ] && [ ! -d play-out/.lock-demo.takeover ]; then
+          : > "$FAKE_DIR/own-done"
+          mkdir play-out/.lock-demo.takeover
+          echo "$2" > play-out/.lock-demo.takeover/pid
         fi
         if [ "$2" = "$FAKE_PS_DEAD" ]; then
           n=$(cat "$FAKE_DIR/ps-count" 2>/dev/null || echo 0)
@@ -838,8 +848,8 @@ public class PlayRunWrapperTests
         return env;
     }
 
-    // The call judges the dead lock stale outside the mutex (ps call 1), clears the stale mutex, then judges it again
-    // holding the mutex (ps call 3), and between that judgment and its removal the lock turns into a live owner's.
+    // The call judges the dead lock stale outside the mutex (judgment 1), clears the stale mutex, then judges it again
+    // holding the mutex (judgment 3), and between that judgment and its removal the lock turns into a live owner's.
     [TestMethod]
     public void ALockThatTurnsLiveAfterTheJudgmentUnderTheMutexIsLeftInPlace()
     {
@@ -922,22 +932,105 @@ public class PlayRunWrapperTests
         Assert.AreEqual(0, Calls);
     }
 
-    // The call judges the mutex of a dead holder stale, and before it renames the mutex a live call takes the path
-    // (the fake ps puts a live pid into the mutex). The call must leave that holder's mutex in place, with nothing
-    // renamed beside it, and wait.
+    // The call judges the mutex of a dead holder stale, and before it clears the mutex a live call takes the path
+    // (the fake ps puts a live pid into the mutex). The call must leave that holder's mutex in place and wait.
     [TestMethod]
-    public void AMutexThatTurnsLiveBeforeItsRenameIsRestoredAndTheCallWaits()
+    public void AMutexThatTurnsLiveBeforeItIsClearedIsLeftInPlaceAndTheCallWaits()
     {
         var deadHolder = DeadPid();
         var deadOwner = DeadPid();
         HoldLock(deadOwner);
         HoldTakeover(deadHolder, TimeSpan.FromMinutes(5));
-        using var call = Start(Args, FakePsEnv(deadOwner, new() { ["FAKE_PS_MDEAD"] = deadHolder.ToString() }));
+        using var call = Start(Args, FakePsEnv(deadOwner, new() { ["FAKE_PS_MDEAD"] = deadHolder.ToString(), ["FAKE_PS_MSWAP"] = "1" }));
         WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait on the live holder's mutex");
 
         Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo.takeover/pid")));
-        Assert.AreEqual(1, Directory.GetFileSystemEntries(Out(""),".lock-demo.takeover*").Length, "no renamed mutex is left");
+        Assert.AreEqual(1, Directory.GetFileSystemEntries(Out(""), ".lock-demo.takeover*").Length, "no sibling of the mutex is left");
         Assert.AreEqual(0, Calls);
+    }
+
+    // The mutex is never moved off its path: while the call judges it stale a second time, the path still stands, so
+    // no third call can take it and no live holder's mutex can be dropped when it is put back.
+    [TestMethod]
+    public void AStaleMutexStandsOnItsPathWhileItIsJudgedAgain()
+    {
+        var deadHolder = DeadPid();
+        var deadOwner = DeadPid();
+        HoldLock(deadOwner);
+        HoldTakeover(deadHolder, TimeSpan.Zero);
+        var call = Run(Args, FakePsEnv(deadOwner, new() { ["FAKE_PS_MDEAD"] = deadHolder.ToString(), ["FAKE_PS_MLOG"] = "1" }));
+
+        Assert.AreEqual(0, call.Status);
+        var log = File.ReadAllLines(Path.Combine(fake, "ps-mutex-log"));
+        Assert.IsTrue(log.Length >= 2, "the mutex is judged before and while it is cleared");
+        Assert.IsTrue(log.All(l => l == "present"), "the mutex path stood at every judgment: " + string.Join(",", log));
+    }
+
+    // A call never waits on a mutex that holds its own pid outside its critical section (a stalled clearer of
+    // another call left it there): it removes it and goes on.
+    [TestMethod]
+    public void AMutexHoldingTheCallsOwnPidOutsideItsCriticalSectionIsRemovedAndTheCallGoesOn()
+    {
+        var dead = DeadPid();
+        HoldLock(dead);
+        var call = Run(Args, FakePsEnv(dead, new() { ["FAKE_PS_OWN"] = "1" }));
+
+        Assert.AreEqual(0, call.Status);
+        Assert.AreEqual(1, Calls);
+        Assert.IsFalse(Directory.Exists(Out(".lock-demo.takeover")));
+    }
+
+    void HoldReap(string key, string? pid, TimeSpan age)
+    {
+        Directory.CreateDirectory(Out($".lock-demo.takeover.reap.{key}"));
+        if (pid is not null)
+        {
+            File.WriteAllText(Out($".lock-demo.takeover.reap.{key}/pid"), pid + "\n");
+        }
+
+        Directory.SetLastWriteTimeUtc(Out($".lock-demo.takeover.reap.{key}"), DateTime.UtcNow - age);
+    }
+
+    // One reaper per dead holder: while a live call is reaping the mutex of holder D, another call leaves it.
+    [TestMethod]
+    public void ALiveReaperOfTheHoldersMutexMakesTheCallWait()
+    {
+        var deadHolder = DeadPid();
+        HoldLock(DeadPid());
+        HoldTakeover(deadHolder, TimeSpan.Zero);
+        HoldReap(deadHolder.ToString(), Environment.ProcessId.ToString(), TimeSpan.FromMinutes(5));
+        using var call = Start(Args);
+        WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait on the reaper");
+
+        Assert.IsTrue(Directory.Exists(Out(".lock-demo.takeover")), "the mutex is left to the reaper");
+        Assert.AreEqual(0, Calls);
+    }
+
+    // A reaper killed inside its step leaves a reap dir with a dead pid, or with none: both are cleared by the next
+    // call, which then reaps the mutex and goes on.
+    [TestMethod]
+    public void AReapDirOfADeadReaperIsClearedAndTheCallGoesOn()
+    {
+        var deadHolder = DeadPid();
+        HoldLock(DeadPid());
+        HoldTakeover(deadHolder, TimeSpan.Zero);
+        HoldReap(deadHolder.ToString(), DeadPid().ToString(), TimeSpan.Zero);
+
+        Assert.AreEqual(0, Run(Args).Status);
+        Assert.AreEqual(1, Calls);
+        Assert.AreEqual(0, Directory.GetFileSystemEntries(Out(""), ".lock-demo.takeover*").Length);
+    }
+
+    [TestMethod]
+    public void AReapDirWithNoPidOlderThanFiveSecondsIsClearedAndTheCallGoesOn()
+    {
+        HoldLock(DeadPid());
+        HoldTakeover(TimeSpan.FromMinutes(5));
+        HoldReap("nopid", null, TimeSpan.FromMinutes(5));
+
+        Assert.AreEqual(0, Run(Args).Status);
+        Assert.AreEqual(1, Calls);
+        Assert.AreEqual(0, Directory.GetFileSystemEntries(Out(""), ".lock-demo.takeover*").Length);
     }
 
     // Two calls find a dead lock beside a stale mutex. The lock is taken over once: one Godot call, one stored entry.

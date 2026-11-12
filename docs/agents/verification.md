@@ -140,12 +140,20 @@ failed `expect` or a problem in the script.
   output and the same `ps` lists the call's own pid, so a missing `ps`, a `ps` without `-p`, and any other result make
   a call wait. The takeover happens under the mutex `play-out/.lock-<stem>.takeover`, which holds its holder's pid. The
   mutex is stale, and is then cleared, when that pid reads as dead, or when it holds no pid and is older than 5
-  seconds; a mutex of a live holder is never cleared and the call waits. The wait message names the lock and the
+  seconds, and the call then waits on a mutex of a live holder. The wait message names the lock and the
   mutex. A call removes a lock only while its own pid is in the mutex, after it judged the lock dead a second time
   under the mutex and found the pid it judged still in it, and it never moves a lock off its path; the lock's own
-  call removes it on exit only while it holds that call's pid. A clearer renames a stale mutex away and judges it
-  again; a live one is renamed back when its path is free, and in the moment between, a third call can take the
-  path. Remove the lock and the mutex by hand only when no run is live.
+  call removes it on exit only while it holds that call's pid. A stale mutex is cleared in place and never moved,
+  by one reaper per holder: the directory `play-out/.lock-<stem>.takeover.reap.<holder>` (`<holder>` is the pid in
+  the mutex, or `nopid`) holds the reaper's pid, and its reaper judges the mutex stale again with the same holder
+  in it before it removes it. A reap directory is stale by the mutex's rule, and the next call removes it. A call
+  removes a mutex that holds its own pid outside its critical section instead of waiting on it. Two gaps are left,
+  and each needs a call that stalls or is killed. A holder that stalls more than 5 seconds between creating the
+  mutex and writing its pid reads as holding none, so a reaper can remove it and a third call can take the path:
+  two holders, and one can remove a lock another took. A reaper killed inside its step leaves its reap directory,
+  and two calls that both judge it stale can remove it one after the other's new reaper has made it: two reapers
+  of one holder, and the one that finishes second can remove a mutex a live holder took. Remove the lock, the
+  mutex, and the reap directories by hand only when no run is live.
 - An empty `--size` or `--seed` exits 2 with the usage message, as an empty `--fps` or `--layout` does.
 
 When a line is about one place, take a cropped shot, `shot <name> <column> <row> [radius] [scale]`, rather
