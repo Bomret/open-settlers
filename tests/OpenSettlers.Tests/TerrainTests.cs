@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -105,6 +106,18 @@ public sealed class TerrainTests
 
         Assert.HasCount(64 * 64, covered);
     }
+
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(-1)]
+    public void ChunksWithASideOfZeroOrLessAreRefused(int side) =>
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => TerrainTiling.Chunks(4, 4, side));
+
+    [TestMethod]
+    [DataRow(0, 5)]
+    [DataRow(5, 0)]
+    public void ChunksOfNoRowsOrNoColumnsAreNone(int columns, int rows) =>
+        Assert.AreEqual(0, TerrainTiling.Chunks(columns, rows, 16).Count);
 
     [TestMethod]
     public void ChunksAtTheEdgeAreSmallerWhereTheMapDoesNotDivide()
