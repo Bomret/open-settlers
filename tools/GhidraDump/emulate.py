@@ -2,10 +2,10 @@
 
 Usage: python3 -I emulate.py [--game <dir>] [--project <dir>] <command>...
 
-Each command is one of the forms EmulateMapStart.java lists, for example rng:0000,0000,0000. Run from the
-repository root. The install is the --game folder or SIEDLER_DIR, as for the game itself. The script imports
-Siedler1.exe into a project in a temporary folder, without analysis, and removes the project afterwards: it
-keeps no program bytes.
+Each command is one of the forms EmulateMapStart.java lists, for example rng:0000,0000,0000. The script finds
+EmulateMapStart.java and EmulateDraw.java beside itself, from any folder. The install is the --game folder or
+SIEDLER_DIR, as for the game itself. The script imports Siedler1.exe into a project in a temporary folder, without
+analysis, and removes the project afterwards: it keeps no program bytes.
 
 With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
 calls run the script against the imported program instead of importing again. The folder records the SHA-256 of the
@@ -35,7 +35,7 @@ import tempfile
 PROJECT_NAME = "Emu"
 DIGEST_FILE = "program.sha256"
 
-SCRIPTS = os.path.join(os.getcwd(), "tools", "GhidraDump")
+SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 
 # The History Edition's Siedler1.exe (docs/rules/AGENTS.md, "Reference build"; ADR 0004).
 REFERENCE_SHA256 = "0113d8b31268a5848e6827da32a970d7c6a0aab33ff28cc8f11a974b3679dbd5"
@@ -116,6 +116,8 @@ def main(argv):
     game = os.environ.get("SIEDLER_DIR")
     shared = None
     while argv[:1] in (["--game"], ["--project"]):
+        if len(argv) < 2 or not argv[1]:
+            fail(f"{argv[0]} needs a folder. {__doc__.strip().splitlines()[2]}")
         if argv[0] == "--game":
             game = argv[1]
         else:
