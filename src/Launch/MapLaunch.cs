@@ -33,6 +33,16 @@ public abstract record MapLaunch
     public sealed record Open(Layout? Layout, Install Install, PlayScript? Script, string? PlayOutFolder) : MapLaunch;
 
     /// <summary>
+    /// The exit for a bad argument of any mode (<see cref="LaunchArgs.BadArgumentExitCode"/>, stderr, <c>ERROR</c> and
+    /// the problems joined by "; "), or null where the arguments are good. The view calls it first for every mode, so
+    /// no window opens for a bad argument; <see cref="Decide"/> repeats it to keep the order whole.
+    /// </summary>
+    public static Exit? BadArgument(LaunchArgs args) =>
+        args.Problems.Count > 0
+            ? new Exit(LaunchArgs.BadArgumentExitCode, $"ERROR {string.Join("; ", args.Problems)}", LaunchStream.Stderr)
+            : null;
+
+    /// <summary>
     /// Decides a map launch, checking in this order, the first failure winning: a bad argument exits
     /// <see cref="LaunchArgs.BadArgumentExitCode"/> (stderr); a layout file that fails to load exits with its own code
     /// and message (stdout); a missing install exits 2 (stdout, <c>ERROR problem</c>); an unreadable or bad play script
@@ -51,13 +61,9 @@ public abstract record MapLaunch
         Func<string> projectFolder
     )
     {
-        if (args.Problems.Count > 0)
+        if (BadArgument(args) is { } bad)
         {
-            return new Exit(
-                LaunchArgs.BadArgumentExitCode,
-                $"ERROR {string.Join("; ", args.Problems)}",
-                LaunchStream.Stderr
-            );
+            return bad;
         }
 
         Layout? layout = null;

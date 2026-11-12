@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Assets;
@@ -151,6 +152,61 @@ public sealed class MapLaunchTests
         var text = CrashText.Of("a/b.dat", new InvalidOperationException("boom"));
 
         Assert.AreEqual("a/b.dat: crashed: InvalidOperationException: boom", text);
+    }
+
+    sealed class OneKind(string name, params Asset[] assets) : AssetKind
+    {
+        public override string Name => name;
+
+        public override IEnumerable<Asset> Enumerate(Install install) => assets;
+    }
+
+    [TestMethod]
+    public void TheCrashSubjectIsTheSelectedAssetFile()
+    {
+        using var fake = new FakeInstall();
+        var asset = new Asset
+        {
+            Kind = "text",
+            File = "x/a",
+            Name = "a",
+            Load = () => throw new InvalidOperationException("unused"),
+        };
+        var state = AssetBrowserState.Open(
+            LaunchArgs.Parse(["--game", fake.Root], null),
+            [new OneKind("text", asset)],
+            selectFirst: false
+        );
+        state.SelectKind("text");
+
+        Assert.AreEqual("x/a", CrashText.Subject(state));
+    }
+
+    [TestMethod]
+    public void WithNoSelectedAssetTheCrashSubjectIsTheSelectedKind()
+    {
+        using var fake = new FakeInstall();
+        var state = AssetBrowserState.Open(
+            LaunchArgs.Parse(["--game", fake.Root], null),
+            [new OneKind("empty")],
+            selectFirst: false
+        );
+        state.SelectKind("empty");
+
+        Assert.AreEqual("empty", CrashText.Subject(state));
+    }
+
+    [TestMethod]
+    public void WithNeitherSelectedTheCrashSubjectIsNull()
+    {
+        using var fake = new FakeInstall();
+        var state = AssetBrowserState.Open(
+            LaunchArgs.Parse(["--game", fake.Root], null),
+            [new OneKind("empty")],
+            selectFirst: false
+        );
+
+        Assert.IsNull(CrashText.Subject(state));
     }
 
     [TestMethod]

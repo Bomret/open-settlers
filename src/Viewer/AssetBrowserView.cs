@@ -37,11 +37,11 @@ public partial class AssetBrowserView : Control
             System.Environment.GetEnvironmentVariable(LaunchArgs.GameVariable),
             movieMaker: !string.IsNullOrEmpty(Engine.GetWriteMoviePath())
         );
-        if (args.Problems.Count > 0)
+        if (MapLaunch.BadArgument(args) is { } bad)
         {
             // A bad argument wins over a missing install, and no window opens for it.
-            GD.PrintErr($"ERROR {string.Join("; ", args.Problems)}");
-            GetTree().Quit(LaunchArgs.BadArgumentExitCode);
+            GD.PrintErr(bad.Message);
+            GetTree().Quit(bad.Code);
 
             return;
         }
@@ -98,8 +98,7 @@ public partial class AssetBrowserView : Control
 
     // AssetBrowserState propagates a programming error, and a Godot callback exception only reaches the log, so the
     // view catches it like RunCheck does and returns the text to show in its place.
-    string? Guard(Action action) =>
-        CrashText.Guard(action, () => _state.SelectedAsset?.File ?? _state.SelectedKind, line => GD.PrintErr(line));
+    string? Guard(Action action) => CrashText.Guard(action, () => CrashText.Subject(_state), line => GD.PrintErr(line));
 
     static Label Wrapped(string text) =>
         new()
@@ -129,9 +128,14 @@ public partial class AssetBrowserView : Control
         if (decision is MapLaunch.Exit exit)
         {
             if (exit.Stream == LaunchStream.Stderr)
+            {
                 GD.PrintErr(exit.Message);
+            }
             else
+            {
                 GD.Print(exit.Message);
+            }
+
             GetTree().Quit(exit.Code);
 
             return;
