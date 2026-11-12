@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
   <ItemGroup>
     <!-- The adapters, the game, and the tests read the internal members of the game's parts. -->
     <InternalsVisibleTo Include="OpenSettlers.Adapters" />

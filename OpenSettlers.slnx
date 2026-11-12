@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="OpenSettlers.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/Domain/OpenSettlers.Domain.csproj" />
+    <Project Path="src/Application/OpenSettlers.Application.csproj" />
+    <Project Path="src/Adapters/OpenSettlers.Adapters.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OpenSettlers.Tests/OpenSettlers.Tests.csproj" />
+  </Folder>
+</Solution>

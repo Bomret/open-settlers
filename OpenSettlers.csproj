@@ -1,9 +1,8 @@
 <Project Sdk="Godot.NET.Sdk/4.7.2">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>OpenSettlers</RootNamespace>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <!-- The layer libraries (Domain, Application, Adapters) are their own projects, and so is the job generator, which runs in the compiler. -->
