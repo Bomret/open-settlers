@@ -10,14 +10,13 @@ namespace OpenSettlers.Tests;
 public sealed class RuleTablesTests
 {
     [TestMethod]
-    public void TablesGivenNoJobDataAnswerEveryJobWithAStandIn()
+    public void TablesGivenNoJobDataHoldNoneAndAnyJobIsAnError()
     {
-        var tables = TestProgram.Made();
-        var job = Job.Of(99);
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], TestProgram.Made().StartStock);
 
-        Assert.AreEqual(default(FigureAdds), tables.Get<FigureAdds>(job));
-        Assert.AreEqual(default(BuilderFigureAdds), tables.Get<BuilderFigureAdds>(job));
-        Assert.AreEqual(new WorkerRequest(job, Good.None), tables.Get<WorkerRequest>(job));
+        Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<FigureAdds>(new Woodcutter()));
+        Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<BuilderFigureAdds>(Job.Of(99)));
+        Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<WorkerRequest>(new Builder()));
     }
 
     [TestMethod]
@@ -182,12 +181,16 @@ public sealed class RuleTablesTests
     }
 
     [TestMethod]
-    public void TablesThatGiveNoJobDataHoldTheMadeUpDataOfEveryJob()
+    public void TheMadeUpJobDataHoldsExactlyTheDataTheJobTypesDeclare()
     {
-        var tables = TestProgram.Made();
+        var declared = TestProgram.Jobs().SelectMany(job => job.Data.Select(type => (job, type)));
+        var made = TestProgram.MadeJobData().Select(entry => (entry.Job, entry.Data.GetType()));
 
-        Assert.AreEqual(default, tables.Get<FigureAdds>(new Woodcutter()));
-        Assert.AreEqual(new WorkerRequest(new Builder(), Good.None), tables.Get<WorkerRequest>(new Builder()));
-        Assert.AreEqual(new WorkerRequest(new Digger(), Good.None), tables.Get<WorkerRequest>(new Digger()));
+        CollectionAssert.AreEquivalent(declared.ToList(), made.ToList());
+        Assert.IsTrue(declared.Any(), "the jobs declare data");
+        Assert.AreEqual(
+            new WorkerRequest(new Builder(), Good.None),
+            TestProgram.Made().Get<WorkerRequest>(new Builder())
+        );
     }
 }

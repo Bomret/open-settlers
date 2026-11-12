@@ -169,10 +169,8 @@ public sealed class RuleTables
         // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
         _materialOrder = materialOrder ?? new ushort[BuildingTypeCount];
         _blowSteps = blowSteps ?? new ushort[2 * BuildingTypeCount];
-        // Where a job's data is given, it is exactly what is given: a job's data that is missing is an error when read.
-        // stand-in: tables a test gives no job data answer every job with a made-up value (see Get).
+        // A job's data is exactly what is given: a job's data that is missing is an error when read (see Get).
         _jobData = [];
-        _madeUp = jobData is null;
         foreach (var (job, data) in jobData ?? [])
         {
             _jobData[(job, data.GetType())] = data;
@@ -180,33 +178,19 @@ public sealed class RuleTables
     }
 
     private readonly Dictionary<(Job, Type), object> _jobData;
-    private readonly bool _madeUp;
 
     /// <summary>
     /// The data of type <typeparamref name="T"/> that the job <paramref name="job"/> owns: the figure adds of its handler, or the
-    /// request a site makes for it. The importer reads each from the job's tables module. Throws where the tables hold none.
-    /// Tables built with no job data (a test's) answer every job with a stand-in: a data record of all zeros, which draws the settler
-    /// in the carrier's row, and for a <see cref="WorkerRequest"/> the job's own request with no tool.
+    /// request a site makes for it. The importer reads each from the job's tables module. Throws where the tables hold none: a job's
+    /// missing data is an error and no default.
     /// </summary>
     public T Get<T>(Job job)
-        where T : notnull
-    {
-        if (_jobData.TryGetValue((job, typeof(T)), out var data))
-        {
-            return (T)data;
-        }
-
-        if (_madeUp && typeof(T) == typeof(WorkerRequest))
-        {
-            return (T)(object)new WorkerRequest(job, Good.None);
-        }
-
-        return _madeUp && typeof(T).IsValueType
-            ? default!
+        where T : notnull =>
+        _jobData.TryGetValue((job, typeof(T)), out var data)
+            ? (T)data
             : throw new InvalidOperationException(
                 $"The tables hold no {typeof(T).Name} for the job {job.GetType().Name}."
             );
-    }
 
     /// <summary>The class of each object code.</summary>
     public ObjectClass[] Classes => _classes;

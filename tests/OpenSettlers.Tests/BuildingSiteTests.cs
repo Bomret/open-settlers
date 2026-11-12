@@ -37,7 +37,8 @@ public sealed class BuildingSiteTests
             TestProgram.Made().StartStock,
             buildingSizes: sizes,
             buildingNeeds: needs,
-            workers: TestProgram.MadeWorkers()
+            workers: TestProgram.MadeWorkers(),
+            jobData: TestProgram.MadeJobData()
         );
     }
 

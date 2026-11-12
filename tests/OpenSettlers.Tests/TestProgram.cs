@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -35,8 +36,32 @@ internal static class TestProgram
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
             transportPriorities: transportPriorities,
-            workers: MadeWorkers()
+            workers: MadeWorkers(),
+            jobData: MadeJobData()
         );
+
+    /// <summary>The job of each number 0 to 31.</summary>
+    public static IEnumerable<Job> Jobs() => Enumerable.Range(0, ProgramTablesImporter.JobNumbers).Select(Job.Of);
+
+    /// <summary>
+    /// Made-up data for every record each job type declares (<see cref="Job.Data"/>): the builder and the digger ask for a settler of
+    /// their own job with no tool, and every other record is all zeros, which draws the settler in the carrier's row. A test that gives
+    /// data of its own builds on this list, whose later entries for one job and type win.
+    /// </summary>
+    public static IReadOnlyList<(Job Job, object Data)> MadeJobData() =>
+        [
+            .. Jobs()
+                .SelectMany(job =>
+                    job.Data.Select(type =>
+                        (
+                            job,
+                            type == typeof(WorkerRequest)
+                                ? new WorkerRequest(job, Good.None)
+                                : Activator.CreateInstance(type)!
+                        )
+                    )
+                ),
+        ];
 
     /// <summary>
     /// The workers made-up tables ask for: the woodcutter's hut a woodcutter with a made-up tool, the forester's building a forester
