@@ -13,20 +13,14 @@
 # play-out/runs.log; the line names the mode (map or game-view), the layout, and the graphics source. Bad arguments exit 2 and leave no trace.
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
 # call waits on a live owner (a process of another user counts as live), says so once on stderr, and takes over
-# the lock of a dead one under the mutex play-out/.lock-<stem>.takeover, which holds its holder's pid. A mutex
-# whose holder is dead, or that holds no pid and is older than 5 seconds, is stale and cleared in place by one
-# reaper per holder (the directory $mutex.reap.<holder>, <holder> being the pid or "nopid", holds the reaper's pid
-# and is stale by the same rule, then removed by the next call that judges a mutex of that holder; one whose mutex
-# is gone stays until removed by hand and blocks nothing); a mutex is never moved off its path, and a call
-# removes a mutex holding its own pid outside its critical section. A pid counts as dead only when `ps -p` exits 1
-# with no output and lists the caller's own pid; any other result reads as live. A lock is never moved off its
-# path, and one is removed only after it is judged dead twice, the second time under the mutex and with the same
-# pid in it. Two gaps are left, and each needs a call that stalls or is killed. A holder that stalls more than 5
-# seconds between creating the mutex and writing its pid reads as holding none, so a reaper can remove it and a
-# third call can take the path: two holders, and one can remove a lock another took. A reaper killed inside its
-# step leaves its reap directory, and two calls that both judge it stale can remove it one after the other's new
-# reaper has made it: two reapers of one holder, and the one that finishes second can remove a mutex a live
-# holder took. An empty --size or --seed exits 2. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
+# the lock of a dead one, or of one with no pid older than 5 seconds, under the takeover mutex
+# play-out/.lock-<stem>.takeover. The comments beside the lock code state the protocol: the liveness check, the
+# mutex, and its reapers. Two gaps are left, and each needs a call that stalls or is killed. A holder that stalls
+# more than 5 seconds between creating the mutex and writing its pid reads as holding none, so a reaper can remove
+# it and a third call can take the path: two holders, and one can remove a lock another took. A reaper killed
+# inside its step leaves its reap directory, and two calls that both judge it stale can remove it one after the
+# other's new reaper has made it: two reapers of one holder, and the one that finishes second can remove a mutex a
+# live holder took. An empty --size or --seed exits 2. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
 # failed build starts no Godot, stores nothing, and exits 3. Build and Godot run through `mise exec`, which
 # supplies the pinned tools and $GODOT. PLAY_RUN_MISE replaces the mise binary (default mise), PLAY_RUN_GODOT
 # the Godot binary (default $GODOT from mise.toml), PLAY_RUN_DOTNET the dotnet binary (default dotnet).
@@ -167,7 +161,8 @@ until mkdir "$lock" 2>/dev/null; do
     # A stale mutex is cleared in place, never moved: while it stands no call can create the mutex path. One
     # reaper per holder (the pid in the mutex, or "nopid") holds the directory $mutex.reap.<holder>, which holds
     # the reaper's pid, judges the mutex stale again with the same holder in it, and removes it. A reap directory
-    # is stale by the mutex's rule and removed by the next call that judges a mutex of that holder, which retries.
+    # is stale by the mutex's rule and removed by the next call that judges a mutex of that holder, which retries;
+    # one whose mutex is gone stays until removed by hand and blocks nothing.
     if [ -d "$mutex" ] && mutex_stale "$mutex"; then
       key=${holder:-nopid}
       reap=$mutex.reap.$key
