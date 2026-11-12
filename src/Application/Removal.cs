@@ -283,6 +283,22 @@ public sealed class Removal(
         return null;
     }
 
+    /// <summary>
+    /// Throws the <see cref="InvalidOperationException"/> of <see cref="SplitRoad"/> where a road passes the node and its bits
+    /// hold no two directions among 0 to 5; changes nothing.
+    /// </summary>
+    public void CheckSplit(int index)
+    {
+        if (RoadThrough(index) is not null)
+        {
+            _ = SplitBits(index);
+        }
+    }
+
+    private (int First, int Second) SplitBits(int index) =>
+        RoadBits(Map.At(index).Roads)
+        ?? throw new InvalidOperationException($"the node {index} holds no two road directions to split along");
+
     // The road that passes a node that holds no flag.
     private Road? RoadThrough(int index)
     {
@@ -981,7 +997,8 @@ public sealed class Removal(
     /// settlers on it go to the half they stand on or walk to (Gather and the carrier on its way). The half that holds no
     /// carrier asks the castle for one at the next flag pass of its flags, with a request that takes the cause. A node that holds
     /// no road changes nothing. A node of a road whose bits hold no two directions among 0 to 5 throws
-    /// <see cref="InvalidOperationException"/> naming the node.
+    /// <see cref="InvalidOperationException"/> naming the node; a caller runs <see cref="CheckSplit"/> before it puts the flag
+    /// down, so the failure leaves no flag behind.
     /// </summary>
     public void SplitRoad(int index, int slot, Cause cause)
     {
@@ -990,12 +1007,7 @@ public sealed class Removal(
             return;
         }
 
-        if (RoadBits(Map.At(index).Roads) is not { } bits)
-        {
-            throw new InvalidOperationException($"the node {index} holds no two road directions to split along");
-        }
-
-        var (first, second) = bits;
+        var (first, second) = SplitBits(index);
 
         _raze = cause;
         var a = Gather(index, first);

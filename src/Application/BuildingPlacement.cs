@@ -68,7 +68,12 @@ public sealed class BuildingPlacement(
         // The placement (0x449a63) first moves the deposit of the building's node to the nodes around it, as it does for a flag's
         // node (0x449f58), before it writes the building's object and link, then puts the building's flag down on the south-east
         // node where none stands there, as the flag placement does (0x4422c5): the flag object and bit, the deposit moved, the
-        // link to the new slot.
+        // link to the new slot. A flag node of a road whose bits hold no two road directions fails before anything changes.
+        if (!withFlag && site.Node == 6)
+        {
+            removal.CheckSplit(map.Index(flagX, flagY));
+        }
+
         FlagPlacement.MoveDeposit(map, x, y);
         if (!withFlag)
         {
