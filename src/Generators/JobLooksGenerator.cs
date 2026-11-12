@@ -148,7 +148,9 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
     {
         foreach (var source in Sources)
         {
-            var look = declarations.FirstOrDefault(declaration => declaration.IsLook && declaration.Source == source.Index);
+            var look = declarations.FirstOrDefault(declaration =>
+                declaration.IsLook && declaration.Source == source.Index
+            );
             if (look is null)
             {
                 continue;
@@ -215,7 +217,9 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
         text.AppendLine("#nullable enable");
         text.AppendLine($"namespace {ns};");
         text.AppendLine();
-        text.AppendLine($"/// <summary>The registry of the looks of the {source.Label}, in the order of their full type names.</summary>");
+        text.AppendLine(
+            $"/// <summary>The registry of the looks of the {source.Label}, in the order of their full type names.</summary>"
+        );
         text.AppendLine($"internal static class {source.Registry}");
         text.AppendLine("{");
         text.AppendLine("    /// <summary>Builds every look of the source.</summary>");

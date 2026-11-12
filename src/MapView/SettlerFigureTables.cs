@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
@@ -53,7 +54,7 @@ public sealed class SettlerFigureTables
     private readonly short[] _bases;
     private readonly short[] _offsets;
     private readonly byte[] _data;
-    private readonly Dictionary<Job, IFigureHandler> _handlers;
+    private readonly Dictionary<Job, HistoryEditionLook> _looks;
     private readonly IdleCarrierTables? _idle;
 
     /// <param name="bases">Two words for each high byte of the figure word: the figure base and the second figure base (negative for none).</param>
@@ -80,19 +81,39 @@ public sealed class SettlerFigureTables
         FigureAdds digger = default,
         SawmillerFigureAdds sawmiller = default
     )
+        : this(
+            new RuleTables(
+                new ObjectClass[RuleTables.ClassCount],
+                [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[RuleTables.Goods])],
+                carriedFigures: carried ?? [],
+                jobData:
+                [
+                    (Job.Woodcutter, woodcutter),
+                    (Job.Stonecutter, stonecutter),
+                    (Job.Digger, digger),
+                    (Job.Builder, builder),
+                    (Job.Forester, forester),
+                    (Job.Sawmiller, sawmiller),
+                    (Job.TypeOneHut, typeOneHut),
+                ]
+            ),
+            bases,
+            offsets,
+            sequences,
+            idle
+        ) { }
+
+    // The looks the History Edition source holds read the job data of the tables (the registry is generated from the look modules).
+    private SettlerFigureTables(
+        RuleTables tables,
+        short[] bases,
+        short[] offsets,
+        byte[] sequences,
+        IdleCarrierTables? idle
+    )
     {
-        // The handler table at 0x43f744 holds 8 bytes for each job; the engine holds the handlers of the jobs it draws.
-        _handlers = new Dictionary<Job, IFigureHandler>
-        {
-            [Job.Carrier] = new CarrierFigures(carried ?? []),
-            [Job.Woodcutter] = new WoodcutterFigures(woodcutter),
-            [Job.Stonecutter] = new StonecutterFigures(stonecutter),
-            [Job.TypeOneHut] = new TypeOneHutFigures(typeOneHut),
-            [Job.Builder] = new WorkFigures(builder.Work, builder.Walk),
-            [Job.Digger] = new WorkFigures(digger.Cutting, digger.Walk),
-            [Job.Forester] = new WorkFigures(forester.Work, forester.Walk),
-            [Job.Sawmiller] = new SawmillerFigures(sawmiller),
-        };
+        // The handler table at 0x43f744 holds 8 bytes for each job; the engine holds the looks of the jobs it draws.
+        _looks = HistoryEditionLookRegistry.Build(tables).ToDictionary(look => look.Job);
         _idle = idle;
         _bases = bases;
         _offsets = offsets;
@@ -102,22 +123,15 @@ public sealed class SettlerFigureTables
     /// <summary>The figure tables of the exe's <paramref name="tables"/> over the walk <paramref name="sequences"/>.</summary>
     public static SettlerFigureTables From(RuleTables tables, byte[] sequences) =>
         new(
+            tables,
             tables.FigureBases,
             tables.FigureOffsets,
             sequences,
-            tables.CarriedFigures,
-            tables.Get<FigureAdds>(Job.Woodcutter),
-            tables.Get<HutFigureAdds>(Job.TypeOneHut),
-            new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets),
-            tables.Get<BuilderFigureAdds>(Job.Builder),
-            tables.Get<FigureAdds>(Job.Stonecutter),
-            tables.Get<ForesterFigureAdds>(Job.Forester),
-            tables.Get<FigureAdds>(Job.Digger),
-            tables.Get<SawmillerFigureAdds>(Job.Sawmiller)
+            new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets)
         );
 
     /// <summary>Whether the tables hold the figure handler of <paramref name="job"/>: a job without one has no drawn figure.</summary>
-    public bool HasHandler(Job job) => _handlers.ContainsKey(job);
+    public bool HasHandler(Job job) => _looks.ContainsKey(job);
 
     /// <summary>The palette index of a player's colour.</summary>
     public static int ColourOf(int player) => ColourBase + ColourStep * player;
@@ -163,13 +177,13 @@ public sealed class SettlerFigureTables
                 return null;
             }
 
-            if (!_handlers.TryGetValue(draw.Job, out var handler))
+            if (!_looks.TryGetValue(draw.Job, out var look))
             {
                 return null;
             }
 
             var figure = _data[at];
-            word = figure + handler.Add(draw, figure);
+            word = figure + look.Add(draw, figure);
         }
 
         return PickOf(word, draw.Part, ColourOf(draw.Player), dx, dy);

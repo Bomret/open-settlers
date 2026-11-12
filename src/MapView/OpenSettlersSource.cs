@@ -252,12 +252,12 @@ public sealed class OpenSettlersSource : IGraphicsSource
             goods[code] = new ObjectDrawing(Image(GoodKey(code)), null);
         }
 
-        var settlers = new ObjectImage[Jobs.Length * Kinds.Length];
-        for (var job = 0; job < Jobs.Length; job++)
+        var settlers = new ObjectImage[Jobs.Count * Kinds.Length];
+        for (var job = 0; job < Jobs.Count; job++)
         {
             for (var kind = 0; kind < Kinds.Length; kind++)
             {
-                settlers[job * Kinds.Length + kind] = Image(SettlerKey(Jobs[job].Name, Kinds[kind]));
+                settlers[job * Kinds.Length + kind] = Image(SettlerKey(Jobs[job].Key, Kinds[kind]));
             }
         }
 
@@ -270,18 +270,23 @@ public sealed class OpenSettlersSource : IGraphicsSource
         return new OpenSettlersSource(terrain, roads, flag, objects, buildings, goods, settlers, headroom);
     }
 
-    // The jobs the game draws a settler for, by the name their manifest keys carry.
-    static readonly (string Name, Job Job)[] Jobs =
-    [
-        ("carrier", Job.Carrier),
-        ("woodcutter", Job.Woodcutter),
-        ("stonecutter", Job.Stonecutter),
-        ("type-one-hut", Job.TypeOneHut),
-        ("builder", Job.Builder),
-        ("forester", Job.Forester),
-        ("digger", Job.Digger),
-        ("sawmiller", Job.Sawmiller),
-    ];
+    // The jobs the game draws a settler for, by the name their manifest keys carry: the looks of the source (the registry is
+    // generated from the look modules).
+    static readonly IReadOnlyList<OpenSettlersLook> Jobs = OpenSettlersLookRegistry.Build();
+
+    // The index of the job's look, or -1 for a job without one, which draws nothing.
+    static int IndexOfLook(Job job)
+    {
+        for (var at = 0; at < Jobs.Count; at++)
+        {
+            if (Jobs[at].Job == job)
+            {
+                return at;
+            }
+        }
+
+        return -1;
+    }
 
     // The kinds of activity a settler is drawn in; one frame each, whatever the heading, step, or frame.
     static readonly string[] Kinds = ["walks", "carries", "cuts", "door", "hands-over", "waits"];
@@ -425,7 +430,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     /// <inheritdoc />
     public ObjectDrawing? Draw(SettlerDraw draw)
     {
-        var job = Array.FindIndex(Jobs, entry => entry.Job == draw.Job);
+        var job = IndexOfLook(draw.Job);
         if (draw.Part != SettlerPart.Figure || job < 0)
         {
             return null;
