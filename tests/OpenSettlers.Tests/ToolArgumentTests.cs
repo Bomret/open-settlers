@@ -49,6 +49,7 @@ public sealed class ToolArgumentTests
             RedirectStandardError = true,
         };
         info.ArgumentList.Add("-I");
+        info.ArgumentList.Add("-B");
         foreach (var argument in arguments)
         {
             info.ArgumentList.Add(argument);
@@ -84,21 +85,19 @@ public sealed class ToolArgumentTests
     {
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "emulate.py:");
+        StringAssert.Contains(run.Stderr, "Usage: python3 -I emulate.py");
         Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
     }
 
     [TestMethod]
-    public void GameGivenLastIsRefusedWithUsage() => AssertUsage(Python(_folder, [Emulate(), "--game"]));
-
-    [TestMethod]
-    public void ProjectGivenLastIsRefusedWithUsage() => AssertUsage(Python(_folder, [Emulate(), "--project"]));
-
-    [TestMethod]
-    public void EmptyGameIsRefusedWithUsage() => AssertUsage(Python(_folder, [Emulate(), "--game", "", "rng:0,0,0"]));
-
-    [TestMethod]
-    public void EmptyProjectIsRefusedWithUsage() =>
-        AssertUsage(Python(_folder, [Emulate(), "--game", _folder, "--project", "", "rng:0,0,0"]));
+    [DataRow("--game")]
+    [DataRow("--project")]
+    [DataRow("--game", "", "rng:0,0,0")]
+    [DataRow("--game", "<folder>", "--project", "", "rng:0,0,0")]
+    public void AFlagWithoutAFolderIsRefusedWithUsage(params string[] arguments) =>
+        AssertUsage(
+            Python(_folder, [Emulate(), .. arguments.Select(argument => argument == "<folder>" ? _folder : argument)])
+        );
 
     [TestMethod]
     public void EmptyProjectDeletesNothing()
@@ -166,6 +165,10 @@ public sealed class ToolArgumentTests
 
         Assert.AreEqual(0, run.Exit, run.Stderr);
         Assert.AreEqual("imported", run.Stdout.Trim());
+        Assert.IsFalse(
+            Directory.Exists(Path.Combine(Path.GetDirectoryName(Digest())!, "__pycache__")),
+            "a test run wrote bytecode into the source tree"
+        );
     }
 
     [TestMethod]

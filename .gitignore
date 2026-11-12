@@ -9,3 +9,4 @@ TestResults/
 re-local/
 mise.local.toml
 play-out/
+__pycache__/
