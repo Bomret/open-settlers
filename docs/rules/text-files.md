@@ -36,8 +36,8 @@ which this note does not cover.
   of the file ends it, and the program counts its bytes by the same two limits below; the end-of-file
   marker the loop stores does not count. The text mode treats a Ctrl-Z byte as the end of the file (inferred from the
   runtime's behaviour, not from an address).
-- **Too long.** A line of 255 bytes or more before its line end overruns the buffer, and `Text_ParseFile`
-  (`0x410f40`) calls the range-check failure, which ends the process. The program loads no key from that
+- **Too long.** A line of 255 bytes or more before its line end overruns the buffer. `Text_ParseFile`
+  (`0x410f40`) then calls the range-check failure, which ends the process. The program loads no key from that
   file. Lines of up to 254 bytes are safe.
 - **Too short.** A line of fewer than 5 bytes before its line end is skipped. An empty line is one of these.
 - **Key.** The key is everything before the first equals sign on the line, spaces included. A line
@@ -49,8 +49,8 @@ which this note does not cover.
 - **Text.** The program works on bytes. The reference install's files hold ASCII only.
 - **A zero byte** ends what the program sees of a line, because it searches the line as a C string.
 
-A skipped line (too short, or lacking the equals sign or a quote) leaves no message and does not stop the
-reading of the lines after it. A too-long line is not skipped: it ends the process.
+A line is skipped when it is too short or lacks the equals sign or a quote. A skipped line leaves no message
+and does not stop the reading of later lines. A too-long line is not skipped: it ends the process.
 
 ## Keys and lookup
 
@@ -67,5 +67,5 @@ skip, with their numbers and reasons (`src/Formats/TextFile.cs`). The asset chec
 as a failure of its file, because a line the program skips in a shipped file is a defect there. A blank
 line counts, though the program skips it without harm. The browser shows one table of all keys, one
 value column per language, with an empty cell where a language lacks the key (`src/Assets/TextKind.cs`).
-The reader goes on after a too-long line, so the table shows the keys of such a file though the program
-loads none of them.
+The reader goes on after a too-long line. The table therefore shows the keys of such a file, though the
+program loads none of them.
