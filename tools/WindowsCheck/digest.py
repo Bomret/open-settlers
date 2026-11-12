@@ -25,7 +25,7 @@ def main(argv):
     if len(argv) != 6:
         sys.exit(__doc__)
     path, size, seed, rng, total = argv[1:]
-    if size not in ("1", "2", "3"):
+    if size not in {str(k) for k in SIZES}:
         sys.exit("the size must be 1, 2, or 3")
     width, height = SIZES[int(size)]
     with open(path, "rb") as handle:
