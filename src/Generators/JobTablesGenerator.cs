@@ -12,7 +12,8 @@ namespace OpenSettlers.Generators;
 /// <summary>
 /// Writes <c>JobTablesRegistry</c> (ADR 0016), which builds every tables module of the compilation that declares
 /// <c>OpenSettlers.Simulation.JobTables&lt;TJob&gt;</c>, and lists the job and state names the modules state with
-/// <c>JobNameAttribute</c> and <c>StateNameAttribute</c>. A module with no accessible parameterless constructor, a second module for
+/// <c>JobNameAttribute</c> and <c>StateNameAttribute</c>. A generic module, a module the registry cannot reach, a module with no
+/// accessible parameterless constructor, a second module for
 /// one job, two modules that name one job or one state, a module that names one state twice, and a module that names a state the
 /// assembly's <c>CoreStateCodesAttribute</c> lists are build errors.
 /// </summary>
@@ -70,6 +71,24 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         "TAB006",
         "A job tables module names a state of the core",
         "The job tables module '{0}' names the state {1}, which the name table names itself",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
+
+    private static readonly DiagnosticDescriptor GenericModule = new(
+        "TAB007",
+        "A job tables module is generic",
+        "The job tables module '{0}' is generic, or nested in a generic type, which the registry cannot build",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
+
+    private static readonly DiagnosticDescriptor UnreachableModule = new(
+        "TAB008",
+        "A job tables module is not reachable from the registry",
+        "The job tables module '{0}' is private or protected, or nested in a type that is, so the registry cannot build it",
         "OpenSettlers.Jobs",
         DiagnosticSeverity.Error,
         true
@@ -139,6 +158,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         var states = Attributes(type, "StateNameAttribute", tables)
             .Select(attribute => new Named((int)attribute.ConstructorArguments[0].Value!, Name(attribute, 1)))
             .ToArray();
+        var (generic, unreachable) = Reach.Of(type);
         return new Module(
             type.ToDisplayString(),
             job.ToDisplayString(),
@@ -147,6 +167,8 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
                 constructor.Parameters.Length == 0
                 && constructor.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal
             ),
+            generic,
+            unreachable,
             jobName,
             new Sequence<Named>(states),
             Place.Of(declaration.Identifier.GetLocation())
@@ -192,6 +214,18 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         var states = new Dictionary<int, Module>();
         foreach (var module in candidates)
         {
+            if (module.Generic)
+            {
+                output.ReportDiagnostic(Diagnostic.Create(GenericModule, module.Place.ToLocation(), module.Name));
+                continue;
+            }
+
+            if (module.Unreachable)
+            {
+                output.ReportDiagnostic(Diagnostic.Create(UnreachableModule, module.Place.ToLocation(), module.Name));
+                continue;
+            }
+
             if (!module.HasConstructor)
             {
                 output.ReportDiagnostic(Diagnostic.Create(NoConstructor, module.Place.ToLocation(), module.Name));
@@ -340,12 +374,18 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
             Items.Aggregate(17, (hash, item) => hash * 31 + (item?.GetHashCode() ?? 0));
     }
 
-    /// <summary>What the generator keeps of a module: its type, its job type, its names, and where it stands.</summary>
+    /// <summary>
+    /// What the generator keeps of a module: its type, its job type, whether it declares the constructor the registry calls, whether
+    /// it or a type it is nested in is generic, whether it or a type it is nested in is private or protected, its names, and where it
+    /// stands.
+    /// </summary>
     private sealed record Module(
         string Name,
         string Job,
         string Namespace,
         bool HasConstructor,
+        bool Generic,
+        bool Unreachable,
         Text? JobName,
         Sequence<Named> States,
         Place Place

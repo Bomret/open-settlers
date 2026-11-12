@@ -214,6 +214,49 @@ public sealed class JobTablesGeneratorTests
     }
 
     [TestMethod]
+    public void AGenericModuleIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            """
+            namespace OpenSettlers.Simulation;
+            public sealed class GenericTables<T> : JobTables<OpenSettlers.Domain.Alpha> { }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "TAB007");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "GenericTables");
+        Assert.IsFalse(text.Contains("GenericTables"));
+    }
+
+    [TestMethod]
+    [DataRow("private", "public")]
+    [DataRow("protected", "public")]
+    [DataRow("public", "private")]
+    [DataRow("public", "private protected")]
+    public void AModuleThatIsOrIsNestedInAPrivateOrProtectedTypeIsABuildErrorNamingTheClass(string outer, string inner)
+    {
+        var (diagnostics, text, output) = Run(
+            $$"""
+            namespace OpenSettlers.Simulation;
+            public class Holder
+            {
+                {{outer}} class Mid
+                {
+                    {{inner}} sealed class HiddenTables : JobTables<OpenSettlers.Domain.Alpha> { }
+                }
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "TAB008");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "HiddenTables");
+        Assert.IsFalse(text.Contains("HiddenTables"));
+        Assert.AreEqual(0, output.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error));
+    }
+
+    [TestMethod]
     public void NoRegistryIsWrittenWhereNoModuleIsDeclared()
     {
         var (diagnostics, text, _) = Run();
