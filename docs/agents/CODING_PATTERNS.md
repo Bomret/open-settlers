@@ -29,7 +29,7 @@ domain, and a conversion from or to the original's bytes goes in the adapters.
 
 A job is a type (ADR 0016) and each layer holds its code for the job in a job module. A source generator in each
 layer finds the modules and writes the layer's registry, so no list of jobs exists and adding a job edits no shared
-file. A caller names a job by its type (`new Woodcutter()`, `is Woodcutter`), never by a static accessor or a number
+file of the jobs (a building the job works in has its own list, step 5). A caller names a job by its type (`new Woodcutter()`, `is Woodcutter`), never by a static accessor or a number
 constant of `Job`. Add a job as its own files, layer by layer:
 
 1. Domain, `src/Domain/Jobs/X.cs`: `public sealed record X : Job` with `public const int Number = <n>;` (a literal) and
@@ -54,6 +54,9 @@ constant of `Job`. Add a job as its own files, layer by layer:
    for the History Edition source and `src/MapView/OpenSettlersLooks/XKey.cs` with
    `XKey() : OpenSettlersLook<X>("x")` for the content set (`HistoryEditionLookRegistry`, `OpenSettlersLookRegistry`).
    A job without a look draws nothing; `JobCoverageTests` fails a job that has rules and no look under a source.
+5. Building: a job whose worker the handler of a building type asks for is a building concern too. Add the address of
+   that handler's request to `ProgramTablesImporter.WorkerRequestAddresses`, the hand-written list of the building
+   handlers that ask for a worker.
 
 A job without a module of some kind builds and keeps the shared defaults. The carrier's, the castle roster's, and the walk
 home's rules stay hand-wired core. Test doubles in the test assembly are not found by the domain, application, and
