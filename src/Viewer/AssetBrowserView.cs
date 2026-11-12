@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
 using OpenSettlers.Domain;
@@ -84,8 +85,13 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        _views = PreviewView.Discover();
-        _state = AssetBrowserState.Open(args, kinds, selectFirst: false);
+        var views = PreviewView.Discover();
+        _state = AssetBrowserState.Open(args, kinds, selectFirst: false, previewClash: PreviewView.Clash(views));
+        if (_state.Message == null)
+        {
+            _views = views.ToDictionary(v => v.PreviewType);
+        }
+
         if (_state.Categories.Count > 0 && Guard(() => _state.SelectKind(_state.Categories[0])) is { } crash)
         {
             AddChild(Wrapped(crash));
