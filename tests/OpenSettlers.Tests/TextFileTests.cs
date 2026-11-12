@@ -197,7 +197,7 @@ public sealed class TextFileTests
     }
 
     [TestMethod]
-    public void ALineOf255CharactersStopsTheProgramAndIsRejectedWhileOneOf254IsRead()
+    public void ALineOf255CharactersEndsTheProgramAndIsRejectedWhileOneOf254IsRead()
     {
         var value254 = new string('x', 254 - "K=\"\"".Length);
         var value255 = new string('x', 255 - "K=\"\"".Length);

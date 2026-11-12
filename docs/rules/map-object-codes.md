@@ -28,7 +28,7 @@ The table gives what the sprite shows in either case, so a later rule can name i
 
 | Code | Class | Sprite | Scatter pass | Name | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| 1 (`0x01`) | 3 | flag (entry 1378, drawn by `0x44db26`) | none | `flag` | `ObjectSprites.FlagCode`; [Flags](flags.md) |
+| 1 (`0x01`) | 3 | flag (entry 1378, drawn by `0x44db26`) | none | `flag` | `MapObject.Flag`; [Flags](flags.md) |
 | 2 (`0x02`) | 4 | building (drawn by `0x44e329` from a record table) | none | `building` | class 4 to 6; [Build sites](build-sites.md) names the codes 2 to 4 buildings |
 | 3 (`0x03`) | 5 | building (drawn by `0x44e329` from a record table) | none | `building` | class 4 to 6; [Build sites](build-sites.md) names the codes 2 to 4 buildings |
 | 4 (`0x04`) | 6 | building (drawn by `0x44e329` from a record table) | none | `building` | class 4 to 6; [Build sites](build-sites.md) names the codes 2 to 4 buildings |
@@ -110,7 +110,7 @@ The table gives what the sprite shows in either case, so a later rule can name i
 | 80 (`0x50`) | 2 | brown rock (80 tall, 81 low) | `0x42443b` (terrain 5 to 6) | `rock` | class 2; sprite |
 | 81 (`0x51`) | 2 | brown rock (80 tall, 81 low) | `0x42443b` (terrain 5 to 6) | `rock` | class 2; sprite |
 | 82 (`0x52`) | 1 | wooden cross | none; `MapGen_MarkPeaks` writes it on peaks | `cross` | sprite; `MapGen_MarkPeaks` puts it on peaks ([Map form](map-form.md)) |
-| 83 (`0x53`) | 0 | tree stump | `0x424503` (terrain 5 to 6) | `stump` | `FirstHandledObject` 0x53 in `HutWork`; [Woodcutting](woodcutting.md) calls it the stump |
+| 83 (`0x53`) | 0 | tree stump | `0x424503` (terrain 5 to 6) | `stump` | `MapObject.StumpCode` (0x53); [Woodcutting](woodcutting.md) calls it the stump |
 | 84 (`0x54`) | 0 | small stone with grass (84 grey, 85 brown) | `0x424567` (terrain 5 to 6) | unnamed | class 0; sprite only |
 | 85 (`0x55`) | 0 | small stone with grass (84 grey, 85 brown) | `0x424567` (terrain 5 to 6) | unnamed | class 0; sprite only |
 | 86 (`0x56`) | 0 | pale bones (86) and a small pale piece (87) | `0x4245cb` (terrain 10) | unnamed | class 0; sprite only |
