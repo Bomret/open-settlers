@@ -239,18 +239,6 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
         return text.ToString();
     }
 
-    /// <summary>Where a declaration's name stands, kept as values so that a model of it compares equal across compilations.</summary>
-    private sealed record Place(string Path, TextSpan Span, LinePositionSpan Lines)
-    {
-        public static Place Of(Location location)
-        {
-            var line = location.GetLineSpan();
-            return new Place(line.Path, location.SourceSpan, line.Span);
-        }
-
-        public Location ToLocation() => Location.Create(Path, Span, Lines);
-    }
-
     /// <summary>
     /// What the generator keeps of a declaration: <c>Job</c> itself, or a type derived from it. <c>First</c> and <c>Last</c> are
     /// null where the type declares no constant for them; <c>Unread</c> names the member that failed to read (<c>Number</c> first).

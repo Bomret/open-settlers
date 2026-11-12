@@ -164,18 +164,7 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
                                 : constructor.Parameters.Length == 0
                         )
                     );
-                    var generic = false;
-                    var unreachable = false;
-                    for (var holder = type; holder is not null; holder = holder.ContainingType)
-                    {
-                        generic |= holder.IsGenericType;
-                        unreachable |=
-                            holder.DeclaredAccessibility
-                                is Accessibility.Private
-                                    or Accessibility.Protected
-                                    or Accessibility.ProtectedAndInternal;
-                    }
-
+                    var (generic, unreachable) = Reach.Of(type);
                     return new Declaration(
                         type.ToDisplayString(),
                         ns,
@@ -289,18 +278,6 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
         text.AppendLine("        };");
         text.AppendLine("}");
         return text.ToString();
-    }
-
-    /// <summary>Where a declaration's name stands, kept as values so that a model of it compares equal across compilations.</summary>
-    private sealed record Place(string Path, TextSpan Span, LinePositionSpan Lines)
-    {
-        public static Place Of(Location location)
-        {
-            var line = location.GetLineSpan();
-            return new Place(line.Path, location.SourceSpan, line.Span);
-        }
-
-        public Location ToLocation() => Location.Create(Path, Span, Lines);
     }
 
     /// <summary>

@@ -321,18 +321,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
 
     private static string Literal(string value) => SymbolDisplay.FormatLiteral(value, true);
 
-    /// <summary>Where a declaration's name stands, kept as values so that a model of it compares equal across compilations.</summary>
-    private sealed record Place(string Path, TextSpan Span, LinePositionSpan Lines)
-    {
-        public static Place Of(Location location)
-        {
-            var line = location.GetLineSpan();
-            return new Place(line.Path, location.SourceSpan, line.Span);
-        }
-
-        public Location ToLocation() => Location.Create(Path, Span, Lines);
-    }
-
     /// <summary>A name with its evidence.</summary>
     private sealed record Text(string Name, string Evidence);
 
