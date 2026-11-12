@@ -108,7 +108,7 @@ A sawmill is taken down as every finished building is ([Removal](removal.md)), a
 
 The file `src/Application/SawmillerRules.cs` holds these routines. `SawmillerRules` is the rules module of the sawmiller (`JobRules<Sawmiller>`):
 
-- `Start` is job 6. `GameFactory` registers each module of the generated `JobModules` registry with `HutWork.RegisterModule`.
+- `Start` is the module's start routine for job 6. `GameFactory` registers every module of the generated `JobModules` registry with `HutWork.RegisterModule`, not only this one.
 - `Work` is state `0x18`.
 - `StepOut` is state `0xb`.
 - `PutDown` is state `0xd`.

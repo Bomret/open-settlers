@@ -129,7 +129,7 @@ A worker out at a heap is sent home where he stands. He takes state `0x19`, sear
 
 ## In the engine
 
-The file `src/Application/StonecutterRules.cs` holds `StonecutterRules`, the rules module of the stonecutter (`JobRules<Stonecutter>`). It holds `Start`, `SearchStone`, `Arrive`, `CutStone`, and `WalkTurn`, the hook the free walk runs at each turn, where `StoneHeaps.Eye` is the check of his walk out. The step out, the free walk, and the entry into the hut are `HutWork`'s.
+The file `src/Application/StonecutterRules.cs` holds `StonecutterRules`, the rules module of the stonecutter (`JobRules<Stonecutter>`). It holds `Start`, `SearchStone`, `Arrive`, `CutStone`, and and `WalkTurn`. The free walk runs `WalkTurn` at each turn, and `StoneHeaps.Eye` is the check of his walk out. The step out, the free walk, and the entry into the hut are `HutWork`'s.
 
 The activities are:
 

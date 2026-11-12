@@ -28,13 +28,14 @@ domain, and a conversion from or to the original's bytes goes in the adapters.
 ## Job modules
 
 A job is a type (ADR 0016) and each layer holds its code for the job in a job module. A source generator in each
-layer finds the modules and writes the layer's registry, so no list of jobs exists and adding a job edits no shared
-file of the jobs (a building the job works in has its own list, step 5). A caller names a job by its type (`new Woodcutter()`, `is Woodcutter`), never by a static accessor or a number
-constant of `Job`. Add a job as its own files, layer by layer:
+layer finds the modules and writes the layer's registry. No list of jobs exists, so adding a job edits no shared file
+of the jobs. A building the job works in has its own list, in step 5. A caller names a job by its type
+(`new Woodcutter()`, `is Woodcutter`), never by a static accessor or a number constant of `Job`. Add a job as its own
+files, layer by layer:
 
 1. Domain, `src/Domain/Jobs/X.cs`: `public sealed record X : Job` with `public const int Number = <n>;` (a literal) and
-   `public override int Code => Number;`. Override `ArrivesHomeGenerically` where the original's table at `0x437dfb`
-   gives the job a branch of its own. The data the original holds for the job (`FigureAdds` and its relatives, a
+   `public override int Code => Number;`. Override `ArrivesHomeGenerically` for a job that has a branch of its own in
+   the original's table at `0x437dfb`. The data the original holds for the job (`FigureAdds` and its relatives, a
    `WorkerRequest`) is a record of the domain that the rules read through `RuleTables.Get<T>(new X())`. Declare the
    record types the job owns in `public override IReadOnlyList<Type> Data => [typeof(...)]`: the importer refuses a
    program whose tables module leaves one unread, so a job's data is never a silent default, and a test builds the same
@@ -43,13 +44,14 @@ constant of `Job`. Add a job as its own files, layer by layer:
 2. Application, a file of `src/Application/`: `public sealed class XRules(JobParts parts) : JobRules<X>(parts)`. Override
    the hooks the job needs (`CanStandInHut`, `Cause`, `SiteWorker`, `Register`, `Start`, `Arrive`, `WalkTurn`, `Pass`,
    `Turn`); a hook left alone keeps the shared default. `SiteWorker` names the request a building site makes for the
-   job's worker at a `SiteStage`, so the shared site pass names no job. A job needing a part `JobParts` lacks extends `JobParts` (and the
-   `new JobParts(...)` calls of the tests) rather than reaching into a shared behavior. A module reaches the shared states of the
-   workers who go out from a building (the step out, the entry, the arrival home) through `Parts.Hut` alone.
+   job's worker at a `SiteStage`, so the shared site pass names no job. A job needing a part `JobParts` lacks extends `JobParts`, and the
+   `new JobParts(...)` calls of the tests. It never reaches into a shared behavior. The shared states of the workers who
+   go out from a building are the step out, the entry, and the arrival home. A module reaches them through `Parts.Hut`
+   alone.
    `JobModules.Build(parts)` builds every module.
 3. Adapters, `src/Adapters/Simulation/Jobs/XTables.cs`: `public sealed class XTables : JobTables<X>` with `[JobName]` and
    `[StateName]` (each carries its evidence, INV-0006) and a `Read` override that adds the job's data records from
-   `Siedler1.exe`. `JobTablesRegistry` lists the modules and `NameTable` the names.
+   `Siedler1.exe`. The generator writes `JobTablesRegistry`, which holds the modules, and `NameTable`, which holds the names.
 4. Map view: `src/MapView/HistoryEditionLooks/XLook.cs` with `XLook(RuleTables tables) : HistoryEditionLook<X>`
    for the History Edition source and `src/MapView/OpenSettlersLooks/XKey.cs` with
    `XKey() : OpenSettlersLook<X>("x")` for the content set (`HistoryEditionLookRegistry`, `OpenSettlersLookRegistry`).
@@ -59,20 +61,19 @@ constant of `Job`. Add a job as its own files, layer by layer:
    handlers that ask for a worker.
 
 A job without a module of some kind builds and keeps the shared defaults. The carrier's, the castle roster's, and the walk
-home's rules stay hand-wired core. Test doubles in the test assembly are not found by the domain, application, and
-adapter generators, which write a registry only into the compilation that declares their base type: a test proves those
-generators on fixture jobs compiled through `CSharpGeneratorDriver` (`FixtureJobTests`). The test project compiles the
-map view's sources with the looks generator, so a look declared in the test assembly enters the test compilation's look
-registries.
+home's rules stay hand-wired core. The domain, application, and adapter generators do not find test doubles in the test assembly. They write a
+registry only into the compilation that declares their base type. A test proves those generators on fixture jobs
+compiled through `CSharpGeneratorDriver` (`FixtureJobTests`). The test project compiles the map view's sources with the
+looks generator. A look declared in the test assembly therefore enters the test compilation's look registries.
 
 A malformed module fails the build with a message that names the class:
 
 | Id | Cause |
 | --- | --- |
-| `JOB001`–`JOB004` | A job type that is not sealed; two job types with one number; a job type with no `public const int Number` the generator can read; a job type whose `LastNumber` is below its `Number`. |
-| `TAB001`–`TAB008` | A tables module with no parameterless constructor; two tables modules for one job; two that name one job; two that name one state; one that names a state twice; one that names a state of the core (`CoreStateCodes`, which `NameTable` names itself); a generic tables module; a tables module that is private or protected or nested in such a type. |
-| `RUL001`–`RUL004` | A rules module with no constructor that takes the `JobParts` alone; two rules modules for one job; a generic module; a module that is private or protected or nested in such a type. |
-| `LOOK001`–`LOOK004` | A look with no constructor the registry can call; two looks for one job under one graphics source; a generic look; a look that is private or protected or nested in such a type. |
+| `JOB001`–`JOB004` | A job type is not sealed. Two job types share one number. A job type has no `public const int Number` the generator can read. A job type has a `LastNumber` below its `Number`. |
+| `TAB001`–`TAB008` | A tables module has no parameterless constructor. Two tables modules serve one job. Two name one job. Two name one state. One names a state twice. One names a state of the core, which `NameTable` names itself (`CoreStateCodes`). A tables module is generic. A tables module is private or protected, or nested in such a type. |
+| `RUL001`–`RUL004` | A rules module has no constructor that takes the `JobParts` alone. Two rules modules serve one job. A module is generic. A module is private or protected, or nested in such a type. |
+| `LOOK001`–`LOOK004` | A look has no constructor the registry can call. Two looks serve one job under one graphics source. A look is generic. A look is private or protected, or nested in such a type. |
 
 ## Typed vocabulary
 

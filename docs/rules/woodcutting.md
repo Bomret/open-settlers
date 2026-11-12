@@ -167,13 +167,14 @@ read from the registers the decompile shows); an open lead.
 ## In the engine
 
 `src/Application/HutWork.cs` holds the states the huts' workers share: `PassDoor`, `StepOut`, `FreeWalk`, `PutGood`, `EnterHut`, and
-`ObjectPass`. At the door a settler entering a storage goes first, then the start routine of the module of the settler's job runs; at the
-end of a free walk the module's `Arrive` runs, and at each turn of it, before its steps, the module's `WalkTurn`; the cause of an event is the layout's or the walk home's before the module's `Cause`.
+`ObjectPass`. At the door a settler entering a storage goes first. Then the start routine of the module of the settler's job runs.
+At the end of a free walk the module's `Arrive` runs. At each turn of the walk, before its steps, the module's `WalkTurn` runs.
+The cause of an event is the layout's or the walk home's. The module's `Cause` comes after them.
 `src/Application/WoodcutterRules.cs`, the rules module of the woodcutter (`JobRules<Woodcutter>`), holds `Start`, `SearchTree`, `Arrive`,
 and `Cut`. `MainPass` runs `HutWork.ObjectPass` once each pass, before the modules' `Pass` hooks. The stonecutter, forester, and type 1 hut have rules modules of their
-own (`StonecutterRules`, `ForesterRules`, `TypeOneHutRules`); a job with no module starts nothing and records as the settlers' rules.
+own (`StonecutterRules`, `ForesterRules`, `TypeOneHutRules`). A job with no module starts nothing and records as the settlers' rules.
 They are built from the settlers' movement, the tables, and a random generator port (`IRandomDraws`). The woodcutter, stonecutter, and
-forester modules declare `CanStandInHut`: a layout stands a worker only in their huts.
+forester modules declare `CanStandInHut`. A layout stands a worker only in their huts.
 `Flag.Places` holds the 8 places of a flag. `Woodcutter` is job 5, and `BuildingType.Woodcutter` is type 2.
 
 The woodcutter's work is the activities `LooksForTree`, `StepsOntoFlag`, `WalksFree`, `Cuts`, `EntersBuilding`, and `Door`. A
