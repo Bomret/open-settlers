@@ -12,7 +12,7 @@ namespace OpenSettlers.Generators;
 /// Writes <c>JobModules</c>, the registry of the job rules modules of the application layer (ADR 0016), from the classes of the
 /// compilation that declare <c>OpenSettlers.Simulation.JobRules&lt;TJob&gt;</c>. The registry builds each module from the
 /// <c>JobParts</c>, in the order of the modules' full type names. A module without a constructor that takes the
-/// <c>JobParts</c>, and a second module for one job, are build errors.
+/// <c>JobParts</c>, a second module for one job, a generic module, and a module the registry cannot reach are build errors.
 /// </summary>
 [Generator]
 public sealed class JobRulesGenerator : IIncrementalGenerator
@@ -24,6 +24,24 @@ public sealed class JobRulesGenerator : IIncrementalGenerator
         "RUL001",
         "A job module has no JobParts constructor",
         "The job module '{0}' declares no constructor that takes the JobParts alone",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
+
+    private static readonly DiagnosticDescriptor GenericModule = new(
+        "RUL003",
+        "A job module is generic",
+        "The job module '{0}' is generic, or nested in a generic type, which the registry cannot build",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
+
+    private static readonly DiagnosticDescriptor UnreachableModule = new(
+        "RUL004",
+        "A job module is not reachable from the registry",
+        "The job module '{0}' is private or protected, or nested in a type that is, so the registry cannot build it",
         "OpenSettlers.Jobs",
         DiagnosticSeverity.Error,
         true
@@ -44,10 +62,7 @@ public sealed class JobRulesGenerator : IIncrementalGenerator
         // The transform reduces each declaration to an equatable model, so the output reruns only where a module changes.
         var declarations = context
             .SyntaxProvider.CreateSyntaxProvider(
-                static (node, _) =>
-                    node
-                        is ClassDeclarationSyntax { BaseList: not null }
-                            or ClassDeclarationSyntax { Identifier.ValueText: "JobRules" },
+                static (node, _) => node is ClassDeclarationSyntax { BaseList: not null },
                 static (syntax, token) => Describe(syntax, token)
             )
             .Where(static declaration => declaration is not null)
@@ -59,25 +74,22 @@ public sealed class JobRulesGenerator : IIncrementalGenerator
     private static Declaration? Describe(GeneratorSyntaxContext syntax, System.Threading.CancellationToken token)
     {
         var declaration = (ClassDeclarationSyntax)syntax.Node;
-        var rules = syntax.SemanticModel.Compilation.GetTypeByMetadataName(RulesMetadataName);
-        var parts = syntax.SemanticModel.Compilation.GetTypeByMetadataName(PartsMetadataName);
-        if (
-            rules is null
-            || rules.Locations.All(location => !location.IsInSource)
-            || syntax.SemanticModel.GetDeclaredSymbol(declaration, token) is not INamedTypeSymbol type
-        )
+        if (syntax.SemanticModel.GetDeclaredSymbol(declaration, token) is not INamedTypeSymbol type)
         {
             return null;
         }
 
+        // The declaration is one of this compilation's sources, so a type that is JobRules<TJob> is declared here.
         var place = Place.Of(declaration.Identifier.GetLocation());
-        if (SymbolEqualityComparer.Default.Equals(type, rules))
+        if (IsRules(type))
         {
             return new Declaration(
                 type.ToDisplayString(),
-                rules.ContainingNamespace.ToDisplayString(),
+                type.ContainingNamespace.ToDisplayString(),
                 true,
                 null,
+                false,
+                false,
                 false,
                 place
             );
@@ -90,21 +102,33 @@ public sealed class JobRulesGenerator : IIncrementalGenerator
 
         for (var parent = type.BaseType; parent is not null; parent = parent.BaseType)
         {
-            if (parent.IsGenericType && SymbolEqualityComparer.Default.Equals(parent.OriginalDefinition, rules))
+            if (parent.IsGenericType && IsRules(parent.OriginalDefinition))
             {
-                var constructed =
-                    parts is not null
-                    && type.InstanceConstructors.Any(constructor =>
-                        constructor.Parameters.Length == 1
-                        && SymbolEqualityComparer.Default.Equals(constructor.Parameters[0].Type, parts)
-                        && constructor.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal
-                    );
+                var constructed = type.InstanceConstructors.Any(constructor =>
+                    constructor.Parameters.Length == 1
+                    && constructor.Parameters[0].Type.ToDisplayString() == PartsMetadataName
+                    && constructor.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal
+                );
+                var generic = false;
+                var unreachable = false;
+                for (var holder = type; holder is not null; holder = holder.ContainingType)
+                {
+                    generic |= holder.IsGenericType;
+                    unreachable |=
+                        holder.DeclaredAccessibility
+                            is Accessibility.Private
+                                or Accessibility.Protected
+                                or Accessibility.ProtectedAndInternal;
+                }
+
                 return new Declaration(
                     type.ToDisplayString(),
-                    rules.ContainingNamespace.ToDisplayString(),
+                    parent.OriginalDefinition.ContainingNamespace.ToDisplayString(),
                     false,
                     parent.TypeArguments[0].ToDisplayString(),
                     constructed,
+                    generic,
+                    unreachable,
                     place
                 );
             }
@@ -112,6 +136,9 @@ public sealed class JobRulesGenerator : IIncrementalGenerator
 
         return null;
     }
+
+    private static bool IsRules(INamedTypeSymbol type) =>
+        type.ContainingNamespace.ToDisplayString() + "." + type.MetadataName == RulesMetadataName;
 
     private static void Generate(SourceProductionContext output, ImmutableArray<Declaration> declarations)
     {
@@ -144,7 +171,15 @@ public sealed class JobRulesGenerator : IIncrementalGenerator
             }
 
             ruled.Add(module.Job!, module);
-            if (module.HasConstructor)
+            if (module.Generic)
+            {
+                output.ReportDiagnostic(Diagnostic.Create(GenericModule, module.Place.ToLocation(), module.Name));
+            }
+            else if (module.Unreachable)
+            {
+                output.ReportDiagnostic(Diagnostic.Create(UnreachableModule, module.Place.ToLocation(), module.Name));
+            }
+            else if (module.HasConstructor)
             {
                 kept.Add(module);
             }
@@ -199,7 +234,8 @@ public sealed class JobRulesGenerator : IIncrementalGenerator
 
     /// <summary>
     /// What the generator keeps of a declaration: <c>JobRules&lt;TJob&gt;</c> itself, or a concrete class derived from it with the
-    /// job it rules and whether it declares the <c>JobParts</c> constructor.
+    /// job it rules, whether it declares the <c>JobParts</c> constructor, whether it or a type it is nested in is generic, and whether
+    /// it or a type it is nested in is private or protected, which the registry cannot build.
     /// </summary>
     private sealed record Declaration(
         string Name,
@@ -207,6 +243,8 @@ public sealed class JobRulesGenerator : IIncrementalGenerator
         bool IsRules,
         string? Job,
         bool HasConstructor,
+        bool Generic,
+        bool Unreachable,
         Place Place
     );
 }

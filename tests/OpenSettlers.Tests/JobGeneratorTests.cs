@@ -184,6 +184,7 @@ public sealed class JobGeneratorTests
 
         var error = diagnostics.Single(d => d.Id == "JOB003");
         StringAssert.Contains(error.GetMessage(), "Fickle");
+        StringAssert.Contains(error.GetMessage(), "'public const int LastNumber'");
     }
 
     [TestMethod]
@@ -233,6 +234,7 @@ public sealed class JobGeneratorTests
         var error = diagnostics.Single(d => d.Id == "JOB003");
         Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
         StringAssert.Contains(error.GetMessage(), "Fickle");
+        StringAssert.Contains(error.GetMessage(), "'public const int Number'");
     }
 
     [TestMethod]

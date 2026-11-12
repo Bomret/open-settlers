@@ -42,7 +42,7 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor NotConstant = new(
         "JOB003",
         "A job's number is not a constant",
-        "The job type '{0}' declares no 'public const int Number' the generator can read",
+        "The job type '{0}' declares no 'public const int {1}' the generator can read",
         "OpenSettlers.Jobs",
         DiagnosticSeverity.Error,
         true
@@ -83,7 +83,7 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
         var jobNamespace = job.ContainingNamespace.ToDisplayString();
         if (SymbolEqualityComparer.Default.Equals(type, job))
         {
-            return new Declaration(type.ToDisplayString(), jobNamespace, job.Name, true, true, null, null, place);
+            return new Declaration(type.ToDisplayString(), jobNamespace, job.Name, true, true, null, null, null, place);
         }
 
         if (!IsJob(type, job) || type.IsAbstract || type.Name == FallbackName)
@@ -101,6 +101,9 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
             type.IsSealed,
             first,
             last,
+            first is null ? "Number"
+                : last is null ? "LastNumber"
+                : null,
             place
         );
     }
@@ -132,7 +135,9 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
             }
             else if (candidate.First is null || candidate.Last is null)
             {
-                output.ReportDiagnostic(Diagnostic.Create(NotConstant, candidate.Place.ToLocation(), candidate.Name));
+                output.ReportDiagnostic(
+                    Diagnostic.Create(NotConstant, candidate.Place.ToLocation(), candidate.Name, candidate.Unread)
+                );
             }
             else
             {
@@ -248,7 +253,7 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
 
     /// <summary>
     /// What the generator keeps of a declaration: <c>Job</c> itself, or a type derived from it. <c>First</c> and <c>Last</c> are
-    /// null where the type declares no constant for them.
+    /// null where the type declares no constant for them; <c>Unread</c> names the member that failed to read (<c>Number</c> first).
     /// </summary>
     private sealed record Declaration(
         string Name,
@@ -258,6 +263,7 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
         bool IsSealed,
         int? First,
         int? Last,
+        string? Unread,
         Place Place
     );
 }

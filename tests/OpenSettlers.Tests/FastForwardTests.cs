@@ -117,12 +117,23 @@ public sealed class FastForwardTests
             s.Job == new Stonecutter() && s.Activity is WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
         );
 
+    // Ticks the reference game until the state holds, and fails where it does not within the ticks the step under test is given.
+    static void TickUntil(Game reference, System.Func<Game, bool> holds, int max, string what)
+    {
+        for (var tick = 0; !holds(reference); tick++)
+        {
+            if (tick == max)
+                Assert.Fail($"the reference game did not reach {what} in {max} ticks");
+
+            reference.Tick();
+        }
+    }
+
     [TestMethod]
     public void AStonecutterCarriesTheStoneOnTheWayBackToTheHut()
     {
         var reference = StonecuttingTests.World(0x4d, out _);
-        while (!CarriesAStone(reference))
-            reference.Tick();
+        TickUntil(reference, CarriesAStone, 6000, "a stonecutter carrying a stone");
         var game = StonecuttingTests.World(0x4d, out _);
 
         var problem = Step("fast-forward stonecutter carrying max 6000").Run(game, Unread);
@@ -137,8 +148,7 @@ public sealed class FastForwardTests
     {
         static bool Builds(Game game) => game.Settlers.Any(s => s.Job == new Builder() && s.Activity.Code == 9);
         var (reference, _) = BuilderTests.World();
-        while (!Builds(reference))
-            reference.Tick();
+        TickUntil(reference, Builds, 3000, "a builder in state 9");
         var (game, _) = BuilderTests.World();
 
         var problem = Step("fast-forward builder state 9 max 3000").Run(game, Unread);

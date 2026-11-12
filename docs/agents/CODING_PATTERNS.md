@@ -65,7 +65,7 @@ A malformed module fails the build with a message that names the class:
 | --- | --- |
 | `JOB001`–`JOB003` | A job type that is not sealed; two job types with one number; a job type with no `public const int Number` the generator can read. |
 | `TAB001`–`TAB006` | A tables module with no parameterless constructor; two tables modules for one job; two that name one job; two that name one state; one that names a state twice; one that names a state of the core (`CoreStateCodes`, which `NameTable` names itself). |
-| `RUL001`–`RUL002` | A rules module with no constructor that takes the `JobParts` alone; two rules modules for one job. |
+| `RUL001`–`RUL004` | A rules module with no constructor that takes the `JobParts` alone; two rules modules for one job; a generic module; a module that is private or protected or nested in such a type. |
 | `LOOK001`–`LOOK002` | A look with no constructor the registry can call; two looks for one job under one graphics source. |
 
 ## Typed vocabulary

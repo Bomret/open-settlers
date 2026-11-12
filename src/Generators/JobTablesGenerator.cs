@@ -91,7 +91,10 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
                 new Sequence<int>([
                     .. compilation
                         .Assembly.GetAttributes()
-                        .Where(attribute => attribute.AttributeClass?.Name == "CoreStateCodesAttribute")
+                        .Where(attribute =>
+                            attribute.AttributeClass?.ToDisplayString()
+                            == "OpenSettlers.Simulation.CoreStateCodesAttribute"
+                        )
                         .SelectMany(attribute => attribute.ConstructorArguments[0].Values)
                         .Select(value => (int)value.Value!),
                 ])

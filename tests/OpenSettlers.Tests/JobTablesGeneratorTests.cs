@@ -184,6 +184,24 @@ public sealed class JobTablesGeneratorTests
     }
 
     [TestMethod]
+    public void AnAssemblyAttributeOfTheSameNameInAnotherNamespaceNamesNoStateOfTheCore()
+    {
+        var (diagnostics, _, _) = Run(
+            """
+            [assembly: Other.CoreStateCodes(5)]
+            namespace Other
+            {
+                [System.AttributeUsage(System.AttributeTargets.Assembly)]
+                public sealed class CoreStateCodesAttribute(params int[] codes) : System.Attribute { }
+            }
+            """,
+            Module("AlphaTables", "Alpha", "[StateName(5, \"walks\", \"e\")]")
+        );
+
+        Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+    }
+
+    [TestMethod]
     public void AModuleThatNamesOneStateTwiceIsABuildErrorNamingTheClass()
     {
         var (diagnostics, _, _) = Run(

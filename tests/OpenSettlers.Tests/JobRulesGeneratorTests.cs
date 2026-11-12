@@ -139,6 +139,69 @@ public sealed class JobRulesGeneratorTests
     }
 
     [TestMethod]
+    public void AGenericModuleIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.Simulation;
+            public sealed class GenericRules<T>(JobParts parts) : JobRules<OpenSettlers.Domain.Alpha>(parts);
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "RUL003");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "GenericRules");
+        Assert.IsFalse(text.Contains("GenericRules"));
+    }
+
+    [TestMethod]
+    [DataRow("private")]
+    [DataRow("protected")]
+    public void AModuleNestedAsPrivateOrProtectedIsABuildErrorNamingTheClass(string access)
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            $$"""
+            namespace OpenSettlers.Simulation;
+            public class Holder
+            {
+                {{access}} sealed class HiddenRules(JobParts parts) : JobRules<OpenSettlers.Domain.Alpha>(parts);
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "RUL004");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "HiddenRules");
+        Assert.IsFalse(text.Contains("HiddenRules"));
+    }
+
+    [TestMethod]
+    public void AModuleNestedAsInternalOrPublicInAPublicTypeIsBuilt()
+    {
+        var (diagnostics, text, output) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.Simulation;
+            public class Holder
+            {
+                internal sealed class InnerRules(JobParts parts) : JobRules<OpenSettlers.Domain.Alpha>(parts);
+                public sealed class OuterRules(JobParts parts) : JobRules<OpenSettlers.Domain.Beta>(parts);
+            }
+            """
+        );
+
+        Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+        StringAssert.Contains(text, "new global::OpenSettlers.Simulation.Holder.InnerRules(parts)");
+        Assert.AreEqual(
+            0,
+            output.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error),
+            string.Join("; ", output.GetDiagnostics())
+        );
+    }
+
+    [TestMethod]
     public void AnAbstractModuleIsNoModule()
     {
         var (diagnostics, text, _) = Run(

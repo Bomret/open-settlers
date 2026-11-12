@@ -9,16 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class GraphicsSourceBoundaryTests
 {
-    static string Read(string path)
-    {
-        var dir = AppContext.BaseDirectory;
-        while (!File.Exists(Path.Combine(dir, "tools", "play-run.sh")))
-        {
-            dir = Path.GetDirectoryName(dir) ?? throw new InvalidOperationException("tools/play-run.sh not found");
-        }
-
-        return File.ReadAllText(Path.Combine(dir, path));
-    }
+    static string Read(string path) => File.ReadAllText(Path.Combine(RootOf(), path));
 
     [TestMethod]
     [DataRow("src/MapView/TerrainTriangles.cs")]
