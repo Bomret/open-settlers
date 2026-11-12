@@ -16,7 +16,8 @@
 # the lock of a dead one under the mutex play-out/.lock-<stem>.takeover, which holds its holder's pid. A mutex
 # whose holder is dead, or that holds no pid and is older than 5 seconds, is stale and cleared in place by one
 # reaper per holder (the directory $mutex.reap.<holder>, <holder> being the pid or "nopid", holds the reaper's pid
-# and is stale by the same rule, then removed by the next call); a mutex is never moved off its path, and a call
+# and is stale by the same rule, then removed by the next call that judges a mutex of that holder; one whose mutex
+# is gone stays until removed by hand and blocks nothing); a mutex is never moved off its path, and a call
 # removes a mutex holding its own pid outside its critical section. A pid counts as dead only when `ps -p` exits 1
 # with no output and lists the caller's own pid; any other result reads as live. A lock is never moved off its
 # path, and one is removed only after it is judged dead twice, the second time under the mutex and with the same
@@ -157,8 +158,8 @@ until mkdir "$lock" 2>/dev/null; do
       if holds_mutex; then rm -rf "$mutex"; fi
       continue
     fi
-    # A call never waits on a mutex that holds its own pid outside the section above (a clearer that was stalled
-    # left it there).
+    # A call never waits on a mutex that holds its own pid outside the section above (pid reuse: a dead earlier
+    # call with this call's pid left it there).
     if holds_mutex; then
       rm -rf "$mutex"
       continue
@@ -166,7 +167,7 @@ until mkdir "$lock" 2>/dev/null; do
     # A stale mutex is cleared in place, never moved: while it stands no call can create the mutex path. One
     # reaper per holder (the pid in the mutex, or "nopid") holds the directory $mutex.reap.<holder>, which holds
     # the reaper's pid, judges the mutex stale again with the same holder in it, and removes it. A reap directory
-    # is stale by the mutex's rule and removed by the next call, which retries.
+    # is stale by the mutex's rule and removed by the next call that judges a mutex of that holder, which retries.
     if [ -d "$mutex" ] && mutex_stale "$mutex"; then
       key=${holder:-nopid}
       reap=$mutex.reap.$key

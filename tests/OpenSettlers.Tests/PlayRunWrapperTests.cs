@@ -799,7 +799,7 @@ public class PlayRunWrapperTests
     // replaces the takeover mutex's pid with a live holder's, as a call does that takes the mutex between another
     // call's judgment of the mutex and the clearing of it, and with FAKE_PS_MLOG it appends to ps-mutex-log whether
     // the mutex path stands. FAKE_PS_OWN makes the first self-probe (a pid that is neither dead nor FAKE_PS_MDEAD)
-    // leave a mutex holding that pid, which the wrapper's own pid is, as a clearer that was stalled leaves one.
+    // leave a mutex holding that pid, which the wrapper's own pid is, as a dead earlier call with a reused pid leaves one.
     // Asked about a live pid while the lock path is free, it creates a lock for FAKE_PS_W, as a waiting call does.
     const string FakePs = """
         #!/bin/sh
@@ -1004,8 +1004,8 @@ public class PlayRunWrapperTests
         Assert.IsTrue(log.All(l => l == "present"), "the mutex path stood at every judgment: " + string.Join(",", log));
     }
 
-    // A call never waits on a mutex that holds its own pid outside its critical section (a stalled clearer of
-    // another call left it there): it removes it and goes on.
+    // A call never waits on a mutex that holds its own pid outside its critical section (pid reuse: a dead
+    // earlier call with this call's pid left it there): it removes it and goes on.
     [TestMethod]
     public void AMutexHoldingTheCallsOwnPidOutsideItsCriticalSectionIsRemovedAndTheCallGoesOn()
     {
