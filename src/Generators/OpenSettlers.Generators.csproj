@@ -4,7 +4,6 @@
          as an analyzer and not as an assembly (ADR 0016, INV-0008): the generator is no run-time dependency. -->
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
     <IsRoslynComponent>true</IsRoslynComponent>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <!-- The rules ship in no package, so release tracking has nothing to track. -->
