@@ -13,7 +13,7 @@ namespace OpenSettlers.Generators;
 /// declares <c>OpenSettlers.Domain.Job</c>. A job type declares its number as <c>public const int Number</c>; a job that spans
 /// several numbers also declares <c>public const int LastNumber</c> and takes the offset from <c>Number</c> as its one
 /// constructor argument. <c>UnportedJob</c> takes every other number. A job type that is not sealed, two jobs with one number,
-/// and a number that is not a constant are build errors.
+/// a number that is not a constant, and a <c>LastNumber</c> below the <c>Number</c> are build errors.
 /// </summary>
 [Generator]
 public sealed class JobLookupGenerator : IIncrementalGenerator
@@ -43,6 +43,15 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
         "JOB003",
         "A job's number is not a constant",
         "The job type '{0}' declares no 'public const int {1}' the generator can read",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
+
+    private static readonly DiagnosticDescriptor BackwardRange = new(
+        "JOB004",
+        "A job's last number is below its number",
+        "The job type '{0}' declares a LastNumber {2} below its Number {1}",
         "OpenSettlers.Jobs",
         DiagnosticSeverity.Error,
         true
@@ -137,6 +146,18 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
             {
                 output.ReportDiagnostic(
                     Diagnostic.Create(NotConstant, candidate.Place.ToLocation(), candidate.Name, candidate.Unread)
+                );
+            }
+            else if (candidate.Last < candidate.First)
+            {
+                output.ReportDiagnostic(
+                    Diagnostic.Create(
+                        BackwardRange,
+                        candidate.Place.ToLocation(),
+                        candidate.Name,
+                        candidate.First,
+                        candidate.Last
+                    )
                 );
             }
             else

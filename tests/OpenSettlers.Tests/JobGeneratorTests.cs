@@ -188,6 +188,29 @@ public sealed class JobGeneratorTests
     }
 
     [TestMethod]
+    public void ALastNumberBelowTheNumberIsABuildErrorNamingTheClassAndNoCompilerError()
+    {
+        var (diagnostics, text, output) = Run(
+            Domain,
+            """
+            namespace OpenSettlers.Domain;
+            public sealed record Backward(int Level) : Job
+            {
+                public const int Number = 7;
+                public const int LastNumber = 5;
+                public override int Code => Number + Level;
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "JOB004");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "Backward");
+        Assert.IsFalse(text.Contains("Backward"));
+        Assert.AreEqual(0, output.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error));
+    }
+
+    [TestMethod]
     public void AnUnrelatedChangeToTheCompilationRerunsNoOutput()
     {
         var compilation = CSharpCompilation.Create(
