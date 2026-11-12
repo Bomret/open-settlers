@@ -43,7 +43,7 @@ public static class GameFactory
         var goods = new GoodsTransport(movement, flags, network, history, buildings);
         var walkHome = new WalkHomeBehavior(movement, buildings, flags, network, history, draws, Route);
         var causes = new Causes(history, buildings, walkHome);
-        var woodcutter = new WoodcutterBehavior(
+        var hut = new HutWork(
             movement,
             settlers,
             flags,
@@ -93,6 +93,23 @@ public static class GameFactory
             () => castle.Castle is not null,
             id => causes.ForgetPlacement(id)
         );
+        // The job rules modules (ADR 0016): the generated registry builds each from the shared parts.
+        var parts = new JobParts(
+            movement,
+            buildings,
+            flags,
+            history,
+            draws,
+            (flag, place, good) => goods.LayGood(flag, place, good),
+            hut
+        );
+        var modules = JobModules.Build(parts);
+        foreach (var module in modules)
+        {
+            hut.RegisterModule(module);
+            module.Register(behaviours);
+        }
+
         var walks = new WalkBehavior(
             movement,
             buildings,
@@ -105,30 +122,14 @@ public static class GameFactory
             carriers,
             roadStep,
             roster,
-            settlers
+            settlers,
+            modules
         );
-        var builder = new BuilderBehavior(movement, buildings, flags, history, draws, woodcutter.StepOut);
-        woodcutter.RegisterStart(Job.Builder, builder.Start);
-        woodcutter.RegisterStart(Job.Stonecutter, woodcutter.StartStonecutter);
-        woodcutter.RegisterStart(Job.Forester, woodcutter.StartForester);
-        var digger = new DiggerBehavior(movement, buildings, history, woodcutter.StepOut);
-        woodcutter.RegisterStart(Job.Digger, digger.Start);
-        var sawmill = new SawmillBehavior(
-            movement,
-            flags,
-            history,
-            (flag, place, good) => goods.LayGood(flag, place, good),
-            woodcutter.EnterHut
-        );
-        woodcutter.RegisterStart(Job.Sawmiller, sawmill.Start);
-        builder.Register(behaviours);
-        digger.Register(behaviours);
-        sawmill.Register(behaviours);
         roster.Register(behaviours);
         walks.Register(behaviours);
         removal.Register(behaviours);
         carriers.Register(behaviours);
-        woodcutter.Register(behaviours);
+        hut.Register(behaviours);
         walkHome.Register(behaviours);
         var pass = new MainPass(
             clock,
@@ -140,11 +141,11 @@ public static class GameFactory
             causes,
             new TablePass(settlers, buildings, behaviours),
             carriers,
-            woodcutter,
+            hut,
             removal,
             roster,
-            new SitePass(map, flags, tables, roster.AskForWorker),
-            sawmill,
+            new SitePass(map, flags, tables, modules, roster.AskForWorker),
+            modules,
             handsOutGoods
                 ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
                 : null
@@ -178,7 +179,7 @@ public static class GameFactory
                 Removal = removal,
                 WalkHome = walkHome,
                 Walks = walks,
-                Woodcutter = woodcutter,
+                Hut = hut,
                 Placement = placement,
                 RoadPlanner = planner,
                 Queue = new CommandQueue(),

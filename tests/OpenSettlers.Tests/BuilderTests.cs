@@ -18,9 +18,9 @@ public sealed class BuilderTests
 
     // A game with a forester's site at 17,5 whose planks lie on site: the hand-out of the castle is not part of these tests. A step takes
     // 300 clock units, more than the 128 between two turns of a settler, so a builder's turn makes one blow at most.
-    private static (Game Game, Building Site) World(int planksOnSite = 2)
+    internal static (Game Game, Building Site) World(int planksOnSite = 2, bool everyPassTurns = false)
     {
-        var game = ConstructionWorld.Create(ConstructionTables.Tables(stepTime: 300));
+        var game = ConstructionWorld.Create(ConstructionTables.Tables(stepTime: 300), everyPassTurns: everyPassTurns);
         ConstructionWorld.Site(game, BuildingType.Forester, SiteX, SiteY);
         var site = game.Buildings[1];
         site.FillLow = planksOnSite << 4;
@@ -46,6 +46,48 @@ public sealed class BuilderTests
         }
 
         return seen;
+    }
+
+    // With the turns of every pass, no settler the view draws stands still for more than a pass: the builder on his way out, at work,
+    // and on his way home, and the carriers. The slice turns alone leave the figures standing for passes.
+    [TestMethod]
+    public void NoDrawnSettlerStallsWhenEveryPassGivesATurn()
+    {
+        var (on, _) = World(everyPassTurns: true);
+        var (off, _) = World(everyPassTurns: false);
+
+        var (longest, seen) = ConstructionWorld.LongestStall(on, 3000);
+
+        Assert.IsGreaterThan(1, ConstructionWorld.LongestStall(off, 3000).Longest, "the slice turns alone stall");
+        Assert.IsLessThanOrEqualTo(1, longest);
+        CollectionAssert.IsSubsetOf(new[] { typeof(Walks), typeof(Builds) }, seen.ToList());
+    }
+
+    // The view draws a site by its progress word (SiteStages), so a blow is a change of the object layer the view must redraw.
+    [TestMethod]
+    public void TheObjectLayerWatchReportsEveryBlowOnASite()
+    {
+        var (game, site) = World();
+        var watch = new OpenSettlers.MapView.ObjectLayerWatch();
+        watch.Changed(game);
+        var blows = 0;
+
+        for (var tick = 0; tick < 3000 && site.Constructing; tick++)
+        {
+            var before = site.Progress;
+            game.Tick();
+            var changed = watch.Changed(game);
+            if (site.Progress != before)
+            {
+                blows++;
+                Assert.IsTrue(
+                    changed,
+                    $"tick {game.TickCount}: the progress went from {before:x4} to {site.Progress:x4}"
+                );
+            }
+        }
+
+        Assert.IsGreaterThan(1, blows, "the builder made his blows");
     }
 
     [TestMethod]
@@ -74,7 +116,7 @@ public sealed class BuilderTests
         Assert.IsNull(flag.RequestOf(RequestWord.First).Asks);
         Assert.IsNull(flag.RequestOf(RequestWord.Second).Asks);
         Assert.IsFalse(site.Constructing);
-        var builder = ConstructionWorld.OfJob(game, Job.Builder).Single();
+        var builder = ConstructionWorld.OfJob(game, new Builder()).Single();
         Assert.IsInstanceOfType<WaitsInCastle>(builder.Activity, "the builder entered the castle again");
     }
 
@@ -82,7 +124,7 @@ public sealed class BuilderTests
     public void TheFinishingBlowTakesTheBuilderOutOfTheSiteAndHeLeavesIt()
     {
         var (game, site) = World();
-        var builder = ConstructionWorld.OfJob(game, Job.Builder).Single();
+        var builder = ConstructionWorld.OfJob(game, new Builder()).Single();
         var inside = false;
         for (var tick = 0; tick < 3000 && site.Constructing; tick++)
         {
@@ -189,7 +231,7 @@ public sealed class BuilderTests
         for (var tick = 0; tick < 6000 && !inside; tick++)
         {
             game.Tick();
-            inside = ConstructionWorld.OfJob(game, new Job(8)).Any(worker => (worker.X, worker.Y) == (SiteX, SiteY));
+            inside = ConstructionWorld.OfJob(game, Job.Of(8)).Any(worker => (worker.X, worker.Y) == (SiteX, SiteY));
         }
 
         Assert.IsTrue(site.WorkerInside || site.WorkerOnTheWay);
@@ -209,8 +251,8 @@ public sealed class BuilderTests
             () =>
             {
                 // No settler of the builder's job waits, no settler without a job waits, and the stock holds no tool.
-                game.Roster.ClearWaiting(Job.Builder);
-                game.Roster.ClearWaiting(Job.Jobless);
+                game.Roster.ClearWaiting(new Builder());
+                game.Roster.ClearWaiting(new Jobless());
                 failed |= site.RequestFailed;
             }
         );
@@ -219,7 +261,7 @@ public sealed class BuilderTests
         Assert.IsTrue(failed, "the request found no builder");
         Assert.IsTrue(site.Constructing);
         Assert.IsEmpty(
-            ConstructionWorld.OfJob(game, Job.Builder).Where(settler => settler.Activity is not WaitsInCastle)
+            ConstructionWorld.OfJob(game, new Builder()).Where(settler => settler.Activity is not WaitsInCastle)
         );
     }
 
@@ -237,7 +279,7 @@ public sealed class BuilderTests
 
         ConstructionWorld.Run(game, 600);
 
-        Assert.AreEqual(2, ConstructionWorld.OfJob(game, Job.Builder).Length, "the castle's builder and a made one");
+        Assert.AreEqual(2, ConstructionWorld.OfJob(game, new Builder()).Length, "the castle's builder and a made one");
         Assert.AreEqual(tools - 1, game.CastleStock.Count(ConstructionTables.BuilderTool));
         Assert.IsTrue(game.Buildings.Skip(1).All(building => building.WorkerInside || building.WorkerOnTheWay));
     }

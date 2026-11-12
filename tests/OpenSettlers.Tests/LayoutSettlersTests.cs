@@ -97,11 +97,15 @@ public sealed class LayoutSettlersTests
             goodClasses: goodClasses,
             distribution: distribution,
             plankRankBase: plankRankBase,
-            workers: workers,
-            builderRequest: builderRequest,
+            workers: workers ?? TestProgram.MadeWorkers(stonecutter: true),
             materialOrder: materialOrder,
             blowSteps: blowSteps,
-            diggerRequest: diggerRequest
+            // A request a test gives replaces the made-up one of the same job.
+            jobData:
+            [
+                (new Builder(), builderRequest ?? new WorkerRequest(new Builder(), Good.None)),
+                (new Digger(), diggerRequest ?? new WorkerRequest(new Digger(), Good.None)),
+            ]
         );
     }
 
@@ -134,18 +138,39 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built);
 
-        var worker = game.Settlers.Single(settler => settler.Job == Job.Woodcutter);
+        var worker = game.Settlers.Single(settler => settler.Job == new Woodcutter());
         Assert.IsInstanceOfType<Door>(worker.Activity);
         Assert.AreEqual((13, 10), (worker.X, worker.Y));
         Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
         Assert.AreEqual(game.Settlers.ToList().IndexOf(worker), game.Buildings[1].Worker);
-        Assert.AreEqual(0, game.Roster.Waiting(Job.Woodcutter));
+        Assert.AreEqual(0, game.Roster.Waiting(new Woodcutter()));
+    }
+
+    [TestMethod]
+    public void ALayoutStandsAWorkerOnlyInTheHutOfAJobWhoseRulesLetItsSettlerStandInTheHut()
+    {
+        var game = Applied(Built);
+
+        CollectionAssert.AreEqual(
+            new[] { true, true, true, false, false, false },
+            new[]
+            {
+                BuildingType.Woodcutter,
+                BuildingType.Stonecutter,
+                BuildingType.Forester,
+                BuildingType.Sawmill,
+                BuildingType.Castle,
+                BuildingType.Storehouse,
+            }
+                .Select(game.Walks.StandsWorker)
+                .ToArray()
+        );
     }
 
     [TestMethod]
     public void ACarrierPlacedOnARoadIsTheSettlerTheCastlesWaitingListNamesWhereItNamesOne()
     {
-        var jobless = Job.Jobless;
+        var jobless = new Jobless();
         var game = Applied("\"castle\": {\"x\": 10, \"y\": 10},");
         Run(game, 3000);
         foreach (
@@ -191,7 +216,7 @@ public sealed class LayoutSettlersTests
         Assert.IsFalse(leftTheCastle);
         Assert.IsTrue(Trees.Any(tree => game.Map.At(tree.X, tree.Y).Object.Code != 8));
         Assert.IsFalse(game.Buildings[1].WorkerOnTheWay);
-        Assert.AreEqual(1, game.Settlers.Count(settler => settler.Job == Job.Woodcutter));
+        Assert.AreEqual(1, game.Settlers.Count(settler => settler.Job == new Woodcutter()));
     }
 
     [TestMethod]
@@ -199,7 +224,7 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built + $"\"settlers\": [{Carrier}]");
 
-        var carrier = game.Settlers.Single(settler => settler.Job == Job.Carrier);
+        var carrier = game.Settlers.Single(settler => settler.Job == new Carrier());
         var waiting = (WaitsAtFlag)carrier.Activity;
         Assert.AreEqual((13, 11), (carrier.X, carrier.Y));
         Assert.AreEqual((1, new Direction(3)), (waiting.Flag, waiting.Direction));
@@ -272,7 +297,61 @@ public sealed class LayoutSettlersTests
         );
 
         Assert.IsFalse(game.Buildings[1].WorkerInside || game.Buildings[1].WorkerOnTheWay);
-        Assert.AreEqual(1, game.Settlers.Count(s => s.Job == Job.Woodcutter && s.Activity is WaitsInCastle));
+        Assert.AreEqual(1, game.Settlers.Count(s => s.Job == new Woodcutter() && s.Activity is WaitsInCastle));
+    }
+
+    [TestMethod]
+    [DataRow("sawmill", 13, 10, DisplayName = "a finished sawmill")]
+    [DataRow("woodcutter", 10, 10, DisplayName = "the castle")]
+    public void AWorkerForAFinishedBuildingOfAJobWhoseSettlerDoesNotStandInTheHutIsRefusedNamingTheJobsThatDo(
+        string type,
+        int x,
+        int y
+    )
+    {
+        var game = Applied(
+            Built.Replace(
+                "\"type\": \"woodcutter\", \"x\": 13, \"y\": 10",
+                $"\"type\": \"{type}\", \"x\": 13, \"y\": 10"
+            )
+        );
+
+        Assert.AreEqual(
+            "no finished woodcutter's, stonecutter's, or forester's building stands on the node",
+            game.Walks.StandWorkerInHut(x, y)
+        );
+    }
+
+    private sealed class StandingRules<TJob>(bool stands) : JobRules<TJob>(null!)
+        where TJob : Job
+    {
+        public override bool CanStandInHut => stands;
+    }
+
+    [TestMethod]
+    public void TheRefusalReadsRightForAnyNumberOfJobsThatStandInTheirHut()
+    {
+        var woodcutter = new StandingRules<Woodcutter>(true);
+        var forester = new StandingRules<Forester>(true);
+        var stonecutter = new StandingRules<Stonecutter>(true);
+        var carrier = new StandingRules<Carrier>(false);
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "no finished building stands on the node",
+                "no finished woodcutter's building stands on the node",
+                "no finished woodcutter's or forester's building stands on the node",
+                "no finished woodcutter's, stonecutter's, or forester's building stands on the node",
+            },
+            new[]
+            {
+                WalkBehavior.NoHutRefusal([carrier]),
+                WalkBehavior.NoHutRefusal([carrier, woodcutter]),
+                WalkBehavior.NoHutRefusal([forester, carrier, woodcutter]),
+                WalkBehavior.NoHutRefusal([forester, stonecutter, woodcutter]),
+            }
+        );
     }
 
     [TestMethod]
@@ -372,14 +451,14 @@ public sealed class LayoutSettlersTests
     public void ACarrierWhenTheCastleHoldsNoCarrierIsAJoblessSettlerMadeTheRoadsCarrier()
     {
         var before = Applied(Built);
-        var jobless = before.Settlers.Count(s => s.Job == Job.Jobless && s.Activity is WaitsInCastle);
-        Assert.AreEqual(0, before.Settlers.Count(settler => settler.Job == Job.Carrier));
+        var jobless = before.Settlers.Count(s => s.Job == new Jobless() && s.Activity is WaitsInCastle);
+        Assert.AreEqual(0, before.Settlers.Count(settler => settler.Job == new Carrier()));
 
         var game = Applied(Built + $"\"settlers\": [{Carrier}]");
 
-        var carrier = game.Settlers.ToList().FindIndex(settler => settler.Job == Job.Carrier);
+        var carrier = game.Settlers.ToList().FindIndex(settler => settler.Job == new Carrier());
         Assert.IsInstanceOfType<WaitsAtFlag>(game.Settlers[carrier].Activity);
-        Assert.AreEqual(jobless - 1, game.Settlers.Count(s => s.Job == Job.Jobless && s.Activity is WaitsInCastle));
+        Assert.AreEqual(jobless - 1, game.Settlers.Count(s => s.Job == new Jobless() && s.Activity is WaitsInCastle));
         Assert.AreEqual(before.Settlers.Count, game.Settlers.Count);
     }
 

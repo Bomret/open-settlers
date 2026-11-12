@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
@@ -9,7 +10,7 @@ namespace OpenSettlers.Tests;
 // to 18,6 and from there to 19,4, as HutTests lays them. A building at 17,5 has its flag at 18,6, which a road joins to the castle.
 internal static class ConstructionWorld
 {
-    public static Game Create(RuleTables? tables = null, bool handsOutGoods = false)
+    public static Game Create(RuleTables? tables = null, bool handsOutGoods = false, bool everyPassTurns = false)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < map.Count; index++)
@@ -20,7 +21,12 @@ internal static class ConstructionWorld
             }
         }
 
-        var game = GameFactory.Create(tables ?? ConstructionTables.Tables(), map, handsOutGoods: handsOutGoods);
+        var game = GameFactory.Create(
+            tables ?? ConstructionTables.Tables(),
+            map,
+            handsOutGoods: handsOutGoods,
+            everyPassTurns: everyPassTurns
+        );
         game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
@@ -44,6 +50,33 @@ internal static class ConstructionWorld
     {
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: type));
         game.Tick();
+    }
+
+    // The longest run of passes, over the ticks, in which a settler the view draws (Activity.IsDrawn) had no time left of its step:
+    // its figure stands still until its next turn. Also the activity types such a settler was seen in.
+    public static (int Longest, HashSet<System.Type> Seen) LongestStall(Game game, int ticks)
+    {
+        var stalls = new Dictionary<int, int>();
+        var seen = new HashSet<System.Type>();
+        var longest = 0;
+        for (var tick = 0; tick < ticks; tick++)
+        {
+            game.Tick();
+            for (var slot = 0; slot < game.Settlers.Count; slot++)
+            {
+                var settler = game.Settlers[slot];
+                var drawn = settler.Activity.IsDrawn;
+                var ended = (ushort)(game.Clock.Now - settler.Stamp) >= settler.Timer;
+                stalls[slot] = drawn && ended ? stalls.GetValueOrDefault(slot) + 1 : 0;
+                longest = System.Math.Max(longest, stalls[slot]);
+                if (drawn)
+                {
+                    seen.Add(settler.Activity.GetType());
+                }
+            }
+        }
+
+        return (longest, seen);
     }
 
     public static void Run(Game game, int ticks)

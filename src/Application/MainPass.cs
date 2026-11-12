@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace OpenSettlers.Simulation;
 
@@ -19,11 +20,11 @@ public sealed class MainPass(
     Causes causes,
     TablePass tablePass,
     CarrierBehavior carriers,
-    WoodcutterBehavior woodcutter,
+    HutWork hut,
     Removal removal,
     CastleRoster roster,
     SitePass sites,
-    SawmillBehavior sawmill,
+    IReadOnlyList<JobRules> modules,
     StorageDistribution? distribution = null
 )
 {
@@ -44,8 +45,8 @@ public sealed class MainPass(
     public int ScanCursor { get; private set; }
 
     /// <summary>
-    /// Whether each pass gives every settler that walks, waits out a step, steps through a door, cuts, or searches
-    /// (the activities of the states 2, 3, 4, 5, 0xe, 0x10, 0x11, 0x19) one more turn after the slices, as the original's view
+    /// Whether each pass gives every settler in an activity the view draws (<see cref="Activity.IsDrawn"/>) one more turn after
+    /// the slices, as the original's view
     /// pass (<c>0x42f4f1</c>) does for the settlers in view. Off, a settler takes a turn only in its slice, every 16 or 17
     /// passes, as in the original's passes without a view.
     /// </summary>
@@ -57,7 +58,12 @@ public sealed class MainPass(
         clock.Advance();
         ClearRetryBits();
         carriers.ClearFlagRetryBits();
-        woodcutter.ObjectPass();
+        hut.ObjectPass();
+        foreach (var module in modules)
+        {
+            module.Pass();
+        }
+
         Phase = (Phase + 1) % PhaseCount;
         if (Phase == TablePhases)
         {
@@ -83,9 +89,9 @@ public sealed class MainPass(
                     else
                     {
                         roster.HandleBuilding(building);
-                        if (building.Type == BuildingType.Sawmill && !building.Constructing)
+                        foreach (var module in modules)
                         {
-                            sawmill.KeepRank(building);
+                            module.Turn(building);
                         }
                     }
                 }
@@ -98,23 +104,11 @@ public sealed class MainPass(
         }
 
         // 0x42f4f1 gives each settler in view one more turn every pass; the engine gives it to every settler in an activity
-        // the view draws in motion, so the walk on the screen does not stall between the slice turns and the simulation
-        // does not depend on the view. The other activities keep the slice turns alone.
+        // the view draws (Activity.IsDrawn), so the figure on the screen does not stall between the slice turns and the
+        // simulation does not depend on the view. The other activities keep the slice turns alone.
         for (var slot = 0; slot < settlers.Count; slot++)
         {
-            if (
-                settlers[slot].Activity
-                is Walks
-                    or WalksRoad
-                    or Door
-                    or WaitsOutStep
-                    or HandsOver
-                    or WalksFree
-                    or Cuts
-                    or CutsStone
-                    or Plants
-                    or SearchesHome
-            )
+            if (settlers[slot].Activity.IsDrawn)
             {
                 tablePass.Visit(slot);
             }

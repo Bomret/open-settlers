@@ -110,7 +110,7 @@ The figure handler of job 8 is at `0x43fd88`, reached by the stub at `0x43f784`.
 - `0x0e00` for a byte below 0x80. That covers the walk and the frames `0x79` and `0x7a` of the wait and the planting.
 - `0x1080` for a byte from 0x80. There it also toggles the settler's sound bit and asks for the sound `0x30`. No recorded pass reaches that byte.
 
-The engine reads the two words from the program's instructions (`RuleTables.ForesterFigureAdds`). The engine draws state `0x14`. It does not draw state `0x13`, in the building.
+The engine reads the two words from the program's instructions (`RuleTables.Get<ForesterFigureAdds>(new Forester())`). The engine draws state `0x14`. It does not draw state `0x13`, in the building.
 
 The sapling stages are the objects `0x67` and `0x68`. The engine draws them from the map like any object. They are entries 1345 and 1346 of the graphics archive, where the entry is 1250 plus the code less 8. The `open-settlers` content set draws them as a thin stem with a small crown (`object/103`, `object/104`). It draws the forester as a green figure in each pose (`settler/forester/*`). The planting has the pose of work.
 
@@ -130,10 +130,10 @@ A worker out at his goal is sent home where he stands. He takes state `0x19`, se
 
 ## In the engine
 
-The file `src/Application/WoodcutterBehavior.Forester.cs` is the forester's part of `WoodcutterBehavior`. It holds `StartForester`, `SearchSpot`, `ArriveForester`, `Plant`, and `GrowSapling`. `ObjectPass` calls `GrowSapling` as the object pass's handler.
+The file `src/Application/ForesterRules.cs` holds `ForesterRules`, the rules module of the forester (`JobRules<Forester>`). It holds `Start`, `SearchSpot`, `Arrive`, and `Plant`. `HutWork.ObjectPass` calls `GrowSapling` as the object pass's handler.
 
 The activities are `LooksForSpot` (state `0x13`) and `Plants`. `Plants` is state `0x14`, with the way back, whether the sapling is down, and the walk's memory. The walk to the node is a `WalksFree` whose purpose is `ToSpot`.
 
-`Job.Forester` is job 8. `MapObjectKind.Sapling` holds the codes `0x67` and `0x68`. `MapObject.Grown` is the tree a draw makes of one.
+`Forester` is job 8. `MapObjectKind.Sapling` holds the codes `0x67` and `0x68`. `MapObject.Grown` is the tree a draw makes of one.
 
 `CastleRoster` asks for his worker for a building of type 9 through the request's second way. A layout's `forester` entry stands a settler without a job in the building as the forester (`WalkBehavior.StandWorkerInHut`).

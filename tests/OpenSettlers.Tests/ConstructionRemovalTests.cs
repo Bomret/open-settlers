@@ -127,7 +127,7 @@ public sealed class ConstructionRemovalTests
     private static string Settler(OpenSettlers.Domain.Settler settler, int width)
     {
         var bytes = Convert.FromHexString(ConstructionBuilderTests.Settler(settler, width));
-        if (settler.Job == Job.Builder && bytes[10] is 0x19 or 0x1c)
+        if (settler.Job == new Builder() && bytes[10] is 0x19 or 0x1c)
         {
             var target = BitConverter.ToUInt16(bytes, 12) + 1;
             bytes[12] = (byte)target;

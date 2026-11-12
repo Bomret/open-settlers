@@ -25,7 +25,7 @@ public sealed class HistoryEditionSettlersTests
         MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
     private static Settler Woodcutter(int frame, int timer, Activity activity) =>
-        new(Job.Woodcutter, 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)timer };
+        new(new Woodcutter(), 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)timer };
 
     private static readonly Activity Walking = new Walks(new ToStorage(), new Heading(0));
 
@@ -54,14 +54,7 @@ public sealed class HistoryEditionSettlersTests
     }
 
     private static Settler LoadedCarrier(int frame, int timer = 0) =>
-        new(
-            Job.Carrier,
-            0,
-            4,
-            3,
-            0,
-            new WalksRoad(new Load(new Good(WoodcutterBehavior.GoodLog), null), new Heading(0))
-        )
+        new(new Carrier(), 0, 4, 3, 0, new WalksRoad(new Load(new Good(WoodcutterRules.GoodLog), null), new Heading(0)))
         {
             Frame = frame,
             Timer = (ushort)timer,
@@ -147,7 +140,7 @@ public sealed class HistoryEditionSettlersTests
             from step in Enumerable.Range(0, 128)
             let load = new Load(new Good(good), null)
             select new Settler(
-                Job.Carrier,
+                new Carrier(),
                 0,
                 4,
                 3,
@@ -181,7 +174,7 @@ public sealed class HistoryEditionSettlersTests
                 new Cuts(new Vector(0, 0), false, 1, 0),
                 new Cuts(new Vector(0, 0), false, 0, 0),
             }
-            select new Settler(Job.TypeOneHut, 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)(step * 8) };
+            select new Settler(new TypeOneHut(), 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)(step * 8) };
 
         var missing = PickedWithNoImage(Load(), settlers);
 

@@ -23,7 +23,8 @@ public sealed class ThingHistorySettlersTests
                 .ToArray(),
             Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
             Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray()
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
+            workers: TestProgram.MadeWorkers()
         );
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < map.Count; index++)
@@ -62,7 +63,7 @@ public sealed class ThingHistorySettlersTests
     }
 
     private static int WoodcutterSlot(Game game) =>
-        game.Settlers.Select((s, slot) => (s, slot)).First(p => p.s.Job == Job.Woodcutter).slot;
+        game.Settlers.Select((s, slot) => (s, slot)).First(p => p.s.Job == new Woodcutter()).slot;
 
     [TestMethod]
     public void AWorkerRequestedForAHutRecordsTheBuildingAndEachStepOfItsWalkTheNode()
@@ -138,7 +139,7 @@ public sealed class ThingHistorySettlersTests
             {
                 var settler = game.Settlers[s];
                 var raw = SettlerEncoder.Fields(settler);
-                if (settler.Job == Job.Carrier)
+                if (settler.Job == new Carrier())
                 {
                     // The carriers' rules record their own changes.
                     continue;

@@ -155,7 +155,7 @@ public sealed class ConstructionBuilderTests
                         expected = value[..24] + "0000" + value[28..];
                     }
 
-                    if (settler.Job == Job.Carrier && value[20..24] == "0300")
+                    if (settler.Job == new Carrier() && value[20..24] == "0300")
                     {
                         // A carrier that walks his road with no good keeps in the word at 12 the low word of the pointer to the flag item he
                         // waited for (0x46 for each slot); the engine keeps no such word.

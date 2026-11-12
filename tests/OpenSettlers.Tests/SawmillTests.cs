@@ -16,7 +16,7 @@ public sealed class SawmillTests
     private const int CastleFlag = 0;
     private const int SawmillFlag = 4;
 
-    private static (Game Game, Building Sawmill) World(bool handsOutGoods = false)
+    internal static (Game Game, Building Sawmill) World(bool handsOutGoods = false)
     {
         var game = ConstructionWorld.Create(ConstructionTables.Tables(), handsOutGoods);
         ConstructionWorld.Do(game, CommandKind.PlaceFlag, 15, 9);
@@ -29,11 +29,11 @@ public sealed class SawmillTests
     }
 
     // Runs until the sawmiller waits inside, with the flag asking for logs.
-    private static Settler SawmillerInside(Game game)
+    internal static Settler SawmillerInside(Game game)
     {
         ConstructionWorld.Run(game, 1500);
 
-        return ConstructionWorld.OfJob(game, Job.Sawmiller).Single();
+        return ConstructionWorld.OfJob(game, new Sawmiller()).Single();
     }
 
     private static Request LogRequest(Game game) => game.Flags[SawmillFlag].RequestOf(ConstructionTables.LogClass.Word);

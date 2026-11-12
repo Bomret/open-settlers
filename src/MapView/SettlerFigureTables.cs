@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
@@ -49,57 +51,25 @@ public sealed class SettlerFigureTables
     // The node's lake mark picks the fixed figure word, and its road directions the offsets (0x44d77e).
     private const int FixedFigureWord = 0x203;
 
-    // The woodcutter's handler (0x43fb6b) tests the figure byte for bit 7, and the settler's activity for the way back with the
-    // log.
-    private const int HighFigure = 0x80;
-
     private readonly short[] _bases;
     private readonly short[] _offsets;
     private readonly byte[] _data;
-    private readonly short[] _carried;
-    private readonly FigureAdds _woodcutter;
-    private readonly FigureAdds _stonecutter;
-    private readonly HutFigureAdds _typeOneHut;
-    private readonly BuilderFigureAdds _builder;
-    private readonly ForesterFigureAdds _forester;
-    private readonly FigureAdds _digger;
-    private readonly SawmillerFigureAdds _sawmiller;
+    private readonly Dictionary<Job, HistoryEditionLook> _looks;
     private readonly IdleCarrierTables? _idle;
 
-    /// <param name="bases">Two words for each high byte of the figure word: the figure base and the second figure base (negative for none).</param>
-    /// <param name="offsets">Two words for each low byte of the figure word: what it adds to the figure and to the second figure.</param>
-    /// <param name="sequences">The bytes of entry 2 of the graphics archive.</param>
-    /// <param name="carried">For each good the word a carrier carrying it adds to its figure byte.</param>
-    /// <param name="woodcutter">What the woodcutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
-    /// <param name="typeOneHut">What the handler of the settler of the type 1 hut adds to the figure byte (<c>0x43fed8</c>).</param>
-    /// <param name="idle">The tables of the waiting carriers; none draws no waiting carrier.</param>
-    /// <param name="stonecutter">What the stonecutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
-    /// <param name="digger">What the digger's handler adds to the figure byte (<c>0x43fa87</c>); all 0 draws him in the carrier's row.</param>
-    /// <param name="sawmiller">What the sawmiller's handler adds to the figure byte (<c>0x43fc21</c>) and how far it moves the saw's second figure; all 0 draws him in the carrier's row.</param>
-    public SettlerFigureTables(
+    // The looks the History Edition source holds read the job data of the tables (the registry is generated from the look modules).
+    // The figure bases, offsets, and idle tables are given apart from the tables for a test that draws with part of them.
+    internal SettlerFigureTables(
+        RuleTables tables,
         short[] bases,
         short[] offsets,
         byte[] sequences,
-        short[]? carried = null,
-        FigureAdds woodcutter = default,
-        HutFigureAdds typeOneHut = default,
-        IdleCarrierTables? idle = null,
-        BuilderFigureAdds builder = default,
-        FigureAdds stonecutter = default,
-        ForesterFigureAdds forester = default,
-        FigureAdds digger = default,
-        SawmillerFigureAdds sawmiller = default
+        IdleCarrierTables? idle
     )
     {
-        _sawmiller = sawmiller;
-        _digger = digger;
-        _builder = builder;
-        _forester = forester;
+        // The handler table at 0x43f744 holds 8 bytes for each job; the engine holds the looks of the jobs it draws.
+        _looks = HistoryEditionLookRegistry.Build(tables).ToDictionary(look => look.Job);
         _idle = idle;
-        _stonecutter = stonecutter;
-        _typeOneHut = typeOneHut;
-        _woodcutter = woodcutter;
-        _carried = carried ?? [];
         _bases = bases;
         _offsets = offsets;
         _data = sequences;
@@ -108,19 +78,15 @@ public sealed class SettlerFigureTables
     /// <summary>The figure tables of the exe's <paramref name="tables"/> over the walk <paramref name="sequences"/>.</summary>
     public static SettlerFigureTables From(RuleTables tables, byte[] sequences) =>
         new(
+            tables,
             tables.FigureBases,
             tables.FigureOffsets,
             sequences,
-            tables.CarriedFigures,
-            tables.WoodcutterFigureAdds,
-            tables.TypeOneHutFigureAdds,
-            new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets),
-            tables.BuilderFigureAdds,
-            tables.StonecutterFigureAdds,
-            tables.ForesterFigureAdds,
-            tables.DiggerFigureAdds,
-            tables.SawmillerFigureAdds
+            new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets)
         );
+
+    /// <summary>Whether the tables hold the figure handler of <paramref name="job"/>: a job without one has no drawn figure.</summary>
+    internal bool HasHandler(Job job) => _looks.ContainsKey(job);
 
     /// <summary>The palette index of a player's colour.</summary>
     public static int ColourOf(int player) => ColourBase + ColourStep * player;
@@ -136,7 +102,7 @@ public sealed class SettlerFigureTables
         var dy = 0;
         if (draw.Activity is WaitsOffRoad)
         {
-            if (draw.Job != Job.Carrier || _idle is null || draw.Node is not { } node)
+            if (draw.Job is not Carrier || _idle is null || draw.Node is not { } node)
             {
                 return null;
             }
@@ -166,7 +132,13 @@ public sealed class SettlerFigureTables
                 return null;
             }
 
-            word = FigureWord(draw, _data[at]);
+            if (!_looks.TryGetValue(draw.Job, out var look))
+            {
+                return null;
+            }
+
+            var figure = _data[at];
+            word = figure + look.Add(draw, figure);
         }
 
         return PickOf(word, draw.Part, ColourOf(draw.Player), dx, dy);
@@ -204,103 +176,4 @@ public sealed class SettlerFigureTables
                     : null;
         }
     }
-
-    // The figure word of a settler's figure byte (0x43f8ae for the carrier, 0x43fb6b for the woodcutter): the carrier adds
-    // the word of the good it carries; the woodcutter adds the constant of the handler, the one of the way back with the
-    // log (byte 13 0x80, byte 14 1, state 0x10) for a figure byte below 0x80 on that way.
-    private int FigureWord(SettlerDraw draw, int figure)
-    {
-        if (draw.Job == Job.Carrier)
-        {
-            return figure + CarriedFigure(draw);
-        }
-
-        if (draw.Job == Job.Builder)
-        {
-            // The builder's handler (0x43faf4) adds the blows' constant for a figure byte from 0x80 and the walk's below it.
-            return figure + (figure >= HighFigure ? _builder.Work : _builder.Walk);
-        }
-
-        if (draw.Job == Job.Digger)
-        {
-            // The digger's handler (0x43fa87) adds the constant of a figure byte from 0x80 and the walk's below it.
-            return figure + (figure >= HighFigure ? _digger.Cutting : _digger.Walk);
-        }
-
-        if (draw.Job == Job.Sawmiller)
-        {
-            // The sawmiller's handler (0x43fc21) adds the saw's constant for a figure byte from 0x80, the plank's for the step that takes
-            // it out (state 5 with state 0xd next), and the walk's for every other.
-            return figure
-                + (
-                    figure >= HighFigure ? _sawmiller.Saw
-                    : draw.Activity is WaitsOutStep { Then: PutsDownGood } ? _sawmiller.Carrying
-                    : _sawmiller.Walk
-                );
-        }
-
-        if (draw.Job == Job.TypeOneHut)
-        {
-            // The handler of the type 1 hut's settler (0x43fed8) adds by the heading for a figure byte from 0x80 and by the
-            // way back with a load, as the woodcutter's does, below it.
-            if (figure >= HighFigure)
-            {
-                return figure + (FacesBack(draw) ? _typeOneHut.HighFacing : _typeOneHut.High);
-            }
-
-            return figure + (WayBackWithLoad(draw) ? _typeOneHut.Carrying : _typeOneHut.Walk);
-        }
-
-        if (draw.Job == Job.Stonecutter)
-        {
-            return figure + StonecutterAdd(figure, draw);
-        }
-
-        if (draw.Job == Job.Forester)
-        {
-            // The forester's handler (0x43fd88) adds the work's constant for a figure byte from 0x80 and the walk's below it,
-            // the waiting and planting frames included.
-            return figure + (figure >= HighFigure ? _forester.Work : _forester.Walk);
-        }
-
-        return figure + WoodcutterAdd(figure, WayBackWithLoad(draw));
-    }
-
-    // What the stonecutter's handler (0x43fcd8) adds to a figure byte: the stroke's constant from 0x80, below it the way back's
-    // with the stone, also for the step back off the heap (state 0x17, byte 13 2), or the walk's.
-    private int StonecutterAdd(int figure, SettlerDraw draw) =>
-        figure >= HighFigure ? _stonecutter.Cutting
-        : WayBackWithLoad(draw) || draw.Activity is CutsStone { Phase: 2 } ? _stonecutter.Carrying
-        : _stonecutter.Walk;
-
-    // What the woodcutter's handler (0x43fb6b) adds to a figure byte: the felling's constant from 0x80, below it the way
-    // back's with a load or the walk's.
-    private int WoodcutterAdd(int figure, bool carrying) =>
-        figure >= HighFigure ? _woodcutter.Cutting
-        : carrying ? _woodcutter.Carrying
-        : _woodcutter.Walk;
-
-    // The way back with a load: the free walk back to the hut's flag with the log (0x43fc0b, 0x43ff40).
-    private static bool WayBackWithLoad(SettlerDraw draw) =>
-        draw.Activity is WalksFree { Trip.Purpose: BackToHut { Carrying: true } };
-
-    // The settler's heading is 1 (byte 14, which the handler of the type 1 hut's settler reads at 0x43fed8): the way back with
-    // a load, the first cut, or a step back from the node to the south-west.
-    private static bool FacesBack(SettlerDraw draw) =>
-        draw.Activity switch
-        {
-            WalksFree { Trip.Purpose: BackToHut { Carrying: true } } => true,
-            Cuts cut => cut.Count == 1,
-            Walks => draw.Heading == new Heading(1),
-            _ => false,
-        };
-
-    // The word a carrier on its road or handing a good over adds to its figure byte for the good it carries (byte 11, at
-    // 0x43f8ae, for the states 3 and 0xe). A carrier in state 0x42 has no record (byte 11 is the road direction there, no
-    // good).
-    private int CarriedFigure(SettlerDraw draw) => draw.Activity is WalksRoad or HandsOver ? Carried(draw.Carried) : 0;
-
-    // The word of the table at 0x43f4b7 for a good (2 * good bytes on): the row of the figure bases in its high byte. A
-    // carrier with no good (0) adds nothing; so does a good the table does not cover.
-    private int Carried(Good good) => good.Code > 0 && good.Code < _carried.Length ? _carried[good.Code] : 0;
 }

@@ -4,6 +4,7 @@
     <Project Path="src/Domain/OpenSettlers.Domain.csproj" />
     <Project Path="src/Application/OpenSettlers.Application.csproj" />
     <Project Path="src/Adapters/OpenSettlers.Adapters.csproj" />
+    <Project Path="src/Generators/OpenSettlers.Generators.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/OpenSettlers.Tests/OpenSettlers.Tests.csproj" />

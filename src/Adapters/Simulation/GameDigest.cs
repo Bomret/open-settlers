@@ -88,7 +88,7 @@ public sealed class GameDigest : IGameDigest
 
         var random = game.Draws.Generator;
         hash = Mix(Mix(Mix(hash, random.W0), random.W1), random.W2);
-        var (stamp, timer, x, y) = game.Woodcutter.ObjectPassState;
+        var (stamp, timer, x, y) = game.Hut.ObjectPassState;
         hash = Mix(Mix(Mix(Mix(hash, stamp), timer), x), y);
         foreach (var good in FlagEncoder.Places(game.Flags))
         {

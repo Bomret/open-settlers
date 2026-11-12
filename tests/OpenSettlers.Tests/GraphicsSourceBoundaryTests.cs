@@ -9,16 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class GraphicsSourceBoundaryTests
 {
-    static string Read(string path)
-    {
-        var dir = AppContext.BaseDirectory;
-        while (!File.Exists(Path.Combine(dir, "tools", "play-run.sh")))
-        {
-            dir = Path.GetDirectoryName(dir) ?? throw new InvalidOperationException("tools/play-run.sh not found");
-        }
-
-        return File.ReadAllText(Path.Combine(dir, path));
-    }
+    static string Read(string path) => File.ReadAllText(Path.Combine(RootOf(), path));
 
     [TestMethod]
     [DataRow("src/MapView/TerrainTriangles.cs")]
@@ -46,6 +37,47 @@ public sealed class GraphicsSourceBoundaryTests
     public void TheStepOffsetsReadOnlyTheArchiveEntryOfTheWalkSequences()
     {
         AssertMentions("src/MapView/StepOffsets.cs", ["TerrainGraphics", "ObjectGraphics"]);
+    }
+
+    // The figure handlers and the figure adds are the History Edition's (ADR 0016, INV-0010): the looks of that source and the figure
+    // tables that hold them are the one place that names them.
+    [TestMethod]
+    public void NoClassOfTheMapViewOutsideTheHistoryEditionSourceNamesAFigureHandlerOrFigureAdd()
+    {
+        string[] historyEdition = ["HistoryEditionLook.cs", "SettlerFigureTables.cs"];
+        var folder = Path.GetDirectoryName(Path.Combine(RootOf(), "src/MapView/x"))!;
+        var checkedFiles = 0;
+        foreach (var file in Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
+        {
+            // The looks of the source are the files of its own folder, one for each job.
+            if (
+                Array.IndexOf(historyEdition, Path.GetFileName(file)) >= 0
+                || Path.GetFileName(Path.GetDirectoryName(file)) == "HistoryEditionLooks"
+            )
+            {
+                continue;
+            }
+
+            checkedFiles++;
+            var text = File.ReadAllText(file);
+            foreach (var forbidden in new[] { "HistoryEditionLook", "FigureAdds", "FigureHandler", "FigureBytes" })
+            {
+                Assert.DoesNotContain(forbidden, text, $"{file} mentions {forbidden}");
+            }
+        }
+
+        Assert.IsGreaterThan(20, checkedFiles);
+    }
+
+    static string RootOf()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (!File.Exists(Path.Combine(dir, "tools", "play-run.sh")))
+        {
+            dir = Path.GetDirectoryName(dir) ?? throw new InvalidOperationException("tools/play-run.sh not found");
+        }
+
+        return dir;
     }
 
     static void AssertMentions(string path, string[] excepted)

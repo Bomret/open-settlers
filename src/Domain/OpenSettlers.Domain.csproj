@@ -1,5 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <!-- The generator writes Job.Of; it runs in the compiler and is no run-time dependency. -->
+    <ProjectReference
+      Include="../Generators/OpenSettlers.Generators.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
+  </ItemGroup>
+  <ItemGroup>
     <!-- The rules write the flag tables; the layers and the tests that build state by hand see the setters too. -->
     <InternalsVisibleTo Include="OpenSettlers.Application" />
     <InternalsVisibleTo Include="OpenSettlers.Adapters" />

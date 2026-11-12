@@ -34,13 +34,13 @@ public sealed class SpriteLayerTests
             from good in Enumerable.Range(1, RuleTables.CarriedFigureCount - 1)
             from frame in Enumerable.Range(0, 0x79)
             from step in Enumerable.Range(0, 128)
-            select new Settler(Job.Carrier, 0, 4, 3, 0, new WalksRoad(new Load(new Good(good), null), new Heading(0)))
+            select new Settler(new Carrier(), 0, 4, 3, 0, new WalksRoad(new Load(new Good(good), null), new Heading(0)))
             {
                 Frame = frame,
                 Timer = (ushort)(step * 8),
             };
         var others =
-            from job in new[] { Job.Woodcutter, Job.TypeOneHut }
+            from job in new Job[] { new Woodcutter(), new TypeOneHut() }
             from frame in Enumerable.Range(4, 0x79 - 4)
             from step in Enumerable.Range(0, 128)
             from activity in new Activity[] { walks, back }

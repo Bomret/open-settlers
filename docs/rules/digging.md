@@ -101,7 +101,7 @@ The next building pass sends the site through `0x42d55f` to ask for its builder,
 
 **Status:** confirmed from the code and by a draw run. The figure frames are the walk's and the dig's two.
 
-His figure handler is stub 2 of `0x43f744`, at `0x43fa87`. It adds `0x300` to the figure byte for a byte below `0x80`. It adds `0x380` from `0x80`, with a sound request at the frames `0x83` and `0x84`. Every frame of state 8 is below `0x80`, so only the walk's add draws him. `RuleTables.DiggerFigureAdds` holds both adds, read from `0x43fae9` and `0x43fade`.
+His figure handler is stub 2 of `0x43f744`, at `0x43fa87`. It adds `0x300` to the figure byte for a byte below `0x80`. It adds `0x380` from `0x80`, with a sound request at the frames `0x83` and `0x84`. Every frame of state 8 is below `0x80`, so only the walk's add draws him. `RuleTables.Get<FigureAdds>(new Digger())` holds both adds, read from `0x43fae9` and `0x43fade`.
 
 The draw of the walk and of the dig is the settlers' ([Settlers](settlers.md#drawing-the-walk-leads)). `SettlerFigures` draws the activity `Digs` for job 2. It lifts him by the height of the node he stands on.
 
@@ -129,6 +129,6 @@ A large site taken down while it waited still contributes. It contributes the cl
 
 ## In the engine
 
-`DiggerBehavior` (`src/Application/DiggerBehavior.cs`) holds the start routine and state 8. `Start` is registered with `WoodcutterBehavior.RegisterStart` for `Job.Digger`. The activity `Digs` has `Pass`, `Target`, `Node`, and `Phase`, which keep the bytes 11 to 14 for the exporters.
+`DiggerRules` (`src/Application/DiggerRules.cs`), the rules module of the digger (`JobRules<Digger>`), holds the start routine and state 8. `Start` is registered with `HutWork.RegisterModule` for the digger. The activity `Digs` has `Pass`, `Target`, `Node`, and `Phase`, which keep the bytes 11 to 14 for the exporters.
 
-`SitePass.Turn` asks for the digger through `CastleRoster.AskForWorker`, with `RuleTables.DiggerRequest`. `ProgramTablesImporter` reads that table from `0x42d52a`. `EventType.Digs` and `Levelled` record the digger's turns and his end. `BuildSite.Evaluate` has the third-ring term. The tests on made-up tables are `DiggerTests` and `SitePassTests`.
+`SitePass.Turn` asks for the digger through `CastleRoster.AskForWorker`, with the request `DiggerRules.SiteWorker` names for the `SiteStage.Levelling` (`RuleTables.Get<WorkerRequest>(new Digger())`). `DiggerTables` reads that request from `0x42d52a`. `EventType.Digs` and `Levelled` record the digger's turns and his end. `BuildSite.Evaluate` has the third-ring term. The tests on made-up tables are `DiggerTests` and `SitePassTests`.

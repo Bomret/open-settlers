@@ -175,7 +175,7 @@ public sealed class ObjectQuadsTests
     }
 
     static SettlerDraw SettlerAt(SettlerPart part, int row, int x, int y) =>
-        new(row, x, y, part, Job.Carrier, new WalksRoad(null, new Heading(0)), null, 7, 0, 0, Good.None);
+        new(row, x, y, part, new Carrier(), new WalksRoad(null, new Heading(0)), null, 7, 0, 0, Good.None);
 
     // The settlers are one list in the order the terms come: a settler's shadow right before its figure, then its overlay,
     // and a part the source has no image for leaves no quad.

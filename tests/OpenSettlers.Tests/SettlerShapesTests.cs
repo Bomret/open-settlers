@@ -24,7 +24,7 @@ public sealed class SettlerShapesTests
     {
         foreach (var code in new[] { 5, 7, 8, 11, 14, 20, 22, 26 })
         {
-            Assert.IsFalse(new Job(code).ArrivesHomeGenerically, $"job {code}");
+            Assert.IsFalse(Job.Of(code).ArrivesHomeGenerically, $"job {code}");
         }
     }
 
@@ -33,7 +33,7 @@ public sealed class SettlerShapesTests
     {
         foreach (var code in new[] { 0, 4, 21 })
         {
-            Assert.IsTrue(new Job(code).ArrivesHomeGenerically, $"job {code}");
+            Assert.IsTrue(Job.Of(code).ArrivesHomeGenerically, $"job {code}");
         }
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 namespace OpenSettlers.Simulation;
@@ -18,7 +19,8 @@ public sealed class WalkBehavior(
     CarrierBehavior carriers,
     RoadStep roadStep,
     CastleRoster roster,
-    SettlerTable settlers
+    SettlerTable settlers,
+    IReadOnlyList<JobRules> modules
 )
 {
     /// <summary>Registers the behaviours of the activities that walk to an errand.</summary>
@@ -208,7 +210,8 @@ public sealed class WalkBehavior(
     }
 
     /// <summary>
-    /// The worker a finished woodcutter's, stonecutter's, or forester's building stands with (docs/rules/layouts.md, ADR 0009, INV-0005), as the
+    /// The worker a finished building of a job whose settler stands in the hut (the woodcutter's, stonecutter's, or forester's building) stands
+    /// with (docs/rules/layouts.md, ADR 0009, INV-0005), as the
     /// mission start (<c>0x41f2d2</c>) creates a building's settlers inside it: the castle's woodcutter (or stonecutter, or a
     /// settler without a job that becomes the forester, the castle holding none) has
     /// walked from the castle to the hut and stepped through its door (state 4, <c>0x4398ea</c> with the building's status bit
@@ -223,9 +226,9 @@ public sealed class WalkBehavior(
     {
         var node = movement.Map.Index(x, y);
         var hut = movement.BuildingAt(node);
-        if (hut is not { IsDemolishing: false, Site: null } || JobOf(hut.Type) is not { } worker)
+        if (hut is not { IsDemolishing: false, Site: null } || !StandsWorker(hut.Type))
         {
-            return "no finished woodcutter's, stonecutter's, or forester's building stands on the node";
+            return NoHutRefusal(modules);
         }
 
         if (hut.WorkerInside || hut.WorkerOnTheWay)
@@ -233,19 +236,20 @@ public sealed class WalkBehavior(
             return "the hut has its worker already";
         }
 
-        var (asked, name) = worker;
+        var request = movement.Tables.WorkerOf(hut.Type)!;
+        var asked = request.Job;
         var slot = roster.CastleSettler(asked);
         // The castle holds none of the job: the request's second way (0x42be63) makes one of a settler without a job where the
         // request names no tool (the forester's, docs/rules/forestry.md). A job whose request names a tool is not made in a layout.
-        var made = slot < 0 && movement.Tables.WorkerOf(hut.Type) is { Tool.IsNone: true };
+        var made = slot < 0 && request.Tool.IsNone;
         if (made)
         {
-            slot = roster.CastleSettler(Job.Jobless);
+            slot = roster.CastleSettler(new Jobless());
         }
 
         if (slot < 0)
         {
-            return $"the castle holds no {name} for the building";
+            return $"the castle holds no {NameOf(modules.First(rules => rules.JobType == asked.GetType()))} for the building";
         }
 
         var flag = flags[hut.Flag];
@@ -255,10 +259,10 @@ public sealed class WalkBehavior(
         }
 
         var settler = settlers[slot];
-        roster.Take(made ? Job.Jobless : asked, slot);
+        roster.Take(made ? new Jobless() : asked, slot);
         if (made)
         {
-            settler.Job = asked;
+            settler.TakeUp(asked);
         }
 
         hut.WorkerOnTheWay = true;
@@ -273,19 +277,36 @@ public sealed class WalkBehavior(
         return null;
     }
 
-    // The job (and its name, for a refusal) of the worker a layout stands inside a finished building of the type; null for any other type.
-    private static (Job Job, string Name)? JobOf(BuildingType type)
+    /// <summary>
+    /// Whether a layout stands a worker inside a finished building of the type: the building's job has a module whose rules let its
+    /// settler stand in the hut (<see cref="JobRules.CanStandInHut"/>).
+    /// </summary>
+    public bool StandsWorker(BuildingType type) =>
+        movement.Tables.WorkerOf(type) is { } request
+        && modules.Any(rules => rules.JobType == request.Job.GetType() && rules.CanStandInHut);
+
+    // What a sentence calls a settler of the module's job: the job type's name in lower case.
+    private static string NameOf(JobRules rules) => rules.JobType.Name.ToLowerInvariant();
+
+    // The refusal for a node with no building that stands a worker. It names the jobs whose modules let their settler stand in the hut:
+    // "no finished woodcutter's, stonecutter's, or forester's building stands on the node" for three, "a's or b's" for two, "a's" for
+    // one, and no job for none. The names are in descending ordinal order, so three names read woodcutter, stonecutter, forester.
+    internal static string NoHutRefusal(IEnumerable<JobRules> modules)
     {
-        if (type == BuildingType.Woodcutter)
+        var names = modules
+            .Where(rules => rules.CanStandInHut)
+            .Select(NameOf)
+            .OrderByDescending(name => name, System.StringComparer.Ordinal)
+            .Select(name => name + "'s")
+            .ToList();
+        var jobs = names.Count switch
         {
-            return (Job.Woodcutter, "woodcutter");
-        }
+            0 => "",
+            1 => names[0] + " ",
+            2 => names[0] + " or " + names[1] + " ",
+            _ => string.Join(", ", names.Take(names.Count - 1)) + ", or " + names[^1] + " ",
+        };
 
-        if (type == BuildingType.Stonecutter)
-        {
-            return (Job.Stonecutter, "stonecutter");
-        }
-
-        return type == BuildingType.Forester ? (Job.Forester, "forester") : null;
+        return $"no finished {jobs}building stands on the node";
     }
 }

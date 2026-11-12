@@ -73,7 +73,7 @@ public sealed class GameHistoryTests
     public void TheExporterWritesTheSettlersRawValuesAsNamedFieldsInOrder()
     {
         var settler = new Settler(
-            Job.Woodcutter,
+            new Woodcutter(),
             0,
             7,
             9,

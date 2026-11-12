@@ -19,7 +19,7 @@ public sealed class SettlerEncoderTests
             SettlerEncoder.ResidueOf
         );
 
-    private static Settler Of(Activity activity, ushort stamp = 0) => new(Job.Carrier, 0, 4, 3, stamp, activity);
+    private static Settler Of(Activity activity, ushort stamp = 0) => new(new Carrier(), 0, 4, 3, stamp, activity);
 
     private static (int State, int Mode, int Target, int Heading, int Next) Fields(Activity activity)
     {

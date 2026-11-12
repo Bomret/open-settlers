@@ -12,7 +12,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class WorkerRequestTests
 {
-    private static readonly Job ForesterJob = new(8);
+    private static readonly Job ForesterJob = Job.Of(8);
     private static readonly Good Tool = ConstructionTables.ForesterTool;
 
     private static Building PlaceForester(Game game)
@@ -45,14 +45,14 @@ public sealed class WorkerRequestTests
         // The roads' carriers have taken their settlers without a job by now.
         ConstructionWorld.Run(game, 100);
         var tools = game.CastleStock.Count(Tool);
-        var jobless = ConstructionWorld.OfJob(game, Job.Jobless).Length;
+        var jobless = ConstructionWorld.OfJob(game, new Jobless()).Length;
         Assert.IsTrue(game.PlaceFinishedBuilding(BuildingType.Woodcutter, 17, 5));
 
         ConstructionWorld.Run(game, 600);
 
         Assert.AreEqual(tools, game.CastleStock.Count(Tool));
-        Assert.AreEqual(jobless, ConstructionWorld.OfJob(game, Job.Jobless).Length);
-        Assert.AreEqual(Job.Woodcutter, game.Settlers[game.Buildings[1].Worker].Job);
+        Assert.AreEqual(jobless, ConstructionWorld.OfJob(game, new Jobless()).Length);
+        Assert.AreEqual(new Woodcutter(), game.Settlers[game.Buildings[1].Worker].Job);
     }
 
     [TestMethod]
@@ -90,7 +90,7 @@ public sealed class WorkerRequestTests
         for (var tick = 0; tick < 200; tick++)
         {
             // The settlers enter the castle's list as their turns come, so it is emptied before every tick.
-            game.Roster.ClearWaiting(Job.Jobless);
+            game.Roster.ClearWaiting(new Jobless());
             game.Tick();
             failed |= forester.RequestFailed;
         }

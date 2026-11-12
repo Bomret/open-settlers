@@ -55,8 +55,9 @@ more phases: [Timing](timing.md#rules-that-count-passes)), the flag pass `0x4641
   through the state table at `0x42fca1`.
 - **Departure from the engine:** the program runs the turn of each settler in view once more every pass
   (`0x42f4f1`), which makes the motion on the screen smooth. The simulation must not depend on the view, so with
-  `Game.EveryPassTurns` the engine gives that turn to every settler in a state the view draws in motion (2, 3, 4,
-  5, 0xe, 0x10, 0x11, 0x19), in view or not, after the slices of every pass (phase 32 included). The other states, the
+  `Game.EveryPassTurns` the engine gives that turn to every settler in a state the view draws, in view or not, after
+  the slices of every pass (phase 32 included). Each activity type states whether the view draws it (`Activity.IsDrawn`),
+  so the drawing and this turn read one rule. The other states, the
   knights' among them, keep the slice turns alone, so their events and random draws come at the slice's rate. The game view sets it; without it a settler takes a turn only in its slice, as in the
   original's passes without a view, which is what the emulator recordings of the walks hold.
 
@@ -464,6 +465,7 @@ scan windows from the install's program at run time (`StepTimes`, `DoorSpeeds`, 
 the adapters) holds the buildings, the settlers, the clock, the phase, the scan cursor, the castle's waiting list, and the
 settlers' places.
 
-The carriers' part is in `src/Application/CarrierBehavior.cs` ([Carriers](carriers.md#in-the-engine)). The woodcutter's part and
-the map's object pass are in `src/Application/WoodcutterBehavior.cs` ([Woodcutting](woodcutting.md#in-the-engine)). The walk home
+The carriers' part is in `src/Application/CarrierBehavior.cs` ([Carriers](carriers.md#in-the-engine)). The huts' shared
+states and the map's object pass are in `src/Application/HutWork.cs`, and the woodcutter's part is in `src/Application/WoodcutterRules.cs`
+([Woodcutting](woodcutting.md#in-the-engine)). The walk home
 is in `src/Application/WalkHomeBehavior.cs`. Both build on `SettlerMovement` (the settlers' nodes, the step, and the timer).

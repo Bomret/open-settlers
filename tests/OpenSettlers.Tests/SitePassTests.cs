@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
@@ -21,7 +23,8 @@ public sealed class SitePassTests
     private (BehaviourBench Bench, SitePass Pass, Building Site) Bench(
         BuildingType type,
         BuildingNeeds needs,
-        ushort progress = 1
+        ushort progress = 1,
+        IReadOnlyList<JobRules>? modules = null
     )
     {
         var bench = new BehaviourBench();
@@ -44,9 +47,24 @@ public sealed class SitePassTests
 
         return (
             bench,
-            new SitePass(bench.Map, bench.Flags, tables, (building, request) => Asked.Add((building, request))),
+            new SitePass(
+                bench.Map,
+                bench.Flags,
+                tables,
+                modules ?? JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!)),
+                (building, request) => Asked.Add((building, request))
+            ),
             site
         );
+    }
+
+    // A module that names the workers of both stages of a site, as the digger's and the builder's modules do for their own jobs.
+    private sealed class SiteRules(JobParts parts) : JobRules<Carrier>(parts)
+    {
+        public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
+            stage == SiteStage.Levelling
+                ? new WorkerRequest(new Woodcutter(), new Good(3))
+                : new WorkerRequest(new Sawmiller(), new Good(4));
     }
 
     // The node of the site and its six neighbours at one height, then the node itself at another.
@@ -171,7 +189,7 @@ public sealed class SitePassTests
 
         Assert.AreEqual(1, Asked.Count);
         Assert.AreSame(site, Asked[0].Site);
-        Assert.AreEqual(new WorkerRequest(Job.Digger, ConstructionTables.DiggerTool), Asked[0].Request);
+        Assert.AreEqual(new WorkerRequest(new Digger(), ConstructionTables.DiggerTool), Asked[0].Request);
         Assert.AreEqual((ushort)0, site.Progress, "the site waits for the ground");
     }
 
@@ -214,7 +232,57 @@ public sealed class SitePassTests
         pass.Turn(site);
 
         Assert.AreEqual(1, Asked.Count);
-        Assert.AreEqual(Job.Builder, Asked[0].Request.Job);
+        Assert.AreEqual(new Builder(), Asked[0].Request.Job);
+    }
+
+    [TestMethod]
+    public void ASiteAsksForTheWorkersTheModulesNameForItsTwoStages()
+    {
+        var modules = new JobRules[] { new SiteRules(new JobParts(null!, null!, null!, null!, null!, null!, null!)) };
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0, modules: modules);
+        Uneven(bench);
+
+        pass.Turn(site);
+        Assert.AreEqual(new WorkerRequest(new Woodcutter(), new Good(3)), Asked.Single().Request);
+
+        Asked.Clear();
+        bench.Map.At(7, 5).Height = 3;
+        pass.Turn(site);
+        Assert.AreEqual(new WorkerRequest(new Sawmiller(), new Good(4)), Asked.Single().Request);
+    }
+
+    private sealed class OtherSiteRules(JobParts parts) : JobRules<Digger>(parts)
+    {
+        public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
+            stage == SiteStage.Building ? new WorkerRequest(new Forester(), new Good(5)) : null;
+    }
+
+    [TestMethod]
+    public void TwoModulesThatNameTheWorkerOfOneStageRefuseTheAskNamingBoth()
+    {
+        var parts = new JobParts(null!, null!, null!, null!, null!, null!, null!);
+        var modules = new JobRules[] { new SiteRules(parts), new OtherSiteRules(parts) };
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0, modules: modules);
+        Uneven(bench, node: 3);
+
+        var refusal = Assert.ThrowsExactly<InvalidOperationException>(() => pass.Turn(site));
+
+        StringAssert.Contains(refusal.Message, nameof(SiteRules));
+        StringAssert.Contains(refusal.Message, nameof(OtherSiteRules));
+        StringAssert.Contains(refusal.Message, nameof(SiteStage.Building));
+    }
+
+    [TestMethod]
+    public void ASiteAsksForNoWorkerWhereNoModuleNamesOneForItsStage()
+    {
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0, modules: []);
+        Uneven(bench);
+
+        pass.Turn(site);
+        bench.Map.At(7, 5).Height = 3;
+        pass.Turn(site);
+
+        Assert.AreEqual(0, Asked.Count);
     }
 
     [TestMethod]
@@ -225,6 +293,6 @@ public sealed class SitePassTests
 
         pass.Turn(site);
 
-        Assert.IsTrue(Asked.TrueForAll(asked => asked.Request.Job != Job.Digger));
+        Assert.IsTrue(Asked.TrueForAll(asked => asked.Request.Job != new Digger()));
     }
 }

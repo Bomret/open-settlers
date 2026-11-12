@@ -20,7 +20,7 @@ public sealed class RemovalLogicTests
         classes[1] = 3;
         classes[2] = 4;
         var kinds = Enumerable.Repeat((byte)0xff, RuleTables.GoodKindCount).ToArray();
-        kinds[WoodcutterBehavior.GoodLog] = 1;
+        kinds[WoodcutterRules.GoodLog] = 1;
 
         return new RuleTables(
             classes,
@@ -175,7 +175,7 @@ public sealed class RemovalLogicTests
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 18, 6));
 
         var states = game
-            .Settlers.Where(settler => settler.Job == Job.Carrier)
+            .Settlers.Where(settler => settler.Job == new Carrier())
             .Select(settler => settler.Activity.Code)
             .Order()
             .ToArray();
@@ -197,7 +197,7 @@ public sealed class RemovalLogicTests
         var game = World();
         Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
         var lost = game.Flags.Count - 1;
-        game.Goods.LayGood(lost, 0, WoodcutterBehavior.GoodLog, destination: 3);
+        game.Goods.LayGood(lost, 0, WoodcutterRules.GoodLog, destination: 3);
         var hut = game.Buildings[1];
         Assert.AreEqual(0, hut.FillHigh);
 
@@ -214,12 +214,12 @@ public sealed class RemovalLogicTests
         const int board = 1;
         const int way = 0;
         var ranks = new byte[StartStock.Goods];
-        ranks[WoodcutterBehavior.GoodLog - 1] = 5;
+        ranks[WoodcutterRules.GoodLog - 1] = 5;
         ranks[stone - 1] = 9;
         ranks[board - 1] = 2;
         var game = World(transportPriorities: ranks);
         game.Goods.LayGood(1, 0, board, way: way);
-        game.Goods.LayGood(1, 1, WoodcutterBehavior.GoodLog, way: way);
+        game.Goods.LayGood(1, 1, WoodcutterRules.GoodLog, way: way);
         game.Goods.LayGood(1, 2, stone, way: way);
         game.Goods.LayGood(1, 5, board, destination: 3, way: way);
         game.Goods.WaitForRoad(1, way, 5);
@@ -295,7 +295,7 @@ public sealed class RemovalLogicTests
         foreach (var (x, y) in new[] { (13, 4), (13, 7), (14, 8) })
         {
             Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, x, y));
-            game.Goods.LayGood(game.Flags.Count - 1, 0, WoodcutterBehavior.GoodLog);
+            game.Goods.LayGood(game.Flags.Count - 1, 0, WoodcutterRules.GoodLog);
         }
 
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));

@@ -78,6 +78,8 @@ public sealed class ObjectGraphics
                 ObjectSprites.SawmillEntry,
                 ObjectSprites.SiteLargeEntry,
                 ObjectSprites.SiteSmallEntry,
+                ObjectSprites.ScaffoldSmallEntry,
+                ObjectSprites.ScaffoldLargeEntry,
             ],
             "the building's sprite"
         );
@@ -96,6 +98,8 @@ public sealed class ObjectGraphics
             .Append(ObjectSprites.SawmillEntry)
             .Append(ObjectSprites.SiteLargeEntry)
             .Append(ObjectSprites.SiteSmallEntry)
+            .Append(ObjectSprites.ScaffoldSmallEntry)
+            .Append(ObjectSprites.ScaffoldLargeEntry)
             .Concat(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1));
         foreach (var entry in shadowed.Where(entry => Holds(entry + ShadowOffset)))
         {

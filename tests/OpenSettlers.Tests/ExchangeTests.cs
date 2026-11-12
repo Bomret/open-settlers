@@ -30,7 +30,7 @@ public sealed class ExchangeTests
         bench.Settlers[
             bench.Place(
                 new Settler(
-                    Job.Carrier,
+                    new Carrier(),
                     0,
                     0,
                     0,

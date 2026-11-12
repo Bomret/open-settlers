@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
@@ -64,7 +66,7 @@ public abstract record FastForwardStep : PlayStep
 /// </summary>
 public sealed record FastForwardJobStep : FastForwardStep
 {
-    /// <summary>The job to watch: <see cref="Domain.Job.Woodcutter"/> or <see cref="Domain.Job.Carrier"/>.</summary>
+    /// <summary>The job to watch: a job the name table names (<see cref="Named"/>).</summary>
     public required Job Job { get; init; }
 
     /// <summary>
@@ -74,17 +76,23 @@ public sealed record FastForwardJobStep : FastForwardStep
     public int? State { get; init; }
 
     /// <summary>
-    /// Whether the settler carries a good. A carrier does while it walks its road with a good in its hands. A woodcutter
-    /// does on the way back from the tree, the log the hut's flag takes on arrival.
+    /// The job the name table names <paramref name="name"/>, found by trying each job number through
+    /// <see cref="Domain.Job.Of"/>; null for a name the table does not hold. Each name stands for one job (ADR 0010).
     /// </summary>
-    public static bool Carries(Settler settler) =>
-        settler.Job switch
+    public static Job? Named(string name)
+    {
+        for (var code = 0; code < 256; code++)
         {
-            var job when job == Domain.Job.Carrier => settler.Activity is WalksRoad { Load.Good.IsNone: false },
-            var job when job == Domain.Job.Woodcutter => settler.Activity
-                is WalksFree { Trip.Purpose: BackToHut { Carrying: true } },
-            _ => false,
-        };
+            if (Simulation.NameTable.JobName(code) == name)
+                return Domain.Job.Of(code);
+        }
+
+        return null;
+    }
+
+    /// <summary>The job names the name table holds, in job-number order.</summary>
+    public static IEnumerable<string> Names() =>
+        Enumerable.Range(0, 256).Select(Simulation.NameTable.JobName).OfType<string>().Distinct();
 
     /// <summary>Whether some settler of the job meets the condition; reads the game alone and builds no state.</summary>
     public override bool Holds(Game game, Func<bool, PlayState> state)
@@ -93,7 +101,7 @@ public sealed record FastForwardJobStep : FastForwardStep
         {
             // The raw-code boundary: a play script writes the original's state numbers, so State is compared with the
             // activity's original state code.
-            if (settler.Job == Job && (State is { } code ? settler.Activity.Code == code : Carries(settler)))
+            if (settler.Job == Job && (State is { } code ? settler.Activity.Code == code : settler.Activity.Carries))
                 return true;
         }
 

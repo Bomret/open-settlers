@@ -32,7 +32,14 @@ public sealed class BuildingSiteTests
             needs[2 * type.Code + 1] = (byte)(type == BuildingType.Sawmill ? 2 : 0);
         }
 
-        return new RuleTables(classes, TestProgram.Made().StartStock, buildingSizes: sizes, buildingNeeds: needs);
+        return new RuleTables(
+            classes,
+            TestProgram.Made().StartStock,
+            buildingSizes: sizes,
+            buildingNeeds: needs,
+            workers: TestProgram.MadeWorkers(),
+            jobData: TestProgram.MadeJobData()
+        );
     }
 
     private static Game World()

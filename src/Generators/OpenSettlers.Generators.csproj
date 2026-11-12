@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Roslyn loads a generator into the compiler, which needs netstandard2.0. Every other project references this one
+         as an analyzer and not as an assembly (ADR 0016, INV-0008): the generator is no run-time dependency. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <!-- The rules ship in no package, so release tracking has nothing to track. -->
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+    <RootNamespace>OpenSettlers.Generators</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

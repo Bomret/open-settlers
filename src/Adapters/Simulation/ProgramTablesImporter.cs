@@ -62,6 +62,9 @@ public static class ProgramTablesImporter
     /// <summary>The bytes of the stub of one job.</summary>
     public const int JobStubSize = 8;
 
+    /// <summary>The number of job numbers, 0 to 31 (byte 0 of the settler's item, bits 2 to 6).</summary>
+    public const int JobNumbers = 32;
+
     /// <summary>The handler of the woodcutter's figure (<c>0x43fb6b</c>, the target of the stub of job 5).</summary>
     public const int WoodcutterHandlerAddress = 0x43fb6b;
 
@@ -256,7 +259,13 @@ public static class ProgramTablesImporter
     /// Reads the tables from the bytes of <c>Siedler1.exe</c>. Throws <see cref="InvalidDataException"/> when the
     /// bytes are no executable or a table lies outside the data the file holds.
     /// </summary>
-    public static RuleTables Import(byte[] exe)
+    public static RuleTables Import(byte[] exe) => Import(exe, JobTablesRegistry.Modules());
+
+    /// <summary>
+    /// Reads the tables as <see cref="Import(byte[])"/> does, with the job data read by <paramref name="modules"/>: the data of a job
+    /// whose module is absent is unread, and reading it is an error (<see cref="RuleTables.Get{T}"/>).
+    /// </summary>
+    internal static RuleTables Import(byte[] exe, IReadOnlyList<IJobTables> modules)
     {
         var classes = Slice(exe, ClassTableAddress, RuleTables.ClassCount);
         var startStock = new byte[RuleTables.StartStockRows][];
@@ -281,9 +290,7 @@ public static class ProgramTablesImporter
             Slice(exe, GoodKindAddress, RuleTables.GoodKindCount),
             Slice(exe, RoadCapacityAddress, RuleTables.RoadCapacityCount),
             TransportPriorityRanks(exe),
-            WoodcutterAdds(exe),
             [.. Slice(exe, FrameRowAddress, RuleTables.FrameRowCount).Select(row => (sbyte)row)],
-            TypeOneHutAdds(exe),
             Words(Slice(exe, IdlePhaseAddress, 2 * RuleTables.IdlePhaseCount)),
             Words(Slice(exe, IdleFigureAddress, 2 * RuleTables.IdleFigureCount)),
             [.. Slice(exe, IdleOffsetAddress, RuleTables.IdleOffsetCount).Select(offset => (sbyte)offset)],
@@ -293,78 +300,61 @@ public static class ProgramTablesImporter
             [.. DistributionAddresses.Select(address => DistributionOrder(exe, address))],
             PlankRankBase(exe),
             Workers(exe),
-            WorkerRequest(exe, BuilderRequestAddress),
             [.. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
-            BuilderAdds(exe),
-            StonecutterAdds(exe),
-            ForesterAdds(exe),
-            WorkerRequest(exe, DiggerRequestAddress),
-            DiggerAdds(exe),
-            SawmillerAdds(exe)
+            JobData(exe, modules)
         );
     }
 
-    // The sawmiller's adds from the immediates of his handler, as the digger's are read: the stub of job 6 must jump to the handler.
-    private static SawmillerFigureAdds SawmillerAdds(byte[] exe)
+    // What each job owns, read by its tables module (JobTablesRegistry, written by the generator from the modules). The draw routine
+    // must load the figure tables the adds are read for, else the program is not the one the rules were read from and the figures
+    // would be wrong.
+    private static List<(Job Job, object Data)> JobData(byte[] exe, IReadOnlyList<IJobTables> modules)
     {
-        var stub = JobStubAddress + JobStubSize * Job.SawmillerCode;
         Expect(
             exe,
-            stub,
-            [0xe9, .. BitConverter.GetBytes(SawmillerHandlerAddress - (stub + 5))],
-            "jumps to the sawmiller's handler"
+            FigureBaseLoadAddress,
+            [0x8d, 0x35, .. BitConverter.GetBytes(FigureBaseAddress)],
+            "loads the figure bases"
         );
+        Expect(
+            exe,
+            FigureOffsetLoadAddress,
+            [0x8d, 0x35, .. BitConverter.GetBytes(FigureOffsetAddress)],
+            "loads the figure offsets"
+        );
+        var data = new List<(Job Job, object Data)>();
+        foreach (var module in modules)
+        {
+            module.Read(exe, data);
+        }
 
-        return new SawmillerFigureAdds(
-            Immediate(exe, SawmillerWalkAddress),
-            Immediate(exe, SawmillerCarryingAddress),
-            Immediate(exe, SawmillerSawAddress)
-        );
+        // A job's data that no module read is no default: each job type declares the data it owns (Job.Data), and the install is
+        // refused where a module left one unread.
+        foreach (var job in Enumerable.Range(0, JobNumbers).Select(Job.Of))
+        {
+            foreach (var type in job.Data)
+            {
+                if (!data.Any(entry => entry.Job.Equals(job) && entry.Data.GetType() == type))
+                {
+                    throw new InvalidDataException(
+                        $"Siedler1.exe holds no job data as expected: no tables module read the {type.Name} of the job {job.GetType().Name}."
+                    );
+                }
+            }
+        }
+
+        return data;
     }
 
-    // The forester's adds from the immediates of his handler: the stub of job 8 must jump to it.
-    private static ForesterFigureAdds ForesterAdds(byte[] exe)
+    /// <summary>
+    /// Expects the stub of <paramref name="job"/> in the table of the figure handlers (<see cref="JobStubAddress"/>) to jump to
+    /// <paramref name="handler"/>, else the program is not the one the job's adds were read from.
+    /// </summary>
+    internal static void ExpectStub(byte[] exe, Job job, int handler, string what)
     {
-        var stub = JobStubAddress + JobStubSize * Job.ForesterCode;
-        Expect(
-            exe,
-            stub,
-            [0xe9, .. BitConverter.GetBytes(ForesterHandlerAddress - (stub + 5))],
-            "jumps to the forester's handler"
-        );
-
-        return new ForesterFigureAdds(Immediate(exe, ForesterWalkAddress), Immediate(exe, ForesterWorkAddress));
-    }
-
-    // The digger's adds from the immediates of his handler, as the builder's are read: the stub of job 2 must jump to the handler. Every
-    // frame of his work is below 0x80, so the walk's add is the one he is drawn by.
-    private static FigureAdds DiggerAdds(byte[] exe)
-    {
-        var stub = JobStubAddress + JobStubSize * Job.DiggerCode;
-        Expect(
-            exe,
-            stub,
-            [0xe9, .. BitConverter.GetBytes(DiggerHandlerAddress - (stub + 5))],
-            "jumps to the digger's handler"
-        );
-        var walk = Immediate(exe, DiggerWalkAddress);
-
-        return new FigureAdds(walk, walk, Immediate(exe, DiggerHighAddress));
-    }
-
-    // The builder's adds from the immediates of his handler, as the woodcutter's are read: the stub of job 3 must jump to the handler.
-    private static BuilderFigureAdds BuilderAdds(byte[] exe)
-    {
-        var stub = JobStubAddress + JobStubSize * Job.BuilderCode;
-        Expect(
-            exe,
-            stub,
-            [0xe9, .. BitConverter.GetBytes(BuilderHandlerAddress - (stub + 5))],
-            "jumps to the builder's handler"
-        );
-
-        return new BuilderFigureAdds(Immediate(exe, BuilderWalkAddress), Immediate(exe, BuilderWorkAddress));
+        var stub = JobStubAddress + JobStubSize * job.Code;
+        Expect(exe, stub, [0xe9, .. BitConverter.GetBytes(handler - (stub + 5))], what);
     }
 
     // The worker each of the four types asks for, from the instructions of its handler.
@@ -380,7 +370,7 @@ public static class ProgramTablesImporter
     }
 
     // A request for a worker: mov eax, job; mov [edi], eax; mov eax, tool; mov [edi+0x18], eax. The tool word halved is the good.
-    private static WorkerRequest WorkerRequest(byte[] exe, int address)
+    internal static WorkerRequest WorkerRequest(byte[] exe, int address)
     {
         var code = Slice(exe, address, 15);
         if (
@@ -395,7 +385,7 @@ public static class ProgramTablesImporter
             );
         }
 
-        return new WorkerRequest(new Job(code[1]), new Good(BitConverter.ToInt32(code, 8) / 2));
+        return new WorkerRequest(Job.Of(code[1]), new Good(BitConverter.ToInt32(code, 8) / 2));
     }
 
     // The request word a flag item offset names: 0x42 is the first word, 0x44 the second (the class table's second byte takes the
@@ -462,92 +452,14 @@ public static class ProgramTablesImporter
         return Slice(exe, PlankRankAddress + 2, 2)[1];
     }
 
-    // The woodcutter's adds from the immediates of his handler. The draw routine must load the tables read here, and the
-    // stub of the job must jump to the handler, else the program is not the one the rule was read from and the figures
-    // would be wrong.
-    private static FigureAdds WoodcutterAdds(byte[] exe)
-    {
-        Expect(
-            exe,
-            FigureBaseLoadAddress,
-            [0x8d, 0x35, .. BitConverter.GetBytes(FigureBaseAddress)],
-            "loads the figure bases"
-        );
-        Expect(
-            exe,
-            FigureOffsetLoadAddress,
-            [0x8d, 0x35, .. BitConverter.GetBytes(FigureOffsetAddress)],
-            "loads the figure offsets"
-        );
-        var stub = JobStubAddress + JobStubSize * Job.Woodcutter.Code;
-        Expect(
-            exe,
-            stub,
-            [0xe9, .. BitConverter.GetBytes(WoodcutterHandlerAddress - (stub + 5))],
-            "jumps to the woodcutter's handler"
-        );
-
-        return new FigureAdds(
-            Immediate(exe, WoodcutterWalkAddress),
-            Immediate(exe, WoodcutterCarryingAddress),
-            Immediate(exe, WoodcutterCuttingAddress)
-        );
-    }
-
-    // The stonecutter's adds, read as the woodcutter's are: the stub of job 7 must jump to his handler, and the add of his step
-    // back off the heap must be the add of his way back with the stone.
-    private static FigureAdds StonecutterAdds(byte[] exe)
-    {
-        var stub = JobStubAddress + JobStubSize * Job.StonecutterCode;
-        Expect(
-            exe,
-            stub,
-            [0xe9, .. BitConverter.GetBytes(StonecutterHandlerAddress - (stub + 5))],
-            "jumps to the stonecutter's handler"
-        );
-        var carrying = Immediate(exe, StonecutterCarryingAddress);
-        if (Immediate(exe, StonecutterStepBackAddress) != carrying)
-        {
-            throw new InvalidDataException(
-                "Siedler1.exe holds no figure routine as expected: the stonecutter's step back no longer adds what his way back with the stone adds."
-            );
-        }
-
-        return new FigureAdds(
-            Immediate(exe, StonecutterWalkAddress),
-            carrying,
-            Immediate(exe, StonecutterCuttingAddress)
-        );
-    }
-
-    // The adds of the handler of the settler of the type 1 hut, read as the woodcutter's are: the stub of job 11 must jump
-    // to the handler.
-    private static HutFigureAdds TypeOneHutAdds(byte[] exe)
-    {
-        var stub = JobStubAddress + JobStubSize * RuleTables.TypeOneHutJob;
-        Expect(
-            exe,
-            stub,
-            [0xe9, .. BitConverter.GetBytes(TypeOneHutHandlerAddress - (stub + 5))],
-            "jumps to the handler of the settler of the type 1 hut"
-        );
-
-        return new HutFigureAdds(
-            Immediate(exe, TypeOneHutWalkAddress),
-            Immediate(exe, TypeOneHutCarryingAddress),
-            Immediate(exe, TypeOneHutHighAddress),
-            Immediate(exe, TypeOneHutHighFacingAddress)
-        );
-    }
-
-    private static ushort Immediate(byte[] exe, int address)
+    internal static ushort Immediate(byte[] exe, int address)
     {
         Expect(exe, address, AddFigureWord, "adds to the figure word");
 
         return BitConverter.ToUInt16(Slice(exe, address + AddFigureWord.Length, 2));
     }
 
-    private static void Expect(byte[] exe, int address, byte[] code, string what)
+    internal static void Expect(byte[] exe, int address, byte[] code, string what)
     {
         if (!Slice(exe, address, code.Length).SequenceEqual(code))
         {

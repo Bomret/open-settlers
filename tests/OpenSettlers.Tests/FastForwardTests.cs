@@ -35,7 +35,7 @@ public sealed class FastForwardTests
         return script.Problems.Single();
     }
 
-    static bool Cutting(Game game) => game.Settlers.Any(s => s is { Job.Code: Job.WoodcutterCode, Activity: Cuts });
+    static bool Cutting(Game game) => game.Settlers.Any(s => s is { Job.Code: Woodcutter.Number, Activity: Cuts });
 
     // The tick the woodcutter first cuts at, found on a game of its own.
     static long FirstCut()
@@ -56,7 +56,7 @@ public sealed class FastForwardTests
             new FastForwardJobStep
             {
                 Line = 2,
-                Job = Job.Woodcutter,
+                Job = new Woodcutter(),
                 State = 0x11,
                 MaxTicks = 5000,
                 Text = "fast-forward woodcutter state 0x11 max 5000",
@@ -74,13 +74,142 @@ public sealed class FastForwardTests
             new FastForwardJobStep
             {
                 Line = 1,
-                Job = Job.Carrier,
+                Job = new Carrier(),
                 State = null,
                 MaxTicks = 7,
                 Text = "fast-forward carrier carrying max 7",
             },
             step
         );
+    }
+
+    [TestMethod]
+    public void ABuilderStateStepParsesAndAStonecutterCarryingStepParses()
+    {
+        Assert.AreEqual(new Builder(), ((FastForwardJobStep)Step("fast-forward builder state 9 max 10")).Job);
+        Assert.AreEqual(9, ((FastForwardJobStep)Step("fast-forward builder state 9 max 10")).State);
+
+        var carrying = (FastForwardJobStep)Step("fast-forward stonecutter carrying max 10");
+
+        Assert.AreEqual(new Stonecutter(), carrying.Job);
+        Assert.IsNull(carrying.State);
+    }
+
+    [TestMethod]
+    public void AJobNameTheTableHoldsStandsForItsJob()
+    {
+        var expected = new (string Name, Job Job)[]
+        {
+            ("carrier", new Carrier()),
+            ("digger", new Digger()),
+            ("builder", new Builder()),
+            ("woodcutter", new Woodcutter()),
+            ("stonecutter", new Stonecutter()),
+            ("forester", new Forester()),
+        };
+
+        foreach (var (name, job) in expected)
+            Assert.AreEqual(job, ((FastForwardJobStep)Step($"fast-forward {name} state 1 max 1")).Job, name);
+    }
+
+    static bool CarriesAStone(Game game) =>
+        game.Settlers.Any(s =>
+            s.Job == new Stonecutter() && s.Activity is WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
+        );
+
+    // Ticks the reference game until the state holds, and fails where it does not within the ticks the step under test is given.
+    static void TickUntil(Game reference, System.Func<Game, bool> holds, int max, string what)
+    {
+        for (var tick = 0; !holds(reference); tick++)
+        {
+            if (tick == max)
+                Assert.Fail($"the reference game did not reach {what} in {max} ticks");
+
+            reference.Tick();
+        }
+    }
+
+    [TestMethod]
+    public void AStonecutterCarriesTheStoneOnTheWayBackToTheHut()
+    {
+        var reference = StonecuttingTests.World(0x4d, out _);
+        TickUntil(reference, CarriesAStone, 6000, "a stonecutter carrying a stone");
+        var game = StonecuttingTests.World(0x4d, out _);
+
+        var problem = Step("fast-forward stonecutter carrying max 6000").Run(game, Unread);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(reference.TickCount, game.TickCount);
+        Assert.IsTrue(CarriesAStone(game));
+    }
+
+    // The sawmiller holds the plank from the tick he stops sawing: in the door (state 0xb) where the flag has no room, and on the
+    // step out of it (state 5 before 0xd).
+    static bool CarriesAPlank(Game game) =>
+        game.Settlers.Any(s =>
+            s.Job == new Sawmiller() && s.Activity is StepsOutWithGood or WaitsOutStep { Then: PutsDownGood }
+        );
+
+    // A sawmill with a log laid at the castle's flag, its sawmiller waiting inside (SawmillTests' world).
+    static Game SawmillWithALog()
+    {
+        var (game, _) = SawmillTests.World();
+        SawmillTests.SawmillerInside(game);
+        game.Goods.LayGood(0, 0, Good.Log.Code);
+
+        return game;
+    }
+
+    [TestMethod]
+    public void ASawmillerCarriesThePlankOutOfTheSawmill()
+    {
+        var reference = SawmillWithALog();
+        TickUntil(reference, CarriesAPlank, 12000, "a sawmiller carrying a plank");
+        var game = SawmillWithALog();
+
+        var problem = Step("fast-forward sawmiller carrying max 12000").Run(game, Unread);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(reference.TickCount, game.TickCount);
+        Assert.IsTrue(CarriesAPlank(game));
+    }
+
+    [TestMethod]
+    public void ABuilderIsInStateNineAtTheFirstTickItBuilds()
+    {
+        static bool Builds(Game game) => game.Settlers.Any(s => s.Job == new Builder() && s.Activity.Code == 9);
+        var (reference, _) = BuilderTests.World();
+        TickUntil(reference, Builds, 3000, "a builder in state 9");
+        var (game, _) = BuilderTests.World();
+
+        var problem = Step("fast-forward builder state 9 max 3000").Run(game, Unread);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(reference.TickCount, game.TickCount);
+        Assert.IsTrue(Builds(game));
+    }
+
+    [TestMethod]
+    public void AnUnknownJobNameIsRefusedWithTheNamesTheTableHolds()
+    {
+        var problem = Problem("fast-forward miller state 1 max 5");
+
+        Assert.StartsWith("play/t.play line 1: 'miller' is not a job name, use ", problem);
+        foreach (var name in new[] { "carrier", "digger", "builder", "woodcutter", "stonecutter", "forester" })
+            Assert.Contains(name, problem);
+    }
+
+    [TestMethod]
+    public void OnlyACarriersLoadedRoadWalkAndAFreeWalkBackCarryingCarryAGood()
+    {
+        var road = new Heading();
+        var load = new Load(Good.Log, 0);
+        Assert.IsTrue(new WalksRoad(load, road).Carries);
+        Assert.IsFalse(new WalksRoad(null, road).Carries);
+        Assert.IsFalse(new WalksRoad(new Load(Good.None, 0), road).Carries);
+        Assert.IsTrue(new WalksFree(new Trip(default, new BackToHut(true))).Carries);
+        Assert.IsFalse(new WalksFree(new Trip(default, new BackToHut(false))).Carries);
+        Assert.IsFalse(new WaitsInCastle().Carries);
     }
 
     [TestMethod]
@@ -144,7 +273,6 @@ public sealed class FastForwardTests
     }
 
     [TestMethod]
-    [DataRow("fast-forward baker state 1 max 5", "'baker' is not woodcutter or carrier")]
     [DataRow("fast-forward woodcutter state zz max 5", "'zz' is not a whole number of zero or more")]
     [DataRow("fast-forward woodcutter state -1 max 5", "'-1' is not a whole number of zero or more")]
     [DataRow("fast-forward woodcutter state 0x max 5", "'0x' is not a whole number of zero or more")]
@@ -218,7 +346,7 @@ public sealed class FastForwardTests
 
         Assert.IsNull(problem);
         Assert.IsTrue(
-            game.Settlers.Any(s => s is { Job.Code: Job.CarrierCode, Activity: WalksRoad { Load: not null } })
+            game.Settlers.Any(s => s is { Job.Code: Carrier.Number, Activity: WalksRoad { Load: not null } })
         );
     }
 

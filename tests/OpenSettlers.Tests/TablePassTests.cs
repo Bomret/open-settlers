@@ -15,7 +15,7 @@ public sealed class TablePassTests
         var table = new SettlerTable();
         for (var slot = 0; slot < count; slot++)
         {
-            table.Add(new Settler(Job.Carrier, 0, 0, 0, 0, slot % 2 == 0 ? new WaitsInCastle() : new BuildsCastle()));
+            table.Add(new Settler(new Carrier(), 0, 0, 0, 0, slot % 2 == 0 ? new WaitsInCastle() : new BuildsCastle()));
         }
 
         return table;

@@ -28,13 +28,13 @@ public sealed class CastleRoster(
     // byte 0 of the original's item shifted right by 2.
     private static readonly Job[] CastleJobs =
     [
-        .. new[] { 4, 21, 21, 21, 21, 21, 22, 22, 22, 18, 5, 6, 7, 2, 3, 11, 20, 20, 9, 9 }.Select(code => new Job(
-            code
-        )),
+        .. new[] { 4, 21, 21, 21, 21, 21, 22, 22, 22, 18, 5, 6, 7, 2, 3, 11, 20, 20, 9, 9 }.Select(code =>
+            Job.Of(code)
+        ),
     ];
 
     // The job whose waiting settler's turn in the castle takes another branch (not ported): the original's job 10.
-    private static readonly Job UnportedWaitingJob = new(10);
+    private static readonly Job UnportedWaitingJob = Job.Of(10);
 
     // The number of jobs the castle's list of waiting settlers has an entry for (0x42 + 2 times the job, up to 0x82).
     private const int JobCount = 32;
@@ -68,7 +68,7 @@ public sealed class CastleRoster(
 
     /// <summary>The castle's list of waiting settlers, by job: the slot of the settler that waits there, 0 for none.</summary>
     public IReadOnlyList<ushort> WaitingList =>
-        [.. Enumerable.Range(0, JobCount).Select(code => _waiting.GetValueOrDefault(new Job(code)))];
+        [.. Enumerable.Range(0, JobCount).Select(code => _waiting.GetValueOrDefault(Job.Of(code)))];
 
     /// <summary>The settlers a request has sent out that have not left the castle yet (word at 0x4a of the storage item).</summary>
     public int LeavingCount { get; private set; }
@@ -144,14 +144,7 @@ public sealed class CastleRoster(
         foreach (var job in CastleJobs)
         {
             settlers.Add(
-                new Settler(
-                    job,
-                    0,
-                    x,
-                    y,
-                    clock.Now,
-                    job == Job.CastleSettler ? new BuildsCastle() : new WaitsInCastle()
-                )
+                new Settler(job, 0, x, y, clock.Now, job is CastleSettler ? new BuildsCastle() : new WaitsInCastle())
             );
             history.FillSettler(settlers.Count - 1);
         }
@@ -202,7 +195,7 @@ public sealed class CastleRoster(
             return false;
         }
 
-        var jobless = Entry(Job.Jobless);
+        var jobless = Entry(new Jobless());
         var made = Entry(job) == 0;
         if (made && (jobless == 0 || (!request.Tool.IsNone && stock.Count(request.Tool) == 0)))
         {
@@ -211,10 +204,10 @@ public sealed class CastleRoster(
 
         var slot = made ? jobless : Entry(job);
         var settler = settlers[slot];
-        Entry(made ? Job.Jobless : job) = 0;
+        Entry(made ? new Jobless() : job) = 0;
         if (made)
         {
-            settler.Job = job;
+            settler.TakeUp(job);
             stock.Take(request.Tool);
         }
 
@@ -274,7 +267,7 @@ public sealed class CastleRoster(
                     if (draws.Draw() < PromotionLimits[level])
                     {
                         Entry(settler.Job) = 0;
-                        settler.Job = settler.Job.Promoted;
+                        settler.TakeUp(settler.Job.Promoted);
                         settler.Timer = KnightTimerStep;
                         break;
                     }
