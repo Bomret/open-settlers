@@ -43,6 +43,27 @@ public sealed class AssetBrowserStateTests
     }
 
     [TestMethod]
+    public void TwoKindsOfOneNameOpenTheBrowserOnAMessageThatNamesIt()
+    {
+        using var fake = new FakeInstall();
+
+        var state = Open(fake, new ListedKind("text"), new ListedKind("text"));
+
+        StringAssert.Contains(state.Message, "\"text\"");
+        Assert.IsEmpty(state.Categories);
+    }
+
+    [TestMethod]
+    public void KindsOfUniqueNamesOpenTheBrowserWithNoMessage()
+    {
+        using var fake = new FakeInstall();
+
+        var state = Open(fake, new ListedKind("text"), new ListedKind("palette"));
+
+        Assert.IsNull(state.Message);
+    }
+
+    [TestMethod]
     public void AFolderWithoutTheProgramShowsTheMessageToo()
     {
         using var fake = new FakeInstall(withProgram: false);
