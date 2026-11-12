@@ -290,7 +290,7 @@ public sealed class WalkBehavior(
 
     // The refusal for a node with no building that stands a worker. It names the jobs whose modules let their settler stand in the hut:
     // "no finished woodcutter's, stonecutter's, or forester's building stands on the node" for three, "a's or b's" for two, "a's" for
-    // one, and no job for none. The names are in descending ordinal order, which gives today's order of the three.
+    // one, and no job for none. The names are in descending ordinal order, so three names read woodcutter, stonecutter, forester.
     internal static string NoHutRefusal(IEnumerable<JobRules> modules)
     {
         var names = modules

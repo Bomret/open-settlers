@@ -268,6 +268,8 @@ public sealed class JobLooksGeneratorTests
         );
 
         CollectionAssert.AreEqual(new[] { "LOOK004", "LOOK004" }, diagnostics.Select(d => d.Id).ToArray());
+        StringAssert.Contains(diagnostics[0].GetMessage(), "DeepLook");
+        StringAssert.Contains(diagnostics[1].GetMessage(), "DeepKey");
         Assert.IsFalse(text.Contains("Deep"));
     }
 
