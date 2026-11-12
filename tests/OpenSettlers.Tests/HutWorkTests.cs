@@ -93,7 +93,7 @@ public sealed class HutWorkTests
     {
         var (bench, behaviour, laid, causes, parts) = Hut(0);
         var registry = Registry(bench, behaviour, parts, causes);
-        var woodcutter = new Settler(Job.Woodcutter, 0, HutX, HutY, 0, new LooksForTree());
+        var woodcutter = new Settler(new Woodcutter(), 0, HutX, HutY, 0, new LooksForTree());
         var slot = bench.Place(woodcutter);
 
         for (var turn = 0; turn < 500 && !(laid.Count > 0 && woodcutter.Activity is Door); turn++)
@@ -113,7 +113,7 @@ public sealed class HutWorkTests
     {
         var (bench, behaviour, _, causes, parts) = Hut(0);
         var registry = Registry(bench, behaviour, parts, causes);
-        var woodcutter = new Settler(Job.Woodcutter, 0, HutX, HutY, 0, new LooksForTree());
+        var woodcutter = new Settler(new Woodcutter(), 0, HutX, HutY, 0, new LooksForTree());
         var slot = bench.Place(woodcutter);
 
         for (var turn = 0; turn < 500 && woodcutter.Activity is not WalksFree { Trip.Purpose: BackToHut }; turn++)

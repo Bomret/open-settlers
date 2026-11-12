@@ -18,7 +18,7 @@ public sealed class WalkHomeBehaviorTests
             route ?? ((_, _) => -1)
         );
 
-    private static Settler Walker(int x, int y, Activity activity) => new(Job.Woodcutter, 0, x, y, 0, activity);
+    private static Settler Walker(int x, int y, Activity activity) => new(new Woodcutter(), 0, x, y, 0, activity);
 
     [TestMethod]
     public void ASettlerClaimsItsNodeWhenNoOtherSettlerStandsThere()

@@ -111,7 +111,7 @@ public sealed class CarrierEventsTests
         Assert.AreEqual(ThingId.SettlerKind, request.Thing.Kind);
         Assert.AreEqual(Cause.Placed(game.History.FlagId(0)), request.Cause);
         Assert.AreEqual(game.History.FlagId((int)request.State.Get("target")!.Value).ToString(), request.Other);
-        Assert.AreEqual(Job.CarrierCode, request.State.Get("job"));
+        Assert.AreEqual(Carrier.Number, request.State.Get("job"));
     }
 
     [TestMethod]

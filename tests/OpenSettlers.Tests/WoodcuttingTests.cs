@@ -42,7 +42,7 @@ public sealed class WoodcuttingTests
             Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
             Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
             walkRows: rows,
-            workers: workers
+            workers: workers ?? TestProgram.MadeWorkers()
         );
     }
 

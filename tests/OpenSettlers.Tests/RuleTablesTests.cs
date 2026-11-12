@@ -10,11 +10,13 @@ namespace OpenSettlers.Tests;
 public sealed class RuleTablesTests
 {
     [TestMethod]
-    public void TheMadeUpJobDataHoldsExactlyTheRequiredJobData()
+    public void TablesGivenNoJobDataHoldNoneAndAnyJobIsAnError()
     {
-        var made = RuleTables.MadeUpJobData().Select(entry => (entry.Job, entry.Data.GetType()));
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], TestProgram.Made().StartStock);
 
-        CollectionAssert.AreEquivalent(RuleTables.RequiredJobData.ToList(), made.ToList());
+        Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<FigureAdds>(new Woodcutter()));
+        Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<BuilderFigureAdds>(Job.Of(99)));
+        Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<WorkerRequest>(new Builder()));
     }
 
     [TestMethod]
@@ -152,37 +154,43 @@ public sealed class RuleTablesTests
         var woodcutter = new FigureAdds(1, 2, 3);
         var stonecutter = new FigureAdds(4, 5, 6);
         var tables = WithJobData(
-            (Job.Woodcutter, woodcutter),
-            (Job.Stonecutter, stonecutter),
-            (Job.Digger, new FigureAdds(7, 8, 9)),
-            (Job.Digger, new WorkerRequest(Job.Digger, new Good(16))),
-            (Job.Builder, new WorkerRequest(Job.Builder, new Good(17)))
+            (new Woodcutter(), woodcutter),
+            (new Stonecutter(), stonecutter),
+            (new Digger(), new FigureAdds(7, 8, 9)),
+            (new Digger(), new WorkerRequest(new Digger(), new Good(16))),
+            (new Builder(), new WorkerRequest(new Builder(), new Good(17)))
         );
 
-        Assert.AreEqual(woodcutter, tables.Get<FigureAdds>(Job.Woodcutter));
-        Assert.AreEqual(stonecutter, tables.Get<FigureAdds>(Job.Stonecutter));
-        Assert.AreEqual(new FigureAdds(7, 8, 9), tables.Get<FigureAdds>(Job.Digger));
-        Assert.AreEqual(new WorkerRequest(Job.Digger, new Good(16)), tables.Get<WorkerRequest>(Job.Digger));
-        Assert.AreEqual(new WorkerRequest(Job.Builder, new Good(17)), tables.Get<WorkerRequest>(Job.Builder));
+        Assert.AreEqual(woodcutter, tables.Get<FigureAdds>(new Woodcutter()));
+        Assert.AreEqual(stonecutter, tables.Get<FigureAdds>(new Stonecutter()));
+        Assert.AreEqual(new FigureAdds(7, 8, 9), tables.Get<FigureAdds>(new Digger()));
+        Assert.AreEqual(new WorkerRequest(new Digger(), new Good(16)), tables.Get<WorkerRequest>(new Digger()));
+        Assert.AreEqual(new WorkerRequest(new Builder(), new Good(17)), tables.Get<WorkerRequest>(new Builder()));
     }
 
     [TestMethod]
     public void AJobWhoseDataTheTablesLackIsAnErrorAndNoDefault()
     {
-        var tables = WithJobData((Job.Woodcutter, new FigureAdds(1, 2, 3)));
+        var tables = WithJobData((new Woodcutter(), new FigureAdds(1, 2, 3)));
 
-        var missingJob = Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<FigureAdds>(Job.Stonecutter));
-        Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<WorkerRequest>(Job.Woodcutter));
+        var missingJob = Assert.ThrowsExactly<InvalidOperationException>(() =>
+            tables.Get<FigureAdds>(new Stonecutter())
+        );
+        Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<WorkerRequest>(new Woodcutter()));
         StringAssert.Contains(missingJob.Message, "Stonecutter");
     }
 
     [TestMethod]
-    public void TablesThatGiveNoJobDataHoldTheMadeUpDataOfEveryJob()
+    public void TheMadeUpJobDataHoldsExactlyTheDataTheJobTypesDeclare()
     {
-        var tables = TestProgram.Made();
+        var declared = TestProgram.Jobs().SelectMany(job => job.Data.Select(type => (job, type)));
+        var made = TestProgram.MadeJobData().Select(entry => (entry.Job, entry.Data.GetType()));
 
-        Assert.AreEqual(default, tables.Get<FigureAdds>(Job.Woodcutter));
-        Assert.AreEqual(new WorkerRequest(Job.Builder, Good.None), tables.Get<WorkerRequest>(Job.Builder));
-        Assert.AreEqual(new WorkerRequest(Job.Digger, Good.None), tables.Get<WorkerRequest>(Job.Digger));
+        CollectionAssert.AreEquivalent(declared.ToList(), made.ToList());
+        Assert.IsTrue(declared.Any(), "the jobs declare data");
+        Assert.AreEqual(
+            new WorkerRequest(new Builder(), Good.None),
+            TestProgram.Made().Get<WorkerRequest>(new Builder())
+        );
     }
 }

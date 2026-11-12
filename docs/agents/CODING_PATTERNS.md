@@ -25,6 +25,48 @@ The simulation is three class-library assemblies under `src/` that depend only i
 Place new code by what it does: a rule goes in the application, a type that states what a rule reads goes in the
 domain, and a conversion from or to the original's bytes goes in the adapters.
 
+## Job modules
+
+A job is a type (ADR 0016) and each layer holds its code for the job in a job module. A source generator in each
+layer finds the modules and writes the layer's registry, so no list of jobs exists and adding a job edits no shared
+file. A caller names a job by its type (`new Woodcutter()`, `is Woodcutter`), never by a static accessor or a number
+constant of `Job`. Add a job as its own files, layer by layer:
+
+1. Domain, `src/Domain/Jobs/X.cs`: `public sealed record X : Job` with `public const int Number = <n>;` (a literal) and
+   `public override int Code => Number;`. Override `ArrivesHomeGenerically` where the original's table at `0x437dfb`
+   gives the job a branch of its own. The data the original holds for the job (`FigureAdds` and its relatives, a
+   `WorkerRequest`) is a record of the domain that the rules read through `RuleTables.Get<T>(new X())`. Declare the
+   record types the job owns in `public override IReadOnlyList<Type> Data => [typeof(...)]`: the importer refuses a
+   program whose tables module leaves one unread, so a job's data is never a silent default, and a test builds the same
+   data with `TestProgram.MadeJobData()`. `Job.Of(int)` finds the job of a number and is generated from the sealed job
+   types.
+2. Application, a file of `src/Application/`: `public sealed class XRules(JobParts parts) : JobRules<X>(parts)`. Override
+   the hooks the job needs (`CanStandInHut`, `Cause`, `WorkerName`, `SiteWorker`, `Register`, `Start`, `Arrive`, `Pass`,
+   `Turn`); a hook left alone keeps the shared default. `SiteWorker` names the request a building site makes for the
+   job's worker at a `SiteStage`, so the shared site pass names no job. A job needing a part `JobParts` lacks extends `JobParts` (and the two
+   `new JobParts(...)` calls of `JobModulesTests` and `JobCoverageTests`) rather than reaching into a shared
+   behavior. `JobModules.Build(parts)` builds every module.
+3. Adapters, `src/Adapters/Simulation/Jobs/XTables.cs`: `public sealed class XTables : JobTables<X>` with `[JobName]` and
+   `[StateName]` (each carries its evidence, INV-0006) and a `Read` override that adds the job's data records from
+   `Siedler1.exe`. `JobTablesRegistry` lists the modules and `NameTable` the names.
+4. Map view: `src/MapView/HistoryEditionLooks/XLook.cs` with `XLook(RuleTables tables) : HistoryEditionLook<X>(tables)`
+   for the History Edition source and `src/MapView/OpenSettlersLooks/XKey.cs` with
+   `XKey() : OpenSettlersLook<X>("x")` for the content set (`HistoryEditionLookRegistry`, `OpenSettlersLookRegistry`).
+   A job without a look draws nothing; `JobCoverageTests` fails a job that has rules and no look under a source.
+
+A job without a module of some kind builds and keeps the shared defaults. The carrier's, the castle roster's, and the walk
+home's rules stay hand-wired core. Test doubles in the test assembly are not found by the generators: a test proves
+the generators on fixture jobs compiled through `CSharpGeneratorDriver` (`FixtureJobTests`).
+
+A malformed module fails the build with a message that names the class:
+
+| Id | Cause |
+| --- | --- |
+| `JOB001`–`JOB003` | A job type that is not sealed; two job types with one number; a job type with no `public const int Number` the generator can read. |
+| `TAB001`–`TAB006` | A tables module with no parameterless constructor; two tables modules for one job; two that name one job; two that name one state; one that names a state twice; one that names a state of the core (`CoreStateCodes`, which `NameTable` names itself). |
+| `RUL001`–`RUL002` | A rules module with no constructor that takes the `JobParts` alone; two rules modules for one job. |
+| `LOOK001`–`LOOK002` | A look with no constructor the registry can call; two looks for one job under one graphics source. |
+
 ## Typed vocabulary
 
 Rules read and write typed state: `Settler` with a `Job` and one `Activity`, `Flag` with its `FlagSide`s and

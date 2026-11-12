@@ -174,7 +174,7 @@ and `Cut`. Its `Pass` hook runs `HutWork.ObjectPass` once each pass. The stonecu
 own (`StonecutterRules`, `ForesterRules`, `TypeOneHutRules`); a job with no module starts nothing and records as the settlers' rules.
 They are built from the settlers' movement, the tables, and a random generator port (`IRandomDraws`). The woodcutter, stonecutter, and
 forester modules declare `CanStandInHut`: a layout stands a worker only in their huts.
-`Flag.Places` holds the 8 places of a flag. `Job.Woodcutter` is job 5, and `BuildingType.Woodcutter` is type 2.
+`Flag.Places` holds the 8 places of a flag. `Woodcutter` is job 5, and `BuildingType.Woodcutter` is type 2.
 
 The woodcutter's work is the activities `LooksForTree`, `StepsOntoFlag`, `WalksFree`, `Cuts`, `EntersBuilding`, and `Door`. A
 `WalksFree` carries a `Trip` whose `Purpose` is `ToTree`, `BackToHut`, or `Home`. `RuleTables.WalkRows` holds the rows of

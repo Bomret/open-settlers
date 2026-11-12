@@ -35,7 +35,7 @@ public sealed class FastForwardTests
         return script.Problems.Single();
     }
 
-    static bool Cutting(Game game) => game.Settlers.Any(s => s is { Job.Code: Job.WoodcutterCode, Activity: Cuts });
+    static bool Cutting(Game game) => game.Settlers.Any(s => s is { Job.Code: Woodcutter.Number, Activity: Cuts });
 
     // The tick the woodcutter first cuts at, found on a game of its own.
     static long FirstCut()
@@ -56,7 +56,7 @@ public sealed class FastForwardTests
             new FastForwardJobStep
             {
                 Line = 2,
-                Job = Job.Woodcutter,
+                Job = new Woodcutter(),
                 State = 0x11,
                 MaxTicks = 5000,
                 Text = "fast-forward woodcutter state 0x11 max 5000",
@@ -74,7 +74,7 @@ public sealed class FastForwardTests
             new FastForwardJobStep
             {
                 Line = 1,
-                Job = Job.Carrier,
+                Job = new Carrier(),
                 State = null,
                 MaxTicks = 7,
                 Text = "fast-forward carrier carrying max 7",
@@ -86,12 +86,12 @@ public sealed class FastForwardTests
     [TestMethod]
     public void ABuilderStateStepParsesAndAStonecutterCarryingStepParses()
     {
-        Assert.AreEqual(Job.Builder, ((FastForwardJobStep)Step("fast-forward builder state 9 max 10")).Job);
+        Assert.AreEqual(new Builder(), ((FastForwardJobStep)Step("fast-forward builder state 9 max 10")).Job);
         Assert.AreEqual(9, ((FastForwardJobStep)Step("fast-forward builder state 9 max 10")).State);
 
         var carrying = (FastForwardJobStep)Step("fast-forward stonecutter carrying max 10");
 
-        Assert.AreEqual(Job.Stonecutter, carrying.Job);
+        Assert.AreEqual(new Stonecutter(), carrying.Job);
         Assert.IsNull(carrying.State);
     }
 
@@ -100,12 +100,12 @@ public sealed class FastForwardTests
     {
         var expected = new (string Name, Job Job)[]
         {
-            ("carrier", Job.Carrier),
-            ("digger", Job.Digger),
-            ("builder", Job.Builder),
-            ("woodcutter", Job.Woodcutter),
-            ("stonecutter", Job.Stonecutter),
-            ("forester", Job.Forester),
+            ("carrier", new Carrier()),
+            ("digger", new Digger()),
+            ("builder", new Builder()),
+            ("woodcutter", new Woodcutter()),
+            ("stonecutter", new Stonecutter()),
+            ("forester", new Forester()),
         };
 
         foreach (var (name, job) in expected)
@@ -114,7 +114,7 @@ public sealed class FastForwardTests
 
     static bool CarriesAStone(Game game) =>
         game.Settlers.Any(s =>
-            s.Job == Job.Stonecutter && s.Activity is WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
+            s.Job == new Stonecutter() && s.Activity is WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
         );
 
     [TestMethod]
@@ -135,7 +135,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void ABuilderIsInStateNineAtTheFirstTickItBuilds()
     {
-        static bool Builds(Game game) => game.Settlers.Any(s => s.Job == Job.Builder && s.Activity.Code == 9);
+        static bool Builds(Game game) => game.Settlers.Any(s => s.Job == new Builder() && s.Activity.Code == 9);
         var (reference, _) = BuilderTests.World();
         while (!Builds(reference))
             reference.Tick();
@@ -305,7 +305,7 @@ public sealed class FastForwardTests
 
         Assert.IsNull(problem);
         Assert.IsTrue(
-            game.Settlers.Any(s => s is { Job.Code: Job.CarrierCode, Activity: WalksRoad { Load: not null } })
+            game.Settlers.Any(s => s is { Job.Code: Carrier.Number, Activity: WalksRoad { Load: not null } })
         );
     }
 

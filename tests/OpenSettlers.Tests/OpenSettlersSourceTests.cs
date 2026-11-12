@@ -425,9 +425,9 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/woodcutter/carries"] = ContentFolder.Entry("carries.png", "0, 0");
         var source = folder.Load();
 
-        var walks = source.Draw(Settler(Job.Woodcutter, Walking()))!.Image!;
-        var cuts = source.Draw(Settler(Job.Woodcutter, Cutting()))!.Image!;
-        var carries = source.Draw(Settler(Job.Woodcutter, Walking(), carried: new Good(7)))!.Image!;
+        var walks = source.Draw(Settler(new Woodcutter(), Walking()))!.Image!;
+        var cuts = source.Draw(Settler(new Woodcutter(), Cutting()))!.Image!;
+        var carries = source.Draw(Settler(new Woodcutter(), Walking(), carried: new Good(7)))!.Image!;
 
         Assert.AreEqual((1, 2, 3), (walks.Rgba[0], cuts.Rgba[0], carries.Rgba[0]));
     }
@@ -443,10 +443,10 @@ public sealed class OpenSettlersSourceTests
         var source = folder.Load();
 
         var withLog = source
-            .Draw(Settler(Job.Woodcutter, new WalksFree(new Trip(new Vector(2, 1), new BackToHut(true)))))!
+            .Draw(Settler(new Woodcutter(), new WalksFree(new Trip(new Vector(2, 1), new BackToHut(true)))))!
             .Image!;
         var withoutLog = source
-            .Draw(Settler(Job.Woodcutter, new WalksFree(new Trip(new Vector(2, 1), new BackToHut(false)))))!
+            .Draw(Settler(new Woodcutter(), new WalksFree(new Trip(new Vector(2, 1), new BackToHut(false)))))!
             .Image!;
 
         Assert.AreEqual((3, 1), (withLog.Rgba[0], withoutLog.Rgba[0]));
@@ -458,9 +458,9 @@ public sealed class OpenSettlersSourceTests
         using var folder = new ContentFolder();
         var source = folder.Load();
 
-        var first = source.Draw(Settler(Job.Woodcutter, Walking(new Heading(0)), frame: 7, step: 0))!.Image;
-        var other = source.Draw(Settler(Job.Woodcutter, Walking(new Heading(3)), frame: 31, step: 40))!.Image;
-        var waiting = source.Draw(Settler(Job.Woodcutter, new WaitsOutStep(Walking()), step: 5))!.Image;
+        var first = source.Draw(Settler(new Woodcutter(), Walking(new Heading(0)), frame: 7, step: 0))!.Image;
+        var other = source.Draw(Settler(new Woodcutter(), Walking(new Heading(3)), frame: 31, step: 40))!.Image;
+        var waiting = source.Draw(Settler(new Woodcutter(), new WaitsOutStep(Walking()), step: 5))!.Image;
 
         Assert.AreSame(first, other);
         Assert.AreSame(first, waiting);
@@ -472,9 +472,9 @@ public sealed class OpenSettlersSourceTests
         using var folder = new ContentFolder();
         var source = folder.Load();
 
-        Assert.IsNull(source.Draw(Settler(Job.Carrier, Walking()))!.Shadow);
-        Assert.IsNull(source.Draw(Settler(Job.Carrier, Walking(), SettlerPart.Overlay)));
-        Assert.IsNull(source.Draw(Settler(Job.Carrier, Walking(), SettlerPart.SecondFigure)));
+        Assert.IsNull(source.Draw(Settler(new Carrier(), Walking()))!.Shadow);
+        Assert.IsNull(source.Draw(Settler(new Carrier(), Walking(), SettlerPart.Overlay)));
+        Assert.IsNull(source.Draw(Settler(new Carrier(), Walking(), SettlerPart.SecondFigure)));
     }
 
     [TestMethod]
@@ -491,9 +491,9 @@ public sealed class OpenSettlersSourceTests
         var outbound = new WalksFree(new Trip(new Vector(2, 1), new ToHeap(new Vector(-2, -1))), true);
         var back = new WalksFree(new Trip(new Vector(2, 1), new BackToHut(true)));
 
-        var walks = source.Draw(Settler(Job.Stonecutter, outbound))!.Image!;
-        var cuts = source.Draw(Settler(Job.Stonecutter, new CutsStone(new Vector(0, 0), 1, 0)))!.Image!;
-        var carries = source.Draw(Settler(Job.Stonecutter, back))!.Image!;
+        var walks = source.Draw(Settler(new Stonecutter(), outbound))!.Image!;
+        var cuts = source.Draw(Settler(new Stonecutter(), new CutsStone(new Vector(0, 0), 1, 0)))!.Image!;
+        var carries = source.Draw(Settler(new Stonecutter(), back))!.Image!;
 
         Assert.AreEqual((1, 2, 3), (walks.Rgba[0], cuts.Rgba[0], carries.Rgba[0]));
     }
@@ -509,8 +509,8 @@ public sealed class OpenSettlersSourceTests
         var source = folder.Load();
         var outbound = new WalksFree(new Trip(new Vector(2, 1), new ToSpot(new Vector(-2, -1))));
 
-        var walks = source.Draw(Settler(Job.Forester, outbound))!.Image!;
-        var plants = source.Draw(Settler(Job.Forester, new Plants(new Vector(-2, -1), false, 8)))!.Image!;
+        var walks = source.Draw(Settler(new Forester(), outbound))!.Image!;
+        var plants = source.Draw(Settler(new Forester(), new Plants(new Vector(-2, -1), false, 8)))!.Image!;
 
         Assert.AreEqual((1, 2), (walks.Rgba[0], plants.Rgba[0]));
     }
@@ -520,7 +520,7 @@ public sealed class OpenSettlersSourceTests
     {
         using var folder = new ContentFolder();
 
-        Assert.IsNull(folder.Load().Draw(Settler(Job.CastleSettler, Walking())));
+        Assert.IsNull(folder.Load().Draw(Settler(new CastleSettler(), Walking())));
     }
 
     [TestMethod]
@@ -538,14 +538,14 @@ public sealed class OpenSettlersSourceTests
         var source = folder.Load();
         var jobs = new Dictionary<string, Job>
         {
-            ["carrier"] = Job.Carrier,
-            ["woodcutter"] = Job.Woodcutter,
-            ["stonecutter"] = Job.Stonecutter,
-            ["type-one-hut"] = Job.TypeOneHut,
-            ["builder"] = Job.Builder,
-            ["forester"] = Job.Forester,
-            ["digger"] = Job.Digger,
-            ["sawmiller"] = Job.Sawmiller,
+            ["carrier"] = new Carrier(),
+            ["woodcutter"] = new Woodcutter(),
+            ["stonecutter"] = new Stonecutter(),
+            ["type-one-hut"] = new TypeOneHut(),
+            ["builder"] = new Builder(),
+            ["forester"] = new Forester(),
+            ["digger"] = new Digger(),
+            ["sawmiller"] = new Sawmiller(),
         };
         Activity[] activities =
         [
@@ -580,8 +580,8 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/carrier/waits"] = ContentFolder.Entry("waits.png", "0, 0");
         var source = folder.Load();
 
-        var walks = source.Draw(Settler(Job.Carrier, Walking()))!.Image!;
-        var waits = source.Draw(Settler(Job.Carrier, new WaitsAtFlag(0, 0, new Heading(0).Retried)))!.Image!;
+        var walks = source.Draw(Settler(new Carrier(), Walking()))!.Image!;
+        var waits = source.Draw(Settler(new Carrier(), new WaitsAtFlag(0, 0, new Heading(0).Retried)))!.Image!;
 
         Assert.AreEqual((1, 2), (walks.Rgba[0], waits.Rgba[0]));
     }
@@ -598,9 +598,9 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/sawmiller/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
         var source = folder.Load();
 
-        var sawing = source.Draw(Settler(Job.Sawmiller, new Saws(true)))!.Image!;
-        var carrying = source.Draw(Settler(Job.Sawmiller, new WaitsOutStep(new PutsDownGood(Good.Plank))))!.Image!;
-        var walking = source.Draw(Settler(Job.Sawmiller, new Walks(new ToStorage(), new Heading(0))))!.Image!;
+        var sawing = source.Draw(Settler(new Sawmiller(), new Saws(true)))!.Image!;
+        var carrying = source.Draw(Settler(new Sawmiller(), new WaitsOutStep(new PutsDownGood(Good.Plank))))!.Image!;
+        var walking = source.Draw(Settler(new Sawmiller(), new Walks(new ToStorage(), new Heading(0))))!.Image!;
 
         Assert.AreEqual((3, 2, 1), (sawing.Rgba[0], carrying.Rgba[0], walking.Rgba[0]));
     }
@@ -625,8 +625,8 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/carrier/walks"] = ContentFolder.Entry("marked.png", "0, 0");
         var source = folder.Load();
 
-        var first = source.Draw(Settler(Job.Carrier, Walking(), player: 0))!.Image!;
-        var second = source.Draw(Settler(Job.Carrier, Walking(), player: 1))!.Image!;
+        var first = source.Draw(Settler(new Carrier(), Walking(), player: 0))!.Image!;
+        var second = source.Draw(Settler(new Carrier(), Walking(), player: 1))!.Image!;
 
         var (r, g, b) = OpenSettlersSource.PlayerColour(1);
         CollectionAssert.AreEqual(new byte[] { r, g, b, 255, 10, 20, 30, 255 }, second.Rgba);
@@ -643,9 +643,9 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/carrier/walks"] = ContentFolder.Entry("marked.png", "0, 0");
         var source = folder.Load();
 
-        var one = source.Draw(Settler(Job.Carrier, Walking(), frame: 3, player: 2))!.Image;
-        var two = source.Draw(Settler(Job.Carrier, Walking(new Heading(4)), frame: 9, step: 12, player: 2))!.Image;
-        var other = source.Draw(Settler(Job.Carrier, Walking(), player: 3))!.Image;
+        var one = source.Draw(Settler(new Carrier(), Walking(), frame: 3, player: 2))!.Image;
+        var two = source.Draw(Settler(new Carrier(), Walking(new Heading(4)), frame: 9, step: 12, player: 2))!.Image;
+        var other = source.Draw(Settler(new Carrier(), Walking(), player: 3))!.Image;
 
         Assert.AreSame(one, two);
         Assert.AreNotSame(one, other);
@@ -659,8 +659,8 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/carrier/walks"] = ContentFolder.Entry("marked.png", "0, 0");
         var source = folder.Load();
 
-        var low = source.Draw(Settler(Job.Carrier, Walking(), player: 1))!.Image!;
-        var high = source.Draw(Settler(Job.Carrier, Walking(), player: 1 + OpenSettlersSource.PlayerColours))!.Image!;
+        var low = source.Draw(Settler(new Carrier(), Walking(), player: 1))!.Image!;
+        var high = source.Draw(Settler(new Carrier(), Walking(), player: 1 + OpenSettlersSource.PlayerColours))!.Image!;
 
         CollectionAssert.AreEqual(low.Rgba, high.Rgba);
     }
@@ -958,7 +958,7 @@ public sealed class OpenSettlersSourceTests
         // Every job the item's byte 0 can carry (bits 2 to 6): a job the History Edition's tables hold a figure handler for must
         // have a figure in the content set for every activity it is drawn in, and a job without one none, so the two sources draw
         // the same jobs.
-        var handlers = new SettlerFigureTables([], [], []);
+        var handlers = SettlerFiguresTests.TablesOf([], [], []);
         var jobsDrawn = 0;
         for (var code = 0; code < 32; code++)
         {
@@ -1011,7 +1011,7 @@ public sealed class OpenSettlersSourceTests
         // A carrier waiting off the road is drawn by the builder's second path, whose Figure term the source must answer.
         var waiting = figures.Draws(
             map,
-            [new Settler(Job.Carrier, 3, 4, 3, 0, new WaitsAtFlag(0, 0, heading.Retried)) { Frame = 7 }],
+            [new Settler(new Carrier(), 3, 4, 3, 0, new WaitsAtFlag(0, 0, heading.Retried)) { Frame = 7 }],
             0
         );
         Assert.IsTrue(waiting.Any(term => term.Part == SettlerPart.Figure));

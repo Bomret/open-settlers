@@ -25,7 +25,8 @@ public sealed class HutTests
                 .ToArray(),
             Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
             Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray()
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
+            workers: TestProgram.MadeWorkers()
         );
     }
 
@@ -82,7 +83,7 @@ public sealed class HutTests
 
         Assert.AreEqual(1, game.Buildings.Count);
         Assert.AreEqual(20, game.Settlers.Count);
-        Assert.AreEqual(Job.Woodcutter, game.Settlers[10].Job);
+        Assert.AreEqual(new Woodcutter(), game.Settlers[10].Job);
         Assert.IsTrue(
             game.Settlers.Skip(1).All(settler => settler.Activity is WaitsInCastle && settler.X == 15 && settler.Y == 5)
         );

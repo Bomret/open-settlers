@@ -122,7 +122,7 @@ public sealed class ProgramTablesTests
 
         Load(ProgramTablesImporter.FigureBaseLoadAddress, ProgramTablesImporter.FigureBaseAddress);
         Load(ProgramTablesImporter.FigureOffsetLoadAddress, ProgramTablesImporter.FigureOffsetAddress);
-        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.WoodcutterCode;
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Woodcutter.Number;
         Write(stub, [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.WoodcutterHandlerAddress - (stub + 5))]);
         void Add(int at, int word) => Write(at, [0x66, 0x81, 0x47, 0x08, (byte)word, (byte)(word >> 8)]);
 
@@ -130,7 +130,7 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.WoodcutterCarryingAddress, 0x1000);
         Add(ProgramTablesImporter.WoodcutterCuttingAddress, 0x0e80);
         var stonecutterStub =
-            ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.StonecutterCode;
+            ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Stonecutter.Number;
         Write(
             stonecutterStub,
             [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.StonecutterHandlerAddress - (stonecutterStub + 5))]
@@ -139,8 +139,7 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.StonecutterCarryingAddress, 0x1200);
         Add(ProgramTablesImporter.StonecutterStepBackAddress, 0x1200);
         Add(ProgramTablesImporter.StonecutterCuttingAddress, 0x1280);
-        var hutStub =
-            ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * RuleTables.TypeOneHutJob;
+        var hutStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * TypeOneHut.Number;
         Write(
             hutStub,
             [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.TypeOneHutHandlerAddress - (hutStub + 5))]
@@ -149,29 +148,28 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.TypeOneHutCarryingAddress, 0x2f00);
         Add(ProgramTablesImporter.TypeOneHutHighAddress, 0x2c80);
         Add(ProgramTablesImporter.TypeOneHutHighFacingAddress, 0x2d80);
-        var builderStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.BuilderCode;
+        var builderStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Builder.Number;
         Write(
             builderStub,
             [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.BuilderHandlerAddress - (builderStub + 5))]
         );
         Add(ProgramTablesImporter.BuilderWalkAddress, 0x1500);
         Add(ProgramTablesImporter.BuilderWorkAddress, 0x1580);
-        var foresterStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.ForesterCode;
+        var foresterStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Forester.Number;
         Write(
             foresterStub,
             [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.ForesterHandlerAddress - (foresterStub + 5))]
         );
         Add(ProgramTablesImporter.ForesterWalkAddress, 0x0e00);
         Add(ProgramTablesImporter.ForesterWorkAddress, 0x1080);
-        var diggerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.DiggerCode;
+        var diggerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Digger.Number;
         Write(
             diggerStub,
             [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.DiggerHandlerAddress - (diggerStub + 5))]
         );
         Add(ProgramTablesImporter.DiggerWalkAddress, 0x1600);
         Add(ProgramTablesImporter.DiggerHighAddress, 0x1680);
-        var sawmillerStub =
-            ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.SawmillerCode;
+        var sawmillerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Sawmiller.Number;
         Write(
             sawmillerStub,
             [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.SawmillerHandlerAddress - (sawmillerStub + 5))]
@@ -576,7 +574,7 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new WorkerRequest(Job.Of(7), new Good(0x18)), tables.Get<WorkerRequest>(Job.Builder));
+        Assert.AreEqual(new WorkerRequest(Job.Of(7), new Good(0x18)), tables.Get<WorkerRequest>(new Builder()));
         Assert.AreEqual(new WorkerRequest(Job.Of(12), new Good(5)), tables.WorkerOf(BuildingType.Woodcutter));
         Assert.AreEqual(new WorkerRequest(Job.Of(14), new Good(7)), tables.WorkerOf(BuildingType.Stonecutter));
         Assert.AreEqual(new WorkerRequest(Job.Of(19), Good.None), tables.WorkerOf(BuildingType.Forester));
@@ -612,9 +610,9 @@ public sealed class ProgramTablesTests
     public void TheBuildersFigureAddsAreReadFromItsHandlerAndItsStubIsChecked()
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
-        Assert.AreEqual(new BuilderFigureAdds(0x1500, 0x1580), tables.Get<BuilderFigureAdds>(Job.Builder));
+        Assert.AreEqual(new BuilderFigureAdds(0x1500, 0x1580), tables.Get<BuilderFigureAdds>(new Builder()));
 
-        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.BuilderCode;
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Builder.Number;
         var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
 
         var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
@@ -627,10 +625,10 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         // The made-up handler loads the job 5 and the tool word 0x24: the request is what the handler says, not the digger's own numbers.
-        Assert.AreEqual(new WorkerRequest(Job.Of(5), new Good(18)), tables.Get<WorkerRequest>(Job.Digger));
-        Assert.AreEqual(new FigureAdds(0x1600, 0x1600, 0x1680), tables.Get<FigureAdds>(Job.Digger));
+        Assert.AreEqual(new WorkerRequest(Job.Of(5), new Good(18)), tables.Get<WorkerRequest>(new Digger()));
+        Assert.AreEqual(new FigureAdds(0x1600, 0x1600, 0x1680), tables.Get<FigureAdds>(new Digger()));
 
-        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.DiggerCode;
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Digger.Number;
         var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
 
         var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
@@ -645,9 +643,9 @@ public sealed class ProgramTablesTests
         // peek:43fa87:100 (the handler: add word [edi+8], 0x380 at 0x43fade and 0x300 at 0x43fae9).
         var tables = TestProgram.Tables();
 
-        Assert.AreEqual(new WorkerRequest(Job.Digger, new Good(16)), tables.Get<WorkerRequest>(Job.Digger));
-        Assert.AreEqual(0x300, tables.Get<FigureAdds>(Job.Digger).Walk);
-        Assert.AreEqual(0x380, tables.Get<FigureAdds>(Job.Digger).Cutting);
+        Assert.AreEqual(new WorkerRequest(new Digger(), new Good(16)), tables.Get<WorkerRequest>(new Digger()));
+        Assert.AreEqual(0x300, tables.Get<FigureAdds>(new Digger()).Walk);
+        Assert.AreEqual(0x380, tables.Get<FigureAdds>(new Digger()).Cutting);
     }
 
     [TestMethod]
@@ -657,10 +655,10 @@ public sealed class ProgramTablesTests
 
         Assert.AreEqual(
             new SawmillerFigureAdds(0x1700, 0x1780, 0x1800),
-            tables.Get<SawmillerFigureAdds>(Job.Sawmiller)
+            tables.Get<SawmillerFigureAdds>(new Sawmiller())
         );
 
-        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.SawmillerCode;
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Sawmiller.Number;
         var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
 
         var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
@@ -676,7 +674,7 @@ public sealed class ProgramTablesTests
         // for the walk; the draw run of the recording (settler-draws.txt, sawmiller) draws with them.
         Assert.AreEqual(
             new SawmillerFigureAdds(0xc00, 0x1700, 0x1580),
-            TestProgram.Tables().Get<SawmillerFigureAdds>(Job.Sawmiller)
+            TestProgram.Tables().Get<SawmillerFigureAdds>(new Sawmiller())
         );
     }
 
@@ -685,7 +683,10 @@ public sealed class ProgramTablesTests
     public void TheBuildersFigureAddsOfTheInstallMatchTheEmulator()
     {
         // peek:43faf4:120 (the handler: add word [edi+8], 0x580 at 0x43fb55 and 0x500 at 0x43fb60).
-        Assert.AreEqual(new BuilderFigureAdds(0x500, 0x580), TestProgram.Tables().Get<BuilderFigureAdds>(Job.Builder));
+        Assert.AreEqual(
+            new BuilderFigureAdds(0x500, 0x580),
+            TestProgram.Tables().Get<BuilderFigureAdds>(new Builder())
+        );
     }
 
     [TestMethod]
@@ -697,8 +698,8 @@ public sealed class ProgramTablesTests
         // peek:42d5fc:15, peek:42d952:15, peek:42d994:15, peek:42d9d6:15, peek:42da18:15 (the handlers' job and tool words; the tool
         // word halved is the good whose stock word lies at 4 plus the word in the storage item), peek:43f0ba:48 (the order words), and
         // peek:43f0fa:96 (the steps).
-        Assert.AreEqual(new WorkerRequest(Job.Builder, new Good(17)), tables.Get<WorkerRequest>(Job.Builder));
-        Assert.AreEqual(new WorkerRequest(Job.Woodcutter, new Good(21)), tables.WorkerOf(BuildingType.Woodcutter));
+        Assert.AreEqual(new WorkerRequest(new Builder(), new Good(17)), tables.Get<WorkerRequest>(new Builder()));
+        Assert.AreEqual(new WorkerRequest(new Woodcutter(), new Good(21)), tables.WorkerOf(BuildingType.Woodcutter));
         Assert.AreEqual(new WorkerRequest(Job.Of(7), new Good(23)), tables.WorkerOf(BuildingType.Stonecutter));
         Assert.AreEqual(new WorkerRequest(Job.Of(8), Good.None), tables.WorkerOf(BuildingType.Forester));
         Assert.AreEqual(new WorkerRequest(Job.Of(6), new Good(22)), tables.WorkerOf(BuildingType.Sawmill));
@@ -820,7 +821,7 @@ public sealed class ProgramTablesTests
     [TestCategory(Needs.Install)]
     public void TheWoodcuttersFigureWordsOfTheInstallAreThoseOfHisDrawHandler()
     {
-        var adds = TestProgram.Tables().Get<FigureAdds>(Job.Woodcutter);
+        var adds = TestProgram.Tables().Get<FigureAdds>(new Woodcutter());
 
         // 0x43fb6b, the handler of job 5: add word [edi+8], imm16 at 0x43fc16 (walk), 0x43fc0b (way back with the log), 0x43fbe5 (figure byte from 0x80).
         Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), adds);
@@ -831,14 +832,14 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), tables.Get<FigureAdds>(Job.Woodcutter));
+        Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), tables.Get<FigureAdds>(new Woodcutter()));
     }
 
     [TestMethod]
     [TestCategory(Needs.Install)]
     public void TheStonecuttersFigureWordsOfTheInstallAreThoseOfHisDrawHandler()
     {
-        var adds = TestProgram.Tables().Get<FigureAdds>(Job.Stonecutter);
+        var adds = TestProgram.Tables().Get<FigureAdds>(new Stonecutter());
 
         // 0x43fcd8, the handler of job 7: add word [edi+8], imm16 at 0x43fd7d (walk), 0x43fd55 (way back with the stone), 0x43fd2f
         // (figure byte from 0x80).
@@ -850,14 +851,14 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new FigureAdds(0x0d00, 0x1200, 0x1280), tables.Get<FigureAdds>(Job.Stonecutter));
+        Assert.AreEqual(new FigureAdds(0x0d00, 0x1200, 0x1280), tables.Get<FigureAdds>(new Stonecutter()));
     }
 
     [TestMethod]
     [TestCategory(Needs.Install)]
     public void TheForestersFigureWordsOfTheInstallAreThoseOfHisDrawHandler()
     {
-        var adds = TestProgram.Tables().Get<ForesterFigureAdds>(Job.Forester);
+        var adds = TestProgram.Tables().Get<ForesterFigureAdds>(new Forester());
 
         // 0x43fd88, the handler of job 8: add word [edi+8], imm16 at 0x43fdea (walk) and 0x43fddf (figure byte from 0x80).
         Assert.AreEqual(new ForesterFigureAdds(0x0e00, 0x1080), adds);
@@ -868,7 +869,7 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new ForesterFigureAdds(0x0e00, 0x1080), tables.Get<ForesterFigureAdds>(Job.Forester));
+        Assert.AreEqual(new ForesterFigureAdds(0x0e00, 0x1080), tables.Get<ForesterFigureAdds>(new Forester()));
     }
 
     [TestMethod]
@@ -876,7 +877,7 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
             bytes[
-                FileOffset(ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.ForesterCode)
+                FileOffset(ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Forester.Number)
                     + 1
             ] ^= 1
         );
@@ -899,7 +900,7 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new HutFigureAdds(0x2c00, 0x2f00, 0x2c80, 0x2d80), tables.Get<HutFigureAdds>(Job.TypeOneHut));
+        Assert.AreEqual(new HutFigureAdds(0x2c00, 0x2f00, 0x2c80, 0x2d80), tables.Get<HutFigureAdds>(new TypeOneHut()));
     }
 
     [TestMethod]
@@ -907,9 +908,8 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
             bytes[
-                FileOffset(
-                    ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * RuleTables.TypeOneHutJob
-                ) + 1
+                FileOffset(ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * TypeOneHut.Number)
+                    + 1
             ] ^= 1
         );
 
@@ -921,7 +921,7 @@ public sealed class ProgramTablesTests
     public void AJobWhoseDataNoModuleReadsIsAnErrorOfTheLoad()
     {
         var exe = Executable(_ => { });
-        var modules = JobTablesRegistry.Modules().Where(module => !module.Job.Equals(Job.Builder)).ToArray();
+        var modules = JobTablesRegistry.Modules().Where(module => module.Job is not Builder).ToArray();
 
         var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe, modules));
         StringAssert.Contains(refusal.Message, "no tables module read");
@@ -933,9 +933,8 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
             bytes[
-                FileOffset(
-                    ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.WoodcutterCode
-                ) + 1
+                FileOffset(ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Woodcutter.Number)
+                    + 1
             ] ^= 1
         );
 

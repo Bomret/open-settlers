@@ -47,7 +47,7 @@ The settler takes the job in bits 2 to 6 of his first byte. The stock loses a to
 
 The request fails with no settler of the job and no settler without a job, or with no tool. Then the building's handler sets bit 2.
 
-Each handler asks for one job and tool. `ProgramTablesImporter` reads them from the handlers' instructions (`RuleTables.WorkerOf`, and `RuleTables.Get<WorkerRequest>(Job.Builder)` for the builder's):
+Each handler asks for one job and tool. `ProgramTablesImporter` reads them from the handlers' instructions (`RuleTables.WorkerOf`, and `RuleTables.Get<WorkerRequest>(new Builder())` for the builder's):
 
 | Asker | Handler (the request) | Job | Tool good (word / 2) |
 | --- | --- | --- | --- |
@@ -140,7 +140,7 @@ The job table of the program lists these jobs:
 - The digger is job 2 (`0x42d328`, tool good 16, [The digger](digging.md)).
 - The castle's own first settler is job 4. This settler stands by while the castle is built (state 10, `0x43f17a`) and carries goods out of the castle.
 
-No building asks for job 4. The engine's `Job.Digger` is job 2, `Job.Builder` is job 3, and `Job.CastleSettler` is job 4.
+No building asks for job 4. The engine's `Digger` is job 2, `Builder` is job 3, and `CastleSettler` is job 4.
 
 ## Drawing a site
 
@@ -163,7 +163,7 @@ The engine draws the layers through `SiteStages` under both sources. The History
 
 **Not ported:** the piles of the planks and stones on site. The routine draws a good's sprite `0x44de9a` once for each good on site, 3 pixels apart. The planks and stones come from the fill bytes' high nibbles.
 
-**The builder's figure.** His figure handler is stub 3 of `0x43f744`, at `0x43faf4`. It adds `0x500` to the figure byte for a byte below `0x80`. It adds `0x580` for a byte from `0x80`, which are the blows. It requests a sound at some of the work figures through `0x44fe13`. The engine leaves sounds out. The word's high byte picks the row of figure bases ([Settlers](settlers.md#drawing-the-walk-leads)). `RuleTables.Get<BuilderFigureAdds>(Job.Builder)` holds both adds, read from `0x43fb60` and `0x43fb55`.
+**The builder's figure.** His figure handler is stub 3 of `0x43f744`, at `0x43faf4`. It adds `0x500` to the figure byte for a byte below `0x80`. It adds `0x580` for a byte from `0x80`, which are the blows. It requests a sound at some of the work figures through `0x44fe13`. The engine leaves sounds out. The word's high byte picks the row of figure bases ([Settlers](settlers.md#drawing-the-walk-leads)). `RuleTables.Get<BuilderFigureAdds>(new Builder())` holds both adds, read from `0x43fb60` and `0x43fb55`.
 
 The engine makes the record of a settler where the node holds his slot. So the builder inside the building is drawn at its node with the frame of his state. `SettlerFigures` draws the activities `Builds` and `LeavesSite` for job 3.
 
@@ -173,6 +173,6 @@ The engine makes the record of a settler where the node holds his slot. So the b
 
 `BuilderRules`, the rules module of the builder (`JobRules<Builder>`), holds the start routine, state 9, the end, and state 0x4a. `HutWork.RegisterModule` fills the table of the job start routines (`0x43ca54`) that the door's step runs.
 
-`SitePass.Turn` asks for the builder (`CastleRoster.AskForWorker`). `CastleRoster.RequestWorker` is `0x42be63` with its second way. `CastleStock.Take` takes the tool.
+`SitePass.Turn` asks for the builder (`CastleRoster.AskForWorker`) with the request `BuilderRules.SiteWorker` names for the `SiteStage.Building`; the site pass names no job. `CastleRoster.RequestWorker` is `0x42be63` with its second way. `CastleStock.Take` takes the tool.
 
-`RuleTables.WorkerOf`, `Get<WorkerRequest>(Job.Builder)`, `StoneAt`, `BlowStep`, and `Get<BuilderFigureAdds>(Job.Builder)` hold the tables as typed values. `Builds` and `LeavesSite` are the activities of states 9 and `0x4a`. They keep their codes for the exporters. The tests on made-up tables are `WorkerRequestTests` and `BuilderTests`.
+`RuleTables.WorkerOf`, `Get<WorkerRequest>(new Builder())`, `StoneAt`, `BlowStep`, and `Get<BuilderFigureAdds>(new Builder())` hold the tables as typed values. `Builds` and `LeavesSite` are the activities of states 9 and `0x4a`. They keep their codes for the exporters. The tests on made-up tables are `WorkerRequestTests` and `BuilderTests`.

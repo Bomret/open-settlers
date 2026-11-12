@@ -48,6 +48,10 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     // The settler's node and the site's flag lie one step apart, south-east (direction 1).
     private const int ToFlag = 1;
 
+    /// <summary>The builder is the worker a site asks for when it starts (<c>0x42d5fc</c>).</summary>
+    public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
+        stage == SiteStage.Building ? tables.Get<WorkerRequest>(new Builder()) : null;
+
     /// <summary>Registers the behaviour of the builder's activities.</summary>
     public override void Register(ActivityRegistry registry)
     {

@@ -147,7 +147,7 @@ public static class GameFactory
             carriers,
             removal,
             roster,
-            new SitePass(map, flags, tables, roster.AskForWorker),
+            new SitePass(map, flags, tables, modules, roster.AskForWorker),
             modules,
             handsOutGoods
                 ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)

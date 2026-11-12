@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
@@ -65,10 +66,10 @@ public sealed class JobTests
     [TestMethod]
     public void AJobBuiltAnyOtherWayEqualsOfItsNumber()
     {
-        Assert.AreEqual(Job.Of(0), Job.Carrier);
-        Assert.AreEqual(Job.Of(5), Job.Woodcutter);
-        Assert.AreEqual(Job.Of(11), Job.TypeOneHut);
-        Assert.AreEqual(Job.Of(21), Job.Jobless);
+        Assert.AreEqual(Job.Of(0), new Carrier());
+        Assert.AreEqual(Job.Of(5), new Woodcutter());
+        Assert.AreEqual(Job.Of(11), new TypeOneHut());
+        Assert.AreEqual(Job.Of(21), new Jobless());
         Assert.AreEqual(Job.Of(24), new Knight(2));
         Assert.AreEqual(Job.Of(9).GetHashCode(), new UnportedJob(9).GetHashCode());
         Assert.AreEqual(Job.Of(27), Job.Of(26).Promoted);
@@ -77,7 +78,7 @@ public sealed class JobTests
     [TestMethod]
     public void AJobPrintsAsItsBareNumber()
     {
-        Assert.AreEqual("5", Job.Woodcutter.ToString());
+        Assert.AreEqual("5", new Woodcutter().ToString());
         Assert.AreEqual("24", new Knight(2).ToString());
         Assert.AreEqual("9", new UnportedJob(9).ToString());
     }
@@ -104,9 +105,9 @@ public sealed class JobTests
     public void ASettlerIsNeverWithoutAJob()
     {
         Assert.ThrowsExactly<ArgumentNullException>(() => new Settler(null!, 0, 1, 2, 0, new LooksForTree()));
-        var settler = new Settler(Job.Carrier, 0, 1, 2, 0, new LooksForTree());
+        var settler = new Settler(new Carrier(), 0, 1, 2, 0, new LooksForTree());
         Assert.ThrowsExactly<ArgumentNullException>(() => settler.TakeUp(null!));
-        Assert.AreEqual(Job.Carrier, settler.Job);
+        Assert.AreEqual(new Carrier(), settler.Job);
     }
 
     [TestMethod]
@@ -116,12 +117,19 @@ public sealed class JobTests
     }
 
     [TestMethod]
-    public void AKeptAccessorGivesTheSameJobOnEveryCall()
+    public void TheJobTypeHoldsNoAccessorAndNoNumberOfAnyJob()
     {
-        var first = new[] { Job.Carrier, Job.Woodcutter };
-        var second = new[] { Job.Carrier, Job.Woodcutter };
-        Assert.AreSame(first[0], second[0]);
-        Assert.AreSame(first[1], second[1]);
+        const BindingFlags Declared =
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
+        CollectionAssert.AreEqual(
+            Array.Empty<string>(),
+            typeof(Job).GetProperties(Declared).Select(p => p.Name).ToArray()
+        );
+        CollectionAssert.AreEquivalent(
+            new[] { "FirstKnight", "LastKnight" },
+            typeof(Job).GetFields(Declared).Select(field => field.Name).ToList()
+        );
     }
 
     [TestMethod]

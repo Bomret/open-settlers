@@ -35,7 +35,8 @@ public sealed class LayoutApplyTests
     // given that class.
     static Game NewGame(Layout layout)
     {
-        var tables = TestProgram.Made();
+        var made = TestProgram.Made();
+        var tables = new RuleTables(made.Classes, made.StartStock, workers: TestProgram.MadeWorkers(stonecutter: true));
         tables.Classes[MapObject.Flag.Code] = 3;
 
         return GameFactory.Create(tables, layout.BuildMap());
@@ -86,7 +87,7 @@ public sealed class LayoutApplyTests
 
         Assert.IsNull(layout.Apply(game));
 
-        var worker = game.Settlers.Single(settler => settler.Job == Job.Stonecutter && settler.Activity is Door);
+        var worker = game.Settlers.Single(settler => settler.Job == new Stonecutter() && settler.Activity is Door);
         Assert.AreEqual((13, 10), (worker.X, worker.Y), "he stands in the doorway of his building");
         Assert.IsTrue(game.Buildings.Single(building => building.Type == BuildingType.Stonecutter).WorkerInside);
     }
@@ -98,15 +99,15 @@ public sealed class LayoutApplyTests
         var game = NewGame(layout);
         var without = NewGame(Read(Castle + Flag + Road));
         Assert.IsNull(Read(Castle + Flag + Road).Apply(without));
-        var jobless = without.Settlers.Count(settler => settler.Job == Job.Jobless);
+        var jobless = without.Settlers.Count(settler => settler.Job == new Jobless());
 
         Assert.IsNull(layout.Apply(game));
 
-        var worker = game.Settlers.Single(settler => settler.Job == Job.Forester);
+        var worker = game.Settlers.Single(settler => settler.Job == new Forester());
         Assert.IsInstanceOfType<Door>(worker.Activity, "he stands in the doorway of his building");
         Assert.AreEqual((13, 10), (worker.X, worker.Y));
         Assert.IsTrue(game.Buildings.Single(building => building.Type == BuildingType.Forester).WorkerInside);
-        Assert.AreEqual(jobless - 1, game.Settlers.Count(settler => settler.Job == Job.Jobless));
+        Assert.AreEqual(jobless - 1, game.Settlers.Count(settler => settler.Job == new Jobless()));
     }
 
     // The made tables of the layout tests with the sawmill large, as the original's size table makes it.
@@ -118,7 +119,12 @@ public sealed class LayoutApplyTests
         classes[MapObject.Flag.Code] = 3;
 
         return GameFactory.Create(
-            new RuleTables(classes, TestProgram.Made().StartStock, buildingSizes: sizes),
+            new RuleTables(
+                classes,
+                TestProgram.Made().StartStock,
+                buildingSizes: sizes,
+                workers: TestProgram.MadeWorkers(stonecutter: true)
+            ),
             layout.BuildMap()
         );
     }

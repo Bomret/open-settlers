@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -34,8 +35,50 @@ internal static class TestProgram
                 .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            transportPriorities: transportPriorities
+            transportPriorities: transportPriorities,
+            workers: MadeWorkers(),
+            jobData: MadeJobData()
         );
+
+    /// <summary>The job of each number 0 to 31.</summary>
+    public static IEnumerable<Job> Jobs() => Enumerable.Range(0, ProgramTablesImporter.JobNumbers).Select(Job.Of);
+
+    /// <summary>
+    /// Made-up data for every record each job type declares (<see cref="Job.Data"/>): the builder and the digger ask for a settler of
+    /// their own job with no tool, and every other record is all zeros, which draws the settler in the carrier's row. A test that gives
+    /// data of its own builds on this list, whose later entries for one job and type win.
+    /// </summary>
+    public static IReadOnlyList<(Job Job, object Data)> MadeJobData() =>
+        [
+            .. Jobs()
+                .SelectMany(job =>
+                    job.Data.Select(type =>
+                        (
+                            job,
+                            type == typeof(WorkerRequest)
+                                ? new WorkerRequest(job, Good.None)
+                                : Activator.CreateInstance(type)!
+                        )
+                    )
+                ),
+        ];
+
+    /// <summary>
+    /// The workers made-up tables ask for: the woodcutter's hut a woodcutter with a made-up tool, the forester's building a forester
+    /// with no tool, and with <paramref name="stonecutter"/> the stonecutter's building a stonecutter with no tool.
+    /// </summary>
+    public static WorkerRequest?[] MadeWorkers(bool stonecutter = false)
+    {
+        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
+        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(new Woodcutter(), new Good(1));
+        workers[BuildingType.Forester.Code] = new WorkerRequest(new Forester(), Good.None);
+        if (stonecutter)
+        {
+            workers[BuildingType.Stonecutter.Code] = new WorkerRequest(new Stonecutter(), Good.None);
+        }
+
+        return workers;
+    }
 
     /// <summary>
     /// The reference install named by <c>SIEDLER_DIR</c>; the test is inconclusive without it, and where its program

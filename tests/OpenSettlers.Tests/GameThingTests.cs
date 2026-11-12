@@ -291,9 +291,9 @@ public sealed class GameThingTests
         }
 
         var carrier = game.Settlers.First(s =>
-            s.Job == Job.Carrier && NameTable.StateName(s.Activity.Code) is not null
+            s.Job == new Carrier() && NameTable.StateName(s.Activity.Code) is not null
         );
-        var carriers = game.Settlers.Count(s => s.Job == Job.Carrier);
+        var carriers = game.Settlers.Count(s => s.Job == new Carrier());
 
         Assert.AreEqual(
             "",

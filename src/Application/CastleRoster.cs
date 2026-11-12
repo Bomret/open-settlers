@@ -144,14 +144,7 @@ public sealed class CastleRoster(
         foreach (var job in CastleJobs)
         {
             settlers.Add(
-                new Settler(
-                    job,
-                    0,
-                    x,
-                    y,
-                    clock.Now,
-                    job == Job.CastleSettler ? new BuildsCastle() : new WaitsInCastle()
-                )
+                new Settler(job, 0, x, y, clock.Now, job is CastleSettler ? new BuildsCastle() : new WaitsInCastle())
             );
             history.FillSettler(settlers.Count - 1);
         }
@@ -202,7 +195,7 @@ public sealed class CastleRoster(
             return false;
         }
 
-        var jobless = Entry(Job.Jobless);
+        var jobless = Entry(new Jobless());
         var made = Entry(job) == 0;
         if (made && (jobless == 0 || (!request.Tool.IsNone && stock.Count(request.Tool) == 0)))
         {
@@ -211,7 +204,7 @@ public sealed class CastleRoster(
 
         var slot = made ? jobless : Entry(job);
         var settler = settlers[slot];
-        Entry(made ? Job.Jobless : job) = 0;
+        Entry(made ? new Jobless() : job) = 0;
         if (made)
         {
             settler.TakeUp(job);

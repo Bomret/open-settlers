@@ -11,18 +11,22 @@ public sealed class JobLooksTests
 {
     private static readonly Job[] Drawn =
     [
-        Job.Carrier,
-        Job.Woodcutter,
-        Job.Stonecutter,
-        Job.TypeOneHut,
-        Job.Builder,
-        Job.Forester,
-        Job.Digger,
-        Job.Sawmiller,
+        new Carrier(),
+        new Woodcutter(),
+        new Stonecutter(),
+        new TypeOneHut(),
+        new Builder(),
+        new Forester(),
+        new Digger(),
+        new Sawmiller(),
     ];
 
     private static RuleTables Tables() =>
-        new([.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)], NoStock());
+        new(
+            [.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)],
+            NoStock(),
+            jobData: TestProgram.MadeJobData()
+        );
 
     private static byte[][] NoStock() =>
         [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[RuleTables.Goods])];

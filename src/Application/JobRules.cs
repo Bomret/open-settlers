@@ -19,12 +19,25 @@ public abstract class JobRules
     public abstract Type JobType { get; }
 
     /// <summary>
+    /// What the shared texts call a settler of the job, as in "the castle holds no woodcutter for the building". Default: the job type's
+    /// name in lower case; a job whose type name reads badly in a sentence overrides it.
+    /// </summary>
+    public virtual string WorkerName => JobType.Name.ToLowerInvariant();
+
+    /// <summary>
     /// Whether a layout stands a settler of the job inside a finished building of its own (a hut, as the mission start does). Default: no.
     /// </summary>
     public virtual bool CanStandInHut => false;
 
     /// <summary>The cause the shared rules record a change of the job's settler under, apart from layouts and walks home. Default: the settlers' rules.</summary>
     public virtual Cause Cause => Cause.Settlers;
+
+    /// <summary>
+    /// The request a building site makes for a worker of this job at <paramref name="stage"/>, read from <paramref name="tables"/>, or
+    /// null where the job is not the worker of that stage. <see cref="SitePass"/> asks the castle for the first non-null answer of the
+    /// modules. Default: null for every stage.
+    /// </summary>
+    public virtual WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) => null;
 
     /// <summary>Registers the behaviour of the activities of the job's own states. Default: none.</summary>
     public virtual void Register(ActivityRegistry registry) { }

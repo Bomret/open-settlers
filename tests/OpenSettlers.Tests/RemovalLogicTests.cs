@@ -175,7 +175,7 @@ public sealed class RemovalLogicTests
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 18, 6));
 
         var states = game
-            .Settlers.Where(settler => settler.Job == Job.Carrier)
+            .Settlers.Where(settler => settler.Job == new Carrier())
             .Select(settler => settler.Activity.Code)
             .Order()
             .ToArray();

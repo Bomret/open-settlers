@@ -73,7 +73,7 @@ public sealed class RoadLoopTests
         Assert.AreEqual(1, game.Flags[0].Side(2).Carriers, "and at the other end");
         Assert.AreEqual(
             1,
-            game.Settlers.Count(s => s is { Job.Code: Job.CarrierCode, Activity: WalksRoad or WaitsAtFlag })
+            game.Settlers.Count(s => s is { Job.Code: Carrier.Number, Activity: WalksRoad or WaitsAtFlag })
         );
     }
 
@@ -97,7 +97,7 @@ public sealed class RoadLoopTests
         Assert.AreEqual(1, game.Flags[0].Side(2).Carriers, "the second half at the castle flag");
         Assert.AreEqual(
             2,
-            game.Settlers.Count(s => s is { Job.Code: Job.CarrierCode, Activity: WalksRoad or WaitsAtFlag })
+            game.Settlers.Count(s => s is { Job.Code: Carrier.Number, Activity: WalksRoad or WaitsAtFlag })
         );
     }
 
@@ -116,7 +116,7 @@ public sealed class RoadLoopTests
         Assert.IsFalse(game.Flags[0].Side(2).CarrierOnTheWay);
         Assert.AreEqual(
             0,
-            game.Settlers.Count(s => s is { Job.Code: Job.CarrierCode, Activity: WalksRoad or WaitsAtFlag }),
+            game.Settlers.Count(s => s is { Job.Code: Carrier.Number, Activity: WalksRoad or WaitsAtFlag }),
             "no carrier at work"
         );
         CollectionAssert.AreEqual(TestMaps.Roads(bare.Map), TestMaps.Roads(game.Map));
