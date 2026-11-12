@@ -1,0 +1,223 @@
+using System;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Generators;
+
+namespace OpenSettlers.Tests;
+
+// The job looks generator (ADR 0016, INV-0010) writes one registry for each graphics source from the look modules of the
+// compilation and fails the build on a look without its constructor and on two looks for one job under one source.
+[TestClass]
+public sealed class JobLooksGeneratorTests
+{
+    private const string Framework = """
+        namespace OpenSettlers.Domain
+        {
+            public abstract record Job;
+            public sealed record Alpha : Job;
+            public sealed record Beta : Job;
+            public sealed class RuleTables;
+        }
+        namespace OpenSettlers.MapView
+        {
+            using OpenSettlers.Domain;
+            public abstract class HistoryEditionLook { }
+            public abstract class HistoryEditionLook<TJob> : HistoryEditionLook where TJob : Job
+            {
+                protected HistoryEditionLook(RuleTables tables) { }
+            }
+            public abstract class OpenSettlersLook { }
+            public abstract class OpenSettlersLook<TJob> : OpenSettlersLook where TJob : Job
+            {
+                protected OpenSettlersLook(string key) { }
+            }
+        }
+        """;
+
+    private static readonly MetadataReference[] References =
+    [
+        .. ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Select(path => MetadataReference.CreateFromFile(path)),
+    ];
+
+    private static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(
+        params string[] sources
+    )
+    {
+        var compilation = CSharpCompilation.Create(
+            "MapView",
+            sources.Select(source => CSharpSyntaxTree.ParseText(source)),
+            References,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(new JobLooksGenerator());
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
+        var text = string.Concat(driver.GetRunResult().GeneratedTrees.Select(tree => tree.ToString()));
+        return (diagnostics, text, output);
+    }
+
+    private static readonly string[] WellFormed =
+    [
+        Framework,
+        """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public sealed class BetaLook(RuleTables tables) : HistoryEditionLook<Beta>(tables);
+            public sealed class BetaKey() : OpenSettlersLook<Beta>("beta");
+            """,
+        """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public sealed class AlphaLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+            public sealed class AlphaKey() : OpenSettlersLook<Alpha>("alpha");
+            """,
+    ];
+
+    [TestMethod]
+    public void WellFormedLooksGiveNoDiagnosticAndRegistriesThatCompile()
+    {
+        var (diagnostics, text, output) = Run(WellFormed);
+
+        Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+        Assert.AreEqual(
+            0,
+            output.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error),
+            string.Join("; ", output.GetDiagnostics())
+        );
+        StringAssert.Contains(text, "new global::OpenSettlers.MapView.AlphaLook(tables)");
+        StringAssert.Contains(text, "new global::OpenSettlers.MapView.AlphaKey()");
+    }
+
+    [TestMethod]
+    public void EachRegistryHoldsTheLooksOfItsSourceInTheOrderOfTheirFullTypeNames()
+    {
+        var (_, text, _) = Run(WellFormed);
+
+        Assert.IsTrue(
+            text.IndexOf("AlphaLook(tables)", StringComparison.Ordinal)
+                < text.IndexOf("BetaLook(tables)", StringComparison.Ordinal)
+        );
+        Assert.IsTrue(
+            text.IndexOf("AlphaKey()", StringComparison.Ordinal) < text.IndexOf("BetaKey()", StringComparison.Ordinal)
+        );
+        Assert.IsTrue(
+            text.IndexOf("BetaLook(tables)", StringComparison.Ordinal)
+                < text.IndexOf("AlphaKey()", StringComparison.Ordinal),
+            "the History Edition registry comes first"
+        );
+    }
+
+    [TestMethod]
+    public void TheGeneratedTextIsTheSameWhateverTheOrderOfTheSources()
+    {
+        Assert.AreEqual(Run(WellFormed).Text, Run(WellFormed.Reverse().ToArray()).Text);
+    }
+
+    [TestMethod]
+    public void NothingIsWrittenWhereNoLookTypeIsDeclared()
+    {
+        var (diagnostics, text, _) = Run("namespace Other { public sealed class Plain { } }");
+
+        Assert.AreEqual(0, diagnostics.Length);
+        Assert.AreEqual("", text);
+    }
+
+    [TestMethod]
+    public void AHistoryEditionLookWithoutTheRuleTablesConstructorIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public sealed class LoneLook : HistoryEditionLook<Alpha>
+            {
+                public LoneLook() : base(new RuleTables()) { }
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "LOOK001");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "LoneLook");
+        Assert.IsFalse(text.Contains("LoneLook"));
+    }
+
+    [TestMethod]
+    public void AnOpenSettlersLookWithoutTheParameterlessConstructorIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public sealed class LoneKey : OpenSettlersLook<Alpha>
+            {
+                public LoneKey(string key) : base(key) { }
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "LOOK001");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "LoneKey");
+        Assert.IsFalse(text.Contains("LoneKey"));
+    }
+
+    [TestMethod]
+    public void TwoHistoryEditionLooksForOneJobAreABuildErrorNamingBothClassesAndTheJob()
+    {
+        var (diagnostics, _, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public sealed class FirstLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+            public sealed class SecondLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "LOOK002");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "FirstLook");
+        StringAssert.Contains(error.GetMessage(), "SecondLook");
+        StringAssert.Contains(error.GetMessage(), "Alpha");
+    }
+
+    [TestMethod]
+    public void TwoOpenSettlersLooksForOneJobAreABuildError()
+    {
+        var (diagnostics, _, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public sealed class FirstKey() : OpenSettlersLook<Alpha>("one");
+            public sealed class SecondKey() : OpenSettlersLook<Alpha>("two");
+            """
+        );
+
+        Assert.AreEqual("LOOK002", diagnostics.Single().Id);
+    }
+
+    [TestMethod]
+    public void OneJobMayHaveALookUnderEachSource()
+    {
+        var (diagnostics, _, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public sealed class AlphaLook(RuleTables tables) : HistoryEditionLook<Alpha>(tables);
+            public sealed class AlphaKey() : OpenSettlersLook<Alpha>("alpha");
+            """
+        );
+
+        Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+    }
+}
