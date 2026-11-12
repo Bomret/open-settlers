@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -139,6 +140,41 @@ public sealed class RemovalLogicTests
         Assert.IsFalse(game.Map.At(16, 6).Roads.Has(0), "the castle's flag holds no east road");
         Assert.IsFalse(game.Map.At(18, 6).Roads.Has(3), "nor the flag at the other end a west road");
         Assert.IsNull(game.Removal.CommandAt(16, 6), "the castle's flag is still refused");
+    }
+
+    // The node 17,6 is a node of the road between the castle's flag and the flag at 18,6.
+    [TestMethod]
+    [DataRow((byte)0)]
+    [DataRow((byte)0b0000_0001)]
+    [DataRow((byte)0b0100_0001)]
+    [DataRow((byte)0b1000_0001)]
+    [DataRow((byte)0b1100_0000)]
+    public void ASplitAtANodeWithoutTwoRoadDirectionsFailsNamingTheNode(byte bits)
+    {
+        var game = World();
+        var node = game.Map.Index(17, 6);
+        game.Map.At(node).Roads = new RoadSet(bits);
+
+        var failure = Assert.ThrowsExactly<InvalidOperationException>(() =>
+            game.Removal.SplitRoad(node, 0, Cause.Removal)
+        );
+
+        StringAssert.Contains(failure.Message, node.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    [TestMethod]
+    [DataRow((byte)0)]
+    [DataRow((byte)0b0000_0001)]
+    [DataRow((byte)0b0100_0001)]
+    [DataRow((byte)0b1100_0000)]
+    public void ARoadTakenDownAtANodeWithoutTwoRoadDirectionsIsRefusedAndNothingChanges(byte bits)
+    {
+        var game = World();
+        game.Map.At(17, 6).Roads = new RoadSet(bits);
+        var digest = game.Digest();
+
+        Assert.IsFalse(game.Removal.RemoveRoadAt(17, 6));
+        Assert.AreEqual(digest, game.Digest());
     }
 
     [TestMethod]

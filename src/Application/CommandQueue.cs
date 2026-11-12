@@ -44,7 +44,10 @@ public sealed class CommandQueue
 
     private static int Compare(Command a, Command b)
     {
-        var order = (a.Tick, a.Player, a.Kind, a.X, a.Y).CompareTo((b.Tick, b.Player, b.Kind, b.X, b.Y));
+        // A command with no building comes before one with a building; buildings go by their code.
+        var order = (a.Tick, a.Player, a.Kind, a.X, a.Y, a.Building?.Code ?? int.MinValue).CompareTo(
+            (b.Tick, b.Player, b.Kind, b.X, b.Y, b.Building?.Code ?? int.MinValue)
+        );
 
         // The directions of a road, compared one by one, the shorter first where one is the start of the other.
         var (da, db) = (a.Directions ?? [], b.Directions ?? []);

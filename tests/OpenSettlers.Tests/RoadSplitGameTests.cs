@@ -190,6 +190,22 @@ public sealed class RoadSplitGameTests
         Assert.AreEqual(1, game.Network.Roads.Count);
     }
 
+    // The road node 18,6 holds one road direction only: the split it asks for fails naming the node before the flag is put down.
+    [TestMethod]
+    public void AFlagOnARoadNodeWithoutTwoRoadDirectionsFailsNamingTheNodeAndPutsNoFlagDown()
+    {
+        var game = EastRoad();
+        var node = game.Map.Index(18, 6);
+        game.Map.At(node).Roads = new RoadSet(0b0000_0001);
+        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 6));
+        var digest = game.Digest();
+
+        var failure = Assert.ThrowsExactly<InvalidOperationException>(game.ApplyCommands);
+
+        StringAssert.Contains(failure.Message, node.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.AreEqual(digest, game.Digest(), "no flag and no event is left behind");
+    }
+
     [TestMethod]
     public void TheHalfWithoutACarrierAsksForOneAndTheOldCarrierKeepsItsHalf()
     {
@@ -335,6 +351,21 @@ public sealed class RoadSplitGameTests
         Assert.AreEqual(digest, game.Digest());
         Assert.AreEqual(1, game.Network.Roads.Count);
         Assert.AreEqual(2, game.Flags.Count);
+    }
+
+    // The hut at 17,5 has its flag on the road node 18,6, which holds one road direction only.
+    [TestMethod]
+    public void AHutWhoseFlagLandsOnARoadNodeWithoutTwoRoadDirectionsFailsNamingTheNodeAndChangesNothing()
+    {
+        var game = EastRoad();
+        var node = game.Map.Index(18, 6);
+        game.Map.At(node).Roads = new RoadSet(0b0000_0001);
+        var digest = game.Digest();
+
+        var failure = Assert.ThrowsExactly<InvalidOperationException>(() => Huts.Place(game, 17, 5));
+
+        StringAssert.Contains(failure.Message, node.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.AreEqual(digest, game.Digest(), "no flag, no building, and no event is left behind");
     }
 
     [TestMethod]

@@ -25,7 +25,8 @@
   - Map view, game view — `mise run map`, `mise run game -- [--seed <seed>] [--size <n>] [--layout <file>]`
     (need `SIEDLER_DIR`)
   - Run the project with program arguments — `mise run godot -- <args>`
-  - Seed digests and counts — `mise run seed-info -- --seed <seed> [--size <n>]` (no install needed)
+  - Seed digests and counts — `mise run seed-info -- --seed <seed> [--size <n>]`; it needs `SIEDLER_DIR`,
+    because it opens the install and imports the tables of `Siedler1.exe`
   - Play run — `mise run play -- <stem> ...`, the play-run wrapper; see `docs/agents/verification.md`
   - Ghidra dump — the `ghidra:*` tasks run the scripts in `tools/GhidraDump/`, which build a local Ghidra
     project of `Siedler1.exe` and write a searchable dump into `re-local/`. See `tools/GhidraDump/README.md`.

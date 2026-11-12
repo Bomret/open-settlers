@@ -121,7 +121,7 @@ failed `expect` or a problem in the script.
   with the stored exit status, which the wrapper exits with. Only a run that exits 0 or 1 is stored. `--fresh` always runs and replaces the
   stored result.
 - The hash covers every tracked or untracked, not ignored file under `src/`, `scenes/`, and `content/` (content and
-  path). It also covers `project.godot`, `OpenSettlers.csproj`, `global.json`, the play script, the mode, the
+  path). It also covers `project.godot`, `OpenSettlers.csproj`, `global.json`, `Directory.Build.props`, the play script, the mode, the
   layout's path and content, the seed, the size, the graphics source, the frame rate, the Godot version, and the
   `SIEDLER_DIR` path.
   It leaves out the install's content and `.godot/`. After a change to the install, run with `--fresh`.
@@ -132,10 +132,34 @@ failed `expect` or a problem in the script.
   `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `graphics=<source>` (`history-edition` without the flag), `exit=<status>`, and `run`,
   `reused`, or `build` (a failed build). A line proves a run at a tip when its `HEAD` equals the tip and it reads
   `clean`.
-- Calls for one stem run one at a time: a second call waits on the lock directory
-  `play-out/.lock-<stem>`, says so once on stderr, then hashes its inputs and reuses what the first
-  stored. Other stems run in parallel. The lock holds its owner's pid, and a call takes over the lock of
-  a dead owner, and of a lock with no pid older than 5 seconds. Remove a lock by hand only when no run is live.
+- Calls for one stem run one at a time. A second call waits on the lock directory `play-out/.lock-<stem>`, says so
+  once on stderr, then hashes its inputs and reuses what the first stored. Other stems run in parallel.
+- The lock holds its owner's pid. A call takes over the lock of a dead owner, and a lock with no pid older than
+  5 seconds. A process of another user counts as live.
+- The liveness check is `ps -p <pid> -o pid=`, which needs no locale. A pid reads as dead only when that `ps`
+  exits 1 with no output and the same `ps` lists the call's own pid. A missing `ps`, a `ps` without `-p`, and
+  any other result make a call wait.
+- The takeover happens under the mutex `play-out/.lock-<stem>.takeover`, which holds its holder's pid. The mutex
+  is stale when that pid reads as dead, or when it holds no pid and is older than 5 seconds. A stale mutex is
+  cleared. A call waits on a mutex of a live holder. The wait message names the lock and the mutex.
+- A call removes a lock only while its own pid is in the mutex. It first judges the lock dead a second time
+  under the mutex and finds the pid it judged still in it. It never moves a lock off its path. The lock's own
+  call removes it on exit only while it holds that call's pid.
+- A stale mutex is cleared in place and never moved, by one reaper per holder. The directory
+  `play-out/.lock-<stem>.takeover.reap.<holder>` holds the reaper's pid. `<holder>` is the pid in the mutex, or
+  `nopid`. The reaper judges the mutex stale again with the same holder in it before it removes it.
+- A reap directory is stale by the mutex's rule. The next call that judges a mutex of that holder removes it. A
+  reap directory whose mutex is gone stays until removed by hand, and blocks nothing. A call removes a mutex
+  that holds its own pid outside its critical section instead of waiting on it.
+- Two gaps are left, and each needs a call that stalls or is killed.
+  - A holder that stalls more than 5 seconds between creating the mutex and writing its pid reads as holding
+    none. A reaper can then remove the mutex, and a third call can take the path. Two holders result, and one
+    can remove a lock another took.
+  - A reaper killed inside its step leaves its reap directory. Two calls that both judge it stale can remove it
+    one after the other's new reaper has made it. Two reapers of one holder result, and the one that finishes
+    second can remove a mutex a live holder took.
+- Remove the lock, the mutex, and the reap directories by hand only when no run is live.
+- An empty `--size` or `--seed` exits 2 with the usage message, as an empty `--fps` or `--layout` does.
 
 When a line is about one place, take a cropped shot, `shot <name> <column> <row> [radius] [scale]`, rather
 than the whole frame: it keeps the tiles within `radius` steps of the tile (default 1) and the room above them

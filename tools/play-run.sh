@@ -7,13 +7,20 @@
 # implies --game-view (a layout holds its own seed and size, so --layout with --seed or --size exits 2, and so
 # does a missing layout file or an empty layout value). The input hash covers the mode, the layout's path and
 # content, the content and path of every tracked or untracked, not ignored file under src/, scenes/ and content/, the
-# project files, the play script, the seed, the size, the graphics source (history-edition when none is given), the
+# project files (project.godot, OpenSettlers.csproj, global.json, Directory.Build.props), the play script, the seed, the size, the graphics source (history-edition when none is given), the
 # fps, the Godot version and the SIEDLER_DIR path. --graphics takes history-edition or open-settlers, once. A result is stored in
 # play-out/.cache/<hash>/ only for exit status 0 or 1. Each call past the argument checks appends one line to
 # play-out/runs.log; the line names the mode (map or game-view), the layout, and the graphics source. Bad arguments exit 2 and leave no trace.
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
-# call waits on a live owner, says so once on stderr, and takes over the lock of a dead one under the mutex
-# play-out/.lock-<stem>.takeover. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
+# call waits on a live owner (a process of another user counts as live), says so once on stderr, and takes over
+# the lock of a dead one, or of one with no pid older than 5 seconds, under the takeover mutex
+# play-out/.lock-<stem>.takeover. The comments beside the lock code state the protocol: the liveness check, the
+# mutex, and its reapers. Two gaps are left, and each needs a call that stalls or is killed. A holder that stalls
+# more than 5 seconds between creating the mutex and writing its pid reads as holding none, so a reaper can remove
+# it and a third call can take the path: two holders, and one can remove a lock another took. A reaper killed
+# inside its step leaves its reap directory, and two calls that both judge it stale can remove it one after the
+# other's new reaper has made it: two reapers of one holder, and the one that finishes second can remove a mutex a
+# live holder took. An empty --size or --seed exits 2. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
 # failed build starts no Godot, stores nothing, and exits 3. Build and Godot run through `mise exec`, which
 # supplies the pinned tools and $GODOT. PLAY_RUN_MISE replaces the mise binary (default mise), PLAY_RUN_GODOT
 # the Godot binary (default $GODOT from mise.toml), PLAY_RUN_DOTNET the dotnet binary (default dotnet).
@@ -44,8 +51,8 @@ while [ $# -gt 0 ]; do
     --seed | --size | --fps | --layout | --graphics)
       [ $# -ge 2 ] || usage "$1 needs a value"
       case "$1" in
-        --seed) seed=$2 ;;
-        --size) size=$2 ;;
+        --seed) [ -n "$2" ] || usage "--seed needs a value"; seed=$2 ;;
+        --size) [ -n "$2" ] || usage "--size needs a value"; size=$2 ;;
         --fps) fps=$2 ;;
         --layout) [ -n "$2" ] || usage "--layout needs a file"; layout=$2 ;;
         --graphics)
@@ -96,17 +103,38 @@ version=$(godot --version 2>/dev/null) || usage "cannot read the Godot version"
 
 # One call per stem at a time, locked before the hash so a waiting call hashes the inputs it runs on. The lock
 # holds the owner's pid; a lock whose pid is dead is taken over, and so is a lock with no pid after a grace of
-# 5 seconds (its owner was killed between creating it and writing the pid).
+# 5 seconds (its owner was killed between creating it and writing the pid). `ps -p` finds a live process of
+# another user, which kill -0 reports as gone (EPERM), and needs no locale. A pid counts as dead only when
+# `ps -p <pid> -o pid=` exits 1 with no output and the same `ps` lists this call's own pid; a missing ps, a ps
+# without -p, and any other result read as live. The takeover mutex holds its holder's pid and is stale when that
+# pid is dead, or, with no pid in it, after the same 5 seconds grace. A lock is never moved off its path: it is
+# removed only by a call that holds the mutex (its own pid is in it), judged the lock stale there, and finds the
+# pid it judged still in the lock. A stale mutex is never moved: one reaper per holder, serialized by the directory
+# $mutex.reap.<holder> (which holds the reaper's pid), judges it again in place with the same holder in it and
+# removes it. The EXIT trap removes only a lock that holds its pid.
 lock=play-out/.lock-$stem
-stale() {
-  p=$(cat "$lock/pid" 2>/dev/null)
-  if [ -n "$p" ]; then
-    ! kill -0 "$p" 2>/dev/null
-  else
-    m=$(stat -c %Y "$lock" 2>/dev/null || stat -f %m "$lock" 2>/dev/null) || return 1
-    [ $(($(date +%s) - m)) -gt 5 ]
-  fi
+mutex=$lock.takeover
+older() {
+  m=$(stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null) || return 1
+  [ $(($(date +%s) - m)) -gt 5 ]
 }
+# Is the process of pid $1 dead?
+gone() {
+  listed=$(ps -p "$1" -o pid= 2>/dev/null)
+  [ $? -eq 1 ] && [ -z "$listed" ] && [ -n "$(ps -p $$ -o pid= 2>/dev/null)" ]
+}
+# Judges the lock, and leaves the pid it judged in $judged.
+stale() {
+  judged=$(cat "$lock/pid" 2>/dev/null)
+  if [ -n "$judged" ]; then gone "$judged"; else older "$lock"; fi
+}
+# Judges the mutex at path $1.
+mutex_stale() {
+  holder=$(cat "$1/pid" 2>/dev/null)
+  if [ -n "$holder" ]; then gone "$holder"; else older "$1"; fi
+}
+# Does the mutex at its path hold this call's pid?
+holds_mutex() { [ "$(cat "$mutex/pid" 2>/dev/null)" = "$$" ]; }
 waited=
 mkdir -p play-out 2>/dev/null
 until mkdir "$lock" 2>/dev/null; do
@@ -115,21 +143,48 @@ until mkdir "$lock" 2>/dev/null; do
     exit 2
   fi
   if stale; then
-    # Only the holder of the takeover mutex removes a lock, after judging it stale again while holding it. No
-    # other call can create the lock path while the stale lock still stands there.
-    if mkdir "$lock.takeover" 2>/dev/null; then
-      if stale; then rm -rf "$lock"; fi
-      rmdir "$lock.takeover"
+    # Only the holder of the takeover mutex removes a lock, after judging it stale again while holding it, and
+    # only a lock that still holds the pid it judged. No other call can create the lock path while the stale
+    # lock still stands there. The holder acts only while its pid is in the mutex, and removes the mutex then.
+    if mkdir "$mutex" 2>/dev/null; then
+      echo $$ >"$mutex/pid"
+      if holds_mutex && stale && [ "$(cat "$lock/pid" 2>/dev/null)" = "$judged" ] && holds_mutex; then rm -rf "$lock"; fi
+      if holds_mutex; then rm -rf "$mutex"; fi
       continue
+    fi
+    # A call never waits on a mutex that holds its own pid outside the section above (pid reuse: a dead earlier
+    # call with this call's pid left it there).
+    if holds_mutex; then
+      rm -rf "$mutex"
+      continue
+    fi
+    # A stale mutex is cleared in place, never moved: while it stands no call can create the mutex path. One
+    # reaper per holder (the pid in the mutex, or "nopid") holds the directory $mutex.reap.<holder>, which holds
+    # the reaper's pid, judges the mutex stale again with the same holder in it, and removes it. A reap directory
+    # is stale by the mutex's rule and removed by the next call that judges a mutex of that holder, which retries;
+    # one whose mutex is gone stays until removed by hand and blocks nothing.
+    if [ -d "$mutex" ] && mutex_stale "$mutex"; then
+      key=${holder:-nopid}
+      reap=$mutex.reap.$key
+      if mkdir "$reap" 2>/dev/null; then
+        echo $$ >"$reap/pid"
+        if mutex_stale "$mutex" && [ "${holder:-nopid}" = "$key" ]; then rm -rf "$mutex"; fi
+        if [ "$(cat "$reap/pid" 2>/dev/null)" = "$$" ]; then rm -rf "$reap"; fi
+        continue
+      fi
+      if mutex_stale "$reap"; then
+        rm -rf "$reap"
+        continue
+      fi
     fi
   fi
   if [ -z "$waited" ]; then
-    echo "play-run.sh: waiting on $lock (remove it if no run is live)" >&2
+    echo "play-run.sh: waiting on $lock or $mutex (remove them if no run is live)" >&2
     waited=1
   fi
   sleep 1
 done
-trap 'rm -rf "$lock"' EXIT
+trap 'if [ "$(cat "$lock/pid" 2>/dev/null)" = "$$" ]; then rm -rf "$lock"; fi' EXIT
 trap 'exit 130' INT TERM HUP
 echo $$ >"$lock/pid"
 
@@ -142,7 +197,7 @@ hash=$(
     done >"$list"
     [ -s "$list" ] && git hash-object --stdin-paths <"$list" | paste -d ' ' "$list" -
     rm -f "$list"
-    for f in project.godot OpenSettlers.csproj global.json; do
+    for f in project.godot OpenSettlers.csproj global.json Directory.Build.props; do
       if [ -f "$f" ]; then echo "$f $(git hash-object -- "$f")"; else echo "$f missing"; fi
     done
     echo "script $(git hash-object -- "$script")"

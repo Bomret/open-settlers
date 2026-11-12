@@ -197,7 +197,7 @@ public sealed class TextFileTests
     }
 
     [TestMethod]
-    public void ALineOf255CharactersStopsTheProgramAndIsRejectedWhileOneOf254IsRead()
+    public void ALineOf255CharactersEndsTheProgramAndIsRejectedWhileOneOf254IsRead()
     {
         var value254 = new string('x', 254 - "K=\"\"".Length);
         var value255 = new string('x', 255 - "K=\"\"".Length);
@@ -208,6 +208,7 @@ public sealed class TextFileTests
         var rejected = file.Rejected.Single();
         Assert.AreEqual(2, rejected.Line);
         StringAssert.Contains(rejected.Reason, "too long");
+        StringAssert.Contains(rejected.Reason, "loads no key of the file");
     }
 
     [TestMethod]

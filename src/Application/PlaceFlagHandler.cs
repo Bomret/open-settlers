@@ -33,6 +33,12 @@ public sealed class PlaceFlagHandler(
             return false;
         }
 
+        // A road node whose bits hold no two road directions fails before the flag is put down.
+        if (site.Node == 4)
+        {
+            removal.CheckSplit(map.Index(x, y));
+        }
+
         FlagPlacement.Apply(map, x, y, flags.NextSlot);
         var slot = FlagSlots.Add(flags, history, x, y);
         var cause = causes.Command(history.FlagId(slot));

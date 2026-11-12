@@ -36,9 +36,9 @@ public readonly record struct Seed(ushort W0, ushort W1, ushort W2)
             return false;
         }
 
-        if (text.FirstOrDefault(c => c is < '1' or > '8') is var bad and not '\0')
+        if (text.AsSpan().IndexOfAnyExceptInRange('1', '8') is var at and >= 0)
         {
-            problem = $"'{bad}' is not a digit from 1 to 8";
+            problem = $"'{text[at]}' is not a digit from 1 to 8";
             return false;
         }
 

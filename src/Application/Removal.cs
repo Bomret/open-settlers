@@ -16,7 +16,7 @@ namespace OpenSettlers.Simulation;
 // it class 0, so the click is refused).
 
 /// <summary>
-/// The removal: the click class of a node (the remove tool's command for it is the game's),the take-down of a flag, a building, or a road, the dismissal and the rejoining of the
+/// The removal: the click class of a node (the remove tool's command for it is the game's), the take-down of a flag, a building, or a road, the dismissal and the rejoining of the
 /// settlers on a road that goes, the count of the goods that are lost, the burning of a building taken down, and the split of a
 /// road by a flag. It handles the activities <see cref="WaitsToGoHome"/> and <see cref="WaitsToRejoin"/>.
 /// </summary>
@@ -244,7 +244,12 @@ public sealed class Removal(
             return false;
         }
 
-        var (first, second) = RoadBits(nodeRoads);
+        if (RoadBits(nodeRoads) is not { } bits)
+        {
+            return false;
+        }
+
+        var (first, second) = bits;
 
         // A road has no ID: its cause names the flag it leaves from.
         _raze = Cause.Razed(history.FlagId(road.FromSlot));
@@ -258,18 +263,41 @@ public sealed class Removal(
     }
 
     // The take-down and the split walk from a node along its first two road bits (0x462e1d, 0x4662e2); a second bit found at 4
-    // with bit 5 set is taken for 5.
-    private static (int First, int Second) RoadBits(RoadSet nodeRoads)
+    // with bit 5 set is taken for 5. Null where the node holds no two directions among 0 to 5.
+    private static (int First, int Second)? RoadBits(RoadSet nodeRoads)
     {
         var first = nodeRoads.First;
-        var second = first + 1;
-        while (!nodeRoads.Has(second))
+        if (first > 5)
         {
-            second++;
+            return null;
         }
 
-        return (first, second == 4 && nodeRoads.Has(5) ? 5 : second);
+        for (var second = first + 1; second <= 5; second++)
+        {
+            if (nodeRoads.Has(second))
+            {
+                return (first, second == 4 && nodeRoads.Has(5) ? 5 : second);
+            }
+        }
+
+        return null;
     }
+
+    /// <summary>
+    /// Throws the <see cref="InvalidOperationException"/> of <see cref="SplitRoad"/> where a road passes the node and its bits
+    /// hold no two directions among 0 to 5; changes nothing.
+    /// </summary>
+    public void CheckSplit(int index)
+    {
+        if (RoadThrough(index) is not null)
+        {
+            _ = SplitBits(index);
+        }
+    }
+
+    private (int First, int Second) SplitBits(int index) =>
+        RoadBits(Map.At(index).Roads)
+        ?? throw new InvalidOperationException($"the node {index} holds no two road directions to split along");
 
     // The road that passes a node that holds no flag.
     private Road? RoadThrough(int index)
@@ -968,7 +996,9 @@ public sealed class Removal(
     /// The flag in the slot has just been put on the node of a road: the road becomes two roads that meet at the flag, and the
     /// settlers on it go to the half they stand on or walk to (Gather and the carrier on its way). The half that holds no
     /// carrier asks the castle for one at the next flag pass of its flags, with a request that takes the cause. A node that holds
-    /// no road changes nothing.
+    /// no road changes nothing. A node of a road whose bits hold no two directions among 0 to 5 throws
+    /// <see cref="InvalidOperationException"/> naming the node; a caller runs <see cref="CheckSplit"/> before it puts the flag
+    /// down, so the failure leaves no flag behind.
     /// </summary>
     public void SplitRoad(int index, int slot, Cause cause)
     {
@@ -977,8 +1007,9 @@ public sealed class Removal(
             return;
         }
 
+        var (first, second) = SplitBits(index);
+
         _raze = cause;
-        var (first, second) = RoadBits(Map.At(index).Roads);
         var a = Gather(index, first);
         var b = Gather(index, second);
 

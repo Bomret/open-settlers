@@ -186,7 +186,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 - `content/`: the content sets the repository ships (ADR 0015). `content/open-settlers/` is the Open Settlers graphics source: a manifest, PNGs, and a `.gdignore`.
 - `play/`: the checked-in play scripts ("Run a play script").
 - `layouts/`: the checked-in layouts ("Layouts" under "Run a play script").
-- `tests/OpenSettlers.Tests/`: the unit tests (MSTest). They need neither Godot nor an install.
+- `tests/OpenSettlers.Tests/`: the unit tests (MSTest). The project also holds the `Install` and `Ghidra` test categories, which the unit commands filter out; the unit tests need neither Godot nor an install.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.
 - `docs/controls.md`: the controls of the map view and the game view.
