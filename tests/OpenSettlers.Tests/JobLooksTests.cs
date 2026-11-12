@@ -22,7 +22,11 @@ public sealed class JobLooksTests
     ];
 
     private static RuleTables Tables() =>
-        new([.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)], NoStock());
+        new(
+            [.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)],
+            NoStock(),
+            jobData: TestProgram.MadeJobData()
+        );
 
     private static byte[][] NoStock() =>
         [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[RuleTables.Goods])];
