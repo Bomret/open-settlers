@@ -53,6 +53,10 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
     private const int ByteMask = 0xff;
     private const int DirectionCount = 6;
 
+    /// <summary>The digger is the worker a large site asks for while its ground is not levelled (<c>0x42d52a</c>).</summary>
+    public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
+        stage == SiteStage.Levelling ? tables.Get<WorkerRequest>(new Digger()) : null;
+
     /// <summary>Registers the behaviour of the digger's activity.</summary>
     public override void Register(ActivityRegistry registry) =>
         registry.Register<Digs>((slot, settler, _) => Turn(slot, settler));

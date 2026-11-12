@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
@@ -9,17 +10,20 @@ namespace OpenSettlers.Simulation;
 /// <c>docs/rules/digging.md</c>) where none is inside or on the way and its last request did not fail; then the pass keeps the rank of the
 /// requests of the site's flag for planks and stones from what the site holds on site and on the way against what it needs, so that it never
 /// asks for more than it needs. A site with no worker inside or on the way, whose last request did not fail, asks for its builder
-/// (<c>0x42d5fc</c>) and takes the progress word 1. **Not ported:** the branch of the computer player (player byte <c>+0x163</c>) and the
-/// branch of the digger's request for a player whose byte <c>+0x163</c> has bit 6 set.
+/// (<c>0x42d5fc</c>) and takes the progress word 1. The workers it asks for are those the job rules modules name for each
+/// <see cref="SiteStage"/> (<see cref="JobRules.SiteWorker"/>); the pass names no job. **Not ported:** the branch of the computer player
+/// (player byte <c>+0x163</c>) and the branch of the digger's request for a player whose byte <c>+0x163</c> has bit 6 set.
 /// </summary>
 /// <param name="map">The map: the heights of the ground around a large site.</param>
 /// <param name="flags">The flag table: the site's flag holds its requests.</param>
-/// <param name="tables">The rule tables: the size of a type, the rank the planks start from, and the builder's request.</param>
+/// <param name="tables">The rule tables: the size of a type, the rank the planks start from, and the workers' requests.</param>
+/// <param name="modules">The job rules modules, which name the worker of each stage of a site.</param>
 /// <param name="askForWorker">The request of a worker for a building (the castle's), or null where the site asks for none.</param>
 public sealed class SitePass(
     Map map,
     FlagTable flags,
     RuleTables tables,
+    IReadOnlyList<JobRules> modules,
     Action<Building, WorkerRequest>? askForWorker = null
 )
 {
@@ -48,7 +52,7 @@ public sealed class SitePass(
                 // castle for a digger (0x42d52a), and the failing request sets the bit (CastleRoster.AskForWorker).
                 if (!site.RequestFailed)
                 {
-                    askForWorker?.Invoke(site, tables.Get<WorkerRequest>(new Digger()));
+                    Ask(site, SiteStage.Levelling);
                 }
 
                 return;
@@ -60,12 +64,26 @@ public sealed class SitePass(
         if (!(site.RequestFailed || site.WorkerInside || site.WorkerOnTheWay))
         {
             site.Progress = 1;
-            askForWorker?.Invoke(site, tables.Get<WorkerRequest>(new Builder()));
+            Ask(site, SiteStage.Building);
         }
 
         var flag = flags[site.Flag];
         Keep(flag, RequestWord.First, needs.Planks, site.FillLow, tables.PlankRankBase, site.WorkerInside);
         Keep(flag, RequestWord.Second, needs.Stones, site.FillHigh, StoneRankStart, site.WorkerInside);
+    }
+
+    // The site's request for the worker of the stage: the first the modules name, none where no module names one.
+    private void Ask(Building site, SiteStage stage)
+    {
+        foreach (var module in modules)
+        {
+            if (module.SiteWorker(stage, tables) is { } request)
+            {
+                askForWorker?.Invoke(site, request);
+
+                return;
+            }
+        }
     }
 
     // The ground is levelled where the node and its six neighbours all lie at the site's height (0x42d34e to 0x42d490).
