@@ -51,6 +51,10 @@ Always use braces around loops and conditional branching. The one exception is a
 
 Document public and protected/abstract/overridable facing types and members using appropriate code documentation. Be specific and concise but also mention side-effects, possible errors/exceptions and possibly unexpected behavior.
 
+### Godot `.uid` files
+
+A new script or shader in a Godot-scanned folder (`src/Assets/`, `src/Formats/`, `src/Launch/`, `src/MapView/`, `src/Viewer/`) gets a `.uid` file from the Godot editor. Generate it with `godot --headless --editor --quit-after 2 --path .` and commit it with the source. A new folder outside the Godot assembly (`<Compile Remove>` in `OpenSettlers.csproj`) gets a `.gdignore`.
+
 ## C# Style
 
 ### Member ordering
