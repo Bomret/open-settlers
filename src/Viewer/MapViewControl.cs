@@ -570,8 +570,17 @@ public partial class MapViewControl : Control
             return;
         }
 
-        // Keycode holds the bare key: a held Shift or Ctrl is not part of it.
-        switch (MapKeys.Action(key.Keycode.ToString(), key.Pressed, key.Echo, _seed.HasFocus()))
+        var bare = key.Keycode switch
+        {
+            Key.Escape => MapKey.Escape,
+            Key.Plus => MapKey.Plus,
+            Key.Equal => MapKey.Equal,
+            Key.KpAdd => MapKey.KeypadAdd,
+            Key.Minus => MapKey.Minus,
+            Key.KpSubtract => MapKey.KeypadSubtract,
+            _ => MapKey.Other,
+        };
+        switch (MapKeys.Action(bare, key.Pressed, key.Echo, _seed.HasFocus()))
         {
             case MapKeyAction.LeaveRoadMode:
                 _roadButton.ButtonPressed = false;
@@ -671,7 +680,10 @@ public partial class MapViewControl : Control
             _game.Enqueue(command);
         }
 
-        DrawPreview();
+        if (mode.Road && _drawing is not null)
+        {
+            DrawPreview();
+        }
     }
 
     // Releases every toggle of the build panel.
