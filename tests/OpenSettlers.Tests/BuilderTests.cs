@@ -18,9 +18,9 @@ public sealed class BuilderTests
 
     // A game with a forester's site at 17,5 whose planks lie on site: the hand-out of the castle is not part of these tests. A step takes
     // 300 clock units, more than the 128 between two turns of a settler, so a builder's turn makes one blow at most.
-    private static (Game Game, Building Site) World(int planksOnSite = 2)
+    private static (Game Game, Building Site) World(int planksOnSite = 2, bool everyPassTurns = false)
     {
-        var game = ConstructionWorld.Create(ConstructionTables.Tables(stepTime: 300));
+        var game = ConstructionWorld.Create(ConstructionTables.Tables(stepTime: 300), everyPassTurns: everyPassTurns);
         ConstructionWorld.Site(game, BuildingType.Forester, SiteX, SiteY);
         var site = game.Buildings[1];
         site.FillLow = planksOnSite << 4;
@@ -46,6 +46,48 @@ public sealed class BuilderTests
         }
 
         return seen;
+    }
+
+    // With the turns of every pass, no settler the view draws stands still for more than a pass: the builder on his way out, at work,
+    // and on his way home, and the carriers. The slice turns alone leave the figures standing for passes.
+    [TestMethod]
+    public void NoDrawnSettlerStallsWhenEveryPassGivesATurn()
+    {
+        var (on, _) = World(everyPassTurns: true);
+        var (off, _) = World(everyPassTurns: false);
+
+        var (longest, seen) = ConstructionWorld.LongestStall(on, 3000);
+
+        Assert.IsGreaterThan(1, ConstructionWorld.LongestStall(off, 3000).Longest, "the slice turns alone stall");
+        Assert.IsLessThanOrEqualTo(1, longest);
+        CollectionAssert.IsSubsetOf(new[] { typeof(Walks), typeof(Builds) }, seen.ToList());
+    }
+
+    // The view draws a site by its progress word (SiteStages), so a blow is a change of the object layer the view must redraw.
+    [TestMethod]
+    public void TheObjectLayerWatchReportsEveryBlowOnASite()
+    {
+        var (game, site) = World();
+        var watch = new OpenSettlers.MapView.ObjectLayerWatch();
+        watch.Changed(game);
+        var blows = 0;
+
+        for (var tick = 0; tick < 3000 && site.Constructing; tick++)
+        {
+            var before = site.Progress;
+            game.Tick();
+            var changed = watch.Changed(game);
+            if (site.Progress != before)
+            {
+                blows++;
+                Assert.IsTrue(
+                    changed,
+                    $"tick {game.TickCount}: the progress went from {before:x4} to {site.Progress:x4}"
+                );
+            }
+        }
+
+        Assert.IsGreaterThan(1, blows, "the builder made his blows");
     }
 
     [TestMethod]

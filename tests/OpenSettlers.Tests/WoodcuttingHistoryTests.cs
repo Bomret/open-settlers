@@ -121,7 +121,7 @@ public sealed class WoodcuttingHistoryTests
         for (var i = 0; i < 4000 && Woodcutter(game).Activity is not Door; i++)
             game.Tick();
         Assert.IsInstanceOfType<Door>(Woodcutter(game).Activity);
-        Woodcutter(game).Job = Job.Carrier;
+        Woodcutter(game).TakeUp(Job.Carrier);
         var before = game.History.EventsOf(id).Count;
         for (var i = 0; i < 50 && !game.History.EventsOf(id).Skip(before).Any(e => e.Type == EventType.Door); i++)
             game.Tick();

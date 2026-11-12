@@ -847,7 +847,7 @@ public sealed class Removal(
         if (settler.Job == Job.CastleSettler)
         {
             // The settler keeps its identity and takes the carrier's job; the mode byte of its item is cleared.
-            settler.Job = Job.Carrier;
+            settler.TakeUp(Job.Carrier);
             residue = movement.ResidueOf(settler.Activity) with { Mode = 0 };
         }
 

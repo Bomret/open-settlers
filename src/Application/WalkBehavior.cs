@@ -258,7 +258,7 @@ public sealed class WalkBehavior(
         roster.Take(made ? Job.Jobless : asked, slot);
         if (made)
         {
-            settler.Job = asked;
+            settler.TakeUp(asked);
         }
 
         hut.WorkerOnTheWay = true;

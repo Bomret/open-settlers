@@ -5,8 +5,8 @@ namespace OpenSettlers.MapView;
 
 /// <summary>
 /// Tells the view when the objects it draws changed: a tree cut, a stump gone, a log laid on a flag. The castle, the
-/// flags, the roads, and the huts are counted by the view; this watches the map objects and the goods on the flags,
-/// which change with no count changing.
+/// flags, the roads, and the huts are counted by the view; this watches the map objects, the heights, the goods on the
+/// flags, and the progress of the building sites, which change with no count changing.
 /// </summary>
 public sealed class ObjectLayerWatch
 {
@@ -30,6 +30,8 @@ public sealed class ObjectLayerWatch
         for (var index = 0; index < map.Count; index++)
         {
             hash = Fnv1a.Add(hash, map.At(index).Object);
+            // The digger changes heights with no object changing; the ground and what stands on it are drawn by them.
+            hash = Fnv1a.Add(hash, (ulong)map.At(index).Height);
         }
 
         foreach (var flag in game.Flags)
@@ -37,6 +39,16 @@ public sealed class ObjectLayerWatch
             foreach (var place in flag.Places)
             {
                 hash = Fnv1a.Add(hash, place.Good);
+            }
+        }
+
+        // A site is drawn by its progress word (SiteStages, ObjectDraws), which the builder's blows move with no object changing.
+        // The castle's word moves too but does not change its drawing.
+        foreach (var building in game.Buildings)
+        {
+            if (building.Constructing && building.Type != BuildingType.Castle)
+            {
+                hash = Fnv1a.Add(hash, building.Progress);
             }
         }
 

@@ -199,6 +199,25 @@ public sealed class SettlerFiguresTests
             Stamp = 0,
         };
 
+    // A job draws its figure through its handler (0x43f744 plus 8 for each job); a job the engine holds no handler for, such as the
+    // castle's own settler or a settler without a job, draws nothing, even where it walks.
+    [TestMethod]
+    [DataRow(4)]
+    [DataRow(21)]
+    public void ASettlerOfAJobWithoutAFigureHandlerIsNotDrawn(int job)
+    {
+        var walker = Walker(7, 0);
+        var other = new Settler(new Job(job), 0, 4, 3, 0, walker.Activity)
+        {
+            Frame = walker.Frame,
+            Timer = walker.Timer,
+            Stamp = 0,
+        };
+
+        Assert.IsNotEmpty(Figures().Draws(Map(), [walker], 0), "a woodcutter in the same walk is drawn");
+        Assert.IsEmpty(Figures().Draws(Map(), [other], 0));
+    }
+
     [TestMethod]
     public void AWalkingSettlerIsDrawnAsItsFigureItsColourOverlayAndItsSecondFigure()
     {

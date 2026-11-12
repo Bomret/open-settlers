@@ -955,19 +955,24 @@ public sealed class OpenSettlersSourceTests
             new WaitsToRejoin(heading.Retried),
         ];
 
-        // Every job the item's byte 0 can carry (bits 2 to 6): a job the builder draws a walking settler for must have a figure
-        // in the source for every activity it is drawn in, so the source's job set cannot fall behind the builder's.
+        // Every job the item's byte 0 can carry (bits 2 to 6): a job the History Edition's tables hold a figure handler for must
+        // have a figure in the content set for every activity it is drawn in, and a job without one none, so the two sources draw
+        // the same jobs.
+        var handlers = new SettlerFigureTables([], [], []);
         var jobsDrawn = 0;
         for (var code = 0; code < 32; code++)
         {
             var job = new Job(code);
             Settler Of(Activity activity) => new(job, 3, 4, 3, 0, activity) { Frame = 7 };
 
-            if (figures.Draws(map, [Of(drawnActivities[0])], 0).Count == 0)
+            if (!handlers.HasHandler(job))
             {
                 foreach (var activity in drawnActivities)
                 {
-                    Assert.IsEmpty(figures.Draws(map, [Of(activity)], 0), $"job {code} {activity}");
+                    Assert.IsTrue(
+                        figures.Draws(map, [Of(activity)], 0).All(term => term.Ask(source) is null),
+                        $"job {code} {activity}"
+                    );
                 }
 
                 continue;

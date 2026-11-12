@@ -19,6 +19,14 @@ public abstract record Activity
     /// </summary>
     public Residue Residue { get; init; }
 
+    /// <summary>
+    /// Whether the view draws a settler in this activity, by its frame and the time left of its step (<c>docs/rules/settlers.md</c>,
+    /// "Drawing the walk"). Such a settler takes one more turn every pass where the game gives the settlers in view their turns
+    /// (<c>MainPass.EveryPassTurns</c>), so its figure does not stand still between its slice turns. An activity the original draws
+    /// overrides this; the others are not drawn.
+    /// </summary>
+    public virtual bool IsDrawn => false;
+
     /// <summary>Where the activity takes the settler along the roads, or null where it takes it nowhere along them.</summary>
     public virtual Errand? GoingTo => null;
 
@@ -56,6 +64,9 @@ public sealed record Walks(Errand Errand, Heading Heading, int Tries = 0) : HasE
 {
     /// <inheritdoc />
     public override int Code => 2;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 3: a carrier walks its road, with a good in its hands or none.</summary>
@@ -67,6 +78,9 @@ public sealed record WalksRoad(Load? Load, Heading Heading, int Waits = 0, bool 
 {
     /// <inheritdoc />
     public override int Code => 3;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 4: the settler has stepped through a door and waits out what the door's speed leaves of the step.</summary>
@@ -76,6 +90,9 @@ public sealed record Door(int TimeLeft, bool EnteringStorage = false) : Activity
 {
     /// <inheritdoc />
     public override int Code => 4;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>An activity of a step whose time runs out before the settler takes up <see cref="Then"/>.</summary>
@@ -95,6 +112,9 @@ public sealed record WaitsOutStep(Activity Then) : StepsBefore(Then)
 {
     /// <inheritdoc />
     public override int Code => 5;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 6: the settler stands on the flag of the building it walks into and waits for the node of the door.</summary>
@@ -127,6 +147,9 @@ public sealed record Builds(int Site, bool Blowing, int Materials, bool SecondFi
 {
     /// <inheritdoc />
     public override int Code => 9;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>
@@ -143,6 +166,9 @@ public sealed record Digs(int Pass, int Target, int Node, int Phase) : Activity
 {
     /// <inheritdoc />
     public override int Code => 8;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>
@@ -154,6 +180,9 @@ public sealed record Saws(bool Sawing) : Activity
 {
     /// <inheritdoc />
     public override int Code => 0x18;
+
+    /// <summary>Drawn while he saws; waiting for a log he is not drawn.</summary>
+    public override bool IsDrawn => Sawing;
 }
 
 /// <summary>
@@ -173,6 +202,9 @@ public sealed record PutsDownGood(Good Good) : Activity
 {
     /// <inheritdoc />
     public override int Code => 0xd;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>
@@ -183,6 +215,9 @@ public sealed record LeavesSite : Activity
 {
     /// <inheritdoc />
     public override int Code => 0x4a;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 10: the settler stands by while the castle is built.</summary>
@@ -207,6 +242,9 @@ public sealed record HandsOver(Load? Load, Heading Heading, bool Marked = false)
 {
     /// <inheritdoc />
     public override int Code => 0xe;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 15: the settler leaves the castle by its door onto the castle's flag.</summary>
@@ -227,6 +265,9 @@ public sealed record WalksFree(Trip Trip, bool EyesHeaps = false) : Activity
 {
     /// <inheritdoc />
     public override int Code => EyesHeaps ? 0x16 : 0x10;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 17: the woodcutter cuts the tree it stands on, one falling step at a time.</summary>
@@ -238,6 +279,9 @@ public sealed record Cuts(Vector Back, bool SecondVariant, int Count, int Memory
 {
     /// <inheritdoc />
     public override int Code => 0x11;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 18: the woodcutter inside its hut looks for a tree.</summary>
@@ -262,6 +306,9 @@ public sealed record Plants(Vector Back, bool Planted, int Memory) : Activity
 {
     /// <inheritdoc />
     public override int Code => 0x14;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 21: the stonecutter inside his hut looks for a stone heap.</summary>
@@ -282,6 +329,9 @@ public sealed record CutsStone(Vector Back, int Phase, int Quarter) : Activity
 {
     /// <inheritdoc />
     public override int Code => 0x17;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 25: the settler looks for the nearest flag on the way home.</summary>
@@ -294,6 +344,9 @@ public sealed record SearchesHome(bool FarEndFirst = false, int FarEndMark = 1) 
 {
     /// <inheritdoc />
     public override int Code => 0x19;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
 }
 
 /// <summary>State 28: the settler claims the node it stands on to start the way home.</summary>

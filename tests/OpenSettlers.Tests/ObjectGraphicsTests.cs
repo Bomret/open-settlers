@@ -210,6 +210,23 @@ public sealed class ObjectGraphicsTests
         Assert.AreEqual(11, graphics.Sprites[ObjectSprites.WoodcutterEntry].OffsetX);
     }
 
+    // A site draws the scaffold of its type (docs/rules/construction.md, "Drawing a site"), so both scaffolds are read with their shadows.
+    [TestMethod]
+    public void TheScaffoldSpritesAreRead()
+    {
+        var payloads = Payloads();
+        payloads[ObjectSprites.ScaffoldSmallEntry] = Square(6, 2);
+        payloads[ObjectSprites.ScaffoldLargeEntry] = Square(8, 2);
+        payloads[ObjectSprites.ScaffoldSmallEntry + ObjectGraphics.ShadowOffset] = ShadowMask();
+        using var fake = Install(payloads, rows: 1700);
+
+        var graphics = ObjectGraphics.Load(Open(fake));
+
+        Assert.AreEqual(6, graphics.Sprites[ObjectSprites.ScaffoldSmallEntry].OffsetX);
+        Assert.AreEqual(8, graphics.Sprites[ObjectSprites.ScaffoldLargeEntry].OffsetX);
+        Assert.IsTrue(graphics.Shadows.ContainsKey(ObjectSprites.ScaffoldSmallEntry));
+    }
+
     [TestMethod]
     public void AnAbsentEntryHasNoSprite()
     {

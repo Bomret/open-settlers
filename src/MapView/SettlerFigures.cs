@@ -28,7 +28,8 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
 
     private static readonly SettlerPart[] Parts = [SettlerPart.Figure, SettlerPart.Overlay, SettlerPart.SecondFigure];
 
-    // The settlers that are drawn walk the roads (state 2), wait out a step (5), walk along a road as a carrier does (3), hand
+    // The settlers that are drawn are those in an activity that says so (Activity.IsDrawn), the same ones that take the turns of
+    // every pass: among them those that walk the roads (state 2), wait out a step (5), walk along a road as a carrier does (3), hand
     // a good over (0xe), step through a door (4), walk free (0x10), cut (0x11), or search for a flag home (0x19). **Confirmed**
     // (draw run, settler-draws.txt): a carrier that waits next to a flag (state 0x42) is not drawn at all: the carrier's figure
     // handler (0x43f8ae) returns at once for it. **Confirmed** the same way: a carrier whose road was taken down or joined and
@@ -39,23 +40,6 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
     // its door, walks free along its vector, or cuts is drawn with the frame and the timer it holds as a walking settler is
     // (docs/rules/woodcutting.md). A settler that searches for the nearest flag on its way home is drawn with the frame 0x52
     // the claim sets, as a walking settler is. **Confirmed** (draw run, the woodcutter and the dismissed carrier).
-    private static bool IsDrawn(Activity activity) =>
-        activity
-            is Walks
-                or WaitsOutStep
-                or WalksRoad
-                or HandsOver
-                or Door
-                or WalksFree
-                or Cuts
-                or CutsStone
-                or Plants
-                or SearchesHome
-                or Builds
-                or LeavesSite
-                or Digs
-                or Saws { Sawing: true }
-                or PutsDownGood;
 
     /// <summary>
     /// The terms of the settlers that walk, in the order of their rows, each settler's figure, overlay, and second figure in
@@ -67,19 +51,8 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
         var records = new List<(int Order, int Y, int X, int Row, List<SettlerDraw> Terms)>();
         foreach (var settler in settlers)
         {
-            if (
-                !IsDrawn(settler.Activity)
-                || (
-                    settler.Job != Job.Carrier
-                    && settler.Job != Job.Woodcutter
-                    && settler.Job != Job.Stonecutter
-                    && settler.Job != Job.TypeOneHut
-                    && settler.Job != Job.Builder
-                    && settler.Job != Job.Forester
-                    && settler.Job != Job.Digger
-                    && settler.Job != Job.Sawmiller
-                )
-            )
+            // Each graphics source draws a term only for a job it has a figure for, so the record of any other job draws nothing.
+            if (!settler.Activity.IsDrawn)
             {
                 continue;
             }

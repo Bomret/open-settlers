@@ -20,7 +20,13 @@ public sealed class Settler
     }
 
     /// <summary>The job. A settler without a job becomes a carrier when it takes a road; the settler stays the same.</summary>
-    public Job Job { get; set; }
+    public Job Job { get; private set; }
+
+    /// <summary>
+    /// The settler takes up <paramref name="job"/>: a jobless settler a worker request sends out, a worker who becomes a carrier, a
+    /// knight promoted. It stays the same object in the same slot, so its thing ID and its history go on.
+    /// </summary>
+    public void TakeUp(Job job) => Job = job;
 
     /// <summary>The player.</summary>
     public int Player { get; }

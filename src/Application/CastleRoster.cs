@@ -214,7 +214,7 @@ public sealed class CastleRoster(
         Entry(made ? Job.Jobless : job) = 0;
         if (made)
         {
-            settler.Job = job;
+            settler.TakeUp(job);
             stock.Take(request.Tool);
         }
 
@@ -274,7 +274,7 @@ public sealed class CastleRoster(
                     if (draws.Draw() < PromotionLimits[level])
                     {
                         Entry(settler.Job) = 0;
-                        settler.Job = settler.Job.Promoted;
+                        settler.TakeUp(settler.Job.Promoted);
                         settler.Timer = KnightTimerStep;
                         break;
                     }

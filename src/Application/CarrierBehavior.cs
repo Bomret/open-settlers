@@ -218,7 +218,7 @@ public sealed class CarrierBehavior(
         var carrier = roster.Waiting(job);
         var settler = settlers[carrier];
         roster.Take(job, carrier);
-        settler.Job = Job.Carrier;
+        settler.TakeUp(Job.Carrier);
         var (flag, flagDirection) = end == 0 ? (slot, direction) : (far, farDirection);
         movement.Become(settler, new Leaving(new ToRoad(flag, flagDirection)));
         roster.WorkerSent();
@@ -318,7 +318,7 @@ public sealed class CarrierBehavior(
         var (dx, dy) = Direction.Steps[waitDirection];
         var settler = settlers[slot];
         roster.Take(job, slot);
-        settler.Job = Job.Carrier;
+        settler.TakeUp(Job.Carrier);
         settler.X = (flags[waitFlag].X + dx) & (Map.Size.Width - 1);
         settler.Y = (flags[waitFlag].Y + dy) & (Map.Size.Height - 1);
         settler.Frame = (byte)(waitDirection + 0x6e);
