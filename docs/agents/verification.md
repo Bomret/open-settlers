@@ -82,6 +82,13 @@ test: the install readers, the emulator tools in `tools/GhidraDump/`.
 It runs the unit tests of the full command. Microsoft.Testing.Platform prints one `passed <test> (<duration>)`
 line per test, then the total duration in the run summary.
 
+## Prepare command
+
+`mise run restore`
+
+It restores CSharpier, the local dotnet tool the full command's format check runs. `dotnet test` restores the NuGet
+packages itself.
+
 ## Test paths
 
 - `tests/`

@@ -18,6 +18,8 @@ published to the wiki of `Bomret/open-settlers` on GitHub. In-repo docs
   changelog — durable, reader-facing docs only, not every `AGENTS.md`.
 - **Hierarchy:** links. A GitHub wiki nests no pages. Each child page links from a list item in its
   parent's body, and `/superdev:publish-kb` writes that link (ADR 0168).
+- **Decisions:** stay in the repository's ADRs. The knowledge base carries no ADR digest and no ADR
+  summaries.
 
 ## Audience, language & outline
 
@@ -29,7 +31,7 @@ The wiki is **human-consumption first**.
 
 ## Outline
 
-A living skeleton. `/superdev:plan` and `/superdev:document` fill and extend it.
+A living skeleton. `/superdev:document` extends it.
 
 - **`Home`.** The root page, with no parent. Hand-written. Its section `Pages` holds the link list to the
   audience pages, which `/superdev:publish-kb` maintains.
@@ -48,6 +50,11 @@ A living skeleton. `/superdev:plan` and `/superdev:document` fill and extend it.
 - **`Changelog`.** `(aggregate)`: one `## <feature>` section per shipped feature, never deeper and never
   `#`. Parent: `Developers`, section `Pages`.
 
+**Every outline entry names a topic page** (ADR 0229, INV-0188). An entry gives one page's exact title,
+and the page holds one subject a reader looks up, such as `Architecture` or `Configuration`. An entry holding a placeholder (`<...>`)
+names no page, and the doc pass writes no page under it. `/superdev:document`'s doc pass extends the topic page a change touches. Only when no topic fits does it
+add one explicit entry here, in the scope's doc commit, with its reason. A page per feature is no entry.
+
 **Create the root page first.** A child published before its root lands, but stays staged as not linked,
 because its parent has no page to carry the link yet.
 
@@ -58,9 +65,9 @@ whole (ADR 0027).
 **Links.** A parent's link line has the form `- [<title>](https://github.com/Bomret/open-settlers/wiki/{sub_url}): <one line>`.
 `<title>` is the child's full title. `{sub_url}` is written literally. The doc-writer writes the whole line,
 placeholder included, and `/superdev:publish-kb` replaces `{sub_url}` with the value the find call returns
-for the child once the child has landed. `/superdev:publish-kb` then places the line after the last
-top-level list item of the named section's own content, or below the heading as its first list item when
-that content holds none yet.
+for the child once the child has landed. That value is not the title slugged by hand (see Wiki git
+conventions). `/superdev:publish-kb` then places the line after the last top-level list item of the named
+section's own content, or below the heading as its first list item when that content holds none yet.
 
 **Page names.** A page is the file `<name>.md` at the wiki repository's root. `<name>` is the title with
 each space replaced by `-`: `Build and setup` is `Build-and-setup.md`, and its URL ends in
@@ -69,8 +76,9 @@ title that holds a `-` shows with a space there.
 
 ## Staging
 
-This is a **remote** backend, so nothing but `/superdev:publish-kb` calls it (ADR 0023). `/superdev:plan`
-and `/superdev:document` write each page as a **staged page** under `.superdev/kb-pending/<scope>/` in the
+This is a **remote** backend, so nothing but `/superdev:publish-kb` calls it (ADR 0023).
+The doc pass writes each page as a **staged page**: `/superdev:document` runs it, and on the `lite` tier
+`/superdev:implement` runs it inline first. Each page is staged under `.superdev/kb-pending/<scope>/` in the
 main working tree, resolved by `scope.js staging <scope>` (ADR 0119). Each carries YAML frontmatter with
 the page `title` and an `action` of `upsert`, `patch`, or `delete`, and the page body below. A page reaches
 the wiki when a human runs `/superdev:publish-kb`, after the feature has reached the readers this wiki is
@@ -207,9 +215,10 @@ Human-consumption first: shape pages around the audience, write in the language 
 
 ## superdev usage
 
-- `/superdev:plan` — seeds the in-repo feature specification/ADRs into the outline and stages their pages.
-- `/superdev:document` — reconciles and extends the KB (via its doc-writer) and stages the pages it
-  changed, after a scope lands and on demand.
+- `/superdev:document` reconciles and extends the wiki's topic pages through its doc-writer, and stages
+  the pages it changed.
+- `/superdev:implement` runs the same doc pass inline first on the `lite` tier, and stages the pages it
+  changed; `/superdev:document`'s doc-writer then extends them.
 - `/superdev:publish-kb` — sends the staged pages to the wiki. The only command that calls it.
 
 ## Degrade / switching

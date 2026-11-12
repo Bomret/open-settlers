@@ -22,6 +22,11 @@
   - Unit tests — `mise run test` (skips the `Install` and `Ghidra` test categories, MSTest on Microsoft.Testing.Platform, selected in `global.json`)
   - Integration tests — `mise run test:integration` (runs only the `Install` and `Ghidra` test categories; needs `SIEDLER_DIR` and Ghidra)
   - Asset check, asset browser, Godot editor — `mise run assets`, `mise run browser`, `mise run editor`
+  - Map view, game view — `mise run map`, `mise run game -- [--seed <seed>] [--size <n>] [--layout <file>]`
+    (need `SIEDLER_DIR`)
+  - Run the project with program arguments — `mise run godot -- <args>`
+  - Seed digests and counts — `mise run seed-info -- --seed <seed> [--size <n>]` (no install needed)
+  - Play run — `mise run play -- <stem> ...`, the play-run wrapper; see `docs/agents/verification.md`
   - Ghidra dump — the `ghidra:*` tasks run the scripts in `tools/GhidraDump/`, which build a local Ghidra
     project of `Siedler1.exe` and write a searchable dump into `re-local/`. See `tools/GhidraDump/README.md`.
   - Program index — `mise run index`
