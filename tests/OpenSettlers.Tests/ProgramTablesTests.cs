@@ -918,21 +918,14 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
-    public void AJobWhoseDataNoModuleReadsIsAnErrorWhereTheRulesReadIt()
+    public void AJobWhoseDataNoModuleReadsIsAnErrorOfTheLoad()
     {
         var exe = Executable(_ => { });
         var modules = JobTablesRegistry.Modules().Where(module => module.Job is not Builder).ToArray();
 
-        var tables = ProgramTablesImporter.Import(exe, modules);
-
-        var refusal = Assert.ThrowsExactly<InvalidOperationException>(() =>
-            tables.Get<BuilderFigureAdds>(new Builder())
-        );
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe, modules));
+        StringAssert.Contains(refusal.Message, "no tables module read");
         StringAssert.Contains(refusal.Message, "Builder");
-        Assert.AreEqual(
-            ProgramTablesImporter.Import(exe).Get<FigureAdds>(new Woodcutter()),
-            tables.Get<FigureAdds>(new Woodcutter())
-        );
     }
 
     [TestMethod]

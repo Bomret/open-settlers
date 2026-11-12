@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace OpenSettlers.Domain;
 
 /// <summary>The stonecutter, who cuts stone heaps and carries the stones to his hut's flag (<c>docs/rules/stonecutting.md</c>).</summary>
@@ -11,4 +14,7 @@ public sealed record Stonecutter : Job
 
     /// <inheritdoc />
     public override bool ArrivesHomeGenerically => false;
+
+    /// <inheritdoc />
+    public override IReadOnlyList<Type> Data => [typeof(FigureAdds)];
 }

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace OpenSettlers.Domain;
 
 /// <summary>The forester, who plants saplings on free meadow nodes around his hut (<c>docs/rules/forestry.md</c>).</summary>
@@ -11,4 +14,7 @@ public sealed record Forester : Job
 
     /// <inheritdoc />
     public override bool ArrivesHomeGenerically => false;
+
+    /// <inheritdoc />
+    public override IReadOnlyList<Type> Data => [typeof(ForesterFigureAdds)];
 }

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace OpenSettlers.Domain;
 
 /// <summary>The sawmiller, who saws the logs the sawmill holds into planks and carries each plank out to the flag (<c>docs/rules/sawmilling.md</c>).</summary>
@@ -8,4 +11,7 @@ public sealed record Sawmiller : Job
 
     /// <inheritdoc />
     public override int Code => Number;
+
+    /// <inheritdoc />
+    public override IReadOnlyList<Type> Data => [typeof(SawmillerFigureAdds)];
 }

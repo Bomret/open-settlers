@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace OpenSettlers.Domain;
 
 /// <summary>The job of the settler of the type 1 hut, whose work looks for a free node by the water (<c>docs/rules/settlers.md</c>).</summary>
@@ -11,4 +14,7 @@ public sealed record TypeOneHut : Job
 
     /// <inheritdoc />
     public override bool ArrivesHomeGenerically => false;
+
+    /// <inheritdoc />
+    public override IReadOnlyList<Type> Data => [typeof(HutFigureAdds)];
 }

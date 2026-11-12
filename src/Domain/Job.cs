@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace OpenSettlers.Domain;
 
 /// <summary>
@@ -32,6 +34,13 @@ public abstract partial record Job
     /// 20, and the knights. Those jobs' own branches hand over to it where the walk is a walk home. A job type that has a branch of its own overrides it.
     /// </summary>
     public virtual bool ArrivesHomeGenerically => true;
+
+    /// <summary>
+    /// The types of the data records the job's rules and looks read from the rule tables (<see cref="RuleTables.Get{T}"/>), declared in
+    /// the job's own file. The importer refuses a program whose tables module for the job leaves one unread, so a job's data is
+    /// never a silent default. Default: none.
+    /// </summary>
+    public virtual IReadOnlyList<System.Type> Data => [];
 
     /// <summary>The level of a knight's job: 0 for the first.</summary>
     public int KnightLevel => Code - FirstKnight;
