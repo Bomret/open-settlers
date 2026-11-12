@@ -53,7 +53,7 @@ Document public and protected/abstract/overridable facing types and members usin
 
 ### Godot `.uid` files
 
-A new script or shader in a Godot-scanned folder (`src/Assets/`, `src/Formats/`, `src/Launch/`, `src/MapView/`, `src/Viewer/`) gets a `.uid` file from the Godot editor. Generate it with `godot --headless --editor --quit-after 2 --path .` and commit it with the source. A new folder outside the Godot assembly (`<Compile Remove>` in `OpenSettlers.csproj`) gets a `.gdignore`.
+A new script or shader in a Godot-scanned folder (`src/Assets/`, `src/Formats/`, `src/Launch/`, `src/MapView/`, `src/Viewer/`) gets a `.uid` file from the Godot editor. Generate it with `mise exec -- <godot> --headless --import --path .`, where `<godot>` is the `GODOT` name in `mise.toml` for the platform, and commit it with the source. A new folder of C# sources outside the Godot assembly (`<Compile Remove>` in `OpenSettlers.csproj`) gets a `.gdignore`.
 
 ## C# Style
 
