@@ -705,7 +705,8 @@ public sealed class PlayNamedThingTests
         var waiting = game.History.Events.All.Single(e =>
             e.Type == EventType.LayoutWaitingOnRoad
             && e.Thing.Kind == ThingId.SettlerKind
-            && e.Other!.StartsWith("flag#", StringComparison.Ordinal)
+            && e.Other is { } other
+            && other.StartsWith("flag#", StringComparison.Ordinal)
         );
 
         var settler = game.Settlers[waiting.Thing.Slot];
