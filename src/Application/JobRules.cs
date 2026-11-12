@@ -48,6 +48,12 @@ public abstract class JobRules
     /// </summary>
     public virtual void Arrive(int slot, Settler settler) => Parts.Hut.ArriveByDefault(slot, settler);
 
+    /// <summary>
+    /// Run at each turn of a free walk whose timer has run out, before the step; it may change the settler's <see cref="WalksFree"/>.
+    /// Default: nothing.
+    /// </summary>
+    public virtual void WalkTurn(Settler settler) { }
+
     /// <summary>Run once each pass of the main loop, before the tables. Default: nothing.</summary>
     public virtual void Pass() { }
 

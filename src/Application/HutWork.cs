@@ -202,15 +202,9 @@ public sealed class HutWork(
             return false;
         }
 
+        RulesOf(settler.Job)?.WalkTurn(settler);
         var walk = (WalksFree)settler.Activity;
         var trip = walk.Trip;
-        if (walk.EyesHeaps)
-        {
-            var heap = movement.Neighbour(settler, StoneHeaps.Direction).Index;
-            trip = StoneHeaps.Eye(trip, movement.Occupant(heap) == 0 && StoneHeaps.At(Map, heap));
-            settler.Activity = walk with { Trip = trip };
-        }
-
         while (true)
         {
             var memory = trip.Memory;

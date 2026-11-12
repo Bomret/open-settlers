@@ -3,7 +3,7 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.Simulation;
 
 /// <summary>
-/// What the free walk needs of the stone heaps: the direction from a node to the node a heap stands on for a stonecutter who stands on it,
+/// What the stonecutter's rules need of the stone heaps: the direction from a node to the node a heap stands on for a stonecutter who stands on it,
 /// whether a heap stands on a node, and the check at each turn of his walk out.
 /// </summary>
 internal static class StoneHeaps
@@ -80,6 +80,20 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
     {
         movement.Release(Map.Index(settler.X, settler.Y));
         movement.Become(settler, new LooksForStone());
+    }
+
+    /// <summary>On his walk out (state 0x16) he eyes the node north-west of him for a heap at each turn (<see cref="StoneHeaps.Eye"/>).</summary>
+    public override void WalkTurn(Settler settler)
+    {
+        var walk = (WalksFree)settler.Activity;
+        if (walk.EyesHeaps)
+        {
+            var heap = movement.Neighbour(settler, StoneHeaps.Direction).Index;
+            settler.Activity = walk with
+            {
+                Trip = StoneHeaps.Eye(walk.Trip, movement.Occupant(heap) == 0 && StoneHeaps.At(Map, heap)),
+            };
+        }
     }
 
     // The node a heap stands on for a stonecutter at the node (x, y).

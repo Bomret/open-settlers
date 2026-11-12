@@ -168,7 +168,7 @@ read from the registers the decompile shows); an open lead.
 
 `src/Application/HutWork.cs` holds the states the huts' workers share: `PassDoor`, `StepOut`, `FreeWalk`, `PutGood`, `EnterHut`, and
 `ObjectPass`. At the door a settler entering a storage goes first, then the start routine of the module of the settler's job runs; at the
-end of a free walk the module's `Arrive` runs; the cause of an event is the layout's or the walk home's before the module's `Cause`.
+end of a free walk the module's `Arrive` runs, and at each turn of it, before its steps, the module's `WalkTurn`; the cause of an event is the layout's or the walk home's before the module's `Cause`.
 `src/Application/WoodcutterRules.cs`, the rules module of the woodcutter (`JobRules<Woodcutter>`), holds `Start`, `SearchTree`, `Arrive`,
 and `Cut`. `MainPass` runs `HutWork.ObjectPass` once each pass, before the modules' `Pass` hooks. The stonecutter, forester, and type 1 hut have rules modules of their
 own (`StonecutterRules`, `ForesterRules`, `TypeOneHutRules`); a job with no module starts nothing and records as the settlers' rules.
