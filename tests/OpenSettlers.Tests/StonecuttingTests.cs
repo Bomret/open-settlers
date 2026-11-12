@@ -49,7 +49,7 @@ public sealed class StonecuttingTests
 
     // The castle, the flags, the roads, and the stonecutter's hut; a heap of the code stands on each such free node of his reach
     // where a code is given, and the generated trees and heaps are gone from the whole map.
-    private static Game World(byte? heap, out Map map, RuleTables? tables = null, bool everyPass = false)
+    internal static Game World(byte? heap, out Map map, RuleTables? tables = null, bool everyPass = false)
     {
         var made = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < made.Count; index++)

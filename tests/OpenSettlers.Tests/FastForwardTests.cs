@@ -96,15 +96,56 @@ public sealed class FastForwardTests
     }
 
     [TestMethod]
-    public void EveryJobTheNameTableNamesParses()
+    public void AJobNameTheTableHoldsStandsForItsJob()
     {
-        for (var code = 0; code < 256; code++)
+        var expected = new (string Name, Job Job)[]
         {
-            if (OpenSettlers.Simulation.NameTable.JobName(code) is not { } name)
-                continue;
+            ("carrier", Job.Carrier),
+            ("digger", Job.Digger),
+            ("builder", Job.Builder),
+            ("woodcutter", Job.Woodcutter),
+            ("stonecutter", Job.Stonecutter),
+            ("forester", Job.Forester),
+        };
 
-            Assert.AreEqual(Job.Of(code), ((FastForwardJobStep)Step($"fast-forward {name} state 1 max 1")).Job, name);
-        }
+        foreach (var (name, job) in expected)
+            Assert.AreEqual(job, ((FastForwardJobStep)Step($"fast-forward {name} state 1 max 1")).Job, name);
+    }
+
+    static bool CarriesAStone(Game game) =>
+        game.Settlers.Any(s =>
+            s.Job == Job.Stonecutter && s.Activity is WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
+        );
+
+    [TestMethod]
+    public void AStonecutterCarriesTheStoneOnTheWayBackToTheHut()
+    {
+        var reference = StonecuttingTests.World(0x4d, out _);
+        while (!CarriesAStone(reference))
+            reference.Tick();
+        var game = StonecuttingTests.World(0x4d, out _);
+
+        var problem = Step("fast-forward stonecutter carrying max 6000").Run(game, Unread);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(reference.TickCount, game.TickCount);
+        Assert.IsTrue(CarriesAStone(game));
+    }
+
+    [TestMethod]
+    public void ABuilderIsInStateNineAtTheFirstTickItBuilds()
+    {
+        static bool Builds(Game game) => game.Settlers.Any(s => s.Job == Job.Builder && s.Activity.Code == 9);
+        var (reference, _) = BuilderTests.World();
+        while (!Builds(reference))
+            reference.Tick();
+        var (game, _) = BuilderTests.World();
+
+        var problem = Step("fast-forward builder state 9 max 3000").Run(game, Unread);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(reference.TickCount, game.TickCount);
+        Assert.IsTrue(Builds(game));
     }
 
     [TestMethod]

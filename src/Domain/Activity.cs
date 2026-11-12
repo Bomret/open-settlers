@@ -28,8 +28,9 @@ public abstract record Activity
     public virtual bool IsDrawn => false;
 
     /// <summary>
-    /// Whether a settler in this activity holds a good: a carrier on its road with a good in its hands, or a settler on its
-    /// free walk back to its hut with the good it took. The play script's <c>fast-forward &lt;job&gt; carrying</c> waits for it.
+    /// Whether this is one of the two walks the play script's <c>fast-forward &lt;job&gt; carrying</c> waits for: a carrier on its
+    /// road with a good in its hands, or a settler on its free walk back to its hut with the good it took. The activities where a
+    /// settler hands a good over or puts it down are not among them.
     /// </summary>
     public virtual bool Carries => false;
 
