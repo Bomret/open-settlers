@@ -125,6 +125,21 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
+    public void TheCoreStateCodesTheGeneratorChecksAreTheStatesTheTableNamesItself()
+    {
+        var listed = typeof(NameTable)
+            .Assembly.GetCustomAttributes(typeof(CoreStateCodesAttribute), false)
+            .Cast<CoreStateCodesAttribute>()
+            .SelectMany(attribute => attribute.Codes);
+        var modules = JobTablesRegistry.StateNames.Select(state => state.Code).ToHashSet();
+        var core = NameTable
+            .Entries.Where(entry => entry.Kind == NameTable.CodeKind.State && !modules.Contains(entry.Code))
+            .Select(entry => entry.Code);
+
+        CollectionAssert.AreEquivalent(core.ToList(), listed.ToList());
+    }
+
+    [TestMethod]
     public void AStoneIsACodeOfClassTwo()
     {
         var names = Table((0x48, 2), (0x49, 0), (0x4a, 1), (8, 1));

@@ -25,7 +25,8 @@ internal interface IJobTables
 /// program for the job, and the names the name table gives the job and its own states. A module derives from this type, has a
 /// parameterless constructor, and states its names with <see cref="JobNameAttribute"/> and <see cref="StateNameAttribute"/>, which
 /// the generator reads at build time: it writes <c>JobTablesRegistry</c> from the modules it finds, and fails the build for a
-/// module with no constructor, a second module for one job, and two modules that name one job or one state. A job that owns no
+/// module with no constructor, a second module for one job, two modules that name one job or one state, a module that names one
+/// state twice, and a module that names a state of <see cref="CoreStateCodesAttribute"/>. A job that owns no
 /// data and no names needs no module.
 /// </summary>
 /// <typeparam name="TJob">The job the module is for.</typeparam>
@@ -48,6 +49,17 @@ public sealed class JobNameAttribute(string name, string evidence) : Attribute
 
     /// <summary>The evidence for the name.</summary>
     public string Evidence { get; } = evidence;
+}
+
+/// <summary>
+/// The codes of the states <see cref="NameTable"/> names itself, the ones that belong to no one job. The generator reads it at build
+/// time and fails the build for a module that names one of them, which <see cref="NameTable"/> could not hold twice.
+/// </summary>
+[AttributeUsage(AttributeTargets.Assembly)]
+public sealed class CoreStateCodesAttribute(params int[] codes) : Attribute
+{
+    /// <summary>The codes.</summary>
+    public int[] Codes { get; } = codes;
 }
 
 /// <summary>The name of a settler state the module's job owns and the evidence for it (INV-0006). The generator reads it at build time.</summary>

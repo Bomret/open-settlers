@@ -39,8 +39,13 @@ public sealed class JobTablesGeneratorTests
             public sealed class JobNameAttribute(string name, string evidence) : Attribute { }
             [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
             public sealed class StateNameAttribute(int code, string name, string evidence) : Attribute { }
+            [AttributeUsage(AttributeTargets.Assembly)]
+            public sealed class CoreStateCodesAttribute(params int[] codes) : Attribute { }
         }
         """;
+
+    // The assembly that holds the core states 2 and 3 of the made-up name table.
+    private const string Core = "[assembly: OpenSettlers.Simulation.CoreStateCodes(2, 3)]";
 
     private static readonly MetadataReference[] References =
     [
@@ -51,16 +56,20 @@ public sealed class JobTablesGeneratorTests
 
     private static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(
         params string[] modules
+    ) => Run(modules.Prepend(Base).Prepend(Core).ToArray(), References);
+
+    private static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(
+        string[] sources,
+        MetadataReference[] references
     )
     {
-        var trees = modules
-            .Prepend(Base)
+        var trees = sources
             .Select(source => CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest)))
             .ToArray();
         var compilation = CSharpCompilation.Create(
             "Adapters",
             trees,
-            References,
+            references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
         );
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new JobTablesGenerator());
@@ -165,11 +174,62 @@ public sealed class JobTablesGeneratorTests
     }
 
     [TestMethod]
-    public void NoRegistryIsWrittenWhereTheCompilationDeclaresNoJobTables()
+    public void AModuleThatNamesAStateOfTheCoreIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, _, _) = Run(Module("AlphaTables", "Alpha", "[StateName(2, \"walks\", \"e\")]"));
+
+        var error = diagnostics.Single(d => d.Id == "TAB006");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "AlphaTables");
+    }
+
+    [TestMethod]
+    public void AModuleThatNamesOneStateTwiceIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, _, _) = Run(
+            Module("AlphaTables", "Alpha", "[StateName(9, \"one\", \"e\")][StateName(9, \"two\", \"e\")]")
+        );
+
+        var error = diagnostics.Single(d => d.Id == "TAB005");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "AlphaTables");
+    }
+
+    [TestMethod]
+    public void NoRegistryIsWrittenWhereNoModuleIsDeclared()
     {
         var (diagnostics, text, _) = Run();
 
         Assert.AreEqual(0, diagnostics.Length);
+        Assert.AreEqual(string.Empty, text);
+    }
+
+    [TestMethod]
+    public void NoRegistryIsWrittenWhereTheCompilationDeclaresNoJobTablesInSource()
+    {
+        var (diagnostics, text, _) = Run([Module("AlphaTables", "Alpha")], References);
+
+        Assert.AreEqual(0, diagnostics.Count(d => d.Id.StartsWith("TAB")));
+        Assert.AreEqual(string.Empty, text);
+    }
+
+    [TestMethod]
+    public void NoRegistryIsWrittenWhereJobTablesComesOnlyFromMetadata()
+    {
+        var library = CSharpCompilation.Create(
+            "Library",
+            [CSharpSyntaxTree.ParseText(Base)],
+            References,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+        );
+        using var stream = new MemoryStream();
+        Assert.IsTrue(library.Emit(stream).Success);
+        stream.Position = 0;
+        MetadataReference[] references = [.. References, MetadataReference.CreateFromStream(stream)];
+
+        var (diagnostics, text, _) = Run([Module("AlphaTables", "Alpha")], references);
+
+        Assert.AreEqual(0, diagnostics.Count(d => d.Id.StartsWith("TAB")));
         Assert.AreEqual(string.Empty, text);
     }
 }

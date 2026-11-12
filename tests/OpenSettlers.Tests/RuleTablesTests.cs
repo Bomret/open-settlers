@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
 
@@ -8,6 +9,14 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RuleTablesTests
 {
+    [TestMethod]
+    public void TheMadeUpJobDataHoldsExactlyTheRequiredJobData()
+    {
+        var made = RuleTables.MadeUpJobData().Select(entry => (entry.Job, entry.Data.GetType()));
+
+        CollectionAssert.AreEquivalent(RuleTables.RequiredJobData.ToList(), made.ToList());
+    }
+
     [TestMethod]
     public void AnObjectClassNamesWhatTheRulesAskOfIt()
     {

@@ -256,7 +256,13 @@ public static class ProgramTablesImporter
     /// Reads the tables from the bytes of <c>Siedler1.exe</c>. Throws <see cref="InvalidDataException"/> when the
     /// bytes are no executable or a table lies outside the data the file holds.
     /// </summary>
-    public static RuleTables Import(byte[] exe)
+    public static RuleTables Import(byte[] exe) => Import(exe, JobTablesRegistry.Modules());
+
+    /// <summary>
+    /// Reads the tables as <see cref="Import(byte[])"/> does, with the job data read by <paramref name="modules"/>: a module set
+    /// that leaves a job's required data unread is refused.
+    /// </summary>
+    internal static RuleTables Import(byte[] exe, IReadOnlyList<IJobTables> modules)
     {
         var classes = Slice(exe, ClassTableAddress, RuleTables.ClassCount);
         var startStock = new byte[RuleTables.StartStockRows][];
@@ -293,14 +299,14 @@ public static class ProgramTablesImporter
             Workers(exe),
             [.. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
-            JobData(exe)
+            JobData(exe, modules)
         );
     }
 
     // What each job owns, read by its tables module (JobTablesRegistry, written by the generator from the modules). The draw routine
     // must load the figure tables the adds are read for, else the program is not the one the rules were read from and the figures
     // would be wrong.
-    private static List<(Job Job, object Data)> JobData(byte[] exe)
+    private static List<(Job Job, object Data)> JobData(byte[] exe, IReadOnlyList<IJobTables> modules)
     {
         Expect(
             exe,
@@ -315,18 +321,18 @@ public static class ProgramTablesImporter
             "loads the figure offsets"
         );
         var data = new List<(Job Job, object Data)>();
-        foreach (var module in JobTablesRegistry.Modules())
+        foreach (var module in modules)
         {
             module.Read(exe, data);
         }
 
         // A job's data that no module read is no default: the install is refused.
-        foreach (var (job, wanted) in RuleTables.MadeUpJobData())
+        foreach (var (job, type) in RuleTables.RequiredJobData)
         {
-            if (!data.Any(entry => entry.Job.Equals(job) && entry.Data.GetType() == wanted.GetType()))
+            if (!data.Any(entry => entry.Job.Equals(job) && entry.Data.GetType() == type))
             {
                 throw new InvalidDataException(
-                    $"Siedler1.exe holds no job data as expected: no tables module read the {wanted.GetType().Name} of the job {job.GetType().Name}."
+                    $"Siedler1.exe holds no job data as expected: no tables module read the {type.Name} of the job {job.GetType().Name}."
                 );
             }
         }

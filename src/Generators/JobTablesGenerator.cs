@@ -13,7 +13,8 @@ namespace OpenSettlers.Generators;
 /// Writes <c>JobTablesRegistry</c> (ADR 0016), which builds every tables module of the compilation that declares
 /// <c>OpenSettlers.Simulation.JobTables&lt;TJob&gt;</c>, and lists the job and state names the modules state with
 /// <c>JobNameAttribute</c> and <c>StateNameAttribute</c>. A module with no accessible parameterless constructor, a second module for
-/// one job, and two modules that name one job or one state are build errors.
+/// one job, two modules that name one job or one state, a module that names one state twice, and a module that names a state the
+/// assembly's <c>CoreStateCodesAttribute</c> lists are build errors.
 /// </summary>
 [Generator]
 public sealed class JobTablesGenerator : IIncrementalGenerator
@@ -56,6 +57,24 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         true
     );
 
+    private static readonly DiagnosticDescriptor StateNamedTwice = new(
+        "TAB005",
+        "A job tables module names one state twice",
+        "The job tables module '{0}' names the state {1} twice",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
+
+    private static readonly DiagnosticDescriptor CoreState = new(
+        "TAB006",
+        "A job tables module names a state of the core",
+        "The job tables module '{0}' names the state {1}, which the name table names itself",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
+
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -67,7 +86,20 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
             .Where(static module => module is not null)
             .Select(static (module, _) => module!)
             .Collect();
-        context.RegisterSourceOutput(modules, static (output, found) => Generate(output, found));
+        var core = context.CompilationProvider.Select(
+            static (compilation, _) =>
+                new Sequence<int>([
+                    .. compilation
+                        .Assembly.GetAttributes()
+                        .Where(attribute => attribute.AttributeClass?.Name == "CoreStateCodesAttribute")
+                        .SelectMany(attribute => attribute.ConstructorArguments[0].Values)
+                        .Select(value => (int)value.Value!),
+                ])
+        );
+        context.RegisterSourceOutput(
+            modules.Combine(core),
+            static (output, found) => Generate(output, found.Left, found.Right.Items)
+        );
     }
 
     private static Module? Describe(GeneratorSyntaxContext syntax, System.Threading.CancellationToken token)
@@ -133,7 +165,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
             (string)attribute.ConstructorArguments[first + 1].Value!
         );
 
-    private static void Generate(SourceProductionContext output, ImmutableArray<Module> found)
+    private static void Generate(SourceProductionContext output, ImmutableArray<Module> found, int[] coreStates)
     {
         if (found.Length == 0)
         {
@@ -160,6 +192,24 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
             if (!module.HasConstructor)
             {
                 output.ReportDiagnostic(Diagnostic.Create(NoConstructor, module.Place.ToLocation(), module.Name));
+                continue;
+            }
+
+            var twice = module.States.Items.GroupBy(state => state.Code).FirstOrDefault(group => group.Count() > 1);
+            if (twice is not null)
+            {
+                output.ReportDiagnostic(
+                    Diagnostic.Create(StateNamedTwice, module.Place.ToLocation(), module.Name, twice.Key)
+                );
+                continue;
+            }
+
+            var core = module.States.Items.FirstOrDefault(state => coreStates.Contains(state.Code));
+            if (core is not null)
+            {
+                output.ReportDiagnostic(
+                    Diagnostic.Create(CoreState, module.Place.ToLocation(), module.Name, core.Code)
+                );
                 continue;
             }
 

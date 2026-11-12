@@ -185,6 +185,23 @@ public sealed class RuleTables
     private readonly Dictionary<(Job, Type), object> _jobData;
 
     /// <summary>
+    /// The (job, data type) pairs the rules read through <see cref="Get{T}"/>: a program's tables must hold each, and the importer
+    /// refuses the install where no job module read one. <see cref="MadeUpJobData"/> holds a stand-in for each.
+    /// </summary>
+    public static IReadOnlyList<(Job Job, Type Type)> RequiredJobData { get; } =
+    [
+        (Job.Woodcutter, typeof(FigureAdds)),
+        (Job.Stonecutter, typeof(FigureAdds)),
+        (Job.Digger, typeof(FigureAdds)),
+        (Job.Builder, typeof(BuilderFigureAdds)),
+        (Job.Forester, typeof(ForesterFigureAdds)),
+        (Job.Sawmiller, typeof(SawmillerFigureAdds)),
+        (Job.TypeOneHut, typeof(HutFigureAdds)),
+        (Job.Builder, typeof(WorkerRequest)),
+        (Job.Digger, typeof(WorkerRequest)),
+    ];
+
+    /// <summary>
     /// The job data a test that gives none gets (<c>jobData</c> of the constructor): the builder and the digger ask for a settler of
     /// their own job with no tool, and every job's figure adds are 0, which draws the settler in the carrier's row. A test that gives
     /// data of its own builds on this list, whose later entries for one job and type win.

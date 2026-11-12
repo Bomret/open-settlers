@@ -617,7 +617,8 @@ public sealed class ProgramTablesTests
         var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.BuilderCode;
         var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
 
-        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "builder");
     }
 
     [TestMethod]
@@ -632,7 +633,8 @@ public sealed class ProgramTablesTests
         var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.DiggerCode;
         var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
 
-        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "digger");
     }
 
     [TestMethod]
@@ -661,7 +663,8 @@ public sealed class ProgramTablesTests
         var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.SawmillerCode;
         var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
 
-        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "sawmiller");
     }
 
     [TestMethod]
@@ -911,7 +914,18 @@ public sealed class ProgramTablesTests
         );
 
         var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
-        StringAssert.Contains(refusal.Message, "figure");
+        StringAssert.Contains(refusal.Message, "type 1 hut");
+    }
+
+    [TestMethod]
+    public void AJobWhoseDataNoModuleReadsIsAnErrorOfTheLoad()
+    {
+        var exe = Executable(_ => { });
+        var modules = JobTablesRegistry.Modules().Where(module => !module.Job.Equals(Job.Builder)).ToArray();
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe, modules));
+        StringAssert.Contains(refusal.Message, "no tables module read");
+        StringAssert.Contains(refusal.Message, "Builder");
     }
 
     [TestMethod]
@@ -927,6 +941,7 @@ public sealed class ProgramTablesTests
 
         var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
         StringAssert.Contains(refusal.Message, "figure");
+        StringAssert.Contains(refusal.Message, "woodcutter");
     }
 
     [TestMethod]

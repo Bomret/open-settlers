@@ -1,5 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using OpenSettlers.Simulation;
+
+// The states NameTable names itself (Build); NameTableTests checks the list against them, the generator against the modules.
+[assembly: CoreStateCodes(1, 2, 3, 4, 5, 6, 7, 0xf, 0x10, 0x19, 0x1c, 0x42, 0x4a)]
 
 namespace OpenSettlers.Simulation;
 
@@ -154,20 +158,19 @@ public sealed class NameTable
             "sapling",
             "the planting 0x4389bf puts 0x67 or 0x68 on the node, and the object pass grows each into a tree of the codes 0x10 to 0x17 or 8 to 0xf (0x4290d5, 0x42910f); docs/rules/forestry.md"
         );
-        const string State = StateEvidence;
-        AddOne(CodeKind.State, 1, "waits-in-castle", State);
-        AddOne(CodeKind.State, 2, "walks", State);
-        AddOne(CodeKind.State, 3, "walks-along-road", State);
-        AddOne(CodeKind.State, 4, "enters-door", State);
-        AddOne(CodeKind.State, 5, "waits-out-step", State);
-        AddOne(CodeKind.State, 6, "enters-building", State);
-        AddOne(CodeKind.State, 7, "steps-onto-flag", State);
-        AddOne(CodeKind.State, 0xf, "leaves-castle", State);
-        AddOne(CodeKind.State, 0x10, "walks-free", State);
-        AddOne(CodeKind.State, 0x19, "looks-for-flag-home", State);
-        AddOne(CodeKind.State, 0x1c, "claims-node-home", State);
-        AddOne(CodeKind.State, 0x42, "waits-at-flag", State);
-        AddOne(CodeKind.State, 0x4a, "leaves-site", State);
+        AddOne(CodeKind.State, 1, "waits-in-castle", StateEvidence);
+        AddOne(CodeKind.State, 2, "walks", StateEvidence);
+        AddOne(CodeKind.State, 3, "walks-along-road", StateEvidence);
+        AddOne(CodeKind.State, 4, "enters-door", StateEvidence);
+        AddOne(CodeKind.State, 5, "waits-out-step", StateEvidence);
+        AddOne(CodeKind.State, 6, "enters-building", StateEvidence);
+        AddOne(CodeKind.State, 7, "steps-onto-flag", StateEvidence);
+        AddOne(CodeKind.State, 0xf, "leaves-castle", StateEvidence);
+        AddOne(CodeKind.State, 0x10, "walks-free", StateEvidence);
+        AddOne(CodeKind.State, 0x19, "looks-for-flag-home", StateEvidence);
+        AddOne(CodeKind.State, 0x1c, "claims-node-home", StateEvidence);
+        AddOne(CodeKind.State, 0x42, "waits-at-flag", StateEvidence);
+        AddOne(CodeKind.State, 0x4a, "leaves-site", StateEvidence);
 
         AddOne(CodeKind.Building, BuildingType.Castle.Code, "castle", "BuildingType.Castle");
         AddOne(CodeKind.Building, BuildingType.Woodcutter.Code, "woodcutter-hut", "BuildingType.Woodcutter");
