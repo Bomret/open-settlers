@@ -159,6 +159,28 @@ public sealed class TerrainGraphicsTests
     }
 
     [TestMethod]
+    [DataRow(33, 9)]
+    [DataRow(32, 42)]
+    public void AMaskLargerThanThirtyTwoByFortyOneIsRefusedWithItsSize(int width, int height)
+    {
+        using var fake = Install(Payloads(n => n == 100 ? Mask(width, height) : null));
+
+        var problem = Assert.ThrowsExactly<InvalidDataException>(() => TerrainGraphics.Load(Open(fake)));
+
+        StringAssert.Contains(problem.Message, $"{width} x {height}");
+    }
+
+    [TestMethod]
+    public void AMaskOfExactlyThirtyTwoByFortyOneIsTaken()
+    {
+        using var fake = Install(Payloads(n => n == 100 ? Mask(32, 41) : null));
+
+        var graphics = TerrainGraphics.Load(Open(fake));
+
+        Assert.AreEqual(41, graphics.Masks[TerrainGraphics.MaskLayer(100)].Height);
+    }
+
+    [TestMethod]
     public void ATextureThatIsNotThirtyTwoByTwentyNamesItsEntry()
     {
         using var fake = Install(Payloads(n => n == 270 ? Texture(16, 20, 1) : null));

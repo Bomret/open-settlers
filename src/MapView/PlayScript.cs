@@ -235,7 +235,7 @@ public sealed record NameStep : PlayStep
 /// <summary><c>mark &lt;label&gt;</c>: saves the game as it stands now under a label.</summary>
 public sealed record MarkStep : PlayStep
 {
-    /// <summary>The label; not a whole number.</summary>
+    /// <summary>The label; not a whole number that reads as a tick (a whole number within the range of a long).</summary>
     public required string Label { get; init; }
 }
 
@@ -484,7 +484,7 @@ public sealed class PlayScript
             case "mark":
                 if (args.Length != 1)
                     return Wrong(words[0], "1 argument", args.Length);
-                if (int.TryParse(args[0], NumberStyles.None, CultureInfo.InvariantCulture, out _))
+                if (long.TryParse(args[0], NumberStyles.None, CultureInfo.InvariantCulture, out _))
                     return (null, $"'{args[0]}' is a number, a mark's label is not");
                 if (!declared.Marks.Add(args[0]))
                     return (null, $"mark '{args[0]}' is given twice");
@@ -758,7 +758,11 @@ public sealed class PlayScript
                 if (!NamedThings.IsThingId(args[2]))
                     return (null, $"'{args[2]}' is not a thing ID like settler#12.3");
             }
-            else if (!declared.Aliases.Contains(args[2]) && !args[2].Contains('@'))
+            else if (args[2].Contains('@'))
+            {
+                return (null, $"'{args[2]}' is no alias or thing ID: '@' is not part of either");
+            }
+            else if (!declared.Aliases.Contains(args[2]))
             {
                 return (null, $"unknown alias '{args[2]}'");
             }

@@ -55,10 +55,16 @@ public sealed class AssetBrowserState
     /// <summary>
     /// Opens the install the launch arguments name and, unless <c>selectFirst</c> is false, selects the first kind and
     /// its first asset. The view passes false so it can guard the first selection itself; the default serves callers
-    /// that want the first kind selected on open. Without a usable install, or with two kinds of one name, the state holds <see cref="Message"/>
+    /// that want the first kind selected on open. Without a usable install, with two kinds of one name, or with a
+    /// <c>previewClash</c> (checked last, from <see cref="PreviewClash.Of"/>), the state holds <see cref="Message"/>
     /// and no categories. Only the first selection can throw, as <see cref="SelectKind"/> does.
     /// </summary>
-    public static AssetBrowserState Open(LaunchArgs args, IEnumerable<AssetKind> kinds, bool selectFirst = true)
+    public static AssetBrowserState Open(
+        LaunchArgs args,
+        IEnumerable<AssetKind> kinds,
+        bool selectFirst = true,
+        string? previewClash = null
+    )
     {
         if (!Install.TryOpen(args, out var install, out var problem))
         {
@@ -69,6 +75,11 @@ public sealed class AssetBrowserState
         if (AssetKind.NameClash(sorted) is { } clash)
         {
             return new AssetBrowserState(clash, null, new Dictionary<string, AssetKind>());
+        }
+
+        if (previewClash != null)
+        {
+            return new AssetBrowserState(previewClash, null, new Dictionary<string, AssetKind>());
         }
 
         var state = new AssetBrowserState(null, install, sorted.ToDictionary(k => k.Name));
