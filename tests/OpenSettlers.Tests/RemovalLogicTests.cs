@@ -149,6 +149,7 @@ public sealed class RemovalLogicTests
     [DataRow((byte)0b0100_0001)]
     [DataRow((byte)0b1000_0001)]
     [DataRow((byte)0b1100_0000)]
+    [Timeout(10_000)]
     public void ASplitAtANodeWithoutTwoRoadDirectionsFailsNamingTheNode(byte bits)
     {
         var game = World();
