@@ -14,7 +14,8 @@
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
 # call waits on a live owner (a process of another user counts as live), says so once on stderr, and takes over
 # the lock of a dead one under the mutex play-out/.lock-<stem>.takeover; a mutex older than 5 seconds is stale
-# and cleared. An empty --size or --seed exits 2. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
+# and cleared. A lock is never moved off its path, and one is removed only after it is judged dead twice, the
+# second time under the mutex and with the same pid in it. An empty --size or --seed exits 2. An unwritable play-out/ exits 2. A run builds OpenSettlers.csproj first; a
 # failed build starts no Godot, stores nothing, and exits 3. Build and Godot run through `mise exec`, which
 # supplies the pinned tools and $GODOT. PLAY_RUN_MISE replaces the mise binary (default mise), PLAY_RUN_GODOT
 # the Godot binary (default $GODOT from mise.toml), PLAY_RUN_DOTNET the dotnet binary (default dotnet).
@@ -98,20 +99,23 @@ version=$(godot --version 2>/dev/null) || usage "cannot read the Godot version"
 # One call per stem at a time, locked before the hash so a waiting call hashes the inputs it runs on. The lock
 # holds the owner's pid; a lock whose pid is dead is taken over, and so is a lock with no pid after a grace of
 # 5 seconds (its owner was killed between creating it and writing the pid). `ps -p` finds a live process of
-# another user, which kill -0 reports as gone (EPERM), and needs no locale. The takeover mutex has the same
-# 5 seconds grace.
+# another user, which kill -0 reports as gone (EPERM), and needs no locale; only its exit status 1 reads as dead,
+# so a missing or failing ps never turns a live owner into a dead one. The takeover mutex has the same 5 seconds
+# grace. A lock is never moved off its path: it is removed only by a call that holds the mutex, judged the lock
+# stale there, and finds the pid it judged still in the lock. The EXIT trap removes only a lock that holds its pid.
 lock=play-out/.lock-$stem
 older() {
   m=$(stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null) || return 1
   [ $(($(date +%s) - m)) -gt 5 ]
 }
+# Judges the lock, and leaves the pid it judged in $judged.
 stale() {
-  d=${1:-$lock}
-  p=$(cat "$d/pid" 2>/dev/null)
-  if [ -n "$p" ]; then
-    ! ps -p "$p" >/dev/null 2>&1
+  judged=$(cat "$lock/pid" 2>/dev/null)
+  if [ -n "$judged" ]; then
+    ps -p "$judged" >/dev/null 2>&1
+    [ $? -eq 1 ]
   else
-    older "$d"
+    older "$lock"
   fi
 }
 waited=
@@ -122,22 +126,25 @@ until mkdir "$lock" 2>/dev/null; do
     exit 2
   fi
   if stale; then
-    # Only the holder of the takeover mutex removes a lock, after judging it stale again while holding it. No
-    # other call can create the lock path while the stale lock still stands there.
+    # Only the holder of the takeover mutex removes a lock, after judging it stale again while holding it, and
+    # only a lock that still holds the pid it judged. No other call can create the lock path while the stale
+    # lock still stands there.
     if mkdir "$lock.takeover" 2>/dev/null; then
-      # A call that cleared a stale mutex may hold it beside this one, so the lock is renamed away and judged
-      # again there: a lock whose owner is alive goes back.
-      if stale && mv "$lock" "$lock.gone.$$" 2>/dev/null; then
-        if stale "$lock.gone.$$"; then rm -rf "$lock.gone.$$"; else mv "$lock.gone.$$" "$lock"; fi
-      fi
-      rmdir "$lock.takeover"
+      if stale && [ "$(cat "$lock/pid" 2>/dev/null)" = "$judged" ]; then rm -rf "$lock"; fi
+      rmdir "$lock.takeover" 2>/dev/null
       continue
     fi
-    # A mutex left by a killed call is renamed away, which one of several calls wins. The rename never touches
-    # the lock, so a live owner's lock stays whatever calls race here.
+    # A mutex left by a killed call is renamed to a name of this call, which one of several calls wins, and
+    # judged again there. One that was not old was another call's fresh mutex: this call drops it and waits.
+    # The rename never touches the lock.
     if [ -d "$lock.takeover" ] && older "$lock.takeover"; then
-      mv "$lock.takeover" "$lock.takeover.$$" 2>/dev/null && rm -rf "$lock.takeover.$$"
-      continue
+      if mv "$lock.takeover" "$lock.takeover.$$" 2>/dev/null; then
+        if older "$lock.takeover.$$"; then
+          rm -rf "$lock.takeover.$$"
+          continue
+        fi
+        rm -rf "$lock.takeover.$$"
+      fi
     fi
   fi
   if [ -z "$waited" ]; then
@@ -146,7 +153,7 @@ until mkdir "$lock" 2>/dev/null; do
   fi
   sleep 1
 done
-trap 'rm -rf "$lock"' EXIT
+trap 'if [ "$(cat "$lock/pid" 2>/dev/null)" = "$$" ]; then rm -rf "$lock"; fi' EXIT
 trap 'exit 130' INT TERM HUP
 echo $$ >"$lock/pid"
 

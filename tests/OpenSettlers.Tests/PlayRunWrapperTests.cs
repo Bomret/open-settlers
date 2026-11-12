@@ -161,6 +161,8 @@ public class PlayRunWrapperTests
         Executable(Path.Combine(fake, "mise"), FakeMise);
         Executable(Path.Combine(fake, "godot"), FakeGodot);
         Executable(Path.Combine(fake, "dotnet"), FakeDotnet);
+        Directory.CreateDirectory(Path.Combine(fake, "psbin"));
+        Executable(Path.Combine(fake, "psbin", "ps"), FakePs);
         CopyTree(Path.Combine(templateRoot, "repo"), repo);
     }
 
@@ -791,14 +793,80 @@ public class PlayRunWrapperTests
         Assert.AreEqual(1, Calls);
     }
 
+    // A `ps` that judges the dead owner's pid dead and numbers its calls. At call FAKE_PS_SWAP_AT it also replaces the
+    // lock's pid with a live owner's, as another call does between this call's judgment and its removal of the lock.
+    // Asked about a live pid while the lock path is free, it creates a lock for FAKE_PS_W, as a waiting call does.
+    const string FakePs = """
+        #!/bin/sh
+        n=$(cat "$FAKE_DIR/ps-count" 2>/dev/null || echo 0)
+        n=$((n + 1))
+        echo "$n" > "$FAKE_DIR/ps-count"
+        [ -n "${FAKE_PS_EXIT:-}" ] && exit "$FAKE_PS_EXIT"
+        if [ "$2" = "$FAKE_PS_DEAD" ]; then
+          [ "$n" = "${FAKE_PS_SWAP_AT:-0}" ] && echo "$FAKE_PS_LIVE" > play-out/.lock-demo/pid
+          exit 1
+        fi
+        if [ -n "${FAKE_PS_W:-}" ] && [ ! -d play-out/.lock-demo ]; then
+          mkdir play-out/.lock-demo
+          echo "$FAKE_PS_W" > play-out/.lock-demo/pid
+        fi
+        exit 0
+        """;
+
+    Dictionary<string, string?> FakePsEnv(int dead, Dictionary<string, string?>? more = null)
+    {
+        var bin = Path.Combine(fake, "psbin");
+        var env = new Dictionary<string, string?>
+        {
+            ["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),
+            ["FAKE_PS_DEAD"] = dead.ToString(),
+            ["FAKE_PS_LIVE"] = Environment.ProcessId.ToString(),
+        };
+        foreach (var (key, value) in more ?? [])
+        {
+            env[key] = value;
+        }
+
+        return env;
+    }
+
+    // The call judges the dead lock stale outside the mutex (ps call 1), clears the stale mutex, then judges it again
+    // holding the mutex (ps call 3), and between that judgment and its removal the lock turns into a live owner's.
     [TestMethod]
-    public void CallsRacingOnAStaleTakeoverMutexLeaveALiveOwnersLockInPlace()
+    public void ALockThatTurnsLiveAfterTheJudgmentUnderTheMutexIsLeftInPlace()
+    {
+        var dead = DeadPid();
+        HoldLock(dead);
+        HoldTakeover(TimeSpan.FromMinutes(5));
+        using var call = Start(Args, FakePsEnv(dead, new() { ["FAKE_PS_SWAP_AT"] = "3" }));
+        WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait on the live owner");
+
+        Assert.IsFalse(Directory.Exists(Out(".lock-demo.takeover")), "the stale mutex was cleared, so the call took the branch");
+        Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo/pid")));
+        Assert.AreEqual(0, Calls);
+    }
+
+    // Same turn, and a waiting call creates the lock path should the wrapper ever move the live lock off it: the
+    // wrapper must leave exactly that one pid file in the lock, with nothing nested into it.
+    [TestMethod]
+    public void AJudgedLockIsNeverMovedOffItsPath()
+    {
+        var dead = DeadPid();
+        HoldLock(dead);
+        HoldTakeover(TimeSpan.FromMinutes(5));
+        using var call = Start(Args, FakePsEnv(dead, new() { ["FAKE_PS_SWAP_AT"] = "3", ["FAKE_PS_W"] = "1" }));
+        WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait");
+
+        CollectionAssert.AreEqual(new[] { "pid" }, Directory.GetFileSystemEntries(Out(".lock-demo")).Select(Path.GetFileName).ToArray());
+        Assert.AreEqual(0, Calls);
+    }
+
+    [TestMethod]
+    public void AFailingPsIsNoProofThatAnOwnerIsDead()
     {
         HoldLock(Environment.ProcessId);
-        HoldTakeover(TimeSpan.FromMinutes(5));
-        using var first = Start(Args);
-        using var second = Start(Args);
-        WaitFor(() => first.Stderr.Contains("waiting on") && second.Stderr.Contains("waiting on"), "both calls to wait");
+        using var call = Start(Args, FakePsEnv(DeadPid(), new() { ["FAKE_PS_EXIT"] = "127" }));
+        WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait when ps fails");
 
         Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo/pid")));
         Assert.AreEqual(0, Calls);
