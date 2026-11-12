@@ -86,7 +86,7 @@ public sealed class SettlerFigureTables
         );
 
     /// <summary>Whether the tables hold the figure handler of <paramref name="job"/>: a job without one has no drawn figure.</summary>
-    public bool HasHandler(Job job) => _looks.ContainsKey(job);
+    internal bool HasHandler(Job job) => _looks.ContainsKey(job);
 
     /// <summary>The palette index of a player's colour.</summary>
     public static int ColourOf(int player) => ColourBase + ColourStep * player;
