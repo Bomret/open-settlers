@@ -24,7 +24,8 @@ public partial class PlayDriver : Node
         (long)KeyModifierMask.MaskShift,
         (long)KeyModifierMask.MaskCtrl,
         (long)KeyModifierMask.MaskAlt,
-        (long)KeyModifierMask.MaskMeta
+        (long)KeyModifierMask.MaskMeta,
+        (long)KeyModifierMask.CodeMask
     );
 
     readonly MapViewControl _view;

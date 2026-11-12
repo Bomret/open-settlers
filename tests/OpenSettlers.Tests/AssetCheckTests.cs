@@ -129,19 +129,6 @@ public sealed class AssetCheckTests
         Assert.IsNull(AssetKind.NameClash([]));
     }
 
-    [TestMethod]
-    public void TwoKindsOfOneNameStopTheCheckWithExitCode3AndTheName()
-    {
-        using var fake = new FakeInstall();
-
-        var report = Run(fake, new ListedKind("text"), new ListedKind("text"));
-
-        Assert.AreEqual(3, report.ExitCode);
-        Assert.HasCount(1, report.Lines);
-        StringAssert.StartsWith(report.Lines[0], "ERROR ");
-        StringAssert.Contains(report.Lines[0], "\"text\"");
-    }
-
     sealed class ThrowingKind : AssetKind
     {
         public override string Name => "broken";
@@ -222,6 +209,8 @@ public sealed class AssetCheckTests
         );
 
         Assert.AreEqual(3, report.ExitCode);
+        Assert.HasCount(1, report.Lines);
+        StringAssert.StartsWith(report.Lines[0], "ERROR ");
         StringAssert.Contains(report.Lines[0], "\"text\"");
     }
 }

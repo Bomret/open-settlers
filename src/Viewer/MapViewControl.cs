@@ -564,7 +564,6 @@ public partial class MapViewControl : Control
     /// <inheritdoc/>
     public override void _UnhandledKeyInput(InputEvent input)
     {
-        // An echo is a repeat of a held key (a play run re-presses a hold after a focus loss), not a new zoom step.
         if (input is not InputEventKey key)
         {
             return;

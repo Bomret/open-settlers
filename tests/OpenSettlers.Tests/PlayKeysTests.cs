@@ -9,7 +9,22 @@ namespace OpenSettlers.Tests;
 public sealed class PlayKeysTests
 {
     const long KeyA = 65;
-    static readonly KeyMasks Masks = new(Shift: 1L << 25, Ctrl: 1L << 26, Alt: 1L << 27, Meta: 1L << 28);
+    static readonly KeyMasks Masks = new(
+        Shift: 1L << 25,
+        Ctrl: 1L << 26,
+        Alt: 1L << 27,
+        Meta: 1L << 28,
+        Code: 0x007FFFFF
+    );
+
+    [TestMethod]
+    public void TheBareKeyIsTheBitsTheCodeMaskNames()
+    {
+        var narrow = Masks with { Code = 0xFF };
+
+        Assert.IsNull(PlayKeys.Split("x", 0x1A41, narrow, out var chord));
+        Assert.AreEqual(0x41, chord.Key);
+    }
 
     [TestMethod]
     public void ABareKeyHasNoFlags()

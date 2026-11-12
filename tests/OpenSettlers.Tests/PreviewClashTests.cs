@@ -8,9 +8,11 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class PreviewClashTests
 {
-    sealed record BasePreview : Preview;
+    record BasePreview : Preview;
 
-    sealed record DerivedPreview : Preview;
+    sealed record DerivedPreview : BasePreview;
+
+    sealed record OtherPreview : Preview;
 
     [TestMethod]
     public void TwoViewsOfOnePreviewTypeClashAndNameTheTypeAndBothViews()
@@ -25,14 +27,14 @@ public sealed class PreviewClashTests
     [TestMethod]
     public void UniquePreviewTypesAndNoViewsGiveNoClash()
     {
-        Assert.IsNull(PreviewClash.Of([("FirstView", typeof(BasePreview)), ("OtherView", typeof(DerivedPreview))]));
+        Assert.IsNull(PreviewClash.Of([("FirstView", typeof(BasePreview)), ("OtherView", typeof(OtherPreview))]));
         Assert.IsNull(PreviewClash.Of([]));
     }
 
     [TestMethod]
     public void ViewsOfABaseAndADerivedPreviewTypeAreNoClash()
     {
-        Assert.IsNull(PreviewClash.Of([("BaseView", typeof(Preview)), ("DerivedView", typeof(BasePreview))]));
+        Assert.IsNull(PreviewClash.Of([("BaseView", typeof(BasePreview)), ("DerivedView", typeof(DerivedPreview))]));
     }
 
     [TestMethod]
@@ -40,7 +42,7 @@ public sealed class PreviewClashTests
     {
         var state = AssetBrowserState.Open(LaunchArgs.Parse([], null), [], selectFirst: false, previewClash: "clash");
 
-        Assert.AreNotEqual("clash", state.Message);
+        StringAssert.Contains(state.Message, "no install given");
     }
 
     [TestMethod]

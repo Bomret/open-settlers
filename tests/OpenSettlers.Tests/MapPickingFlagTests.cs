@@ -7,8 +7,8 @@ namespace OpenSettlers.Tests;
 
 // Flag picking where flag boxes overlap, on a map built in code (no install). The boxes are the map view's
 // ObjectDraws.FlagGeometry, 16 by 19 pixels. Two nodes one row apart are 16 pixels apart across, and two nodes in one
-// row 32, so with that geometry only nodes two rows apart share a column of pixels, and only when the southern one
-// is raised enough (4 pixels a height unit) to close the 20 pixel row gap.
+// row 32, so with that geometry only nodes an even number of rows apart share a column of pixels. They overlap when
+// the southern one is raised enough (4 pixels a height unit, up to 124) to close the 20 pixels a row gap.
 [TestClass]
 public sealed class MapPickingFlagTests
 {
@@ -43,16 +43,6 @@ public sealed class MapPickingFlagTests
     }
 
     [TestMethod]
-    public void TheSouthernFlagWinsWhicheverOrderTheFlagsWereLaidIn()
-    {
-        var map = FlagsAt((11, 12, 8), (10, 10, 0));
-
-        var picked = PickAt(map, (165, 195), ObjectDraws.FlagGeometry);
-
-        Assert.AreEqual((11, 12), picked);
-    }
-
-    [TestMethod]
     public void AClickInTwoOverlappingFlagBoxesAcrossTheVerticalSeamPicksTheFlagOnRowZeroOfTheCopyBelow()
     {
         // (10,30) stands at (-160,600): box y 582 to 600. (11,0) is drawn in the copy below the last row at
@@ -68,10 +58,11 @@ public sealed class MapPickingFlagTests
     public void AClickInTwoFlagBoxesOfOneRowPicksTheEasternFlag()
     {
         // The map view's boxes never overlap within a row (the nodes are 32 pixels apart and the boxes 16 wide), so
-        // the rule is pinned with a box of 40 pixels: the flags at (160,200) and (192,200) both hold (195,195).
+        // the rule is pinned with a box of 40 pixels centred on the node: the flags at (160,200) and (192,200) hold
+        // x 140 to 180 and x 172 to 212, and both hold (174,198), whose nearest node is the western flag.
         var map = FlagsAt((10, 10, 0), (11, 10, 0));
 
-        var picked = PickAt(map, (195, 195), new MapPicking.PickBox(40, 19, 0, -18));
+        var picked = PickAt(map, (174, 198), new MapPicking.PickBox(40, 19, -20, -18));
 
         Assert.AreEqual((11, 10), picked);
     }

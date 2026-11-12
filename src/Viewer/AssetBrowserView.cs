@@ -86,7 +86,12 @@ public partial class AssetBrowserView : Control
         }
 
         var views = PreviewView.Discover();
-        _state = AssetBrowserState.Open(args, kinds, selectFirst: false, previewClash: PreviewView.Clash(views));
+        _state = AssetBrowserState.Open(
+            args,
+            kinds,
+            selectFirst: false,
+            previewClash: PreviewClash.Of(views.Select(v => (v.GetType().Name, v.PreviewType)))
+        );
         if (_state.Message == null)
         {
             _views = views.ToDictionary(v => v.PreviewType);

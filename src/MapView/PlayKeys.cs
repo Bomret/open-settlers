@@ -4,8 +4,8 @@ using System.Linq;
 
 namespace OpenSettlers.MapView;
 
-/// <summary>The modifier bits of a key code, one mask per modifier.</summary>
-public readonly record struct KeyMasks(long Shift, long Ctrl, long Alt, long Meta);
+/// <summary>The bits of a key code: one mask per modifier, and the mask of the bits that hold the bare key.</summary>
+public readonly record struct KeyMasks(long Shift, long Ctrl, long Alt, long Meta, long Code);
 
 /// <summary>A key code split into the bare key and the modifier flags.</summary>
 public readonly record struct KeyChord(long Key, bool Shift, bool Ctrl, bool Alt, bool Meta);
@@ -13,16 +13,13 @@ public readonly record struct KeyChord(long Key, bool Shift, bool Ctrl, bool Alt
 /// <summary>The key handling of a play run that needs no window: the split of a key code (<see cref="Split"/>).</summary>
 public static class PlayKeys
 {
-    // The bits of a key code that hold the bare key; the bits above them hold the modifier flags.
-    const long CodeMask = 0x007FFFFF;
-
     /// <summary>
     /// Splits <c>code</c>, the code <c>name</c> resolved to, into the bare key and the flags <c>masks</c> name. A code
     /// with no bare key is no key: the result is the problem to report.
     /// </summary>
     public static string? Split(string name, long code, KeyMasks masks, out KeyChord chord)
     {
-        var key = code & CodeMask;
+        var key = code & masks.Code;
         chord = new KeyChord(
             key,
             (code & masks.Shift) != 0,

@@ -73,8 +73,4 @@ public abstract class PreviewView
             )
             .Select(t => (PreviewView)Activator.CreateInstance(t)!)
             .ToList();
-
-    /// <summary>The problem with <c>views</c>, or null when no two draw one preview type.</summary>
-    public static string? Clash(IEnumerable<PreviewView> views) =>
-        PreviewClash.Of(views.Select(v => (v.GetType().Name, v.PreviewType)));
 }

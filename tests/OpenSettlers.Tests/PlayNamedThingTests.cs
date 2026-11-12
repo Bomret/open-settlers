@@ -247,6 +247,7 @@ public sealed class PlayNamedThingTests
         var run = Run(text, game);
 
         Assert.AreEqual("", string.Join("\n", Parse(text).Problems), "the script reads");
+        Assert.IsTrue(run.Finished, "the expect-event step was evaluated");
         Assert.AreEqual("", string.Join("\n", run.Problems));
     }
 
@@ -388,6 +389,8 @@ public sealed class PlayNamedThingTests
         }
 
         Assert.HasCount(10, problems);
+        Assert.IsTrue(problems.Any(p => p.Contains("line 8:") && p.Contains("unknown event type 'bogus'")));
+        Assert.IsTrue(problems.Any(p => p.Contains("line 9:") && p.Contains("unknown cause 'bogus'")));
     }
 
     [TestMethod]
@@ -472,8 +475,19 @@ public sealed class PlayNamedThingTests
     }
 
     // A state of the game with a map size value the original does not offer.
-    static PlayState StateOfSize(Game game, int size) =>
-        new(0, 0, 1f, "1", size, game.TickCount, 0, new Dictionary<(int X, int Y), int>(), Thing.Of(game, null), game);
+    static PlayState StateOfSize(Game game, int size, Thing[]? things = null) =>
+        new(
+            0,
+            0,
+            1f,
+            "1",
+            size,
+            game.TickCount,
+            0,
+            new Dictionary<(int X, int Y), int>(),
+            things ?? Thing.Of(game, null),
+            game
+        );
 
     string RunProblem(string text, Game game) => Problem(Run(text, game));
 
@@ -488,7 +502,7 @@ public sealed class PlayNamedThingTests
     }
 
     [TestMethod]
-    public void AnExpectAtAndAnExpectCountStepOnAnUnofferedMapSizeAreRefused()
+    public void AnExpectAtStepOnAnUnofferedMapSizeIsRefused()
     {
         var state = StateOfSize(Castle(), 7);
         var what = ThingSelector.Parse("flag").Selector!;
@@ -636,18 +650,7 @@ public sealed class PlayNamedThingTests
     {
         var game = Castle();
         Thing[] things = [new("settler", 1, 1, [("job", "carrier"), ("id", "settler#0.1")], null)];
-        var state = new PlayState(
-            0,
-            0,
-            1f,
-            "1",
-            1,
-            game.TickCount,
-            0,
-            new Dictionary<(int X, int Y), int>(),
-            things,
-            game
-        );
+        var state = StateOfSize(game, 1, things);
         var run = new PlayRun(Parse("name s 1 1 settler\nexpect s.job = 0"), () => state, _out, _ => null);
         run.Advance(1.0 / 30);
 
@@ -693,6 +696,20 @@ public sealed class PlayNamedThingTests
         Assert.HasCount(1, script.Problems);
         StringAssert.StartsWith(script.Problems[0], "play/t.play line 1: ");
         StringAssert.Contains(script.Problems[0], "3000000000");
+    }
+
+    [TestMethod]
+    public void AnEventsLineOfACarrierNamesTheFlagItWaitsAtAsOther()
+    {
+        var game = ThingHistoryTests.Laid();
+        var carrier = game.History.EventsOf(game.History.SettlerId(0));
+        Assert.IsTrue(carrier.Any(e => e.Other is not null), "a carrier event with another thing");
+
+        Run("name c 11 11 settler\nevents c carrier", game);
+        var text = File.ReadAllText(Path.Combine(_out, "carrier.events.txt"));
+
+        StringAssert.Contains(text, $" other={carrier.First(e => e.Other is not null).Other} ");
+        StringAssert.Contains(text, " other=flag#");
     }
 
     [TestMethod]
