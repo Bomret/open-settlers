@@ -158,6 +158,10 @@ public sealed class ToolArgumentTests
     [TestMethod]
     public void ImportingDigestPrintsNothingAndDoesNotExit()
     {
+        // A leftover gitignored folder from an earlier import without -B is no failure of this run.
+        var bytecode = Path.Combine(Path.GetDirectoryName(Digest())!, "__pycache__");
+        var existed = Directory.Exists(bytecode);
+
         var run = Python(
             _folder,
             ["-c", $"import sys; sys.path.insert(0, r'{Path.GetDirectoryName(Digest())}'); import digest; print('imported')"]
@@ -165,10 +169,7 @@ public sealed class ToolArgumentTests
 
         Assert.AreEqual(0, run.Exit, run.Stderr);
         Assert.AreEqual("imported", run.Stdout.Trim());
-        Assert.IsFalse(
-            Directory.Exists(Path.Combine(Path.GetDirectoryName(Digest())!, "__pycache__")),
-            "a test run wrote bytecode into the source tree"
-        );
+        Assert.IsTrue(existed || !Directory.Exists(bytecode), "a test run wrote bytecode into the source tree");
     }
 
     [TestMethod]
