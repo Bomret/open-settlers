@@ -73,13 +73,13 @@ public sealed class CarrierBehaviorTests
     public void ARoadWithoutACarrierAsksTheCastleAtItsFlagsTurnAndTheSettlerWithoutAJobIsSentToIt()
     {
         var rig = new Rig();
-        var slot = rig.Bench.Settlers.Add(new Settler(Job.Jobless, 0, 0, 0, 0, new WaitsInCastle()));
-        rig.Roster.Waiting[Job.Jobless] = slot;
+        var slot = rig.Bench.Settlers.Add(new Settler(new Jobless(), 0, 0, 0, 0, new WaitsInCastle()));
+        rig.Roster.Waiting[new Jobless()] = slot;
 
         rig.Carriers.FlagPass(0);
 
         var carrier = rig.Bench.Settlers[slot];
-        Assert.AreEqual(Job.Carrier, carrier.Job);
+        Assert.AreEqual(new Carrier(), carrier.Job);
         Assert.AreEqual(new ToRoad(0, East), ((Leaving)carrier.Activity).Errand);
         Assert.IsTrue(rig.Bench.Flags[0].Side(East).CarrierOnTheWay, "the road's near end counts it on its way");
         Assert.IsTrue(rig.Bench.Flags[1].Side(West).CarrierOnTheWay, "and its far end");
@@ -102,7 +102,7 @@ public sealed class CarrierBehaviorTests
     {
         var rig = new Rig();
         var walking = new Walks(new ToRoad(0, East), new Heading(0));
-        var settler = new Settler(Job.Carrier, 0, 4, 4, 0, walking);
+        var settler = new Settler(new Carrier(), 0, 4, 4, 0, walking);
         rig.Bench.Roads.Remove(rig.Road);
 
         rig.Carriers.EnterRoad(rig.Bench.Settlers.Add(settler), settler);
@@ -118,7 +118,7 @@ public sealed class CarrierBehaviorTests
         rig.Goods.LayGood(1, 2, Log, destination: 0);
         rig.Goods.Turn(1);
         var approach = Heading.Facing(West).Retried;
-        var settler = new Settler(Job.Carrier, 0, 5, 4, 0, new WaitsAtFlag(1, West, approach));
+        var settler = new Settler(new Carrier(), 0, 5, 4, 0, new WaitsAtFlag(1, West, approach));
         var slot = rig.Bench.Settlers.Add(settler);
 
         rig.Registry.Handle(slot, settler);
@@ -138,7 +138,7 @@ public sealed class CarrierBehaviorTests
         rig.Bench.Buildings.Add(castle);
         map.At(3, 3).LinkTo(0);
         var load = new Load(new Good(Log), 0);
-        var settler = new Settler(Job.Carrier, 0, 4, 4, 0, new WalksRoad(load, Heading.Facing(West)));
+        var settler = new Settler(new Carrier(), 0, 4, 4, 0, new WalksRoad(load, Heading.Facing(West)));
         var slot = rig.Bench.Settlers.Add(settler);
         rig.Bench.Clock = 8;
 

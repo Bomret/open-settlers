@@ -116,7 +116,7 @@ public sealed class BuilderTests
         Assert.IsNull(flag.RequestOf(RequestWord.First).Asks);
         Assert.IsNull(flag.RequestOf(RequestWord.Second).Asks);
         Assert.IsFalse(site.Constructing);
-        var builder = ConstructionWorld.OfJob(game, Job.Builder).Single();
+        var builder = ConstructionWorld.OfJob(game, new Builder()).Single();
         Assert.IsInstanceOfType<WaitsInCastle>(builder.Activity, "the builder entered the castle again");
     }
 
@@ -124,7 +124,7 @@ public sealed class BuilderTests
     public void TheFinishingBlowTakesTheBuilderOutOfTheSiteAndHeLeavesIt()
     {
         var (game, site) = World();
-        var builder = ConstructionWorld.OfJob(game, Job.Builder).Single();
+        var builder = ConstructionWorld.OfJob(game, new Builder()).Single();
         var inside = false;
         for (var tick = 0; tick < 3000 && site.Constructing; tick++)
         {
@@ -251,8 +251,8 @@ public sealed class BuilderTests
             () =>
             {
                 // No settler of the builder's job waits, no settler without a job waits, and the stock holds no tool.
-                game.Roster.ClearWaiting(Job.Builder);
-                game.Roster.ClearWaiting(Job.Jobless);
+                game.Roster.ClearWaiting(new Builder());
+                game.Roster.ClearWaiting(new Jobless());
                 failed |= site.RequestFailed;
             }
         );
@@ -261,7 +261,7 @@ public sealed class BuilderTests
         Assert.IsTrue(failed, "the request found no builder");
         Assert.IsTrue(site.Constructing);
         Assert.IsEmpty(
-            ConstructionWorld.OfJob(game, Job.Builder).Where(settler => settler.Activity is not WaitsInCastle)
+            ConstructionWorld.OfJob(game, new Builder()).Where(settler => settler.Activity is not WaitsInCastle)
         );
     }
 
@@ -279,7 +279,7 @@ public sealed class BuilderTests
 
         ConstructionWorld.Run(game, 600);
 
-        Assert.AreEqual(2, ConstructionWorld.OfJob(game, Job.Builder).Length, "the castle's builder and a made one");
+        Assert.AreEqual(2, ConstructionWorld.OfJob(game, new Builder()).Length, "the castle's builder and a made one");
         Assert.AreEqual(tools - 1, game.CastleStock.Count(ConstructionTables.BuilderTool));
         Assert.IsTrue(game.Buildings.Skip(1).All(building => building.WorkerInside || building.WorkerOnTheWay));
     }

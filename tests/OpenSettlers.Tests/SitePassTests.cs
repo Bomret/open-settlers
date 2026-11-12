@@ -171,7 +171,7 @@ public sealed class SitePassTests
 
         Assert.AreEqual(1, Asked.Count);
         Assert.AreSame(site, Asked[0].Site);
-        Assert.AreEqual(new WorkerRequest(Job.Digger, ConstructionTables.DiggerTool), Asked[0].Request);
+        Assert.AreEqual(new WorkerRequest(new Digger(), ConstructionTables.DiggerTool), Asked[0].Request);
         Assert.AreEqual((ushort)0, site.Progress, "the site waits for the ground");
     }
 
@@ -214,7 +214,7 @@ public sealed class SitePassTests
         pass.Turn(site);
 
         Assert.AreEqual(1, Asked.Count);
-        Assert.AreEqual(Job.Builder, Asked[0].Request.Job);
+        Assert.AreEqual(new Builder(), Asked[0].Request.Job);
     }
 
     [TestMethod]
@@ -225,6 +225,6 @@ public sealed class SitePassTests
 
         pass.Turn(site);
 
-        Assert.IsTrue(Asked.TrueForAll(asked => asked.Request.Job != Job.Digger));
+        Assert.IsTrue(Asked.TrueForAll(asked => asked.Request.Job != new Digger()));
     }
 }

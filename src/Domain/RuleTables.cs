@@ -50,9 +50,6 @@ public sealed class RuleTables
     /// <summary>The number of rows of the figure bases (the figure word's high byte, 0 to 0x88).</summary>
     public const int FigureBaseRowCount = 137;
 
-    /// <summary>The job number of the settler of the type 1 hut.</summary>
-    public const int TypeOneHutJob = 11;
-
     /// <summary>The number of goods the carried figure table covers, good 0 included.</summary>
     public const int CarriedFigureCount = 27;
 
@@ -167,77 +164,48 @@ public sealed class RuleTables
                 [],
             ];
         PlankRankBase = plankRankBase;
-        // stand-in: a table a test does not give makes only the woodcutter's hut and the forester's building ask for a worker, the
-        // woodcutter's of the woodcutter's job and a made-up tool, the forester's of the forester's job and no tool, and the builder a
-        // settler of the builder's job with no tool.
-        _workers = workers ?? MadeUpWorkers();
+        // stand-in: a table a test does not give makes no building ask for a worker.
+        _workers = workers ?? new WorkerRequest?[BuildingTypeCount];
         // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
         _materialOrder = materialOrder ?? new ushort[BuildingTypeCount];
         _blowSteps = blowSteps ?? new ushort[2 * BuildingTypeCount];
         // Where a job's data is given, it is exactly what is given: a job's data that is missing is an error when read.
+        // stand-in: tables a test gives no job data answer every job with a made-up value (see Get).
         _jobData = [];
-        foreach (var (job, data) in jobData ?? MadeUpJobData())
+        _madeUp = jobData is null;
+        foreach (var (job, data) in jobData ?? [])
         {
             _jobData[(job, data.GetType())] = data;
         }
     }
 
     private readonly Dictionary<(Job, Type), object> _jobData;
-
-    /// <summary>
-    /// The (job, data type) pairs the rules read through <see cref="Get{T}"/>: a program's tables must hold each, and the importer
-    /// refuses the install where no job module read one. <see cref="MadeUpJobData"/> holds a stand-in for each.
-    /// </summary>
-    public static IReadOnlyList<(Job Job, Type Type)> RequiredJobData { get; } =
-    [
-        (Job.Woodcutter, typeof(FigureAdds)),
-        (Job.Stonecutter, typeof(FigureAdds)),
-        (Job.Digger, typeof(FigureAdds)),
-        (Job.Builder, typeof(BuilderFigureAdds)),
-        (Job.Forester, typeof(ForesterFigureAdds)),
-        (Job.Sawmiller, typeof(SawmillerFigureAdds)),
-        (Job.TypeOneHut, typeof(HutFigureAdds)),
-        (Job.Builder, typeof(WorkerRequest)),
-        (Job.Digger, typeof(WorkerRequest)),
-    ];
-
-    /// <summary>
-    /// The job data a test that gives none gets (<c>jobData</c> of the constructor): the builder and the digger ask for a settler of
-    /// their own job with no tool, and every job's figure adds are 0, which draws the settler in the carrier's row. A test that gives
-    /// data of its own builds on this list, whose later entries for one job and type win.
-    /// </summary>
-    public static IReadOnlyList<(Job Job, object Data)> MadeUpJobData() =>
-        [
-            (Job.Woodcutter, default(FigureAdds)),
-            (Job.Stonecutter, default(FigureAdds)),
-            (Job.Digger, default(FigureAdds)),
-            (Job.Builder, default(BuilderFigureAdds)),
-            (Job.Forester, default(ForesterFigureAdds)),
-            (Job.Sawmiller, default(SawmillerFigureAdds)),
-            (Job.TypeOneHut, default(HutFigureAdds)),
-            (Job.Builder, new WorkerRequest(Job.Builder, Good.None)),
-            (Job.Digger, new WorkerRequest(Job.Digger, Good.None)),
-        ];
+    private readonly bool _madeUp;
 
     /// <summary>
     /// The data of type <typeparamref name="T"/> that the job <paramref name="job"/> owns: the figure adds of its handler, or the
     /// request a site makes for it. The importer reads each from the job's tables module. Throws where the tables hold none.
+    /// Tables built with no job data (a test's) answer every job with a stand-in: a data record of all zeros, which draws the settler
+    /// in the carrier's row, and for a <see cref="WorkerRequest"/> the job's own request with no tool.
     /// </summary>
     public T Get<T>(Job job)
-        where T : notnull =>
-        _jobData.TryGetValue((job, typeof(T)), out var data)
-            ? (T)data
+        where T : notnull
+    {
+        if (_jobData.TryGetValue((job, typeof(T)), out var data))
+        {
+            return (T)data;
+        }
+
+        if (_madeUp && typeof(T) == typeof(WorkerRequest))
+        {
+            return (T)(object)new WorkerRequest(job, Good.None);
+        }
+
+        return _madeUp && typeof(T).IsValueType
+            ? default!
             : throw new InvalidOperationException(
                 $"The tables hold no {typeof(T).Name} for the job {job.GetType().Name}."
             );
-
-    private static WorkerRequest?[] MadeUpWorkers()
-    {
-        var workers = new WorkerRequest?[BuildingTypeCount];
-        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(Job.Woodcutter, new Good(1));
-        workers[BuildingType.Forester.Code] = new WorkerRequest(Job.Forester, Good.None);
-
-        return workers;
     }
 
     /// <summary>The class of each object code.</summary>

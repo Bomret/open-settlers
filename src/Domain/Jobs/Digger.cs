@@ -4,7 +4,7 @@ namespace OpenSettlers.Domain;
 public sealed record Digger : Job
 {
     /// <summary>The job's number.</summary>
-    public const int Number = DiggerCode;
+    public const int Number = 2;
 
     /// <inheritdoc />
     public override int Code => Number;

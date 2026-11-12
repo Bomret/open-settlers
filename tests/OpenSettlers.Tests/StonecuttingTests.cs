@@ -35,7 +35,7 @@ public sealed class StonecuttingTests
     private static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Stonecutter.Code] = new WorkerRequest(Job.Stonecutter, Good.None);
+        workers[BuildingType.Stonecutter.Code] = new WorkerRequest(new Stonecutter(), Good.None);
 
         return workers;
     }

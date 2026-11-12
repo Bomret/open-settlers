@@ -18,10 +18,10 @@ public sealed class NameTableTests
         Assert.AreEqual("flag", names.ObjectName(1));
         Assert.AreEqual("castle", NameTable.BuildingName(BuildingType.Castle.Code));
         Assert.AreEqual("storehouse", NameTable.BuildingName(0xa));
-        Assert.AreEqual("carrier", NameTable.JobName(Job.CarrierCode));
-        Assert.AreEqual("digger", NameTable.JobName(Job.DiggerCode));
+        Assert.AreEqual("carrier", NameTable.JobName(Carrier.Number));
+        Assert.AreEqual("digger", NameTable.JobName(Digger.Number));
         Assert.AreEqual("digs", NameTable.StateName(8));
-        Assert.AreEqual(3, Job.Builder.Code);
+        Assert.AreEqual(3, new Builder().Code);
         Assert.AreEqual("builder", NameTable.JobName(3));
         Assert.AreEqual("castle-settler", NameTable.JobName(4));
         Assert.AreEqual("jobless", NameTable.JobName(21));
@@ -33,7 +33,7 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheSawmillersJobAndStatesGetTheirNames()
     {
-        Assert.AreEqual("sawmiller", NameTable.JobName(Job.SawmillerCode));
+        Assert.AreEqual("sawmiller", NameTable.JobName(Sawmiller.Number));
         Assert.AreEqual("saws", NameTable.StateName(0x18));
         Assert.AreEqual("steps-out-with-good", NameTable.StateName(0xb));
         Assert.AreEqual("puts-down-good", NameTable.StateName(0xd));
@@ -42,7 +42,7 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheStonecuttersJobAndStatesGetTheirNames()
     {
-        Assert.AreEqual("stonecutter", NameTable.JobName(Job.StonecutterCode));
+        Assert.AreEqual("stonecutter", NameTable.JobName(Stonecutter.Number));
         Assert.AreEqual("looks-for-heap", NameTable.StateName(0x15));
         Assert.AreEqual("walks-to-heap", NameTable.StateName(0x16));
         Assert.AreEqual("cuts-stone", NameTable.StateName(0x17));
@@ -51,7 +51,7 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheForestersJobStatesAndSaplingsGetTheirNames()
     {
-        Assert.AreEqual("forester", NameTable.JobName(Job.ForesterCode));
+        Assert.AreEqual("forester", NameTable.JobName(Forester.Number));
         Assert.AreEqual("looks-for-spot", NameTable.StateName(0x13));
         Assert.AreEqual("plants", NameTable.StateName(0x14));
         var names = Table((0x67, 1), (0x68, 1));
@@ -72,7 +72,7 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheTypeOneHutSettlerHasNoNameAndEveryOtherPortedJobHasOne()
     {
-        Assert.IsNull(NameTable.JobName(RuleTables.TypeOneHutJob));
+        Assert.IsNull(NameTable.JobName(TypeOneHut.Number));
         foreach (var number in new[] { 0, 2, 3, 4, 5, 6, 7, 8, 21 })
         {
             Assert.IsNotNull(NameTable.JobName(number), $"job {number}");

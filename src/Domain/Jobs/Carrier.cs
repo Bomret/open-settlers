@@ -4,7 +4,7 @@ namespace OpenSettlers.Domain;
 public sealed record Carrier : Job
 {
     /// <summary>The job's number.</summary>
-    public const int Number = CarrierCode;
+    public const int Number = 0;
 
     /// <inheritdoc />
     public override int Code => Number;

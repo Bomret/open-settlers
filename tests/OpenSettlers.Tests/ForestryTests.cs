@@ -35,7 +35,7 @@ public sealed class ForestryTests
     private static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Forester.Code] = new WorkerRequest(Job.Forester, Good.None);
+        workers[BuildingType.Forester.Code] = new WorkerRequest(new Forester(), Good.None);
 
         return workers;
     }
@@ -102,7 +102,7 @@ public sealed class ForestryTests
         && map.At(node.X, node.Y).Roads.IsEmpty
         && !map.At(node.X, node.Y).LakeMark;
 
-    private static Settler Forester(Game game) => game.Settlers.Single(settler => settler.Job == Job.Forester);
+    private static Settler Forester(Game game) => game.Settlers.Single(settler => settler.Job == new Forester());
 
     private static (int X, int Y)[] Saplings(Map map) =>
         [.. Reach().Where(node => map.At(node.X, node.Y).Object.Kind == MapObjectKind.Sapling)];

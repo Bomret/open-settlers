@@ -4,7 +4,7 @@ namespace OpenSettlers.Domain;
 public sealed record TypeOneHut : Job
 {
     /// <summary>The job's number.</summary>
-    public const int Number = RuleTables.TypeOneHutJob;
+    public const int Number = 11;
 
     /// <inheritdoc />
     public override int Code => Number;

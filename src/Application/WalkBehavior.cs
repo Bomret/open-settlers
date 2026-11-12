@@ -235,19 +235,20 @@ public sealed class WalkBehavior(
             return "the hut has its worker already";
         }
 
-        var (asked, name) = JobOf(hut.Type)!.Value;
+        var request = movement.Tables.WorkerOf(hut.Type)!;
+        var asked = request.Job;
         var slot = roster.CastleSettler(asked);
         // The castle holds none of the job: the request's second way (0x42be63) makes one of a settler without a job where the
         // request names no tool (the forester's, docs/rules/forestry.md). A job whose request names a tool is not made in a layout.
-        var made = slot < 0 && movement.Tables.WorkerOf(hut.Type) is { Tool.IsNone: true };
+        var made = slot < 0 && request.Tool.IsNone;
         if (made)
         {
-            slot = roster.CastleSettler(Job.Jobless);
+            slot = roster.CastleSettler(new Jobless());
         }
 
         if (slot < 0)
         {
-            return $"the castle holds no {name} for the building";
+            return $"the castle holds no {asked.GetType().Name.ToLowerInvariant()} for the building";
         }
 
         var flag = flags[hut.Flag];
@@ -257,7 +258,7 @@ public sealed class WalkBehavior(
         }
 
         var settler = settlers[slot];
-        roster.Take(made ? Job.Jobless : asked, slot);
+        roster.Take(made ? new Jobless() : asked, slot);
         if (made)
         {
             settler.TakeUp(asked);
@@ -280,26 +281,6 @@ public sealed class WalkBehavior(
     /// settler stand in the hut (<see cref="JobRules.CanStandInHut"/>).
     /// </summary>
     public bool StandsWorker(BuildingType type) =>
-        JobOf(type) is { } worker && modules.Any(rules => rules.JobType == worker.Job.GetType() && rules.CanStandInHut);
-
-    // The job (and its name, for a refusal) of the worker of a building of the type; null for a type that has none of these.
-    private static (Job Job, string Name)? JobOf(BuildingType type)
-    {
-        if (type == BuildingType.Woodcutter)
-        {
-            return (Job.Woodcutter, "woodcutter");
-        }
-
-        if (type == BuildingType.Stonecutter)
-        {
-            return (Job.Stonecutter, "stonecutter");
-        }
-
-        if (type == BuildingType.Forester)
-        {
-            return (Job.Forester, "forester");
-        }
-
-        return type == BuildingType.Sawmill ? (Job.Sawmiller, "sawmiller") : null;
-    }
+        movement.Tables.WorkerOf(type) is { } request
+        && modules.Any(rules => rules.JobType == request.Job.GetType() && rules.CanStandInHut);
 }

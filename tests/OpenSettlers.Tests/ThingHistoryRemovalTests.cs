@@ -23,7 +23,8 @@ public sealed class ThingHistoryRemovalTests
                 .ToArray(),
             Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
             Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray()
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
+            workers: TestProgram.MadeWorkers()
         );
     }
 

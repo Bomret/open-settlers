@@ -34,8 +34,26 @@ internal static class TestProgram
                 .Range(0, RuleTables.StartStockRows)
                 .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
                 .ToArray(),
-            transportPriorities: transportPriorities
+            transportPriorities: transportPriorities,
+            workers: MadeWorkers()
         );
+
+    /// <summary>
+    /// The workers made-up tables ask for: the woodcutter's hut a woodcutter with a made-up tool, the forester's building a forester
+    /// with no tool, and with <paramref name="stonecutter"/> the stonecutter's building a stonecutter with no tool.
+    /// </summary>
+    public static WorkerRequest?[] MadeWorkers(bool stonecutter = false)
+    {
+        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
+        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(new Woodcutter(), new Good(1));
+        workers[BuildingType.Forester.Code] = new WorkerRequest(new Forester(), Good.None);
+        if (stonecutter)
+        {
+            workers[BuildingType.Stonecutter.Code] = new WorkerRequest(new Stonecutter(), Good.None);
+        }
+
+        return workers;
+    }
 
     /// <summary>
     /// The reference install named by <c>SIEDLER_DIR</c>; the test is inconclusive without it, and where its program

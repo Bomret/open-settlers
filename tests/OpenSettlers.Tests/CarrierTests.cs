@@ -60,7 +60,7 @@ public sealed class CarrierTests
         }
     }
 
-    private static Settler[] Carriers(Game game) => [.. game.Settlers.Where(settler => settler.Job == Job.Carrier)];
+    private static Settler[] Carriers(Game game) => [.. game.Settlers.Where(settler => settler.Job == new Carrier())];
 
     [TestMethod]
     public void ARoadAsksTheCastleForACarrierAtItsFlagsTurnAndTheCastleSendsASettlerWithoutAJob()
@@ -158,8 +158,8 @@ public sealed class CarrierTests
         // The settlers enter the table as their turns come, so it is emptied before every tick.
         for (var tick = 0; tick < 40; tick++)
         {
-            game.Roster.ClearWaiting(Job.Carrier);
-            game.Roster.ClearWaiting(Job.Jobless);
+            game.Roster.ClearWaiting(new Carrier());
+            game.Roster.ClearWaiting(new Jobless());
             game.Tick();
         }
 

@@ -23,7 +23,8 @@ public sealed class SettlerJobTests
                 .ToArray(),
             Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
             Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray()
+            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
+            workers: TestProgram.MadeWorkers()
         );
     }
 
@@ -58,7 +59,7 @@ public sealed class SettlerJobTests
     public void ASettlerWithoutAJobThatTakesARoadBecomesACarrierAndKeepsItsThingId()
     {
         var game = Town();
-        var jobless = game.Settlers.Where(settler => settler.Job == Job.Jobless).ToList();
+        var jobless = game.Settlers.Where(settler => settler.Job == new Jobless()).ToList();
         var ids = jobless.ToDictionary(
             settler => settler,
             settler => game.History.SettlerId(game.Settlers.ToList().IndexOf(settler))
@@ -70,7 +71,7 @@ public sealed class SettlerJobTests
             game.Tick();
         }
 
-        var carrier = game.Settlers.Single(settler => settler.Job == Job.Carrier);
+        var carrier = game.Settlers.Single(settler => settler.Job == new Carrier());
         Assert.IsTrue(jobless.Contains(carrier), "the carrier is one of the settlers that had no job");
         Assert.AreEqual(ids[carrier], game.History.SettlerId(game.Settlers.ToList().IndexOf(carrier)));
     }
@@ -93,11 +94,11 @@ public sealed class SettlerJobTests
         var id = game.History.SettlerId(slot);
         // The engine has no builder outside the castle, so the hut's woodcutter is given the builder's job: the test shows
         // that the removal of a building turns a builder worker into a carrier of the same settler, not a builder's path.
-        worker.TakeUp(Job.CastleSettler);
+        worker.TakeUp(new CastleSettler());
 
         Do(game, CommandKind.RemoveBuilding, 16, 2);
 
-        Assert.AreEqual(Job.Carrier, worker.Job);
+        Assert.AreEqual(new Carrier(), worker.Job);
         Assert.AreSame(worker, game.Settlers[slot]);
         Assert.AreEqual(id, game.History.SettlerId(slot));
     }

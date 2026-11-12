@@ -106,7 +106,7 @@ public sealed class SettlerFiguresTests
         bases[2 * 0x1c] = 1600;
         bases[2 * 0x1c + 1] = -1;
 
-        return new SettlerFigureTables(
+        return TablesOf(
             bases,
             offsets,
             Sequences(),
@@ -119,6 +119,44 @@ public sealed class SettlerFiguresTests
             sawmiller: SawmillerAdds
         );
     }
+
+    // Figure tables over made-up job data: the given adds of each job, all 0 (the carrier's row) for the ones not given, and the figure
+    // bases, offsets, and waiting carriers' tables given apart from the rule tables.
+    internal static SettlerFigureTables TablesOf(
+        short[] bases,
+        short[] offsets,
+        byte[] sequences,
+        short[]? carried = null,
+        FigureAdds woodcutter = default,
+        HutFigureAdds typeOneHut = default,
+        IdleCarrierTables? idle = null,
+        BuilderFigureAdds builder = default,
+        FigureAdds stonecutter = default,
+        ForesterFigureAdds forester = default,
+        FigureAdds digger = default,
+        SawmillerFigureAdds sawmiller = default
+    ) =>
+        new(
+            new RuleTables(
+                new ObjectClass[RuleTables.ClassCount],
+                TestProgram.Made().StartStock,
+                carriedFigures: carried ?? [],
+                jobData:
+                [
+                    (new Woodcutter(), woodcutter),
+                    (new Stonecutter(), stonecutter),
+                    (new Digger(), digger),
+                    (new Builder(), builder),
+                    (new Forester(), forester),
+                    (new Sawmiller(), sawmiller),
+                    (new TypeOneHut(), typeOneHut),
+                ]
+            ),
+            bases,
+            offsets,
+            sequences,
+            idle
+        );
 
     // The adds of the sawmiller's handler (0x43fc21), made up: 0x1900 for a figure byte below 0x80, 0x1a00 for the step that takes the
     // plank out, and 0x1b80 from 0x80 on.
@@ -185,14 +223,14 @@ public sealed class SettlerFiguresTests
             _ => ActivityOf(state),
         };
 
-        return new(Job.Carrier, 0, 4, 3, 0, activity) { Frame = 7, Timer = (ushort)timer };
+        return new(new Carrier(), 0, 4, 3, 0, activity) { Frame = 7, Timer = (ushort)timer };
     }
 
     private static Map Map() =>
         MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
     private static Settler Walker(int frame, int timer, int state = 2) =>
-        new(Job.Woodcutter, 0, 4, 3, 0, ActivityOf(state))
+        new(new Woodcutter(), 0, 4, 3, 0, ActivityOf(state))
         {
             Frame = frame,
             Timer = (ushort)timer,
@@ -314,7 +352,7 @@ public sealed class SettlerFiguresTests
     // The handler of the settler of the type 1 hut (0x43fed8) adds, for a figure byte below 0x80, 0x2c00 or 0x2f00 on the way back
     // with a load and, from 0x80, 0x2c80 or, where the heading (byte 14) is 1, 0x2d80; the rows here are made up.
     private static Settler Hut(int frame, Activity? activity = null) =>
-        new(Job.TypeOneHut, 0, 4, 3, 0, activity ?? ActivityOf(2)) { Frame = frame };
+        new(new TypeOneHut(), 0, 4, 3, 0, activity ?? ActivityOf(2)) { Frame = frame };
 
     // The free walk back to the hut's flag, with the log in the woodcutter's hands or without it.
     private static Activity WayBack(bool carrying) =>
@@ -511,7 +549,7 @@ public sealed class SettlerFiguresTests
         var figures = Figures();
         var map = Map();
         Settler Builder(int frame, Activity activity) =>
-            new(Job.Builder, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+            new(new Builder(), 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
 
         var walk = figures.Draws(map, [Builder(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
         var work = figures.Draws(map, [Builder(8, new Builds(1, true, 0, false, 8))], 0).Select(d => d.Entry).ToArray();
@@ -528,7 +566,7 @@ public sealed class SettlerFiguresTests
         var figures = Figures();
         var map = Map();
         Settler Digger(int frame, Activity activity) =>
-            new(Job.Digger, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+            new(new Digger(), 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
 
         var walk = figures.Draws(map, [Digger(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
         var work = figures.Draws(map, [Digger(8, new Digs(15, 10, 6, 1))], 0).Select(d => d.Entry).ToArray();
@@ -545,7 +583,7 @@ public sealed class SettlerFiguresTests
         var figures = Figures();
         var map = Map();
         Settler Sawmiller(int frame, Activity activity) =>
-            new(Job.Sawmiller, 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+            new(new Sawmiller(), 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
 
         var walk = figures.Draws(map, [Sawmiller(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
         var saws = figures.Draws(map, [Sawmiller(8, new Saws(true))], 0).Select(d => d.Entry).ToArray();
@@ -576,7 +614,7 @@ public sealed class SettlerFiguresTests
     [TestMethod]
     public void ASettlerOfAnotherJobDrawsNothing()
     {
-        var jobless = new Settler(Job.Jobless, 0, 4, 3, 0, ActivityOf(2)) { Frame = 7 };
+        var jobless = new Settler(new Jobless(), 0, 4, 3, 0, ActivityOf(2)) { Frame = 7 };
 
         Assert.IsEmpty(Figures().Draws(Map(), [jobless], 0));
     }
@@ -618,7 +656,7 @@ public sealed class SettlerFiguresTests
         var offsets = new short[512];
         offsets[2 * 3] = 7;
 
-        var tables = new SettlerFigureTables(bases, offsets, Sequences(), null, Adds);
+        var tables = TablesOf(bases, offsets, Sequences(), null, Adds);
         var draws = new SettlerPair(new SettlerFigures(new StepOffsets(Sequences()), []), tables).Draws(
             Map(),
             [Walker(7, 0)],
@@ -692,7 +730,7 @@ public sealed class SettlerFiguresTests
         var bases = new short[256];
         bases[2 * 0x0b + 1] = -1;
 
-        var tables = new SettlerFigureTables(bases, new short[4], Sequences(), null, Adds);
+        var tables = TablesOf(bases, new short[4], Sequences(), null, Adds);
 
         Assert.IsEmpty(
             new SettlerPair(new SettlerFigures(new StepOffsets(Sequences()), []), tables).Draws(
@@ -709,7 +747,7 @@ public sealed class SettlerFiguresTests
     public void ASettlersTermsNameItsJobActivityHeadingStepPlayerAndCarriedGood()
     {
         var load = new Load(new Good(7), null);
-        var carrier = new Settler(Job.Carrier, 1, 4, 3, 0, new WalksRoad(load, new Heading(2)))
+        var carrier = new Settler(new Carrier(), 1, 4, 3, 0, new WalksRoad(load, new Heading(2)))
         {
             Frame = 7,
             Timer = 16,
@@ -724,7 +762,7 @@ public sealed class SettlerFiguresTests
         );
         Assert.IsTrue(
             terms.All(term =>
-                term.Job == Job.Carrier
+                term.Job == new Carrier()
                 && term.Activity == carrier.Activity
                 && term.Heading == new Heading(2)
                 && term.Frame == 7
@@ -793,7 +831,7 @@ public sealed class SettlerFiguresTests
     [TestMethod]
     public void ATermTheTablesHaveNoPickForDrawsNothingAndDoesNotThrow()
     {
-        var tables = new SettlerFigureTables(new short[256], new short[4], Sequences(), null, Adds);
+        var tables = TablesOf(new short[256], new short[4], Sequences(), null, Adds);
         var term = Figures().Terms(Map(), [Walker(7, 0)], 0)[0];
 
         Assert.IsNull(tables.Pick(term));

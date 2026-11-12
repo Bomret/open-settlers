@@ -11,14 +11,14 @@ public sealed class JobLooksTests
 {
     private static readonly Job[] Drawn =
     [
-        Job.Carrier,
-        Job.Woodcutter,
-        Job.Stonecutter,
-        Job.TypeOneHut,
-        Job.Builder,
-        Job.Forester,
-        Job.Digger,
-        Job.Sawmiller,
+        new Carrier(),
+        new Woodcutter(),
+        new Stonecutter(),
+        new TypeOneHut(),
+        new Builder(),
+        new Forester(),
+        new Digger(),
+        new Sawmiller(),
     ];
 
     private static RuleTables Tables() =>

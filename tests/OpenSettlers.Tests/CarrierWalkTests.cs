@@ -217,7 +217,7 @@ public sealed class CarrierWalkTests
                 else
                 {
                     Assert.AreEqual(
-                        Job.Jobless,
+                        new Jobless(),
                         game.Settlers[slot].Job,
                         $"{name}: settler {slot} still waits in the castle after pass {pass}"
                     );

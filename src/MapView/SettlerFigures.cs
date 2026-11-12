@@ -126,7 +126,7 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
     {
         foreach (var settler in settlers)
         {
-            if (settler.Job != Job.Carrier || settler.Activity is not WaitsOffRoad)
+            if (settler.Job is not Carrier || settler.Activity is not WaitsOffRoad)
             {
                 continue;
             }

@@ -209,9 +209,7 @@ public sealed class RoadSplitGameTests
         Assert.AreEqual(1, game.Flags[2].Side(3).Carriers, "the castle half has a carrier");
         Assert.AreEqual(
             2,
-            game.Settlers.Count(settler =>
-                settler is { Job.Code: Job.CarrierCode, Activity: WalksRoad or WaitsAtFlag }
-            ),
+            game.Settlers.Count(settler => settler is { Job.Code: Carrier.Number, Activity: WalksRoad or WaitsAtFlag }),
             "two carriers work the two roads"
         );
     }

@@ -13,7 +13,7 @@ public sealed class SettlerMovementTests
     private static SettlerMovement Movement(Map map) =>
         new(map, new BuildingTable(), LayoutSettlersTests.MadeTables(), () => _clock, _ => new Residue());
 
-    private static Settler SettlerAt(int x, int y) => new(Job.Woodcutter, 0, x, y, 0, new WaitsInCastle());
+    private static Settler SettlerAt(int x, int y) => new(new Woodcutter(), 0, x, y, 0, new WaitsInCastle());
 
     [TestMethod]
     public void AMoveFreesTheOldNodeAndTakesTheNewOne()

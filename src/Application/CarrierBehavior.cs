@@ -209,7 +209,7 @@ public sealed class CarrierBehavior(
     {
         var (far, farDirection) = RoadNetwork.FarEnd(road, slot, direction);
         var end = StorageEnd(slot, far);
-        var job = roster.Waiting(Job.Carrier) != 0 ? Job.Carrier : Job.Jobless;
+        Job job = roster.Waiting(new Carrier()) != 0 ? new Carrier() : new Jobless();
         if (end < 0 || roster.Waiting(job) == 0)
         {
             return false;
@@ -218,7 +218,7 @@ public sealed class CarrierBehavior(
         var carrier = roster.Waiting(job);
         var settler = settlers[carrier];
         roster.Take(job, carrier);
-        settler.TakeUp(Job.Carrier);
+        settler.TakeUp(new Carrier());
         var (flag, flagDirection) = end == 0 ? (slot, direction) : (far, farDirection);
         movement.Become(settler, new Leaving(new ToRoad(flag, flagDirection)));
         roster.WorkerSent();
@@ -306,7 +306,7 @@ public sealed class CarrierBehavior(
             return "no land road leads from the road to the castle";
         }
 
-        var job = roster.CastleSettler(Job.Carrier) >= 0 ? Job.Carrier : Job.Jobless;
+        Job job = roster.CastleSettler(new Carrier()) >= 0 ? new Carrier() : new Jobless();
         var slot = roster.CastleSettler(job);
         if (slot < 0)
         {
@@ -318,7 +318,7 @@ public sealed class CarrierBehavior(
         var (dx, dy) = Direction.Steps[waitDirection];
         var settler = settlers[slot];
         roster.Take(job, slot);
-        settler.TakeUp(Job.Carrier);
+        settler.TakeUp(new Carrier());
         settler.X = (flags[waitFlag].X + dx) & (Map.Size.Width - 1);
         settler.Y = (flags[waitFlag].Y + dy) & (Map.Size.Height - 1);
         settler.Frame = (byte)(waitDirection + 0x6e);

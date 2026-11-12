@@ -4,7 +4,7 @@ namespace OpenSettlers.Domain;
 public sealed record Builder : Job
 {
     /// <summary>The job's number.</summary>
-    public const int Number = BuilderCode;
+    public const int Number = 3;
 
     /// <inheritdoc />
     public override int Code => Number;

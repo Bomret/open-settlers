@@ -259,8 +259,8 @@ public static class ProgramTablesImporter
     public static RuleTables Import(byte[] exe) => Import(exe, JobTablesRegistry.Modules());
 
     /// <summary>
-    /// Reads the tables as <see cref="Import(byte[])"/> does, with the job data read by <paramref name="modules"/>: a module set
-    /// that leaves a job's required data unread is refused.
+    /// Reads the tables as <see cref="Import(byte[])"/> does, with the job data read by <paramref name="modules"/>: the data of a job
+    /// whose module is absent is unread, and reading it is an error (<see cref="RuleTables.Get{T}"/>).
     /// </summary>
     internal static RuleTables Import(byte[] exe, IReadOnlyList<IJobTables> modules)
     {
@@ -326,17 +326,7 @@ public static class ProgramTablesImporter
             module.Read(exe, data);
         }
 
-        // A job's data that no module read is no default: the install is refused.
-        foreach (var (job, type) in RuleTables.RequiredJobData)
-        {
-            if (!data.Any(entry => entry.Job.Equals(job) && entry.Data.GetType() == type))
-            {
-                throw new InvalidDataException(
-                    $"Siedler1.exe holds no job data as expected: no tables module read the {type.Name} of the job {job.GetType().Name}."
-                );
-            }
-        }
-
+        // A job's data that no module read is no default: reading it is an error (RuleTables.Get).
         return data;
     }
 

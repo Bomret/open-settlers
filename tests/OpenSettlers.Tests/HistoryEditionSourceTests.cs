@@ -535,7 +535,7 @@ public sealed class HistoryEditionSourceTests
             100,
             50,
             part,
-            Job.Carrier,
+            new Carrier(),
             activity ?? new WalksRoad(null, new Heading(0)),
             null,
             frame,

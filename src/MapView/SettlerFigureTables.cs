@@ -57,54 +57,9 @@ public sealed class SettlerFigureTables
     private readonly Dictionary<Job, HistoryEditionLook> _looks;
     private readonly IdleCarrierTables? _idle;
 
-    /// <param name="bases">Two words for each high byte of the figure word: the figure base and the second figure base (negative for none).</param>
-    /// <param name="offsets">Two words for each low byte of the figure word: what it adds to the figure and to the second figure.</param>
-    /// <param name="sequences">The bytes of entry 2 of the graphics archive.</param>
-    /// <param name="carried">For each good the word a carrier carrying it adds to its figure byte.</param>
-    /// <param name="woodcutter">What the woodcutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
-    /// <param name="typeOneHut">What the handler of the settler of the type 1 hut adds to the figure byte (<c>0x43fed8</c>).</param>
-    /// <param name="idle">The tables of the waiting carriers; none draws no waiting carrier.</param>
-    /// <param name="stonecutter">What the stonecutter's handler adds to the figure byte; all 0 draws him in the carrier's row.</param>
-    /// <param name="digger">What the digger's handler adds to the figure byte (<c>0x43fa87</c>); all 0 draws him in the carrier's row.</param>
-    /// <param name="sawmiller">What the sawmiller's handler adds to the figure byte (<c>0x43fc21</c>) and how far it moves the saw's second figure; all 0 draws him in the carrier's row.</param>
-    public SettlerFigureTables(
-        short[] bases,
-        short[] offsets,
-        byte[] sequences,
-        short[]? carried = null,
-        FigureAdds woodcutter = default,
-        HutFigureAdds typeOneHut = default,
-        IdleCarrierTables? idle = null,
-        BuilderFigureAdds builder = default,
-        FigureAdds stonecutter = default,
-        ForesterFigureAdds forester = default,
-        FigureAdds digger = default,
-        SawmillerFigureAdds sawmiller = default
-    )
-        : this(
-            new RuleTables(
-                new ObjectClass[RuleTables.ClassCount],
-                [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[RuleTables.Goods])],
-                carriedFigures: carried ?? [],
-                jobData:
-                [
-                    (Job.Woodcutter, woodcutter),
-                    (Job.Stonecutter, stonecutter),
-                    (Job.Digger, digger),
-                    (Job.Builder, builder),
-                    (Job.Forester, forester),
-                    (Job.Sawmiller, sawmiller),
-                    (Job.TypeOneHut, typeOneHut),
-                ]
-            ),
-            bases,
-            offsets,
-            sequences,
-            idle
-        ) { }
-
     // The looks the History Edition source holds read the job data of the tables (the registry is generated from the look modules).
-    private SettlerFigureTables(
+    // The figure bases, offsets, and idle tables are given apart from the tables for a test that draws with part of them.
+    internal SettlerFigureTables(
         RuleTables tables,
         short[] bases,
         short[] offsets,
@@ -147,7 +102,7 @@ public sealed class SettlerFigureTables
         var dy = 0;
         if (draw.Activity is WaitsOffRoad)
         {
-            if (draw.Job != Job.Carrier || _idle is null || draw.Node is not { } node)
+            if (draw.Job is not Carrier || _idle is null || draw.Node is not { } node)
             {
                 return null;
             }

@@ -97,15 +97,14 @@ public sealed class LayoutSettlersTests
             goodClasses: goodClasses,
             distribution: distribution,
             plankRankBase: plankRankBase,
-            workers: workers,
+            workers: workers ?? TestProgram.MadeWorkers(stonecutter: true),
             materialOrder: materialOrder,
             blowSteps: blowSteps,
             // A request a test gives replaces the made-up one of the same job.
             jobData:
             [
-                .. RuleTables.MadeUpJobData(),
-                .. builderRequest is null ? [] : new[] { (Job.Builder, (object)builderRequest) },
-                .. diggerRequest is null ? [] : new[] { (Job.Digger, (object)diggerRequest) },
+                (new Builder(), builderRequest ?? new WorkerRequest(new Builder(), Good.None)),
+                (new Digger(), diggerRequest ?? new WorkerRequest(new Digger(), Good.None)),
             ]
         );
     }
@@ -139,12 +138,12 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built);
 
-        var worker = game.Settlers.Single(settler => settler.Job == Job.Woodcutter);
+        var worker = game.Settlers.Single(settler => settler.Job == new Woodcutter());
         Assert.IsInstanceOfType<Door>(worker.Activity);
         Assert.AreEqual((13, 10), (worker.X, worker.Y));
         Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
         Assert.AreEqual(game.Settlers.ToList().IndexOf(worker), game.Buildings[1].Worker);
-        Assert.AreEqual(0, game.Roster.Waiting(Job.Woodcutter));
+        Assert.AreEqual(0, game.Roster.Waiting(new Woodcutter()));
     }
 
     [TestMethod]
@@ -171,7 +170,7 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void ACarrierPlacedOnARoadIsTheSettlerTheCastlesWaitingListNamesWhereItNamesOne()
     {
-        var jobless = Job.Jobless;
+        var jobless = new Jobless();
         var game = Applied("\"castle\": {\"x\": 10, \"y\": 10},");
         Run(game, 3000);
         foreach (
@@ -217,7 +216,7 @@ public sealed class LayoutSettlersTests
         Assert.IsFalse(leftTheCastle);
         Assert.IsTrue(Trees.Any(tree => game.Map.At(tree.X, tree.Y).Object.Code != 8));
         Assert.IsFalse(game.Buildings[1].WorkerOnTheWay);
-        Assert.AreEqual(1, game.Settlers.Count(settler => settler.Job == Job.Woodcutter));
+        Assert.AreEqual(1, game.Settlers.Count(settler => settler.Job == new Woodcutter()));
     }
 
     [TestMethod]
@@ -225,7 +224,7 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built + $"\"settlers\": [{Carrier}]");
 
-        var carrier = game.Settlers.Single(settler => settler.Job == Job.Carrier);
+        var carrier = game.Settlers.Single(settler => settler.Job == new Carrier());
         var waiting = (WaitsAtFlag)carrier.Activity;
         Assert.AreEqual((13, 11), (carrier.X, carrier.Y));
         Assert.AreEqual((1, new Direction(3)), (waiting.Flag, waiting.Direction));
@@ -298,7 +297,7 @@ public sealed class LayoutSettlersTests
         );
 
         Assert.IsFalse(game.Buildings[1].WorkerInside || game.Buildings[1].WorkerOnTheWay);
-        Assert.AreEqual(1, game.Settlers.Count(s => s.Job == Job.Woodcutter && s.Activity is WaitsInCastle));
+        Assert.AreEqual(1, game.Settlers.Count(s => s.Job == new Woodcutter() && s.Activity is WaitsInCastle));
     }
 
     [TestMethod]
@@ -398,14 +397,14 @@ public sealed class LayoutSettlersTests
     public void ACarrierWhenTheCastleHoldsNoCarrierIsAJoblessSettlerMadeTheRoadsCarrier()
     {
         var before = Applied(Built);
-        var jobless = before.Settlers.Count(s => s.Job == Job.Jobless && s.Activity is WaitsInCastle);
-        Assert.AreEqual(0, before.Settlers.Count(settler => settler.Job == Job.Carrier));
+        var jobless = before.Settlers.Count(s => s.Job == new Jobless() && s.Activity is WaitsInCastle);
+        Assert.AreEqual(0, before.Settlers.Count(settler => settler.Job == new Carrier()));
 
         var game = Applied(Built + $"\"settlers\": [{Carrier}]");
 
-        var carrier = game.Settlers.ToList().FindIndex(settler => settler.Job == Job.Carrier);
+        var carrier = game.Settlers.ToList().FindIndex(settler => settler.Job == new Carrier());
         Assert.IsInstanceOfType<WaitsAtFlag>(game.Settlers[carrier].Activity);
-        Assert.AreEqual(jobless - 1, game.Settlers.Count(s => s.Job == Job.Jobless && s.Activity is WaitsInCastle));
+        Assert.AreEqual(jobless - 1, game.Settlers.Count(s => s.Job == new Jobless() && s.Activity is WaitsInCastle));
         Assert.AreEqual(before.Settlers.Count, game.Settlers.Count);
     }
 

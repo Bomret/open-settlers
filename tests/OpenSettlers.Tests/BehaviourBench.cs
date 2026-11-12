@@ -24,7 +24,7 @@ internal sealed class BehaviourBench
         Movement = new SettlerMovement(Map, Buildings, Tables, () => Clock, _ => new Residue());
         History = new GameHistory(new NoSnapshots(), () => 0);
         // Slot 0 of the settler table reads as a free node in an occupant list: the settlers under test take later slots.
-        Settlers.Add(new Settler(Job.Jobless, 0, 0, 0, 0, new RawState(0)));
+        Settlers.Add(new Settler(new Jobless(), 0, 0, 0, 0, new RawState(0)));
     }
 
     public ushort Clock { get; set; }

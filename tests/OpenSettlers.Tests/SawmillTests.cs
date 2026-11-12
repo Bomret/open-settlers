@@ -33,7 +33,7 @@ public sealed class SawmillTests
     {
         ConstructionWorld.Run(game, 1500);
 
-        return ConstructionWorld.OfJob(game, Job.Sawmiller).Single();
+        return ConstructionWorld.OfJob(game, new Sawmiller()).Single();
     }
 
     private static Request LogRequest(Game game) => game.Flags[SawmillFlag].RequestOf(ConstructionTables.LogClass.Word);

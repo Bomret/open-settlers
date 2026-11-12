@@ -27,7 +27,7 @@ public sealed class CarrierLook(RuleTables tables) : HistoryEditionLook<Carrier>
 /// <param name="tables">The tables of the exe: the builder's adds.</param>
 public sealed class BuilderLook(RuleTables tables) : HistoryEditionLook<Builder>(tables)
 {
-    private readonly BuilderFigureAdds _adds = tables.Get<BuilderFigureAdds>(Job.Builder);
+    private readonly BuilderFigureAdds _adds = tables.Get<BuilderFigureAdds>(new Builder());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) => FigureBytes.IsWork(figure) ? _adds.Work : _adds.Walk;
@@ -39,7 +39,7 @@ public sealed class BuilderLook(RuleTables tables) : HistoryEditionLook<Builder>
 /// <param name="tables">The tables of the exe: the digger's adds.</param>
 public sealed class DiggerLook(RuleTables tables) : HistoryEditionLook<Digger>(tables)
 {
-    private readonly FigureAdds _adds = tables.Get<FigureAdds>(Job.Digger);
+    private readonly FigureAdds _adds = tables.Get<FigureAdds>(new Digger());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) => FigureBytes.IsWork(figure) ? _adds.Cutting : _adds.Walk;
@@ -52,7 +52,7 @@ public sealed class DiggerLook(RuleTables tables) : HistoryEditionLook<Digger>(t
 /// <param name="tables">The tables of the exe: the forester's adds.</param>
 public sealed class ForesterLook(RuleTables tables) : HistoryEditionLook<Forester>(tables)
 {
-    private readonly ForesterFigureAdds _adds = tables.Get<ForesterFigureAdds>(Job.Forester);
+    private readonly ForesterFigureAdds _adds = tables.Get<ForesterFigureAdds>(new Forester());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) => FigureBytes.IsWork(figure) ? _adds.Work : _adds.Walk;
@@ -65,7 +65,7 @@ public sealed class ForesterLook(RuleTables tables) : HistoryEditionLook<Foreste
 /// <param name="tables">The tables of the exe: the woodcutter's adds.</param>
 public sealed class WoodcutterLook(RuleTables tables) : HistoryEditionLook<Woodcutter>(tables)
 {
-    private readonly FigureAdds _adds = tables.Get<FigureAdds>(Job.Woodcutter);
+    private readonly FigureAdds _adds = tables.Get<FigureAdds>(new Woodcutter());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) =>
@@ -81,7 +81,7 @@ public sealed class WoodcutterLook(RuleTables tables) : HistoryEditionLook<Woodc
 /// <param name="tables">The tables of the exe: the stonecutter's adds.</param>
 public sealed class StonecutterLook(RuleTables tables) : HistoryEditionLook<Stonecutter>(tables)
 {
-    private readonly FigureAdds _adds = tables.Get<FigureAdds>(Job.Stonecutter);
+    private readonly FigureAdds _adds = tables.Get<FigureAdds>(new Stonecutter());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) =>
@@ -97,7 +97,7 @@ public sealed class StonecutterLook(RuleTables tables) : HistoryEditionLook<Ston
 /// <param name="tables">The tables of the exe: the sawmiller's adds.</param>
 public sealed class SawmillerLook(RuleTables tables) : HistoryEditionLook<Sawmiller>(tables)
 {
-    private readonly SawmillerFigureAdds _adds = tables.Get<SawmillerFigureAdds>(Job.Sawmiller);
+    private readonly SawmillerFigureAdds _adds = tables.Get<SawmillerFigureAdds>(new Sawmiller());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) =>
@@ -113,7 +113,7 @@ public sealed class SawmillerLook(RuleTables tables) : HistoryEditionLook<Sawmil
 /// <param name="tables">The tables of the exe: the hut's adds.</param>
 public sealed class TypeOneHutLook(RuleTables tables) : HistoryEditionLook<TypeOneHut>(tables)
 {
-    private readonly HutFigureAdds _adds = tables.Get<HutFigureAdds>(Job.TypeOneHut);
+    private readonly HutFigureAdds _adds = tables.Get<HutFigureAdds>(new TypeOneHut());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) =>

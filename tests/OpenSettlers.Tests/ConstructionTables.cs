@@ -70,9 +70,9 @@ internal static class ConstructionTables
     public static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(Job.Woodcutter, Good.None);
+        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(new Woodcutter(), Good.None);
         workers[BuildingType.Forester.Code] = new WorkerRequest(Job.Of(8), ForesterTool);
-        workers[BuildingType.Sawmill.Code] = new WorkerRequest(Job.Sawmiller, SawTool);
+        workers[BuildingType.Sawmill.Code] = new WorkerRequest(new Sawmiller(), SawTool);
 
         return workers;
     }
@@ -112,7 +112,7 @@ internal static class ConstructionTables
         LayoutSettlersTests.MadeTables(
             stepTime: stepTime,
             workers: Workers(),
-            builderRequest: new WorkerRequest(Job.Builder, BuilderTool),
+            builderRequest: new WorkerRequest(new Builder(), BuilderTool),
             materialOrder: materialOrder ?? MaterialOrder(),
             blowSteps: BlowSteps(),
             buildingClass: 4,
@@ -124,6 +124,6 @@ internal static class ConstructionTables
             goodClasses: Classes(),
             distribution: Orders(),
             plankRankBase: plankRankBase,
-            diggerRequest: new WorkerRequest(Job.Digger, DiggerTool)
+            diggerRequest: new WorkerRequest(new Digger(), DiggerTool)
         );
 }
