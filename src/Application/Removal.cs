@@ -267,7 +267,12 @@ public sealed class Removal(
     private static (int First, int Second)? RoadBits(RoadSet nodeRoads)
     {
         var first = nodeRoads.First;
-        for (var second = first + 1; second <= 5 && first <= 5; second++)
+        if (first > 5)
+        {
+            return null;
+        }
+
+        for (var second = first + 1; second <= 5; second++)
         {
             if (nodeRoads.Has(second))
             {

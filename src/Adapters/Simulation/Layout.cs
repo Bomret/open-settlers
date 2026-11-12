@@ -397,7 +397,7 @@ public sealed partial class Layout
                     Fail($"{name}[{y}]", $"has {rows[y].Length} characters, the map is {size.Width} wide");
                     good = false;
                 }
-                else if (Array.FindIndex(rows[y].ToCharArray(), c => !alphabet.Contains(c)) is var column and >= 0)
+                else if (rows[y].AsSpan().IndexOfAnyExcept(alphabet.AsSpan()) is var column and >= 0)
                 {
                     Fail($"{name}[{y}]", $"column {column}: '{rows[y][column]}' is not {expected}");
                     good = false;
