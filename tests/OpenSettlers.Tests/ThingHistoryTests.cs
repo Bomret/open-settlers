@@ -303,7 +303,7 @@ public sealed class ThingHistoryTests
         "goods": [{"x": 14, "y": 11, "place": 0, "good": 7}]
         """;
 
-    private static Game Laid(string extra = Built)
+    internal static Game Laid(string extra = Built)
     {
         var read = Layout.Read(LayoutTests.Text(extra: "\n" + extra), "test.jsonc");
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));

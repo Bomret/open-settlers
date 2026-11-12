@@ -64,13 +64,13 @@ public abstract class PreviewView
         return box;
     }
 
-    /// <summary>The views by preview type.</summary>
-    public static IReadOnlyDictionary<Type, PreviewView> Discover() =>
+    /// <summary>One instance of every view. Two views of one preview type are the browser's <see cref="PreviewClash"/>.</summary>
+    public static IReadOnlyList<PreviewView> Discover() =>
         typeof(PreviewView)
             .Assembly.GetTypes()
             .Where(t =>
                 t.IsSubclassOf(typeof(PreviewView)) && !t.IsAbstract && t.GetConstructor(Type.EmptyTypes) != null
             )
             .Select(t => (PreviewView)Activator.CreateInstance(t)!)
-            .ToDictionary(v => v.PreviewType);
+            .ToList();
 }

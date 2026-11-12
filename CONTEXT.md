@@ -163,6 +163,16 @@ The part of `Siedler1.exe` that the History Edition carries over from the origin
 game's rules, its state, and its drawing.
 _Avoid_: core, original code
 
+**Domain**
+The assembly of the typed model and the random generator. It references no other project assembly
+(`src/Domain/`, ADR 0013).
+_Avoid_: core, model layer
+
+**Adapter**
+The assembly that converts the original's packed bytes, map layers, and bare codes to and from the typed
+model (`src/Adapters/`, ADR 0013). It references the domain and the application.
+_Avoid_: converter layer, edge
+
 **Platform layer**
 The part of `Siedler1.exe` that the History Edition adds for Windows: graphics and sound output, timing,
 and input. It is new code, so a rule found only there is marked as such.

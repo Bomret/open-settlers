@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
 using OpenSettlers.Domain;
@@ -37,11 +38,11 @@ public partial class AssetBrowserView : Control
             System.Environment.GetEnvironmentVariable(LaunchArgs.GameVariable),
             movieMaker: !string.IsNullOrEmpty(Engine.GetWriteMoviePath())
         );
-        if (args.Problems.Count > 0)
+        if (MapLaunch.BadArgument(args) is { } bad)
         {
             // A bad argument wins over a missing install, and no window opens for it.
-            GD.PrintErr($"ERROR {string.Join("; ", args.Problems)}");
-            GetTree().Quit(LaunchArgs.BadArgumentExitCode);
+            GD.PrintErr(bad.Message);
+            GetTree().Quit(bad.Code);
 
             return;
         }
@@ -84,8 +85,18 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        _views = PreviewView.Discover();
-        _state = AssetBrowserState.Open(args, kinds, selectFirst: false);
+        var views = PreviewView.Discover();
+        _state = AssetBrowserState.Open(
+            args,
+            kinds,
+            selectFirst: false,
+            previewClash: PreviewClash.Of(views.Select(v => (v.GetType().Name, v.PreviewType)))
+        );
+        if (_state.Message == null)
+        {
+            _views = views.ToDictionary(v => v.PreviewType);
+        }
+
         if (_state.Categories.Count > 0 && Guard(() => _state.SelectKind(_state.Categories[0])) is { } crash)
         {
             AddChild(Wrapped(crash));
@@ -98,22 +109,7 @@ public partial class AssetBrowserView : Control
 
     // AssetBrowserState propagates a programming error, and a Godot callback exception only reaches the log, so the
     // view catches it like RunCheck does and returns the text to show in its place.
-    string? Guard(Action action)
-    {
-        try
-        {
-            action();
-
-            return null;
-        }
-        catch (Exception e)
-        {
-            GD.PrintErr($"asset browser crashed: {e}");
-            var subject = _state.SelectedAsset?.File ?? _state.SelectedKind;
-
-            return $"{subject}: crashed: {e.GetType().Name}: {e.Message}";
-        }
-    }
+    string? Guard(Action action) => CrashText.Guard(action, () => CrashText.Subject(_state), line => GD.PrintErr(line));
 
     static Label Wrapped(string text) =>
         new()
@@ -128,44 +124,35 @@ public partial class AssetBrowserView : Control
     // callback exception does not set the exit code, so this owns it.
     void RunMap(LaunchArgs args)
     {
-        // A layout that is missing or fails to load exits 4 and names the file and the entry, before the install is
-        // opened and before a window opens.
-        Layout? layout = null;
-        if (args.Layout is not null)
-        {
-            var loadCode = LayoutLoad.Run(args.Layout, out layout, out var loadProblem);
-            if (loadCode != 0)
+        var decision = MapLaunch.Decide(
+            args,
+            path =>
             {
-                GD.Print(loadProblem);
-                GetTree().Quit(loadCode);
+                var code = LayoutLoad.Run(path, out var loaded, out var message);
 
-                return;
-            }
-        }
-
-        if (!Install.TryOpen(args, out var install, out var problem))
+                return (code, loaded, message);
+            },
+            a => Install.TryOpen(a, out var opened, out var problem) ? (opened, null) : (null, problem),
+            PlayScript.Read,
+            () => ProjectSettings.GlobalizePath("res://")
+        );
+        if (decision is MapLaunch.Exit exit)
         {
-            GD.Print($"ERROR {problem}");
-            GetTree().Quit(2);
+            if (exit.Stream == LaunchStream.Stderr)
+            {
+                GD.PrintErr(exit.Message);
+            }
+            else
+            {
+                GD.Print(exit.Message);
+            }
+
+            GetTree().Quit(exit.Code);
 
             return;
         }
 
-        // A play script that cannot be read or has a bad line exits 1 and names the line, before the view opens.
-        PlayScript? script = null;
-        if (args.Play is not null)
-        {
-            var path = System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), args.Play);
-            script = PlayScript.Read(path);
-            if (script.Problems.Count > 0)
-            {
-                GD.PrintErr($"ERROR {string.Join("; ", script.Problems)}");
-                GetTree().Quit(PlayRun.FailedExitCode);
-
-                return;
-            }
-        }
-
+        var (layout, install, script, folder) = (MapLaunch.Open)decision;
         var view = layout is not null
             ? new MapViewControl(install, layout, args.Graphics)
             : new MapViewControl(
@@ -178,8 +165,7 @@ public partial class AssetBrowserView : Control
         AddChild(view);
         if (script is not null)
         {
-            var folder = System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), "play-out", script.Stem);
-            AddChild(new PlayDriver(view, script, folder));
+            AddChild(new PlayDriver(view, script, folder!));
         }
     }
 

@@ -728,6 +728,37 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
+    [UnsupportedOSPlatform("windows")]
+    public void AnUnwritablePlayOutExitsWithTwoAndLogsNoRun()
+    {
+        Assert.AreEqual(0, Run(Args).Status);
+        var before = LogLines;
+        var playOut = Path.Combine(repo, "play-out");
+        var mode = File.GetUnixFileMode(playOut);
+        File.SetUnixFileMode(playOut, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        try
+        {
+            try
+            {
+                File.WriteAllText(Path.Combine(playOut, "probe"), "x");
+                Assert.Inconclusive("play-out/ stays writable for this user (root)");
+            }
+            catch (UnauthorizedAccessException) { }
+
+            var (status, _, stderr) = Run(Args);
+
+            Assert.AreEqual(2, status);
+            StringAssert.Contains(stderr, "play-run.sh: cannot write play-out/");
+            CollectionAssert.AreEqual(before, LogLines);
+            Assert.AreEqual(1, Calls);
+        }
+        finally
+        {
+            File.SetUnixFileMode(playOut, mode);
+        }
+    }
+
+    [TestMethod]
     public void ALockWithNoPidOlderThanTheGraceIsTakenOver()
     {
         Directory.CreateDirectory(Out(".lock-demo"));

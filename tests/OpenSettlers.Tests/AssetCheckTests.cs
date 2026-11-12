@@ -119,6 +119,16 @@ public sealed class AssetCheckTests
         CollectionAssert.Contains(report.Lines.ToList(), "loca/T.TXT: 1 entry (text)");
     }
 
+    [TestMethod]
+    public void TwoKindsOfOneNameClashAndUniqueNamesDoNot()
+    {
+        var clash = AssetKind.NameClash([new ListedKind("text"), new ListedKind("sound"), new ListedKind("text")]);
+
+        StringAssert.Contains(clash, "\"text\"");
+        Assert.IsNull(AssetKind.NameClash([new ListedKind("text"), new ListedKind("sound")]));
+        Assert.IsNull(AssetKind.NameClash([]));
+    }
+
     sealed class ThrowingKind : AssetKind
     {
         public override string Name => "broken";
@@ -199,6 +209,8 @@ public sealed class AssetCheckTests
         );
 
         Assert.AreEqual(3, report.ExitCode);
+        Assert.HasCount(1, report.Lines);
+        StringAssert.StartsWith(report.Lines[0], "ERROR ");
         StringAssert.Contains(report.Lines[0], "\"text\"");
     }
 }

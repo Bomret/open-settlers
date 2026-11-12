@@ -217,6 +217,72 @@ public sealed class PlayNamedThingTests
     }
 
     [TestMethod]
+    [DataRow("builds")]
+    [DataRow("digs")]
+    [DataRow("levelled")]
+    [DataRow("saws")]
+    [DataRow("building-finished")]
+    [DataRow("leaves-site")]
+    public void ExpectEventAcceptsTheConstructionTypes(string type)
+    {
+        var problems = Parse($"name f 18 6 flag\nexpect-event f {type}").Problems;
+
+        Assert.AreEqual("", string.Join("\n", problems));
+    }
+
+    [TestMethod]
+    public void ExpectEventBuildsPassesOnTheBuilderOnceHeHasWorked()
+    {
+        var (game, _) = BuilderTests.World();
+        Settler? builder = null;
+        for (var tick = 0; tick < 3000 && builder is null; tick++)
+        {
+            game.Tick();
+            builder = game.Settlers.FirstOrDefault(settler => settler.Activity is Builds);
+        }
+        Assert.IsNotNull(builder, "the builder works");
+        ConstructionWorld.Run(game, 600);
+
+        var text = $"name b {builder.X} {builder.Y} settler\nexpect-event b builds";
+        var run = Run(text, game);
+
+        Assert.AreEqual("", string.Join("\n", Parse(text).Problems), "the script reads");
+        Assert.IsTrue(run.Finished, "the expect-event step was evaluated");
+        Assert.AreEqual("", string.Join("\n", run.Problems));
+    }
+
+    [TestMethod]
+    public void EveryEventTypeConstantIsListedOnce()
+    {
+        var declared = typeof(EventType)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(field => field.IsLiteral && field.FieldType == typeof(string))
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .ToList();
+
+        CollectionAssert.AreEquivalent(declared, EventType.All.ToList());
+    }
+
+    [TestMethod]
+    public void EveryCauseRuleAreaAndKindIsListed()
+    {
+        var kinds = typeof(Cause)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(field => field.IsLiteral && field.FieldType == typeof(string))
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .Concat(
+                typeof(Cause)
+                    .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                    .Where(property => property.PropertyType == typeof(Cause))
+                    .Select(property => ((Cause)property.GetValue(null)!).Kind)
+            )
+            .Distinct()
+            .ToList();
+
+        CollectionAssert.AreEquivalent(kinds, Cause.Kinds.ToList());
+    }
+
+    [TestMethod]
     public void ExpectGoneFailsOnALiveThing()
     {
         StringAssert.Contains(Problem(Run("name f 18 6 flag\nexpect-gone f", Castle())), "live");
@@ -323,6 +389,8 @@ public sealed class PlayNamedThingTests
         }
 
         Assert.HasCount(10, problems);
+        Assert.IsTrue(problems.Any(p => p.Contains("line 8:") && p.Contains("unknown event type 'bogus'")));
+        Assert.IsTrue(problems.Any(p => p.Contains("line 9:") && p.Contains("unknown cause 'bogus'")));
     }
 
     [TestMethod]
@@ -404,5 +472,275 @@ public sealed class PlayNamedThingTests
         Assert.AreEqual(texts[0], texts[1]);
         StringAssert.Contains(texts[0], "place-flag");
         Assert.HasCount(1, texts[0].TrimEnd('\n').Split('\n'));
+    }
+
+    // A state of the game with a map size value the original does not offer.
+    static PlayState StateOfSize(Game game, int size, Thing[]? things = null) =>
+        new(
+            0,
+            0,
+            1f,
+            "1",
+            size,
+            game.TickCount,
+            0,
+            new Dictionary<(int X, int Y), int>(),
+            things ?? Thing.Of(game, null),
+            game
+        );
+
+    string RunProblem(string text, Game game) => Problem(Run(text, game));
+
+    [TestMethod]
+    public void NameOnAMapSizeTheOriginalDoesNotOfferIsRefused()
+    {
+        var game = Castle();
+        var run = new PlayRun(Parse("name f 18 6 flag"), () => StateOfSize(game, 7), _out, _ => null);
+        run.Advance(1.0 / 30);
+
+        StringAssert.Contains(Problem(run), "the map size 7 is not one the original offers");
+    }
+
+    [TestMethod]
+    public void AnExpectAtStepOnAnUnofferedMapSizeIsRefused()
+    {
+        var state = StateOfSize(Castle(), 7);
+        var what = ThingSelector.Parse("flag").Selector!;
+
+        var problem = state.Check(
+            new ExpectAtStep
+            {
+                Line = 1,
+                Column = 18,
+                Row = 6,
+                What = what,
+            }
+        );
+
+        StringAssert.Contains(problem, "the map size 7 is not one the original offers");
+    }
+
+    [TestMethod]
+    [DataRow("name f 32 5 flag")]
+    [DataRow("name f 5 32 flag")]
+    public void NameOnANodeOnePastTheMapIsRefused(string line)
+    {
+        StringAssert.Contains(RunProblem(line, Castle()), "the node is outside the 32 by 32 map");
+    }
+
+    [TestMethod]
+    public void NameAcceptsTheLastColumnAndTheLastRow()
+    {
+        var game = Castle();
+
+        StringAssert.Contains(RunProblem("name f 31 5 flag", game), "no thing matches");
+        StringAssert.Contains(RunProblem("name f 5 31 flag", game), "no thing matches");
+        Assert.DoesNotContain("outside", RunProblem("name f 31 31 flag", game));
+    }
+
+    [TestMethod]
+    public void NameWithNoMatchSaysSoAndSeveralMatchesSaySo()
+    {
+        var game = Castle();
+        var node = game.Settlers.GroupBy(s => (s.X, s.Y)).First(g => g.Count() > 1).Key;
+
+        StringAssert.Contains(RunProblem("name f 5 5 flag", game), "no thing matches");
+        StringAssert.Contains(RunProblem($"name s {node.X} {node.Y} settler", game), "several things match");
+    }
+
+    [TestMethod]
+    public void NameOfAThingWithNoThingIdIsRefusedForARoadNodeAndAMapObject()
+    {
+        var game = ThingHistoryTests.NewGame();
+        Do(game, CommandKind.PlaceCastle, 15, 5);
+        Do(game, CommandKind.PlaceFlag, 20, 6);
+        Do(game, CommandKind.BuildRoad, 16, 6, [0, 0, 0, 0]);
+        var taken = Thing.Of(game, null).Where(t => t.Kind is "flag" or "building").Select(t => (t.X, t.Y)).ToHashSet();
+        var mapObject = game.Map.Objects.First(o => !taken.Contains((o.X, o.Y)));
+
+        var road = RunProblem("name r 18 6 road", game);
+        var thing = RunProblem($"name o {mapObject.X} {mapObject.Y} object", game);
+
+        StringAssert.Contains(road, "the road has no thing ID");
+        StringAssert.Contains(thing, "the object has no thing ID");
+    }
+
+    [TestMethod]
+    public void ExpectOnAThingGoneWithNoEventSaysSo()
+    {
+        var current = Castle();
+        var run = new PlayRun(
+            Parse("name f 18 6 flag\nwait 1\nexpect f.x = 18"),
+            () => StateOf(current),
+            _out,
+            _ => null
+        );
+        run.Advance(0);
+        current = ThingHistoryTests.NewGame();
+        run.Advance(1.0);
+
+        StringAssert.Contains(Problem(run), "is gone, it has no event");
+    }
+
+    [TestMethod]
+    public void ExpectOnAFieldTheThingDoesNotListNamesTheFieldAndTheLine()
+    {
+        var problem = RunProblem("name f 18 6 flag\nexpect f.job = 1", Castle());
+
+        StringAssert.Contains(problem, "lists no job");
+        StringAssert.Contains(problem, "flag 18,6");
+    }
+
+    [TestMethod]
+    public void ExpectAtATickThatHasNotRunIsRefusedAndTheLastRunTickAnswers()
+    {
+        var game = Castle();
+        var last = Math.Max(game.TickCount - 1, game.History.Events.LastTick);
+
+        Assert.AreEqual("", RunProblem($"name c 15 5 building\nexpect c.x@{last} = 15", game));
+        StringAssert.Contains(
+            RunProblem($"name c 15 5 building\nexpect c.x@{last + 1} = 15", game),
+            $"tick {last + 1} has not run"
+        );
+    }
+
+    [TestMethod]
+    public void ExpectAtATickBeforeTheFirstEventNamesTheTickItAppears()
+    {
+        var game = Castle();
+        var first = game.History.EventsOf(game.History.FlagId(1))[0].Tick;
+
+        Assert.AreEqual("", RunProblem($"name f 18 6 flag\nexpect f.x@{first} = 18", game));
+        StringAssert.Contains(
+            RunProblem($"name f 18 6 flag\nexpect f.x@{first - 1} = 18", game),
+            $"first appears at tick {first}, after tick {first - 1}"
+        );
+    }
+
+    [TestMethod]
+    public void ExpectAtATickOfAThingWithNoEventSaysSo()
+    {
+        var current = Castle();
+        var run = new PlayRun(
+            Parse("name f 18 6 flag\nwait 1\nexpect f.x@0 = 18"),
+            () => StateOf(current),
+            _out,
+            _ => null
+        );
+        run.Advance(0);
+        current = ThingHistoryTests.NewGame();
+        current.Tick();
+        current.Tick();
+        run.Advance(1.0);
+
+        StringAssert.Contains(Problem(run), "flag#1.1 has no event");
+    }
+
+    [TestMethod]
+    public void ExpectAtATickFailsWhenThePastStateLacksTheField()
+    {
+        var game = Castle();
+        var first = game.History.EventsOf(game.History.FlagId(1))[0].Tick;
+
+        StringAssert.Contains(RunProblem($"name f 18 6 flag\nexpect f.job@{first} = 1", game), "has no job");
+    }
+
+    [TestMethod]
+    public void ExpectOfAListedValueThatIsNoNumberFailsAndNamesTheValue()
+    {
+        var game = Castle();
+        Thing[] things = [new("settler", 1, 1, [("job", "carrier"), ("id", "settler#0.1")], null)];
+        var state = StateOfSize(game, 1, things);
+        var run = new PlayRun(Parse("name s 1 1 settler\nexpect s.job = 0"), () => state, _out, _ => null);
+        run.Advance(1.0 / 30);
+
+        StringAssert.Contains(Problem(run), "'carrier' is no number");
+    }
+
+    [TestMethod]
+    [DataRow("true", true, 1.0)]
+    [DataRow("false", true, 0.0)]
+    [DataRow("0x1f", true, 31.0)]
+    [DataRow("0X1F", true, 31.0)]
+    [DataRow("-1", true, -1.0)]
+    [DataRow("1.5", true, 1.5)]
+    [DataRow("0x", false, 0.0)]
+    [DataRow("0xzz", false, 0.0)]
+    [DataRow("0x80000000", false, 0.0)]
+    [DataRow("NaN", false, 0.0)]
+    [DataRow("Infinity", false, 0.0)]
+    [DataRow("1e309", false, 0.0)]
+    [DataRow("True", false, 0.0)]
+    public void NumericReadsExpectValuesOneWay(string text, bool ok, double value)
+    {
+        Assert.AreEqual(ok, NamedThings.Numeric(text, out var read));
+        if (ok)
+            Assert.AreEqual(value, read);
+    }
+
+    [TestMethod]
+    public void ALinkValueWithAnAtSignIsRefusedWhenTheScriptIsRead()
+    {
+        var script = Parse("name a 18 6 flag\nexpect a.flag-id = foo@bar");
+
+        Assert.HasCount(1, script.Problems);
+        StringAssert.StartsWith(script.Problems[0], "play/t.play line 2: ");
+        StringAssert.Contains(script.Problems[0], "foo@bar");
+    }
+
+    [TestMethod]
+    public void AMarkLabelThatReadsAsATickIsRefusedWhenTheScriptIsRead()
+    {
+        var script = Parse("mark 3000000000");
+
+        Assert.HasCount(1, script.Problems);
+        StringAssert.StartsWith(script.Problems[0], "play/t.play line 1: ");
+        StringAssert.Contains(script.Problems[0], "3000000000");
+    }
+
+    [TestMethod]
+    public void AnEventsLineOfACarrierNamesTheFlagItWaitsAtAsOther()
+    {
+        var game = ThingHistoryTests.Laid();
+        var waiting = game.History.Events.All.Single(e =>
+            e.Type == EventType.LayoutWaitingOnRoad
+            && e.Thing.Kind == ThingId.SettlerKind
+            && e.Other is { } other
+            && other.StartsWith("flag#", StringComparison.Ordinal)
+        );
+
+        var settler = game.Settlers[waiting.Thing.Slot];
+
+        var run = Run($"name c {settler.X} {settler.Y} settler\nevents c carrier", game);
+        Assert.AreEqual("", string.Join("\n", run.Problems));
+        var text = File.ReadAllText(Path.Combine(_out, "carrier.events.txt"));
+
+        StringAssert.Contains(text, $" other={waiting.Other} ");
+    }
+
+    [TestMethod]
+    public void AnEventsLineCarriesOtherOnlyForAnEventWithAnotherThing()
+    {
+        var game = ThingHistoryTests.NewGame();
+        Do(game, CommandKind.PlaceCastle, 15, 5);
+        Do(game, CommandKind.PlaceFlag, 20, 6);
+        Do(game, CommandKind.BuildRoad, 16, 6, [0, 0, 0, 0]);
+        Do(game, CommandKind.PlaceFlag, 18, 6);
+        var slot = game.Flags.Select((flag, i) => (flag, i)).First(e => !e.flag.IsFree && e.flag.X == 18).i;
+        var events = game.History.EventsOf(game.History.FlagId(slot));
+        Assert.IsTrue(events.Any(e => e.Other is not null), "an event with another thing");
+        Assert.IsTrue(events.Any(e => e.Other is null), "an event without one");
+
+        Run("name f 18 6 flag\nevents f split", game);
+        var lines = File.ReadAllText(Path.Combine(_out, "split.events.txt")).TrimEnd('\n').Split('\n');
+
+        Assert.HasCount(events.Count, lines);
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (events[i].Other is { } other)
+                StringAssert.Contains(lines[i], $" other={other} ");
+            else
+                Assert.DoesNotContain(" other=", lines[i]);
+        }
     }
 }
