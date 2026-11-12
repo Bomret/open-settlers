@@ -171,7 +171,7 @@ The engine makes the record of a settler where the node holds his slot. So the b
 
 ## In the engine
 
-`BuilderBehavior` holds the start routine, state 9, the end, and state 0x4a. `WoodcutterBehavior.RegisterStart` is the table of the job start routines (`0x43ca54`) that the door's step runs.
+`BuilderRules`, the rules module of the builder (`JobRules<Builder>`), holds the start routine, state 9, the end, and state 0x4a. `WoodcutterBehavior.RegisterModule` and `RegisterStart` fill the table of the job start routines (`0x43ca54`) that the door's step runs.
 
 `SitePass.Turn` asks for the builder (`CastleRoster.AskForWorker`). `CastleRoster.RequestWorker` is `0x42be63` with its second way. `CastleStock.Take` takes the tool.
 

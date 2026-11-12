@@ -107,23 +107,28 @@ public static class GameFactory
             roster,
             settlers
         );
-        var builder = new BuilderBehavior(movement, buildings, flags, history, draws, woodcutter.StepOut);
-        woodcutter.RegisterStart(Job.Builder, builder.Start);
         woodcutter.RegisterStart(Job.Stonecutter, woodcutter.StartStonecutter);
         woodcutter.RegisterStart(Job.Forester, woodcutter.StartForester);
-        var digger = new DiggerBehavior(movement, buildings, history, woodcutter.StepOut);
-        woodcutter.RegisterStart(Job.Digger, digger.Start);
-        var sawmill = new SawmillBehavior(
-            movement,
-            flags,
-            history,
-            (flag, place, good) => goods.LayGood(flag, place, good),
-            woodcutter.EnterHut
+        // The job rules modules (ADR 0016): the generated registry builds each from the shared parts.
+        var modules = JobModules.Build(
+            new JobParts(
+                movement,
+                buildings,
+                flags,
+                history,
+                draws,
+                (flag, place, good) => goods.LayGood(flag, place, good),
+                woodcutter.EnterHut,
+                woodcutter.StepOut,
+                woodcutter.ArriveHome
+            )
         );
-        woodcutter.RegisterStart(Job.Sawmiller, sawmill.Start);
-        builder.Register(behaviours);
-        digger.Register(behaviours);
-        sawmill.Register(behaviours);
+        foreach (var module in modules)
+        {
+            woodcutter.RegisterModule(module);
+            module.Register(behaviours);
+        }
+
         roster.Register(behaviours);
         walks.Register(behaviours);
         removal.Register(behaviours);
@@ -144,7 +149,7 @@ public static class GameFactory
             removal,
             roster,
             new SitePass(map, flags, tables, roster.AskForWorker),
-            sawmill,
+            modules,
             handsOutGoods
                 ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
                 : null
