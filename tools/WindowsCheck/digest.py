@@ -25,7 +25,7 @@ def main(argv):
     if len(argv) != 6:
         sys.exit(__doc__)
     path, size, seed, rng, total = argv[1:]
-    if int(size) not in SIZES:
+    if size not in ("1", "2", "3"):
         sys.exit("the size must be 1, 2, or 3")
     width, height = SIZES[int(size)]
     with open(path, "rb") as handle:
@@ -44,4 +44,5 @@ def main(argv):
           + " ".join(f"{h:016X}" for h in hashes) + f" total={total}")
 
 
-main(sys.argv)
+if __name__ == "__main__":
+    main(sys.argv)
