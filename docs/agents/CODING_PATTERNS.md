@@ -35,17 +35,22 @@ constant of `Job`. Add a job as its own files, layer by layer:
 1. Domain, `src/Domain/Jobs/X.cs`: `public sealed record X : Job` with `public const int Number = <n>;` (a literal) and
    `public override int Code => Number;`. Override `ArrivesHomeGenerically` where the original's table at `0x437dfb`
    gives the job a branch of its own. The data the original holds for the job (`FigureAdds` and its relatives, a
-   `WorkerRequest`) is a record of the domain that the rules read through `RuleTables.Get<T>(new X())`. `Job.Of(int)`
-   finds the job of a number and is generated from the sealed job types.
+   `WorkerRequest`) is a record of the domain that the rules read through `RuleTables.Get<T>(new X())`. Declare the
+   record types the job owns in `public override IReadOnlyList<Type> Data => [typeof(...)]`: the importer refuses a
+   program whose tables module leaves one unread, so a job's data is never a silent default, and a test builds the same
+   data with `TestProgram.MadeJobData()`. `Job.Of(int)` finds the job of a number and is generated from the sealed job
+   types.
 2. Application, a file of `src/Application/`: `public sealed class XRules(JobParts parts) : JobRules<X>(parts)`. Override
-   the hooks the job needs (`CanStandInHut`, `Cause`, `Register`, `Start`, `Arrive`, `Pass`, `Turn`); a hook left alone
-   keeps the shared default. A job needing a part `JobParts` lacks extends `JobParts` (and the two
+   the hooks the job needs (`CanStandInHut`, `Cause`, `WorkerName`, `SiteWorker`, `Register`, `Start`, `Arrive`, `Pass`,
+   `Turn`); a hook left alone keeps the shared default. `SiteWorker` names the request a building site makes for the
+   job's worker at a `SiteStage`, so the shared site pass names no job. A job needing a part `JobParts` lacks extends `JobParts` (and the two
    `new JobParts(...)` calls of `JobModulesTests` and `JobCoverageTests`) rather than reaching into a shared
    behavior. `JobModules.Build(parts)` builds every module.
 3. Adapters, `src/Adapters/Simulation/Jobs/XTables.cs`: `public sealed class XTables : JobTables<X>` with `[JobName]` and
    `[StateName]` (each carries its evidence, INV-0006) and a `Read` override that adds the job's data records from
    `Siedler1.exe`. `JobTablesRegistry` lists the modules and `NameTable` the names.
-4. Map view: `XLook(RuleTables tables) : HistoryEditionLook<X>(tables)` for the History Edition source and
+4. Map view: `src/MapView/HistoryEditionLooks/XLook.cs` with `XLook(RuleTables tables) : HistoryEditionLook<X>(tables)`
+   for the History Edition source and `src/MapView/OpenSettlersLooks/XKey.cs` with
    `XKey() : OpenSettlersLook<X>("x")` for the content set (`HistoryEditionLookRegistry`, `OpenSettlersLookRegistry`).
    A job without a look draws nothing; `JobCoverageTests` fails a job that has rules and no look under a source.
 

@@ -248,7 +248,7 @@ public sealed class WalkBehavior(
 
         if (slot < 0)
         {
-            return $"the castle holds no {asked.GetType().Name.ToLowerInvariant()} for the building";
+            return $"the castle holds no {modules.First(rules => rules.JobType == asked.GetType()).WorkerName} for the building";
         }
 
         var flag = flags[hut.Flag];

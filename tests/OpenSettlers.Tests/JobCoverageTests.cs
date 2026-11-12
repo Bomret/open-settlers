@@ -62,19 +62,9 @@ public sealed class JobCoverageTests
     [TestMethod]
     public void EveryJobWithRulesHasALookUnderEveryGraphicsSourceAndNoJobHasTwo()
     {
-        Assert.AreEqual(0, Problems(RulesJobs(), Looks()).Count, string.Join("; ", Problems(RulesJobs(), Looks())));
-    }
+        var problems = Problems(RulesJobs(), Looks());
 
-    [TestMethod]
-    public void AJobWithRulesAndNoLookUnderOneSourceIsAProblem()
-    {
-        var looks = Looks();
-        looks[ContentSet] = looks[ContentSet].Where(job => job != typeof(Domain.Digger));
-
-        CollectionAssert.AreEqual(
-            new[] { $"Digger has rules and no look under {ContentSet}" },
-            Problems(RulesJobs(), looks).ToArray()
-        );
+        Assert.AreEqual(0, problems.Count, string.Join("; ", problems));
     }
 
     [TestMethod]

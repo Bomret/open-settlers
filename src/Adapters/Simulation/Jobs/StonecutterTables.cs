@@ -9,7 +9,7 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 [JobName(
     "stonecutter",
-    "Job.Stonecutter; his work puts good 10 (a stone) on the hut's flag (0x438182) and cuts the stone heaps 0x48 to 0x4f (0x435c5c); docs/rules/stonecutting.md"
+    "Stonecutter; his work puts good 10 (a stone) on the hut's flag (0x438182) and cuts the stone heaps 0x48 to 0x4f (0x435c5c); docs/rules/stonecutting.md"
 )]
 [StateName(
     0x15,

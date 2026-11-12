@@ -8,7 +8,7 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 [JobName(
     "builder",
-    "Job.Builder; the under-construction handler 0x42d55f asks for job 3 with the tool good 17 (request at 0x42d5fc) and the job's state 9 builds the site (0x43ec82); docs/rules/construction.md"
+    "Builder; the under-construction handler 0x42d55f asks for job 3 with the tool good 17 (request at 0x42d5fc) and the job's state 9 builds the site (0x43ec82); docs/rules/construction.md"
 )]
 [StateName(9, "builds", NameTable.StateEvidence)]
 public sealed class BuilderTables : JobTables<Builder>

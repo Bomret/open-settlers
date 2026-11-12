@@ -53,12 +53,16 @@ public sealed class GraphicsSourceBoundaryTests
     [TestMethod]
     public void NoClassOfTheMapViewOutsideTheHistoryEditionSourceNamesAFigureHandlerOrFigureAdd()
     {
-        string[] historyEdition = ["HistoryEditionLook.cs", "HistoryEditionLooks.cs", "SettlerFigureTables.cs"];
+        string[] historyEdition = ["HistoryEditionLook.cs", "SettlerFigureTables.cs"];
         var folder = Path.GetDirectoryName(Path.Combine(RootOf(), "src/MapView/x"))!;
         var checkedFiles = 0;
         foreach (var file in Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
         {
-            if (Array.IndexOf(historyEdition, Path.GetFileName(file)) >= 0)
+            // The looks of the source are the files of its own folder, one for each job.
+            if (
+                Array.IndexOf(historyEdition, Path.GetFileName(file)) >= 0
+                || Path.GetFileName(Path.GetDirectoryName(file)) == "HistoryEditionLooks"
+            )
             {
                 continue;
             }

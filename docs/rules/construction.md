@@ -173,6 +173,6 @@ The engine makes the record of a settler where the node holds his slot. So the b
 
 `BuilderRules`, the rules module of the builder (`JobRules<Builder>`), holds the start routine, state 9, the end, and state 0x4a. `HutWork.RegisterModule` fills the table of the job start routines (`0x43ca54`) that the door's step runs.
 
-`SitePass.Turn` asks for the builder (`CastleRoster.AskForWorker`). `CastleRoster.RequestWorker` is `0x42be63` with its second way. `CastleStock.Take` takes the tool.
+`SitePass.Turn` asks for the builder (`CastleRoster.AskForWorker`) with the request `BuilderRules.SiteWorker` names for the `SiteStage.Building`; the site pass names no job. `CastleRoster.RequestWorker` is `0x42be63` with its second way. `CastleStock.Take` takes the tool.
 
 `RuleTables.WorkerOf`, `Get<WorkerRequest>(new Builder())`, `StoneAt`, `BlowStep`, and `Get<BuilderFigureAdds>(new Builder())` hold the tables as typed values. `Builds` and `LeavesSite` are the activities of states 9 and `0x4a`. They keep their codes for the exporters. The tests on made-up tables are `WorkerRequestTests` and `BuilderTests`.

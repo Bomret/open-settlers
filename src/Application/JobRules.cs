@@ -19,6 +19,12 @@ public abstract class JobRules
     public abstract Type JobType { get; }
 
     /// <summary>
+    /// What the shared texts call a settler of the job, as in "the castle holds no woodcutter for the building". Default: the job type's
+    /// name in lower case; a job whose type name reads badly in a sentence overrides it.
+    /// </summary>
+    public virtual string WorkerName => JobType.Name.ToLowerInvariant();
+
+    /// <summary>
     /// Whether a layout stands a settler of the job inside a finished building of its own (a hut, as the mission start does). Default: no.
     /// </summary>
     public virtual bool CanStandInHut => false;
