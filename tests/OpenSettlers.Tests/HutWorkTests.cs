@@ -6,8 +6,8 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
-// The woodcutter's work cycle and the map's object pass, built from hand-made tables and a fixed random sequence: no castle
-// is placed and no game ticks.
+// The woodcutter's work cycle and the map's object pass, built from hand-made tables and a fixed random sequence: the bench tests
+// place no castle and tick no game; the last test ticks a game to see the object pass run in the main loop.
 [TestClass]
 public sealed class HutWorkTests
 {
@@ -59,9 +59,6 @@ public sealed class HutWorkTests
             bench.History,
             bench.Draws,
             layGood,
-            behaviour.EnterHut,
-            behaviour.StepOut,
-            behaviour.ArriveHome,
             behaviour
         );
 
@@ -80,7 +77,6 @@ public sealed class HutWorkTests
             module.Register(registry);
         }
 
-        behaviour.RegisterUnruled(new UnruledRules(parts));
         registry.Register<WaitsOutStep>(
             (slot, settler, _) => WalkBehavior.WaitOutStep(bench.Movement, bench.History, causes, slot, settler)
         );
@@ -126,6 +122,18 @@ public sealed class HutWorkTests
     }
 
     [TestMethod]
+    public void AModuleRefusesTheArrivalOfASettlerThatIsNotOnAFreeWalkWithAMessage()
+    {
+        var (_, _, _, _, parts) = Hut();
+        var rules = JobModules.Build(parts).Single(module => module.JobType == typeof(TypeOneHut));
+        var settler = new Settler(new TypeOneHut(), 0, HutX, HutY, 0, new SearchesHome());
+
+        var refusal = Assert.ThrowsExactly<InvalidOperationException>(() => rules.Arrive(1, settler));
+
+        StringAssert.Contains(refusal.Message, "free walk");
+    }
+
+    [TestMethod]
     public void TheObjectPassTurnsAFallingTreeIntoAStumpWhenItsCursorReachesIt()
     {
         var (bench, behaviour, _, _, _) = Hut();
@@ -141,9 +149,28 @@ public sealed class HutWorkTests
     [TestMethod]
     public void TheGameRunsTheObjectPassOncePerPassThroughTheWoodcuttersPassHook()
     {
+        const int passes = 50;
         var game = StonecuttingTests.World(null, out var map);
-        var before = game.Hut.ObjectPassState;
-        var tick = game.TickCount;
+        map.At(9, 20).Object = MapObject.Falling(5, secondVariant: false);
+        var runs = 0;
+        var stamp = game.Hut.ObjectPassState.Stamp;
+
+        for (var pass = 0; pass < passes; pass++)
+        {
+            game.Tick();
+            var after = game.Hut.ObjectPassState.Stamp;
+            runs += after == stamp ? 0 : 1;
+            stamp = after;
+        }
+
+        // The pass stamps the clock when it runs, and the clock moves on in every pass: a pass that skipped it leaves the stamp.
+        Assert.AreEqual(passes, runs);
+    }
+
+    [TestMethod]
+    public void TheObjectPassOfTheGameReachesAFallingTreeThroughTheWoodcuttersPassHook()
+    {
+        var game = StonecuttingTests.World(null, out var map);
         map.At(9, 20).Object = MapObject.Falling(5, secondVariant: false);
 
         for (var pass = 0; pass < 40000 && map.At(9, 20).Object.Kind == MapObjectKind.FallingTree; pass++)
@@ -152,7 +179,5 @@ public sealed class HutWorkTests
         }
 
         Assert.AreNotEqual(MapObjectKind.FallingTree, map.At(9, 20).Object.Kind, "the pass reached the falling tree");
-        Assert.AreNotEqual(before, game.Hut.ObjectPassState);
-        Assert.IsTrue(game.TickCount > tick);
     }
 }

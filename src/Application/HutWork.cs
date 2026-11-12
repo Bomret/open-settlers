@@ -8,9 +8,9 @@ namespace OpenSettlers.Simulation;
 /// type 1 hut's settler (their rules modules hold what each does). The shared states are the door, the step out onto the hut's flag, the
 /// free walk (the walk home's too), the entry into a hut, the search home, and the map's object pass (docs/rules/woodcutting.md). At the
 /// door a settler entering a storage goes first, then the start routine of the module of its job runs; at the end of a free walk the
-/// module's arrival runs; an event's cause is the layout's or the walk home's before the module's. The object pass walks a cursor over the
-/// map and turns a felled tree into nothing in the time the original takes. The behaviour takes the activities of a door, the step onto the
-/// flag, the free walk, and the entry into a hut.
+/// module's arrival runs; an event's cause is the layout's or the walk home's before the module's. A settler whose job has no module
+/// starts nothing, records as the settlers' rules, and arrives as <see cref="ArriveByDefault"/> does. The behaviour takes the
+/// activities of a door, the step onto the flag, the free walk, and the entry into a hut.
 /// </summary>
 /// <param name="movement">The settlers' ground: the node of each settler, the timer, the change of activity, the tables.</param>
 /// <param name="settlers">The settler table.</param>
@@ -42,9 +42,8 @@ public sealed class HutWork(
     public (ushort Stamp, ushort Timer, int X, int Y) ObjectPassState =>
         (_objectStamp, _objectTimer, _objectX, _objectY);
 
-    // The job rules modules by the type of their job: the hooks the shared states call. A job without a module takes the unruled rules.
+    // The job rules modules by the type of their job: the hooks the shared states call. A job without a module has none.
     private readonly System.Collections.Generic.Dictionary<Type, JobRules> _modules = [];
-    private JobRules? _unruled;
 
     private Map Map => movement.Map;
 
@@ -53,13 +52,25 @@ public sealed class HutWork(
     /// </summary>
     public void RegisterModule(JobRules rules) => _modules.Add(rules.JobType, rules);
 
-    /// <summary>Registers the rules of the jobs that have no module: they start nothing, record as the settlers' rules, and arrive as <see cref="JobRules.Arrive"/> does.</summary>
-    public void RegisterUnruled(JobRules rules) => _unruled = rules;
+    private JobRules? RulesOf(Job job) => _modules.TryGetValue(job.GetType(), out var rules) ? rules : null;
 
-    private JobRules RulesOf(Job job) =>
-        _modules.TryGetValue(job.GetType(), out var rules)
-            ? rules
-            : _unruled ?? throw new InvalidOperationException("no unruled rules are registered");
+    /// <summary>
+    /// The arrival at the end of a free walk of a job whose module overrides none: the generic arrival home where the job arrives home
+    /// generically or the walk is the walk home, else nothing. This is <see cref="JobRules.Arrive"/>'s default and the arrival of a job
+    /// without a module.
+    /// </summary>
+    internal void ArriveByDefault(int slot, Settler settler)
+    {
+        var walk =
+            settler.Activity as WalksFree
+            ?? throw new InvalidOperationException(
+                "an arrival is the end of a free walk, and the settler is not on one"
+            );
+        if (settler.Job.ArrivesHomeGenerically || walk.Trip.Purpose is Home)
+        {
+            ArriveHome(slot, settler);
+        }
+    }
 
     /// <summary>Registers the behaviour of the shared activities: the door, the entry into a hut, the step onto the flag, and the free walk.</summary>
     public void Register(ActivityRegistry registry)
@@ -69,13 +80,6 @@ public sealed class HutWork(
         registry.Register<StepsOntoFlag>((slot, settler, _) => StepOut(slot, settler));
         registry.Register<WalksFree>((slot, settler, _) => FreeWalk(slot, settler));
     }
-
-    // The cause of a change the settler rules make to the settler in the slot: the walk home while it walks to a storage, else
-    // the rule area's (the layout while one is built).
-    private Cause SettlerCause(int slot) =>
-        walkHome.IsWalking(slot) ? Cause.WalkHome
-        : inLayout() ? Cause.Layout
-        : Cause.Settlers;
 
     // State 4, a settler that stepped through a door (0x43c96b): once its timer is down to the time the door leaves it, it
     // runs the routine of its job when a building stands there that is not marked bit 5; else it is state 0x19.
@@ -107,7 +111,7 @@ public sealed class HutWork(
                 return;
             }
 
-            RulesOf(settler.Job).Start(slot, settler, building);
+            RulesOf(settler.Job)?.Start(slot, settler, building);
         }
         else
         {
@@ -124,11 +128,14 @@ public sealed class HutWork(
     /// the cause of the settler's job (woodcutting, stonecutting, forestry, or the settlers' rules).
     /// </summary>
     internal void RecordWork(int slot, string type, string? other = null) =>
-        history.RecordSettler(slot, type, WorkCause(slot), other);
-
-    // The rules of the settler's job name their cause where no layout is built and no walk home is walked.
-    private Cause WorkCause(int slot) =>
-        inLayout() || walkHome.IsWalking(slot) ? SettlerCause(slot) : RulesOf(settlers[slot].Job).Cause;
+        history.RecordSettler(
+            slot,
+            type,
+            walkHome.IsWalking(slot) ? Cause.WalkHome
+                : inLayout() ? Cause.Layout
+                : RulesOf(settlers[slot].Job)?.Cause ?? Cause.Settlers,
+            other
+        );
 
     // The generic arrival at the end of a free walk home (0x4385ab); the job rules modules take it through the JobParts.
     internal void ArriveHome(int slot, Settler settler)
@@ -176,7 +183,14 @@ public sealed class HutWork(
         RecordWork(slot, EventType.FreeWalk);
         if (arrived)
         {
-            RulesOf(settler.Job).Arrive(slot, settler);
+            if (RulesOf(settler.Job) is { } rules)
+            {
+                rules.Arrive(slot, settler);
+            }
+            else
+            {
+                ArriveByDefault(slot, settler);
+            }
         }
     }
 
@@ -462,13 +476,14 @@ public sealed class HutWork(
         RecordWork(slot, EventType.EnterHut);
     }
 
-    // The map's object pass (0x428d10, called by the main loop's 0x4286d8 each pass). Each 20 clock units it takes the next
-    // nodes of a cursor that moves 23 columns on and a row down where it wraps: on a lake node with detail it may move the
-    // detail (the draws of the original), a node with an object code of 0x53 or more takes its handler: the cut tree codes
-    // 0x5d to 0x66 become 0x53, and 0x53 vanishes when the draw's low two bits are 0; the saplings 0x67 and 0x68 grow into trees
-    // (GrowSapling). **Not ported:** the handlers of the codes 0x69 and up (the original's growth and decay; the generation
-    // places none).
-    /// <summary>The map's object pass, run once each pass of the main loop (the pass hook of the woodcutter's rules).</summary>
+    /// <summary>
+    /// The map's object pass (0x428d10, called by the main loop's 0x4286d8 each pass), run once each pass of the main loop through the
+    /// pass hook of the woodcutter's rules. Each 20 clock units it takes the next nodes of a cursor that moves 23 columns on and a row down
+    /// where it wraps: on a lake node with detail it may move the detail (the draws of the original), a node with an object code of 0x53
+    /// or more takes its handler: the cut tree codes 0x5d to 0x66 become 0x53, and 0x53 vanishes when the draw's low two bits are 0; the
+    /// saplings 0x67 and 0x68 grow into trees (GrowSapling), so a felled tree turns into nothing in the time the original takes.
+    /// **Not ported:** the handlers of the codes 0x69 and up (the original's growth and decay; the generation places none).
+    /// </summary>
     public void ObjectPass()
     {
         var delta = (ushort)(movement.Clock - _objectStamp);

@@ -22,7 +22,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     private readonly FlagTable flags = parts.Flags;
     private readonly GameHistory history = parts.History;
     private readonly IRandomDraws draws = parts.Draws;
-    private readonly Action<int, Settler> stepOut = parts.StepOut;
+    private readonly HutWork hut = parts.Hut;
 
     // The types whose builder takes the second figure: the mask 0x4a0400 tests the type's bit (0x43ceb4).
     private const int SecondFigureTypes = 0x4a0400;
@@ -232,7 +232,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
         if (movement.Occupant(next) == 0)
         {
             settler.Activity = new StepsOntoFlag(new Walks(new ToStorage(), new Heading(0)));
-            stepOut(slot, settler);
+            hut.StepOut(slot, settler);
 
             return;
         }

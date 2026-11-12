@@ -43,9 +43,10 @@ constant of `Job`. Add a job as its own files, layer by layer:
 2. Application, a file of `src/Application/`: `public sealed class XRules(JobParts parts) : JobRules<X>(parts)`. Override
    the hooks the job needs (`CanStandInHut`, `Cause`, `WorkerName`, `SiteWorker`, `Register`, `Start`, `Arrive`, `Pass`,
    `Turn`); a hook left alone keeps the shared default. `SiteWorker` names the request a building site makes for the
-   job's worker at a `SiteStage`, so the shared site pass names no job. A job needing a part `JobParts` lacks extends `JobParts` (and the two
-   `new JobParts(...)` calls of `JobModulesTests` and `JobCoverageTests`) rather than reaching into a shared
-   behavior. `JobModules.Build(parts)` builds every module.
+   job's worker at a `SiteStage`, so the shared site pass names no job. A job needing a part `JobParts` lacks extends `JobParts` (and the
+   `new JobParts(...)` calls of the tests) rather than reaching into a shared behavior. A module reaches the shared states of the
+   workers who go out from a building (the step out, the entry, the arrival home) through `Parts.Hut` alone.
+   `JobModules.Build(parts)` builds every module.
 3. Adapters, `src/Adapters/Simulation/Jobs/XTables.cs`: `public sealed class XTables : JobTables<X>` with `[JobName]` and
    `[StateName]` (each carries its evidence, INV-0006) and a `Read` override that adds the job's data records from
    `Siedler1.exe`. `JobTablesRegistry` lists the modules and `NameTable` the names.

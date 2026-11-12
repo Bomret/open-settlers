@@ -1,4 +1,3 @@
-using System;
 using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
@@ -10,14 +9,3 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 /// <param name="parts">The shared parts.</param>
 public sealed class TypeOneHutRules(JobParts parts) : JobRules<TypeOneHut>(parts);
-
-/// <summary>
-/// The rules of every job that has no module of its own: the door starts nothing, the cause is the settlers', and the arrival is
-/// <see cref="JobRules.Arrive"/>'s default. <see cref="HutWork"/> takes them for a settler whose job has no registered module.
-/// </summary>
-/// <param name="parts">The shared parts.</param>
-internal sealed class UnruledRules(JobParts parts) : JobRules(parts)
-{
-    /// <inheritdoc />
-    public override Type JobType => typeof(Job);
-}

@@ -50,10 +50,7 @@ public sealed class SitePassTests
                 bench.Map,
                 bench.Flags,
                 tables,
-                modules
-                    ?? JobModules.Build(
-                        new JobParts(null!, null!, null!, null!, null!, null!, null!, null!, null!, null!)
-                    ),
+                modules ?? JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!)),
                 (building, request) => Asked.Add((building, request))
             ),
             site
@@ -240,10 +237,7 @@ public sealed class SitePassTests
     [TestMethod]
     public void ASiteAsksForTheWorkersTheModulesNameForItsTwoStages()
     {
-        var modules = new JobRules[]
-        {
-            new SiteRules(new JobParts(null!, null!, null!, null!, null!, null!, null!, null!, null!, null!)),
-        };
+        var modules = new JobRules[] { new SiteRules(new JobParts(null!, null!, null!, null!, null!, null!, null!)) };
         var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0, modules: modules);
         Uneven(bench);
 

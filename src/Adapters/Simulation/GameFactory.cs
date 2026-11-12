@@ -101,9 +101,6 @@ public static class GameFactory
             history,
             draws,
             (flag, place, good) => goods.LayGood(flag, place, good),
-            hut.EnterHut,
-            hut.StepOut,
-            hut.ArriveHome,
             hut
         );
         var modules = JobModules.Build(parts);
@@ -113,7 +110,6 @@ public static class GameFactory
             module.Register(behaviours);
         }
 
-        hut.RegisterUnruled(new UnruledRules(parts));
         var walks = new WalkBehavior(
             movement,
             buildings,

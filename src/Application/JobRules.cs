@@ -52,13 +52,7 @@ public abstract class JobRules
     /// The arrival at the end of a free walk. Default: the generic arrival home where the job arrives home generically or the walk is
     /// the walk home, else nothing.
     /// </summary>
-    public virtual void Arrive(int slot, Settler settler)
-    {
-        if (settler.Job.ArrivesHomeGenerically || ((WalksFree)settler.Activity).Trip.Purpose is Home)
-        {
-            Parts.ArriveHome(slot, settler);
-        }
-    }
+    public virtual void Arrive(int slot, Settler settler) => Parts.Hut.ArriveByDefault(slot, settler);
 
     /// <summary>Run once each pass of the main loop, before the tables. Default: nothing.</summary>
     public virtual void Pass() { }

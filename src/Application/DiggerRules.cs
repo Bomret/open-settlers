@@ -22,7 +22,7 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
     private readonly SettlerMovement movement = parts.Movement;
     private readonly BuildingTable buildings = parts.Buildings;
     private readonly GameHistory history = parts.History;
-    private readonly Action<int, Settler> stepOut = parts.StepOut;
+    private readonly HutWork hut = parts.Hut;
 
     // The first pass and the first node of a pass; the start routine gives them (0x43cdb2, 0x43ce0d), and phase 1 (the next node).
     private const int FirstPass = 15;
@@ -250,6 +250,6 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
         }
 
         settler.Activity = new StepsOntoFlag(new Walks(new ToStorage(), new Heading(0)));
-        stepOut(slot, settler);
+        hut.StepOut(slot, settler);
     }
 }

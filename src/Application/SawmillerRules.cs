@@ -19,7 +19,7 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
     private readonly FlagTable flags = parts.Flags;
     private readonly GameHistory history = parts.History;
     private readonly Action<int, int, int> layGood = parts.LayGood;
-    private readonly Action<int, Settler> enterBuilding = parts.EnterHut;
+    private readonly HutWork hut = parts.Hut;
 
     // The time a log takes to saw, which the timer is set to (0x435a75), and the frame of the work (0x435a6d).
     private const ushort SawTime = 0x93f;
@@ -169,6 +169,6 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
         layGood(flag, place >= 0 ? place : FlagPlaces - 1, good.Code);
         history.RecordFlag(flag, EventType.PutGood, Cause.Settlers, history.SettlerId(slot).ToString());
         movement.Become(settler, new EntersBuilding(), movement.ResidueOf(settler.Activity) with { Mode = 0 });
-        enterBuilding(slot, settler);
+        hut.EnterHut(slot, settler);
     }
 }
