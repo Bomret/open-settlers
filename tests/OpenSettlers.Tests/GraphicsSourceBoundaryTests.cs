@@ -48,6 +48,43 @@ public sealed class GraphicsSourceBoundaryTests
         AssertMentions("src/MapView/StepOffsets.cs", ["TerrainGraphics", "ObjectGraphics"]);
     }
 
+    // The figure handlers and the figure adds are the History Edition's (ADR 0016, INV-0010): the looks of that source and the figure
+    // tables that hold them are the one place that names them.
+    [TestMethod]
+    public void NoClassOfTheMapViewOutsideTheHistoryEditionSourceNamesAFigureHandlerOrFigureAdd()
+    {
+        string[] historyEdition = ["HistoryEditionLook.cs", "HistoryEditionLooks.cs", "SettlerFigureTables.cs"];
+        var folder = Path.GetDirectoryName(Path.Combine(RootOf(), "src/MapView/x"))!;
+        var checkedFiles = 0;
+        foreach (var file in Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
+        {
+            if (Array.IndexOf(historyEdition, Path.GetFileName(file)) >= 0)
+            {
+                continue;
+            }
+
+            checkedFiles++;
+            var text = File.ReadAllText(file);
+            foreach (var forbidden in new[] { "HistoryEditionLook", "FigureAdds", "FigureHandler", "FigureBytes" })
+            {
+                Assert.DoesNotContain(forbidden, text, $"{file} mentions {forbidden}");
+            }
+        }
+
+        Assert.IsGreaterThan(20, checkedFiles);
+    }
+
+    static string RootOf()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (!File.Exists(Path.Combine(dir, "tools", "play-run.sh")))
+        {
+            dir = Path.GetDirectoryName(dir) ?? throw new InvalidOperationException("tools/play-run.sh not found");
+        }
+
+        return dir;
+    }
+
     static void AssertMentions(string path, string[] excepted)
     {
         var text = Read(path);
