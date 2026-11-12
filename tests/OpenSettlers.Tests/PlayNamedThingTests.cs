@@ -702,14 +702,19 @@ public sealed class PlayNamedThingTests
     public void AnEventsLineOfACarrierNamesTheFlagItWaitsAtAsOther()
     {
         var game = ThingHistoryTests.Laid();
-        var carrier = game.History.EventsOf(game.History.SettlerId(0));
-        Assert.IsTrue(carrier.Any(e => e.Other is not null), "a carrier event with another thing");
+        var waiting = game.History.Events.All.Single(e =>
+            e.Type == EventType.LayoutWaitingOnRoad
+            && e.Thing.Kind == ThingId.SettlerKind
+            && e.Other!.StartsWith("flag#", StringComparison.Ordinal)
+        );
 
-        Run("name c 11 11 settler\nevents c carrier", game);
+        var settler = game.Settlers[waiting.Thing.Slot];
+
+        var run = Run($"name c {settler.X} {settler.Y} settler\nevents c carrier", game);
+        Assert.AreEqual("", string.Join("\n", run.Problems));
         var text = File.ReadAllText(Path.Combine(_out, "carrier.events.txt"));
 
-        StringAssert.Contains(text, $" other={carrier.First(e => e.Other is not null).Other} ");
-        StringAssert.Contains(text, " other=flag#");
+        StringAssert.Contains(text, $" other={waiting.Other} ");
     }
 
     [TestMethod]
