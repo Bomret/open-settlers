@@ -60,7 +60,7 @@ The asset browser opens a window:
 mise run browser
 ```
 
-It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. Its text and lists scale with the window. It shows a message instead when there is no usable install or two asset kinds share a name, and a notice when the selected kind lists no assets.
+It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. Its text and lists scale with the window. It shows a message instead when there is no usable install, two asset kinds share a name, or two preview views draw one preview type (it names the type and both views), and a notice when the selected kind lists no assets.
 
 The map view opens a window with a seed field and a size picker above the terrain of the generated map:
 
@@ -172,7 +172,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 
 - `OpenSettlers.csproj`, `project.godot`: the Godot project.
 - `mise.toml`: the pinned development tools and the tasks.
-- `src/`: the engine code. `Domain/` holds the typed model and the random generator, `Application/` the game with its commands, roads, settlers, carriers, goods, woodcutting, and removal, and `Adapters/Simulation/` the importers and exporters of the original's bytes, the seed, and the map generator (three assemblies, ADR 0013). `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, `MapView/` the terrain, object, road, and settler drawing plans, the click handling, and the camera, and `Viewer/` the asset browser, the map view (`MapViewControl.cs`, which also shows the game view), the play driver, and the shaders.
+- `src/`: the engine code. `Domain/` holds the typed model and the random generator, `Application/` the game with its commands, roads, settlers, carriers, goods, woodcutting, and removal, and `Adapters/Simulation/` the importers and exporters of the original's bytes, the seed, and the map generator (three assemblies, ADR 0013). `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, the decision whether a map launch opens or exits, and the text of a crash, `MapView/` the terrain, object, road, and settler drawing plans, the click handling, and the camera, and `Viewer/` the asset browser, the map view (`MapViewControl.cs`, which also shows the game view), the play driver, and the shaders.
 - `.gdignore` files: the C# folders outside the Godot assembly (`src/Domain/`, `src/Application/`, `src/Adapters/`, `src/Generators/`, `tests/`) carry one, so the Godot editor does not scan them. The editor writes a `.uid` file beside each script and shader it scans; those are committed with their source.
 - `content/`: the content sets the repository ships (ADR 0015). `content/open-settlers/` is the Open Settlers graphics source: a manifest, PNGs, and a `.gdignore`.
 - `play/`: the checked-in play scripts ("Run a play script").
