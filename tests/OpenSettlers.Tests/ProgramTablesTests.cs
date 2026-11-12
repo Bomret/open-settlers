@@ -576,11 +576,11 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new WorkerRequest(new Job(7), new Good(0x18)), tables.BuilderRequest);
-        Assert.AreEqual(new WorkerRequest(new Job(12), new Good(5)), tables.WorkerOf(BuildingType.Woodcutter));
-        Assert.AreEqual(new WorkerRequest(new Job(14), new Good(7)), tables.WorkerOf(BuildingType.Stonecutter));
-        Assert.AreEqual(new WorkerRequest(new Job(19), Good.None), tables.WorkerOf(BuildingType.Forester));
-        Assert.AreEqual(new WorkerRequest(new Job(27), new Good(20)), tables.WorkerOf(BuildingType.Sawmill));
+        Assert.AreEqual(new WorkerRequest(Job.Of(7), new Good(0x18)), tables.BuilderRequest);
+        Assert.AreEqual(new WorkerRequest(Job.Of(12), new Good(5)), tables.WorkerOf(BuildingType.Woodcutter));
+        Assert.AreEqual(new WorkerRequest(Job.Of(14), new Good(7)), tables.WorkerOf(BuildingType.Stonecutter));
+        Assert.AreEqual(new WorkerRequest(Job.Of(19), Good.None), tables.WorkerOf(BuildingType.Forester));
+        Assert.AreEqual(new WorkerRequest(Job.Of(27), new Good(20)), tables.WorkerOf(BuildingType.Sawmill));
         Assert.IsNull(tables.WorkerOf(BuildingType.Castle), "the castle's handler asks for no worker of this kind");
     }
 
@@ -626,7 +626,7 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         // The made-up handler loads the job 5 and the tool word 0x24: the request is what the handler says, not the digger's own numbers.
-        Assert.AreEqual(new WorkerRequest(new Job(5), new Good(18)), tables.DiggerRequest);
+        Assert.AreEqual(new WorkerRequest(Job.Of(5), new Good(18)), tables.DiggerRequest);
         Assert.AreEqual(new FigureAdds(0x1600, 0x1600, 0x1680), tables.DiggerFigureAdds);
 
         var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Job.DiggerCode;
@@ -690,9 +690,9 @@ public sealed class ProgramTablesTests
         // peek:43f0fa:96 (the steps).
         Assert.AreEqual(new WorkerRequest(Job.Builder, new Good(17)), tables.BuilderRequest);
         Assert.AreEqual(new WorkerRequest(Job.Woodcutter, new Good(21)), tables.WorkerOf(BuildingType.Woodcutter));
-        Assert.AreEqual(new WorkerRequest(new Job(7), new Good(23)), tables.WorkerOf(BuildingType.Stonecutter));
-        Assert.AreEqual(new WorkerRequest(new Job(8), Good.None), tables.WorkerOf(BuildingType.Forester));
-        Assert.AreEqual(new WorkerRequest(new Job(6), new Good(22)), tables.WorkerOf(BuildingType.Sawmill));
+        Assert.AreEqual(new WorkerRequest(Job.Of(7), new Good(23)), tables.WorkerOf(BuildingType.Stonecutter));
+        Assert.AreEqual(new WorkerRequest(Job.Of(8), Good.None), tables.WorkerOf(BuildingType.Forester));
+        Assert.AreEqual(new WorkerRequest(Job.Of(6), new Good(22)), tables.WorkerOf(BuildingType.Sawmill));
         Assert.IsFalse(tables.StoneAt(BuildingType.Woodcutter, 0));
         Assert.IsFalse(tables.StoneAt(BuildingType.Sawmill, 0));
         Assert.IsFalse(tables.StoneAt(BuildingType.Sawmill, 1));

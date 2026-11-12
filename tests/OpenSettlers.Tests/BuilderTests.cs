@@ -231,7 +231,7 @@ public sealed class BuilderTests
         for (var tick = 0; tick < 6000 && !inside; tick++)
         {
             game.Tick();
-            inside = ConstructionWorld.OfJob(game, new Job(8)).Any(worker => (worker.X, worker.Y) == (SiteX, SiteY));
+            inside = ConstructionWorld.OfJob(game, Job.Of(8)).Any(worker => (worker.X, worker.Y) == (SiteX, SiteY));
         }
 
         Assert.IsTrue(site.WorkerInside || site.WorkerOnTheWay);

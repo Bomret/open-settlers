@@ -148,7 +148,7 @@ public sealed class SettlerDrawTests
 
         // The job is the bits 2 to 6 of byte 0 (0x43f537 masks with 0x7c); the byte's bit 7 is not the job's.
         return new Settler(
-            new Job((bytes[0] >> 2) & 0x1f),
+            Job.Of((bytes[0] >> 2) & 0x1f),
             bytes[0] & 3,
             node % (2 * width),
             node / (2 * width),

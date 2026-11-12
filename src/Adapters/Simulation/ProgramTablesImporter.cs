@@ -395,7 +395,7 @@ public static class ProgramTablesImporter
             );
         }
 
-        return new WorkerRequest(new Job(code[1]), new Good(BitConverter.ToInt32(code, 8) / 2));
+        return new WorkerRequest(Job.Of(code[1]), new Good(BitConverter.ToInt32(code, 8) / 2));
     }
 
     // The request word a flag item offset names: 0x42 is the first word, 0x44 the second (the class table's second byte takes the

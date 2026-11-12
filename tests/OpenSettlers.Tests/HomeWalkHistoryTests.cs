@@ -106,7 +106,7 @@ public sealed class HomeWalkHistoryTests
     public void AKnightSearchingHomeTakesState0x35()
     {
         var game = SentHome(null);
-        var knight = game.Settlers.First(s => s.Job == new Job(22));
+        var knight = game.Settlers.First(s => s.Job == Job.Of(22));
         var slot = game.Settlers.ToList().IndexOf(knight);
         knight.Activity = new ClaimsHomeNode();
         for (var pass = 0; pass < 80 && knight.Activity is not KnightWalks; pass++)

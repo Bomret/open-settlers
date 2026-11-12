@@ -11,7 +11,7 @@ public sealed class Settler
     /// <summary>A settler of <paramref name="job"/> and <paramref name="player"/> on the node, in <paramref name="activity"/>.</summary>
     public Settler(Job job, int player, int x, int y, ushort stamp, Activity activity)
     {
-        Job = job;
+        Job = job ?? throw new System.ArgumentNullException(nameof(job));
         Player = player;
         X = x;
         Y = y;
@@ -26,7 +26,7 @@ public sealed class Settler
     /// The settler takes up <paramref name="job"/>: a jobless settler a worker request sends out, a worker who becomes a carrier, a
     /// knight promoted. It stays the same object in the same slot, so its thing ID and its history go on.
     /// </summary>
-    public void TakeUp(Job job) => Job = job;
+    public void TakeUp(Job job) => Job = job ?? throw new System.ArgumentNullException(nameof(job));
 
     /// <summary>The player.</summary>
     public int Player { get; }

@@ -71,7 +71,7 @@ internal static class ConstructionTables
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
         workers[BuildingType.Woodcutter.Code] = new WorkerRequest(Job.Woodcutter, Good.None);
-        workers[BuildingType.Forester.Code] = new WorkerRequest(new Job(8), ForesterTool);
+        workers[BuildingType.Forester.Code] = new WorkerRequest(Job.Of(8), ForesterTool);
         workers[BuildingType.Sawmill.Code] = new WorkerRequest(Job.Sawmiller, SawTool);
 
         return workers;

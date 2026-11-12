@@ -23,6 +23,8 @@
     <ProjectReference Include="../../src/Domain/OpenSettlers.Domain.csproj" />
     <ProjectReference Include="../../src/Application/OpenSettlers.Application.csproj" />
     <ProjectReference Include="../../src/Adapters/OpenSettlers.Adapters.csproj" />
+    <!-- JobGeneratorTests drive the generator through the compiler API, so the tests reference its assembly as well as run it. -->
+    <ProjectReference Include="../../src/Generators/OpenSettlers.Generators.csproj" OutputItemType="Analyzer" />
   </ItemGroup>
   <ItemGroup>
     <None Include="map-digests.txt" CopyToOutputDirectory="PreserveNewest" />
