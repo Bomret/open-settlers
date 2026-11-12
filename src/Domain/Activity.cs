@@ -28,9 +28,10 @@ public abstract record Activity
     public virtual bool IsDrawn => false;
 
     /// <summary>
-    /// Whether this is one of the two walks the play script's <c>fast-forward &lt;job&gt; carrying</c> waits for: a carrier on its
-    /// road with a good in its hands, or a settler on its free walk back to its hut with the good it took. The activities where a
-    /// settler hands a good over or puts it down are not among them.
+    /// Whether this is one of the activities the play script's <c>fast-forward &lt;job&gt; carrying</c> waits for: a carrier on its
+    /// road with a good in its hands, a settler on its free walk back to its hut with the good it took, or the sawmiller with his
+    /// plank in the sawmill's door and on the step out of it. The activities where a settler hands a good over or puts it down are
+    /// not among them.
     /// </summary>
     public virtual bool Carries => false;
 
@@ -125,6 +126,9 @@ public sealed record WaitsOutStep(Activity Then) : StepsBefore(Then)
 
     /// <inheritdoc />
     public override bool IsDrawn => true;
+
+    /// <summary>The sawmiller's step out of the door holds the plank he lays down after it.</summary>
+    public override bool Carries => Then is PutsDownGood;
 }
 
 /// <summary>State 6: the settler stands on the flag of the building it walks into and waits for the node of the door.</summary>
@@ -204,6 +208,9 @@ public sealed record StepsOutWithGood(Good Good) : Activity
 {
     /// <inheritdoc />
     public override int Code => 0xb;
+
+    /// <inheritdoc />
+    public override bool Carries => true;
 }
 
 /// <summary>State 0xd: the settler stands on the flag with a good in his hands and lays it on the flag (<c>0x43c6aa</c>), then enters the building.</summary>

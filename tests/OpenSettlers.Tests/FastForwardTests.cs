@@ -143,6 +143,37 @@ public sealed class FastForwardTests
         Assert.IsTrue(CarriesAStone(game));
     }
 
+    // The sawmiller holds the plank from the tick he stops sawing: in the door (state 0xb) where the flag has no room, and on the
+    // step out of it (state 5 before 0xd).
+    static bool CarriesAPlank(Game game) =>
+        game.Settlers.Any(s =>
+            s.Job == new Sawmiller() && s.Activity is StepsOutWithGood or WaitsOutStep { Then: PutsDownGood }
+        );
+
+    // A sawmill with a log laid at the castle's flag, its sawmiller waiting inside (SawmillTests' world).
+    static Game SawmillWithALog()
+    {
+        var (game, _) = SawmillTests.World();
+        SawmillTests.SawmillerInside(game);
+        game.Goods.LayGood(0, 0, Good.Log.Code);
+
+        return game;
+    }
+
+    [TestMethod]
+    public void ASawmillerCarriesThePlankOutOfTheSawmill()
+    {
+        var reference = SawmillWithALog();
+        TickUntil(reference, CarriesAPlank, 12000, "a sawmiller carrying a plank");
+        var game = SawmillWithALog();
+
+        var problem = Step("fast-forward sawmiller carrying max 12000").Run(game, Unread);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(reference.TickCount, game.TickCount);
+        Assert.IsTrue(CarriesAPlank(game));
+    }
+
     [TestMethod]
     public void ABuilderIsInStateNineAtTheFirstTickItBuilds()
     {
