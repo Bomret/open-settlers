@@ -301,6 +301,28 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
+    [DataRow("sawmill", 13, 10, DisplayName = "a finished sawmill")]
+    [DataRow("woodcutter", 10, 10, DisplayName = "the castle")]
+    public void AWorkerForAFinishedBuildingOfAJobWhoseSettlerDoesNotStandInTheHutIsRefusedNamingTheJobsThatDo(
+        string type,
+        int x,
+        int y
+    )
+    {
+        var game = Applied(
+            Built.Replace(
+                "\"type\": \"woodcutter\", \"x\": 13, \"y\": 10",
+                $"\"type\": \"{type}\", \"x\": 13, \"y\": 10"
+            )
+        );
+
+        Assert.AreEqual(
+            "no finished woodcutter's, stonecutter's, or forester's building stands on the node",
+            game.Walks.StandWorkerInHut(x, y)
+        );
+    }
+
+    [TestMethod]
     public void AWorkerForAWoodcuttersSiteIsRefused()
     {
         var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}],", ""));

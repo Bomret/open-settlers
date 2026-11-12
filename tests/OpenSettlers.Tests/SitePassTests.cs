@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -248,6 +249,27 @@ public sealed class SitePassTests
         bench.Map.At(7, 5).Height = 3;
         pass.Turn(site);
         Assert.AreEqual(new WorkerRequest(new Sawmiller(), new Good(4)), Asked.Single().Request);
+    }
+
+    private sealed class OtherSiteRules(JobParts parts) : JobRules<Digger>(parts)
+    {
+        public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
+            stage == SiteStage.Building ? new WorkerRequest(new Forester(), new Good(5)) : null;
+    }
+
+    [TestMethod]
+    public void TwoModulesThatNameTheWorkerOfOneStageRefuseTheAskNamingBoth()
+    {
+        var parts = new JobParts(null!, null!, null!, null!, null!, null!, null!);
+        var modules = new JobRules[] { new SiteRules(parts), new OtherSiteRules(parts) };
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0, modules: modules);
+        Uneven(bench, node: 3);
+
+        var refusal = Assert.ThrowsExactly<InvalidOperationException>(() => pass.Turn(site));
+
+        StringAssert.Contains(refusal.Message, nameof(SiteRules));
+        StringAssert.Contains(refusal.Message, nameof(OtherSiteRules));
+        StringAssert.Contains(refusal.Message, nameof(SiteStage.Building));
     }
 
     [TestMethod]

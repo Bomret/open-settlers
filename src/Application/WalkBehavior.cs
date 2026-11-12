@@ -210,7 +210,8 @@ public sealed class WalkBehavior(
     }
 
     /// <summary>
-    /// The worker a finished woodcutter's, stonecutter's, or forester's building stands with (docs/rules/layouts.md, ADR 0009, INV-0005), as the
+    /// The worker a finished building of a job whose settler stands in the hut (the woodcutter's, stonecutter's, or forester's building) stands
+    /// with (docs/rules/layouts.md, ADR 0009, INV-0005), as the
     /// mission start (<c>0x41f2d2</c>) creates a building's settlers inside it: the castle's woodcutter (or stonecutter, or a
     /// settler without a job that becomes the forester, the castle holding none) has
     /// walked from the castle to the hut and stepped through its door (state 4, <c>0x4398ea</c> with the building's status bit
@@ -227,7 +228,7 @@ public sealed class WalkBehavior(
         var hut = movement.BuildingAt(node);
         if (hut is not { IsDemolishing: false, Site: null } || !StandsWorker(hut.Type))
         {
-            return "no finished woodcutter's, stonecutter's, or forester's building stands on the node";
+            return $"no finished {HutJobs()} building stands on the node";
         }
 
         if (hut.WorkerInside || hut.WorkerOnTheWay)
@@ -248,7 +249,7 @@ public sealed class WalkBehavior(
 
         if (slot < 0)
         {
-            return $"the castle holds no {modules.First(rules => rules.JobType == asked.GetType()).WorkerName} for the building";
+            return $"the castle holds no {NameOf(modules.First(rules => rules.JobType == asked.GetType()))} for the building";
         }
 
         var flag = flags[hut.Flag];
@@ -283,4 +284,23 @@ public sealed class WalkBehavior(
     public bool StandsWorker(BuildingType type) =>
         movement.Tables.WorkerOf(type) is { } request
         && modules.Any(rules => rules.JobType == request.Job.GetType() && rules.CanStandInHut);
+
+    // What a sentence calls a settler of the module's job: the job type's name in lower case.
+    private static string NameOf(JobRules rules) => rules.JobType.Name.ToLowerInvariant();
+
+    // The jobs whose buildings a layout stands a worker in, as the refusal names them: "woodcutter's, stonecutter's, or forester's"
+    // (the names last first).
+    private string HutJobs()
+    {
+        var names = modules
+            .Where(rules => rules.CanStandInHut)
+            .Select(NameOf)
+            .OrderByDescending(name => name, System.StringComparer.Ordinal)
+            .Select(name => name + "'s")
+            .ToList();
+
+        return names.Count < 2
+            ? string.Concat(names)
+            : string.Join(", ", names.Take(names.Count - 1)) + ", or " + names[^1];
+    }
 }

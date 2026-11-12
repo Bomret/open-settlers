@@ -19,12 +19,6 @@ public abstract class JobRules
     public abstract Type JobType { get; }
 
     /// <summary>
-    /// What the shared texts call a settler of the job, as in "the castle holds no woodcutter for the building". Default: the job type's
-    /// name in lower case; a job whose type name reads badly in a sentence overrides it.
-    /// </summary>
-    public virtual string WorkerName => JobType.Name.ToLowerInvariant();
-
-    /// <summary>
     /// Whether a layout stands a settler of the job inside a finished building of its own (a hut, as the mission start does). Default: no.
     /// </summary>
     public virtual bool CanStandInHut => false;
@@ -34,8 +28,8 @@ public abstract class JobRules
 
     /// <summary>
     /// The request a building site makes for a worker of this job at <paramref name="stage"/>, read from <paramref name="tables"/>, or
-    /// null where the job is not the worker of that stage. <see cref="SitePass"/> asks the castle for the first non-null answer of the
-    /// modules. Default: null for every stage.
+    /// null where the job is not the worker of that stage. <see cref="SitePass"/> asks the castle for the one non-null answer of the
+    /// modules and refuses a stage two modules answer. Default: null for every stage.
     /// </summary>
     public virtual WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) => null;
 

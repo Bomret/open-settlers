@@ -72,17 +72,34 @@ public sealed class SitePass(
         Keep(flag, RequestWord.Second, needs.Stones, site.FillHigh, StoneRankStart, site.WorkerInside);
     }
 
-    // The site's request for the worker of the stage: the first the modules name, none where no module names one.
+    // The site's request for the worker of the stage, none where no module names one. Two modules that name the worker of one stage
+    // are refused, so no module's answer depends on the registry's order. The answers read the tables, which a partial table set
+    // holds no data for until a site asks, so the refusal comes with the first ask of the stage.
     private void Ask(Building site, SiteStage stage)
     {
+        JobRules? first = null;
+        WorkerRequest? worker = null;
         foreach (var module in modules)
         {
-            if (module.SiteWorker(stage, tables) is { } request)
+            if (module.SiteWorker(stage, tables) is not { } request)
             {
-                askForWorker?.Invoke(site, request);
-
-                return;
+                continue;
             }
+
+            if (first is not null)
+            {
+                throw new InvalidOperationException(
+                    $"the job rules modules {first.GetType().Name} and {module.GetType().Name} both name the worker of the {stage} stage of a site"
+                );
+            }
+
+            first = module;
+            worker = request;
+        }
+
+        if (worker is not null)
+        {
+            askForWorker?.Invoke(site, worker);
         }
     }
 

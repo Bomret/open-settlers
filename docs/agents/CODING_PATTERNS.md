@@ -41,7 +41,7 @@ constant of `Job`. Add a job as its own files, layer by layer:
    data with `TestProgram.MadeJobData()`. `Job.Of(int)` finds the job of a number and is generated from the sealed job
    types.
 2. Application, a file of `src/Application/`: `public sealed class XRules(JobParts parts) : JobRules<X>(parts)`. Override
-   the hooks the job needs (`CanStandInHut`, `Cause`, `WorkerName`, `SiteWorker`, `Register`, `Start`, `Arrive`, `Pass`,
+   the hooks the job needs (`CanStandInHut`, `Cause`, `SiteWorker`, `Register`, `Start`, `Arrive`, `Pass`,
    `Turn`); a hook left alone keeps the shared default. `SiteWorker` names the request a building site makes for the
    job's worker at a `SiteStage`, so the shared site pass names no job. A job needing a part `JobParts` lacks extends `JobParts` (and the
    `new JobParts(...)` calls of the tests) rather than reaching into a shared behavior. A module reaches the shared states of the
