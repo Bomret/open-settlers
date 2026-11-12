@@ -98,10 +98,15 @@ public sealed class LayoutSettlersTests
             distribution: distribution,
             plankRankBase: plankRankBase,
             workers: workers,
-            builderRequest: builderRequest,
             materialOrder: materialOrder,
             blowSteps: blowSteps,
-            diggerRequest: diggerRequest
+            // A request a test gives replaces the made-up one of the same job.
+            jobData:
+            [
+                .. RuleTables.MadeUpJobData(),
+                .. builderRequest is null ? [] : new[] { (Job.Builder, (object)builderRequest) },
+                .. diggerRequest is null ? [] : new[] { (Job.Digger, (object)diggerRequest) },
+            ]
         );
     }
 

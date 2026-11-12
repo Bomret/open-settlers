@@ -108,7 +108,7 @@ The figure handler of job 7 is at `0x43fcd8`, reached by the stub at `0x43f77c`.
 - `0x1200` on the way back with the stone and in the step back off the heap. The way back has byte 13 at `0x80`, byte 14 at 1, and state `0x10`. The step back has state `0x17` and byte 13 at 2.
 - `0x1280` for a byte from 0x80, the stroke.
 
-The engine reads the three words from the program's instructions (`RuleTables.StonecutterFigureAdds`). The engine draws states `0x16` and `0x17`. It does not draw state `0x15`, in the building.
+The engine reads the three words from the program's instructions (`RuleTables.Get<FigureAdds>(Job.Stonecutter)`). The engine draws states `0x16` and `0x17`. It does not draw state `0x15`, in the building.
 
 The heap stages are the objects `0x48` to `0x4f`, drawn from the map like any object. A stone on a flag is the sprite `320` plus the good. The engine draws it as every good on a flag is ([Woodcutting](woodcutting.md#drawing)).
 

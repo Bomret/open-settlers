@@ -48,7 +48,7 @@ public sealed class SitePass(
                 // castle for a digger (0x42d52a), and the failing request sets the bit (CastleRoster.AskForWorker).
                 if (!site.RequestFailed)
                 {
-                    askForWorker?.Invoke(site, tables.DiggerRequest);
+                    askForWorker?.Invoke(site, tables.Get<WorkerRequest>(Job.Digger));
                 }
 
                 return;
@@ -60,7 +60,7 @@ public sealed class SitePass(
         if (!(site.RequestFailed || site.WorkerInside || site.WorkerOnTheWay))
         {
             site.Progress = 1;
-            askForWorker?.Invoke(site, tables.BuilderRequest);
+            askForWorker?.Invoke(site, tables.Get<WorkerRequest>(Job.Builder));
         }
 
         var flag = flags[site.Flag];

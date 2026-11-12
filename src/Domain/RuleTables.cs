@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace OpenSettlers.Domain;
@@ -112,9 +113,7 @@ public sealed class RuleTables
         byte[]? goodKinds = null,
         byte[]? roadCapacities = null,
         byte[]? transportPriorities = null,
-        FigureAdds? woodcutterFigureAdds = null,
         sbyte[]? frameRows = null,
-        HutFigureAdds? typeOneHutFigureAdds = null,
         short[]? idlePhases = null,
         short[]? idleFigures = null,
         sbyte[]? idleOffsets = null,
@@ -124,15 +123,9 @@ public sealed class RuleTables
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0,
         WorkerRequest?[]? workers = null,
-        WorkerRequest? builderRequest = null,
         ushort[]? materialOrder = null,
         ushort[]? blowSteps = null,
-        BuilderFigureAdds? builderFigureAdds = null,
-        FigureAdds? stonecutterFigureAdds = null,
-        ForesterFigureAdds? foresterFigureAdds = null,
-        WorkerRequest? diggerRequest = null,
-        FigureAdds? diggerFigureAdds = null,
-        SawmillerFigureAdds? sawmillerFigureAdds = null
+        IEnumerable<(Job Job, object Data)>? jobData = null
     )
     {
         if (
@@ -156,11 +149,7 @@ public sealed class RuleTables
         _goodKinds = goodKinds ?? new byte[GoodKindCount];
         _roadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
         _transportPriorities = transportPriorities ?? new byte[Goods];
-        WoodcutterFigureAdds = woodcutterFigureAdds ?? default;
-        StonecutterFigureAdds = stonecutterFigureAdds ?? default;
-        ForesterFigureAdds = foresterFigureAdds ?? default;
         FrameRows = frameRows ?? new sbyte[FrameRowCount];
-        TypeOneHutFigureAdds = typeOneHutFigureAdds ?? default;
         IdlePhases = idlePhases ?? new short[IdlePhaseCount];
         IdleFigures = idleFigures ?? new short[IdleFigureCount];
         IdleOffsets = idleOffsets ?? new sbyte[IdleOffsetCount];
@@ -182,16 +171,65 @@ public sealed class RuleTables
         // woodcutter's of the woodcutter's job and a made-up tool, the forester's of the forester's job and no tool, and the builder a
         // settler of the builder's job with no tool.
         _workers = workers ?? MadeUpWorkers();
-        BuilderRequest = builderRequest ?? new WorkerRequest(Job.Builder, Good.None);
         // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
         _materialOrder = materialOrder ?? new ushort[BuildingTypeCount];
         _blowSteps = blowSteps ?? new ushort[2 * BuildingTypeCount];
-        BuilderFigureAdds = builderFigureAdds ?? default;
-        // stand-in: a table a test does not give makes the digger a settler of the digger's job with no tool, drawn in the carrier's row.
-        DiggerRequest = diggerRequest ?? new WorkerRequest(Job.Digger, Good.None);
-        DiggerFigureAdds = diggerFigureAdds ?? default;
-        SawmillerFigureAdds = sawmillerFigureAdds ?? default;
+        // Where a job's data is given, it is exactly what is given: a job's data that is missing is an error when read.
+        _jobData = [];
+        foreach (var (job, data) in jobData ?? MadeUpJobData())
+        {
+            _jobData[(job, data.GetType())] = data;
+        }
     }
+
+    private readonly Dictionary<(Job, Type), object> _jobData;
+
+    /// <summary>
+    /// The (job, data type) pairs the rules read through <see cref="Get{T}"/>: a program's tables must hold each, and the importer
+    /// refuses the install where no job module read one. <see cref="MadeUpJobData"/> holds a stand-in for each.
+    /// </summary>
+    public static IReadOnlyList<(Job Job, Type Type)> RequiredJobData { get; } =
+    [
+        (Job.Woodcutter, typeof(FigureAdds)),
+        (Job.Stonecutter, typeof(FigureAdds)),
+        (Job.Digger, typeof(FigureAdds)),
+        (Job.Builder, typeof(BuilderFigureAdds)),
+        (Job.Forester, typeof(ForesterFigureAdds)),
+        (Job.Sawmiller, typeof(SawmillerFigureAdds)),
+        (Job.TypeOneHut, typeof(HutFigureAdds)),
+        (Job.Builder, typeof(WorkerRequest)),
+        (Job.Digger, typeof(WorkerRequest)),
+    ];
+
+    /// <summary>
+    /// The job data a test that gives none gets (<c>jobData</c> of the constructor): the builder and the digger ask for a settler of
+    /// their own job with no tool, and every job's figure adds are 0, which draws the settler in the carrier's row. A test that gives
+    /// data of its own builds on this list, whose later entries for one job and type win.
+    /// </summary>
+    public static IReadOnlyList<(Job Job, object Data)> MadeUpJobData() =>
+        [
+            (Job.Woodcutter, default(FigureAdds)),
+            (Job.Stonecutter, default(FigureAdds)),
+            (Job.Digger, default(FigureAdds)),
+            (Job.Builder, default(BuilderFigureAdds)),
+            (Job.Forester, default(ForesterFigureAdds)),
+            (Job.Sawmiller, default(SawmillerFigureAdds)),
+            (Job.TypeOneHut, default(HutFigureAdds)),
+            (Job.Builder, new WorkerRequest(Job.Builder, Good.None)),
+            (Job.Digger, new WorkerRequest(Job.Digger, Good.None)),
+        ];
+
+    /// <summary>
+    /// The data of type <typeparamref name="T"/> that the job <paramref name="job"/> owns: the figure adds of its handler, or the
+    /// request a site makes for it. The importer reads each from the job's tables module. Throws where the tables hold none.
+    /// </summary>
+    public T Get<T>(Job job)
+        where T : notnull =>
+        _jobData.TryGetValue((job, typeof(T)), out var data)
+            ? (T)data
+            : throw new InvalidOperationException(
+                $"The tables hold no {typeof(T).Name} for the job {job.GetType().Name}."
+            );
 
     private static WorkerRequest?[] MadeUpWorkers()
     {
@@ -275,18 +313,6 @@ public sealed class RuleTables
     /// <summary>For each low byte of the figure word 2 words: what it adds to the figure and to the second figure.</summary>
     public short[] FigureOffsets { get; }
 
-    /// <summary>What the woodcutter's handler adds to the figure byte to make the figure word.</summary>
-    public FigureAdds WoodcutterFigureAdds { get; }
-
-    /// <summary>What the stonecutter's handler (<c>0x43fcd8</c>) adds to the figure byte; all 0 draws him in the carrier's row.</summary>
-    public FigureAdds StonecutterFigureAdds { get; }
-
-    /// <summary>What the forester's handler (<c>0x43fd88</c>) adds to the figure byte; all 0 draws him in the carrier's row.</summary>
-    public ForesterFigureAdds ForesterFigureAdds { get; }
-
-    /// <summary>What the handler of the settler of the type 1 hut adds to the figure byte to make the figure word.</summary>
-    public HutFigureAdds TypeOneHutFigureAdds { get; }
-
     /// <summary>For each frame of a settler what the record builder adds to the row of its record's list.</summary>
     public sbyte[] FrameRows { get; }
 
@@ -364,30 +390,6 @@ public sealed class RuleTables
     /// player setup of a new game writes (<c>0x445752</c>, <c>docs/rules/construction-materials.md</c>).
     /// </summary>
     public byte PlankRankBase { get; }
-
-    /// <summary>What the builder's figure handler adds to the figure byte (<c>0x43faf4</c>); all 0 draws him in the carrier's row.</summary>
-    public BuilderFigureAdds BuilderFigureAdds { get; }
-
-    /// <summary>
-    /// What a building site asks for as its builder (<c>0x42d5fc</c>): the builder's job and the tool good a jobless settler takes from the
-    /// stock to become one.
-    /// </summary>
-    public WorkerRequest BuilderRequest { get; }
-
-    /// <summary>
-    /// What a large building site whose ground is not level asks for as its digger (<c>0x42d52a</c>, in <c>0x42d328</c>): the digger's job
-    /// and the tool good a jobless settler takes from the stock to become one.
-    /// </summary>
-    public WorkerRequest DiggerRequest { get; }
-
-    /// <summary>
-    /// What the digger's figure handler adds to the figure byte (<c>0x43fa87</c>): <see cref="FigureAdds.Walk"/> for a figure byte below 0x80,
-    /// which every frame of his work is, and <see cref="FigureAdds.Cutting"/> for one from 0x80 (no state of his sets one).
-    /// </summary>
-    public FigureAdds DiggerFigureAdds { get; }
-
-    /// <summary>What the sawmiller's figure handler adds (<c>0x43fc21</c>, the target of the stub of job 6, <c>docs/rules/sawmilling.md</c>).</summary>
-    public SawmillerFigureAdds SawmillerFigureAdds { get; }
 
     /// <summary>
     /// What a finished building of <paramref name="type"/> asks for as its worker (the handlers of the jump table <c>0x42cd1d</c>); null for

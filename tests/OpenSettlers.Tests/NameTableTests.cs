@@ -70,6 +70,42 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
+    public void TheTypeOneHutSettlerHasNoNameAndEveryOtherPortedJobHasOne()
+    {
+        Assert.IsNull(NameTable.JobName(RuleTables.TypeOneHutJob));
+        foreach (var number in new[] { 0, 2, 3, 4, 5, 6, 7, 8, 21 })
+        {
+            Assert.IsNotNull(NameTable.JobName(number), $"job {number}");
+        }
+    }
+
+    [TestMethod]
+    public void TheNamesTheJobModulesStateAreInTheTableWithTheirEvidence()
+    {
+        var jobs = NameTable.Entries.Where(entry => entry.Kind == NameTable.CodeKind.Job).ToArray();
+
+        CollectionAssert.AreEquivalent(
+            new[]
+            {
+                "carrier",
+                "digger",
+                "builder",
+                "castle-settler",
+                "woodcutter",
+                "sawmiller",
+                "stonecutter",
+                "forester",
+                "jobless",
+            },
+            jobs.Select(entry => entry.Name).ToArray()
+        );
+        Assert.AreEqual(
+            "the code of the Activity record (src/Domain/Activity.cs)",
+            NameTable.Entries.Single(entry => entry.Kind == NameTable.CodeKind.State && entry.Code == 0x11).Evidence
+        );
+    }
+
+    [TestMethod]
     public void EveryEntryCitesItsEvidence()
     {
         Assert.IsTrue(NameTable.Entries.Any());
@@ -86,6 +122,21 @@ public sealed class NameTableTests
         CollectionAssert.AreEqual(Enumerable.Range(8, 16).ToArray(), names.CodesNamed("tree").ToArray());
         Assert.AreEqual(10, names.CodesNamed("felled-tree").Count());
         Assert.IsFalse(names.CodesNamed("no-such-name").Any());
+    }
+
+    [TestMethod]
+    public void TheCoreStateCodesTheGeneratorChecksAreTheStatesTheTableNamesItself()
+    {
+        var listed = typeof(NameTable)
+            .Assembly.GetCustomAttributes(typeof(CoreStateCodesAttribute), false)
+            .Cast<CoreStateCodesAttribute>()
+            .SelectMany(attribute => attribute.Codes);
+        var modules = JobTablesRegistry.StateNames.Select(state => state.Code).ToHashSet();
+        var core = NameTable
+            .Entries.Where(entry => entry.Kind == NameTable.CodeKind.State && !modules.Contains(entry.Code))
+            .Select(entry => entry.Code);
+
+        CollectionAssert.AreEquivalent(core.ToList(), listed.ToList());
     }
 
     [TestMethod]
