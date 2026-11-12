@@ -905,7 +905,10 @@ public class PlayRunWrapperTests
         using var call = Start(Args, FakePsEnv(dead, new() { ["FAKE_PS_SWAP_AT"] = "3" }));
         WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait on the live owner");
 
-        Assert.IsFalse(Directory.Exists(Out(".lock-demo.takeover")), "the stale mutex was cleared, so the call took the branch");
+        Assert.IsFalse(
+            Directory.Exists(Out(".lock-demo.takeover")),
+            "the stale mutex was cleared, so the call took the branch"
+        );
         Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo/pid")));
         Assert.AreEqual(0, Calls);
     }
@@ -921,7 +924,10 @@ public class PlayRunWrapperTests
         using var call = Start(Args, FakePsEnv(dead, new() { ["FAKE_PS_SWAP_AT"] = "3", ["FAKE_PS_W"] = "1" }));
         WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait");
 
-        CollectionAssert.AreEqual(new[] { "pid" }, Directory.GetFileSystemEntries(Out(".lock-demo")).Select(Path.GetFileName).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { "pid" },
+            Directory.GetFileSystemEntries(Out(".lock-demo")).Select(Path.GetFileName).ToArray()
+        );
         Assert.AreEqual(0, Calls);
     }
 
@@ -972,7 +978,10 @@ public class PlayRunWrapperTests
         HoldLock(DeadPid());
         HoldTakeover(Environment.ProcessId, TimeSpan.FromMinutes(5));
         using var call = Start(Args);
-        WaitFor(() => call.Stderr.Contains("play-out/.lock-demo.takeover"), "the call to wait on the live holder's mutex");
+        WaitFor(
+            () => call.Stderr.Contains("play-out/.lock-demo.takeover"),
+            "the call to wait on the live holder's mutex"
+        );
 
         Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo.takeover/pid")));
         Assert.AreEqual(0, Calls);
@@ -987,11 +996,18 @@ public class PlayRunWrapperTests
         var deadOwner = DeadPid();
         HoldLock(deadOwner);
         HoldTakeover(deadHolder, TimeSpan.FromMinutes(5));
-        using var call = Start(Args, FakePsEnv(deadOwner, new() { ["FAKE_PS_MDEAD"] = deadHolder.ToString(), ["FAKE_PS_MSWAP"] = "1" }));
+        using var call = Start(
+            Args,
+            FakePsEnv(deadOwner, new() { ["FAKE_PS_MDEAD"] = deadHolder.ToString(), ["FAKE_PS_MSWAP"] = "1" })
+        );
         WaitFor(() => call.Stderr.Contains("waiting on"), "the call to wait on the live holder's mutex");
 
         Assert.AreEqual(Environment.ProcessId + "\n", File.ReadAllText(Out(".lock-demo.takeover/pid")));
-        Assert.AreEqual(1, Directory.GetFileSystemEntries(Out(""), ".lock-demo.takeover*").Length, "no sibling of the mutex is left");
+        Assert.AreEqual(
+            1,
+            Directory.GetFileSystemEntries(Out(""), ".lock-demo.takeover*").Length,
+            "no sibling of the mutex is left"
+        );
         Assert.AreEqual(0, Calls);
     }
 
@@ -1038,7 +1054,10 @@ public class PlayRunWrapperTests
         var deadOwner = DeadPid();
         HoldLock(deadOwner);
         HoldTakeover(deadHolder, TimeSpan.Zero);
-        var call = Run(Args, FakePsEnv(deadOwner, new() { ["FAKE_PS_MDEAD"] = deadHolder.ToString(), ["FAKE_PS_MLOG"] = "1" }));
+        var call = Run(
+            Args,
+            FakePsEnv(deadOwner, new() { ["FAKE_PS_MDEAD"] = deadHolder.ToString(), ["FAKE_PS_MLOG"] = "1" })
+        );
 
         Assert.AreEqual(0, call.Status);
         var log = File.ReadAllLines(Path.Combine(fake, "ps-mutex-log"));

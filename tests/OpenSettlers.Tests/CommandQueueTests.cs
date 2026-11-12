@@ -98,8 +98,7 @@ public sealed class CommandQueueTests
         CollectionAssert.AreEqual(new[] { 1, 2 }, (System.Collections.ICollection)command.Directions!);
     }
 
-    static Command Place(BuildingType? building) =>
-        new(1, 0, CommandKind.PlaceBuilding, 4, 4, Building: building);
+    static Command Place(BuildingType? building) => new(1, 0, CommandKind.PlaceBuilding, 4, 4, Building: building);
 
     static Command Taken(CommandQueue queue)
     {

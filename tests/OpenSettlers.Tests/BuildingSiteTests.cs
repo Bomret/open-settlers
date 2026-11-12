@@ -320,7 +320,14 @@ public sealed class BuildingSiteTests
         var forward = World();
         var backward = World();
         var (x, y, _) = Find(forward, 4);
-        var woodcutter = new Command(forward.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: BuildingType.Woodcutter);
+        var woodcutter = new Command(
+            forward.TickCount,
+            0,
+            CommandKind.PlaceBuilding,
+            x,
+            y,
+            Building: BuildingType.Woodcutter
+        );
         var sawmill = woodcutter with { Building = BuildingType.Sawmill };
 
         forward.Enqueue(woodcutter);

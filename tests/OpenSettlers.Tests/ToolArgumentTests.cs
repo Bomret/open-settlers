@@ -164,7 +164,10 @@ public sealed class ToolArgumentTests
 
         var run = Python(
             _folder,
-            ["-c", $"import sys; sys.path.insert(0, r'{Path.GetDirectoryName(Digest())}'); import digest; print('imported')"]
+            [
+                "-c",
+                $"import sys; sys.path.insert(0, r'{Path.GetDirectoryName(Digest())}'); import digest; print('imported')",
+            ]
         );
 
         Assert.AreEqual(0, run.Exit, run.Stderr);

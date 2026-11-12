@@ -155,8 +155,8 @@ public sealed class RemovalLogicTests
         var node = game.Map.Index(17, 6);
         game.Map.At(node).Roads = new RoadSet(bits);
 
-        var failure = Assert.ThrowsExactly<InvalidOperationException>(
-            () => game.Removal.SplitRoad(node, 0, Cause.Removal)
+        var failure = Assert.ThrowsExactly<InvalidOperationException>(() =>
+            game.Removal.SplitRoad(node, 0, Cause.Removal)
         );
 
         StringAssert.Contains(failure.Message, node.ToString(System.Globalization.CultureInfo.InvariantCulture));
