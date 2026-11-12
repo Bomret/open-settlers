@@ -84,6 +84,94 @@ public sealed class FastForwardTests
     }
 
     [TestMethod]
+    public void ABuilderStateStepParsesAndAStonecutterCarryingStepParses()
+    {
+        Assert.AreEqual(Job.Builder, ((FastForwardJobStep)Step("fast-forward builder state 9 max 10")).Job);
+        Assert.AreEqual(9, ((FastForwardJobStep)Step("fast-forward builder state 9 max 10")).State);
+
+        var carrying = (FastForwardJobStep)Step("fast-forward stonecutter carrying max 10");
+
+        Assert.AreEqual(Job.Stonecutter, carrying.Job);
+        Assert.IsNull(carrying.State);
+    }
+
+    [TestMethod]
+    public void AJobNameTheTableHoldsStandsForItsJob()
+    {
+        var expected = new (string Name, Job Job)[]
+        {
+            ("carrier", Job.Carrier),
+            ("digger", Job.Digger),
+            ("builder", Job.Builder),
+            ("woodcutter", Job.Woodcutter),
+            ("stonecutter", Job.Stonecutter),
+            ("forester", Job.Forester),
+        };
+
+        foreach (var (name, job) in expected)
+            Assert.AreEqual(job, ((FastForwardJobStep)Step($"fast-forward {name} state 1 max 1")).Job, name);
+    }
+
+    static bool CarriesAStone(Game game) =>
+        game.Settlers.Any(s =>
+            s.Job == Job.Stonecutter && s.Activity is WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
+        );
+
+    [TestMethod]
+    public void AStonecutterCarriesTheStoneOnTheWayBackToTheHut()
+    {
+        var reference = StonecuttingTests.World(0x4d, out _);
+        while (!CarriesAStone(reference))
+            reference.Tick();
+        var game = StonecuttingTests.World(0x4d, out _);
+
+        var problem = Step("fast-forward stonecutter carrying max 6000").Run(game, Unread);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(reference.TickCount, game.TickCount);
+        Assert.IsTrue(CarriesAStone(game));
+    }
+
+    [TestMethod]
+    public void ABuilderIsInStateNineAtTheFirstTickItBuilds()
+    {
+        static bool Builds(Game game) => game.Settlers.Any(s => s.Job == Job.Builder && s.Activity.Code == 9);
+        var (reference, _) = BuilderTests.World();
+        while (!Builds(reference))
+            reference.Tick();
+        var (game, _) = BuilderTests.World();
+
+        var problem = Step("fast-forward builder state 9 max 3000").Run(game, Unread);
+
+        Assert.IsNull(problem);
+        Assert.AreEqual(reference.TickCount, game.TickCount);
+        Assert.IsTrue(Builds(game));
+    }
+
+    [TestMethod]
+    public void AnUnknownJobNameIsRefusedWithTheNamesTheTableHolds()
+    {
+        var problem = Problem("fast-forward miller state 1 max 5");
+
+        Assert.StartsWith("play/t.play line 1: 'miller' is not a job name, use ", problem);
+        foreach (var name in new[] { "carrier", "digger", "builder", "woodcutter", "stonecutter", "forester" })
+            Assert.Contains(name, problem);
+    }
+
+    [TestMethod]
+    public void OnlyACarriersLoadedRoadWalkAndAFreeWalkBackCarryingCarryAGood()
+    {
+        var road = new Heading();
+        var load = new Load(Good.Log, 0);
+        Assert.IsTrue(new WalksRoad(load, road).Carries);
+        Assert.IsFalse(new WalksRoad(null, road).Carries);
+        Assert.IsFalse(new WalksRoad(new Load(Good.None, 0), road).Carries);
+        Assert.IsTrue(new WalksFree(new Trip(default, new BackToHut(true))).Carries);
+        Assert.IsFalse(new WalksFree(new Trip(default, new BackToHut(false))).Carries);
+        Assert.IsFalse(new WaitsInCastle().Carries);
+    }
+
+    [TestMethod]
     [DataRow("17")]
     [DataRow("0x11")]
     [DataRow("0X11")]
@@ -144,7 +232,6 @@ public sealed class FastForwardTests
     }
 
     [TestMethod]
-    [DataRow("fast-forward baker state 1 max 5", "'baker' is not woodcutter or carrier")]
     [DataRow("fast-forward woodcutter state zz max 5", "'zz' is not a whole number of zero or more")]
     [DataRow("fast-forward woodcutter state -1 max 5", "'-1' is not a whole number of zero or more")]
     [DataRow("fast-forward woodcutter state 0x max 5", "'0x' is not a whole number of zero or more")]

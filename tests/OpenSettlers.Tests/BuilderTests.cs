@@ -18,7 +18,7 @@ public sealed class BuilderTests
 
     // A game with a forester's site at 17,5 whose planks lie on site: the hand-out of the castle is not part of these tests. A step takes
     // 300 clock units, more than the 128 between two turns of a settler, so a builder's turn makes one blow at most.
-    private static (Game Game, Building Site) World(int planksOnSite = 2, bool everyPassTurns = false)
+    internal static (Game Game, Building Site) World(int planksOnSite = 2, bool everyPassTurns = false)
     {
         var game = ConstructionWorld.Create(ConstructionTables.Tables(stepTime: 300), everyPassTurns: everyPassTurns);
         ConstructionWorld.Site(game, BuildingType.Forester, SiteX, SiteY);
