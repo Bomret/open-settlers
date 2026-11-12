@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -50,86 +51,122 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // The transform reduces each declaration to an equatable model, so the output reruns only where a job type changes.
         var declarations = context
             .SyntaxProvider.CreateSyntaxProvider(
-                static (node, _) => node is TypeDeclarationSyntax { BaseList: not null },
-                static (syntax, _) => (TypeDeclarationSyntax)syntax.Node
+                static (node, _) =>
+                    node
+                        is TypeDeclarationSyntax { BaseList: not null }
+                            or TypeDeclarationSyntax { Identifier.ValueText: "Job" },
+                static (syntax, token) => Describe(syntax, token)
             )
+            .Where(static declaration => declaration is not null)
+            .Select(static (declaration, _) => declaration!)
             .Collect();
-        context.RegisterSourceOutput(
-            context.CompilationProvider.Combine(declarations),
-            static (output, pair) => Generate(output, pair.Left, pair.Right)
+        context.RegisterSourceOutput(declarations, static (output, found) => Generate(output, found));
+    }
+
+    private static Declaration? Describe(GeneratorSyntaxContext syntax, System.Threading.CancellationToken token)
+    {
+        var declaration = (TypeDeclarationSyntax)syntax.Node;
+        var job = syntax.SemanticModel.Compilation.GetTypeByMetadataName(JobMetadataName);
+        if (
+            job is null
+            || job.Locations.All(location => !location.IsInSource)
+            || syntax.SemanticModel.GetDeclaredSymbol(declaration, token) is not INamedTypeSymbol type
+        )
+        {
+            return null;
+        }
+
+        var place = Place.Of(declaration.Identifier.GetLocation());
+        var jobNamespace = job.ContainingNamespace.ToDisplayString();
+        if (SymbolEqualityComparer.Default.Equals(type, job))
+        {
+            return new Declaration(type.ToDisplayString(), jobNamespace, job.Name, true, true, null, null, place);
+        }
+
+        if (!IsJob(type, job) || type.IsAbstract || type.Name == FallbackName)
+        {
+            return null;
+        }
+
+        var first = Constant(type, "Number");
+        var last = type.GetMembers("LastNumber").Any() ? Constant(type, "LastNumber") : first;
+        return new Declaration(
+            type.ToDisplayString(),
+            jobNamespace,
+            job.Name,
+            false,
+            type.IsSealed,
+            first,
+            last,
+            place
         );
     }
 
-    private static void Generate(
-        SourceProductionContext output,
-        Compilation compilation,
-        IEnumerable<TypeDeclarationSyntax> declarations
-    )
+    private static void Generate(SourceProductionContext output, ImmutableArray<Declaration> declarations)
     {
-        var job = compilation.GetTypeByMetadataName(JobMetadataName);
-        if (job is null || job.Locations.All(location => !location.IsInSource))
+        var job = declarations.FirstOrDefault(declaration => declaration.IsJob);
+        if (job is null)
         {
             return;
         }
 
-        var jobs = new List<JobType>();
-        foreach (var declaration in declarations)
+        // A partial job type has a declaration per part: the first part by file and position stands for it.
+        var candidates = declarations
+            .Where(declaration => !declaration.IsJob)
+            .OrderBy(declaration => declaration.Name, System.StringComparer.Ordinal)
+            .ThenBy(declaration => declaration.Place.Path, System.StringComparer.Ordinal)
+            .ThenBy(declaration => declaration.Place.Span.Start)
+            .GroupBy(declaration => declaration.Name)
+            .Select(parts => parts.First())
+            .ToList();
+
+        var jobs = new List<Declaration>();
+        foreach (var candidate in candidates)
         {
-            var model = compilation.GetSemanticModel(declaration.SyntaxTree);
-            if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol type || !IsJob(type, job))
+            if (!candidate.IsSealed)
             {
-                continue;
+                output.ReportDiagnostic(Diagnostic.Create(NotSealed, candidate.Place.ToLocation(), candidate.Name));
             }
-
-            if (type.IsAbstract || type.Name == FallbackName)
+            else if (candidate.First is null || candidate.Last is null)
             {
-                continue;
+                output.ReportDiagnostic(Diagnostic.Create(NotConstant, candidate.Place.ToLocation(), candidate.Name));
             }
-
-            var location = declaration.Identifier.GetLocation();
-            if (!type.IsSealed)
+            else
             {
-                output.ReportDiagnostic(Diagnostic.Create(NotSealed, location, type.Name));
-                continue;
+                jobs.Add(candidate);
             }
-
-            var first = Constant(type, "Number");
-            if (first is not { } number)
-            {
-                output.ReportDiagnostic(Diagnostic.Create(NotConstant, location, type.Name));
-                continue;
-            }
-
-            var last = type.GetMembers("LastNumber").Any() ? Constant(type, "LastNumber") : number;
-            if (last is not { } end)
-            {
-                output.ReportDiagnostic(Diagnostic.Create(NotConstant, location, type.Name));
-                continue;
-            }
-
-            jobs.Add(new JobType(type.ToDisplayString(), number, end, location));
         }
 
-        jobs.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
-        var valid = new List<JobType>();
+        jobs.Sort(
+            (a, b) =>
+                a.First == b.First ? string.CompareOrdinal(a.Name, b.Name) : a.First!.Value.CompareTo(b.First!.Value)
+        );
+        var kept = new List<Declaration>();
         foreach (var candidate in jobs)
         {
-            var clash = valid.FirstOrDefault(other => other.First <= candidate.Last && candidate.First <= other.Last);
-            if (clash is not null)
+            // The kept jobs have disjoint ranges in ascending order, and the candidate starts at or after the last kept one's start,
+            // so the candidate's first number is the shared one where the ranges overlap.
+            if (kept.Count > 0 && candidate.First <= kept[kept.Count - 1].Last)
             {
                 output.ReportDiagnostic(
-                    Diagnostic.Create(SharedNumber, candidate.Location, clash.Name, candidate.Name, candidate.First)
+                    Diagnostic.Create(
+                        SharedNumber,
+                        candidate.Place.ToLocation(),
+                        kept[kept.Count - 1].Name,
+                        candidate.Name,
+                        candidate.First
+                    )
                 );
                 continue;
             }
 
-            valid.Add(candidate);
+            kept.Add(candidate);
         }
 
-        valid.Sort((a, b) => a.First.CompareTo(b.First));
-        output.AddSource("Job.Of.g.cs", SourceText.From(Write(job, valid), Encoding.UTF8));
+        output.AddSource("Job.Of.g.cs", SourceText.From(Write(job, kept), Encoding.UTF8));
     }
 
     private static bool IsJob(INamedTypeSymbol type, INamedTypeSymbol job)
@@ -150,19 +187,19 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
             ? value
             : null;
 
-    private static string Write(INamedTypeSymbol job, List<JobType> jobs)
+    private static string Write(Declaration job, List<Declaration> jobs)
     {
         var text = new StringBuilder();
         text.AppendLine("// <auto-generated/>");
         text.AppendLine("#nullable enable");
-        text.AppendLine($"namespace {job.ContainingNamespace.ToDisplayString()};");
+        text.AppendLine($"namespace {job.JobNamespace};");
         text.AppendLine();
-        text.AppendLine($"public abstract partial record {job.Name}");
+        text.AppendLine($"public abstract partial record {job.JobName}");
         text.AppendLine("{");
         text.AppendLine(
             "    /// <summary>The job of a number: the job type that owns it, or an <see cref=\"UnportedJob\"/>.</summary>"
         );
-        text.AppendLine($"    public static {job.Name} Of(int code) => code switch");
+        text.AppendLine($"    public static {job.JobName} Of(int code) => code switch");
         text.AppendLine("    {");
         foreach (var entry in jobs)
         {
@@ -179,7 +216,7 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
         text.AppendLine(
             "    /// <summary>Whether a job type owns the number, so that an <see cref=\"UnportedJob\"/> may not hold it.</summary>"
         );
-        text.AppendLine("    public static bool IsPorted(int code) =>");
+        text.AppendLine("    internal static bool IsPorted(int code) =>");
         text.Append("        ");
         text.Append(
             jobs.Count == 0
@@ -197,22 +234,30 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
         return text.ToString();
     }
 
-    private sealed class JobType
+    /// <summary>Where a declaration's name stands, kept as values so that a model of it compares equal across compilations.</summary>
+    private sealed record Place(string Path, TextSpan Span, LinePositionSpan Lines)
     {
-        public JobType(string name, int first, int last, Location location)
+        public static Place Of(Location location)
         {
-            Name = name;
-            First = first;
-            Last = last;
-            Location = location;
+            var line = location.GetLineSpan();
+            return new Place(line.Path, location.SourceSpan, line.Span);
         }
 
-        public string Name { get; }
-
-        public int First { get; }
-
-        public int Last { get; }
-
-        public Location Location { get; }
+        public Location ToLocation() => Location.Create(Path, Span, Lines);
     }
+
+    /// <summary>
+    /// What the generator keeps of a declaration: <c>Job</c> itself, or a type derived from it. <c>First</c> and <c>Last</c> are
+    /// null where the type declares no constant for them.
+    /// </summary>
+    private sealed record Declaration(
+        string Name,
+        string JobNamespace,
+        string JobName,
+        bool IsJob,
+        bool IsSealed,
+        int? First,
+        int? Last,
+        Place Place
+    );
 }

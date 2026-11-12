@@ -101,6 +101,30 @@ public sealed class JobTests
     }
 
     [TestMethod]
+    public void ASettlerIsNeverWithoutAJob()
+    {
+        Assert.ThrowsExactly<ArgumentNullException>(() => new Settler(null!, 0, 1, 2, 0, new LooksForTree()));
+        var settler = new Settler(Job.Carrier, 0, 1, 2, 0, new LooksForTree());
+        Assert.ThrowsExactly<ArgumentNullException>(() => settler.TakeUp(null!));
+        Assert.AreEqual(Job.Carrier, settler.Job);
+    }
+
+    [TestMethod]
+    public void AWorkerRequestIsNeverWithoutAJob()
+    {
+        Assert.ThrowsExactly<ArgumentNullException>(() => new WorkerRequest(null!, Good.None));
+    }
+
+    [TestMethod]
+    public void AKeptAccessorGivesTheSameJobOnEveryCall()
+    {
+        var first = new[] { Job.Carrier, Job.Woodcutter };
+        var second = new[] { Job.Carrier, Job.Woodcutter };
+        Assert.AreSame(first[0], second[0]);
+        Assert.AreSame(first[1], second[1]);
+    }
+
+    [TestMethod]
     public void TheTableMembersKeepTheirValueForEveryNumberFrom0To31()
     {
         for (var code = 0; code <= 31; code++)

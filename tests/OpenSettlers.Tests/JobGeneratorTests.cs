@@ -130,6 +130,99 @@ public sealed class JobGeneratorTests
     }
 
     [TestMethod]
+    public void AnOverlapNamesANumberTheTwoJobsShare()
+    {
+        var (diagnostics, _, _) = Run(
+            Domain,
+            JobSource("public sealed record", "Alpha", "public const int Number = 11;"),
+            WellFormed[3]
+        );
+
+        StringAssert.Contains(diagnostics.Single(d => d.Id == "JOB002").GetMessage(), "number 11 ");
+    }
+
+    [TestMethod]
+    public void AJobSplitOverPartsThatBothNameJobIsOneJob()
+    {
+        var (diagnostics, text, _) = Run(
+            Domain,
+            """
+            namespace OpenSettlers.Domain;
+            public sealed partial record Split : Job { public const int Number = 9; public override int Code => Number; }
+            public sealed partial record Split : Job;
+            """
+        );
+
+        Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+        StringAssert.Contains(text, "9 => new global::OpenSettlers.Domain.Split()");
+    }
+
+    [TestMethod]
+    public void TheGeneratedIsPortedIsNotPublicApi()
+    {
+        var (_, text, _) = Run(WellFormed);
+
+        StringAssert.Contains(text, "internal static bool IsPorted");
+        Assert.IsFalse(text.Contains("public static bool IsPorted"));
+    }
+
+    [TestMethod]
+    public void ALastNumberThatIsNotAConstantIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, _, _) = Run(
+            Domain,
+            """
+            namespace OpenSettlers.Domain;
+            public sealed record Fickle(int Level) : Job
+            {
+                public const int Number = 3;
+                public static readonly int LastNumber = 4;
+                public override int Code => Number + Level;
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "JOB003");
+        StringAssert.Contains(error.GetMessage(), "Fickle");
+    }
+
+    [TestMethod]
+    public void AnUnrelatedChangeToTheCompilationRerunsNoOutput()
+    {
+        var compilation = CSharpCompilation.Create(
+            "Domain",
+            WellFormed.Select(source => CSharpSyntaxTree.ParseText(source)),
+            References,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+        );
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [new JobLookupGenerator().AsSourceGenerator()],
+            driverOptions: new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None, true)
+        );
+        driver = driver.RunGenerators(compilation);
+        driver = driver.RunGenerators(
+            compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText("namespace Other; public sealed class Unrelated;"))
+        );
+
+        var reasons = driver
+            .GetRunResult()
+            .Results.Single()
+            .TrackedOutputSteps.Values.SelectMany(steps => steps)
+            .SelectMany(step => step.Outputs)
+            .Select(output => output.Reason)
+            .ToArray();
+        Assert.IsTrue(reasons.Length > 0);
+        CollectionAssert.AreEqual(
+            Enumerable.Repeat(IncrementalStepRunReason.Unchanged, reasons.Length).ToArray(),
+            reasons
+                .Select(reason =>
+                    reason == IncrementalStepRunReason.Cached ? IncrementalStepRunReason.Unchanged : reason
+                )
+                .ToArray()
+        );
+    }
+
+    [TestMethod]
     public void ANumberThatIsNotAConstantIsABuildErrorNamingTheClass()
     {
         var (diagnostics, _, _) = Run(
