@@ -56,8 +56,11 @@ constant of `Job`. Add a job as its own files, layer by layer:
    A job without a look draws nothing; `JobCoverageTests` fails a job that has rules and no look under a source.
 
 A job without a module of some kind builds and keeps the shared defaults. The carrier's, the castle roster's, and the walk
-home's rules stay hand-wired core. Test doubles in the test assembly are not found by the generators: a test proves
-the generators on fixture jobs compiled through `CSharpGeneratorDriver` (`FixtureJobTests`).
+home's rules stay hand-wired core. Test doubles in the test assembly are not found by the domain, application, and
+adapter generators, which write a registry only into the compilation that declares their base type: a test proves those
+generators on fixture jobs compiled through `CSharpGeneratorDriver` (`FixtureJobTests`). The test project compiles the
+map view's sources with the looks generator, so a look declared in the test assembly enters the test compilation's look
+registries.
 
 A malformed module fails the build with a message that names the class:
 

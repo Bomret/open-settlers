@@ -12,8 +12,8 @@ namespace OpenSettlers.Tests;
 
 // A job written only as its own files (ADR 0016) appears in every layer's generated registry with no edit elsewhere. Each layer is
 // its own compilation with the shared engine files of that layer stood in for, as the build has them (the Domain, the Application, the
-// Adapters, the map view), and the four generators run over each. Test doubles in the test assembly are not found by the generators,
-// so the fixture is compiled here.
+// Adapters, the map view), and the four generators run over each. Test doubles in the test assembly are not found by the domain,
+// application, and adapter generators, so the fixture is compiled here.
 [TestClass]
 public sealed class FixtureJobTests
 {
