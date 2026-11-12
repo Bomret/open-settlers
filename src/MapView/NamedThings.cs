@@ -215,7 +215,9 @@ public sealed class NamedThings
             holds = actual == (_ids.GetValueOrDefault(step.Value) ?? step.Value);
         else
         {
-            Numeric(actual, out var have);
+            if (!Numeric(actual, out var have))
+                return $"{text} failed: '{actual}' is no number";
+
             holds = PlayState.Compare(have, step.Number, step.Op);
         }
 
