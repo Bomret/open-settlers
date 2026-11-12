@@ -27,6 +27,12 @@ public abstract record Activity
     /// </summary>
     public virtual bool IsDrawn => false;
 
+    /// <summary>
+    /// Whether a settler in this activity holds a good: a carrier on its road with a good in its hands, or a settler on its
+    /// free walk back to its hut with the good it took. The play script's <c>fast-forward &lt;job&gt; carrying</c> waits for it.
+    /// </summary>
+    public virtual bool Carries => false;
+
     /// <summary>Where the activity takes the settler along the roads, or null where it takes it nowhere along them.</summary>
     public virtual Errand? GoingTo => null;
 
@@ -81,6 +87,9 @@ public sealed record WalksRoad(Load? Load, Heading Heading, int Waits = 0, bool 
 
     /// <inheritdoc />
     public override bool IsDrawn => true;
+
+    /// <inheritdoc />
+    public override bool Carries => Load is { Good.IsNone: false };
 }
 
 /// <summary>State 4: the settler has stepped through a door and waits out what the door's speed leaves of the step.</summary>
@@ -268,6 +277,9 @@ public sealed record WalksFree(Trip Trip, bool EyesHeaps = false) : Activity
 
     /// <inheritdoc />
     public override bool IsDrawn => true;
+
+    /// <inheritdoc />
+    public override bool Carries => Trip.Purpose is BackToHut { Carrying: true };
 }
 
 /// <summary>State 17: the woodcutter cuts the tree it stands on, one falling step at a time.</summary>

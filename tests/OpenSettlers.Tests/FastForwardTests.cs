@@ -84,6 +84,53 @@ public sealed class FastForwardTests
     }
 
     [TestMethod]
+    public void ABuilderStateStepParsesAndAStonecutterCarryingStepParses()
+    {
+        Assert.AreEqual(Job.Builder, ((FastForwardJobStep)Step("fast-forward builder state 9 max 10")).Job);
+        Assert.AreEqual(9, ((FastForwardJobStep)Step("fast-forward builder state 9 max 10")).State);
+
+        var carrying = (FastForwardJobStep)Step("fast-forward stonecutter carrying max 10");
+
+        Assert.AreEqual(Job.Stonecutter, carrying.Job);
+        Assert.IsNull(carrying.State);
+    }
+
+    [TestMethod]
+    public void EveryJobTheNameTableNamesParses()
+    {
+        for (var code = 0; code < 256; code++)
+        {
+            if (OpenSettlers.Simulation.NameTable.JobName(code) is not { } name)
+                continue;
+
+            Assert.AreEqual(Job.Of(code), ((FastForwardJobStep)Step($"fast-forward {name} state 1 max 1")).Job, name);
+        }
+    }
+
+    [TestMethod]
+    public void AnUnknownJobNameIsRefusedWithTheNamesTheTableHolds()
+    {
+        var problem = Problem("fast-forward miller state 1 max 5");
+
+        Assert.StartsWith("play/t.play line 1: 'miller' is not a job name, use ", problem);
+        foreach (var name in new[] { "carrier", "digger", "builder", "woodcutter", "stonecutter", "forester" })
+            Assert.Contains(name, problem);
+    }
+
+    [TestMethod]
+    public void OnlyACarriersLoadedRoadWalkAndAFreeWalkBackCarryingCarryAGood()
+    {
+        var road = new Heading();
+        var load = new Load(Good.Log, 0);
+        Assert.IsTrue(new WalksRoad(load, road).Carries);
+        Assert.IsFalse(new WalksRoad(null, road).Carries);
+        Assert.IsFalse(new WalksRoad(new Load(Good.None, 0), road).Carries);
+        Assert.IsTrue(new WalksFree(new Trip(default, new BackToHut(true))).Carries);
+        Assert.IsFalse(new WalksFree(new Trip(default, new BackToHut(false))).Carries);
+        Assert.IsFalse(new WaitsInCastle().Carries);
+    }
+
+    [TestMethod]
     [DataRow("17")]
     [DataRow("0x11")]
     [DataRow("0X11")]
@@ -144,7 +191,6 @@ public sealed class FastForwardTests
     }
 
     [TestMethod]
-    [DataRow("fast-forward baker state 1 max 5", "'baker' is not woodcutter or carrier")]
     [DataRow("fast-forward woodcutter state zz max 5", "'zz' is not a whole number of zero or more")]
     [DataRow("fast-forward woodcutter state -1 max 5", "'-1' is not a whole number of zero or more")]
     [DataRow("fast-forward woodcutter state 0x max 5", "'0x' is not a whole number of zero or more")]

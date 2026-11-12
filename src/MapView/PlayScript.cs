@@ -581,13 +581,9 @@ public sealed class PlayScript
         if (!state && !(args.Length == 4 && args[1] == "carrying" && args[2] == "max"))
             return (null, Usage);
 
-        // The job names are the name table's (ADR 0010); fast-forward watches only these two jobs.
-        var jobs = new[] { Domain.Job.Woodcutter, Domain.Job.Carrier };
-        var watched = jobs.Where(job => Simulation.NameTable.JobName(job.Code) == args[0])
-            .Cast<Domain.Job?>()
-            .FirstOrDefault();
-        if (watched is not { } job)
-            return (null, $"'{args[0]}' is not woodcutter or carrier");
+        // The job names are the name table's (ADR 0010).
+        if (FastForwardJobStep.Named(args[0]) is not { } job)
+            return (null, $"'{args[0]}' is not a job name, use {string.Join(", ", FastForwardJobStep.Names())}");
 
         var n = 0;
         if (state && !Whole(args[2], out n))
