@@ -2,7 +2,7 @@
 
 An open-source engine for Die Siedler (Blue Byte, 1993), built on Godot 4 with C#. It ships no game content: it reads the files of a Die Siedler install the player owns.
 
-Status: the engine reads the data files of an install and generates the map of a seed. It runs a game on that map in the game view. The game has a castle, flags, roads, a woodcutter's hut, carriers, and goods. The engine has five modes: the asset check, the asset browser, the map view, the game view, and seed info. [The roadmap](docs/roadmap.md) plans the milestones to the free-play release.
+Status: the engine reads the data files of an install and generates the map of a seed. It runs a game on that map in the game view. The game has a castle, flags, roads, carriers, goods, and building sites. Builders and diggers work a site. It has four buildings: a woodcutter's hut, a forester's hut, a stonecutter's hut, and a sawmill. The engine has five modes: the asset check, the asset browser, the map view, the game view, and seed info. [The roadmap](docs/roadmap.md) plans the milestones to the free-play release.
 
 ## Requirements
 
@@ -60,7 +60,7 @@ The asset browser opens a window:
 mise run browser
 ```
 
-It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. Its text and lists scale with the window. It shows a message instead when there is no usable install, two asset kinds share a name, or two preview views draw one preview type (it names the type and both views), and a notice when the selected kind lists no assets.
+It lists the asset kinds, the assets of the selected kind, and a preview of the selected asset. Its text and lists scale with the window. It shows a message instead when there is no usable install or two asset kinds share a name. It also shows a message when two preview views draw one preview type, and the message names the type and both views. It shows a notice when the selected kind lists no assets.
 
 The map view opens a window with a seed field and a size picker above the terrain of the generated map:
 
@@ -142,13 +142,13 @@ A play script has one step per line. Blank lines and lines that start with `#` a
 Named things. These steps work in the game view and fail in the map view.
 
 - `name <alias> <column> <row> <what>` saves the thing ID of the one thing at the node that matches `what` (the vocabulary and node rules of `expect-at`) under `alias`. It fails when no thing or several match, and lists what the node holds. Only a settler, building, or flag has an ID. An alias is letters, digits, `-`, and `_`, and is not a field of `expect`.
-- `mark <label>` saves the game as it stands now under a label that is not a whole number that reads as a tick (one within the range of a long).
+- `mark <label>` saves the game as it stands now under a label that is not a tick. A label of digits alone that fits in a 64-bit integer reads as a tick, and `mark` refuses it.
 - `expect <alias>.<field>[@<label>|@<tick>] <op> <value>` checks a field of the named thing now, at a mark, or at the end of a tick, with the operators of `expect`. Now, the fields are the thing's `list` fields, `x` and `y` included. At a mark or tick, the fields are those of the thing's state in its events: a settler's `job`, `state`, `player`, `mode`, `target`, `next`, `heading`, `frame`, `timer`, `stamp`, `x`, and `y`; a building's `type`, `constructing`, `x`, `y`, `flag`, `status`, `worker`, `stamp`, `fill`, and `progress`; a flag's `x`, `y`, `status`, `road0` to `road5`, and `good0` to `good7`. Values are decimal, `0x` hex, `true`, or `false`. The links `id`, `flag-id`, and `worker-id` take only `=` and show only now. They compare with a thing ID or with another alias. A check on a field whose actual value is no number fails and names the value. An `expect <field>` line without a dot keeps its meaning.
 - `expect-event <alias> <type> [cause <cause>]` passes when the thing has an event of that type, with that cause kind when given. A failure lists the thing's events. The types are those of `EventType.All` in `src/Application/EventType.cs`. The causes are `placed` and `razed` (a player's command), `layout`, and the rule areas `settlers`, `carriers`, `woodcutting`, `stonecutting`, `forestry`, `walk-home`, `goods`, and `removal`.
 - `expect-gone <alias>` passes only when no thing in the game has the alias's ID, which holds for a thing whose slot a new thing filled. Any other check on a gone thing (`expect` on a field, now, and `expect-event`) fails and says `gone at tick N, cause <cause>`, from the thing's last event. `events` is an output step, not a check: it writes the history a gone thing keeps.
 - `events <alias> <file>` writes `play-out/<script name>/<file>.events.txt`, one line for each event of the thing: `tick=<n> type=<type> cause=<cause> [other=<id>] <field>=<value> ...`. Two runs of the same script give equal files.
 
-An unknown alias, mark, field, event type, or cause, an alias or mark given twice, and a link value holding `@` are problems in the script and name the line. `play/named-woodcutter.play` names the woodcutter of `layouts/woodcutter.jsonc`, checks it now and at a mark, and checks an event.
+These are problems in the script, and each names the line: an unknown alias, mark, field, event type, or cause; an alias or mark given twice; a link value holding `@`. `play/named-woodcutter.play` names the woodcutter of `layouts/woodcutter.jsonc`, checks it now and at a mark, and checks an event.
 
 #### Layouts
 
@@ -172,7 +172,16 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 
 - `OpenSettlers.csproj`, `project.godot`: the Godot project.
 - `mise.toml`: the pinned development tools and the tasks.
-- `src/`: the engine code. `Domain/` holds the typed model and the random generator, `Application/` the game with its commands, roads, settlers, carriers, goods, woodcutting, and removal, and `Adapters/Simulation/` the importers and exporters of the original's bytes, the seed, and the map generator (three assemblies, ADR 0013). `Assets/` holds the asset kinds and the asset check, `Formats/` the file readers, `Launch/` the command-line arguments, the decision whether a map launch opens or exits, and the text of a crash, `MapView/` the terrain, object, road, and settler drawing plans, the click handling, and the camera, and `Viewer/` the asset browser, the map view (`MapViewControl.cs`, which also shows the game view), the play driver, and the shaders.
+- `src/`: the engine code, in these folders:
+  - `Domain/` holds the typed model and the random generator.
+  - `Application/` holds the game with its commands, roads, settlers, carriers, goods, and removal. It also holds the job rules: woodcutting, stonecutting, forestry, and the construction rules of `BuilderRules.cs`, `DiggerRules.cs`, and `ForesterRules.cs`.
+  - `Adapters/Simulation/` holds the importers and exporters of the original's bytes, the seed, and the map generator. Domain, Application, and Adapters are three assemblies ([ADR 0013](docs/adr/0013-the-simulation-is-typed-and-the-original-s-bytes-stay-at-its-edge.md)).
+  - `Generators/` holds the source generators that find the job modules ([ADR 0016](docs/adr/0016-jobs-are-types-and-each-layer-finds-its-job-modules.md)).
+  - `Assets/` holds the asset kinds and the asset check.
+  - `Formats/` holds the file readers.
+  - `Launch/` holds the command-line arguments, the decision whether a map launch opens or exits, and the text of a crash.
+  - `MapView/` holds the terrain, object, road, and settler drawing plans, the click handling, and the camera.
+  - `Viewer/` holds the asset browser, the map view, the play driver, and the shaders. `MapViewControl.cs` also shows the game view.
 - `.gdignore` files: the C# folders outside the Godot assembly (`src/Domain/`, `src/Application/`, `src/Adapters/`, `src/Generators/`, `tests/`) carry one, so the Godot editor does not scan them. The editor writes a `.uid` file beside each script and shader it scans; those are committed with their source.
 - `content/`: the content sets the repository ships (ADR 0015). `content/open-settlers/` is the Open Settlers graphics source: a manifest, PNGs, and a `.gdignore`.
 - `play/`: the checked-in play scripts ("Run a play script").

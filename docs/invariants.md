@@ -52,9 +52,9 @@ Check: `NameTableTests` checks that every entry carries its evidence and that a 
 
 Class: architecture
 Concepts: Thing ID, Event, Simulation
-Statement: Recording never changes the game. The thing-ID counters and the event store stay out of `Game.Digest()`, and no rule reads them to decide anything. The same seed and commands give the same digest as before the feature, and every existing test passes unchanged.
+Statement: Recording never changes the game. The thing-ID counters and the event store stay out of `Game.Digest()`, and no rule reads them to decide anything. A run of the same seed and commands gives the digests that `golden.txt` pins, whether or not anything reads the events.
 Breaks: silently
-Check: a test runs the same seed and commands and compares the digest with a value taken before recording existed; reviewers check that no rule reads the store or a counter.
+Check: `GoldenTests` plays each scenario once, reads no event until the run has ended, and compares the digests at each checkpoint with the lines of `golden.txt`; reviewers check that no rule reads the store or a counter.
 
 ### INV-0008
 
