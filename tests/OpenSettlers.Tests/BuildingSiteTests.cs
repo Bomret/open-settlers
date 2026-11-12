@@ -313,4 +313,23 @@ public sealed class BuildingSiteTests
 
         Assert.AreNotEqual(wood.Digest(), stone.Digest());
     }
+
+    [TestMethod]
+    public void TwoPlacementsAtOneNodeGiveTheSameDigestInEitherOrderOfEnqueue()
+    {
+        var forward = World();
+        var backward = World();
+        var (x, y, _) = Find(forward, 4);
+        var woodcutter = new Command(forward.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: BuildingType.Woodcutter);
+        var sawmill = woodcutter with { Building = BuildingType.Sawmill };
+
+        forward.Enqueue(woodcutter);
+        forward.Enqueue(sawmill);
+        backward.Enqueue(sawmill);
+        backward.Enqueue(woodcutter);
+        forward.Tick();
+        backward.Tick();
+
+        Assert.AreEqual(forward.Digest(), backward.Digest());
+    }
 }

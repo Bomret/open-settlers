@@ -97,4 +97,57 @@ public sealed class CommandQueueTests
         Assert.IsTrue(queue.TryTakeDue(0, out var command));
         CollectionAssert.AreEqual(new[] { 1, 2 }, (System.Collections.ICollection)command.Directions!);
     }
+
+    static Command Place(BuildingType? building) =>
+        new(1, 0, CommandKind.PlaceBuilding, 4, 4, Building: building);
+
+    static Command Taken(CommandQueue queue)
+    {
+        Assert.IsTrue(queue.TryTakeDue(1, out var command));
+        return command;
+    }
+
+    [TestMethod]
+    public void TwoPlacementsThatDifferInTheBuildingAreBothKeptInTheSameOrderWhicheverIsAddedFirst()
+    {
+        var woodcutter = Place(BuildingType.Woodcutter);
+        var sawmill = Place(BuildingType.Sawmill);
+        var forward = new CommandQueue();
+        forward.Add(woodcutter, 0);
+        forward.Add(sawmill, 0);
+        var backward = new CommandQueue();
+        backward.Add(sawmill, 0);
+        backward.Add(woodcutter, 0);
+
+        Assert.AreEqual(2, forward.Count);
+        Assert.AreEqual(2, backward.Count);
+        Assert.AreEqual(Taken(forward), Taken(backward));
+    }
+
+    [TestMethod]
+    public void ACommandWithNoBuildingAndOneWithABuildingAreBothKeptInAFixedOrder()
+    {
+        var none = Place(null);
+        var built = Place(BuildingType.Woodcutter);
+        var forward = new CommandQueue();
+        forward.Add(none, 0);
+        forward.Add(built, 0);
+        var backward = new CommandQueue();
+        backward.Add(built, 0);
+        backward.Add(none, 0);
+
+        Assert.AreEqual(2, forward.Count);
+        Assert.AreEqual(2, backward.Count);
+        Assert.AreEqual(Taken(forward), Taken(backward));
+    }
+
+    [TestMethod]
+    public void AnExactRepeatOfAPlacementQueuesOnce()
+    {
+        var queue = new CommandQueue();
+        queue.Add(Place(BuildingType.Sawmill), 0);
+        queue.Add(Place(BuildingType.Sawmill), 0);
+
+        Assert.AreEqual(1, queue.Count);
+    }
 }
