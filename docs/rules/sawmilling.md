@@ -85,7 +85,7 @@ The figure handler of job 6 is at `0x43fc21`, reached by the stub at `0x43f774`.
 - `0x1700` in state 5 with byte 15 at `0xd`, the step out with the plank.
 - `0x1580` for a byte from 0x80, the saw.
 
-The handler requests a sound at some of the saw's frames, which is **not ported**. It also moves the record's word at `+0x10` by 4 for those frames. The recording shows no visible effect of that move. The engine reads the three words from the program's instructions (`RuleTables.Get<SawmillerFigureAdds>(Job.Sawmiller)`).
+The handler requests a sound at some of the saw's frames, which is **not ported**. It also moves the record's word at `+0x10` by 4 for those frames. The recording shows no visible effect of that move. The engine reads the three words from the program's instructions (`RuleTables.Get<SawmillerFigureAdds>(new Sawmiller())`).
 
 The engine draws states 4, 5, `0x18` while he saws, and `0xd`. In state `0x18` with no log, byte 11 is 0 and the recording draws nothing. It also draws nothing for the stonecutter in the building. **Inferred:** state `0xb` is not drawn, as state 7 is not. In state `0xb` he waits at the door for the node or a place on the flag.
 
@@ -114,4 +114,4 @@ The file `src/Application/SawmillerRules.cs` holds these routines. `SawmillerRul
 - `PutDown` is state `0xd`.
 - `Turn` is the module's building hook. `MainPass` calls it for each building after `CastleRoster.HandleBuilding`, and it keeps the rank of a finished sawmill.
 
-The activities are `Saws` (state `0x18`, with a flag for the part), `StepsOutWithGood` (state `0xb`), and `PutsDownGood` (state `0xd`). `Job.Sawmiller` is job 6. The plank is laid through `GoodsTransport.LayGood`, as the woodcutter's log is. Logs and planks go by the request search and the storage search of the goods, which need no rule of their own.
+The activities are `Saws` (state `0x18`, with a flag for the part), `StepsOutWithGood` (state `0xb`), and `PutsDownGood` (state `0xd`). `Sawmiller` is job 6. The plank is laid through `GoodsTransport.LayGood`, as the woodcutter's log is. Logs and planks go by the request search and the storage search of the goods, which need no rule of their own.
