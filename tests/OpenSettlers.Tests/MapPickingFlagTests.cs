@@ -55,6 +55,31 @@ public sealed class MapPickingFlagTests
     }
 
     [TestMethod]
+    public void AClickOutsideEveryFlagBoxPicksTheNearestNode()
+    {
+        // The flag at (10,10) stands at (160,200): its box covers x 158 to 174, y 181 to 200. A click at (180,200) lies
+        // 6 pixels east of the box. The nearest node is (11,10) at (192,200), 12 pixels away; the flag is 20 away.
+        var map = FlagsAt((10, 10, 0));
+
+        var picked = PickAt(map, (180, 200), ObjectDraws.FlagGeometry);
+
+        Assert.AreEqual((11, 10), picked);
+    }
+
+    [TestMethod]
+    public void AClickInTheBoxOfAFlagInTheCopyToTheWestPicksTheFlag()
+    {
+        // (31,10) stands at (832,200) and in the copy one map width (1024) to the west at (-192,200): box x -194 to
+        // -178, y 181 to 200. A click at (-182,183), the top of the cloth, lies in it; the node nearest to it is (31,9)
+        // at (-176,180), 6.7 pixels away, and the flag's node is 17 away.
+        var map = FlagsAt((31, 10, 0));
+
+        var picked = PickAt(map, (-182, 183), ObjectDraws.FlagGeometry);
+
+        Assert.AreEqual((31, 10), picked);
+    }
+
+    [TestMethod]
     public void AClickInTwoFlagBoxesOfOneRowPicksTheEasternFlag()
     {
         // The map view's boxes never overlap within a row (the nodes are 32 pixels apart and the boxes 16 wide), so
