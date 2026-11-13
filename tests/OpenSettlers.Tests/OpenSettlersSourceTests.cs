@@ -635,6 +635,35 @@ public sealed class OpenSettlersSourceTests
         CollectionAssert.AreEqual(new byte[] { 10, 20, 30, 255 }, first.Rgba[4..]);
     }
 
+    // The rule is the doc comment of PlayerColours: a player takes the colour of its number modulo the number of colours.
+    // Modulo is the mathematical one, so -1 takes the colour of 7 and -8, 8, and int.MinValue (a multiple of 8) the colour of 0.
+    [TestMethod]
+    [DataRow(-1, 7)]
+    [DataRow(-8, 0)]
+    [DataRow(-9, 7)]
+    [DataRow(8, 0)]
+    [DataRow(9, 1)]
+    [DataRow(int.MinValue, 0)]
+    [DataRow(int.MaxValue, 7)]
+    public void APlayerNumberOutOfTheEightTakesTheColourOfItsNumberModuloEight(int player, int same)
+    {
+        Assert.AreEqual(OpenSettlersSource.PlayerColour(same), OpenSettlersSource.PlayerColour(player));
+    }
+
+    [TestMethod]
+    public void ANegativePlayerIsDrawnInItsColour()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("marked.png", "2x1:mark");
+        folder.Entries["settler/carrier/walks"] = ContentFolder.Entry("marked.png", "0, 0");
+        var source = folder.Load();
+
+        var image = source.Draw(Settler(new Carrier(), Walking(), player: -1))!.Image!;
+
+        var (r, g, b) = OpenSettlersSource.PlayerColour(7);
+        CollectionAssert.AreEqual(new byte[] { r, g, b, 255, 10, 20, 30, 255 }, image.Rgba);
+    }
+
     [TestMethod]
     public void TheSameFrameAndPlayerAnswerOneImageInstance()
     {
@@ -759,6 +788,38 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["road/east"] = ContentFolder.Entry("none.png", "0, 0");
 
         Refuses(folder, "road/east", "none.png", "cannot be decoded");
+    }
+
+    // A decoder whose images claim a size their pixels do not fill: 2 x 2 pixels, 15 bytes of RGBA.
+    sealed class ShortDecoder : IImageDecoder
+    {
+        public DecodedImage? Decode(string path) => new(2, 2, new byte[15]);
+    }
+
+    [TestMethod]
+    public void AnImageWhoseRgbaLengthIsNotFourBytesAPixelIsRefusedAsUndecodable()
+    {
+        using var folder = new ContentFolder();
+        folder.Load();
+
+        var e = Assert.Throws<InvalidDataException>(() => OpenSettlersSource.Load(folder.Root, new ShortDecoder()));
+
+        StringAssert.Contains(e.Message, "manifest.json");
+        StringAssert.Contains(e.Message, "a.png");
+        StringAssert.Contains(e.Message, "cannot be decoded");
+    }
+
+    [TestMethod]
+    [DataRow("5")]
+    [DataRow("null")]
+    [DataRow("[\"a.png\"]")]
+    [DataRow("\"\"")]
+    public void AnImageValueThatIsNoStringIsRefusedByFileAndKey(string image)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["road/south"] = $$"""{ "image": {{image}}, "anchor": [0, 0] }""";
+
+        Refuses(folder, "manifest.json", "road/south", "no image");
     }
 
     [TestMethod]

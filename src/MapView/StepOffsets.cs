@@ -38,7 +38,7 @@ public sealed class StepOffsets
 
     /// <summary>Reads the table from an archive already read. Throws <see cref="System.IO.InvalidDataException"/> where the entry is absent.</summary>
     public static StepOffsets From(Archive archive) =>
-        new(ObjectGraphics.Read(archive, Entry, "the walk sequences", data => data.ToArray()));
+        new(TerrainGraphics.Entry(archive, Entry, "the walk sequences", data => data.ToArray()));
 
     /// <summary>The bytes of entry 2, which the History Edition's figure tables read the figure bytes from.</summary>
     internal byte[] Sequences => _data;

@@ -34,11 +34,26 @@ public sealed class GraphicsSourceBoundaryTests
     }
 
     // The settlers' step offsets come from the install under every graphics source (ADR 0014, Consequences; INV-0010): the
-    // class reads entry 2 of the graphics archive, and only through the archive reading names below.
+    // class reads entry 2 of the graphics archive, and only through the one archive-entry helper of TerrainGraphics, which
+    // the terrain, road, object, and settler graphics read their entries through too.
     [TestMethod]
     public void TheStepOffsetsReadOnlyTheArchiveEntryOfTheWalkSequences()
     {
-        AssertMentions("src/MapView/StepOffsets.cs", ["TerrainGraphics", "ObjectGraphics"]);
+        AssertMentions("src/MapView/StepOffsets.cs", ["TerrainGraphics"]);
+    }
+
+    [TestMethod]
+    public void NoClassReadsAnArchiveEntryButThroughTheOneHelper()
+    {
+        var folder = Path.GetDirectoryName(Path.Combine(RootOf(), "src/MapView/x"))!;
+        foreach (var file in Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("ObjectGraphics.Read(", text, $"{file} reads an entry through a second helper");
+        }
+
+        Assert.Contains("internal static T Entry<T>(", Read("src/MapView/TerrainGraphics.cs"));
+        Assert.DoesNotContain("static T Read<T>(", Read("src/MapView/ObjectGraphics.cs"));
     }
 
     // The figure handlers and the figure adds are the History Edition's (ADR 0016, INV-0010): the looks of that source and the figure

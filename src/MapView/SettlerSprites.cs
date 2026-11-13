@@ -63,12 +63,12 @@ public sealed class SettlerSprites
         }
 
         var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
-        var palette = ObjectGraphics.Read(archive, 3, "the palette", data => PaletteFile.Read(data.Span));
+        var palette = TerrainGraphics.Entry(archive, 3, "the palette", data => PaletteFile.Read(data.Span));
         var steps = StepOffsets.From(archive);
         ObjectImage? shadow = null;
         if (archive.RowCount > ShadowEntry && archive[ShadowEntry].State != EntryState.Absent)
         {
-            shadow = ObjectGraphics.Read(
+            shadow = TerrainGraphics.Entry(
                 archive,
                 ShadowEntry,
                 "the shadow mask",

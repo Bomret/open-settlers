@@ -86,6 +86,11 @@ public sealed class TerrainGraphics
         return new TerrainGraphics { Masks = masks, Textures = textures };
     }
 
+    /// <summary>
+    /// Reads entry <paramref name="number"/> of the graphics archive with <paramref name="read"/>; the one reader every map
+    /// view graphics class uses. An absent or unreadable entry fails with an <see cref="InvalidDataException"/> naming
+    /// <paramref name="what"/> and the entry.
+    /// </summary>
     internal static T Entry<T>(Archive archive, int number, string what, Func<ReadOnlyMemory<byte>, T> read)
     {
         try
