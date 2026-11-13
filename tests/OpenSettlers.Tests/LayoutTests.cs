@@ -335,7 +335,7 @@ public sealed class LayoutTests
         var read = Layout.ReadFile("");
 
         Assert.IsNull(read.Layout);
-        Assert.HasCount(1, read.Problems);
+        CollectionAssert.AreEqual(new[] { "'': file: the path is empty" }, read.Problems.ToArray());
     }
 
     [TestMethod]

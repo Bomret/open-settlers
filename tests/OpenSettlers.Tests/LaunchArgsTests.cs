@@ -551,6 +551,17 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
+    [DataRow("--play")]
+    [DataRow("--layout")]
+    public void AnEmptyPlayOrLayoutValueIsOneProblemLikeAnEmptyGame(string flag)
+    {
+        var args = LaunchArgs.Parse(["--map", flag, ""], null, movieMaker: true);
+
+        Assert.IsTrue(args.Problems.Contains($"{flag} needs a value"));
+        Assert.IsNull(flag == "--play" ? args.Play : args.Layout);
+    }
+
+    [TestMethod]
     public void ARepeatedGameFlagKeepsTheFirstAndIsNoProblem()
     {
         var args = LaunchArgs.Parse(["--game", "a", "--game", "b"], "/env/install");

@@ -318,9 +318,20 @@ public sealed class PlayScript
     /// <summary>Reads the script at <c>path</c>; a file that cannot be read, or an empty path, is one problem and no steps.</summary>
     public static PlayScript Read(string path)
     {
+        if (path.Length == 0)
+        {
+            return new PlayScript
+            {
+                Path = path,
+                Steps = [],
+                Problems = ["'': script: the path is empty"],
+            };
+        }
+
+        string text;
         try
         {
-            return Parse(File.ReadAllText(path), path);
+            text = File.ReadAllText(path);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
@@ -331,6 +342,8 @@ public sealed class PlayScript
                 Problems = [$"{path}: script cannot be read: {e.Message}"],
             };
         }
+
+        return Parse(text, path);
     }
 
     /// <summary>Parses <c>text</c>; <c>path</c> only names the script in problems and in <see cref="Path"/>.</summary>

@@ -46,6 +46,18 @@ public sealed class MapLaunchTests
         Assert.AreEqual(new MapLaunch.Exit(4, "ERROR unknown flag --bogus", LaunchStream.Stderr), outcome);
     }
 
+    // Sweep #244 (#264): an empty --play or --layout value is no value, as an empty --game is; the launch exits with the
+    // bad-argument status and one problem before it opens an install or reads the project folder.
+    [TestMethod]
+    [DataRow("--map", "--play")]
+    [DataRow("--game-view", "--layout")]
+    public void AnEmptyPlayOrLayoutPathExitsFourOnStderrWithOneProblem(string mode, string flag)
+    {
+        var outcome = Decide(Args(mode, flag, ""));
+
+        Assert.AreEqual(new MapLaunch.Exit(4, $"ERROR {flag} needs a value", LaunchStream.Stderr), outcome);
+    }
+
     [TestMethod]
     public void ALayoutFileThatFailsToLoadExitsFourOnStdoutWithItsOwnMessage()
     {

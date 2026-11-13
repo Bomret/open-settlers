@@ -69,8 +69,7 @@ public sealed class LayoutLoadTests
 
         Assert.AreEqual(4, code);
         Assert.IsNull(layout);
-        StringAssert.StartsWith(message, "ERROR : ");
-        Assert.DoesNotContain("; ", message);
+        Assert.AreEqual("ERROR '': file: the path is empty", message);
     }
 
     [TestMethod]

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 
@@ -362,7 +363,7 @@ public sealed class PlayScriptTests
     {
         var script = PlayScript.Read("");
 
-        Assert.HasCount(1, script.Problems);
+        CollectionAssert.AreEqual(new[] { "'': script: the path is empty" }, script.Problems.ToArray());
         Assert.IsEmpty(script.Steps);
     }
 

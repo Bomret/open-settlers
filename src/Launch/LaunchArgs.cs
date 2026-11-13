@@ -216,12 +216,20 @@ public sealed class LaunchArgs
                 else if (flag == PlayFlag)
                 {
                     playGiven = true;
-                    play = value;
+                    play = value.Length > 0 ? value : null;
+                    if (play is null)
+                    {
+                        problems.Add($"{PlayFlag} needs a value{Known(flag)}");
+                    }
                 }
                 else if (flag == LayoutFlag)
                 {
                     layoutGiven = true;
-                    layout = value;
+                    layout = value.Length > 0 ? value : null;
+                    if (layout is null)
+                    {
+                        problems.Add($"{LayoutFlag} needs a value{Known(flag)}");
+                    }
                 }
                 else if (flag == SeedFlag)
                 {

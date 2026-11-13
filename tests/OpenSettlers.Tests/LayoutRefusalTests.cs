@@ -188,7 +188,8 @@ public sealed class LayoutRefusalTests
     }
 
     // The whole-number spellings: the readers take a number as whole when System.Text.Json reads it as an int, so only the
-    // integer spelling counts (1 and -0); 1.0 and 1e0 are refused, as LaunchArgs refuses the size 2.0 (LaunchArgsTests). The
+    // integer spelling counts (1 and -0). No document defines 1.0 and 1e0 either way; the refusal of both is the readers'
+    // current rule, pinned here (the sibling LaunchArgs refuses the command-line size 2.0 alike, LaunchArgsTests). The
     // coordinate of an object is the probe.
     [TestMethod]
     [DataRow("1")]
