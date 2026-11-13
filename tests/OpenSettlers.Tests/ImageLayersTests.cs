@@ -37,6 +37,24 @@ public sealed class ImageLayersTests
         Assert.IsLessThanOrEqualTo(20, shapes.Count);
     }
 
+    // The doc of Shape: an empty set takes one layer, and the width and height are the 32 step's smallest.
+    [TestMethod]
+    public void AnEmptySetTakesOneLayerOfTheSmallestStep() => Assert.AreEqual((1, 32, 32), new ImageLayers().Shape);
+
+    // The layers are by image identity: two images equal by value but not the same object are two layers.
+    [TestMethod]
+    public void TwoValueEqualButDistinctImagesGiveTwoLayers()
+    {
+        var layers = new ImageLayers();
+        var first = new ObjectImage(0, 0, 0, 0, []);
+        var second = new ObjectImage(0, 0, 0, 0, []);
+
+        Assert.AreEqual(first, second);
+        Assert.AreEqual(0, layers.Of(first));
+        Assert.AreEqual(1, layers.Of(second));
+        Assert.AreEqual(0, layers.Of(first));
+    }
+
     // Every image fits the shape: a layer each, and each image's width and height.
     [TestMethod]
     public void TheShapeHoldsEveryImage()

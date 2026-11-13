@@ -45,4 +45,24 @@ public sealed class ZoomTests
 
         Assert.AreEqual(2f, zoom.Scale, 1e-6);
     }
+
+    [TestMethod]
+    public void ATallViewCoversAtMostTwoMaps()
+    {
+        // The smallest map is 32 rows of 20 pixels, 640 pixels tall: a 2,560-pixel view needs a scale of 2 to cover 1,280.
+        var zoom = new Zoom();
+        zoom.ByFactor(0.001f, Smallest, 100, 2560);
+
+        Assert.AreEqual(2f, zoom.Scale, 1e-6);
+    }
+
+    [TestMethod]
+    public void FitNeverLowersTheScale()
+    {
+        // A 100-pixel view needs a scale of 0.25 at the least, below the 1 the zoom starts at.
+        var zoom = new Zoom();
+        zoom.Fit(Smallest, 100, 100);
+
+        Assert.AreEqual(1f, zoom.Scale);
+    }
 }
