@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -49,6 +50,20 @@ internal static class PythonTool
         return found;
     }
 
+    /// <summary>Starts the process, or fails the test with the hint where the program cannot be started.</summary>
+    public static Process Start(ProcessStartInfo info)
+    {
+        try
+        {
+            return Process.Start(info)!;
+        }
+        catch (Win32Exception)
+        {
+            Assert.Fail(MissingHint);
+            throw;
+        }
+    }
+
     private static bool HoldsHeadless(string dir) =>
         File.Exists(Path.Combine(dir, "analyzeHeadless")) || File.Exists(Path.Combine(dir, "analyzeHeadless.bat"));
 
@@ -92,7 +107,7 @@ internal static class PythonTool
             info.Environment["SIEDLER_DIR"] = siedlerDir;
         }
 
-        using var process = Process.Start(info)!;
+        using var process = Start(info);
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
         process.WaitForExit();
@@ -109,15 +124,13 @@ internal static class PythonTool
         if (OperatingSystem.IsWindows())
         {
             Assert.Inconclusive("the stand-in analyzeHeadless is a shell script");
+            return folder;
         }
 
         Directory.CreateDirectory(folder);
         var script = Path.Combine(folder, "analyzeHeadless");
         File.WriteAllText(script, "#!/bin/sh\n" + body);
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
+        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 
         return folder;
     }

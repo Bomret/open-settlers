@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -54,27 +53,8 @@ public sealed class RepositoryContentTests
         var generated = Path.Combine(Path.GetTempPath(), "open-settlers-art-" + Guid.NewGuid().ToString("N"));
         try
         {
-            var info = new ProcessStartInfo("python3") { WorkingDirectory = root, RedirectStandardError = true };
-            info.ArgumentList.Add("-I");
-            info.ArgumentList.Add("tools/open-settlers-art.py");
-            info.ArgumentList.Add(generated);
-            Process process;
-            try
-            {
-                process = Process.Start(info)!;
-            }
-            catch (System.ComponentModel.Win32Exception)
-            {
-                Assert.Fail("python3 is not on the path; mise install provides it");
-                throw;
-            }
-
-            using (process)
-            {
-                var error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
-                Assert.AreEqual(0, process.ExitCode, error);
-            }
+            var run = PythonTool.Run(root, [PythonTool.InRepo("tools", "open-settlers-art.py"), generated]);
+            Assert.AreEqual(0, run.Exit, run.Stderr);
 
             var checkedIn = Path.Combine(root, "content", "open-settlers");
             var expected = SetFiles(generated);

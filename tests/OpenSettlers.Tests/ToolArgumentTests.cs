@@ -22,23 +22,11 @@ public sealed class ToolArgumentTests
     [TestCleanup]
     public void Cleanup() => Directory.Delete(_folder, true);
 
-    private static (int Exit, string Stdout, string Stderr) Python(
-        string workingDirectory,
-        string[] arguments,
-        string? path = null,
-        string? siedlerDir = null
-    )
-    {
-        var run = PythonTool.Run(workingDirectory, arguments, path, siedlerDir);
-
-        return (run.Exit, run.Stdout, run.Stderr);
-    }
-
     private static string Emulate() => PythonTool.InRepo("tools", "GhidraDump", "emulate.py");
 
     private static string Digest() => PythonTool.InRepo("tools", "WindowsCheck", "digest.py");
 
-    private static void AssertUsage((int Exit, string Stdout, string Stderr) run)
+    private static void AssertUsage(ToolRun run)
     {
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "emulate.py:");
@@ -53,7 +41,10 @@ public sealed class ToolArgumentTests
     [DataRow("--game", "<folder>", "--project", "", "rng:0,0,0")]
     public void AFlagWithoutAFolderIsRefusedWithUsage(params string[] arguments) =>
         AssertUsage(
-            Python(_folder, [Emulate(), .. arguments.Select(argument => argument == "<folder>" ? _folder : argument)])
+            PythonTool.Run(
+                _folder,
+                [Emulate(), .. arguments.Select(argument => argument == "<folder>" ? _folder : argument)]
+            )
         );
 
     [TestMethod]
@@ -77,7 +68,7 @@ public sealed class ToolArgumentTests
             File.SetUnixFileMode(headless, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
 
-        var run = Python(_folder, [Emulate(), "--game", game, "--project", "", "rng:0,0,0"], bin);
+        var run = PythonTool.Run(_folder, [Emulate(), "--game", game, "--project", "", "rng:0,0,0"], bin);
 
         AssertUsage(run);
         Assert.IsTrue(File.Exists(Path.Combine(_folder, "Emu.gpr")));
@@ -105,7 +96,7 @@ public sealed class ToolArgumentTests
         File.WriteAllText(headless, $"#!/bin/sh\nprintf '%s\\n' \"$@\" > '{record}'\nexit 1\n");
         File.SetUnixFileMode(headless, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 
-        Python(_folder, [Emulate(), "--game", game, "rng:0,0,0"], bin);
+        PythonTool.Run(_folder, [Emulate(), "--game", game, "rng:0,0,0"], bin);
 
         var arguments = File.ReadAllLines(record);
         var scripts = arguments[Array.IndexOf(arguments, "-scriptPath") + 1];
@@ -119,7 +110,7 @@ public sealed class ToolArgumentTests
         var bytecode = Path.Combine(Path.GetDirectoryName(Digest())!, "__pycache__");
         var existed = Directory.Exists(bytecode);
 
-        var run = Python(
+        var run = PythonTool.Run(
             _folder,
             [
                 "-c",
@@ -138,7 +129,7 @@ public sealed class ToolArgumentTests
         var dump = Path.Combine(_folder, "dump.bin");
         File.WriteAllBytes(dump, new byte[32 * 8 * 32]);
 
-        var run = Python(_folder, [Digest(), dump, "1", "6359,a0d2,b4fa", "7590,f842,468d", "5"]);
+        var run = PythonTool.Run(_folder, [Digest(), dump, "1", "6359,a0d2,b4fa", "7590,f842,468d", "5"]);
 
         Assert.AreEqual(0, run.Exit, run.Stderr);
         StringAssert.StartsWith(run.Stdout, "Windows run | 1 6359,A0D2,B4FA CountResource1 7590,F842,468D ");
@@ -148,7 +139,7 @@ public sealed class ToolArgumentTests
     [TestMethod]
     public void DigestRefusesASizeThatIsNotANumber()
     {
-        var run = Python(_folder, [Digest(), Path.Combine(_folder, "none"), "big", "1,2,3", "4,5,6", "7"]);
+        var run = PythonTool.Run(_folder, [Digest(), Path.Combine(_folder, "none"), "big", "1,2,3", "4,5,6", "7"]);
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "size");
@@ -179,7 +170,7 @@ public sealed class ToolArgumentTests
     [DataRow("rng:0,0,0", "draw:1-1:0,0:a")]
     public void ADrawCommandMixedWithANonDrawCommandIsRefused(params string[] commands)
     {
-        var run = Python(_folder, [Emulate(), "--game", Game(), .. commands]);
+        var run = PythonTool.Run(_folder, [Emulate(), "--game", Game(), .. commands]);
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "emulate.py: draw: runs alone");
@@ -187,7 +178,7 @@ public sealed class ToolArgumentTests
     }
 
     [TestMethod]
-    public void NoCommandIsRefusedWithUsage() => AssertUsage(Python(_folder, [Emulate(), "--game", Game()]));
+    public void NoCommandIsRefusedWithUsage() => AssertUsage(PythonTool.Run(_folder, [Emulate(), "--game", Game()]));
 
     [TestMethod]
     [DataRow(false)]
@@ -196,7 +187,7 @@ public sealed class ToolArgumentTests
     {
         string[] game = missingFolder ? ["--game", Path.Combine(_folder, "missing")] : [];
 
-        var run = Python(_folder, [Emulate(), .. game, "rng:0,0,0"]);
+        var run = PythonTool.Run(_folder, [Emulate(), .. game, "rng:0,0,0"]);
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "emulate.py: no install folder: pass --game <dir> or set SIEDLER_DIR");
@@ -206,7 +197,7 @@ public sealed class ToolArgumentTests
     [TestMethod]
     public void AMissingAnalyzeHeadlessIsRefusedWithTheWayToGetIt()
     {
-        var run = Python(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"]);
+        var run = PythonTool.Run(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"]);
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "emulate.py: analyzeHeadless is not on PATH");
@@ -218,7 +209,7 @@ public sealed class ToolArgumentTests
     {
         var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'\necho STANDIN-LOG\nexit 3");
 
-        var run = Python(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"], bin);
+        var run = PythonTool.Run(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"], bin);
 
         Assert.AreEqual(1, run.Exit);
         StringAssert.Contains(run.Stderr, "STANDIN-LOG");
@@ -229,7 +220,7 @@ public sealed class ToolArgumentTests
     {
         var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> no result'\necho STANDIN-LOG");
 
-        var run = Python(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"], bin);
+        var run = PythonTool.Run(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"], bin);
 
         Assert.AreEqual(1, run.Exit);
         Assert.IsFalse(run.Stdout.Contains("EMU "), "no EMU line, no recording");
@@ -245,7 +236,7 @@ public sealed class ToolArgumentTests
         var game = Game(name);
         var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'");
 
-        var run = Python(_folder, [Emulate(), "--game", game, "rng:0,0,0"], bin);
+        var run = PythonTool.Run(_folder, [Emulate(), "--game", game, "rng:0,0,0"], bin);
 
         Assert.AreEqual(0, run.Exit, run.Stderr);
         Assert.AreEqual("EMU ok", run.Stdout.Trim());
@@ -258,7 +249,7 @@ public sealed class ToolArgumentTests
     {
         var game = Game("other.exe");
 
-        var run = Python(_folder, [Emulate(), "--game", game, "rng:0,0,0"], RecordingHeadless("exit 0"));
+        var run = PythonTool.Run(_folder, [Emulate(), "--game", game, "rng:0,0,0"], RecordingHeadless("exit 0"));
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, $"emulate.py: no Siedler1.exe in {game}");
@@ -270,7 +261,7 @@ public sealed class ToolArgumentTests
         var game = Game();
         var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'");
 
-        var run = Python(_folder, [Emulate(), "rng:0,0,0"], bin, siedlerDir: game);
+        var run = PythonTool.Run(_folder, [Emulate(), "rng:0,0,0"], bin, siedlerDir: game);
 
         Assert.AreEqual(0, run.Exit, run.Stderr);
         var arguments = RecordedArguments();
@@ -283,7 +274,7 @@ public sealed class ToolArgumentTests
         var game = Game();
         var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'");
 
-        var run = Python(
+        var run = PythonTool.Run(
             _folder,
             [Emulate(), "--game", game, "rng:0,0,0"],
             bin,
@@ -330,7 +321,7 @@ public sealed class ToolArgumentTests
         var dump = Path.Combine(_folder, "dump.bin");
         File.WriteAllBytes(dump, bytes);
 
-        var run = Python(_folder, [Digest(), dump, size.ToString(), "6359,a0d2,b4fa", "7590,f842,468d", "5"]);
+        var run = PythonTool.Run(_folder, [Digest(), dump, size.ToString(), "6359,a0d2,b4fa", "7590,f842,468d", "5"]);
 
         Assert.AreEqual(0, run.Exit, run.Stderr);
         Assert.AreEqual(
@@ -345,7 +336,7 @@ public sealed class ToolArgumentTests
     [DataRow(6)]
     public void DigestWithTheWrongNumberOfArgumentsPrintsItsUsage(int count)
     {
-        var run = Python(_folder, [Digest(), .. Enumerable.Repeat("x", count)]);
+        var run = PythonTool.Run(_folder, [Digest(), .. Enumerable.Repeat("x", count)]);
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "Usage: python3 -I digest.py <dump-file> <size> <seed> <rng> <total>");
@@ -357,7 +348,7 @@ public sealed class ToolArgumentTests
     [DataRow("4")]
     public void DigestRefusesASizeOutsideOneToThree(string size)
     {
-        var run = Python(_folder, [Digest(), Path.Combine(_folder, "none"), size, "1,2,3", "4,5,6", "7"]);
+        var run = PythonTool.Run(_folder, [Digest(), Path.Combine(_folder, "none"), size, "1,2,3", "4,5,6", "7"]);
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "the size must be 1, 2, or 3");
@@ -370,7 +361,7 @@ public sealed class ToolArgumentTests
         var dump = Path.Combine(_folder, "dump.bin");
         File.WriteAllBytes(dump, [1, 2, 3]);
 
-        var run = Python(_folder, [Digest(), dump, "1", "1,2,3", "4,5,6", "7"]);
+        var run = PythonTool.Run(_folder, [Digest(), dump, "1", "1,2,3", "4,5,6", "7"]);
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "size 1 needs 8192 bytes, the dump has 3");
@@ -382,7 +373,7 @@ public sealed class ToolArgumentTests
     {
         var dump = Path.Combine(_folder, "missing.bin");
 
-        var run = Python(_folder, [Digest(), dump, "1", "1,2,3", "4,5,6", "7"]);
+        var run = PythonTool.Run(_folder, [Digest(), dump, "1", "1,2,3", "4,5,6", "7"]);
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, dump);

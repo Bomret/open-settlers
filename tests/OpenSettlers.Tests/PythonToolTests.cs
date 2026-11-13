@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -25,6 +26,26 @@ public sealed class PythonToolTests
     public void AMissingPython3FailsTheTestWithTheMiseInstallHint()
     {
         var exception = Assert.ThrowsExactly<AssertFailedException>(() => PythonTool.Resolve(_folder));
+
+        StringAssert.Contains(exception.Message, "mise install");
+    }
+
+    [TestMethod]
+    public void APython3ThatCannotBeStartedFailsTheTestWithTheMiseInstallHint()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("a file without the execute bit is a Unix case");
+            return;
+        }
+
+        var script = Path.Combine(_folder, "python3");
+        File.WriteAllText(script, "#!/bin/sh\n");
+        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+
+        var exception = Assert.ThrowsExactly<AssertFailedException>(() =>
+            PythonTool.Start(new ProcessStartInfo(script))
+        );
 
         StringAssert.Contains(exception.Message, "mise install");
     }

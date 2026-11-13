@@ -67,15 +67,27 @@ public sealed class DrawVerbTests
         bool realHeadless = false
     )
     {
+        var run = EmulateRun(game, commands, project, path, realHeadless);
+
+        return (run.Exit, run.Stdout);
+    }
+
+    private static ToolRun EmulateRun(
+        string game,
+        string[] commands,
+        string? project = null,
+        string? path = null,
+        bool realHeadless = false
+    )
+    {
         string[] projectArguments = project is null ? [] : ["--project", project];
-        var run = PythonTool.Run(
+
+        return PythonTool.Run(
             Path.GetTempPath(),
             [PythonTool.InRepo("tools", "GhidraDump", "emulate.py"), "--game", game, .. projectArguments, .. commands],
             path,
             realHeadless: realHeadless
         );
-
-        return (run.Exit, run.Stdout);
     }
 
     // Ghidra on the path and the reference install: the runs that reach the emulator need both.
@@ -107,21 +119,26 @@ public sealed class DrawVerbTests
     [TestMethod]
     public void ARunOnAnInstallWithNoProgramExitsNonZeroAndPrintsNothing()
     {
-        var (exit, output) = Emulate(_folder, $"draw:100-101:17,20:{Game}");
+        var bin = PythonTool.StandInHeadless(Path.Combine(_folder, "bin"), "exit 0\n");
 
-        Assert.AreNotEqual(0, exit);
-        Assert.AreEqual("", output);
+        var run = EmulateRun(_folder, [$"draw:100-101:17,20:{Game}"], path: bin);
+
+        Assert.AreNotEqual(0, run.Exit);
+        Assert.AreEqual("", run.Stdout);
+        StringAssert.Contains(run.Stderr, "no Siedler1.exe in");
     }
 
     [TestMethod]
     public void ARunOnAProgramOfAnotherBuildExitsNonZeroAndPrintsNothing()
     {
         File.WriteAllText(Path.Combine(_folder, "Siedler1.exe"), "not the history edition");
+        var bin = PythonTool.StandInHeadless(Path.Combine(_folder, "bin"), "exit 0\n");
 
-        var (exit, output) = Emulate(_folder, $"draw:100-101:17,20:{Game}");
+        var run = EmulateRun(_folder, [$"draw:100-101:17,20:{Game}"], path: bin);
 
-        Assert.AreNotEqual(0, exit);
-        Assert.AreEqual("", output);
+        Assert.AreNotEqual(0, run.Exit);
+        Assert.AreEqual("", run.Stdout);
+        StringAssert.Contains(run.Stderr, "is not the reference build");
     }
 
     // The commands of the Ghidra tests, run as one batch the first time a test that reaches the install asks for it.
