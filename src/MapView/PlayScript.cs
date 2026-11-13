@@ -315,14 +315,14 @@ public sealed class PlayScript
     /// <summary>One line per problem, each naming the script and the line.</summary>
     public required IReadOnlyList<string> Problems { get; init; }
 
-    /// <summary>Reads the script at <c>path</c>; a file that cannot be read is one problem and no steps.</summary>
+    /// <summary>Reads the script at <c>path</c>; a file that cannot be read, or an empty path, is one problem and no steps.</summary>
     public static PlayScript Read(string path)
     {
         try
         {
             return Parse(File.ReadAllText(path), path);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
             return new PlayScript
             {

@@ -115,7 +115,7 @@ public sealed partial class Layout
 
     /// <summary>
     /// Reads the layout file at <paramref name="path"/> like <see cref="Read"/>. A file that is missing or cannot be
-    /// read is a problem naming the path.
+    /// read, or an empty path, is a problem naming the path.
     /// </summary>
     public static LayoutResult ReadFile(string path)
     {
@@ -123,7 +123,7 @@ public sealed partial class Layout
         {
             return Read(File.ReadAllText(path), path);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
             return new LayoutResult(null, [$"{path}: file: cannot be read: {e.Message}"]);
         }

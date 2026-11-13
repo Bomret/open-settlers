@@ -356,4 +356,32 @@ public sealed class PlayScriptTests
         Assert.HasCount(1, script.Problems);
         StringAssert.Contains(script.Problems[0], "/no/such/dir/x.play");
     }
+
+    [TestMethod]
+    public void AnEmptyPathIsOneProblemAndNoSteps()
+    {
+        var script = PlayScript.Read("");
+
+        Assert.HasCount(1, script.Problems);
+        Assert.IsEmpty(script.Steps);
+    }
+
+    [TestMethod]
+    public void ADirectoryPathIsOneProblemAndNoSteps()
+    {
+        // A directory cannot be read as a file whoever runs the test, root included.
+        var folder = System.IO.Directory.CreateTempSubdirectory("play-script").FullName;
+        try
+        {
+            var script = PlayScript.Read(folder);
+
+            Assert.HasCount(1, script.Problems);
+            StringAssert.StartsWith(script.Problems[0], folder + ": ");
+            Assert.IsEmpty(script.Steps);
+        }
+        finally
+        {
+            System.IO.Directory.Delete(folder, true);
+        }
+    }
 }
