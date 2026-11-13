@@ -87,6 +87,45 @@ public sealed class MapGeneratorTests
     }
 
     [TestMethod]
+    public void GeneratingWithNoTablesIsRefusedNamingThem()
+    {
+        var refusal = Assert.ThrowsExactly<ArgumentNullException>(() =>
+            MapGenerator.Generate(null!, new MapSeed(1, 2, 3), MapSize.Offered[0])
+        );
+        Assert.AreEqual("tables", refusal.ParamName);
+    }
+
+    [TestMethod]
+    public void TryGeneratingWithNoTablesIsRefusedNamingThem()
+    {
+        var refusal = Assert.ThrowsExactly<ArgumentNullException>(() =>
+            MapGenerator.TryGenerate(null!, new MapSeed(1, 2, 3), 1, null, out _, out _)
+        );
+        Assert.AreEqual("tables", refusal.ParamName);
+    }
+
+    // The offered size 1 is 32 by 32 tiles (the emulator values of TheOfferedSizesAreThoseTheEmulatorFindsFromTheSizeValue).
+    [TestMethod]
+    public void ASizeTheOriginalOffersGeneratesTheMapOfThatSizeWithNoProblem()
+    {
+        var passes = 0;
+
+        var generated = MapGenerator.TryGenerate(
+            TestProgram.Made(),
+            new MapSeed(1, 2, 3),
+            1,
+            (_, _, _) => passes++,
+            out var map,
+            out var problem
+        );
+
+        Assert.IsTrue(generated);
+        Assert.IsNull(problem);
+        Assert.AreEqual((1, 32, 32), (map!.Size.Value, map.Size.Width, map.Size.Height));
+        Assert.AreEqual(Enum.GetValues<MapPass>().Length, passes);
+    }
+
+    [TestMethod]
     [DataRow(-1, 0)]
     [DataRow(-1, -1)]
     [DataRow(0, -1)]
