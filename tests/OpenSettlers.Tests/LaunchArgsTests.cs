@@ -536,4 +536,60 @@ public sealed class LaunchArgsTests
         Assert.IsEmpty(args.Problems);
         Assert.AreEqual(LaunchMode.GameView, args.Mode);
     }
+
+    // Sweep #244 F90-F93. The rule is the one LaunchArgs documents: an empty --game value is no value, a repeated --game
+    // keeps the first, a stray argument is ignored, a size is digits only.
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("/env/install")]
+    public void AnEmptyGameValueIsOneProblemAndNoInstallWhateverTheEnvironmentHolds(string? env)
+    {
+        var args = LaunchArgs.Parse(["--game", ""], env);
+
+        CollectionAssert.AreEqual(new[] { "--game needs a value" }, args.Problems.ToArray());
+        Assert.IsNull(args.Game);
+    }
+
+    [TestMethod]
+    public void ARepeatedGameFlagKeepsTheFirstAndIsNoProblem()
+    {
+        var args = LaunchArgs.Parse(["--game", "a", "--game", "b"], "/env/install");
+
+        Assert.AreEqual("a", args.Game);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    public void AnEmptyFirstGameFlagIsKeptAndTheSecondIsIgnored()
+    {
+        var args = LaunchArgs.Parse(["--game", "", "--game", "x"], "/env/install");
+
+        CollectionAssert.AreEqual(new[] { "--game needs a value" }, args.Problems.ToArray());
+        Assert.IsNull(args.Game);
+    }
+
+    [TestMethod]
+    public void AStrayPositionalArgumentIsIgnored()
+    {
+        var args = LaunchArgs.Parse(["stray", "--map", "other"], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual(LaunchMode.Map, args.Mode);
+    }
+
+    [TestMethod]
+    [DataRow("+1")]
+    [DataRow(" 1")]
+    [DataRow("1 ")]
+    [DataRow("-1")]
+    public void ASignedOrSpacedSizeIsOneProblemNamingIt(string size)
+    {
+        var args = LaunchArgs.Parse(["--map", "--size", size], null);
+
+        CollectionAssert.AreEqual(
+            new[] { $"bad --size '{size}': not a size number, use 1, 2 or 3" },
+            args.Problems.ToArray()
+        );
+        Assert.IsNull(args.Size);
+    }
 }
