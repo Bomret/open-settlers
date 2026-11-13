@@ -16,9 +16,9 @@ Both commands run the unit tests: the tests that need neither the install nor Gh
 with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
 `TestProgram.Tables`). Both also skip the category `Ghidra` (they run `analyzeHeadless`). The filter is
 `TestCategory!=Install&TestCategory!=Ghidra`. Neither command needs the install, Ghidra, or Godot. The remaining tests
-build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path. The remaining tests need `python3`, which
-`mise install` provides. Where it is missing, they fail with that hint. No test reports inconclusive for it. A test that runs a tool
-spawns it through `PythonTool`. `PythonTool` removes `SIEDLER_DIR` and any host `analyzeHeadless` from the child's environment.
+build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path. The tests that run a Python tool need `python3`, which
+`mise install` provides. Where it is missing, they fail with that hint. None of them reports inconclusive. Each spawns
+its tool through `PythonTool`. `PythonTool` removes `SIEDLER_DIR` and any host `analyzeHeadless` from the child's environment.
 `RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
 `content/open-settlers/` holds a file the generator does not write the same.
 
