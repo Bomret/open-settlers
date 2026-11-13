@@ -961,6 +961,117 @@ public sealed class ProgramTablesTests
         StringAssert.Contains(refusal.Message, "figure");
     }
 
+    // The file signatures of a PE32 executable: "MZ" at the file's start and "PE\0\0" (0x4550 as a little-endian word) at the
+    // offset e_lfanew that the word at 0x3c holds (the Microsoft PE format specification).
+    [TestMethod]
+    public void ALongFileWithAWrongMzSignatureIsRefusedAsNoExecutable()
+    {
+        var exe = Executable(bytes => bytes[1] = (byte)'z');
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        Assert.AreEqual("Siedler1.exe is no PE executable.", refusal.Message);
+    }
+
+    [TestMethod]
+    public void ALongFileWithAWrongPeSignatureIsRefusedAsNoExecutable()
+    {
+        var exe = Executable(bytes => bytes[0x40 + 2] = (byte)'X');
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        Assert.AreEqual("Siedler1.exe is no PE executable.", refusal.Message);
+    }
+
+    // The hand-out order of a storage ends at a negative word and holds at most one step for each of the 26 goods in each of the two
+    // request words: 2 * 26 = 52 steps (hand arithmetic). A list of 53 valid steps never ends, so step 52 is the first one refused.
+    [TestMethod]
+    public void AnOrderListWithNoTerminatingWordIsRefusedAtItsFiftyThirdStep()
+    {
+        var exe = Executable(bytes =>
+        {
+            for (var step = 0; step < 53; step++)
+            {
+                byte[] code = [0x42, 0, 1, 0, 2, 0];
+                code.CopyTo(bytes, FileOffset(ProgramTablesImporter.DistributionAddresses[0]) + 6 * step);
+            }
+        });
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        Assert.AreEqual(
+            "Siedler1.exe holds no order of the storage's hand-out at 0x42a313: step 52 is no step.",
+            refusal.Message
+        );
+    }
+
+    // The routine at 0x445752 starts with mov ax, imm16 (0x66 0xb8, docs/rules/construction-materials.md); another first byte is another
+    // routine, and the message names the address and what the code no longer does.
+    [TestMethod]
+    public void APlayerSetupThatDoesNotLoadItsWordIsRefusedAtTheFirstInstruction()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.PlankRankAddress)] = 0x90);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        Assert.AreEqual(
+            "Siedler1.exe holds no figure routine as expected: the code at 0x445752 no longer loads the word of the player's default.",
+            refusal.Message
+        );
+    }
+
+    [TestMethod]
+    public void AStonecuttersStubThatJumpsElsewhereIsRefused()
+    {
+        var exe = Executable(bytes =>
+            bytes[
+                FileOffset(
+                    ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Stonecutter.Number
+                ) + 1
+            ] ^= 1
+        );
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "no longer jumps to the stonecutter's handler");
+    }
+
+    // Made-up waiting-carrier tables: phase word i is 0x100 * i + 7, figure word i is 0x8800 + i, and offset byte k is 3 * k (mod 256).
+    // Hand arithmetic: phase 15 = 0x0f07; figure 127 = 0x887f; offset 127 = 381 mod 256 = 125; offset 43 = 129, a signed byte of -127.
+    [TestMethod]
+    public void TheWaitingCarriersTablesAreReadFromAMadeUpExecutable()
+    {
+        var exe = Executable(bytes =>
+        {
+            for (var i = 0; i < RuleTables.IdlePhaseCount; i++)
+            {
+                BitConverter
+                    .GetBytes((short)(0x100 * i + 7))
+                    .CopyTo(bytes, FileOffset(ProgramTablesImporter.IdlePhaseAddress) + 2 * i);
+            }
+
+            for (var i = 0; i < RuleTables.IdleFigureCount; i++)
+            {
+                BitConverter
+                    .GetBytes(unchecked((short)(0x8800 + i)))
+                    .CopyTo(bytes, FileOffset(ProgramTablesImporter.IdleFigureAddress) + 2 * i);
+            }
+
+            for (var k = 0; k < RuleTables.IdleOffsetCount; k++)
+            {
+                bytes[FileOffset(ProgramTablesImporter.IdleOffsetAddress) + k] = (byte)(3 * k);
+            }
+        });
+
+        var tables = ProgramTablesImporter.Import(exe);
+
+        Assert.AreEqual(RuleTables.IdlePhaseCount, tables.IdlePhases.Length);
+        Assert.AreEqual((short)7, tables.IdlePhases[0]);
+        Assert.AreEqual((short)0x0f07, tables.IdlePhases[15]);
+        Assert.AreEqual(RuleTables.IdleFigureCount, tables.IdleFigures.Length);
+        Assert.AreEqual(unchecked((short)0x8800), tables.IdleFigures[0]);
+        Assert.AreEqual(unchecked((short)0x887f), tables.IdleFigures[127]);
+        Assert.AreEqual(RuleTables.IdleOffsetCount, tables.IdleOffsets.Length);
+        Assert.AreEqual((sbyte)0, tables.IdleOffsets[0]);
+        Assert.AreEqual((sbyte)-127, tables.IdleOffsets[43]);
+        Assert.AreEqual((sbyte)125, tables.IdleOffsets[127]);
+    }
+
     private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
 
     // The waiting carriers' tables of the reference build (0x44d87d, 0x44d89d, 0x674923): the first phase word, the first
