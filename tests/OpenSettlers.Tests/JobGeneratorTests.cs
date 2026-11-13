@@ -268,4 +268,34 @@ public sealed class JobGeneratorTests
         Assert.AreEqual(0, diagnostics.Length);
         Assert.AreEqual("", text);
     }
+
+    [TestMethod]
+    public void AnAbstractJobIsNoJob()
+    {
+        var (diagnostics, text, _) = Run(
+            Domain,
+            """
+            namespace OpenSettlers.Domain;
+            public abstract record Middle : Job;
+            """
+        );
+
+        Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+        Assert.IsFalse(text.Contains("Middle"));
+    }
+
+    [TestMethod]
+    public void TheUnportedJobIsNoJobOfItsOwn()
+    {
+        // This UnportedJob is not sealed and has no number, so a generator that took it for a job would report it.
+        var (diagnostics, _, _) = Run(
+            """
+            namespace OpenSettlers.Domain;
+            public abstract partial record Job { public abstract int Code { get; } }
+            public record UnportedJob(int Code) : Job { public override int Code { get; } = Code; }
+            """
+        );
+
+        Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+    }
 }

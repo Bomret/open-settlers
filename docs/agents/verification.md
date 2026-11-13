@@ -16,8 +16,10 @@ Both commands run the unit tests: the tests that need neither the install nor Gh
 with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
 `TestProgram.Tables`). Both also skip the category `Ghidra` (they run `analyzeHeadless`). The filter is
 `TestCategory!=Install&TestCategory!=Ghidra`. Neither command needs the install, Ghidra, or Godot. The remaining tests
-build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path. They need `python3`, which
-`mise install` provides: `RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
+build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path. The tests that run a Python tool need `python3`, which
+`mise install` provides. Where it is missing, they fail with that hint. None of them reports inconclusive. Each spawns
+its tool through `PythonTool`. `PythonTool` removes `SIEDLER_DIR` and any host `analyzeHeadless` from the child's environment.
+`RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
 `content/open-settlers/` holds a file the generator does not write the same.
 
 The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
@@ -28,8 +30,7 @@ inconclusive in either command without the install. `NeedsTests` pins the filter
 No static field or static property initializer and no static constructor of a test class may reach the install
 (`TestProgram.Tables()`, `TestProgram.OpenInstall()`). Without the install the `Assert.Inconclusive` they throw then fires
 during type initialization, and MSTest fails every test of the class with a `TypeInitializationException`. Build the
-value inside the test instead, as the cached `Map` accessor of `MapPickingTests` does, and read that accessor only from
-the test. A lambda, local function, or method group that runs only when called later is allowed, such as
+value inside the test instead, and call it only from the test. The `Generated()` method of `ObjectDrawsTests` does so. A lambda, local function, or method group that runs only when called later is allowed, such as
 `new Lazy<Map>(() => Generated())`. An instance initializer or constructor is allowed: it runs when MSTest creates the
 instance for a test, which then reports inconclusive.
 

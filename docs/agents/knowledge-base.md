@@ -4,6 +4,9 @@ An external knowledge base for durable, human-facing docs (file-format specifica
 published to the wiki of `Bomret/open-settlers` on GitHub. In-repo docs
 (`docs/agents/documentation.md`) remain the source of truth; the wiki is a published view.
 
+The ADR and INV numbers in this file (for example ADR 0168 and INV-0188) name decisions and invariants of the
+superdev plugin, not of `docs/adr/` or `docs/invariants.md`. `scripts/publish-kb.js` is a script of that plugin.
+
 ## Configuration
 
 - **Backend:** GitHub repo Wiki, reached as the git repository

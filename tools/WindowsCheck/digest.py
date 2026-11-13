@@ -28,8 +28,11 @@ def main(argv):
     if size not in {str(k) for k in SIZES}:
         sys.exit("the size must be 1, 2, or 3")
     width, height = SIZES[int(size)]
-    with open(path, "rb") as handle:
-        dump = handle.read()
+    try:
+        with open(path, "rb") as handle:
+            dump = handle.read()
+    except OSError as error:
+        sys.exit(f"digest.py: cannot read {path}: {error.strerror}")
     if len(dump) != height * 8 * width:
         sys.exit(f"size {size} needs {height * 8 * width} bytes, the dump has {len(dump)}")
     hashes = [BASIS] * 6

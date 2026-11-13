@@ -1,4 +1,8 @@
+using System.Collections.Generic;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Assets;
+using OpenSettlers.Formats;
 using OpenSettlers.MapView;
 
 namespace OpenSettlers.Tests;
@@ -47,5 +51,61 @@ public sealed class StepOffsetsTests
     public void AnEntryTooShortForItsTableHasNoStep()
     {
         Assert.IsNull(new StepOffsets([]).At(7, 0));
+    }
+
+    const string Archive = "loca/SPAD.PA";
+
+    static Install Open(FakeInstall fake)
+    {
+        Assert.IsTrue(
+            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
+        );
+
+        return install;
+    }
+
+    [TestMethod]
+    public void LoadingReadsEntryTwoOfTheArchive()
+    {
+        using var fake = new FakeInstall().Put(
+            Archive,
+            ArchiveBytes.Build(3, new Dictionary<int, byte[]> { [2] = SettlerFiguresTests.Sequences() })
+        );
+
+        var steps = StepOffsets.Load(Open(fake));
+
+        Assert.AreEqual(new StepOffset(-1, 0), steps.At(7, 8));
+    }
+
+    [TestMethod]
+    public void AnArchiveWithoutEntryTwoIsRefusedByEntryAndReason()
+    {
+        using var fake = new FakeInstall().Put(Archive, ArchiveBytes.Build(3));
+
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => StepOffsets.Load(Open(fake)));
+
+        StringAssert.Contains(failure.Message, "the walk sequences (entry 2) of loca/SPAD.PA is unreadable");
+        StringAssert.Contains(failure.Message, "the archive has no such entry");
+    }
+
+    [TestMethod]
+    public void AnArchiveTooShortToHoldEntryTwoIsRefusedByEntry()
+    {
+        using var fake = new FakeInstall().Put(Archive, ArchiveBytes.Build(2));
+
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => StepOffsets.Load(Open(fake)));
+
+        StringAssert.Contains(failure.Message, "the walk sequences (entry 2)");
+    }
+
+    [TestMethod]
+    public void AnEntryThatReachesPastTheArchiveIsRefusedByEntry()
+    {
+        var bytes = ArchiveBytes.Build(3, new Dictionary<int, byte[]> { [2] = [1, 2, 3, 4] });
+        ArchiveBytes.Put(bytes, 2 * 8, 4000);
+
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => StepOffsets.From(ArchiveFile.Read(bytes)));
+
+        StringAssert.Contains(failure.Message, "the walk sequences (entry 2) of loca/SPAD.PA is unreadable");
     }
 }

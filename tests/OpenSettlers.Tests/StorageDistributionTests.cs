@@ -25,24 +25,35 @@ public sealed class StorageDistributionTests
     );
 
     // Flag 0 is the castle's; flags 1 and 2 are sites' flags on roads that hold a carrier (flag 2 beyond flag 1). The castle holds
-    // the planks and stones given.
+    // the planks and stones given. A flagCount below 3 leaves out the last flags and their roads, and withCastle false leaves the
+    // castle unplaced.
     private static Rig Started(
         int planks,
         int stones,
         ushort draw = 2,
         bool carriers = true,
         RuleTables? tables = null,
-        int[]? food = null
+        int[]? food = null,
+        int flagCount = 3,
+        bool withCastle = true
     )
     {
         var bench = new BehaviourBench(tables ?? ConstructionTables.Tables(), draw);
-        for (var column = 0; column < 3; column++)
+        for (var column = 0; column < flagCount; column++)
         {
             bench.Flags.Add(4 + 2 * column, 4);
         }
 
-        bench.Join(0, East, 1, West, carrier: carriers);
-        bench.Join(1, East, 2, West, carrier: carriers);
+        if (flagCount > 1)
+        {
+            bench.Join(0, East, 1, West, carrier: carriers);
+        }
+
+        if (flagCount > 2)
+        {
+            bench.Join(1, East, 2, West, carrier: carriers);
+        }
+
         var stock = new int[StartStock.Goods];
         stock[Planks - 1] = planks;
         stock[Stones - 1] = stones;
@@ -52,7 +63,11 @@ public sealed class StorageDistributionTests
         }
 
         var castle = new CastleStock();
-        castle.Place(new Castle(3, 3, 1), stock);
+        if (withCastle)
+        {
+            castle.Place(new Castle(3, 3, 1), stock);
+        }
+
         var goods = new GoodsTransport(bench.Movement, bench.Flags, bench.Roads, bench.History, bench.Buildings);
         var distribution = new StorageDistribution(
             bench.Tables,
@@ -244,5 +259,54 @@ public sealed class StorageDistributionTests
         rig.Distribution.Run();
 
         Assert.AreEqual(1, rig.Bench.Draws.Taken);
+    }
+
+    // ----- The draw comes before each guard (INV-0002), so every run takes one (F30) -----
+
+    [TestMethod]
+    public void WithNoCastleTheRunDrawsOnceAndHandsNothingOut()
+    {
+        var rig = Started(planks: 0, stones: 0, flagCount: 2, withCastle: false);
+        Site(rig, 1, 0x3e);
+
+        rig.Distribution.Run();
+
+        Assert.AreEqual(
+            (1, true, 0x3e),
+            (
+                rig.Bench.Draws.Taken,
+                rig.Bench.Flags[0].Places[0].IsEmpty,
+                (int)rig.Bench.Flags[1].RequestOf(RequestWord.First).Rank
+            )
+        );
+    }
+
+    [TestMethod]
+    public void WithNoFlagsTheRunDrawsOnceAndTheStockStays()
+    {
+        var rig = Started(planks: 5, stones: 0, flagCount: 0);
+
+        rig.Distribution.Run();
+
+        Assert.AreEqual((1, 5), (rig.Bench.Draws.Taken, rig.Castle.Planks));
+    }
+
+    // The control is TheCastleHandsAPlankToTheSiteThatAsksAndItsCountFalls: the same rig with a free place serves the flag.
+    [TestMethod]
+    public void WithNoEmptyPlaceOnTheCastlesFlagTheRunDrawsOnceAndHandsNothingOut()
+    {
+        var rig = Started(planks: 5, stones: 0);
+        Site(rig, 1, 0x3e);
+        for (var place = 0; place < Flag.PlaceCount; place++)
+        {
+            rig.Goods.LayGood(0, place, 1);
+        }
+
+        rig.Distribution.Run();
+
+        Assert.AreEqual(
+            (1, 5, 0x3e),
+            (rig.Bench.Draws.Taken, rig.Castle.Planks, (int)rig.Bench.Flags[1].RequestOf(RequestWord.First).Rank)
+        );
     }
 }

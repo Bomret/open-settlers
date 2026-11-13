@@ -216,6 +216,8 @@ public class PlayRunWrapperTests
             process.BeginErrorReadLine();
         }
 
+        public int Pid => process.Id;
+
         public string Stderr
         {
             get
@@ -343,6 +345,8 @@ public class PlayRunWrapperTests
             ("deleted", () => File.Delete(Path.Combine(repo, "scenes/main.tscn"))),
             ("renamed", () => File.Move(Path.Combine(repo, "src/Game.cs"), Path.Combine(repo, "src/Game2.cs"))),
             ("project", () => Write("project.godot", "config 2")),
+            ("csproj", () => Write("OpenSettlers.csproj", "<Project><!-- 2 --></Project>")),
+            ("global-json", () => Write("global.json", "{ }")),
             ("build-props", () => Write("Directory.Build.props", "<Project><!-- 2 --></Project>")),
             ("script", () => Write("play/demo.play", "wait 2")),
             ("seed", () => args[2] = "xyz"),
@@ -363,6 +367,80 @@ public class PlayRunWrapperTests
 
             Assert.AreEqual(expected, Calls, $"a changed {input} did not start Godot again");
         }
+    }
+
+    // The wrapper hashes "<file> missing" for an absent project file and "<file> <git hash of the content>" for a
+    // present one, so an empty file (the hash of zero bytes) and an absent file are two entries. Hand check: the
+    // two lines differ in their second field, so they cannot hash alike.
+    [TestMethod]
+    [DataRow("project.godot")]
+    [DataRow("OpenSettlers.csproj")]
+    [DataRow("global.json")]
+    [DataRow("Directory.Build.props")]
+    public void AMissingProjectFileHashesApartFromAnEmptyOne(string file)
+    {
+        Run(Args);
+        File.Delete(Path.Combine(repo, file));
+        Run(Args);
+        Assert.AreEqual(2, Calls, $"a missing {file} reused the entry of the present one");
+
+        Write(file, "");
+        Run(Args);
+        Assert.AreEqual(3, Calls, $"an empty {file} reused the entry of the missing one");
+
+        File.Delete(Path.Combine(repo, file));
+        Run(Args);
+        Assert.AreEqual(3, Calls, $"a missing {file} again did not reuse its own entry");
+    }
+
+    // Each signal reaches the wrapper after Godot started, which is after the wrapper wrote its pid into the lock.
+    // The shell runs a trap once its foreground command ends, so the gate opens after the signal. 130 is the status
+    // the trap in tools/play-run.sh states (`exit 130`).
+    static void Signal(Running call, string signal)
+    {
+        // The shell's own kill builtin, so a host with no standalone kill executable still runs the case.
+        using var kill = Process.Start("sh", ["-c", "kill -s \"$1\" \"$2\"", "sh", signal, call.Pid.ToString()])!;
+        kill.WaitForExit();
+        Assert.AreEqual(0, kill.ExitCode, $"kill -s {signal} failed");
+    }
+
+    [TestMethod]
+    [DataRow("INT")]
+    [DataRow("TERM")]
+    [DataRow("HUP")]
+    public void ASignalReleasesTheWrappersOwnLockAndExitsOneHundredThirty(string signal)
+    {
+        var gate = Path.Combine(fake, "gate");
+        using var call = Start(Args, new() { ["FAKE_GATE"] = gate });
+        WaitFor(() => Calls == 1, "the call to start Godot");
+        Assert.AreEqual(call.Pid + "\n", File.ReadAllText(Out(".lock-demo/pid")));
+
+        Signal(call, signal);
+        File.WriteAllText(gate, "");
+        var (status, _, _) = call.Finish();
+
+        Assert.AreEqual(130, status);
+        Assert.IsFalse(Directory.Exists(Out(".lock-demo")), "the lock stayed after the signal");
+        Assert.AreEqual(1, Calls);
+    }
+
+    [TestMethod]
+    [DataRow("INT")]
+    [DataRow("TERM")]
+    [DataRow("HUP")]
+    public void ASignalLeavesALockThatHoldsAnotherPid(string signal)
+    {
+        var gate = Path.Combine(fake, "gate");
+        using var call = Start(Args, new() { ["FAKE_GATE"] = gate });
+        WaitFor(() => Calls == 1, "the call to start Godot");
+        File.WriteAllText(Out(".lock-demo/pid"), "1\n");
+
+        Signal(call, signal);
+        File.WriteAllText(gate, "");
+        var (status, _, _) = call.Finish();
+
+        Assert.AreEqual(130, status);
+        Assert.AreEqual("1\n", File.ReadAllText(Out(".lock-demo/pid")));
     }
 
     [TestMethod]

@@ -10,12 +10,12 @@ public sealed class SeedInfoTests
 {
     const string SeedText = "1234567812345678";
 
-    static Map MapOf(string seedText, int sizeValue)
+    static Map MapOf(string seedText, int sizeValue, RuleTables? tables = null)
     {
         Seed.TryParse(seedText, out var seed, out _);
         MapSize.TryFromValue(sizeValue, out var size, out _);
 
-        return MapGenerator.Generate(TestProgram.Tables(), seed.ToMapSeed(), size!);
+        return MapGenerator.Generate(tables ?? TestProgram.Tables(), seed.ToMapSeed(), size!);
     }
 
     [TestMethod]
@@ -81,6 +81,46 @@ public sealed class SeedInfoTests
         Assert.AreEqual(0, code);
         Assert.AreEqual(SeedInfo.Report(SeedText, MapOf(SeedText, 1)), text);
     }
+
+    // The report of a made-up map with no object and no deposit, whose terrain is all type 0 and whose layers are all zero bytes. The
+    // expected text is hand arithmetic: the layer digest is the FNV-1a 64 of 1024 zero bytes (32 x 32 tiles, FNV constants of the
+    // FNV specification), the 2 * 1024 triangles of the 1024 tiles are all of type 0, and the two last sections hold no line.
+    [TestMethod]
+    public void TheReportOfAMapWithNoObjectAndNoDepositHasEmptySections()
+    {
+        var map = new Map(MapSize.Offered[0]);
+        var zeros = Fnv(new byte[32 * 32]).ToString("x16");
+
+        var text = SeedInfo.Report("7", map);
+
+        Assert.AreEqual(
+            "Seed: 7\nSize: 1 (32 x 32 tiles)\nLayer digests (FNV-1a 64, row-major):\n"
+                + $"  Flags: {zeros}\n  Height: {zeros}\n  Terrain: {zeros}\n  Lake: {zeros}\n  Object: {zeros}\n"
+                + $"  Resource: {zeros} (same bytes as Lake, so the digests match)\n"
+                + "Terrain tiles (both triangles of each tile, by type):\n  0: 2048\n"
+                + "Objects (by code):\nDeposits (by resource type):\n",
+            text
+        );
+    }
+
+    // Tables of made-up values generate a map with no install, so the run exits 0 with the report of that map.
+    // The full text is a delegation check (SeedInfo.Report of the generated map; the empty-sections test pins Report
+    // by hand); only the exit code and the hand-written prefix are independent.
+    [TestMethod]
+    public void RunningMadeUpTablesExitsZeroWithTheReportOfTheirMap()
+    {
+        Seed.TryParse(SeedText, out var seed, out _);
+        var expected = SeedInfo.Report(SeedText, MapOf(SeedText, 1, TestProgram.Made()));
+
+        var code = SeedInfo.Run(TestProgram.Made, SeedText, seed, MapSize.Offered[0], out var text);
+
+        Assert.AreEqual(0, code);
+        Assert.AreEqual(expected, text);
+        StringAssert.StartsWith(text, "Seed: 1234567812345678\nSize: 1 (32 x 32 tiles)\n");
+    }
+
+    static ulong Fnv(byte[] bytes) =>
+        bytes.Aggregate(0xcbf29ce484222325, (hash, value) => (hash ^ value) * 0x100000001b3);
 
     [TestMethod]
     public void AnyOtherGeneratorFailureExitsOneWithItsMessage()

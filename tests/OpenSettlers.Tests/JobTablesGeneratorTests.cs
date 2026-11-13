@@ -293,4 +293,37 @@ public sealed class JobTablesGeneratorTests
         Assert.AreEqual(0, diagnostics.Count(d => d.Id.StartsWith("TAB")));
         Assert.AreEqual(string.Empty, text);
     }
+
+    [TestMethod]
+    public void AnAbstractModuleIsNoModule()
+    {
+        var (diagnostics, text, _) = Run(
+            """
+            namespace OpenSettlers.Simulation;
+            public abstract class BaseTables<T> : JobTables<OpenSettlers.Domain.Alpha> where T : class { }
+            """
+        );
+
+        Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+        Assert.AreEqual("", text);
+    }
+
+    [TestMethod]
+    public void AModuleNestedInAGenericTypeIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            """
+            namespace OpenSettlers.Simulation;
+            public class Outer<T>
+            {
+                public sealed class InnerTables : JobTables<OpenSettlers.Domain.Alpha> { }
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "TAB007");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "InnerTables");
+        Assert.IsFalse(text.Contains("InnerTables"));
+    }
 }

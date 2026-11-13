@@ -307,4 +307,46 @@ public sealed class JobLooksGeneratorTests
 
         Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
     }
+
+    [TestMethod]
+    public void AnAbstractLookIsNoLook()
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public abstract class BaseLook : HistoryEditionLook<Alpha>;
+            public abstract class BaseKey : OpenSettlersLook<Beta>
+            {
+                protected BaseKey() : base("beta") { }
+            }
+            """
+        );
+
+        Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+        Assert.IsFalse(text.Contains("Base"));
+    }
+
+    [TestMethod]
+    public void ALookNestedInAGenericTypeIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, text, _) = Run(
+            Framework,
+            """
+            namespace OpenSettlers.MapView;
+            using OpenSettlers.Domain;
+            public class Outer<T>
+            {
+                public sealed class InnerLook(RuleTables tables) : HistoryEditionLook<Alpha>;
+                public sealed class InnerKey() : OpenSettlersLook<Beta>("beta");
+            }
+            """
+        );
+
+        CollectionAssert.AreEqual(new[] { "LOOK003", "LOOK003" }, diagnostics.Select(d => d.Id).ToArray());
+        StringAssert.Contains(diagnostics[0].GetMessage(), "InnerLook");
+        StringAssert.Contains(diagnostics[1].GetMessage(), "InnerKey");
+        Assert.IsFalse(text.Contains("Inner"));
+    }
 }

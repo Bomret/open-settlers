@@ -205,6 +205,47 @@ public sealed class ArchiveFileTests
         CollectionAssert.AreEqual(new byte[] { 1 }, archive.Data(archive[1]).ToArray());
     }
 
+    // Source: graphics-archives.md, "The header and the table": the row count includes the header's own row, so a
+    // table of 0 rows is the 8-byte header alone and a table of 1 row is the header row, with no entry.
+    [TestMethod]
+    public void ATableOfZeroRowsHoldsNoEntry()
+    {
+        var bytes = new byte[8];
+        ArchiveBytes.Put(bytes, 0, 8);
+
+        var archive = ArchiveFile.Read(bytes);
+
+        Assert.AreEqual(0, archive.RowCount);
+        Assert.AreEqual(0, archive.Entries.Count);
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => archive[1]);
+    }
+
+    [TestMethod]
+    public void ATableOfOneRowHoldsNoEntry()
+    {
+        var archive = Read(1);
+
+        Assert.AreEqual(1, archive.RowCount);
+        Assert.AreEqual(0, archive.Entries.Count);
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => archive[1]);
+    }
+
+    // Source: graphics-archives.md, "Corrupt archives" (an entry beyond the end of the file is reported on its
+    // own with its number) and "Archive_FillAliases" (an alias repeats the size and offset of its source row 1352).
+    [TestMethod]
+    public void AnAliasWhoseSourceRunsPastTheEndOfTheFileFailsOnItsOwnAndNamesTheAlias()
+    {
+        var bytes = ArchiveBytes.Build(1364);
+        ArchiveBytes.Put(bytes, 1352 * 8, 100);
+        ArchiveBytes.Put(bytes, 1352 * 8 + 4, (uint)bytes.Length - 10);
+        var archive = ArchiveFile.Read(bytes);
+
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => archive.Data(archive[1363]));
+
+        Assert.AreEqual(EntryState.Alias, archive[1363].State);
+        StringAssert.Contains(failure.Message, "entry 1363");
+    }
+
     [TestMethod]
     public void AnAbsentEntryHasNoDataToRead()
     {

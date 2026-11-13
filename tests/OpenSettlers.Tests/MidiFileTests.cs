@@ -268,6 +268,61 @@ public sealed class MidiFileTests
         StringAssert.Contains(error.Message, "cut short");
     }
 
+    // Source: docs/rules/music-file.md, "The file format": the events are channel, meta (0xFF), and
+    // system-exclusive (0xF0, 0xF7) events; the bad-data path is InvalidDataException with the reason named.
+    [TestMethod]
+    [DataRow((byte)0xF1)]
+    [DataRow((byte)0xF8)]
+    [DataRow((byte)0xFE)]
+    public void AStatusByteBetweenF1AndFEInsideATrackIsUnreadable(byte status)
+    {
+        var error = Assert.ThrowsExactly<InvalidDataException>(() =>
+            MidiFile.Read(File(Header(0, 1, 96), Track(Ev(0, status, 0))))
+        );
+
+        StringAssert.Contains(error.Message, $"0x{status:X2}");
+    }
+
+    // Source: music-file.md, "The file format": a delta time is a variable-length number of up to four bytes.
+    [TestMethod]
+    public void AVariableLengthNumberOfFiveBytesIsUnreadable()
+    {
+        var error = Assert.ThrowsExactly<InvalidDataException>(() =>
+            MidiFile.Read(File(Header(0, 1, 96), Track(Ev(0x81, 0x80, 0x80, 0x80, 0x00, 0x90, 60, 100))))
+        );
+
+        StringAssert.Contains(error.Message, "longer than four bytes");
+    }
+
+    // Source: music-file.md, "The file format": four bytes are the most a delta time takes.
+    [TestMethod]
+    public void AVariableLengthNumberOfFourBytesIsReadable()
+    {
+        var music = MidiFile.Read(File(Header(0, 1, 96), Track(Ev(0x80, 0x80, 0x80, 0x00, 0x90, 60, 100))));
+
+        Assert.AreEqual(1, music.Tracks[0].EventCount);
+    }
+
+    // Source: music-file.md, "In the engine": a division of 0 gives a length of 0.
+    [TestMethod]
+    public void APlainDivisionOfZeroGivesLengthZero()
+    {
+        var music = MidiFile.Read(File(Header(0, 1, 0), Track(Ev(0x60, 0x90, 60, 100))));
+
+        Assert.AreEqual(0.0, music.LengthSeconds);
+    }
+
+    // Source: music-file.md, "The file format": the program refuses a file only when an announced track
+    // lacks its tag, so a header that announces no track has none to lack.
+    [TestMethod]
+    public void AHeaderOfZeroTracksReadsWithNoTracksAndLengthZero()
+    {
+        var music = MidiFile.Read(Header(0, 0, 96));
+
+        Assert.AreEqual(0, music.Tracks.Count);
+        Assert.AreEqual(0.0, music.LengthSeconds);
+    }
+
     [TestMethod]
     public void ADataByteWithoutARunningStatusIsUnreadable()
     {

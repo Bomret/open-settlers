@@ -92,6 +92,38 @@ public sealed class PlayRunTests
     }
 
     [TestMethod]
+    public void AdvancingAFinishedRunSendsNothingAndStaysFinished()
+    {
+        // The run ended on a failed expect with `press A` still pending: only the Finished guard keeps it from running.
+        var run = Run("expect camera-x > 10\npress A");
+        Frames(run, 2);
+        Assert.IsTrue(run.Finished);
+        Assert.HasCount(1, run.Problems);
+
+        Frames(run, 100);
+
+        Assert.IsEmpty(_sent);
+        Assert.IsTrue(run.Finished);
+        Assert.HasCount(1, run.Problems);
+    }
+
+    // A hold at the end of the script: the run releases the key when its time has passed, and only then finishes.
+    [TestMethod]
+    public void AHoldThatEndsTheScriptReleasesItsKeyBeforeTheRunFinishes()
+    {
+        var run = Run("hold Right 1");
+
+        Frames(run, 29);
+        Assert.IsFalse(run.Finished);
+        Frames(run, 3);
+
+        Assert.IsTrue(run.Finished);
+        Assert.HasCount(2, _sent);
+        Assert.IsInstanceOfType<ReleaseStep>(_sent[1]);
+        Assert.IsEmpty(run.Problems);
+    }
+
+    [TestMethod]
     public void TheRunFinishesAfterTheLastWaitHasPassed()
     {
         var run = Run("press A\nwait 0.5");

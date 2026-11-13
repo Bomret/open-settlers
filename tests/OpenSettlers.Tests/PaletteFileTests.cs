@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Formats;
@@ -56,6 +57,31 @@ public sealed class PaletteFileTests
         var palette = PaletteFile.Read(Triples(0xFF, 0x80, 0x07));
 
         CollectionAssert.AreEqual(new byte[] { 252, 128, 4, 255 }, palette.Rgba(1).ToArray());
+    }
+
+    // Source: graphics-images.md, "The palette": 256 colors, indexes 0 to 255. An index outside it throws
+    // ArgumentOutOfRangeException: the engine's chosen API contract (no rules document states an outcome).
+    [TestMethod]
+    public void TheLastColorIsIndex255()
+    {
+        var palette = PaletteFile.Read(Triples(0xFF, 0x80, 0x07));
+
+        Assert.AreEqual(new Rgb(63, 32, 1), palette[255]);
+        CollectionAssert.AreEqual(new byte[] { 252, 128, 4, 255 }, palette.Rgba(255).ToArray());
+    }
+
+    [TestMethod]
+    [DataRow(-1)]
+    [DataRow(256)]
+    public void AnIndexOutsideZeroTo255IsOutOfRange(int index)
+    {
+        var palette = PaletteFile.Read(Triples(0, 0, 0));
+
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => palette[index]);
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
+        {
+            _ = palette.Rgba(index);
+        });
     }
 
     [TestMethod]

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -54,7 +53,7 @@ public sealed class ObjectGraphics
         }
 
         var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
-        var palette = Read(archive, 3, "the palette", data => PaletteFile.Read(data.Span));
+        var palette = TerrainGraphics.Entry(archive, 3, "the palette", data => PaletteFile.Read(data.Span));
         var sprites = new Dictionary<int, ObjectImage>();
 
         bool Holds(int entry) => entry < archive.RowCount && archive[entry].State != EntryState.Absent;
@@ -63,7 +62,12 @@ public sealed class ObjectGraphics
         {
             foreach (var entry in entries.Where(Holds))
             {
-                sprites[entry] = Read(archive, entry, what, data => ObjectImage.From(SpriteFile.Read(data), palette));
+                sprites[entry] = TerrainGraphics.Entry(
+                    archive,
+                    entry,
+                    what,
+                    data => ObjectImage.From(SpriteFile.Read(data), palette)
+                );
             }
         }
 
@@ -103,7 +107,7 @@ public sealed class ObjectGraphics
             .Concat(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1));
         foreach (var entry in shadowed.Where(entry => Holds(entry + ShadowOffset)))
         {
-            shadows[entry] = Read(
+            shadows[entry] = TerrainGraphics.Entry(
                 archive,
                 entry + ShadowOffset,
                 "the shadow mask",
@@ -128,27 +132,5 @@ public sealed class ObjectGraphics
             Shadows = shadows,
             Headroom = sprites.Values.Max(image => image.Height),
         };
-    }
-
-    /// <summary>Reads entry <paramref name="number"/> with <paramref name="read"/>; an absent or unreadable entry fails naming <paramref name="what"/> and the entry.</summary>
-    internal static T Read<T>(Archive archive, int number, string what, Func<ReadOnlyMemory<byte>, T> read)
-    {
-        try
-        {
-            var entry = archive[number];
-            if (entry.State == EntryState.Absent)
-            {
-                throw new InvalidDataException("the archive has no such entry");
-            }
-
-            return read(archive.Data(entry));
-        }
-        catch (Exception e) when (e is InvalidDataException or ArgumentOutOfRangeException)
-        {
-            throw new InvalidDataException(
-                $"{what} (entry {number}) of {TerrainGraphics.ArchiveFile} is unreadable: {e.Message}",
-                e
-            );
-        }
     }
 }

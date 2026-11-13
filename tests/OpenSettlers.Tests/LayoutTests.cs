@@ -330,6 +330,45 @@ public sealed class LayoutTests
     }
 
     [TestMethod]
+    public void AnEmptyPathIsOneProblem()
+    {
+        var read = Layout.ReadFile("");
+
+        Assert.IsNull(read.Layout);
+        CollectionAssert.AreEqual(new[] { "'': file: the path is empty" }, read.Problems.ToArray());
+    }
+
+    [TestMethod]
+    public void APathWithANulIsOneProblemNamingIt()
+    {
+        // The file system refuses a path with a NUL character (an ArgumentException), not an IOException.
+        var read = Layout.ReadFile("a\0b");
+
+        Assert.IsNull(read.Layout);
+        Assert.HasCount(1, read.Problems);
+        StringAssert.StartsWith(read.Problems[0], "a\0b: file: cannot be read: ");
+    }
+
+    [TestMethod]
+    public void ADirectoryPathIsOneProblemNamingIt()
+    {
+        // A directory cannot be read as a file whoever runs the test, root included.
+        var folder = System.IO.Directory.CreateTempSubdirectory("layout-tests").FullName;
+        try
+        {
+            var read = Layout.ReadFile(folder);
+
+            Assert.IsNull(read.Layout);
+            Assert.HasCount(1, read.Problems);
+            StringAssert.StartsWith(read.Problems[0], folder + ": ");
+        }
+        finally
+        {
+            System.IO.Directory.Delete(folder, true);
+        }
+    }
+
+    [TestMethod]
     public void AFileOnDiskLoadsAndItsProblemsNameItsPath()
     {
         var folder = System.IO.Directory.CreateTempSubdirectory("layout-tests").FullName;
