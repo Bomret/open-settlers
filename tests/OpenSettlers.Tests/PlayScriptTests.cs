@@ -368,6 +368,17 @@ public sealed class PlayScriptTests
     }
 
     [TestMethod]
+    public void APathWithANulIsOneProblemNamingThePath()
+    {
+        // The file system refuses a path with a NUL character (an ArgumentException), not an IOException.
+        var script = PlayScript.Read("a\0b");
+
+        Assert.HasCount(1, script.Problems);
+        StringAssert.StartsWith(script.Problems[0], "a\0b: script: cannot be read: ");
+        Assert.IsEmpty(script.Steps);
+    }
+
+    [TestMethod]
     public void ADirectoryPathIsOneProblemAndNoSteps()
     {
         // A directory cannot be read as a file whoever runs the test, root included.

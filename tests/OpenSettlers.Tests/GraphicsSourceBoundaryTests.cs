@@ -45,12 +45,25 @@ public sealed class GraphicsSourceBoundaryTests
     [TestMethod]
     public void NoClassReadsAnArchiveEntryButThroughTheOneHelper()
     {
-        var folder = Path.GetDirectoryName(Path.Combine(RootOf(), "src/MapView/x"))!;
+        // Every source file under src, so a helper in another folder (src/Adapters, src/Assets) is caught too. The asset check's
+        // palette read (src/Assets/ArchiveEntryKind.cs, PaletteOf) reads an entry of any archive, not of the map view's graphics
+        // archive the helper names, and is the one file besides the helper that holds the filter.
+        string[] own = ["src/MapView/TerrainGraphics.cs", "src/Assets/ArchiveEntryKind.cs"];
+        var root = RootOf();
+        var folder = Path.Combine(root, "src");
+        var checkedFiles = 0;
         foreach (var file in Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
         {
+            var relative = Path.GetRelativePath(root, file).Replace('\\', '/');
+            if (relative.Contains("/obj/") || relative.Contains("/bin/"))
+            {
+                continue;
+            }
+
+            checkedFiles++;
             var text = File.ReadAllText(file);
             Assert.DoesNotContain("ObjectGraphics.Read(", text, $"{file} reads an entry through a second helper");
-            if (Path.GetFileName(file) != "TerrainGraphics.cs")
+            if (Array.IndexOf(own, relative) < 0)
             {
                 // The filter and the message form of an entry read are the helper's; any other copy is a second helper.
                 Assert.DoesNotContain(
@@ -61,6 +74,12 @@ public sealed class GraphicsSourceBoundaryTests
                 Assert.DoesNotContain("is unreadable:", text, $"{file} words an entry read failure itself");
             }
         }
+
+        // The scan reaches the folders outside the map view.
+        Assert.IsGreaterThan(
+            Directory.GetFiles(Path.Combine(folder, "MapView"), "*.cs", SearchOption.AllDirectories).Length,
+            checkedFiles
+        );
 
         // The positive control: the helper still holds the strings the guard above looks for elsewhere.
         var helper = Read("src/MapView/TerrainGraphics.cs");

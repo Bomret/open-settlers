@@ -113,6 +113,37 @@ public sealed class HistoryEditionLooksTests
         );
     }
 
+    // The type 1 hut's handler at 0x43fed8 (docs/rules/settlers.md, job 11): the way back with a load sets byte 14 to 1, so at a
+    // work figure it adds the facing-back constant; a free walk with no load does not.
+    [TestMethod]
+    public void ATypeOneHutLookAddsTheFacingBackWorkConstantOnTheWayBackWithALoad()
+    {
+        var look = new TypeOneHutLook(Tables());
+
+        Assert.AreEqual(8, look.Add(Draw(new TypeOneHut(), BackWithLoad), High));
+    }
+
+    [TestMethod]
+    public void ATypeOneHutLookAddsThePlainWorkConstantOnAFreeWalkWithNoLoad()
+    {
+        var look = new TypeOneHutLook(Tables());
+        var empty = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(false)));
+
+        Assert.AreEqual(4, look.Add(Draw(new TypeOneHut(), empty), High));
+    }
+
+    // The carrier's handler at 0x43f8ae (docs/rules/goods.md, "Drawing a carrier with a good"): good 0 never reads its word, so a
+    // carrier with no good adds nothing even where the table's first word is not 0.
+    [TestMethod]
+    public void ACarrierLookAddsNothingForNoGoodWhateverTheTablesFirstWord()
+    {
+        var carried = new short[RuleTables.CarriedFigureCount];
+        carried[0] = 0x1100;
+        var look = new CarrierLook(Tables(carried));
+
+        Assert.AreEqual(0, look.Add(Draw(new Carrier(), new WalksRoad(null, new Heading(0)), carried: Good.None), 0));
+    }
+
     // The carrier's handler at 0x43f8ae: a good beyond the carried table (27 entries, goods 0 to 26) adds nothing, and the last good
     // the table covers adds its word.
     [TestMethod]
