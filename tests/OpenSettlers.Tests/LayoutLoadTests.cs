@@ -62,6 +62,58 @@ public sealed class LayoutLoadTests
         }
     }
 
+    [TestMethod]
+    public void AnEmptyPathExitsFourWithOneProblem()
+    {
+        var code = LayoutLoad.Run("", out var layout, out var message);
+
+        Assert.AreEqual(4, code);
+        Assert.IsNull(layout);
+        Assert.AreEqual("ERROR '': file: the path is empty", message);
+    }
+
+    [TestMethod]
+    public void ADirectoryPathExitsFourWithOneProblemNamingIt()
+    {
+        // A directory cannot be read as a file whoever runs the test, root included.
+        var folder = System.IO.Directory.CreateTempSubdirectory("layout-load").FullName;
+        try
+        {
+            var code = LayoutLoad.Run(folder, out var layout, out var message);
+
+            Assert.AreEqual(4, code);
+            Assert.IsNull(layout);
+            StringAssert.StartsWith(message, "ERROR " + folder + ": ");
+            Assert.DoesNotContain("; ", message);
+        }
+        finally
+        {
+            System.IO.Directory.Delete(folder, true);
+        }
+    }
+
+    [TestMethod]
+    public void SeveralProblemsAreJoinedWithSemicolonAndSpace()
+    {
+        var folder = System.IO.Directory.CreateTempSubdirectory("layout-load").FullName;
+        try
+        {
+            var bad = System.IO.Path.Combine(folder, "bad.jsonc");
+            System.IO.File.WriteAllText(bad, LayoutTests.Text(size: "9", seed: "5"));
+
+            var code = LayoutLoad.Run(bad, out _, out var message);
+
+            Assert.AreEqual(4, code);
+            StringAssert.StartsWith(message, "ERROR " + bad + ": size: ");
+            StringAssert.Contains(message, "; " + bad + ": seed: ");
+            Assert.AreEqual(2, message!.Split("; ").Length);
+        }
+        finally
+        {
+            System.IO.Directory.Delete(folder, true);
+        }
+    }
+
     static Game NewGame(Layout layout) => GameFactory.Create(TestProgram.Made(), layout.BuildMap());
 
     [TestMethod]

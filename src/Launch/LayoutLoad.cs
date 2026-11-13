@@ -9,7 +9,7 @@ public static class LayoutLoad
     /// <summary>
     /// Reads the layout file at <paramref name="path"/>. Returns 0 and the layout when it loads. Returns
     /// <see cref="LaunchArgs.BadArgumentExitCode"/> and a message of the form <c>ERROR file: entry: reason</c> (one
-    /// problem after another, joined by <c>; </c>) when the file is missing, cannot be read, or fails to load.
+    /// problem after another, joined by <c>; </c>) when the path is empty, the file is missing, cannot be read, or fails to load.
     /// </summary>
     public static int Run(string path, [NotNullWhen(true)] out Layout? layout, [NotNullWhen(false)] out string? message)
     {
