@@ -62,7 +62,11 @@ public sealed class GraphicsSourceBoundaryTests
             }
         }
 
-        Assert.Contains("internal static T Entry<T>(", Read("src/MapView/TerrainGraphics.cs"));
+        // The positive control: the helper still holds the strings the guard above looks for elsewhere.
+        var helper = Read("src/MapView/TerrainGraphics.cs");
+        Assert.Contains("internal static T Entry<T>(", helper);
+        Assert.Contains("e is InvalidDataException or ArgumentOutOfRangeException", helper);
+        Assert.Contains("is unreadable:", helper);
         Assert.DoesNotContain("static T Read<T>(", Read("src/MapView/ObjectGraphics.cs"));
     }
 
