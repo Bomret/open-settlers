@@ -14,6 +14,8 @@ Technical docs live in the repo as a hierarchy of `AGENTS.md` files:
 - **Hierarchy.** The root `AGENTS.md` holds project-wide instructions + the top-level index. A child
   `AGENTS.md` holds local rules for a subtree, created when a folder becomes a **durable boundary**
   with its own purpose, rules, workflow, or verification.
+- **Claude Code shim.** Each `AGENTS.md` has a sibling `CLAUDE.md` that holds only `@AGENTS.md`, so that
+  Claude Code loads it. A new child `AGENTS.md` gets one too.
 - **Read before editing.** Walk the `AGENTS.md` tree from the root down to the area you'll touch; follow
   the local rules — don't edit blindly.
 - **Update after meaningful changes.** When structure, ownership, workflow, or a child index changes →
