@@ -298,6 +298,9 @@ public sealed class RemovalLogicTests
         var hut = game.Buildings[1];
         Assert.IsTrue(game.Removal.RemoveBuildingAt(16, 2));
         Run(game, 5);
+        Assert.IsTrue(hut.IsDemolishing, "the precondition: the hut is still being demolished");
+        Assert.IsTrue(hut.BurnLeft > 0);
+        Assert.AreSame(hut, game.Buildings[1]);
         var (burnLeft, stamp, digest) = (hut.BurnLeft, hut.Stamp, game.Digest());
 
         var again = game.Removal.RemoveBuildingAt(16, 2);

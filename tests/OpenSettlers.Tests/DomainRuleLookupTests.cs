@@ -21,7 +21,7 @@ public sealed class DomainRuleLookupTests
     [TestMethod]
     public void TheDoorSpeedOfNoBuildingIsTheFirstEntry()
     {
-        // docs/rules/build-sites.md and RuleTables.DoorSpeed: no building reads the first entry (hand arithmetic: 100 + 0).
+        // RuleTables.DoorSpeed: no building reads the first entry (hand arithmetic: 100 + 0).
         Assert.AreEqual((byte)100, DoorTables().DoorSpeed((Building?)null));
     }
 
@@ -55,7 +55,7 @@ public sealed class DomainRuleLookupTests
     public void StoneAtIsFalseForAStepOutsideZeroToFifteenAndForATypeOutsideTheTable()
     {
         // The order words at 0x43f0ba (docs/rules/construction.md) hold 16 bits, a set bit a stone; every bit is set here, so
-        // only the range checks of the lookup can answer false.
+        // only the range checks of the lookup can answer false (RuleTables.StoneAt: false outside step 0 to 15 and outside the table).
         var tables = LookupTables();
         var forester = BuildingType.Forester;
 
@@ -71,7 +71,8 @@ public sealed class DomainRuleLookupTests
     public void BlowStepIsZeroForATypeOutsideTheTable()
     {
         // The words at 0x43f0fa are two for each type (docs/rules/construction.md): the forester (9) reads words 18 and 19
-        // (hand arithmetic: 500 + 18, 500 + 19); a type outside the table reads 0.
+        // (hand arithmetic: 500 + 18, 500 + 19); a type outside the table reads 0
+        // (RuleTables.BlowStep: 0 for a type outside the table).
         var tables = LookupTables();
 
         Assert.AreEqual((ushort)518, tables.BlowStep(BuildingType.Forester, late: false));
@@ -84,7 +85,8 @@ public sealed class DomainRuleLookupTests
     public void WorkerOfIsNullForATypeOutsideTheTable()
     {
         // The handlers of the jump table 0x42cd1d (docs/rules/build-sites.md) cover the 24 types; every type of the made-up
-        // table asks for the woodcutter, so only an index outside the table reads as none.
+        // table asks for the woodcutter, so only an index outside the table reads as none
+        // (RuleTables.WorkerOf: null for a type whose handler asks for none).
         var tables = LookupTables();
 
         Assert.IsNotNull(tables.WorkerOf(BuildingType.Forester));
@@ -96,7 +98,8 @@ public sealed class DomainRuleLookupTests
     public void StepTimeBelowTheFirstShapeAndPastTheLastReadsAsZero()
     {
         // docs/rules/settlers.md: the table covers the shapes -32 to 127 (StepTimeFirst to 127); entry i holds 1000 + i here
-        // (hand arithmetic: shape -32 is entry 0, shape 0 is entry 32).
+        // (hand arithmetic: shape -32 is entry 0, shape 0 is entry 32);
+        // RuleTables.StepTime: a shape outside the table reads as 0.
         var tables = LookupTables();
 
         Assert.AreEqual((ushort)1000, tables.StepTime(RuleTables.StepTimeFirst));
@@ -157,6 +160,7 @@ public sealed class DomainRuleLookupTests
         // the middle first (|2j - r| smallest, the lower j on a tie), then 0; a group is the turns (x, y) to (x - y, x) of a
         // seed. Hand arithmetic: ring 9 starts at entry 217, its seeds go 4, 5, 3, 6, 2, 7, 1, 8, 0, so the seed (9, 1)
         // starts the group at 217 + 6 * 6 = 253: (9,1), (8,9), (-1,8), (-9,-1), (-8,-9), (1,-8).
+        // The count 259 (entry 0 and entries 1 to 258) is docs/rules/settlers.md:360-361, state 0x19 searching entries 1 to 258.
         Assert.AreEqual(259, Spiral.SearchOffsets.Count);
         Assert.AreEqual((9, 1), Spiral.SearchOffsets[253]);
         Assert.AreEqual((-9, -1), Spiral.SearchOffsets[256]);
@@ -175,8 +179,7 @@ public sealed class DomainRuleLookupTests
     [DataRow(15, TerrainKind.Other)]
     public void TerrainCodes8To10And15AreOtherAndCodes11To14AreMountain(int code, TerrainKind kind)
     {
-        // docs/rules/map-form.md, the terrain codes: 11 to 14 are mountain, and 8 to 10 (the cactus land) and 15 (the highest
-        // code) are neither plain land nor mountain (BuildSite_SortTriangle, 0x44be72).
+        // docs/rules/build-sites.md:77-78: plain is 4 to 7, mountain 11 to 14, and any other code (8 to 10 and 15) is another kind.
         Assert.AreEqual(kind, new Terrain(code).Kind);
     }
 }

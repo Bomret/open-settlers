@@ -104,6 +104,8 @@ public sealed class SeedInfoTests
     }
 
     // Tables of made-up values generate a map with no install, so the run exits 0 with the report of that map.
+    // The full text is a delegation check (SeedInfo.Report of the generated map; the empty-sections test pins Report
+    // by hand); only the exit code and the hand-written prefix are independent.
     [TestMethod]
     public void RunningMadeUpTablesExitsZeroWithTheReportOfTheirMap()
     {

@@ -184,8 +184,8 @@ public sealed class MaskFileTests
         CollectionAssert.AreEqual(new byte[] { 252, 0, 0, 0, 252, 0, 0, 255 }, mask.ToRgba(Palette(), 5));
     }
 
-    // Source: graphics-images.md, "The palette": colors 0 to 255 are valid mask colors, and color 0 is forced
-    // to black whatever the entry holds.
+    // Source: graphics-images.md, "The palette": the palette holds 256 colors (0 to 255) and color 0 is
+    // forced to black whatever the entry holds.
     [TestMethod]
     [DataRow(0, 0)]
     [DataRow(255, 252)]

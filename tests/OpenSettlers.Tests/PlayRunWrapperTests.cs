@@ -398,7 +398,8 @@ public class PlayRunWrapperTests
     // the trap in tools/play-run.sh states (`exit 130`).
     static void Signal(Running call, string signal)
     {
-        using var kill = Process.Start("kill", ["-s", signal, call.Pid.ToString()])!;
+        // The shell's own kill builtin, so a host with no standalone kill executable still runs the case.
+        using var kill = Process.Start("sh", ["-c", "kill -s \"$1\" \"$2\"", "sh", signal, call.Pid.ToString()])!;
         kill.WaitForExit();
         Assert.AreEqual(0, kill.ExitCode, $"kill -s {signal} failed");
     }

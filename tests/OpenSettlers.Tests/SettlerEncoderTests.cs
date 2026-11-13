@@ -204,7 +204,8 @@ public sealed class SettlerEncoderTests
     // leaves the bytes it does not own at 0.
 
     // construction.md, state 9: byte 11 is 1 while he looks for the next material and 0xff while he blows; byte 14 holds the count of
-    // the materials taken in its low nibble and the second figure in bit 7; byte 15 holds the blows left.
+    // the materials taken in its low nibble and the second figure in bit 7; byte 15 holds the blows left; the word at 12 holds
+    // the site's slot (construction.md, the start).
     [TestMethod]
     public void TheBuilderHoldsTheBlowModeTheMaterialsAndTheSecondFigureInByte14()
     {
@@ -302,6 +303,7 @@ public sealed class SettlerEncoderTests
 
     // forestry.md, state 0x14: bytes 11 and 12 the way back, byte 13 the east way back again, byte 14 0xff once the sapling is down and
     // 0 before. The way back (2, -3) gives byte 11 2 and byte 12 0xfd, so the word at 12 is 0xfd + 256 * 2 = 0x02fd.
+    // Byte 15 (8) is the walk's memory (forestry.md).
     [TestMethod]
     public void TheForesterHoldsTheWayBackTwiceAndByte14ForTheSapling()
     {

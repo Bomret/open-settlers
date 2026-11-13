@@ -59,7 +59,7 @@ public sealed class ZoomTests
     [TestMethod]
     public void FitNeverLowersTheScale()
     {
-        // A 100-pixel view needs a scale of 0.25 at the least, below the 1 the zoom starts at.
+        // A 100-pixel view needs a scale of about 0.08 at the least (max(100/2048, 100/1280)), below the 1 the zoom starts at.
         var zoom = new Zoom();
         zoom.Fit(Smallest, 100, 100);
 

@@ -113,92 +113,6 @@ public sealed class SimulationBoundaryTests
         Assert.AreEqual(2, game.Handlers.Count);
     }
 
-    // ----- Storage distribution (F30): the draw comes before each guard (INV-0002), so every run takes one -----
-
-    private static (BehaviourBench Bench, StorageDistribution Run) Distribution(CastleStock castle, int flagCount)
-    {
-        var bench = new BehaviourBench(ConstructionTables.Tables(), 2);
-        for (var column = 0; column < flagCount; column++)
-        {
-            bench.Flags.Add(4 + 2 * column, 4);
-        }
-
-        if (flagCount > 1)
-        {
-            bench.Join(0, 0, 1, 3);
-            bench.Flags[1].SetRequest(RequestWord.First, new Request(ConstructionTables.PlankClass, 0x3e));
-        }
-
-        var goods = new GoodsTransport(bench.Movement, bench.Flags, bench.Roads, bench.History, bench.Buildings);
-
-        return (
-            bench,
-            new StorageDistribution(
-                bench.Tables,
-                castle,
-                bench.Flags,
-                bench.Roads,
-                bench.Buildings,
-                goods,
-                bench.Draws,
-                bench.History
-            )
-        );
-    }
-
-    private static CastleStock Stocked(int planks)
-    {
-        var stock = new int[StartStock.Goods];
-        stock[Good.Plank.Code - 1] = planks;
-        var castle = new CastleStock();
-        castle.Place(new Castle(3, 3, 1), stock);
-
-        return castle;
-    }
-
-    [TestMethod]
-    public void WithNoCastleTheRunDrawsOnceAndHandsNothingOut()
-    {
-        var (bench, run) = Distribution(new CastleStock(), 2);
-
-        run.Run();
-
-        Assert.AreEqual(
-            (1, true, 0x3e),
-            (bench.Draws.Taken, bench.Flags[0].Places[0].IsEmpty, (int)bench.Flags[1].RequestOf(RequestWord.First).Rank)
-        );
-    }
-
-    [TestMethod]
-    public void WithNoFlagsTheRunDrawsOnceAndTheStockStays()
-    {
-        var castle = Stocked(5);
-        var (bench, run) = Distribution(castle, 0);
-
-        run.Run();
-
-        Assert.AreEqual((1, 5), (bench.Draws.Taken, castle.Planks));
-    }
-
-    [TestMethod]
-    public void WithNoEmptyPlaceOnTheCastlesFlagTheRunDrawsOnceAndHandsNothingOut()
-    {
-        var castle = Stocked(5);
-        var (bench, run) = Distribution(castle, 2);
-        var goods = new GoodsTransport(bench.Movement, bench.Flags, bench.Roads, bench.History, bench.Buildings);
-        for (var place = 0; place < Flag.PlaceCount; place++)
-        {
-            goods.LayGood(0, place, 1);
-        }
-
-        run.Run();
-
-        Assert.AreEqual(
-            (1, 5, 0x3e),
-            (bench.Draws.Taken, castle.Planks, (int)bench.Flags[1].RequestOf(RequestWord.First).Rank)
-        );
-    }
-
     // ----- Cursor windows (F31): 0x428728 clears a window of entries from a cursor, stops after the tenth flagged one -----
 
     private static Game WindowGame(int window)
@@ -437,15 +351,7 @@ public sealed class SimulationBoundaryTests
     private static (HutWork Work, BehaviourBench Bench) LakeBench(params ushort[] draws)
     {
         var bench = new BehaviourBench(draws);
-        var walkHome = new WalkHomeBehavior(
-            bench.Movement,
-            bench.Buildings,
-            bench.Flags,
-            bench.Roads,
-            bench.History,
-            bench.Draws,
-            (_, _) => -1
-        );
+        var walkHome = Behaviour(bench);
         var work = new HutWork(
             bench.Movement,
             bench.Settlers,

@@ -66,12 +66,12 @@ public sealed class TerrainRulesTests
         Assert.AreEqual(new TerrainDraw(141 + 18, Texture(code, 3)), draw);
     }
 
-    // The largest step: upper row 1 column 5 (0x1c, k 7) is the slopes 5 and 1; lower row 4 column 1 (0x18, k 6) the slopes 1 and 4.
+    // The largest step: upper row 1 column 5 (0x1c, k 7) is the slopes 5 and 1; lower index 36 (0x1c, k 7) the slopes 0 and 4.
     [TestMethod]
     public void TheLargestStepsOfTheTablesAreReached()
     {
         Assert.AreEqual(new TerrainDraw(60 + 14, 260 + 7), TerrainRules.Upper(10, 9, 13, new Terrain(7)));
-        Assert.AreEqual(new TerrainDraw(141 + 37, 260 + 6), TerrainRules.Lower(10, 7, 10, new Terrain(5)));
+        Assert.AreEqual(new TerrainDraw(141 + 36, 260 + 7), TerrainRules.Lower(10, 6, 10, new Terrain(5)));
     }
 
     // Level ground: the slopes 4 and 4, the index 40, 0x10 in both tables, k 4; masks 100 and 181.

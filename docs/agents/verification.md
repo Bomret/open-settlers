@@ -30,7 +30,7 @@ inconclusive in either command without the install. `NeedsTests` pins the filter
 No static field or static property initializer and no static constructor of a test class may reach the install
 (`TestProgram.Tables()`, `TestProgram.OpenInstall()`). Without the install the `Assert.Inconclusive` they throw then fires
 during type initialization, and MSTest fails every test of the class with a `TypeInitializationException`. Build the
-value inside the test instead, as the cached `Map` accessor of `MapPickingTests` does, and read that accessor only from
+value inside the test instead, as the `Generated()` method of `ObjectDrawsTests` does, and call it only from
 the test. A lambda, local function, or method group that runs only when called later is allowed, such as
 `new Lazy<Map>(() => Generated())`. An instance initializer or constructor is allowed: it runs when MSTest creates the
 instance for a test, which then reports inconclusive.

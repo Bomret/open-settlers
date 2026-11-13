@@ -59,8 +59,8 @@ public sealed class PaletteFileTests
         CollectionAssert.AreEqual(new byte[] { 252, 128, 4, 255 }, palette.Rgba(1).ToArray());
     }
 
-    // Source: graphics-images.md, "The palette": 256 colors, indexes 0 to 255; an index outside it throws
-    // ArgumentOutOfRangeException as the Archive indexer's stated outcome does for a number outside its table.
+    // Source: graphics-images.md, "The palette": 256 colors, indexes 0 to 255. An index outside it throws
+    // ArgumentOutOfRangeException: the engine's chosen API contract (no rules document states an outcome).
     [TestMethod]
     public void TheLastColorIsIndex255()
     {

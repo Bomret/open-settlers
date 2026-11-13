@@ -50,6 +50,16 @@ public sealed class GraphicsSourceBoundaryTests
         {
             var text = File.ReadAllText(file);
             Assert.DoesNotContain("ObjectGraphics.Read(", text, $"{file} reads an entry through a second helper");
+            if (Path.GetFileName(file) != "TerrainGraphics.cs")
+            {
+                // The filter and the message form of an entry read are the helper's; any other copy is a second helper.
+                Assert.DoesNotContain(
+                    "e is InvalidDataException or ArgumentOutOfRangeException",
+                    text,
+                    $"{file} filters an entry read itself"
+                );
+                Assert.DoesNotContain("is unreadable:", text, $"{file} words an entry read failure itself");
+            }
         }
 
         Assert.Contains("internal static T Entry<T>(", Read("src/MapView/TerrainGraphics.cs"));

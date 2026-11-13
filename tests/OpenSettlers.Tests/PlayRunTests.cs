@@ -94,15 +94,17 @@ public sealed class PlayRunTests
     [TestMethod]
     public void AdvancingAFinishedRunSendsNothingAndStaysFinished()
     {
-        var run = Run("press A");
+        // The run ended on a failed expect with `press A` still pending: only the Finished guard keeps it from running.
+        var run = Run("expect camera-x > 10\npress A");
         Frames(run, 2);
         Assert.IsTrue(run.Finished);
+        Assert.HasCount(1, run.Problems);
 
         Frames(run, 100);
 
-        Assert.HasCount(1, _sent);
+        Assert.IsEmpty(_sent);
         Assert.IsTrue(run.Finished);
-        Assert.IsEmpty(run.Problems);
+        Assert.HasCount(1, run.Problems);
     }
 
     // A hold at the end of the script: the run releases the key when its time has passed, and only then finishes.
