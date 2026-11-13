@@ -13,11 +13,11 @@ public sealed class ShotCropTests
     private const double OriginX = 0;
     private const double OriginY = 40;
 
-    // Built by the first test that reads it, so that without the install its Assert.Inconclusive fires inside that
-    // test rather than during type initialization.
+    // A map generated in code from made-up rule tables (no install). The crop geometry reads only the map's size and
+    // heights, which the seed gives.
     private static Map? _map;
 
-    private static Map Map => _map ??= MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
+    private static Map Map => _map ??= MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
 
     private static string? Box(
         (double X, double Y) camera,
@@ -75,7 +75,6 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void ARadiusOfZeroFramesTheAimedTileAlone()
     {
         var camera = (300.0, 200.0);
@@ -95,7 +94,6 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void TheBoxCoversEveryTileWithinTheRadiusAndTheHeadroomAbove()
     {
         var camera = (300.0, 200.0);
@@ -125,7 +123,6 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void ATileAtTheSeamTakesItsRingFromTheSameCopy()
     {
         // Camera on the map's north-west node: column 0 is drawn near the middle, column -1 is the last column.
@@ -137,7 +134,6 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void ABoxReachingPastTheCanvasIsClippedToIt()
     {
         // A tile drawn near the top-left corner of the canvas, with a wide ring.
@@ -153,7 +149,6 @@ public sealed class ShotCropTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void AnAimedTileThatCannotBeClickedIsTheClickProblem()
     {
         var problem = Box((300.0, 200.0), 1, Map.Size.Width, 0, 1, 0, out _);

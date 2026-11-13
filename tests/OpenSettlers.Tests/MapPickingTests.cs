@@ -8,17 +8,16 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 [TestClass]
-[TestCategory(Needs.Install)]
 public sealed class MapPickingTests
 {
     private const double ViewWidth = 800;
     private const double ViewHeight = 600;
 
-    // Built by the first test that reads it, so that without the install its Assert.Inconclusive fires inside that
-    // test rather than during type initialization.
+    // A map generated in code from made-up rule tables (no install). Picking and aiming read only the map's size and
+    // heights, which the seed gives.
     private static Map? _map;
 
-    private static Map Map => _map ??= MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
+    private static Map Map => _map ??= MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
 
     public static IEnumerable<object[]> Scales =>
         new[] { 0.25, 0.8, 1, 2.5, 4 }.Select(scale => new object[] { scale });
@@ -332,7 +331,7 @@ public sealed class MapPickingTests
     [DynamicData(nameof(Scales))]
     public void AClickOnAFlagAsItIsDrawnPicksTheFlagsNode(double scale)
     {
-        var map = MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
+        var map = MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
         var (column, row) = (12, 9);
         map.At(column, row).Object = MapObject.Flag;
         var (x, y) = DrawnPoint(column, row);

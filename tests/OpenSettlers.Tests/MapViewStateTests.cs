@@ -10,10 +10,9 @@ public sealed class MapViewStateTests
     const string Seed = "1234567812345678";
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void OpeningGeneratesTheMapOfTheGivenSeedAndSize()
     {
-        var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
 
         Assert.IsNotNull(state.Map);
         Assert.AreEqual(32, state.Map.Size.Width);
@@ -22,10 +21,9 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void AValidNewSeedRegeneratesTheMap()
     {
-        var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
         var first = state.Map;
 
         var changed = state.Apply("8765432187654321", 1);
@@ -36,10 +34,9 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void TheAppliedSeedTypedInGroupsDoesNotRegenerate()
     {
-        var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
 
         var changed = state.Apply("1234 5678 1234 5678", 1);
 
@@ -47,10 +44,9 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void ANewSizeRegeneratesTheMap()
     {
-        var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
 
         var changed = state.Apply(Seed, 2);
 
@@ -60,10 +56,9 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void TheSameSeedAndSizeKeepTheMap()
     {
-        var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
         var first = state.Map;
 
         Assert.IsFalse(state.Apply(Seed, 1));
@@ -71,10 +66,9 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void AnInvalidSeedShowsItsReasonAndKeepsTheLastMap()
     {
-        var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
         var first = state.Map;
 
         var changed = state.Apply("12345678123456", 2);
@@ -87,10 +81,9 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void AValidChangeClearsTheProblem()
     {
-        var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
         state.Apply("9", 1);
 
         state.Apply("8765432187654321", 1);
@@ -99,10 +92,9 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void ASizeTheOriginalDoesNotOfferKeepsTheLastMap()
     {
-        var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
         var first = state.Map;
 
         Assert.IsFalse(state.Apply(Seed, 9));
@@ -111,10 +103,9 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
-    [TestCategory(Needs.Install)]
     public void TheStockLevelIsThatOfTheAppliedSeed()
     {
-        var state = MapViewState.Open(TestProgram.Tables(), Seed, 1);
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
 
         // The screen seed 1234567812345678 is the free-game seed 3905,0577,7739, whose level the emulator gave as 2
         // (opponents:3905,0577,7739).
