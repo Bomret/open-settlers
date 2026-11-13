@@ -339,7 +339,7 @@ public sealed class PlayScript
             {
                 Path = path,
                 Steps = [],
-                Problems = [$"{path}: script: cannot be read:{e.Message}"],
+                Problems = [$"{path}: script: cannot be read: {e.Message}"],
             };
         }
 
