@@ -57,9 +57,9 @@ internal static class PythonTool
         {
             return Process.Start(info)!;
         }
-        catch (Win32Exception)
+        catch (Win32Exception exception)
         {
-            Assert.Fail(MissingHint);
+            Assert.Fail($"{MissingHint} ({exception.Message})");
             throw;
         }
     }

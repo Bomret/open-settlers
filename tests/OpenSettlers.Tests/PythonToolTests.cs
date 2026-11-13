@@ -51,6 +51,19 @@ public sealed class PythonToolTests
     }
 
     [TestMethod]
+    public void AStartFailureNamesItsCauseBesideTheHint()
+    {
+        var missing = Path.Combine(_folder, "no-such-directory");
+
+        var exception = Assert.ThrowsExactly<AssertFailedException>(() =>
+            PythonTool.Start(new ProcessStartInfo("sh") { WorkingDirectory = missing })
+        );
+
+        StringAssert.Contains(exception.Message, "mise install");
+        StringAssert.Contains(exception.Message, missing, "the cause: the working directory that does not exist");
+    }
+
+    [TestMethod]
     public void AnEmptyPathFailsTheTestWithTheMiseInstallHint()
     {
         var exception = Assert.ThrowsExactly<AssertFailedException>(() => PythonTool.Resolve(""));
