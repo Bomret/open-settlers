@@ -289,6 +289,22 @@ public sealed class RemovalLogicTests
         Assert.IsTrue(Huts.Place(game, 16, 2), "a hut may stand there again");
     }
 
+    // The click class of a building being demolished is 0 (Removal.ClickClass: IsDemolishing refuses class 3), so a second removal
+    // of the same building is refused and its burn keeps its start.
+    [TestMethod]
+    public void ARepeatRemovalOfABuildingAlreadyBeingDemolishedIsRefusedAndChangesNothing()
+    {
+        var game = World();
+        var hut = game.Buildings[1];
+        Assert.IsTrue(game.Removal.RemoveBuildingAt(16, 2));
+        Run(game, 5);
+        var (burnLeft, stamp, digest) = (hut.BurnLeft, hut.Stamp, game.Digest());
+
+        var again = game.Removal.RemoveBuildingAt(16, 2);
+
+        Assert.AreEqual((false, burnLeft, stamp, digest), (again, hut.BurnLeft, hut.Stamp, game.Digest()));
+    }
+
     // Acceptance: a removal changes nothing else. The terrain and the heights, the stock, and the second road with its flags, the
     // same before and after the road next to it is taken down. (The hut is no part of it: its worker may walk the road that goes,
     // and then the hut's status changes, as the original's dismissal of the worker does.)
