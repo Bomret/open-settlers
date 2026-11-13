@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -23,63 +22,21 @@ public sealed class ToolArgumentTests
     [TestCleanup]
     public void Cleanup() => Directory.Delete(_folder, true);
 
-    private static string RepoRoot()
-    {
-        var dir = AppContext.BaseDirectory;
-        while (!File.Exists(Path.Combine(dir, "tools", "GhidraDump", "emulate.py")))
-        {
-            dir =
-                Path.GetDirectoryName(dir)
-                ?? throw new InvalidOperationException("tools/GhidraDump/emulate.py not found");
-        }
-
-        return dir;
-    }
-
     private static (int Exit, string Stdout, string Stderr) Python(
         string workingDirectory,
         string[] arguments,
-        string? path = null
+        string? path = null,
+        string? siedlerDir = null
     )
     {
-        var info = new ProcessStartInfo("python3")
-        {
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        info.ArgumentList.Add("-I");
-        info.ArgumentList.Add("-B");
-        foreach (var argument in arguments)
-        {
-            info.ArgumentList.Add(argument);
-        }
+        var run = PythonTool.Run(workingDirectory, arguments, path, siedlerDir);
 
-        info.Environment.Remove("SIEDLER_DIR");
-        if (path is not null)
-        {
-            info.Environment["PATH"] = path + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
-        }
-
-        try
-        {
-            using var process = Process.Start(info)!;
-            var stdout = process.StandardOutput.ReadToEndAsync();
-            var stderr = process.StandardError.ReadToEndAsync();
-            process.WaitForExit();
-
-            return (process.ExitCode, stdout.Result, stderr.Result);
-        }
-        catch (System.ComponentModel.Win32Exception)
-        {
-            Assert.Inconclusive("python3 is not on the path");
-            throw;
-        }
+        return (run.Exit, run.Stdout, run.Stderr);
     }
 
-    private static string Emulate() => Path.Combine(RepoRoot(), "tools", "GhidraDump", "emulate.py");
+    private static string Emulate() => PythonTool.InRepo("tools", "GhidraDump", "emulate.py");
 
-    private static string Digest() => Path.Combine(RepoRoot(), "tools", "WindowsCheck", "digest.py");
+    private static string Digest() => PythonTool.InRepo("tools", "WindowsCheck", "digest.py");
 
     private static void AssertUsage((int Exit, string Stdout, string Stderr) run)
     {
@@ -195,6 +152,240 @@ public sealed class ToolArgumentTests
 
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "size");
+        Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
+    }
+
+    private string Game(string programName = "Siedler1.exe")
+    {
+        var game = Path.Combine(_folder, "game");
+        Directory.CreateDirectory(game);
+        File.WriteAllBytes(Path.Combine(game, programName), [1, 2, 3]);
+
+        return game;
+    }
+
+    private string RecordingHeadless(string tail) =>
+        PythonTool.StandInHeadless(
+            Path.Combine(_folder, "bin"),
+            $"printf '%s\\n' \"$@\" > '{Path.Combine(_folder, "args.txt")}'\n{tail}\n"
+        );
+
+    private string[] RecordedArguments() => File.ReadAllLines(Path.Combine(_folder, "args.txt"));
+
+    // emulate.py: its own refusals, in the order it checks them (the docstring and the code of tools/GhidraDump/emulate.py).
+
+    [TestMethod]
+    [DataRow("draw:1-1:0,0:a", "rng:0,0,0")]
+    [DataRow("rng:0,0,0", "draw:1-1:0,0:a")]
+    public void ADrawCommandMixedWithANonDrawCommandIsRefused(params string[] commands)
+    {
+        var run = Python(_folder, [Emulate(), "--game", Game(), .. commands]);
+
+        Assert.AreNotEqual(0, run.Exit);
+        StringAssert.Contains(run.Stderr, "emulate.py: draw: runs alone");
+        Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
+    }
+
+    [TestMethod]
+    public void NoCommandIsRefusedWithUsage() => AssertUsage(Python(_folder, [Emulate(), "--game", Game()]));
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void NoInstallFolderIsRefusedWithTheWayToGiveOne(bool missingFolder)
+    {
+        string[] game = missingFolder ? ["--game", Path.Combine(_folder, "missing")] : [];
+
+        var run = Python(_folder, [Emulate(), .. game, "rng:0,0,0"]);
+
+        Assert.AreNotEqual(0, run.Exit);
+        StringAssert.Contains(run.Stderr, "emulate.py: no install folder: pass --game <dir> or set SIEDLER_DIR");
+        Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
+    }
+
+    [TestMethod]
+    public void AMissingAnalyzeHeadlessIsRefusedWithTheWayToGetIt()
+    {
+        var run = Python(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"]);
+
+        Assert.AreNotEqual(0, run.Exit);
+        StringAssert.Contains(run.Stderr, "emulate.py: analyzeHeadless is not on PATH");
+        Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
+    }
+
+    [TestMethod]
+    public void AGhidraThatExitsNonZeroFailsTheRunAndShowsItsOutput()
+    {
+        var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'\necho STANDIN-LOG\nexit 3");
+
+        var run = Python(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"], bin);
+
+        Assert.AreEqual(1, run.Exit);
+        StringAssert.Contains(run.Stderr, "STANDIN-LOG");
+    }
+
+    [TestMethod]
+    public void AGhidraThatPrintsNoEmuLineFailsTheRunAndShowsItsOutput()
+    {
+        var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> no result'\necho STANDIN-LOG");
+
+        var run = Python(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"], bin);
+
+        Assert.AreEqual(1, run.Exit);
+        Assert.IsFalse(run.Stdout.Contains("EMU "), "no EMU line, no recording");
+        StringAssert.Contains(run.Stderr, "STANDIN-LOG");
+    }
+
+    [TestMethod]
+    [DataRow("Siedler1.exe")]
+    [DataRow("siedler1.exe")]
+    [DataRow("SIEDLER1.EXE")]
+    public void TheProgramIsFoundWhateverTheCaseOfItsName(string name)
+    {
+        var game = Game(name);
+        var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'");
+
+        var run = Python(_folder, [Emulate(), "--game", game, "rng:0,0,0"], bin);
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        Assert.AreEqual("EMU ok", run.Stdout.Trim());
+        var arguments = RecordedArguments();
+        Assert.AreEqual(Path.Combine(game, name), arguments[Array.IndexOf(arguments, "-import") + 1]);
+    }
+
+    [TestMethod]
+    public void AFolderWithNoProgramIsRefusedWithTheFolderNamed()
+    {
+        var game = Game("other.exe");
+
+        var run = Python(_folder, [Emulate(), "--game", game, "rng:0,0,0"], RecordingHeadless("exit 0"));
+
+        Assert.AreNotEqual(0, run.Exit);
+        StringAssert.Contains(run.Stderr, $"emulate.py: no Siedler1.exe in {game}");
+    }
+
+    [TestMethod]
+    public void WithoutGameTheInstallComesFromSiedlerDir()
+    {
+        var game = Game();
+        var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'");
+
+        var run = Python(_folder, [Emulate(), "rng:0,0,0"], bin, siedlerDir: game);
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        var arguments = RecordedArguments();
+        Assert.AreEqual(Path.Combine(game, "Siedler1.exe"), arguments[Array.IndexOf(arguments, "-import") + 1]);
+    }
+
+    [TestMethod]
+    public void TheGameFlagOverridesSiedlerDir()
+    {
+        var game = Game();
+        var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'");
+
+        var run = Python(
+            _folder,
+            [Emulate(), "--game", game, "rng:0,0,0"],
+            bin,
+            siedlerDir: Path.Combine(_folder, "elsewhere")
+        );
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        var arguments = RecordedArguments();
+        Assert.AreEqual(Path.Combine(game, "Siedler1.exe"), arguments[Array.IndexOf(arguments, "-import") + 1]);
+    }
+
+    // digest.py. The expected digests are FNV-1a 64 over each layer in row-major order, computed outside this repository's
+    // code with a separate implementation (node BigInt, offsets from docs/rules/map-form.md as digest.py's docstring cites
+    // them): a at y * 8 * width + x * 4 and b = a + 4 * width; flags a, height a + 1, terrain a + 2, lake b, object a + 3,
+    // resource b. The dump's byte i is i * 7 + (i >> 8) * 13 + 3 modulo 256, so every offset holds a different byte.
+
+    [TestMethod]
+    [DataRow(
+        1,
+        "D871A1A96E8660A5 9A4348E0C1E647A5 CC99F4A73EF061E5 2911A162A38DEBA5 EDE936C6C7367E65 2911A162A38DEBA5"
+    )]
+    [DataRow(
+        2,
+        "9FE64BD2B22CC125 283F8B0F1C7A5925 8FE3EB50C76206A5 ABD3870F8BA5C525 B8F752FB97BB7325 ABD3870F8BA5C525"
+    )]
+    [DataRow(
+        3,
+        "290AC421349AF725 FE2EA6DC437C2325 40A8F022F3459A25 B062C3B1E8299725 5969DEBA62D56325 B062C3B1E8299725"
+    )]
+    public void DigestReadsEachLayerFromItsOffsetInRowMajorOrder(int size, string digests)
+    {
+        var (width, height) = size switch
+        {
+            1 => (32, 32),
+            2 => (64, 32),
+            _ => (64, 64),
+        };
+        var bytes = new byte[height * 8 * width];
+        for (var i = 0; i < bytes.Length; i++)
+        {
+            bytes[i] = (byte)(i * 7 + (i >> 8) * 13 + 3);
+        }
+
+        var dump = Path.Combine(_folder, "dump.bin");
+        File.WriteAllBytes(dump, bytes);
+
+        var run = Python(_folder, [Digest(), dump, size.ToString(), "6359,a0d2,b4fa", "7590,f842,468d", "5"]);
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        Assert.AreEqual(
+            $"Windows run | {size} 6359,A0D2,B4FA CountResource1 7590,F842,468D {digests} total=5",
+            run.Stdout.Trim()
+        );
+    }
+
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(4)]
+    [DataRow(6)]
+    public void DigestWithTheWrongNumberOfArgumentsPrintsItsUsage(int count)
+    {
+        var run = Python(_folder, [Digest(), .. Enumerable.Repeat("x", count)]);
+
+        Assert.AreNotEqual(0, run.Exit);
+        StringAssert.Contains(run.Stderr, "Usage: python3 -I digest.py <dump-file> <size> <seed> <rng> <total>");
+        Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
+    }
+
+    [TestMethod]
+    [DataRow("0")]
+    [DataRow("4")]
+    public void DigestRefusesASizeOutsideOneToThree(string size)
+    {
+        var run = Python(_folder, [Digest(), Path.Combine(_folder, "none"), size, "1,2,3", "4,5,6", "7"]);
+
+        Assert.AreNotEqual(0, run.Exit);
+        StringAssert.Contains(run.Stderr, "the size must be 1, 2, or 3");
+        Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
+    }
+
+    [TestMethod]
+    public void DigestRefusesADumpOfTheWrongLengthWithTheLengthItNeeds()
+    {
+        var dump = Path.Combine(_folder, "dump.bin");
+        File.WriteAllBytes(dump, [1, 2, 3]);
+
+        var run = Python(_folder, [Digest(), dump, "1", "1,2,3", "4,5,6", "7"]);
+
+        Assert.AreNotEqual(0, run.Exit);
+        StringAssert.Contains(run.Stderr, "size 1 needs 8192 bytes, the dump has 3");
+        Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
+    }
+
+    [TestMethod]
+    public void DigestRefusesADumpItCannotReadWithTheFileNamed()
+    {
+        var dump = Path.Combine(_folder, "missing.bin");
+
+        var run = Python(_folder, [Digest(), dump, "1", "1,2,3", "4,5,6", "7"]);
+
+        Assert.AreNotEqual(0, run.Exit);
+        StringAssert.Contains(run.Stderr, dump);
         Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
     }
 }
