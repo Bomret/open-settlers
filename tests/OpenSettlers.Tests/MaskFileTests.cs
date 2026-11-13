@@ -184,6 +184,22 @@ public sealed class MaskFileTests
         CollectionAssert.AreEqual(new byte[] { 252, 0, 0, 0, 252, 0, 0, 255 }, mask.ToRgba(Palette(), 5));
     }
 
+    // Source: graphics-images.md, "The palette": colors 0 to 255 are valid mask colors, and color 0 is forced
+    // to black whatever the entry holds.
+    [TestMethod]
+    [DataRow(0, 0)]
+    [DataRow(255, 252)]
+    public void TheMaskColorsAtBothEndsOfThePaletteDrawThatColor(int color, byte red)
+    {
+        var bytes = new byte[768];
+        bytes[color * 3] = 0xFC;
+
+        var mask = MaskFile.Read(Entry(1, 1, 0, 1, 0, 0));
+        var rgba = mask.ToRgba(PaletteFile.Read(bytes), color);
+
+        CollectionAssert.AreEqual(new byte[] { red, 0, 0, 255 }, rgba);
+    }
+
     // The side bound is inclusive: a graphic exactly 2048 wide or tall reads.
     [TestMethod]
     [DataRow(2048, 1)]

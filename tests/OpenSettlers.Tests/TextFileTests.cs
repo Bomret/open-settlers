@@ -62,6 +62,18 @@ public sealed class TextFileTests
         CollectionAssert.AreEqual(new[] { "A B |one" }, Pairs(file));
     }
 
+    // Source: docs/rules/text-files.md, "Key": the key is everything before the first equals sign, so a line
+    // that starts with the equals sign has the empty key.
+    [TestMethod]
+    public void ALineThatStartsWithTheEqualsSignHasTheEmptyKey()
+    {
+        var file = Read("=\"value\"\r\n");
+
+        CollectionAssert.AreEqual(new[] { "|value" }, Pairs(file));
+        Assert.AreEqual("value", file.Get(""));
+        Assert.AreEqual(0, file.Rejected.Count);
+    }
+
     [TestMethod]
     public void ALastLineWithoutCrlfIsRead()
     {
