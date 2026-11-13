@@ -72,7 +72,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         _sites = new SiteDrawings((type, layer) => SiteLayer(layer, type));
     }
 
-    /// <summary>The number of player colours; a player beyond them takes the colour of its number modulo this.</summary>
+    /// <summary>The number of player colours; any other player number, negative included, takes the colour of its number modulo this.</summary>
     public const int PlayerColours = 8;
 
     static readonly (byte R, byte G, byte B)[] Colours =
@@ -91,7 +91,10 @@ public sealed class OpenSettlersSource : IGraphicsSource
     public static readonly (byte R, byte G, byte B) MarkColour = (255, 0, 255);
 
     /// <summary>The colour a player's mark shows in: the pixels of a settler's image in the mark colour take it.</summary>
-    public static (byte R, byte G, byte B) PlayerColour(int player) => Colours[player % PlayerColours];
+    public static (byte R, byte G, byte B) PlayerColour(int player) => Colours[ColourIndex(player)];
+
+    // The mathematical modulo: a negative number counts back from the last colour.
+    static int ColourIndex(int player) => (player % PlayerColours + PlayerColours) % PlayerColours;
 
     /// <summary>The manifest key of the castle.</summary>
     public const string CastleKey = "building/castle";
@@ -437,7 +440,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         }
 
         var index = job * Kinds.Length + KindOf(draw);
-        var key = (index, draw.Player % PlayerColours);
+        var key = (index, ColourIndex(draw.Player));
         if (!_marked.TryGetValue(key, out var drawing))
         {
             drawing = new ObjectDrawing(Marked(_settlers[index], PlayerColour(draw.Player)), null);

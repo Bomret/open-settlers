@@ -28,13 +28,13 @@ public sealed class RoadGraphicsTests
         return [.. bytes];
     }
 
-    static byte[] Texture(byte index)
+    static byte[] Texture(byte index, int width = 32, int height = 20)
     {
         var bytes = new List<byte> { 0, 0 };
-        bytes.AddRange(BitConverter.GetBytes((ushort)32));
-        bytes.AddRange(BitConverter.GetBytes((ushort)20));
+        bytes.AddRange(BitConverter.GetBytes((ushort)width));
+        bytes.AddRange(BitConverter.GetBytes((ushort)height));
         bytes.AddRange(new byte[4]);
-        bytes.AddRange(new byte[32 * 20]);
+        bytes.AddRange(new byte[width * height]);
         for (var i = 10; i < bytes.Count; i++)
         {
             bytes[i] = index;
@@ -98,5 +98,61 @@ public sealed class RoadGraphicsTests
         using var fake = new FakeInstall().Put(Archive, ArchiveBytes.Build(311, payloads));
         var absent = Assert.ThrowsExactly<InvalidDataException>(() => RoadGraphics.Load(Open(fake)));
         StringAssert.Contains(absent.Message, "entry 240");
+    }
+
+    // The messages are the form of TerrainGraphics.Entry: "<what> (entry <n>) of loca/SPAD.PA is unreadable: <reason>".
+    static InvalidDataException Refused(Action<Dictionary<int, byte[]>> change)
+    {
+        var payloads = Payloads();
+        change(payloads);
+        using var fake = new FakeInstall().Put(Archive, ArchiveBytes.Build(311, payloads));
+
+        return Assert.ThrowsExactly<InvalidDataException>(() => RoadGraphics.Load(Open(fake)));
+    }
+
+    [TestMethod]
+    public void AnAbsentPaletteNamesItsEntry()
+    {
+        var failure = Refused(payloads => payloads.Remove(3));
+
+        StringAssert.Contains(failure.Message, "the palette (entry 3) of loca/SPAD.PA is unreadable");
+    }
+
+    [TestMethod]
+    public void AnUnreadableMaskNamesItsEntry()
+    {
+        var failure = Refused(payloads => payloads[235] = [1, 2, 3]);
+
+        StringAssert.Contains(failure.Message, "the road mask (entry 235) of loca/SPAD.PA is unreadable");
+    }
+
+    [TestMethod]
+    [DataRow(33, 9)]
+    [DataRow(16, 42)]
+    public void AMaskLargerThanTheLayerNamesItsEntryAndItsSize(int width, int height)
+    {
+        var failure = Refused(payloads => payloads[250] = Mask(width, height));
+
+        StringAssert.Contains(failure.Message, "the road mask (entry 250)");
+        StringAssert.Contains(failure.Message, $"the mask is {width} x {height}, larger than the 32 x 41");
+    }
+
+    [TestMethod]
+    [DataRow(31, 20)]
+    [DataRow(32, 19)]
+    public void ATextureThatIsNot32By20NamesItsEntryAndItsSize(int width, int height)
+    {
+        var failure = Refused(payloads => payloads[305] = Texture(10, width, height));
+
+        StringAssert.Contains(failure.Message, "the road texture (entry 305)");
+        StringAssert.Contains(failure.Message, $"the texture is {width} x {height}, not the 32 x 20");
+    }
+
+    [TestMethod]
+    public void AnAbsentTextureNamesItsEntry()
+    {
+        var failure = Refused(payloads => payloads.Remove(309));
+
+        StringAssert.Contains(failure.Message, "the road texture (entry 309) of loca/SPAD.PA is unreadable");
     }
 }
