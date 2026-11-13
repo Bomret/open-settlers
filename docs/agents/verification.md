@@ -17,7 +17,9 @@ with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgra
 `TestProgram.Tables`). Both also skip the category `Ghidra` (they run `analyzeHeadless`). The filter is
 `TestCategory!=Install&TestCategory!=Ghidra`. Neither command needs the install, Ghidra, or Godot. The remaining tests
 build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path. They need `python3`, which
-`mise install` provides: `RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
+`mise install` provides, and fail with that hint where it is missing (none reports inconclusive for it); the tests that run a tool
+spawn it through `PythonTool` with `SIEDLER_DIR` and any host `analyzeHeadless` removed from the child's environment.
+`RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
 `content/open-settlers/` holds a file the generator does not write the same.
 
 The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put

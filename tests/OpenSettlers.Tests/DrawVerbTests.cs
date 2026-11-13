@@ -27,7 +27,7 @@ public sealed class DrawVerbTests
     public static void InitializeClass(TestContext _)
     {
         _project = NewFolder();
-        _batch = new(() => Lines(Emulate(ReferenceInstall(), Commands, _project).Output));
+        _batch = new(() => Lines(Emulate(ReferenceInstall(), Commands, _project, realHeadless: true).Output));
     }
 
     [ClassCleanup]
@@ -50,73 +50,44 @@ public sealed class DrawVerbTests
     [TestCleanup]
     public void Cleanup() => Directory.Delete(_folder, true);
 
-    private static string RepoRoot()
-    {
-        var dir = AppContext.BaseDirectory;
-        while (!File.Exists(Path.Combine(dir, "tools", "GhidraDump", "emulate.py")))
-        {
-            dir =
-                Path.GetDirectoryName(dir)
-                ?? throw new InvalidOperationException("tools/GhidraDump/emulate.py not found");
-        }
-
-        return dir;
-    }
-
+    // realHeadless: the runs that reach the real Ghidra keep the host's path; the others see only the stand-in on the path.
     private static (int Exit, string Output) Emulate(
         string game,
         string command,
         string? project = null,
-        string? path = null
-    ) => Emulate(game, [command], project, path);
+        string? path = null,
+        bool realHeadless = false
+    ) => Emulate(game, [command], project, path, realHeadless);
 
     private static (int Exit, string Output) Emulate(
         string game,
         string[] commands,
         string? project = null,
-        string? path = null
+        string? path = null,
+        bool realHeadless = false
     )
     {
-        var info = new ProcessStartInfo("python3")
-        {
-            WorkingDirectory = RepoRoot(),
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        info.ArgumentList.Add("-I");
-        info.ArgumentList.Add("tools/GhidraDump/emulate.py");
-        info.ArgumentList.Add("--game");
-        info.ArgumentList.Add(game);
-        if (project is not null)
-        {
-            info.ArgumentList.Add("--project");
-            info.ArgumentList.Add(project);
-        }
+        var run = EmulateRun(game, commands, project, path, realHeadless);
 
-        foreach (var command in commands)
-        {
-            info.ArgumentList.Add(command);
-        }
+        return (run.Exit, run.Stdout);
+    }
 
-        if (path is not null)
-        {
-            info.Environment["PATH"] = path + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
-        }
+    private static ToolRun EmulateRun(
+        string game,
+        string[] commands,
+        string? project = null,
+        string? path = null,
+        bool realHeadless = false
+    )
+    {
+        string[] projectArguments = project is null ? [] : ["--project", project];
 
-        try
-        {
-            using var process = Process.Start(info)!;
-            var output = process.StandardOutput.ReadToEndAsync();
-            process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            return (process.ExitCode, output.Result);
-        }
-        catch (System.ComponentModel.Win32Exception)
-        {
-            Assert.Inconclusive("python3 is not on the path");
-            throw;
-        }
+        return PythonTool.Run(
+            Path.GetTempPath(),
+            [PythonTool.InRepo("tools", "GhidraDump", "emulate.py"), "--game", game, .. projectArguments, .. commands],
+            path,
+            realHeadless: realHeadless
+        );
     }
 
     // Ghidra on the path and the reference install: the runs that reach the emulator need both.
@@ -148,21 +119,26 @@ public sealed class DrawVerbTests
     [TestMethod]
     public void ARunOnAnInstallWithNoProgramExitsNonZeroAndPrintsNothing()
     {
-        var (exit, output) = Emulate(_folder, $"draw:100-101:17,20:{Game}");
+        var bin = PythonTool.StandInHeadless(Path.Combine(_folder, "bin"), "exit 0\n");
 
-        Assert.AreNotEqual(0, exit);
-        Assert.AreEqual("", output);
+        var run = EmulateRun(_folder, [$"draw:100-101:17,20:{Game}"], path: bin);
+
+        Assert.AreNotEqual(0, run.Exit);
+        Assert.AreEqual("", run.Stdout);
+        StringAssert.Contains(run.Stderr, "no Siedler1.exe in");
     }
 
     [TestMethod]
     public void ARunOnAProgramOfAnotherBuildExitsNonZeroAndPrintsNothing()
     {
         File.WriteAllText(Path.Combine(_folder, "Siedler1.exe"), "not the history edition");
+        var bin = PythonTool.StandInHeadless(Path.Combine(_folder, "bin"), "exit 0\n");
 
-        var (exit, output) = Emulate(_folder, $"draw:100-101:17,20:{Game}");
+        var run = EmulateRun(_folder, [$"draw:100-101:17,20:{Game}"], path: bin);
 
-        Assert.AreNotEqual(0, exit);
-        Assert.AreEqual("", output);
+        Assert.AreNotEqual(0, run.Exit);
+        Assert.AreEqual("", run.Stdout);
+        StringAssert.Contains(run.Stderr, "is not the reference build");
     }
 
     // The commands of the Ghidra tests, run as one batch the first time a test that reaches the install asks for it.
