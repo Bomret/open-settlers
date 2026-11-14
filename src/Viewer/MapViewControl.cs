@@ -155,6 +155,13 @@ public partial class MapViewControl(
                 .Where(b => b.IsVisibleInTree()),
         ];
 
+    /// <summary>A play run's <c>seed</c> step: types the text into the seed field and submits it, as a player's Enter does.</summary>
+    public void EnterSeed(string text)
+    {
+        _seed.Text = text;
+        _seed.EmitSignal(LineEdit.SignalName.TextSubmitted, text);
+    }
+
     /// <summary>The map shown; null when the seed has none. A play run's <c>click-tile</c> step aims at its tiles.</summary>
     public Map? Map => _state.Map;
 

@@ -1,5 +1,12 @@
-# The build-site overlay before the castle stands: every castle site shows the large-building marker.
+# The build-site overlay before the castle stands: every castle site shows the large-building marker. A new
+# seed turns the overlay off.
 # Run it on the game view: sh tools/play-run.sh build-help-start --game-view --fps 10
 button Build help
 wait 0.3
 shot start
+
+# A new seed starts a new game, and Build help starts off: the new map shows no marker.
+seed 1234567812345634
+wait 0.3
+expect seed = 1234567812345634
+shot new-seed

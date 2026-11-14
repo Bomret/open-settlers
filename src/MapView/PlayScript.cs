@@ -145,6 +145,13 @@ public sealed record ButtonStep : PlayStep
         : $"no button '{Name}', shown: {string.Join(", ", shown)}";
 }
 
+/// <summary><c>seed &lt;text&gt;</c>: types the text into the seed field and submits it, as a player's Enter does.</summary>
+public sealed record SeedStep : PlayStep
+{
+    /// <summary>The seed text, one word.</summary>
+    public required string Text { get; init; }
+}
+
 /// <summary><c>dump &lt;name&gt;</c>: writes the view's state to <c>&lt;name&gt;.txt</c> of the output folder.</summary>
 public sealed record DumpStep : PlayStep
 {
@@ -543,6 +550,10 @@ public sealed class PlayScript
 
                 // A label may hold spaces ("Build help"): the name is the rest of the line, one space between its words.
                 return (new ButtonStep { Line = number, Name = string.Join(' ', args) }, null);
+            case "seed":
+                return args.Length == 1
+                    ? (new SeedStep { Line = number, Text = args[0] }, null)
+                    : Wrong(words[0], "1 argument", args.Length);
             case "fast-forward":
                 return ParseFastForward(args, number);
             case "expect":

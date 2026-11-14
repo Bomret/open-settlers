@@ -296,12 +296,23 @@ public sealed class PlayScriptTests
     }
 
     [TestMethod]
+    public void ASeedStepEntersTheSeedText()
+    {
+        var script = Parse("seed 1234567812345678");
+
+        Assert.IsEmpty(script.Problems);
+        Assert.AreEqual(new SeedStep { Line = 1, Text = "1234567812345678" }, script.Steps[0]);
+    }
+
+    [TestMethod]
     [DataRow("click-tile 3", "takes 2 arguments")]
     [DataRow("click-tile 3 4 5", "takes 2 arguments")]
     [DataRow("click-tile x 4", "not a whole number of zero or more")]
     [DataRow("click-tile 3 -1", "not a whole number of zero or more")]
     [DataRow("click-tile 3.5 4", "not a whole number of zero or more")]
     [DataRow("button", "takes a name")]
+    [DataRow("seed", "takes 1 argument")]
+    [DataRow("seed 1 2", "takes 1 argument")]
     public void ABadClickStepIsAProblemNamingItsLine(string line, string reason)
     {
         var script = Parse("wait 1\n" + line);
