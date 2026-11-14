@@ -85,7 +85,8 @@ animation step. A draw term never holds an entry number (INV-0010).
 _Avoid_: sprite ID, entry, frame number
 
 **Build-site overlay**
-The markers the game view draws on every visible node of its player's territory to show what may be put there: a
+The markers the game view draws on every visible node of its player's territory, or before the castle stands, of every
+castle site, to show what may be put there: a
 flag, a mine, a small building, or a large building. Each marker is a build marker; the build-site evaluator's
 judgment of the node picks it. It is switched on and off as a whole.
 _Avoid_: build help, where-to-build overlay, placement overlay
