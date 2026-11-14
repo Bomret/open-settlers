@@ -11,26 +11,22 @@ namespace OpenSettlers.Simulation;
 /// handler, the tick is the main pass, the digest is the port's, and everything else a caller reaches is a read-only part.
 /// The behaviours that change the game are internal, reached only by the assemblies that build and drive it.
 /// </summary>
-public sealed class Game
+/// <remarks>
+/// A game of <paramref name="parts"/>, at tick 0 with no command queued and no castle. Throws
+/// <see cref="ArgumentException"/> where two handlers apply the same kind.
+/// </remarks>
+/// <param name="parts">The parts the game is built from.</param>
+public sealed class Game(GameParts parts)
 {
     /// <summary>Ticks in a second at normal speed: 4 timer calls of 20 milliseconds make one tick.</summary>
     public const double TicksPerSecond = 12.5;
 
-    readonly GameParts _parts;
+    readonly GameParts _parts = parts;
     readonly List<Command> _applied = [];
 
-    /// <summary>
-    /// A game of <paramref name="parts"/>, at tick 0 with no command queued and no castle. Throws
-    /// <see cref="ArgumentException"/> where two handlers apply the same kind.
-    /// </summary>
-    public Game(GameParts parts)
-    {
-        _parts = parts;
-        Handlers = parts.Handlers.ToDictionary(handler => handler.Kind);
-    }
-
     /// <summary>The handler of each kind of command.</summary>
-    internal IReadOnlyDictionary<int, ICommandHandler> Handlers { get; }
+    internal IReadOnlyDictionary<int, ICommandHandler> Handlers { get; } =
+        parts.Handlers.ToDictionary(handler => handler.Kind);
 
     /// <summary>The commands applied so far, in the order they were applied.</summary>
     internal IReadOnlyList<Command> Applied => _applied;

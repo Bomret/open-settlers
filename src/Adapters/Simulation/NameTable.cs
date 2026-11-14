@@ -16,12 +16,11 @@ namespace OpenSettlers.Simulation;
 /// static. The names of the jobs, and of the states a job owns, come from the jobs' tables modules
 /// (<see cref="JobTables{TJob}"/>); the states that belong to no one job are stated here.
 /// </summary>
-public sealed class NameTable
+/// <remarks>The names of the object codes as the class table <paramref name="tables"/> reads them.</remarks>
+/// <param name="tables">The rule tables whose class table the names are read from.</param>
+public sealed class NameTable(RuleTables tables)
 {
-    readonly RuleTables _tables;
-
-    /// <summary>The names of the object codes as the class table <paramref name="tables"/> reads them.</summary>
-    public NameTable(RuleTables tables) => this._tables = tables;
+    readonly RuleTables _tables = tables;
 
     // The object codes the engine and docs/rules/map-object-codes.md name; Game.Woodcutting reads the ranges from here.
     internal const int FirstTree = MapObject.FirstTreeCode;

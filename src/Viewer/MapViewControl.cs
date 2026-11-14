@@ -21,7 +21,24 @@ namespace OpenSettlers.Viewer;
 /// and the plus and minus keys, and a touchpad pinch change the <see cref="Zoom"/>; the wheel and the pinch keep
 /// the map point under the pointer in place. A two-finger touchpad swipe moves the camera.
 /// </summary>
-public partial class MapViewControl : Control
+/// <remarks>
+/// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
+/// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
+/// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
+/// <paramref name="graphics"/> is the source the view draws from; the rules come from the install under both.
+/// </remarks>
+/// <param name="install">The install whose graphics and rules the view reads.</param>
+/// <param name="seedText">The seed the view opens on, as the seed field shows it.</param>
+/// <param name="sizeValue">The map size the view opens on.</param>
+/// <param name="gameView">Whether a game ticks on the shown map.</param>
+/// <param name="graphics">The graphics source the view draws from.</param>
+public partial class MapViewControl(
+    Install install,
+    string seedText,
+    int sizeValue,
+    bool gameView = false,
+    GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
+) : Control
 {
     // Rows of tiles in one mesh; 16 rows of the widest map are about 8,200 vertices.
     const int BandRows = 16;
@@ -34,9 +51,9 @@ public partial class MapViewControl : Control
     // report. Nothing queries the device (the layers Vulkan guarantees are 256).
     const int MaxArrayLayers = 2048;
 
-    readonly Install _install;
-    readonly bool _gameView;
-    readonly GraphicsSourceName _graphics;
+    readonly Install _install = install;
+    readonly bool _gameView = gameView;
+    readonly GraphicsSourceName _graphics = graphics;
     Game? _game;
     readonly TickPacer _pacer = new();
 
@@ -68,8 +85,8 @@ public partial class MapViewControl : Control
     RoadDrawing? _drawing;
     Node2D _preview = null!;
     string? _roadsProblem;
-    readonly string _openSeed;
-    readonly int _openSize;
+    readonly string _openSeed = seedText;
+    readonly int _openSize = sizeValue;
     readonly Layout? _layout;
     MapViewState _state = null!;
     Camera _camera = null!;
@@ -105,27 +122,6 @@ public partial class MapViewControl : Control
     bool _castleDrawn;
     Vector2 _keyCarry;
     Vector2 _dragCarry;
-
-    /// <summary>
-    /// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
-    /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
-    /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
-    /// <paramref name="graphics"/> is the source the view draws from; the rules come from the install under both.
-    /// </summary>
-    public MapViewControl(
-        Install install,
-        string seedText,
-        int sizeValue,
-        bool gameView = false,
-        GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
-    )
-    {
-        _install = install;
-        _openSeed = seedText;
-        _openSize = sizeValue;
-        _gameView = gameView;
-        _graphics = graphics;
-    }
 
     /// <summary>
     /// The game view on the map a <paramref name="layout"/> draws: the seed field shows the layout's seed and the

@@ -70,6 +70,7 @@ The root `.editorconfig` turns these rules into build errors. Each has its own `
 | Braces / control flow: braces around every branch and loop body | IDE0011 |
 | Naming: the table under "Naming" | IDE1006 |
 | A collection expression of the same type in place of an array creation, a collection initializer, or a trailing `ToArray`/`ToList` call | IDE0028, IDE0300–IDE0305 |
+| Classes: a primary constructor where the constructor only assigns its parameters | IDE0290 |
 
 These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, and composition over inheritance. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
 
@@ -113,7 +114,7 @@ Use records, primary constructors, collection expressions, and other C# 12 featu
 
 ### Classes
 
-Always use primary constructors with no class fields, if possible.
+Always use primary constructors with no class fields, if possible. IDE0290 enforces the rule where a constructor only assigns its parameters. The constructor's documentation goes on the type: a `<param>` for each parameter.
 
 ### Records
 
