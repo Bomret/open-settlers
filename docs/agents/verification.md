@@ -20,7 +20,10 @@ build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on 
 `mise install` provides. Where it is missing, they fail with that hint. None of them reports inconclusive. Each spawns
 its tool through `PythonTool`. `PythonTool` removes `SIEDLER_DIR` and any host `analyzeHeadless` from the child's environment.
 `RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
-`content/open-settlers/` holds a file the generator does not write the same.
+`content/open-settlers/` holds a file the generator does not write the same. `HeadlessEntryTests` runs
+`tools/GhidraDump/headless.py` in a temporary folder on a path that holds only stand-in `analyzeHeadless` and `gradle`
+shell scripts, so a Ghidra or Gradle of the host never runs. It reports inconclusive without python3, and its stand-in
+runs report inconclusive on Windows.
 
 The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
 `[TestCategory(Needs.Install)]` (and `Needs.Ghidra` where the test runs `analyzeHeadless`) on every test
