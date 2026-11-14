@@ -2,38 +2,41 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
-// docs/agents/CODING.md, "Access modifiers": the build fails on an access modifier that is the default where it stands. The
-// rule lives in the repository's configuration, so these tests pin that configuration: IDE0040 with omit_if_default at
-// warning severity for every C# file, and code style enforced in the build with warnings as errors.
+// docs/agents/CODING.md, "What the build enforces": the build fails on a violation of each rule the table lists. The rules
+// live in the repository's configuration, so these tests pin that configuration: each listed rule ID at warning severity
+// for every C# file, the options the rules read, and code style enforced in the build with warnings as errors.
 [TestClass]
 public sealed class CodeStyleBuildTests
 {
-    static readonly Dictionary<string, string> EditorConfigPins = new()
+    // The options whose value decides what a rule reports. when_types_exactly_match keeps the type the code creates.
+    static readonly Dictionary<string, string> OptionPins = new()
     {
         ["dotnet_style_require_accessibility_modifiers"] = "omit_if_default",
-        ["dotnet_diagnostic.IDE0040.severity"] = "warning",
+        ["dotnet_style_prefer_collection_expression"] = "when_types_exactly_match",
     };
 
     static readonly string[] GeneratedFolders = ["bin", "obj", ".godot", ".git", ".superdev", "node_modules"];
 
     [TestMethod]
-    public void TheEditorConfigRequiresOmittingADefaultModifier()
+    public void TheEditorConfigSetsEveryBuildEnforcedRuleAndItsOptions()
     {
         var settings = CSharpSection(File.ReadAllLines(Path.Combine(RootOf(), ".editorconfig")));
+        var pins = EditorConfigPins().Select(pin => $"{pin.Key} = {pin.Value}").ToList();
 
-        CollectionAssert.IsSubsetOf(
-            new[]
-            {
-                "dotnet_style_require_accessibility_modifiers = omit_if_default",
-                "dotnet_diagnostic.IDE0040.severity = warning",
-            },
-            settings
-        );
+        Assert.IsEmpty(pins.Except(settings), string.Join(Environment.NewLine, pins.Except(settings)));
+    }
+
+    // The table must list the rules, or the pins above would check nothing.
+    [TestMethod]
+    public void TheCodingGuideListsTheBuildEnforcedRules()
+    {
+        CollectionAssert.IsSubsetOf(new[] { "IDE0040", "IDE0300", "IDE0305", "IDE0290" }, BuildEnforcedRuleIds());
     }
 
     [TestMethod]
@@ -47,18 +50,19 @@ public sealed class CodeStyleBuildTests
         CollectionAssert.AreEqual(new[] { "EnforceCodeStyleInBuild=true", "TreatWarningsAsErrors=true" }, values);
     }
 
-    // A later section, a nested .editorconfig, or a project file could switch the rule off past the pins above, so every
+    // A later section, a nested .editorconfig, or a project file could switch a rule off past the pins above, so every
     // place that sets one of the pinned settings must set it to the pinned value.
     [TestMethod]
-    public void NoEditorConfigSectionOverridesTheModifierRule()
+    public void NoEditorConfigSectionOverridesAPinnedSetting()
     {
         var root = RootOf();
+        var pins = EditorConfigPins();
         var overrides = ConfigFiles(root, file => Path.GetFileName(file) == ".editorconfig")
             .SelectMany(relative =>
                 File.ReadAllLines(Path.Combine(root, relative))
                     .Select(line => line.Split('=', 2))
-                    .Where(pair => pair.Length == 2 && EditorConfigPins.ContainsKey(pair[0].Trim()))
-                    .Where(pair => pair[1].Trim() != EditorConfigPins[pair[0].Trim()])
+                    .Where(pair => pair.Length == 2 && pins.ContainsKey(pair[0].Trim()))
+                    .Where(pair => pair[1].Trim() != pins[pair[0].Trim()])
                     .Select(pair => $"{relative}: {pair[0].Trim()} = {pair[1].Trim()}")
             )
             .ToList();
@@ -82,6 +86,35 @@ public sealed class CodeStyleBuildTests
             .ToList();
 
         Assert.IsEmpty(overrides, string.Join(Environment.NewLine, overrides));
+    }
+
+    // Each rule ID of the table under "What the build enforces" at warning severity, beside the option pins.
+    static Dictionary<string, string> EditorConfigPins() =>
+        BuildEnforcedRuleIds()
+            .Select(id => new KeyValuePair<string, string>($"dotnet_diagnostic.{id}.severity", "warning"))
+            .Concat(OptionPins)
+            .ToDictionary(pin => pin.Key, pin => pin.Value);
+
+    // The rule IDs of the table, a range such as IDE0300–IDE0305 expanded to each ID in it.
+    static string[] BuildEnforcedRuleIds()
+    {
+        var section = File.ReadAllLines(Path.Combine(RootOf(), "docs", "agents", "CODING.md"))
+            .SkipWhile(line => line.Trim() != "### What the build enforces")
+            .Skip(1)
+            .TakeWhile(line => !line.StartsWith('#'));
+
+        return
+        [
+            .. section
+                .Where(line => line.StartsWith('|'))
+                .SelectMany(line => Regex.Matches(line, @"IDE(\d{4})(?:–IDE(\d{4}))?"))
+                .SelectMany(match =>
+                {
+                    var first = int.Parse(match.Groups[1].Value);
+                    var last = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : first;
+                    return Enumerable.Range(first, last - first + 1).Select(n => $"IDE{n:D4}");
+                }),
+        ];
     }
 
     static IEnumerable<string> ConfigFiles(string root, Func<string, bool> matches) =>

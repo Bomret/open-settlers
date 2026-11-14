@@ -74,8 +74,11 @@ dotnet_naming_style.i_pascal_case.capitalization = pascal_case
 dotnet_naming_style.i_pascal_case.required_prefix = I
 
 # "Modern C# features": a collection expression of the same type where one can replace an array creation, a collection
-# initializer, or a trailing ToArray/ToList call. `true` matches the type exactly, so a rewrite keeps the type the code creates.
-dotnet_style_prefer_collection_expression = true
+# initializer, or a trailing ToArray/ToList call. when_types_exactly_match reports a site only where the collection
+# expression creates the type the code creates: the target type itself, or List<T> behind an IList<T> or ICollection<T>
+# target. It leaves an IEnumerable<T>, IReadOnlyCollection<T>, or IReadOnlyList<T> target alone, where the compiler would
+# create another type. The pinned SDK reads `true` as this value; the name states it.
+dotnet_style_prefer_collection_expression = when_types_exactly_match
 dotnet_diagnostic.IDE0028.severity = warning
 dotnet_diagnostic.IDE0300.severity = warning
 dotnet_diagnostic.IDE0301.severity = warning
