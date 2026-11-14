@@ -301,7 +301,7 @@ Sites:
 - `0x44e0d1`: calls `Gfx_DrawSpriteBase320` with a sprite-list entry (0 or 8, from the 25 inline lists at `0x44e114`) plus a phase of 0 to 7 plus 136, entries 456 to 471. Lies in code after `Gfx_DrawSpriteBase320` and before `0x44e329` that no Ghidra function covers; the containing routine's entry was not established (REA rizin unavailable).
 - `0x44ff24`, `0x44ff3f`: forms the shadow entry (index plus 1500, drawn by `0x406210` at `0x44ff2a`), then the sprite entry (index plus 1250, drawn by `Gfx_DrawSpriteGrowing` at `0x44ff45`). Code not covered by a Ghidra function, between `Sound_Request` and `Gfx_DrawPhaseSprite`; entry `0x44fee2` (jumped to at `0x44fc70`) is a candidate routine, not verified.
 - `0x45006a`: stores shadow entry 4 for the call to `Gfx_DrawShadow` at `0x45007d`; `0x450128` to `0x45014c`: adds a word of the table `Settler_FigureOffsets` to both entry fields (in `Gfx_DrawSettlerRecords`).
-- `0x450ada` (in `0x450a8f`), `0x450fc5` (in `0x450f6e`): call `Gfx_DrawSpriteBase320` with a run-time list word; not bounded. The two routines are called from `Render_DrawViewLayers` and lack rows.
+- `0x450ada` (in `0x450a8f`), `0x450fc5` (in `0x450f6e`): call `Gfx_DrawSpriteBase320` with a run-time list word; not bounded. The two routines are called from `Render_DrawViewLayers`.
 - `0x450f2f` (in `BuildHelp_DrawRowMarkers`): calls `Gfx_DrawSpriteBase320` with the build marker, 47 to 50, so the entries 367 to 370 ([Build sites](build-sites.md#the-build-site-overlay)).
 - `0x452394`, `0x452400`, `0x452443`: draw raw images 1, 5 to 11, and 15 to 21 through `Gfx_DrawSprite` under palette 3997 (title scene). Code not covered by a Ghidra function; containing routine not established.
 - `0x45cf10`: draws raw images 660 to 663; `0x45cf57` to `0x45d02c`: 670 to 677 (in `Panel_CopyViewToScreen`, `0x45ce7b`).
@@ -325,6 +325,8 @@ Sites:
 | `0x450a56` | `Render_DrawViewLayers` | The overlay of one view: draws nothing where view byte 0 bit 0 is set; otherwise the build markers (`BuildHelp_DrawMarkers`) while bit 6 is set, then the sprite lists of `0x450f6e` and `0x450a8f`. | confirmed | game | Only caller is `Render_DrawViewOverlay`. See [Build sites](build-sites.md#the-build-site-overlay). |
 | `0x450ae7` | `BuildHelp_DrawMarkers` | Draws the build marker of every node in the view's window of nodes for the view's player (view `+0x82`): saves the player's node and result (`+0xfc` to `+0x102`), runs `BuildHelp_DrawRowMarkers` for each half row, restores them, and sets view byte 0 bit 7. | confirmed | game | Only caller is `Render_DrawViewLayers`. See [Build sites](build-sites.md#the-build-site-overlay). |
 | `0x450d85` | `BuildHelp_DrawRowMarkers` | Draws the build markers of one row of nodes: per node, judges it with `BuildSite_Evaluate` (keeping the player's byte `+3`) and stores the marker in the view's buffer (`+0xda`), or reads the stored marker while view byte 0 bit 7 is set, then draws a marker that is not 0 through `Gfx_DrawSpriteBase320`, raised by the node's height times 4. | confirmed | game | Called by `BuildHelp_DrawMarkers`. See [Build sites](build-sites.md#the-build-site-overlay). |
+| `0x450f6e` | — | Draws the first sprite list of a view, above the build markers: up to seven entries of the list at view `+0xa4`, each a sprite-list word and a position. The list is empty where its first byte is negative, and an entry with the word 0 draws nothing. `View_Setup` fills the words with 32 and 33. What the list shows is open. | confirmed | game | Called by `Render_DrawViewLayers`. See [Build sites](build-sites.md#the-build-site-overlay). |
+| `0x450a8f` | — | Draws the second sprite list of a view, after `0x450f6e`: the entries of the list that view `+0x1aa` points to, each a position and a sprite-list word, as many as the count at `+0x1ae` plus 1 (none at -1). `View_Setup` and `0x4409d5` set the count to -1. What the list shows is open. | confirmed | game | Called by `Render_DrawViewLayers`. See [Build sites](build-sites.md#the-build-site-overlay). |
 | `0x44d2fc` | — | For each view, copies a rectangle from the surface at `+0x108` into the view's screen. | unknown | game | Called by `Main_Loop` in a game. |
 | `0x424d87` | `Minimap_Build` | Writes one byte per tile from terrain and height to the buffer at `+0x8c`. | inferred | game | Called by `MapGen_Generate` and `Game_ResumeLoaded`. |
 | `0x406500` | `Gfx_CopyRect` | Copies a rectangle between two surfaces. | confirmed | platform | Called by panel and view code. |
@@ -1332,8 +1334,10 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x45080d` | `Render_MarkTwoDirty` | confirmed | Views, panels, and drawing |
 | `0x450a35` | `Render_DrawViewOverlay` | confirmed | Views, panels, and drawing |
 | `0x450a56` | `Render_DrawViewLayers` | confirmed | Views, panels, and drawing |
+| `0x450a8f` | — | confirmed | Views, panels, and drawing |
 | `0x450ae7` | `BuildHelp_DrawMarkers` | confirmed | Views, panels, and drawing |
 | `0x450d85` | `BuildHelp_DrawRowMarkers` | confirmed | Views, panels, and drawing |
+| `0x450f6e` | — | confirmed | Views, panels, and drawing |
 | `0x4511d5` | `Text_DrawGlyphs` | inferred | Graphics images |
 | `0x451355` | `Panel_Update` | inferred | Views, panels, and drawing |
 | `0x4513a8` | `Panel_UpdateView` | inferred | Views, panels, and drawing |
@@ -1485,7 +1489,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 362 routines of the 513 functions in the dump's game code band and lists 63 more without a name: 304 confirmed, 70 inferred, 51 unknown.
+Coverage: the index names 362 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 306 confirmed, 70 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:
