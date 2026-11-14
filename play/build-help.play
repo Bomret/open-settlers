@@ -1,0 +1,26 @@
+# The build-site overlay: Build help shows the build markers of the castle's territory, a flag placed changes them in the
+# frame that draws it, the Flag button leaves the overlay on, and Build help again takes the markers away.
+# Run it on the layout: sh tools/play-run.sh build-help --layout layouts/woodcutter.jsonc --fps 10
+# The castle stands at 10,10 with its flag at 11,11.
+wait 0.3
+shot off 10 12 4 2
+
+button Build help
+wait 0.3
+shot on 10 12 4 2
+shot on-whole
+
+# The Flag button presses with the overlay on and leaves it on; a flag placed takes its node's marker and its
+# neighbors' changes.
+button Flag
+click-tile 8 13
+wait 0.3
+expect-at 8 13 flag
+shot flag 8 13 3 2
+shot flag-whole
+
+button Flag
+button Build help
+wait 0.3
+shot off-again 10 12 4 2
+dump end

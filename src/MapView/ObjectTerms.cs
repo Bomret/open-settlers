@@ -63,6 +63,24 @@ public sealed record GoodAtFlag : ObjectTerm
 }
 
 /// <summary>
+/// The build marker of a node (<c>CONTEXT.md</c>, "Build-site overlay"): <c>Column</c> and <c>Row</c> name the node, and
+/// <c>X</c> and <c>Y</c> its position raised by its height, where an object of the node stands. A source draws the marker
+/// with no shadow.
+/// </summary>
+public sealed record BuildMarkerDraw : ObjectTerm
+{
+    /// <summary>The column of the node.</summary>
+    public required int Column { get; init; }
+
+    /// <summary>The marker the node shows.</summary>
+    public required BuildMarker Marker { get; init; }
+
+    /// <inheritdoc />
+    public override ObjectDrawing? Ask(IGraphicsSource source) =>
+        source.Draw(Marker) is { } image ? new ObjectDrawing { Image = image, Shadow = null } : null;
+}
+
+/// <summary>
 /// The ripple of a tile with a water triangle at an animation step. <c>Tile</c> is the tile's record index (row times
 /// width plus column), which varies the ripple from tile to tile.
 /// </summary>

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -44,4 +45,50 @@ public static class BuildMarkers
             3 => BuildMarker.Small,
             _ => BuildMarker.Large,
         };
+}
+
+/// <summary>
+/// The build-site overlay of a game (<c>docs/rules/build-sites.md</c>, "The build-site overlay"): the marker of every node
+/// of the map for the view's player, judged by <see cref="BuildSite.Evaluate"/> once per node. Before the player's castle
+/// stands it judges for a player without a castle, so the castle sites show the large-building marker; after, only the
+/// player's territory shows markers. Reading the markers changes nothing in the game.
+/// </summary>
+public static class BuildMarkerDraws
+{
+    /// <summary>
+    /// The markers of every node of <paramref name="game"/>'s map for <paramref name="player"/>, in row-major order, each
+    /// at its node raised by the node's height times <see cref="TerrainTriangles.HeightStep"/>; a node the original marks
+    /// with nothing has no draw.
+    /// </summary>
+    public static List<BuildMarkerDraw> Of(Game game, int player)
+    {
+        var map = game.Map;
+        var hasCastle = game.CastleStock.Castle is not null;
+        var draws = new List<BuildMarkerDraw>();
+        for (var row = 0; row < map.Size.Height; row++)
+        {
+            for (var column = 0; column < map.Size.Width; column++)
+            {
+                var judged = BuildSite.Evaluate(game.Tables, map, column, row, player, hasCastle, game.Buildings);
+                if (BuildMarkers.Of(judged) is not { } marker)
+                {
+                    continue;
+                }
+
+                var (x, y) = Camera.NodePosition(column, row);
+                draws.Add(
+                    new BuildMarkerDraw
+                    {
+                        Row = row,
+                        X = x,
+                        Y = y - map.At(column, row).Height * TerrainTriangles.HeightStep,
+                        Column = column,
+                        Marker = marker,
+                    }
+                );
+            }
+        }
+
+        return draws;
+    }
 }

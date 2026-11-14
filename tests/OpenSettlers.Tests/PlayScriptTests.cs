@@ -287,13 +287,21 @@ public sealed class PlayScriptTests
     }
 
     [TestMethod]
+    public void AButtonNameIsTheRestOfTheLineOneSpaceBetweenItsWords()
+    {
+        var script = Parse("button Build   help");
+
+        Assert.IsEmpty(script.Problems);
+        Assert.AreEqual(new ButtonStep { Line = 1, Name = "Build help" }, script.Steps[0]);
+    }
+
+    [TestMethod]
     [DataRow("click-tile 3", "takes 2 arguments")]
     [DataRow("click-tile 3 4 5", "takes 2 arguments")]
     [DataRow("click-tile x 4", "not a whole number of zero or more")]
     [DataRow("click-tile 3 -1", "not a whole number of zero or more")]
     [DataRow("click-tile 3.5 4", "not a whole number of zero or more")]
-    [DataRow("button", "takes 1 argument")]
-    [DataRow("button Road Flag", "takes 1 argument")]
+    [DataRow("button", "takes a name")]
     public void ABadClickStepIsAProblemNamingItsLine(string line, string reason)
     {
         var script = Parse("wait 1\n" + line);

@@ -132,7 +132,7 @@ public sealed record ClickTileStep : PlayStep
     public required int Row { get; init; }
 }
 
-/// <summary><c>button &lt;name&gt;</c>: a left click on the shown game-view button whose label is the name.</summary>
+/// <summary><c>button &lt;name&gt;</c>: a left click on the shown game-view button whose label is the name, the rest of the line with one space between its words.</summary>
 public sealed record ButtonStep : PlayStep
 {
     /// <summary>The button's label, matched exactly, case included.</summary>
@@ -536,12 +536,13 @@ public sealed class PlayScript
                     null
                 );
             case "button":
-                if (args.Length != 1)
+                if (args.Length == 0)
                 {
-                    return Wrong(words[0], "1 argument", args.Length);
+                    return Wrong(words[0], "a name", args.Length);
                 }
 
-                return (new ButtonStep { Line = number, Name = args[0] }, null);
+                // A label may hold spaces ("Build help"): the name is the rest of the line, one space between its words.
+                return (new ButtonStep { Line = number, Name = string.Join(' ', args) }, null);
             case "fast-forward":
                 return ParseFastForward(args, number);
             case "expect":

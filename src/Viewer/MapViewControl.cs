@@ -13,7 +13,8 @@ namespace OpenSettlers.Viewer;
 /// <summary>
 /// The map view (<c>--map</c>): a seed field and a size picker above the terrain of the generated map. The terrain,
 /// the roads, the objects, and the water are drawn on the GPU (ADR 0007) through a graphics source (ADR 0014): the
-/// shared builders give a draw term for each triangle, strip, object, building, good, and ripple, the source answers
+/// shared builders give a draw term for each triangle, strip, object, building, good, ripple, and (in the game view while
+/// Build help is on) build marker, the source answers
 /// each with an RGBA image, and the images are layers of an array texture that <c>Objects.gdshader</c> (or
 /// <c>Water.gdshader</c> for the ripples) samples (alpha the coverage), one mesh per band of rows. The objects are
 /// quads drawn over the terrain. The arrow keys and a mouse drag move the <see cref="Camera"/>, which
@@ -69,6 +70,7 @@ public partial class MapViewControl(
     Button _roadButton = null!;
     (Button Button, BuildingType Type)[] _buildButtons = [];
     Button _removeButton = null!;
+    Button _buildHelpButton = null!;
 
     // The placement of the walking settlers (game view only), the images the source drew for them so far, and the material
     // over them.
@@ -110,6 +112,9 @@ public partial class MapViewControl(
     ShaderMaterial? _waterMaterial;
     int _rippleImages;
     byte[]? _rippleSurface;
+    readonly ImageLayers _markerLayers = new();
+    ShaderMaterial? _markerMaterial;
+    int _markerImages;
     readonly System.Collections.Generic.List<MeshInstance2D> _waterNodes = [];
     string? _graphicsProblem;
     string? _objectsProblem;
@@ -146,6 +151,7 @@ public partial class MapViewControl(
             .. new[] { _flagButton, _roadButton }
                 .Concat(_buildButtons.Select(entry => entry.Button))
                 .Append(_removeButton)
+                .Append(_buildHelpButton)
                 .Where(b => b.IsVisibleInTree()),
         ];
 
@@ -357,6 +363,18 @@ public partial class MapViewControl(
             }
         };
         bar.AddChild(_removeButton);
+        // Stand-in for the original's build-site overlay toggle (0x440d23): while it is pressed every node shows the build
+        // marker of its judgment (docs/rules/build-sites.md, "The build-site overlay"). It starts off, stands apart from
+        // the buttons above, and keeps its state for a new map.
+        _buildHelpButton = new Button
+        {
+            Text = "Build help",
+            ToggleMode = true,
+            Visible = _gameView,
+            FocusMode = FocusModeEnum.None,
+        };
+        _buildHelpButton.Toggled += _ => Redraw();
+        bar.AddChild(_buildHelpButton);
 
         _canvas = new Control
         {
@@ -806,6 +824,14 @@ public partial class MapViewControl(
             return;
         }
 
+        // The build markers are judged once for the whole map and drawn in every wrap copy.
+        var markerMesh = BuildMarkerMesh(_source);
+        var markerMaterial = markerMesh is null ? null : MarkerMaterial();
+        if (markerMesh is not null && markerMaterial is null)
+        {
+            return;
+        }
+
         _framesDrawn = _frameCounter;
         _objectNodes.Clear();
         _waterNodes.Clear();
@@ -857,6 +883,20 @@ public partial class MapViewControl(
                 var settlers = new MeshInstance2D { ZAsRelative = false, ZIndex = 2 };
                 copy.AddChild(settlers);
                 _settlerMeshes.Add(settlers);
+            }
+
+            // The markers paint over the terrain, the objects, and the settlers of every copy.
+            if (markerMesh is not null)
+            {
+                copy.AddChild(
+                    new MeshInstance2D
+                    {
+                        Mesh = markerMesh,
+                        Material = markerMaterial,
+                        ZAsRelative = false,
+                        ZIndex = 3,
+                    }
+                );
             }
 
             _world.AddChild(copy);
@@ -949,6 +989,26 @@ public partial class MapViewControl(
             node.Material = material;
         }
     }
+
+    // One mesh of the build markers of the view's player (player 0) while Build help is pressed; null where it is off, in
+    // the map view, or where the source draws none.
+    ArrayMesh? BuildMarkerMesh(IGraphicsSource source)
+    {
+        if (_game is null || !_buildHelpButton.ButtonPressed)
+        {
+            return null;
+        }
+
+        var quads = ObjectQuads.Flat(BuildMarkerDraws.Of(_game, 0), source, _markerLayers);
+
+        return quads.Count == 0
+            ? null
+            : BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))));
+    }
+
+    // The material of the build markers.
+    ShaderMaterial? MarkerMaterial() =>
+        LayerMaterial(_markerLayers, "Objects", "the build markers", ref _markerMaterial, ref _markerImages);
 
     // The material of the settlers' images.
     ShaderMaterial? SettlerMaterial() =>
