@@ -1,16 +1,19 @@
 # Verification
 
+The full command:
+
 ```sh
 mise run check
 ```
+
+The focused command:
 
 ```sh
 mise run test
 ```
 
-The full command restores the local tools, checks formatting (CSharpier names each unformatted file.
-`mise run format` fixes them), runs the unit tests, and builds the project. `mise.toml` holds the
-steps.
+The full command restores the local tools, checks formatting, runs the unit tests, and builds the project.
+CSharpier names each unformatted file, and `mise run format` fixes them. `mise.toml` holds the steps.
 
 Every build enforces the code-style rules of `docs/agents/CODING.md` ("What the build enforces" and "Document").
 A violation fails the full command at its test step. That step builds the test project and the projects it references.
