@@ -23,12 +23,12 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class HomeWalkTests
 {
-    private const string Fixture = "home-walks.txt";
+    const string Fixture = "home-walks.txt";
 
     // The scenario of a settler on a flag no road leads from to the castle: it looks for another flag (state 0x19, mode 1).
-    private const string NoStorage = "no-storage-road";
+    const string NoStorage = "no-storage-road";
 
-    private sealed record Scenario(
+    sealed record Scenario(
         string Name,
         string Command,
         List<(int Pass, string? Settler, string? Rng, string? Waiting, string? Other)> Lines
@@ -36,7 +36,7 @@ public sealed class HomeWalkTests
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -66,10 +66,10 @@ public sealed class HomeWalkTests
         return scenarios;
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
-    private static Game CastleWithRoad()
+    static Game CastleWithRoad()
     {
         MapSize.TryFromValue(1, out var size, out _);
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(0x1234, 0x5678, 0x9ABC), size!);

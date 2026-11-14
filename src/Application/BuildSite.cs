@@ -39,7 +39,7 @@ public readonly record struct BuildSiteResult(int Node, int Site, int Height)
 public static class BuildSite
 {
     // The spiral entries that the evaluator reads: the node itself and rings 1, 2, and 3.
-    private const int Nodes = 37;
+    const int Nodes = 37;
 
     /// <summary>
     /// Judges a node for a player. <paramref name="hasCastle"/> tells whether the player's castle stands; the

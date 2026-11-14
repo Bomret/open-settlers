@@ -18,8 +18,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RoadDrawsTests
 {
-    private const int Column = 10;
-    private const int Row = 10;
+    const int Column = 10;
+    const int Row = 10;
 
     public static IEnumerable<object[]> Cases =>
         File.ReadAllLines("road-strips.txt").Select(line => new object[] { line });
@@ -168,17 +168,17 @@ public sealed class RoadDrawsTests
         Assert.IsEmpty(RoadDraws.Of(map));
     }
 
-    private static Map Blank() => new(MapSize.Offered[0]);
+    static Map Blank() => new(MapSize.Offered[0]);
 
     // Both triangles of a node take the terrain code.
-    private static void SetTerrain(Map map, int x, int y, int code)
+    static void SetTerrain(Map map, int x, int y, int code)
     {
         map.At(x, y).Upper = new Terrain(code);
         map.At(x, y).Lower = new Terrain(code);
     }
 
     // Every triangle of the map is the lowest land.
-    private static void Land(Map map)
+    static void Land(Map map)
     {
         for (var index = 0; index < map.Count; index++)
         {

@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SeedTests
 {
-    private static Seed Parse(string screen)
+    static Seed Parse(string screen)
     {
         Assert.IsTrue(Seed.TryParse(screen, out var seed, out var problem), problem);
         return seed;

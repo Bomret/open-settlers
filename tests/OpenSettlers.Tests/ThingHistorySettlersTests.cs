@@ -10,7 +10,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ThingHistorySettlersTests
 {
-    private static Game NewGame()
+    static Game NewGame()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -38,13 +38,13 @@ public sealed class ThingHistorySettlersTests
         return GameFactory.Create(tables, map);
     }
 
-    private static void Do(Game game, int kind, int x, int y, int[]? directions = null)
+    static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
         game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
         game.Tick();
     }
 
-    private static Game Built(out int hutSlot)
+    static Game Built(out int hutSlot)
     {
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
@@ -62,7 +62,7 @@ public sealed class ThingHistorySettlersTests
         return game;
     }
 
-    private static int WoodcutterSlot(Game game) =>
+    static int WoodcutterSlot(Game game) =>
         game.Settlers.Select((s, slot) => (s, slot)).First(p => p.s.Job == new Woodcutter()).slot;
 
     [TestMethod]

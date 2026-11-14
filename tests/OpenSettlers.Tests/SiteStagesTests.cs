@@ -104,7 +104,7 @@ public sealed class SiteStagesTests
         Assert.IsNull(ObjectSprites.SiteLayerEntry(SiteLayer.Stage, BuildingType.Storehouse));
     }
 
-    private static ObjectImage Image(int width, int height, int offsetX = 0, int offsetY = 0, byte value = 7)
+    static ObjectImage Image(int width, int height, int offsetX = 0, int offsetY = 0, byte value = 7)
     {
         var rgba = new byte[width * height * 4];
         for (var pixel = 0; pixel < width * height; pixel++)

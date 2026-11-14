@@ -42,7 +42,7 @@ public static class RoadDraws
 {
     // Pixels the strip reaches above its higher node (0x428008 subtracts 2 more after the height); the level strip is
     // 5 rows high, so it is centered on the line.
-    private const int Above = 2;
+    const int Above = 2;
 
     /// <summary>
     /// The strips of the map's roads in row-major order of the node each is drawn from. Every strip gives a term; the
@@ -71,7 +71,7 @@ public static class RoadDraws
     }
 
     // The strip of the road that leaves a node east, south-east, or south.
-    private static RoadStrip Strip(Map map, int column, int row, RoadDirection direction)
+    static RoadStrip Strip(Map map, int column, int row, RoadDirection direction)
     {
         int H(int dx, int dy) => map.At(column + dx, row + dy).Height;
         Terrain Low(int dx, int dy) => map.At(column + dx, row + dy).Lower;

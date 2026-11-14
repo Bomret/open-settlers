@@ -17,7 +17,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class MapGeneratorTests
 {
-    private static readonly string[] Seeds = ["1234,5678,9ABC", "6359,A0D2,B4FA", "FFFF,0001,8001"];
+    static readonly string[] Seeds = ["1234,5678,9ABC", "6359,A0D2,B4FA", "FFFF,0001,8001"];
 
     public static IEnumerable<object[]> Passes => Enum.GetValues<MapPass>().Select(pass => new object[] { pass });
 
@@ -140,11 +140,11 @@ public sealed class MapGeneratorTests
         Assert.AreEqual(0x80 | MadeCode, ObjectAfterOverlap(objectClass: 1, -1, 0));
     }
 
-    private const int MadeCode = 5;
+    const int MadeCode = 5;
 
     // Generates with made tables that give MadeCode the class, puts that code with the water bit on one tile before the
     // overlap pass and marks its neighbor at (dx, dy) as occupied, and returns the tile's object byte after the pass.
-    private static int ObjectAfterOverlap(int objectClass, int dx, int dy)
+    static int ObjectAfterOverlap(int objectClass, int dx, int dy)
     {
         var made = TestProgram.Made();
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -297,7 +297,7 @@ public sealed class MapGeneratorTests
         Assert.AreEqual(956, map.Resource1Total);
     }
 
-    private static int DrawsBetween(RandomGenerator from, RandomGenerator to)
+    static int DrawsBetween(RandomGenerator from, RandomGenerator to)
     {
         var steps = 0;
         for (var generator = from; generator != to; generator = generator.Step())
@@ -309,7 +309,7 @@ public sealed class MapGeneratorTests
         return steps;
     }
 
-    private static IEnumerable<ExpectedLine> Observe(MapSize size, MapSeed seed)
+    static IEnumerable<ExpectedLine> Observe(MapSize size, MapSeed seed)
     {
         var lines = new List<ExpectedLine>();
         MapGenerator.Generate(
@@ -340,21 +340,21 @@ public sealed class MapGeneratorTests
         return lines;
     }
 
-    private static IEnumerable<ExpectedLine> ExpectedLines() =>
+    static IEnumerable<ExpectedLine> ExpectedLines() =>
         File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "map-digests.txt"))
             .Where(line => line.Length > 0)
             .Select(line => new ExpectedLine { Pass = Enum.Parse<MapPass>(line.Split(' ')[2]), Text = line });
 
-    private static MapSeed ParseSeed(string words)
+    static MapSeed ParseSeed(string words)
     {
         var parts = words.Split(',').Select(part => ushort.Parse(part, NumberStyles.HexNumber)).ToArray();
 
         return new MapSeed(parts[0], parts[1], parts[2]);
     }
 
-    private static string Format(MapSeed seed) => $"{seed.W0:X4},{seed.W1:X4},{seed.W2:X4}";
+    static string Format(MapSeed seed) => $"{seed.W0:X4},{seed.W1:X4},{seed.W2:X4}";
 
-    private sealed record ExpectedLine
+    sealed record ExpectedLine
     {
         public required MapPass Pass { get; init; }
         public required string Text { get; init; }

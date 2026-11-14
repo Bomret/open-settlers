@@ -20,7 +20,7 @@ public static class StartStock
     // the emulator (castle:, 7 start stock levels in castle-placements.txt), not read from the routine's own
     // subtractions; docs/rules/castle.md states its origin. Upgrade path: read the subtractions of 0x442704 and its
     // callees.
-    private static readonly (int Good, int Count)[] Taken =
+    static readonly (int Good, int Count)[] Taken =
     [
         (7, 7),
         (9, 2),

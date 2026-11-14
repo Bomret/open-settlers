@@ -11,9 +11,9 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RoadLoopTests
 {
-    private static readonly int[] Loop = [0, 1, 2, 3, 4, 5];
+    static readonly int[] Loop = [0, 1, 2, 3, 4, 5];
 
-    private static Game Started()
+    static Game Started()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = GameFactory.Create(RemovalLogicTests.Made(), map);
@@ -22,7 +22,7 @@ public sealed class RoadLoopTests
         return game;
     }
 
-    private static Game WithLoop()
+    static Game WithLoop()
     {
         var game = Started();
         Apply(game, CommandKind.BuildRoad, 16, 6, Loop);
@@ -30,13 +30,13 @@ public sealed class RoadLoopTests
         return game;
     }
 
-    private static void Apply(Game game, int kind, int x, int y, int[]? directions = null)
+    static void Apply(Game game, int kind, int x, int y, int[]? directions = null)
     {
         game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
         game.Tick();
     }
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
         {

@@ -12,7 +12,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RoadOnRoadTests
 {
-    private static Game Started()
+    static Game Started()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = GameFactory.Create(RemovalLogicTests.Made(), map);
@@ -25,14 +25,14 @@ public sealed class RoadOnRoadTests
         return game;
     }
 
-    private static void Apply(Game game, Command command)
+    static void Apply(Game game, Command command)
     {
         game.Enqueue(command);
         game.Tick();
     }
 
     // From 18,8 north to 18,7, then north onto 18,6, a node of the east road.
-    private static readonly int[] OntoTheRoad = [5, 5];
+    static readonly int[] OntoTheRoad = [5, 5];
 
     [TestMethod]
     public void ARoadWhoseLastStepLandsOnTheNodeOfAnotherRoadIsRefused()
@@ -108,7 +108,7 @@ public sealed class RoadOnRoadTests
         AssertUnchanged(game, road, roads, events);
     }
 
-    private static void AssertUnchanged(Game game, Road road, RoadSet[] roads, int events)
+    static void AssertUnchanged(Game game, Road road, RoadSet[] roads, int events)
     {
         Assert.AreEqual(1, game.Network.Roads.Count);
         Assert.AreEqual(road, game.Network.Roads.Single());

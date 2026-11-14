@@ -10,7 +10,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class TablePassTests
 {
-    private static SettlerTable Settlers(int count)
+    static SettlerTable Settlers(int count)
     {
         var table = new SettlerTable();
         for (var slot = 0; slot < count; slot++)
@@ -21,7 +21,7 @@ public sealed class TablePassTests
         return table;
     }
 
-    private static BuildingTable Buildings(int count)
+    static BuildingTable Buildings(int count)
     {
         var table = new BuildingTable();
         for (var slot = 0; slot < count; slot++)

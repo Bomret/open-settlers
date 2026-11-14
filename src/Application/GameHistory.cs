@@ -11,22 +11,22 @@ namespace OpenSettlers.Simulation;
 public sealed class GameHistory
 {
     // The state of a settler waiting next to a flag (docs/rules/carriers.md).
-    private const int WaitingState = 0x42;
+    const int WaitingState = 0x42;
 
     // The state of a settler idle in a storage.
-    private const int IdleState = 1;
+    const int IdleState = 1;
 
     // How often each slot of the settler, building, and flag lists was filled. A list the free slots at its end trimmed keeps
     // its counts, and nothing lowers one.
-    private readonly List<int> _settlerFills = [];
-    private readonly List<int> _buildingFills = [];
-    private readonly List<int> _flagFills = [];
+    readonly List<int> _settlerFills = [];
+    readonly List<int> _buildingFills = [];
+    readonly List<int> _flagFills = [];
 
     // The command cause each settler carries on until its behaviour ends.
-    private readonly Dictionary<ThingId, Cause> _carried = [];
+    readonly Dictionary<ThingId, Cause> _carried = [];
 
-    private readonly IThingSnapshots _snapshots;
-    private readonly Func<long> _tickCount;
+    readonly IThingSnapshots _snapshots;
+    readonly Func<long> _tickCount;
 
     /// <summary>
     /// A history that takes each thing's state from <paramref name="snapshots"/> and reads the number of ticks the game has
@@ -145,12 +145,12 @@ public sealed class GameHistory
         }
     }
 
-    private void Record(string type, ThingId thing, ThingState state, Cause cause, string? other) =>
+    void Record(string type, ThingId thing, ThingState state, Cause cause, string? other) =>
         Events.Add(new ThingEvent(_tickCount(), type, thing, state, cause, other));
 
-    private static int FillOf(List<int> fills, int slot) => slot >= 0 && slot < fills.Count ? fills[slot] : 0;
+    static int FillOf(List<int> fills, int slot) => slot >= 0 && slot < fills.Count ? fills[slot] : 0;
 
-    private static void Fill(List<int> fills, int slot)
+    static void Fill(List<int> fills, int slot)
     {
         while (fills.Count <= slot)
         {

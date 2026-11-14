@@ -13,14 +13,14 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SitePassTests
 {
-    private const int SiteFlag = 1;
-    private static readonly Request Planks = new(ConstructionTables.PlankClass, 0);
-    private static readonly Request Stones = new(ConstructionTables.StoneClass, 0);
+    const int SiteFlag = 1;
+    static readonly Request Planks = new(ConstructionTables.PlankClass, 0);
+    static readonly Request Stones = new(ConstructionTables.StoneClass, 0);
 
     // The requests the site's pass sent to the castle, in order, with the building each came from (MSTest makes an instance for each test).
-    private readonly List<(Building Site, WorkerRequest Request)> Asked = [];
+    readonly List<(Building Site, WorkerRequest Request)> Asked = [];
 
-    private (BehaviourBench Bench, SitePass Pass, Building Site) Bench(
+    (BehaviourBench Bench, SitePass Pass, Building Site) Bench(
         BuildingType type,
         BuildingNeeds needs,
         ushort progress = 1,
@@ -59,7 +59,7 @@ public sealed class SitePassTests
     }
 
     // A module that names the workers of both stages of a site, as the digger's and the builder's modules do for their own jobs.
-    private sealed class SiteRules(JobParts parts) : JobRules<Carrier>(parts)
+    sealed class SiteRules(JobParts parts) : JobRules<Carrier>(parts)
     {
         public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
             stage == SiteStage.Levelling
@@ -68,7 +68,7 @@ public sealed class SitePassTests
     }
 
     // The node of the site and its six neighbours at one height, then the node itself at another.
-    private static void Uneven(BehaviourBench bench, int ground = 3, int node = 2)
+    static void Uneven(BehaviourBench bench, int ground = 3, int node = 2)
     {
         for (var direction = 0; direction < Direction.Count; direction++)
         {
@@ -79,7 +79,7 @@ public sealed class SitePassTests
         bench.Map.At(7, 5).Height = node;
     }
 
-    private static int Rank(BehaviourBench bench, RequestWord word) => bench.Flags[SiteFlag].RequestOf(word).Rank;
+    static int Rank(BehaviourBench bench, RequestWord word) => bench.Flags[SiteFlag].RequestOf(word).Rank;
 
     [TestMethod]
     public void ASiteWithNothingAsksForPlanksAtTheRankTheStartGives()
@@ -251,7 +251,7 @@ public sealed class SitePassTests
         Assert.AreEqual(new WorkerRequest(new Sawmiller(), new Good(4)), Asked.Single().Request);
     }
 
-    private sealed class OtherSiteRules(JobParts parts) : JobRules<Digger>(parts)
+    sealed class OtherSiteRules(JobParts parts) : JobRules<Digger>(parts)
     {
         public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
             stage == SiteStage.Building ? new WorkerRequest(new Forester(), new Good(5)) : null;

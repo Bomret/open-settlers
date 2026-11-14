@@ -13,9 +13,9 @@ namespace OpenSettlers.Tests;
 public sealed class HistoryEditionLooksTests
 {
     // The made-up adds: the walk 1, the way back with a load 2, the work 4, the work facing back 8.
-    private static readonly FigureAdds Adds = new(Walk: 1, Carrying: 2, Cutting: 4);
+    static readonly FigureAdds Adds = new(Walk: 1, Carrying: 2, Cutting: 4);
 
-    private static RuleTables Tables(short[]? carried = null) =>
+    static RuleTables Tables(short[]? carried = null) =>
         new(
             [.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)],
             [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[RuleTables.Goods])],
@@ -29,13 +29,13 @@ public sealed class HistoryEditionLooksTests
             ]
         );
 
-    private static SettlerDraw Draw(Job job, Activity activity, Heading? heading = null, Good carried = default) =>
+    static SettlerDraw Draw(Job job, Activity activity, Heading? heading = null, Good carried = default) =>
         new(0, 0, 0, SettlerPart.Figure, job, activity, heading, 0, 0, 0, carried);
 
-    private const int Low = 0x7f;
-    private const int High = 0x80;
+    const int Low = 0x7f;
+    const int High = 0x80;
 
-    private static readonly Activity BackWithLoad = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(true)));
+    static readonly Activity BackWithLoad = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(true)));
 
     // The stonecutter's handler at 0x43fcd8: the stroke from 0x80, below it the way back with the stone and the step back off the
     // heap (state 0x17, byte 13 = 2, the phase 2 of cutting stone) the carrying constant, any other frame the walk's.

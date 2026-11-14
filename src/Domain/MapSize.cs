@@ -16,7 +16,7 @@ public sealed record MapSize
     /// <summary>The sizes the original offers, smallest first. Only these exist.</summary>
     public static IReadOnlyList<MapSize> Offered { get; } = [new(1, 32, 32), new(2, 64, 32), new(3, 64, 64)];
 
-    private MapSize(int value, int width, int height)
+    MapSize(int value, int width, int height)
     {
         Value = value;
         Width = width;

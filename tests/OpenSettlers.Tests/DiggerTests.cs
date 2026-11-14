@@ -15,14 +15,14 @@ public sealed class DiggerTests
 {
     // A sawmill's site at 14,8 (a node the made-up tables judge as a site for a large building) with its flag at 15,9, which a road joins
     // to the castle's flag.
-    private const int SiteX = 14;
-    private const int SiteY = 8;
+    const int SiteX = 14;
+    const int SiteY = 8;
 
-    private static ref Node Neighbour(Game game, int direction) =>
+    static ref Node Neighbour(Game game, int direction) =>
         ref game.Map.At(SiteX + Direction.Steps[direction].Dx, SiteY + Direction.Steps[direction].Dy);
 
     // The heights of the node and its six neighbours (east, south-east, south, west, north-west, north).
-    private static int[] Heights(Game game) =>
+    static int[] Heights(Game game) =>
         [
             game.Map.At(SiteX, SiteY).Height,
             .. Enumerable.Range(0, Direction.Count).Select(direction => Neighbour(game, direction).Height),
@@ -30,10 +30,9 @@ public sealed class DiggerTests
 
     // A game with a large site (a sawmill) whose ground holds the target height plus the offsets given for the node and its neighbours (east,
     // south-east, south, west, north-west, north), and a shovel in the stock.
-    private static (Game Game, Building Site, int Target) World(int node, params int[] around) =>
-        World(false, node, around);
+    static (Game Game, Building Site, int Target) World(int node, params int[] around) => World(false, node, around);
 
-    private static (Game Game, Building Site, int Target) World(bool everyPassTurns, int node, params int[] around)
+    static (Game Game, Building Site, int Target) World(bool everyPassTurns, int node, params int[] around)
     {
         var game = ConstructionWorld.Create(ConstructionTables.Tables(stepTime: 100), everyPassTurns: everyPassTurns);
         game.CastleStock.Add(ConstructionTables.DiggerTool);
@@ -52,7 +51,7 @@ public sealed class DiggerTests
         return (game, site, target);
     }
 
-    private static int[] Levelled(int target) => [.. Enumerable.Repeat(target, 7)];
+    static int[] Levelled(int target) => [.. Enumerable.Repeat(target, 7)];
 
     [TestMethod]
     public void TheDiggerLevelsTheNodeAndItsSixNeighboursToTheSitesHeightAndTheSiteStarts()

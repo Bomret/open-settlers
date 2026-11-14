@@ -11,7 +11,7 @@ public sealed partial class Layout
     // reports the reason Refusal gives for the command's kind. A building, settler, or good entry is no command a player gives:
     // its Place puts it in the game directly (Game.PlaceFinishedBuilding, WalkBehavior.StandWorkerInHut,
     // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null.
-    private sealed record Step(string Name, Command Command, Func<Game, string?>? Place = null);
+    sealed record Step(string Name, Command Command, Func<Game, string?>? Place = null);
 
     /// <summary>
     /// Builds the castle, flags, roads, and buildings of the layout in the game, one entry at a time in the order the
@@ -34,7 +34,7 @@ public sealed partial class Layout
     }
 
     // The entries one at a time; the game records their events with the cause layout (Causes.InLayout).
-    private string? Build(Game game)
+    string? Build(Game game)
     {
         foreach (var step in _steps)
         {
@@ -61,7 +61,7 @@ public sealed partial class Layout
     }
 
     // Why the original refuses each kind of command (the documentation of the command kind).
-    private static string Refusal(int kind) =>
+    static string Refusal(int kind) =>
         kind switch
         {
             CommandKind.PlaceCastle => "the node is no castle site, the original refuses it there",
@@ -74,14 +74,14 @@ public sealed partial class Layout
             _ => BuildingRefusal,
         };
 
-    private const string BuildingRefusal =
+    const string BuildingRefusal =
         "the node is no site for a building of the type's size with its flag south-east of it, and the castle must stand";
 
-    private sealed partial class Reader
+    sealed partial class Reader
     {
         // The castle, flags, roads, buildings, settlers, and goods entries in the order the file holds them. Null when an entry is bad
         // or repeats an earlier one of its kind.
-        private List<Step>? ReadSteps(JsonElement root)
+        List<Step>? ReadSteps(JsonElement root)
         {
             var steps = new List<Step>();
             var good = true;
@@ -113,7 +113,7 @@ public sealed partial class Layout
             return good ? steps : null;
         }
 
-        private bool ReadList(JsonProperty property, int kind, List<Step> steps)
+        bool ReadList(JsonProperty property, int kind, List<Step> steps)
         {
             if (property.Value.ValueKind != JsonValueKind.Array)
             {
@@ -132,11 +132,7 @@ public sealed partial class Layout
             return good;
         }
 
-        private bool ReadEntries(
-            JsonProperty property,
-            Func<string, JsonElement, List<Step>, bool> read,
-            List<Step> steps
-        )
+        bool ReadEntries(JsonProperty property, Func<string, JsonElement, List<Step>, bool> read, List<Step> steps)
         {
             if (property.Value.ValueKind != JsonValueKind.Array)
             {
@@ -156,7 +152,7 @@ public sealed partial class Layout
         }
 
         // The building types a finished-building entry names (docs/rules/layouts.md), by the names of the build panel.
-        private static readonly Dictionary<string, BuildingType> BuildingNames = new()
+        static readonly Dictionary<string, BuildingType> BuildingNames = new()
         {
             ["woodcutter"] = BuildingType.Woodcutter,
             ["stonecutter"] = BuildingType.Stonecutter,
@@ -164,13 +160,13 @@ public sealed partial class Layout
             ["sawmill"] = BuildingType.Sawmill,
         };
 
-        private const string BuildingShape =
+        const string BuildingShape =
             "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", or \"sawmill\", \"x\", \"y\"} (the node of the building, "
             + "finished with its flag south-east of it)";
 
         // A finished-building entry: the building stands finished at tick 0 as the original's mission start leaves a building
         // (0x41f2d2 places it through 0x449a63 and finishes it).
-        private bool ReadBuilding(string name, JsonElement entry, List<Step> steps)
+        bool ReadBuilding(string name, JsonElement entry, List<Step> steps)
         {
             if (entry.ValueKind != JsonValueKind.Object)
             {
@@ -238,11 +234,11 @@ public sealed partial class Layout
         }
 
         // The entry states a settler starts in (docs/rules/layouts.md): each job with its states.
-        private const string SettlerShape =
+        const string SettlerShape =
             "{\"job\": \"carrier\", \"state\": \"waiting-on-road\", \"x\", \"y\", \"direction\"} (a flag of the road and "
             + "the direction the road leaves it)";
 
-        private bool ReadSettler(string name, JsonElement entry, List<Step> steps)
+        bool ReadSettler(string name, JsonElement entry, List<Step> steps)
         {
             if (entry.ValueKind != JsonValueKind.Object)
             {
@@ -294,7 +290,7 @@ public sealed partial class Layout
             return true;
         }
 
-        private bool ReadGood(string name, JsonElement entry, List<Step> steps)
+        bool ReadGood(string name, JsonElement entry, List<Step> steps)
         {
             const string shape = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": 1 to 25}";
             if (entry.ValueKind != JsonValueKind.Object)
@@ -334,10 +330,10 @@ public sealed partial class Layout
             return true;
         }
 
-        private static string Shape(int kind) =>
+        static string Shape(int kind) =>
             kind == CommandKind.BuildRoad ? "{\"x\", \"y\", \"directions\"}" : "{\"x\", \"y\"}";
 
-        private bool ReadEntry(string name, JsonElement entry, int kind, List<Step> steps)
+        bool ReadEntry(string name, JsonElement entry, int kind, List<Step> steps)
         {
             var road = kind == CommandKind.BuildRoad;
             if (entry.ValueKind != JsonValueKind.Object)
@@ -386,7 +382,7 @@ public sealed partial class Layout
         }
 
         // The directions of a road: one or more whole numbers from 0 to 5. A bad list is a problem naming the entry.
-        private bool ReadDirections(string name, JsonElement entry, out int[]? directions)
+        bool ReadDirections(string name, JsonElement entry, out int[]? directions)
         {
             directions = null;
             if (

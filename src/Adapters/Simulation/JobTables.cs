@@ -7,7 +7,7 @@ namespace OpenSettlers.Simulation;
 /// What the importer and the name table ask of a <see cref="JobTables{TJob}"/> module without knowing its job type. The generated
 /// <c>JobTablesRegistry</c> holds every module as one.
 /// </summary>
-internal interface IJobTables
+interface IJobTables
 {
     /// <summary>The job the module is for.</summary>
     Job Job { get; }

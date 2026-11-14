@@ -26,7 +26,7 @@ public sealed class SettlerMovement(
     Func<Activity, Residue> residueOf
 )
 {
-    private readonly Dictionary<int, int> _occupant = [];
+    readonly Dictionary<int, int> _occupant = [];
 
     /// <summary>The map the settlers walk on.</summary>
     public Map Map => map;

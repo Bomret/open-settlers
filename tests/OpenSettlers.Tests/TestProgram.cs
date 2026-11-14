@@ -15,9 +15,9 @@ namespace OpenSettlers.Tests;
 /// inconclusive without it. <see cref="Made"/> holds tables a test builds in code, for the tests that check the
 /// game's own logic and hold no original value.
 /// </summary>
-internal static class TestProgram
+static class TestProgram
 {
-    private static RuleTables? _tables;
+    static RuleTables? _tables;
 
     /// <summary>
     /// Tables of made-up values, no restatement of the original's: every object code has class 0, so no object

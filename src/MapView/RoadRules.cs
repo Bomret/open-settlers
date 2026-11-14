@@ -15,17 +15,17 @@ public static class RoadRules
 {
     // The first mask entry of a strip for the height difference 0: the east strips take 230 to 238, the south-east
     // 239 to 247, and the south 248 to 256, a difference of -4 to 4 each.
-    private const int EastMask = 234;
-    private const int SouthEastMask = 243;
-    private const int SouthMask = 252;
-    private const int MaxDifference = 4;
+    const int EastMask = 234;
+    const int SouthEastMask = 243;
+    const int SouthMask = 252;
+    const int MaxDifference = 4;
 
     // The texture entry for a slope of 5 or more, and the entries of the other two slopes follow it; the entry
     // of a strip beside water; and the steps up from the land textures to those of mountain and of snow.
-    private const int SteepTexture = 300;
-    private const int WaterTexture = 309;
-    private const int MountainStep = 3;
-    private const int SnowStep = 6;
+    const int SteepTexture = 300;
+    const int WaterTexture = 309;
+    const int MountainStep = 3;
+    const int SnowStep = 6;
 
     /// <summary>
     /// The draw of a strip: the mask of its direction and height difference, and the texture of its slope and ground.

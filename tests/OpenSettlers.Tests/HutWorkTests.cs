@@ -11,12 +11,12 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class HutWorkTests
 {
-    private const int HutX = 4;
-    private const int HutY = 4;
+    const int HutX = 4;
+    const int HutY = 4;
 
     // The hut at (4, 4) with its flag south-east of it at (5, 5), and a tree at (5, 4): the first entry of the spiral around the
     // hut (an offset of 1 east) that the draw 0 names.
-    private static (
+    static (
         BehaviourBench Bench,
         HutWork Behaviour,
         List<(int Flag, int Place, int Good)> Laid,
@@ -67,7 +67,7 @@ public sealed class HutWorkTests
 
     // The registry of the hut work's activities and the modules' (the woodcutter's among them), and the wait of a step that the game's
     // own walk behaviour handles.
-    private static ActivityRegistry Registry(BehaviourBench bench, HutWork behaviour, JobParts parts, Causes causes)
+    static ActivityRegistry Registry(BehaviourBench bench, HutWork behaviour, JobParts parts, Causes causes)
     {
         var registry = new ActivityRegistry();
         behaviour.Register(registry);

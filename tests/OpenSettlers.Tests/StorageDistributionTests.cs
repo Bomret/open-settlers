@@ -12,22 +12,17 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class StorageDistributionTests
 {
-    private const int East = 0;
-    private const int West = 3;
-    private const int Planks = 8;
-    private const int Stones = 10;
+    const int East = 0;
+    const int West = 3;
+    const int Planks = 8;
+    const int Stones = 10;
 
-    private sealed record Rig(
-        BehaviourBench Bench,
-        CastleStock Castle,
-        StorageDistribution Distribution,
-        GoodsTransport Goods
-    );
+    sealed record Rig(BehaviourBench Bench, CastleStock Castle, StorageDistribution Distribution, GoodsTransport Goods);
 
     // Flag 0 is the castle's; flags 1 and 2 are sites' flags on roads that hold a carrier (flag 2 beyond flag 1). The castle holds
     // the planks and stones given. A flagCount below 3 leaves out the last flags and their roads, and withCastle false leaves the
     // castle unplaced.
-    private static Rig Started(
+    static Rig Started(
         int planks,
         int stones,
         ushort draw = 2,
@@ -83,7 +78,7 @@ public sealed class StorageDistributionTests
         return new Rig(bench, castle, distribution, goods);
     }
 
-    private static Building Site(Rig rig, int flag, byte plankRank, byte stoneRank = 0)
+    static Building Site(Rig rig, int flag, byte plankRank, byte stoneRank = 0)
     {
         rig.Bench.Flags[flag].SetRequest(RequestWord.First, new Request(ConstructionTables.PlankClass, plankRank));
         rig.Bench.Flags[flag].SetRequest(RequestWord.Second, new Request(ConstructionTables.StoneClass, stoneRank));
@@ -123,7 +118,7 @@ public sealed class StorageDistributionTests
     }
 
     // The food step of the program's orders hands out the one of the food goods 1, 3, and 6 that the castle holds most of.
-    private static readonly int[] FoodGoods = [1, 3, 6];
+    static readonly int[] FoodGoods = [1, 3, 6];
 
     [TestMethod]
     public void AFoodStepHandsOutTheFoodGoodTheCastleHoldsMostOf()

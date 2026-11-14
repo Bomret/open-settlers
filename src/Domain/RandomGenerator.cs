@@ -20,5 +20,5 @@ public readonly record struct RandomGenerator(ushort W0, ushort W1, ushort W2)
         return new RandomGenerator(first, RotateRight(second), RotateRight(third));
     }
 
-    private static ushort RotateRight(ushort word) => (ushort)((word >> 1) | (word << 15));
+    static ushort RotateRight(ushort word) => (ushort)((word >> 1) | (word << 15));
 }

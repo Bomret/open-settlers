@@ -11,7 +11,7 @@ namespace OpenSettlers.Domain;
 /// </summary>
 public sealed class BuildingTable : IReadOnlyList<Building>
 {
-    private readonly List<Building> _buildings = [];
+    readonly List<Building> _buildings = [];
 
     /// <summary>The number of slots, free ones before the last building included.</summary>
     public int Count => _buildings.Count;

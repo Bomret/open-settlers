@@ -55,21 +55,21 @@ public sealed partial class Layout
     /// <summary>The characters of the <c>lakes</c> grid: <c>.</c> leaves Flags bit 6 clear, <c>L</c> sets it.</summary>
     public const string LakeCharacters = ".L";
 
-    private static readonly JsonDocumentOptions Options = new()
+    static readonly JsonDocumentOptions Options = new()
     {
         CommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
     };
 
-    private readonly string[] _height;
-    private readonly string[] _terrain;
-    private readonly string[] _terrainLower;
-    private readonly string[]? _lakes;
-    private readonly IReadOnlyList<PlacedObject> _objects;
-    private readonly IReadOnlyList<Step> _steps;
-    private readonly string _file;
+    readonly string[] _height;
+    readonly string[] _terrain;
+    readonly string[] _terrainLower;
+    readonly string[]? _lakes;
+    readonly IReadOnlyList<PlacedObject> _objects;
+    readonly IReadOnlyList<Step> _steps;
+    readonly string _file;
 
-    private Layout(
+    Layout(
         string file,
         MapSize size,
         Seed seed,
@@ -212,7 +212,7 @@ public sealed partial class Layout
     // west, north-west, and north, are at height 0 too. Against generated maps (LayoutTests) this marks every tile
     // the generator marks, and also tiles at height 0 that it leaves unmarked; a layout that draws the marks in its
     // lakes grid has no need of the rule.
-    private static void MarkLakeMiddles(MapLayers map)
+    static void MarkLakeMiddles(MapLayers map)
     {
         var height = map.Bytes(MapLayer.Height);
         var terrain = map.Bytes(MapLayer.Terrain);
@@ -237,9 +237,9 @@ public sealed partial class Layout
     }
 
     // Reads one file's text and collects every problem it can find; entries that depend on a bad entry are skipped.
-    private sealed partial class Reader(string file)
+    sealed partial class Reader(string file)
     {
-        private readonly List<string> _problems = [];
+        readonly List<string> _problems = [];
 
         public IReadOnlyList<string> Problems => _problems;
 
@@ -338,9 +338,9 @@ public sealed partial class Layout
             }
         }
 
-        private void Fail(string entry, string reason) => _problems.Add($"{file}: {entry}: {reason}");
+        void Fail(string entry, string reason) => _problems.Add($"{file}: {entry}: {reason}");
 
-        private MapSize? ReadSize(JsonElement entry)
+        MapSize? ReadSize(JsonElement entry)
         {
             if (entry.ValueKind != JsonValueKind.Number || !entry.TryGetInt32(out var value))
             {
@@ -357,7 +357,7 @@ public sealed partial class Layout
             return size;
         }
 
-        private Seed? ReadSeed(JsonElement entry)
+        Seed? ReadSeed(JsonElement entry)
         {
             var text = entry.ValueKind == JsonValueKind.String ? entry.GetString() : null;
             if (text is null)
@@ -378,7 +378,7 @@ public sealed partial class Layout
         }
 
         // A grid of one string for each row; the shape is checked against the size where the size is good.
-        private string[]? ReadGrid(string name, JsonElement entry, MapSize? size, string alphabet, string expected)
+        string[]? ReadGrid(string name, JsonElement entry, MapSize? size, string alphabet, string expected)
         {
             if (
                 entry.ValueKind != JsonValueKind.Array
@@ -415,7 +415,7 @@ public sealed partial class Layout
             return good ? rows : null;
         }
 
-        private List<PlacedObject>? ReadObjects(JsonElement entry, MapSize? size)
+        List<PlacedObject>? ReadObjects(JsonElement entry, MapSize? size)
         {
             if (entry.ValueKind != JsonValueKind.Array)
             {
@@ -487,7 +487,7 @@ public sealed partial class Layout
             return good ? objects : null;
         }
 
-        private static bool Whole(JsonElement drawn, string key, out int value)
+        static bool Whole(JsonElement drawn, string key, out int value)
         {
             value = 0;
 

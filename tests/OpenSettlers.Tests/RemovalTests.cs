@@ -22,7 +22,7 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class RemovalTests
 {
-    private const string Fixture = "removals.txt";
+    const string Fixture = "removals.txt";
 
     internal sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
 
@@ -69,7 +69,7 @@ public sealed class RemovalTests
         return scenarios;
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]: the game before the first pass.
@@ -169,7 +169,7 @@ public sealed class RemovalTests
     // original and 0 in the engine, where 0 is also the target before the pick. A settler that was a carrier waiting next to a
     // flag and went home (state 0x19 with the bytes 14 and 15 of the pointer, 0 and 0x23) keeps the pointer there until its
     // search for a flag writes the vector.
-    private static string Masked(string expected, string actual)
+    static string Masked(string expected, string actual)
     {
         var state = Convert.ToByte(expected[20..22], 16);
         var mode = Convert.ToByte(expected[22..24], 16);
@@ -191,7 +191,7 @@ public sealed class RemovalTests
 
     // The flag item's fields the engine holds, in the order of the verb's 70 bytes: byte 4 bit 7, the status, the road bytes, the
     // goods and their destination words, and the bytes of the directions (0x3c to 0x41).
-    private static string FlagFields(Game game, int slot) =>
+    static string FlagFields(Game game, int slot) =>
         Convert.ToHexString([
             FlagEncoder.GoodsByte(game.Flags[slot]),
             FlagEncoder.Status(game.Flags[slot]),
@@ -201,7 +201,7 @@ public sealed class RemovalTests
             .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[slot].Side(direction))),
         ]);
 
-    private static string Fields(string item) =>
+    static string Fields(string item) =>
         string.Concat(
             (Convert.ToByte(item[8..10], 16) & 0x80).ToString("X2", CultureInfo.InvariantCulture),
             item[10..24],
@@ -239,7 +239,7 @@ public sealed class RemovalTests
     }
 
     // The map bytes of the flag, object, and link layers that a step changed, as the verb lists them: "x,y:0=old>new/3=old>new/4=old>new".
-    private static string MapChanges(byte[][] before, Map map)
+    static string MapChanges(byte[][] before, Map map)
     {
         var width = map.Size.Width;
         var exported = MapLayerExporter.Export(map);
@@ -274,7 +274,7 @@ public sealed class RemovalTests
 
     // The verb also lists the changes of byte 5 of a node, the mark a settler leaves on the node it stands on (0x80); the engine
     // keeps that mark in its settler table (Game.Occupant) and no map layer holds it, so the settlers' bytes check it.
-    private static string WithoutOccupancy(string changes) =>
+    static string WithoutOccupancy(string changes) =>
         string.Join(
             ';',
             changes
@@ -290,7 +290,7 @@ public sealed class RemovalTests
                 .Select(entry => $"{entry.Node}:{string.Join('/', entry.Layers)}")
         );
 
-    private static byte[][] Snapshot(Map map) =>
+    static byte[][] Snapshot(Map map) =>
         [Layers.Of(map, MapLayer.Flags), [], [], Layers.Of(map, MapLayer.Object), Layers.Of(map, MapLayer.Resource)];
 
     [TestMethod]

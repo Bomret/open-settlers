@@ -145,7 +145,7 @@ public sealed class RuleTablesTests
         Assert.AreEqual(RuleTables.FrameRowCount, frameSpan);
     }
 
-    private static RuleTables WithJobData(params (Job, object)[] data) =>
+    static RuleTables WithJobData(params (Job, object)[] data) =>
         new(new ObjectClass[RuleTables.ClassCount], TestProgram.Made().StartStock, jobData: data);
 
     [TestMethod]

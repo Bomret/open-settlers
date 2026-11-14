@@ -9,7 +9,7 @@ namespace OpenSettlers.MapView;
 /// <param name="tables">The tables of the exe: the digger's adds.</param>
 public sealed class DiggerLook(RuleTables tables) : HistoryEditionLook<Digger>
 {
-    private readonly FigureAdds _adds = tables.Get<FigureAdds>(new Digger());
+    readonly FigureAdds _adds = tables.Get<FigureAdds>(new Digger());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) => FigureBytes.IsWork(figure) ? _adds.Cutting : _adds.Walk;

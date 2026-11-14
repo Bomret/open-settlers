@@ -13,8 +13,8 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed class RoadDrawing(Game game)
 {
-    private readonly List<int> _directions = [];
-    private (int X, int Y)? _start;
+    readonly List<int> _directions = [];
+    (int X, int Y)? _start;
 
     /// <summary>True from the click on the start flag until the road is built or cancelled.</summary>
     public bool Active => _start is not null;

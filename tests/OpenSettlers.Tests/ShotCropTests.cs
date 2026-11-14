@@ -8,18 +8,18 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ShotCropTests
 {
-    private const double ViewWidth = 800;
-    private const double ViewHeight = 600;
-    private const double OriginX = 0;
-    private const double OriginY = 40;
+    const double ViewWidth = 800;
+    const double ViewHeight = 600;
+    const double OriginX = 0;
+    const double OriginY = 40;
 
     // A map generated in code from made-up rule tables (no install). The crop geometry reads only the map's size and
     // heights, which the seed gives.
-    private static Map? _map;
+    static Map? _map;
 
-    private static Map Map => _map ??= MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
+    static Map Map => _map ??= MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
 
-    private static string? Box(
+    static string? Box(
         (double X, double Y) camera,
         double scale,
         int column,
@@ -44,7 +44,7 @@ public sealed class ShotCropTests
             out box
         );
 
-    private static (double X, double Y) Aimed((double X, double Y) camera, double scale, int column, int row)
+    static (double X, double Y) Aimed((double X, double Y) camera, double scale, int column, int row)
     {
         var problem = MapPicking.Aim(
             Map,
@@ -64,7 +64,7 @@ public sealed class ShotCropTests
         return (x, y);
     }
 
-    private static int Height(int column, int row)
+    static int Height(int column, int row)
     {
         var width = Map.Size.Width;
         var rows = Map.Size.Height;

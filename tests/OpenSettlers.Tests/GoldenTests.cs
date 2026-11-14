@@ -23,25 +23,18 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class GoldenTests
 {
-    private const string Fixture = "golden.txt";
-    private static readonly MapSeed GeneratedSeed = new(0x1234, 0x5678, 0x9ABC);
-    private const string GeneratedWhere = "generated seed=1234,5678,9ABC size=1";
+    const string Fixture = "golden.txt";
+    static readonly MapSeed GeneratedSeed = new(0x1234, 0x5678, 0x9ABC);
+    const string GeneratedWhere = "generated seed=1234,5678,9ABC size=1";
 
     // The kind of a step that stands a finished woodcutter's hut on the node before the tick: no command gives a finished
     // building, so the script places it through the seam a layout's finished-building entry uses.
-    private const int FinishedHut = -1;
+    const int FinishedHut = -1;
 
     // A command at a tick: the scripts enqueue every command before the first tick, but a finished hut, which no command gives.
-    private sealed record Step(
-        long Tick,
-        int Kind,
-        int X,
-        int Y,
-        int[]? Directions = null,
-        BuildingType? Building = null
-    );
+    sealed record Step(long Tick, int Kind, int X, int Y, int[]? Directions = null, BuildingType? Building = null);
 
-    private sealed record Scenario(
+    sealed record Scenario(
         string Name,
         string Where,
         Func<bool, Game> Start,
@@ -51,7 +44,7 @@ public sealed class GoldenTests
 
     // The castle at 15,5 puts its flag at 16,6. Flags at 18,6 (slot 1), 19,4 (2), and 17,3 (3) with roads between
     // them, and a woodcutter's hut at 16,2 on its own flag, as ThingHistoryRemovalTests lays them out.
-    private static readonly Step[] Town =
+    static readonly Step[] Town =
     [
         new(0, CommandKind.PlaceCastle, 15, 5),
         new(1, CommandKind.PlaceFlag, 18, 6),
@@ -64,13 +57,13 @@ public sealed class GoldenTests
     ];
 
     // The class 4 the removal click takes a building for.
-    private const byte BuildingClass = 4;
+    const byte BuildingClass = 4;
 
-    private static readonly int[] Loop = [0, 1, 2, 3, 4, 5];
+    static readonly int[] Loop = [0, 1, 2, 3, 4, 5];
 
-    private static readonly IReadOnlyList<int> Checkpoints = [100, 700, 1500, 3000, 6000];
+    static readonly IReadOnlyList<int> Checkpoints = [100, 700, 1500, 3000, 6000];
 
-    private static Game Generated(bool everyPass)
+    static Game Generated(bool everyPass)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), GeneratedSeed, MapSize.Offered[0]);
 
@@ -79,14 +72,14 @@ public sealed class GoldenTests
 
     // The game as the game view runs it (the castle's hand-out on, GameFactory.Create's handsOutGoods), on the made-up tables of the
     // construction rules.
-    private static Game HandingOut(bool everyPass)
+    static Game HandingOut(bool everyPass)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), GeneratedSeed, MapSize.Offered[0]);
 
         return GameFactory.Create(ConstructionTables.Tables(), map, everyPassTurns: everyPass, handsOutGoods: true);
     }
 
-    private static Func<bool, Game> OnLayout(string file) =>
+    static Func<bool, Game> OnLayout(string file) =>
         everyPass =>
         {
             var path = Path.Combine(CheckedInLayoutsTests.LayoutsFolder(), file);
@@ -102,7 +95,7 @@ public sealed class GoldenTests
             return game;
         };
 
-    private static readonly Scenario[] Scenarios =
+    static readonly Scenario[] Scenarios =
     [
         new("town-woodcutter-goods", GeneratedWhere, Generated, Town, Checkpoints),
         new(
@@ -179,7 +172,7 @@ public sealed class GoldenTests
     ];
 
     // The 64-bit FNV-1a of the events as lines, in the order recorded.
-    private static ulong EventDigest(IEnumerable<ThingEvent> events)
+    static ulong EventDigest(IEnumerable<ThingEvent> events)
     {
         var hash = 0xcbf29ce484222325UL;
         foreach (var e in events)
@@ -194,12 +187,12 @@ public sealed class GoldenTests
         return hash;
     }
 
-    private sealed record Outcome(string Line, Game Game);
+    sealed record Outcome(string Line, Game Game);
 
     // Plays the scenario once and reads no event until it has ended, so the digests at the checkpoints are those of a run
     // that nothing reads the events of (INV-0007). The events as of each checkpoint are the log's events up to its tick.
     // eachTick, where given, runs after every tick.
-    private static Outcome Run(Scenario scenario, bool everyPass, Action<Game>? eachTick = null)
+    static Outcome Run(Scenario scenario, bool everyPass, Action<Game>? eachTick = null)
     {
         var game = scenario.Start(everyPass);
         foreach (var step in scenario.Script.Where(step => step.Kind != FinishedHut))
@@ -242,7 +235,7 @@ public sealed class GoldenTests
     }
 
     // Each scenario plays once per test run; the tests below assert its properties on this outcome.
-    private static readonly Lazy<IReadOnlyList<Outcome>> Outcomes = new(() =>
+    static readonly Lazy<IReadOnlyList<Outcome>> Outcomes = new(() =>
         Scenarios.SelectMany(scenario => new[] { true, false }.Select(everyPass => Run(scenario, everyPass))).ToList()
     );
 
@@ -315,14 +308,14 @@ public sealed class GoldenTests
         CollectionAssert.AreEqual(expected, actual);
     }
 
-    private static Func<ThingEvent, bool> OfType(params string[] types) => e => types.Contains(e.Type);
+    static Func<ThingEvent, bool> OfType(params string[] types) => e => types.Contains(e.Type);
 
     // Every behaviour the engine has leaves at least its minimum of these events in the log of one scenario: a recurring
     // behaviour at least Recurring times, a behaviour a scenario sets going once (a removal, a split, the loop road, a
     // head-on meeting, the woodcutter's one log) once.
-    private const int Recurring = 3;
+    const int Recurring = 3;
 
-    private static readonly (string Behaviour, int Min, Func<ThingEvent, bool> Is)[] Behaviours =
+    static readonly (string Behaviour, int Min, Func<ThingEvent, bool> Is)[] Behaviours =
     [
         ("castle", 1, OfType(EventType.PlaceCastle)),
         ("flags", Recurring, OfType(EventType.PlaceFlag)),

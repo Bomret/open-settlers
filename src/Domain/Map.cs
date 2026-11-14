@@ -9,7 +9,7 @@ namespace OpenSettlers.Domain;
 /// </summary>
 public sealed class Map
 {
-    private readonly Node[] _nodes;
+    readonly Node[] _nodes;
 
     /// <summary>A map of the size with every node empty.</summary>
     public Map(MapSize size)

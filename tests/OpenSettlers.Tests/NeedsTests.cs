@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class NeedsTests
 {
-    private static string MiseToml()
+    static string MiseToml()
     {
         var dir = AppContext.BaseDirectory;
         while (!File.Exists(Path.Combine(dir, "mise.toml")))
@@ -36,10 +36,10 @@ public sealed class NeedsTests
     }
 
     // The --filter of the task's section, which ends at the next line that opens a section.
-    private static string Filter(string task) =>
+    static string Filter(string task) =>
         Regex.Match(MiseToml().Split($"[tasks.{task}]")[1].Split("\n[")[0], "--filter '([^']*)'").Groups[1].Value;
 
-    private static string[] Categories(string prefix) =>
+    static string[] Categories(string prefix) =>
         typeof(Needs).GetFields().Select(f => $"{prefix}{f.GetRawConstantValue()}").Order().ToArray();
 
     [TestMethod]

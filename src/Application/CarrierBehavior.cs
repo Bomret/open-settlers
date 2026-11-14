@@ -41,11 +41,11 @@ public sealed class CarrierBehavior(
 {
     // The command cause of each road a command built: the carrier sent to it carries it on until it waits on its road. A road no
     // command built (a layout's) has none. The request of a carrier takes the entry.
-    private readonly Dictionary<Road, Cause> _roadCauses = [];
+    readonly Dictionary<Road, Cause> _roadCauses = [];
 
-    private Map Map => movement.Map;
+    Map Map => movement.Map;
 
-    private Cause RuleCause => inLayout() ? Cause.Layout : Cause.Settlers;
+    Cause RuleCause => inLayout() ? Cause.Layout : Cause.Settlers;
 
     /// <summary>The flag the scan that clears the flags' retry bits goes on from at the next pass.</summary>
     public int FlagCursor { get; private set; }
@@ -167,7 +167,7 @@ public sealed class CarrierBehavior(
     // The turn of a flag (0x464c36): for each direction from north to east that holds a road, a road whose byte shows no
     // carrier on it or on the way asks for one, unless a request of this flag found none since the retry scan. A road
     // with a carrier sets its bit in the status.
-    private void VisitFlag(int slot)
+    void VisitFlag(int slot)
     {
         // The flag takes what the turn found only at its end: a request made in the turn records the flag as it stood before.
         var flag = flags[slot];
@@ -205,7 +205,7 @@ public sealed class CarrierBehavior(
     // flag is the only storage. The castle sends the settler of job 0 that waits there, or else makes a carrier of a settler
     // of job 21 that waits there (no tool): a settler without a job becomes a carrier, and stays the same settler. The carrier
     // walks to the end of the road the search came from. **Not ported:** the water roads' boatmen (job 1, 0x42b4bc).
-    private bool RequestCarrier(int slot, int direction, Road road)
+    bool RequestCarrier(int slot, int direction, Road road)
     {
         var (far, farDirection) = RoadNetwork.FarEnd(road, slot, direction);
         var end = StorageEnd(slot, far);
@@ -243,7 +243,7 @@ public sealed class CarrierBehavior(
     // The end of the road from which the search reaches the castle's flag first: 0 the flag the request comes from, 1 the
     // flag at the far end, or -1 where no land road leads to it. The two ends are queued in that order, then each flag
     // queues the flags its roads lead to, directions from north to east, and keeps the first mark that reaches a flag.
-    private int StorageEnd(int start, int far)
+    int StorageEnd(int start, int far)
     {
         var marks = new int[flags.Count];
         Array.Fill(marks, -1);
@@ -360,7 +360,7 @@ public sealed class CarrierBehavior(
     }
 
     // A carrier has entered a road: no carrier is on the way to it any more and it holds one more.
-    private static void CountCarrier(FlagSide side)
+    static void CountCarrier(FlagSide side)
     {
         side.CarrierOnTheWay = false;
         side.Carriers++;
@@ -372,7 +372,7 @@ public sealed class CarrierBehavior(
     // A step tried again (a heading less 6) goes through the retry table at 0x43adea, whose six entries (0x43b83a, 0x43ba9f,
     // 0x43be55, 0x43c0c0, 0x43c20a, 0x43c350) enter the step routines after their end-of-road check: the carrier steps or
     // is blocked again, and does not wait a second time.
-    private void WalkRoad(int slot, Settler settler)
+    void WalkRoad(int slot, Settler settler)
     {
         while (true)
         {
@@ -438,7 +438,7 @@ public sealed class CarrierBehavior(
     // the target.
     // **Inferred:** the fourth turn at a road that holds two carriers is read from the code; no emulator or debugger run reaches
     // it. Open lead in docs/milestones/m3-first-loop.md (the fourth turn of a carrier at the end of a road that holds two).
-    private void Wait(int slot, Settler settler, WalksRoad walks, int back, int flag)
+    void Wait(int slot, Settler settler, WalksRoad walks, int back, int flag)
     {
         settler.Timer = 0x3f;
         settler.Frame = walks.Heading.IdleFrame;
@@ -484,7 +484,7 @@ public sealed class CarrierBehavior(
     // stands next to (it goes on in the heading it came) and at the flag at the road's far end (it turns round). With one it
     // takes state 0x43 and runs it. **Not ported:** what the carrier does in state 3 and after it with a good to fetch (the
     // next stage); it walks on as it does with none.
-    private void Fetch(int slot, Settler settler)
+    void Fetch(int slot, Settler settler)
     {
         var waiting = (WaitsAtFlag)settler.Activity;
         var side = flags[waiting.Flag].Side(waiting.Direction);
@@ -535,7 +535,7 @@ public sealed class CarrierBehavior(
 
     // A carrier on the flag it carries a good to (0x43c45e): it turns to the building north-west of the flag, state 0xe, with the
     // step's frame from the heights and its time on the timer, and goes on at once where the timer has not run out.
-    private void Deliver(int slot, Settler settler, WalksRoad walks)
+    void Deliver(int slot, Settler settler, WalksRoad walks)
     {
         var here = Map.Index(settler.X, settler.Y);
         var (_, _, node) = movement.Neighbour(settler, 4);
@@ -555,7 +555,7 @@ public sealed class CarrierBehavior(
     // word of both bytes becomes 0xffff and the good is counted in the building's storage, up to 50000. The castle's bytes are
     // 0xffff, so each good delivered to it counts. The carrier then turns the frame round, takes the other half of the step's
     // time, and the second time goes on in state 3 at the flag, where the exchange runs again.
-    private void Handover(int slot, Settler settler)
+    void Handover(int slot, Settler settler)
     {
         while (true)
         {

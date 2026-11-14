@@ -14,7 +14,7 @@ namespace OpenSettlers.Tests;
 public sealed class StartStockTests
 {
     // Entry e less its subtraction at level 0, whose row 0 holds e in the entry e.
-    private static readonly int[] LevelZero =
+    static readonly int[] LevelZero =
     [
         0,
         1,
@@ -44,7 +44,7 @@ public sealed class StartStockTests
         22,
     ];
 
-    private static int[] AtLevel(int level) => [.. StartStock.At(TestProgram.Made(), level)];
+    static int[] AtLevel(int level) => [.. StartStock.At(TestProgram.Made(), level)];
 
     [TestMethod]
     public void LevelZeroTakesTheCastlesSubtractionsFromTheFirstRow()

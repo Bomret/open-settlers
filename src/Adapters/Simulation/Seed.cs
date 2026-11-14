@@ -10,8 +10,8 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public readonly record struct Seed(ushort W0, ushort W1, ushort W2)
 {
-    private const int Groups = 4;
-    private const int DigitsPerGroup = 4;
+    const int Groups = 4;
+    const int DigitsPerGroup = 4;
 
     /// <summary>
     /// Reads the screen form: 16 digits <c>1</c> to <c>8</c>, as the original takes them, or the same digits as
@@ -68,11 +68,11 @@ public readonly record struct Seed(ushort W0, ushort W1, ushort W2)
     /// <summary>The map seed a free game starts with: each word xor a fixed mask (<c>0x468b3d</c>).</summary>
     public MapSeed ToMapSeed() => new((ushort)(W0 ^ 0x5A5A), (ushort)(W1 ^ 0xA5A5), (ushort)(W2 ^ 0xC3C3));
 
-    private static int Combine(int[] digits) => digits.Aggregate(0, (value, digit) => value << 3 | digit);
+    static int Combine(int[] digits) => digits.Aggregate(0, (value, digit) => value << 3 | digit);
 
-    private static ushort Word(int low, int high) => (ushort)((low & 0xFF) | (high & 0xFF) << 8);
+    static ushort Word(int low, int high) => (ushort)((low & 0xFF) | (high & 0xFF) << 8);
 
-    private static string Digits(int group) =>
+    static string Digits(int group) =>
         new([
             (char)('1' + (group >> 9 & 7)),
             (char)('1' + (group >> 6 & 7)),

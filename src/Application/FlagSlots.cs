@@ -1,7 +1,7 @@
 namespace OpenSettlers.Simulation;
 
 // The one way a flag takes a slot of the flag table.
-internal static class FlagSlots
+static class FlagSlots
 {
     // Puts a flag in the next slot; the item of the slot starts as zeros (the allocator clears it).
     internal static int Add(FlagTable flags, GameHistory history, int x, int y)

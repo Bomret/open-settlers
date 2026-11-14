@@ -48,14 +48,14 @@ public sealed class Removal(
     // The command being applied that takes things down, joins roads, or splits one, for the cause of the events its changes record
     // (ADR 0011): the raze command, or the flag placement that splits a road (a layout's entry has the layout cause); null between
     // commands. Never read to decide a change (INV-0007).
-    private Cause? _raze;
+    Cause? _raze;
 
     // The raze cause of each building taken down, for its burn and free events ticks later.
-    private readonly Dictionary<ThingId, Cause> _razedBuildings = [];
+    readonly Dictionary<ThingId, Cause> _razedBuildings = [];
 
-    private Map Map => movement.Map;
+    Map Map => movement.Map;
 
-    private Cause RazeCause => _raze ?? Cause.Removal;
+    Cause RazeCause => _raze ?? Cause.Removal;
 
     /// <summary>Registers the behaviour of the activities of the carriers that a road taken down or joined leaves waiting.</summary>
     public void Register(ActivityRegistry registry)
@@ -85,7 +85,7 @@ public sealed class Removal(
             _ => null,
         };
 
-    private int ClickClass(int index)
+    int ClickClass(int index)
     {
         if (!hasCastle() || Map.At(index).Owner != Owner.Player(0))
         {
@@ -144,10 +144,10 @@ public sealed class Removal(
         return !nodeRoads.IsEmpty && !nodeRoads.IsOnly(1) && !nodeRoads.IsOnly(4) ? 4 : 0;
     }
 
-    private (int X, int Y) Position(int index) => (index % Map.Size.Width, index / Map.Size.Width);
+    (int X, int Y) Position(int index) => (index % Map.Size.Width, index / Map.Size.Width);
 
     // The node a step in a direction leads to.
-    private int NodeAfter(int index, int direction)
+    int NodeAfter(int index, int direction)
     {
         var (x, y) = Position(index);
         var (dx, dy) = Direction.Steps[direction];
@@ -157,31 +157,31 @@ public sealed class Removal(
 
     // The direction of a settler's heading as the walk reads it: a negative heading marks a blocked step and gives the direction
     // less 6.
-    private static int Back(Settler settler) => WalkingActivity.HeadingOf(settler.Activity)?.Direction ?? 0;
+    static int Back(Settler settler) => WalkingActivity.HeadingOf(settler.Activity)?.Direction ?? 0;
 
     // The errand of a settler whose target is a flag (the states 2, 15, and 5 or 7 on their way to state 2): 0x4312ed and
     // 0x462153 send them home when what they walk to is gone. The original also tests state 1, a settler that waits in the
     // castle; its target is 0 there, and no flag has slot 0 (the dummy of the flag table), so the test never hits. The engine's
     // slot 0 is the castle's flag, so the test is left out. Null for a settler that goes on no errand.
-    private static Errand? HeadsTo(Settler settler) => settler.Activity.GoingTo;
+    static Errand? HeadsTo(Settler settler) => settler.Activity.GoingTo;
 
     // Whether the settler walks to the road that leaves the flag in the direction.
-    private static bool HeadsToRoad(Settler settler, int flag, int direction) =>
+    static bool HeadsToRoad(Settler settler, int flag, int direction) =>
         HeadsTo(settler) is ToRoad road && road.At == flag && road.Direction == direction;
 
     // The settler's walk is turned home: it goes on to a storage whatever it was walking to.
-    private void SendHome(int walker, Settler settler)
+    void SendHome(int walker, Settler settler)
     {
         settler.Activity = settler.Activity.Redirected(new ToStorage());
         beginWalkHome(walker);
     }
 
     // The cause the building at the slot was taken down with, removal for a building no raze took down.
-    private Cause RazedCauseOf(int slot) => _razedBuildings.GetValueOrDefault(history.BuildingId(slot), Cause.Removal);
+    Cause RazedCauseOf(int slot) => _razedBuildings.GetValueOrDefault(history.BuildingId(slot), Cause.Removal);
 
     // Records the settler's event: it carries the raze command's cause on until it idles (History.CarryCause); a change ticks after the
     // command takes the cause the settler already carries, else removal.
-    private void Touch(int slot, string type, string? other = null)
+    void Touch(int slot, string type, string? other = null)
     {
         if (_raze is { IsCommand: true } command)
         {
@@ -191,10 +191,9 @@ public sealed class Removal(
         history.RecordSettler(slot, type, RazeCause, other);
     }
 
-    private void TouchFlag(int slot, string type, string? other = null) =>
-        history.RecordFlag(slot, type, RazeCause, other);
+    void TouchFlag(int slot, string type, string? other = null) => history.RecordFlag(slot, type, RazeCause, other);
 
-    private void TouchBuilding(Building building, string type) =>
+    void TouchBuilding(Building building, string type) =>
         history.RecordBuilding(buildings.SlotOf(building), type, RazeCause);
 
     /// <summary>The flag on the node is taken down where the click allows it; false (and nothing changed) where it does not.</summary>
@@ -264,7 +263,7 @@ public sealed class Removal(
 
     // The take-down and the split walk from a node along its first two road bits (0x462e1d, 0x4662e2); a second bit found at 4
     // with bit 5 set is taken for 5. Null where the node holds no two directions among 0 to 5.
-    private static (int First, int Second)? RoadBits(RoadSet nodeRoads)
+    static (int First, int Second)? RoadBits(RoadSet nodeRoads)
     {
         var first = nodeRoads.First;
         if (first > 5)
@@ -295,12 +294,12 @@ public sealed class Removal(
         }
     }
 
-    private (int First, int Second) SplitBits(int index) =>
+    (int First, int Second) SplitBits(int index) =>
         RoadBits(Map.At(index).Roads)
         ?? throw new InvalidOperationException($"the node {index} holds no two road directions to split along");
 
     // The road that passes a node that holds no flag.
-    private Road? RoadThrough(int index)
+    Road? RoadThrough(int index)
     {
         foreach (var road in roads.Roads)
         {
@@ -320,7 +319,7 @@ public sealed class Removal(
 
     // 0x463204: the road's bits are taken from the node on in one direction until the flag at its end; the settlers on the way
     // are dismissed, and the flag at the end loses its road (EndOfRoad).
-    private void TakeRoadDown(int index, int direction)
+    void TakeRoadDown(int index, int direction)
     {
         DismissWaiting(index);
         var standing = movement.Occupant(index);
@@ -362,7 +361,7 @@ public sealed class Removal(
     // The flag at the end of a road that was taken down (0x463204 from 0x46358c): a settler on the flag that came along the road
     // is dismissed; the flag's item loses the road's carrier bits, the settlers on their way to the road's end go home, and the
     // goods that were to go along the road lose that direction.
-    private void EndOfRoad(int index, int back)
+    void EndOfRoad(int index, int back)
     {
         var slot = Map.At(index).LinkedSlot;
         var standing = movement.Occupant(index);
@@ -410,7 +409,7 @@ public sealed class Removal(
     // that carries a good counts it lost. It then looks for the nearest flag on the way home (state 0x19).
     // **Inferred:** the carrier dismissed while it carries a good is read from the code; no emulator or debugger run reaches
     // this. Open lead in docs/milestones/m3-first-loop.md (a carrier carrying a good on a road that goes).
-    private void Dismiss(int slot)
+    void Dismiss(int slot)
     {
         var settler = settlers[slot];
         if (settler.Activity is Walks walks)
@@ -452,7 +451,7 @@ public sealed class Removal(
     }
 
     // 0x463ef9: the carriers that wait at a node next to a flag (the states 0x42, 0x43, 0x45) are told to go home (state 0x44).
-    private void DismissWaiting(int index)
+    void DismissWaiting(int index)
     {
         for (var slot = 0; slot < settlers.Count; slot++)
         {
@@ -478,7 +477,7 @@ public sealed class Removal(
     }
 
     // 0x464008: a carrier that waits at a node next to a flag is taken with the settlers on the road (state 0x45); its slot, or -1.
-    private int TakeWaiting(int index)
+    int TakeWaiting(int index)
     {
         for (var slot = 0; slot < settlers.Count; slot++)
         {
@@ -507,7 +506,7 @@ public sealed class Removal(
 
     // State 0x44 (0x43007b): a dismissed carrier that waited takes the node it stands on where no settler stands and goes
     // home (state 0x19); else it tries again at its next turn.
-    private void Dismissed(int slot, Settler settler)
+    void Dismissed(int slot, Settler settler)
     {
         var node = Map.Index(settler.X, settler.Y);
         if (movement.Occupant(node) != 0)
@@ -525,7 +524,7 @@ public sealed class Removal(
 
     // State 0x45 (0x4300f1): a carrier that waited at the end of a road that was joined takes state 0x43 with the highest road
     // direction of its node as its heading, and runs that state at once.
-    private void Rejoined(int slot, Settler settler)
+    void Rejoined(int slot, Settler settler)
     {
         var approach = ((WaitsToRejoin)settler.Activity).Approach;
         movement.Become(settler, new ClaimsNode(Heading.Facing(Map.At(settler.X, settler.Y).Roads.Last), approach));
@@ -537,7 +536,7 @@ public sealed class Removal(
     // The goods 14 and 15 count against the total of resource 1; a good that has a kind counts against the byte of the fill of
     // the building at its destination flag, except the buildings with a storage. **Not ported:** a destination flag with no
     // building, where the original reads a null pointer.
-    private void CountLost(Good good, int? destination)
+    void CountLost(Good good, int? destination)
     {
         if (good.CountsAgainstResource1)
         {
@@ -553,13 +552,13 @@ public sealed class Removal(
         }
     }
 
-    private sealed record Walked(int Steps, List<int> Settlers, int Far, int FarDirection);
+    sealed record Walked(int Steps, List<int> Settlers, int Far, int FarDirection);
 
     // 0x463a40: the walk along the road that leaves the flag in a direction, to the flag at its end. It counts the steps, takes
     // the settlers on the road (a carrier in state 3 that is not marked to go, at the first flag and at the far flag only when
     // it came along the road; a carrier that waits next to a flag takes state 0x45), and gives the far flag and the direction
     // the road leaves it in.
-    private Walked Gather(int index, int direction)
+    Walked Gather(int index, int direction)
     {
         var gathered = new List<int>();
         DismissWaiting(index);
@@ -616,7 +615,7 @@ public sealed class Removal(
     }
 
     // The directions of a road walked from one of its flags, the road leaving that flag in a direction.
-    private static List<Direction> PathFrom(Road road, int flag, int direction) =>
+    static List<Direction> PathFrom(Road road, int flag, int direction) =>
         road.FromSlot == flag && road.FromDirection == direction
             ? [.. road.Directions]
             : [.. road.Directions.Reverse().Select(step => step.Opposite)];
@@ -694,7 +693,7 @@ public sealed class Removal(
     // one; the original's table has no 0); the settlers beyond the capacity, taken from the start of the list, are marked to
     // go (the next state 0xff, a waiting carrier takes state 0x44) and a good they carry is lost. A road with no
     // settler keeps its bytes.
-    private void CountCarriers(List<int> onRoad, (int Flag, int Direction) a, (int Flag, int Direction) b, int capacity)
+    void CountCarriers(List<int> onRoad, (int Flag, int Direction) a, (int Flag, int Direction) b, int capacity)
     {
         if (onRoad.Count == 0)
         {
@@ -751,7 +750,7 @@ public sealed class Removal(
     // click only takes down a flag whose roads are land; the engine keeps one kind for the road).
     // **Inferred:** the case of more settlers than the length class holds (the mark 0xff) is read from the code; no emulator or
     // debugger run reaches it. Open lead in docs/milestones/m3-first-loop.md (more settlers on a joined road than its class holds).
-    private void JoinRoads(int index, int slot)
+    void JoinRoads(int index, int slot)
     {
         // **Inferred:** bit 4 with no road there is the mark of a hut standing at the flag (PlaceBuilding), no road bit. Nothing
         // shows that the original (0x462153) masks it so: its click refuses a flag with a hut (ClickClass) and a hut's removal
@@ -819,7 +818,7 @@ public sealed class Removal(
     // 0x4617fd for a building that is no military building and not the castle: the building is marked taken down (it burns for
     // 0x7ff clock units, Burn), its node and its flag lose the marks of the building, its worker walks home, the goods that wait
     // for it lose their destination (ReleaseGoodsFor), and its flag goes where no road leaves it.
-    private void TakeBuildingDown(Building building)
+    void TakeBuildingDown(Building building)
     {
         var flag = flags[building.Flag];
         var flagNode = Map.Index(flag.X, flag.Y);
@@ -868,7 +867,7 @@ public sealed class Removal(
 
     // The worker inside a building that is taken down: a settler of the job 4 loses its job; it walks home from where it stands
     // (state 0x19 where it holds its node, else state 0x1c to claim it).
-    private void SendWorkerHome(int slot)
+    void SendWorkerHome(int slot)
     {
         var settler = settlers[slot];
         var residue = movement.ResidueOf(settler.Activity);
@@ -896,7 +895,7 @@ public sealed class Removal(
     // 0x4312ed: what waits for the building at a flag is released. A settler on its way to the flag (the mode below 0) goes home;
     // a carrier that carries a good there loses the destination; a good on any flag that was to go to the flag loses its
     // destination and its direction, and the flag gets its turn again. **Not ported:** the loop over the storage items.
-    private void ReleaseGoodsFor(int flag)
+    void ReleaseGoodsFor(int flag)
     {
         for (var walker = 0; walker < settlers.Count; walker++)
         {
@@ -977,7 +976,7 @@ public sealed class Removal(
 
     // 0x42cf9d for a building without a territory: the node loses its lake mark, object, and link, and the slot is free; the
     // table's count falls past the free slots at its end.
-    private void FreeBuilding(int slot)
+    void FreeBuilding(int slot)
     {
         var building = buildings[slot];
         var node = Map.Index(building.X, building.Y);
@@ -1084,7 +1083,7 @@ public sealed class Removal(
     // carrier on its way from the far flag's end, which keeps only that mark; the half's length class goes into both; the
     // directions of the two ends name each other; the carriers on the half count on it (CountCarriers) up to the capacity of
     // its length class, one less where a carrier is on its way to it.
-    private void LinkHalf(int flag, int direction, Walked half)
+    void LinkHalf(int flag, int direction, Walked half)
     {
         var (far, farDirection) = (half.Far, half.FarDirection);
         var side = flags[flag].Side(direction);

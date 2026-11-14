@@ -5,14 +5,14 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 /// <summary>A settler sprite as the History Edition's picks give it for a term: the row, entry, colour index, and position.</summary>
-internal sealed record Drawn(int Row, int Entry, int Colour, int X, int Y);
+sealed record Drawn(int Row, int Entry, int Colour, int X, int Y);
 
 /// <summary>
 /// The shared placement of the settlers' terms and the History Edition's table picks over them: each term's entry and
 /// colour index come from the picks, at the term's position moved by the pick's offsets and, for a second figure, by the
 /// shift of its figure.
 /// </summary>
-internal sealed class SettlerPair(SettlerFigures shared, SettlerFigureTables tables)
+sealed class SettlerPair(SettlerFigures shared, SettlerFigureTables tables)
 {
     /// <summary>The pair over the install's walk sequences and the tables of the exe.</summary>
     public static SettlerPair Of(Assets.Install install, Domain.RuleTables tables)

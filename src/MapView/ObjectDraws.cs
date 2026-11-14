@@ -11,7 +11,7 @@ public static class ObjectDraws
     // The places of a flag's goods (bytes 0xc to 0x13 of the flag item) and where each is drawn, in pixels from the flag's
     // draw position (0x44db26 adds them to the node's x and y; 0x44de9a draws the good at the object's position). The
     // places 0 to 2 are drawn before the flag, the others after it.
-    private static readonly (int X, int Y)[] GoodPlaces =
+    static readonly (int X, int Y)[] GoodPlaces =
     [
         (6, -4),
         (10, -2),
@@ -23,7 +23,7 @@ public static class ObjectDraws
         (-4, 4),
     ];
 
-    private const int GoodsBeforeFlag = 3;
+    const int GoodsBeforeFlag = 3;
 
     /// <summary>
     /// The geometry of a flag for a click (<see cref="MapPicking.Pick"/>): the box of the History Edition's flag at its
@@ -136,15 +136,7 @@ public static class ObjectDraws
         return draws;
     }
 
-    private static void AddGoods(
-        List<ObjectTerm> draws,
-        IReadOnlyList<Good>? goods,
-        int row,
-        int x,
-        int y,
-        int from,
-        int to
-    )
+    static void AddGoods(List<ObjectTerm> draws, IReadOnlyList<Good>? goods, int row, int x, int y, int from, int to)
     {
         for (var place = from; place < to && goods is not null && place < goods.Count; place++)
         {

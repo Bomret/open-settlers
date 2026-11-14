@@ -11,18 +11,11 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RoadSplitGameTests
 {
-    private static Game Started(int castleX, int castleY, int endX, int endY, params int[] road) =>
+    static Game Started(int castleX, int castleY, int endX, int endY, params int[] road) =>
         Started(null, castleX, castleY, endX, endY, road);
 
     // The road from the castle's flag to the flag at the end; beforeRoad changes the map after the flags stand and before the road.
-    private static Game Started(
-        Action<Map>? beforeRoad,
-        int castleX,
-        int castleY,
-        int endX,
-        int endY,
-        params int[] road
-    )
+    static Game Started(Action<Map>? beforeRoad, int castleX, int castleY, int endX, int endY, params int[] road)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = GameFactory.Create(RemovalLogicTests.Made(), map);
@@ -45,15 +38,15 @@ public sealed class RoadSplitGameTests
         return game;
     }
 
-    private static Game EastRoad() => Started(15, 5, 20, 6, 0, 0, 0, 0);
+    static Game EastRoad() => Started(15, 5, 20, 6, 0, 0, 0, 0);
 
-    private static void Apply(Game game, int kind, int x, int y)
+    static void Apply(Game game, int kind, int x, int y)
     {
         game.Enqueue(new Command(game.TickCount, 0, kind, x, y));
         game.Tick();
     }
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
         {
@@ -61,7 +54,7 @@ public sealed class RoadSplitGameTests
         }
     }
 
-    private static int[] Path(Game game) =>
+    static int[] Path(Game game) =>
         [.. game.Network.Roads.OrderBy(road => road.FromSlot).SelectMany(road => road.Directions)];
 
     [TestMethod]
@@ -107,7 +100,7 @@ public sealed class RoadSplitGameTests
 
     // The triangles beside the steps from 16,6 to 20,6 are water (the lower triangle of a node and the upper of its north node,
     // nibbles below 4); the other triangles around the nodes stay land, so a flag is allowed on the road.
-    private static Game WaterRoad() =>
+    static Game WaterRoad() =>
         Started(
             map =>
             {
@@ -127,11 +120,11 @@ public sealed class RoadSplitGameTests
             0
         );
 
-    private static string Show(Road road) =>
+    static string Show(Road road) =>
         $"{road.FromSlot}.{road.FromDirection}>{road.ToSlot}.{road.ToDirection} {string.Concat(road.Directions)} {road.Water}";
 
     // A road as its two ends and its path, read from the lower slot: the joined road may start at either end.
-    private static string Describe(Road road) =>
+    static string Describe(Road road) =>
         road.FromSlot <= road.ToSlot
             ? $"{road.FromSlot}.{road.FromDirection}>{road.ToSlot}.{road.ToDirection} {string.Concat(road.Directions)} {road.Water}"
             : $"{road.ToSlot}.{road.ToDirection}>{road.FromSlot}.{road.FromDirection} {string.Concat(road.Directions.Reverse().Select(step => (step + 3) % 6))} {road.Water}";

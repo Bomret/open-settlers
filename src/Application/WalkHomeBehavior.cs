@@ -33,13 +33,13 @@ public sealed class WalkHomeBehavior(
 )
 {
     // The entries of the spiral table the search reads: 1 to 258, from either end.
-    private const int SearchEntries = 258;
+    const int SearchEntries = 258;
 
     // The settlers on the walk home, from the claim of their node to the entry into the storage: the steps of the shared walk
     // routines record the walk home as their cause (history only, no rule reads it).
-    private readonly System.Collections.Generic.HashSet<int> _walking = [];
+    readonly System.Collections.Generic.HashSet<int> _walking = [];
 
-    private Map Map => movement.Map;
+    Map Map => movement.Map;
 
     /// <summary>Registers the behaviour of the activities of the walk home.</summary>
     public void Register(ActivityRegistry registry)
@@ -107,11 +107,11 @@ public sealed class WalkHomeBehavior(
     }
 
     // The owner a node of the settler's player has (0x4354b8).
-    private static Owner OwnerOf(Settler settler) => Owner.Player(settler.Player);
+    static Owner OwnerOf(Settler settler) => Owner.Player(settler.Player);
 
     // Whether a flag of the settler's player stands on the node and a road leaves it (the flag mark of the node, bits 0 to 5 of the
     // flag item's byte 4 not 0, the owners equal: 0x4355 and 0x4385ab).
-    private bool HomeFlag(Settler settler, int x, int y)
+    bool HomeFlag(Settler settler, int x, int y)
     {
         var index = Map.Index(x, y);
         if (!Map.At(index).FlagMark || Map.At(index).Owner != OwnerOf(settler))
@@ -171,7 +171,7 @@ public sealed class WalkHomeBehavior(
     // settler's own player. After the three rings any such node is taken. **Inferred:** the second and third rings and the
     // last phase (no emulator run reaches them; the first ring is matched). Returns the offsets, wrapped to bytes as the
     // vector holds them.
-    private (int Dx, int Dy) HomeNode(Settler settler)
+    (int Dx, int Dy) HomeNode(Settler settler)
     {
         var width = Map.Size.Width - 1;
         var height = Map.Size.Height - 1;

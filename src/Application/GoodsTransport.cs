@@ -108,7 +108,7 @@ public sealed class GoodsTransport(
 
     // The goods that head each direction, as the four sets the original builds (0x46427c): set k holds the directions that more
     // than k goods have been given. Index k of the result is that set.
-    private RoadSet[] Load(int flag)
+    RoadSet[] Load(int flag)
     {
         var count = new int[Direction.Count];
         foreach (var place in flags[flag].Places)
@@ -133,13 +133,13 @@ public sealed class GoodsTransport(
 
     // The order the first road that holds a carrier is chosen in when a good reaches no storage (0x464539): the east, then the
     // directions counted down from 5 to 1. A stand-in for the register the original starts from (see Destine).
-    private static readonly int[] CarrierRoadOrder = [0, 5, 4, 3, 2, 1];
+    static readonly int[] CarrierRoadOrder = [0, 5, 4, 3, 2, 1];
 
     // The destination of a good with none (0x464364 to 0x46444c, 0x45d3ea). The table at 0x464117 gives a good a class and the
     // request word it is looked for in, or sends it to storage at once. A good with a class looks first for the flag whose request
     // asks for it (the request search); where none does, the storage search follows: over the roads that hold a carrier, to the
     // castle's flag, or none.
-    private void Destine(int flag, int place)
+    void Destine(int flag, int place)
     {
         var good = flags[flag].Places[place].Good;
         if (
@@ -195,7 +195,7 @@ public sealed class GoodsTransport(
 
     // 0x464999 to 0x4649e0: the flag that was found is served: its rank, shifted right by one where bit 0 is set, else 0, and the
     // building of the flag counts one more good on the way, in the fill byte of the word's kind (the first word is the planks').
-    private void Serve(int asking, RequestWord word)
+    void Serve(int asking, RequestWord word)
     {
         var request = flags[asking].RequestOf(word);
         flags[asking]
@@ -221,7 +221,7 @@ public sealed class GoodsTransport(
 
     // 0x45d3ea: the search from a flag over the roads that hold a carrier (from north to east) for
     // the flag of a storage. A flag that is a storage itself finds none. The castle's flag is the only storage.
-    private int StorageSearch(int start)
+    int StorageSearch(int start)
     {
         if (start == 0)
         {
@@ -259,7 +259,7 @@ public sealed class GoodsTransport(
     }
 
     // The directions of a flag's roads that hold a carrier.
-    private RoadSet CarrierRoads(int flag)
+    RoadSet CarrierRoads(int flag)
     {
         var held = RoadSet.Empty;
         for (var direction = 0; direction < Direction.Count; direction++)
@@ -274,7 +274,7 @@ public sealed class GoodsTransport(
     // runs from the flag's roads that hold a carrier, the ones with the fewest goods heading that way first (0x464bb2 seeds
     // one load after the other), and spreads each seed's direction over the roads that hold a carrier, level by level; the
     // direction that reaches the destination first is the good's.
-    private void Direct(int flag, int place, RoadSet[] load)
+    void Direct(int flag, int place, RoadSet[] load)
     {
         var good = flags[flag].Places[place];
         var destination = good.Destination!.Value;

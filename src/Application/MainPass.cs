@@ -30,10 +30,10 @@ public sealed class MainPass(
 {
     // The phases of a pass cycle (docs/rules/timing.md). **Inferred** for a game with no computer opponent: the
     // original sets 33 where no player's start parameter at +0x1d6 is from 1 to 11 (0x42055e).
-    private const int PhaseCount = 33;
+    const int PhaseCount = 33;
 
     // The phases from this one on run no item table.
-    private const int TablePhases = 32;
+    const int TablePhases = 32;
 
     /// <summary>The phase the last pass ran, 0 to 32.</summary>
     public int Phase { get; private set; }
@@ -118,7 +118,7 @@ public sealed class MainPass(
     // 0x428728: each pass clears the request-failed mark of a window of buildings from a cursor that wraps at the end of
     // the table, and stops after 10 buildings that had the mark set. A request that found no worker is made again
     // when its building's turn comes after that.
-    private void ClearRetryBits()
+    void ClearRetryBits()
     {
         var count = buildings.Count;
         if (count == 0)

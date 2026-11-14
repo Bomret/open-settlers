@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 public sealed class DomainRuleLookupTests
 {
     // Door speeds: the entry of index i holds 100 + i, so the entry a lookup read names itself.
-    private static RuleTables DoorTables() =>
+    static RuleTables DoorTables() =>
         new(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.Made().StartStock,
@@ -38,7 +38,7 @@ public sealed class DomainRuleLookupTests
 
     // A material order whose every bit is set and a blow table, step table, and worker table with a distinct entry for each
     // type, so that only an index outside the table can read as nothing.
-    private static RuleTables LookupTables() =>
+    static RuleTables LookupTables() =>
         new(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.Made().StartStock,

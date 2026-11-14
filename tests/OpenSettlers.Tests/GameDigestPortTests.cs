@@ -7,7 +7,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class GameDigestPortTests
 {
-    private sealed class FixedDigest(ulong value) : IGameDigest
+    sealed class FixedDigest(ulong value) : IGameDigest
     {
         public Game? Asked { get; private set; }
 

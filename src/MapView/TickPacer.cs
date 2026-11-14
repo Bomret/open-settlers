@@ -8,8 +8,8 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed class TickPacer
 {
-    private double _carry;
-    private bool _held;
+    double _carry;
+    bool _held;
 
     /// <summary>The whole ticks that fall due after a frame of <paramref name="seconds"/>.</summary>
     public int Due(double seconds)

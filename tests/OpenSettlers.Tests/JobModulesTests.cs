@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class JobModulesTests
 {
-    private static System.Collections.Generic.IReadOnlyList<JobRules> Modules() =>
+    static System.Collections.Generic.IReadOnlyList<JobRules> Modules() =>
         JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!));
 
     [TestMethod]

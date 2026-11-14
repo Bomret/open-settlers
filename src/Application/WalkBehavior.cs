@@ -59,14 +59,14 @@ public sealed class WalkBehavior(
     // (StorageFlag), and at its flag the settler enters it as a worker enters its hut. A step east, south-east, or south onto
     // a settler that comes the other way and is blocked passes it (RoadStep). **Not ported:** the states the original reaches
     // from here for other modes.
-    private void Walk(int slot, Settler settler)
+    void Walk(int slot, Settler settler)
     {
         // `walked` records the turn of state 2; a step or entry inside it records its own change first (`stepped`, `entered`).
         WalkTurn(slot, settler);
         history.RecordSettler(slot, EventType.Walked, causes.OfSettler(slot));
     }
 
-    private void WalkTurn(int slot, Settler settler)
+    void WalkTurn(int slot, Settler settler)
     {
         var map = movement.Map;
         if (!movement.TimerRan(settler))
@@ -286,7 +286,7 @@ public sealed class WalkBehavior(
         && modules.Any(rules => rules.JobType == request.Job.GetType() && rules.CanStandInHut);
 
     // What a sentence calls a settler of the module's job: the job type's name in lower case.
-    private static string NameOf(JobRules rules) => rules.JobType.Name.ToLowerInvariant();
+    static string NameOf(JobRules rules) => rules.JobType.Name.ToLowerInvariant();
 
     // The refusal for a node with no building that stands a worker. It names the jobs whose modules let their settler stand in the hut:
     // "no finished woodcutter's, stonecutter's, or forester's building stands on the node" for three, "a's or b's" for two, "a's" for

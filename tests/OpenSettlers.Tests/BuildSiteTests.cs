@@ -18,8 +18,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class BuildSiteTests
 {
-    private const ulong FnvOffset = 0xcbf29ce484222325;
-    private const ulong FnvPrime = 0x100000001b3;
+    const ulong FnvOffset = 0xcbf29ce484222325;
+    const ulong FnvPrime = 0x100000001b3;
 
     public static IEnumerable<object[]> Lines =>
         File.ReadAllLines("build-sites.txt").Select(line => new object[] { line });
@@ -111,7 +111,7 @@ public sealed class BuildSiteTests
 
     // The judgment of every node whose object has a class below 3, as the harness line states it. Without a castle
     // the valid nodes are the castle sites; with one they are the sites of a large building (site 4).
-    private static string Observe(Map map, bool hasCastle)
+    static string Observe(Map map, bool hasCastle)
     {
         var width = map.Size.Width;
         var hash = FnvOffset;
@@ -155,7 +155,7 @@ public sealed class BuildSiteTests
             + $"kinds={string.Join(' ', kinds.Select(pair => $"{pair.Key}:{pair.Value}"))} first={string.Join(' ', first)}";
     }
 
-    private static MapSeed ParseSeed(string text)
+    static MapSeed ParseSeed(string text)
     {
         var words = text.Split(',').Select(word => ushort.Parse(word, NumberStyles.HexNumber)).ToArray();
 

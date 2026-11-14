@@ -7,7 +7,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CommandEqualityTests
 {
-    private static Command Road(int[]? directions) => new(3, 0, CommandKind.BuildRoad, 5, 6, directions);
+    static Command Road(int[]? directions) => new(3, 0, CommandKind.BuildRoad, 5, 6, directions);
 
     [TestMethod]
     public void CommandsWithTheSameFieldsAreEqualWithEqualHashes()

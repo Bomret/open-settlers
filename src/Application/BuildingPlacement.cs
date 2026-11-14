@@ -38,7 +38,7 @@ public sealed class BuildingPlacement(
     /// </summary>
     public bool PlaceFinished(BuildingType type, int x, int y) => Place(type, x, y, finished: true);
 
-    private bool Place(BuildingType type, int x, int y, bool finished)
+    bool Place(BuildingType type, int x, int y, bool finished)
     {
         if (!Types.Contains(type))
         {

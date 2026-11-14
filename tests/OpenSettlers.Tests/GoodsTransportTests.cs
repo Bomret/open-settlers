@@ -9,14 +9,14 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class GoodsTransportTests
 {
-    private const int Log = 7;
+    const int Log = 7;
 
     // A good of the made-up ranks (the ninth: the program gives it no class, so it goes to storage at once).
-    private const int Ninth = 9;
-    private const int West = 3;
-    private const int East = 0;
+    const int Ninth = 9;
+    const int West = 3;
+    const int East = 0;
 
-    private static (BehaviourBench Bench, GoodsTransport Goods) Chain(byte[]? priorities = null, bool carrier = true)
+    static (BehaviourBench Bench, GoodsTransport Goods) Chain(byte[]? priorities = null, bool carrier = true)
     {
         var bench = new BehaviourBench(priorities);
         bench.Flags.Add(4, 4);
@@ -57,7 +57,7 @@ public sealed class GoodsTransportTests
 
     // A flag 2 east of flag 1 whose only road holds a carrier, while the road from flag 1 to the castle's flag holds none: the storage
     // search reaches no storage from flag 2, and the road with a carrier is the one a good takes at once (0x464539).
-    private static (BehaviourBench Bench, GoodsTransport Goods) CutOff()
+    static (BehaviourBench Bench, GoodsTransport Goods) CutOff()
     {
         var bench = new BehaviourBench();
         bench.Flags.Add(4, 4);

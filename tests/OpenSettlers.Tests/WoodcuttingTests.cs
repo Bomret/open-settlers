@@ -12,12 +12,12 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class WoodcuttingTests
 {
-    private const int HutFlag = 3;
+    const int HutFlag = 3;
 
     // The direction each heading class (0x437072) takes first, as 4 times its number plus 4: a step that cuts the vector
     // the class describes. The classes 12 to 15 point west and north, 16 and 17 west and south, 18 to 21 east and south,
     // 22 and 23 east and north.
-    private static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
+    static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
 
     internal static RuleTables Made(WorkerRequest?[]? workers = null)
     {
@@ -47,20 +47,19 @@ public sealed class WoodcuttingTests
     }
 
     // The 128 nodes around the hut the worker draws from, as the spiral gives them.
-    private static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == new Good(7));
+    static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == new Good(7));
 
     // The goods on the hut's flag, place by place.
-    private static Good[] Goods(Game game) => [.. game.Flags[HutFlag].Places.Select(place => place.Good)];
+    static Good[] Goods(Game game) => [.. game.Flags[HutFlag].Places.Select(place => place.Good)];
 
-    private static (int X, int Y)[] Reach() =>
+    static (int X, int Y)[] Reach() =>
         [
             .. Enumerable
                 .Range(1, 128)
                 .Select(entry => (16 + MapGenerator.SpiralOffsets[entry].Dx, 2 + MapGenerator.SpiralOffsets[entry].Dy)),
         ];
 
-    private static bool IsTree(Map map, (int X, int Y) node) =>
-        map.At(node.X, node.Y).Object.Kind == MapObjectKind.Tree;
+    static bool IsTree(Map map, (int X, int Y) node) => map.At(node.X, node.Y).Object.Kind == MapObjectKind.Tree;
 
     // The castle, the flags, the roads, and the hut; a tree stands on every node of the hut's reach where trees is true,
     // and the generated trees are gone from the whole map.

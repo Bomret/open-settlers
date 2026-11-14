@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class JobTests
 {
-    private static readonly (int Code, Type Type)[] Ported =
+    static readonly (int Code, Type Type)[] Ported =
     [
         (0, typeof(Carrier)),
         (2, typeof(Digger)),

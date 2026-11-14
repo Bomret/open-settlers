@@ -153,7 +153,7 @@ public static class ProgramTablesImporter
     public const int SawmillerWalkAddress = 0x43fccd;
 
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
-    private static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
+    static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
     /// <summary>
     /// The address of the carried goods' figure words: 27 words, one for each good (<c>0x43f4b7</c>). The carrier's draw
@@ -309,7 +309,7 @@ public static class ProgramTablesImporter
     // What each job owns, read by its tables module (JobTablesRegistry, written by the generator from the modules). The draw routine
     // must load the figure tables the adds are read for, else the program is not the one the rules were read from and the figures
     // would be wrong.
-    private static List<(Job Job, object Data)> JobData(byte[] exe, IReadOnlyList<IJobTables> modules)
+    static List<(Job Job, object Data)> JobData(byte[] exe, IReadOnlyList<IJobTables> modules)
     {
         Expect(
             exe,
@@ -358,7 +358,7 @@ public static class ProgramTablesImporter
     }
 
     // The worker each of the four types asks for, from the instructions of its handler.
-    private static WorkerRequest?[] Workers(byte[] exe)
+    static WorkerRequest?[] Workers(byte[] exe)
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
         foreach (var (type, address) in WorkerRequestAddresses)
@@ -390,11 +390,11 @@ public static class ProgramTablesImporter
 
     // The request word a flag item offset names: 0x42 is the first word, 0x44 the second (the class table's second byte takes the
     // second for 0x44 and the first for any other offset, as the flag pass does).
-    private static RequestWord WordAt(int offset) => offset == 0x44 ? RequestWord.Second : RequestWord.First;
+    static RequestWord WordAt(int offset) => offset == 0x44 ? RequestWord.Second : RequestWord.First;
 
     // The good class table: for each good a class byte and a request word offset. A class byte with its high bit set sends the good
     // to storage at once, which is no class.
-    private static GoodClass?[] GoodClasses(byte[] table) =>
+    static GoodClass?[] GoodClasses(byte[] table) =>
         [
             .. Enumerable
                 .Range(0, RuleTables.GoodClassCount)
@@ -408,7 +408,7 @@ public static class ProgramTablesImporter
     // One order of the storage's hand-out: the steps up to the word that is negative. The request word's offset must be the first or
     // the second word's (0x42 or 0x44), else the table is not where it is expected. The third word of a step is the offset of the
     // stock word from the first one (the good is the offset halved, plus 1), or -1 for the step of the food goods 1, 3, and 6.
-    private static DistributionStep[] DistributionOrder(byte[] exe, int address)
+    static DistributionStep[] DistributionOrder(byte[] exe, int address)
     {
         var steps = new List<DistributionStep>();
         while (true)
@@ -439,7 +439,7 @@ public static class ProgramTablesImporter
 
     // The rank the planks start from: the high byte of the word the player setup loads and stores at +0x148 of the player block
     // (0x445752: mov ax, imm16; mov ebx, [edi+0x30]; mov [ebx+0x148], ax).
-    private static byte PlankRankBase(byte[] exe)
+    static byte PlankRankBase(byte[] exe)
     {
         Expect(exe, PlankRankAddress, [0x66, 0xb8], "loads the word of the player's default");
         Expect(
@@ -472,7 +472,7 @@ public static class ProgramTablesImporter
     // The rank of each good from the routine's instructions. Each good's step must start with mov al, imm8, and the ranks
     // must be 1 to 26 each once: else the routine is not where the table is expected, and the game would run with wrong
     // priorities.
-    private static byte[] TransportPriorityRanks(byte[] exe)
+    static byte[] TransportPriorityRanks(byte[] exe)
     {
         var goods = RuleTables.Goods;
         var code = Slice(exe, TransportPriorityAddress, TransportPriorityStep * goods);
@@ -499,12 +499,12 @@ public static class ProgramTablesImporter
         return ranks;
     }
 
-    private static short[] Words(byte[] bytes) =>
+    static short[] Words(byte[] bytes) =>
         [.. Enumerable.Range(0, bytes.Length / 2).Select(i => BitConverter.ToInt16(bytes, 2 * i))];
 
     // The bytes at a program address, found through the section that holds it (PE32: e_lfanew at 0x3c, the file
     // header 4 bytes after it, the image base at +28 of the optional header, 40 bytes for each section header).
-    private static byte[] Slice(byte[] exe, int address, int count)
+    static byte[] Slice(byte[] exe, int address, int count)
     {
         try
         {

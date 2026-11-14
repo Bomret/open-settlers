@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 namespace OpenSettlers.Generators;
 
 /// <summary>Whether a generated registry can name a module type in a <c>new</c> expression.</summary>
-internal static class Reach
+static class Reach
 {
     /// <summary>
     /// Whether <paramref name="type"/> or a type it is nested in is generic, and whether it or a type it is nested in is private or

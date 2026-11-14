@@ -25,27 +25,27 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SettlerDrawTests
 {
-    private const string Fixture = "settler-draws.txt";
+    const string Fixture = "settler-draws.txt";
 
     // The build the recordings came from: the sha256 of the first "install=" line of the fixture (every recording must
     // name the same one).
-    private static readonly string ReferenceSha256 = File.ReadLines(Fixture)
+    static readonly string ReferenceSha256 = File.ReadLines(Fixture)
         .First(line => line.StartsWith("install=", StringComparison.Ordinal))
         .Split(' ')
         .Single(part => part.StartsWith("sha256=", StringComparison.Ordinal))["sha256=".Length..];
 
     // 0x44ffe7 moves a record's position by 0x10 and 8 before the blit.
-    private const int OffsetX = 0x10;
-    private const int OffsetY = 8;
+    const int OffsetX = 0x10;
+    const int OffsetY = 8;
 
-    private sealed record Sprite(int Entry, int Colour, int X, int Y)
+    sealed record Sprite(int Entry, int Colour, int X, int Y)
     {
         public override string ToString() => $"{Entry}/{Colour}/{X},{Y}";
     }
 
-    private sealed record Record(int Slot, List<Sprite> Sprites);
+    sealed record Record(int Slot, List<Sprite> Sprites);
 
-    private sealed record Pass(
+    sealed record Pass(
         int Number,
         ushort Clock,
         Dictionary<int, (byte[] Bytes, int Height)> Changed,
@@ -53,11 +53,11 @@ public sealed class SettlerDrawTests
         List<Record> Records
     );
 
-    private sealed record Scenario(string Name, string Command, List<string> Header, List<Pass> Passes);
+    sealed record Scenario(string Name, string Command, List<string> Header, List<Pass> Passes);
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -80,7 +80,7 @@ public sealed class SettlerDrawTests
         return scenarios;
     }
 
-    private static Pass ParsePass(string line)
+    static Pass ParsePass(string line)
     {
         var fields = line.Split(' ')
             .Select(field => field.Split('=', 2))
@@ -141,7 +141,7 @@ public sealed class SettlerDrawTests
     }
 
     // The settler of the original's 16 bytes (Table16), as in CarrierWalkTests: the node is the dword at 4, (y * 2 * width + x) * 4.
-    private static Settler FromBytes(byte[] bytes, int width)
+    static Settler FromBytes(byte[] bytes, int width)
     {
         var node = BitConverter.ToInt32(bytes, 4) / 4;
         var state = bytes[10];
@@ -163,7 +163,7 @@ public sealed class SettlerDrawTests
 
     // The importer of a recorded item's state bytes into the activity they stand for. A state the engine has no activity for
     // (a settler at work, or a state of the original's that the engine does not reach) takes the activity that is not drawn.
-    private static Activity ActivityOf(byte[] bytes, int state)
+    static Activity ActivityOf(byte[] bytes, int state)
     {
         var mode = bytes[11];
         var target =
@@ -231,7 +231,7 @@ public sealed class SettlerDrawTests
     }
 
     // The header bytes 0 and 1 of each figure entry that reads: the shift of its second figure (0x4066d2, 0x4066e4).
-    private static Dictionary<int, (int X, int Y)> Shifts(Install install)
+    static Dictionary<int, (int X, int Y)> Shifts(Install install)
     {
         var archive = Formats.ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var shifts = new Dictionary<int, (int X, int Y)>();
@@ -260,7 +260,7 @@ public sealed class SettlerDrawTests
         return shifts;
     }
 
-    private static string Describe(IEnumerable<Sprite> sprites) => string.Join(" ", sprites);
+    static string Describe(IEnumerable<Sprite> sprites) => string.Join(" ", sprites);
 
     [TestMethod]
     public void EveryRecordingNamesTheReferenceInstallItCameFrom()

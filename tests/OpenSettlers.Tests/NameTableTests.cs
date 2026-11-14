@@ -172,7 +172,7 @@ public sealed class NameTableTests
         Assert.AreEqual("tree", names.ObjectName(0x88));
     }
 
-    private static NameTable Table(params (int Code, int Class)[] classes)
+    static NameTable Table(params (int Code, int Class)[] classes)
     {
         var table = new ObjectClass[RuleTables.ClassCount];
         foreach (var (code, @class) in classes)
@@ -183,6 +183,6 @@ public sealed class NameTableTests
         return new NameTable(new RuleTables(table, ZeroStock()));
     }
 
-    private static byte[][] ZeroStock() =>
+    static byte[][] ZeroStock() =>
         Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
 }

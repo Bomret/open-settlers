@@ -4,10 +4,10 @@ namespace OpenSettlers.Simulation;
 /// What placing the first castle writes into the map (<c>0x442704</c>, <c>docs/rules/castle.md</c>): the castle on
 /// its node, its flag south-east of it, the levelled heights around it, and the player's territory.
 /// </summary>
-internal static class CastlePlacement
+static class CastlePlacement
 {
     // The territory is the castle's node and every node within 8 steps: the first 217 entries of the spiral.
-    private const int TerritoryNodes = 217;
+    const int TerritoryNodes = 217;
 
     /// <summary>
     /// Writes the placement of the player's first castle at a node judged a castle site, levelled to

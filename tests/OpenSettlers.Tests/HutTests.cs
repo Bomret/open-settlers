@@ -12,7 +12,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class HutTests
 {
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -30,10 +30,10 @@ public sealed class HutTests
         );
     }
 
-    private static readonly (int X, int Y)[] Flags = [(18, 6), (19, 4), (17, 3)];
+    static readonly (int X, int Y)[] Flags = [(18, 6), (19, 4), (17, 3)];
 
     // The castle, the three flags (slots 1 to 3), and the roads between the flags 0 and 1 and between 1 and 2.
-    private static Game World()
+    static Game World()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < map.Count; index++)
@@ -60,15 +60,15 @@ public sealed class HutTests
         return game;
     }
 
-    private static void Build(Game game, int x, int y, params int[] directions)
+    static void Build(Game game, int x, int y, params int[] directions)
     {
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
         game.Tick();
     }
 
-    private static void PlaceHut(Game game) => Huts.PlaceAndTick(game, 16, 2);
+    static void PlaceHut(Game game) => Huts.PlaceAndTick(game, 16, 2);
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
         {
@@ -138,7 +138,7 @@ public sealed class HutTests
     }
 
     // A node of the castle's land with a site for a building and nothing on or around its south-east node (node state 7).
-    private static (int X, int Y) FreeSite(Game game)
+    static (int X, int Y) FreeSite(Game game)
     {
         var tables = Made();
         for (var y = 0; y < game.Map.Size.Height - 1; y++)

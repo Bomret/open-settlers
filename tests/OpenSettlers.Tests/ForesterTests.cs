@@ -23,15 +23,15 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class ForesterTests
 {
-    private const string Fixture = "forester-walks.txt";
-    private const int WorkerSlot = 4;
-    private const int HutSlot = 1;
+    const string Fixture = "forester-walks.txt";
+    const int WorkerSlot = 4;
+    const int HutSlot = 1;
 
-    private sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
+    sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture).Where(line => !line.StartsWith("//", StringComparison.Ordinal)))
@@ -50,14 +50,14 @@ public sealed class ForesterTests
         return scenarios;
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
-    private static string Words(RandomGenerator generator) =>
+    static string Words(RandomGenerator generator) =>
         string.Join(',', new[] { generator.W0, generator.W1, generator.W2 }.Select(word => word.ToString("X4")));
 
     // The object bytes of a map that differ from a copy, as the verb lists them: "x,y:old>new" joined by ";".
-    private static string Changes(byte[] before, Map map)
+    static string Changes(byte[] before, Map map)
     {
         var now = Layers.Of(map, MapLayer.Object);
         var width = map.Size.Width;
@@ -71,12 +71,7 @@ public sealed class ForesterTests
         );
     }
 
-    private static Game Start(
-        string command,
-        out Map map,
-        out int passes,
-        out List<(int Pass, int X, int Y, int Code)> sets
-    )
+    static Game Start(string command, out Map map, out int passes, out List<(int Pass, int X, int Y, int Code)> sets)
     {
         // goods:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PUT;PUT...[:SET;SET...]]]]
         var parts = command.Split(':');

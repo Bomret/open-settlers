@@ -12,7 +12,7 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class MapLayers
 {
-    private readonly byte[][] _layers;
+    readonly byte[][] _layers;
 
     internal MapLayers(MapSize size)
     {

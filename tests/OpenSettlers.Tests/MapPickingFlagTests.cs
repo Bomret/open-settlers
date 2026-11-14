@@ -12,10 +12,10 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class MapPickingFlagTests
 {
-    private const double ViewWidth = 800;
-    private const double ViewHeight = 600;
+    const double ViewWidth = 800;
+    const double ViewHeight = 600;
 
-    private static Map FlagsAt(params (int Column, int Row, int Height)[] flags)
+    static Map FlagsAt(params (int Column, int Row, int Height)[] flags)
     {
         var map = new Map(MapSize.Offered[0]);
         foreach (var (column, row, height) in flags)
@@ -27,7 +27,7 @@ public sealed class MapPickingFlagTests
         return map;
     }
 
-    private static (int X, int Y) PickAt(Map map, (double X, double Y) point, MapPicking.PickBox box) =>
+    static (int X, int Y) PickAt(Map map, (double X, double Y) point, MapPicking.PickBox box) =>
         MapPicking.Pick(map, point.X, point.Y, 1, ViewWidth, ViewHeight, ViewWidth / 2, ViewHeight / 2, box);
 
     [TestMethod]

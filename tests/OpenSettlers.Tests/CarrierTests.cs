@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CarrierTests
 {
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -29,7 +29,7 @@ public sealed class CarrierTests
     }
 
     // The castle and the three flags.
-    private static Game World()
+    static Game World()
     {
         var game = GameFactory.Create(
             Made(),
@@ -46,13 +46,13 @@ public sealed class CarrierTests
         return game;
     }
 
-    private static void Build(Game game, int x, int y, params int[] directions)
+    static void Build(Game game, int x, int y, params int[] directions)
     {
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
         game.Tick();
     }
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
         {
@@ -60,7 +60,7 @@ public sealed class CarrierTests
         }
     }
 
-    private static Settler[] Carriers(Game game) => [.. game.Settlers.Where(settler => settler.Job == new Carrier())];
+    static Settler[] Carriers(Game game) => [.. game.Settlers.Where(settler => settler.Job == new Carrier())];
 
     [TestMethod]
     public void ARoadAsksTheCastleForACarrierAtItsFlagsTurnAndTheCastleSendsASettlerWithoutAJob()

@@ -38,7 +38,7 @@ public sealed class RemovalLogicTests
         );
     }
 
-    private static Game World(byte capacity = 8, bool hut = true, byte[]? transportPriorities = null)
+    static Game World(byte capacity = 8, bool hut = true, byte[]? transportPriorities = null)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < map.Count; index++)
@@ -70,13 +70,13 @@ public sealed class RemovalLogicTests
         return game;
     }
 
-    private static void Build(Game game, int x, int y, params int[] directions)
+    static void Build(Game game, int x, int y, params int[] directions)
     {
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
         game.Tick();
     }
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
         {
@@ -84,7 +84,7 @@ public sealed class RemovalLogicTests
         }
     }
 
-    private static bool Applied(Game game, int kind, int x, int y)
+    static bool Applied(Game game, int kind, int x, int y)
     {
         var digest = game.Digest();
         game.Enqueue(new Command(game.TickCount, 0, kind, x, y));
@@ -388,11 +388,11 @@ public sealed class RemovalLogicTests
 
     // The removal on a bench: a map, flag table, and road network made by hand, with fake carrier and goods seams, so a test
     // sees what the removal asks of the carriers without a castle or a game.
-    private const int East = 0;
-    private const int West = 3;
+    const int East = 0;
+    const int West = 3;
 
     // The carrier behaviour as the removal sees it: it notes what the removal asks of it.
-    private sealed class FakeCarriers : IRoadCarriers
+    sealed class FakeCarriers : IRoadCarriers
     {
         public List<Road> Forgotten { get; } = [];
 
@@ -405,12 +405,12 @@ public sealed class RemovalLogicTests
         public void Claim(int slot, Settler settler) { }
     }
 
-    private sealed class FakePriorities : ITransportPriorities
+    sealed class FakePriorities : ITransportPriorities
     {
         public int TransportPriority(Good good) => good.Code;
     }
 
-    private sealed class Rig
+    sealed class Rig
     {
         public Rig()
         {
@@ -454,7 +454,7 @@ public sealed class RemovalLogicTests
 
         public Road Road { get; }
 
-        private void PutFlag(int x, int y)
+        void PutFlag(int x, int y)
         {
             var slot = Bench.Flags.Add(x, y);
             ref var node = ref Bench.Map.At(x, y);

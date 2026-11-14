@@ -8,7 +8,7 @@ namespace OpenSettlers.Tests;
 // A game on made-up tables for the rules of construction that need no install: the map of the seed 1234,5678,9ABC with its castle at
 // 15,5 and its flag at 16,6, no tree anywhere, the flags 18,6, 19,4, and 17,3 (slots 1 to 3) with roads from the castle's flag east
 // to 18,6 and from there to 19,4, as HutTests lays them. A building at 17,5 has its flag at 18,6, which a road joins to the castle.
-internal static class ConstructionWorld
+static class ConstructionWorld
 {
     public static Game Create(RuleTables? tables = null, bool handsOutGoods = false, bool everyPassTurns = false)
     {

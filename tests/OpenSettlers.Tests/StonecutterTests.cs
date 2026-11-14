@@ -23,15 +23,15 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class StonecutterTests
 {
-    private const string Fixture = "stone-walks.txt";
-    private const int WorkerSlot = 12;
-    private const int HutSlot = 1;
+    const string Fixture = "stone-walks.txt";
+    const int WorkerSlot = 12;
+    const int HutSlot = 1;
 
-    private sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
+    sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture).Where(line => !line.StartsWith("//", StringComparison.Ordinal)))
@@ -50,14 +50,14 @@ public sealed class StonecutterTests
         return scenarios;
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
-    private static string Words(RandomGenerator generator) =>
+    static string Words(RandomGenerator generator) =>
         string.Join(',', new[] { generator.W0, generator.W1, generator.W2 }.Select(word => word.ToString("X4")));
 
     // The bytes of a map layer that differ from a copy, as the verb lists them: "x,y:old>new" joined by ";".
-    private static string Changes(byte[] before, Map map, MapLayer layer = MapLayer.Object)
+    static string Changes(byte[] before, Map map, MapLayer layer = MapLayer.Object)
     {
         var now = Layers.Of(map, layer);
         var width = map.Size.Width;
@@ -71,7 +71,7 @@ public sealed class StonecutterTests
         );
     }
 
-    private static Game Start(
+    static Game Start(
         string command,
         out Map map,
         out int hutFlag,

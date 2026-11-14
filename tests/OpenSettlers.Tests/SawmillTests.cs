@@ -11,10 +11,10 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SawmillTests
 {
-    private const int SawmillX = 14;
-    private const int SawmillY = 8;
-    private const int CastleFlag = 0;
-    private const int SawmillFlag = 4;
+    const int SawmillX = 14;
+    const int SawmillY = 8;
+    const int CastleFlag = 0;
+    const int SawmillFlag = 4;
 
     internal static (Game Game, Building Sawmill) World(bool handsOutGoods = false)
     {
@@ -36,7 +36,7 @@ public sealed class SawmillTests
         return ConstructionWorld.OfJob(game, new Sawmiller()).Single();
     }
 
-    private static Request LogRequest(Game game) => game.Flags[SawmillFlag].RequestOf(ConstructionTables.LogClass.Word);
+    static Request LogRequest(Game game) => game.Flags[SawmillFlag].RequestOf(ConstructionTables.LogClass.Word);
 
     [TestMethod]
     public void TheSawmillerWalksInAsksForLogsAndWaitsWhereNoLogIsOnSite()
@@ -109,7 +109,7 @@ public sealed class SawmillTests
     }
 
     // Lays a stone on every empty place of the sawmill's flag and returns how many it laid.
-    private static int FillFlag(Game game)
+    static int FillFlag(Game game)
     {
         var laid = 0;
         for (var place = 0; place < game.Flags[SawmillFlag].Places.Count; place++)
@@ -163,7 +163,7 @@ public sealed class SawmillTests
         Assert.AreEqual(planks + 1, game.CastleStock.Planks, "and so did the plank");
     }
 
-    private const int WaitFrame = 0x52;
+    const int WaitFrame = 0x52;
 
     [TestMethod]
     public void WhereTheFlagFillsDuringTheStepOutThePlankIsLaidOnThePlaceSeven()

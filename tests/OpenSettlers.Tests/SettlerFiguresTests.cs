@@ -35,21 +35,21 @@ public sealed class SettlerFiguresTests
 
     // The adds of the woodcutter's handler (0x43fb6b): the high byte of the figure word is 0x0b for the walk, 0x10 for the
     // way back with the log, and 0x0f for a figure byte from 0x80.
-    private static readonly FigureAdds Adds = new(0x0b00, 0x1000, 0x0e80);
+    static readonly FigureAdds Adds = new(0x0b00, 0x1000, 0x0e80);
 
     // The adds of the handler of the settler of the type 1 hut (0x43fed8), with made-up rows: 0x11 for the walk, 0x12 for the
     // way back with a load, 0x13 and 0x14 for a figure byte from 0x80.
-    private static readonly HutFigureAdds HutAdds = new(0x1100, 0x1200, 0x1280, 0x1380);
+    static readonly HutFigureAdds HutAdds = new(0x1100, 0x1200, 0x1280, 0x1380);
 
     // The adds of the builder's handler (0x43faf4), made up: 0x1500 for the walk and 0x1580 for a figure byte from 0x80.
-    private static readonly BuilderFigureAdds BuilderAdds = new(0x1500, 0x1580);
+    static readonly BuilderFigureAdds BuilderAdds = new(0x1500, 0x1580);
 
     // The woodcutter: the figure base 100 and the second base 50 in the row 0x0b, 200 and none in the row 0x10, 300 and
     // none in the row 0x0f; each figure byte adds its own number and, to the second, 1. The carrier's row 0: 100, none.
-    private static SettlerPair Figures(sbyte[]? frameRows = null) =>
+    static SettlerPair Figures(sbyte[]? frameRows = null) =>
         new(new SettlerFigures(new StepOffsets(Sequences()), frameRows ?? []), Tables());
 
-    private static SettlerFigureTables Tables()
+    static SettlerFigureTables Tables()
     {
         var bases = new short[256];
         bases[2 * 0x0b] = 100;
@@ -160,14 +160,14 @@ public sealed class SettlerFiguresTests
 
     // The adds of the sawmiller's handler (0x43fc21), made up: 0x1900 for a figure byte below 0x80, 0x1a00 for the step that takes the
     // plank out, and 0x1b80 from 0x80 on.
-    private static readonly SawmillerFigureAdds SawmillerAdds = new(0x1900, 0x1a00, 0x1b80);
+    static readonly SawmillerFigureAdds SawmillerAdds = new(0x1900, 0x1a00, 0x1b80);
 
     // The adds of the digger's handler (0x43fa87), made up: 0x1700 for a figure byte below 0x80 and 0x1780 from there on.
-    private static readonly FigureAdds DiggerAdds = new(0x1700, 0x1700, 0x1780);
+    static readonly FigureAdds DiggerAdds = new(0x1700, 0x1700, 0x1780);
 
     // The waiting carriers' tables: the phase of the column c is 8 * c, the figure word of the index i is i (row 0), and the
     // road directions 0x09 (east and west) move the figure 3 right and 1 up.
-    private static IdleCarrierTables Idle()
+    static IdleCarrierTables Idle()
     {
         var offsets = new sbyte[128];
         offsets[2 * 0x09] = 3;
@@ -181,7 +181,7 @@ public sealed class SettlerFiguresTests
     }
 
     // A map whose node of the waiting carriers (4,3) has the roads given, and the lake mark where asked.
-    private static Map MapWithRoad(RoadSet roads, bool lakeMark = false)
+    static Map MapWithRoad(RoadSet roads, bool lakeMark = false)
     {
         var map = Map();
         map.At(4, 3).Roads = roads;
@@ -191,7 +191,7 @@ public sealed class SettlerFiguresTests
     }
 
     // The activity the original's state code stands for, with the data the drawing reads: no good carried, heading 0.
-    private static Activity ActivityOf(int state) =>
+    static Activity ActivityOf(int state) =>
         state switch
         {
             1 => new WaitsInCastle(),
@@ -213,7 +213,7 @@ public sealed class SettlerFiguresTests
         };
 
     // A carrier in the activity of a state; on its road or handing a good over it carries the good `mode`, none for 0.
-    private static Settler Carrier(int mode, int state = 3, int timer = 0)
+    static Settler Carrier(int mode, int state = 3, int timer = 0)
     {
         var carried = mode == 0 ? null : new Load?(new Load(new Good(mode), null));
         Activity activity = state switch
@@ -226,10 +226,10 @@ public sealed class SettlerFiguresTests
         return new(new Carrier(), 0, 4, 3, 0, activity) { Frame = 7, Timer = (ushort)timer };
     }
 
-    private static Map Map() =>
+    static Map Map() =>
         MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
-    private static Settler Walker(int frame, int timer, int state = 2) =>
+    static Settler Walker(int frame, int timer, int state = 2) =>
         new(new Woodcutter(), 0, 4, 3, 0, ActivityOf(state))
         {
             Frame = frame,
@@ -351,15 +351,14 @@ public sealed class SettlerFiguresTests
 
     // The handler of the settler of the type 1 hut (0x43fed8) adds, for a figure byte below 0x80, 0x2c00 or 0x2f00 on the way back
     // with a load and, from 0x80, 0x2c80 or, where the heading (byte 14) is 1, 0x2d80; the rows here are made up.
-    private static Settler Hut(int frame, Activity? activity = null) =>
+    static Settler Hut(int frame, Activity? activity = null) =>
         new(new TypeOneHut(), 0, 4, 3, 0, activity ?? ActivityOf(2)) { Frame = frame };
 
     // The free walk back to the hut's flag, with the log in the woodcutter's hands or without it.
-    private static Activity WayBack(bool carrying) =>
-        new WalksFree(new Trip(new Vector(0, 0), new BackToHut(carrying)));
+    static Activity WayBack(bool carrying) => new WalksFree(new Trip(new Vector(0, 0), new BackToHut(carrying)));
 
     // The woodcutter's cut at the step `count`.
-    private static Activity Cut(int count) => new Cuts(new Vector(0, 0), false, count, 0);
+    static Activity Cut(int count) => new Cuts(new Vector(0, 0), false, count, 0);
 
     [TestMethod]
     public void TheSettlerOfTheTypeOneHutIsDrawnInTheRowsOfHisHandler()

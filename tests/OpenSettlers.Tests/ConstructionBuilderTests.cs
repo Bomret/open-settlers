@@ -19,7 +19,7 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class ConstructionBuilderTests
 {
-    private const string Fixture = "construction-builder.txt";
+    const string Fixture = "construction-builder.txt";
 
     [TestMethod]
     [DataRow("builder-forester")]
@@ -138,7 +138,7 @@ public sealed class ConstructionBuilderTests
         }
     }
 
-    private static void Check(Game game, Dictionary<string, string> line, int width, string when)
+    static void Check(Game game, Dictionary<string, string> line, int width, string when)
     {
         foreach (var (key, value) in line)
         {
@@ -216,5 +216,5 @@ public sealed class ConstructionBuilderTests
     }
 
     // The emulator's class byte of a request word: bit k set asks for the class k.
-    private static byte ClassByte(Request request) => request.Asks is { } asked ? (byte)(1 << asked.Class) : (byte)0;
+    static byte ClassByte(Request request) => request.Asks is { } asked ? (byte)(1 << asked.Class) : (byte)0;
 }

@@ -8,14 +8,14 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace OpenSettlers.Tests;
 
 /// <summary>The exit status and the output of one run of a python tool.</summary>
-internal readonly record struct ToolRun(int Exit, string Stdout, string Stderr);
+readonly record struct ToolRun(int Exit, string Stdout, string Stderr);
 
 /// <summary>
 /// The one place the tests spawn python3 for the scripts under <c>tools/</c>. A missing python3 fails the test with the hint
 /// to run <c>mise install</c>, as <c>docs/agents/verification.md</c> states. Each run sets its environment: <c>SIEDLER_DIR</c>
 /// is absent unless the caller passes it, and the path holds no <c>analyzeHeadless</c> of the host unless the caller asks for it.
 /// </summary>
-internal static class PythonTool
+static class PythonTool
 {
     public const string MissingHint = "python3 is not on the path; mise install provides it";
 
@@ -64,7 +64,7 @@ internal static class PythonTool
         }
     }
 
-    private static bool HoldsHeadless(string dir) =>
+    static bool HoldsHeadless(string dir) =>
         File.Exists(Path.Combine(dir, "analyzeHeadless")) || File.Exists(Path.Combine(dir, "analyzeHeadless.bat"));
 
     /// <summary>

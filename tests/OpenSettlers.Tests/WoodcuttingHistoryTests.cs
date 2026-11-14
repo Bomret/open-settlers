@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class WoodcuttingHistoryTests
 {
-    private static Game Laid()
+    static Game Laid()
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
         while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
@@ -26,9 +26,9 @@ public sealed class WoodcuttingHistoryTests
         return game;
     }
 
-    private static Settler Woodcutter(Game game) => game.Settlers.Single(s => s.Job == new Woodcutter());
+    static Settler Woodcutter(Game game) => game.Settlers.Single(s => s.Job == new Woodcutter());
 
-    private static void RunTrip(Game game, Action? each = null)
+    static void RunTrip(Game game, Action? each = null)
     {
         var laid = false;
         for (var i = 0; i < 4000 && !(laid && Woodcutter(game).Activity is Door); i++)
@@ -69,7 +69,7 @@ public sealed class WoodcuttingHistoryTests
         Assert.AreEqual(GameGoodLog, onFlag.State.Get("good0") & 0x1f);
     }
 
-    private const int GameGoodLog = 7;
+    const int GameGoodLog = 7;
 
     [TestMethod]
     public void ATripRecordsNoMovedEventAndEveryWoodcuttingEventCarriesTheCauseWoodcutting()

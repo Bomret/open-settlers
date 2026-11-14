@@ -9,7 +9,7 @@ namespace OpenSettlers.Domain;
 /// </summary>
 public sealed class SettlerTable : IReadOnlyList<Settler>
 {
-    private readonly List<Settler> _settlers = [];
+    readonly List<Settler> _settlers = [];
 
     /// <summary>The number of settlers.</summary>
     public int Count => _settlers.Count;

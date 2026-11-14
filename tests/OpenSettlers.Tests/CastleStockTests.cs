@@ -8,7 +8,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CastleStockTests
 {
-    private static CastleStock Stocked(params (int Good, int Count)[] counts)
+    static CastleStock Stocked(params (int Good, int Count)[] counts)
     {
         var stock = new int[StartStock.Goods];
         foreach (var (good, count) in counts)

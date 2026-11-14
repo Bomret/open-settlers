@@ -11,15 +11,15 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class StonecuttingTests
 {
-    private const int HutFlag = 3;
-    private const int WorkerSlot = 12;
-    private const int HutX = 16;
-    private const int HutY = 2;
+    const int HutFlag = 3;
+    const int WorkerSlot = 12;
+    const int HutX = 16;
+    const int HutY = 2;
 
-    private static readonly Good Stone = new(10);
+    static readonly Good Stone = new(10);
 
     // The nodes a heap can stand on for the stonecutter: the north-west neighbour of each of the 128 nodes around the hut.
-    private static (int X, int Y)[] Reach() =>
+    static (int X, int Y)[] Reach() =>
         [
             .. Enumerable
                 .Range(1, 128)
@@ -32,7 +32,7 @@ public sealed class StonecuttingTests
         ];
 
     // The made-up workers: the stonecutter's building asks for the stonecutter's job with no tool.
-    private static WorkerRequest?[] Workers()
+    static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
         workers[BuildingType.Stonecutter.Code] = new WorkerRequest(new Stonecutter(), Good.None);
@@ -40,12 +40,11 @@ public sealed class StonecuttingTests
         return workers;
     }
 
-    private static int Heaps(Map map) =>
-        Reach().Count(node => map.At(node.X, node.Y).Object.Kind == MapObjectKind.StoneHeap);
+    static int Heaps(Map map) => Reach().Count(node => map.At(node.X, node.Y).Object.Kind == MapObjectKind.StoneHeap);
 
     // A heap stands on the nodes of his reach whose column plus twice the row is a multiple of 7: none beside another and none on
     // the node beside a heap, so the nodes he walks to and steps back to are free.
-    private static bool HeapNode((int X, int Y) node) => (node.X + 2 * node.Y) % 7 == 0;
+    static bool HeapNode((int X, int Y) node) => (node.X + 2 * node.Y) % 7 == 0;
 
     // The castle, the flags, the roads, and the stonecutter's hut; a heap of the code stands on each such free node of his reach
     // where a code is given, and the generated trees and heaps are gone from the whole map.
@@ -98,7 +97,7 @@ public sealed class StonecuttingTests
         return game;
     }
 
-    private static bool HoldsStone(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == Stone);
+    static bool HoldsStone(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == Stone);
 
     [TestMethod]
     public void AStonecutterCutsAHeapOfHisReachAndLaysAStoneOnTheHutsFlag()
@@ -181,7 +180,7 @@ public sealed class StonecuttingTests
     }
 
     // The tables of ConstructionTables with a forester that needs two stones and no plank, the stone asking the class it asks there.
-    private static RuleTables SiteTables()
+    static RuleTables SiteTables()
     {
         var needs = new byte[2 * RuleTables.BuildingTypeCount];
         needs[(2 * BuildingType.Forester.Code) + 1] = 2;

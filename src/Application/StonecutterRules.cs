@@ -6,7 +6,7 @@ namespace OpenSettlers.Simulation;
 /// What the stonecutter's rules need of the stone heaps: the direction from a node to the node a heap stands on for a stonecutter who stands on it,
 /// whether a heap stands on a node, and the check at each turn of his walk out.
 /// </summary>
-internal static class StoneHeaps
+static class StoneHeaps
 {
     /// <summary>The direction from a node to the node a heap stands on for a stonecutter who stands on it: north-west (0x435b9a, the state's offset +0x14).</summary>
     public const int Direction = 4;
@@ -40,24 +40,24 @@ internal static class StoneHeaps
 /// <param name="parts">The shared parts.</param>
 public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(parts)
 {
-    private readonly SettlerMovement movement = parts.Movement;
-    private readonly IRandomDraws draws = parts.Draws;
-    private readonly HutWork hut = parts.Hut;
+    readonly SettlerMovement movement = parts.Movement;
+    readonly IRandomDraws draws = parts.Draws;
+    readonly HutWork hut = parts.Hut;
 
     /// <summary>The good of a stone (the byte 10 the settler writes onto the flag, 0x438180).</summary>
     public const int GoodStone = 10;
 
     // The time a node without a heap adds to the search's timer (0x435c50), where the woodcutter's adds 400.
-    private const int HeapMiss = 100;
+    const int HeapMiss = 100;
 
     // The direction from the heap's node back to the node the stonecutter came by: south-east.
-    private const int WayOut = 1;
+    const int WayOut = 1;
 
     // The strokes: the stonecutter waits 0x600 units at the heap before the stone comes off (0x435cd3), and the step back
     // takes three quarters of the step's time (0x435e0d).
-    private const int StrokeTime = 0x600;
+    const int StrokeTime = 0x600;
 
-    private Map Map => movement.Map;
+    Map Map => movement.Map;
 
     /// <inheritdoc />
     public override bool CanStandInHut => true;
@@ -97,7 +97,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
     }
 
     // The node a heap stands on for a stonecutter at the node (x, y).
-    private int HeapOf(int x, int y)
+    int HeapOf(int x, int y)
     {
         var (dx, dy) = Direction.Steps[StoneHeaps.Direction];
 
@@ -107,7 +107,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
     // State 0x15, the stonecutter's search (0x435b17). When its timer has run out he draws a node of the spiral around the
     // hut, entries 1 to 128, until a node not marked solid has a heap north-west of it; each node without adds 100 to the
     // timer, and the search ends for this turn when that wraps the timer.
-    private void SearchStone(int slot, Settler settler)
+    void SearchStone(int slot, Settler settler)
     {
         var found = SearchStoneTurn(settler);
         hut.RecordWork(slot, EventType.SearchStone);
@@ -118,7 +118,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
     }
 
     // One turn of the search; true where he found a heap and took state 7.
-    private bool SearchStoneTurn(Settler settler)
+    bool SearchStoneTurn(Settler settler)
     {
         if (!movement.TimerRan(settler))
         {
@@ -203,7 +203,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
     // he steps back onto the node he came by, taking three quarters of the step's time (part 2), and starts the way back with
     // the stone. Each part runs at once into the next where its time has already run out. A heap's last stone removes the heap
     // and its mark. He waits to step back while another settler stands on that node.
-    private void CutStone(int slot, Settler settler)
+    void CutStone(int slot, Settler settler)
     {
         // The heap's node: his own until the step back, and the neighbour he stepped back from during part 2.
         var (heapX, heapY) = (settler.X, settler.Y);
@@ -217,7 +217,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
         hut.RecordWork(slot, EventType.CutStone, heap);
     }
 
-    private void CutStoneTurn(int slot, Settler settler)
+    void CutStoneTurn(int slot, Settler settler)
     {
         var cut = (CutsStone)settler.Activity;
         var delta = (ushort)(movement.Clock - settler.Stamp);
@@ -289,7 +289,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
     }
 
     // Adds time to the settler's timer; true where the sum wraps it (the original's carry), so that the part waits it out.
-    private static bool Wraps(Settler settler, int time)
+    static bool Wraps(Settler settler, int time)
     {
         var old = settler.Timer;
         settler.Timer = (ushort)(old + time);

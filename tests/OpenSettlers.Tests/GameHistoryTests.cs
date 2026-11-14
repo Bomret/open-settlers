@@ -13,7 +13,7 @@ namespace OpenSettlers.Tests;
 public sealed class GameHistoryTests
 {
     // A stand-in for the exporter: every thing's state is its slot.
-    private sealed class SlotSnapshots : IThingSnapshots
+    sealed class SlotSnapshots : IThingSnapshots
     {
         public ThingState Building(int slot) => new([("slot", slot)]);
 

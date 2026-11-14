@@ -12,7 +12,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ThingHistoryTests
 {
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -45,14 +45,14 @@ public sealed class ThingHistoryTests
         return GameFactory.Create(Made(), map);
     }
 
-    private static void Do(Game game, int kind, int x, int y, int[]? directions = null)
+    static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
         game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
         game.Tick();
     }
 
     // The world of GameThingTests: flags at 18,6 (slot 1), 19,4 (2), 17,3 (3), roads between them, a hut at 16,2.
-    private static Game World()
+    static Game World()
     {
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
@@ -80,7 +80,7 @@ public sealed class ThingHistoryTests
         Assert.AreEqual(7057416915496346654UL, World().Digest());
     }
 
-    private static Game Castle()
+    static Game Castle()
     {
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
@@ -294,7 +294,7 @@ public sealed class ThingHistoryTests
         Assert.ThrowsExactly<ArgumentException>(() => game.History.CarryCause(5, Cause.Woodcutting));
     }
 
-    private const string Built = """
+    const string Built = """
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
@@ -313,7 +313,7 @@ public sealed class ThingHistoryTests
         return game;
     }
 
-    private static string Text(Game game) =>
+    static string Text(Game game) =>
         string.Join(
             "\n",
             game.History.Events.All.Select(e => $"{e.Tick} {e.Type} {e.Thing} [{e.State}] {e.Cause} {e.Other}")
@@ -352,7 +352,7 @@ public sealed class ThingHistoryTests
         Assert.AreEqual(Text(World()), Text(World()));
     }
 
-    private static List<string> Lines(Game game) =>
+    static List<string> Lines(Game game) =>
         [.. Thing.Of(game, new NameTable(TestProgram.Made())).Select(thing => thing.Line())];
 
     [TestMethod]

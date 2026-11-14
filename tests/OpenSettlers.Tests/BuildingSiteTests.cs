@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class BuildingSiteTests
 {
-    private static readonly BuildingType[] Types =
+    static readonly BuildingType[] Types =
     [
         BuildingType.Woodcutter,
         BuildingType.Stonecutter,
@@ -19,7 +19,7 @@ public sealed class BuildingSiteTests
         BuildingType.Sawmill,
     ];
 
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -42,7 +42,7 @@ public sealed class BuildingSiteTests
         );
     }
 
-    private static Game World()
+    static Game World()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = GameFactory.Create(Made(), map);
@@ -52,7 +52,7 @@ public sealed class BuildingSiteTests
         return game;
     }
 
-    private static bool Place(Game game, BuildingType? type, int x, int y)
+    static bool Place(Game game, BuildingType? type, int x, int y)
     {
         var revision = game.Revision;
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: type));
@@ -63,7 +63,7 @@ public sealed class BuildingSiteTests
 
     // A node of the castle's land that the evaluator gives the site value and the node state 7 (nothing on or around its
     // south-east node), the first in row-major order.
-    private static (int X, int Y, BuildSiteResult Site) Find(Game game, int site)
+    static (int X, int Y, BuildSiteResult Site) Find(Game game, int site)
     {
         for (var y = 0; y < game.Map.Size.Height - 1; y++)
         {

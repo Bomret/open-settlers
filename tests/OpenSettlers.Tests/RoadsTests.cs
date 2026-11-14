@@ -10,10 +10,10 @@ namespace OpenSettlers.Tests;
 public sealed class RoadsTests
 {
     // The castle of the seed's map stands at 15,5 and its flag at 16,6; a flag goes on 18,6, two nodes east.
-    private const int CastleX = 15;
-    private const int CastleY = 5;
+    const int CastleX = 15;
+    const int CastleY = 5;
 
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -40,7 +40,7 @@ public sealed class RoadsTests
         return game;
     }
 
-    private static void Build(Game game, params int[] directions)
+    static void Build(Game game, params int[] directions)
     {
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 16, 6, directions));
         game.Tick();

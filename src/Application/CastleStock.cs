@@ -52,9 +52,9 @@ public sealed class CastleStock
         return true;
     }
 
-    private bool Holds(Good good) => good.Code >= 1 && good.Code <= Stock.Count;
+    bool Holds(Good good) => good.Code >= 1 && good.Code <= Stock.Count;
 
-    private void Change(Good good, int by)
+    void Change(Good good, int by)
     {
         if (!Holds(good))
         {

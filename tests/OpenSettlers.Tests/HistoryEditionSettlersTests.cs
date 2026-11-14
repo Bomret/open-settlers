@@ -12,7 +12,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class HistoryEditionSettlersTests
 {
-    private static (SettlerPair Pair, HistoryEditionSource Source) Load()
+    static (SettlerPair Pair, HistoryEditionSource Source) Load()
     {
         var install = TestProgram.OpenInstall();
         var tables = TestProgram.Tables();
@@ -21,15 +21,15 @@ public sealed class HistoryEditionSettlersTests
         return (pair, HistoryEditionSource.Load(install, tables));
     }
 
-    private static Map Map() =>
+    static Map Map() =>
         MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
 
-    private static Settler Woodcutter(int frame, int timer, Activity activity) =>
+    static Settler Woodcutter(int frame, int timer, Activity activity) =>
         new(new Woodcutter(), 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)timer };
 
-    private static readonly Activity Walking = new Walks(new ToStorage(), new Heading(0));
+    static readonly Activity Walking = new Walks(new ToStorage(), new Heading(0));
 
-    private static readonly Activity BackWithLog = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(true)));
+    static readonly Activity BackWithLog = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(true)));
 
     // The table rule at the program's addresses (docs/rules/settlers.md): the woodcutter's walk is the row 0x0b of the bases
     // (48, 54), the cut a figure byte from 0x80 in the row 0x0f (272, none), the way back with the log the row 0x10 (48, 60).
@@ -53,7 +53,7 @@ public sealed class HistoryEditionSettlersTests
         CollectionAssert.AreEqual(new[] { 2125, 2775 }, cut.ToArray());
     }
 
-    private static Settler LoadedCarrier(int frame, int timer = 0) =>
+    static Settler LoadedCarrier(int frame, int timer = 0) =>
         new(new Carrier(), 0, 4, 3, 0, new WalksRoad(new Load(new Good(WoodcutterRules.GoodLog), null), new Heading(0)))
         {
             Frame = frame,
@@ -89,7 +89,7 @@ public sealed class HistoryEditionSettlersTests
     }
 
     // Every term the figure tables pick an entry for has an image in the archive: the source draws what the tables pick.
-    private static HashSet<(int, int)> PickedWithNoImage(
+    static HashSet<(int, int)> PickedWithNoImage(
         (SettlerPair Pair, HistoryEditionSource Source) kit,
         IEnumerable<Settler> settlers
     )

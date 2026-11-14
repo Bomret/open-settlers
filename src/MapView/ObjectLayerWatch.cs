@@ -10,8 +10,8 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed class ObjectLayerWatch
 {
-    private ulong? _last;
-    private long _tick = -1;
+    ulong? _last;
+    long _tick = -1;
 
     /// <summary>
     /// True when a map object or a flag's goods differ from the last look (the first call is a change). Only a

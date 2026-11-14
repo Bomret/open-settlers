@@ -13,11 +13,11 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ForestryTests
 {
-    private const int HutX = 16;
-    private const int HutY = 2;
+    const int HutX = 16;
+    const int HutY = 2;
 
     // The nodes the forester draws from: the 128 entries of the spiral around his hut's node, where he stands while he searches.
-    private static (int X, int Y)[] Reach() =>
+    static (int X, int Y)[] Reach() =>
         [
             .. Enumerable
                 .Range(1, 128)
@@ -29,10 +29,10 @@ public sealed class ForestryTests
                 ),
         ];
 
-    private static (int X, int Y) NorthWest((int X, int Y) node) => ((node.X - 1) & 31, (node.Y - 1) & 31);
+    static (int X, int Y) NorthWest((int X, int Y) node) => ((node.X - 1) & 31, (node.Y - 1) & 31);
 
     // The made-up workers: the forester's building asks for the forester's job with no tool.
-    private static WorkerRequest?[] Workers()
+    static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
         workers[BuildingType.Forester.Code] = new WorkerRequest(new Forester(), Good.None);
@@ -40,7 +40,7 @@ public sealed class ForestryTests
         return workers;
     }
 
-    private static void SetMeadow(Map map, (int X, int Y) node, bool meadow)
+    static void SetMeadow(Map map, (int X, int Y) node, bool meadow)
     {
         map.At(node.X, node.Y).Upper = meadow ? Terrain.Lowland : new Terrain(0);
         map.At(node.X, node.Y).Lower = meadow ? Terrain.Lowland : new Terrain(0);
@@ -48,7 +48,7 @@ public sealed class ForestryTests
 
     // The castle, the flags, the roads, and the forester's hut; every node of his reach and its north-west neighbour is meadow
     // (both triangles of the code 5), and no object stands there but what a test puts.
-    private static Game World(Action<Map>? prepare, out Map map, BuildingType? type = null)
+    static Game World(Action<Map>? prepare, out Map map, BuildingType? type = null)
     {
         var hut = type ?? BuildingType.Forester;
         var made = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
@@ -97,17 +97,17 @@ public sealed class ForestryTests
     }
 
     // Whether the node holds nothing of the world's own: no object, no road, no lake mark.
-    private static bool Bare(Map map, (int X, int Y) node) =>
+    static bool Bare(Map map, (int X, int Y) node) =>
         !map.At(node.X, node.Y).Object.Exists
         && map.At(node.X, node.Y).Roads.IsEmpty
         && !map.At(node.X, node.Y).LakeMark;
 
-    private static Settler Forester(Game game) => game.Settlers.Single(settler => settler.Job == new Forester());
+    static Settler Forester(Game game) => game.Settlers.Single(settler => settler.Job == new Forester());
 
-    private static (int X, int Y)[] Saplings(Map map) =>
+    static (int X, int Y)[] Saplings(Map map) =>
         [.. Reach().Where(node => map.At(node.X, node.Y).Object.Kind == MapObjectKind.Sapling)];
 
-    private static void RunUntilPlanted(Game game, Map map, int ticks = 12000)
+    static void RunUntilPlanted(Game game, Map map, int ticks = 12000)
     {
         for (var tick = 0; tick < ticks && Saplings(map).Length == 0; tick++)
         {
@@ -268,7 +268,7 @@ public sealed class ForestryTests
     }
 
     // The map's object pass with a sapling at the first node its cursor reaches (the column 23 of row 0), and the draws given.
-    private static (MapObject After, int Taken) Grow(byte sapling, params ushort[] draws)
+    static (MapObject After, int Taken) Grow(byte sapling, params ushort[] draws)
     {
         var bench = new BehaviourBench(draws);
         var work = new HutWork(

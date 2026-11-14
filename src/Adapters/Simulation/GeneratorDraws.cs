@@ -5,7 +5,7 @@ namespace OpenSettlers.Simulation;
 /// generation left, as the original's does.
 /// </summary>
 /// <param name="start">The generator at the start.</param>
-internal sealed class GeneratorDraws(RandomGenerator start) : IRandomDraws
+sealed class GeneratorDraws(RandomGenerator start) : IRandomDraws
 {
     /// <summary>The generator as the draws so far left it; its three words are the generator's whole state.</summary>
     public RandomGenerator Generator { get; private set; } = start;

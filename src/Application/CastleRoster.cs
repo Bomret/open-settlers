@@ -26,7 +26,7 @@ public sealed class CastleRoster(
 {
     // The jobs of the castle's 20 first settlers in the order of their slots (docs/rules/castle.md); a job is the
     // byte 0 of the original's item shifted right by 2.
-    private static readonly Job[] CastleJobs =
+    static readonly Job[] CastleJobs =
     [
         .. new[] { 4, 21, 21, 21, 21, 21, 22, 22, 22, 18, 5, 6, 7, 2, 3, 11, 20, 20, 9, 9 }.Select(code =>
             Job.Of(code)
@@ -34,37 +34,37 @@ public sealed class CastleRoster(
     ];
 
     // The job whose waiting settler's turn in the castle takes another branch (not ported): the original's job 10.
-    private static readonly Job UnportedWaitingJob = Job.Of(10);
+    static readonly Job UnportedWaitingJob = Job.Of(10);
 
     // The number of jobs the castle's list of waiting settlers has an entry for (0x42 + 2 times the job, up to 0x82).
-    private const int JobCount = 32;
+    const int JobCount = 32;
 
     // The castle's status bit 4, the only status bit it has besides the bit of its worker inside, with no recovered meaning.
-    private const int CastleOtherStatus = 0x10;
+    const int CastleOtherStatus = 0x10;
 
     // A fill counter that has overflowed: both fill bytes of the castle read full, as a delivery that carries out of the
     // counter leaves them (docs/rules/goods.md).
-    private const int FullFill = 0xff;
+    const int FullFill = 0xff;
 
     // The frame of a settler that waits for a busy node, as the claims of the walk home and of the woodcutter set it.
-    private const int WaitingFrame = 0x52;
+    const int WaitingFrame = 0x52;
 
     // The clock units a knight's timer is set to after a promotion and grows by for each draw that does not promote it.
-    private const ushort KnightTimerStep = 6000;
+    const ushort KnightTimerStep = 6000;
 
     // The timer value at and above which adding KnightTimerStep wraps past 16 bits (0x10000 - 6000), which ends the draws.
-    private const int KnightTimerWraps = 0x10000 - KnightTimerStep;
+    const int KnightTimerWraps = 0x10000 - KnightTimerStep;
 
     // The draws below which a knight of the level 0 to 3 (the jobs 22 to 25) is made a knight of the next level
     // (0x43910b, 0x4391eb, 0x4392cb, 0x4393ab).
-    private static readonly int[] PromotionLimits = [4000, 2000, 1000, 500];
+    static readonly int[] PromotionLimits = [4000, 2000, 1000, 500];
 
     // The castle's list of waiting settlers: for each job the slot of the settler that waits there (word at 0x42 + 2
     // times the job of the storage item), 0 for none.
-    private readonly Dictionary<Job, ushort> _waiting = [];
+    readonly Dictionary<Job, ushort> _waiting = [];
 
     // The entry of a job in the castle's list of waiting settlers.
-    private ref ushort Entry(Job job) => ref CollectionsMarshal.GetValueRefOrAddDefault(_waiting, job, out _);
+    ref ushort Entry(Job job) => ref CollectionsMarshal.GetValueRefOrAddDefault(_waiting, job, out _);
 
     /// <summary>The castle's list of waiting settlers, by job: the slot of the settler that waits there, 0 for none.</summary>
     public IReadOnlyList<ushort> WaitingList =>
@@ -236,7 +236,7 @@ public sealed class CastleRoster(
     // State 1, a settler waiting in the castle (0x438eeb): it enters its slot in the castle's list of waiting settlers
     // each turn. The job 10 takes another branch (not ported); the knights, the jobs 22 to 26, also draw
     // (docs/rules/woodcutting.md, "The random generator").
-    private void Idle(int slot, Settler settler)
+    void Idle(int slot, Settler settler)
     {
         if (settler.Job.IsKnightOrAbove)
         {
@@ -251,7 +251,7 @@ public sealed class CastleRoster(
     // A knight waiting in the castle (0x43910b and its three siblings). When its timer has run out it draws until a draw is
     // below its level's limit, which promotes it (job plus one, timer 6000, and its entry in the castle's list moves to
     // the new job), adding 6000 to the timer for each draw above it until that wraps. The last level only waits.
-    private void KnightIdle(int slot, Settler settler)
+    void KnightIdle(int slot, Settler settler)
     {
         var level = settler.Job.KnightLevel;
         if (level < PromotionLimits.Length)
@@ -290,7 +290,7 @@ public sealed class CastleRoster(
     // State 10, the settler that stands by while the castle is built (0x43f17a): each turn adds the elapsed units
     // times 128 to the castle's building progress, and when it wraps past 65536 the castle stands. The settler then
     // takes state 12, which is not ported.
-    private void StandByCastle(int slot, Settler settler)
+    void StandByCastle(int slot, Settler settler)
     {
         var delta = (ushort)(clock.Now - settler.Stamp);
         settler.Stamp = clock.Now;
@@ -317,7 +317,7 @@ public sealed class CastleRoster(
     // State 15, a settler that leaves the castle by its door onto the castle's flag (0x43dd4a): it steps south-east
     // when that node and the node of the building it walks to are free, takes the time of the step times the door's
     // speed, and waits it out in state 5. A busy node keeps it in state 15.
-    private void Leave(int slot, Settler settler)
+    void Leave(int slot, Settler settler)
     {
         var here = movement.Map.Index(settler.X, settler.Y);
         var (x, y, next) = movement.Neighbour(settler, 1);

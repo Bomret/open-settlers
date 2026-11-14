@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CarrierEventsTests
 {
-    private static Game NewGame()
+    static Game NewGame()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < map.Count; index++)
@@ -43,13 +43,13 @@ public sealed class CarrierEventsTests
         );
     }
 
-    private static void Do(Game game, int kind, int x, int y, int[]? directions = null)
+    static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
         game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
         game.Tick();
     }
 
-    private static Game RoadBuilt()
+    static Game RoadBuilt()
     {
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
@@ -60,7 +60,7 @@ public sealed class CarrierEventsTests
     }
 
     // Runs the game until the castle has sent a carrier to the road, which is then on its way.
-    private static void RunToTheRequest(Game game)
+    static void RunToTheRequest(Game game)
     {
         for (var i = 0; i < 400 && !game.History.Events.All.Any(e => e.Type == EventType.CarrierRequested); i++)
         {
@@ -68,7 +68,7 @@ public sealed class CarrierEventsTests
         }
     }
 
-    private static void RunUntil(Game game, System.Func<bool> done)
+    static void RunUntil(Game game, System.Func<bool> done)
     {
         for (var i = 0; i < 3000 && !done(); i++)
         {
@@ -78,7 +78,7 @@ public sealed class CarrierEventsTests
         Assert.IsTrue(done(), "the condition came true");
     }
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
         {
@@ -87,7 +87,7 @@ public sealed class CarrierEventsTests
     }
 
     // Runs the game until a settler waits at a flag on the road, with the road placed by a command.
-    private static Game RoadWithACarrier()
+    static Game RoadWithACarrier()
     {
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
@@ -324,11 +324,11 @@ public sealed class CarrierEventsTests
         Assert.AreEqual(3, walk.State.Get("state"));
     }
 
-    private static void RunToTheTurn(Game game, ThingId carrier, int turn) =>
+    static void RunToTheTurn(Game game, ThingId carrier, int turn) =>
         RunUntil(game, () => game.History.EventsOf(carrier).Count(e => e.Type == EventType.Wait) == turn);
 
     // No command gives a road a second carrier in these tests' short setups, so a test sets the count it needs.
-    private static void SetRoadCount(Game game, int count)
+    static void SetRoadCount(Game game, int count)
     {
         foreach (var (flag, direction) in new[] { (0, 0), (1, 3) })
         {

@@ -9,7 +9,7 @@ namespace OpenSettlers.MapView;
 /// <param name="tables">The tables of the exe: the builder's adds.</param>
 public sealed class BuilderLook(RuleTables tables) : HistoryEditionLook<Builder>
 {
-    private readonly BuilderFigureAdds _adds = tables.Get<BuilderFigureAdds>(new Builder());
+    readonly BuilderFigureAdds _adds = tables.Get<BuilderFigureAdds>(new Builder());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) => FigureBytes.IsWork(figure) ? _adds.Work : _adds.Walk;

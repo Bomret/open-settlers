@@ -25,7 +25,7 @@ public static class MapPicking
     public readonly record struct PickBox(int Width, int Height, int OffsetX, int OffsetY);
 
     // The tallest lift of a node: the greatest height at 4 pixels a unit.
-    private const int MaxLift = Node.MaxHeight * TerrainTriangles.HeightStep;
+    const int MaxLift = Node.MaxHeight * TerrainTriangles.HeightStep;
 
     /// <summary>
     /// The node under a click. <paramref name="cameraX"/> and <paramref name="cameraY"/> are the camera position

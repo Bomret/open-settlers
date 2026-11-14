@@ -18,7 +18,7 @@ namespace OpenSettlers.Tests;
 public sealed class FixtureJobTests
 {
     // What each layer's engine declares, stood in for: the shared files a job module does not touch.
-    private const string DomainEngine = """
+    const string DomainEngine = """
         using System;
         using System.Collections.Generic;
         namespace OpenSettlers.Domain
@@ -33,7 +33,7 @@ public sealed class FixtureJobTests
         }
         """;
 
-    private const string ApplicationEngine = """
+    const string ApplicationEngine = """
         namespace OpenSettlers.Simulation
         {
             using OpenSettlers.Domain;
@@ -46,7 +46,7 @@ public sealed class FixtureJobTests
         }
         """;
 
-    private const string AdaptersEngine = """
+    const string AdaptersEngine = """
         using System;
         using System.Collections.Generic;
         [assembly: OpenSettlers.Simulation.CoreStateCodes(2, 3)]
@@ -72,7 +72,7 @@ public sealed class FixtureJobTests
         }
         """;
 
-    private const string MapViewEngine = """
+    const string MapViewEngine = """
         namespace OpenSettlers.MapView
         {
             using OpenSettlers.Domain;
@@ -88,7 +88,7 @@ public sealed class FixtureJobTests
 
     // The fixture job, as the files a developer adds, each in the layer it belongs to: its job record and data, its rules, its tables
     // (which read its data) and names, and its two looks.
-    private const string FixtureDomain = """
+    const string FixtureDomain = """
         using System;
         using System.Collections.Generic;
         namespace OpenSettlers.Domain;
@@ -101,12 +101,12 @@ public sealed class FixtureJobTests
         }
         """;
 
-    private const string FixtureApplication = """
+    const string FixtureApplication = """
         namespace OpenSettlers.Simulation;
         public sealed class FixtureRules(JobParts parts) : JobRules<OpenSettlers.Domain.Fixture>(parts);
         """;
 
-    private const string FixtureAdapters = """
+    const string FixtureAdapters = """
         using System.Collections.Generic;
         using OpenSettlers.Domain;
         namespace OpenSettlers.Simulation;
@@ -119,14 +119,14 @@ public sealed class FixtureJobTests
         }
         """;
 
-    private const string FixtureMapView = """
+    const string FixtureMapView = """
         namespace OpenSettlers.MapView;
         using OpenSettlers.Domain;
         public sealed class FixtureLook(RuleTables tables) : HistoryEditionLook<Fixture>;
         public sealed class FixtureKey() : OpenSettlersLook<Fixture>("fixture");
         """;
 
-    private static readonly MetadataReference[] References =
+    static readonly MetadataReference[] References =
     [
         .. ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
@@ -135,9 +135,9 @@ public sealed class FixtureJobTests
     ];
 
     // One layer: the generated text, the compilation with the generated files, and the diagnostics of the generators.
-    private sealed record Layer(string Text, Compilation Output, int Diagnostics);
+    sealed record Layer(string Text, Compilation Output, int Diagnostics);
 
-    private static Layer Run(string name, string engine, string? fixture, params Compilation[] below)
+    static Layer Run(string name, string engine, string? fixture, params Compilation[] below)
     {
         var compilation = CSharpCompilation.Create(
             name,
@@ -160,7 +160,7 @@ public sealed class FixtureJobTests
     }
 
     // The four layers, each compiled on the Domain's output, with or without the fixture's files.
-    private static (Layer Domain, Layer Application, Layer Adapters, Layer MapView) Build(bool withFixture)
+    static (Layer Domain, Layer Application, Layer Adapters, Layer MapView) Build(bool withFixture)
     {
         var domain = Run("Domain", DomainEngine, withFixture ? FixtureDomain : null);
 

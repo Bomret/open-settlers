@@ -42,20 +42,20 @@ public sealed class SettlerFigureTables
     /// <summary>The sprite entry of the first colour overlay; the figures lie below it.</summary>
     public const int OverlayBase = 2500;
 
-    private const int SecondBase = 3150;
+    const int SecondBase = 3150;
 
     // The palette index of the first player's colour, and the step between players (0x406610).
-    private const int ColourBase = 0x40;
-    private const int ColourStep = 4;
+    const int ColourBase = 0x40;
+    const int ColourStep = 4;
 
     // The node's lake mark picks the fixed figure word, and its road directions the offsets (0x44d77e).
-    private const int FixedFigureWord = 0x203;
+    const int FixedFigureWord = 0x203;
 
-    private readonly short[] _bases;
-    private readonly short[] _offsets;
-    private readonly byte[] _data;
-    private readonly Dictionary<Job, HistoryEditionLook> _looks;
-    private readonly IdleCarrierTables? _idle;
+    readonly short[] _bases;
+    readonly short[] _offsets;
+    readonly byte[] _data;
+    readonly Dictionary<Job, HistoryEditionLook> _looks;
+    readonly IdleCarrierTables? _idle;
 
     // The looks the History Edition source holds read the job data of the tables (the registry is generated from the look modules).
     // The figure bases, offsets, and idle tables are given apart from the tables for a test that draws with part of them.
@@ -147,7 +147,7 @@ public sealed class SettlerFigureTables
     // The part of a figure word: the figure, its colour overlay filled with the colour, or the second figure where the base has
     // one, with the figure entry whose header shifts it (-1 for none: only the second figure is shifted). The high byte of the
     // word picks the pair of bases, the low byte the pair of offsets (0x44fff3). None where either lies outside the tables.
-    private SettlerPick? PickOf(int word, SettlerPart part, int colour, int dx, int dy)
+    SettlerPick? PickOf(int word, SettlerPart part, int colour, int dx, int dy)
     {
         var row = (word >> 8) & 0xff;
         var figure = word & 0xff;

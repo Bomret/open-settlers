@@ -20,9 +20,9 @@ namespace OpenSettlers.Generators;
 [Generator]
 public sealed class JobTablesGenerator : IIncrementalGenerator
 {
-    private const string TablesMetadataName = "OpenSettlers.Simulation.JobTables`1";
+    const string TablesMetadataName = "OpenSettlers.Simulation.JobTables`1";
 
-    private static readonly DiagnosticDescriptor NoConstructor = new(
+    static readonly DiagnosticDescriptor NoConstructor = new(
         "TAB001",
         "A job tables module has no constructor",
         "The job tables module '{0}' has no accessible parameterless constructor",
@@ -31,7 +31,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         true
     );
 
-    private static readonly DiagnosticDescriptor SecondModule = new(
+    static readonly DiagnosticDescriptor SecondModule = new(
         "TAB002",
         "A job has two tables modules",
         "The job tables modules '{0}' and '{1}' are both for the job '{2}'",
@@ -40,7 +40,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         true
     );
 
-    private static readonly DiagnosticDescriptor SharedJobName = new(
+    static readonly DiagnosticDescriptor SharedJobName = new(
         "TAB003",
         "Two job tables modules name one job",
         "The job tables modules '{0}' and '{1}' both name the job '{2}'",
@@ -49,7 +49,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         true
     );
 
-    private static readonly DiagnosticDescriptor SharedStateName = new(
+    static readonly DiagnosticDescriptor SharedStateName = new(
         "TAB004",
         "Two job tables modules name one state",
         "The job tables modules '{0}' and '{1}' both name the state {2}",
@@ -58,7 +58,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         true
     );
 
-    private static readonly DiagnosticDescriptor StateNamedTwice = new(
+    static readonly DiagnosticDescriptor StateNamedTwice = new(
         "TAB005",
         "A job tables module names one state twice",
         "The job tables module '{0}' names the state {1} twice",
@@ -67,7 +67,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         true
     );
 
-    private static readonly DiagnosticDescriptor CoreState = new(
+    static readonly DiagnosticDescriptor CoreState = new(
         "TAB006",
         "A job tables module names a state of the core",
         "The job tables module '{0}' names the state {1}, which the name table names itself",
@@ -76,7 +76,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         true
     );
 
-    private static readonly DiagnosticDescriptor GenericModule = new(
+    static readonly DiagnosticDescriptor GenericModule = new(
         "TAB007",
         "A job tables module is generic",
         "The job tables module '{0}' is generic, or nested in a generic type, which the registry cannot build",
@@ -85,7 +85,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         true
     );
 
-    private static readonly DiagnosticDescriptor UnreachableModule = new(
+    static readonly DiagnosticDescriptor UnreachableModule = new(
         "TAB008",
         "A job tables module is not reachable from the registry",
         "The job tables module '{0}' is private or protected, or nested in a type that is, so the registry cannot build it",
@@ -124,7 +124,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         );
     }
 
-    private static Module? Describe(GeneratorSyntaxContext syntax, System.Threading.CancellationToken token)
+    static Module? Describe(GeneratorSyntaxContext syntax, System.Threading.CancellationToken token)
     {
         var declaration = (ClassDeclarationSyntax)syntax.Node;
         var tables = syntax.SemanticModel.Compilation.GetTypeByMetadataName(TablesMetadataName);
@@ -175,7 +175,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         );
     }
 
-    private static IEnumerable<AttributeData> Attributes(INamedTypeSymbol type, string name, INamedTypeSymbol tables) =>
+    static IEnumerable<AttributeData> Attributes(INamedTypeSymbol type, string name, INamedTypeSymbol tables) =>
         type.GetAttributes()
             .Where(attribute =>
                 attribute.AttributeClass is { } attributeClass
@@ -184,13 +184,13 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
             );
 
     // The name and the evidence of an attribute: its two arguments from the index <paramref name="first"/>.
-    private static Text Name(AttributeData attribute, int first) =>
+    static Text Name(AttributeData attribute, int first) =>
         new(
             (string)attribute.ConstructorArguments[first].Value!,
             (string)attribute.ConstructorArguments[first + 1].Value!
         );
 
-    private static void Generate(SourceProductionContext output, ImmutableArray<Module> found, int[] coreStates)
+    static void Generate(SourceProductionContext output, ImmutableArray<Module> found, int[] coreStates)
     {
         if (found.Length == 0)
         {
@@ -298,7 +298,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         output.AddSource("JobTablesRegistry.g.cs", SourceText.From(Write(found[0].Namespace, kept), Encoding.UTF8));
     }
 
-    private static string Write(string ns, List<Module> modules)
+    static string Write(string ns, List<Module> modules)
     {
         var text = new StringBuilder();
         text.AppendLine("// <auto-generated/>");
@@ -353,16 +353,16 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         return text.ToString();
     }
 
-    private static string Literal(string value) => SymbolDisplay.FormatLiteral(value, true);
+    static string Literal(string value) => SymbolDisplay.FormatLiteral(value, true);
 
     /// <summary>A name with its evidence.</summary>
-    private sealed record Text(string Name, string Evidence);
+    sealed record Text(string Name, string Evidence);
 
     /// <summary>A state the module names.</summary>
-    private sealed record Named(int Code, Text Text);
+    sealed record Named(int Code, Text Text);
 
     /// <summary>A list that compares by its items, so that a model holding it compares equal across compilations.</summary>
-    private sealed class Sequence<T>(T[] items) : System.IEquatable<Sequence<T>>
+    sealed class Sequence<T>(T[] items) : System.IEquatable<Sequence<T>>
     {
         public T[] Items { get; } = items;
 
@@ -379,7 +379,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
     /// it or a type it is nested in is generic, whether it or a type it is nested in is private or protected, its names, and where it
     /// stands.
     /// </summary>
-    private sealed record Module(
+    sealed record Module(
         string Name,
         string Job,
         string Namespace,

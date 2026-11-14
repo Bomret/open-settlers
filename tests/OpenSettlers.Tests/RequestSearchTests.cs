@@ -11,11 +11,11 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RequestSearchTests
 {
-    private const int East = 0;
-    private const int West = 3;
+    const int East = 0;
+    const int West = 3;
 
     // Flags 0 (the castle's), 1, 2, and 3 in a line of roads that hold a carrier; the flags 2 and 3 are the flags of building sites.
-    private static (BehaviourBench Bench, GoodsTransport Goods, Building Near, Building Far) Line(
+    static (BehaviourBench Bench, GoodsTransport Goods, Building Near, Building Far) Line(
         byte nearRank,
         byte farRank,
         bool carriers = true
@@ -37,7 +37,7 @@ public sealed class RequestSearchTests
         return (bench, goods, near, far);
     }
 
-    private static Building Site(BehaviourBench bench, int flag, byte rank)
+    static Building Site(BehaviourBench bench, int flag, byte rank)
     {
         bench.Flags[flag].SetRequest(RequestWord.First, new Request(ConstructionTables.PlankClass, rank));
         bench.Flags[flag].SetRequest(RequestWord.Second, new Request(ConstructionTables.StoneClass, 0));
@@ -56,7 +56,7 @@ public sealed class RequestSearchTests
         return site;
     }
 
-    private static void Turn(GoodsTransport goods, int flag) => goods.Turn(flag);
+    static void Turn(GoodsTransport goods, int flag) => goods.Turn(flag);
 
     [TestMethod]
     public void APlankGoesToTheFlagThatAsksForPlanksAheadOfStorage()

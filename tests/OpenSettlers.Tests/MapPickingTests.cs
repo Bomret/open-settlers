@@ -10,21 +10,21 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class MapPickingTests
 {
-    private const double ViewWidth = 800;
-    private const double ViewHeight = 600;
+    const double ViewWidth = 800;
+    const double ViewHeight = 600;
 
     // A map generated in code from made-up rule tables (no install). Picking and aiming read only the map's size and
     // heights, which the seed gives.
-    private static Map? _map;
+    static Map? _map;
 
-    private static Map Map => _map ??= MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
+    static Map Map => _map ??= MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
 
     public static IEnumerable<object[]> Scales =>
         new[] { 0.25, 0.8, 1, 2.5, 4 }.Select(scale => new object[] { scale });
 
     // The screen position at which the view draws a node of the copy with this offset: the node's drawn point, lifted
     // by its height, moved by the copy's offset, relative to the camera, scaled, around the middle of the view.
-    private static (double X, double Y) Screen(
+    static (double X, double Y) Screen(
         int column,
         int row,
         (int X, int Y) copy,
@@ -37,7 +37,7 @@ public sealed class MapPickingTests
         return ((x + copy.X - camera.X) * scale + ViewWidth / 2, (y + copy.Y - camera.Y) * scale + ViewHeight / 2);
     }
 
-    private static (int X, int Y) DrawnPoint(int column, int row)
+    static (int X, int Y) DrawnPoint(int column, int row)
     {
         var (x, y) = Camera.NodePosition(column, row);
         var height = Map.At(column, row).Height;
@@ -45,10 +45,10 @@ public sealed class MapPickingTests
         return (x, y - height * TerrainTriangles.HeightStep);
     }
 
-    private static (int X, int Y) Pick((double X, double Y) camera, double scale, (double X, double Y) screen) =>
+    static (int X, int Y) Pick((double X, double Y) camera, double scale, (double X, double Y) screen) =>
         MapPicking.Pick(Map, camera.X, camera.Y, scale, ViewWidth, ViewHeight, screen.X, screen.Y);
 
-    private static void AssertPicksANodeDrawnAt(
+    static void AssertPicksANodeDrawnAt(
         int column,
         int row,
         (int X, int Y) copy,
@@ -148,15 +148,10 @@ public sealed class MapPickingTests
         Assert.AreEqual(DrawnPoint(12, 14), DrawnPoint(picked.X, picked.Y));
     }
 
-    private static string? Aim(
-        (double X, double Y) camera,
-        double scale,
-        int column,
-        int row,
-        out (double X, double Y) at
-    ) => Aim(camera, scale, ViewWidth, ViewHeight, column, row, out at);
+    static string? Aim((double X, double Y) camera, double scale, int column, int row, out (double X, double Y) at) =>
+        Aim(camera, scale, ViewWidth, ViewHeight, column, row, out at);
 
-    private static string? Aim(
+    static string? Aim(
         (double X, double Y) camera,
         double scale,
         double width,
@@ -325,7 +320,7 @@ public sealed class MapPickingTests
     }
 
     // A flag's box of 16 by 19 pixels stands on its node: its left edge 2 west of the node, its top 19 above it.
-    private static readonly MapPicking.PickBox FlagImage = new(16, 19, -2, -19);
+    static readonly MapPicking.PickBox FlagImage = new(16, 19, -2, -19);
 
     [TestMethod]
     [DynamicData(nameof(Scales))]

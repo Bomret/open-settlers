@@ -22,23 +22,17 @@ public sealed class SettlerSprites
     /// </summary>
     public const int ShadowEntry = 4;
 
-    private readonly Archive _archive;
-    private readonly Palette _palette;
-    private readonly SettlerFigureTables _tables;
-    private readonly ObjectImage? _shadow;
-    private readonly Dictionary<int, (ObjectImage Image, int First, int Second)?> _sprites = [];
-    private readonly Dictionary<(int Entry, int Colour), ObjectImage?> _filled = [];
-    private readonly Dictionary<(int Entry, int Colour, int X, int Y), ObjectImage?> _anchored = [];
-    private readonly Dictionary<(int X, int Y), ObjectImage?> _shadows = [];
-    private readonly Dictionary<(SettlerPick Pick, bool Shadowed), ObjectDrawing?> _drawings = [];
+    readonly Archive _archive;
+    readonly Palette _palette;
+    readonly SettlerFigureTables _tables;
+    readonly ObjectImage? _shadow;
+    readonly Dictionary<int, (ObjectImage Image, int First, int Second)?> _sprites = [];
+    readonly Dictionary<(int Entry, int Colour), ObjectImage?> _filled = [];
+    readonly Dictionary<(int Entry, int Colour, int X, int Y), ObjectImage?> _anchored = [];
+    readonly Dictionary<(int X, int Y), ObjectImage?> _shadows = [];
+    readonly Dictionary<(SettlerPick Pick, bool Shadowed), ObjectDrawing?> _drawings = [];
 
-    private SettlerSprites(
-        Archive archive,
-        Palette palette,
-        SettlerFigureTables tables,
-        ObjectImage? shadow,
-        StepOffsets steps
-    )
+    SettlerSprites(Archive archive, Palette palette, SettlerFigureTables tables, ObjectImage? shadow, StepOffsets steps)
     {
         Steps = steps;
         _archive = archive;
@@ -103,7 +97,7 @@ public sealed class SettlerSprites
         return cached;
     }
 
-    private ObjectDrawing? Make(SettlerPick pick, bool shadowed)
+    ObjectDrawing? Make(SettlerPick pick, bool shadowed)
     {
         // A second figure moves by the header bytes 0 and 1 of its figure, read as signed bytes (0x4066d2, 0x4066e4); a figure
         // that does not read shifts nothing.
@@ -119,7 +113,7 @@ public sealed class SettlerSprites
 
     // The image of an entry filled with a colour (-1 for none), hung moved by x and y; one instance for each, so that the
     // picks that land on the same image share one layer of the view's array texture (ImageLayers keys an image by reference).
-    private ObjectImage? Anchored(int entry, int colour, int x, int y)
+    ObjectImage? Anchored(int entry, int colour, int x, int y)
     {
         if (!_anchored.TryGetValue((entry, colour, x, y), out var cached))
         {
@@ -131,7 +125,7 @@ public sealed class SettlerSprites
     }
 
     // The shadow mask hung moved by x and y; one instance for each, for the same reason.
-    private ObjectImage? Shadow(int x, int y)
+    ObjectImage? Shadow(int x, int y)
     {
         if (_shadow is null)
         {
@@ -147,10 +141,10 @@ public sealed class SettlerSprites
         return cached;
     }
 
-    private static ObjectImage Moved(ObjectImage image, int x, int y) =>
+    static ObjectImage Moved(ObjectImage image, int x, int y) =>
         x == 0 && y == 0 ? image : image with { OffsetX = image.OffsetX + x, OffsetY = image.OffsetY + y };
 
-    private ObjectImage? Filled(int entry, int colour)
+    ObjectImage? Filled(int entry, int colour)
     {
         if (colour < 0)
         {
@@ -168,7 +162,7 @@ public sealed class SettlerSprites
 
     // The sprite of an entry with its header bytes 0 and 1, or null where the archive holds none or it does not read. A
     // sequence names figures for every job, and some of the entries it reaches are no sprites.
-    private (ObjectImage Image, int First, int Second)? Loaded(int entry)
+    (ObjectImage Image, int First, int Second)? Loaded(int entry)
     {
         if (!_sprites.TryGetValue(entry, out var cached))
         {

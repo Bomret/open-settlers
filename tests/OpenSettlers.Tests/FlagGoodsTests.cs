@@ -41,17 +41,13 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class FlagGoodsTests
 {
-    private const string Fixture = "flag-goods.txt";
+    const string Fixture = "flag-goods.txt";
 
-    private sealed record Scenario(
-        string Name,
-        string Command,
-        List<(int Pass, Dictionary<string, string> Values)> Lines
-    );
+    sealed record Scenario(string Name, string Command, List<(int Pass, Dictionary<string, string> Values)> Lines);
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -72,11 +68,11 @@ public sealed class FlagGoodsTests
         return scenarios;
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     // A flag's goods fields in the order of the fixture's f fields.
-    private static string Fields(Game game, int flag) =>
+    static string Fields(Game game, int flag) =>
         Convert.ToHexString([
             .. new[] { FlagEncoder.GoodsByte(game.Flags[flag]), FlagEncoder.Status(game.Flags[flag]) },
             .. game.Flags[flag].Places.Select(FlagEncoder.GoodByte),
@@ -84,11 +80,11 @@ public sealed class FlagGoodsTests
             .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[flag].Side(direction))),
         ]);
 
-    private static string Expected(string fields) =>
+    static string Expected(string fields) =>
         string.Concat((Convert.ToByte(fields[..2], 16) & 0x80).ToString("X2"), fields[2..]);
 
     // The carrier's 16 bytes as the original's item holds them while it waits and the turn it fetches a good.
-    private static string Carrier(Settler s, int width)
+    static string Carrier(Settler s, int width)
     {
         var raw = SettlerEncoder.Fields(s);
         var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
@@ -216,7 +212,7 @@ public sealed class FlagGoodsTests
     // in state 3 while the carrier carries a good (its byte 11 is not 0), and else the flag it walks to or what it held last,
     // which the engine keeps in its own numbering and nothing reads: only the first three are compared. The fixture's bytes
     // say which: the state at 10 and the good at 11.
-    private static string Masked(string expected, string bytes)
+    static string Masked(string expected, string bytes)
     {
         var state = Convert.ToByte(expected[20..22], 16);
         var carrying = state == 3 && Convert.ToByte(expected[22..24], 16) != 0;

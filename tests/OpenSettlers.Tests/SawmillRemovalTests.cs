@@ -12,7 +12,7 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class SawmillRemovalTests
 {
-    private const string Fixture = "saw-removals.txt";
+    const string Fixture = "saw-removals.txt";
 
     public static IEnumerable<object[]> Scenarios =>
         RemovalTests.Load(Fixture).Select(scenario => new object[] { scenario.Name });

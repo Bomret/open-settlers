@@ -20,15 +20,15 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class WorkerWalkTests
 {
-    private const string Fixture = "worker-walks.txt";
-    private const int WorkerSlot = 10;
-    private const int HutSlot = 1;
+    const string Fixture = "worker-walks.txt";
+    const int WorkerSlot = 10;
+    const int HutSlot = 1;
 
-    private sealed record Scenario(string Name, string Command, List<(int Pass, string? Worker, string? Hut)> Lines);
+    sealed record Scenario(string Name, string Command, List<(int Pass, string? Worker, string? Hut)> Lines);
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -83,7 +83,7 @@ public sealed class WorkerWalkTests
         return Convert.ToHexString([.. bytes]);
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     [TestMethod]

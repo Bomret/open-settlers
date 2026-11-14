@@ -10,9 +10,9 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class HomeWalkHistoryTests
 {
-    private const int Sent = 12;
+    const int Sent = 12;
 
-    private static Game SentHome(Cause? carried)
+    static Game SentHome(Cause? carried)
     {
         MapSize.TryFromValue(1, out var size, out _);
         var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(0x1234, 0x5678, 0x9ABC), size!);
@@ -41,7 +41,7 @@ public sealed class HomeWalkHistoryTests
         return game;
     }
 
-    private static ThingEvent[] Walk(Game game) =>
+    static ThingEvent[] Walk(Game game) =>
         [.. game.History.EventsOf(game.History.SettlerId(Sent)).Where(e => e.Type != EventType.PlaceCastle)];
 
     [TestMethod]

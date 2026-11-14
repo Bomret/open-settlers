@@ -24,9 +24,9 @@ namespace OpenSettlers.MapView;
 public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
 {
     // The record builder lifts a settler 2 pixels above the node's height (0x43f537: the height times 4, then 2 more).
-    private const int SettlerLift = 2;
+    const int SettlerLift = 2;
 
-    private static readonly SettlerPart[] Parts = [SettlerPart.Figure, SettlerPart.Overlay, SettlerPart.SecondFigure];
+    static readonly SettlerPart[] Parts = [SettlerPart.Figure, SettlerPart.Overlay, SettlerPart.SecondFigure];
 
     // The settlers that are drawn are those in an activity that says so (Activity.IsDrawn), the same ones that take the turns of
     // every pass: among them those that walk the roads (state 2), wait out a step (5), walk along a road as a carrier does (3), hand
@@ -118,7 +118,7 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
     // The records the tile pass makes for the nodes marked by a waiting carrier (0x44d77e). The position is the node lifted by
     // 4 times its height (no lift of 2, unlike 0x43f537); the source picks the figure by the node and the clock, and moves it
     // by the offsets of the node's road directions.
-    private static IEnumerable<(int Order, int Y, int X, int Row, List<SettlerDraw> Terms)> WaitingCarriers(
+    static IEnumerable<(int Order, int Y, int X, int Row, List<SettlerDraw> Terms)> WaitingCarriers(
         Map map,
         IReadOnlyList<Settler> settlers,
         ushort clock

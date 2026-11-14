@@ -14,7 +14,7 @@ namespace OpenSettlers.Tests;
 public sealed class GameThingTests
 {
     // Made-up tables as HutTests has them: every object class is 0 except the flag's, code 1, which is 3.
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -32,7 +32,7 @@ public sealed class GameThingTests
         );
     }
 
-    private static Game World()
+    static Game World()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < map.Count; index++)
@@ -60,13 +60,13 @@ public sealed class GameThingTests
         return game;
     }
 
-    private static void Do(Game game, int kind, int x, int y, int[]? directions = null)
+    static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
         game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
         game.Tick();
     }
 
-    private static List<string> Lines(Game game) =>
+    static List<string> Lines(Game game) =>
         [.. Thing.Of(game, new NameTable(TestProgram.Made())).Select(thing => thing.Line())];
 
     [TestMethod]
@@ -268,7 +268,7 @@ public sealed class GameThingTests
     }
 
     // Runs the checks of script over the things the game view lists of game; the problems they report, one a line.
-    private static string Checks(Game game, string script)
+    static string Checks(Game game, string script)
     {
         var things = Thing.Listed(true, game, game.Map, new NameTable(TestProgram.Made()));
         var state = new PlayState(0, 0, 1f, "1", 1, Ticks: game.TickCount, Things: things);

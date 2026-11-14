@@ -16,7 +16,7 @@ public sealed class FlagTable : IReadOnlyList<Flag>
     /// </summary>
     public const int Capacity = 256;
 
-    private readonly List<Flag> _flags = [];
+    readonly List<Flag> _flags = [];
 
     /// <summary>The number of slots, free ones before the last flag included.</summary>
     public int Count => _flags.Count;

@@ -17,7 +17,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SiteDrawTests
 {
-    private const string Fixture = "site-draws.txt";
+    const string Fixture = "site-draws.txt";
 
     [TestMethod]
     [DataRow("forester-site")]

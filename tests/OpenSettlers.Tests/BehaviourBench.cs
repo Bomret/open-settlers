@@ -7,7 +7,7 @@ namespace OpenSettlers.Tests;
 
 // The pieces a settler behaviour is built from, made by hand: the map, the item tables, the movement, a history, and a fixed
 // sequence of random draws. A test builds a behaviour from them and runs its turns without a castle or a game.
-internal sealed class BehaviourBench
+sealed class BehaviourBench
 {
     public BehaviourBench(params ushort[] draws)
         : this((byte[]?)null, draws) { }
@@ -86,9 +86,9 @@ internal sealed class BehaviourBench
     }
 }
 
-internal sealed class QueuedDraws(ushort[] draws) : IRandomDraws
+sealed class QueuedDraws(ushort[] draws) : IRandomDraws
 {
-    private readonly Queue<ushort> _draws = new(draws);
+    readonly Queue<ushort> _draws = new(draws);
 
     public int Taken { get; private set; }
 
@@ -104,7 +104,7 @@ internal sealed class QueuedDraws(ushort[] draws) : IRandomDraws
     }
 }
 
-internal sealed class NoSnapshots : IThingSnapshots
+sealed class NoSnapshots : IThingSnapshots
 {
     public ThingState Building(int slot) => new([]);
 

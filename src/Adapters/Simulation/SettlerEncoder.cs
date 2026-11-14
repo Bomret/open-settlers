@@ -17,14 +17,14 @@ public readonly record struct SettlerFields(int State, int Mode, int Target, int
 /// </summary>
 public static class SettlerEncoder
 {
-    private const int StorageMode = 0xfe;
-    private const int BuildingMode = 0xff;
-    private const int WayBackMark = 0x80;
-    private const int BlowingMode = 0xff;
-    private const int SearchingMode = 1;
-    private const int SecondFigureBit = 0x80;
-    private const int WalksState = 2;
-    private const int PutsDownState = 0xd;
+    const int StorageMode = 0xfe;
+    const int BuildingMode = 0xff;
+    const int WayBackMark = 0x80;
+    const int BlowingMode = 0xff;
+    const int SearchingMode = 1;
+    const int SecondFigureBit = 0x80;
+    const int WalksState = 2;
+    const int PutsDownState = 0xd;
 
     /// <summary>The original's fields for the settler.</summary>
     public static SettlerFields Fields(Settler settler)
@@ -55,9 +55,9 @@ public static class SettlerEncoder
     /// <summary>The word the original's settler item holds for a good's destination flag: the flag's slot plus one, 0 for none.</summary>
     internal static int DestinationWord(int? destination) => destination is { } slot ? slot + 1 : 0;
 
-    private readonly record struct Raw(int State, int Mode, int Target, int Heading, int Next);
+    readonly record struct Raw(int State, int Mode, int Target, int Heading, int Next);
 
-    private static Raw Of(Activity activity)
+    static Raw Of(Activity activity)
     {
         var r = activity.Residue;
 
@@ -132,7 +132,7 @@ public static class SettlerEncoder
         };
     }
 
-    private static int ModeOf(Errand errand) =>
+    static int ModeOf(Errand errand) =>
         errand switch
         {
             ToBuilding => BuildingMode,
@@ -140,11 +140,11 @@ public static class SettlerEncoder
             _ => StorageMode,
         };
 
-    private static int TargetOf(Errand errand) => errand.Flag;
+    static int TargetOf(Errand errand) => errand.Flag;
 
     // A free walk: the vector's east steps in the mode and its south steps in the low byte of the target, the way-back mark in
     // the high byte of the target and the way back's south steps (or what the walk is for) in the heading.
-    private static Raw OfTrip(int state, Trip trip)
+    static Raw OfTrip(int state, Trip trip)
     {
         var (mark, heading) = trip.Purpose switch
         {

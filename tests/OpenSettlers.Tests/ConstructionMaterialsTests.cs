@@ -19,7 +19,7 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class ConstructionMaterialsTests
 {
-    private const string Fixture = "construction-materials.txt";
+    const string Fixture = "construction-materials.txt";
 
     [TestMethod]
     [DataRow("two-sites")]
@@ -88,7 +88,7 @@ public sealed class ConstructionMaterialsTests
     }
 
     // b@x,y,T places the site of the type T, l@x,y,H levels the node and its six neighbours to the height H (the digger's work).
-    private static void Click(Game game, char kind, int[] node)
+    static void Click(Game game, char kind, int[] node)
     {
         if (kind == 'b')
         {
@@ -114,7 +114,7 @@ public sealed class ConstructionMaterialsTests
         }
     }
 
-    private static void Check(
+    static void Check(
         Game game,
         string when,
         Dictionary<int, string> flags,
@@ -192,8 +192,8 @@ public sealed class ConstructionMaterialsTests
     }
 
     // The emulator's class byte of a request word: bit k set asks for the class k.
-    private static byte ClassByte(Request request) => request.Asks is { } asked ? (byte)(1 << asked.Class) : (byte)0;
+    static byte ClassByte(Request request) => request.Asks is { } asked ? (byte)(1 << asked.Class) : (byte)0;
 
     // The goods a fill byte holds: the high nibble is on site, the low nibble on the way.
-    private static int Held(int fill) => (fill >> 4) + (fill & 0xf);
+    static int Held(int fill) => (fill >> 4) + (fill & 0xf);
 }

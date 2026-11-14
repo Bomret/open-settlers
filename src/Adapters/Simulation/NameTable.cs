@@ -18,7 +18,7 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class NameTable
 {
-    private readonly RuleTables tables;
+    readonly RuleTables tables;
 
     /// <summary>The names of the object codes as the class table <paramref name="tables"/> reads them.</summary>
     public NameTable(RuleTables tables) => this.tables = tables;
@@ -47,15 +47,15 @@ public sealed class NameTable
     /// <summary>The evidence of a state whose name rests on the code of the Activity record alone.</summary>
     internal const string StateEvidence = "the code of the Activity record (src/Domain/Activity.cs)";
 
-    private const string TreeEvidence =
+    const string TreeEvidence =
         "the program compares a node's code with 8 and 0x18 (0x438c11, 0x437f8f); docs/rules/woodcutting.md (codes 8 to 0x17); class 1";
-    private const string StoneEvidence =
+    const string StoneEvidence =
         "docs/rules/map-object-codes.md (codes 0x48 to 0x4f are stone heaps); named only where class 2 of RuleTables.Classes agrees (docs/rules/build-sites.md)";
 
     /// <summary>Every entry of the table. The <c>stone</c> entries hold only where the class table says class 2.</summary>
     internal static IReadOnlyList<Entry> Entries { get; } = Build();
 
-    private static readonly Dictionary<(CodeKind, int), string> Names = Entries.ToDictionary(
+    static readonly Dictionary<(CodeKind, int), string> Names = Entries.ToDictionary(
         entry => (entry.Kind, entry.Code),
         entry => entry.Name
     );
@@ -93,9 +93,9 @@ public sealed class NameTable
     public static bool IsObjectName(string name) =>
         Entries.Any(entry => entry.Kind == CodeKind.Object && entry.Name == name);
 
-    private static string? Find(CodeKind kind, int code) => Names.GetValueOrDefault((kind, code));
+    static string? Find(CodeKind kind, int code) => Names.GetValueOrDefault((kind, code));
 
-    private static List<Entry> Build()
+    static List<Entry> Build()
     {
         var entries = new List<Entry>();
 

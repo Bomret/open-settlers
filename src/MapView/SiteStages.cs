@@ -93,7 +93,7 @@ public static class SiteStages
         return image is null && shadow is null ? null : new ObjectDrawing(image, shadow);
     }
 
-    private static ObjectImage? Join(ObjectImage? below, ObjectImage? above) =>
+    static ObjectImage? Join(ObjectImage? below, ObjectImage? above) =>
         below is null ? above
         : above is null ? below
         : below.Over(above);
@@ -107,7 +107,7 @@ public static class SiteStages
 /// <param name="layer">The source's art for a layer of the site of a type, or null where it has none.</param>
 public sealed class SiteDrawings(Func<BuildingType, SiteLayer, ObjectDrawing?> layer)
 {
-    private readonly Dictionary<(BuildingType Type, ushort Progress), ObjectDrawing?> _made = [];
+    readonly Dictionary<(BuildingType Type, ushort Progress), ObjectDrawing?> _made = [];
 
     /// <summary>The drawing of the site of <paramref name="type"/> at <paramref name="progress"/>, or null where no layer has art.</summary>
     public ObjectDrawing? Of(BuildingType type, ushort progress)

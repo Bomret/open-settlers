@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ThingHistoryRemovalTests
 {
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -28,7 +28,7 @@ public sealed class ThingHistoryRemovalTests
         );
     }
 
-    private static Game NewGame()
+    static Game NewGame()
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         for (var index = 0; index < map.Count; index++)
@@ -42,13 +42,13 @@ public sealed class ThingHistoryRemovalTests
         return GameFactory.Create(Made(), map);
     }
 
-    private static void Do(Game game, int kind, int x, int y, int[]? directions = null)
+    static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
         game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
         game.Tick();
     }
 
-    private static Game World()
+    static Game World()
     {
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
@@ -69,7 +69,7 @@ public sealed class ThingHistoryRemovalTests
         return game;
     }
 
-    private static string Text(Game game) =>
+    static string Text(Game game) =>
         string.Join("\n", game.History.Events.All.Select(e => $"{e.Tick} {e.Type} {e.Thing} {e.Cause} {e.Other}"));
 
     [TestMethod]
@@ -175,7 +175,7 @@ public sealed class ThingHistoryRemovalTests
         }
     }
 
-    private static readonly string[] SettlerFields =
+    static readonly string[] SettlerFields =
     [
         "job",
         "state",

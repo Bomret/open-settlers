@@ -5,7 +5,7 @@ namespace OpenSettlers.Tests;
 // A finished building that stands, the way a layout's finished-building entry sets one up: no command gives a finished
 // building (docs/rules/build-sites.md), so the tests of the rules that act on a finished hut place it through the seam the
 // layout uses. The woodcutter's hut is the default.
-internal static class Huts
+static class Huts
 {
     /// <summary>Places a finished woodcutter's hut on the node and tells whether the placement allowed it.</summary>
     public static bool Place(Game game, int x, int y) => Place(game, x, y, BuildingType.Woodcutter);

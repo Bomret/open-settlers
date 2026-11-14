@@ -77,20 +77,20 @@ public sealed class RuleTables
     /// <summary>The number of candidates of a row of the free walk's direction choice, and its width in the program.</summary>
     public const int WalkRowSize = 8;
 
-    private readonly ObjectClass[] _classes;
-    private readonly byte[] _goodKinds;
-    private readonly byte[] _roadCapacities;
-    private readonly byte[] _walkRows;
-    private readonly byte[] _transportPriorities;
-    private readonly byte[] _doorSpeeds;
-    private readonly ushort[] _scanWindows;
-    private readonly byte[] _buildingSizes;
-    private readonly byte[] _buildingNeeds;
-    private readonly GoodClass?[] _goodClasses;
-    private readonly DistributionStep[][] _distribution;
-    private readonly WorkerRequest?[] _workers;
-    private readonly ushort[] _materialOrder;
-    private readonly ushort[] _blowSteps;
+    readonly ObjectClass[] _classes;
+    readonly byte[] _goodKinds;
+    readonly byte[] _roadCapacities;
+    readonly byte[] _walkRows;
+    readonly byte[] _transportPriorities;
+    readonly byte[] _doorSpeeds;
+    readonly ushort[] _scanWindows;
+    readonly byte[] _buildingSizes;
+    readonly byte[] _buildingNeeds;
+    readonly GoodClass?[] _goodClasses;
+    readonly DistributionStep[][] _distribution;
+    readonly WorkerRequest?[] _workers;
+    readonly ushort[] _materialOrder;
+    readonly ushort[] _blowSteps;
 
     /// <summary>
     /// Creates tables from their contents. The tables of the settlers' walk (<paramref name="stepTimes"/>,
@@ -177,7 +177,7 @@ public sealed class RuleTables
         }
     }
 
-    private readonly Dictionary<(Job, Type), object> _jobData;
+    readonly Dictionary<(Job, Type), object> _jobData;
 
     /// <summary>
     /// The data of type <typeparamref name="T"/> that the job <paramref name="job"/> owns: the figure adds of its handler, or the

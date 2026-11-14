@@ -7,7 +7,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class WalkHomeBehaviorTests
 {
-    private static WalkHomeBehavior Behaviour(BehaviourBench bench, System.Func<int, int, int>? route = null) =>
+    static WalkHomeBehavior Behaviour(BehaviourBench bench, System.Func<int, int, int>? route = null) =>
         new(
             bench.Movement,
             bench.Buildings,
@@ -18,7 +18,7 @@ public sealed class WalkHomeBehaviorTests
             route ?? ((_, _) => -1)
         );
 
-    private static Settler Walker(int x, int y, Activity activity) => new(new Woodcutter(), 0, x, y, 0, activity);
+    static Settler Walker(int x, int y, Activity activity) => new(new Woodcutter(), 0, x, y, 0, activity);
 
     [TestMethod]
     public void ASettlerClaimsItsNodeWhenNoOtherSettlerStandsThere()

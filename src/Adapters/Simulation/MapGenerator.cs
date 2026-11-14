@@ -77,18 +77,18 @@ public static class MapGenerator
     /// <summary>The column and row offsets around a tile in rings: the tile itself, then rings of 6, 12, and on.</summary>
     internal static IReadOnlyList<(int Dx, int Dy)> SpiralOffsets => Spiral.Offsets;
 
-    private sealed class Generation
+    sealed class Generation
     {
         // MapGen_InitParams (0x421530) stores the water level and the lake radius.
-        private const int WaterLevel = 20;
-        private const int LakeRadius = 14;
+        const int WaterLevel = 20;
+        const int LakeRadius = 14;
 
         // The 15 object scatter passes (0x424175 to 0x4246f4), each the parameters it hands MapGen_ScatterObjects
         // (0x424755): clusters per patch count, the mask of the draw that picks a spiral offset, the terrain range
         // from low up to but not including high, the object code base and the mask of the draw added to it, and the
         // objects tried in a cluster. The original writes these as immediates in its code (from 0x4241e3), not as a
         // table.
-        private static readonly Scatter[] ScatterPasses =
+        static readonly Scatter[] ScatterPasses =
         [
             new(8, 0xff, 5, 7, 0x08, 0x0f, 10),
             new(1, 0x3f, 5, 7, 0x08, 0x07, 45),
@@ -110,9 +110,9 @@ public static class MapGenerator
         // The deposit passes in the order they run (MapGen_PlaceDeposits3, 2, 1, and 4): deposits per patch count
         // and resource type. All four place on terrain from 11 up to but not including 15. The original writes these as
         // immediates in its code (from 0x424a03), not as a table.
-        private static readonly Deposit[] DepositPasses = [new(9, 3), new(4, 2), new(2, 1), new(2, 4)];
+        static readonly Deposit[] DepositPasses = [new(9, 3), new(4, 2), new(2, 1), new(2, 4)];
 
-        private readonly record struct Scatter(
+        readonly record struct Scatter(
             int CountPerPatch,
             int IndexMask,
             int LowTerrain,
@@ -122,28 +122,28 @@ public static class MapGenerator
             int ClusterSize
         );
 
-        private readonly record struct Deposit(int CountPerPatch, int Type);
+        readonly record struct Deposit(int CountPerPatch, int Type);
 
         // The six neighbors of a tile in the order the passes visit them: east, south-east, south, west,
         // north-west, north (the offsets of the original's 0x04, 0x08, 0x0c, 0x10, 0x14, 0x18 steps).
-        private static readonly (int Dx, int Dy)[] Neighbors = [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
+        static readonly (int Dx, int Dy)[] Neighbors = [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
 
         // The directions of the six sides of a ring around a tile, and the tile after each side.
-        private static readonly (int Dx, int Dy)[] RingSides = [(0, 1), (-1, 0), (-1, -1), (0, -1), (1, 0), (1, 1)];
+        static readonly (int Dx, int Dy)[] RingSides = [(0, 1), (-1, 0), (-1, -1), (0, -1), (1, 0), (1, 1)];
 
-        private readonly RuleTables _tables;
-        private readonly MapSeed _seed;
-        private readonly MapPassObserver? _observer;
-        private readonly MapLayers _map;
-        private readonly int _width;
-        private readonly int _height;
-        private readonly byte[] _flags;
-        private readonly byte[] _heights;
-        private readonly byte[] _terrain;
-        private readonly byte[] _lake;
-        private readonly byte[] _objects;
-        private readonly byte[] _resource;
-        private RandomGenerator _generator;
+        readonly RuleTables _tables;
+        readonly MapSeed _seed;
+        readonly MapPassObserver? _observer;
+        readonly MapLayers _map;
+        readonly int _width;
+        readonly int _height;
+        readonly byte[] _flags;
+        readonly byte[] _heights;
+        readonly byte[] _terrain;
+        readonly byte[] _lake;
+        readonly byte[] _objects;
+        readonly byte[] _resource;
+        RandomGenerator _generator;
 
         public Generation(RuleTables tables, MapSeed seed, MapSize size, MapPassObserver? observer)
         {
@@ -223,25 +223,25 @@ public static class MapGenerator
             return _map;
         }
 
-        private void Report(MapPass pass) => _observer?.Invoke(pass, _map, _generator);
+        void Report(MapPass pass) => _observer?.Invoke(pass, _map, _generator);
 
         // One step of the generator; the draw is the new first word, which Rng_Step (0x466ade) leaves behind.
-        private ushort Draw()
+        ushort Draw()
         {
             _generator = _generator.Step();
 
             return _generator.W0;
         }
 
-        private int Tiles => _width * _height;
+        int Tiles => _width * _height;
 
         // The tile at a position; the map wraps at both edges.
-        private int At(int x, int y) => (y & (_height - 1)) * _width + (x & (_width - 1));
+        int At(int x, int y) => (y & (_height - 1)) * _width + (x & (_width - 1));
 
-        private int Move(int tile, int dx, int dy) => At(tile % _width + dx, tile / _width + dy);
+        int Move(int tile, int dx, int dy) => At(tile % _width + dx, tile / _width + dy);
 
         // MapGen_ClearMap (0x421d3a): zeroes the whole buffer.
-        private void ClearMap()
+        void ClearMap()
         {
             foreach (var layer in Enum.GetValues<MapLayer>())
             {
@@ -250,7 +250,7 @@ public static class MapGenerator
         }
 
         // MapGen_SeedHeights (0x421d71): one random height, at most 250, on every 16th column and row.
-        private void SeedHeights()
+        void SeedHeights()
         {
             for (var y = 0; y < _height; y += 16)
             {
@@ -265,7 +265,7 @@ public static class MapGenerator
         // MapGen_SubdivideHeights (0x421e75) with MapGen_DisplaceMidpoint (0x4220ec): midpoint subdivision from
         // a distance of 16 tiles down to 1. One draw sets the displacement for all four sweeps; each sweep
         // halves it.
-        private void SubdivideHeights()
+        void SubdivideHeights()
         {
             var first = Draw();
             var amplitude = (ushort)((first & 0x7f) + 0x80);
@@ -309,7 +309,7 @@ public static class MapGenerator
 
         // MapGen_LimitSlopes (0x42215a) with its two identical steps (0x42223b, 0x4222ad): repeats until no
         // neighbor to the south, south-east, and east differs by more than 32 from the tile.
-        private void LimitSlopes()
+        void LimitSlopes()
         {
             bool changed;
             do
@@ -347,7 +347,7 @@ public static class MapGenerator
 
         // MapGen_FillLakes (0x422a0e): floods each level up to the water level, then turns the lake marks into
         // water and shore.
-        private void FillLakes()
+        void FillLakes()
         {
             for (var level = 0; level <= WaterLevel; level++)
             {
@@ -382,7 +382,7 @@ public static class MapGenerator
         // MapGen_GrowLake (0x422bf3): marks a lake around a tile whose six neighbors are all at or below the
         // water level, and grows it ring by ring. The marks are 0xff for the lake, 0xfe for its edge, and after
         // the lake is done 0xfd and 0xfc. A tile that cannot start a lake gets height 0.
-        private void GrowLake(int middle)
+        void GrowLake(int middle)
         {
             if (Neighbors.Any(side => _heights[Move(middle, side.Dx, side.Dy)] > WaterLevel))
             {
@@ -427,7 +427,7 @@ public static class MapGenerator
 
         // MapGen_GrowLakeTile (0x423041): adds a tile to the lake when it touches the lake, and none of its
         // neighbors is above the water level.
-        private bool GrowLakeTile(int tile)
+        bool GrowLakeTile(int tile)
         {
             var touchesLake = false;
             foreach (var side in Neighbors)
@@ -466,7 +466,7 @@ public static class MapGenerator
 
         // The tiles of the ring at a distance of ring + 1 around a tile: six sides of ring + 1 tiles each,
         // starting east of the tile and turning at each corner.
-        private IEnumerable<int> RingTiles(int middle, int ring)
+        IEnumerable<int> RingTiles(int middle, int ring)
         {
             var tile = Move(middle, ring + 1, 0);
             foreach (var side in RingSides)
@@ -481,7 +481,7 @@ public static class MapGenerator
         }
 
         // MapGen_LowerToWaterLevel (0x42231f): lowers every height so that water is 0 and the shore is 1.
-        private void LowerToWaterLevel()
+        void LowerToWaterLevel()
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
@@ -491,7 +491,7 @@ public static class MapGenerator
 
         // MapGen_ClassifyTerrain (0x422857): the terrain of the two triangles of each tile from the sums of
         // their three corner heights. The upper triangle takes the high nibble.
-        private void ClassifyTerrain()
+        void ClassifyTerrain()
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
@@ -507,7 +507,7 @@ public static class MapGenerator
         }
 
         // MapGen_TerrainFromHeightSum (0x42297f).
-        private static int TerrainFromHeightSum(int sum) =>
+        static int TerrainFromHeightSum(int sum) =>
             sum switch
             {
                 < 0x003 => 0x0,
@@ -522,7 +522,7 @@ public static class MapGenerator
 
         // MapGen_KeepMainLand (0x4223de): keeps the first land mass that covers a quarter of the map and turns
         // the rest into water. Where the scan finds none, the original scans without end; this throws.
-        private void KeepMainLand()
+        void KeepMainLand()
         {
             var reached = new byte[Tiles];
             var start = 0;
@@ -562,7 +562,7 @@ public static class MapGenerator
 
         // Marks the land mass around a tile in the reached layer; true when it covers a quarter of the map.
         // A tile joins the mass through the corners whose triangles hold land.
-        private bool Flood(byte[] reached, int start)
+        bool Flood(byte[] reached, int start)
         {
             reached[start] = 0xff;
             var count = 0;
@@ -609,7 +609,7 @@ public static class MapGenerator
             return count * 4 >= Tiles;
         }
 
-        private void RemoveUnreachedLand(byte[] reached)
+        void RemoveUnreachedLand(byte[] reached)
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
@@ -629,7 +629,7 @@ public static class MapGenerator
         }
 
         // MapGen_ScaleHeights (0x42237d): scales the heights down to 0 to 32.
-        private void ScaleHeights()
+        void ScaleHeights()
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
@@ -639,11 +639,11 @@ public static class MapGenerator
 
         // Map_SetGeometry (0x42195c) stores the base count of patches, clusters, and deposits: the map's columns
         // and rows each divided by 32, multiplied.
-        private int PatchCount => (_width >> 5) * (_height >> 5);
+        int PatchCount => (_width >> 5) * (_height >> 5);
 
         // MapGen_GradeWaterDepth (0x4234bd): water terrain 0 next to terrain 5 becomes 3, then 0 next to 3
         // becomes 2, then 0 next to 2 becomes 1.
-        private void GradeWaterDepth()
+        void GradeWaterDepth()
         {
             ReplaceTerrainNear(0, 5, 3);
             ReplaceTerrainNear(0, 3, 2);
@@ -651,11 +651,11 @@ public static class MapGenerator
         }
 
         // MapGen_SetShoreTerrain (0x423536): terrain 5 next to terrain 3 becomes 4.
-        private void SetShoreTerrain() => ReplaceTerrainNear(5, 3, 4);
+        void SetShoreTerrain() => ReplaceTerrainNear(5, 3, 4);
 
         // MapGen_BlendPatchEdges (0x423d74): patch terrain 10 gives way to 5 through the blend types 7, 8, and 9;
         // then the blend types go back to 5 and terrain 5 next to a patch takes them in the other direction.
-        private void BlendPatchEdges()
+        void BlendPatchEdges()
         {
             ReplaceTerrainNear(10, 5, 7);
             ReplaceTerrainNear(10, 7, 8);
@@ -670,7 +670,7 @@ public static class MapGenerator
         // triangle first, the replacement takes the target's place when the neighborhood holds the near terrain.
         // The neighborhood is the 3 by 3 tiles around the tile as they stood before the tile's own change, so
         // the lower triangle's test does not see the upper triangle's replacement.
-        private void ReplaceTerrainNear(int target, int near, int replacement)
+        void ReplaceTerrainNear(int target, int near, int replacement)
         {
             Span<byte> around = stackalloc byte[9];
             for (var tile = 0; tile < Tiles; tile++)
@@ -699,7 +699,7 @@ public static class MapGenerator
 
         // MapGen_HasTerrainNearUpper (0x423789) and MapGen_HasTerrainNearLower (0x4238b2). The cells are the 3 by 3
         // terrain bytes in row-major order; the lists name the triangles (cell, high nibble or not) each tests.
-        private static bool NearUpper(ReadOnlySpan<byte> around, int near) =>
+        static bool NearUpper(ReadOnlySpan<byte> around, int near) =>
             Holds(
                 around,
                 near,
@@ -717,7 +717,7 @@ public static class MapGenerator
                 (8, true)
             );
 
-        private static bool NearLower(ReadOnlySpan<byte> around, int near) =>
+        static bool NearLower(ReadOnlySpan<byte> around, int near) =>
             Holds(
                 around,
                 near,
@@ -735,7 +735,7 @@ public static class MapGenerator
                 (8, true)
             );
 
-        private static bool Holds(ReadOnlySpan<byte> around, int near, params (int Cell, bool High)[] triangles)
+        static bool Holds(ReadOnlySpan<byte> around, int near, params (int Cell, bool High)[] triangles)
         {
             foreach (var (cell, high) in triangles)
             {
@@ -749,7 +749,7 @@ public static class MapGenerator
         }
 
         // MapGen_ResetTypes7To9 (0x423e6a): the blend types 7 to 9 in either triangle become 5.
-        private void ResetTypes7To9()
+        void ResetTypes7To9()
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
@@ -760,7 +760,7 @@ public static class MapGenerator
         }
 
         // MapGen_RandomPos (0x423aa3): draws a column, then a row.
-        private (int X, int Y) RandomPos()
+        (int X, int Y) RandomPos()
         {
             var x = Draw() & (_width - 1);
             var y = Draw() & (_height - 1);
@@ -769,12 +769,12 @@ public static class MapGenerator
         }
 
         // MapGen_SpiralPos (0x423b30): the tile at an index of the spiral table around a center.
-        private int SpiralPos((int X, int Y) center, int index) =>
+        int SpiralPos((int X, int Y) center, int index) =>
             At(center.X + SpiralOffsets[index].Dx, center.Y + SpiralOffsets[index].Dy);
 
         // MapGen_PlacePatches (0x4239db): patch count tries, each up to 200 random tiles for one of terrain 5 in
         // both triangles, around which a patch of terrain 10 grows over the spiral from its outer end to its middle.
-        private void PlacePatches()
+        void PlacePatches()
         {
             var count = PatchCount;
             do
@@ -808,11 +808,11 @@ public static class MapGenerator
             } while (--count != 0);
         }
 
-        private static bool Patchable(int nibble) => nibble is 5 or 10;
+        static bool Patchable(int nibble) => nibble is 5 or 10;
 
         // MapGen_CanPatchLower (0x423c10): both triangles of the tile and the lower triangles of the tiles to
         // the west and south are plain (5) or patch (10).
-        private bool CanPatchLower(int tile) =>
+        bool CanPatchLower(int tile) =>
             Patchable(_terrain[tile] & 0x0f)
             && Patchable(_terrain[tile] >> 4)
             && Patchable(_terrain[Move(tile, -1, 0)] & 0x0f)
@@ -820,7 +820,7 @@ public static class MapGenerator
 
         // MapGen_CanPatchUpper (0x423cc7): both triangles of the tile and the upper triangles of the tiles to the
         // east and north are plain or patch.
-        private bool CanPatchUpper(int tile) =>
+        bool CanPatchUpper(int tile) =>
             Patchable(_terrain[tile] & 0x0f)
             && Patchable(_terrain[tile] >> 4)
             && Patchable(_terrain[Move(tile, 1, 0)] >> 4)
@@ -829,7 +829,7 @@ public static class MapGenerator
         // MapGen_MarkPeaks (0x423fec): an object 0x52 on every tile above 25 that is not lower than its east,
         // south-east, and south neighbors and higher than its west, north-west, and north neighbors. The
         // original compares the low 5 bits of the heights, so a height of 32 reads as 0.
-        private void MarkPeaks()
+        void MarkPeaks()
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
@@ -851,7 +851,7 @@ public static class MapGenerator
         // MapGen_FitsTerrain (0x424802): both triangles of the tile, the lower triangle of the tile to the west,
         // both triangles of the tile to the north-west, and the lower triangle of the tile to the north all lie
         // from low up to but not including high.
-        private bool FitsTerrain(int tile, int low, int high)
+        bool FitsTerrain(int tile, int low, int high)
         {
             bool In(int nibble) => nibble >= low && nibble < high;
             int Terrain(int dx, int dy) => _terrain[Move(tile, dx, dy)];
@@ -867,7 +867,7 @@ public static class MapGenerator
         // MapGen_ScatterObjects (0x424755): clusters of objects. Each cluster takes up to 100 random tiles for
         // one that fits the terrain, then draws a spiral offset for each of its objects. An object goes on a
         // fitting tile that holds none, with a code of the pass's base plus a draw masked.
-        private void ScatterObjects(Scatter pass)
+        void ScatterObjects(Scatter pass)
         {
             var count = PatchCount * pass.CountPerPatch;
             do
@@ -903,7 +903,7 @@ public static class MapGenerator
         // amount 0 even from 20 (20, 16, 12, 8, 4), so the walk ends after the fifth. The original also tests the
         // byte after the resource byte of the tile (the site 0x424ad8); no pass writes that byte, so the test
         // always holds and the engine leaves it out.
-        private void PlaceDeposits(Deposit pass)
+        void PlaceDeposits(Deposit pass)
         {
             var count = PatchCount * pass.CountPerPatch;
             do
@@ -947,7 +947,7 @@ public static class MapGenerator
         // MapGen_ResolveObjectOverlap (0x424c57): a large object, one whose byte in the class table (0x41e640) is
         // above 1 unsigned, stays only where the tiles to its west, north-west, and north carry no object mark (flag
         // bit 6); it then sets its own mark. Otherwise the object code is removed and the water bit stays.
-        private void ResolveObjectOverlap()
+        void ResolveObjectOverlap()
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
@@ -973,10 +973,10 @@ public static class MapGenerator
 
         // MapGen_MarkWaterAdjacent (0x4232ef): bit 7 of the object byte on each tile with a water triangle (a
         // terrain nibble below 4).
-        private void MarkWaterAdjacent() => MarkWaterAdjacentTiles(_terrain, _objects);
+        void MarkWaterAdjacent() => MarkWaterAdjacentTiles(_terrain, _objects);
 
         // MapGen_CountResource1 (0x421841): the sum of the amounts of the deposits of resource type 1.
-        private void CountResource1()
+        void CountResource1()
         {
             var total = 0;
             foreach (var value in _resource)

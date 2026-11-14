@@ -322,7 +322,7 @@ public sealed class LayoutSettlersTests
         );
     }
 
-    private sealed class StandingRules<TJob>(bool stands) : JobRules<TJob>(null!)
+    sealed class StandingRules<TJob>(bool stands) : JobRules<TJob>(null!)
         where TJob : Job
     {
         public override bool CanStandInHut => stands;

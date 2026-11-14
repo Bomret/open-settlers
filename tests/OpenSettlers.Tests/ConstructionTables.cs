@@ -7,7 +7,7 @@ namespace OpenSettlers.Tests;
 // Tables of made-up values for the rules of the materials that reach a building site (docs/rules/construction-materials.md): the classes,
 // the request words, the order a storage serves in, and the rank the planks start from are chosen so that they differ from the program's
 // own and from one another. The program's own values are in ConstructionMaterialsTests and ProgramTablesTests.
-internal static class ConstructionTables
+static class ConstructionTables
 {
     // The made-up classes: the plank asks class 3 of the first word, the stone class 6 of the second, the log class 2 of the second;
     // every other good goes to storage at once.

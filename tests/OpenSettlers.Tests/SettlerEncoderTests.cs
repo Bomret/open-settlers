@@ -10,7 +10,7 @@ namespace OpenSettlers.Tests;
 public sealed class SettlerEncoderTests
 {
     // The movement that turns a walk home reads the residue as the encoder writes it.
-    private static SettlerMovement Movement { get; } =
+    static SettlerMovement Movement { get; } =
         new(
             new Map(MapSize.Offered[0]),
             new BuildingTable(),
@@ -19,9 +19,9 @@ public sealed class SettlerEncoderTests
             SettlerEncoder.ResidueOf
         );
 
-    private static Settler Of(Activity activity, ushort stamp = 0) => new(new Carrier(), 0, 4, 3, stamp, activity);
+    static Settler Of(Activity activity, ushort stamp = 0) => new(new Carrier(), 0, 4, 3, stamp, activity);
 
-    private static (int State, int Mode, int Target, int Heading, int Next) Fields(Activity activity)
+    static (int State, int Mode, int Target, int Heading, int Next) Fields(Activity activity)
     {
         var raw = SettlerEncoder.Fields(Of(activity));
 

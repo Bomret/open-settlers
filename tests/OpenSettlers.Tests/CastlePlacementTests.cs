@@ -18,8 +18,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CastlePlacementTests
 {
-    private const ulong FnvOffset = 0xcbf29ce484222325;
-    private const ulong FnvPrime = 0x100000001b3;
+    const ulong FnvOffset = 0xcbf29ce484222325;
+    const ulong FnvPrime = 0x100000001b3;
 
     public static IEnumerable<object[]> Lines =>
         File.ReadAllLines("castle-placements.txt").Select(line => new object[] { line });
@@ -181,7 +181,7 @@ public sealed class CastlePlacementTests
 
     // The fields of a line: a word with an equals sign starts a field, and the words after it, up to the next such
     // word, are its value (the digests of "layers" are five words).
-    private static Dictionary<string, string> Fields(string line)
+    static Dictionary<string, string> Fields(string line)
     {
         var fields = new Dictionary<string, string>();
         var key = "";
@@ -202,10 +202,9 @@ public sealed class CastlePlacementTests
         return fields;
     }
 
-    private static byte[][] Snapshot(Map map) =>
-        Enum.GetValues<MapLayer>().Select(layer => Layers.Of(map, layer)).ToArray();
+    static byte[][] Snapshot(Map map) => Enum.GetValues<MapLayer>().Select(layer => Layers.Of(map, layer)).ToArray();
 
-    private static int Changes(byte[][] before, byte[][] after)
+    static int Changes(byte[][] before, byte[][] after)
     {
         var count = 0;
         for (var node = 0; node < before[0].Length; node++)
@@ -219,7 +218,7 @@ public sealed class CastlePlacementTests
         return count;
     }
 
-    private static string Digests(Map map)
+    static string Digests(Map map)
     {
         var zero = Digest(new byte[map.Size.Width * map.Size.Height]);
 
@@ -232,9 +231,9 @@ public sealed class CastlePlacementTests
         );
     }
 
-    private static ulong Digest(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
+    static ulong Digest(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
 
-    private static MapSeed ParseSeed(string text)
+    static MapSeed ParseSeed(string text)
     {
         var words = text.Split(',').Select(word => ushort.Parse(word, NumberStyles.HexNumber)).ToArray();
 

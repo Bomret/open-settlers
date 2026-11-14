@@ -11,10 +11,10 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ActivityRegistryTests
 {
-    private static IEnumerable<Type> ActivityTypes() =>
+    static IEnumerable<Type> ActivityTypes() =>
         typeof(Activity).Assembly.GetTypes().Where(type => type.IsSubclassOf(typeof(Activity)) && !type.IsAbstract);
 
-    private static Game NewGame() =>
+    static Game NewGame() =>
         GameFactory.Create(
             LayoutSettlersTests.MadeTables(),
             MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])

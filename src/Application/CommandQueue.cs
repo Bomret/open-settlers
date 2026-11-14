@@ -10,7 +10,7 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class CommandQueue
 {
-    private readonly SortedSet<Command> _queue = new(Comparer<Command>.Create(Compare));
+    readonly SortedSet<Command> _queue = new(Comparer<Command>.Create(Compare));
 
     /// <summary>The number of commands waiting.</summary>
     public int Count => _queue.Count;
@@ -42,7 +42,7 @@ public sealed class CommandQueue
         return false;
     }
 
-    private static int Compare(Command a, Command b)
+    static int Compare(Command a, Command b)
     {
         // A command with no building comes before one with a building; buildings go by their code.
         var order = (a.Tick, a.Player, a.Kind, a.X, a.Y, a.Building?.Code ?? int.MinValue).CompareTo(

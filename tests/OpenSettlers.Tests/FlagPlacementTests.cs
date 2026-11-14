@@ -17,7 +17,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class FlagPlacementTests
 {
-    private const long CastleTick = 0;
+    const long CastleTick = 0;
 
     public static IEnumerable<object[]> Runs =>
         File.ReadAllLines("flag-placements.txt")
@@ -207,7 +207,7 @@ public sealed class FlagPlacementTests
         Assert.AreEqual(3, map.At(0, 5).DepositAmount);
     }
 
-    private static Game GameWithCastle(int x = 15, int y = 5, string seed = "1234,5678,9ABC")
+    static Game GameWithCastle(int x = 15, int y = 5, string seed = "1234,5678,9ABC")
     {
         var game = GameFactory.Create(
             TestProgram.Made(),
@@ -219,29 +219,29 @@ public sealed class FlagPlacementTests
         return game;
     }
 
-    private static bool Allows(Game game, int x, int y) =>
+    static bool Allows(Game game, int x, int y) =>
         BuildSite.Evaluate(TestProgram.Made(), game.Map, x, y, 0, hasCastle: true).AllowsFlag;
 
     // The first node, in row-major order, where the flag button puts a flag.
-    private static (int X, int Y) FirstFlagSite(Game game) =>
+    static (int X, int Y) FirstFlagSite(Game game) =>
         Enumerable
             .Range(0, game.Map.Size.Width * game.Map.Size.Height)
             .Select(node => (X: node % game.Map.Size.Width, Y: node / game.Map.Size.Width))
             .First(node => Allows(game, node.X, node.Y));
 
-    private static Dictionary<string, string> Fields(string line) =>
+    static Dictionary<string, string> Fields(string line) =>
         line.Split(' ')
             .Select(word => word.Split('=', 2))
             .Where(pair => pair.Length == 2)
             .ToDictionary(pair => pair[0], pair => pair[1]);
 
-    private static byte[][] Snapshot(Map map) =>
+    static byte[][] Snapshot(Map map) =>
         new[] { MapLayer.Flags, MapLayer.Height, MapLayer.Terrain, MapLayer.Object, MapLayer.Resource }
             .Select(layer => Layers.Of(map, layer))
             .ToArray();
 
     // The changed bytes as the harness lists them: each changed tile in row-major order with "position=old>new".
-    private static string Changes(byte[][] before, byte[][] after, int width) =>
+    static string Changes(byte[][] before, byte[][] after, int width) =>
         string.Join(
             ' ',
             Enumerable
@@ -262,7 +262,7 @@ public sealed class FlagPlacementTests
                 .Select(entry => $"{entry.Node % width},{entry.Node / width}:{entry.Diff}")
         );
 
-    private static MapSeed ParseSeed(string text)
+    static MapSeed ParseSeed(string text)
     {
         var words = text.Split(',').Select(word => ushort.Parse(word, NumberStyles.HexNumber)).ToArray();
 

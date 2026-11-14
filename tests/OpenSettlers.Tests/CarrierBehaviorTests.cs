@@ -9,12 +9,12 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CarrierBehaviorTests
 {
-    private const int Log = 7;
-    private const int East = 0;
-    private const int West = 3;
+    const int Log = 7;
+    const int East = 0;
+    const int West = 3;
 
     // The castle's list of waiting settlers: a slot for a job.
-    private sealed class Roster : ICastleRoster
+    sealed class Roster : ICastleRoster
     {
         public Dictionary<Job, int> Waiting { get; } = [];
 
@@ -29,7 +29,7 @@ public sealed class CarrierBehaviorTests
         void ICastleRoster.WorkerSent() => Sent++;
     }
 
-    private sealed class Rig
+    sealed class Rig
     {
         public Rig(bool carrier = false)
         {

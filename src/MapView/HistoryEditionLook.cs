@@ -32,10 +32,10 @@ public abstract class HistoryEditionLook<TJob> : HistoryEditionLook
 }
 
 /// <summary>The figure handlers share the figure byte's top bit, which marks the frames of a settler's work.</summary>
-internal static class FigureBytes
+static class FigureBytes
 {
     // The handlers (0x43fb6b and its siblings) test the figure byte for bit 7.
-    private const int HighFigure = 0x80;
+    const int HighFigure = 0x80;
 
     /// <summary>Whether the figure byte is one of the work's frames (from 0x80).</summary>
     public static bool IsWork(int figure) => figure >= HighFigure;

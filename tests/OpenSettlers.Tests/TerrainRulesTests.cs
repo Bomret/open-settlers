@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class TerrainRulesTests
 {
-    private static int Texture(int code, int k) =>
+    static int Texture(int code, int k) =>
         code switch
         {
             <= 3 => 292,

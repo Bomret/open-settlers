@@ -13,15 +13,15 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class HeadOnPassTests
 {
-    private const int East = 0;
-    private const int West = 3;
+    const int East = 0;
+    const int West = 3;
 
     // The direction each heading class (0x437072) takes first, as in WoodcuttingTests: a step that cuts the vector.
-    private static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
+    static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
 
-    private static readonly RuleTables Tables = MadeTables();
+    static readonly RuleTables Tables = MadeTables();
 
-    private static RuleTables MadeTables()
+    static RuleTables MadeTables()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
@@ -48,9 +48,9 @@ public sealed class HeadOnPassTests
         );
     }
 
-    private sealed record Meeting(Game Game, ThingEvent Pass, ThingEvent Wait, int Stepper, int Passer);
+    sealed record Meeting(Game Game, ThingEvent Pass, ThingEvent Wait, int Stepper, int Passer);
 
-    private static void Do(Game game, int kind, int x, int y, int[]? directions = null)
+    static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
         game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
         game.Tick();
@@ -58,7 +58,7 @@ public sealed class HeadOnPassTests
 
     // The roads run from the castle's flag in `direction` (east unless named): two steps to the second flag, two more
     // to the third. The settler coming home heads the opposite way.
-    private static Meeting Meet(int direction = East)
+    static Meeting Meet(int direction = East)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var game = GameFactory.Create(Tables, map);
@@ -93,9 +93,9 @@ public sealed class HeadOnPassTests
         return new Meeting(game, pass, wait, stepper, passer);
     }
 
-    private static int Height(Game game, int x, int y) => game.Map.At(x, y).Height;
+    static int Height(Game game, int x, int y) => game.Map.At(x, y).Height;
 
-    private static (int X, int Y) Node(ThingState state) => (state.Get("x")!.Value, state.Get("y")!.Value);
+    static (int X, int Y) Node(ThingState state) => (state.Get("x")!.Value, state.Get("y")!.Value);
 
     [TestMethod]
     public void TheTwoSettlersTakeEachOthersNodesWithTheStepsHeadingsShapeAndTime()

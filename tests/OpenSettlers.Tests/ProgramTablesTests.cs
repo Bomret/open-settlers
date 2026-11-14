@@ -14,16 +14,16 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ProgramTablesTests
 {
-    private const ulong FnvOffset = 0xcbf29ce484222325;
-    private const ulong FnvPrime = 0x100000001b3;
-    private const int ImageBase = 0x400000;
-    private const int SectionStart = 0x1e000;
-    private const int SectionSize = 0x260000;
-    private const int RawStart = 0x200;
+    const ulong FnvOffset = 0xcbf29ce484222325;
+    const ulong FnvPrime = 0x100000001b3;
+    const int ImageBase = 0x400000;
+    const int SectionStart = 0x1e000;
+    const int SectionSize = 0x260000;
+    const int RawStart = 0x200;
 
     // A PE32 file with one section that holds the addresses 0x41e000 to 0x67e000 (the waiting carriers' offsets lie at 0x674923) at the file offset 0x200, with a made-up
     // default transport priority order: the routine's instructions give good g the rank 27 - g.
-    private static byte[] Executable(Action<byte[]> fill, int sectionAt = SectionStart)
+    static byte[] Executable(Action<byte[]> fill, int sectionAt = SectionStart)
     {
         var exe = new byte[RawStart + SectionSize];
         exe[0] = (byte)'M';
@@ -57,7 +57,7 @@ public sealed class ProgramTablesTests
     // The tables of the materials that reach a building site, made up: the good class table (only the good 8 has a class), three orders
     // of the storage's hand-out of one step each that a word of -1 ends, and the player setup's routine that loads the word 0x9234 and
     // stores it at +0x148 of the player block.
-    private static void WriteConstructionTables(byte[] exe)
+    static void WriteConstructionTables(byte[] exe)
     {
         void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
 
@@ -84,7 +84,7 @@ public sealed class ProgramTablesTests
     // the job 7 and the tool word 0x30, the building of the type t for the job t + 10 and the tool word 2 * (t + 3) (none for the
     // forester). The builder's order of materials and steps of blows are made up: the order word of the type t has the bit t % 5 set,
     // and its steps are 0x100 * (2t + 1) and one more.
-    private static void WriteWorkerTables(byte[] exe)
+    static void WriteWorkerTables(byte[] exe)
     {
         void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
 
@@ -114,7 +114,7 @@ public sealed class ProgramTablesTests
 
     // The instructions of the draw routine and the woodcutter's handler that Read checks: the loads of the two tables,
     // the stub of job 5 that jumps to its handler, and the three adds to the figure word.
-    private static void WriteFigureRoutines(byte[] exe)
+    static void WriteFigureRoutines(byte[] exe)
     {
         void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
 
@@ -179,7 +179,7 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.SawmillerSawAddress, 0x1800);
     }
 
-    private static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
+    static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
 
     [TestMethod]
     public void TheTablesAreFoundByTheirAddressInTheSection()
@@ -535,7 +535,7 @@ public sealed class ProgramTablesTests
     }
 
     // A step as text: its request word, its class, and the goods it hands out.
-    private static string[] Steps(DistributionStep[] order) =>
+    static string[] Steps(DistributionStep[] order) =>
         [.. order.Select(step => $"{step.Class.Word} {step.Class.Class}: {string.Join(',', step.Goods)}")];
 
     [TestMethod]
@@ -1072,7 +1072,7 @@ public sealed class ProgramTablesTests
         Assert.AreEqual((sbyte)125, tables.IdleOffsets[127]);
     }
 
-    private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
+    static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
 
     // The waiting carriers' tables of the reference build (0x44d87d, 0x44d89d, 0x674923): the first phase word, the first
     // figure word (row 0x88), and the offsets of a node whose road runs north and south (directions 2 and 5, bits 0x24).

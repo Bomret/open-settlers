@@ -14,14 +14,14 @@ namespace OpenSettlers.Simulation;
 /// <param name="parts">The shared parts.</param>
 public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts)
 {
-    private readonly SettlerMovement movement = parts.Movement;
-    private readonly IRandomDraws draws = parts.Draws;
-    private readonly HutWork hut = parts.Hut;
+    readonly SettlerMovement movement = parts.Movement;
+    readonly IRandomDraws draws = parts.Draws;
+    readonly HutWork hut = parts.Hut;
 
     /// <summary>The good of a log (the byte 7 the settler writes onto the flag, 0x438011).</summary>
     public const int GoodLog = 7;
 
-    private Map Map => movement.Map;
+    Map Map => movement.Map;
 
     /// <inheritdoc />
     public override bool CanStandInHut => true;
@@ -46,7 +46,7 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
     // State 0x12, the woodcutter's search (0x438b8c). When its timer has run out it draws a node of the spiral around the
     // hut, entries 1 to 128, until a tree stands on one; each node without a tree adds 400 to the timer, and the search
     // ends for this turn when that wraps the timer.
-    private void SearchTree(int slot, Settler settler)
+    void SearchTree(int slot, Settler settler)
     {
         var found = SearchTurn(settler);
         hut.RecordWork(slot, EventType.SearchTree);
@@ -57,7 +57,7 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
     }
 
     // One turn of the search; true where it found a tree and took state 7.
-    private bool SearchTurn(Settler settler)
+    bool SearchTurn(Settler settler)
     {
         if (!movement.TimerRan(settler))
         {
@@ -136,14 +136,14 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
     // State 0x11, the cut (0x438a9e): each time the timer runs out the tree takes the next of its falling codes (0x5d to
     // 0x66, the second variant after 0x61 for the codes 8 to 15), the frame is 0x74 plus the count and the timer takes
     // the time that frame's table word gives. After the fifth the settler starts the way back with the log.
-    private void Cut(int slot, Settler settler)
+    void Cut(int slot, Settler settler)
     {
         var tree = ThingId.OfObject("tree", settler.X, settler.Y).ToString();
         CutTurn(settler);
         hut.RecordWork(slot, EventType.CutTree, tree);
     }
 
-    private void CutTurn(Settler settler)
+    void CutTurn(Settler settler)
     {
         if (!movement.TimerRan(settler))
         {
