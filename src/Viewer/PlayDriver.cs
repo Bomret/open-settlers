@@ -120,6 +120,10 @@ public partial class PlayDriver : Node
                 return ClickTile(tile);
             case ButtonStep button:
                 return ClickButton(button);
+            case SeedStep seed:
+                _view.EnterSeed(seed.Text);
+
+                return null;
             case FastForwardStep fastForward:
                 return _view.FastForward(fastForward);
             case ShotStep shot:

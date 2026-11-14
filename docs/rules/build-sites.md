@@ -90,7 +90,86 @@ of the node (counted twice) and its six neighbors, divided by 8 and then kept be
 height less 4 (not below 0) and its smallest plus 4, and at least 1.
 
 A large building site can wait for its digger. It has the map object code 3, it is under construction, and its progress word is 0. Where such a site lies within the third ring of the node, its target height widens the range of condition 10. [The digger](digging.md#a-site-that-waits-in-the-build-site-evaluator) has the rule and its run. The evaluator also
-sets two bits of the player's flags that tell the screen where to draw its marker; they change no result.
+sets bit 1 of the player block's byte `+3` when it starts, and on some of its paths clears bit 1 or sets or clears bit 0; the bits change no
+result. No drawing routine reads them. Bit 1 is read by `View_HandleClick` (`0x440c24`), `Road_ClickStep` (`0x443f62`), and
+the computer player (`Ai_UpdatePlayer`, `0x474da3`). Bit 0, which marks a building of type 11, 21, 22, or 24 nearby, is read
+by `Building_Free` (`0x42cf9d`) and the computer player. The build-site overlay (below) keeps byte `+3` as it found it.
+
+## The build-site overlay
+
+**Status:** confirmed for the nodes, the markers, the toggle, the drawing, and the draw order of the markers.
+Confirmed also: two sprite lists come above the markers. What those two lists show is open. The meaning of the four images
+is **inferred** from what they show.
+
+The overlay shows, on the nodes of a view, what the evaluator allows there. `Render_DrawViewOverlay` (`0x450a35`) runs
+`Render_DrawViewLayers` (`0x450a56`) for each view. That routine draws the build markers through `BuildHelp_DrawMarkers`
+(`0x450ae7`) only while bit 6 of the view's byte 0 is set. It draws them before the view's other sprite lists. Those lists
+come above the markers.
+
+**The draw order.** `Main_Loop` (`0x425a10`) runs `Render_DrawMapView` (`0x44d38d`) and then `Render_DrawViewOverlay`.
+`Render_DrawMapView` draws each row's tiles and objects and then the row's settlers (`Render_DrawViewRows` at `0x44d3ae`,
+`Render_DrawRowSettlers` at `0x44ffe7`). So the markers lie above the terrain, the map objects, the buildings, and the
+settlers. Two sprite lists come above the markers. `0x450f6e` draws up to seven entries of the list at view `+0xa4`. `0x450a8f` draws
+the list at view `+0x1aa`, with its count at `+0x1ae`. What the two lists show is **open**. The engine draws nothing above
+the markers (see "In the engine").
+
+**The nodes.** `BuildHelp_DrawMarkers` walks the view's whole window of nodes, row by row, each row in two halves of
+alternate nodes, and runs `BuildHelp_DrawRowMarkers` (`0x450d85`) for each half. The node position wraps at the map size.
+It judges each node for the view's player (the player block at view `+0x82`), with that player's castle state, as a click
+of that player would. It saves the player's node and result (`+0xfc` to `+0x102`) before the walk and puts them back after
+it, and `BuildHelp_DrawRowMarkers` keeps the player's byte `+3` across each call of the evaluator. So the overlay changes no
+state that the game reads.
+
+**The marker for each judgment** (`BuildHelp_DrawRowMarkers`):
+
+| Node state | Site | Marker |
+| --- | --- | --- |
+| 0 to 3 | any | none |
+| 4 | 0 | none |
+| 4 | 1 to 5 | 47, a flag |
+| 5 to 7 | 0 | none |
+| 5 to 7 | 1 | 47, a flag |
+| 5 to 7 | 2 | 48, a mine |
+| 5 to 7 | 3 | 49, a small building |
+| 5 to 7 | 4 or 5 | 50, a large building |
+
+The site 5, the castle site of a player without a castle, draws the large-building marker. A node that nobody judges, such as
+a node of another owner, keeps the evaluator's cleared result and draws nothing.
+
+**A node that holds a flag or a building.** The evaluator's flag branch ends with the node state 1 or 2, and its building
+branch (`BuildSite_EvaluateBuilding`, `0x44bd72`) starts with the node state 3. The castle (class 6) leaves the node state 0. So
+the overlay draws no marker on a node that holds a flag, a building, or the castle. The engine's 0, 0, 0 for those nodes
+gives the same picture.
+
+**The drawing.** A marker is drawn through `Gfx_DrawSpriteBase320` (`0x44de9a`), the entry number 320 plus the marker:
+367 to 370 of `loca/SPAD.PA`. The position is the node's screen position, raised by the node's height (the low 5 bits of
+the height byte) times 4 pixels. A marker whose raised position lies above the view or below its bottom edge is skipped.
+`Gfx_DrawSpriteBase320` draws the sprite through `Gfx_DrawSpriteTransparent` (`0x4062e0`) and nothing else, so the original
+draws **no shadow** under a marker. REA shows that the only callees of `BuildHelp_DrawRowMarkers` are `BuildSite_Evaluate`
+and `Gfx_DrawSpriteBase320`. The only callee of `Gfx_DrawSpriteBase320` is `Gfx_DrawSpriteTransparent`. The four entries
+show:
+
+- 367: a small flag on a pole, 6 by 11 pixels.
+- 368: a mine, a small pit head with a dark entrance, 9 by 14 pixels.
+- 369: a small house with a pointed roof, 11 by 11 pixels.
+- 370: a large building with two towers, 16 by 10 pixels.
+
+**The toggle.** `View_Setup` (`0x41f86b`) clears view byte 0 at the start of a game, so the overlay starts off. The
+engine's Build help button turns off at the start of each game, a new seed or size included.
+`View_RunButtonAction` (`0x440d23`) flips bit 6 and asks for sound 8 on the second-button gesture over a road, flag, or
+building button, where the view shows its button bar (byte 1 bit 1) and road mode (byte 1 bit 7) is off. `View_HandleClick`
+(`0x440c24`) holds the same toggle on a path not traced. Opening a panel clears the bit (`View_HandleClick`,
+`View_RunButtonAction`, `Castle_PlaceFromClick` at `0x442630`).
+
+**The cache.** `BuildHelp_DrawMarkers` sets view byte 0 bit 7 after a walk. `BuildHelp_DrawRowMarkers` stores each node's
+marker in the buffer at view `+0xda`. While bit 7 is set, the next frames read the stored markers. They judge no node.
+`Render_RedrawViewBase` (`0x427133`) clears bit 7. It redraws the view's base after the view moves. `Flag_PlaceFromButton`
+(`0x442244`) also clears bit 7. The engine does not hold this cache.
+
+**A flag marker where a flag click refuses.** The node state 5 with the site 1 draws the flag marker. That state means a flag
+stands on the south-east node, and the flag button places a flag only where the node state is 4, 6, or 7.
+`Flag_PlaceFromButton` holds that rule. `BuildSiteResult.AllowsFlag` holds it in the engine. So the marker promises a flag that a click refuses. The
+engine shows the original's marker.
 
 ## Placing a building
 
@@ -173,6 +252,8 @@ a flag put there by the button would split it, the node's flag byte takes the bu
 is slot 3.
 
 ## In the engine
+
+`BuildMarkers` and `BuildMarkerDraws` (`src/MapView/BuildMarker.cs`) turn the evaluator's judgment into a marker and a draw for each node of the player's territory. The game view's Build help button (`src/Viewer/MapViewControl.cs`) toggles them. The view draws the markers above the terrain, the objects, the buildings, and the settlers, and draws nothing above them.
 
 `OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Application/BuildSite.cs`) is the evaluator. The engine departs from the program in one place. A node with a flag or a building object gives 0, 0, 0 (above). The code 3 height term reads the building table. The flag button and the building placement hand that table to `BuildSite.Evaluate`. `BuildSiteResult.AllowsFlag` is the flag button's rule. The flag placement is in [Flags](flags.md).
 

@@ -203,6 +203,9 @@ script alone. Add a layout only where none of them holds the situation.
 - `layouts/woodcutter.jsonc` and `play/woodcutter-cut.play`: a woodcutter in his hut beside trees,
   fast-forwarded to the cut (state `0x11`).
 - `play/woodcutter-figures.play` on the same layout: crops of the woodcutter at his door, on the way out, at the cut, and on the way back with the log.
+- `play/build-help.play` on the same layout checks the build markers of the castle's territory, on and off. It checks their
+  change after a flag is placed.
+- `play/build-help-start.play` runs on the game view of the default seed. It checks the castle sites before the castle stands.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.

@@ -1378,6 +1378,34 @@
       -7
     ]
   },
+  "marker/flag": {
+    "image": "marker/flag.png",
+    "anchor": [
+      -4,
+      -11
+    ]
+  },
+  "marker/mine": {
+    "image": "marker/mine.png",
+    "anchor": [
+      -6,
+      -11
+    ]
+  },
+  "marker/small": {
+    "image": "marker/small.png",
+    "anchor": [
+      -6,
+      -10
+    ]
+  },
+  "marker/large": {
+    "image": "marker/large.png",
+    "anchor": [
+      -9,
+      -12
+    ]
+  },
   "settler/carrier/walks": {
     "image": "settler/carrier-walks.png",
     "anchor": [

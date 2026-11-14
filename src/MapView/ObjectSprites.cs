@@ -132,6 +132,16 @@ public static class ObjectSprites
     /// <b>Inferred:</b> read from the decompile of <c>0x44de9a</c>; no emulator or debugger run of the draw confirms it.</summary>
     public static int GoodEntry(Good good) => GoodsFirstEntry + (good.Code & 0x1f);
 
+    /// <summary>The sprite entry of the flag marker, the first of the four build markers.</summary>
+    public const int MarkerFirstEntry = 367;
+
+    /// <summary>
+    /// The sprite entry of a build marker: <c>0x450d85</c> draws the marker 47 to 50 through <c>0x44de9a</c>, which adds 320,
+    /// so the flag, mine, small, and large markers are the entries 367 to 370 (<c>docs/rules/build-sites.md</c>, "The
+    /// build-site overlay"). The original draws no shadow for them.
+    /// </summary>
+    public static int MarkerEntry(BuildMarker marker) => MarkerFirstEntry + (int)marker;
+
     /// <summary>The first of the 16 water entries, drawn only over palette index 8 (<c>docs/rules/map-objects.md</c>).</summary>
     public const int WaterFirstEntry = 630;
 

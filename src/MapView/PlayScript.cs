@@ -132,7 +132,7 @@ public sealed record ClickTileStep : PlayStep
     public required int Row { get; init; }
 }
 
-/// <summary><c>button &lt;name&gt;</c>: a left click on the shown game-view button whose label is the name.</summary>
+/// <summary><c>button &lt;name&gt;</c>: a left click on the shown game-view button whose label is the name, the rest of the line with one space between its words.</summary>
 public sealed record ButtonStep : PlayStep
 {
     /// <summary>The button's label, matched exactly, case included.</summary>
@@ -143,6 +143,13 @@ public sealed record ButtonStep : PlayStep
         shown.Contains(Name) ? null
         : shown.Count == 0 ? $"no button '{Name}': no button is shown"
         : $"no button '{Name}', shown: {string.Join(", ", shown)}";
+}
+
+/// <summary><c>seed &lt;text&gt;</c>: types the text into the seed field and submits it, as a player's Enter does.</summary>
+public sealed record SeedStep : PlayStep
+{
+    /// <summary>The seed text, one word.</summary>
+    public required string Text { get; init; }
 }
 
 /// <summary><c>dump &lt;name&gt;</c>: writes the view's state to <c>&lt;name&gt;.txt</c> of the output folder.</summary>
@@ -536,12 +543,17 @@ public sealed class PlayScript
                     null
                 );
             case "button":
-                if (args.Length != 1)
+                if (args.Length == 0)
                 {
-                    return Wrong(words[0], "1 argument", args.Length);
+                    return Wrong(words[0], "a name", args.Length);
                 }
 
-                return (new ButtonStep { Line = number, Name = args[0] }, null);
+                // A label may hold spaces ("Build help"): the name is the rest of the line, one space between its words.
+                return (new ButtonStep { Line = number, Name = string.Join(' ', args) }, null);
+            case "seed":
+                return args.Length == 1
+                    ? (new SeedStep { Line = number, Text = args[0] }, null)
+                    : Wrong(words[0], "1 argument", args.Length);
             case "fast-forward":
                 return ParseFastForward(args, number);
             case "expect":

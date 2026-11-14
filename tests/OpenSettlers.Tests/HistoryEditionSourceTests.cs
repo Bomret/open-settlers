@@ -810,6 +810,36 @@ public sealed class HistoryEditionSourceTests
     }
 
     [TestMethod]
+    public void EachBuildMarkerDrawsItsOwnSpriteAndNoShadow()
+    {
+        // Entries 367 to 370 are the flag, mine, small, and large markers (docs/rules/build-sites.md, "The build-site
+        // overlay"). Each has a shadow mask at its entry plus 250 here, which the original never draws for them.
+        using var fake = ObjectFake(payloads =>
+        {
+            for (var entry = 367; entry <= 370; entry++)
+            {
+                payloads[entry] = ObjectGraphicsTests.Square((short)(entry - 360), 2);
+                payloads[entry + 250] = ObjectGraphicsTests.ShadowMask();
+            }
+        });
+        var source = Open(fake);
+
+        BuildMarker[] markers = [BuildMarker.Flag, BuildMarker.Mine, BuildMarker.Small, BuildMarker.Large];
+        int[] offsets = [.. markers.Select(marker => source.Draw(marker)!.OffsetX)];
+
+        CollectionAssert.AreEqual(new[] { 7, 8, 9, 10 }, offsets);
+        Assert.AreSame(source.Draw(BuildMarker.Mine), source.Draw(BuildMarker.Mine));
+    }
+
+    [TestMethod]
+    public void ABuildMarkerTheArchiveLeavesOutDrawsNothing()
+    {
+        using var fake = ObjectFake();
+
+        Assert.IsNull(Open(fake).Draw(BuildMarker.Large));
+    }
+
+    [TestMethod]
     public void ATileWithWaterDrawsTheRippleOfItsTileAndStepOverTheSurfaceColor()
     {
         using var fake = ObjectFake();

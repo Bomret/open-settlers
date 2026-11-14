@@ -14,8 +14,8 @@ namespace OpenSettlers.MapView;
 /// anchor is the offset of the image's top left corner from the term's position. The keys: <see cref="TerrainKey"/> for
 /// each terrain code and triangle, <see cref="RoadKey"/> for each road direction, <see cref="FlagKey"/> and
 /// <see cref="ObjectKey"/> for the flag and the object codes 8 to 127, <see cref="CastleKey"/> and
-/// <see cref="WoodcutterKey"/> for the buildings, <see cref="GoodKey"/> for each of the 32 goods, and
-/// <see cref="SettlerKey"/> for each job and kind of activity of a settler. The art is flat: one image per terrain code
+/// <see cref="WoodcutterKey"/> for the buildings, <see cref="GoodKey"/> for each of the 32 goods, <see cref="MarkerKey"/>
+/// for each of the four build markers, and <see cref="SettlerKey"/> for each job and kind of activity of a settler. The art is flat: one image per terrain code
 /// and triangle, one strip per direction, whatever the slope, one frame per object, and one figure per job and kind of
 /// activity, whatever the settler's heading, step, or frame. A settler's pixels in <see cref="MarkColour"/> show the
 /// player's colour. The source draws no shadow, no water ripple, and no object of the codes 2 to 7. Every key above must
@@ -42,6 +42,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     readonly IReadOnlyDictionary<string, ObjectDrawing> _buildings;
     readonly ObjectDrawing[] _goods;
     readonly ObjectImage[] _settlers;
+    readonly ObjectImage[] _markers;
     readonly int _headroom;
 
     // The figure of a job and kind in a player's colour, one instance per job, kind, and colour.
@@ -58,10 +59,12 @@ public sealed class OpenSettlersSource : IGraphicsSource
         IReadOnlyDictionary<string, ObjectDrawing> buildings,
         ObjectDrawing[] goods,
         ObjectImage[] settlers,
+        ObjectImage[] markers,
         int headroom
     )
     {
         _settlers = settlers;
+        _markers = markers;
         _headroom = headroom;
         _terrain = terrain;
         _roads = roads;
@@ -164,6 +167,9 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <summary>The manifest key of a good, by its low 5 bits.</summary>
     public static string GoodKey(int code) => $"good/{code & (GoodCount - 1)}";
+
+    /// <summary>The manifest key of a build marker: <c>marker/flag</c>, <c>marker/mine</c>, <c>marker/small</c>, or <c>marker/large</c>.</summary>
+    public static string MarkerKey(BuildMarker marker) => $"marker/{marker.ToString().ToLowerInvariant()}";
 
     /// <summary>The manifest key of the flag.</summary>
     public const string FlagKey = "object/flag";
@@ -274,13 +280,15 @@ public sealed class OpenSettlersSource : IGraphicsSource
             }
         }
 
+        ObjectImage[] markers = [.. Enum.GetValues<BuildMarker>().Select(marker => Image(MarkerKey(marker)))];
+
         var headroom = objects
             .Concat([flag])
             .Concat(buildings.Values)
             .Concat(goods)
             .Max(drawing => drawing.Image!.Height);
 
-        return new OpenSettlersSource(terrain, roads, flag, objects, buildings, goods, settlers, headroom);
+        return new OpenSettlersSource(terrain, roads, flag, objects, buildings, goods, settlers, markers, headroom);
     }
 
     // The jobs the game draws a settler for, by the name their manifest keys carry: the looks of the source (the registry is
@@ -485,4 +493,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public RippleImage? Draw(WaterRipple ripple) => null;
+
+    /// <inheritdoc />
+    public ObjectImage? Draw(BuildMarker marker) => _markers[(int)marker];
 }
