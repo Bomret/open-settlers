@@ -147,6 +147,10 @@ public sealed class HistoryEditionSource : IGraphicsSource
         return cached;
     }
 
+    /// <inheritdoc />
+    public ObjectImage? Draw(BuildMarker marker) =>
+        Usable(_objects?.Sprites.GetValueOrDefault(ObjectSprites.MarkerEntry(marker)));
+
     // What the archive draws for an object sprite entry, made once so that equal entries answer with one instance: the
     // sprite and the shadow mask at its entry plus 250, or null where it has neither.
     ObjectDrawing? Drawing(int entry)

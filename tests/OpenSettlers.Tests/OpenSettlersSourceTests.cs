@@ -118,6 +118,7 @@ public sealed class OpenSettlersSourceTests
             .Concat(Enumerable.Range(8, 120).Select(code => $"object/{code}"))
             .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
+            .Concat(["marker/flag", "marker/mine", "marker/small", "marker/large"])
             .Concat(
                 from job in new[]
                 {
@@ -325,6 +326,35 @@ public sealed class OpenSettlersSourceTests
     [DataRow("object/8")]
     [DataRow("object/127")]
     public void AnObjectKeyTheManifestLacksIsRefusedByFileAndKey(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    [TestMethod]
+    [DataRow(BuildMarker.Flag, "marker/flag")]
+    [DataRow(BuildMarker.Mine, "marker/mine")]
+    [DataRow(BuildMarker.Small, "marker/small")]
+    [DataRow(BuildMarker.Large, "marker/large")]
+    public void EachBuildMarkerDrawsTheImageOfItsKey(BuildMarker marker, string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries[key] = ContentFolder.Entry("m.png", "-2, -5");
+        folder.Png("m.png", "3x6:7");
+
+        var image = folder.Load().Draw(marker)!;
+
+        Assert.AreEqual((3, 6, -2, -5), (image.Width, image.Height, image.OffsetX, image.OffsetY));
+    }
+
+    [TestMethod]
+    [DataRow("marker/flag")]
+    [DataRow("marker/mine")]
+    [DataRow("marker/small")]
+    [DataRow("marker/large")]
+    public void AMarkerKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();
         folder.Entries.Remove(key);

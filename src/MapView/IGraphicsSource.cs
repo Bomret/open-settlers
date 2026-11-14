@@ -59,6 +59,12 @@ public interface IGraphicsSource
     RippleImage? Draw(WaterRipple ripple);
 
     /// <summary>
+    /// The image of a build marker, or null where the source draws none. A marker has no shadow: the original draws none
+    /// (<c>docs/rules/build-sites.md</c>, "The build-site overlay").
+    /// </summary>
+    ObjectImage? Draw(BuildMarker marker);
+
+    /// <summary>
     /// The height in map pixels of the tallest image the source draws for an object, 0 where it draws none. A play run's
     /// cropped shot leaves this much room above its tiles.
     /// </summary>

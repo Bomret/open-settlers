@@ -8,7 +8,7 @@ namespace OpenSettlers.MapView;
 
 /// <summary>
 /// The object sprites of a History Edition install, by archive entry (ADR 0014): the sprites of codes 8 to 127 (entries
-/// 1250 to 1369), the castle's, the flag's with its further frames, the hut's, the goods', and the water's, and the
+/// 1250 to 1369), the castle's, the flag's with its further frames, the hut's, the goods', the water's, and the build markers', and the
 /// shadow masks of those that have one. Only the History Edition source reads it.
 /// </summary>
 public sealed class ObjectGraphics
@@ -27,6 +27,9 @@ public sealed class ObjectGraphics
 
     /// <summary>The shadow of each sprite entry that has a mask in the archive. The goods and the water draw no shadow (<c>0x44de9a</c>, <c>0x44ff59</c> draw only the sprite).</summary>
     public IReadOnlyDictionary<int, ObjectImage> Shadows { get; init; } = new Dictionary<int, ObjectImage>();
+
+    /// <summary>The number of build markers, one sprite each from <see cref="ObjectSprites.MarkerFirstEntry"/>.</summary>
+    public const int BuildMarkerCount = 4;
 
     /// <summary>The height of the tallest sprite.</summary>
     public required int Headroom { get; init; }
@@ -90,6 +93,7 @@ public sealed class ObjectGraphics
         AddSprites(Enumerable.Range(ObjectSprites.GoodsFirstEntry, ObjectSprites.GoodsCount), "the good's sprite");
         AddSprites(Enumerable.Range(ObjectSprites.WaterFirstEntry, ObjectSprites.WaterCount), "the water sprite");
         AddSprites(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1), "the flag sprite");
+        AddSprites(Enumerable.Range(ObjectSprites.MarkerFirstEntry, BuildMarkerCount), "the build marker sprite");
 
         var shadows = new Dictionary<int, ObjectImage>();
         var shadowed = Enumerable

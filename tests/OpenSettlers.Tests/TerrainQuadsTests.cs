@@ -27,6 +27,8 @@ public sealed class TerrainQuadsTests
                 Rgba = new byte[30 * 10 * 4],
             };
 
+        public ObjectImage? Draw(BuildMarker marker) => null;
+
         public ObjectImage? Draw(RoadStrip strip) =>
             strip.Difference == 0
                 ? new ObjectImage

@@ -357,6 +357,35 @@ def good(code):
     return c, (-4, -7)
 
 
+MARKER = (245, 225, 70)
+
+
+def marker(kind):
+    """A build marker, standing with its foot on the node: a pennant for a flag, a pick for a mine, a small house for a
+    small building, and a wide house for a large building, in one bright colour with an outline so it reads over any
+    ground. The original draws no shadow under its markers, and these have none."""
+    if kind == "flag":
+        c = Canvas(8, 12)
+        c.rect(1, 0, 1, 12, MARKER)
+        c.triangle((2, 1), 5, 0, MARKER)
+        c.rect(2, 1, 5, 4, MARKER)
+    elif kind == "mine":
+        c = Canvas(12, 12)
+        c.line(2, 10, 9, 3, MARKER, 2)
+        c.rect(5, 1, 6, 2, MARKER)
+        c.rect(1, 10, 3, 2, MARKER)
+    elif kind == "small":
+        c = Canvas(12, 11)
+        c.triangle((5, 1), 5, 5, MARKER)
+        c.rect(2, 5, 8, 6, MARKER)
+    else:
+        c = Canvas(18, 13)
+        c.triangle((8, 1), 6, 8, MARKER)
+        c.rect(1, 6, 16, 7, MARKER)
+    c.outline(INK)
+    return c, (-(c.width // 2), -(c.height - 1))
+
+
 JOBS = {
     "carrier": (60, 100, 170),
     "woodcutter": (60, 130, 60),
@@ -465,6 +494,8 @@ def main():
     add("building/stage-large", "building/stage-large.png", scaffold(True))
     for code in range(32):
         add(f"good/{code}", f"good/{code}.png", good(code))
+    for kind in ("flag", "mine", "small", "large"):
+        add(f"marker/{kind}", f"marker/{kind}.png", marker(kind))
     for job, color in JOBS.items():
         for kind in KINDS:
             load = STONE if job == "stonecutter" else WOOD
