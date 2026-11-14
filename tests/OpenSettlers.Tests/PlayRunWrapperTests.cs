@@ -411,8 +411,12 @@ public class PlayRunWrapperTests
     // ran, status 0 means the signal was ignored or blocked on entry.
     const string TrapProbe = "trap \"exit 7\" \"$1\"; kill -s \"$1\" $$; exit 0";
 
+    // The outcomes ProbeOutcome reads from status 7 and status 0 of the trap probe.
+    const string Settable = "settable";
+    const string Ignored = "ignored";
+
     // Runs PATH sh with the arguments through Process.Start, as Start runs the wrapper, and reads how it ended:
-    // "settable" for status 7, "ignored" for status 0, and otherwise what it saw. .NET reports a process that a
+    // Settable for status 7, Ignored for status 0, and otherwise what it saw. .NET reports a process that a
     // signal ended as status 128 plus the signal number. A probe still running after the bound is killed.
     static string ProbeOutcome(TimeSpan bound, params string[] args)
     {
@@ -427,8 +431,8 @@ public class PlayRunWrapperTests
 
         return probe.ExitCode switch
         {
-            7 => "settable",
-            0 => "ignored",
+            7 => Settable,
+            0 => Ignored,
             > 128 and var status => $"exit status {status}, as a probe that signal {status - 128} ended reports",
             var status => $"exit status {status}",
         };
@@ -436,12 +440,12 @@ public class PlayRunWrapperTests
 
     static void InconclusiveUnlessTrappable(string signal, string outcome)
     {
-        if (outcome == "settable")
+        if (outcome == Settable)
         {
             return;
         }
 
-        if (outcome == "ignored")
+        if (outcome == Ignored)
         {
             Assert.Inconclusive(
                 $"SIG{signal} was ignored when the test host started (under nohup, say), and a non-interactive shell "
@@ -449,7 +453,7 @@ public class PlayRunWrapperTests
             );
         }
 
-        Assert.Fail($"the trap probe for SIG{signal} ended neither settable nor ignored: {outcome}");
+        Assert.Fail($"the trap probe for SIG{signal} ended neither {Settable} nor {Ignored}: {outcome}");
     }
 
     // Called before Start, so an inconclusive case starts no wrapper, takes no lock, and calls no Godot.
@@ -473,24 +477,24 @@ public class PlayRunWrapperTests
             signal,
             TrapProbe
         );
-        Assert.AreEqual("ignored", underIgnoringParent);
+        Assert.AreEqual(Ignored, underIgnoringParent);
 
         var alone = ProbeOutcome(bound, "-c", TrapProbe, "sh", signal);
-        if (alone == "ignored")
+        if (alone == Ignored)
         {
             Assert.Inconclusive(
                 $"the test host itself ignores SIG{signal}, and a POSIX shell cannot remove that ignore"
             );
         }
 
-        Assert.AreEqual("settable", alone);
+        Assert.AreEqual(Settable, alone);
     }
 
     [TestMethod]
     public void AnIgnoredSignalMakesTheCaseInconclusiveNamingTheSignalAndTheRule()
     {
         var inconclusive = Assert.ThrowsExactly<AssertInconclusiveException>(() =>
-            InconclusiveUnlessTrappable("HUP", "ignored")
+            InconclusiveUnlessTrappable("HUP", Ignored)
         );
 
         StringAssert.Contains(inconclusive.Message, "SIGHUP");
@@ -514,9 +518,14 @@ public class PlayRunWrapperTests
     {
         var pidFile = Path.Combine(_root, "probe-pid");
 
-        var outcome = ProbeOutcome(TimeSpan.FromSeconds(1), "-c", "echo $$ > \"$1\"; exec sleep 30", "sh", pidFile);
+        // The bound leaves a loaded host time to start sh and write the pid file before the kill.
+        var outcome = ProbeOutcome(TimeSpan.FromSeconds(5), "-c", "echo $$ > \"$1\"; exec sleep 30", "sh", pidFile);
 
-        StringAssert.Contains(outcome, "no exit within 1 s");
+        StringAssert.Contains(outcome, "no exit within 5 s");
+        Assert.IsTrue(
+            File.Exists(pidFile),
+            "the probe was killed before it wrote its pid, so the test cannot check that the probe is gone"
+        );
         var pid = int.Parse(File.ReadAllText(pidFile));
         Assert.ThrowsExactly<ArgumentException>(() => Process.GetProcessById(pid), "the probe was left running");
         var failure = Assert.ThrowsExactly<AssertFailedException>(() => InconclusiveUnlessTrappable("TERM", outcome));
