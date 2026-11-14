@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -12,6 +13,14 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CodeStyleBuildTests
 {
+    static readonly Dictionary<string, string> EditorConfigPins = new()
+    {
+        ["dotnet_style_require_accessibility_modifiers"] = "omit_if_default",
+        ["dotnet_diagnostic.IDE0040.severity"] = "warning",
+    };
+
+    static readonly string[] GeneratedFolders = ["bin", "obj", ".godot", ".git", ".superdev", "node_modules"];
+
     [TestMethod]
     public void TheEditorConfigRequiresOmittingADefaultModifier()
     {
@@ -37,6 +46,50 @@ public sealed class CodeStyleBuildTests
 
         CollectionAssert.AreEqual(new[] { "EnforceCodeStyleInBuild=true", "TreatWarningsAsErrors=true" }, values);
     }
+
+    // A later section, a nested .editorconfig, or a project file could switch the rule off past the pins above, so every
+    // place that sets one of the pinned settings must set it to the pinned value.
+    [TestMethod]
+    public void NoEditorConfigSectionOverridesTheModifierRule()
+    {
+        var root = RootOf();
+        var overrides = ConfigFiles(root, file => Path.GetFileName(file) == ".editorconfig")
+            .SelectMany(relative =>
+                File.ReadAllLines(Path.Combine(root, relative))
+                    .Select(line => line.Split('=', 2))
+                    .Where(pair => pair.Length == 2 && EditorConfigPins.ContainsKey(pair[0].Trim()))
+                    .Where(pair => pair[1].Trim() != EditorConfigPins[pair[0].Trim()])
+                    .Select(pair => $"{relative}: {pair[0].Trim()} = {pair[1].Trim()}")
+            )
+            .ToList();
+
+        Assert.IsEmpty(overrides, string.Join(Environment.NewLine, overrides));
+    }
+
+    [TestMethod]
+    public void NoMsBuildFileSwitchesCodeStyleEnforcementOff()
+    {
+        var root = RootOf();
+        var overrides = ConfigFiles(root, file => Path.GetExtension(file) is ".csproj" or ".props" or ".targets")
+            .SelectMany(relative =>
+                XDocument
+                    .Load(Path.Combine(root, relative))
+                    .Descendants()
+                    .Where(e => e.Name.LocalName is "EnforceCodeStyleInBuild" or "TreatWarningsAsErrors")
+                    .Where(e => e.Value.Trim() != "true")
+                    .Select(e => $"{relative}: {e.Name.LocalName} = {e.Value.Trim()}")
+            )
+            .ToList();
+
+        Assert.IsEmpty(overrides, string.Join(Environment.NewLine, overrides));
+    }
+
+    static IEnumerable<string> ConfigFiles(string root, Func<string, bool> matches) =>
+        Directory
+            .EnumerateFiles(root, "*", SearchOption.AllDirectories)
+            .Where(matches)
+            .Select(file => Path.GetRelativePath(root, file).Replace('\\', '/'))
+            .Where(relative => !relative.Split('/').Any(part => GeneratedFolders.Contains(part)));
 
     static string[] CSharpSection(string[] lines) =>
         [
