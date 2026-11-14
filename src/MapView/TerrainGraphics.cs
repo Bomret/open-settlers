@@ -7,7 +7,23 @@ using OpenSettlers.Formats;
 namespace OpenSettlers.MapView;
 
 /// <summary>A fill mask as one layer of an array texture: <see cref="Width"/> by <see cref="Height"/> pixels at the top left.</summary>
-public sealed record MaskImage(int Width, int Height, int OffsetX, int OffsetY, byte[] Layer);
+public sealed record MaskImage
+{
+    /// <summary>The width of the mask in pixels.</summary>
+    public required int Width { get; init; }
+
+    /// <summary>The height of the mask in pixels.</summary>
+    public required int Height { get; init; }
+
+    /// <summary>The horizontal offset of the mask from its mask file's header.</summary>
+    public required int OffsetX { get; init; }
+
+    /// <summary>The vertical offset of the mask from its mask file's header.</summary>
+    public required int OffsetY { get; init; }
+
+    /// <summary>The layer: one byte a pixel, 255 where the mask covers it and 0 elsewhere, at the layer's full width.</summary>
+    public required byte[] Layer { get; init; }
+}
 
 /// <summary>
 /// The terrain graphics of an install as the GPU takes them: each fill mask
@@ -72,7 +88,14 @@ public sealed class TerrainGraphics
             // The archive leaves out the masks no combination of heights reaches.
             masks.Add(
                 !TerrainRules.UsesMask(entry) && archive[entry].State == EntryState.Absent
-                    ? new MaskImage(0, 0, 0, 0, new byte[LayerWidth * MaskLayerHeight])
+                    ? new MaskImage
+                    {
+                        Width = 0,
+                        Height = 0,
+                        OffsetX = 0,
+                        OffsetY = 0,
+                        Layer = new byte[LayerWidth * MaskLayerHeight],
+                    }
                     : Entry(archive, entry, "the mask", data => ToLayer(MaskFile.Read(data)))
             );
         }
@@ -127,7 +150,14 @@ public sealed class TerrainGraphics
             }
         }
 
-        return new MaskImage(mask.Width, mask.Height, mask.Header.OffsetX, mask.Header.OffsetY, layer);
+        return new MaskImage
+        {
+            Width = mask.Width,
+            Height = mask.Height,
+            OffsetX = mask.Header.OffsetX,
+            OffsetY = mask.Header.OffsetY,
+            Layer = layer,
+        };
     }
 
     internal static byte[] ToTexture(RawImage image, Palette palette)

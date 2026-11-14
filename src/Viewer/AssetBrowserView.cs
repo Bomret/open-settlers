@@ -152,7 +152,11 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        var (layout, install, script, folder) = (MapLaunch.Open)decision;
+        var open = (MapLaunch.Open)decision;
+        var layout = open.Layout;
+        var install = open.Install;
+        var script = open.Script;
+        var folder = open.PlayOutFolder;
         var view = layout is not null
             ? new MapViewControl(install, layout, args.Graphics)
             : new MapViewControl(

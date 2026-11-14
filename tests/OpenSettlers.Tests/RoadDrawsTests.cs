@@ -98,29 +98,39 @@ public sealed class RoadDrawsTests
         Assert.AreEqual(3, strips.Count);
         var land = Terrain.Lowland;
         Assert.AreEqual(
-            new RoadStrip(Camera.NodePosition(5, 5).X, Camera.NodePosition(5, 5).Y - 2, RoadDirection.East, 0, 0, land),
+            new RoadStrip
+            {
+                X = Camera.NodePosition(5, 5).X,
+                Y = Camera.NodePosition(5, 5).Y - 2,
+                Direction = RoadDirection.East,
+                Difference = 0,
+                Slope = 0,
+                Ground = land,
+            },
             strips[0]
         );
         Assert.AreEqual(
-            new RoadStrip(
-                Camera.NodePosition(8, 6).X,
-                Camera.NodePosition(8, 6).Y - 2,
-                RoadDirection.SouthEast,
-                0,
-                0,
-                land
-            ),
+            new RoadStrip
+            {
+                X = Camera.NodePosition(8, 6).X,
+                Y = Camera.NodePosition(8, 6).Y - 2,
+                Direction = RoadDirection.SouthEast,
+                Difference = 0,
+                Slope = 0,
+                Ground = land,
+            },
             strips[1]
         );
         Assert.AreEqual(
-            new RoadStrip(
-                Camera.NodePosition(12, 7).X - 16,
-                Camera.NodePosition(12, 7).Y - 2,
-                RoadDirection.South,
-                0,
-                0,
-                land
-            ),
+            new RoadStrip
+            {
+                X = Camera.NodePosition(12, 7).X - 16,
+                Y = Camera.NodePosition(12, 7).Y - 2,
+                Direction = RoadDirection.South,
+                Difference = 0,
+                Slope = 0,
+                Ground = land,
+            },
             strips[2]
         );
     }

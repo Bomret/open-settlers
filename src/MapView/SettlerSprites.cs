@@ -108,7 +108,7 @@ public sealed class SettlerSprites
             return null;
         }
 
-        return new ObjectDrawing(image, shadowed ? Shadow(pick.Dx, pick.Dy) : null);
+        return new ObjectDrawing { Image = image, Shadow = shadowed ? Shadow(pick.Dx, pick.Dy) : null };
     }
 
     // The image of an entry filled with a colour (-1 for none), hung moved by x and y; one instance for each, so that the

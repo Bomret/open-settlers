@@ -9,9 +9,30 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ObjectQuadsTests
 {
-    static readonly ObjectImage Flag = new(3, 1, -1, -2, new byte[12]);
-    static readonly ObjectImage FlagShadow = new(4, 2, 1, -1, new byte[32]);
-    static readonly ObjectImage GoodImage = new(2, 2, 3, 1, new byte[16]);
+    static readonly ObjectImage Flag = new()
+    {
+        Width = 3,
+        Height = 1,
+        OffsetX = -1,
+        OffsetY = -2,
+        Rgba = new byte[12],
+    };
+    static readonly ObjectImage FlagShadow = new()
+    {
+        Width = 4,
+        Height = 2,
+        OffsetX = 1,
+        OffsetY = -1,
+        Rgba = new byte[32],
+    };
+    static readonly ObjectImage GoodImage = new()
+    {
+        Width = 2,
+        Height = 2,
+        OffsetX = 3,
+        OffsetY = 1,
+        Rgba = new byte[16],
+    };
 
     // A source that draws a flag with a shadow, a woodcutter's hut with no shadow, every good as one image, a ripple on
     // even tiles only, and nothing else.
@@ -22,29 +43,37 @@ public sealed class ObjectQuadsTests
         public ObjectImage? Draw(RoadStrip strip) => null;
 
         public ObjectDrawing? Draw(MapObjectDraw draw) =>
-            draw.Object == MapObject.Flag ? new ObjectDrawing(Flag, FlagShadow) : null;
+            draw.Object == MapObject.Flag ? new ObjectDrawing { Image = Flag, Shadow = FlagShadow } : null;
 
         public ObjectDrawing? Draw(BuildingDraw draw) =>
-            draw.Type == BuildingType.Woodcutter ? new ObjectDrawing(Flag, null) : null;
+            draw.Type == BuildingType.Woodcutter ? new ObjectDrawing { Image = Flag, Shadow = null } : null;
 
-        public ObjectDrawing? Draw(GoodAtFlag draw) => new ObjectDrawing(GoodImage, null);
+        public ObjectDrawing? Draw(GoodAtFlag draw) => new ObjectDrawing { Image = GoodImage, Shadow = null };
 
         // A settler's figure has a shadow, its overlay none, and its second figure no image.
         public ObjectDrawing? Draw(SettlerDraw draw) =>
             draw.Part switch
             {
-                SettlerPart.Figure => new ObjectDrawing(Flag, FlagShadow),
-                SettlerPart.Overlay => new ObjectDrawing(GoodImage, null),
+                SettlerPart.Figure => new ObjectDrawing { Image = Flag, Shadow = FlagShadow },
+                SettlerPart.Overlay => new ObjectDrawing { Image = GoodImage, Shadow = null },
                 _ => null,
             };
 
         public RippleImage? Draw(WaterRipple ripple) =>
-            ripple.Tile % 2 == 0 ? new RippleImage(Flag, [1, 2, 3, 255]) : null;
+            ripple.Tile % 2 == 0 ? new RippleImage { Image = Flag, Surface = [1, 2, 3, 255] } : null;
 
         public int ObjectHeadroom => 2;
     }
 
-    static MapObjectDraw FlagAt(int row, int x, int y) => new(row, x, y, MapObject.Flag, 0);
+    static MapObjectDraw FlagAt(int row, int x, int y) =>
+        new()
+        {
+            Row = row,
+            X = x,
+            Y = y,
+            Object = MapObject.Flag,
+            Step = 0,
+        };
 
     [TestMethod]
     public void AQuadHangsFromTheDrawPositionByTheImagesOffsets()
@@ -67,10 +96,38 @@ public sealed class ObjectQuadsTests
         CollectionAssert.AreEqual(
             new[]
             {
-                new ObjectQuad(101, 49, 4, 2, 0),
-                new ObjectQuad(99, 48, 3, 1, 1),
-                new ObjectQuad(201, 49, 4, 2, 0),
-                new ObjectQuad(199, 48, 3, 1, 1),
+                new ObjectQuad
+                {
+                    X = 101,
+                    Y = 49,
+                    Width = 4,
+                    Height = 2,
+                    Layer = 0,
+                },
+                new ObjectQuad
+                {
+                    X = 99,
+                    Y = 48,
+                    Width = 3,
+                    Height = 1,
+                    Layer = 1,
+                },
+                new ObjectQuad
+                {
+                    X = 201,
+                    Y = 49,
+                    Width = 4,
+                    Height = 2,
+                    Layer = 0,
+                },
+                new ObjectQuad
+                {
+                    X = 199,
+                    Y = 48,
+                    Width = 3,
+                    Height = 1,
+                    Layer = 1,
+                },
             },
             bands[0]
         );
@@ -81,7 +138,17 @@ public sealed class ObjectQuadsTests
     public void ATermTheSourceDrawsNothingForLeavesNoQuadAndNoLayer()
     {
         var layers = new ImageLayers();
-        var terms = new ObjectTerm[] { new MapObjectDraw(0, 100, 50, new MapObject { Code = 40 }, 0) };
+        var terms = new ObjectTerm[]
+        {
+            new MapObjectDraw
+            {
+                Row = 0,
+                X = 100,
+                Y = 50,
+                Object = new MapObject { Code = 40 },
+                Step = 0,
+            },
+        };
 
         var bands = ObjectQuads.Bands(terms, new FakeSource(), layers, 1, 16);
 
@@ -92,11 +159,30 @@ public sealed class ObjectQuadsTests
     [TestMethod]
     public void AnImageWithNoPixelLeavesNoQuad()
     {
-        var empty = new ObjectDrawing(new ObjectImage(0, 0, 0, 0, []), null);
+        var empty = new ObjectDrawing
+        {
+            Image = new ObjectImage
+            {
+                Width = 0,
+                Height = 0,
+                OffsetX = 0,
+                OffsetY = 0,
+                Rgba = [],
+            },
+            Shadow = null,
+        };
         var layers = new ImageLayers();
 
         var bands = ObjectQuads.Bands(
-            [new GoodAtFlag(0, 1, 1, new Domain.Good { Code = 7 })],
+            [
+                new GoodAtFlag
+                {
+                    Row = 0,
+                    X = 1,
+                    Y = 1,
+                    Good = new Domain.Good { Code = 7 },
+                },
+            ],
             new EmptySource(empty),
             layers,
             1,
@@ -132,7 +218,13 @@ public sealed class ObjectQuadsTests
         var terms = new ObjectTerm[]
         {
             FlagAt(0, 100, 50),
-            new BuildingDraw(0, 132, 50, BuildingType.Woodcutter),
+            new BuildingDraw
+            {
+                Row = 0,
+                X = 132,
+                Y = 50,
+                Type = BuildingType.Woodcutter,
+            },
             FlagAt(20, 100, 450),
         };
 
@@ -148,9 +240,21 @@ public sealed class ObjectQuadsTests
     {
         var terms = new ObjectTerm[]
         {
-            new GoodAtFlag(0, 10, 10, new Domain.Good { Code = 7 }),
+            new GoodAtFlag
+            {
+                Row = 0,
+                X = 10,
+                Y = 10,
+                Good = new Domain.Good { Code = 7 },
+            },
             FlagAt(0, 100, 50),
-            new GoodAtFlag(0, 20, 10, new Domain.Good { Code = 7 }),
+            new GoodAtFlag
+            {
+                Row = 0,
+                X = 20,
+                Y = 10,
+                Good = new Domain.Good { Code = 7 },
+            },
         };
 
         var bands = ObjectQuads.Bands(terms, new FakeSource(), new ImageLayers(), 1, 16);
@@ -164,34 +268,81 @@ public sealed class ObjectQuadsTests
         var layers = new ImageLayers();
 
         var (quads, surface) = ObjectQuads.Ripples(
-            [new WaterRipple(0, 100, 50, 0, 0), new WaterRipple(0, 132, 50, 1, 0), new WaterRipple(1, 100, 70, 2, 0)],
+            [
+                new WaterRipple
+                {
+                    Row = 0,
+                    X = 100,
+                    Y = 50,
+                    Tile = 0,
+                    Step = 0,
+                },
+                new WaterRipple
+                {
+                    Row = 0,
+                    X = 132,
+                    Y = 50,
+                    Tile = 1,
+                    Step = 0,
+                },
+                new WaterRipple
+                {
+                    Row = 1,
+                    X = 100,
+                    Y = 70,
+                    Tile = 2,
+                    Step = 0,
+                },
+            ],
             new FakeSource(),
             layers
         );
 
-        CollectionAssert.AreEqual(new[] { new ObjectQuad(99, 48, 3, 1, 0), new ObjectQuad(99, 68, 3, 1, 0) }, quads);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new ObjectQuad
+                {
+                    X = 99,
+                    Y = 48,
+                    Width = 3,
+                    Height = 1,
+                    Layer = 0,
+                },
+                new ObjectQuad
+                {
+                    X = 99,
+                    Y = 68,
+                    Width = 3,
+                    Height = 1,
+                    Layer = 0,
+                },
+            },
+            quads
+        );
         CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 255 }, surface);
         Assert.HasCount(1, layers.Images);
     }
 
     static SettlerDraw SettlerAt(SettlerPart part, int row, int x, int y) =>
-        new(
-            row,
-            x,
-            y,
-            part,
-            new Carrier(),
-            new WalksRoad
+        new()
+        {
+            Row = row,
+            X = x,
+            Y = y,
+            Part = part,
+            Job = new Carrier(),
+            Activity = new WalksRoad
             {
                 Load = null,
                 Heading = new Heading { Value = 0 },
             },
-            null,
-            7,
-            0,
-            0,
-            Good.None
-        );
+            Heading = null,
+            Frame = 7,
+            Step = 0,
+            Player = 0,
+            Carried = Good.None,
+        };
 
     // The settlers are one list in the order the terms come: a settler's shadow right before its figure, then its overlay,
     // and a part the source has no image for leaves no quad.
@@ -214,11 +365,46 @@ public sealed class ObjectQuadsTests
         CollectionAssert.AreEqual(
             new[]
             {
-                new ObjectQuad(101, 49, 4, 2, 0),
-                new ObjectQuad(99, 48, 3, 1, 1),
-                new ObjectQuad(103, 51, 2, 2, 2),
-                new ObjectQuad(201, 399, 4, 2, 0),
-                new ObjectQuad(199, 398, 3, 1, 1),
+                new ObjectQuad
+                {
+                    X = 101,
+                    Y = 49,
+                    Width = 4,
+                    Height = 2,
+                    Layer = 0,
+                },
+                new ObjectQuad
+                {
+                    X = 99,
+                    Y = 48,
+                    Width = 3,
+                    Height = 1,
+                    Layer = 1,
+                },
+                new ObjectQuad
+                {
+                    X = 103,
+                    Y = 51,
+                    Width = 2,
+                    Height = 2,
+                    Layer = 2,
+                },
+                new ObjectQuad
+                {
+                    X = 201,
+                    Y = 399,
+                    Width = 4,
+                    Height = 2,
+                    Layer = 0,
+                },
+                new ObjectQuad
+                {
+                    X = 199,
+                    Y = 398,
+                    Width = 3,
+                    Height = 1,
+                    Layer = 1,
+                },
             },
             quads
         );
@@ -240,7 +426,20 @@ public sealed class ObjectQuadsTests
     {
         var layers = new ImageLayers();
 
-        var (quads, surface) = ObjectQuads.Ripples([new WaterRipple(0, 100, 50, 1, 0)], new FakeSource(), layers);
+        var (quads, surface) = ObjectQuads.Ripples(
+            [
+                new WaterRipple
+                {
+                    Row = 0,
+                    X = 100,
+                    Y = 50,
+                    Tile = 1,
+                    Step = 0,
+                },
+            ],
+            new FakeSource(),
+            layers
+        );
 
         Assert.IsEmpty(quads);
         Assert.IsNull(surface);

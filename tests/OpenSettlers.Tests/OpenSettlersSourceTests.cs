@@ -88,7 +88,12 @@ public sealed class OpenSettlersSourceTests
                 Array.Fill(rgba, byte.Parse(text[(colon + 1)..]));
             }
 
-            return new DecodedImage(width, height, rgba);
+            return new DecodedImage
+            {
+                Width = width,
+                Height = height,
+                Rgba = rgba,
+            };
         }
     }
 
@@ -130,7 +135,18 @@ public sealed class OpenSettlersSourceTests
             );
 
     static TerrainTriangle Triangle(int code, bool upper) =>
-        new(0, 0, upper, new Terrain { Code = code }, 0, 0, 0, 100, 50);
+        new()
+        {
+            Column = 0,
+            Row = 0,
+            Upper = upper,
+            Terrain = new Terrain { Code = code },
+            Apex = 0,
+            Left = 0,
+            Right = 0,
+            X = 100,
+            Y = 50,
+        };
 
     [TestMethod]
     public void ATerrainTriangleDrawsTheImageOfItsTerrainAndOrientationHungFromItsAnchor()
@@ -168,7 +184,19 @@ public sealed class OpenSettlersSourceTests
         folder.Png("strip.png", $"{width}x1:1");
         folder.Entries[key] = ContentFolder.Entry("strip.png", "1, 2");
 
-        var image = folder.Load().Draw(new RoadStrip(10, 20, direction, 0, 0, new Terrain { Code = 5 }))!;
+        var image = folder
+            .Load()
+            .Draw(
+                new RoadStrip
+                {
+                    X = 10,
+                    Y = 20,
+                    Direction = direction,
+                    Difference = 0,
+                    Slope = 0,
+                    Ground = new Terrain { Code = 5 },
+                }
+            )!;
 
         Assert.AreEqual((width, 1, 1, 2), (image.Width, image.Height, image.OffsetX, image.OffsetY));
     }
@@ -209,14 +237,37 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["object/13"] = ContentFolder.Entry("tree.png", "-2, -6");
         var source = folder.Load();
 
-        var drawing = source.Draw(new MapObjectDraw(0, 0, 0, new MapObject { Code = 13 }, 0))!;
+        var drawing = source.Draw(
+            new MapObjectDraw
+            {
+                Row = 0,
+                X = 0,
+                Y = 0,
+                Object = new MapObject { Code = 13 },
+                Step = 0,
+            }
+        )!;
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual(
             (5, 7, -2, -6),
             (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY)
         );
-        Assert.AreSame(drawing.Image, source.Draw(new MapObjectDraw(5, 9, 9, new MapObject { Code = 13 }, 77))!.Image);
+        Assert.AreSame(
+            drawing.Image,
+            source
+                .Draw(
+                    new MapObjectDraw
+                    {
+                        Row = 5,
+                        X = 9,
+                        Y = 9,
+                        Object = new MapObject { Code = 13 },
+                        Step = 77,
+                    }
+                )!
+                .Image
+        );
     }
 
     [TestMethod]
@@ -229,7 +280,20 @@ public sealed class OpenSettlersSourceTests
     {
         using var folder = new ContentFolder();
 
-        Assert.IsNull(folder.Load().Draw(new MapObjectDraw(0, 0, 0, new MapObject { Code = (byte)code }, 0)));
+        Assert.IsNull(
+            folder
+                .Load()
+                .Draw(
+                    new MapObjectDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Object = new MapObject { Code = (byte)code },
+                        Step = 0,
+                    }
+                )
+        );
     }
 
     [TestMethod]
@@ -239,7 +303,19 @@ public sealed class OpenSettlersSourceTests
         folder.Png("flag.png", "3x4:2");
         folder.Entries["object/flag"] = ContentFolder.Entry("flag.png", "0, -3");
 
-        var image = folder.Load().Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 8))!.Image!;
+        var image = folder
+            .Load()
+            .Draw(
+                new MapObjectDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Object = MapObject.Flag,
+                    Step = 8,
+                }
+            )!
+            .Image!;
 
         Assert.AreEqual((3, 4, 0, -3), (image.Width, image.Height, image.OffsetX, image.OffsetY));
     }
@@ -261,7 +337,20 @@ public sealed class OpenSettlersSourceTests
     {
         using var folder = new ContentFolder();
 
-        Assert.IsNull(folder.Load().Draw(new WaterRipple(0, 0, 0, 0, 0)));
+        Assert.IsNull(
+            folder
+                .Load()
+                .Draw(
+                    new WaterRipple
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Tile = 0,
+                        Step = 0,
+                    }
+                )
+        );
     }
 
     [TestMethod]
@@ -276,7 +365,17 @@ public sealed class OpenSettlersSourceTests
         folder.Png("building.png", "9x8:6");
         folder.Entries[key] = ContentFolder.Entry("building.png", "-4, -7");
 
-        var drawing = folder.Load().Draw(new BuildingDraw(0, 0, 0, new BuildingType { Code = type }))!;
+        var drawing = folder
+            .Load()
+            .Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = new BuildingType { Code = type },
+                }
+            )!;
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual(
@@ -295,13 +394,33 @@ public sealed class OpenSettlersSourceTests
         folder.Entries[key] = ContentFolder.Entry("site.png", "-4, -7");
         var source = folder.Load();
 
-        var drawing = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Sawmill, (ushort)progress))!;
+        var drawing = source.Draw(
+            new BuildingDraw
+            {
+                Row = 0,
+                X = 0,
+                Y = 0,
+                Type = BuildingType.Sawmill,
+                SiteProgress = (ushort)progress,
+            }
+        )!;
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual((9, 8), (drawing.Image!.Width, drawing.Image.Height));
         Assert.AreSame(
             drawing.Image,
-            source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter, (ushort)progress))!.Image
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.Woodcutter,
+                        SiteProgress = (ushort)progress,
+                    }
+                )!
+                .Image
         );
     }
 
@@ -317,8 +436,30 @@ public sealed class OpenSettlersSourceTests
 
         // Twice the progress word is the fraction of the scaffold's height that shows from the bottom: (0x200 * 8 >> 16) + 1 = 1 row, and
         // (0x6000 * 8 >> 16) + 1 = 4 rows; the base is 2 rows high and its bottom row is the scaffold's.
-        var low = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x0100))!.Image!;
-        var high = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x3000))!.Image!;
+        var low = source
+            .Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = BuildingType.Forester,
+                    SiteProgress = 0x0100,
+                }
+            )!
+            .Image!;
+        var high = source
+            .Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = BuildingType.Forester,
+                    SiteProgress = 0x3000,
+                }
+            )!
+            .Image!;
 
         Assert.AreEqual((2, -1), (low.Height, low.OffsetY));
         Assert.AreEqual((4, -3), (high.Height, high.OffsetY));
@@ -335,8 +476,30 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["building/forester"] = ContentFolder.Entry("hut.png", "-4, -7");
         var source = folder.Load();
 
-        var first = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x8000))!.Image!;
-        var later = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0xc000))!.Image!;
+        var first = source
+            .Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = BuildingType.Forester,
+                    SiteProgress = 0x8000,
+                }
+            )!
+            .Image!;
+        var later = source
+            .Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = BuildingType.Forester,
+                    SiteProgress = 0xc000,
+                }
+            )!
+            .Image!;
 
         // The whole scaffold alone at 0x8000; then the building's bottom (0x8000 * 8 >> 16) + 1 = 5 rows over it.
         Assert.AreEqual(5, first.Rgba[0]);
@@ -349,7 +512,19 @@ public sealed class OpenSettlersSourceTests
     {
         using var folder = new ContentFolder();
 
-        Assert.IsNull(folder.Load().Draw(new BuildingDraw(0, 0, 0, BuildingType.None)));
+        Assert.IsNull(
+            folder
+                .Load()
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.None,
+                    }
+                )
+        );
     }
 
     [TestMethod]
@@ -378,14 +553,35 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["good/7"] = ContentFolder.Entry("log.png", "-2, -2");
         var source = folder.Load();
 
-        var drawing = source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = 7 }))!;
+        var drawing = source.Draw(
+            new GoodAtFlag
+            {
+                Row = 0,
+                X = 0,
+                Y = 0,
+                Good = new Good { Code = 7 },
+            }
+        )!;
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual(
             (4, 2, -2, -2),
             (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY)
         );
-        Assert.AreSame(drawing.Image, source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = 7 + 32 }))!.Image);
+        Assert.AreSame(
+            drawing.Image,
+            source
+                .Draw(
+                    new GoodAtFlag
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Good = new Good { Code = 7 + 32 },
+                    }
+                )!
+                .Image
+        );
     }
 
     [TestMethod]
@@ -408,7 +604,21 @@ public sealed class OpenSettlersSourceTests
         int step = 0,
         int player = 0,
         Good? carried = null
-    ) => new(0, 0, 0, part, job, activity, heading, frame, step, player, carried ?? Good.None);
+    ) =>
+        new()
+        {
+            Row = 0,
+            X = 0,
+            Y = 0,
+            Part = part,
+            Job = job,
+            Activity = activity,
+            Heading = heading,
+            Frame = frame,
+            Step = step,
+            Player = player,
+            Carried = carried ?? Good.None,
+        };
 
     static Activity Walking(Heading? heading = null) =>
         new WalksRoad { Load = null, Heading = heading ?? new Heading { Value = 0 } };
@@ -939,7 +1149,13 @@ public sealed class OpenSettlersSourceTests
     // A decoder whose images claim a size their pixels do not fill: 2 x 2 pixels, 15 bytes of RGBA.
     sealed class ShortDecoder : IImageDecoder
     {
-        public DecodedImage? Decode(string path) => new(2, 2, new byte[15]);
+        public DecodedImage? Decode(string path) =>
+            new()
+            {
+                Width = 2,
+                Height = 2,
+                Rgba = new byte[15],
+            };
     }
 
     [TestMethod]
@@ -1042,7 +1258,12 @@ public sealed class OpenSettlersSourceTests
             var width = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(16, 4));
             var height = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(20, 4));
 
-            return new DecodedImage(width, height, new byte[width * height * 4]);
+            return new DecodedImage
+            {
+                Width = width,
+                Height = height,
+                Rgba = new byte[width * height * 4],
+            };
         }
     }
 
@@ -1073,7 +1294,19 @@ public sealed class OpenSettlersSourceTests
 
         foreach (var direction in Enum.GetValues<RoadDirection>())
         {
-            Assert.IsNotNull(source.Draw(new RoadStrip(0, 0, direction, 0, 0, new Terrain { Code = 5 })));
+            Assert.IsNotNull(
+                source.Draw(
+                    new RoadStrip
+                    {
+                        X = 0,
+                        Y = 0,
+                        Direction = direction,
+                        Difference = 0,
+                        Slope = 0,
+                        Ground = new Terrain { Code = 5 },
+                    }
+                )
+            );
         }
     }
 
@@ -1140,26 +1373,116 @@ public sealed class OpenSettlersSourceTests
     {
         var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
 
-        Assert.IsNotNull(source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0))?.Image);
+        Assert.IsNotNull(
+            source
+                .Draw(
+                    new MapObjectDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Object = MapObject.Flag,
+                        Step = 0,
+                    }
+                )
+                ?.Image
+        );
         for (var code = MapObject.FirstTreeCode; code < 128; code++)
         {
             Assert.IsNotNull(
-                source.Draw(new MapObjectDraw(0, 0, 0, new MapObject { Code = (byte)code }, 0))?.Image,
+                source
+                    .Draw(
+                        new MapObjectDraw
+                        {
+                            Row = 0,
+                            X = 0,
+                            Y = 0,
+                            Object = new MapObject { Code = (byte)code },
+                            Step = 0,
+                        }
+                    )
+                    ?.Image,
                 $"{code}"
             );
         }
 
         for (var code = 0; code < 32; code++)
         {
-            Assert.IsNotNull(source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = code }))?.Image, $"good {code}");
+            Assert.IsNotNull(
+                source
+                    .Draw(
+                        new GoodAtFlag
+                        {
+                            Row = 0,
+                            X = 0,
+                            Y = 0,
+                            Good = new Good { Code = code },
+                        }
+                    )
+                    ?.Image,
+                $"good {code}"
+            );
         }
 
-        Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Castle))?.Image);
+        Assert.IsNotNull(
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.Castle,
+                    }
+                )
+                ?.Image
+        );
         foreach (var type in BuildingPlacement.Types)
         {
-            Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, type))?.Image, $"finished {type}");
-            Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, type, 0))?.Image, $"site of {type}, progress 0");
-            Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, type, 1))?.Image, $"site of {type}, progress 1");
+            Assert.IsNotNull(
+                source
+                    .Draw(
+                        new BuildingDraw
+                        {
+                            Row = 0,
+                            X = 0,
+                            Y = 0,
+                            Type = type,
+                        }
+                    )
+                    ?.Image,
+                $"finished {type}"
+            );
+            Assert.IsNotNull(
+                source
+                    .Draw(
+                        new BuildingDraw
+                        {
+                            Row = 0,
+                            X = 0,
+                            Y = 0,
+                            Type = type,
+                            SiteProgress = 0,
+                        }
+                    )
+                    ?.Image,
+                $"site of {type}, progress 0"
+            );
+            Assert.IsNotNull(
+                source
+                    .Draw(
+                        new BuildingDraw
+                        {
+                            Row = 0,
+                            X = 0,
+                            Y = 0,
+                            Type = type,
+                            SiteProgress = 1,
+                        }
+                    )
+                    ?.Image,
+                $"site of {type}, progress 1"
+            );
         }
     }
 

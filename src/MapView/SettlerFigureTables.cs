@@ -10,14 +10,40 @@ namespace OpenSettlers.MapView;
 /// (<c>0x44d89d</c>), and the x and y offsets, as signed bytes, for each value of a node's six road direction bits
 /// (<c>0x674923</c>).
 /// </summary>
-public sealed record IdleCarrierTables(short[] Phases, short[] Figures, sbyte[] Offsets);
+public sealed record IdleCarrierTables
+{
+    /// <summary>The 16 phase words (<c>0x44d87d</c>).</summary>
+    public required short[] Phases { get; init; }
+
+    /// <summary>The 128 figure words (<c>0x44d89d</c>).</summary>
+    public required short[] Figures { get; init; }
+
+    /// <summary>The x and y offsets, as signed bytes, for each value of a node's six road direction bits (<c>0x674923</c>).</summary>
+    public required sbyte[] Offsets { get; init; }
+}
 
 /// <summary>
 /// What the figure tables pick for one term of a settler: the sprite entry, the palette index its fill takes (-1 for a
 /// sprite drawn as it is), the entry of the figure whose header shifts it (-1 for none; only the second figure is shifted),
 /// and the offset the node's road directions move a waiting carrier by (0 for any other).
 /// </summary>
-public readonly record struct SettlerPick(int Entry, int Colour, int ShiftedBy, int Dx, int Dy);
+public readonly record struct SettlerPick
+{
+    /// <summary>The sprite entry.</summary>
+    public required int Entry { get; init; }
+
+    /// <summary>The palette index the sprite's fill takes; -1 for a sprite drawn as it is.</summary>
+    public required int Colour { get; init; }
+
+    /// <summary>The entry of the figure whose header shifts the sprite; -1 for none.</summary>
+    public required int ShiftedBy { get; init; }
+
+    /// <summary>The horizontal offset the node's road directions move a waiting carrier by; 0 for any other settler.</summary>
+    public required int Dx { get; init; }
+
+    /// <summary>The vertical offset the node's road directions move a waiting carrier by; 0 for any other settler.</summary>
+    public required int Dy { get; init; }
+}
 
 /// <summary>
 /// Which sprites a settler is drawn with, by the exe's figure tables (<c>docs/rules/settlers.md</c>, "Drawing the walk"): the
@@ -82,7 +108,12 @@ public sealed class SettlerFigureTables
             tables.FigureBases,
             tables.FigureOffsets,
             sequences,
-            new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets)
+            new IdleCarrierTables
+            {
+                Phases = tables.IdlePhases,
+                Figures = tables.IdleFigures,
+                Offsets = tables.IdleOffsets,
+            }
         );
 
     /// <summary>Whether the tables hold the figure handler of <paramref name="job"/>: a job without one has no drawn figure.</summary>
@@ -161,18 +192,33 @@ public sealed class SettlerFigureTables
         switch (part)
         {
             case SettlerPart.Figure:
-                return new SettlerPick(FigureBase + first, -1, -1, dx, dy);
+                return new SettlerPick
+                {
+                    Entry = FigureBase + first,
+                    Colour = -1,
+                    ShiftedBy = -1,
+                    Dx = dx,
+                    Dy = dy,
+                };
             case SettlerPart.Overlay:
-                return new SettlerPick(OverlayBase + first, colour, -1, dx, dy);
+                return new SettlerPick
+                {
+                    Entry = OverlayBase + first,
+                    Colour = colour,
+                    ShiftedBy = -1,
+                    Dx = dx,
+                    Dy = dy,
+                };
             default:
                 return _bases[2 * row + 1] >= 0
-                    ? new SettlerPick(
-                        SecondBase + _bases[2 * row + 1] + _offsets[2 * figure + 1],
-                        -1,
-                        FigureBase + first,
-                        dx,
-                        dy
-                    )
+                    ? new SettlerPick
+                    {
+                        Entry = SecondBase + _bases[2 * row + 1] + _offsets[2 * figure + 1],
+                        Colour = -1,
+                        ShiftedBy = FigureBase + first,
+                        Dx = dx,
+                        Dy = dy,
+                    }
                     : null;
         }
     }

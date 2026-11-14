@@ -17,7 +17,14 @@ public sealed class ImageLayersTests
                 var width = 1 + i % 97;
                 var height = 1 + i % 61;
 
-                return new ObjectImage(width, height, 0, 0, new byte[width * height * 4]);
+                return new ObjectImage
+                {
+                    Width = width,
+                    Height = height,
+                    OffsetX = 0,
+                    OffsetY = 0,
+                    Rgba = new byte[width * height * 4],
+                };
             })
             .ToList();
 
@@ -46,8 +53,22 @@ public sealed class ImageLayersTests
     public void TwoValueEqualButDistinctImagesGiveTwoLayers()
     {
         var layers = new ImageLayers();
-        var first = new ObjectImage(0, 0, 0, 0, []);
-        var second = new ObjectImage(0, 0, 0, 0, []);
+        var first = new ObjectImage
+        {
+            Width = 0,
+            Height = 0,
+            OffsetX = 0,
+            OffsetY = 0,
+            Rgba = [],
+        };
+        var second = new ObjectImage
+        {
+            Width = 0,
+            Height = 0,
+            OffsetX = 0,
+            OffsetY = 0,
+            Rgba = [],
+        };
 
         Assert.AreEqual(first, second);
         Assert.AreEqual(0, layers.Of(first));

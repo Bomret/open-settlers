@@ -3,7 +3,23 @@ using System.Collections.Generic;
 namespace OpenSettlers.MapView;
 
 /// <summary>One image-sized rectangle to draw: its top-left corner and size in map pixels, and its array texture layer.</summary>
-public readonly record struct ObjectQuad(int X, int Y, int Width, int Height, int Layer);
+public readonly record struct ObjectQuad
+{
+    /// <summary>The left edge in map pixels.</summary>
+    public required int X { get; init; }
+
+    /// <summary>The top edge in map pixels.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>The width in map pixels.</summary>
+    public required int Width { get; init; }
+
+    /// <summary>The height in map pixels.</summary>
+    public required int Height { get; init; }
+
+    /// <summary>The layer of the array texture.</summary>
+    public required int Layer { get; init; }
+}
 
 /// <summary>The drawing plan of a map's objects: one rectangle per image the source draws, grouped into bands of rows.</summary>
 public static class ObjectQuads
@@ -97,7 +113,14 @@ public static class ObjectQuads
         if (image is { Width: > 0, Height: > 0 })
         {
             quads.Add(
-                new ObjectQuad(x + image.OffsetX, y + image.OffsetY, image.Width, image.Height, layers.Of(image))
+                new ObjectQuad
+                {
+                    X = x + image.OffsetX,
+                    Y = y + image.OffsetY,
+                    Width = image.Width,
+                    Height = image.Height,
+                    Layer = layers.Of(image),
+                }
             );
         }
     }

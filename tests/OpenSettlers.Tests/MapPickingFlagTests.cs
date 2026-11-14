@@ -87,7 +87,17 @@ public sealed class MapPickingFlagTests
         // x 140 to 180 and x 172 to 212, and both hold (174,198), whose nearest node is the western flag.
         var map = FlagsAt((10, 10, 0), (11, 10, 0));
 
-        var picked = PickAt(map, (174, 198), new MapPicking.PickBox(40, 19, -20, -18));
+        var picked = PickAt(
+            map,
+            (174, 198),
+            new MapPicking.PickBox
+            {
+                Width = 40,
+                Height = 19,
+                OffsetX = -20,
+                OffsetY = -18,
+            }
+        );
 
         Assert.AreEqual((11, 10), picked);
     }

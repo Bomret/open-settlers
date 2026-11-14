@@ -3,7 +3,14 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.MapView;
 
 /// <summary>The mask and the texture the original draws a terrain triangle with (entries of <c>loca/SPAD.PA</c>).</summary>
-public readonly record struct TerrainDraw(int Mask, int Texture);
+public readonly record struct TerrainDraw
+{
+    /// <summary>The entry of the mask.</summary>
+    public required int Mask { get; init; }
+
+    /// <summary>The entry of the texture.</summary>
+    public required int Texture { get; init; }
+}
 
 /// <summary>
 /// How the original picks the mask and the texture of a terrain triangle (<c>docs/rules/graphics-images.md</c>,
@@ -236,7 +243,7 @@ public static class TerrainRules
 
         var texture = TextureOfTerrain[(terrain & 15) * 8 + (variants[index] >> 2)];
 
-        return new TerrainDraw(firstMask + index, FirstTexture + texture);
+        return new TerrainDraw { Mask = firstMask + index, Texture = FirstTexture + texture };
     }
 
     static byte[] BuildTextureOfTerrain()

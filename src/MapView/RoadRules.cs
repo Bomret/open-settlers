@@ -4,7 +4,14 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.MapView;
 
 /// <summary>The mask and the texture the original draws a road strip with (entries of <c>loca/SPAD.PA</c>).</summary>
-public readonly record struct RoadDraw(int Mask, int Texture);
+public readonly record struct RoadDraw
+{
+    /// <summary>The entry of the mask.</summary>
+    public required int Mask { get; init; }
+
+    /// <summary>The entry of the texture.</summary>
+    public required int Texture { get; init; }
+}
 
 /// <summary>
 /// How the original picks the mask and the texture of a road strip (<c>docs/rules/roads.md</c>): the strip routines
@@ -57,6 +64,6 @@ public static class RoadRules
             texture += strip.Ground.IsSnow ? SnowStep : MountainStep;
         }
 
-        return new RoadDraw(maskBase + strip.Difference, texture);
+        return new RoadDraw { Mask = maskBase + strip.Difference, Texture = texture };
     }
 }

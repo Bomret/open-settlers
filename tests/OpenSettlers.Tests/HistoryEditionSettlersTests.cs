@@ -321,7 +321,14 @@ public sealed class HistoryEditionSettlersTests
     [TestMethod]
     public void AColourOverlayKeepsItsTransparentPixelsTransparent()
     {
-        var overlay = new ObjectImage(2, 1, 0, 0, [1, 2, 3, 255, 0, 0, 0, 0]);
+        var overlay = new ObjectImage
+        {
+            Width = 2,
+            Height = 1,
+            OffsetX = 0,
+            OffsetY = 0,
+            Rgba = [1, 2, 3, 255, 0, 0, 0, 0],
+        };
         var bytes = new byte[768];
         bytes[3 * 0x40] = 64;
         bytes[3 * 0x40 + 1] = 68;

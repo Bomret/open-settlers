@@ -8,15 +8,33 @@ namespace OpenSettlers.MapView;
 /// palette indexes to colors, so a covered pixel is opaque, whatever its index: index 0 is a real color
 /// (<c>Palette</c>). An uncovered pixel is fully transparent.
 /// </summary>
-/// <param name="Width">The width in pixels.</param>
-/// <param name="Height">The height in pixels.</param>
-/// <param name="OffsetX">The offset of the image's left edge from the draw position.</param>
-/// <param name="OffsetY">The offset of the image's top edge from the draw position.</param>
-/// <param name="Rgba">Four bytes per pixel, row by row: the palette's color with alpha 255 where the program draws the pixel, and 0, 0, 0, 0 where it leaves the surface as it is.</param>
-public sealed record ObjectImage(int Width, int Height, int OffsetX, int OffsetY, byte[] Rgba)
+public sealed record ObjectImage
 {
+    /// <summary>The width in pixels.</summary>
+    public required int Width { get; init; }
+
+    /// <summary>The height in pixels.</summary>
+    public required int Height { get; init; }
+
+    /// <summary>The offset of the image's left edge from the draw position.</summary>
+    public required int OffsetX { get; init; }
+
+    /// <summary>The offset of the image's top edge from the draw position.</summary>
+    public required int OffsetY { get; init; }
+
+    /// <summary>Four bytes per pixel, row by row: the palette's color with alpha 255 where the program draws the pixel, and 0, 0, 0, 0 where it leaves the surface as it is.</summary>
+    public required byte[] Rgba { get; init; }
+
     /// <summary>An image with no pixel, for an entry the archive leaves out.</summary>
-    public static ObjectImage Empty { get; } = new(0, 0, 0, 0, []);
+    public static ObjectImage Empty { get; } =
+        new()
+        {
+            Width = 0,
+            Height = 0,
+            OffsetX = 0,
+            OffsetY = 0,
+            Rgba = [],
+        };
 
     /// <summary>
     /// The image with its pixel rows laid out in a <paramref name="width"/> x <paramref name="height"/> layer, at the
@@ -74,7 +92,14 @@ public sealed record ObjectImage(int Width, int Height, int OffsetX, int OffsetY
         Blit(this, rgba);
         Blit(above, rgba);
 
-        return new ObjectImage(width, height, left, top, rgba);
+        return new ObjectImage
+        {
+            Width = width,
+            Height = height,
+            OffsetX = left,
+            OffsetY = top,
+            Rgba = rgba,
+        };
 
         void Blit(ObjectImage image, byte[] target)
         {
@@ -105,13 +130,14 @@ public sealed record ObjectImage(int Width, int Height, int OffsetX, int OffsetY
             }
         }
 
-        return new ObjectImage(
-            sprite.Header.Width,
-            sprite.Header.Height,
-            sprite.Header.OffsetX,
-            sprite.Header.OffsetY,
-            rgba
-        );
+        return new ObjectImage
+        {
+            Width = sprite.Header.Width,
+            Height = sprite.Header.Height,
+            OffsetX = sprite.Header.OffsetX,
+            OffsetY = sprite.Header.OffsetY,
+            Rgba = rgba,
+        };
     }
 
     /// <summary>
@@ -129,6 +155,13 @@ public sealed record ObjectImage(int Width, int Height, int OffsetX, int OffsetY
             }
         }
 
-        return new ObjectImage(mask.Width, mask.Height, mask.Header.OffsetX, mask.Header.OffsetY, rgba);
+        return new ObjectImage
+        {
+            Width = mask.Width,
+            Height = mask.Height,
+            OffsetX = mask.Header.OffsetX,
+            OffsetY = mask.Header.OffsetY,
+            Rgba = rgba,
+        };
     }
 }

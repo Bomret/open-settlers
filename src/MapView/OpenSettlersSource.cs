@@ -221,7 +221,14 @@ public sealed class OpenSettlersSource : IGraphicsSource
                     decoded[path] = pixels;
                 }
 
-                image = new ObjectImage(pixels.Width, pixels.Height, anchorX, anchorY, pixels.Rgba);
+                image = new ObjectImage
+                {
+                    Width = pixels.Width,
+                    Height = pixels.Height,
+                    OffsetX = anchorX,
+                    OffsetY = anchorY,
+                    Rgba = pixels.Rgba,
+                };
                 images[(path, anchorX, anchorY)] = image;
             }
 
@@ -241,18 +248,21 @@ public sealed class OpenSettlersSource : IGraphicsSource
             roads[direction] = Image(RoadKey((RoadDirection)direction));
         }
 
-        var flag = new ObjectDrawing(Image(FlagKey), null);
+        var flag = new ObjectDrawing { Image = Image(FlagKey), Shadow = null };
         var objects = new ObjectDrawing[LastObjectCode - FirstObjectCode + 1];
         for (var code = FirstObjectCode; code <= LastObjectCode; code++)
         {
-            objects[code - FirstObjectCode] = new ObjectDrawing(Image(ObjectKey(code)), null);
+            objects[code - FirstObjectCode] = new ObjectDrawing { Image = Image(ObjectKey(code)), Shadow = null };
         }
 
-        var buildings = BuildingKeys.ToDictionary(key => key, key => new ObjectDrawing(Image(key), null));
+        var buildings = BuildingKeys.ToDictionary(
+            key => key,
+            key => new ObjectDrawing { Image = Image(key), Shadow = null }
+        );
         var goods = new ObjectDrawing[GoodCount];
         for (var code = 0; code < GoodCount; code++)
         {
-            goods[code] = new ObjectDrawing(Image(GoodKey(code)), null);
+            goods[code] = new ObjectDrawing { Image = Image(GoodKey(code)), Shadow = null };
         }
 
         var settlers = new ObjectImage[Jobs.Count * Kinds.Length];
@@ -443,7 +453,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         var key = (index, ColourIndex(draw.Player));
         if (!_marked.TryGetValue(key, out var drawing))
         {
-            drawing = new ObjectDrawing(Marked(_settlers[index], PlayerColour(draw.Player)), null);
+            drawing = new ObjectDrawing { Image = Marked(_settlers[index], PlayerColour(draw.Player)), Shadow = null };
             _marked[key] = drawing;
         }
 

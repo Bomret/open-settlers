@@ -4,13 +4,27 @@ namespace OpenSettlers.MapView;
 /// What a source draws for an object term: the image, and the shadow drawn right before it. Either is null where the
 /// source draws none of it (a source that draws no shadow answers with the image alone).
 /// </summary>
-public sealed record ObjectDrawing(ObjectImage? Image, ObjectImage? Shadow);
+public sealed record ObjectDrawing
+{
+    /// <summary>The image; null where the source draws none.</summary>
+    public required ObjectImage? Image { get; init; }
+
+    /// <summary>The shadow drawn right before the image; null where the source draws none.</summary>
+    public required ObjectImage? Shadow { get; init; }
+}
 
 /// <summary>
 /// The ripple of water as a source draws it: the image, and the color of the surface it shows over. The ripple paints
 /// only where the screen under it shows the surface color.
 /// </summary>
-public sealed record RippleImage(ObjectImage Image, byte[] Surface);
+public sealed record RippleImage
+{
+    /// <summary>The image of the ripple.</summary>
+    public required ObjectImage Image { get; init; }
+
+    /// <summary>The color of the surface the ripple shows over, as four bytes (red, green, blue, alpha).</summary>
+    public required byte[] Surface { get; init; }
+}
 
 /// <summary>
 /// Where the map view gets the image of each draw term (ADR 0014, <c>CONTEXT.md</c> "Graphics source"). A source

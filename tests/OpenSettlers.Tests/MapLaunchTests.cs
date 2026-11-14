@@ -43,7 +43,15 @@ public sealed class MapLaunchTests
     {
         var outcome = Decide(Args("--map", "--bogus"));
 
-        Assert.AreEqual(new MapLaunch.Exit(4, "ERROR unknown flag --bogus", LaunchStream.Stderr), outcome);
+        Assert.AreEqual(
+            new MapLaunch.Exit
+            {
+                Code = 4,
+                Message = "ERROR unknown flag --bogus",
+                Stream = LaunchStream.Stderr,
+            },
+            outcome
+        );
     }
 
     // Sweep #244 (#264): an empty --play or --layout value is no value, as an empty --game is; the launch exits with the
@@ -55,7 +63,15 @@ public sealed class MapLaunchTests
     {
         var outcome = Decide(Args(mode, flag, ""));
 
-        Assert.AreEqual(new MapLaunch.Exit(4, $"ERROR {flag} needs a value", LaunchStream.Stderr), outcome);
+        Assert.AreEqual(
+            new MapLaunch.Exit
+            {
+                Code = 4,
+                Message = $"ERROR {flag} needs a value",
+                Stream = LaunchStream.Stderr,
+            },
+            outcome
+        );
     }
 
     [TestMethod]
@@ -65,7 +81,15 @@ public sealed class MapLaunchTests
 
         var outcome = Decide(Args("--layout", "l.jsonc", "--game", fake.Root), layout: Fails);
 
-        Assert.AreEqual(new MapLaunch.Exit(4, "ERROR bad layout", LaunchStream.Stdout), outcome);
+        Assert.AreEqual(
+            new MapLaunch.Exit
+            {
+                Code = 4,
+                Message = "ERROR bad layout",
+                Stream = LaunchStream.Stdout,
+            },
+            outcome
+        );
     }
 
     [TestMethod]
@@ -88,7 +112,15 @@ public sealed class MapLaunchTests
         var outcome = Decide(Args("--map", "--play", "x.play", "--game", fake.Root), script: BadScript);
 
         Assert.HasCount(2, problems);
-        Assert.AreEqual(new MapLaunch.Exit(1, $"ERROR {string.Join("; ", problems)}", LaunchStream.Stderr), outcome);
+        Assert.AreEqual(
+            new MapLaunch.Exit
+            {
+                Code = 1,
+                Message = $"ERROR {string.Join("; ", problems)}",
+                Stream = LaunchStream.Stderr,
+            },
+            outcome
+        );
     }
 
     [TestMethod]

@@ -72,5 +72,12 @@ public static class TerrainQuads
     }
 
     static ObjectQuad Quad(ObjectImage image, int x, int y, ImageLayers layers) =>
-        new(x + image.OffsetX, y + image.OffsetY, image.Width, image.Height, layers.Of(image));
+        new()
+        {
+            X = x + image.OffsetX,
+            Y = y + image.OffsetY,
+            Width = image.Width,
+            Height = image.Height,
+            Layer = layers.Of(image),
+        };
 }

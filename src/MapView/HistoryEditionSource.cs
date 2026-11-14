@@ -139,7 +139,7 @@ public sealed class HistoryEditionSource : IGraphicsSource
         if (!_ripples.TryGetValue(entry, out var cached))
         {
             cached = Usable(_objects.Sprites.GetValueOrDefault(entry)) is { } image
-                ? new RippleImage(image, _objects.SurfaceRgba)
+                ? new RippleImage { Image = image, Surface = _objects.SurfaceRgba }
                 : null;
             _ripples[entry] = cached;
         }
@@ -160,7 +160,7 @@ public sealed class HistoryEditionSource : IGraphicsSource
         {
             var image = Usable(_objects.Sprites.GetValueOrDefault(entry));
             var shadow = Usable(_objects.Shadows.GetValueOrDefault(entry));
-            cached = image is null && shadow is null ? null : new ObjectDrawing(image, shadow);
+            cached = image is null && shadow is null ? null : new ObjectDrawing { Image = image, Shadow = shadow };
             _drawings[entry] = cached;
         }
 
@@ -239,7 +239,14 @@ public sealed class HistoryEditionSource : IGraphicsSource
                 }
             }
 
-            image = new ObjectImage(mask.Width, mask.Height, mask.OffsetX + shiftX, mask.OffsetY, rgba);
+            image = new ObjectImage
+            {
+                Width = mask.Width,
+                Height = mask.Height,
+                OffsetX = mask.OffsetX + shiftX,
+                OffsetY = mask.OffsetY,
+                Rgba = rgba,
+            };
         }
 
         cache[(maskEntry, textureEntry)] = image;

@@ -18,11 +18,24 @@ namespace OpenSettlers.MapView;
 public static class MapPicking
 {
     /// <summary>
-    /// A rectangle of <paramref name="Width"/> by <paramref name="Height"/> pixels whose top-left corner lies
-    /// (<paramref name="OffsetX"/>, <paramref name="OffsetY"/>) from the node it belongs to: the part of a flag's sprite a
+    /// A rectangle of <see cref="Width"/> by <see cref="Height"/> pixels whose top-left corner lies
+    /// (<see cref="OffsetX"/>, <see cref="OffsetY"/>) from the node it belongs to: the part of a flag's sprite a
     /// click picks the flag by. It holds no pixel.
     /// </summary>
-    public readonly record struct PickBox(int Width, int Height, int OffsetX, int OffsetY);
+    public readonly record struct PickBox
+    {
+        /// <summary>The width in pixels.</summary>
+        public required int Width { get; init; }
+
+        /// <summary>The height in pixels.</summary>
+        public required int Height { get; init; }
+
+        /// <summary>The horizontal distance of the top-left corner from the node, in pixels.</summary>
+        public required int OffsetX { get; init; }
+
+        /// <summary>The vertical distance of the top-left corner from the node, in pixels.</summary>
+        public required int OffsetY { get; init; }
+    }
 
     // The tallest lift of a node: the greatest height at 4 pixels a unit.
     const int MaxLift = Node.MaxHeight * TerrainTriangles.HeightStep;

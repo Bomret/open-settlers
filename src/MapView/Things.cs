@@ -12,25 +12,36 @@ namespace OpenSettlers.MapView;
 /// A thing (<c>CONTEXT.md</c>) as a <c>list</c> step shows it: its kind, its node, the raw values the engine holds for
 /// it in the engine's form, and its name where the name table has one.
 /// </summary>
-/// <param name="Kind">The kind, such as <c>object</c>; a list orders by it first.</param>
-/// <param name="X">The node's column.</param>
-/// <param name="Y">The node's row.</param>
-/// <param name="Values">The raw values as a field name and its text, in the order a line shows them.</param>
-/// <param name="Name">The name from the name table; null where it has none.</param>
-public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Field, string Value)> Values, string? Name)
+public sealed record Thing
 {
+    /// <summary>The kind, such as <c>object</c>; a list orders by it first.</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>The node's column.</summary>
+    public required int X { get; init; }
+
+    /// <summary>The node's row.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>The raw values as a field name and its text, in the order a line shows them.</summary>
+    public required IReadOnlyList<(string Field, string Value)> Values { get; init; }
+
+    /// <summary>The name from the name table; null where it has none.</summary>
+    public required string? Name { get; init; }
+
     /// <summary>The kind of a map object.</summary>
     public const string ObjectKind = "object";
 
     /// <summary>The map object as a thing: its code in hex, and its name where <paramref name="names"/> has one.</summary>
     public static Thing Of(PlacedObject mapObject, NameTable? names) =>
-        new(
-            ObjectKind,
-            mapObject.X,
-            mapObject.Y,
-            [("code", $"0x{mapObject.Code:x2}")],
-            names?.ObjectName(mapObject.Code)
-        );
+        new()
+        {
+            Kind = ObjectKind,
+            X = mapObject.X,
+            Y = mapObject.Y,
+            Values = [("code", $"0x{mapObject.Code:x2}")],
+            Name = names?.ObjectName(mapObject.Code),
+        };
 
     /// <summary>The kind of a settler.</summary>
     public const string SettlerKind = "settler";
@@ -52,10 +63,12 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
         // The readout shows the original's own encoding of the settler beside the names (INV-0006).
         var raw = SettlerEncoder.Fields(settler);
 
-        return new(
-            SettlerKind,
-            settler.X,
-            settler.Y,
+        return new()
+        {
+            Kind = SettlerKind,
+            X = settler.X,
+            Y = settler.Y,
+            Values =
             [
                 ("job", settler.Job.ToString()),
                 ("state", Hex(raw.State)),
@@ -68,8 +81,8 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
                 ("timer", settler.Timer.ToString(CultureInfo.InvariantCulture)),
                 ("stamp", raw.Stamp.ToString(CultureInfo.InvariantCulture)),
             ],
-            SettlerName(settler)
-        );
+            Name = SettlerName(settler),
+        };
     }
 
     static string? SettlerName(Settler settler)
@@ -102,7 +115,14 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
             ]);
         }
 
-        return new Thing(BuildingKind, building.X, building.Y, values, NameTable.BuildingName(building.Type.Code));
+        return new Thing
+        {
+            Kind = BuildingKind,
+            X = building.X,
+            Y = building.Y,
+            Values = values,
+            Name = NameTable.BuildingName(building.Type.Code),
+        };
     }
 
     /// <summary>
@@ -133,24 +153,27 @@ public sealed record Thing(string Kind, int X, int Y, IReadOnlyList<(string Fiel
             .. game.Map.Objects.Where(o => !taken.Contains((o.X, o.Y))).Select(o => Of(o, names)),
             .. game.Settlers.Select((settler, slot) => Of(game, settler, slot)),
             .. buildings.Select(e => Of(game, e.building, e.slot)),
-            .. flags.Select(entry => new Thing(
-                FlagKind,
-                entry.flag.X,
-                entry.flag.Y,
+            .. flags.Select(entry => new Thing
+            {
+                Kind = FlagKind,
+                X = entry.flag.X,
+                Y = entry.flag.Y,
+                Values =
                 [
                     ("slot", entry.slot.ToString(CultureInfo.InvariantCulture)),
                     ("id", game.History.FlagId(entry.slot).ToString()),
                 ],
-                null
-            )),
+                Name = null,
+            }),
             .. RoadNodes(game)
-                .Select(node => new Thing(
-                    RoadKind,
-                    node.Key.X,
-                    node.Key.Y,
-                    [("dirs", string.Join(",", node.Value))],
-                    null
-                )),
+                .Select(node => new Thing
+                {
+                    Kind = RoadKind,
+                    X = node.Key.X,
+                    Y = node.Key.Y,
+                    Values = [("dirs", string.Join(",", node.Value))],
+                    Name = null,
+                }),
         ];
     }
 

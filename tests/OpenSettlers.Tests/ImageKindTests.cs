@@ -68,8 +68,24 @@ public sealed class ImageKindTests
 
         var preview = (PalettePreview)List<PaletteKind>(fake).First(a => a.File == Files[0]).Load();
 
-        Assert.AreEqual(new Rgb(63, 0, 0), preview.Palette[1]);
-        Assert.AreEqual(new Rgb(0, 0, 0), preview.Palette[0]);
+        Assert.AreEqual(
+            new Rgb
+            {
+                R = 63,
+                G = 0,
+                B = 0,
+            },
+            preview.Palette[1]
+        );
+        Assert.AreEqual(
+            new Rgb
+            {
+                R = 0,
+                G = 0,
+                B = 0,
+            },
+            preview.Palette[0]
+        );
     }
 
     [TestMethod]

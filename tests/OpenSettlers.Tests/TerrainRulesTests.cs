@@ -40,7 +40,7 @@ public sealed class TerrainRulesTests
     {
         var draw = TerrainRules.Upper(10, 11, 12, new Terrain { Code = code });
 
-        Assert.AreEqual(new TerrainDraw(60 + 21, Texture(code, 3)), draw);
+        Assert.AreEqual(new TerrainDraw { Mask = 60 + 21, Texture = Texture(code, 3) }, draw);
     }
 
     // Lower: apex 10, left 6, right 8 gives the slopes 0 and 2 (left + 4 - apex, right + 4 - apex), the index 0 + 9 x 2 = 18, row 2
@@ -63,23 +63,35 @@ public sealed class TerrainRulesTests
     {
         var draw = TerrainRules.Lower(10, 6, 8, new Terrain { Code = code });
 
-        Assert.AreEqual(new TerrainDraw(141 + 18, Texture(code, 3)), draw);
+        Assert.AreEqual(new TerrainDraw { Mask = 141 + 18, Texture = Texture(code, 3) }, draw);
     }
 
     // The largest step: upper row 1 column 5 (0x1c, k 7) is the slopes 5 and 1; lower index 36 (0x1c, k 7) the slopes 0 and 4.
     [TestMethod]
     public void TheLargestStepsOfTheTablesAreReached()
     {
-        Assert.AreEqual(new TerrainDraw(60 + 14, 260 + 7), TerrainRules.Upper(10, 9, 13, new Terrain { Code = 7 }));
-        Assert.AreEqual(new TerrainDraw(141 + 36, 260 + 7), TerrainRules.Lower(10, 6, 10, new Terrain { Code = 5 }));
+        Assert.AreEqual(
+            new TerrainDraw { Mask = 60 + 14, Texture = 260 + 7 },
+            TerrainRules.Upper(10, 9, 13, new Terrain { Code = 7 })
+        );
+        Assert.AreEqual(
+            new TerrainDraw { Mask = 141 + 36, Texture = 260 + 7 },
+            TerrainRules.Lower(10, 6, 10, new Terrain { Code = 5 })
+        );
     }
 
     // Level ground: the slopes 4 and 4, the index 40, 0x10 in both tables, k 4; masks 100 and 181.
     [TestMethod]
     public void LevelGroundTakesTheMiddleOfBothTables()
     {
-        Assert.AreEqual(new TerrainDraw(100, 264), TerrainRules.Upper(7, 7, 7, new Terrain { Code = 5 }));
-        Assert.AreEqual(new TerrainDraw(181, 264), TerrainRules.Lower(7, 7, 7, new Terrain { Code = 5 }));
+        Assert.AreEqual(
+            new TerrainDraw { Mask = 100, Texture = 264 },
+            TerrainRules.Upper(7, 7, 7, new Terrain { Code = 5 })
+        );
+        Assert.AreEqual(
+            new TerrainDraw { Mask = 181, Texture = 264 },
+            TerrainRules.Lower(7, 7, 7, new Terrain { Code = 5 })
+        );
     }
 
     // The heights are the five low bits: 42 is 10.

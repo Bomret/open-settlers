@@ -81,7 +81,14 @@ public sealed class ObjectGraphicsTests
     [TestMethod]
     public void APaddedImageKeepsItsSizeAndOffsetsAndItsRowsMoveToTheLayersStride()
     {
-        var image = new ObjectImage(2, 2, -1, -2, [1, 1, 1, 255, 2, 2, 2, 255, 3, 3, 3, 255, 4, 4, 4, 255]);
+        var image = new ObjectImage
+        {
+            Width = 2,
+            Height = 2,
+            OffsetX = -1,
+            OffsetY = -2,
+            Rgba = [1, 1, 1, 255, 2, 2, 2, 255, 3, 3, 3, 255, 4, 4, 4, 255],
+        };
 
         var padded = image.Padded(3, 3);
 

@@ -320,7 +320,13 @@ public sealed class MapPickingTests
     }
 
     // A flag's box of 16 by 19 pixels stands on its node: its left edge 2 west of the node, its top 19 above it.
-    static readonly MapPicking.PickBox FlagImage = new(16, 19, -2, -19);
+    static readonly MapPicking.PickBox FlagImage = new()
+    {
+        Width = 16,
+        Height = 19,
+        OffsetX = -2,
+        OffsetY = -19,
+    };
 
     [TestMethod]
     [DynamicData(nameof(Scales))]

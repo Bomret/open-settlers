@@ -82,19 +82,20 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
                     settler.X,
                     row,
                     [
-                        .. Parts.Select(part => new SettlerDraw(
-                            row,
-                            x,
-                            y,
-                            part,
-                            settler.Job,
-                            settler.Activity,
-                            WalkingActivity.HeadingOf(settler.Activity),
-                            settler.Frame,
-                            left,
-                            settler.Player,
-                            carried
-                        )),
+                        .. Parts.Select(part => new SettlerDraw
+                        {
+                            Row = row,
+                            X = x,
+                            Y = y,
+                            Part = part,
+                            Job = settler.Job,
+                            Activity = settler.Activity,
+                            Heading = WalkingActivity.HeadingOf(settler.Activity),
+                            Frame = settler.Frame,
+                            Step = left,
+                            Player = settler.Player,
+                            Carried = carried,
+                        }),
                     ]
                 )
             );
@@ -134,7 +135,12 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
             var node = map.At(settler.X, settler.Y);
             var (x, y) = Camera.NodePosition(settler.X, settler.Y);
             y -= node.Height * TerrainTriangles.HeightStep;
-            var waiting = new WaitingNode(settler.X, node.LakeMark, node.Roads);
+            var waiting = new WaitingNode
+            {
+                Column = settler.X,
+                LakeMark = node.LakeMark,
+                Roads = node.Roads,
+            };
 
             yield return (
                 1,
@@ -142,20 +148,21 @@ public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
                 settler.X,
                 settler.Y,
                 [
-                    .. Parts.Select(part => new SettlerDraw(
-                        settler.Y,
-                        x,
-                        y,
-                        part,
-                        settler.Job,
-                        settler.Activity,
-                        null,
-                        settler.Frame,
-                        clock,
-                        settler.Player,
-                        Good.None,
-                        waiting
-                    )),
+                    .. Parts.Select(part => new SettlerDraw
+                    {
+                        Row = settler.Y,
+                        X = x,
+                        Y = y,
+                        Part = part,
+                        Job = settler.Job,
+                        Activity = settler.Activity,
+                        Heading = null,
+                        Frame = settler.Frame,
+                        Step = clock,
+                        Player = settler.Player,
+                        Carried = Good.None,
+                        Node = waiting,
+                    }),
                 ]
             );
         }

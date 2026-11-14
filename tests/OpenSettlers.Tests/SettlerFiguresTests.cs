@@ -194,11 +194,12 @@ public sealed class SettlerFiguresTests
         offsets[2 * 0x09] = 3;
         offsets[2 * 0x09 + 1] = -1;
 
-        return new IdleCarrierTables(
-            [.. Enumerable.Range(0, 16).Select(c => (short)(8 * c))],
-            [.. Enumerable.Range(0, 128).Select(i => (short)i)],
-            offsets
-        );
+        return new IdleCarrierTables
+        {
+            Phases = [.. Enumerable.Range(0, 16).Select(c => (short)(8 * c))],
+            Figures = [.. Enumerable.Range(0, 128).Select(i => (short)i)],
+            Offsets = offsets,
+        };
     }
 
     // A map whose node of the waiting carriers (4,3) has the roads given, and the lake mark where asked.
@@ -960,7 +961,15 @@ public sealed class SettlerFiguresTests
         var roads = RoadSet.Of(0).With(3);
         var term = Figures().Terms(MapWithRoad(roads, lakeMark: true), [Carrier(mode: 7, state: 0x42)], 40)[0];
 
-        Assert.AreEqual(new WaitingNode(4, true, roads), term.Node);
+        Assert.AreEqual(
+            new WaitingNode
+            {
+                Column = 4,
+                LakeMark = true,
+                Roads = roads,
+            },
+            term.Node
+        );
         Assert.AreEqual(40, term.Step, "the game's clock");
     }
 

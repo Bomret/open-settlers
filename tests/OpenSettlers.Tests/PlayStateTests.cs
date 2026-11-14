@@ -7,7 +7,14 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class PlayStateTests
 {
-    static readonly PlayState State = new(CameraX: 120, CameraY: 40, Zoom: 1.25f, Seed: "1234567812345678", Size: 2);
+    static readonly PlayState State = new()
+    {
+        CameraX = 120,
+        CameraY = 40,
+        Zoom = 1.25f,
+        Seed = "1234567812345678",
+        Size = 2,
+    };
 
     static ExpectStep Expect(string field, string op, string value) =>
         new()
@@ -293,7 +300,14 @@ public sealed class PlayStateTests
     [TestMethod]
     public void ZoomComparesAtFourDecimals()
     {
-        var zoom = new PlayState(0, 0, 1.00001f, "1", 1);
+        var zoom = new PlayState
+        {
+            CameraX = 0,
+            CameraY = 0,
+            Zoom = 1.00001f,
+            Seed = "1",
+            Size = 1,
+        };
 
         Assert.IsNull(zoom.Check(Expect("zoom", "=", "1")));
         Assert.IsNotNull(zoom.Check(Expect("zoom", "=", "1.0001")));

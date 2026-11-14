@@ -299,7 +299,16 @@ public sealed class GameThingTests
     static string Checks(Game game, string script)
     {
         var things = Thing.Listed(true, game, game.Map, new NameTable(TestProgram.Made()));
-        var state = new PlayState(0, 0, 1f, "1", 1, Ticks: game.TickCount, Things: things);
+        var state = new PlayState
+        {
+            CameraX = 0,
+            CameraY = 0,
+            Zoom = 1f,
+            Seed = "1",
+            Size = 1,
+            Ticks = game.TickCount,
+            Things = things,
+        };
         var run = new PlayRun(PlayScript.Parse(script, "play/t.play"), () => state, "unused", _ => null);
         for (var i = 0; i < 5; i++)
         {

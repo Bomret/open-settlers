@@ -14,35 +14,44 @@ namespace OpenSettlers.MapView;
 /// goods on each flag; its dump also gives the game's digest. A <c>dump</c> step writes it and an <c>expect</c> step checks
 /// one field of it.
 /// </summary>
-/// <param name="CameraX">The camera's west-east position in map pixels.</param>
-/// <param name="CameraY">The camera's north-south position in map pixels.</param>
-/// <param name="Zoom">The zoom scale: screen pixels per map pixel.</param>
-/// <param name="Seed">The seed as applied, in the form it was given.</param>
-/// <param name="Size">The size value of the map.</param>
-/// <param name="Ticks">The game's tick count; null in the map view.</param>
-/// <param name="Logs">The castle's log count, 0 before a castle stands; null in the map view.</param>
-/// <param name="FlagGoods">
-/// The count of goods on each flag that holds some, by the flag's node; a flag left out holds none. Null in the map view.
-/// </param>
-/// <param name="Things">The things a <c>list</c> step writes; null lists none.</param>
-/// <param name="Game">The running game the named-thing steps read events from; null in the map view.</param>
-/// <param name="Planks">The castle's plank count, 0 before a castle stands; null in the map view.</param>
-/// <param name="Stones">The castle's stone count, 0 before a castle stands; null in the map view.</param>
-public sealed record PlayState(
-    int CameraX,
-    int CameraY,
-    float Zoom,
-    string Seed,
-    int Size,
-    long? Ticks = null,
-    int? Logs = null,
-    IReadOnlyDictionary<(int X, int Y), int>? FlagGoods = null,
-    IReadOnlyList<Thing>? Things = null,
-    Game? Game = null,
-    int? Planks = null,
-    int? Stones = null
-)
+public sealed record PlayState
 {
+    /// <summary>The camera's west-east position in map pixels.</summary>
+    public required int CameraX { get; init; }
+
+    /// <summary>The camera's north-south position in map pixels.</summary>
+    public required int CameraY { get; init; }
+
+    /// <summary>The zoom scale: screen pixels per map pixel.</summary>
+    public required float Zoom { get; init; }
+
+    /// <summary>The seed as applied, in the form it was given.</summary>
+    public required string Seed { get; init; }
+
+    /// <summary>The size value of the map.</summary>
+    public required int Size { get; init; }
+
+    /// <summary>The game's tick count; null in the map view.</summary>
+    public long? Ticks { get; init; } = null;
+
+    /// <summary>The castle's log count, 0 before a castle stands; null in the map view.</summary>
+    public int? Logs { get; init; } = null;
+
+    /// <summary>The count of goods on each flag that holds some, by the flag's node; a flag left out holds none. Null in the map view.</summary>
+    public IReadOnlyDictionary<(int X, int Y), int>? FlagGoods { get; init; } = null;
+
+    /// <summary>The things a <c>list</c> step writes; null lists none.</summary>
+    public IReadOnlyList<Thing>? Things { get; init; } = null;
+
+    /// <summary>The running game the named-thing steps read events from; null in the map view.</summary>
+    public Game? Game { get; init; } = null;
+
+    /// <summary>The castle's plank count, 0 before a castle stands; null in the map view.</summary>
+    public int? Planks { get; init; } = null;
+
+    /// <summary>The castle's stone count, 0 before a castle stands; null in the map view.</summary>
+    public int? Stones { get; init; } = null;
+
     /// <summary>The decimals zoom is written with and compared at.</summary>
     public const int ZoomDecimals = 4;
 

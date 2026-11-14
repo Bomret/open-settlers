@@ -83,12 +83,13 @@ public sealed class ShotCropTests
         Assert.IsNull(problem);
         var (x, y) = Aimed(camera, 2, 10, 10);
         Assert.AreEqual(
-            new CropBox(
-                (int)Math.Floor(x - 16 * 2 + OriginX),
-                (int)Math.Floor(y - 10 * 2 + OriginY),
-                (int)Math.Ceiling(x + 16 * 2 + OriginX) - (int)Math.Floor(x - 16 * 2 + OriginX),
-                (int)Math.Ceiling(y + 10 * 2 + OriginY) - (int)Math.Floor(y - 10 * 2 + OriginY)
-            ),
+            new CropBox
+            {
+                X = (int)Math.Floor(x - 16 * 2 + OriginX),
+                Y = (int)Math.Floor(y - 10 * 2 + OriginY),
+                Width = (int)Math.Ceiling(x + 16 * 2 + OriginX) - (int)Math.Floor(x - 16 * 2 + OriginX),
+                Height = (int)Math.Ceiling(y + 10 * 2 + OriginY) - (int)Math.Floor(y - 10 * 2 + OriginY),
+            },
             box
         );
     }
@@ -162,10 +163,30 @@ public sealed class ShotCropTests
     [TestMethod]
     public void ACropTooLargeOnceScaledIsAProblemNamingBothSizes()
     {
-        Assert.IsNull(ShotCrop.ScaleProblem(new CropBox(0, 0, 1000, 500), 16));
+        Assert.IsNull(
+            ShotCrop.ScaleProblem(
+                new CropBox
+                {
+                    X = 0,
+                    Y = 0,
+                    Width = 1000,
+                    Height = 500,
+                },
+                16
+            )
+        );
         Assert.AreEqual(
             "the crop of 1000x500 pixels at scale 17 is 17000x8500, more than 16384 on a side",
-            ShotCrop.ScaleProblem(new CropBox(0, 0, 1000, 500), 17)
+            ShotCrop.ScaleProblem(
+                new CropBox
+                {
+                    X = 0,
+                    Y = 0,
+                    Width = 1000,
+                    Height = 500,
+                },
+                17
+            )
         );
     }
 }

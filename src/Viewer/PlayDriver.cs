@@ -20,13 +20,14 @@ public partial class PlayDriver : Node
     /// <summary>The window and content size of a play run.</summary>
     public static readonly Vector2I WindowSize = new(1280, 720);
 
-    static readonly KeyMasks Masks = new(
-        (long)KeyModifierMask.MaskShift,
-        (long)KeyModifierMask.MaskCtrl,
-        (long)KeyModifierMask.MaskAlt,
-        (long)KeyModifierMask.MaskMeta,
-        (long)KeyModifierMask.CodeMask
-    );
+    static readonly KeyMasks Masks = new()
+    {
+        Shift = (long)KeyModifierMask.MaskShift,
+        Ctrl = (long)KeyModifierMask.MaskCtrl,
+        Alt = (long)KeyModifierMask.MaskAlt,
+        Meta = (long)KeyModifierMask.MaskMeta,
+        Code = (long)KeyModifierMask.CodeMask,
+    };
 
     readonly MapViewControl _view;
     readonly PlayRun _run;
@@ -242,7 +243,18 @@ public partial class PlayDriver : Node
     {
         foreach (var key in _held.ToPressAgain(key => Godot.Input.IsKeyPressed((Key)key)))
         {
-            Press(new KeyChord(key, false, false, false, false), true, echo: true);
+            Press(
+                new KeyChord
+                {
+                    Key = key,
+                    Shift = false,
+                    Ctrl = false,
+                    Alt = false,
+                    Meta = false,
+                },
+                true,
+                echo: true
+            );
         }
     }
 

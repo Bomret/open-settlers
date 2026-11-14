@@ -21,6 +21,11 @@ public sealed class GodotImageDecoder : IImageDecoder
 
         image.Convert(Image.Format.Rgba8);
 
-        return new DecodedImage(image.GetWidth(), image.GetHeight(), image.GetData());
+        return new DecodedImage
+        {
+            Width = image.GetWidth(),
+            Height = image.GetHeight(),
+            Rgba = image.GetData(),
+        };
     }
 }

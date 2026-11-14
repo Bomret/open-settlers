@@ -44,7 +44,20 @@ public sealed class HistoryEditionLooksTests
         );
 
     static SettlerDraw Draw(Job job, Activity activity, Heading? heading = null, Good carried = default) =>
-        new(0, 0, 0, SettlerPart.Figure, job, activity, heading, 0, 0, 0, carried);
+        new()
+        {
+            Row = 0,
+            X = 0,
+            Y = 0,
+            Part = SettlerPart.Figure,
+            Job = job,
+            Activity = activity,
+            Heading = heading,
+            Frame = 0,
+            Step = 0,
+            Player = 0,
+            Carried = carried,
+        };
 
     const int Low = 0x7f;
     const int High = 0x80;

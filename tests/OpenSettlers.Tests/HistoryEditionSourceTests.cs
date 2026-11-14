@@ -97,7 +97,19 @@ public sealed class HistoryEditionSourceTests
     static FakeInstall Fake(Dictionary<int, byte[]>? payloads = null) =>
         new FakeInstall().Put(Archive, ArchiveBytes.Build(311, payloads ?? Payloads()));
 
-    static TerrainTriangle Flat(Terrain terrain, bool upper = true) => new(0, 0, upper, terrain, 5, 5, 5, 100, 50);
+    static TerrainTriangle Flat(Terrain terrain, bool upper = true) =>
+        new()
+        {
+            Column = 0,
+            Row = 0,
+            Upper = upper,
+            Terrain = terrain,
+            Apex = 5,
+            Left = 5,
+            Right = 5,
+            X = 100,
+            Y = 50,
+        };
 
     static byte[] Pixel(ObjectImage image, int x, int y) => image.Rgba[((y * image.Width + x) * 4)..][..4];
 
@@ -152,8 +164,38 @@ public sealed class HistoryEditionSourceTests
         using var fake = Fake();
         var source = Open(fake);
 
-        Assert.IsNull(source.Draw(new TerrainTriangle(0, 0, true, new Terrain { Code = 5 }, 5, 0, 5, 100, 50)));
-        Assert.IsNull(source.Draw(new TerrainTriangle(0, 0, false, new Terrain { Code = 5 }, 5, 5, 0, 100, 50)));
+        Assert.IsNull(
+            source.Draw(
+                new TerrainTriangle
+                {
+                    Column = 0,
+                    Row = 0,
+                    Upper = true,
+                    Terrain = new Terrain { Code = 5 },
+                    Apex = 5,
+                    Left = 0,
+                    Right = 5,
+                    X = 100,
+                    Y = 50,
+                }
+            )
+        );
+        Assert.IsNull(
+            source.Draw(
+                new TerrainTriangle
+                {
+                    Column = 0,
+                    Row = 0,
+                    Upper = false,
+                    Terrain = new Terrain { Code = 5 },
+                    Apex = 5,
+                    Left = 5,
+                    Right = 0,
+                    X = 100,
+                    Y = 50,
+                }
+            )
+        );
     }
 
     [TestMethod]
@@ -162,8 +204,34 @@ public sealed class HistoryEditionSourceTests
         using var fake = Fake();
         var source = Open(fake);
 
-        var low = source.Draw(new TerrainTriangle(0, 0, true, new Terrain { Code = 5 }, 1, 1, 1, 100, 50));
-        var high = source.Draw(new TerrainTriangle(0, 0, true, new Terrain { Code = 5 }, 33, 1, 1, 100, 50));
+        var low = source.Draw(
+            new TerrainTriangle
+            {
+                Column = 0,
+                Row = 0,
+                Upper = true,
+                Terrain = new Terrain { Code = 5 },
+                Apex = 1,
+                Left = 1,
+                Right = 1,
+                X = 100,
+                Y = 50,
+            }
+        );
+        var high = source.Draw(
+            new TerrainTriangle
+            {
+                Column = 0,
+                Row = 0,
+                Upper = true,
+                Terrain = new Terrain { Code = 5 },
+                Apex = 33,
+                Left = 1,
+                Right = 1,
+                X = 100,
+                Y = 50,
+            }
+        );
 
         Assert.AreSame(low, high);
     }
@@ -187,7 +255,18 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = Fake();
 
-        var image = Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.East, 0, 0, new Terrain { Code = 5 }))!;
+        var image = Open(fake)
+            .Draw(
+                new RoadStrip
+                {
+                    X = 100,
+                    Y = 200,
+                    Direction = RoadDirection.East,
+                    Difference = 0,
+                    Slope = 0,
+                    Ground = new Terrain { Code = 5 },
+                }
+            )!;
 
         Assert.AreEqual(234 - 230, image.OffsetY);
         Assert.AreEqual(1, image.OffsetX);
@@ -199,8 +278,34 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = Fake();
 
-        Assert.IsNull(Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.South, 5, 0, new Terrain { Code = 5 })));
-        Assert.IsNull(Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.South, -5, 0, new Terrain { Code = 5 })));
+        Assert.IsNull(
+            Open(fake)
+                .Draw(
+                    new RoadStrip
+                    {
+                        X = 100,
+                        Y = 200,
+                        Direction = RoadDirection.South,
+                        Difference = 5,
+                        Slope = 0,
+                        Ground = new Terrain { Code = 5 },
+                    }
+                )
+        );
+        Assert.IsNull(
+            Open(fake)
+                .Draw(
+                    new RoadStrip
+                    {
+                        X = 100,
+                        Y = 200,
+                        Direction = RoadDirection.South,
+                        Difference = -5,
+                        Slope = 0,
+                        Ground = new Terrain { Code = 5 },
+                    }
+                )
+        );
     }
 
     [TestMethod]
@@ -211,11 +316,35 @@ public sealed class HistoryEditionSourceTests
 
         Assert.AreEqual(
             243 - 230 + 2,
-            source.Draw(new RoadStrip(0, 0, RoadDirection.SouthEast, 2, 0, new Terrain { Code = 5 }))!.OffsetY
+            source
+                .Draw(
+                    new RoadStrip
+                    {
+                        X = 0,
+                        Y = 0,
+                        Direction = RoadDirection.SouthEast,
+                        Difference = 2,
+                        Slope = 0,
+                        Ground = new Terrain { Code = 5 },
+                    }
+                )!
+                .OffsetY
         );
         Assert.AreEqual(
             252 - 230 - 3, // the south masks start at 248 for -4
-            source.Draw(new RoadStrip(0, 0, RoadDirection.South, -3, 0, new Terrain { Code = 5 }))!.OffsetY
+            source
+                .Draw(
+                    new RoadStrip
+                    {
+                        X = 0,
+                        Y = 0,
+                        Direction = RoadDirection.South,
+                        Difference = -3,
+                        Slope = 0,
+                        Ground = new Terrain { Code = 5 },
+                    }
+                )!
+                .OffsetY
         );
     }
 
@@ -225,9 +354,21 @@ public sealed class HistoryEditionSourceTests
         using var fake = Fake();
         var source = Open(fake);
         byte Red(int slope, int ground) =>
-            Pixel(source.Draw(new RoadStrip(0, 0, RoadDirection.East, 0, slope, new Terrain { Code = ground }))!, 1, 0)[
+            Pixel(
+                source.Draw(
+                    new RoadStrip
+                    {
+                        X = 0,
+                        Y = 0,
+                        Direction = RoadDirection.East,
+                        Difference = 0,
+                        Slope = slope,
+                        Ground = new Terrain { Code = ground },
+                    }
+                )!,
+                1,
                 0
-            ];
+            )[0];
 
         Assert.AreEqual(100, Red(5, 5));
         Assert.AreEqual(100 + 4, Red(0, 5));
@@ -247,7 +388,19 @@ public sealed class HistoryEditionSourceTests
         var source = Open(fake);
 
         StringAssert.Contains(source.RoadsProblem!, "entry 240");
-        Assert.IsNull(source.Draw(new RoadStrip(0, 0, RoadDirection.East, 0, 0, new Terrain { Code = 5 })));
+        Assert.IsNull(
+            source.Draw(
+                new RoadStrip
+                {
+                    X = 0,
+                    Y = 0,
+                    Direction = RoadDirection.East,
+                    Difference = 0,
+                    Slope = 0,
+                    Ground = new Terrain { Code = 5 },
+                }
+            )
+        );
         Assert.IsNotNull(source.Draw(Flat(new Terrain { Code = 5 })));
     }
 
@@ -283,7 +436,15 @@ public sealed class HistoryEditionSourceTests
         return new FakeInstall().Put(Archive, ArchiveBytes.Build(1700, payloads));
     }
 
-    static MapObjectDraw Object(int code, ushort step = 0) => new(0, 10, 20, new MapObject { Code = (byte)code }, step);
+    static MapObjectDraw Object(int code, ushort step = 0) =>
+        new()
+        {
+            Row = 0,
+            X = 10,
+            Y = 20,
+            Object = new MapObject { Code = (byte)code },
+            Step = step,
+        };
 
     [TestMethod]
     public void AMapObjectDrawsTheSpriteOfItsCodeWithItsShadow()
@@ -305,8 +466,36 @@ public sealed class HistoryEditionSourceTests
         // Code 8 is entry 1250 for 16 steps and entry 1251 at step 16 (docs/rules/map-objects.md).
         Assert.AreEqual(3, source.Draw(Object(8, 15))!.Image!.Width);
         Assert.AreEqual(2, source.Draw(Object(8, 16))!.Image!.Width);
-        Assert.AreEqual(10, source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 8))!.Image!.OffsetX);
-        Assert.AreEqual(9, source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0))!.Image!.OffsetX);
+        Assert.AreEqual(
+            10,
+            source
+                .Draw(
+                    new MapObjectDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Object = MapObject.Flag,
+                        Step = 8,
+                    }
+                )!
+                .Image!.OffsetX
+        );
+        Assert.AreEqual(
+            9,
+            source
+                .Draw(
+                    new MapObjectDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Object = MapObject.Flag,
+                        Step = 0,
+                    }
+                )!
+                .Image!.OffsetX
+        );
     }
 
     [TestMethod]
@@ -337,9 +526,45 @@ public sealed class HistoryEditionSourceTests
         );
         var source = Open(fake);
 
-        Assert.AreEqual(7, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Castle))!.Image!.OffsetX);
-        Assert.AreEqual(11, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter))!.Image!.OffsetX);
-        Assert.IsNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Storehouse)));
+        Assert.AreEqual(
+            7,
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.Castle,
+                    }
+                )!
+                .Image!.OffsetX
+        );
+        Assert.AreEqual(
+            11,
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.Woodcutter,
+                    }
+                )!
+                .Image!.OffsetX
+        );
+        Assert.IsNull(
+            source.Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = BuildingType.Storehouse,
+                }
+            )
+        );
     }
 
     // The sprites of the finished buildings of M4 and of the sites that have not started (docs/rules/build-sites.md): each entry
@@ -357,11 +582,78 @@ public sealed class HistoryEditionSourceTests
         });
         var source = Open(fake);
 
-        Assert.AreEqual(21, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Stonecutter))!.Image!.OffsetX);
-        Assert.AreEqual(22, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester))!.Image!.OffsetX);
-        Assert.AreEqual(23, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Sawmill))!.Image!.OffsetX);
-        Assert.AreEqual(24, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Sawmill, 0))!.Image!.OffsetX);
-        Assert.AreEqual(25, source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Woodcutter, 1))!.Image!.OffsetX);
+        Assert.AreEqual(
+            21,
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.Stonecutter,
+                    }
+                )!
+                .Image!.OffsetX
+        );
+        Assert.AreEqual(
+            22,
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.Forester,
+                    }
+                )!
+                .Image!.OffsetX
+        );
+        Assert.AreEqual(
+            23,
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.Sawmill,
+                    }
+                )!
+                .Image!.OffsetX
+        );
+        Assert.AreEqual(
+            24,
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.Sawmill,
+                        SiteProgress = 0,
+                    }
+                )!
+                .Image!.OffsetX
+        );
+        Assert.AreEqual(
+            25,
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 0,
+                        Y = 0,
+                        Type = BuildingType.Woodcutter,
+                        SiteProgress = 1,
+                    }
+                )!
+                .Image!.OffsetX
+        );
     }
 
     // A site's stages (docs/rules/construction.md): the base (object 145) with the scaffold of the type (object 186 for the small types)
@@ -377,14 +669,50 @@ public sealed class HistoryEditionSourceTests
         });
         var source = Open(fake);
 
-        var first = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x4000))!.Image!;
-        var second = source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Forester, 0x8001))!.Image!;
+        var first = source
+            .Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = BuildingType.Forester,
+                    SiteProgress = 0x4000,
+                }
+            )!
+            .Image!;
+        var second = source
+            .Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = BuildingType.Forester,
+                    SiteProgress = 0x8001,
+                }
+            )!
+            .Image!;
 
         // The union of the images that draw starts at the left edge of the leftmost: 25 where the base and the scaffold draw, 22 where
         // the finished building grows over the scaffold.
         Assert.AreEqual(25, first.OffsetX);
         Assert.AreEqual(22, second.OffsetX);
-        Assert.AreSame(second, source.Draw(new BuildingDraw(0, 5, 5, BuildingType.Forester, 0x8001))!.Image);
+        Assert.AreSame(
+            second,
+            source
+                .Draw(
+                    new BuildingDraw
+                    {
+                        Row = 0,
+                        X = 5,
+                        Y = 5,
+                        Type = BuildingType.Forester,
+                        SiteProgress = 0x8001,
+                    }
+                )!
+                .Image
+        );
     }
 
     // The install's own archive holds the scaffold and the finished building of each type, so a site draws its stages as it grows: the
@@ -406,7 +734,20 @@ public sealed class HistoryEditionSourceTests
         )
         {
             var heights = new[] { 0x0400, 0x2000, 0x7fff, 0x8100, 0xc000, 0xff00 }
-                .Select(progress => source.Draw(new BuildingDraw(0, 0, 0, type, (ushort)progress))?.Image)
+                .Select(progress =>
+                    source
+                        .Draw(
+                            new BuildingDraw
+                            {
+                                Row = 0,
+                                X = 0,
+                                Y = 0,
+                                Type = type,
+                                SiteProgress = (ushort)progress,
+                            }
+                        )
+                        ?.Image
+                )
                 .ToArray();
 
             Assert.IsTrue(heights.All(image => image is not null), $"{type} draws a stage at each progress word");
@@ -419,7 +760,20 @@ public sealed class HistoryEditionSourceTests
                 );
             }
 
-            Assert.IsTrue(heights[^1]!.Height >= source.Draw(new BuildingDraw(0, 0, 0, type))!.Image!.Height - 1);
+            Assert.IsTrue(
+                heights[^1]!.Height
+                    >= source
+                        .Draw(
+                            new BuildingDraw
+                            {
+                                Row = 0,
+                                X = 0,
+                                Y = 0,
+                                Type = type,
+                            }
+                        )!
+                        .Image!.Height - 1
+            );
         }
     }
 
@@ -429,11 +783,30 @@ public sealed class HistoryEditionSourceTests
         using var fake = ObjectFake();
         var source = Open(fake);
 
-        var log = source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = 7 }))!;
+        var log = source.Draw(
+            new GoodAtFlag
+            {
+                Row = 0,
+                X = 0,
+                Y = 0,
+                Good = new Good { Code = 7 },
+            }
+        )!;
 
         Assert.AreEqual(3, log.Image!.OffsetX);
         Assert.IsNull(log.Shadow);
-        Assert.AreSame(log, source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = 0x27 })));
+        Assert.AreSame(
+            log,
+            source.Draw(
+                new GoodAtFlag
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Good = new Good { Code = 0x27 },
+                }
+            )
+        );
     }
 
     [TestMethod]
@@ -442,12 +815,32 @@ public sealed class HistoryEditionSourceTests
         using var fake = ObjectFake();
         var source = Open(fake);
 
-        var ripple = source.Draw(new WaterRipple(0, 0, 0, 0, 0))!;
+        var ripple = source.Draw(
+            new WaterRipple
+            {
+                Row = 0,
+                X = 0,
+                Y = 0,
+                Tile = 0,
+                Step = 0,
+            }
+        )!;
 
         Assert.AreEqual(4, ripple.Image.OffsetX);
         CollectionAssert.AreEqual(new byte[] { 40, 12, 0, 255 }, ripple.Surface);
         // The tile 1 draws the entry 634, which this install does not hold.
-        Assert.IsNull(source.Draw(new WaterRipple(0, 0, 0, 1, 0)));
+        Assert.IsNull(
+            source.Draw(
+                new WaterRipple
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Tile = 1,
+                    Step = 0,
+                }
+            )
+        );
     }
 
     [TestMethod]
@@ -467,7 +860,18 @@ public sealed class HistoryEditionSourceTests
 
         StringAssert.Contains(source.ObjectsProblem!, "no object sprite");
         Assert.IsNull(source.Draw(Object(8)));
-        Assert.IsNull(source.Draw(new WaterRipple(0, 0, 0, 0, 0)));
+        Assert.IsNull(
+            source.Draw(
+                new WaterRipple
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Tile = 0,
+                    Step = 0,
+                }
+            )
+        );
         Assert.AreEqual(0, source.ObjectHeadroom);
         Assert.IsNotNull(source.Draw(Flat(new Terrain { Code = 5 })));
     }
@@ -533,25 +937,27 @@ public sealed class HistoryEditionSourceTests
         WaitingNode? node = null,
         Activity? activity = null
     ) =>
-        new(
-            3,
-            100,
-            50,
-            part,
-            new Carrier(),
-            activity
+        new()
+        {
+            Row = 3,
+            X = 100,
+            Y = 50,
+            Part = part,
+            Job = new Carrier(),
+            Activity =
+                activity
                 ?? new WalksRoad
                 {
                     Load = null,
                     Heading = new Heading { Value = 0 },
                 },
-            null,
-            frame,
-            0,
-            player,
-            Good.None,
-            node
-        );
+            Heading = null,
+            Frame = frame,
+            Step = 0,
+            Player = player,
+            Carried = Good.None,
+            Node = node,
+        };
 
     [TestMethod]
     public void AFigureDrawsItsSpriteWithTheSettlersShadow()
@@ -718,7 +1124,12 @@ public sealed class HistoryEditionSourceTests
         offsets[2 * 0x09] = 3;
         offsets[2 * 0x09 + 1] = -1;
         using var fake = SettlerFake();
-        var waiting = new WaitingNode(4, false, new RoadSet { Bits = 0x09 });
+        var waiting = new WaitingNode
+        {
+            Column = 4,
+            LakeMark = false,
+            Roads = new RoadSet { Bits = 0x09 },
+        };
 
         var drawing = OpenWithSettlers(fake, SettlerTables(offsets))
             .Draw(

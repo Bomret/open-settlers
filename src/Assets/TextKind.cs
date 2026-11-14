@@ -7,7 +7,14 @@ using OpenSettlers.Formats;
 namespace OpenSettlers.Assets;
 
 /// <summary>One key of the text table and its value in each language, in <see cref="TextPreview.Languages"/> order; null where the language has no such key.</summary>
-public sealed record TextRow(string Key, IReadOnlyList<string?> Values);
+public sealed record TextRow
+{
+    /// <summary>The key of the text table.</summary>
+    public required string Key { get; init; }
+
+    /// <summary>The key's value in each language, in <see cref="TextPreview.Languages"/> order; null where the language has no such key.</summary>
+    public required IReadOnlyList<string?> Values { get; init; }
+}
 
 /// <summary>The preview of the texts: one table of every key, with one value column per language.</summary>
 public sealed record TextPreview : Preview
@@ -76,7 +83,7 @@ public sealed class TextKind : AssetKind
 
         var files = reads.Select((r, index) => index == own ? ownFile : Readable(r)).ToList();
         var keys = files.SelectMany(f => f?.Entries.Select(e => e.Key) ?? []).Distinct();
-        var rows = keys.Select(k => new TextRow(k, files.Select(f => f?.Get(k)).ToList())).ToList();
+        var rows = keys.Select(k => new TextRow { Key = k, Values = files.Select(f => f?.Get(k)).ToList() }).ToList();
 
         return new TextPreview
         {

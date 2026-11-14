@@ -276,7 +276,15 @@ public sealed class FastForwardTests
         var pacer = new TickPacer();
         var run = new PlayRun(
             PlayScript.Parse("fast-forward woodcutter carrying max 5", "play/t.play"),
-            () => new PlayState(5, 6, 1f, "1", 1),
+            () =>
+                new PlayState
+                {
+                    CameraX = 5,
+                    CameraY = 6,
+                    Zoom = 1f,
+                    Seed = "1",
+                    Size = 1,
+                },
             Path.Combine(Path.GetTempPath(), "ff-unused"),
             step => step is FastForwardStep f ? f.Apply(null, false, pacer, Unread) : null
         );
@@ -375,7 +383,17 @@ public sealed class FastForwardTests
     }
 
     // What a play run observes of the game alone: its ticks and the castle's logs.
-    static PlayState Observed(Game game) => new(0, 0, 1, "", 1, game.TickCount, game.CastleStock.Logs);
+    static PlayState Observed(Game game) =>
+        new()
+        {
+            CameraX = 0,
+            CameraY = 0,
+            Zoom = 1,
+            Seed = "",
+            Size = 1,
+            Ticks = game.TickCount,
+            Logs = game.CastleStock.Logs,
+        };
 
     [TestMethod]
     public void AnUntilStepReadsAnExpectCondition()
@@ -569,7 +587,14 @@ public sealed class FastForwardTests
         {
             built++;
 
-            return new PlayState(0, 0, 1, "", 1);
+            return new PlayState
+            {
+                CameraX = 0,
+                CameraY = 0,
+                Zoom = 1,
+                Seed = "",
+                Size = 1,
+            };
         }
 
         Assert.AreEqual(

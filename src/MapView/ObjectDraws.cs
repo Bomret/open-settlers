@@ -30,7 +30,14 @@ public static class ObjectDraws
     /// first animation step, 16 by 19 pixels with its top 18 above the node. It is the same under every graphics source
     /// so that a click names the same node, and so the same command, under each (INV-0009).
     /// </summary>
-    public static MapPicking.PickBox FlagGeometry { get; } = new(16, 19, 0, -18);
+    public static MapPicking.PickBox FlagGeometry { get; } =
+        new()
+        {
+            Width = 16,
+            Height = 19,
+            OffsetX = 0,
+            OffsetY = -18,
+        };
 
     /// <summary>The goods that lie on the flags of a game, by the flag's node; a flag with no good is left out.</summary>
     public static Dictionary<(int X, int Y), IReadOnlyList<Good>> FlagGoodsOf(Game game) =>
@@ -69,7 +76,16 @@ public static class ObjectDraws
                     ? flagGoods.GetValueOrDefault((item.X, item.Y))
                     : null;
             AddGoods(draws, goods, item.Y, x, top, 0, GoodsBeforeFlag);
-            draws.Add(new MapObjectDraw(item.Y, x, top, item.Object, counter));
+            draws.Add(
+                new MapObjectDraw
+                {
+                    Row = item.Y,
+                    X = x,
+                    Y = top,
+                    Object = item.Object,
+                    Step = counter,
+                }
+            );
             AddGoods(draws, goods, item.Y, x, top, GoodsBeforeFlag, GoodPlaces.Length);
         }
 
@@ -82,7 +98,13 @@ public static class ObjectDraws
             var index = draws.FindIndex(draw => draw.Row > placed.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,
-                new BuildingDraw(placed.Y, x, y - height * TerrainTriangles.HeightStep, BuildingType.Castle)
+                new BuildingDraw
+                {
+                    Row = placed.Y,
+                    X = x,
+                    Y = y - height * TerrainTriangles.HeightStep,
+                    Type = BuildingType.Castle,
+                }
             );
         }
 
@@ -102,13 +124,14 @@ public static class ObjectDraws
             var index = draws.FindIndex(draw => draw.Row > hut.Y);
             draws.Insert(
                 index < 0 ? draws.Count : index,
-                new BuildingDraw(
-                    hut.Y,
-                    x,
-                    y - height * TerrainTriangles.HeightStep,
-                    hut.Type,
-                    hut.Constructing ? hut.Progress : null
-                )
+                new BuildingDraw
+                {
+                    Row = hut.Y,
+                    X = x,
+                    Y = y - height * TerrainTriangles.HeightStep,
+                    Type = hut.Type,
+                    SiteProgress = hut.Constructing ? hut.Progress : null,
+                }
             );
         }
 
@@ -129,7 +152,16 @@ public static class ObjectDraws
             if (map.At(tile).WaterTriangle)
             {
                 var (x, y) = Camera.NodePosition(tile % width, tile / width);
-                draws.Add(new WaterRipple(tile / width, x - 16, y, tile, counter));
+                draws.Add(
+                    new WaterRipple
+                    {
+                        Row = tile / width,
+                        X = x - 16,
+                        Y = y,
+                        Tile = tile,
+                        Step = counter,
+                    }
+                );
             }
         }
 
@@ -142,7 +174,15 @@ public static class ObjectDraws
         {
             if (!goods[place].IsNone)
             {
-                draws.Add(new GoodAtFlag(row, x + GoodPlaces[place].X, y + GoodPlaces[place].Y, goods[place]));
+                draws.Add(
+                    new GoodAtFlag
+                    {
+                        Row = row,
+                        X = x + GoodPlaces[place].X,
+                        Y = y + GoodPlaces[place].Y,
+                        Good = goods[place],
+                    }
+                );
             }
         }
     }
