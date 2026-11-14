@@ -280,8 +280,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
             }
         }
 
-        BuildMarker[] markerKinds = [BuildMarker.Flag, BuildMarker.Mine, BuildMarker.Small, BuildMarker.Large];
-        ObjectImage[] markers = [.. markerKinds.Select(marker => Image(MarkerKey(marker)))];
+        ObjectImage[] markers = [.. Enum.GetValues<BuildMarker>().Select(marker => Image(MarkerKey(marker)))];
 
         var headroom = objects
             .Concat([flag])

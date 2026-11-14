@@ -835,7 +835,9 @@ public partial class MapViewControl(
 
         // The build markers are judged once for the whole map and drawn in every wrap copy.
         var markerMesh = BuildMarkerMesh(_source);
-        var markerMaterial = markerMesh is null ? null : MarkerMaterial();
+        var markerMaterial = markerMesh is null
+            ? null
+            : LayerMaterial(_markerLayers, "Objects", "the build markers", ref _markerMaterial, ref _markerImages);
         if (markerMesh is not null && markerMaterial is null)
         {
             return;
@@ -1014,10 +1016,6 @@ public partial class MapViewControl(
             ? null
             : BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))));
     }
-
-    // The material of the build markers.
-    ShaderMaterial? MarkerMaterial() =>
-        LayerMaterial(_markerLayers, "Objects", "the build markers", ref _markerMaterial, ref _markerImages);
 
     // The material of the settlers' images.
     ShaderMaterial? SettlerMaterial() =>

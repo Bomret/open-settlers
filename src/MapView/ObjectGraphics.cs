@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,9 +28,6 @@ public sealed class ObjectGraphics
 
     /// <summary>The shadow of each sprite entry that has a mask in the archive. The goods and the water draw no shadow (<c>0x44de9a</c>, <c>0x44ff59</c> draw only the sprite).</summary>
     public IReadOnlyDictionary<int, ObjectImage> Shadows { get; init; } = new Dictionary<int, ObjectImage>();
-
-    /// <summary>The number of build markers, one sprite each from <see cref="ObjectSprites.MarkerFirstEntry"/>.</summary>
-    public const int BuildMarkerCount = 4;
 
     /// <summary>The height of the tallest sprite.</summary>
     public required int Headroom { get; init; }
@@ -93,7 +91,7 @@ public sealed class ObjectGraphics
         AddSprites(Enumerable.Range(ObjectSprites.GoodsFirstEntry, ObjectSprites.GoodsCount), "the good's sprite");
         AddSprites(Enumerable.Range(ObjectSprites.WaterFirstEntry, ObjectSprites.WaterCount), "the water sprite");
         AddSprites(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1), "the flag sprite");
-        AddSprites(Enumerable.Range(ObjectSprites.MarkerFirstEntry, BuildMarkerCount), "the build marker sprite");
+        AddSprites(Enum.GetValues<BuildMarker>().Select(ObjectSprites.MarkerEntry), "the build marker sprite");
 
         var shadows = new Dictionary<int, ObjectImage>();
         var shadowed = Enumerable
