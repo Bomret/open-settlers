@@ -206,8 +206,12 @@ public sealed class HomeWalkTests
                     var force = parts[10].Split(',').Select(int.Parse).ToArray();
                     sent.Activity = (force[0], force[1]) switch
                     {
-                        (0x19, 1) => new SearchesHome(true),
-                        (2, 0xfe) => new Walks(new ToStorage(), new Heading(0)),
+                        (0x19, 1) => new SearchesHome { FarEndFirst = true },
+                        (2, 0xfe) => new Walks
+                        {
+                            Errand = new ToStorage(),
+                            Heading = new Heading { Value = 0 },
+                        },
                         _ => throw new InvalidOperationException($"{name}: no activity for the forced {parts[10]}"),
                     };
                 }

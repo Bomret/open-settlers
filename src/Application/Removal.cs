@@ -468,7 +468,7 @@ public sealed class Removal(
 
             if (settler.Activity is WaitsOffRoad waiting)
             {
-                movement.Become(settler, new WaitsToGoHome(waiting.Approach));
+                movement.Become(settler, new WaitsToGoHome { Approach = waiting.Approach });
                 Touch(slot, EventType.DismissWaiting);
 
                 return;
@@ -490,7 +490,10 @@ public sealed class Removal(
             switch (settler.Activity)
             {
                 case WaitsAtFlag or ClaimsNode:
-                    movement.Become(settler, new WaitsToRejoin(((WaitsOffRoad)settler.Activity).Approach));
+                    movement.Become(
+                        settler,
+                        new WaitsToRejoin { Approach = ((WaitsOffRoad)settler.Activity).Approach }
+                    );
                     Touch(slot, EventType.TakeWaiting);
 
                     return slot;
@@ -527,7 +530,10 @@ public sealed class Removal(
     void Rejoined(int slot, Settler settler)
     {
         var approach = ((WaitsToRejoin)settler.Activity).Approach;
-        movement.Become(settler, new ClaimsNode(Heading.Facing(Map.At(settler.X, settler.Y).Roads.Last), approach));
+        movement.Become(
+            settler,
+            new ClaimsNode { Heading = Heading.Facing(Map.At(settler.X, settler.Y).Roads.Last), Approach = approach }
+        );
         Touch(slot, EventType.Rejoined);
         carriers.Claim(slot, settler);
     }
@@ -712,7 +718,7 @@ public sealed class Removal(
                 var carrier = settlers[carrierSlot];
                 if (carrier.Activity is WaitsToRejoin rejoining)
                 {
-                    movement.Become(carrier, new WaitsToGoHome(rejoining.Approach));
+                    movement.Become(carrier, new WaitsToGoHome { Approach = rejoining.Approach });
                 }
                 else
                 {
@@ -777,7 +783,17 @@ public sealed class Removal(
         roads.Remove(roadB);
         carriers.ForgetCause(roadA);
         carriers.ForgetCause(roadB);
-        roads.Add(new Road(a.Far, a.FarDirection, b.Far, b.FarDirection, path, roadA.Water && roadB.Water));
+        roads.Add(
+            new Road
+            {
+                FromSlot = a.Far,
+                FromDirection = a.FarDirection,
+                ToSlot = b.Far,
+                ToDirection = b.FarDirection,
+                Directions = path,
+                Water = roadA.Water && roadB.Water,
+            }
+        );
 
         var sideA = flags[a.Far].Side(a.FarDirection);
         var sideB = flags[b.Far].Side(b.FarDirection);
@@ -1032,15 +1048,24 @@ public sealed class Removal(
         roads.Remove(road);
         var halves = new[]
         {
-            new Road(
-                road.FromSlot,
-                road.FromDirection,
-                slot,
-                startDirection,
-                [.. road.Directions.Take(steps)],
-                road.Water
-            ),
-            new Road(slot, endDirection, road.ToSlot, road.ToDirection, [.. road.Directions.Skip(steps)], road.Water),
+            new Road
+            {
+                FromSlot = road.FromSlot,
+                FromDirection = road.FromDirection,
+                ToSlot = slot,
+                ToDirection = startDirection,
+                Directions = [.. road.Directions.Take(steps)],
+                Water = road.Water,
+            },
+            new Road
+            {
+                FromSlot = slot,
+                FromDirection = endDirection,
+                ToSlot = road.ToSlot,
+                ToDirection = road.ToDirection,
+                Directions = [.. road.Directions.Skip(steps)],
+                Water = road.Water,
+            },
         };
         foreach (var half in halves)
         {

@@ -35,15 +35,15 @@ public sealed class ForestryTests
     static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Forester.Code] = new WorkerRequest(new Forester(), Good.None);
+        workers[BuildingType.Forester.Code] = new WorkerRequest { Job = new Forester(), Tool = Good.None };
 
         return workers;
     }
 
     static void SetMeadow(Map map, (int X, int Y) node, bool meadow)
     {
-        map.At(node.X, node.Y).Upper = meadow ? Terrain.Lowland : new Terrain(0);
-        map.At(node.X, node.Y).Lower = meadow ? Terrain.Lowland : new Terrain(0);
+        map.At(node.X, node.Y).Upper = meadow ? Terrain.Lowland : new Terrain { Code = 0 };
+        map.At(node.X, node.Y).Lower = meadow ? Terrain.Lowland : new Terrain { Code = 0 };
     }
 
     // The castle, the flags, the roads, and the forester's hut; every node of his reach and its north-west neighbour is meadow
@@ -161,7 +161,7 @@ public sealed class ForestryTests
                     switch (refusal)
                     {
                         case "object":
-                            at.Object = new MapObject(0x4a);
+                            at.Object = new MapObject { Code = 0x4a };
                             break;
                         case "flag":
                             at.Object = MapObject.Flag;
@@ -214,7 +214,7 @@ public sealed class ForestryTests
             {
                 foreach (var node in Reach().Where(node => Bare(map, node)))
                 {
-                    map.At(node.X, node.Y).Object = new MapObject(0x4a);
+                    map.At(node.X, node.Y).Object = new MapObject { Code = 0x4a };
                 }
             },
             out var map
@@ -246,7 +246,7 @@ public sealed class ForestryTests
                 // A sapling stands on the nodes of the woodcutter's reach whose column plus twice the row is a multiple of 7.
                 foreach (var node in Reach().Where(node => (node.X + 2 * node.Y) % 7 == 0 && Bare(map, node)))
                 {
-                    map.At(node.X, node.Y).Object = new MapObject((byte)(MapObject.SaplingCode + node.X % 2));
+                    map.At(node.X, node.Y).Object = new MapObject { Code = (byte)(MapObject.SaplingCode + node.X % 2) };
                     saplings.Add(node);
                 }
             },
@@ -260,7 +260,7 @@ public sealed class ForestryTests
         {
             game.Tick();
             grown |= saplings.Any(node => map.At(node.X, node.Y).Object.Kind != MapObjectKind.Sapling);
-            log = game.Flags[3].Places.Any(place => place.Good == new Good(WoodcutterRules.GoodLog));
+            log = game.Flags[3].Places.Any(place => place.Good == new Good { Code = WoodcutterRules.GoodLog });
         }
 
         Assert.IsTrue(grown, "a sapling of the hut's reach grew");
@@ -289,7 +289,7 @@ public sealed class ForestryTests
             (_, _, _) => { },
             () => false
         );
-        bench.Map.At(23, 0).Object = new MapObject(sapling);
+        bench.Map.At(23, 0).Object = new MapObject { Code = sapling };
         bench.Clock = 8 * 40;
 
         work.ObjectPass();

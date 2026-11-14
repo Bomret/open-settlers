@@ -107,7 +107,7 @@ public sealed class WalkBehavior(
                 {
                     // No storage chosen yet (0x45d09b); none a road leads to sends the settler to look for a flag again,
                     // from the far end of the search.
-                    movement.Become(settler, new SearchesHome(true));
+                    movement.Become(settler, new SearchesHome { FarEndFirst = true });
                     settler.Timer = 0;
                     return;
                 }
@@ -132,7 +132,7 @@ public sealed class WalkBehavior(
                 if (direction < 0 && errand is ToStorage)
                 {
                     // 0x43a24e: a settler on its way to a storage that finds no road leads on looks for a flag again.
-                    movement.Become(settler, new SearchesHome(true));
+                    movement.Become(settler, new SearchesHome { FarEndFirst = true });
                     settler.Timer = 0;
                     return;
                 }
@@ -189,7 +189,7 @@ public sealed class WalkBehavior(
         var buildingId = history.BuildingId(buildings.SlotOf(building));
         causes.RecordBuilding(building, EventType.Entered, history.SettlerId(slot).ToString());
         var storage = settler.Activity.GoingTo is ToStorage;
-        movement.Become(settler, new EntersBuilding(storage));
+        movement.Become(settler, new EntersBuilding { Storage = storage });
         if (movement.Occupant(node) != 0)
         {
             settler.Frame = 0x55;
@@ -204,7 +204,10 @@ public sealed class WalkBehavior(
         var time = tables.StepTime(shape);
         settler.Timer = time;
         settler.Stamp = clock.Now;
-        movement.Become(settler, new Door((ushort)(time * tables.DoorSpeed(building)) >> 5, storage));
+        movement.Become(
+            settler,
+            new Door { TimeLeft = (ushort)(time * tables.DoorSpeed(building)) >> 5, EnteringStorage = storage }
+        );
         history.RecordSettler(slot, EventType.Entered, causes.OfSettler(slot), buildingId.ToString());
         causes.ForgetPlacement(buildingId);
     }
@@ -266,7 +269,7 @@ public sealed class WalkBehavior(
         }
 
         hut.WorkerOnTheWay = true;
-        movement.Become(settler, new Leaving(new ToBuilding(hut.Flag)));
+        movement.Become(settler, new Leaving { Errand = new ToBuilding { At = hut.Flag } });
         settler.X = flag.X;
         settler.Y = flag.Y;
         Enter(slot, settler);

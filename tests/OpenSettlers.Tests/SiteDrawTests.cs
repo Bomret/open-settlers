@@ -38,7 +38,7 @@ public sealed class SiteDrawTests
                 .Select(field => field.Split('=', 2))
                 .ToDictionary(pair => pair[0], pair => pair[1]);
             var bytes = Convert.FromHexString(fields["b"]);
-            var type = new BuildingType((bytes[4] >> 2) & 0x1f);
+            var type = new BuildingType { Code = (bytes[4] >> 2) & 0x1f };
             var progress = (ushort)(bytes[12] | bytes[13] << 8);
             var drawn = fields["d"]
                 .Split(';')

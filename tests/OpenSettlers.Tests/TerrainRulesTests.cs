@@ -38,7 +38,7 @@ public sealed class TerrainRulesTests
     [DataRow(15)]
     public void AnUpperTriangleWithASlopeTakesTheTextureOfItsTerrainAndStep(int code)
     {
-        var draw = TerrainRules.Upper(10, 11, 12, new Terrain(code));
+        var draw = TerrainRules.Upper(10, 11, 12, new Terrain { Code = code });
 
         Assert.AreEqual(new TerrainDraw(60 + 21, Texture(code, 3)), draw);
     }
@@ -61,7 +61,7 @@ public sealed class TerrainRulesTests
     [DataRow(15)]
     public void ALowerTriangleWithASlopeTakesTheTextureOfItsTerrainAndStep(int code)
     {
-        var draw = TerrainRules.Lower(10, 6, 8, new Terrain(code));
+        var draw = TerrainRules.Lower(10, 6, 8, new Terrain { Code = code });
 
         Assert.AreEqual(new TerrainDraw(141 + 18, Texture(code, 3)), draw);
     }
@@ -70,40 +70,46 @@ public sealed class TerrainRulesTests
     [TestMethod]
     public void TheLargestStepsOfTheTablesAreReached()
     {
-        Assert.AreEqual(new TerrainDraw(60 + 14, 260 + 7), TerrainRules.Upper(10, 9, 13, new Terrain(7)));
-        Assert.AreEqual(new TerrainDraw(141 + 36, 260 + 7), TerrainRules.Lower(10, 6, 10, new Terrain(5)));
+        Assert.AreEqual(new TerrainDraw(60 + 14, 260 + 7), TerrainRules.Upper(10, 9, 13, new Terrain { Code = 7 }));
+        Assert.AreEqual(new TerrainDraw(141 + 36, 260 + 7), TerrainRules.Lower(10, 6, 10, new Terrain { Code = 5 }));
     }
 
     // Level ground: the slopes 4 and 4, the index 40, 0x10 in both tables, k 4; masks 100 and 181.
     [TestMethod]
     public void LevelGroundTakesTheMiddleOfBothTables()
     {
-        Assert.AreEqual(new TerrainDraw(100, 264), TerrainRules.Upper(7, 7, 7, new Terrain(5)));
-        Assert.AreEqual(new TerrainDraw(181, 264), TerrainRules.Lower(7, 7, 7, new Terrain(5)));
+        Assert.AreEqual(new TerrainDraw(100, 264), TerrainRules.Upper(7, 7, 7, new Terrain { Code = 5 }));
+        Assert.AreEqual(new TerrainDraw(181, 264), TerrainRules.Lower(7, 7, 7, new Terrain { Code = 5 }));
     }
 
     // The heights are the five low bits: 42 is 10.
     [TestMethod]
     public void OnlyTheFiveLowBitsOfAHeightCount()
     {
-        Assert.AreEqual(TerrainRules.Upper(10, 11, 12, new Terrain(5)), TerrainRules.Upper(42, 43, 44, new Terrain(5)));
-        Assert.AreEqual(TerrainRules.Lower(10, 6, 8, new Terrain(5)), TerrainRules.Lower(42, 38, 40, new Terrain(5)));
+        Assert.AreEqual(
+            TerrainRules.Upper(10, 11, 12, new Terrain { Code = 5 }),
+            TerrainRules.Upper(42, 43, 44, new Terrain { Code = 5 })
+        );
+        Assert.AreEqual(
+            TerrainRules.Lower(10, 6, 8, new Terrain { Code = 5 }),
+            TerrainRules.Lower(42, 38, 40, new Terrain { Code = 5 })
+        );
     }
 
     // Upper index 5 (slopes 5 and 0) and lower index 5 (slopes 5 and 0) hold 0xff, no texture: no draw.
     [TestMethod]
     public void ATableValueOf0xffGivesNoDraw()
     {
-        Assert.IsNull(TerrainRules.Upper(10, 9, 14, new Terrain(5)));
-        Assert.IsNull(TerrainRules.Lower(10, 11, 6, new Terrain(5)));
+        Assert.IsNull(TerrainRules.Upper(10, 9, 14, new Terrain { Code = 5 }));
+        Assert.IsNull(TerrainRules.Lower(10, 11, 6, new Terrain { Code = 5 }));
     }
 
     // A slope two nodes beyond the table's end (an index of 81 or more, or below 0) has no entry in the 81 values.
     [TestMethod]
     public void AnIndexBeyondTheTableGivesNoDraw()
     {
-        Assert.IsNull(TerrainRules.Upper(10, 14, 5, new Terrain(5)));
-        Assert.IsNull(TerrainRules.Lower(10, 6, 15, new Terrain(5)));
+        Assert.IsNull(TerrainRules.Upper(10, 14, 5, new Terrain { Code = 5 }));
+        Assert.IsNull(TerrainRules.Lower(10, 6, 15, new Terrain { Code = 5 }));
     }
 
     // The aliasing of a slope of 9 or more with the next row (Upper(10, 5, 14) has the slopes 9 and 0, and the index 9 of the slopes 0

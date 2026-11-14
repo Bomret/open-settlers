@@ -139,7 +139,7 @@ public sealed class ForesterTests
             var before = Layers.Of(map, MapLayer.Object);
             foreach (var set in sets.Where(set => set.Pass == pass))
             {
-                map.At(set.X, set.Y).Object = new MapObject((byte)set.Code);
+                map.At(set.X, set.Y).Object = new MapObject { Code = (byte)set.Code };
             }
 
             game.Tick();

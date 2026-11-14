@@ -78,7 +78,13 @@ public sealed class GameHistoryTests
             7,
             9,
             0,
-            new WaitsAtFlag(300, new Direction(254), new Heading(11)) { Residue = new Residue(Heading: 3, Next: 15) }
+            new WaitsAtFlag
+            {
+                Flag = 300,
+                Direction = new Direction { Value = 254 },
+                Approach = new Heading { Value = 11 },
+                Residue = new Residue { Heading = 3, Next = 15 },
+            }
         )
         {
             Frame = 6,
@@ -108,8 +114,8 @@ public sealed class GameHistoryTests
             flags[0].Side(direction).Carriers = direction + 1;
         }
 
-        flags[0].Places[0].Good = new Good(9);
-        flags[0].Places[7].Good = new Good(1);
+        flags[0].Places[0].Good = new Good { Code = 9 };
+        flags[0].Places[7].Good = new Good { Code = 1 };
         flags[0].Places[7].Way = 0;
 
         var exporter = new SnapshotExporter(new SettlerTable(), new BuildingTable(), flags);

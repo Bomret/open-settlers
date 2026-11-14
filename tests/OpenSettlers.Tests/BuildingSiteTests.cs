@@ -87,7 +87,7 @@ public sealed class BuildingSiteTests
     [DataRow(0x11, 3, 2)]
     public void EachOfTheFourTypesIsPlacedAsABuildingSiteOfItsNeeds(int code, int planks, int stones)
     {
-        var type = new BuildingType(code);
+        var type = new BuildingType { Code = code };
         var game = World();
         var (x, y, site) = Find(game, 4);
 
@@ -292,7 +292,7 @@ public sealed class BuildingSiteTests
     {
         var game = World();
         var (x, y, _) = Find(game, 4);
-        Place(game, new BuildingType(code), x, y);
+        Place(game, new BuildingType { Code = code }, x, y);
 
         var line = OpenSettlers.MapView.Thing.Of(game.Buildings[1]).Line();
 

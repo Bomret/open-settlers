@@ -155,7 +155,7 @@ public sealed class GoodsTransportTests
 
         Assert.IsNotNull(goods.PlaceGood(9, 9, 0, Log), "no flag stands on the node");
         Assert.IsNull(goods.PlaceGood(6, 4, 0, Log));
-        Assert.AreEqual(new Good(Log), bench.Flags[1].Places[0].Good);
+        Assert.AreEqual(new Good { Code = Log }, bench.Flags[1].Places[0].Good);
         Assert.IsNotNull(goods.PlaceGood(6, 4, 0, Ninth), "the place holds a good already");
     }
 }

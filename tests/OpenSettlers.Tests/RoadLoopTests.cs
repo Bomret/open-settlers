@@ -52,14 +52,18 @@ public sealed class RoadLoopTests
         var road = game.Network.Roads.Single();
         Assert.AreEqual((0, 0, 0, 2), (road.FromSlot, road.FromDirection.Value, road.ToSlot, road.ToDirection.Value));
         CollectionAssert.AreEqual(Loop, road.Directions.Select(step => step.Value).ToArray());
-        Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length, "class 2 for six steps at the start end");
-        Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(2).Length, "and at the other end");
         Assert.AreEqual(
-            new Direction(2),
+            new LengthClass { Value = 2 },
+            game.Flags[0].Side(0).Length,
+            "class 2 for six steps at the start end"
+        );
+        Assert.AreEqual(new LengthClass { Value = 2 }, game.Flags[0].Side(2).Length, "and at the other end");
+        Assert.AreEqual(
+            new Direction { Value = 2 },
             game.Flags[0].Side(0).FarDirection,
             "each end names the direction of the other"
         );
-        Assert.AreEqual(new Direction(0), game.Flags[0].Side(2).FarDirection);
+        Assert.AreEqual(new Direction { Value = 0 }, game.Flags[0].Side(2).FarDirection);
     }
 
     [TestMethod]
@@ -170,7 +174,7 @@ public sealed class RoadLoopTests
             new[] { road.FromDirection.Value, road.ToDirection.Value },
             "the joined road starts at either end"
         );
-        Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length);
+        Assert.AreEqual(new LengthClass { Value = 2 }, game.Flags[0].Side(0).Length);
     }
 
     [TestMethod]

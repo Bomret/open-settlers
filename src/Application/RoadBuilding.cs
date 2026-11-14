@@ -228,14 +228,15 @@ public static class RoadBuilding
             return null;
         }
 
-        return new Road(
-            map.At(nodes[0]).Link ?? 0,
-            steps[0],
-            map.At(nodes[^1]).Link ?? 0,
-            (steps[^1] + 3) % 6,
-            [.. steps],
-            kinds == 2
-        );
+        return new Road
+        {
+            FromSlot = map.At(nodes[0]).Link ?? 0,
+            FromDirection = steps[0],
+            ToSlot = map.At(nodes[^1]).Link ?? 0,
+            ToDirection = (steps[^1] + 3) % 6,
+            Directions = [.. steps],
+            Water = kinds == 2,
+        };
     }
 
     // Whether the two triangles beside the step from the node in the direction are both water (0x444e68: the

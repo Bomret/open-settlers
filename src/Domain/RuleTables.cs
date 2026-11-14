@@ -316,8 +316,8 @@ public sealed class RuleTables
     /// </summary>
     public BuildingNeeds NeedsOf(BuildingType type) =>
         type.Code is >= 0 and < BuildingTypeCount
-            ? new BuildingNeeds(_buildingNeeds[2 * type.Code], _buildingNeeds[2 * type.Code + 1])
-            : new BuildingNeeds(0, 0);
+            ? new BuildingNeeds { Planks = _buildingNeeds[2 * type.Code], Stones = _buildingNeeds[2 * type.Code + 1] }
+            : new BuildingNeeds { Planks = 0, Stones = 0 };
 
     /// <summary>
     /// The request a good with no destination looks for (<c>0x464117</c>): its class and the request word of the flags that ask for
@@ -389,32 +389,79 @@ public enum FillCounter
 }
 
 /// <summary>
-/// What a job's handler adds to the figure byte to make the figure word: for a figure byte below 0x80 (<paramref name="Walk"/>,
-/// or <paramref name="Carrying"/> on the way back with the log) and for one from 0x80 (<paramref name="Cutting"/>).
+/// What a job's handler adds to the figure byte to make the figure word: for a figure byte below 0x80 (<see cref="Walk"/>,
+/// or <see cref="Carrying"/> on the way back with the log) and for one from 0x80 (<see cref="Cutting"/>).
 /// </summary>
-public readonly record struct FigureAdds(ushort Walk, ushort Carrying, ushort Cutting);
+public readonly record struct FigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add for a figure byte below 0x80 on the way back with the log.</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80: the cut.</summary>
+    public required ushort Cutting { get; init; }
+}
 
 /// <summary>
-/// What the sawmiller's handler adds to the figure byte: <paramref name="Walk"/> for a byte below 0x80, <paramref name="Carrying"/> in the
-/// step that takes the plank out (state 5 with state 0xd next), and <paramref name="Saw"/> for a byte from 0x80, the saw's frames.
+/// What the sawmiller's handler adds to the figure byte: <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in the
+/// step that takes the plank out (state 5 with state 0xd next), and <see cref="Saw"/> for a byte from 0x80, the saw's frames.
 /// </summary>
-public readonly record struct SawmillerFigureAdds(ushort Walk, ushort Carrying, ushort Saw);
+public readonly record struct SawmillerFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add in the step that takes the plank out (state 5 with state 0xd next).</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80: the saw's frames.</summary>
+    public required ushort Saw { get; init; }
+}
 
 /// <summary>
-/// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <paramref name="Walk"/>
-/// (or <paramref name="Carrying"/> on the way back with a load), for one from 0x80 <paramref name="High"/>
-/// (<paramref name="HighFacing"/> where the settler's heading, byte 14, is 1).
+/// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <see cref="Walk"/>
+/// (or <see cref="Carrying"/> on the way back with a load), for one from 0x80 <see cref="High"/>
+/// (<see cref="HighFacing"/> where the settler's heading, byte 14, is 1).
 /// </summary>
-public readonly record struct HutFigureAdds(ushort Walk, ushort Carrying, ushort High, ushort HighFacing);
+public readonly record struct HutFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add for a figure byte below 0x80 on the way back with a load.</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80.</summary>
+    public required ushort High { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80 where the settler's heading, byte 14, is 1.</summary>
+    public required ushort HighFacing { get; init; }
+}
 
 /// <summary>
-/// What the builder's figure handler (<c>0x43faf4</c>) adds to the figure byte: <paramref name="Walk"/> for a byte below 0x80,
-/// <paramref name="Work"/> for one from 0x80 (the blows).
+/// What the builder's figure handler (<c>0x43faf4</c>) adds to the figure byte: <see cref="Walk"/> for a byte below 0x80,
+/// <see cref="Work"/> for one from 0x80 (the blows).
 /// </summary>
-public readonly record struct BuilderFigureAdds(ushort Walk, ushort Work);
+public readonly record struct BuilderFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80: the blows.</summary>
+    public required ushort Work { get; init; }
+}
 
 /// <summary>
-/// What the forester's figure handler (<c>0x43fd88</c>) adds to the figure byte: <paramref name="Walk"/> for a byte below 0x80
-/// (the walk, and the waiting and planting frames), <paramref name="Work"/> for one from 0x80.
+/// What the forester's figure handler (<c>0x43fd88</c>) adds to the figure byte: <see cref="Walk"/> for a byte below 0x80
+/// (the walk, and the waiting and planting frames), <see cref="Work"/> for one from 0x80.
 /// </summary>
-public readonly record struct ForesterFigureAdds(ushort Walk, ushort Work);
+public readonly record struct ForesterFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk, and the waiting and planting frames.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80.</summary>
+    public required ushort Work { get; init; }
+}

@@ -30,10 +30,11 @@ public sealed class ForesterTables : JobTables<Forester>
         data.Add(
             (
                 Job,
-                new ForesterFigureAdds(
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.ForesterWalkAddress),
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.ForesterWorkAddress)
-                )
+                new ForesterFigureAdds
+                {
+                    Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.ForesterWalkAddress),
+                    Work = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.ForesterWorkAddress),
+                }
             )
         );
     }

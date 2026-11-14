@@ -278,7 +278,7 @@ public static class ProgramTablesImporter
         var windows = Slice(exe, ScanWindowAddress, 2 * RuleTables.ScanWindowCount);
 
         return new RuleTables(
-            [.. classes.Select(code => new ObjectClass(code))],
+            [.. classes.Select(code => new ObjectClass { Value = code })],
             startStock,
             [.. Enumerable.Range(0, RuleTables.StepTimeCount).Select(i => BitConverter.ToUInt16(steps, 2 * i))],
             Slice(exe, DoorSpeedAddress, RuleTables.DoorSpeedCount),
@@ -385,7 +385,11 @@ public static class ProgramTablesImporter
             );
         }
 
-        return new WorkerRequest(Job.Of(code[1]), new Good(BitConverter.ToInt32(code, 8) / 2));
+        return new WorkerRequest
+        {
+            Job = Job.Of(code[1]),
+            Tool = new Good { Code = BitConverter.ToInt32(code, 8) / 2 },
+        };
     }
 
     // The request word a flag item offset names: 0x42 is the first word, 0x44 the second (the class table's second byte takes the
@@ -401,7 +405,7 @@ public static class ProgramTablesImporter
                 .Select(good =>
                     (sbyte)table[2 * good] < 0
                         ? (GoodClass?)null
-                        : new GoodClass(table[2 * good], WordAt(table[2 * good + 1]))
+                        : new GoodClass { Class = table[2 * good], Word = WordAt(table[2 * good + 1]) }
                 ),
         ];
 
@@ -427,10 +431,14 @@ public static class ProgramTablesImporter
             }
 
             steps.Add(
-                new DistributionStep(
-                    new GoodClass(words[1], WordAt(words[0])),
-                    words[2] < 0 ? [new Good(1), new Good(3), new Good(6)] : [new Good(words[2] / 2 + 1)]
-                )
+                new DistributionStep
+                {
+                    Class = new GoodClass { Class = words[1], Word = WordAt(words[0]) },
+                    Goods =
+                        words[2] < 0
+                            ? [new Good { Code = 1 }, new Good { Code = 3 }, new Good { Code = 6 }]
+                            : [new Good { Code = words[2] / 2 + 1 }],
+                }
             );
         }
 

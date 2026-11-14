@@ -160,7 +160,7 @@ public sealed class HutWork(
             var speed = (byte)(movement.Tables.DoorSpeed(door) ^ 0x1f);
             settler.Timer = (ushort)((ushort)(movement.Tables.StepTime(shape) * speed) >> 5);
             settler.Stamp = movement.Clock;
-            settler.Activity = new WaitsOutStep(((StepsOntoFlag)settler.Activity).Then);
+            settler.Activity = new WaitsOutStep { Then = ((StepsOntoFlag)settler.Activity).Then };
             RecordWork(slot, EventType.StepOut);
 
             return;
@@ -416,7 +416,7 @@ public sealed class HutWork(
     /// </summary>
     internal void ReturnToHut(int slot, Settler settler, Trip trip)
     {
-        settler.Activity = new WalksFree(trip with { Remaining = new Vector(0, trip.Remaining.South) });
+        settler.Activity = new WalksFree { Trip = trip with { Remaining = new Vector(0, trip.Remaining.South) } };
         EnterHut(slot, settler);
     }
 
@@ -465,7 +465,11 @@ public sealed class HutWork(
         var storage = ((EntersBuilding)settler.Activity).Storage;
         movement.Become(
             settler,
-            new Door((ushort)(time * movement.Tables.DoorSpeed(movement.BuildingAt(node))) >> 5, storage)
+            new Door
+            {
+                TimeLeft = (ushort)(time * movement.Tables.DoorSpeed(movement.BuildingAt(node))) >> 5,
+                EnteringStorage = storage,
+            }
         );
         RecordWork(slot, EventType.EnterHut);
     }

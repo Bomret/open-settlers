@@ -94,7 +94,7 @@ Always use primary constructors with no class fields, if possible.
 
 ### Records
 
-Records carry data through `required` init-only properties, never positional (primary-constructor) parameters. Each property is its own member with its own doc comment; construct with an object initializer.
+Records carry data through `required` init-only properties, never positional (primary-constructor) parameters. Each property is its own member and carries its description in its own `<summary>`, and a record's doc comment holds no `<param>`. A property of a public record always has a description. Construct with an object initializer, and read a record through its properties or a property pattern, never through deconstruction or a positional pattern.
 
 ```csharp
 // Yes
@@ -111,5 +111,12 @@ var alarm = new Alarm { JobName = "job-a", State = AlarmState.Raised };
 public sealed record Alarm(string JobName, AlarmState State);
 ```
 
-A property that carries a default stays a non-`required` init property with an initializer (`public uint Flags { get; init; } = 0;`). Primary constructors remain the norm for classes; the rule above is records-only.
+A property that carries a default stays a non-`required` init property with an initializer (`public uint Flags { get; init; } = 0;`). A `readonly record struct` whose defaults are all zero leaves the initializers out, because a struct with field initializers needs an explicit constructor. A record that refuses bad input checks it in the `init` accessor, through a backing field, so a copy made with `with` is checked too (`WorkerRequest.Job`). Primary constructors remain the norm for classes; the rule above is records-only.
+
+The properties stand in the order of the record's data, a base record's properties first: the order sets the record's equality, hash code, and `ToString` text, and a hash set iterates in the order the hash codes give (INV-0002).
+
+Two exemptions stay positional:
+
+- **The job generator project** (`src/Generators`). It targets netstandard2.0, because Roslyn loads a generator into the compiler, and netstandard2.0 lacks the attributes that `required` members need.
+- **`Knight` and `UnportedJob`.** The generated `Job.Of` builds both from a number through their constructors, and `UnportedJob.Code` overrides the abstract get-only `Job.Code`, which an init property cannot.
 

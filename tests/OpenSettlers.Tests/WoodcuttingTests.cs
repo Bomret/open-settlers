@@ -47,7 +47,7 @@ public sealed class WoodcuttingTests
     }
 
     // The 128 nodes around the hut the worker draws from, as the spiral gives them.
-    static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == new Good(7));
+    static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == new Good { Code = 7 });
 
     // The goods on the hut's flag, place by place.
     static Good[] Goods(Game game) => [.. game.Flags[HutFlag].Places.Select(place => place.Good)];
@@ -81,7 +81,7 @@ public sealed class WoodcuttingTests
                 var index = map.Index(x & 31, y & 31);
                 if (!map.At(index).Object.Exists)
                 {
-                    map.At(index).Object = new MapObject(8);
+                    map.At(index).Object = new MapObject { Code = 8 };
                 }
             }
         }
@@ -125,7 +125,11 @@ public sealed class WoodcuttingTests
             game.Tick();
         }
 
-        Assert.AreEqual(new Good(7), game.Flags[HutFlag].Places[0].Good, "the log lies on the first place of the flag");
+        Assert.AreEqual(
+            new Good { Code = 7 },
+            game.Flags[HutFlag].Places[0].Good,
+            "the log lies on the first place of the flag"
+        );
         Assert.AreEqual(8, game.Flags[HutFlag].Places.Count);
         Assert.AreEqual(before - 1, reach.Count(node => IsTree(map, node)), "one tree is felled");
     }
@@ -184,7 +188,7 @@ public sealed class WoodcuttingTests
         Assert.IsTrue(watch.Changed(game));
 
         // Only a tick changes the game, so a look between two ticks does not read the layers again.
-        map.At(0).Object = new MapObject((byte)(map.At(0).Object.Code ^ 0x7f));
+        map.At(0).Object = new MapObject { Code = (byte)(map.At(0).Object.Code ^ 0x7f) };
 
         Assert.IsFalse(watch.Changed(game));
     }

@@ -14,8 +14,8 @@ namespace OpenSettlers.Tests;
 public sealed class SitePassTests
 {
     const int SiteFlag = 1;
-    static readonly Request Planks = new(ConstructionTables.PlankClass, 0);
-    static readonly Request Stones = new(ConstructionTables.StoneClass, 0);
+    static readonly Request Planks = new() { Asks = ConstructionTables.PlankClass, Rank = 0 };
+    static readonly Request Stones = new() { Asks = ConstructionTables.StoneClass, Rank = 0 };
 
     // The requests the site's pass sent to the castle, in order, with the building each came from (MSTest makes an instance for each test).
     readonly List<(Building Site, WorkerRequest Request)> Asked = [];
@@ -63,8 +63,16 @@ public sealed class SitePassTests
     {
         public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
             stage == SiteStage.Levelling
-                ? new WorkerRequest(new Woodcutter(), new Good(3))
-                : new WorkerRequest(new Sawmiller(), new Good(4));
+                ? new WorkerRequest
+                {
+                    Job = new Woodcutter(),
+                    Tool = new Good { Code = 3 },
+                }
+                : new WorkerRequest
+                {
+                    Job = new Sawmiller(),
+                    Tool = new Good { Code = 4 },
+                };
     }
 
     // The node of the site and its six neighbours at one height, then the node itself at another.
@@ -84,7 +92,7 @@ public sealed class SitePassTests
     [TestMethod]
     public void ASiteWithNothingAsksForPlanksAtTheRankTheStartGives()
     {
-        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds(2, 0));
+        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds { Planks = 2, Stones = 0 });
 
         pass.Turn(site);
 
@@ -96,7 +104,7 @@ public sealed class SitePassTests
     [TestMethod]
     public void ASiteWithItsBuilderInsideAsksAtFullRank()
     {
-        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds(2, 0));
+        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds { Planks = 2, Stones = 0 });
         site.WorkerInside = true;
 
         pass.Turn(site);
@@ -107,7 +115,7 @@ public sealed class SitePassTests
     [TestMethod]
     public void TheRankFallsByAHalfForEachPlankOnSiteOrOnTheWay()
     {
-        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds(3, 0));
+        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds { Planks = 3, Stones = 0 });
         site.WorkerInside = true;
         site.FillLow = 0x01; // one on the way
 
@@ -122,7 +130,7 @@ public sealed class SitePassTests
     [TestMethod]
     public void ASiteNeverAsksForMoreThanItNeeds()
     {
-        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds(2, 0));
+        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds { Planks = 2, Stones = 0 });
         site.WorkerInside = true;
         site.FillLow = 0x11; // one on site, one on the way: the two it needs
 
@@ -134,7 +142,7 @@ public sealed class SitePassTests
     [TestMethod]
     public void StonesStartFromTheFullByteWhateverThePlayerWordHolds()
     {
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2));
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds { Planks = 3, Stones = 2 });
         site.WorkerInside = true;
 
         pass.Turn(site);
@@ -146,7 +154,7 @@ public sealed class SitePassTests
     [TestMethod]
     public void TheStonesAreCountedInTheHighFillByte()
     {
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2));
+        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds { Planks = 3, Stones = 2 });
         site.WorkerInside = true;
         site.FillHigh = 0x01;
 
@@ -159,7 +167,11 @@ public sealed class SitePassTests
     [TestMethod]
     public void ALargeSiteAsksForNothingUntilTheGroundAroundItIsLevelled()
     {
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0);
+        var (bench, pass, site) = Bench(
+            BuildingType.Sawmill,
+            new BuildingNeeds { Planks = 3, Stones = 2 },
+            progress: 0
+        );
         for (var direction = 0; direction < Direction.Count; direction++)
         {
             var (dx, dy) = Direction.Steps[direction];
@@ -182,21 +194,32 @@ public sealed class SitePassTests
     [TestMethod]
     public void ALargeSiteOnUnevenGroundAsksForADiggerAndNotForItsBuilder()
     {
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0);
+        var (bench, pass, site) = Bench(
+            BuildingType.Sawmill,
+            new BuildingNeeds { Planks = 3, Stones = 2 },
+            progress: 0
+        );
         Uneven(bench);
 
         pass.Turn(site);
 
         Assert.AreEqual(1, Asked.Count);
         Assert.AreSame(site, Asked[0].Site);
-        Assert.AreEqual(new WorkerRequest(new Digger(), ConstructionTables.DiggerTool), Asked[0].Request);
+        Assert.AreEqual(
+            new WorkerRequest { Job = new Digger(), Tool = ConstructionTables.DiggerTool },
+            Asked[0].Request
+        );
         Assert.AreEqual((ushort)0, site.Progress, "the site waits for the ground");
     }
 
     [TestMethod]
     public void ASiteWhoseLastRequestFailedWaitsForTheRetryScanBeforeItAsksAgain()
     {
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0);
+        var (bench, pass, site) = Bench(
+            BuildingType.Sawmill,
+            new BuildingNeeds { Planks = 3, Stones = 2 },
+            progress: 0
+        );
         Uneven(bench);
         site.RequestFailed = true;
 
@@ -211,7 +234,11 @@ public sealed class SitePassTests
     [TestMethod]
     public void ADiggerInsideOrOnTheWayLeavesTheGroundToHim()
     {
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0);
+        var (bench, pass, site) = Bench(
+            BuildingType.Sawmill,
+            new BuildingNeeds { Planks = 3, Stones = 2 },
+            progress: 0
+        );
         Uneven(bench);
         site.WorkerOnTheWay = true;
         pass.Turn(site);
@@ -226,7 +253,11 @@ public sealed class SitePassTests
     [TestMethod]
     public void ALevelLargeSiteAsksForNoDiggerBeforeItStartsAndAsksForItsBuilder()
     {
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0);
+        var (bench, pass, site) = Bench(
+            BuildingType.Sawmill,
+            new BuildingNeeds { Planks = 3, Stones = 2 },
+            progress: 0
+        );
         Uneven(bench, node: 3);
 
         pass.Turn(site);
@@ -239,22 +270,47 @@ public sealed class SitePassTests
     public void ASiteAsksForTheWorkersTheModulesNameForItsTwoStages()
     {
         var modules = new JobRules[] { new SiteRules(new JobParts(null!, null!, null!, null!, null!, null!, null!)) };
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0, modules: modules);
+        var (bench, pass, site) = Bench(
+            BuildingType.Sawmill,
+            new BuildingNeeds { Planks = 3, Stones = 2 },
+            progress: 0,
+            modules: modules
+        );
         Uneven(bench);
 
         pass.Turn(site);
-        Assert.AreEqual(new WorkerRequest(new Woodcutter(), new Good(3)), Asked.Single().Request);
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = new Woodcutter(),
+                Tool = new Good { Code = 3 },
+            },
+            Asked.Single().Request
+        );
 
         Asked.Clear();
         bench.Map.At(7, 5).Height = 3;
         pass.Turn(site);
-        Assert.AreEqual(new WorkerRequest(new Sawmiller(), new Good(4)), Asked.Single().Request);
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = new Sawmiller(),
+                Tool = new Good { Code = 4 },
+            },
+            Asked.Single().Request
+        );
     }
 
     sealed class OtherSiteRules(JobParts parts) : JobRules<Digger>(parts)
     {
         public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
-            stage == SiteStage.Building ? new WorkerRequest(new Forester(), new Good(5)) : null;
+            stage == SiteStage.Building
+                ? new WorkerRequest
+                {
+                    Job = new Forester(),
+                    Tool = new Good { Code = 5 },
+                }
+                : null;
     }
 
     [TestMethod]
@@ -262,7 +318,12 @@ public sealed class SitePassTests
     {
         var parts = new JobParts(null!, null!, null!, null!, null!, null!, null!);
         var modules = new JobRules[] { new SiteRules(parts), new OtherSiteRules(parts) };
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0, modules: modules);
+        var (bench, pass, site) = Bench(
+            BuildingType.Sawmill,
+            new BuildingNeeds { Planks = 3, Stones = 2 },
+            progress: 0,
+            modules: modules
+        );
         Uneven(bench, node: 3);
 
         var refusal = Assert.ThrowsExactly<InvalidOperationException>(() => pass.Turn(site));
@@ -275,7 +336,12 @@ public sealed class SitePassTests
     [TestMethod]
     public void ASiteAsksForNoWorkerWhereNoModuleNamesOneForItsStage()
     {
-        var (bench, pass, site) = Bench(BuildingType.Sawmill, new BuildingNeeds(3, 2), progress: 0, modules: []);
+        var (bench, pass, site) = Bench(
+            BuildingType.Sawmill,
+            new BuildingNeeds { Planks = 3, Stones = 2 },
+            progress: 0,
+            modules: []
+        );
         Uneven(bench);
 
         pass.Turn(site);
@@ -288,7 +354,7 @@ public sealed class SitePassTests
     [TestMethod]
     public void ASmallSiteOnUnevenGroundNeverAsksForADigger()
     {
-        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds(2, 0));
+        var (bench, pass, site) = Bench(BuildingType.Woodcutter, new BuildingNeeds { Planks = 2, Stones = 0 });
         Uneven(bench);
 
         pass.Turn(site);

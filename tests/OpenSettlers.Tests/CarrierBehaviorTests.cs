@@ -80,7 +80,7 @@ public sealed class CarrierBehaviorTests
 
         var carrier = rig.Bench.Settlers[slot];
         Assert.AreEqual(new Carrier(), carrier.Job);
-        Assert.AreEqual(new ToRoad(0, East), ((Leaving)carrier.Activity).Errand);
+        Assert.AreEqual(new ToRoad { At = 0, Direction = East }, ((Leaving)carrier.Activity).Errand);
         Assert.IsTrue(rig.Bench.Flags[0].Side(East).CarrierOnTheWay, "the road's near end counts it on its way");
         Assert.IsTrue(rig.Bench.Flags[1].Side(West).CarrierOnTheWay, "and its far end");
         Assert.AreEqual(1, rig.Roster.Sent);
@@ -101,7 +101,11 @@ public sealed class CarrierBehaviorTests
     public void ACarrierSentToARoadThatIsGoneStaysWhereItIsAndTheRoadCountsNoCarrier()
     {
         var rig = new Rig();
-        var walking = new Walks(new ToRoad(0, East), new Heading(0));
+        var walking = new Walks
+        {
+            Errand = new ToRoad { At = 0, Direction = East },
+            Heading = new Heading { Value = 0 },
+        };
         var settler = new Settler(new Carrier(), 0, 4, 4, 0, walking);
         rig.Bench.Roads.Remove(rig.Road);
 
@@ -118,7 +122,19 @@ public sealed class CarrierBehaviorTests
         rig.Goods.LayGood(1, 2, Log, destination: 0);
         rig.Goods.Turn(1);
         var approach = Heading.Facing(West).Retried;
-        var settler = new Settler(new Carrier(), 0, 5, 4, 0, new WaitsAtFlag(1, West, approach));
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            5,
+            4,
+            0,
+            new WaitsAtFlag
+            {
+                Flag = 1,
+                Direction = West,
+                Approach = approach,
+            }
+        );
         var slot = rig.Bench.Settlers.Add(settler);
 
         rig.Registry.Handle(slot, settler);
@@ -137,8 +153,19 @@ public sealed class CarrierBehaviorTests
         var castle = new Building(BuildingType.Castle, 3, 3, 0) { FillLow = 0xff, FillHigh = 0xff };
         rig.Bench.Buildings.Add(castle);
         map.At(3, 3).LinkTo(0);
-        var load = new Load(new Good(Log), 0);
-        var settler = new Settler(new Carrier(), 0, 4, 4, 0, new WalksRoad(load, Heading.Facing(West)));
+        var load = new Load
+        {
+            Good = new Good { Code = Log },
+            Destination = 0,
+        };
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            4,
+            4,
+            0,
+            new WalksRoad { Load = load, Heading = Heading.Facing(West) }
+        );
         var slot = rig.Bench.Settlers.Add(settler);
         rig.Bench.Clock = 8;
 
@@ -153,6 +180,6 @@ public sealed class CarrierBehaviorTests
         rig.Bench.Clock += 200;
         rig.Registry.Handle(slot, settler);
 
-        CollectionAssert.AreEqual(new[] { new Good(Log) }, rig.Stocked, "the castle counts the log once");
+        CollectionAssert.AreEqual(new[] { new Good { Code = Log } }, rig.Stocked, "the castle counts the log once");
     }
 }

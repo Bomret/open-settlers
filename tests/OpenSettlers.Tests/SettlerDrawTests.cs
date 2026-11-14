@@ -168,64 +168,127 @@ public sealed class SettlerDrawTests
         var mode = bytes[11];
         var target =
             state == 0x42 ? (BitConverter.ToInt32(bytes, 12) - 0x23000000) / 0x46 : BitConverter.ToUInt16(bytes, 12);
-        var heading = new Heading((sbyte)bytes[14]);
+        var heading = new Heading { Value = (sbyte)bytes[14] };
         var next = bytes[15];
-        var approach = new Heading((sbyte)BitConverter.ToUInt16(bytes, 8));
-        var load = mode > 0 ? new Load(new Good(mode), null) : (Load?)null;
+        var approach = new Heading { Value = (sbyte)BitConverter.ToUInt16(bytes, 8) };
+        var load =
+            mode > 0
+                ? new Load
+                {
+                    Good = new Good { Code = mode },
+                    Destination = null,
+                }
+                : (Load?)null;
         var vector = new Vector((sbyte)mode, (sbyte)target);
         var mark = target >> 8;
 
         return state switch
         {
-            1 => new WaitsInCastle(heading.Value),
-            2 => new Walks(new ToStorage(), heading, next),
-            3 => new WalksRoad(load, heading, next == 0xff ? 0 : next, next == 0xff),
-            4 => new Door(target, mode == 0xfe),
-            9 => new Builds(
-                BitConverter.ToUInt16(bytes, 12),
-                mode == 0xff,
-                bytes[14] & 0x0f,
-                (bytes[14] & 0x80) != 0,
-                next
-            ),
+            1 => new WaitsInCastle { Storage = heading.Value },
+            2 => new Walks
+            {
+                Errand = new ToStorage(),
+                Heading = heading,
+                Tries = next,
+            },
+            3 => new WalksRoad
+            {
+                Load = load,
+                Heading = heading,
+                Waits = next == 0xff ? 0 : next,
+                Marked = next == 0xff,
+            },
+            4 => new Door { TimeLeft = target, EnteringStorage = mode == 0xfe },
+            9 => new Builds
+            {
+                Site = BitConverter.ToUInt16(bytes, 12),
+                Blowing = mode == 0xff,
+                Materials = bytes[14] & 0x0f,
+                SecondFigure = (bytes[14] & 0x80) != 0,
+                Blows = next,
+            },
             0x4a => new LeavesSite(),
-            8 => new Digs(mode, bytes[12], bytes[13], bytes[14]),
-            5 => new WaitsOutStep(next == 0xd ? new PutsDownGood(new Good(mode)) : new Walks(new ToStorage(), heading)),
-            0xb => new StepsOutWithGood(new Good(mode)),
-            0xd => new PutsDownGood(new Good(mode)),
-            0xe => new HandsOver(load, heading, next == 0xff),
-            0xf => new Leaving(new ToStorage()),
-            0x10 => new WalksFree(
-                new Trip(
-                    vector,
-                    mark != 0x80 ? new ToTree(new Vector((sbyte)mark, heading.Value))
+            8 => new Digs
+            {
+                Pass = mode,
+                Target = bytes[12],
+                Node = bytes[13],
+                Phase = bytes[14],
+            },
+            5 => new WaitsOutStep
+            {
+                Then =
+                    next == 0xd
+                        ? new PutsDownGood { Good = new Good { Code = mode } }
+                        : new Walks { Errand = new ToStorage(), Heading = heading },
+            },
+            0xb => new StepsOutWithGood { Good = new Good { Code = mode } },
+            0xd => new PutsDownGood { Good = new Good { Code = mode } },
+            0xe => new HandsOver
+            {
+                Load = load,
+                Heading = heading,
+                Marked = next == 0xff,
+            },
+            0xf => new Leaving { Errand = new ToStorage() },
+            0x10 => new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = vector,
+                    Purpose =
+                        mark != 0x80 ? new ToTree { Back = new Vector((sbyte)mark, heading.Value) }
                         : heading.Value < 0 ? new Home()
-                        : new BackToHut(heading.Value != 0),
-                    next
-                )
-            ),
-            0x11 => new Cuts(new Vector((sbyte)mode, (sbyte)target), mark != 0, heading.Value, next),
+                        : new BackToHut { Carrying = heading.Value != 0 },
+                    Memory = next,
+                },
+            },
+            0x11 => new Cuts
+            {
+                Back = new Vector((sbyte)mode, (sbyte)target),
+                SecondVariant = mark != 0,
+                Count = heading.Value,
+                Memory = next,
+            },
             0x12 => new LooksForTree(),
             0x13 => new LooksForSpot(),
-            0x14 => new Plants(vector, bytes[14] != 0, next),
+            0x14 => new Plants
+            {
+                Back = vector,
+                Planted = bytes[14] != 0,
+                Memory = next,
+            },
             0x15 => new LooksForStone(),
-            0x16 => new WalksFree(
-                new Trip(
-                    vector,
-                    mark != 0x80 ? new ToHeap(new Vector((sbyte)mark, heading.Value))
+            0x16 => new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = vector,
+                    Purpose =
+                        mark != 0x80 ? new ToHeap { Back = new Vector((sbyte)mark, heading.Value) }
                         : heading.Value < 0 ? new Home()
-                        : new BackToHut(heading.Value != 0),
-                    next
-                ),
-                true
-            ),
-            0x17 => new CutsStone(vector, mark, (bytes[14] | (next << 8))),
-            0x18 => new Saws(mode != 0),
-            0x19 => new SearchesHome(mode != 0, mode),
-            0x42 => new WaitsAtFlag(target, mode, approach),
-            0x43 => new ClaimsNode(heading, approach),
-            0x44 => new WaitsToGoHome(approach),
-            0x45 => new WaitsToRejoin(approach),
+                        : new BackToHut { Carrying = heading.Value != 0 },
+                    Memory = next,
+                },
+                EyesHeaps = true,
+            },
+            0x17 => new CutsStone
+            {
+                Back = vector,
+                Phase = mark,
+                Quarter = (bytes[14] | (next << 8)),
+            },
+            0x18 => new Saws { Sawing = mode != 0 },
+            0x19 => new SearchesHome { FarEndFirst = mode != 0, FarEndMark = mode },
+            0x42 => new WaitsAtFlag
+            {
+                Flag = target,
+                Direction = mode,
+                Approach = approach,
+            },
+            0x43 => new ClaimsNode { Heading = heading, Approach = approach },
+            0x44 => new WaitsToGoHome { Approach = approach },
+            0x45 => new WaitsToRejoin { Approach = approach },
             _ => new BuiltCastle(),
         };
     }

@@ -98,8 +98,12 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
             if (CanPlant(x, y))
             {
                 // The vector to the node is taken from the flag the first step reaches: one less each way.
-                var way = new Trip(new Vector(dx - 1, dy - 1), new ToSpot(new Vector(-(dx - 1), -(dy - 1))));
-                settler.Activity = new StepsOntoFlag(new WalksFree(way));
+                var way = new Trip
+                {
+                    Remaining = new Vector(dx - 1, dy - 1),
+                    Purpose = new ToSpot { Back = new Vector(-(dx - 1), -(dy - 1)) },
+                };
+                settler.Activity = new StepsOntoFlag { Then = new WalksFree { Trip = way } };
 
                 return true;
             }
@@ -138,14 +142,26 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
 
         if (Map.At(settler.X, settler.Y).Object.Exists)
         {
-            settler.Activity = new WalksFree(new Trip(spot.Back, new BackToHut(false)));
+            settler.Activity = new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = spot.Back,
+                    Purpose = new BackToHut { Carrying = false },
+                },
+            };
             settler.Timer = 0;
             hut.RecordWork(slot, EventType.Arrive);
 
             return;
         }
 
-        settler.Activity = new Plants(spot.Back, false, trip.Memory);
+        settler.Activity = new Plants
+        {
+            Back = spot.Back,
+            Planted = false,
+            Memory = trip.Memory,
+        };
         settler.Frame = 0x79;
         settler.Timer = ArrivalWait;
         hut.RecordWork(slot, EventType.Arrive);
@@ -175,7 +191,7 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
             ref var node = ref Map.At(settler.X, settler.Y);
             if (!node.Object.Exists && node.Roads.IsEmpty)
             {
-                node.Object = new MapObject((byte)code);
+                node.Object = new MapObject { Code = (byte)code };
             }
 
             plants = plants with { Planted = true };
@@ -188,7 +204,14 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
             }
         }
 
-        settler.Activity = new WalksFree(new Trip(plants.Back, new BackToHut(false)));
+        settler.Activity = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = plants.Back,
+                Purpose = new BackToHut { Carrying = false },
+            },
+        };
         settler.Timer = 0;
     }
 }

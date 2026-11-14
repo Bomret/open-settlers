@@ -16,7 +16,7 @@ public sealed class StonecuttingTests
     const int HutX = 16;
     const int HutY = 2;
 
-    static readonly Good Stone = new(10);
+    static readonly Good Stone = new() { Code = 10 };
 
     // The nodes a heap can stand on for the stonecutter: the north-west neighbour of each of the 128 nodes around the hut.
     static (int X, int Y)[] Reach() =>
@@ -35,7 +35,7 @@ public sealed class StonecuttingTests
     static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Stonecutter.Code] = new WorkerRequest(new Stonecutter(), Good.None);
+        workers[BuildingType.Stonecutter.Code] = new WorkerRequest { Job = new Stonecutter(), Tool = Good.None };
 
         return workers;
     }
@@ -63,7 +63,7 @@ public sealed class StonecuttingTests
         {
             foreach (var (x, y) in Reach().Where(node => HeapNode(node) && !made.At(node.X, node.Y).Object.Exists))
             {
-                made.At(x, y).Object = new MapObject(code);
+                made.At(x, y).Object = new MapObject { Code = code };
                 made.At(x, y).LakeMark = true;
             }
         }

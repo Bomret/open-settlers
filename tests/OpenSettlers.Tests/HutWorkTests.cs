@@ -30,7 +30,7 @@ public sealed class HutWorkTests
         bench.Map.At(HutX, HutY).LinkTo(0);
         bench.Map.At(HutX, HutY).Object = MapObject.Hut;
         bench.Map.At(HutX + 1, HutY + 1).LinkTo(flag);
-        bench.Map.At(HutX + 1, HutY).Object = new MapObject(8);
+        bench.Map.At(HutX + 1, HutY).Object = new MapObject { Code = 8 };
         var laid = new List<(int, int, int)>();
         var walkHome = new WalkHomeBehavior(
             bench.Movement,

@@ -153,7 +153,7 @@ public sealed class RemovalLogicTests
     {
         var game = World();
         var node = game.Map.Index(17, 6);
-        game.Map.At(node).Roads = new RoadSet(bits);
+        game.Map.At(node).Roads = new RoadSet { Bits = bits };
 
         var failure = Assert.ThrowsExactly<InvalidOperationException>(() =>
             game.Removal.SplitRoad(node, 0, Cause.Removal)
@@ -170,7 +170,7 @@ public sealed class RemovalLogicTests
     public void ARoadTakenDownAtANodeWithoutTwoRoadDirectionsIsRefusedAndNothingChanges(byte bits)
     {
         var game = World();
-        game.Map.At(17, 6).Roads = new RoadSet(bits);
+        game.Map.At(17, 6).Roads = new RoadSet { Bits = bits };
         var digest = game.Digest();
 
         Assert.IsFalse(game.Removal.RemoveRoadAt(17, 6));
@@ -263,7 +263,7 @@ public sealed class RemovalLogicTests
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
 
         Assert.IsNull(game.Flags[1].Places[5].Way, "the good for the hut loses its direction");
-        Assert.AreEqual(new Good(board), game.Flags[1].Places[5].Good);
+        Assert.AreEqual(new Good { Code = board }, game.Flags[1].Places[5].Good);
         Assert.AreEqual(2, game.Flags[1].Side(way).WaitingPlace, "the stone waits for the road next");
     }
 

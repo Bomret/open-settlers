@@ -74,8 +74,12 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
             {
                 // The vector to the tree is taken from the flag the first step reaches: one less each way. The way back is
                 // the same vector turned round.
-                var way = new Trip(new Vector(dx - 1, dy - 1), new ToTree(new Vector(-(dx - 1), -(dy - 1))));
-                settler.Activity = new StepsOntoFlag(new WalksFree(way));
+                var way = new Trip
+                {
+                    Remaining = new Vector(dx - 1, dy - 1),
+                    Purpose = new ToTree { Back = new Vector(-(dx - 1), -(dy - 1)) },
+                };
+                settler.Activity = new StepsOntoFlag { Then = new WalksFree { Trip = way } };
 
                 return true;
             }
@@ -120,7 +124,13 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
         var standing = Map.At(settler.X, settler.Y).Object;
         if (standing.Kind == MapObjectKind.Tree)
         {
-            settler.Activity = new Cuts(tree.Back, standing.HasSecondCutVariant, 0, trip.Memory);
+            settler.Activity = new Cuts
+            {
+                Back = tree.Back,
+                SecondVariant = standing.HasSecondCutVariant,
+                Count = 0,
+                Memory = trip.Memory,
+            };
             settler.Frame = 0x74;
             settler.Timer = 0x3ff;
             hut.RecordWork(slot, EventType.Arrive);
@@ -128,7 +138,14 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
             return;
         }
 
-        settler.Activity = new WalksFree(new Trip(tree.Back, new BackToHut(false)));
+        settler.Activity = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = tree.Back,
+                Purpose = new BackToHut { Carrying = false },
+            },
+        };
         settler.Timer = 0;
         hut.RecordWork(slot, EventType.Arrive);
     }
@@ -172,7 +189,14 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
             }
         }
 
-        settler.Activity = new WalksFree(new Trip(cut.Back, new BackToHut(true)));
+        settler.Activity = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = cut.Back,
+                Purpose = new BackToHut { Carrying = true },
+            },
+        };
         settler.Timer = 0;
     }
 }

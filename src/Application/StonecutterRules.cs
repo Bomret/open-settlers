@@ -27,7 +27,12 @@ static class StoneHeaps
 
         var back = new Vector(heap.Back.East + trip.Remaining.East, heap.Back.South + trip.Remaining.South);
 
-        return new Trip(new Vector(0, 0), new ToHeap(back), 8);
+        return new Trip
+        {
+            Remaining = new Vector(0, 0),
+            Purpose = new ToHeap { Back = back },
+            Memory = 8,
+        };
     }
 }
 
@@ -134,8 +139,15 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
             if (!Map.At(x, y).LakeMark && StoneHeaps.At(Map, HeapOf(x, y)))
             {
                 // The vector to the node beside the heap is taken from the flag the first step reaches: one less each way.
-                var way = new Trip(new Vector(dx - 1, dy - 1), new ToHeap(new Vector(-(dx - 1), -(dy - 1))));
-                settler.Activity = new StepsOntoFlag(new WalksFree(way, EyesHeaps: true));
+                var way = new Trip
+                {
+                    Remaining = new Vector(dx - 1, dy - 1),
+                    Purpose = new ToHeap { Back = new Vector(-(dx - 1), -(dy - 1)) },
+                };
+                settler.Activity = new StepsOntoFlag
+                {
+                    Then = new WalksFree { Trip = way, EyesHeaps = true },
+                };
 
                 return true;
             }
@@ -182,7 +194,15 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
         var (x, y, node) = movement.Neighbour(settler, StoneHeaps.Direction);
         if (movement.Occupant(node) != 0 || !StoneHeaps.At(Map, node))
         {
-            settler.Activity = new WalksFree(new Trip(heap.Back, new BackToHut(false)), walk.EyesHeaps);
+            settler.Activity = new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = heap.Back,
+                    Purpose = new BackToHut { Carrying = false },
+                },
+                EyesHeaps = walk.EyesHeaps,
+            };
             settler.Timer = 0;
             hut.RecordWork(slot, EventType.Arrive);
 
@@ -194,7 +214,12 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
         settler.Frame = (byte)shape;
         var time = movement.Tables.StepTime(shape);
         settler.Timer = time;
-        settler.Activity = new CutsStone(heap.Back, 0, time >> 2);
+        settler.Activity = new CutsStone
+        {
+            Back = heap.Back,
+            Phase = 0,
+            Quarter = time >> 2,
+        };
         hut.RecordWork(slot, EventType.Arrive);
     }
 
@@ -268,7 +293,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
             }
             else
             {
-                heap.Object = new MapObject((byte)(heap.Object.Code + 1));
+                heap.Object = new MapObject { Code = (byte)(heap.Object.Code + 1) };
             }
 
             var shape = 0xd + movement.Height(back) - movement.Height(here);
@@ -284,7 +309,14 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
             }
         }
 
-        settler.Activity = new WalksFree(new Trip(cut.Back, new BackToHut(true)));
+        settler.Activity = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = cut.Back,
+                Purpose = new BackToHut { Carrying = true },
+            },
+        };
         settler.Timer = 0;
     }
 

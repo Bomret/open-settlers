@@ -104,8 +104,8 @@ public sealed class MapImporterTests
         Assert.AreEqual(RoadSet.Of(0).With(2), node.Roads);
         Assert.IsTrue(node.LakeMark);
         Assert.IsTrue(node.FlagMark);
-        Assert.AreEqual((7, new Owner(4)), (node.Height, node.Owner));
-        Assert.AreEqual((new Terrain(5), new Terrain(11)), (node.Upper, node.Lower));
+        Assert.AreEqual((7, new Owner { Code = 4 }), (node.Height, node.Owner));
+        Assert.AreEqual((new Terrain { Code = 5 }, new Terrain { Code = 11 }), (node.Upper, node.Lower));
         Assert.AreEqual((MapObjectKind.Castle, true), (node.Object.Kind, node.WaterTriangle));
         Assert.AreEqual((1, 20), (node.DepositType, node.DepositAmount));
     }

@@ -88,11 +88,11 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
 
             if (movement.Tables.ClassOfGood(Good.Log) is { } asked)
             {
-                flag.SetRequest(asked.Word, new Request(asked, 0));
+                flag.SetRequest(asked.Word, new Request { Asks = asked, Rank = 0 });
             }
         }
 
-        movement.Become(settler, new Saws(false));
+        movement.Become(settler, new Saws { Sawing = false });
     }
 
     // State 0x18 (0x4359fe). Without a log on site (the high nibble of the fill byte) the sawmiller waits and changes nothing. With
@@ -106,12 +106,12 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
         if (done)
         {
             movement.Release(node);
-            movement.Become(settler, new StepsOutWithGood(Good.Plank));
+            movement.Become(settler, new StepsOutWithGood { Good = Good.Plank });
         }
         else if (!sawing && movement.BuildingAt(node) is { } mill && (mill.FillHigh & OnSite) != 0)
         {
             mill.SetFill(FillCounter.High, mill.FillHigh - OneOnSite);
-            movement.Become(settler, new Saws(true));
+            movement.Become(settler, new Saws { Sawing = true });
             movement.Occupy(node, slot);
             settler.Frame = SawFrame;
             settler.Timer = SawTime;
@@ -148,7 +148,7 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
             var speed = (byte)(movement.Tables.DoorSpeed(door) ^ 0x1f);
             settler.Timer = (ushort)((ushort)(movement.Tables.StepTime(shape) * speed) >> 5);
             settler.Stamp = movement.Clock;
-            settler.Activity = new WaitsOutStep(new PutsDownGood(carried));
+            settler.Activity = new WaitsOutStep { Then = new PutsDownGood { Good = carried } };
         }
         else
         {

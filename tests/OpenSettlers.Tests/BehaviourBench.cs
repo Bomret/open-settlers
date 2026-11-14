@@ -24,7 +24,7 @@ sealed class BehaviourBench
         Movement = new SettlerMovement(Map, Buildings, Tables, () => Clock, _ => new Residue());
         History = new GameHistory(new NoSnapshots(), () => 0);
         // Slot 0 of the settler table reads as a free node in an occupant list: the settlers under test take later slots.
-        Settlers.Add(new Settler(new Jobless(), 0, 0, 0, 0, new RawState(0)));
+        Settlers.Add(new Settler(new Jobless(), 0, 0, 0, 0, new RawState { StateCode = 0 }));
     }
 
     public ushort Clock { get; set; }
@@ -60,7 +60,15 @@ sealed class BehaviourBench
     // network and the flags' sides, with a carrier on it or none. The map is not touched: the goods rules read the flag table.
     public Road Join(int from, int direction, int to, int back, int steps = 2, bool carrier = true)
     {
-        var road = new Road(from, direction, to, back, [.. System.Linq.Enumerable.Repeat(direction, steps)], false);
+        var road = new Road
+        {
+            FromSlot = from,
+            FromDirection = direction,
+            ToSlot = to,
+            ToDirection = back,
+            Directions = [.. System.Linq.Enumerable.Repeat(direction, steps)],
+            Water = false,
+        };
         Roads.Add(road);
         var length = LengthClass.OfSteps(steps);
         var start = Flags[from].Side(direction);

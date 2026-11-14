@@ -81,7 +81,7 @@ public sealed class ObjectQuadsTests
     public void ATermTheSourceDrawsNothingForLeavesNoQuadAndNoLayer()
     {
         var layers = new ImageLayers();
-        var terms = new ObjectTerm[] { new MapObjectDraw(0, 100, 50, new MapObject(40), 0) };
+        var terms = new ObjectTerm[] { new MapObjectDraw(0, 100, 50, new MapObject { Code = 40 }, 0) };
 
         var bands = ObjectQuads.Bands(terms, new FakeSource(), layers, 1, 16);
 
@@ -96,7 +96,7 @@ public sealed class ObjectQuadsTests
         var layers = new ImageLayers();
 
         var bands = ObjectQuads.Bands(
-            [new GoodAtFlag(0, 1, 1, new Domain.Good(7))],
+            [new GoodAtFlag(0, 1, 1, new Domain.Good { Code = 7 })],
             new EmptySource(empty),
             layers,
             1,
@@ -148,9 +148,9 @@ public sealed class ObjectQuadsTests
     {
         var terms = new ObjectTerm[]
         {
-            new GoodAtFlag(0, 10, 10, new Domain.Good(7)),
+            new GoodAtFlag(0, 10, 10, new Domain.Good { Code = 7 }),
             FlagAt(0, 100, 50),
-            new GoodAtFlag(0, 20, 10, new Domain.Good(7)),
+            new GoodAtFlag(0, 20, 10, new Domain.Good { Code = 7 }),
         };
 
         var bands = ObjectQuads.Bands(terms, new FakeSource(), new ImageLayers(), 1, 16);
@@ -175,7 +175,23 @@ public sealed class ObjectQuadsTests
     }
 
     static SettlerDraw SettlerAt(SettlerPart part, int row, int x, int y) =>
-        new(row, x, y, part, new Carrier(), new WalksRoad(null, new Heading(0)), null, 7, 0, 0, Good.None);
+        new(
+            row,
+            x,
+            y,
+            part,
+            new Carrier(),
+            new WalksRoad
+            {
+                Load = null,
+                Heading = new Heading { Value = 0 },
+            },
+            null,
+            7,
+            0,
+            0,
+            Good.None
+        );
 
     // The settlers are one list in the order the terms come: a settler's shadow right before its figure, then its overlay,
     // and a part the source has no image for leaves no quad.

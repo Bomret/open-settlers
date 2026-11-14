@@ -70,8 +70,11 @@ public sealed class LayoutTests
         Assert.AreEqual(32, map.Size.Width);
         Assert.AreEqual(9, map.At(5, 4).Height);
         Assert.AreEqual(0, map.At(3, 10).Height);
-        Assert.AreEqual((new Terrain(5), new Terrain(5)), (map.At(0, 0).Upper, map.At(0, 0).Lower));
-        Assert.AreEqual((new Terrain(0), new Terrain(1)), (map.At(3, 10).Upper, map.At(3, 10).Lower));
+        Assert.AreEqual((new Terrain { Code = 5 }, new Terrain { Code = 5 }), (map.At(0, 0).Upper, map.At(0, 0).Lower));
+        Assert.AreEqual(
+            (new Terrain { Code = 0 }, new Terrain { Code = 1 }),
+            (map.At(3, 10).Upper, map.At(3, 10).Lower)
+        );
         CollectionAssert.AreEqual(
             new[] { (7, 2, 8), (8, 2, 9) },
             map.Objects.Select(o => (o.X, o.Y, (int)o.Code)).ToArray()
@@ -83,7 +86,10 @@ public sealed class LayoutTests
     {
         var map = Built(Text(terrain: Grid('g', (0, Row('g', 0, 'm')))));
 
-        Assert.AreEqual((new Terrain(11), new Terrain(11)), (map.At(0, 0).Upper, map.At(0, 0).Lower));
+        Assert.AreEqual(
+            (new Terrain { Code = 11 }, new Terrain { Code = 11 }),
+            (map.At(0, 0).Upper, map.At(0, 0).Lower)
+        );
     }
 
     // The letters of docs/rules/map-form.md, in the order of the terrain codes 0 to 15.
@@ -314,7 +320,17 @@ public sealed class LayoutTests
 
         var game = GameFactory.Create(TestProgram.Made(), Built(Text()));
 
-        Assert.AreEqual(new RandomGenerator(words.W0, words.W1, words.W2).Step().Step(), game.Draws.Generator);
+        Assert.AreEqual(
+            new RandomGenerator
+            {
+                W0 = words.W0,
+                W1 = words.W1,
+                W2 = words.W2,
+            }
+                .Step()
+                .Step(),
+            game.Draws.Generator
+        );
     }
 
     [TestMethod]

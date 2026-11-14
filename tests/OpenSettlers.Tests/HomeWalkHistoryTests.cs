@@ -86,7 +86,15 @@ public sealed class HomeWalkHistoryTests
         var settler = game.Settlers[Sent];
         settler.X = 30;
         settler.Y = 30;
-        settler.Activity = new WalksFree(new Trip(new Vector(0, 0), new Home(), 8));
+        settler.Activity = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = new Vector(0, 0),
+                Purpose = new Home(),
+                Memory = 8,
+            },
+        };
         settler.Timer = 0;
         game.History.CarryCause(Sent, razed);
         for (var pass = 0; pass < 200 && settler.Activity is WalksFree; pass++)

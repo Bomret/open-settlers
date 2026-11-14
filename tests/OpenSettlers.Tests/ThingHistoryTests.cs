@@ -256,7 +256,11 @@ public sealed class ThingHistoryTests
         var settler = game.Settlers[5];
         game.History.CarryCause(5, command);
 
-        settler.Activity = new Walks(new ToStorage(), new Heading(0));
+        settler.Activity = new Walks
+        {
+            Errand = new ToStorage(),
+            Heading = new Heading { Value = 0 },
+        };
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
         settler.Activity = new WaitsInCastle();
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
@@ -274,11 +278,20 @@ public sealed class ThingHistoryTests
         var settler = game.Settlers[5];
 
         game.History.CarryCause(5, command);
-        settler.Activity = new WaitsAtFlag(0, 0, new Heading(0));
+        settler.Activity = new WaitsAtFlag
+        {
+            Flag = 0,
+            Direction = 0,
+            Approach = new Heading { Value = 0 },
+        };
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
         game.History.CarryCause(5, command);
-        settler.Activity = new Walks(new ToStorage(), new Heading(0));
+        settler.Activity = new Walks
+        {
+            Errand = new ToStorage(),
+            Heading = new Heading { Value = 0 },
+        };
         game.History.EndCarry(5);
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
 

@@ -32,7 +32,7 @@ public sealed class GoodsTransport(
     public void LayGood(int flag, int place, int good, int? destination = null, int? way = null)
     {
         var laid = flags[flag].Places[place];
-        laid.Good = new Good(good);
+        laid.Good = new Good { Code = good };
         laid.Destination = destination;
         laid.Way = way;
         flags[flag].NeedsGoodsTurn = true;
@@ -405,11 +405,21 @@ public sealed class GoodsTransport(
                 place.Good = carried.Good;
                 place.Way = null;
                 place.Destination = carried.Destination;
-                walks = walks with { Load = new Load(good, destination), Waits = 0, Marked = false };
+                walks = walks with
+                {
+                    Load = new Load { Good = good, Destination = destination },
+                    Waits = 0,
+                    Marked = false,
+                };
             }
             else
             {
-                walks = walks with { Load = new Load(place.Good, place.Destination), Waits = 0, Marked = false };
+                walks = walks with
+                {
+                    Load = new Load { Good = place.Good, Destination = place.Destination },
+                    Waits = 0,
+                    Marked = false,
+                };
                 place.Good = Good.None;
                 place.Way = null;
             }

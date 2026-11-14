@@ -220,7 +220,13 @@ public sealed class CarrierBehavior(
         roster.Take(job, carrier);
         settler.TakeUp(new Carrier());
         var (flag, flagDirection) = end == 0 ? (slot, direction) : (far, farDirection);
-        movement.Become(settler, new Leaving(new ToRoad(flag, flagDirection)));
+        movement.Become(
+            settler,
+            new Leaving
+            {
+                Errand = new ToRoad { At = flag, Direction = flagDirection },
+            }
+        );
         roster.WorkerSent();
         flags[slot].Side(direction).CarrierOnTheWay = true;
         flags[far].Side(farDirection).CarrierOnTheWay = true;
@@ -325,7 +331,12 @@ public sealed class CarrierBehavior(
         settler.Timer = 0x3f;
         // The stamp's low byte holds the approach, which the activity keeps.
         settler.Stamp = (ushort)(movement.Clock & 0xff00);
-        settler.Activity = new WaitsAtFlag(waitFlag, waitDirection, Heading.Facing(waitDirection).Retried);
+        settler.Activity = new WaitsAtFlag
+        {
+            Flag = waitFlag,
+            Direction = waitDirection,
+            Approach = Heading.Facing(waitDirection).Retried,
+        };
         CountCarrier(startSide);
         CountCarrier(farSide);
         history.RecordSettler(slot, EventType.LayoutWaitingOnRoad, Cause.Layout, history.FlagId(waitFlag).ToString());
@@ -351,7 +362,7 @@ public sealed class CarrierBehavior(
         var (far, farDirection) = RoadNetwork.FarEnd(road, flag, direction);
         CountCarrier(flags[far].Side(farDirection));
         CountCarrier(flags[flag].Side(direction));
-        movement.Become(settler, new WalksRoad(null, Heading.Facing(direction)));
+        movement.Become(settler, new WalksRoad { Load = null, Heading = Heading.Facing(direction) });
         var id = history.SettlerId(slot);
         history.RecordSettler(slot, EventType.EnterRoad, Cause.Carriers, history.FlagId(flag).ToString());
         history.RecordFlag(flag, EventType.EnterRoad, Cause.Carriers, id.ToString());
@@ -475,7 +486,12 @@ public sealed class CarrierBehavior(
 
         // The approach moves into the low byte of the stamp, which the encoder writes from the activity.
         settler.Stamp = (ushort)(settler.Stamp & 0xff00);
-        settler.Activity = new WaitsAtFlag(flag, back, approach);
+        settler.Activity = new WaitsAtFlag
+        {
+            Flag = flag,
+            Direction = back,
+            Approach = approach,
+        };
         movement.Release(Map.Index(settler.X, settler.Y));
         history.RecordSettler(slot, EventType.Wait, Cause.Carriers);
     }
@@ -508,7 +524,7 @@ public sealed class CarrierBehavior(
             heading = Heading.Facing(waiting.Direction.Opposite);
         }
 
-        movement.Become(settler, new ClaimsNode(heading, waiting.Approach));
+        movement.Become(settler, new ClaimsNode { Heading = heading, Approach = waiting.Approach });
         history.RecordSettler(slot, EventType.Fetch, Cause.Goods);
         Claim(slot, settler);
     }
@@ -527,7 +543,7 @@ public sealed class CarrierBehavior(
         }
 
         movement.Occupy(here, slot);
-        movement.Become(settler, new WalksRoad(null, ((ClaimsNode)settler.Activity).Heading));
+        movement.Become(settler, new WalksRoad { Load = null, Heading = ((ClaimsNode)settler.Activity).Heading });
         settler.Stamp = movement.Clock;
         settler.Timer = 0;
         history.RecordSettler(slot, EventType.Claim, Cause.Goods);
@@ -539,7 +555,7 @@ public sealed class CarrierBehavior(
     {
         var here = Map.Index(settler.X, settler.Y);
         var (_, _, node) = movement.Neighbour(settler, 4);
-        movement.Become(settler, new HandsOver(walks.Load, walks.Heading));
+        movement.Become(settler, new HandsOver { Load = walks.Load, Heading = walks.Heading });
         settler.Frame = (byte)(movement.Height(node) - movement.Height(here) + 0x5d);
         var old = settler.Timer;
         settler.Timer = (ushort)(old + movement.Tables.StepTime(settler.Frame));
@@ -562,7 +578,7 @@ public sealed class CarrierBehavior(
             var hands = (HandsOver)settler.Activity;
             if (hands.Marked)
             {
-                movement.Become(settler, new WalksRoad(hands.Load, hands.Heading));
+                movement.Become(settler, new WalksRoad { Load = hands.Load, Heading = hands.Heading });
                 history.RecordSettler(slot, EventType.Handover, Cause.Goods);
                 WalkRoad(slot, settler);
 

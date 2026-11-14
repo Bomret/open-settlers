@@ -46,7 +46,13 @@ public static class SettlerEncoder
     {
         var raw = Of(activity);
 
-        return new Residue(raw.Mode, raw.Target, raw.Heading, raw.Next);
+        return new Residue
+        {
+            Mode = raw.Mode,
+            Target = raw.Target,
+            Heading = raw.Heading,
+            Next = raw.Next,
+        };
     }
 
     /// <summary>The bytes the settler's activity leaves as they are when the settler takes up another activity.</summary>

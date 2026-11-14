@@ -44,9 +44,9 @@ public sealed class ObjectDrawsTests
         var draws = ObjectDraws.Of(Generated());
 
         // Seed 1234567812345678, size 1. Object (3,0) code 13 on height 5: x = 3 * 32, y = 0 - 5 * 4.
-        CollectionAssert.Contains(draws, new MapObjectDraw(0, 96, -20, new MapObject(13), 0));
+        CollectionAssert.Contains(draws, new MapObjectDraw(0, 96, -20, new MapObject { Code = 13 }, 0));
         // Object (9,0) code 82 on height 29: x = 9 * 32, y = 0 - 29 * 4.
-        CollectionAssert.Contains(draws, new MapObjectDraw(0, 288, -116, new MapObject(82), 0));
+        CollectionAssert.Contains(draws, new MapObjectDraw(0, 288, -116, new MapObject { Code = 82 }, 0));
     }
 
     [TestMethod]
@@ -178,7 +178,7 @@ public sealed class ObjectDrawsTests
         var (map, game) = CastleWorld();
         var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>>
         {
-            [(16, 6)] = [.. goods.Select(good => new Good(good))],
+            [(16, 6)] = [.. goods.Select(good => new Good { Code = good })],
         };
 
         return ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
@@ -195,15 +195,15 @@ public sealed class ObjectDrawsTests
         CollectionAssert.AreEqual(
             new ObjectTerm[]
             {
-                new GoodAtFlag(6, 422, 56, new Good(1)),
-                new GoodAtFlag(6, 426, 58, new Good(2)),
-                new GoodAtFlag(6, 412, 56, new Good(3)),
+                new GoodAtFlag(6, 422, 56, new Good { Code = 1 }),
+                new GoodAtFlag(6, 426, 58, new Good { Code = 2 }),
+                new GoodAtFlag(6, 412, 56, new Good { Code = 3 }),
                 new MapObjectDraw(6, 416, 60, MapObject.Flag, 0),
-                new GoodAtFlag(6, 426, 62, new Good(4)),
-                new GoodAtFlag(6, 408, 58, new Good(5)),
-                new GoodAtFlag(6, 422, 64, new Good(6)),
-                new GoodAtFlag(6, 408, 62, new Good(7)),
-                new GoodAtFlag(6, 412, 64, new Good(8)),
+                new GoodAtFlag(6, 426, 62, new Good { Code = 4 }),
+                new GoodAtFlag(6, 408, 58, new Good { Code = 5 }),
+                new GoodAtFlag(6, 422, 64, new Good { Code = 6 }),
+                new GoodAtFlag(6, 408, 62, new Good { Code = 7 }),
+                new GoodAtFlag(6, 412, 64, new Good { Code = 8 }),
             },
             draws.Skip(flag - 3).Take(9).ToList()
         );
@@ -222,7 +222,7 @@ public sealed class ObjectDrawsTests
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
-        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [new Good(1)] };
+        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [new Good { Code = 1 }] };
 
         var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
 
@@ -232,20 +232,20 @@ public sealed class ObjectDrawsTests
         CollectionAssert.AreEqual(
             new ObjectTerm[]
             {
-                new MapObjectDraw(2, 480, 8, new MapObject(2), 0),
-                new MapObjectDraw(2, 576, 40, new MapObject(31), 0),
+                new MapObjectDraw(2, 480, 8, new MapObject { Code = 2 }, 0),
+                new MapObjectDraw(2, 576, 40, new MapObject { Code = 31 }, 0),
                 new BuildingDraw(2, 480, 8, BuildingType.Woodcutter),
                 new MapObjectDraw(3, 496, 40, MapObject.Flag, 0),
-                new MapObjectDraw(3, 656, 60, new MapObject(89), 0),
-                new MapObjectDraw(3, 720, 60, new MapObject(88), 0),
-                new MapObjectDraw(4, 416, 20, new MapObject(16), 0),
-                new MapObjectDraw(4, 448, 36, new MapObject(9), 0),
-                new MapObjectDraw(5, 400, 40, new MapObject(4), 0),
-                new MapObjectDraw(5, 752, 100, new MapObject(89), 0),
+                new MapObjectDraw(3, 656, 60, new MapObject { Code = 89 }, 0),
+                new MapObjectDraw(3, 720, 60, new MapObject { Code = 88 }, 0),
+                new MapObjectDraw(4, 416, 20, new MapObject { Code = 16 }, 0),
+                new MapObjectDraw(4, 448, 36, new MapObject { Code = 9 }, 0),
+                new MapObjectDraw(5, 400, 40, new MapObject { Code = 4 }, 0),
+                new MapObjectDraw(5, 752, 100, new MapObject { Code = 89 }, 0),
                 new BuildingDraw(5, 400, 40, BuildingType.Castle),
-                new MapObjectDraw(6, 224, 60, new MapObject(9), 0),
-                new MapObjectDraw(6, 256, 60, new MapObject(8), 0),
-                new GoodAtFlag(6, 422, 56, new Good(1)),
+                new MapObjectDraw(6, 224, 60, new MapObject { Code = 9 }, 0),
+                new MapObjectDraw(6, 256, 60, new MapObject { Code = 8 }, 0),
+                new GoodAtFlag(6, 422, 56, new Good { Code = 1 }),
                 new MapObjectDraw(6, 416, 60, MapObject.Flag, 0),
             },
             draws.Where(draw => draw.Row is >= 2 and <= 6).ToList()
@@ -260,7 +260,7 @@ public sealed class ObjectDrawsTests
 
         Assert.IsEmpty(empty.OfType<GoodAtFlag>());
         Assert.AreEqual(empty.Count + 1, one.Count);
-        Assert.Contains(new GoodAtFlag(6, 422, 56, new Good(0x27)), one);
+        Assert.Contains(new GoodAtFlag(6, 422, 56, new Good { Code = 0x27 }), one);
     }
 
     [TestMethod]

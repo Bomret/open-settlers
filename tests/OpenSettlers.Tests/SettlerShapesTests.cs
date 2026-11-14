@@ -10,13 +10,13 @@ public sealed class SettlerShapesTests
     [TestMethod]
     public void AHeadingGivesTheIdleFrameOfACarrierThatStopsFacingIt()
     {
-        Assert.AreEqual(0x70, new Heading(2).IdleFrame);
+        Assert.AreEqual(0x70, new Heading { Value = 2 }.IdleFrame);
     }
 
     [TestMethod]
     public void AHeadingAStepTriedAgainMarkedKeepsTheIdleFrameOfTheOriginalsByteArithmetic()
     {
-        Assert.AreEqual(0x68, new Heading(-6).IdleFrame);
+        Assert.AreEqual(0x68, new Heading { Value = -6 }.IdleFrame);
     }
 
     [TestMethod]

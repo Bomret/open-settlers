@@ -27,9 +27,20 @@ public sealed class HistoryEditionSettlersTests
     static Settler Woodcutter(int frame, int timer, Activity activity) =>
         new(new Woodcutter(), 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)timer };
 
-    static readonly Activity Walking = new Walks(new ToStorage(), new Heading(0));
+    static readonly Activity Walking = new Walks
+    {
+        Errand = new ToStorage(),
+        Heading = new Heading { Value = 0 },
+    };
 
-    static readonly Activity BackWithLog = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(true)));
+    static readonly Activity BackWithLog = new WalksFree
+    {
+        Trip = new Trip
+        {
+            Remaining = new Vector(0, 0),
+            Purpose = new BackToHut { Carrying = true },
+        },
+    };
 
     // The table rule at the program's addresses (docs/rules/settlers.md): the woodcutter's walk is the row 0x0b of the bases
     // (48, 54), the cut a figure byte from 0x80 in the row 0x0f (272, none), the way back with the log the row 0x10 (48, 60).
@@ -45,7 +56,23 @@ public sealed class HistoryEditionSettlersTests
         // The way back with the log: the same byte in the row 0x10: 1850 + 48 + 7, 2500 + 48 + 7, 3150 + 60 + 0.
         var back = pair.Draws(map, [Woodcutter(4, 0, BackWithLog)], 0).Select(d => d.Entry);
         // Frame 0x74 with 800 units left: the triple 100 holds the figure byte 0x83, the word 0x0f03: 1850 + 272 + 3, 2500 + 272 + 3.
-        var cut = pair.Draws(map, [Woodcutter(0x74, 800, new Cuts(new Vector(0, 0), false, 0, 0))], 0)
+        var cut = pair.Draws(
+                map,
+                [
+                    Woodcutter(
+                        0x74,
+                        800,
+                        new Cuts
+                        {
+                            Back = new Vector(0, 0),
+                            SecondVariant = false,
+                            Count = 0,
+                            Memory = 0,
+                        }
+                    ),
+                ],
+                0
+            )
             .Select(d => d.Entry);
 
         CollectionAssert.AreEqual(new[] { 1905, 2555, 3204 }, walk.ToArray());
@@ -54,7 +81,22 @@ public sealed class HistoryEditionSettlersTests
     }
 
     static Settler LoadedCarrier(int frame, int timer = 0) =>
-        new(new Carrier(), 0, 4, 3, 0, new WalksRoad(new Load(new Good(WoodcutterRules.GoodLog), null), new Heading(0)))
+        new(
+            new Carrier(),
+            0,
+            4,
+            3,
+            0,
+            new WalksRoad
+            {
+                Load = new Load
+                {
+                    Good = new Good { Code = WoodcutterRules.GoodLog },
+                    Destination = null,
+                },
+                Heading = new Heading { Value = 0 },
+            }
+        )
         {
             Frame = frame,
             Timer = (ushort)timer,
@@ -138,14 +180,28 @@ public sealed class HistoryEditionSettlersTests
             from state in new[] { 3, 0xe }
             from frame in Enumerable.Range(0, 0x79)
             from step in Enumerable.Range(0, 128)
-            let load = new Load(new Good(good), null)
+            let load = new Load
+            {
+                Good = new Good { Code = good },
+                Destination = null,
+            }
             select new Settler(
                 new Carrier(),
                 0,
                 4,
                 3,
                 0,
-                state == 3 ? new WalksRoad(load, new Heading(0)) : new HandsOver(load, new Heading(0))
+                state == 3
+                    ? new WalksRoad
+                    {
+                        Load = load,
+                        Heading = new Heading { Value = 0 },
+                    }
+                    : new HandsOver
+                    {
+                        Load = load,
+                        Heading = new Heading { Value = 0 },
+                    }
             )
             {
                 Frame = frame,
@@ -171,8 +227,20 @@ public sealed class HistoryEditionSettlersTests
             {
                 Walking,
                 BackWithLog,
-                new Cuts(new Vector(0, 0), false, 1, 0),
-                new Cuts(new Vector(0, 0), false, 0, 0),
+                new Cuts
+                {
+                    Back = new Vector(0, 0),
+                    SecondVariant = false,
+                    Count = 1,
+                    Memory = 0,
+                },
+                new Cuts
+                {
+                    Back = new Vector(0, 0),
+                    SecondVariant = false,
+                    Count = 0,
+                    Memory = 0,
+                },
             }
             select new Settler(new TypeOneHut(), 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)(step * 8) };
 

@@ -25,7 +25,7 @@ public sealed class TypeOneHutLook(RuleTables tables) : HistoryEditionLook<TypeO
         {
             WalksFree { Trip.Purpose: BackToHut { Carrying: true } } => true,
             Cuts cut => cut.Count == 1,
-            Walks => draw.Heading == new Heading(1),
+            Walks => draw.Heading == new Heading { Value = 1 },
             _ => false,
         };
 }

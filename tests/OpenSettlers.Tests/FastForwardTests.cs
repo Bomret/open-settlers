@@ -202,13 +202,37 @@ public sealed class FastForwardTests
     [TestMethod]
     public void OnlyACarriersLoadedRoadWalkAndAFreeWalkBackCarryingCarryAGood()
     {
-        var road = new Heading();
-        var load = new Load(Good.Log, 0);
-        Assert.IsTrue(new WalksRoad(load, road).Carries);
-        Assert.IsFalse(new WalksRoad(null, road).Carries);
-        Assert.IsFalse(new WalksRoad(new Load(Good.None, 0), road).Carries);
-        Assert.IsTrue(new WalksFree(new Trip(default, new BackToHut(true))).Carries);
-        Assert.IsFalse(new WalksFree(new Trip(default, new BackToHut(false))).Carries);
+        var road = new Heading { Value = 0 };
+        var load = new Load { Good = Good.Log, Destination = 0 };
+        Assert.IsTrue(new WalksRoad { Load = load, Heading = road }.Carries);
+        Assert.IsFalse(new WalksRoad { Load = null, Heading = road }.Carries);
+        Assert.IsFalse(
+            new WalksRoad
+            {
+                Load = new Load { Good = Good.None, Destination = 0 },
+                Heading = road,
+            }.Carries
+        );
+        Assert.IsTrue(
+            new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = default,
+                    Purpose = new BackToHut { Carrying = true },
+                },
+            }.Carries
+        );
+        Assert.IsFalse(
+            new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = default,
+                    Purpose = new BackToHut { Carrying = false },
+                },
+            }.Carries
+        );
         Assert.IsFalse(new WaitsInCastle().Carries);
     }
 

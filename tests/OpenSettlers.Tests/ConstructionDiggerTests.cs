@@ -297,7 +297,7 @@ public sealed class ConstructionDiggerTests
                 CommandKind.PlaceBuilding,
                 node[0],
                 node[1],
-                Building: new BuildingType(node[2])
+                Building: new BuildingType { Code = node[2] }
             )
         );
         game.ApplyCommands();

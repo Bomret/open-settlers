@@ -160,7 +160,14 @@ public sealed partial class Layout
     {
         var map = new MapLayers(Size);
         var seed = Seed.ToMapSeed();
-        map.Generator = new RandomGenerator(seed.W0, seed.W1, seed.W2).Step().Step();
+        map.Generator = new RandomGenerator
+        {
+            W0 = seed.W0,
+            W1 = seed.W1,
+            W2 = seed.W2,
+        }
+            .Step()
+            .Step();
         var height = map.Bytes(MapLayer.Height);
         var terrain = map.Bytes(MapLayer.Terrain);
         var objects = map.Bytes(MapLayer.Object);
@@ -480,7 +487,14 @@ public sealed partial class Layout
                 }
                 else
                 {
-                    objects.Add(new PlacedObject(x, y, new MapObject((byte)code)));
+                    objects.Add(
+                        new PlacedObject
+                        {
+                            X = x,
+                            Y = y,
+                            Object = new MapObject { Code = (byte)code },
+                        }
+                    );
                 }
             }
 

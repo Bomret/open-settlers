@@ -75,11 +75,12 @@ public static class StartStock
     /// </summary>
     public static int LevelOf(Seed seed)
     {
-        var generator = new RandomGenerator(
-            (ushort)(seed.W0 ^ 0x5a5a),
-            (ushort)(seed.W1 ^ 0xa5a5),
-            (ushort)(seed.W2 ^ 0xc3c3)
-        );
+        var generator = new RandomGenerator
+        {
+            W0 = (ushort)(seed.W0 ^ 0x5a5a),
+            W1 = (ushort)(seed.W1 ^ 0xa5a5),
+            W2 = (ushort)(seed.W2 ^ 0xc3c3),
+        };
 
         // The draws, in order: 4 rounds of 4 for the four opponents' settings, then the pair for player 1 and the
         // pair for player 0, whose first draw is the human's level.

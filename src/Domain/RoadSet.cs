@@ -7,9 +7,11 @@ namespace OpenSettlers.Domain;
 /// 4 north-west, 5 north (<c>docs/rules/roads.md</c>). A flag's building is joined to it as a road in direction 4, and
 /// a building's node holds the road in direction 1 to its flag.
 /// </summary>
-/// <param name="Bits">The original's six flag bits, bit <c>d</c> for direction <c>d</c>; kept raw for the exporters.</param>
-public readonly record struct RoadSet(byte Bits)
+public readonly record struct RoadSet
 {
+    /// <summary>The original's six flag bits, bit <c>d</c> for direction <c>d</c>; kept raw for the exporters.</summary>
+    public required byte Bits { get; init; }
+
     /// <summary>No road leaves the node.</summary>
     public static RoadSet Empty => default;
 
@@ -26,7 +28,7 @@ public readonly record struct RoadSet(byte Bits)
     public int Last => 31 - BitOperations.LeadingZeroCount((uint)Bits);
 
     /// <summary>The set of one direction.</summary>
-    public static RoadSet Of(int direction) => new((byte)(1 << direction));
+    public static RoadSet Of(int direction) => new() { Bits = (byte)(1 << direction) };
 
     /// <summary>True when a road leaves in the direction.</summary>
     public bool Has(int direction) => (Bits >> direction & 1) != 0;
@@ -35,11 +37,11 @@ public readonly record struct RoadSet(byte Bits)
     public bool IsOnly(int direction) => Bits == 1 << direction;
 
     /// <summary>The set with the direction added.</summary>
-    public RoadSet With(int direction) => new((byte)(Bits | 1 << direction));
+    public RoadSet With(int direction) => new() { Bits = (byte)(Bits | 1 << direction) };
 
     /// <summary>The set with the direction removed.</summary>
-    public RoadSet Without(int direction) => new((byte)(Bits & ~(1 << direction)));
+    public RoadSet Without(int direction) => new() { Bits = (byte)(Bits & ~(1 << direction)) };
 
     /// <summary>The directions this set holds that the other does not.</summary>
-    public RoadSet Except(RoadSet other) => new((byte)(Bits & ~other.Bits));
+    public RoadSet Except(RoadSet other) => new() { Bits = (byte)(Bits & ~other.Bits) };
 }

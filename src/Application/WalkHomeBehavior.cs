@@ -159,8 +159,8 @@ public sealed class WalkHomeBehavior(
             (dx, dy) = HomeNode(settler);
         }
 
-        var walk = new Trip(new Vector(dx, dy), new Home());
-        settler.Activity = settler.Job.IsKnight ? new KnightWalks(walk) : new WalksFree(walk);
+        var walk = new Trip { Remaining = new Vector(dx, dy), Purpose = new Home() };
+        settler.Activity = settler.Job.IsKnight ? new KnightWalks { Trip = walk } : new WalksFree { Trip = walk };
         settler.Timer = 0;
         history.RecordSettler(slot, EventType.SearchedHome, Cause.WalkHome);
     }
@@ -223,7 +223,11 @@ public sealed class WalkHomeBehavior(
         settler.Timer = 0;
         if (HomeFlag(settler, settler.X, settler.Y))
         {
-            settler.Activity = new Walks(new ToStorage(), new Heading(0));
+            settler.Activity = new Walks
+            {
+                Errand = new ToStorage(),
+                Heading = new Heading { Value = 0 },
+            };
             history.RecordSettler(slot, EventType.ArrivedHome, Cause.WalkHome, history.BuildingId(0).ToString());
 
             return;

@@ -46,17 +46,21 @@ public abstract record Activity
 }
 
 /// <summary>State 1: a settler waits in the castle; each turn it enters its slot in the castle's list of waiting settlers.</summary>
-/// <param name="Storage">The slot of the storage the settler waits in; the castle is 0.</param>
-public sealed record WaitsInCastle(int Storage = 0) : Activity
+public sealed record WaitsInCastle : Activity
 {
+    /// <summary>The slot of the storage the settler waits in; the castle is 0.</summary>
+    public int Storage { get; init; } = 0;
+
     /// <inheritdoc />
     public override int Code => 1;
 }
 
 /// <summary>An activity that takes the settler along the roads to an errand: a walk, or the way out of the castle to it.</summary>
-/// <param name="Errand">Where the activity leads.</param>
-public abstract record HasErrand(Errand Errand) : Activity
+public abstract record HasErrand : Activity
 {
+    /// <summary>Where the activity leads.</summary>
+    public required Errand Errand { get; init; }
+
     /// <inheritdoc />
     public override Errand? GoingTo => Errand;
 
@@ -65,11 +69,14 @@ public abstract record HasErrand(Errand Errand) : Activity
 }
 
 /// <summary>State 2: the settler walks the roads to <see cref="Errand"/>.</summary>
-/// <param name="Errand">Where the walk leads.</param>
-/// <param name="Heading">The direction back to the node the settler came from.</param>
-/// <param name="Tries">The turns spent on a blocked step (byte 15), counted from 0.</param>
-public sealed record Walks(Errand Errand, Heading Heading, int Tries = 0) : HasErrand(Errand)
+public sealed record Walks : HasErrand
 {
+    /// <summary>The direction back to the node the settler came from.</summary>
+    public required Heading Heading { get; init; }
+
+    /// <summary>The turns spent on a blocked step (byte 15), counted from 0.</summary>
+    public int Tries { get; init; } = 0;
+
     /// <inheritdoc />
     public override int Code => 2;
 
@@ -78,12 +85,20 @@ public sealed record Walks(Errand Errand, Heading Heading, int Tries = 0) : HasE
 }
 
 /// <summary>State 3: a carrier walks its road, with a good in its hands or none.</summary>
-/// <param name="Load">The good the carrier carries, or null.</param>
-/// <param name="Heading">The direction back to the node the carrier came from.</param>
-/// <param name="Waits">The turns the carrier has spent at the end of a road that holds two carriers.</param>
-/// <param name="Marked">Whether the carrier is marked to go: its road was taken down or joined.</param>
-public sealed record WalksRoad(Load? Load, Heading Heading, int Waits = 0, bool Marked = false) : Activity
+public sealed record WalksRoad : Activity
 {
+    /// <summary>The good the carrier carries, or null.</summary>
+    public required Load? Load { get; init; }
+
+    /// <summary>The direction back to the node the carrier came from.</summary>
+    public required Heading Heading { get; init; }
+
+    /// <summary>The turns the carrier has spent at the end of a road that holds two carriers.</summary>
+    public int Waits { get; init; } = 0;
+
+    /// <summary>Whether the carrier is marked to go: its road was taken down or joined.</summary>
+    public bool Marked { get; init; } = false;
+
     /// <inheritdoc />
     public override int Code => 3;
 
@@ -95,10 +110,14 @@ public sealed record WalksRoad(Load? Load, Heading Heading, int Waits = 0, bool 
 }
 
 /// <summary>State 4: the settler has stepped through a door and waits out what the door's speed leaves of the step.</summary>
-/// <param name="TimeLeft">The time the door step has left, where the settler goes on.</param>
-/// <param name="EnteringStorage">Whether the settler came home to a storage and enters it (the walk home).</param>
-public sealed record Door(int TimeLeft, bool EnteringStorage = false) : Activity
+public sealed record Door : Activity
 {
+    /// <summary>The time the door step has left, where the settler goes on.</summary>
+    public required int TimeLeft { get; init; }
+
+    /// <summary>Whether the settler came home to a storage and enters it (the walk home).</summary>
+    public bool EnteringStorage { get; init; } = false;
+
     /// <inheritdoc />
     public override int Code => 4;
 
@@ -107,9 +126,11 @@ public sealed record Door(int TimeLeft, bool EnteringStorage = false) : Activity
 }
 
 /// <summary>An activity of a step whose time runs out before the settler takes up <see cref="Then"/>.</summary>
-/// <param name="Then">The activity the settler takes when the step's time has run out.</param>
-public abstract record StepsBefore(Activity Then) : Activity
+public abstract record StepsBefore : Activity
 {
+    /// <summary>The activity the settler takes when the step's time has run out.</summary>
+    public required Activity Then { get; init; }
+
     /// <inheritdoc />
     public override Errand? GoingTo => Then.GoingTo;
 
@@ -118,8 +139,7 @@ public abstract record StepsBefore(Activity Then) : Activity
 }
 
 /// <summary>State 5: the settler waits out a step and then takes up <see cref="StepsBefore.Then"/>.</summary>
-/// <param name="Then">The activity the settler takes when the step's time has run out.</param>
-public sealed record WaitsOutStep(Activity Then) : StepsBefore(Then)
+public sealed record WaitsOutStep : StepsBefore
 {
     /// <inheritdoc />
     public override int Code => 5;
@@ -132,16 +152,17 @@ public sealed record WaitsOutStep(Activity Then) : StepsBefore(Then)
 }
 
 /// <summary>State 6: the settler stands on the flag of the building it walks into and waits for the node of the door.</summary>
-/// <param name="Storage">Whether the building is a storage the settler walks home to.</param>
-public sealed record EntersBuilding(bool Storage = false) : Activity
+public sealed record EntersBuilding : Activity
 {
+    /// <summary>Whether the building is a storage the settler walks home to.</summary>
+    public bool Storage { get; init; } = false;
+
     /// <inheritdoc />
     public override int Code => 6;
 }
 
 /// <summary>State 7: the settler steps from a hut onto its flag, and then takes up <see cref="StepsBefore.Then"/>.</summary>
-/// <param name="Then">The activity the settler takes when the step's time has run out.</param>
-public sealed record StepsOntoFlag(Activity Then) : StepsBefore(Then)
+public sealed record StepsOntoFlag : StepsBefore
 {
     /// <inheritdoc />
     public override int Code => 7;
@@ -152,13 +173,23 @@ public sealed record StepsOntoFlag(Activity Then) : StepsBefore(Then)
 /// materials one after the other in the order of the type's order word, and for each makes eight blows that add a step to the site's
 /// progress word.
 /// </summary>
-/// <param name="Site">The slot of the building site in the building table (the word at 12).</param>
-/// <param name="Blowing">Whether he is making the blows of a material (byte 11 is 0xff) and not looking for the next one (byte 11 is 1).</param>
-/// <param name="Materials">The materials he has taken so far, the index of the next in the order (the low four bits of byte 14).</param>
-/// <param name="SecondFigure">Whether his figure is the second one the types 10, 17, 19, and 22 take (bit 7 of byte 14, the frames 0x64 and 0x6a to 0x6d).</param>
-/// <param name="Blows">The blows left of the material (byte 15).</param>
-public sealed record Builds(int Site, bool Blowing, int Materials, bool SecondFigure, int Blows) : Activity
+public sealed record Builds : Activity
 {
+    /// <summary>The slot of the building site in the building table (the word at 12).</summary>
+    public required int Site { get; init; }
+
+    /// <summary>Whether he is making the blows of a material (byte 11 is 0xff) and not looking for the next one (byte 11 is 1).</summary>
+    public required bool Blowing { get; init; }
+
+    /// <summary>The materials he has taken so far, the index of the next in the order (the low four bits of byte 14).</summary>
+    public required int Materials { get; init; }
+
+    /// <summary>Whether his figure is the second one the types 10, 17, 19, and 22 take (bit 7 of byte 14, the frames 0x64 and 0x6a to 0x6d).</summary>
+    public required bool SecondFigure { get; init; }
+
+    /// <summary>The blows left of the material (byte 15).</summary>
+    public required int Blows { get; init; }
+
     /// <inheritdoc />
     public override int Code => 9;
 
@@ -172,12 +203,20 @@ public sealed record Builds(int Site, bool Blowing, int Materials, bool SecondFi
 /// nodes whose height is the pass's, walks onto each, and changes its height by one toward the site's height, lowering in the odd passes and
 /// raising in the even ones.
 /// </summary>
-/// <param name="Pass">The pass he is in, 15 down to 0 (byte 11): the height the pass names is the target's plus a delta the pass number gives.</param>
-/// <param name="Target">The site's height (byte 12).</param>
-/// <param name="Node">The node of the pass he works at, 6 (east) down to 0 (the site's node) (byte 13); direction 6 - <see cref="Node"/> leads from the site to it.</param>
-/// <param name="Phase">Where he is in the work of the node (byte 14): 0 the wait for a busy node, 1 the next node, 2 the dig, 3 the step onto the node.</param>
-public sealed record Digs(int Pass, int Target, int Node, int Phase) : Activity
+public sealed record Digs : Activity
 {
+    /// <summary>The pass he is in, 15 down to 0 (byte 11): the height the pass names is the target's plus a delta the pass number gives.</summary>
+    public required int Pass { get; init; }
+
+    /// <summary>The site's height (byte 12).</summary>
+    public required int Target { get; init; }
+
+    /// <summary>The node of the pass he works at, 6 (east) down to 0 (the site's node) (byte 13); direction 6 - <see cref="Node"/> leads from the site to it.</summary>
+    public required int Node { get; init; }
+
+    /// <summary>Where he is in the work of the node (byte 14): 0 the wait for a busy node, 1 the next node, 2 the dig, 3 the step onto the node.</summary>
+    public required int Phase { get; init; }
+
     /// <inheritdoc />
     public override int Code => 8;
 
@@ -189,9 +228,11 @@ public sealed record Digs(int Pass, int Target, int Node, int Phase) : Activity
 /// State 0x18: the sawmiller works in the sawmill he stands in (<c>0x4359fe</c>, <c>docs/rules/sawmilling.md</c>). Without a log on site he waits
 /// for one; with one, he takes it out of the building's fill and saws for 0x93f clock units, then carries a plank out to the flag.
 /// </summary>
-/// <param name="Sawing">Whether he saws a log (byte 11 is 0xff) and not waits for one (byte 11 is 0).</param>
-public sealed record Saws(bool Sawing) : Activity
+public sealed record Saws : Activity
 {
+    /// <summary>Whether he saws a log (byte 11 is 0xff) and not waits for one (byte 11 is 0).</summary>
+    public required bool Sawing { get; init; }
+
     /// <inheritdoc />
     public override int Code => 0x18;
 
@@ -203,9 +244,11 @@ public sealed record Saws(bool Sawing) : Activity
 /// State 0xb: the sawmiller waits at the sawmill's door with the plank in his hands until the node of the flag is free and the flag has a
 /// free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the plank down.
 /// </summary>
-/// <param name="Good">The good he carries out (byte 11), the plank.</param>
-public sealed record StepsOutWithGood(Good Good) : Activity
+public sealed record StepsOutWithGood : Activity
 {
+    /// <summary>The good he carries out (byte 11), the plank.</summary>
+    public required Good Good { get; init; }
+
     /// <inheritdoc />
     public override int Code => 0xb;
 
@@ -214,9 +257,11 @@ public sealed record StepsOutWithGood(Good Good) : Activity
 }
 
 /// <summary>State 0xd: the settler stands on the flag with a good in his hands and lays it on the flag (<c>0x43c6aa</c>), then enters the building.</summary>
-/// <param name="Good">The good he lays down (byte 11).</param>
-public sealed record PutsDownGood(Good Good) : Activity
+public sealed record PutsDownGood : Activity
 {
+    /// <summary>The good he lays down (byte 11).</summary>
+    public required Good Good { get; init; }
+
     /// <inheritdoc />
     public override int Code => 0xd;
 
@@ -252,11 +297,17 @@ public sealed record BuiltCastle : Activity
 }
 
 /// <summary>State 14: a carrier hands the good it carries over to the building at its flag.</summary>
-/// <param name="Load">The good still in the carrier's hands, or null once it is handed over.</param>
-/// <param name="Heading">The direction back to the node the carrier came from.</param>
-/// <param name="Marked">Whether the carrier is in the second half of the handover, or is marked to go.</param>
-public sealed record HandsOver(Load? Load, Heading Heading, bool Marked = false) : Activity
+public sealed record HandsOver : Activity
 {
+    /// <summary>The good still in the carrier's hands, or null once it is handed over.</summary>
+    public required Load? Load { get; init; }
+
+    /// <summary>The direction back to the node the carrier came from.</summary>
+    public required Heading Heading { get; init; }
+
+    /// <summary>Whether the carrier is in the second half of the handover, or is marked to go.</summary>
+    public bool Marked { get; init; } = false;
+
     /// <inheritdoc />
     public override int Code => 0xe;
 
@@ -265,21 +316,24 @@ public sealed record HandsOver(Load? Load, Heading Heading, bool Marked = false)
 }
 
 /// <summary>State 15: the settler leaves the castle by its door onto the castle's flag.</summary>
-/// <param name="Errand">Where the settler walks to from the flag.</param>
-public sealed record Leaving(Errand Errand) : HasErrand(Errand)
+public sealed record Leaving : HasErrand
 {
     /// <inheritdoc />
     public override int Code => 0xf;
 }
 
 /// <summary>State 16, or state 22 for the stonecutter's walk: the settler walks free along a vector.</summary>
-/// <param name="Trip">The walk.</param>
-/// <param name="EyesHeaps">
-/// Whether the stonecutter looks for a stone heap beside his node at each turn of the walk (state 22, <c>0x436a84</c>): he
-/// stops where one stands north-west of him. The walk of every other settler, and the stonecutter's way back, is state 16.
-/// </param>
-public sealed record WalksFree(Trip Trip, bool EyesHeaps = false) : Activity
+public sealed record WalksFree : Activity
 {
+    /// <summary>The walk.</summary>
+    public required Trip Trip { get; init; }
+
+    /// <summary>
+    /// Whether the stonecutter looks for a stone heap beside his node at each turn of the walk (state 22, <c>0x436a84</c>): he
+    /// stops where one stands north-west of him. The walk of every other settler, and the stonecutter's way back, is state 16.
+    /// </summary>
+    public bool EyesHeaps { get; init; } = false;
+
     /// <inheritdoc />
     public override int Code => EyesHeaps ? 0x16 : 0x10;
 
@@ -291,12 +345,20 @@ public sealed record WalksFree(Trip Trip, bool EyesHeaps = false) : Activity
 }
 
 /// <summary>State 17: the woodcutter cuts the tree it stands on, one falling step at a time.</summary>
-/// <param name="Back">The steps of the way back to the hut's flag.</param>
-/// <param name="SecondVariant">Whether the tree takes the second cutting variant.</param>
-/// <param name="Count">The falling steps done, 0 to 5.</param>
-/// <param name="Memory">The memory the free walk to the tree left.</param>
-public sealed record Cuts(Vector Back, bool SecondVariant, int Count, int Memory) : Activity
+public sealed record Cuts : Activity
 {
+    /// <summary>The steps of the way back to the hut's flag.</summary>
+    public required Vector Back { get; init; }
+
+    /// <summary>Whether the tree takes the second cutting variant.</summary>
+    public required bool SecondVariant { get; init; }
+
+    /// <summary>The falling steps done, 0 to 5.</summary>
+    public required int Count { get; init; }
+
+    /// <summary>The memory the free walk to the tree left.</summary>
+    public required int Memory { get; init; }
+
     /// <inheritdoc />
     public override int Code => 0x11;
 
@@ -319,11 +381,17 @@ public sealed record LooksForSpot : Activity
 }
 
 /// <summary>State 20: the forester stands on the node he plants on, waits, and puts the sapling down (<c>0x4389bf</c>).</summary>
-/// <param name="Back">The steps of the way back to the hut's flag, east and south (bytes 11 and 12).</param>
-/// <param name="Planted">Whether the sapling is down and he waits to turn back (byte 14 not 0).</param>
-/// <param name="Memory">The memory the free walk to the node left (byte 15).</param>
-public sealed record Plants(Vector Back, bool Planted, int Memory) : Activity
+public sealed record Plants : Activity
 {
+    /// <summary>The steps of the way back to the hut's flag, east and south (bytes 11 and 12).</summary>
+    public required Vector Back { get; init; }
+
+    /// <summary>Whether the sapling is down and he waits to turn back (byte 14 not 0).</summary>
+    public required bool Planted { get; init; }
+
+    /// <summary>The memory the free walk to the node left (byte 15).</summary>
+    public required int Memory { get; init; }
+
     /// <inheritdoc />
     public override int Code => 0x14;
 
@@ -342,11 +410,17 @@ public sealed record LooksForStone : Activity
 /// State 23: the stonecutter stands on the node of the heap he cuts, steps back onto the node he came by, and takes the stone
 /// with him (<c>0x435c5c</c>).
 /// </summary>
-/// <param name="Back">The steps of the way back to the hut's flag, east and south (bytes 11 and 12).</param>
-/// <param name="Phase">The part of the cut: 0 the step onto the heap, 1 the stroke, 2 the step back (byte 13).</param>
-/// <param name="Quarter">A quarter of the step onto the heap's time, the point where the stroke begins (the word at 14).</param>
-public sealed record CutsStone(Vector Back, int Phase, int Quarter) : Activity
+public sealed record CutsStone : Activity
 {
+    /// <summary>The steps of the way back to the hut's flag, east and south (bytes 11 and 12).</summary>
+    public required Vector Back { get; init; }
+
+    /// <summary>The part of the cut: 0 the step onto the heap, 1 the stroke, 2 the step back (byte 13).</summary>
+    public required int Phase { get; init; }
+
+    /// <summary>A quarter of the step onto the heap's time, the point where the stroke begins (the word at 14).</summary>
+    public required int Quarter { get; init; }
+
     /// <inheritdoc />
     public override int Code => 0x17;
 
@@ -355,13 +429,17 @@ public sealed record CutsStone(Vector Back, int Phase, int Quarter) : Activity
 }
 
 /// <summary>State 25: the settler looks for the nearest flag on the way home.</summary>
-/// <param name="FarEndFirst">Whether the search starts from the far end of its table of offsets.</param>
-/// <param name="FarEndMark">
-/// The byte 11 the search starts at the far end by: the byte the walk before it left, kept as it was (not 0), 1 where a rule
-/// starts the search. Its value is of no meaning while <paramref name="FarEndFirst"/> is false.
-/// </param>
-public sealed record SearchesHome(bool FarEndFirst = false, int FarEndMark = 1) : Activity
+public sealed record SearchesHome : Activity
 {
+    /// <summary>Whether the search starts from the far end of its table of offsets.</summary>
+    public bool FarEndFirst { get; init; } = false;
+
+    /// <summary>
+    /// The byte 11 the search starts at the far end by: the byte the walk before it left, kept as it was (not 0), 1 where a rule
+    /// starts the search. Its value is of no meaning while <paramref name="FarEndFirst"/> is false.
+    /// </summary>
+    public int FarEndMark { get; init; } = 1;
+
     /// <inheritdoc />
     public override int Code => 0x19;
 
@@ -377,9 +455,11 @@ public sealed record ClaimsHomeNode : Activity
 }
 
 /// <summary>State 53: a knight walks free along a vector (the knights' own walk is not ported).</summary>
-/// <param name="Trip">The walk.</param>
-public sealed record KnightWalks(Trip Trip) : Activity
+public sealed record KnightWalks : Activity
 {
+    /// <summary>The walk.</summary>
+    public required Trip Trip { get; init; }
+
     /// <inheritdoc />
     public override int Code => 0x35;
 }
@@ -389,9 +469,11 @@ public sealed record KnightWalks(Trip Trip) : Activity
 /// original's branches that reach the state 0x49 are not ported, and a settler a layout or a snapshot places in
 /// another state keeps it raw (INV-0006).
 /// </summary>
-/// <param name="StateCode">The code of the original's state.</param>
-public sealed record RawState(int StateCode) : Activity
+public sealed record RawState : Activity
 {
+    /// <summary>The code of the original's state.</summary>
+    public required int StateCode { get; init; }
+
     /// <inheritdoc />
     public override int Code => StateCode;
 }
@@ -400,39 +482,44 @@ public sealed record RawState(int StateCode) : Activity
 /// The activities of a carrier that stands next to the flag at the end of its road, off its node (states 0x42 to 0x45). The
 /// carrier keeps the heading it stopped with, marked as a step tried again.
 /// </summary>
-/// <param name="Approach">The heading the carrier held when it stopped, marked as a step tried again.</param>
-public abstract record WaitsOffRoad(Heading Approach) : Activity;
+public abstract record WaitsOffRoad : Activity
+{
+    /// <summary>The heading the carrier held when it stopped, marked as a step tried again.</summary>
+    public required Heading Approach { get; init; }
+}
 
 /// <summary>State 66: a carrier waits next to a flag at the end of its road, off its node.</summary>
-/// <param name="Flag">The slot of the flag the carrier waits next to.</param>
-/// <param name="Direction">The direction in which the road leaves that flag.</param>
-/// <param name="Approach">The heading the carrier held when it stopped, marked as a step tried again.</param>
-public sealed record WaitsAtFlag(int Flag, Direction Direction, Heading Approach) : WaitsOffRoad(Approach)
+public sealed record WaitsAtFlag : WaitsOffRoad
 {
+    /// <summary>The slot of the flag the carrier waits next to.</summary>
+    public required int Flag { get; init; }
+
+    /// <summary>The direction in which the road leaves that flag.</summary>
+    public required Direction Direction { get; init; }
+
     /// <inheritdoc />
     public override int Code => 0x42;
 }
 
 /// <summary>State 67: a carrier that waits next to a flag claims its node to go on with a good to fetch.</summary>
-/// <param name="Heading">The direction back to the node the carrier came from.</param>
-/// <param name="Approach">The heading the carrier held when it stopped, marked as a step tried again.</param>
-public sealed record ClaimsNode(Heading Heading, Heading Approach) : WaitsOffRoad(Approach)
+public sealed record ClaimsNode : WaitsOffRoad
 {
+    /// <summary>The direction back to the node the carrier came from.</summary>
+    public required Heading Heading { get; init; }
+
     /// <inheritdoc />
     public override int Code => 0x43;
 }
 
 /// <summary>State 68: a carrier that waited next to a flag is told to go home because its road went.</summary>
-/// <param name="Approach">The heading the carrier held when it stopped, marked as a step tried again.</param>
-public sealed record WaitsToGoHome(Heading Approach) : WaitsOffRoad(Approach)
+public sealed record WaitsToGoHome : WaitsOffRoad
 {
     /// <inheritdoc />
     public override int Code => 0x44;
 }
 
 /// <summary>State 69: a carrier that waited next to a flag is taken along when its road is joined.</summary>
-/// <param name="Approach">The heading the carrier held when it stopped, marked as a step tried again.</param>
-public sealed record WaitsToRejoin(Heading Approach) : WaitsOffRoad(Approach)
+public sealed record WaitsToRejoin : WaitsOffRoad
 {
     /// <inheritdoc />
     public override int Code => 0x45;

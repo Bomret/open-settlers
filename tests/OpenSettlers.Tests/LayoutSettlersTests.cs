@@ -103,8 +103,8 @@ public sealed class LayoutSettlersTests
             // A request a test gives replaces the made-up one of the same job.
             jobData:
             [
-                (new Builder(), builderRequest ?? new WorkerRequest(new Builder(), Good.None)),
-                (new Digger(), diggerRequest ?? new WorkerRequest(new Digger(), Good.None)),
+                (new Builder(), builderRequest ?? new WorkerRequest { Job = new Builder(), Tool = Good.None }),
+                (new Digger(), diggerRequest ?? new WorkerRequest { Job = new Digger(), Tool = Good.None }),
             ]
         );
     }
@@ -227,7 +227,7 @@ public sealed class LayoutSettlersTests
         var carrier = game.Settlers.Single(settler => settler.Job == new Carrier());
         var waiting = (WaitsAtFlag)carrier.Activity;
         Assert.AreEqual((13, 11), (carrier.X, carrier.Y));
-        Assert.AreEqual((1, new Direction(3)), (waiting.Flag, waiting.Direction));
+        Assert.AreEqual((1, new Direction { Value = 3 }), (waiting.Flag, waiting.Direction));
         Assert.AreEqual(1, game.Flags[0].Side(0).Carriers);
         Assert.AreEqual(1, game.Flags[1].Side(3).Carriers);
         Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay);
@@ -251,7 +251,7 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built + "\"goods\": [{\"x\": 14, \"y\": 11, \"place\": 2, \"good\": 7}]");
 
-        Assert.AreEqual(new Good(7), game.Flags[1].Places[2].Good);
+        Assert.AreEqual(new Good { Code = 7 }, game.Flags[1].Places[2].Good);
         Assert.IsTrue(game.Flags[1].Places[0].IsEmpty);
         Assert.IsTrue(game.Flags[1].NeedsGoodsTurn);
     }

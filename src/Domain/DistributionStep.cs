@@ -8,6 +8,11 @@ namespace OpenSettlers.Domain;
 /// <see cref="Class"/> (in its request word) are served the good of <see cref="Goods"/> the storage holds most of; a step of one good
 /// serves that good, the step of the food goods names three.
 /// </summary>
-/// <param name="Class">The class the step looks for, with the request word it looks in.</param>
-/// <param name="Goods">The goods the step hands out: the storage serves the one with the greatest count (the first of equals).</param>
-public readonly record struct DistributionStep(GoodClass Class, IReadOnlyList<Good> Goods);
+public readonly record struct DistributionStep
+{
+    /// <summary>The class the step looks for, with the request word it looks in.</summary>
+    public required GoodClass Class { get; init; }
+
+    /// <summary>The goods the step hands out: the storage serves the one with the greatest count (the first of equals).</summary>
+    public required IReadOnlyList<Good> Goods { get; init; }
+}

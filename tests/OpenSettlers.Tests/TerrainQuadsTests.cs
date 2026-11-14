@@ -37,7 +37,7 @@ public sealed class TerrainQuadsTests
     }
 
     static TerrainTriangle Triangle(int row, int code = 5, int x = 100, int y = 50) =>
-        new(0, row, true, new Domain.Terrain(code), 5, 5, 5, x, y);
+        new(0, row, true, new Domain.Terrain { Code = code }, 5, 5, 5, x, y);
 
     static List<List<ObjectQuad>> Bands(
         IReadOnlyList<TerrainTriangle> triangles,
@@ -114,8 +114,8 @@ public sealed class TerrainQuadsTests
         Bands([Triangle(0)], 4, layers);
         var strips = new[]
         {
-            new RoadStrip(100, 200, RoadDirection.East, 0, 0, new Domain.Terrain(5)),
-            new RoadStrip(300, 200, RoadDirection.East, 5, 0, new Domain.Terrain(5)),
+            new RoadStrip(100, 200, RoadDirection.East, 0, 0, new Domain.Terrain { Code = 5 }),
+            new RoadStrip(300, 200, RoadDirection.East, 5, 0, new Domain.Terrain { Code = 5 }),
         };
 
         var quads = TerrainQuads.Strips(strips, new FakeSource(), layers);

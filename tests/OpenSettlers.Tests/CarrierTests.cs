@@ -75,7 +75,7 @@ public sealed class CarrierTests
         var carrier = Carriers(game).Single();
         Assert.IsInstanceOfType<Leaving>(carrier.Activity, "the carrier leaves the castle");
         Assert.AreEqual(
-            new ToRoad(0, 0),
+            new ToRoad { At = 0, Direction = 0 },
             ((Leaving)carrier.Activity).Errand,
             "it takes the road that leaves the castle's flag east, walking to the castle's flag"
         );
@@ -109,7 +109,11 @@ public sealed class CarrierTests
         var waiting = (WaitsAtFlag)carrier.Activity;
         Assert.AreEqual((17, 6), (carrier.X, carrier.Y), "the node of the road next to the flag at 18,6");
         Assert.AreEqual(1, waiting.Flag, "the flag it waits next to");
-        Assert.AreEqual(new Direction(3), waiting.Direction, "the direction in which the road leaves that flag");
+        Assert.AreEqual(
+            new Direction { Value = 3 },
+            waiting.Direction,
+            "the direction in which the road leaves that flag"
+        );
         Assert.AreEqual(0x71, carrier.Frame, "the frame of the idle carrier: 0x6e plus the direction it came by");
     }
 

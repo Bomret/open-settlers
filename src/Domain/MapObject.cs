@@ -42,9 +42,11 @@ public enum MapObjectKind
 /// object codes. The meaning of most codes is not established yet (<c>docs/rules/map-form.md</c>), so the raw code is
 /// always kept, and a code with no name survives import and export unchanged.
 /// </summary>
-/// <param name="Code">The original's object code, 0 for none to 127.</param>
-public readonly record struct MapObject(byte Code)
+public readonly record struct MapObject
 {
+    /// <summary>The original's object code, 0 for none to 127.</summary>
+    public required byte Code { get; init; }
+
     /// <summary>The first object code of a tree.</summary>
     public const int FirstTreeCode = 8;
 
@@ -73,32 +75,32 @@ public readonly record struct MapObject(byte Code)
     public const int SecondSaplingCode = 0x68;
 
     /// <summary>The first sapling.</summary>
-    public static MapObject Sapling => new(SaplingCode);
+    public static MapObject Sapling => new() { Code = SaplingCode };
 
     /// <summary>
     /// The tree a sapling grows into where the object pass's draw allows it (<c>0x4290d5</c>, <c>0x42910f</c>): the sapling's own
     /// range of trees, 0x10 or 8, plus the draw's low three bits.
     /// </summary>
     public static MapObject Grown(MapObject sapling, int draw) =>
-        new((byte)((sapling.Code == SaplingCode ? 0x10 : 8) + (draw & 7)));
+        new() { Code = (byte)((sapling.Code == SaplingCode ? 0x10 : 8) + (draw & 7)) };
 
     /// <summary>No object on the node.</summary>
     public static MapObject None => default;
 
     /// <summary>The stump of a felled tree.</summary>
-    public static MapObject Stump => new(StumpCode);
+    public static MapObject Stump => new() { Code = StumpCode };
 
     /// <summary>A flag.</summary>
-    public static MapObject Flag => new(1);
+    public static MapObject Flag => new() { Code = 1 };
 
     /// <summary>The node of a small building.</summary>
-    public static MapObject Hut => new(2);
+    public static MapObject Hut => new() { Code = 2 };
 
     /// <summary>The node of a large building.</summary>
-    public static MapObject LargeHut => new(3);
+    public static MapObject LargeHut => new() { Code = 3 };
 
     /// <summary>The castle.</summary>
-    public static MapObject Castle => new(4);
+    public static MapObject Castle => new() { Code = 4 };
 
     /// <summary>True when an object stands on the node.</summary>
     public bool Exists => Code != 0;
@@ -119,7 +121,8 @@ public readonly record struct MapObject(byte Code)
     /// The tree after a step of its cut, 1 to 5 (<c>0x438a9e</c>): the codes 0x5d to 0x61, or 0x62 to 0x66 for the second
     /// variant.
     /// </summary>
-    public static MapObject Falling(int step, bool secondVariant) => new((byte)(step + 0x5c + (secondVariant ? 5 : 0)));
+    public static MapObject Falling(int step, bool secondVariant) =>
+        new() { Code = (byte)(step + 0x5c + (secondVariant ? 5 : 0)) };
 
     /// <summary>What the engine names about the code.</summary>
     public MapObjectKind Kind =>
@@ -140,11 +143,17 @@ public readonly record struct MapObject(byte Code)
 }
 
 /// <summary>A <see cref="MapObject"/> with the node it stands on.</summary>
-/// <param name="X">The node's column.</param>
-/// <param name="Y">The node's row.</param>
-/// <param name="Object">The object.</param>
-public readonly record struct PlacedObject(int X, int Y, MapObject Object)
+public readonly record struct PlacedObject
 {
+    /// <summary>The node's column.</summary>
+    public required int X { get; init; }
+
+    /// <summary>The node's row.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>The object.</summary>
+    public required MapObject Object { get; init; }
+
     /// <summary>The object's raw code.</summary>
     public byte Code => Object.Code;
 }

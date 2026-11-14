@@ -23,11 +23,12 @@ public sealed class WoodcutterTables : JobTables<Woodcutter>
         data.Add(
             (
                 Job,
-                new FigureAdds(
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.WoodcutterWalkAddress),
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.WoodcutterCarryingAddress),
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.WoodcutterCuttingAddress)
-                )
+                new FigureAdds
+                {
+                    Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.WoodcutterWalkAddress),
+                    Carrying = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.WoodcutterCarryingAddress),
+                    Cutting = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.WoodcutterCuttingAddress),
+                }
             )
         );
     }

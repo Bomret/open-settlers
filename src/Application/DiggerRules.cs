@@ -67,7 +67,16 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
     /// step through the door left them.
     /// </summary>
     public override void Start(int slot, Settler settler, Building site) =>
-        movement.Become(settler, new Digs(FirstPass, site.Site?.TargetHeight ?? 0, FirstNode, NextNodePhase));
+        movement.Become(
+            settler,
+            new Digs
+            {
+                Pass = FirstPass,
+                Target = site.Site?.TargetHeight ?? 0,
+                Node = FirstNode,
+                Phase = NextNodePhase,
+            }
+        );
 
     // State 8: the time since the last turn comes off the timer; when it has run out the digger works until the timer is positive again.
     void Turn(int slot, Settler settler)
@@ -249,7 +258,14 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
             );
         }
 
-        settler.Activity = new StepsOntoFlag(new Walks(new ToStorage(), new Heading(0)));
+        settler.Activity = new StepsOntoFlag
+        {
+            Then = new Walks
+            {
+                Errand = new ToStorage(),
+                Heading = new Heading { Value = 0 },
+            },
+        };
         hut.StepOut(slot, settler);
     }
 }

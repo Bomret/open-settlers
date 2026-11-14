@@ -47,7 +47,10 @@ public sealed class DomainRuleLookupTests
             blowSteps: [.. Enumerable.Range(0, 2 * RuleTables.BuildingTypeCount).Select(i => (ushort)(500 + i))],
             workers:
             [
-                .. Enumerable.Repeat(new WorkerRequest(new Woodcutter(), Good.None), RuleTables.BuildingTypeCount),
+                .. Enumerable.Repeat(
+                    new WorkerRequest { Job = new Woodcutter(), Tool = Good.None },
+                    RuleTables.BuildingTypeCount
+                ),
             ]
         );
 
@@ -63,7 +66,7 @@ public sealed class DomainRuleLookupTests
         Assert.IsTrue(tables.StoneAt(forester, 15));
         Assert.IsFalse(tables.StoneAt(forester, 16));
         Assert.IsFalse(tables.StoneAt(forester, -1));
-        Assert.IsFalse(tables.StoneAt(new BuildingType(RuleTables.BuildingTypeCount), 0));
+        Assert.IsFalse(tables.StoneAt(new BuildingType { Code = RuleTables.BuildingTypeCount }, 0));
         Assert.IsFalse(tables.StoneAt(BuildingType.None, 0));
     }
 
@@ -77,7 +80,10 @@ public sealed class DomainRuleLookupTests
 
         Assert.AreEqual((ushort)518, tables.BlowStep(BuildingType.Forester, late: false));
         Assert.AreEqual((ushort)519, tables.BlowStep(BuildingType.Forester, late: true));
-        Assert.AreEqual((ushort)0, tables.BlowStep(new BuildingType(RuleTables.BuildingTypeCount), late: false));
+        Assert.AreEqual(
+            (ushort)0,
+            tables.BlowStep(new BuildingType { Code = RuleTables.BuildingTypeCount }, late: false)
+        );
         Assert.AreEqual((ushort)0, tables.BlowStep(BuildingType.None, late: true));
     }
 
@@ -90,7 +96,7 @@ public sealed class DomainRuleLookupTests
         var tables = LookupTables();
 
         Assert.IsNotNull(tables.WorkerOf(BuildingType.Forester));
-        Assert.IsNull(tables.WorkerOf(new BuildingType(RuleTables.BuildingTypeCount)));
+        Assert.IsNull(tables.WorkerOf(new BuildingType { Code = RuleTables.BuildingTypeCount }));
         Assert.IsNull(tables.WorkerOf(BuildingType.None));
     }
 
@@ -132,9 +138,27 @@ public sealed class DomainRuleLookupTests
         CollectionAssert.AreEqual(
             new[]
             {
-                new ResourceDeposit(30, 1, 2, 7),
-                new ResourceDeposit(2, 5, 1, 4),
-                new ResourceDeposit(20, 5, 3, 9),
+                new ResourceDeposit
+                {
+                    X = 30,
+                    Y = 1,
+                    Type = 2,
+                    Amount = 7,
+                },
+                new ResourceDeposit
+                {
+                    X = 2,
+                    Y = 5,
+                    Type = 1,
+                    Amount = 4,
+                },
+                new ResourceDeposit
+                {
+                    X = 20,
+                    Y = 5,
+                    Type = 3,
+                    Amount = 9,
+                },
             },
             deposits.ToArray()
         );
@@ -180,6 +204,6 @@ public sealed class DomainRuleLookupTests
     public void TerrainCodes8To10And15AreOtherAndCodes11To14AreMountain(int code, TerrainKind kind)
     {
         // docs/rules/build-sites.md:77-78: plain is 4 to 7, mountain 11 to 14, and any other code (8 to 10 and 15) is another kind.
-        Assert.AreEqual(kind, new Terrain(code).Kind);
+        Assert.AreEqual(kind, new Terrain { Code = code }.Kind);
     }
 }

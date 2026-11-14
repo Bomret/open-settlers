@@ -35,7 +35,18 @@ public sealed class ExchangeTests
                     0,
                     0,
                     0,
-                    new WalksRoad(good == 0 ? null : new Load(new Good(good), destination), new Heading(Way))
+                    new WalksRoad
+                    {
+                        Load =
+                            good == 0
+                                ? null
+                                : new Load
+                                {
+                                    Good = new Good { Code = good },
+                                    Destination = destination,
+                                },
+                        Heading = new Heading { Value = Way },
+                    }
                 )
             )
         ];
@@ -57,7 +68,11 @@ public sealed class ExchangeTests
         Exchange(goods, carrier);
 
         Assert.AreEqual(Log, Carried(carrier), "the carrier takes the good that waited");
-        Assert.AreEqual(new Good(Ninth), bench.Flags[0].Places[2].Good, "the good it carried is left in that place");
+        Assert.AreEqual(
+            new Good { Code = Ninth },
+            bench.Flags[0].Places[2].Good,
+            "the good it carried is left in that place"
+        );
         Assert.AreEqual(0, bench.Flags[0].Places[2].Destination, "its destination goes with it");
         Assert.IsNull(bench.Flags[0].Side(Way).WaitingPlace, "no good waits for the road any more");
         Assert.IsTrue(bench.Flags[0].NeedsGoodsTurn, "the flag looks at the new good at its next turn");
@@ -87,7 +102,7 @@ public sealed class ExchangeTests
         Exchange(goods, carrier);
 
         Assert.AreEqual(0, Carried(carrier), "the carrier has nothing left");
-        Assert.AreEqual(new Good(Ninth), bench.Flags[0].Places[1].Good);
+        Assert.AreEqual(new Good { Code = Ninth }, bench.Flags[0].Places[1].Good);
         Assert.AreEqual(0, bench.Flags[0].Places[1].Destination);
     }
 

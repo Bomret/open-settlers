@@ -111,7 +111,7 @@ public sealed class RemovalTests
         foreach (var hut in Points(parts[7]))
         {
             Assert.IsTrue(
-                Huts.Place(game, hut[0] - 1, hut[1] - 1, new BuildingType(hut[2])),
+                Huts.Place(game, hut[0] - 1, hut[1] - 1, new BuildingType { Code = hut[2] }),
                 "the fixture's hut has its site"
             );
         }
@@ -479,7 +479,9 @@ public sealed class RemovalTests
                     {
                         // A building click names the type of the building as its third number.
                         BuildingType? type =
-                            kind == CommandKind.PlaceBuilding && node.Length > 2 ? new BuildingType(node[2]) : null;
+                            kind == CommandKind.PlaceBuilding && node.Length > 2
+                                ? new BuildingType { Code = node[2] }
+                                : null;
                         game.Enqueue(new Command(game.TickCount, 0, kind, node[0], node[1], Building: type));
                     }
 

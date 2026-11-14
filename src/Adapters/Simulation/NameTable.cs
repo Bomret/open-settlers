@@ -67,7 +67,7 @@ public sealed class NameTable
     public string? ObjectName(byte code)
     {
         var name = Find(CodeKind.Object, code & 0x7f);
-        return name == "stone" && !tables.ClassOf(new MapObject((byte)(code & 0x7f))).IsStone ? null : name;
+        return name == "stone" && !tables.ClassOf(new MapObject { Code = (byte)(code & 0x7f) }).IsStone ? null : name;
     }
 
     /// <summary>The name of the settler job, or null where the table has none.</summary>

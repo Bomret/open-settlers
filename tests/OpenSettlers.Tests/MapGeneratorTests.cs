@@ -277,9 +277,24 @@ public sealed class MapGeneratorTests
         CollectionAssert.AreEqual(
             new[]
             {
-                new PlacedObject(9, 0, new MapObject(82)),
-                new PlacedObject(22, 0, new MapObject(73)),
-                new PlacedObject(45, 0, new MapObject(21)),
+                new PlacedObject
+                {
+                    X = 9,
+                    Y = 0,
+                    Object = new MapObject { Code = 82 },
+                },
+                new PlacedObject
+                {
+                    X = 22,
+                    Y = 0,
+                    Object = new MapObject { Code = 73 },
+                },
+                new PlacedObject
+                {
+                    X = 45,
+                    Y = 0,
+                    Object = new MapObject { Code = 21 },
+                },
             },
             map.Objects.Take(3).ToList()
         );
@@ -287,13 +302,40 @@ public sealed class MapGeneratorTests
         CollectionAssert.AreEqual(
             new[]
             {
-                new ResourceDeposit(34, 0, 3, 4),
-                new ResourceDeposit(35, 0, 3, 8),
-                new ResourceDeposit(36, 0, 3, 8),
+                new ResourceDeposit
+                {
+                    X = 34,
+                    Y = 0,
+                    Type = 3,
+                    Amount = 4,
+                },
+                new ResourceDeposit
+                {
+                    X = 35,
+                    Y = 0,
+                    Type = 3,
+                    Amount = 8,
+                },
+                new ResourceDeposit
+                {
+                    X = 36,
+                    Y = 0,
+                    Type = 3,
+                    Amount = 8,
+                },
             },
             map.Deposits.Take(3).ToList()
         );
-        Assert.AreEqual(new ResourceDeposit(18, 20, 1, 4), map.Deposits.First(deposit => deposit.Type == 1));
+        Assert.AreEqual(
+            new ResourceDeposit
+            {
+                X = 18,
+                Y = 20,
+                Type = 1,
+                Amount = 4,
+            },
+            map.Deposits.First(deposit => deposit.Type == 1)
+        );
         Assert.AreEqual(956, map.Resource1Total);
     }
 

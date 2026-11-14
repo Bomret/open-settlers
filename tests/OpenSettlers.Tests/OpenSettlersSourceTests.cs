@@ -129,7 +129,8 @@ public sealed class OpenSettlersSourceTests
                 select $"settler/{job}/{kind}"
             );
 
-    static TerrainTriangle Triangle(int code, bool upper) => new(0, 0, upper, new Terrain(code), 0, 0, 0, 100, 50);
+    static TerrainTriangle Triangle(int code, bool upper) =>
+        new(0, 0, upper, new Terrain { Code = code }, 0, 0, 0, 100, 50);
 
     [TestMethod]
     public void ATerrainTriangleDrawsTheImageOfItsTerrainAndOrientationHungFromItsAnchor()
@@ -167,7 +168,7 @@ public sealed class OpenSettlersSourceTests
         folder.Png("strip.png", $"{width}x1:1");
         folder.Entries[key] = ContentFolder.Entry("strip.png", "1, 2");
 
-        var image = folder.Load().Draw(new RoadStrip(10, 20, direction, 0, 0, new Terrain(5)))!;
+        var image = folder.Load().Draw(new RoadStrip(10, 20, direction, 0, 0, new Terrain { Code = 5 }))!;
 
         Assert.AreEqual((width, 1, 1, 2), (image.Width, image.Height, image.OffsetX, image.OffsetY));
     }
@@ -208,14 +209,14 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["object/13"] = ContentFolder.Entry("tree.png", "-2, -6");
         var source = folder.Load();
 
-        var drawing = source.Draw(new MapObjectDraw(0, 0, 0, new MapObject(13), 0))!;
+        var drawing = source.Draw(new MapObjectDraw(0, 0, 0, new MapObject { Code = 13 }, 0))!;
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual(
             (5, 7, -2, -6),
             (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY)
         );
-        Assert.AreSame(drawing.Image, source.Draw(new MapObjectDraw(5, 9, 9, new MapObject(13), 77))!.Image);
+        Assert.AreSame(drawing.Image, source.Draw(new MapObjectDraw(5, 9, 9, new MapObject { Code = 13 }, 77))!.Image);
     }
 
     [TestMethod]
@@ -228,7 +229,7 @@ public sealed class OpenSettlersSourceTests
     {
         using var folder = new ContentFolder();
 
-        Assert.IsNull(folder.Load().Draw(new MapObjectDraw(0, 0, 0, new MapObject((byte)code), 0)));
+        Assert.IsNull(folder.Load().Draw(new MapObjectDraw(0, 0, 0, new MapObject { Code = (byte)code }, 0)));
     }
 
     [TestMethod]
@@ -275,7 +276,7 @@ public sealed class OpenSettlersSourceTests
         folder.Png("building.png", "9x8:6");
         folder.Entries[key] = ContentFolder.Entry("building.png", "-4, -7");
 
-        var drawing = folder.Load().Draw(new BuildingDraw(0, 0, 0, new BuildingType(type)))!;
+        var drawing = folder.Load().Draw(new BuildingDraw(0, 0, 0, new BuildingType { Code = type }))!;
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual(
@@ -377,14 +378,14 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["good/7"] = ContentFolder.Entry("log.png", "-2, -2");
         var source = folder.Load();
 
-        var drawing = source.Draw(new GoodAtFlag(0, 0, 0, new Good(7)))!;
+        var drawing = source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = 7 }))!;
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual(
             (4, 2, -2, -2),
             (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY)
         );
-        Assert.AreSame(drawing.Image, source.Draw(new GoodAtFlag(0, 0, 0, new Good(7 + 32)))!.Image);
+        Assert.AreSame(drawing.Image, source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = 7 + 32 }))!.Image);
     }
 
     [TestMethod]
@@ -409,9 +410,17 @@ public sealed class OpenSettlersSourceTests
         Good? carried = null
     ) => new(0, 0, 0, part, job, activity, heading, frame, step, player, carried ?? Good.None);
 
-    static Activity Walking(Heading? heading = null) => new WalksRoad(null, heading ?? new Heading(0));
+    static Activity Walking(Heading? heading = null) =>
+        new WalksRoad { Load = null, Heading = heading ?? new Heading { Value = 0 } };
 
-    static Activity Cutting() => new Cuts(new Vector(0, 0), false, 0, 0);
+    static Activity Cutting() =>
+        new Cuts
+        {
+            Back = new Vector(0, 0),
+            SecondVariant = false,
+            Count = 0,
+            Memory = 0,
+        };
 
     [TestMethod]
     public void AWoodcutterWalkingCuttingAndCarryingEachDrawsItsOwnFrame()
@@ -427,7 +436,7 @@ public sealed class OpenSettlersSourceTests
 
         var walks = source.Draw(Settler(new Woodcutter(), Walking()))!.Image!;
         var cuts = source.Draw(Settler(new Woodcutter(), Cutting()))!.Image!;
-        var carries = source.Draw(Settler(new Woodcutter(), Walking(), carried: new Good(7)))!.Image!;
+        var carries = source.Draw(Settler(new Woodcutter(), Walking(), carried: new Good { Code = 7 }))!.Image!;
 
         Assert.AreEqual((1, 2, 3), (walks.Rgba[0], cuts.Rgba[0], carries.Rgba[0]));
     }
@@ -443,10 +452,34 @@ public sealed class OpenSettlersSourceTests
         var source = folder.Load();
 
         var withLog = source
-            .Draw(Settler(new Woodcutter(), new WalksFree(new Trip(new Vector(2, 1), new BackToHut(true)))))!
+            .Draw(
+                Settler(
+                    new Woodcutter(),
+                    new WalksFree
+                    {
+                        Trip = new Trip
+                        {
+                            Remaining = new Vector(2, 1),
+                            Purpose = new BackToHut { Carrying = true },
+                        },
+                    }
+                )
+            )!
             .Image!;
         var withoutLog = source
-            .Draw(Settler(new Woodcutter(), new WalksFree(new Trip(new Vector(2, 1), new BackToHut(false)))))!
+            .Draw(
+                Settler(
+                    new Woodcutter(),
+                    new WalksFree
+                    {
+                        Trip = new Trip
+                        {
+                            Remaining = new Vector(2, 1),
+                            Purpose = new BackToHut { Carrying = false },
+                        },
+                    }
+                )
+            )!
             .Image!;
 
         Assert.AreEqual((3, 1), (withLog.Rgba[0], withoutLog.Rgba[0]));
@@ -458,9 +491,13 @@ public sealed class OpenSettlersSourceTests
         using var folder = new ContentFolder();
         var source = folder.Load();
 
-        var first = source.Draw(Settler(new Woodcutter(), Walking(new Heading(0)), frame: 7, step: 0))!.Image;
-        var other = source.Draw(Settler(new Woodcutter(), Walking(new Heading(3)), frame: 31, step: 40))!.Image;
-        var waiting = source.Draw(Settler(new Woodcutter(), new WaitsOutStep(Walking()), step: 5))!.Image;
+        var first = source
+            .Draw(Settler(new Woodcutter(), Walking(new Heading { Value = 0 }), frame: 7, step: 0))!
+            .Image;
+        var other = source
+            .Draw(Settler(new Woodcutter(), Walking(new Heading { Value = 3 }), frame: 31, step: 40))!
+            .Image;
+        var waiting = source.Draw(Settler(new Woodcutter(), new WaitsOutStep { Then = Walking() }, step: 5))!.Image;
 
         Assert.AreSame(first, other);
         Assert.AreSame(first, waiting);
@@ -488,11 +525,38 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/stonecutter/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
         folder.Entries["settler/stonecutter/carries"] = ContentFolder.Entry("carries.png", "0, 0");
         var source = folder.Load();
-        var outbound = new WalksFree(new Trip(new Vector(2, 1), new ToHeap(new Vector(-2, -1))), true);
-        var back = new WalksFree(new Trip(new Vector(2, 1), new BackToHut(true)));
+        var outbound = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = new Vector(2, 1),
+                Purpose = new ToHeap { Back = new Vector(-2, -1) },
+            },
+            EyesHeaps = true,
+        };
+        var back = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = new Vector(2, 1),
+                Purpose = new BackToHut { Carrying = true },
+            },
+        };
 
         var walks = source.Draw(Settler(new Stonecutter(), outbound))!.Image!;
-        var cuts = source.Draw(Settler(new Stonecutter(), new CutsStone(new Vector(0, 0), 1, 0)))!.Image!;
+        var cuts = source
+            .Draw(
+                Settler(
+                    new Stonecutter(),
+                    new CutsStone
+                    {
+                        Back = new Vector(0, 0),
+                        Phase = 1,
+                        Quarter = 0,
+                    }
+                )
+            )!
+            .Image!;
         var carries = source.Draw(Settler(new Stonecutter(), back))!.Image!;
 
         Assert.AreEqual((1, 2, 3), (walks.Rgba[0], cuts.Rgba[0], carries.Rgba[0]));
@@ -507,10 +571,29 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/forester/walks"] = ContentFolder.Entry("walks.png", "0, 0");
         folder.Entries["settler/forester/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
         var source = folder.Load();
-        var outbound = new WalksFree(new Trip(new Vector(2, 1), new ToSpot(new Vector(-2, -1))));
+        var outbound = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = new Vector(2, 1),
+                Purpose = new ToSpot { Back = new Vector(-2, -1) },
+            },
+        };
 
         var walks = source.Draw(Settler(new Forester(), outbound))!.Image!;
-        var plants = source.Draw(Settler(new Forester(), new Plants(new Vector(-2, -1), false, 8)))!.Image!;
+        var plants = source
+            .Draw(
+                Settler(
+                    new Forester(),
+                    new Plants
+                    {
+                        Back = new Vector(-2, -1),
+                        Planted = false,
+                        Memory = 8,
+                    }
+                )
+            )!
+            .Image!;
 
         Assert.AreEqual((1, 2), (walks.Rgba[0], plants.Rgba[0]));
     }
@@ -549,19 +632,55 @@ public sealed class OpenSettlersSourceTests
         };
         Activity[] activities =
         [
-            new CutsStone(new Vector(0, 0), 1, 0),
-            new Plants(new Vector(0, 0), true, 8),
-            new Digs(15, 10, 6, 1),
-            new Saws(true),
-            new WaitsOutStep(new PutsDownGood(Good.Plank)),
+            new CutsStone
+            {
+                Back = new Vector(0, 0),
+                Phase = 1,
+                Quarter = 0,
+            },
+            new Plants
+            {
+                Back = new Vector(0, 0),
+                Planted = true,
+                Memory = 8,
+            },
+            new Digs
+            {
+                Pass = 15,
+                Target = 10,
+                Node = 6,
+                Phase = 1,
+            },
+            new Saws { Sawing = true },
+            new WaitsOutStep { Then = new PutsDownGood { Good = Good.Plank } },
             Walking(),
-            new Walks(new ToStorage(), new Heading(0)),
-            new Door(0),
-            new HandsOver(null, new Heading(0)),
+            new Walks
+            {
+                Errand = new ToStorage(),
+                Heading = new Heading { Value = 0 },
+            },
+            new Door { TimeLeft = 0 },
+            new HandsOver
+            {
+                Load = null,
+                Heading = new Heading { Value = 0 },
+            },
             Cutting(),
-            new WalksFree(new Trip(new Vector(0, 0), new BackToHut(false))),
+            new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = new Vector(0, 0),
+                    Purpose = new BackToHut { Carrying = false },
+                },
+            },
             new SearchesHome(),
-            new WaitsAtFlag(0, 0, new Heading(0).Retried),
+            new WaitsAtFlag
+            {
+                Flag = 0,
+                Direction = 0,
+                Approach = new Heading { Value = 0 }.Retried,
+            },
         ];
 
         foreach (var activity in activities)
@@ -581,7 +700,19 @@ public sealed class OpenSettlersSourceTests
         var source = folder.Load();
 
         var walks = source.Draw(Settler(new Carrier(), Walking()))!.Image!;
-        var waits = source.Draw(Settler(new Carrier(), new WaitsAtFlag(0, 0, new Heading(0).Retried)))!.Image!;
+        var waits = source
+            .Draw(
+                Settler(
+                    new Carrier(),
+                    new WaitsAtFlag
+                    {
+                        Flag = 0,
+                        Direction = 0,
+                        Approach = new Heading { Value = 0 }.Retried,
+                    }
+                )
+            )!
+            .Image!;
 
         Assert.AreEqual((1, 2), (walks.Rgba[0], waits.Rgba[0]));
     }
@@ -598,9 +729,22 @@ public sealed class OpenSettlersSourceTests
         folder.Entries["settler/sawmiller/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
         var source = folder.Load();
 
-        var sawing = source.Draw(Settler(new Sawmiller(), new Saws(true)))!.Image!;
-        var carrying = source.Draw(Settler(new Sawmiller(), new WaitsOutStep(new PutsDownGood(Good.Plank))))!.Image!;
-        var walking = source.Draw(Settler(new Sawmiller(), new Walks(new ToStorage(), new Heading(0))))!.Image!;
+        var sawing = source.Draw(Settler(new Sawmiller(), new Saws { Sawing = true }))!.Image!;
+        var carrying = source
+            .Draw(Settler(new Sawmiller(), new WaitsOutStep { Then = new PutsDownGood { Good = Good.Plank } }))!
+            .Image!;
+        var walking = source
+            .Draw(
+                Settler(
+                    new Sawmiller(),
+                    new Walks
+                    {
+                        Errand = new ToStorage(),
+                        Heading = new Heading { Value = 0 },
+                    }
+                )
+            )!
+            .Image!;
 
         Assert.AreEqual((3, 2, 1), (sawing.Rgba[0], carrying.Rgba[0], walking.Rgba[0]));
     }
@@ -673,7 +817,9 @@ public sealed class OpenSettlersSourceTests
         var source = folder.Load();
 
         var one = source.Draw(Settler(new Carrier(), Walking(), frame: 3, player: 2))!.Image;
-        var two = source.Draw(Settler(new Carrier(), Walking(new Heading(4)), frame: 9, step: 12, player: 2))!.Image;
+        var two = source
+            .Draw(Settler(new Carrier(), Walking(new Heading { Value = 4 }), frame: 9, step: 12, player: 2))!
+            .Image;
         var other = source.Draw(Settler(new Carrier(), Walking(), player: 3))!.Image;
 
         Assert.AreSame(one, two);
@@ -927,7 +1073,7 @@ public sealed class OpenSettlersSourceTests
 
         foreach (var direction in Enum.GetValues<RoadDirection>())
         {
-            Assert.IsNotNull(source.Draw(new RoadStrip(0, 0, direction, 0, 0, new Terrain(5))));
+            Assert.IsNotNull(source.Draw(new RoadStrip(0, 0, direction, 0, 0, new Terrain { Code = 5 })));
         }
     }
 
@@ -946,7 +1092,7 @@ public sealed class OpenSettlersSourceTests
         game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
-        var goods = Enumerable.Range(0, 8).Select(place => new Good(place + 1)).ToList();
+        var goods = Enumerable.Range(0, 8).Select(place => new Good { Code = place + 1 }).ToList();
         var flagGoods = new Dictionary<(int X, int Y), IReadOnlyList<Good>> { [(17, 3)] = goods };
 
         var terms = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
@@ -970,12 +1116,15 @@ public sealed class OpenSettlersSourceTests
         Assert.IsNotNull(source.Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0))?.Image);
         for (var code = MapObject.FirstTreeCode; code < 128; code++)
         {
-            Assert.IsNotNull(source.Draw(new MapObjectDraw(0, 0, 0, new MapObject((byte)code), 0))?.Image, $"{code}");
+            Assert.IsNotNull(
+                source.Draw(new MapObjectDraw(0, 0, 0, new MapObject { Code = (byte)code }, 0))?.Image,
+                $"{code}"
+            );
         }
 
         for (var code = 0; code < 32; code++)
         {
-            Assert.IsNotNull(source.Draw(new GoodAtFlag(0, 0, 0, new Good(code)))?.Image, $"good {code}");
+            Assert.IsNotNull(source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = code }))?.Image, $"good {code}");
         }
 
         Assert.IsNotNull(source.Draw(new BuildingDraw(0, 0, 0, BuildingType.Castle))?.Image);
@@ -993,27 +1142,64 @@ public sealed class OpenSettlersSourceTests
         var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
         var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
         var figures = new SettlerFigures(new StepOffsets(SettlerFiguresTests.Sequences()), []);
-        var heading = new Heading(0);
+        var heading = new Heading { Value = 0 };
         // The activities the builder draws (a frame that has a step gives each a figure term) and those it does not.
         Activity[] drawnActivities =
         [
-            new Walks(new ToStorage(), heading),
-            new WalksRoad(null, heading),
-            new WalksRoad(new Load(new Good(7), null), heading),
-            new WaitsOutStep(new Walks(new ToStorage(), heading)),
-            new HandsOver(null, heading),
-            new HandsOver(new Load(new Good(7), null), heading),
-            new Door(0),
-            new WalksFree(new Trip(new Vector(0, 0), new BackToHut(false))),
-            new Cuts(new Vector(0, 0), false, 0, 0),
+            new Walks { Errand = new ToStorage(), Heading = heading },
+            new WalksRoad { Load = null, Heading = heading },
+            new WalksRoad
+            {
+                Load = new Load
+                {
+                    Good = new Good { Code = 7 },
+                    Destination = null,
+                },
+                Heading = heading,
+            },
+            new WaitsOutStep
+            {
+                Then = new Walks { Errand = new ToStorage(), Heading = heading },
+            },
+            new HandsOver { Load = null, Heading = heading },
+            new HandsOver
+            {
+                Load = new Load
+                {
+                    Good = new Good { Code = 7 },
+                    Destination = null,
+                },
+                Heading = heading,
+            },
+            new Door { TimeLeft = 0 },
+            new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = new Vector(0, 0),
+                    Purpose = new BackToHut { Carrying = false },
+                },
+            },
+            new Cuts
+            {
+                Back = new Vector(0, 0),
+                SecondVariant = false,
+                Count = 0,
+                Memory = 0,
+            },
             new SearchesHome(),
         ];
         Activity[] otherActivities =
         [
-            new WaitsAtFlag(0, 0, heading.Retried),
-            new ClaimsNode(heading, heading.Retried),
-            new WaitsToGoHome(heading.Retried),
-            new WaitsToRejoin(heading.Retried),
+            new WaitsAtFlag
+            {
+                Flag = 0,
+                Direction = 0,
+                Approach = heading.Retried,
+            },
+            new ClaimsNode { Heading = heading, Approach = heading.Retried },
+            new WaitsToGoHome { Approach = heading.Retried },
+            new WaitsToRejoin { Approach = heading.Retried },
         ];
 
         // Every job the item's byte 0 can carry (bits 2 to 6): a job the History Edition's tables hold a figure handler for must
@@ -1072,7 +1258,24 @@ public sealed class OpenSettlersSourceTests
         // A carrier waiting off the road is drawn by the builder's second path, whose Figure term the source must answer.
         var waiting = figures.Draws(
             map,
-            [new Settler(new Carrier(), 3, 4, 3, 0, new WaitsAtFlag(0, 0, heading.Retried)) { Frame = 7 }],
+            [
+                new Settler(
+                    new Carrier(),
+                    3,
+                    4,
+                    3,
+                    0,
+                    new WaitsAtFlag
+                    {
+                        Flag = 0,
+                        Direction = 0,
+                        Approach = heading.Retried,
+                    }
+                )
+                {
+                    Frame = 7,
+                },
+            ],
             0
         );
         Assert.IsTrue(waiting.Any(term => term.Part == SettlerPart.Figure));

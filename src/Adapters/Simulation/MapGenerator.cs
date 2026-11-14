@@ -164,7 +164,14 @@ public static class MapGenerator
         public MapLayers Run()
         {
             // MapGen_Generate copies the map seed into the generator and steps it twice.
-            _generator = new RandomGenerator(_seed.W0, _seed.W1, _seed.W2).Step().Step();
+            _generator = new RandomGenerator
+            {
+                W0 = _seed.W0,
+                W1 = _seed.W1,
+                W2 = _seed.W2,
+            }
+                .Step()
+                .Step();
             Report(MapPass.Seed);
 
             ClearMap();
@@ -951,7 +958,7 @@ public static class MapGenerator
         {
             for (var tile = 0; tile < Tiles; tile++)
             {
-                if (!_tables.ClassOf(new MapObject((byte)(_objects[tile] & 0x7f))).IsLarge)
+                if (!_tables.ClassOf(new MapObject { Code = (byte)(_objects[tile] & 0x7f) }).IsLarge)
                 {
                     continue;
                 }

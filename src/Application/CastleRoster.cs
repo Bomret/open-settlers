@@ -211,7 +211,7 @@ public sealed class CastleRoster(
             stock.Take(request.Tool);
         }
 
-        movement.Become(settler, new Leaving(new ToBuilding(building.Flag)));
+        movement.Become(settler, new Leaving { Errand = new ToBuilding { At = building.Flag } });
         building.WorkerOnTheWay = true;
         LeavingCount++;
         var buildingSlot = buildings.SlotOf(building);
@@ -345,7 +345,14 @@ public sealed class CastleRoster(
         var speed = (byte)(movement.Tables.DoorSpeed(door) ^ 0x1f);
         settler.Timer = (ushort)((ushort)(movement.Tables.StepTime(shape) * speed) >> 5);
         settler.Stamp = clock.Now;
-        settler.Activity = new WaitsOutStep(new Walks(leaving.Errand, new Heading(0)));
+        settler.Activity = new WaitsOutStep
+        {
+            Then = new Walks
+            {
+                Errand = leaving.Errand,
+                Heading = new Heading { Value = 0 },
+            },
+        };
         history.RecordSettler(slot, EventType.Left, causes.Rule);
     }
 }

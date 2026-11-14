@@ -133,7 +133,12 @@ public sealed class SettlerMovement(
     {
         var residue = residueOf(activity);
 
-        return new SearchesHome(residue.Mode != 0, residue.Mode) { Residue = residue };
+        return new SearchesHome
+        {
+            FarEndFirst = residue.Mode != 0,
+            FarEndMark = residue.Mode,
+            Residue = residue,
+        };
     }
 
     /// <summary>

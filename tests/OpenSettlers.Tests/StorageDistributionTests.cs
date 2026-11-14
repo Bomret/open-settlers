@@ -80,8 +80,10 @@ public sealed class StorageDistributionTests
 
     static Building Site(Rig rig, int flag, byte plankRank, byte stoneRank = 0)
     {
-        rig.Bench.Flags[flag].SetRequest(RequestWord.First, new Request(ConstructionTables.PlankClass, plankRank));
-        rig.Bench.Flags[flag].SetRequest(RequestWord.Second, new Request(ConstructionTables.StoneClass, stoneRank));
+        rig.Bench.Flags[flag]
+            .SetRequest(RequestWord.First, new Request { Asks = ConstructionTables.PlankClass, Rank = plankRank });
+        rig.Bench.Flags[flag]
+            .SetRequest(RequestWord.Second, new Request { Asks = ConstructionTables.StoneClass, Rank = stoneRank });
         var site = new Building(BuildingType.Woodcutter, 3 + 2 * flag, 3, flag, constructing: true)
         {
             Progress = 1,
@@ -123,17 +125,23 @@ public sealed class StorageDistributionTests
     [TestMethod]
     public void AFoodStepHandsOutTheFoodGoodTheCastleHoldsMostOf()
     {
-        var food = new GoodClass(7, RequestWord.First);
+        var food = new GoodClass { Class = 7, Word = RequestWord.First };
         var tables = LayoutSettlersTests.MadeTables(
             distribution:
             [
-                [new DistributionStep(food, [.. FoodGoods.Select(good => new Good(good))])],
+                [
+                    new DistributionStep
+                    {
+                        Class = food,
+                        Goods = [.. FoodGoods.Select(good => new Good { Code = good })],
+                    },
+                ],
                 [],
                 [],
             ]
         );
         var rig = Started(planks: 0, stones: 0, tables: tables, food: [2, 5, 3]);
-        rig.Bench.Flags[1].SetRequest(RequestWord.First, new Request(food, 0x3e));
+        rig.Bench.Flags[1].SetRequest(RequestWord.First, new Request { Asks = food, Rank = 0x3e });
 
         rig.Distribution.Run();
 
@@ -142,9 +150,9 @@ public sealed class StorageDistributionTests
             rig.Bench.Flags[0].Places[0].Good.Code,
             "the good 3, of which the castle holds 5, lies on the flag"
         );
-        Assert.AreEqual(4, rig.Castle.Count(new Good(3)), "its count fell by one");
-        Assert.AreEqual(2, rig.Castle.Count(new Good(1)), "the other foods stay");
-        Assert.AreEqual(3, rig.Castle.Count(new Good(6)), "the other foods stay");
+        Assert.AreEqual(4, rig.Castle.Count(new Good { Code = 3 }), "its count fell by one");
+        Assert.AreEqual(2, rig.Castle.Count(new Good { Code = 1 }), "the other foods stay");
+        Assert.AreEqual(3, rig.Castle.Count(new Good { Code = 6 }), "the other foods stay");
     }
 
     [TestMethod]

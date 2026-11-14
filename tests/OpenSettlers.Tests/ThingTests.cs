@@ -21,7 +21,17 @@ public sealed class ThingTests
     {
         Assert.AreEqual(
             "object 12,4 code=0x0a tree",
-            Thing.Of(new PlacedObject(12, 4, new MapObject(0x0a)), Names()).Line()
+            Thing
+                .Of(
+                    new PlacedObject
+                    {
+                        X = 12,
+                        Y = 4,
+                        Object = new MapObject { Code = 0x0a },
+                    },
+                    Names()
+                )
+                .Line()
         );
     }
 
@@ -30,7 +40,17 @@ public sealed class ThingTests
     {
         Assert.AreEqual(
             "object 13,4 code=0x31",
-            Thing.Of(new PlacedObject(13, 4, new MapObject(0x31)), Names()).Line()
+            Thing
+                .Of(
+                    new PlacedObject
+                    {
+                        X = 13,
+                        Y = 4,
+                        Object = new MapObject { Code = 0x31 },
+                    },
+                    Names()
+                )
+                .Line()
         );
     }
 

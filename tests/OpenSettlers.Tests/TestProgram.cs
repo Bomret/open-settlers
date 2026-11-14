@@ -56,7 +56,7 @@ static class TestProgram
                         (
                             job,
                             type == typeof(WorkerRequest)
-                                ? new WorkerRequest(job, Good.None)
+                                ? new WorkerRequest { Job = job, Tool = Good.None }
                                 : Activator.CreateInstance(type)!
                         )
                     )
@@ -70,11 +70,15 @@ static class TestProgram
     public static WorkerRequest?[] MadeWorkers(bool stonecutter = false)
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(new Woodcutter(), new Good(1));
-        workers[BuildingType.Forester.Code] = new WorkerRequest(new Forester(), Good.None);
+        workers[BuildingType.Woodcutter.Code] = new WorkerRequest
+        {
+            Job = new Woodcutter(),
+            Tool = new Good { Code = 1 },
+        };
+        workers[BuildingType.Forester.Code] = new WorkerRequest { Job = new Forester(), Tool = Good.None };
         if (stonecutter)
         {
-            workers[BuildingType.Stonecutter.Code] = new WorkerRequest(new Stonecutter(), Good.None);
+            workers[BuildingType.Stonecutter.Code] = new WorkerRequest { Job = new Stonecutter(), Tool = Good.None };
         }
 
         return workers;

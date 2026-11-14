@@ -41,7 +41,7 @@ public sealed class CastleStockTests
 
         Assert.AreEqual(53, castle.Planks);
         Assert.AreEqual(28, castle.Stones);
-        Assert.AreEqual(53, castle.Count(new Good(8)));
+        Assert.AreEqual(53, castle.Count(new Good { Code = 8 }));
     }
 
     [TestMethod]

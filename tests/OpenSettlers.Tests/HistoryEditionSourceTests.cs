@@ -106,7 +106,7 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = Fake();
 
-        var image = Open(fake).Draw(Flat(new Terrain(5)))!;
+        var image = Open(fake).Draw(Flat(new Terrain { Code = 5 }))!;
 
         Assert.AreEqual(16, image.Width);
         Assert.AreEqual(25, image.Height);
@@ -121,7 +121,7 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = Fake();
 
-        var image = Open(fake).Draw(Flat(new Terrain(5), upper: false))!;
+        var image = Open(fake).Draw(Flat(new Terrain { Code = 5 }, upper: false))!;
 
         Assert.AreEqual(181 - 100, image.OffsetY);
     }
@@ -131,7 +131,7 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = Fake();
 
-        var image = Open(fake).Draw(Flat(new Terrain(5)))!;
+        var image = Open(fake).Draw(Flat(new Terrain { Code = 5 }))!;
 
         CollectionAssert.AreEqual(new byte[] { 4 * 4 + 4, 0, 0, 255 }, Pixel(image, 1, 21));
     }
@@ -141,7 +141,7 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = Fake();
 
-        var image = Open(fake).Draw(Flat(new Terrain(0)))!;
+        var image = Open(fake).Draw(Flat(new Terrain { Code = 0 }))!;
 
         CollectionAssert.AreEqual(new byte[] { 32 * 4, 0, 0, 255 }, Pixel(image, 1, 0));
     }
@@ -152,8 +152,8 @@ public sealed class HistoryEditionSourceTests
         using var fake = Fake();
         var source = Open(fake);
 
-        Assert.IsNull(source.Draw(new TerrainTriangle(0, 0, true, new Terrain(5), 5, 0, 5, 100, 50)));
-        Assert.IsNull(source.Draw(new TerrainTriangle(0, 0, false, new Terrain(5), 5, 5, 0, 100, 50)));
+        Assert.IsNull(source.Draw(new TerrainTriangle(0, 0, true, new Terrain { Code = 5 }, 5, 0, 5, 100, 50)));
+        Assert.IsNull(source.Draw(new TerrainTriangle(0, 0, false, new Terrain { Code = 5 }, 5, 5, 0, 100, 50)));
     }
 
     [TestMethod]
@@ -162,8 +162,8 @@ public sealed class HistoryEditionSourceTests
         using var fake = Fake();
         var source = Open(fake);
 
-        var low = source.Draw(new TerrainTriangle(0, 0, true, new Terrain(5), 1, 1, 1, 100, 50));
-        var high = source.Draw(new TerrainTriangle(0, 0, true, new Terrain(5), 33, 1, 1, 100, 50));
+        var low = source.Draw(new TerrainTriangle(0, 0, true, new Terrain { Code = 5 }, 1, 1, 1, 100, 50));
+        var high = source.Draw(new TerrainTriangle(0, 0, true, new Terrain { Code = 5 }, 33, 1, 1, 100, 50));
 
         Assert.AreSame(low, high);
     }
@@ -174,9 +174,9 @@ public sealed class HistoryEditionSourceTests
         using var fake = Fake();
         var source = Open(fake);
 
-        var a = source.Draw(Flat(new Terrain(5)));
-        var b = source.Draw(Flat(new Terrain(5)) with { X = 300, Y = 7 });
-        var other = source.Draw(Flat(new Terrain(12)));
+        var a = source.Draw(Flat(new Terrain { Code = 5 }));
+        var b = source.Draw(Flat(new Terrain { Code = 5 }) with { X = 300, Y = 7 });
+        var other = source.Draw(Flat(new Terrain { Code = 12 }));
 
         Assert.AreSame(a, b);
         Assert.AreNotSame(a, other);
@@ -187,7 +187,7 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = Fake();
 
-        var image = Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.East, 0, 0, new Terrain(5)))!;
+        var image = Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.East, 0, 0, new Terrain { Code = 5 }))!;
 
         Assert.AreEqual(234 - 230, image.OffsetY);
         Assert.AreEqual(1, image.OffsetX);
@@ -199,8 +199,8 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = Fake();
 
-        Assert.IsNull(Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.South, 5, 0, new Terrain(5))));
-        Assert.IsNull(Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.South, -5, 0, new Terrain(5))));
+        Assert.IsNull(Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.South, 5, 0, new Terrain { Code = 5 })));
+        Assert.IsNull(Open(fake).Draw(new RoadStrip(100, 200, RoadDirection.South, -5, 0, new Terrain { Code = 5 })));
     }
 
     [TestMethod]
@@ -211,11 +211,11 @@ public sealed class HistoryEditionSourceTests
 
         Assert.AreEqual(
             243 - 230 + 2,
-            source.Draw(new RoadStrip(0, 0, RoadDirection.SouthEast, 2, 0, new Terrain(5)))!.OffsetY
+            source.Draw(new RoadStrip(0, 0, RoadDirection.SouthEast, 2, 0, new Terrain { Code = 5 }))!.OffsetY
         );
         Assert.AreEqual(
             252 - 230 - 3, // the south masks start at 248 for -4
-            source.Draw(new RoadStrip(0, 0, RoadDirection.South, -3, 0, new Terrain(5)))!.OffsetY
+            source.Draw(new RoadStrip(0, 0, RoadDirection.South, -3, 0, new Terrain { Code = 5 }))!.OffsetY
         );
     }
 
@@ -225,7 +225,9 @@ public sealed class HistoryEditionSourceTests
         using var fake = Fake();
         var source = Open(fake);
         byte Red(int slope, int ground) =>
-            Pixel(source.Draw(new RoadStrip(0, 0, RoadDirection.East, 0, slope, new Terrain(ground)))!, 1, 0)[0];
+            Pixel(source.Draw(new RoadStrip(0, 0, RoadDirection.East, 0, slope, new Terrain { Code = ground }))!, 1, 0)[
+                0
+            ];
 
         Assert.AreEqual(100, Red(5, 5));
         Assert.AreEqual(100 + 4, Red(0, 5));
@@ -245,8 +247,8 @@ public sealed class HistoryEditionSourceTests
         var source = Open(fake);
 
         StringAssert.Contains(source.RoadsProblem!, "entry 240");
-        Assert.IsNull(source.Draw(new RoadStrip(0, 0, RoadDirection.East, 0, 0, new Terrain(5))));
-        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+        Assert.IsNull(source.Draw(new RoadStrip(0, 0, RoadDirection.East, 0, 0, new Terrain { Code = 5 })));
+        Assert.IsNotNull(source.Draw(Flat(new Terrain { Code = 5 })));
     }
 
     [TestMethod]
@@ -273,7 +275,7 @@ public sealed class HistoryEditionSourceTests
         payloads[3][3 * 8] = 40;
         payloads[3][3 * 8 + 1] = 12;
         payloads[ObjectSprites.FlagEntry + 1] = ObjectGraphicsTests.Square(10, 5);
-        payloads[ObjectSprites.GoodEntry(new Good(7))] = ObjectGraphicsTests.Square(3, 1);
+        payloads[ObjectSprites.GoodEntry(new Good { Code = 7 })] = ObjectGraphicsTests.Square(3, 1);
         payloads[ObjectSprites.WaterEntry(0, 0)] = ObjectGraphicsTests.Square(4, 4);
         payloads[1250 + ObjectGraphics.ShadowOffset] = ObjectGraphicsTests.ShadowMask();
         change?.Invoke(payloads);
@@ -281,7 +283,7 @@ public sealed class HistoryEditionSourceTests
         return new FakeInstall().Put(Archive, ArchiveBytes.Build(1700, payloads));
     }
 
-    static MapObjectDraw Object(int code, ushort step = 0) => new(0, 10, 20, new MapObject((byte)code), step);
+    static MapObjectDraw Object(int code, ushort step = 0) => new(0, 10, 20, new MapObject { Code = (byte)code }, step);
 
     [TestMethod]
     public void AMapObjectDrawsTheSpriteOfItsCodeWithItsShadow()
@@ -427,11 +429,11 @@ public sealed class HistoryEditionSourceTests
         using var fake = ObjectFake();
         var source = Open(fake);
 
-        var log = source.Draw(new GoodAtFlag(0, 0, 0, new Good(7)))!;
+        var log = source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = 7 }))!;
 
         Assert.AreEqual(3, log.Image!.OffsetX);
         Assert.IsNull(log.Shadow);
-        Assert.AreSame(log, source.Draw(new GoodAtFlag(0, 0, 0, new Good(0x27))));
+        Assert.AreSame(log, source.Draw(new GoodAtFlag(0, 0, 0, new Good { Code = 0x27 })));
     }
 
     [TestMethod]
@@ -467,7 +469,7 @@ public sealed class HistoryEditionSourceTests
         Assert.IsNull(source.Draw(Object(8)));
         Assert.IsNull(source.Draw(new WaterRipple(0, 0, 0, 0, 0)));
         Assert.AreEqual(0, source.ObjectHeadroom);
-        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+        Assert.IsNotNull(source.Draw(Flat(new Terrain { Code = 5 })));
     }
 
     [TestMethod]
@@ -479,7 +481,7 @@ public sealed class HistoryEditionSourceTests
 
         StringAssert.Contains(source.ObjectsProblem!, "entry 1260");
         Assert.IsNull(source.Draw(Object(8)));
-        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+        Assert.IsNotNull(source.Draw(Flat(new Terrain { Code = 5 })));
     }
 
     // The settlers: tables whose row 0 holds the figure base 100 and the second base 50 and whose offsets are all 0, so a
@@ -537,7 +539,12 @@ public sealed class HistoryEditionSourceTests
             50,
             part,
             new Carrier(),
-            activity ?? new WalksRoad(null, new Heading(0)),
+            activity
+                ?? new WalksRoad
+                {
+                    Load = null,
+                    Heading = new Heading { Value = 0 },
+                },
             null,
             frame,
             0,
@@ -699,7 +706,7 @@ public sealed class HistoryEditionSourceTests
         StringAssert.Contains(source.SettlersProblem!, "the shadow mask");
         StringAssert.Contains(source.SettlersProblem!, "entry 4");
         Assert.IsNull(source.Draw(Term(SettlerPart.Figure)));
-        Assert.IsNotNull(source.Draw(Flat(new Terrain(5))));
+        Assert.IsNotNull(source.Draw(Flat(new Terrain { Code = 5 })));
     }
 
     // A waiting carrier's road directions move its image, and its shadow, by the table's offsets: the roads 0x09 move them 3
@@ -711,10 +718,21 @@ public sealed class HistoryEditionSourceTests
         offsets[2 * 0x09] = 3;
         offsets[2 * 0x09 + 1] = -1;
         using var fake = SettlerFake();
-        var waiting = new WaitingNode(4, false, new RoadSet(0x09));
+        var waiting = new WaitingNode(4, false, new RoadSet { Bits = 0x09 });
 
         var drawing = OpenWithSettlers(fake, SettlerTables(offsets))
-            .Draw(Term(SettlerPart.Figure, node: waiting, activity: new WaitsAtFlag(0, 0, new Heading(0).Retried)))!;
+            .Draw(
+                Term(
+                    SettlerPart.Figure,
+                    node: waiting,
+                    activity: new WaitsAtFlag
+                    {
+                        Flag = 0,
+                        Direction = 0,
+                        Approach = new Heading { Value = 0 }.Retried,
+                    }
+                )
+            )!;
 
         Assert.AreEqual((-1 + 3, -2 - 1), (drawing.Image!.OffsetX, drawing.Image.OffsetY));
         Assert.AreEqual((-1 + 3, -2 - 1), (drawing.Shadow!.OffsetX, drawing.Shadow.OffsetY));

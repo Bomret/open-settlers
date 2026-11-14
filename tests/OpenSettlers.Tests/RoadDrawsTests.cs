@@ -51,8 +51,8 @@ public sealed class RoadDrawsTests
             ref var node = ref map.At(Column + dx, Row + dy);
             node.Height = values[0];
             // The fixture holds the original's terrain byte: the upper triangle in the high nibble.
-            node.Upper = new Terrain(values[1] >> 4);
-            node.Lower = new Terrain(values[1] & 0xf);
+            node.Upper = new Terrain { Code = values[1] >> 4 };
+            node.Lower = new Terrain { Code = values[1] & 0xf };
         }
 
         map.At(Column, Row).Roads = RoadSet.Of(direction);
@@ -173,8 +173,8 @@ public sealed class RoadDrawsTests
     // Both triangles of a node take the terrain code.
     static void SetTerrain(Map map, int x, int y, int code)
     {
-        map.At(x, y).Upper = new Terrain(code);
-        map.At(x, y).Lower = new Terrain(code);
+        map.At(x, y).Upper = new Terrain { Code = code };
+        map.At(x, y).Lower = new Terrain { Code = code };
     }
 
     // Every triangle of the map is the lowest land.

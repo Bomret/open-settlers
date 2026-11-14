@@ -48,11 +48,12 @@ public sealed class StonecutterTables : JobTables<Stonecutter>
         data.Add(
             (
                 Job,
-                new FigureAdds(
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.StonecutterWalkAddress),
-                    carrying,
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.StonecutterCuttingAddress)
-                )
+                new FigureAdds
+                {
+                    Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.StonecutterWalkAddress),
+                    Carrying = carrying,
+                    Cutting = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.StonecutterCuttingAddress),
+                }
             )
         );
     }

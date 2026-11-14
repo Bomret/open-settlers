@@ -273,7 +273,7 @@ public sealed class RoadBuildingTests
     public void ARoadDrawnForwardAcrossATreeNodeCompletesAtAFlag()
     {
         var map = OwnedLandWithFlags();
-        map.At(11, 10).Object = new MapObject(TreeCode);
+        map.At(11, 10).Object = new MapObject { Code = TreeCode };
 
         var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
 
@@ -288,7 +288,7 @@ public sealed class RoadBuildingTests
     public void ARoadDrawnForwardAcrossAClassFiveOrSixNodeCompletesAtAFlag(byte code)
     {
         var map = OwnedLandWithFlags();
-        map.At(11, 10).Object = new MapObject(code);
+        map.At(11, 10).Object = new MapObject { Code = code };
 
         var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
 
@@ -302,7 +302,7 @@ public sealed class RoadBuildingTests
     public void ARoadStepOntoAStoneOrASmallBuildingIsRefused(byte code)
     {
         var map = OwnedLandWithFlags();
-        map.At(11, 10).Object = new MapObject(code);
+        map.At(11, 10).Object = new MapObject { Code = code };
 
         var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
 
@@ -314,7 +314,7 @@ public sealed class RoadBuildingTests
     public void AFlagMayNotBePlacedOnATreeNode()
     {
         var map = OwnedLandWithFlags();
-        map.At(11, 12).Object = new MapObject(TreeCode);
+        map.At(11, 12).Object = new MapObject { Code = TreeCode };
 
         Assert.AreEqual(0, BuildSite.Evaluate(TestProgram.Tables(), map, 11, 12, 0, hasCastle: true).Site);
     }

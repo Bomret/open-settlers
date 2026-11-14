@@ -27,7 +27,7 @@ public sealed class RoadStep(SettlerMovement movement, SettlerTable settlers, Ga
         var (x, y, next) = movement.Neighbour(settler, direction);
         int shape;
         var other = movement.Occupant(next);
-        var forward = Heading.Facing(new Direction(direction).Opposite);
+        var forward = Heading.Facing(new Direction { Value = direction }.Opposite);
         if (other == 0)
         {
             shape = 4 + 9 * direction + movement.Height(next) - movement.Height(here);

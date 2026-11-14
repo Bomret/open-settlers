@@ -66,7 +66,17 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     public override void Start(int slot, Settler settler, Building site)
     {
         var secondFigure = (SecondFigureTypes >> site.Type.Code & 1) != 0;
-        movement.Become(settler, new Builds(buildings.SlotOf(site), false, 0, secondFigure, 0));
+        movement.Become(
+            settler,
+            new Builds
+            {
+                Site = buildings.SlotOf(site),
+                Blowing = false,
+                Materials = 0,
+                SecondFigure = secondFigure,
+                Blows = 0,
+            }
+        );
         settler.Frame = secondFigure ? SecondFigureFrame : FirstFigureFrame;
         settler.Timer = StartTimer;
     }
@@ -231,7 +241,14 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
         var (_, _, next) = movement.Neighbour(settler, ToFlag);
         if (movement.Occupant(next) == 0)
         {
-            settler.Activity = new StepsOntoFlag(new Walks(new ToStorage(), new Heading(0)));
+            settler.Activity = new StepsOntoFlag
+            {
+                Then = new Walks
+                {
+                    Errand = new ToStorage(),
+                    Heading = new Heading { Value = 0 },
+                },
+            };
             hut.StepOut(slot, settler);
 
             return;

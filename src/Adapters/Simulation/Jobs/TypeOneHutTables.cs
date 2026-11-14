@@ -20,12 +20,16 @@ public sealed class TypeOneHutTables : JobTables<TypeOneHut>
         data.Add(
             (
                 Job,
-                new HutFigureAdds(
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.TypeOneHutWalkAddress),
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.TypeOneHutCarryingAddress),
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.TypeOneHutHighAddress),
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.TypeOneHutHighFacingAddress)
-                )
+                new HutFigureAdds
+                {
+                    Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.TypeOneHutWalkAddress),
+                    Carrying = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.TypeOneHutCarryingAddress),
+                    High = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.TypeOneHutHighAddress),
+                    HighFacing = ProgramTablesImporter.Immediate(
+                        exe,
+                        ProgramTablesImporter.TypeOneHutHighFacingAddress
+                    ),
+                }
             )
         );
     }

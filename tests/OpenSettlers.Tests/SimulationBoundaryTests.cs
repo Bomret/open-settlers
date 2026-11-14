@@ -23,7 +23,7 @@ public sealed class SimulationBoundaryTests
     {
         var castle = new CastleStock();
         castle.Place(new Castle(1, 1, 1), new int[StartStock.Goods]);
-        var good = new Good(code);
+        var good = new Good { Code = code };
 
         castle.Add(good);
 
@@ -262,7 +262,7 @@ public sealed class SimulationBoundaryTests
 
     static Settler Searching(BehaviourBench bench, bool far, out int slot)
     {
-        var settler = new Settler(new Woodcutter(), 0, 10, 10, 0, new SearchesHome(far));
+        var settler = new Settler(new Woodcutter(), 0, 10, 10, 0, new SearchesHome { FarEndFirst = far });
         slot = bench.Place(settler);
         bench.Clock = 8;
 

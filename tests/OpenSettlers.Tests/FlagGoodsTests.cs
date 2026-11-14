@@ -241,7 +241,7 @@ public sealed class FlagGoodsTests
             game.Tick();
         }
 
-        Assert.AreEqual(new Good(7), game.Flags[1].Places[0].Good);
+        Assert.AreEqual(new Good { Code = 7 }, game.Flags[1].Places[0].Good);
         Assert.IsNull(game.Flags[1].Places[0].Way, "the good has no direction");
         Assert.IsTrue(game.Flags[1].NeedsGoodsTurn, "the flag asks again at its next turn");
         Assert.IsNull(game.Flags[1].Places[0].Destination);
