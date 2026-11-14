@@ -89,7 +89,7 @@ flag cannot be taken down.
 
 ### Build help
 
-Build help turns the build-site overlay on and off. It starts off, and it stays as it is for a new seed or size. Pressing it
+Build help turns the build-site overlay on and off. It starts off, and it turns off for a new seed or size, as a new game starts. Pressing it
 leaves the other buttons as they are, and pressing one of them leaves Build help as it is. It changes nothing in the game.
 
 While it is on, every node shows what may be put there, judged for your player as a click would judge it:

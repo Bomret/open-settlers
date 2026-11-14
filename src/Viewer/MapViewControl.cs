@@ -372,7 +372,7 @@ public partial class MapViewControl(
         bar.AddChild(_removeButton);
         // Stand-in for the original's build-site overlay toggle (0x440d23): while it is pressed every node shows the build
         // marker of its judgment (docs/rules/build-sites.md, "The build-site overlay"). It starts off, stands apart from
-        // the buttons above, and keeps its state for a new map.
+        // the buttons above, and turns off when a game starts (StartGame).
         _buildHelpButton = new Button
         {
             Text = "Build help",
@@ -506,6 +506,8 @@ public partial class MapViewControl(
             _roadButton.ButtonPressed = false;
             ReleaseBuildButtons();
             _removeButton.ButtonPressed = false;
+            // The original clears the overlay's bit when it sets up a view at the start of a game (View_Setup, 0x41f86b).
+            _buildHelpButton.ButtonPressed = false;
             _revisionDrawn = 0;
             DrawPreview();
             _pacer.Reset();
