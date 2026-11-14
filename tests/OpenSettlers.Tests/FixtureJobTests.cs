@@ -92,7 +92,10 @@ public sealed class FixtureJobTests
         using System;
         using System.Collections.Generic;
         namespace OpenSettlers.Domain;
-        public readonly record struct FixtureAdds(ushort Walk);
+        public readonly record struct FixtureAdds
+        {
+            public required ushort Walk { get; init; }
+        }
         public sealed record Fixture : Job
         {
             public const int Number = 12;
@@ -115,7 +118,7 @@ public sealed class FixtureJobTests
         public sealed class FixtureTables : JobTables<Fixture>
         {
             public override void Read(byte[] exe, ICollection<(Job Job, object Data)> data) =>
-                data.Add((Job, new FixtureAdds(7)));
+                data.Add((Job, new FixtureAdds { Walk = 7 }));
         }
         """;
 
