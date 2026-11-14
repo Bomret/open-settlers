@@ -404,12 +404,141 @@ public class PlayRunWrapperTests
         Assert.AreEqual(0, kill.ExitCode, $"kill -s {signal} failed");
     }
 
+    // POSIX (the trap utility): a non-interactive shell cannot trap or reset a signal that was ignored on entry to it.
+    // A test host that starts with a signal ignored, under nohup or as a background job of a shell without job
+    // control, passes that ignore to every shell it starts, so the trap in tools/play-run.sh is never set for that
+    // signal. The probe sets a trap for the signal and sends the signal to its own shell: status 7 means the trap
+    // ran, status 0 means the signal was ignored or blocked on entry.
+    const string TrapProbe = "trap \"exit 7\" \"$1\"; kill -s \"$1\" $$; exit 0";
+
+    // The outcomes ProbeOutcome reads from status 7 and status 0 of the trap probe.
+    const string Settable = "settable";
+    const string Ignored = "ignored";
+
+    // Runs PATH sh with the arguments through Process.Start, as Start runs the wrapper, and reads how it ended:
+    // Settable for status 7, Ignored for status 0, and otherwise what it saw. .NET reports a process that a
+    // signal ended as status 128 plus the signal number. A probe still running after the bound is killed.
+    static string ProbeOutcome(TimeSpan bound, params string[] args)
+    {
+        using var probe = Process.Start("sh", args)!;
+        if (!probe.WaitForExit(bound))
+        {
+            probe.Kill(true);
+            probe.WaitForExit();
+
+            return $"no exit within {bound.TotalSeconds} s";
+        }
+
+        return probe.ExitCode switch
+        {
+            7 => Settable,
+            0 => Ignored,
+            > 128 and var status => $"exit status {status}, as a probe that signal {status - 128} ended reports",
+            var status => $"exit status {status}",
+        };
+    }
+
+    static void InconclusiveUnlessTrappable(string signal, string outcome)
+    {
+        if (outcome == Settable)
+        {
+            return;
+        }
+
+        if (outcome == Ignored)
+        {
+            Assert.Inconclusive(
+                $"SIG{signal} was ignored when the test host started (under nohup, say), and a non-interactive shell "
+                    + "cannot trap a signal ignored on entry, so the wrapper's trap is never set"
+            );
+        }
+
+        Assert.Fail($"the trap probe for SIG{signal} ended neither {Settable} nor {Ignored}: {outcome}");
+    }
+
+    // Called before Start, so an inconclusive case starts no wrapper, takes no lock, and calls no Godot.
+    static void InconclusiveUnlessTrappable(string signal) =>
+        InconclusiveUnlessTrappable(signal, ProbeOutcome(TimeSpan.FromSeconds(30), "-c", TrapProbe, "sh", signal));
+
+    // A POSIX shell can add an ignore but never remove one, so on a host that itself ignores the signal the settable
+    // half cannot run.
+    [TestMethod]
+    [DataRow("INT")]
+    [DataRow("TERM")]
+    [DataRow("HUP")]
+    public void TheTrapProbeTellsAnIgnoredSignalFromASettableOne(string signal)
+    {
+        var bound = TimeSpan.FromSeconds(30);
+        var underIgnoringParent = ProbeOutcome(
+            bound,
+            "-c",
+            "trap '' \"$1\"; exec sh -c \"$2\" sh \"$1\"",
+            "sh",
+            signal,
+            TrapProbe
+        );
+        Assert.AreEqual(Ignored, underIgnoringParent);
+
+        var alone = ProbeOutcome(bound, "-c", TrapProbe, "sh", signal);
+        if (alone == Ignored)
+        {
+            Assert.Inconclusive(
+                $"the test host itself ignores SIG{signal}, and a POSIX shell cannot remove that ignore"
+            );
+        }
+
+        Assert.AreEqual(Settable, alone);
+    }
+
+    [TestMethod]
+    public void AnIgnoredSignalMakesTheCaseInconclusiveNamingTheSignalAndTheRule()
+    {
+        var inconclusive = Assert.ThrowsExactly<AssertInconclusiveException>(() =>
+            InconclusiveUnlessTrappable("HUP", Ignored)
+        );
+
+        StringAssert.Contains(inconclusive.Message, "SIGHUP");
+        StringAssert.Contains(inconclusive.Message, "non-interactive shell cannot trap a signal ignored on entry");
+    }
+
+    [TestMethod]
+    [DataRow("exit 3", "exit status 3")]
+    [DataRow("kill -s TERM $$", "signal 15")]
+    public void ATrapProbeThatEndsAnyOtherWayFailsTheCaseWithWhatItSaw(string script, string seen)
+    {
+        var outcome = ProbeOutcome(TimeSpan.FromSeconds(30), "-c", script);
+        StringAssert.Contains(outcome, seen);
+
+        var failure = Assert.ThrowsExactly<AssertFailedException>(() => InconclusiveUnlessTrappable("TERM", outcome));
+        StringAssert.Contains(failure.Message, outcome);
+    }
+
+    [TestMethod]
+    public void ATrapProbeThatDoesNotExitWithinItsBoundIsKilledAndFailsTheCase()
+    {
+        var pidFile = Path.Combine(_root, "probe-pid");
+
+        // The bound leaves a loaded host time to start sh and write the pid file before the kill.
+        var outcome = ProbeOutcome(TimeSpan.FromSeconds(5), "-c", "echo $$ > \"$1\"; exec sleep 30", "sh", pidFile);
+
+        StringAssert.Contains(outcome, "no exit within 5 s");
+        Assert.IsTrue(
+            File.Exists(pidFile),
+            "the probe was killed before it wrote its pid, so the test cannot check that the probe is gone"
+        );
+        var pid = int.Parse(File.ReadAllText(pidFile));
+        Assert.ThrowsExactly<ArgumentException>(() => Process.GetProcessById(pid), "the probe was left running");
+        var failure = Assert.ThrowsExactly<AssertFailedException>(() => InconclusiveUnlessTrappable("TERM", outcome));
+        StringAssert.Contains(failure.Message, outcome);
+    }
+
     [TestMethod]
     [DataRow("INT")]
     [DataRow("TERM")]
     [DataRow("HUP")]
     public void ASignalReleasesTheWrappersOwnLockAndExitsOneHundredThirty(string signal)
     {
+        InconclusiveUnlessTrappable(signal);
         var gate = Path.Combine(_fake, "gate");
         using var call = Start(Args, new() { ["FAKE_GATE"] = gate });
         WaitFor(() => Calls == 1, "the call to start Godot");
@@ -430,6 +559,7 @@ public class PlayRunWrapperTests
     [DataRow("HUP")]
     public void ASignalLeavesALockThatHoldsAnotherPid(string signal)
     {
+        InconclusiveUnlessTrappable(signal);
         var gate = Path.Combine(_fake, "gate");
         using var call = Start(Args, new() { ["FAKE_GATE"] = gate });
         WaitFor(() => Calls == 1, "the call to start Godot");
