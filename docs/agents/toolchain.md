@@ -36,7 +36,7 @@
   `.csharpierrc.json` sets `printWidth: 120` and leaves every other option at its default. CSharpier
   reads `.gitignore`, so `.godot/`, `bin/`, `obj/`, and `.superdev/` are skipped.
   `// csharpier-ignore` keeps a hand-laid-out fixture, such as a pixel grid, as written.
-- Code style in the build: `.editorconfig` sets one rule, IDE0040 with `omit_if_default` at warning severity, and
+- Code style in the build: `.editorconfig` sets IDE0040 to `omit_if_default` at warning severity.
   `Directory.Build.props` sets `EnforceCodeStyleInBuild` beside `TreatWarningsAsErrors`, so an access modifier that is the
   default fails the build. No other linter is wired.
 - Style prose: `docs/agents/CODING.md` and `docs/agents/CODING_PATTERNS.md`.

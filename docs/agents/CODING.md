@@ -70,7 +70,7 @@ Order by visibility first (`public` → `protected` → `private`), then within 
 
 Omit every access modifier that is the default where it stands: `private` on every member and nested type (fields, methods, properties, constructors, events, nested classes and records), and `internal` on every top-level type, one inside a block-scoped namespace included. These modifiers are not the default and stay: `private protected`, an accessor's own modifier (`{ get; private set; }`), `file`, `internal` on a member, and `internal` on a nested type. Both parts of a partial type follow the rule together. A partial method with a return type, such as a `[GeneratedRegex]` method, keeps its `private`, because the compiler requires an explicit modifier there.
 
-The build enforces the rule: `.editorconfig` sets IDE0040 to `omit_if_default` at warning severity, and `Directory.Build.props` sets `EnforceCodeStyleInBuild` with `TreatWarningsAsErrors`, so a default modifier fails the build. `CodeStyleBuildTests` fails when either file drops one of these settings, and when any `.editorconfig` section or MSBuild file in the repository sets one of them to another value.
+The build enforces the rule. `.editorconfig` sets IDE0040 to `omit_if_default` at warning severity. `Directory.Build.props` sets `EnforceCodeStyleInBuild` with `TreatWarningsAsErrors`, so a default modifier fails the build. `CodeStyleBuildTests` fails when either file drops one of these settings. It also fails when an `.editorconfig` section or an MSBuild file sets either setting to another value.
 
 ### var
 
@@ -88,7 +88,7 @@ Default to `var`. Use explicit types only when it aids readability, e.g. `IReadO
 
 ### Modern C# features
 
-Use records, primary constructors, collection expressions, and other C# 12 features. Both projects target `net8.0` without a `<LangVersion>`, so C# 12 is the language version. Newer features, such as `field` or extension members, do not compile.
+Use records, primary constructors, collection expressions, and other C# 12 features. The root project and the Domain, Application, and Adapters projects target `net8.0` and set no `<LangVersion>`, so C# 12 is their language version. The generator project is the exception (see Records). Newer features, such as `field` or extension members, do not compile.
 
 ### Classes
 
@@ -115,14 +115,14 @@ var alarm = new Alarm { JobName = "job-a", State = AlarmState.Raised };
 public sealed record Alarm(string JobName, AlarmState State);
 ```
 
-A property that carries a default stays a non-`required` init property with an initializer (`public uint Flags { get; init; } = 0;`). A `readonly record struct` whose defaults are all zero leaves the initializers out, because a struct with field initializers needs an explicit constructor. A record that refuses bad input checks it in the `init` accessor, through a backing field, so a copy made with `with` is checked too (`WorkerRequest.Job`). Primary constructors remain the norm for classes; the rule above is records-only.
+A property that carries a default stays a non-`required` init property with an initializer (`public uint Flags { get; init; } = 0;`). A `readonly record struct` whose defaults are all zero leaves the initializers out, because a struct with field initializers needs an explicit constructor. A record that refuses bad input checks it in the `init` accessor through a backing field. A copy made with `with` is then checked too (`WorkerRequest.Job`). Primary constructors remain the norm for classes; the rule above is records-only.
 
 The properties stand in the order of the record's data, a base record's properties first: the order sets the record's equality, hash code, and `ToString` text. Another order changes the hash code, and with it the iteration order of a hash set that holds the record.
 
 Two exemptions stay positional:
 
 - **The job generator project** (`src/Generators`). It targets netstandard2.0, because Roslyn loads a generator into the compiler, and netstandard2.0 lacks the attributes that `required` members need.
-- **`Knight` and `UnportedJob`.** The generated `Job.Of` builds both from a number through their constructors, and `UnportedJob.Code` overrides the abstract get-only `Job.Code`, which an init property cannot.
+- **`Knight` and `UnportedJob`.** The generated `Job.Of` builds both from a number through their constructors, and `UnportedJob.Code` overrides the abstract get-only `Job.Code`, which an init property cannot override.
 
 `PositionalRecordTests` enforces the rule: it parses every C# file under `src/` and `tests/` and fails on a positional record outside the two exemptions. A record inside a string literal, such as a generator test's fixture source, is no declaration and is not checked.
 
