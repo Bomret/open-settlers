@@ -12,7 +12,9 @@ namespace OpenSettlers.MapView;
 /// position is kept in the one copy that starts at the map's north-west node: <c>0 &lt;= X &lt; PeriodX</c> and
 /// <c>0 &lt;= Y &lt; PeriodY</c>.
 /// </summary>
-public sealed class Camera
+/// <remarks>A camera at the north-west node of a map of this size.</remarks>
+/// <param name="size">The size of the map.</param>
+public sealed class Camera(MapSize size)
 {
     /// <summary>The pixels between two nodes of a row.</summary>
     public const int NodeSpacing = 32;
@@ -23,21 +25,13 @@ public sealed class Camera
     /// <summary>The pixels each row leans west.</summary>
     public const int RowLean = 16;
 
-    readonly int _rows;
-
-    /// <summary>A camera at the north-west node of a map of this size.</summary>
-    public Camera(MapSize size)
-    {
-        _rows = size.Height;
-        PeriodX = size.Width * NodeSpacing;
-        PeriodY = size.Height * RowSpacing;
-    }
+    readonly int _rows = size.Height;
 
     /// <summary>The width of the map in pixels.</summary>
-    public int PeriodX { get; }
+    public int PeriodX { get; } = size.Width * NodeSpacing;
 
     /// <summary>The height of the map in pixels.</summary>
-    public int PeriodY { get; }
+    public int PeriodY { get; } = size.Height * RowSpacing;
 
     /// <summary>The west-east position, 0 to <see cref="PeriodX"/> - 1.</summary>
     public int X { get; private set; }

@@ -18,7 +18,7 @@ public sealed class SitePassTests
     static readonly Request Stones = new() { Asks = ConstructionTables.StoneClass, Rank = 0 };
 
     // The requests the site's pass sent to the castle, in order, with the building each came from (MSTest makes an instance for each test).
-    readonly List<(Building Site, WorkerRequest Request)> Asked = [];
+    readonly List<(Building Site, WorkerRequest Request)> _asked = [];
 
     (BehaviourBench Bench, SitePass Pass, Building Site) Bench(
         BuildingType type,
@@ -64,7 +64,7 @@ public sealed class SitePassTests
                             Hut = null!,
                         }
                     ),
-                (building, request) => Asked.Add((building, request))
+                (building, request) => _asked.Add((building, request))
             ),
             site
         );
@@ -215,11 +215,11 @@ public sealed class SitePassTests
 
         pass.Turn(site);
 
-        Assert.AreEqual(1, Asked.Count);
-        Assert.AreSame(site, Asked[0].Site);
+        Assert.AreEqual(1, _asked.Count);
+        Assert.AreSame(site, _asked[0].Site);
         Assert.AreEqual(
             new WorkerRequest { Job = new Digger(), Tool = ConstructionTables.DiggerTool },
-            Asked[0].Request
+            _asked[0].Request
         );
         Assert.AreEqual((ushort)0, site.Progress, "the site waits for the ground");
     }
@@ -236,11 +236,11 @@ public sealed class SitePassTests
         site.RequestFailed = true;
 
         pass.Turn(site);
-        Assert.AreEqual(0, Asked.Count);
+        Assert.AreEqual(0, _asked.Count);
 
         site.RequestFailed = false;
         pass.Turn(site);
-        Assert.AreEqual(1, Asked.Count);
+        Assert.AreEqual(1, _asked.Count);
     }
 
     [TestMethod]
@@ -258,7 +258,7 @@ public sealed class SitePassTests
         site.WorkerInside = true;
         pass.Turn(site);
 
-        Assert.AreEqual(0, Asked.Count);
+        Assert.AreEqual(0, _asked.Count);
         Assert.AreEqual((ushort)0, site.Progress);
     }
 
@@ -274,8 +274,8 @@ public sealed class SitePassTests
 
         pass.Turn(site);
 
-        Assert.AreEqual(1, Asked.Count);
-        Assert.AreEqual(new Builder(), Asked[0].Request.Job);
+        Assert.AreEqual(1, _asked.Count);
+        Assert.AreEqual(new Builder(), _asked[0].Request.Job);
     }
 
     [TestMethod]
@@ -311,10 +311,10 @@ public sealed class SitePassTests
                 Job = new Woodcutter(),
                 Tool = new Good { Code = 3 },
             },
-            Asked.Single().Request
+            _asked.Single().Request
         );
 
-        Asked.Clear();
+        _asked.Clear();
         bench.Map.At(7, 5).Height = 3;
         pass.Turn(site);
         Assert.AreEqual(
@@ -323,7 +323,7 @@ public sealed class SitePassTests
                 Job = new Sawmiller(),
                 Tool = new Good { Code = 4 },
             },
-            Asked.Single().Request
+            _asked.Single().Request
         );
     }
 
@@ -383,7 +383,7 @@ public sealed class SitePassTests
         bench.Map.At(7, 5).Height = 3;
         pass.Turn(site);
 
-        Assert.AreEqual(0, Asked.Count);
+        Assert.AreEqual(0, _asked.Count);
     }
 
     [TestMethod]
@@ -394,6 +394,6 @@ public sealed class SitePassTests
 
         pass.Turn(site);
 
-        Assert.IsTrue(Asked.TrueForAll(asked => asked.Request.Job != new Digger()));
+        Assert.IsTrue(_asked.TrueForAll(asked => asked.Request.Job != new Digger()));
     }
 }

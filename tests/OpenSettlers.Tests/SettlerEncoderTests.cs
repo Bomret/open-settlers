@@ -11,13 +11,7 @@ public sealed class SettlerEncoderTests
 {
     // The movement that turns a walk home reads the residue as the encoder writes it.
     static SettlerMovement Movement { get; } =
-        new(
-            new Map(MapSize.Offered[0]),
-            new BuildingTable(),
-            LayoutSettlersTests.MadeTables(),
-            () => 0,
-            SettlerEncoder.ResidueOf
-        );
+        new(new Map(MapSize.Offered[0]), [], LayoutSettlersTests.MadeTables(), () => 0, SettlerEncoder.ResidueOf);
 
     static Settler Of(Activity activity, ushort stamp = 0) => new(new Carrier(), 0, 4, 3, stamp, activity);
 

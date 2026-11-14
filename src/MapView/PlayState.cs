@@ -95,7 +95,9 @@ public sealed record PlayState
     public string? Check(ExpectStep expect)
     {
         if (Ticks is null && PlayFields.IsGame(expect.Field))
+        {
             return $"expect {expect.Field}: the map view has no {expect.Field}, use --game-view";
+        }
 
         var holds = PlayFields.IsNumeric(expect.Field)
             ? Compare(Number(expect.Field), double.Parse(expect.Value, CultureInfo.InvariantCulture), expect)
@@ -112,11 +114,19 @@ public sealed record PlayState
     {
         var step = $"expect-at {expect.Column} {expect.Row} {expect.What.Text}";
         if (Unlisted(expect.What) is { } unlisted)
+        {
             return $"{step}: {unlisted}";
+        }
+
         if (!MapSize.TryFromValue(Size, out var map, out _))
+        {
             return $"{step}: the map size {Size} is not one the original offers";
+        }
+
         if (expect.Column >= map.Width || expect.Row >= map.Height)
+        {
             return $"{step}: the node is outside the {map.Width} by {map.Height} map";
+        }
 
         var here = (Things ?? []).Where(t => t.X == expect.Column && t.Y == expect.Row).ToList();
 
@@ -133,7 +143,9 @@ public sealed record PlayState
     {
         var step = $"expect-count {expect.What.Text} {expect.Op} {expect.Count}";
         if (Unlisted(expect.What) is { } unlisted)
+        {
             return $"{step}: {unlisted}";
+        }
 
         var actual = (Things ?? []).Count(expect.What.Matches);
 
@@ -173,7 +185,9 @@ public sealed record PlayState
     static bool Compare(double actual, double wanted, ExpectStep expect)
     {
         if (expect.Field == PlayFields.Zoom)
+        {
             wanted = Math.Round(wanted, ZoomDecimals);
+        }
 
         return Compare(actual, wanted, expect.Op);
     }
@@ -244,7 +258,9 @@ public static class PlayFields
     public static (int X, int Y)? FlagNode(string field)
     {
         if (!field.StartsWith(FlagGoods, StringComparison.Ordinal))
+        {
             return null;
+        }
 
         var parts = field[FlagGoods.Length..].Split(',');
         return

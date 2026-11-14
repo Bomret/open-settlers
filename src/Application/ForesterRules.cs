@@ -11,9 +11,9 @@ namespace OpenSettlers.Simulation;
 /// <param name="parts">The shared parts.</param>
 public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
 {
-    readonly SettlerMovement movement = parts.Movement;
-    readonly IRandomDraws draws = parts.Draws;
-    readonly HutWork hut = parts.Hut;
+    readonly SettlerMovement _movement = parts.Movement;
+    readonly IRandomDraws _draws = parts.Draws;
+    readonly HutWork _hut = parts.Hut;
 
     // The time a node he may not plant on adds to the search's timer (0x438de7), where the woodcutter's adds 400.
     const int SpotMiss = 0x2bc;
@@ -25,7 +25,7 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
     const int ArrivalWait = 0xbf;
     const int PlantWait = 0x80;
 
-    Map Map => movement.Map;
+    Map Map => _movement.Map;
 
     /// <inheritdoc />
     public override bool CanStandInHut => true;
@@ -46,8 +46,8 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
     /// </summary>
     public override void Start(int slot, Settler settler, Building building)
     {
-        movement.Release(Map.Index(settler.X, settler.Y));
-        movement.Become(settler, new LooksForSpot());
+        _movement.Release(Map.Index(settler.X, settler.Y));
+        _movement.Become(settler, new LooksForSpot());
     }
 
     // A node he plants on: no road, no object, no mark of a lake or a large object, and the lowland terrain on both triangles of the
@@ -74,24 +74,24 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
     void SearchSpot(int slot, Settler settler)
     {
         var found = SearchSpotTurn(settler);
-        hut.RecordWork(slot, EventType.SearchSpot);
+        _hut.RecordWork(slot, EventType.SearchSpot);
         if (found)
         {
-            hut.StepOut(slot, settler);
+            _hut.StepOut(slot, settler);
         }
     }
 
     // One turn of the search; true where he found a node and took state 7.
     bool SearchSpotTurn(Settler settler)
     {
-        if (!movement.TimerRan(settler))
+        if (!_movement.TimerRan(settler))
         {
             return false;
         }
 
         while (true)
         {
-            var entry = ((draws.Draw() & 0x1fc) + 4) >> 2;
+            var entry = ((_draws.Draw() & 0x1fc) + 4) >> 2;
             var (dx, dy) = Spiral.Offsets[entry];
             var x = (settler.X + dx) & (Map.Size.Width - 1);
             var y = (settler.Y + dy) & (Map.Size.Height - 1);
@@ -128,14 +128,14 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
         if (trip.Purpose is Home)
         {
             // The walk home (0x4385ab).
-            hut.ArriveHome(slot, settler);
+            _hut.ArriveHome(slot, settler);
 
             return;
         }
 
         if (trip.Purpose is not ToSpot spot)
         {
-            hut.ReturnToHut(slot, settler, trip);
+            _hut.ReturnToHut(slot, settler, trip);
 
             return;
         }
@@ -151,7 +151,7 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
                 },
             };
             settler.Timer = 0;
-            hut.RecordWork(slot, EventType.Arrive);
+            _hut.RecordWork(slot, EventType.Arrive);
 
             return;
         }
@@ -164,7 +164,7 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
         };
         settler.Frame = 0x79;
         settler.Timer = ArrivalWait;
-        hut.RecordWork(slot, EventType.Arrive);
+        _hut.RecordWork(slot, EventType.Arrive);
     }
 
     // State 0x14 (0x4389bf). When the timer has run out the first turn puts the sapling down: the code 0x67, or 0x68 by a draw's low
@@ -173,12 +173,12 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
     void Plant(int slot, Settler settler)
     {
         PlantTurn(settler);
-        hut.RecordWork(slot, EventType.PlantSapling, ThingId.OfObject("sapling", settler.X, settler.Y).ToString());
+        _hut.RecordWork(slot, EventType.PlantSapling, ThingId.OfObject("sapling", settler.X, settler.Y).ToString());
     }
 
     void PlantTurn(Settler settler)
     {
-        if (!movement.TimerRan(settler))
+        if (!_movement.TimerRan(settler))
         {
             return;
         }
@@ -187,7 +187,7 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
         if (!plants.Planted)
         {
             settler.Frame = 0x7a;
-            var code = MapObject.SaplingCode + (draws.Draw() & 1);
+            var code = MapObject.SaplingCode + (_draws.Draw() & 1);
             ref var node = ref Map.At(settler.X, settler.Y);
             if (!node.Object.Exists && node.Roads.IsEmpty)
             {

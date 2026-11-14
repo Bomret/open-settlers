@@ -9,7 +9,10 @@ namespace OpenSettlers.Domain;
 /// (<c>Table70</c>, <c>docs/rules/flags.md</c>); the same number is the link the node holds in the map's resource byte. A
 /// slot whose flag was taken down (<c>docs/rules/removal.md</c>) is free until a new flag takes it, and keeps its item.
 /// </summary>
-public sealed class Flag
+/// <remarks>A flag on the node at (<paramref name="x"/>, <paramref name="y"/>) with an empty item.</remarks>
+/// <param name="x">The node's column.</param>
+/// <param name="y">The node's row.</param>
+public sealed class Flag(int x, int y)
 {
     readonly FlagSide[] _sides = [.. Enumerable.Range(0, Direction.Count).Select(_ => new FlagSide())];
     readonly Request[] _requests = new Request[2];
@@ -18,18 +21,11 @@ public sealed class Flag
     /// <summary>The number of places for goods on a flag.</summary>
     public const int PlaceCount = 8;
 
-    /// <summary>A flag on the node at (<paramref name="x"/>, <paramref name="y"/>) with an empty item.</summary>
-    public Flag(int x, int y)
-    {
-        X = x;
-        Y = y;
-    }
-
     /// <summary>The node's column; -1 in a free slot.</summary>
-    public int X { get; private set; }
+    public int X { get; private set; } = x;
 
     /// <summary>The node's row; -1 in a free slot.</summary>
-    public int Y { get; private set; }
+    public int Y { get; private set; } = y;
 
     /// <summary>Whether the slot holds no flag.</summary>
     public bool IsFree => X < 0;

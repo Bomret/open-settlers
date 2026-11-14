@@ -30,15 +30,20 @@ public sealed record ThingSelector
         {
             var digits = text.StartsWith(RawPrefix, StringComparison.Ordinal) ? text[RawPrefix.Length..] : "";
             if (digits.Length == 0 || !digits.All(Uri.IsHexDigit))
+            {
                 return (
                     null,
                     $"'{text}' is a malformed raw code, use object:0x followed by hex digits, such as object:0x0a"
                 );
+            }
+
             if (
                 !int.TryParse(digits, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var code)
                 || code > 0xff
             )
+            {
                 return (null, $"'{text}' is over 0xff");
+            }
 
             return (new ThingSelector { Text = text, RawCode = code }, null);
         }

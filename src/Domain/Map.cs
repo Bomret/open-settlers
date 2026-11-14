@@ -7,19 +7,14 @@ namespace OpenSettlers.Domain;
 /// the grid is the one on the other side. A map comes from an importer of the adapters (the generator's layers or a
 /// layout) and a game changes it.
 /// </summary>
-public sealed class Map
+/// <remarks>A map of the size with every node empty.</remarks>
+/// <param name="size">The size of the map.</param>
+public sealed class Map(MapSize size)
 {
-    readonly Node[] _nodes;
-
-    /// <summary>A map of the size with every node empty.</summary>
-    public Map(MapSize size)
-    {
-        Size = size;
-        _nodes = new Node[size.Width * size.Height];
-    }
+    readonly Node[] _nodes = new Node[size.Width * size.Height];
 
     /// <summary>The size the map was made for.</summary>
-    public MapSize Size { get; }
+    public MapSize Size { get; } = size;
 
     /// <summary>
     /// The random generator as the generation leaves it. The game's random generator continues from it, as the

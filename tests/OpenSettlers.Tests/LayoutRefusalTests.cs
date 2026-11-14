@@ -20,7 +20,7 @@ public sealed class LayoutRefusalTests
     const string Good = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": 1 to 25}";
     const string Directions = "directions must be a list of one or more whole numbers from 0 to 5";
 
-    static string[] Problems(string text) => Layout.Read(text, "t.jsonc").Problems.ToArray();
+    static string[] Problems(string text) => [.. Layout.Read(text, "t.jsonc").Problems];
 
     static string[] Extra(string extra) => Problems(LayoutTests.Text(extra: "\n" + extra));
 
@@ -172,19 +172,19 @@ public sealed class LayoutRefusalTests
     [TestMethod]
     public void ATerrainOrLakesValueThatIsNoListOfStringsIsOneProblemEach()
     {
-        const string reason = "must be a list of strings, one for each row";
+        const string Reason = "must be a list of strings, one for each row";
 
         CollectionAssert.AreEqual(
-            new[] { $"t.jsonc: terrain: {reason}" },
+            new[] { $"t.jsonc: terrain: {Reason}" },
             Problems(LayoutTests.Text(terrain: "\"g\""))
         );
-        CollectionAssert.AreEqual(new[] { $"t.jsonc: terrain: {reason}" }, Problems(LayoutTests.Text(terrain: "[3]")));
+        CollectionAssert.AreEqual(new[] { $"t.jsonc: terrain: {Reason}" }, Problems(LayoutTests.Text(terrain: "[3]")));
         CollectionAssert.AreEqual(
-            new[] { $"t.jsonc: terrainLower: {reason}" },
+            new[] { $"t.jsonc: terrainLower: {Reason}" },
             Problems(LayoutTests.Text(lower: "{}"))
         );
-        CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {reason}" }, Problems(LayoutTests.Text(lakes: "3")));
-        CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {reason}" }, Problems(LayoutTests.Text(lakes: "[null]")));
+        CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {Reason}" }, Problems(LayoutTests.Text(lakes: "3")));
+        CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {Reason}" }, Problems(LayoutTests.Text(lakes: "[null]")));
     }
 
     // The whole-number spellings: the readers take a number as whole when System.Text.Json reads it as an int, so only the

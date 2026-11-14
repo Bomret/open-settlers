@@ -12,6 +12,21 @@ The full command restores the local tools, checks formatting (CSharpier names ea
 `mise run format` fixes them), runs the unit tests, and builds the project. `mise.toml` holds the
 steps.
 
+Every build enforces the code-style rules of `docs/agents/CODING.md` ("What the build enforces" and "Document").
+A violation fails the full command at its test step. That step builds the test project and the projects it references.
+The focused command fails at its build on the same violations.
+
+Two kinds of violation fail only the build step of the full command, which builds `OpenSettlers.csproj`. The focused
+command does not report them:
+
+- A violation in a file under `src/Viewer`. Only `OpenSettlers.csproj` compiles that folder.
+- A doc-comment diagnostic (CS1591 and the others that "Document" names) in a file under `src/Launch`, `src/Formats`,
+  `src/Assets`, or `src/MapView`. The test project compiles these folders but generates no documentation file.
+
+A violation prints as
+`<file>(<line>,<column>): error <rule ID>: <message>`. A play run with a violation exits 3 and prints the build output.
+`docs/agents/toolchain.md` says how to fix a finding. The rules follow the .NET SDK version that `mise.toml` pins.
+
 Both commands run the unit tests: the tests that need neither the install nor Ghidra. Both skip the tests
 with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
 `TestProgram.Tables`). Both also skip the category `Ghidra` (they run `analyzeHeadless`). The filter is

@@ -30,7 +30,7 @@ public sealed class MaskKindTests
         Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
-        return new T().Enumerate(install!, all).ToList();
+        return [.. new T().Enumerate(install!, all)];
     }
 
     // Colors 0x40 and 0x80 are red and green, color 1 is blue.

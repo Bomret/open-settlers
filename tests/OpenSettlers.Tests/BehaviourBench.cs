@@ -33,11 +33,11 @@ sealed class BehaviourBench
 
     public RuleTables Tables { get; }
 
-    public SettlerTable Settlers { get; } = new();
+    public SettlerTable Settlers { get; } = [];
 
-    public BuildingTable Buildings { get; } = new();
+    public BuildingTable Buildings { get; } = [];
 
-    public FlagTable Flags { get; } = new();
+    public FlagTable Flags { get; } = [];
 
     public RoadNetwork Roads { get; } = new();
 

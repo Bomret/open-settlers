@@ -70,9 +70,9 @@ public sealed class BuildingEncoderTests
     [TestMethod]
     public void TheReadoutOfABuildingSiteCarriesItsPlanksStonesAndHeight()
     {
-        const int stones = 3;
+        const int Stones = 3;
         var needs = ConstructionTables.Needs();
-        needs[(2 * BuildingType.Forester.Code) + 1] = stones;
+        needs[(2 * BuildingType.Forester.Code) + 1] = Stones;
         var game = ConstructionWorld.Create(ConstructionTables.Tables(needs: needs));
         ConstructionWorld.Site(game, BuildingType.Forester, 17, 5);
         var site = game.Buildings[1].Site!;
@@ -80,7 +80,7 @@ public sealed class BuildingEncoderTests
         var state = game.History.Events.Of(game.History.BuildingId(1)).Last().State;
 
         Assert.AreEqual(ConstructionTables.ForesterPlanks, state.Get("planks"));
-        Assert.AreEqual(stones, state.Get("stones"));
+        Assert.AreEqual(Stones, state.Get("stones"));
         Assert.AreEqual(site.TargetHeight, state.Get("height"));
     }
 

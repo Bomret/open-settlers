@@ -14,7 +14,10 @@ public issue.
   format from its `Siedler1.exe`, not from a fan source or another reimplementation. Describe each
   recovered rule in your own words in `docs/rules/`, with its address as evidence. Mark a rule that the
   program does not confirm as **inferred** or **stand-in**. `docs/rules/AGENTS.md` describes the process.
-- **Code style.** Follow `docs/agents/CODING.md` and `docs/agents/CODING_PATTERNS.md`.
+- **Code style.** Follow `docs/agents/CODING.md` and `docs/agents/CODING_PATTERNS.md`. The build enforces the rules
+  that `CODING.md` lists under "What the build enforces". A violation fails `mise run check`, a plain build, and a play
+  run. The error names the file, line, and rule ID. `docs/agents/toolchain.md` says how to fix one. The rules follow the
+  .NET SDK version that `mise.toml` pins.
 - **Docs.** Update the docs that your change makes wrong. `docs/agents/documentation.md` gives the
   writing standard: American English, present tense, current state only.
 

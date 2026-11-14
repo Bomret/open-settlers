@@ -150,13 +150,13 @@ public sealed class HutWorkTests
     [TestMethod]
     public void TheGameRunsTheObjectPassOncePerPass()
     {
-        const int passes = 50;
+        const int Passes = 50;
         var game = StonecuttingTests.World(null, out var map);
         map.At(9, 20).Object = MapObject.Falling(5, secondVariant: false);
         var runs = 0;
         var stamp = game.Hut.ObjectPassState.Stamp;
 
-        for (var pass = 0; pass < passes; pass++)
+        for (var pass = 0; pass < Passes; pass++)
         {
             game.Tick();
             var after = game.Hut.ObjectPassState.Stamp;
@@ -165,7 +165,7 @@ public sealed class HutWorkTests
         }
 
         // The pass stamps the clock when it runs, and the clock moves on in every pass: a pass that skipped it leaves the stamp.
-        Assert.AreEqual(passes, runs);
+        Assert.AreEqual(Passes, runs);
     }
 
     [TestMethod]

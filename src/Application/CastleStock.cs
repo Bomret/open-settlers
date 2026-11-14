@@ -11,7 +11,7 @@ public sealed class CastleStock
     public Castle? Castle { get; private set; }
 
     /// <summary>
-    /// The goods in the castle: the 26 counts of the storage item from its word at 6 (<see cref="StartStock.Goods"/> of them), so
+    /// The goods in the castle: the 26 counts of the storage item from its word at 6 (<see cref="RuleTables.Goods"/> of them), so
     /// the count of the good <c>g</c> is the entry <c>g - 1</c> (the word for a log, the good 7, lies at <c>0x12</c> of the
     /// item). Empty before the castle is placed.
     /// </summary>

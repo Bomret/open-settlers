@@ -23,7 +23,7 @@ public readonly record struct BuildSiteResult
     /// </summary>
     public required int Site { get; init; }
 
-    /// <summary>The height the building site is levelled to; set with <paramref name="Site"/> 4 or 5, else 0.</summary>
+    /// <summary>The height the building site is levelled to; set with <see cref="Site"/> 4 or 5, else 0.</summary>
     public required int Height { get; init; }
 
     /// <summary>True when the first castle may stand on the node: node state 7 and site 5.</summary>
@@ -78,11 +78,15 @@ public static class BuildSite
         int Height(int i) => nodes[i].Height;
 
         if (nodes[0].Owner != owner)
+        {
             return default;
+        }
 
         var own = Class(0);
         if (own.IsFlagOrBuilding)
+        {
             return default;
+        }
 
         // Node: how the node itself stands.
         int node;
@@ -105,20 +109,24 @@ public static class BuildSite
 
         var site = 0;
         if (!own.IsEmpty)
+        {
             return new()
             {
                 Node = node,
                 Site = 0,
                 Height = 0,
             };
+        }
 
         if (Up(0).IsWater && Low(0).IsWater && Low(4).IsWater && Up(5).IsWater && Low(5).IsWater && Up(6).IsWater)
+        {
             return new()
             {
                 Node = node,
                 Site = 0,
                 Height = 0,
             };
+        }
 
         var flagNear = false;
         for (var i = 1; i <= 6; i++)
@@ -126,12 +134,14 @@ public static class BuildSite
             if (Class(i).IsFlag)
             {
                 if (node == 4)
+                {
                     return new()
                     {
                         Node = node,
                         Site = 0,
                         Height = 0,
                     };
+                }
 
                 flagNear = true;
                 break;
@@ -142,61 +152,73 @@ public static class BuildSite
         {
             site = 1;
             if (node == 4)
+            {
                 return new()
                 {
                     Node = node,
                     Site = site,
                     Height = 0,
                 };
+            }
         }
 
         for (var i = 1; i <= 6; i++)
         {
             if (Class(i).IsBuilding)
+            {
                 return new()
                 {
                     Node = node,
                     Site = site,
                     Height = 0,
                 };
+            }
         }
 
         if (node != 5 && !Class(2).IsEmpty)
+        {
             return new()
             {
                 Node = node,
                 Site = site,
                 Height = 0,
             };
+        }
 
         foreach (var i in new[] { 7, 8, 14, 1, 3 })
         {
             if (Class(i).IsFlag)
+            {
                 return new()
                 {
                     Node = node,
                     Site = site,
                     Height = 0,
                 };
+            }
         }
 
         if (Up(1).IsWater || Low(3).IsWater || Up(2).IsWater || Low(2).IsWater)
+        {
             return new()
             {
                 Node = node,
                 Site = site,
                 Height = 0,
             };
+        }
 
         for (var i = 1; i <= 6; i++)
         {
             if (nodes[i].Owner != owner)
+            {
                 return new()
                 {
                     Node = node,
                     Site = site,
                     Height = 0,
                 };
+            }
         }
 
         // The six triangles around the node: plain land and mountain can be built on, and no mixture of the two;
@@ -213,12 +235,14 @@ public static class BuildSite
         }
 
         if (kinds > 1)
+        {
             return new()
             {
                 Node = node,
                 Site = site,
                 Height = 0,
             };
+        }
 
         if (kinds != 0)
         {
@@ -231,29 +255,35 @@ public static class BuildSite
         }
 
         if (hasCastle)
+        {
             site = 3;
+        }
 
         for (var i = 1; i <= 6; i++)
         {
             var c = Class(i);
             if (c.IsLarge && !c.IsFlag)
+            {
                 return new()
                 {
                     Node = node,
                     Site = site,
                     Height = 0,
                 };
+            }
         }
 
         for (var i = 7; i <= 18; i++)
         {
             if (Class(i).IsLargeBuilding)
+            {
                 return new()
                 {
                     Node = node,
                     Site = site,
                     Height = 0,
                 };
+            }
         }
 
         if (
@@ -264,12 +294,14 @@ public static class BuildSite
             || Low(5) != Terrain.Lowland
             || Up(6) != Terrain.Lowland
         )
+        {
             return new()
             {
                 Node = node,
                 Site = site,
                 Height = 0,
             };
+        }
 
         // The heights of the 12 nodes of the second ring bound the levelled height, and so do the target heights of the large building
         // sites that wait for their digger within the third ring (0x44c151 to 0x44c204, in 0x44bd72): a node holding the object code 3
@@ -304,12 +336,14 @@ public static class BuildSite
         }
 
         if (high - low >= 9)
+        {
             return new()
             {
                 Node = node,
                 Site = site,
                 Height = 0,
             };
+        }
 
         var sum = 2 * Height(0);
         for (var i = 1; i <= 6; i++)
@@ -322,7 +356,9 @@ public static class BuildSite
         level = Math.Max(level, ceiling);
         level = Math.Min(level, low + 4);
         if (level == 0)
+        {
             level = 1;
+        }
 
         return new()
         {

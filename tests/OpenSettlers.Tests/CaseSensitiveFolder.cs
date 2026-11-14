@@ -12,21 +12,21 @@ namespace OpenSettlers.Tests;
 /// </summary>
 public sealed class CaseSensitiveVolume : IDisposable
 {
-    readonly string? image;
-    readonly string root;
-    readonly string? problem;
-    int count;
+    readonly string? _image;
+    readonly string _root;
+    readonly string? _problem;
+    int _count;
 
     public CaseSensitiveVolume()
     {
         var name = "open-settlers-tests-" + Guid.NewGuid().ToString("N");
         if (OperatingSystem.IsMacOS())
         {
-            image = Path.Combine(Path.GetTempPath(), name);
-            Directory.CreateDirectory(image);
-            root = Path.Combine(image, "mnt");
-            Directory.CreateDirectory(root);
-            var dmg = Path.Combine(image, "cs.dmg");
+            _image = Path.Combine(Path.GetTempPath(), name);
+            Directory.CreateDirectory(_image);
+            _root = Path.Combine(_image, "mnt");
+            Directory.CreateDirectory(_root);
+            var dmg = Path.Combine(_image, "cs.dmg");
             if (
                 !Run(
                     "hdiutil",
@@ -41,40 +41,40 @@ public sealed class CaseSensitiveVolume : IDisposable
                     "UDIF",
                     dmg,
                     "-quiet"
-                ) || !Run("hdiutil", "attach", "-nobrowse", "-noverify", "-mountpoint", root, dmg, "-quiet")
+                ) || !Run("hdiutil", "attach", "-nobrowse", "-noverify", "-mountpoint", _root, dmg, "-quiet")
             )
             {
-                Directory.Delete(image, true);
-                image = null;
-                problem = "No case-sensitive APFS image could be made.";
-                root = "";
+                Directory.Delete(_image, true);
+                _image = null;
+                _problem = "No case-sensitive APFS image could be made.";
+                _root = "";
                 return;
             }
         }
         else
         {
-            root = Path.Combine(Path.GetTempPath(), name);
-            Directory.CreateDirectory(root);
+            _root = Path.Combine(Path.GetTempPath(), name);
+            Directory.CreateDirectory(_root);
         }
 
-        File.WriteAllBytes(Path.Combine(root, "probe"), []);
-        if (File.Exists(Path.Combine(root, "PROBE")))
+        File.WriteAllBytes(Path.Combine(_root, "probe"), []);
+        if (File.Exists(Path.Combine(_root, "PROBE")))
         {
-            problem = "The temp folder is not case-sensitive.";
+            _problem = "The temp folder is not case-sensitive.";
         }
 
-        File.Delete(Path.Combine(root, "probe"));
+        File.Delete(Path.Combine(_root, "probe"));
     }
 
     /// <summary>A new, empty folder in the volume.</summary>
     public CaseSensitiveFolder NewFolder()
     {
-        if (problem != null)
+        if (_problem != null)
         {
-            Assert.Inconclusive(problem);
+            Assert.Inconclusive(_problem);
         }
 
-        var path = Path.Combine(root, (++count).ToString());
+        var path = Path.Combine(_root, (++_count).ToString());
         Directory.CreateDirectory(path);
 
         return new CaseSensitiveFolder(path);
@@ -82,19 +82,19 @@ public sealed class CaseSensitiveVolume : IDisposable
 
     public void Dispose()
     {
-        if (root == "")
+        if (_root == "")
         {
             return;
         }
 
-        if (image == null)
+        if (_image == null)
         {
-            Directory.Delete(root, true);
+            Directory.Delete(_root, true);
             return;
         }
 
-        Run("hdiutil", "detach", root, "-force", "-quiet");
-        Directory.Delete(image, true);
+        Run("hdiutil", "detach", _root, "-force", "-quiet");
+        Directory.Delete(_image, true);
     }
 
     static bool Run(string program, params string[] args)
