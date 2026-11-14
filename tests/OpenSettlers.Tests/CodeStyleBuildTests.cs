@@ -32,11 +32,30 @@ public sealed class CodeStyleBuildTests
         Assert.IsEmpty(pins.Except(settings), string.Join(Environment.NewLine, pins.Except(settings)));
     }
 
-    // The table must list the rules, or the pins above would check nothing.
+    // The pins come from the table, so a row deleted together with its severity line would switch its rule off unseen.
+    // The table must therefore list every rule the build enforces.
     [TestMethod]
     public void TheCodingGuideListsTheBuildEnforcedRules()
     {
-        CollectionAssert.IsSubsetOf(new[] { "IDE0040", "IDE0300", "IDE0305", "IDE0290" }, BuildEnforcedRuleIds());
+        CollectionAssert.IsSubsetOf(
+            new[]
+            {
+                "IDE0040",
+                "IDE0007",
+                "IDE0044",
+                "IDE0011",
+                "IDE1006",
+                "IDE0028",
+                "IDE0300",
+                "IDE0301",
+                "IDE0302",
+                "IDE0303",
+                "IDE0304",
+                "IDE0305",
+                "IDE0290",
+            },
+            BuildEnforcedRuleIds()
+        );
     }
 
     [TestMethod]
@@ -90,7 +109,10 @@ public sealed class CodeStyleBuildTests
     [TestMethod]
     public void TheCodingGuideListsTheDocCommentDiagnostics()
     {
-        CollectionAssert.IsSubsetOf(new[] { "CS1591", "CS1570", "CS0419" }, DocCommentDiagnosticIds());
+        CollectionAssert.IsSubsetOf(
+            new[] { "CS1591", "CS1570", "CS1572", "CS1573", "CS1574", "CS1587", "CS1734", "CS0419" },
+            DocCommentDiagnosticIds()
+        );
     }
 
     // A later section, a nested .editorconfig, or a project file could switch a rule off past the pins above, so every
