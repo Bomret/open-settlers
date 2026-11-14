@@ -52,6 +52,8 @@ Always use braces around loops and conditional branching, a body whose sole stat
 
 Document public and protected/abstract/overridable facing types and members using appropriate code documentation. Be specific and concise but also mention side-effects, possible errors/exceptions and possibly unexpected behavior.
 
+The build enforces the rule for the source projects: the game project, the layer projects, and the job generator. `Directory.Build.props` sets `GenerateDocumentationFile` for each of them, so a public or protected type or member without a doc comment (CS1591) and a doc comment that is malformed or whose reference does not resolve (CS1570, CS1572, CS1573, CS1574, CS1587, CS1734, CS0419) fail its build. The test project does not generate a documentation file; its documentation stays with review.
+
 ### Godot `.uid` files
 
 A new script or shader in a Godot-scanned folder (`src/Assets/`, `src/Formats/`, `src/Launch/`, `src/MapView/`, `src/Viewer/`) gets a `.uid` file from the Godot editor. Generate it with `mise exec -- <godot> --headless --import --path .`, where `<godot>` is the `GODOT` name in `mise.toml` for the platform, and commit it with the source. A new folder of C# sources outside the Godot assembly (`<Compile Remove>` in `OpenSettlers.csproj`) gets a `.gdignore`.
@@ -72,7 +74,7 @@ The root `.editorconfig` turns these rules into build errors. Each has its own `
 | A collection expression of the same type in place of an array creation, a collection initializer, or a trailing `ToArray`/`ToList` call | IDE0028, IDE0300–IDE0305 |
 | Classes: a primary constructor where the constructor only assigns its parameters | IDE0290 |
 
-These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, and composition over inheritance. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
+The documentation rule ("Document") is enforced for the source projects through the compiler's doc-comment diagnostics. These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, composition over inheritance, and the documentation of the test project. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
 
 ### Member ordering
 

@@ -23,7 +23,7 @@ public readonly record struct BuildSiteResult
     /// </summary>
     public required int Site { get; init; }
 
-    /// <summary>The height the building site is levelled to; set with <paramref name="Site"/> 4 or 5, else 0.</summary>
+    /// <summary>The height the building site is levelled to; set with <see cref="Site"/> 4 or 5, else 0.</summary>
     public required int Height { get; init; }
 
     /// <summary>True when the first castle may stand on the node: node state 7 and site 5.</summary>
