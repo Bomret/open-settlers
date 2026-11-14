@@ -4,10 +4,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
-// tools/GhidraDump/headless.py, the entry `mise run natives|import|update|dump [index-only]` runs, run as a process in a
-// fresh temporary folder, which it takes as the repository root. The child's path holds only the folders of the stand-in
-// analyzeHeadless and gradle, shell scripts that record their arguments and working directory with shell builtins alone.
-// No case reaches Ghidra, Gradle, the install, or the repository's re-local folder.
+// tools/GhidraDump/headless.py, the entry `mise run ghidra:natives|ghidra:import|ghidra:update|ghidra:dump [index-only]`
+// runs, run as a process in a fresh temporary folder, which it takes as the repository root. The child's path holds only
+// the folders of the stand-in analyzeHeadless and gradle, shell scripts that record their arguments and working directory
+// with shell builtins alone. No case reaches Ghidra, Gradle, the install, or the repository's re-local folder.
 [TestClass]
 public sealed class HeadlessEntryTests
 {
@@ -93,10 +93,8 @@ public sealed class HeadlessEntryTests
         return root;
     }
 
-    void AssertStartedNothing()
-    {
+    void AssertStartedNothing() =>
         Assert.AreEqual(0, Directory.GetFiles(Record).Length, string.Join(", ", Directory.GetFiles(Record)));
-    }
 
     static void AssertRefused(ToolRun run, string message)
     {
