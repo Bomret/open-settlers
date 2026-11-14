@@ -6,21 +6,17 @@ namespace OpenSettlers.Domain;
 /// the frame of its walk), a <see cref="Domain.Job"/> that can change, and one <see cref="Activity"/> that holds only that
 /// activity's data. The slot in the <see cref="SettlerTable"/> is the settler's number and its thing ID.
 /// </summary>
-public sealed class Settler
+/// <remarks>A settler of <paramref name="job"/> and <paramref name="player"/> on the node, in <paramref name="activity"/>.</remarks>
+/// <param name="job">The job; not null.</param>
+/// <param name="player">The player.</param>
+/// <param name="x">The node's column.</param>
+/// <param name="y">The node's row.</param>
+/// <param name="stamp">The clock (16 bits) at the settler's last turn.</param>
+/// <param name="activity">What the settler does first.</param>
+public sealed class Settler(Job job, int player, int x, int y, ushort stamp, Activity activity)
 {
-    /// <summary>A settler of <paramref name="job"/> and <paramref name="player"/> on the node, in <paramref name="activity"/>.</summary>
-    public Settler(Job job, int player, int x, int y, ushort stamp, Activity activity)
-    {
-        Job = job ?? throw new System.ArgumentNullException(nameof(job));
-        Player = player;
-        X = x;
-        Y = y;
-        Stamp = stamp;
-        Activity = activity;
-    }
-
     /// <summary>The job. A settler without a job becomes a carrier when it takes a road; the settler stays the same.</summary>
-    public Job Job { get; private set; }
+    public Job Job { get; private set; } = job ?? throw new System.ArgumentNullException(nameof(job));
 
     /// <summary>
     /// The settler takes up <paramref name="job"/>: a jobless settler a worker request sends out, a worker who becomes a carrier, a
@@ -29,7 +25,7 @@ public sealed class Settler
     public void TakeUp(Job job) => Job = job ?? throw new System.ArgumentNullException(nameof(job));
 
     /// <summary>The player.</summary>
-    public int Player { get; }
+    public int Player { get; } = player;
 
     /// <summary>The frame of the walk: the shape of the last step, which picks the walk's animation.</summary>
     public int Frame { get; set; }
@@ -38,14 +34,14 @@ public sealed class Settler
     public ushort Timer { get; set; }
 
     /// <summary>The node the settler stands on, column.</summary>
-    public int X { get; set; }
+    public int X { get; set; } = x;
 
     /// <summary>The node the settler stands on, row.</summary>
-    public int Y { get; set; }
+    public int Y { get; set; } = y;
 
     /// <summary>The clock (16 bits) at the settler's last turn.</summary>
-    public ushort Stamp { get; set; }
+    public ushort Stamp { get; set; } = stamp;
 
     /// <summary>What the settler does now.</summary>
-    public Activity Activity { get; set; }
+    public Activity Activity { get; set; } = activity;
 }

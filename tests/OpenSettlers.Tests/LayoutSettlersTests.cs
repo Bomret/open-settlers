@@ -83,13 +83,16 @@ public sealed class LayoutSettlersTests
 
         return new RuleTables(
             classes,
-            Enumerable
-                .Range(0, RuleTables.StartStockRows)
-                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
-                .ToArray(),
-            Enumerable.Repeat(stepTime, RuleTables.StepTimeCount).ToArray(),
-            Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
-            Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray(),
+            [
+                .. Enumerable
+                    .Range(0, RuleTables.StartStockRows)
+                    .Select(row =>
+                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
+                    ),
+            ],
+            [.. Enumerable.Repeat(stepTime, RuleTables.StepTimeCount)],
+            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
+            [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
             transportPriorities: transportPriorities,
             buildingSizes: buildingSizes,
@@ -442,7 +445,7 @@ public sealed class LayoutSettlersTests
     {
         // Six roads joined to the castle's flag, one more than the castle's five jobless settlers: three east along row 11,
         // two south from the castle's flag, and one east along row 15.
-        const string sixRoads = """
+        const string SixRoads = """
             "castle": {"x": 10, "y": 10},
             "flags": [{"x": 13, "y": 11}, {"x": 15, "y": 11}, {"x": 17, "y": 11}, {"x": 11, "y": 13}, {"x": 11, "y": 15}, {"x": 13, "y": 15}],
             "roads": [
@@ -460,7 +463,7 @@ public sealed class LayoutSettlersTests
             CarrierAt(11, 0, 15)
         );
 
-        var problem = Refused(sixRoads + $"\"settlers\": [{carriers}]");
+        var problem = Refused(SixRoads + $"\"settlers\": [{carriers}]");
 
         Assert.AreEqual("test.jsonc: settlers[5]: the castle holds no carrier", problem);
     }

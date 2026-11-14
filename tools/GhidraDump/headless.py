@@ -34,8 +34,8 @@ def run(args, cwd=None):
     sys.exit(subprocess.call(args, cwd=cwd))
 
 
-def analyze(*args):
-    run([headless(), PROJECT, "Siedler1", *args, "-scriptPath", SCRIPTS])
+def analyze(tool, *args):
+    run([tool, PROJECT, "Siedler1", *args, "-scriptPath", SCRIPTS])
 
 
 def main(argv):
@@ -48,20 +48,22 @@ def main(argv):
         run([gradle, "buildNatives"], cwd=os.path.join(support, "gradle"))
     elif mode == "import":
         game = os.environ.get("SIEDLER_DIR") or fail("set SIEDLER_DIR in mise.local.toml")
+        tool = headless()
         os.makedirs(PROJECT, exist_ok=True)
-        analyze("-import", os.path.join(game, "Siedler1.exe"), "-overwrite", *APPLY_INDEX)
+        analyze(tool, "-import", os.path.join(game, "Siedler1.exe"), "-overwrite", *APPLY_INDEX)
     elif mode == "update":
-        analyze("-process", "Siedler1.exe", "-noanalysis", *APPLY_INDEX)
+        analyze(headless(), "-process", "Siedler1.exe", "-noanalysis", *APPLY_INDEX)
     elif mode == "dump":
         index_only = rest == ["index-only"]
         if rest and not index_only:
             fail(f"unknown dump mode: {' '.join(rest)}")
+        tool = headless()
         if not index_only:
             shutil.rmtree(DUMP, ignore_errors=True)
         os.makedirs(DUMP, exist_ok=True)
         extra = ["index-only"] if index_only else []
         analyze(
-            "-process", "Siedler1.exe", "-noanalysis", "-readOnly",
+            tool, "-process", "Siedler1.exe", "-noanalysis", "-readOnly",
             "-postScript", "DumpProgram.java", DUMP, *extra,
             "-postScript", "StateFields.java", DUMP,
         )

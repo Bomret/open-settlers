@@ -354,7 +354,10 @@ public sealed class PlayScriptTests
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
         while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
+        {
             folder = folder.Parent;
+        }
+
         var scripts = Directory.GetFiles(Path.Combine(folder!.FullName, "play"), "*.play");
 
         Assert.IsNotEmpty(scripts);

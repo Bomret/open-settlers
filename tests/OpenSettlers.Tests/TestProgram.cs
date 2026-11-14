@@ -31,10 +31,13 @@ static class TestProgram
     public static RuleTables Made(byte[]? transportPriorities) =>
         new(
             new ObjectClass[RuleTables.ClassCount],
-            Enumerable
-                .Range(0, RuleTables.StartStockRows)
-                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
-                .ToArray(),
+            [
+                .. Enumerable
+                    .Range(0, RuleTables.StartStockRows)
+                    .Select(row =>
+                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
+                    ),
+            ],
             transportPriorities: transportPriorities,
             workers: MadeWorkers(),
             jobData: MadeJobData()

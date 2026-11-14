@@ -436,7 +436,7 @@ public sealed record SearchesHome : Activity
 
     /// <summary>
     /// The byte 11 the search starts at the far end by: the byte the walk before it left, kept as it was (not 0), 1 where a rule
-    /// starts the search. Its value is of no meaning while <paramref name="FarEndFirst"/> is false.
+    /// starts the search. Its value is of no meaning while <see cref="FarEndFirst"/> is false.
     /// </summary>
     public int FarEndMark { get; init; } = 1;
 

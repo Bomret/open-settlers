@@ -20,10 +20,13 @@ public sealed class RoadsTests
 
         return new RuleTables(
             classes,
-            Enumerable
-                .Range(0, RuleTables.StartStockRows)
-                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray())
-                .ToArray()
+            [
+                .. Enumerable
+                    .Range(0, RuleTables.StartStockRows)
+                    .Select(row =>
+                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
+                    ),
+            ]
         );
     }
 

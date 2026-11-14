@@ -9,7 +9,7 @@ namespace OpenSettlers.Simulation;
 /// <summary>What reading a layout gave: the layout, or the problems that kept it from loading.</summary>
 public sealed record LayoutResult
 {
-    /// <summary>The layout; null when <paramref name="Problems"/> is not empty.</summary>
+    /// <summary>The layout; null when <see cref="Problems"/> is not empty.</summary>
     public required Layout? Layout { get; init; }
 
     /// <summary>One line per problem, each naming the file and the entry; empty when the layout loaded.</summary>

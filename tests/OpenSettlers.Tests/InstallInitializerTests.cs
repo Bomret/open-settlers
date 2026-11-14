@@ -371,11 +371,11 @@ public sealed class InstallInitializerTests
         var testProgram = new TestProgramNames
         {
             Bare = imports.Any(directive => directive.StaticKeyword != default),
-            Receivers = imports
-                .Select(directive => directive.Alias?.Name.Identifier.Text)
-                .OfType<string>()
-                .Append("TestProgram")
-                .ToHashSet(),
+            Receivers =
+            [
+                .. imports.Select(directive => directive.Alias?.Name.Identifier.Text).OfType<string>(),
+                "TestProgram",
+            ],
         };
         var types = root.DescendantNodes()
             .OfType<TypeDeclarationSyntax>()

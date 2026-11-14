@@ -123,19 +123,32 @@ public sealed class NamedThings
     {
         var text = $"name {step.Alias} {step.Column} {step.Row} {step.What.Text}";
         if (Refusal(text, state) is { } refused)
+        {
             return refused;
+        }
+
         if (!MapSize.TryFromValue(state.Size, out var map, out _))
+        {
             return $"{text}: the map size {state.Size} is not one the original offers";
+        }
+
         if (step.Column >= map.Width || step.Row >= map.Height)
+        {
             return $"{text}: the node is outside the {map.Width} by {map.Height} map";
+        }
 
         var here = (state.Things ?? []).Where(t => t.X == step.Column && t.Y == step.Row).ToList();
         var match = here.Where(step.What.Matches).ToList();
         var held = here.Count == 0 ? "nothing" : string.Join("; ", here.Select(t => t.Line()));
         if (match.Count != 1)
+        {
             return $"{text} failed: {(match.Count == 0 ? "no thing matches" : "several things match")}, the node holds {held}";
+        }
+
         if (!match[0].Values.Any(v => v.Field == "id"))
+        {
             return $"{text} failed: the {match[0].Kind} has no thing ID, the node holds {held}";
+        }
 
         _ids[step.Alias] = IdOf(match[0]);
 
@@ -146,7 +159,9 @@ public sealed class NamedThings
     public string? Run(MarkStep step, PlayState state)
     {
         if (Refusal($"mark {step.Label}", state) is { } refused)
+        {
             return refused;
+        }
 
         _marks[step.Label] = (state.Ticks!.Value, state.Game!.History.Events.Count);
 
@@ -162,7 +177,9 @@ public sealed class NamedThings
             : "";
         var text = $"expect {step.Alias}.{step.Field}{at} {step.Op} {step.Value}";
         if (Refusal(text, state) is { } refused)
+        {
             return refused;
+        }
 
         var id = _ids[step.Alias];
         var link = IsLink(step.Field);
@@ -170,7 +187,9 @@ public sealed class NamedThings
         if (at.Length == 0)
         {
             if (Live(state, id) is not { } thing)
+            {
                 return $"{text} failed: {step.Alias} ({id}) is {Went(state, id)}";
+            }
 
             var value = step.Field switch
             {
@@ -179,14 +198,18 @@ public sealed class NamedThings
                 _ => thing.Values.FirstOrDefault(v => v.Field == step.Field).Value,
             };
             if (value is null)
+            {
                 return $"{text} failed: {step.Alias} ({id}) lists no {step.Field}: {thing.Line()}";
+            }
 
             actual = value;
         }
         else
         {
             if (link)
+            {
                 return $"{text} failed: {step.Field} shows only now, not at a mark or tick";
+            }
 
             ThingState? past;
             if (step.Mark is not null)
@@ -194,30 +217,40 @@ public sealed class NamedThings
                 var (_, events) = _marks[step.Mark];
                 past = state.Game!.History.Events.All.Take(events).LastOrDefault(e => e.Thing == ParseId(id))?.State;
                 if (past is null)
+                {
                     return $"{text} failed: {step.Alias} ({id}) had no event at mark {step.Mark}";
+                }
             }
             else
             {
                 var (found, refusal) = state.Game!.History.StateAt(ParseId(id), step.Tick!.Value);
                 if (found is null)
+                {
                     return $"{text} failed: {refusal}";
+                }
 
                 past = found;
             }
 
             if (past.Get(step.Field) is not { } number)
+            {
                 return $"{text} failed: the state of {step.Alias} ({id}) has no {step.Field}: {past}";
+            }
 
             actual = number.ToString(CultureInfo.InvariantCulture);
         }
 
         bool holds;
         if (link)
+        {
             holds = actual == (_ids.GetValueOrDefault(step.Value) ?? step.Value);
+        }
         else
         {
             if (!Numeric(actual, out var have))
+            {
                 return $"{text} failed: '{actual}' is no number";
+            }
 
             holds = PlayState.Compare(have, step.Number, step.Op);
         }
@@ -230,14 +263,20 @@ public sealed class NamedThings
     {
         var text = $"expect-event {step.Alias} {step.Type}{(step.Cause is null ? "" : " cause " + step.Cause)}";
         if (Refusal(text, state) is { } refused)
+        {
             return refused;
+        }
 
         if (Live(state, _ids[step.Alias]) is null)
+        {
             return $"{text} failed: {step.Alias} ({_ids[step.Alias]}) is {Went(state, _ids[step.Alias])}";
+        }
 
         var events = state.Game!.History.EventsOf(ParseId(_ids[step.Alias]));
         if (events.Any(e => e.Type == step.Type && (step.Cause is null || e.Cause.Kind == step.Cause)))
+        {
             return null;
+        }
 
         return $"{text} failed: {step.Alias} ({_ids[step.Alias]}) has the events {(events.Count == 0 ? "none" : string.Join(", ", events.Select(e => $"{e.Type} (cause {e.Cause})")))}";
     }
@@ -247,7 +286,9 @@ public sealed class NamedThings
     {
         var text = $"expect-gone {step.Alias}";
         if (Refusal(text, state) is { } refused)
+        {
             return refused;
+        }
 
         return Live(state, _ids[step.Alias]) is null
             ? null
@@ -258,14 +299,19 @@ public sealed class NamedThings
     public string? Run(EventsStep step, PlayState state, string outputFolder)
     {
         if (Refusal($"events {step.Alias} {step.Name}", state) is { } refused)
+        {
             return refused;
+        }
 
         var text = new StringBuilder();
         foreach (var e in state.Game!.History.EventsOf(ParseId(_ids[step.Alias])))
         {
             text.Append($"tick={e.Tick} type={e.Type} cause={e.Cause}");
             if (e.Other is not null)
+            {
                 text.Append($" other={e.Other}");
+            }
+
             text.Append(' ').Append(e.State).Append('\n');
         }
 

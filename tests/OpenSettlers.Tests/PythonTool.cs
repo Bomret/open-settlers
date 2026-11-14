@@ -19,7 +19,8 @@ readonly record struct ToolRun
 
 /// <summary>
 /// The one place the tests spawn python3 for the scripts under <c>tools/</c>. A missing python3 fails the test with the hint
-/// to run <c>mise install</c>, as <c>docs/agents/verification.md</c> states. Each run sets its environment: <c>SIEDLER_DIR</c>
+/// to run <c>mise install</c>, as <c>docs/agents/verification.md</c> states, except in <see cref="RunOnPath"/>, which reports
+/// inconclusive. Each run sets its environment: <c>SIEDLER_DIR</c>
 /// is absent unless the caller passes it, and the path holds no <c>analyzeHeadless</c> of the host unless the caller asks for it.
 /// </summary>
 static class PythonTool
@@ -45,10 +46,7 @@ static class PythonTool
     /// <summary>The python3 executable on <paramref name="searchPath"/> (the host's path where null), or a failed test.</summary>
     public static string Resolve(string? searchPath = null)
     {
-        var found = (searchPath ?? Environment.GetEnvironmentVariable("PATH") ?? "")
-            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
-            .SelectMany(dir => new[] { Path.Combine(dir, "python3"), Path.Combine(dir, "python3.exe") })
-            .FirstOrDefault(File.Exists);
+        var found = Locate(searchPath);
         if (found is null)
         {
             Assert.Fail(MissingHint);
@@ -56,6 +54,12 @@ static class PythonTool
 
         return found;
     }
+
+    static string? Locate(string? searchPath) =>
+        (searchPath ?? Environment.GetEnvironmentVariable("PATH") ?? "")
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .SelectMany(dir => new[] { Path.Combine(dir, "python3"), Path.Combine(dir, "python3.exe") })
+            .FirstOrDefault(File.Exists);
 
     /// <summary>Starts the process, or fails the test with the hint where the program cannot be started.</summary>
     public static Process Start(ProcessStartInfo info)
@@ -108,6 +112,38 @@ static class PythonTool
             realHeadless ? host : host.Where(dir => !HoldsHeadless(dir))
         );
         info.Environment["PATH"] = string.Join(Path.PathSeparator, path);
+
+        return Wait(info, siedlerDir);
+    }
+
+    /// <summary>
+    /// Runs <c>python3 -I -B</c> with the arguments in <paramref name="workingDirectory"/>, the child's path replaced by
+    /// <paramref name="path"/> alone, so no tool of the host's path reaches the child. python3 runs by its absolute path.
+    /// Reports inconclusive where the host has no python3.
+    /// </summary>
+    public static ToolRun RunOnPath(string workingDirectory, string[] arguments, string[] path, string? siedlerDir)
+    {
+        var python = Locate(null);
+        if (python is null)
+        {
+            Assert.Inconclusive(MissingHint);
+        }
+
+        var info = new ProcessStartInfo(python) { WorkingDirectory = workingDirectory };
+        foreach (var argument in (string[])["-I", "-B", .. arguments])
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        info.Environment["PATH"] = string.Join(Path.PathSeparator, path);
+
+        return Wait(info, siedlerDir);
+    }
+
+    static ToolRun Wait(ProcessStartInfo info, string? siedlerDir)
+    {
+        info.RedirectStandardOutput = true;
+        info.RedirectStandardError = true;
         info.Environment.Remove("SIEDLER_DIR");
         if (siedlerDir is not null)
         {
@@ -131,16 +167,22 @@ static class PythonTool
     /// Writes a shell script named analyzeHeadless into <paramref name="folder"/> and returns the folder, to prepend to the
     /// path. The body runs as <c>/bin/sh</c> with the tool's arguments.
     /// </summary>
-    public static string StandInHeadless(string folder, string body)
+    public static string StandInHeadless(string folder, string body) => StandIn(folder, "analyzeHeadless", body);
+
+    /// <summary>
+    /// Writes a shell script named <paramref name="name"/> into <paramref name="folder"/> and returns the folder. The body
+    /// runs as <c>/bin/sh</c> with the tool's arguments. Reports inconclusive on Windows.
+    /// </summary>
+    public static string StandIn(string folder, string name, string body)
     {
         if (OperatingSystem.IsWindows())
         {
-            Assert.Inconclusive("the stand-in analyzeHeadless is a shell script");
+            Assert.Inconclusive($"the stand-in {name} is a shell script");
             return folder;
         }
 
         Directory.CreateDirectory(folder);
-        var script = Path.Combine(folder, "analyzeHeadless");
+        var script = Path.Combine(folder, name);
         File.WriteAllText(script, "#!/bin/sh\n" + body);
         File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 

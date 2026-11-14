@@ -32,7 +32,7 @@ public sealed class SpriteKindTests
         Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
-        return new SpriteKind().Enumerate(install!, all).ToList();
+        return [.. new SpriteKind().Enumerate(install!, all)];
     }
 
     static SpritePreview Preview(int entry, int rows = 4000)

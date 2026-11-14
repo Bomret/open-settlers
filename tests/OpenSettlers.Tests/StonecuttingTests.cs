@@ -106,14 +106,7 @@ public sealed class StonecuttingTests
             game.Tick();
         }
 
-        foreach (
-            var (x, y, directions) in new[]
-            {
-                (16, 6, new[] { 0, 0 }),
-                (18, 6, new[] { 5, 5, 0 }),
-                (17, 3, new[] { 0, 1 }),
-            }
-        )
+        foreach (var (x, y, directions) in new[] { (16, 6, new[] { 0, 0 }), (18, 6, [5, 5, 0]), (17, 3, [0, 1]) })
         {
             game.Enqueue(
                 new Command

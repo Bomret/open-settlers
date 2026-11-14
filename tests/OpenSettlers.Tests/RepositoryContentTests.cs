@@ -82,7 +82,9 @@ public sealed class RepositoryContentTests
         finally
         {
             if (Directory.Exists(generated))
+            {
                 Directory.Delete(generated, true);
+            }
         }
     }
 
@@ -126,11 +128,13 @@ public sealed class RepositoryContentTests
     // The set's files by path relative to the folder, with forward slashes.
     static List<string> SetFiles(string folder) =>
         Directory.Exists(folder)
-            ? Directory
-                .EnumerateFiles(folder, "*", SearchOption.AllDirectories)
-                .Select(file => Path.GetRelativePath(folder, file).Replace('\\', '/'))
-                .Order(StringComparer.Ordinal)
-                .ToList()
+            ?
+            [
+                .. Directory
+                    .EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+                    .Select(file => Path.GetRelativePath(folder, file).Replace('\\', '/'))
+                    .Order(StringComparer.Ordinal),
+            ]
             : [];
 
     // A file's bytes; for a PNG its chunk types and data in order, with the image data decompressed.
@@ -138,7 +142,9 @@ public sealed class RepositoryContentTests
     {
         var bytes = File.ReadAllBytes(file);
         if (Path.GetExtension(file) != ".png" || bytes.Length < 8)
+        {
             return bytes;
+        }
 
         using var result = new MemoryStream();
         using var image = new MemoryStream();
@@ -171,15 +177,21 @@ public sealed class RepositoryContentTests
     static IEnumerable<string> Files(string folder)
     {
         foreach (var file in Directory.EnumerateFiles(folder))
+        {
             yield return file;
+        }
 
         foreach (var child in Directory.EnumerateDirectories(folder))
         {
             if (SkippedFolders.Contains(Path.GetFileName(child)))
+            {
                 continue;
+            }
 
             foreach (var file in Files(child))
+            {
                 yield return file;
+            }
         }
     }
 
@@ -187,7 +199,9 @@ public sealed class RepositoryContentTests
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
         while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
+        {
             folder = folder.Parent;
+        }
 
         return folder?.FullName
             ?? throw new InvalidOperationException("OpenSettlers.csproj not found above the test output");

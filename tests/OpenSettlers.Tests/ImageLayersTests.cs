@@ -10,23 +10,24 @@ public sealed class ImageLayersTests
 {
     // A fixed set of images of mixed sizes, met one at a time as a game view's frames meet them.
     static List<ObjectImage> Images() =>
-        Enumerable
-            .Range(0, 1000)
-            .Select(i =>
-            {
-                var width = 1 + i % 97;
-                var height = 1 + i % 61;
-
-                return new ObjectImage
+        [
+            .. Enumerable
+                .Range(0, 1000)
+                .Select(i =>
                 {
-                    Width = width,
-                    Height = height,
-                    OffsetX = 0,
-                    OffsetY = 0,
-                    Rgba = new byte[width * height * 4],
-                };
-            })
-            .ToList();
+                    var width = 1 + i % 97;
+                    var height = 1 + i % 61;
+
+                    return new ObjectImage
+                    {
+                        Width = width,
+                        Height = height,
+                        OffsetX = 0,
+                        OffsetY = 0,
+                        Rgba = new byte[width * height * 4],
+                    };
+                }),
+        ];
 
     // The view builds the array texture again only where the shape changes: the shape grows in steps, so a thousand
     // images met one at a time change it a handful of times, not once per image.

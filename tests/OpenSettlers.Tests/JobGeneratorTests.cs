@@ -84,7 +84,7 @@ public sealed class JobGeneratorTests
     {
         var first = Run(WellFormed).Text;
         var second = Run(WellFormed).Text;
-        var reversed = Run(WellFormed.Reverse().ToArray()).Text;
+        var reversed = Run([.. WellFormed.Reverse()]).Text;
 
         Assert.AreEqual(first, second);
         Assert.AreEqual(first, reversed);

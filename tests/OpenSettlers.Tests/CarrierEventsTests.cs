@@ -38,15 +38,16 @@ public sealed class CarrierEventsTests
         return GameFactory.Create(
             new RuleTables(
                 classes,
-                Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    )
-                    .ToArray(),
-                Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount).ToArray(),
-                Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount).ToArray(),
-                Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount).ToArray()
+                [
+                    .. Enumerable
+                        .Range(0, RuleTables.StartStockRows)
+                        .Select(row =>
+                            Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
+                        ),
+                ],
+                [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
+                [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
+                [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)]
             ),
             map
         );
@@ -168,15 +169,15 @@ public sealed class CarrierEventsTests
     public void TheEventStoreGrowsNoFasterThanLinearlyOverALongGame()
     {
         var game = RoadWithACarrier();
-        const int ticks = 2000;
+        const int Ticks = 2000;
         var start = game.History.Events.Count;
-        for (var i = 0; i < ticks; i++)
+        for (var i = 0; i < Ticks; i++)
         {
             game.Tick();
         }
 
         var first = game.History.Events.Count - start;
-        for (var i = 0; i < ticks; i++)
+        for (var i = 0; i < Ticks; i++)
         {
             game.Tick();
         }

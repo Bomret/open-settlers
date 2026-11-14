@@ -1,26 +1,48 @@
 # Verification
 
+The full command:
+
 ```sh
 mise run check
 ```
+
+The focused command:
 
 ```sh
 mise run test
 ```
 
-The full command restores the local tools, checks formatting (CSharpier names each unformatted file.
-`mise run format` fixes them), runs the unit tests, and builds the project. `mise.toml` holds the
-steps.
+The full command restores the local tools, checks formatting, runs the unit tests, and builds the project.
+CSharpier names each unformatted file, and `mise run format` fixes them. `mise.toml` holds the steps.
+
+Every build enforces the code-style rules of `docs/agents/CODING.md` ("What the build enforces" and "Document").
+A violation fails the full command at its test step. That step builds the test project and the projects it references.
+The focused command fails at its build on the same violations.
+
+Two kinds of violation fail only the build step of the full command, which builds `OpenSettlers.csproj`. The focused
+command does not report them:
+
+- A violation in a file under `src/Viewer`. Only `OpenSettlers.csproj` compiles that folder.
+- A doc-comment diagnostic (CS1591 and the others that "Document" names) in a file under `src/Launch`, `src/Formats`,
+  `src/Assets`, or `src/MapView`. The test project compiles these folders but generates no documentation file.
+
+A violation prints as
+`<file>(<line>,<column>): error <rule ID>: <message>`. A play run with a violation exits 3 and prints the build output.
+`docs/agents/toolchain.md` says how to fix a finding. The rules follow the .NET SDK version that `mise.toml` pins.
 
 Both commands run the unit tests: the tests that need neither the install nor Ghidra. Both skip the tests
 with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
 `TestProgram.Tables`). Both also skip the category `Ghidra` (they run `analyzeHeadless`). The filter is
 `TestCategory!=Install&TestCategory!=Ghidra`. Neither command needs the install, Ghidra, or Godot. The remaining tests
 build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on the path. The tests that run a Python tool need `python3`, which
-`mise install` provides. Where it is missing, they fail with that hint. None of them reports inconclusive. Each spawns
+`mise install` provides. Where it is missing, they fail with that hint, except `HeadlessEntryTests`, which reports
+inconclusive. Each spawns
 its tool through `PythonTool`. `PythonTool` removes `SIEDLER_DIR` and any host `analyzeHeadless` from the child's environment.
 `RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
-`content/open-settlers/` holds a file the generator does not write the same.
+`content/open-settlers/` holds a file the generator does not write the same. `HeadlessEntryTests` runs
+`tools/GhidraDump/headless.py` in a temporary folder on a path that holds only stand-in `analyzeHeadless` and `gradle`
+shell scripts, so a Ghidra or Gradle of the host never runs. It reports inconclusive without python3, and its stand-in
+runs report inconclusive on Windows.
 
 The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
 `[TestCategory(Needs.Install)]` (and `Needs.Ghidra` where the test runs `analyzeHeadless`) on every test

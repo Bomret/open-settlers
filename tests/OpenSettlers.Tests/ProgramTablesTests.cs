@@ -244,7 +244,7 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         Assert.AreEqual(0xAAD8621C6BD7A8D0UL, Fnv([.. tables.Classes.Select(c => (byte)c.Value)]));
-        Assert.AreEqual(0x5495C7981E661835UL, Fnv(tables.StartStock.SelectMany(row => row).ToArray()));
+        Assert.AreEqual(0x5495C7981E661835UL, Fnv([.. tables.StartStock.SelectMany(row => row)]));
     }
 
     [TestMethod]
@@ -296,9 +296,9 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         // peek:43f208:320 (the 160 words from the step shape -32), peek:43c92b:64, and peek:421d28:16.
-        Assert.AreEqual(0x05BF5D4714B4FBADUL, Fnv(tables.StepTimes.SelectMany(BitConverter.GetBytes).ToArray()));
+        Assert.AreEqual(0x05BF5D4714B4FBADUL, Fnv([.. tables.StepTimes.SelectMany(BitConverter.GetBytes)]));
         Assert.AreEqual(0x993304FEA7F369C8UL, Fnv(tables.DoorSpeeds));
-        Assert.AreEqual(0x5AC52FC0C8AECD88UL, Fnv(tables.ScanWindows.SelectMany(BitConverter.GetBytes).ToArray()));
+        Assert.AreEqual(0x5AC52FC0C8AECD88UL, Fnv([.. tables.ScanWindows.SelectMany(BitConverter.GetBytes)]));
     }
 
     [TestMethod]
@@ -355,8 +355,8 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         // peek:4501a1:548 (274 words, 2 for each row 0 to 0x88) and peek:4503c5:1024 (512 words, 2 for each figure byte).
-        Assert.AreEqual(0x7A4340847303DFB6UL, Fnv(tables.FigureBases.SelectMany(BitConverter.GetBytes).ToArray()));
-        Assert.AreEqual(0x9074A7BD864B08BDUL, Fnv(tables.FigureOffsets.SelectMany(BitConverter.GetBytes).ToArray()));
+        Assert.AreEqual(0x7A4340847303DFB6UL, Fnv([.. tables.FigureBases.SelectMany(BitConverter.GetBytes)]));
+        Assert.AreEqual(0x9074A7BD864B08BDUL, Fnv([.. tables.FigureOffsets.SelectMany(BitConverter.GetBytes)]));
     }
 
     [TestMethod]

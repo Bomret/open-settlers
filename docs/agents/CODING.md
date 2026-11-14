@@ -31,9 +31,10 @@ Prefer composing small, focused types over deep inheritance hierarchies.
 Always put a blank line before a jump statement **unless it is the sole statement in its block**.
 
 ```
-// sole statement — no blank line, no braces needed
-if (condition)
+// sole statement — no blank line
+if (condition) {
     return;
+}
 
 // preceding code — blank line before jump
 if (condition) {
@@ -45,17 +46,49 @@ if (condition) {
 
 ### Braces / control flow
 
-Always use braces around loops and conditional branching. The one exception is a branch whose sole statement is a jump (`return`, `break`, `continue`, `throw`): it may go without braces. CSharpier puts that statement on its own line.
+Always use braces around loops and conditional branching, a body whose sole statement is a jump (`return`, `break`, `continue`, `throw`) included. IDE0011 enforces the rule.
 
 ### Document
 
 Document public and protected/abstract/overridable facing types and members using appropriate code documentation. Be specific and concise but also mention side-effects, possible errors/exceptions and possibly unexpected behavior.
+
+The build enforces the rule for the source projects: the game project, the layer projects, and the job generator. `Directory.Build.props` sets `GenerateDocumentationFile` for each of them. Two kinds of finding then fail the build of the project that holds them:
+
+- A public or protected type or member without a doc comment (CS1591).
+- A doc comment that is malformed or whose reference does not resolve (CS1570, CS1572, CS1573, CS1574, CS1587, CS1734, CS0419).
+
+The test project does not generate a documentation file. Its documentation stays with review.
 
 ### Godot `.uid` files
 
 A new script or shader in a Godot-scanned folder (`src/Assets/`, `src/Formats/`, `src/Launch/`, `src/MapView/`, `src/Viewer/`) gets a `.uid` file from the Godot editor. Generate it with `mise exec -- <godot> --headless --import --path .`, where `<godot>` is the `GODOT` name in `mise.toml` for the platform, and commit it with the source. A new folder of C# sources outside the Godot assembly (`<Compile Remove>` in `OpenSettlers.csproj`) gets a `.gdignore`.
 
 ## C# Style
+
+### What the build enforces
+
+The root `.editorconfig` turns the rules in this table into build errors. Each has its own `dotnet_diagnostic.<ID>.severity = warning` line. `Directory.Build.props` sets `EnforceCodeStyleInBuild` and `TreatWarningsAsErrors`. A violation of a table rule fails the build of every project, the test project included. The error names the file, line, and rule ID.
+
+| Rule | ID |
+|------|----|
+| Access modifiers: no default modifier | IDE0040 |
+| `var` wherever it gives the same type | IDE0007 |
+| A private field assigned only in its declaration or constructor is `readonly` | IDE0044 |
+| Braces / control flow: braces around every branch and loop body | IDE0011 |
+| Naming: the table under "Naming" | IDE1006 |
+| A collection expression of the same type in place of an array creation, a collection initializer, or a trailing `ToArray`/`ToList` call | IDE0028, IDE0300–IDE0305 |
+| Classes: a primary constructor where the constructor only assigns its parameters | IDE0290 |
+
+The documentation rule ("Document") is not in the table. The compiler's doc-comment diagnostics enforce it, and only for the source projects.
+
+`CodeStyleBuildTests` reads the rule IDs of this table and the diagnostics of "Document". It fails in these cases:
+
+- The root `.editorconfig` drops a rule's severity line or an option that a rule reads.
+- An `.editorconfig` sets one of the rules to another value.
+- An MSBuild file switches off `EnforceCodeStyleInBuild`, `TreatWarningsAsErrors`, or `GenerateDocumentationFile`.
+- A `NoWarn` names one of the IDs.
+
+These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, composition over inheritance, and the documentation of the test project. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
 
 ### Member ordering
 
@@ -70,11 +103,11 @@ Order by visibility first (`public` → `protected` → `private`), then within 
 
 Omit every access modifier that is the default where it stands: `private` on every member and nested type (fields, methods, properties, constructors, events, nested classes and records), and `internal` on every top-level type, one inside a block-scoped namespace included. These modifiers are not the default and stay: `private protected`, an accessor's own modifier (`{ get; private set; }`), `file`, `internal` on a member, and `internal` on a nested type. Both parts of a partial type follow the rule together. A partial method with a return type, such as a `[GeneratedRegex]` method, keeps its `private`, because the compiler requires an explicit modifier there.
 
-The build enforces the rule. `.editorconfig` sets IDE0040 to `omit_if_default` at warning severity. `Directory.Build.props` sets `EnforceCodeStyleInBuild` with `TreatWarningsAsErrors`, so a default modifier fails the build. `CodeStyleBuildTests` fails when either file drops one of these settings. It also fails when an `.editorconfig` section or an MSBuild file sets either setting to another value.
+The build enforces the rule. `.editorconfig` sets IDE0040 to `omit_if_default` at warning severity. `Directory.Build.props` sets `EnforceCodeStyleInBuild` with `TreatWarningsAsErrors`, so a default modifier fails the build.
 
 ### var
 
-Default to `var`. Use explicit types only when it aids readability, e.g. `IReadOnlyCollection<string> names = ["alice", "bob"]`.
+Use `var` wherever it gives the same type. Write the type where `var` would give another type or none. Target-typed expressions are an example: `IReadOnlyCollection<string> names = ["alice", "bob"]`, `int? count = null`. IDE0007 enforces the rule.
 
 ### Naming
 
@@ -82,17 +115,22 @@ Default to `var`. Use explicit types only when it aids readability, e.g. `IReadO
 |-------|-----------|---------|
 | Classes / interfaces | PascalCase | `Archive`, `AssetKind` |
 | Interface prefix | `I` | `IComparer<T>` |
-| Private fields | `_camelCase` | `_entries` |
+| Private fields (instance, readonly or not) | `_camelCase` | `_entries` |
+| Private mutable static fields | `_camelCase` | `_templateRoot` |
+| Private static readonly fields | PascalCase | `GeneratedFolders` |
 | Records | PascalCase | `TextEntry`, `Rgb` |
-| Constants | PascalCase | `PaletteKind.KindName`, `Palette.ColorCount` |
+| Constants (fields) | PascalCase | `PaletteKind.KindName`, `Palette.ColorCount` |
+| Local constants | PascalCase | `const int Scale = 3;` |
+
+IDE1006 enforces the table. The table sets no rule for non-private fields, properties, methods, or parameters.
 
 ### Modern C# features
 
-Use records, primary constructors, collection expressions, and other C# 12 features. The root project and the Domain, Application, and Adapters projects target `net8.0` and set no `<LangVersion>`, so C# 12 is their language version. The generator project is the exception (see Records). Newer features, such as `field` or extension members, do not compile.
+Use records, primary constructors, collection expressions, and other C# 12 features. The root project and the Domain, Application, and Adapters projects target `net8.0`. They set no `<LangVersion>`, so C# 12 is their language version. The generator project is the exception (see Records). Newer features, such as `field` or extension members, do not compile.
 
 ### Classes
 
-Always use primary constructors with no class fields, if possible.
+Always use primary constructors with no class fields, if possible. IDE0290 enforces the rule where a constructor only assigns its parameters. The constructor's documentation goes on the type, with a `<param>` for each parameter.
 
 ### Records
 

@@ -62,9 +62,14 @@ public partial class AssetBrowserView : Control
                 out var text
             );
             if (code == 0)
+            {
                 GD.Print(text.TrimEnd('\n'));
+            }
             else
+            {
                 GD.PrintErr($"ERROR {text}");
+            }
+
             GetTree().Quit(code);
 
             return;

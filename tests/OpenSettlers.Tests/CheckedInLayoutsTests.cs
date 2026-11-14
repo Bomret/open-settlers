@@ -15,7 +15,9 @@ public sealed class CheckedInLayoutsTests
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
         while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
+        {
             folder = folder.Parent;
+        }
 
         return Path.Combine(
             folder?.FullName

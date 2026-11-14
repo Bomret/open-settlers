@@ -4,5 +4,9 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- docs/agents/CODING.md, "Document": the doc-comment diagnostics (CS1591 and the malformed or unresolved reference
+         ones) fail the build of every source project. The test project stays with review. -->
+    <GenerateDocumentationFile Condition="'$(MSBuildProjectName)' != 'OpenSettlers.Tests'"
+      >true</GenerateDocumentationFile>
   </PropertyGroup>
 </Project>

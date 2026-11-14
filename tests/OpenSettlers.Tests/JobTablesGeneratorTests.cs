@@ -55,7 +55,7 @@ public sealed class JobTablesGeneratorTests
     ];
 
     static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(params string[] modules) =>
-        Run(modules.Prepend(Base).Prepend(Core).ToArray(), References);
+        Run([.. modules.Prepend(Base).Prepend(Core)], References);
 
     static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(
         string[] sources,
@@ -111,7 +111,7 @@ public sealed class JobTablesGeneratorTests
     [TestMethod]
     public void TheGeneratedTextIsTheSameWhateverTheOrderOfTheSources()
     {
-        Assert.AreEqual(Run(WellFormed).Text, Run(WellFormed.Reverse().ToArray()).Text);
+        Assert.AreEqual(Run(WellFormed).Text, Run([.. WellFormed.Reverse()]).Text);
     }
 
     [TestMethod]

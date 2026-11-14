@@ -10,13 +10,13 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class InstallCaseTests
 {
-    static CaseSensitiveVolume? volume;
+    static CaseSensitiveVolume? _volume;
 
     [ClassInitialize]
-    public static void CreateVolume(TestContext _) => volume = new CaseSensitiveVolume();
+    public static void CreateVolume(TestContext _) => _volume = new CaseSensitiveVolume();
 
     [ClassCleanup]
-    public static void DetachVolume() => volume?.Dispose();
+    public static void DetachVolume() => _volume?.Dispose();
 
     static Install Open(CaseSensitiveFolder folder)
     {
@@ -30,7 +30,7 @@ public sealed class InstallCaseTests
     [TestMethod]
     public void AFolderWithTheProgramInNoSpellingIsRefusedWithTheSameProblem()
     {
-        using var folder = volume!.NewFolder().Put("siedler2.exe", [1]);
+        using var folder = _volume!.NewFolder().Put("siedler2.exe", [1]);
 
         var opened = Install.TryOpen(LaunchArgs.Parse(["--game", folder.Root], null), out _, out var problem);
 
@@ -41,7 +41,7 @@ public sealed class InstallCaseTests
     [TestMethod]
     public void AFileInAFolderOfAnotherCaseIsFoundAndRead()
     {
-        using var folder = volume!.NewFolder().Put("siedler1.exe", [1]).Put("snd/sound.dat", [7, 8]);
+        using var folder = _volume!.NewFolder().Put("siedler1.exe", [1]).Put("snd/sound.dat", [7, 8]);
         var install = Open(folder);
 
         Assert.IsTrue(install.Exists("SND/Sound.DAT"));
@@ -51,7 +51,7 @@ public sealed class InstallCaseTests
     [TestMethod]
     public void TheExactSpellingWinsOverOtherCases()
     {
-        using var folder = volume!
+        using var folder = _volume!
             .NewFolder()
             .Put("Siedler1.exe", [1])
             .Put("gfx/a.dat", [1])
@@ -66,7 +66,7 @@ public sealed class InstallCaseTests
     [TestMethod]
     public void WithoutTheExactSpellingTheFirstInOrdinalOrderWins()
     {
-        using var folder = volume!.NewFolder().Put("Siedler1.exe", [1]).Put("x.dat", [1]).Put("X.dat", [2]);
+        using var folder = _volume!.NewFolder().Put("Siedler1.exe", [1]).Put("x.dat", [1]).Put("X.dat", [2]);
         var install = Open(folder);
 
         // Ordinal order puts "X.dat" (0x58) before "x.dat" (0x78).
@@ -76,7 +76,7 @@ public sealed class InstallCaseTests
     [TestMethod]
     public void AFolderNameMatchesOnlyAFolderAndAFileNameOnlyAFile()
     {
-        using var folder = volume!
+        using var folder = _volume!
             .NewFolder()
             .Put("Siedler1.exe", [1])
             .Put("DATA", [9])
@@ -93,7 +93,7 @@ public sealed class InstallCaseTests
     [TestMethod]
     public void AFileAbsentInEverySpellingIsMissing()
     {
-        using var folder = volume!.NewFolder().Put("Siedler1.exe", [1]).Put("snd/a.dat", [1]);
+        using var folder = _volume!.NewFolder().Put("Siedler1.exe", [1]).Put("snd/a.dat", [1]);
         var install = Open(folder);
 
         Assert.IsFalse(install.Exists("snd/b.dat"));
@@ -111,7 +111,7 @@ public sealed class InstallCaseTests
             Assert.Inconclusive("Folder modes need Unix.");
         }
 
-        using var folder = volume!.NewFolder().Put("Siedler1.exe", [1]).Put("snd/a.dat", [1]);
+        using var folder = _volume!.NewFolder().Put("Siedler1.exe", [1]).Put("snd/a.dat", [1]);
         var locked = Path.Combine(folder.Root, "snd");
         File.SetUnixFileMode(locked, UnixFileMode.UserWrite);
         try
@@ -132,7 +132,7 @@ public sealed class InstallCaseTests
     [TestMethod]
     public void FindingAFileWritesNothing()
     {
-        using var folder = volume!.NewFolder().Put("siedler1.exe", [1]).Put("snd/a.dat", [1]);
+        using var folder = _volume!.NewFolder().Put("siedler1.exe", [1]).Put("snd/a.dat", [1]);
         var before = Directory.GetFileSystemEntries(folder.Root, "*", SearchOption.AllDirectories);
         var install = Open(folder);
 

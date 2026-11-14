@@ -150,10 +150,13 @@ public sealed class CastleRoster(
         }
     }
 
-    // The handler of a building type (the table at 0x42cd1d): a finished building of a type that asks for a worker (RuleTables.WorkerOf)
-    // asks for it unless it has one, has one on the way, or its last request failed; the castle's own handler (0x42e7e0, knights and
-    // defence) is not ported. A building under construction has the construction's handler instead (the entries 0x21 and on of the
-    // table go to 0x42d55f, SitePass).
+    /// <summary>
+    /// The handler of a building type (the table at <c>0x42cd1d</c>): a finished building of a type that asks for a worker
+    /// (<see cref="RuleTables.WorkerOf"/>) asks for it unless it has one, has one on the way, or its last request failed; the
+    /// castle's own handler (<c>0x42e7e0</c>, knights and defence) is not ported. A building under construction has the
+    /// construction's handler instead (the entries <c>0x21</c> and on of the table go to <c>0x42d55f</c>, <see cref="SitePass"/>).
+    /// </summary>
+    /// <param name="building">The building whose turn it is.</param>
     public void HandleBuilding(Building building)
     {
         if (

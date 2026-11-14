@@ -75,7 +75,9 @@ public static class ShotCrop
             out var copy
         );
         if (problem is not null)
+        {
             return problem;
+        }
 
         var (left, top, right, bottom) = (double.MaxValue, double.MaxValue, double.MinValue, double.MinValue);
         for (var dr = -radius; dr <= radius; dr++)
@@ -86,7 +88,9 @@ public static class ShotCrop
                 var steps =
                     Math.Sign(dc) == Math.Sign(dr) ? Math.Max(Math.Abs(dc), Math.Abs(dr)) : Math.Abs(dc) + Math.Abs(dr);
                 if (steps > radius)
+                {
                     continue;
+                }
 
                 var (c, r) = (column + dc, row + dr);
                 var (x, y) = Camera.NodePosition(c, r);

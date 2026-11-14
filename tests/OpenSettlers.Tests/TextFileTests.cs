@@ -10,7 +10,7 @@ public sealed class TextFileTests
 {
     static TextFile Read(string text) => TextFile.Read(Encoding.Latin1.GetBytes(text));
 
-    static string[] Pairs(TextFile file) => file.Entries.Select(e => $"{e.Key}|{e.Value}").ToArray();
+    static string[] Pairs(TextFile file) => [.. file.Entries.Select(e => $"{e.Key}|{e.Value}")];
 
     [TestMethod]
     public void LinesOfKeyAndQuotedValueWithCrlfGiveKeysAndValues()

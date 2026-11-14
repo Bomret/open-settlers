@@ -94,7 +94,7 @@ public sealed class JobRulesGeneratorTests
     [TestMethod]
     public void TheGeneratedTextIsTheSameWhateverTheOrderOfTheSources()
     {
-        Assert.AreEqual(Run(WellFormed).Text, Run(WellFormed.Reverse().ToArray()).Text);
+        Assert.AreEqual(Run(WellFormed).Text, Run([.. WellFormed.Reverse()]).Text);
     }
 
     [TestMethod]

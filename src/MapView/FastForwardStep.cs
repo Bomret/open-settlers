@@ -33,7 +33,9 @@ public abstract record FastForwardStep : PlayStep
         for (var ticks = 0; !Holds(game, state); ticks++)
         {
             if (ticks == MaxTicks)
+            {
                 return $"{Text}: not reached after {ticks} ticks";
+            }
 
             game.Tick();
         }
@@ -48,9 +50,14 @@ public abstract record FastForwardStep : PlayStep
     public string? Apply(Game? game, bool gameView, TickPacer pacer, Func<bool, PlayState> state)
     {
         if (!gameView)
+        {
             return "fast-forward needs the game view, use --game-view";
+        }
+
         if (game is null)
+        {
             return "fast-forward: no game is running";
+        }
 
         var problem = Run(game, state);
         pacer.Hold();
@@ -84,7 +91,9 @@ public sealed record FastForwardJobStep : FastForwardStep
         for (var code = 0; code < 256; code++)
         {
             if (Simulation.NameTable.JobName(code) == name)
+            {
                 return Domain.Job.Of(code);
+            }
         }
 
         return null;
@@ -102,7 +111,9 @@ public sealed record FastForwardJobStep : FastForwardStep
             // The raw-code boundary: a play script writes the original's state numbers, so State is compared with the
             // activity's original state code.
             if (settler.Job == Job && (State is { } code ? settler.Activity.Code == code : settler.Activity.Carries))
+            {
                 return true;
+            }
         }
 
         return false;

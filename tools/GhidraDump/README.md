@@ -54,7 +54,9 @@ build"), found through `SIEDLER_DIR`.
 
 Run Ghidra headless directly. The REA tools and `rea analyze` stop after a fixed timeout that a full
 analysis of `Siedler1.exe` can exceed. Ghidra headless has no timeout. The tasks run
-`headless.py`, which calls Ghidra's `analyzeHeadless` on the project in `re-local/ghidra`.
+`headless.py`, which calls Ghidra's `analyzeHeadless` on the project in `re-local/ghidra`. Each task
+looks up `analyzeHeadless` (and `gradle` for `ghidra:natives`) before it creates or removes a folder, so on
+a host without Ghidra a task stops with its message and leaves `re-local/` as it was.
 
 Build the project only when `re-local/ghidra` holds no project. The import replaces an existing project
 and loses every change applied to it. The build takes about 7 minutes. It imports the program, runs

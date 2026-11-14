@@ -40,7 +40,7 @@ public sealed class NeedsTests
         Regex.Match(MiseToml().Split($"[tasks.{task}]")[1].Split("\n[")[0], "--filter '([^']*)'").Groups[1].Value;
 
     static string[] Categories(string prefix) =>
-        typeof(Needs).GetFields().Select(f => $"{prefix}{f.GetRawConstantValue()}").Order().ToArray();
+        [.. typeof(Needs).GetFields().Select(f => $"{prefix}{f.GetRawConstantValue()}").Order()];
 
     [TestMethod]
     public void TheFullCommandRunsTheFocusedFilter()

@@ -63,13 +63,11 @@ public abstract class JobRules
 
 /// <summary>The job rules module of the job <typeparamref name="TJob"/>: at most one module rules a job.</summary>
 /// <typeparam name="TJob">The job type.</typeparam>
-public abstract class JobRules<TJob> : JobRules
+/// <remarks>Makes the module from the shared parts.</remarks>
+/// <param name="parts">The shared parts.</param>
+public abstract class JobRules<TJob>(JobParts parts) : JobRules(parts)
     where TJob : Job
 {
-    /// <summary>Makes the module from the shared parts.</summary>
-    protected JobRules(JobParts parts)
-        : base(parts) { }
-
     /// <inheritdoc />
     public sealed override Type JobType => typeof(TJob);
 }

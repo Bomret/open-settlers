@@ -8,7 +8,13 @@ namespace OpenSettlers.Simulation;
 /// game state, take no part in <c>Game.Digest</c>, and no rule reads them to decide. The history asks its
 /// <see cref="IThingSnapshots"/> for the state of a thing when a rule records an event.
 /// </summary>
-public sealed class GameHistory
+/// <remarks>
+/// A history that takes each thing's state from <paramref name="snapshots"/> and reads the number of ticks the game has
+/// run from <paramref name="tickCount"/>.
+/// </remarks>
+/// <param name="snapshots">The source of each thing's state.</param>
+/// <param name="tickCount">Reads the number of ticks the game has run.</param>
+public sealed class GameHistory(IThingSnapshots snapshots, Func<long> tickCount)
 {
     // The state of a settler waiting next to a flag (docs/rules/carriers.md).
     const int WaitingState = 0x42;
@@ -25,18 +31,8 @@ public sealed class GameHistory
     // The command cause each settler carries on until its behaviour ends.
     readonly Dictionary<ThingId, Cause> _carried = [];
 
-    readonly IThingSnapshots _snapshots;
-    readonly Func<long> _tickCount;
-
-    /// <summary>
-    /// A history that takes each thing's state from <paramref name="snapshots"/> and reads the number of ticks the game has
-    /// run from <paramref name="tickCount"/>.
-    /// </summary>
-    public GameHistory(IThingSnapshots snapshots, Func<long> tickCount)
-    {
-        _snapshots = snapshots;
-        _tickCount = tickCount;
-    }
+    readonly IThingSnapshots _snapshots = snapshots;
+    readonly Func<long> _tickCount = tickCount;
 
     /// <summary>
     /// The event store: every event the rules recorded, in order (ADR 0011). It is outside the game's digest; no rule reads

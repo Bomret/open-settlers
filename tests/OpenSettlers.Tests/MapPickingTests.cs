@@ -231,7 +231,9 @@ public sealed class MapPickingTests
             for (var column = 0; column < Map.Size.Width; column++)
             {
                 if (Aim((cameraX + 0.1, cameraY + 0.3), scale, width, height, column, row, out var at) is not null)
+                {
                     continue;
+                }
 
                 Assert.AreEqual(((double)(float)at.X, (double)(float)at.Y), at, $"tile {column},{row}");
             }
@@ -246,7 +248,9 @@ public sealed class MapPickingTests
             for (var column = 0; column < Map.Size.Width; column++)
             {
                 if (Aim((512, 320), 0.5, 1280, 680, column, row, out _) is { } problem)
+                {
                     StringAssert.Contains(problem, "same point");
+                }
             }
         }
     }

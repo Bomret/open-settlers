@@ -75,7 +75,7 @@ public sealed class ConstructionMaterialsTests
                 {
                     var click = clicks[index];
                     var node = click[2..].Split(',').Select(number => int.Parse(number, CultureInfo.InvariantCulture));
-                    Click(game, click[0], node.ToArray());
+                    Click(game, click[0], [.. node]);
                     Take(clickLines[index]);
                     Check(game, $"{name}: after the click {click}", flags, buildings, stock, rng);
                 }

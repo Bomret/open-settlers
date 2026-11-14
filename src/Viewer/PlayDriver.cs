@@ -60,7 +60,9 @@ public partial class PlayDriver : Node
         KeepHeld();
         _run.Advance(delta);
         if (!_run.Finished)
+        {
             return;
+        }
 
         foreach (var problem in _run.Problems)
         {
@@ -132,7 +134,9 @@ public partial class PlayDriver : Node
     string? ClickTile(ClickTileStep tile)
     {
         if (_view.Map is not { } map)
+        {
             return $"tile {tile.Column},{tile.Row}: no map is shown";
+        }
 
         var view = _view.Snapshot();
         var size = _view.Canvas.Size;
@@ -151,7 +155,9 @@ public partial class PlayDriver : Node
             out var y
         );
         if (problem is not null)
+        {
             return problem;
+        }
 
         var at = Canvas(new Vector2((float)x, (float)y));
         Send(Button(MouseButton.Left, at, true));
@@ -165,7 +171,9 @@ public partial class PlayDriver : Node
     {
         var shown = _view.ShownButtons;
         if (step.Missing([.. shown.Select(b => b.Text)]) is { } problem)
+        {
             return problem;
+        }
 
         var at = shown.First(b => b.Text == step.Name).GetGlobalRect().GetCenter();
         Send(Button(MouseButton.Left, at, true));
@@ -205,12 +213,19 @@ public partial class PlayDriver : Node
     {
         var code = (long)OS.FindKeycodeFromString(name);
         if (PlayKeys.Split(name, code, Masks, out var chord) is { } problem)
+        {
             return problem;
+        }
 
         if (pressed)
+        {
             _held.Hold(chord.Key);
+        }
         else
+        {
             _held.Release(chord.Key);
+        }
+
         Press(chord, pressed, echo: false);
 
         return null;
@@ -270,7 +285,9 @@ public partial class PlayDriver : Node
             if (shot.Tile is { } tile)
             {
                 if (_view.Map is not { } map)
+                {
                     return $"tile {tile.Column},{tile.Row}: no map is shown";
+                }
 
                 var view = _view.Snapshot();
                 var size = _view.Canvas.Size;
@@ -292,14 +309,21 @@ public partial class PlayDriver : Node
                     out var box
                 );
                 if (problem is not null)
+                {
                     return problem;
+                }
+
                 if (ShotCrop.ScaleProblem(box, tile.Scale) is { } tooLarge)
+                {
                     return tooLarge;
+                }
 
                 // Canvas units are image pixels: the play run pins the window to WindowSize, so the content scale is 1.
                 image = image.GetRegion(new Rect2I(box.X, box.Y, box.Width, box.Height));
                 if (tile.Scale > 1)
+                {
                     image.Resize(box.Width * tile.Scale, box.Height * tile.Scale, Image.Interpolation.Nearest);
+                }
             }
 
             Directory.CreateDirectory(_outputFolder);

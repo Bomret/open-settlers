@@ -11,7 +11,7 @@ public sealed class SettlerMovementTests
     static ushort _clock;
 
     static SettlerMovement Movement(Map map) =>
-        new(map, new BuildingTable(), LayoutSettlersTests.MadeTables(), () => _clock, _ => new Residue());
+        new(map, [], LayoutSettlersTests.MadeTables(), () => _clock, _ => new Residue());
 
     static Settler SettlerAt(int x, int y) => new(new Woodcutter(), 0, x, y, 0, new WaitsInCastle());
 

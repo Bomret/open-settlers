@@ -15,11 +15,11 @@ namespace OpenSettlers.Simulation;
 /// <param name="parts">The shared parts.</param>
 public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
 {
-    readonly SettlerMovement movement = parts.Movement;
-    readonly FlagTable flags = parts.Flags;
-    readonly GameHistory history = parts.History;
-    readonly Action<int, int, int> layGood = parts.LayGood;
-    readonly HutWork hut = parts.Hut;
+    readonly SettlerMovement _movement = parts.Movement;
+    readonly FlagTable _flags = parts.Flags;
+    readonly GameHistory _history = parts.History;
+    readonly Action<int, int, int> _layGood = parts.LayGood;
+    readonly HutWork _hut = parts.Hut;
 
     // The time a log takes to saw, which the timer is set to (0x435a75), and the frame of the work (0x435a6d).
     const ushort SawTime = 0x93f;
@@ -61,9 +61,9 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
 
         var held = (mill.FillHigh >> 4) + (mill.FillHigh & 0xf);
         var rank = held < StoreFull ? (byte)(0xff >> held) : (byte)0;
-        if (movement.Tables.ClassOfGood(Good.Log) is { } asked)
+        if (_movement.Tables.ClassOfGood(Good.Log) is { } asked)
         {
-            var flag = flags[mill.Flag];
+            var flag = _flags[mill.Flag];
             flag.SetRequest(asked.Word, flag.RequestOf(asked.Word) with { Rank = rank });
         }
     }
@@ -75,24 +75,24 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
     /// </summary>
     public override void Start(int slot, Settler settler, Building mill)
     {
-        movement.Release(movement.Map.Index(settler.X, settler.Y));
-        if (movement.ResidueOf(settler.Activity).Mode != 0)
+        _movement.Release(_movement.Map.Index(settler.X, settler.Y));
+        if (_movement.ResidueOf(settler.Activity).Mode != 0)
         {
             // The request words' class bytes are written (0x42 to 0, 0x44 to the class of the log), the second word's rank too (0x45); the
             // first word's rank stays.
-            var flag = flags[mill.Flag];
+            var flag = _flags[mill.Flag];
             foreach (var word in new[] { RequestWord.First, RequestWord.Second })
             {
                 flag.SetRequest(word, flag.RequestOf(word) with { Asks = null });
             }
 
-            if (movement.Tables.ClassOfGood(Good.Log) is { } asked)
+            if (_movement.Tables.ClassOfGood(Good.Log) is { } asked)
             {
                 flag.SetRequest(asked.Word, new Request { Asks = asked, Rank = 0 });
             }
         }
 
-        movement.Become(settler, new Saws { Sawing = false });
+        _movement.Become(settler, new Saws { Sawing = false });
     }
 
     // State 0x18 (0x4359fe). Without a log on site (the high nibble of the fill byte) the sawmiller waits and changes nothing. With
@@ -100,25 +100,25 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
     // run out he lets the node go and steps out with a plank.
     void Work(int slot, Settler settler)
     {
-        var node = movement.Map.Index(settler.X, settler.Y);
+        var node = _movement.Map.Index(settler.X, settler.Y);
         var sawing = ((Saws)settler.Activity).Sawing;
-        var done = sawing && movement.TimerRan(settler);
+        var done = sawing && _movement.TimerRan(settler);
         if (done)
         {
-            movement.Release(node);
-            movement.Become(settler, new StepsOutWithGood { Good = Good.Plank });
+            _movement.Release(node);
+            _movement.Become(settler, new StepsOutWithGood { Good = Good.Plank });
         }
-        else if (!sawing && movement.BuildingAt(node) is { } mill && (mill.FillHigh & OnSite) != 0)
+        else if (!sawing && _movement.BuildingAt(node) is { } mill && (mill.FillHigh & OnSite) != 0)
         {
             mill.SetFill(FillCounter.High, mill.FillHigh - OneOnSite);
-            movement.Become(settler, new Saws { Sawing = true });
-            movement.Occupy(node, slot);
+            _movement.Become(settler, new Saws { Sawing = true });
+            _movement.Occupy(node, slot);
             settler.Frame = SawFrame;
             settler.Timer = SawTime;
-            settler.Stamp = movement.Clock;
+            settler.Stamp = _movement.Clock;
         }
 
-        history.RecordSettler(slot, EventType.Saws, Cause.Settlers);
+        _history.RecordSettler(slot, EventType.Saws, Cause.Settlers);
         if (done)
         {
             StepOut(slot, settler);
@@ -130,24 +130,24 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
     // with the frame 0x52. The time of the step is scaled by the door's speed, and he waits it out in state 5 before he lays the good down.
     void StepOut(int slot, Settler settler)
     {
-        var map = movement.Map;
+        var map = _movement.Map;
         var here = map.Index(settler.X, settler.Y);
-        var (x, y, next) = movement.Neighbour(settler, ToFlag);
-        var standing = movement.Occupant(here);
+        var (x, y, next) = _movement.Neighbour(settler, ToFlag);
+        var standing = _movement.Occupant(here);
         if (
             (standing == slot || standing == 0)
-            && movement.Occupant(next) == 0
-            && flags[map.At(next).LinkedSlot].FirstEmptyPlace() >= 0
+            && _movement.Occupant(next) == 0
+            && _flags[map.At(next).LinkedSlot].FirstEmptyPlace() >= 0
         )
         {
-            var door = movement.BuildingAt(here);
-            var shape = StepFrameBase + movement.Height(next) - movement.Height(here);
+            var door = _movement.BuildingAt(here);
+            var shape = StepFrameBase + _movement.Height(next) - _movement.Height(here);
             var carried = ((StepsOutWithGood)settler.Activity).Good;
-            movement.Move(slot, settler, x, y, next);
+            _movement.Move(slot, settler, x, y, next);
             settler.Frame = (byte)shape;
-            var speed = (byte)(movement.Tables.DoorSpeed(door) ^ 0x1f);
-            settler.Timer = (ushort)((ushort)(movement.Tables.StepTime(shape) * speed) >> 5);
-            settler.Stamp = movement.Clock;
+            var speed = (byte)(_movement.Tables.DoorSpeed(door) ^ 0x1f);
+            settler.Timer = (ushort)((ushort)(_movement.Tables.StepTime(shape) * speed) >> 5);
+            settler.Stamp = _movement.Clock;
             settler.Activity = new WaitsOutStep { Then = new PutsDownGood { Good = carried } };
         }
         else
@@ -156,7 +156,7 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
             settler.Timer = 0;
         }
 
-        history.RecordSettler(slot, EventType.StepOut, Cause.Settlers);
+        _history.RecordSettler(slot, EventType.StepOut, Cause.Settlers);
     }
 
     // State 0xd (0x43c6aa): the good goes on the first empty place of the flag, or on the last place where the first seven hold goods;
@@ -164,11 +164,11 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
     void PutDown(int slot, Settler settler)
     {
         var good = ((PutsDownGood)settler.Activity).Good;
-        var flag = movement.Map.At(settler.X, settler.Y).LinkedSlot;
-        var place = flags[flag].FirstEmptyPlace();
-        layGood(flag, place >= 0 ? place : FlagPlaces - 1, good.Code);
-        history.RecordFlag(flag, EventType.PutGood, Cause.Settlers, history.SettlerId(slot).ToString());
-        movement.Become(settler, new EntersBuilding(), movement.ResidueOf(settler.Activity) with { Mode = 0 });
-        hut.EnterHut(slot, settler);
+        var flag = _movement.Map.At(settler.X, settler.Y).LinkedSlot;
+        var place = _flags[flag].FirstEmptyPlace();
+        _layGood(flag, place >= 0 ? place : FlagPlaces - 1, good.Code);
+        _history.RecordFlag(flag, EventType.PutGood, Cause.Settlers, _history.SettlerId(slot).ToString());
+        _movement.Become(settler, new EntersBuilding(), _movement.ResidueOf(settler.Activity) with { Mode = 0 });
+        _hut.EnterHut(slot, settler);
     }
 }

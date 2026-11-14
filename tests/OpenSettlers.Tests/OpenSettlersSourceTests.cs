@@ -1648,14 +1648,14 @@ public sealed class OpenSettlersSourceTests
     public void EveryTerrainImageCoversTheLargestDrop()
     {
         var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
-        const int largestDrop = Node.MaxHeight * TerrainTriangles.HeightStep;
+        const int LargestDrop = Node.MaxHeight * TerrainTriangles.HeightStep;
 
         for (var code = 0; code < OpenSettlersSource.TerrainCodes; code++)
         {
             foreach (var upper in new[] { true, false })
             {
                 var image = source.Draw(Triangle(code, upper))!;
-                Assert.IsTrue(image.Height - Camera.RowSpacing >= largestDrop, $"{code} {upper}: skirt {image.Height}");
+                Assert.IsTrue(image.Height - Camera.RowSpacing >= LargestDrop, $"{code} {upper}: skirt {image.Height}");
             }
         }
     }

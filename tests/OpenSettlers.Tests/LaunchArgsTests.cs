@@ -335,9 +335,9 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
-    [DataRow(new string[] { "--play", "play/zoom.play" })]
-    [DataRow(new string[] { "--check", "--play", "play/zoom.play" })]
-    [DataRow(new string[] { "--seed-info", "--seed", "1234567812345678", "--play", "play/zoom.play" })]
+    [DataRow(["--play", "play/zoom.play"])]
+    [DataRow(["--check", "--play", "play/zoom.play"])]
+    [DataRow(["--seed-info", "--seed", "1234567812345678", "--play", "play/zoom.play"])]
     public void ThePlayFlagWithoutTheMapOrGameViewFlagIsAProblemNamingBoth(string[] given)
     {
         var args = LaunchArgs.Parse(given, null, movieMaker: true);

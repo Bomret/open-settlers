@@ -156,6 +156,29 @@ public sealed class MapGeneratorTests
         Assert.AreEqual(Enum.GetValues<MapPass>().Length, passes);
     }
 
+    // The map seed 0,0,0 leaves no land mass covering a quarter of the map, where the original's KeepMainLand scans
+    // without end. The timeout abandons the test thread, so a regression that loops fails instead of hanging the run.
+    [TestMethod]
+    [Timeout(10_000, CooperativeCancellation = false)]
+    public void AMapSeedWithNoLandMassIsRefusedAtEveryOfferedSize()
+    {
+        var noLand = new MapSeed
+        {
+            W0 = 0,
+            W1 = 0,
+            W2 = 0,
+        };
+
+        foreach (var size in MapSize.Offered)
+        {
+            var refusal = Assert.ThrowsExactly<InvalidOperationException>(
+                () => MapGenerator.Generate(TestProgram.Made(), noLand, size),
+                $"size {size.Value}"
+            );
+            Assert.AreEqual("no land mass covers a quarter of the map", refusal.Message, $"size {size.Value}");
+        }
+    }
+
     [TestMethod]
     [DataRow(-1, 0)]
     [DataRow(-1, -1)]

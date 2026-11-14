@@ -15,7 +15,9 @@ public sealed class WoodcuttingHistoryTests
     {
         var folder = new DirectoryInfo(AppContext.BaseDirectory);
         while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
+        {
             folder = folder.Parent;
+        }
 
         var path = Path.Combine(folder!.FullName, "layouts", "woodcutter.jsonc");
         var read = Layout.Read(File.ReadAllText(path), "woodcutter.jsonc");
@@ -119,12 +121,17 @@ public sealed class WoodcuttingHistoryTests
         var slot = game.Settlers.ToList().FindIndex(s => s.Job == new Woodcutter());
         var id = game.History.SettlerId(slot);
         for (var i = 0; i < 4000 && Woodcutter(game).Activity is not Door; i++)
+        {
             game.Tick();
+        }
+
         Assert.IsInstanceOfType<Door>(Woodcutter(game).Activity);
         Woodcutter(game).TakeUp(new Carrier());
         var before = game.History.EventsOf(id).Count;
         for (var i = 0; i < 50 && !game.History.EventsOf(id).Skip(before).Any(e => e.Type == EventType.Door); i++)
+        {
             game.Tick();
+        }
 
         var door = game.History.EventsOf(id).Skip(before).First(e => e.Type == EventType.Door);
         Assert.AreNotEqual(Cause.Woodcutting, door.Cause);
@@ -184,14 +191,18 @@ public sealed class WoodcuttingHistoryTests
         var slot = game.Settlers.ToList().FindIndex(s => s.Job == new Woodcutter());
         var id = game.History.SettlerId(slot);
         for (var i = 0; i < 4000 && Woodcutter(game).Activity is not LooksForTree; i++)
+        {
             game.Tick();
+        }
 
         Assert.IsInstanceOfType<LooksForTree>(Woodcutter(game).Activity);
         // No command or removal rule sends a woodcutter home without a carried cause, so the walk home is begun directly.
         game.WalkHome.Begin(slot);
         var before = game.History.EventsOf(id).Count;
         for (var i = 0; i < 30; i++)
+        {
             game.Tick();
+        }
 
         var recorded = game.History.EventsOf(id).Skip(before).ToList();
         Assert.IsNotEmpty(recorded);

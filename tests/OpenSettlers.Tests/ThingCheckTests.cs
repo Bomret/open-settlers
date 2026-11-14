@@ -42,7 +42,9 @@ public sealed class ThingCheckTests
     {
         var run = new PlayRun(Parse(script), () => _state, "unused", _ => null);
         for (var i = 0; i < 5; i++)
+        {
             run.Advance(Frame);
+        }
 
         return run.Problems;
     }

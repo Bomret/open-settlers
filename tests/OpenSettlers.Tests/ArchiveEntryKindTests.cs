@@ -64,7 +64,7 @@ public sealed class ArchiveEntryKindTests
         );
 
     static List<Asset> List(ArchiveEntryKind kind, FakeInstall fake, params ArchiveEntryKind[] others) =>
-        kind.Enumerate(Open(fake), [kind, .. others]).ToList();
+        [.. kind.Enumerate(Open(fake), [kind, .. others])];
 
     [TestMethod]
     public void AKindListsItsClaimedPresentEntriesOfEachArchiveInEntryOrder()

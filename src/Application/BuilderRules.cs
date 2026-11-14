@@ -17,12 +17,12 @@ namespace OpenSettlers.Simulation;
 /// <param name="parts">The shared parts.</param>
 public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
 {
-    readonly SettlerMovement movement = parts.Movement;
-    readonly BuildingTable buildings = parts.Buildings;
-    readonly FlagTable flags = parts.Flags;
-    readonly GameHistory history = parts.History;
-    readonly IRandomDraws draws = parts.Draws;
-    readonly HutWork hut = parts.Hut;
+    readonly SettlerMovement _movement = parts.Movement;
+    readonly BuildingTable _buildings = parts.Buildings;
+    readonly FlagTable _flags = parts.Flags;
+    readonly GameHistory _history = parts.History;
+    readonly IRandomDraws _draws = parts.Draws;
+    readonly HutWork _hut = parts.Hut;
 
     // The types whose builder takes the second figure: the mask 0x4a0400 tests the type's bit (0x43ceb4).
     const int SecondFigureTypes = 0x4a0400;
@@ -66,11 +66,11 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     public override void Start(int slot, Settler settler, Building site)
     {
         var secondFigure = (SecondFigureTypes >> site.Type.Code & 1) != 0;
-        movement.Become(
+        _movement.Become(
             settler,
             new Builds
             {
-                Site = buildings.SlotOf(site),
+                Site = _buildings.SlotOf(site),
                 Blowing = false,
                 Materials = 0,
                 SecondFigure = secondFigure,
@@ -86,15 +86,15 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     void Turn(int slot, Settler settler)
     {
         var site = ((Builds)settler.Activity).Site;
-        if (movement.TimerRan(settler))
+        if (_movement.TimerRan(settler))
         {
             Work(slot, settler);
         }
 
         if (settler.Activity is Builds)
         {
-            history.RecordSettler(slot, EventType.Builds, Cause.Settlers, history.BuildingId(site).ToString());
-            history.RecordBuilding(site, EventType.Builds, Cause.Settlers, history.SettlerId(slot).ToString());
+            _history.RecordSettler(slot, EventType.Builds, Cause.Settlers, _history.BuildingId(site).ToString());
+            _history.RecordBuilding(site, EventType.Builds, Cause.Settlers, _history.SettlerId(slot).ToString());
         }
     }
 
@@ -105,7 +105,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
         while (true)
         {
             var builds = (Builds)settler.Activity;
-            var site = buildings[builds.Site];
+            var site = _buildings[builds.Site];
             if (builds.Blowing)
             {
                 if (!Blow(slot, settler, site, builds))
@@ -135,7 +135,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     // carry out of the word finishes the building; false then.
     bool Blow(int slot, Settler settler, Building site, Builds builds)
     {
-        var sum = site.Progress + movement.Tables.BlowStep(site.Type, site.Progress >= 0x8000);
+        var sum = site.Progress + _movement.Tables.BlowStep(site.Type, site.Progress >= 0x8000);
         site.Progress = (ushort)sum;
         if (sum > ushort.MaxValue)
         {
@@ -156,7 +156,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     {
         settler.Frame = builds.SecondFigure ? SecondFigureFrame : FirstFigureFrame;
         var needs = site.Site!;
-        if (movement.Tables.StoneAt(site.Type, builds.Materials))
+        if (_movement.Tables.StoneAt(site.Type, builds.Materials))
         {
             if ((site.FillHigh & OnSite) == 0)
             {
@@ -196,9 +196,9 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     bool Animate(Settler settler)
     {
         var builds = (Builds)settler.Activity;
-        settler.Frame = BlowFrame + (draws.Draw() & 3) + (builds.SecondFigure ? 4 : 0);
+        settler.Frame = BlowFrame + (_draws.Draw() & 3) + (builds.SecondFigure ? 4 : 0);
         var old = settler.Timer;
-        settler.Timer = (ushort)(old + movement.Tables.StepTime(settler.Frame));
+        settler.Timer = (ushort)(old + _movement.Tables.StepTime(settler.Frame));
 
         return settler.Timer >= old;
     }
@@ -207,29 +207,29 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     // site's flag asks for nothing, and the builder takes state 0x4a with no timer and goes on at once.
     void Finish(int slot, Settler settler, Building site)
     {
-        var siteSlot = buildings.SlotOf(site);
+        var siteSlot = _buildings.SlotOf(site);
         site.Progress = 0;
         site.WorkerInside = false;
         site.Worker = 0;
         site.Constructing = false;
         site.Site = null;
-        var flag = flags[site.Flag];
+        var flag = _flags[site.Flag];
         flag.SetRequest(RequestWord.First, flag.RequestOf(RequestWord.First) with { Asks = null });
         flag.SetRequest(RequestWord.Second, flag.RequestOf(RequestWord.Second) with { Asks = null });
 
-        movement.Become(settler, new LeavesSite());
+        _movement.Become(settler, new LeavesSite());
         settler.Timer = 0;
-        history.RecordBuilding(
+        _history.RecordBuilding(
             siteSlot,
             EventType.BuildingFinished,
             Cause.Settlers,
-            history.SettlerId(slot).ToString()
+            _history.SettlerId(slot).ToString()
         );
-        history.RecordFlag(
+        _history.RecordFlag(
             site.Flag,
             EventType.BuildingFinished,
             Cause.Settlers,
-            history.BuildingId(siteSlot).ToString()
+            _history.BuildingId(siteSlot).ToString()
         );
         Leave(slot, settler);
     }
@@ -238,8 +238,8 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     // original's code falls into) and goes home along the roads (state 2, mode 0xfe, to the castle).
     void Leave(int slot, Settler settler)
     {
-        var (_, _, next) = movement.Neighbour(settler, ToFlag);
-        if (movement.Occupant(next) == 0)
+        var (_, _, next) = _movement.Neighbour(settler, ToFlag);
+        if (_movement.Occupant(next) == 0)
         {
             settler.Activity = new StepsOntoFlag
             {
@@ -249,11 +249,11 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
                     Heading = new Heading { Value = 0 },
                 },
             };
-            hut.StepOut(slot, settler);
+            _hut.StepOut(slot, settler);
 
             return;
         }
 
-        history.RecordSettler(slot, EventType.LeavesSite, Cause.Settlers);
+        _history.RecordSettler(slot, EventType.LeavesSite, Cause.Settlers);
     }
 }

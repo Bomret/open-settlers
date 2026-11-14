@@ -90,9 +90,8 @@ public sealed class GameHistoryTests
             Frame = 6,
             Timer = 65535,
         };
-        var settlers = new SettlerTable();
-        settlers.Add(settler);
-        var exporter = new SnapshotExporter(settlers, new BuildingTable(), new FlagTable());
+        var settlers = new SettlerTable { settler };
+        var exporter = new SnapshotExporter(settlers, [], []);
 
         var state = exporter.Settler(0);
 
@@ -105,8 +104,7 @@ public sealed class GameHistoryTests
     [TestMethod]
     public void TheExporterWritesAFlagsRoadBytesAndGoodsAfterItsNodeAndStatus()
     {
-        var flags = new FlagTable();
-        flags.Add(4, 5);
+        var flags = new FlagTable { { 4, 5 } };
         flags[0].CarrierRequestFailed = true;
         flags[0].Side(0).HoldsCarrier = true;
         for (var direction = 0; direction < 6; direction++)
@@ -118,7 +116,7 @@ public sealed class GameHistoryTests
         flags[0].Places[7].Good = new Good { Code = 1 };
         flags[0].Places[7].Way = 0;
 
-        var exporter = new SnapshotExporter(new SettlerTable(), new BuildingTable(), flags);
+        var exporter = new SnapshotExporter([], [], flags);
 
         var state = exporter.Flag(0);
 
@@ -146,14 +144,14 @@ public sealed class GameHistoryTests
             "RecordSettler",
             "Record",
         };
-        const BindingFlags all =
+        const BindingFlags All =
             BindingFlags.Instance
             | BindingFlags.Static
             | BindingFlags.Public
             | BindingFlags.NonPublic
             | BindingFlags.DeclaredOnly;
 
-        var left = typeof(Game).GetMembers(all).Select(m => m.Name).Where(historyNames.Contains).ToArray();
+        var left = typeof(Game).GetMembers(All).Select(m => m.Name).Where(historyNames.Contains).ToArray();
 
         Assert.IsEmpty(left);
         Assert.IsNotNull(typeof(Game).GetProperty(nameof(Game.History)));

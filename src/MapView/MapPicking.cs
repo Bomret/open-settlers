@@ -166,7 +166,9 @@ public static class MapPicking
         var width = map.Size.Width;
         var rows = map.Size.Height;
         if (column < 0 || column >= width || row < 0 || row >= rows)
+        {
             return $"tile {column},{row} is outside the map of {width} by {rows} tiles";
+        }
 
         var (x, y) = Camera.NodePosition(column, row);
         y -= map.At(column, row).Height * TerrainTriangles.HeightStep;
@@ -179,7 +181,10 @@ public static class MapPicking
             var pointX = (x + copyX - cameraX) * scale + viewWidth / 2;
             var pointY = (y + copyY - cameraY) * scale + viewHeight / 2;
             if (pointX < 0 || pointX >= viewWidth)
+            {
                 continue;
+            }
+
             if (pointY < 0 || pointY >= viewHeight)
             {
                 underBar |= pointY < 0 && pointY >= -barHeight;
@@ -198,13 +203,17 @@ public static class MapPicking
         }
 
         if (best is not { } nearest)
+        {
             return underBar ? $"tile {column},{row} is under the button bar" : $"tile {column},{row} is not on screen";
+        }
 
         // A click sends the point in single precision, so the pick is checked at that rounded point.
         (double X, double Y) at = ((float)nearest.X, (float)nearest.Y);
         var picked = Pick(map, cameraX, cameraY, scale, viewWidth, viewHeight, at.X, at.Y);
         if (picked != (column, row))
+        {
             return $"tile {column},{row} is drawn on the same point as tile {picked.X},{picked.Y}";
+        }
 
         (screenX, screenY) = at;
         copy = bestCopy;
