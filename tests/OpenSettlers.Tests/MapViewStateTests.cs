@@ -121,6 +121,80 @@ public sealed class MapViewStateTests
         StringAssert.Contains(state.Problem, "'0'");
     }
 
+    // Seed.TryParse reads this screen seed as the words 5A5A, A5A5, C3C3 (the digits are the octal 24-bit numbers
+    // 5A5AA5 and A5C3C3, each digit plus one). Seed.ToMapSeed xors the words with those masks, so it gives the map
+    // seed 0,0,0, which holds no land mass covering a quarter of the map. A typed zero seed is refused by the parser
+    // instead. Seed.ToScreen does not give this text: it shows the words as the free-game screen does.
+    const string NoLandSeed = "3756635662452814";
+
+    const string NoLandProblem = "no map for this seed: no land mass covers a quarter of the map";
+
+    [TestMethod]
+    public void TheNoLandScreenSeedGivesTheMapSeedZero()
+    {
+        Assert.IsTrue(Simulation.Seed.TryParse(NoLandSeed, out var seed, out _));
+        Assert.AreEqual(
+            new MapSeed
+            {
+                W0 = 0,
+                W1 = 0,
+                W2 = 0,
+            },
+            seed.ToMapSeed()
+        );
+    }
+
+    [TestMethod]
+    public void OpeningOnASeedWithNoLandHoldsNoMapAndNamesTheGeneratorsReason()
+    {
+        var state = MapViewState.Open(TestProgram.Made(), NoLandSeed, 1);
+
+        Assert.IsNull(state.Map);
+        Assert.AreEqual(NoLandProblem, state.Problem);
+    }
+
+    [TestMethod]
+    [DataRow(1)]
+    [DataRow(2)]
+    public void ASeedWithNoLandKeepsTheLastMapItsSeedAndSize(int sizeValue)
+    {
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var first = state.Map;
+
+        var changed = state.Apply(NoLandSeed, sizeValue);
+
+        Assert.IsFalse(changed);
+        Assert.AreSame(first, state.Map);
+        Assert.AreEqual(Seed, state.SeedText);
+        Assert.AreEqual(1, state.SizeValue);
+        Assert.AreEqual(NoLandProblem, state.Problem);
+    }
+
+    [TestMethod]
+    public void ASeedWithNoLandTypedAgainAfterARefusedOpeningIsRefusedAgain()
+    {
+        var state = MapViewState.Open(TestProgram.Made(), NoLandSeed, 1);
+
+        var changed = state.Apply(NoLandSeed, 1);
+
+        Assert.IsFalse(changed);
+        Assert.IsNull(state.Map);
+        Assert.AreEqual(NoLandProblem, state.Problem);
+    }
+
+    [TestMethod]
+    public void AValidSeedAfterARefusedSeedWithNoLandGeneratesItsMapAndClearsTheReason()
+    {
+        var state = MapViewState.Open(TestProgram.Made(), NoLandSeed, 1);
+
+        var changed = state.Apply(Seed, 1);
+
+        Assert.IsTrue(changed);
+        Assert.IsNotNull(state.Map);
+        Assert.AreEqual(Seed, state.SeedText);
+        Assert.IsNull(state.Problem);
+    }
+
     [TestMethod]
     public void OpeningOnALayoutHoldsTheMapItDrawsAndItsSeed()
     {
