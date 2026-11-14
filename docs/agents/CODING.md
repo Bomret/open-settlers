@@ -102,6 +102,8 @@ public sealed record Alarm
 {
     /// <summary>The job the alarm is about.</summary>
     public required string JobName { get; init; }
+
+    /// <summary>Whether the alarm is raised or cleared.</summary>
     public required AlarmState State { get; init; }
 }
 
@@ -113,7 +115,7 @@ public sealed record Alarm(string JobName, AlarmState State);
 
 A property that carries a default stays a non-`required` init property with an initializer (`public uint Flags { get; init; } = 0;`). A `readonly record struct` whose defaults are all zero leaves the initializers out, because a struct with field initializers needs an explicit constructor. A record that refuses bad input checks it in the `init` accessor, through a backing field, so a copy made with `with` is checked too (`WorkerRequest.Job`). Primary constructors remain the norm for classes; the rule above is records-only.
 
-The properties stand in the order of the record's data, a base record's properties first: the order sets the record's equality, hash code, and `ToString` text, and a hash set iterates in the order the hash codes give (INV-0002).
+The properties stand in the order of the record's data, a base record's properties first: the order sets the record's equality, hash code, and `ToString` text. Another order changes the hash code, and with it the iteration order of a hash set that holds the record.
 
 Two exemptions stay positional:
 
