@@ -4,26 +4,22 @@ namespace OpenSettlers.Domain;
 /// A finished building: one item of the original's building table (<c>Table18</c>, <c>docs/rules/settlers.md</c>). The slot in
 /// the <see cref="BuildingTable"/> is the building's number; the castle is slot 0.
 /// </summary>
-public sealed class Building
+/// <remarks>A building of <paramref name="type"/> on the node, tied to the flag in slot <paramref name="flag"/>.</remarks>
+/// <param name="type">The building type.</param>
+/// <param name="x">The node's column.</param>
+/// <param name="y">The node's row.</param>
+/// <param name="flag">The slot of the building's flag in the flag table.</param>
+/// <param name="constructing">True for a building site and for the castle at the start.</param>
+public sealed class Building(BuildingType type, int x, int y, int flag, bool constructing = false)
 {
     /// <summary>The content of a slot no building holds.</summary>
     public static Building Free() => new(BuildingType.None, -1, -1, -1);
 
-    /// <summary>A building of <paramref name="type"/> on the node, tied to the flag in slot <paramref name="flag"/>.</summary>
-    public Building(BuildingType type, int x, int y, int flag, bool constructing = false)
-    {
-        Type = type;
-        X = x;
-        Y = y;
-        Flag = flag;
-        Constructing = constructing;
-    }
-
     /// <summary>The building type.</summary>
-    public BuildingType Type { get; }
+    public BuildingType Type { get; } = type;
 
     /// <summary>True while the building is built: the castle at the start, and every building site.</summary>
-    public bool Constructing { get; set; }
+    public bool Constructing { get; set; } = constructing;
 
     /// <summary>
     /// What a building site still needs and the height it is levelled to; null for a finished building and for the castle,
@@ -32,13 +28,13 @@ public sealed class Building
     public BuildingSite? Site { get; set; }
 
     /// <summary>The node the building stands on, column.</summary>
-    public int X { get; }
+    public int X { get; } = x;
 
     /// <summary>The node the building stands on, row.</summary>
-    public int Y { get; }
+    public int Y { get; } = y;
 
     /// <summary>The slot of the building's flag in the flag table.</summary>
-    public int Flag { get; }
+    public int Flag { get; } = flag;
 
     /// <summary>Whether a request for a worker found none; the retry scan clears it, and while it is set the building asks for no worker.</summary>
     public bool RequestFailed { get; set; }

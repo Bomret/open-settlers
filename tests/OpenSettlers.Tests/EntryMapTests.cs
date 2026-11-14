@@ -34,7 +34,7 @@ public sealed class EntryMapTests
         Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
-        return new T().Enumerate(install!, all).ToList();
+        return [.. new T().Enumerate(install!, all)];
     }
 
     static IEnumerable<int> Claimed<T>()

@@ -315,10 +315,10 @@ public sealed partial class Layout
 
         bool ReadGood(string name, JsonElement entry, List<Step> steps)
         {
-            const string shape = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": 1 to 25}";
+            const string Shape = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": 1 to 25}";
             if (entry.ValueKind != JsonValueKind.Object)
             {
-                Fail(name, $"must be {shape}");
+                Fail(name, $"must be {Shape}");
 
                 return false;
             }
@@ -329,7 +329,7 @@ public sealed partial class Layout
                 .FirstOrDefault(n => n is not ("x" or "y" or "place" or "good"));
             if (unknown is not null)
             {
-                Fail(name, $"unknown key {unknown}, a good is {shape}");
+                Fail(name, $"unknown key {unknown}, a good is {Shape}");
 
                 return false;
             }
@@ -343,7 +343,7 @@ public sealed partial class Layout
                 || good is < 1 or >= StartStock.Goods
             )
             {
-                Fail(name, $"must be {shape}, whole numbers");
+                Fail(name, $"must be {Shape}, whole numbers");
 
                 return false;
             }
@@ -436,7 +436,7 @@ public sealed partial class Layout
                 return false;
             }
 
-            directions = list.EnumerateArray().Select(d => d.GetInt32()).ToArray();
+            directions = [.. list.EnumerateArray().Select(d => d.GetInt32())];
 
             return true;
         }

@@ -36,7 +36,18 @@
   `.csharpierrc.json` sets `printWidth: 120` and leaves every other option at its default. CSharpier
   reads `.gitignore`, so `.godot/`, `bin/`, `obj/`, and `.superdev/` are skipped.
   `// csharpier-ignore` keeps a hand-laid-out fixture, such as a pixel grid, as written.
-- Code style in the build: `.editorconfig` sets IDE0040 to `omit_if_default` at warning severity.
-  `Directory.Build.props` sets `EnforceCodeStyleInBuild` beside `TreatWarningsAsErrors`, so an access modifier that is the
-  default fails the build. No other linter is wired.
+- Code style in the build: the root `.editorconfig` sets the code-style rules that `docs/agents/CODING.md` ("What the
+  build enforces") lists, each at warning severity. It sets no formatting rule. `Directory.Build.props` sets
+  `EnforceCodeStyleInBuild` beside `TreatWarningsAsErrors`. It also sets `GenerateDocumentationFile` for every project
+  except the test project. A violation fails every build of the project that holds it: `mise run check`,
+  `mise run build`, a plain `dotnet build`, a play run, and the Godot editor's build.
+  The test project compiles `src/Launch`, `src/Formats`, `src/Assets`, and `src/MapView` without a documentation file.
+  A doc-comment diagnostic in these folders therefore fails the build of `OpenSettlers.csproj`. It does not fail the
+  build of the test project.
+  The analyzers ship with the .NET SDK. The rules follow the SDK version that `global.json` and `mise.toml` pin, and a
+  new SDK can report new findings. No other linter is wired.
+- A code-style finding prints as `<file>(<line>,<column>): error <rule ID>: <message>`. Fix it by hand, or apply the
+  rule's code fix to the whole solution. Run
+  `mise exec -- dotnet format style OpenSettlers.slnx --diagnostics <rule ID> --severity warn`, then `mise run format`.
+  IDE1006 (naming) has no solution-wide fix. Rename the symbol in an editor. CS1591 needs a doc comment written by hand.
 - Style prose: `docs/agents/CODING.md` and `docs/agents/CODING_PATTERNS.md`.

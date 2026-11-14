@@ -73,11 +73,11 @@ public class PlayRunWrapperTests
         exit "${FAKE_BUILD_STATUS:-0}"
         """;
 
-    static string templateRoot = "";
+    static string _templateRoot = "";
 
-    string root = "";
-    string repo = "";
-    string fake = "";
+    string _root = "";
+    string _repo = "";
+    string _fake = "";
 
     [UnsupportedOSPlatform("windows")]
     static void Executable(string path, string text)
@@ -103,8 +103,8 @@ public class PlayRunWrapperTests
     [ClassInitialize]
     public static void BuildFixture(TestContext _)
     {
-        templateRoot = Path.Combine(Path.GetTempPath(), "play-run-fixture-" + Guid.NewGuid().ToString("N"));
-        var repo = Path.Combine(templateRoot, "repo");
+        _templateRoot = Path.Combine(Path.GetTempPath(), "play-run-fixture-" + Guid.NewGuid().ToString("N"));
+        var repo = Path.Combine(_templateRoot, "repo");
         void Put(string path, string text)
         {
             var full = Path.Combine(repo, path);
@@ -148,26 +148,26 @@ public class PlayRunWrapperTests
     }
 
     [ClassCleanup]
-    public static void DeleteFixture() => Directory.Delete(templateRoot, true);
+    public static void DeleteFixture() => Directory.Delete(_templateRoot, true);
 
     [TestInitialize]
     [UnsupportedOSPlatform("windows")]
     public void Init()
     {
-        root = Path.Combine(Path.GetTempPath(), "play-run-wrapper-" + Guid.NewGuid().ToString("N"));
-        repo = Path.Combine(root, "repo");
-        fake = Path.Combine(root, "fake");
-        Directory.CreateDirectory(fake);
-        Executable(Path.Combine(fake, "mise"), FakeMise);
-        Executable(Path.Combine(fake, "godot"), FakeGodot);
-        Executable(Path.Combine(fake, "dotnet"), FakeDotnet);
-        Directory.CreateDirectory(Path.Combine(fake, "psbin"));
-        Executable(Path.Combine(fake, "psbin", "ps"), FakePs);
-        CopyTree(Path.Combine(templateRoot, "repo"), repo);
+        _root = Path.Combine(Path.GetTempPath(), "play-run-wrapper-" + Guid.NewGuid().ToString("N"));
+        _repo = Path.Combine(_root, "repo");
+        _fake = Path.Combine(_root, "fake");
+        Directory.CreateDirectory(_fake);
+        Executable(Path.Combine(_fake, "mise"), FakeMise);
+        Executable(Path.Combine(_fake, "godot"), FakeGodot);
+        Executable(Path.Combine(_fake, "dotnet"), FakeDotnet);
+        Directory.CreateDirectory(Path.Combine(_fake, "psbin"));
+        Executable(Path.Combine(_fake, "psbin", "ps"), FakePs);
+        CopyTree(Path.Combine(_templateRoot, "repo"), _repo);
     }
 
     [TestCleanup]
-    public void Cleanup() => Directory.Delete(root, true);
+    public void Cleanup() => Directory.Delete(_root, true);
 
     static string RepoRoot()
     {
@@ -182,16 +182,16 @@ public class PlayRunWrapperTests
 
     void Write(string path, string text)
     {
-        var full = Path.Combine(repo, path);
+        var full = Path.Combine(_repo, path);
         Directory.CreateDirectory(Path.GetDirectoryName(full)!);
         File.WriteAllText(full, text);
     }
 
-    string Out(string path) => Path.Combine(repo, "play-out", path);
+    string Out(string path) => Path.Combine(_repo, "play-out", path);
 
-    int Calls => File.Exists(Path.Combine(fake, "calls")) ? File.ReadAllLines(Path.Combine(fake, "calls")).Length : 0;
+    int Calls => File.Exists(Path.Combine(_fake, "calls")) ? File.ReadAllLines(Path.Combine(_fake, "calls")).Length : 0;
 
-    string[] Order => File.Exists(Path.Combine(fake, "order")) ? File.ReadAllLines(Path.Combine(fake, "order")) : [];
+    string[] Order => File.Exists(Path.Combine(_fake, "order")) ? File.ReadAllLines(Path.Combine(_fake, "order")) : [];
 
     string[] LogLines => File.Exists(Out("runs.log")) ? File.ReadAllLines(Out("runs.log")) : [];
 
@@ -201,30 +201,30 @@ public class PlayRunWrapperTests
     // kills a process still alive, so a failing wait leaves none behind.
     sealed class Running : IDisposable
     {
-        readonly Process process;
-        readonly string name;
-        readonly StringBuilder stdout = new();
-        readonly StringBuilder stderr = new();
+        readonly Process _process;
+        readonly string _name;
+        readonly StringBuilder _stdout = new();
+        readonly StringBuilder _stderr = new();
 
         public Running(Process process, string name)
         {
-            this.process = process;
-            this.name = name;
-            process.OutputDataReceived += (_, e) => Append(stdout, e.Data);
-            process.ErrorDataReceived += (_, e) => Append(stderr, e.Data);
+            _process = process;
+            _name = name;
+            process.OutputDataReceived += (_, e) => Append(_stdout, e.Data);
+            process.ErrorDataReceived += (_, e) => Append(_stderr, e.Data);
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
         }
 
-        public int Pid => process.Id;
+        public int Pid => _process.Id;
 
         public string Stderr
         {
             get
             {
-                lock (stderr)
+                lock (_stderr)
                 {
-                    return stderr.ToString();
+                    return _stderr.ToString();
                 }
             }
         }
@@ -239,24 +239,24 @@ public class PlayRunWrapperTests
 
         public (int Status, string Stdout, string Stderr) Finish()
         {
-            if (!process.WaitForExit(30000))
+            if (!_process.WaitForExit(30000))
             {
-                Assert.Fail($"{name} did not exit within 30 s");
+                Assert.Fail($"{_name} did not exit within 30 s");
             }
 
-            process.WaitForExit();
-            return (process.ExitCode, stdout.ToString(), Stderr);
+            _process.WaitForExit();
+            return (_process.ExitCode, _stdout.ToString(), Stderr);
         }
 
         public void Dispose()
         {
-            if (!process.HasExited)
+            if (!_process.HasExited)
             {
-                process.Kill(true);
-                process.WaitForExit();
+                _process.Kill(true);
+                _process.WaitForExit();
             }
 
-            process.Dispose();
+            _process.Dispose();
         }
     }
 
@@ -270,7 +270,7 @@ public class PlayRunWrapperTests
     {
         var info = new ProcessStartInfo("sh")
         {
-            WorkingDirectory = repo,
+            WorkingDirectory = _repo,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
@@ -280,11 +280,11 @@ public class PlayRunWrapperTests
             info.ArgumentList.Add(arg);
         }
 
-        info.Environment["PLAY_RUN_MISE"] = Path.Combine(fake, "mise");
-        info.Environment["PLAY_RUN_GODOT"] = Path.Combine(fake, "godot");
-        info.Environment["PLAY_RUN_DOTNET"] = Path.Combine(fake, "dotnet");
+        info.Environment["PLAY_RUN_MISE"] = Path.Combine(_fake, "mise");
+        info.Environment["PLAY_RUN_GODOT"] = Path.Combine(_fake, "godot");
+        info.Environment["PLAY_RUN_DOTNET"] = Path.Combine(_fake, "dotnet");
         info.Environment["SIEDLER_DIR"] = Siedler;
-        info.Environment["FAKE_DIR"] = fake;
+        info.Environment["FAKE_DIR"] = _fake;
         foreach (var (key, value) in env ?? [])
         {
             if (value is null)
@@ -342,8 +342,8 @@ public class PlayRunWrapperTests
         {
             ("src", () => Write("src/Game.cs", "class Game { int x; }")),
             ("untracked-scenes", () => Write("scenes/new.tscn", "[scene]")),
-            ("deleted", () => File.Delete(Path.Combine(repo, "scenes/main.tscn"))),
-            ("renamed", () => File.Move(Path.Combine(repo, "src/Game.cs"), Path.Combine(repo, "src/Game2.cs"))),
+            ("deleted", () => File.Delete(Path.Combine(_repo, "scenes/main.tscn"))),
+            ("renamed", () => File.Move(Path.Combine(_repo, "src/Game.cs"), Path.Combine(_repo, "src/Game2.cs"))),
             ("project", () => Write("project.godot", "config 2")),
             ("csproj", () => Write("OpenSettlers.csproj", "<Project><!-- 2 --></Project>")),
             ("global-json", () => Write("global.json", "{ }")),
@@ -380,7 +380,7 @@ public class PlayRunWrapperTests
     public void AMissingProjectFileHashesApartFromAnEmptyOne(string file)
     {
         Run(Args);
-        File.Delete(Path.Combine(repo, file));
+        File.Delete(Path.Combine(_repo, file));
         Run(Args);
         Assert.AreEqual(2, Calls, $"a missing {file} reused the entry of the present one");
 
@@ -388,7 +388,7 @@ public class PlayRunWrapperTests
         Run(Args);
         Assert.AreEqual(3, Calls, $"an empty {file} reused the entry of the missing one");
 
-        File.Delete(Path.Combine(repo, file));
+        File.Delete(Path.Combine(_repo, file));
         Run(Args);
         Assert.AreEqual(3, Calls, $"a missing {file} again did not reuse its own entry");
     }
@@ -410,7 +410,7 @@ public class PlayRunWrapperTests
     [DataRow("HUP")]
     public void ASignalReleasesTheWrappersOwnLockAndExitsOneHundredThirty(string signal)
     {
-        var gate = Path.Combine(fake, "gate");
+        var gate = Path.Combine(_fake, "gate");
         using var call = Start(Args, new() { ["FAKE_GATE"] = gate });
         WaitFor(() => Calls == 1, "the call to start Godot");
         Assert.AreEqual(call.Pid + "\n", File.ReadAllText(Out(".lock-demo/pid")));
@@ -430,7 +430,7 @@ public class PlayRunWrapperTests
     [DataRow("HUP")]
     public void ASignalLeavesALockThatHoldsAnotherPid(string signal)
     {
-        var gate = Path.Combine(fake, "gate");
+        var gate = Path.Combine(_fake, "gate");
         using var call = Start(Args, new() { ["FAKE_GATE"] = gate });
         WaitFor(() => Calls == 1, "the call to start Godot");
         File.WriteAllText(Out(".lock-demo/pid"), "1\n");
@@ -485,7 +485,7 @@ public class PlayRunWrapperTests
     public void ARunBuildsTheGameBeforeGodotThroughMiseAndAReuseDoesNot()
     {
         Run(Args);
-        var miseCalls = File.ReadAllLines(Path.Combine(fake, "mise.log")).Length;
+        var miseCalls = File.ReadAllLines(Path.Combine(_fake, "mise.log")).Length;
         Run(Args);
 
         CollectionAssert.AreEqual(new[] { "dotnet build OpenSettlers.csproj", "godot" }, Order);
@@ -499,7 +499,7 @@ public class PlayRunWrapperTests
     {
         string[] LaunchLine()
         {
-            var args = File.ReadAllLines(Path.Combine(fake, "args"));
+            var args = File.ReadAllLines(Path.Combine(_fake, "args"));
             return args[(Array.IndexOf(args, "--write-movie") + 2)..^2];
         }
 
@@ -507,7 +507,7 @@ public class PlayRunWrapperTests
         Write("play/b.layout", "layout");
 
         Run(Args);
-        var map = File.ReadAllLines(Path.Combine(fake, "args"));
+        var map = File.ReadAllLines(Path.Combine(_fake, "args"));
         var movie = Array.IndexOf(map, "--write-movie");
         Assert.AreEqual("play-out/demo/frame.png", map[movie + 1]);
         CollectionAssert.AreEqual(new[] { "--play", "play/demo.play" }, map[^2..]);
@@ -535,7 +535,7 @@ public class PlayRunWrapperTests
         );
 
         Run(["demo", "--fps", "10"]);
-        var whole = File.ReadAllLines(Path.Combine(fake, "args"));
+        var whole = File.ReadAllLines(Path.Combine(_fake, "args"));
         CollectionAssert.DoesNotContain(whole, "--seed");
         CollectionAssert.DoesNotContain(whole, "--size");
         Assert.AreEqual(5, Calls, "a run did not start Godot, so the args file is stale");
@@ -572,7 +572,7 @@ public class PlayRunWrapperTests
     [TestMethod]
     public void GodotGetsTheGraphicsFlagOnlyWhereTheRunGaveOne()
     {
-        string[] Launch() => File.ReadAllLines(Path.Combine(fake, "args"));
+        string[] Launch() => File.ReadAllLines(Path.Combine(_fake, "args"));
 
         Run([.. Args, "--graphics", "open-settlers"]);
         CollectionAssert.AreEqual(
@@ -609,7 +609,7 @@ public class PlayRunWrapperTests
         Write("content/open-settlers/terrain/new.png", "png");
         Run(Own);
         Assert.AreEqual(4, Calls, "a new image did not start Godot");
-        File.Delete(Path.Combine(repo, "content/open-settlers/manifest.json"));
+        File.Delete(Path.Combine(_repo, "content/open-settlers/manifest.json"));
         Run(Own);
         Assert.AreEqual(5, Calls, "a removed manifest did not start Godot");
     }
@@ -664,7 +664,7 @@ public class PlayRunWrapperTests
         var lines = LogLines;
         Assert.AreEqual(3, lines.Length);
         using var git = Process.Start(
-            new ProcessStartInfo("git", "rev-parse HEAD") { WorkingDirectory = repo, RedirectStandardOutput = true }
+            new ProcessStartInfo("git", "rev-parse HEAD") { WorkingDirectory = _repo, RedirectStandardOutput = true }
         )!;
         var head = git.StandardOutput.ReadToEnd().Trim();
         git.WaitForExit();
@@ -757,7 +757,7 @@ public class PlayRunWrapperTests
     [TestMethod]
     public void TwoConcurrentCallsForOneStemRunGodotOnceAndStoreOneEntry()
     {
-        var gate = Path.Combine(fake, "gate");
+        var gate = Path.Combine(_fake, "gate");
         var env = new Dictionary<string, string?> { ["FAKE_GATE"] = gate };
         using var first = Start(Args, env);
         WaitFor(() => Calls == 1, "the first call to start Godot");
@@ -777,7 +777,7 @@ public class PlayRunWrapperTests
     public void CallsOfDifferentStemsRunInParallel()
     {
         Write("play/other.play", "wait 1");
-        var gate = Path.Combine(fake, "gate");
+        var gate = Path.Combine(_fake, "gate");
         var env = new Dictionary<string, string?> { ["FAKE_GATE"] = gate };
         using var first = Start(Args, env);
         using var second = Start(["other", "--fps", "10"], env);
@@ -822,7 +822,7 @@ public class PlayRunWrapperTests
     {
         Assert.AreEqual(0, Run(Args).Status);
         var before = LogLines;
-        var playOut = Path.Combine(repo, "play-out");
+        var playOut = Path.Combine(_repo, "play-out");
         var mode = File.GetUnixFileMode(playOut);
         File.SetUnixFileMode(playOut, UnixFileMode.UserRead | UnixFileMode.UserExecute);
         try
@@ -860,18 +860,18 @@ public class PlayRunWrapperTests
     [TestMethod]
     public void ACallWaitingOnALiveLockSaysSoAndHashesTheInputsOnceItIsFree()
     {
-        const string waiting =
+        const string Waiting =
             "play-run.sh: waiting on play-out/.lock-demo or play-out/.lock-demo.takeover (remove them if no run is live)";
         Run(Args);
         HoldLock(Environment.ProcessId);
         using var call = Start(Args);
-        WaitFor(() => call.Stderr.Contains(waiting), "the call to say it waits on the lock");
+        WaitFor(() => call.Stderr.Contains(Waiting), "the call to say it waits on the lock");
         Write("src/Game.cs", "class Game { int changed; }");
         Directory.Delete(Out(".lock-demo"), true);
         var (status, _, stderr) = call.Finish();
 
         Assert.AreEqual(0, status);
-        StringAssert.Contains(stderr, waiting);
+        StringAssert.Contains(stderr, Waiting);
         Assert.AreEqual(2, Calls, "the hash was taken before the lock, so the call reused the stale entry");
     }
 
@@ -957,7 +957,7 @@ public class PlayRunWrapperTests
 
     Dictionary<string, string?> FakePsEnv(int dead, Dictionary<string, string?>? more = null)
     {
-        var bin = Path.Combine(fake, "psbin");
+        var bin = Path.Combine(_fake, "psbin");
         var env = new Dictionary<string, string?>
         {
             ["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),
@@ -1115,7 +1115,7 @@ public class PlayRunWrapperTests
 
         Assert.AreEqual(0, call.Status);
         Assert.AreEqual(1, Calls);
-        var log = File.ReadAllLines(Path.Combine(fake, "ps-swapped-log"));
+        var log = File.ReadAllLines(Path.Combine(_fake, "ps-swapped-log"));
         Assert.IsTrue(
             log.Length >= 3 && log.All(l => l == "present"),
             "E's mutex stood through D's reaper and was judged again by E's reaper: " + string.Join(",", log)
@@ -1138,7 +1138,7 @@ public class PlayRunWrapperTests
         );
 
         Assert.AreEqual(0, call.Status);
-        var log = File.ReadAllLines(Path.Combine(fake, "ps-mutex-log"));
+        var log = File.ReadAllLines(Path.Combine(_fake, "ps-mutex-log"));
         Assert.IsTrue(log.Length >= 2, "the mutex is judged before and while it is cleared");
         Assert.IsTrue(log.All(l => l == "present"), "the mutex path stood at every judgment: " + string.Join(",", log));
     }

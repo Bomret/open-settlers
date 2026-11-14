@@ -264,9 +264,11 @@ public sealed class RoadBuildingTests
             .ToDictionary(pair => pair[0], pair => pair[1]);
 
     static byte[][] Snapshot(Map map) =>
-        new[] { MapLayer.Flags, MapLayer.Height, MapLayer.Terrain, MapLayer.Object, MapLayer.Resource }
-            .Select(layer => Layers.Of(map, layer))
-            .ToArray();
+        [
+            .. new[] { MapLayer.Flags, MapLayer.Height, MapLayer.Terrain, MapLayer.Object, MapLayer.Resource }.Select(
+                layer => Layers.Of(map, layer)
+            ),
+        ];
 
     // The changed bytes as the harness lists them: each changed tile in row-major order with "position=old>new".
     static string Changes(byte[][] before, byte[][] after, int width) =>

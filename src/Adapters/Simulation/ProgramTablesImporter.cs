@@ -7,7 +7,7 @@ namespace OpenSettlers.Simulation;
 
 /// <summary>
 /// Builds the <see cref="RuleTables"/> from the bytes of the install's <c>Siedler1.exe</c> (INV-0001): the original's
-/// addresses and packed bytes stay here (ADR 0013). <see cref="Import"/> finds each table by its address in the program,
+/// addresses and packed bytes stay here (ADR 0013). <see cref="Import(byte[])"/> finds each table by its address in the program,
 /// through the section headers of the executable.
 /// </summary>
 public static class ProgramTablesImporter

@@ -20,7 +20,9 @@ public readonly record struct StepOffset
 /// sequence of (figure byte, dx, dy) triples. The settler's frame picks the sequence and the time it has left, in ticks (8
 /// clock units), picks the triple. The figure byte belongs to the History Edition source, which picks the figure by it.
 /// </summary>
-public sealed class StepOffsets
+/// <remarks>The table of the bytes of entry 2.</remarks>
+/// <param name="entry">The bytes of entry 2 of the graphics archive.</param>
+public sealed class StepOffsets(byte[] entry)
 {
     /// <summary>The number of walk frames the entry holds a sequence offset for.</summary>
     public const int Frames = 200;
@@ -31,13 +33,7 @@ public sealed class StepOffsets
     // The entry of the graphics archive that holds the sequences.
     const int Entry = 2;
 
-    readonly byte[] _data;
-
-    /// <summary>The table of the bytes of entry 2.</summary>
-    public StepOffsets(byte[] entry)
-    {
-        _data = entry;
-    }
+    readonly byte[] _data = entry;
 
     /// <summary>Reads the table from the install. Throws <see cref="System.IO.InvalidDataException"/> where the entry is absent.</summary>
     public static StepOffsets Load(Install install) =>

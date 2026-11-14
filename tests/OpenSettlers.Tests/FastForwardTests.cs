@@ -42,7 +42,9 @@ public sealed class FastForwardTests
     {
         var game = WoodcuttingTests.World(true, out _);
         while (!Cutting(game))
+        {
             game.Tick();
+        }
 
         return game.TickCount;
     }
@@ -109,7 +111,9 @@ public sealed class FastForwardTests
         };
 
         foreach (var (name, job) in expected)
+        {
             Assert.AreEqual(job, ((FastForwardJobStep)Step($"fast-forward {name} state 1 max 1")).Job, name);
+        }
     }
 
     static bool CarriesAStone(Game game) =>
@@ -123,7 +127,9 @@ public sealed class FastForwardTests
         for (var tick = 0; !holds(reference); tick++)
         {
             if (tick == max)
+            {
                 Assert.Fail($"the reference game did not reach {what} in {max} ticks");
+            }
 
             reference.Tick();
         }
@@ -196,7 +202,9 @@ public sealed class FastForwardTests
 
         Assert.StartsWith("play/t.play line 1: 'miller' is not a job name, use ", problem);
         foreach (var name in new[] { "carrier", "digger", "builder", "woodcutter", "stonecutter", "forester" })
+        {
             Assert.Contains(name, problem);
+        }
     }
 
     [TestMethod]
@@ -484,7 +492,10 @@ public sealed class FastForwardTests
         static bool Holds(Game game) => game.Flags[3].Places.Any(place => !place.IsEmpty);
         var reference = WoodcuttingTests.World(true, out _);
         while (!Holds(reference))
+        {
             reference.Tick();
+        }
+
         var game = WoodcuttingTests.World(true, out _);
         var flag = game.Flags[3];
 

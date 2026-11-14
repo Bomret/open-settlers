@@ -334,7 +334,7 @@ public sealed class ObjectDrawsTests
             [(16, 6)] = [.. goods.Select(good => new Good { Code = good })],
         };
 
-        return ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
+        return [.. ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6)];
     }
 
     [TestMethod]

@@ -41,7 +41,9 @@ public sealed class PlayRun(
     public void Advance(double seconds)
     {
         if (Finished)
+        {
             return;
+        }
 
         _clock += seconds;
         // simplicity: a wait of whole frames can come out a rounding error short; this tolerance counts it as passed.

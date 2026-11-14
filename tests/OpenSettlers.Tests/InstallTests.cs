@@ -101,9 +101,10 @@ public sealed class InstallTests
 
     // Each file under the root with its size and modification time, in path order.
     static List<string> Snapshot(string root) =>
-        Directory
-            .EnumerateFiles(root, "*", SearchOption.AllDirectories)
-            .Order(StringComparer.Ordinal)
-            .Select(f => $"{f} {new FileInfo(f).Length} {File.GetLastWriteTimeUtc(f):O}")
-            .ToList();
+        [
+            .. Directory
+                .EnumerateFiles(root, "*", SearchOption.AllDirectories)
+                .Order(StringComparer.Ordinal)
+                .Select(f => $"{f} {new FileInfo(f).Length} {File.GetLastWriteTimeUtc(f):O}"),
+        ];
 }
