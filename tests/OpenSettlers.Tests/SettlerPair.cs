@@ -5,14 +5,25 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 /// <summary>A settler sprite as the History Edition's picks give it for a term: the row, entry, colour index, and position.</summary>
-internal sealed record Drawn(int Row, int Entry, int Colour, int X, int Y);
+sealed record Drawn
+{
+    public required int Row { get; init; }
+
+    public required int Entry { get; init; }
+
+    public required int Colour { get; init; }
+
+    public required int X { get; init; }
+
+    public required int Y { get; init; }
+}
 
 /// <summary>
 /// The shared placement of the settlers' terms and the History Edition's table picks over them: each term's entry and
 /// colour index come from the picks, at the term's position moved by the pick's offsets and, for a second figure, by the
 /// shift of its figure.
 /// </summary>
-internal sealed class SettlerPair(SettlerFigures shared, SettlerFigureTables tables)
+sealed class SettlerPair(SettlerFigures shared, SettlerFigureTables tables)
 {
     /// <summary>The pair over the install's walk sequences and the tables of the exe.</summary>
     public static SettlerPair Of(Assets.Install install, Domain.RuleTables tables)
@@ -46,7 +57,14 @@ internal sealed class SettlerPair(SettlerFigures shared, SettlerFigureTables tab
                 var shift =
                     pick.ShiftedBy >= 0 && shifts is not null ? shifts.GetValueOrDefault(pick.ShiftedBy) : default;
                 drawn.Add(
-                    new Drawn(term.Row, pick.Entry, pick.Colour, term.X + pick.Dx + shift.X, term.Y + pick.Dy + shift.Y)
+                    new Drawn
+                    {
+                        Row = term.Row,
+                        Entry = pick.Entry,
+                        Colour = pick.Colour,
+                        X = term.X + pick.Dx + shift.X,
+                        Y = term.Y + pick.Dy + shift.Y,
+                    }
                 );
             }
         }

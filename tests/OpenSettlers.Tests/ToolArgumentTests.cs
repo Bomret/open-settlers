@@ -10,7 +10,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ToolArgumentTests
 {
-    private string _folder = "";
+    string _folder = "";
 
     [TestInitialize]
     public void Initialize()
@@ -22,11 +22,11 @@ public sealed class ToolArgumentTests
     [TestCleanup]
     public void Cleanup() => Directory.Delete(_folder, true);
 
-    private static string Emulate() => PythonTool.InRepo("tools", "GhidraDump", "emulate.py");
+    static string Emulate() => PythonTool.InRepo("tools", "GhidraDump", "emulate.py");
 
-    private static string Digest() => PythonTool.InRepo("tools", "WindowsCheck", "digest.py");
+    static string Digest() => PythonTool.InRepo("tools", "WindowsCheck", "digest.py");
 
-    private static void AssertUsage(ToolRun run)
+    static void AssertUsage(ToolRun run)
     {
         Assert.AreNotEqual(0, run.Exit);
         StringAssert.Contains(run.Stderr, "emulate.py:");
@@ -146,7 +146,7 @@ public sealed class ToolArgumentTests
         Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
     }
 
-    private string Game(string programName = "Siedler1.exe")
+    string Game(string programName = "Siedler1.exe")
     {
         var game = Path.Combine(_folder, "game");
         Directory.CreateDirectory(game);
@@ -155,13 +155,13 @@ public sealed class ToolArgumentTests
         return game;
     }
 
-    private string RecordingHeadless(string tail) =>
+    string RecordingHeadless(string tail) =>
         PythonTool.StandInHeadless(
             Path.Combine(_folder, "bin"),
             $"printf '%s\\n' \"$@\" > '{Path.Combine(_folder, "args.txt")}'\n{tail}\n"
         );
 
-    private string[] RecordedArguments() => File.ReadAllLines(Path.Combine(_folder, "args.txt"));
+    string[] RecordedArguments() => File.ReadAllLines(Path.Combine(_folder, "args.txt"));
 
     // emulate.py: its own refusals, in the order it checks them (the docstring and the code of tools/GhidraDump/emulate.py).
 

@@ -6,11 +6,11 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public static class BuildingEncoder
 {
-    private const int RequestFailedBit = 0x4;
-    private const int DemolishingBit = 0x20;
-    private const int WorkerInsideBit = 0x40;
-    private const int WorkerOnTheWayBit = 0x80;
-    private const int ConstructingBit = 0x20;
+    const int RequestFailedBit = 0x4;
+    const int DemolishingBit = 0x20;
+    const int WorkerInsideBit = 0x40;
+    const int WorkerOnTheWayBit = 0x80;
+    const int ConstructingBit = 0x20;
 
     /// <summary>The status byte (byte 5): the building's flags and the bits with no recovered meaning.</summary>
     public static int Status(Building building) =>

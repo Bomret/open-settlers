@@ -13,8 +13,8 @@ namespace OpenSettlers.MapView;
 /// </summary>
 public sealed class RoadDrawing(Game game)
 {
-    private readonly List<int> _directions = [];
-    private (int X, int Y)? _start;
+    readonly List<int> _directions = [];
+    (int X, int Y)? _start;
 
     /// <summary>True from the click on the start flag until the road is built or cancelled.</summary>
     public bool Active => _start is not null;
@@ -90,7 +90,15 @@ public sealed class RoadDrawing(Game game)
                 case RoadStatus.Complete:
                     Cancel();
 
-                    return new Command(game.TickCount, 0, CommandKind.BuildRoad, start.X, start.Y, next);
+                    return new Command
+                    {
+                        Tick = game.TickCount,
+                        Player = 0,
+                        Kind = CommandKind.BuildRoad,
+                        X = start.X,
+                        Y = start.Y,
+                        Directions = next,
+                    };
             }
 
             return null;

@@ -88,7 +88,15 @@ public sealed class FlagTableTests
     public void TheRoadNetworkFindsTheRoadThatLeavesAFlagAndItsFarEnd()
     {
         var network = new RoadNetwork();
-        var road = new Road(0, 3, 2, 0, [3, 3], false);
+        var road = new Road
+        {
+            FromSlot = 0,
+            FromDirection = 3,
+            ToSlot = 2,
+            ToDirection = 0,
+            Directions = [3, 3],
+            Water = false,
+        };
         network.Add(road);
 
         Assert.AreSame(road, network.RoadAt(0, 3));
@@ -104,8 +112,24 @@ public sealed class FlagTableTests
     public void TheRoadNetworkListsItsRoadsInTheOrderTheyWereAddedAndForgetsARemovedOne()
     {
         var network = new RoadNetwork();
-        var first = new Road(0, 3, 1, 0, [3], false);
-        var second = new Road(1, 1, 2, 4, [1], false);
+        var first = new Road
+        {
+            FromSlot = 0,
+            FromDirection = 3,
+            ToSlot = 1,
+            ToDirection = 0,
+            Directions = [3],
+            Water = false,
+        };
+        var second = new Road
+        {
+            FromSlot = 1,
+            FromDirection = 1,
+            ToSlot = 2,
+            ToDirection = 4,
+            Directions = [1],
+            Water = false,
+        };
         network.Add(first);
         network.Add(second);
 

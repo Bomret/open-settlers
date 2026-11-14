@@ -35,21 +35,30 @@ public sealed class TerrainTests
         map.At(4, 5).Height = 2;
         map.At(5, 5).Height = 3;
         map.At(5, 4).Height = 4;
-        map.At(4, 4).Upper = new Terrain(6);
-        map.At(4, 4).Lower = new Terrain(7);
+        map.At(4, 4).Upper = new Terrain { Code = 6 };
+        map.At(4, 4).Lower = new Terrain { Code = 7 };
 
         var triangles = TerrainTriangles.Of(map);
 
         var upper = triangles.Single(t => t is { Column: 4, Row: 4, Upper: true });
-        Assert.AreEqual((new Terrain(6), 1, 2, 3), (upper.Terrain, upper.Apex, upper.Left, upper.Right));
+        Assert.AreEqual((new Terrain { Code = 6 }, 1, 2, 3), (upper.Terrain, upper.Apex, upper.Left, upper.Right));
         var lower = triangles.Single(t => t is { Column: 4, Row: 4, Upper: false });
-        Assert.AreEqual((new Terrain(7), 3, 1, 4), (lower.Terrain, lower.Apex, lower.Left, lower.Right));
+        Assert.AreEqual((new Terrain { Code = 7 }, 3, 1, 4), (lower.Terrain, lower.Apex, lower.Left, lower.Right));
     }
 
     [TestMethod]
     public void EveryTileOfAGeneratedMapGivesTwoTriangles()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new Seed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            }.ToMapSeed(),
+            MapSize.Offered[0]
+        );
 
         var triangles = TerrainTriangles.Of(map);
 
@@ -59,7 +68,16 @@ public sealed class TerrainTests
     [TestMethod]
     public void TrianglesFollowTheRowsFromNorthToSouthSoLaterOnesPaintOver()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new Seed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            }.ToMapSeed(),
+            MapSize.Offered[0]
+        );
 
         var rows = TerrainTriangles.Of(map).ConvertAll(t => t.Row);
 
@@ -73,7 +91,16 @@ public sealed class TerrainTests
     [TestMethod]
     public void TheUpperTriangleHangsFromItsNodeAndTheLowerRisesToTheNodeBelowEast()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new Seed(1, 2, 3).ToMapSeed(), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new Seed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            }.ToMapSeed(),
+            MapSize.Offered[0]
+        );
 
         var first = TerrainTriangles.Of(map)[0];
 

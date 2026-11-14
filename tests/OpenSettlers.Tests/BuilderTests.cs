@@ -13,8 +13,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class BuilderTests
 {
-    private const int SiteX = 17;
-    private const int SiteY = 5;
+    const int SiteX = 17;
+    const int SiteY = 5;
 
     // A game with a forester's site at 17,5 whose planks lie on site: the hand-out of the castle is not part of these tests. A step takes
     // 300 clock units, more than the 128 between two turns of a settler, so a builder's turn makes one blow at most.
@@ -28,11 +28,10 @@ public sealed class BuilderTests
         return (game, site);
     }
 
-    private static string Words(IEnumerable<ushort> words) =>
-        string.Join(",", words.Select(word => word.ToString("x4")));
+    static string Words(IEnumerable<ushort> words) => string.Join(",", words.Select(word => word.ToString("x4")));
 
     // The distinct values of the site's progress word the ticks give, in order.
-    private static List<ushort> Progress(Game game, Building site, int ticks, System.Action? each = null)
+    static List<ushort> Progress(Game game, Building site, int ticks, System.Action? each = null)
     {
         var seen = new List<ushort> { site.Progress };
         for (var tick = 0; tick < ticks; tick++)
@@ -146,7 +145,7 @@ public sealed class BuilderTests
     // A forester's site that needs one plank and one stone, in the order plank first, then stone (the order word 0b10), with the plank
     // on site and the stone as the test sets it. The planks' fill byte (FillLow, byte 8) and the stones' (FillHigh, byte 9) each hold the
     // goods on site in the high nibble.
-    private static (Game Game, Building Site) StoneWorld(ushort order = 0b10, int plankOnSite = 1, int stoneOnSite = 0)
+    static (Game Game, Building Site) StoneWorld(ushort order = 0b10, int plankOnSite = 1, int stoneOnSite = 0)
     {
         var needs = new byte[2 * RuleTables.BuildingTypeCount];
         needs[2 * BuildingType.Forester.Code] = 1;

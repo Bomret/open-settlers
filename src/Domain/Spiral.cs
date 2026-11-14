@@ -19,7 +19,7 @@ public static class Spiral
     // The original builds the table at start-up (0x41e726) from a seed offset for each group of six: the six
     // rotations (x, y) -> (x - y, x) of the seed. Ring r holds the seeds (r, j) for j from 1 to r - 1, nearest
     // to the middle of the ring first (ties: the lower j), then (r, 0). The passes index at most 255.
-    private static List<(int Dx, int Dy)> Build(int count)
+    static List<(int Dx, int Dy)> Build(int count)
     {
         var table = new List<(int Dx, int Dy)> { (0, 0) };
         for (var ring = 1; table.Count < count; ring++)

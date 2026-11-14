@@ -20,15 +20,22 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class WorkerWalkTests
 {
-    private const string Fixture = "worker-walks.txt";
-    private const int WorkerSlot = 10;
-    private const int HutSlot = 1;
+    const string Fixture = "worker-walks.txt";
+    const int WorkerSlot = 10;
+    const int HutSlot = 1;
 
-    private sealed record Scenario(string Name, string Command, List<(int Pass, string? Worker, string? Hut)> Lines);
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<(int Pass, string? Worker, string? Hut)> Lines { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -36,7 +43,14 @@ public sealed class WorkerWalkTests
             if (line.StartsWith("# ", StringComparison.Ordinal))
             {
                 var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Lines = [],
+                    }
+                );
                 continue;
             }
 
@@ -83,7 +97,7 @@ public sealed class WorkerWalkTests
         return Convert.ToHexString([.. bytes]);
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     [TestMethod]
@@ -95,7 +109,16 @@ public sealed class WorkerWalkTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var hut = parts[7].Split(',').Select(int.Parse).ToArray();
@@ -103,23 +126,42 @@ public sealed class WorkerWalkTests
         var lateAt = parts.Length > 11 ? int.Parse(parts[11], CultureInfo.InvariantCulture) : -1;
         var passes = int.Parse(parts[8], CultureInfo.InvariantCulture);
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         foreach (var flag in Points(parts[5]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
         }
 
         foreach (var road in parts[6].Split(';').Select(text => text.Split(',')))
         {
             game.Enqueue(
-                new Command(
-                    0,
-                    0,
-                    CommandKind.BuildRoad,
-                    int.Parse(road[0]),
-                    int.Parse(road[1]),
-                    [.. road[2].Select(c => c - '0')]
-                )
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0]),
+                    Y = int.Parse(road[1]),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
             );
         }
 
@@ -130,14 +172,15 @@ public sealed class WorkerWalkTests
             foreach (var road in late.Split(';').Select(text => text.Split(',')))
             {
                 game.Enqueue(
-                    new Command(
-                        lateAt,
-                        0,
-                        CommandKind.BuildRoad,
-                        int.Parse(road[0]),
-                        int.Parse(road[1]),
-                        [.. road[2].Select(c => c - '0')]
-                    )
+                    new Command
+                    {
+                        Tick = lateAt,
+                        Player = 0,
+                        Kind = CommandKind.BuildRoad,
+                        X = int.Parse(road[0]),
+                        Y = int.Parse(road[1]),
+                        Directions = [.. road[2].Select(c => c - '0')],
+                    }
                 );
             }
         }

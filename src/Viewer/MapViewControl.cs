@@ -170,24 +170,26 @@ public partial class MapViewControl : Control
     /// and lists nothing.
     /// </summary>
     PlayState Snapshot(bool things) =>
-        new(
-            _camera.X,
-            _camera.Y,
-            _zoom.Scale,
-            _state.SeedText,
-            _state.SizeValue,
-            _gameView ? _game?.TickCount ?? 0 : null,
-            _gameView ? _game?.CastleStock.Logs ?? 0 : null,
-            !_gameView ? null
+        new()
+        {
+            CameraX = _camera.X,
+            CameraY = _camera.Y,
+            Zoom = _zoom.Scale,
+            Seed = _state.SeedText,
+            Size = _state.SizeValue,
+            Ticks = _gameView ? _game?.TickCount ?? 0 : null,
+            Logs = _gameView ? _game?.CastleStock.Logs ?? 0 : null,
+            FlagGoods =
+                !_gameView ? null
                 : _game is null ? new System.Collections.Generic.Dictionary<(int X, int Y), int>()
                 : ObjectDraws
                     .FlagGoodsOf(_game)
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => !good.IsNone)),
-            things ? ListedThings() : null,
-            _gameView ? _game : null,
-            _gameView ? _game?.CastleStock.Planks ?? 0 : null,
-            _gameView ? _game?.CastleStock.Stones ?? 0 : null
-        );
+            Things = things ? ListedThings() : null,
+            Game = _gameView ? _game : null,
+            Planks = _gameView ? _game?.CastleStock.Planks ?? 0 : null,
+            Stones = _gameView ? _game?.CastleStock.Stones ?? 0 : null,
+        };
 
     /// <summary>
     /// A play run's <c>fast-forward</c> step: ticks the game without drawing until the step's condition holds, then draws
@@ -668,12 +670,13 @@ public partial class MapViewControl : Control
         );
         // ClickDecision decides from the pressed buttons: the road is drawn outside the game, a node at a time, and one
         // command builds it where it reaches a flag.
-        var mode = new ClickMode(
-            _roadButton.ButtonPressed,
-            _removeButton.ButtonPressed,
-            _flagButton.ButtonPressed,
-            _buildButtons.Where(entry => entry.Button.ButtonPressed).Select(entry => entry.Type).ToList()
-        );
+        var mode = new ClickMode
+        {
+            Road = _roadButton.ButtonPressed,
+            Remove = _removeButton.ButtonPressed,
+            Flag = _flagButton.ButtonPressed,
+            Buildings = _buildButtons.Where(entry => entry.Button.ButtonPressed).Select(entry => entry.Type).ToList(),
+        };
         if (ClickDecision.Decide(mode, _game, _state.Map, _drawing, _game.Removal.CommandAt, x, y) is { } command)
         {
             _game.Enqueue(command);

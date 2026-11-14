@@ -13,22 +13,20 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class JobGeneratorTests
 {
-    private const string Domain = """
+    const string Domain = """
         namespace OpenSettlers.Domain;
         public abstract partial record Job { public abstract int Code { get; } }
         public sealed record UnportedJob(int Code) : Job { public override int Code { get; } = Code; }
         """;
 
-    private static readonly MetadataReference[] References =
+    static readonly MetadataReference[] References =
     [
         .. ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Select(path => MetadataReference.CreateFromFile(path)),
     ];
 
-    private static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(
-        params string[] sources
-    )
+    static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(params string[] sources)
     {
         var trees = sources.Select(source => CSharpSyntaxTree.ParseText(source)).ToArray();
         var compilation = CSharpCompilation.Create(
@@ -43,13 +41,13 @@ public sealed class JobGeneratorTests
         return (diagnostics, text, output);
     }
 
-    private static string JobSource(string declaration, string name, string number) =>
+    static string JobSource(string declaration, string name, string number) =>
         $$"""
             namespace OpenSettlers.Domain;
             {{declaration}} {{name}} : Job { {{number}} public override int Code => Number; }
             """;
 
-    private static readonly string[] WellFormed =
+    static readonly string[] WellFormed =
     [
         Domain,
         JobSource("public sealed record", "Alpha", "public const int Number = 1;"),

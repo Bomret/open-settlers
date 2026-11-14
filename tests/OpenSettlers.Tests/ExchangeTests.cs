@@ -9,14 +9,14 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ExchangeTests
 {
-    private const int Log = 7;
-    private const int Ninth = 9;
-    private const int Way = 3;
+    const int Log = 7;
+    const int Ninth = 9;
+    const int Way = 3;
 
-    private const int Board = 1;
+    const int Board = 1;
 
     // The flag table holds the castle's flag alone.
-    private static (BehaviourBench Bench, GoodsTransport Goods) WithFlag(byte[]? transportPriorities = null)
+    static (BehaviourBench Bench, GoodsTransport Goods) WithFlag(byte[]? transportPriorities = null)
     {
         var bench = new BehaviourBench(transportPriorities);
         bench.Flags.Add(15, 5);
@@ -26,7 +26,7 @@ public sealed class ExchangeTests
 
     // A settler made a carrier on a flag, with the heading it came in and the good it carries for the flag `destination` (none:
     // no good).
-    private static Settler Carrier(BehaviourBench bench, int good, int? destination) =>
+    static Settler Carrier(BehaviourBench bench, int good, int? destination) =>
         bench.Settlers[
             bench.Place(
                 new Settler(
@@ -35,16 +35,27 @@ public sealed class ExchangeTests
                     0,
                     0,
                     0,
-                    new WalksRoad(good == 0 ? null : new Load(new Good(good), destination), new Heading(Way))
+                    new WalksRoad
+                    {
+                        Load =
+                            good == 0
+                                ? null
+                                : new Load
+                                {
+                                    Good = new Good { Code = good },
+                                    Destination = destination,
+                                },
+                        Heading = new Heading { Value = Way },
+                    }
                 )
             )
         ];
 
-    private static void Exchange(GoodsTransport goods, Settler carrier) =>
+    static void Exchange(GoodsTransport goods, Settler carrier) =>
         goods.Exchange(0, carrier, (WalksRoad)carrier.Activity, 0);
 
     // The good a carrier carries; 0 for none.
-    private static int Carried(Settler carrier) => ((WalksRoad)carrier.Activity).Load?.Good.Code ?? 0;
+    static int Carried(Settler carrier) => ((WalksRoad)carrier.Activity).Load?.Good.Code ?? 0;
 
     [TestMethod]
     public void ACarrierThatCarriesAGoodLeavesItInThePlaceOfTheGoodThatWaitsForItsRoadAndTakesThatOneAlong()
@@ -57,7 +68,11 @@ public sealed class ExchangeTests
         Exchange(goods, carrier);
 
         Assert.AreEqual(Log, Carried(carrier), "the carrier takes the good that waited");
-        Assert.AreEqual(new Good(Ninth), bench.Flags[0].Places[2].Good, "the good it carried is left in that place");
+        Assert.AreEqual(
+            new Good { Code = Ninth },
+            bench.Flags[0].Places[2].Good,
+            "the good it carried is left in that place"
+        );
         Assert.AreEqual(0, bench.Flags[0].Places[2].Destination, "its destination goes with it");
         Assert.IsNull(bench.Flags[0].Side(Way).WaitingPlace, "no good waits for the road any more");
         Assert.IsTrue(bench.Flags[0].NeedsGoodsTurn, "the flag looks at the new good at its next turn");
@@ -87,12 +102,12 @@ public sealed class ExchangeTests
         Exchange(goods, carrier);
 
         Assert.AreEqual(0, Carried(carrier), "the carrier has nothing left");
-        Assert.AreEqual(new Good(Ninth), bench.Flags[0].Places[1].Good);
+        Assert.AreEqual(new Good { Code = Ninth }, bench.Flags[0].Places[1].Good);
         Assert.AreEqual(0, bench.Flags[0].Places[1].Destination);
     }
 
     // Made-up ranks for the goods 1 to 26 (index good - 1): the ninth ranks above the log, the board below it.
-    private static byte[] Ranks(int log, int ninth, int board)
+    static byte[] Ranks(int log, int ninth, int board)
     {
         var ranks = new byte[StartStock.Goods];
         ranks[Log - 1] = (byte)log;
@@ -103,8 +118,7 @@ public sealed class ExchangeTests
     }
 
     // A good on a place that has been given the road's direction (bits 5 to 7 hold the direction plus one).
-    private static void LayDirected(GoodsTransport goods, int place, int good) =>
-        goods.LayGood(0, place, good, way: Way);
+    static void LayDirected(GoodsTransport goods, int place, int good) => goods.LayGood(0, place, good, way: Way);
 
     [TestMethod]
     public void AfterACarrierTakesAGoodTheGoodOfTheHighestTransportPriorityForTheSameRoadWaitsNext()

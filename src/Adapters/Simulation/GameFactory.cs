@@ -94,15 +94,16 @@ public static class GameFactory
             id => causes.ForgetPlacement(id)
         );
         // The job rules modules (ADR 0016): the generated registry builds each from the shared parts.
-        var parts = new JobParts(
-            movement,
-            buildings,
-            flags,
-            history,
-            draws,
-            (flag, place, good) => goods.LayGood(flag, place, good),
-            hut
-        );
+        var parts = new JobParts
+        {
+            Movement = movement,
+            Buildings = buildings,
+            Flags = flags,
+            History = history,
+            Draws = draws,
+            LayGood = (flag, place, good) => goods.LayGood(flag, place, good),
+            Hut = hut,
+        };
         var modules = JobModules.Build(parts);
         foreach (var module in modules)
         {

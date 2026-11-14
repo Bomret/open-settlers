@@ -10,7 +10,7 @@ namespace OpenSettlers.MapView;
 /// <param name="tables">The tables of the exe: the sawmiller's adds.</param>
 public sealed class SawmillerLook(RuleTables tables) : HistoryEditionLook<Sawmiller>
 {
-    private readonly SawmillerFigureAdds _adds = tables.Get<SawmillerFigureAdds>(new Sawmiller());
+    readonly SawmillerFigureAdds _adds = tables.Get<SawmillerFigureAdds>(new Sawmiller());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) =>

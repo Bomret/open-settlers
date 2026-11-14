@@ -12,8 +12,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class JobCoverageTests
 {
-    private const string HistoryEdition = "History Edition";
-    private const string ContentSet = "Open Settlers";
+    const string HistoryEdition = "History Edition";
+    const string ContentSet = "Open Settlers";
 
     // What is wrong with the modules: a job with two rules, a job with two looks under a source, and a job with rules and no look
     // under a source. A job without rules may have looks (the carrier's) or none (the castle settler's).
@@ -40,13 +40,26 @@ public sealed class JobCoverageTests
         return problems;
     }
 
-    private static IEnumerable<Type> Twice(IEnumerable<Type> jobs) =>
+    static IEnumerable<Type> Twice(IEnumerable<Type> jobs) =>
         jobs.GroupBy(job => job).Where(group => group.Count() > 1).Select(group => group.Key);
 
-    private static IEnumerable<Type> RulesJobs() =>
-        JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!)).Select(rules => rules.JobType);
+    static IEnumerable<Type> RulesJobs() =>
+        JobModules
+            .Build(
+                new JobParts
+                {
+                    Movement = null!,
+                    Buildings = null!,
+                    Flags = null!,
+                    History = null!,
+                    Draws = null!,
+                    LayGood = null!,
+                    Hut = null!,
+                }
+            )
+            .Select(rules => rules.JobType);
 
-    private static Dictionary<string, IEnumerable<Type>> Looks(params Type[] extra) =>
+    static Dictionary<string, IEnumerable<Type>> Looks(params Type[] extra) =>
         new()
         {
             [HistoryEdition] =

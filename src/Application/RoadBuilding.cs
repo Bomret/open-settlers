@@ -163,7 +163,7 @@ public static class RoadBuilding
     // direction belongs to the player, and it is the last step's node (the road may be taken back), or it holds no
     // object of class 2 or 4 (stones and rocks, the small building; a tree, class 1, does not block) and then it is a
     // flag, or it holds no road, or a flag could be put on it.
-    private static bool Allowed(RuleTables tables, Map map, int x, int y, int length, int direction)
+    static bool Allowed(RuleTables tables, Map map, int x, int y, int length, int direction)
     {
         var (dx, dy) = Steps[direction];
         var next = map.Index(x + dx, y + dy);
@@ -205,7 +205,7 @@ public static class RoadBuilding
 
     // The commit at a flag (0x444e68): walks the drawn road from the flag it ends at back to the one it started at.
     // Every node must be the player's, and the beside-triangles of the steps must be all land or all water.
-    private static Road? Commit(Map map, List<int> nodes, List<int> steps)
+    static Road? Commit(Map map, List<int> nodes, List<int> steps)
     {
         foreach (var node in nodes)
         {
@@ -228,20 +228,21 @@ public static class RoadBuilding
             return null;
         }
 
-        return new Road(
-            map.At(nodes[0]).Link ?? 0,
-            steps[0],
-            map.At(nodes[^1]).Link ?? 0,
-            (steps[^1] + 3) % 6,
-            [.. steps],
-            kinds == 2
-        );
+        return new Road
+        {
+            FromSlot = map.At(nodes[0]).Link ?? 0,
+            FromDirection = steps[0],
+            ToSlot = map.At(nodes[^1]).Link ?? 0,
+            ToDirection = (steps[^1] + 3) % 6,
+            Directions = [.. steps],
+            Water = kinds == 2,
+        };
     }
 
     // Whether the two triangles beside the step from the node in the direction are both water (0x444e68: the
     // terrain codes of 0 to 3 are water). The triangles are read from the node the step starts at, which differs by
     // direction.
-    private static bool Water(Map map, int node, int direction)
+    static bool Water(Map map, int node, int direction)
     {
         var width = map.Size.Width;
         var x = node % width;

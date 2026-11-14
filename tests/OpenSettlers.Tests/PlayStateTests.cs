@@ -7,7 +7,14 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class PlayStateTests
 {
-    static readonly PlayState State = new(CameraX: 120, CameraY: 40, Zoom: 1.25f, Seed: "1234567812345678", Size: 2);
+    static readonly PlayState State = new()
+    {
+        CameraX = 120,
+        CameraY = 40,
+        Zoom = 1.25f,
+        Seed = "1234567812345678",
+        Size = 2,
+    };
 
     static ExpectStep Expect(string field, string op, string value) =>
         new()
@@ -96,7 +103,15 @@ public sealed class PlayStateTests
         stock[7] = 53;
         stock[9] = 28;
         var castle = new CastleStock();
-        castle.Place(new Castle(1, 1, 1), stock);
+        castle.Place(
+            new Castle
+            {
+                X = 1,
+                Y = 1,
+                Height = 1,
+            },
+            stock
+        );
         var state = State with { Ticks = 1, Logs = castle.Logs, Planks = castle.Planks, Stones = castle.Stones };
 
         StringAssert.EndsWith(state.Dump(), "ticks=1\nlogs=3\nplanks=53\nstones=28\n");
@@ -109,9 +124,27 @@ public sealed class PlayStateTests
     {
         var game = GameFactory.Create(
             TestProgram.Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x6359,
+                    W1 = 0xA0D2,
+                    W2 = 0xB4FA,
+                },
+                MapSize.Offered[0]
+            )
         );
-        game.Enqueue(new Command(3, 0, CommandKind.PlaceCastle, 17, 0));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 3,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 17,
+                Y = 0,
+            }
+        );
         game.Tick();
         var dump = (GameState with { Game = game }).Dump();
 
@@ -202,9 +235,27 @@ public sealed class PlayStateTests
         {
             var game = GameFactory.Create(
                 TestProgram.Made(),
-                MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+                MapGenerator.Generate(
+                    TestProgram.Made(),
+                    new MapSeed
+                    {
+                        W0 = 0x6359,
+                        W1 = 0xA0D2,
+                        W2 = 0xB4FA,
+                    },
+                    MapSize.Offered[0]
+                )
             );
-            game.Enqueue(new Command(3, 0, CommandKind.PlaceCastle, 17, 0));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 3,
+                    Player = 0,
+                    Kind = CommandKind.PlaceCastle,
+                    X = 17,
+                    Y = 0,
+                }
+            );
             for (var i = 0; i < 400; i++)
             {
                 game.Tick();
@@ -229,7 +280,16 @@ public sealed class PlayStateTests
     {
         var game = GameFactory.Create(
             TestProgram.Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x6359,
+                    W1 = 0xA0D2,
+                    W2 = 0xB4FA,
+                },
+                MapSize.Offered[0]
+            )
         );
         game.Tick();
         var state = State with { Ticks = game.TickCount, Logs = game.CastleStock.Logs };
@@ -240,7 +300,14 @@ public sealed class PlayStateTests
     [TestMethod]
     public void ZoomComparesAtFourDecimals()
     {
-        var zoom = new PlayState(0, 0, 1.00001f, "1", 1);
+        var zoom = new PlayState
+        {
+            CameraX = 0,
+            CameraY = 0,
+            Zoom = 1.00001f,
+            Seed = "1",
+            Size = 1,
+        };
 
         Assert.IsNull(zoom.Check(Expect("zoom", "=", "1")));
         Assert.IsNotNull(zoom.Check(Expect("zoom", "=", "1.0001")));

@@ -5,10 +5,24 @@ using System.Text;
 namespace OpenSettlers.Formats;
 
 /// <summary>One key of a text file and its value.</summary>
-public sealed record TextEntry(string Key, string Value);
+public sealed record TextEntry
+{
+    /// <summary>The key.</summary>
+    public required string Key { get; init; }
+
+    /// <summary>The value the key holds.</summary>
+    public required string Value { get; init; }
+}
 
 /// <summary>A line of a text file that the program's parser does not accept, with its 1-based number and the reason.</summary>
-public sealed record RejectedLine(int Line, string Reason);
+public sealed record RejectedLine
+{
+    /// <summary>The 1-based number of the line.</summary>
+    public required int Line { get; init; }
+
+    /// <summary>Why the parser does not accept the line.</summary>
+    public required string Reason { get; init; }
+}
 
 /// <summary>
 /// The keys and values of one language: what the program's text parser reads from a file under <c>loca/</c>
@@ -80,7 +94,7 @@ public sealed class TextFile
             var reason = Parse(Encoding.Latin1.GetString(bytes, start, length), length, out var key, out var value);
             if (reason != null)
             {
-                rejected.Add(new RejectedLine(number, reason));
+                rejected.Add(new RejectedLine { Line = number, Reason = reason });
             }
             else
             {
@@ -96,7 +110,7 @@ public sealed class TextFile
             start = stop + (stop + 1 < end && bytes[stop] == '\r' && bytes[stop + 1] == '\n' ? 2 : 1);
         }
 
-        var entries = order.ConvertAll(k => new TextEntry(k, values[k]));
+        var entries = order.ConvertAll(k => new TextEntry { Key = k, Value = values[k] });
 
         return new TextFile(entries, rejected);
     }

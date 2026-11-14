@@ -10,7 +10,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class BuildingEncoderTests
 {
-    private static Building Hut() => new(BuildingType.Woodcutter, 3, 4, 1);
+    static Building Hut() => new(BuildingType.Woodcutter, 3, 4, 1);
 
     [TestMethod]
     public void ABuildingWithNoFlagSetHasStatusZero()

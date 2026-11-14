@@ -5,11 +5,13 @@ namespace OpenSettlers.Domain;
 /// object), 3 a flag, 4 to 6 buildings with 6 the castle (<c>docs/rules/build-sites.md</c>). The program's class table
 /// assigns one to each object code; <see cref="RuleTables.ClassOf"/> reads it.
 /// </summary>
-/// <param name="Value">The class byte of the table (0 to 6 in the original).</param>
-public readonly record struct ObjectClass(int Value)
+public readonly record struct ObjectClass
 {
+    /// <summary>The class byte of the table (0 to 6 in the original).</summary>
+    public required int Value { get; init; }
+
     /// <summary>The class of a class number, for the tables a test builds from numbers.</summary>
-    public static implicit operator ObjectClass(int value) => new(value);
+    public static implicit operator ObjectClass(int value) => new() { Value = value };
 
     /// <summary>Class 0: the object does not occupy its node for the rules.</summary>
     public bool IsEmpty => Value == 0;

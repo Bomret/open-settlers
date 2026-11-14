@@ -26,15 +26,50 @@ public sealed class SpriteLayerTests
         var tables = TestProgram.Tables();
         var pair = SettlerPair.Of(install, tables);
         var source = HistoryEditionSource.Load(install, tables);
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var layers = new ImageLayers();
-        var walks = new Walks(new ToStorage(), new Heading(0));
-        var back = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(true)));
+        var walks = new Walks
+        {
+            Errand = new ToStorage(),
+            Heading = new Heading { Value = 0 },
+        };
+        var back = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = new Vector(0, 0),
+                Purpose = new BackToHut { Carrying = true },
+            },
+        };
         var carriers =
             from good in Enumerable.Range(1, RuleTables.CarriedFigureCount - 1)
             from frame in Enumerable.Range(0, 0x79)
             from step in Enumerable.Range(0, 128)
-            select new Settler(new Carrier(), 0, 4, 3, 0, new WalksRoad(new Load(new Good(good), null), new Heading(0)))
+            select new Settler(
+                new Carrier(),
+                0,
+                4,
+                3,
+                0,
+                new WalksRoad
+                {
+                    Load = new Load
+                    {
+                        Good = new Good { Code = good },
+                        Destination = null,
+                    },
+                    Heading = new Heading { Value = 0 },
+                }
+            )
             {
                 Frame = frame,
                 Timer = (ushort)(step * 8),

@@ -7,21 +7,25 @@ namespace OpenSettlers.Simulation;
 /// What the build-site evaluator leaves for a node (<c>docs/rules/build-sites.md</c>): the three values the
 /// original writes into the player block at <c>+0x100</c>, <c>+0x101</c>, and <c>+0x102</c>.
 /// </summary>
-/// <param name="Node">
-/// How the node itself stands. 0: nothing was judged, because the node belongs to another owner or holds an
-/// object. 4: the node has coast or other flag bits. 5: a flag already stands south-east of it. 6: the
-/// south-east node has flag bits. 7: the node and the node south-east of it are free.
-/// </param>
-/// <param name="Site">
-/// What a building may be. 0: none. 1: a flag only. 2: a mountain site (no building of the plain; inferred: a
-/// mine). 3: a small building. 4: a large building. 5: the site of the first castle, which is judged like a large
-/// building (the player owns nothing yet).
-/// </param>
-/// <param name="Height">
-/// The height the building site is levelled to; set with <paramref name="Site"/> 4 or 5, else 0.
-/// </param>
-public readonly record struct BuildSiteResult(int Node, int Site, int Height)
+public readonly record struct BuildSiteResult
 {
+    /// <summary>
+    /// How the node itself stands. 0: nothing was judged, because the node belongs to another owner or holds an
+    /// object. 4: the node has coast or other flag bits. 5: a flag already stands south-east of it. 6: the
+    /// south-east node has flag bits. 7: the node and the node south-east of it are free.
+    /// </summary>
+    public required int Node { get; init; }
+
+    /// <summary>
+    /// What a building may be. 0: none. 1: a flag only. 2: a mountain site (no building of the plain; inferred: a
+    /// mine). 3: a small building. 4: a large building. 5: the site of the first castle, which is judged like a large
+    /// building (the player owns nothing yet).
+    /// </summary>
+    public required int Site { get; init; }
+
+    /// <summary>The height the building site is levelled to; set with <paramref name="Site"/> 4 or 5, else 0.</summary>
+    public required int Height { get; init; }
+
     /// <summary>True when the first castle may stand on the node: node state 7 and site 5.</summary>
     public bool IsCastleSite => Node == 7 && Site == 5;
 
@@ -39,7 +43,7 @@ public readonly record struct BuildSiteResult(int Node, int Site, int Height)
 public static class BuildSite
 {
     // The spiral entries that the evaluator reads: the node itself and rings 1, 2, and 3.
-    private const int Nodes = 37;
+    const int Nodes = 37;
 
     /// <summary>
     /// Judges a node for a player. <paramref name="hasCastle"/> tells whether the player's castle stands; the
@@ -101,10 +105,20 @@ public static class BuildSite
 
         var site = 0;
         if (!own.IsEmpty)
-            return new(node, 0, 0);
+            return new()
+            {
+                Node = node,
+                Site = 0,
+                Height = 0,
+            };
 
         if (Up(0).IsWater && Low(0).IsWater && Low(4).IsWater && Up(5).IsWater && Low(5).IsWater && Up(6).IsWater)
-            return new(node, 0, 0);
+            return new()
+            {
+                Node = node,
+                Site = 0,
+                Height = 0,
+            };
 
         var flagNear = false;
         for (var i = 1; i <= 6; i++)
@@ -112,7 +126,12 @@ public static class BuildSite
             if (Class(i).IsFlag)
             {
                 if (node == 4)
-                    return new(node, 0, 0);
+                    return new()
+                    {
+                        Node = node,
+                        Site = 0,
+                        Height = 0,
+                    };
 
                 flagNear = true;
                 break;
@@ -123,31 +142,61 @@ public static class BuildSite
         {
             site = 1;
             if (node == 4)
-                return new(node, site, 0);
+                return new()
+                {
+                    Node = node,
+                    Site = site,
+                    Height = 0,
+                };
         }
 
         for (var i = 1; i <= 6; i++)
         {
             if (Class(i).IsBuilding)
-                return new(node, site, 0);
+                return new()
+                {
+                    Node = node,
+                    Site = site,
+                    Height = 0,
+                };
         }
 
         if (node != 5 && !Class(2).IsEmpty)
-            return new(node, site, 0);
+            return new()
+            {
+                Node = node,
+                Site = site,
+                Height = 0,
+            };
 
         foreach (var i in new[] { 7, 8, 14, 1, 3 })
         {
             if (Class(i).IsFlag)
-                return new(node, site, 0);
+                return new()
+                {
+                    Node = node,
+                    Site = site,
+                    Height = 0,
+                };
         }
 
         if (Up(1).IsWater || Low(3).IsWater || Up(2).IsWater || Low(2).IsWater)
-            return new(node, site, 0);
+            return new()
+            {
+                Node = node,
+                Site = site,
+                Height = 0,
+            };
 
         for (var i = 1; i <= 6; i++)
         {
             if (nodes[i].Owner != owner)
-                return new(node, site, 0);
+                return new()
+                {
+                    Node = node,
+                    Site = site,
+                    Height = 0,
+                };
         }
 
         // The six triangles around the node: plain land and mountain can be built on, and no mixture of the two;
@@ -164,11 +213,21 @@ public static class BuildSite
         }
 
         if (kinds > 1)
-            return new(node, site, 0);
+            return new()
+            {
+                Node = node,
+                Site = site,
+                Height = 0,
+            };
 
         if (kinds != 0)
         {
-            return new(node, hasCastle ? 2 : site, 0);
+            return new()
+            {
+                Node = node,
+                Site = hasCastle ? 2 : site,
+                Height = 0,
+            };
         }
 
         if (hasCastle)
@@ -178,13 +237,23 @@ public static class BuildSite
         {
             var c = Class(i);
             if (c.IsLarge && !c.IsFlag)
-                return new(node, site, 0);
+                return new()
+                {
+                    Node = node,
+                    Site = site,
+                    Height = 0,
+                };
         }
 
         for (var i = 7; i <= 18; i++)
         {
             if (Class(i).IsLargeBuilding)
-                return new(node, site, 0);
+                return new()
+                {
+                    Node = node,
+                    Site = site,
+                    Height = 0,
+                };
         }
 
         if (
@@ -195,7 +264,12 @@ public static class BuildSite
             || Low(5) != Terrain.Lowland
             || Up(6) != Terrain.Lowland
         )
-            return new(node, site, 0);
+            return new()
+            {
+                Node = node,
+                Site = site,
+                Height = 0,
+            };
 
         // The heights of the 12 nodes of the second ring bound the levelled height, and so do the target heights of the large building
         // sites that wait for their digger within the third ring (0x44c151 to 0x44c204, in 0x44bd72): a node holding the object code 3
@@ -230,7 +304,12 @@ public static class BuildSite
         }
 
         if (high - low >= 9)
-            return new(node, site, 0);
+            return new()
+            {
+                Node = node,
+                Site = site,
+                Height = 0,
+            };
 
         var sum = 2 * Height(0);
         for (var i = 1; i <= 6; i++)
@@ -245,6 +324,11 @@ public static class BuildSite
         if (level == 0)
             level = 1;
 
-        return new(node, hasCastle ? 4 : 5, level);
+        return new()
+        {
+            Node = node,
+            Site = hasCastle ? 4 : 5,
+            Height = level,
+        };
     }
 }

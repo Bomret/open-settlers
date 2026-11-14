@@ -13,7 +13,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class JobTablesGeneratorTests
 {
-    private const string Base = """
+    const string Base = """
         using System;
         using System.Collections.Generic;
         namespace OpenSettlers.Domain
@@ -45,20 +45,19 @@ public sealed class JobTablesGeneratorTests
         """;
 
     // The assembly that holds the core states 2 and 3 of the made-up name table.
-    private const string Core = "[assembly: OpenSettlers.Simulation.CoreStateCodes(2, 3)]";
+    const string Core = "[assembly: OpenSettlers.Simulation.CoreStateCodes(2, 3)]";
 
-    private static readonly MetadataReference[] References =
+    static readonly MetadataReference[] References =
     [
         .. ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Select(path => MetadataReference.CreateFromFile(path)),
     ];
 
-    private static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(
-        params string[] modules
-    ) => Run(modules.Prepend(Base).Prepend(Core).ToArray(), References);
+    static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(params string[] modules) =>
+        Run(modules.Prepend(Base).Prepend(Core).ToArray(), References);
 
-    private static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(
+    static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(
         string[] sources,
         MetadataReference[] references
     )
@@ -78,14 +77,14 @@ public sealed class JobTablesGeneratorTests
         return (diagnostics, text, output);
     }
 
-    private static string Module(string name, string job, string attributes = "", string body = "") =>
+    static string Module(string name, string job, string attributes = "", string body = "") =>
         $$"""
             namespace OpenSettlers.Simulation;
             {{attributes}}
             public sealed class {{name}} : JobTables<OpenSettlers.Domain.{{job}}> { {{body}} }
             """;
 
-    private static readonly string[] WellFormed =
+    static readonly string[] WellFormed =
     [
         Module("AlphaTables", "Alpha", "[JobName(\"alpha\", \"why alpha\")][StateName(0x11, \"acts\", \"why acts\")]"),
         Module("BetaTables", "Beta", "[StateName(0x12, \"rests\", \"why rests\")]"),

@@ -23,54 +23,121 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class GoldenTests
 {
-    private const string Fixture = "golden.txt";
-    private static readonly MapSeed GeneratedSeed = new(0x1234, 0x5678, 0x9ABC);
-    private const string GeneratedWhere = "generated seed=1234,5678,9ABC size=1";
+    const string Fixture = "golden.txt";
+    static readonly MapSeed GeneratedSeed = new()
+    {
+        W0 = 0x1234,
+        W1 = 0x5678,
+        W2 = 0x9ABC,
+    };
+    const string GeneratedWhere = "generated seed=1234,5678,9ABC size=1";
 
     // The kind of a step that stands a finished woodcutter's hut on the node before the tick: no command gives a finished
     // building, so the script places it through the seam a layout's finished-building entry uses.
-    private const int FinishedHut = -1;
+    const int FinishedHut = -1;
 
     // A command at a tick: the scripts enqueue every command before the first tick, but a finished hut, which no command gives.
-    private sealed record Step(
-        long Tick,
-        int Kind,
-        int X,
-        int Y,
-        int[]? Directions = null,
-        BuildingType? Building = null
-    );
+    sealed record Step
+    {
+        public required long Tick { get; init; }
 
-    private sealed record Scenario(
-        string Name,
-        string Where,
-        Func<bool, Game> Start,
-        IReadOnlyList<Step> Script,
-        IReadOnlyList<int> Checkpoints
-    );
+        public required int Kind { get; init; }
+
+        public required int X { get; init; }
+
+        public required int Y { get; init; }
+
+        public int[]? Directions { get; init; } = null;
+
+        public BuildingType? Building { get; init; } = null;
+    }
+
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Where { get; init; }
+
+        public required Func<bool, Game> Start { get; init; }
+
+        public required IReadOnlyList<Step> Script { get; init; }
+
+        public required IReadOnlyList<int> Checkpoints { get; init; }
+    }
 
     // The castle at 15,5 puts its flag at 16,6. Flags at 18,6 (slot 1), 19,4 (2), and 17,3 (3) with roads between
     // them, and a woodcutter's hut at 16,2 on its own flag, as ThingHistoryRemovalTests lays them out.
-    private static readonly Step[] Town =
+    static readonly Step[] Town =
     [
-        new(0, CommandKind.PlaceCastle, 15, 5),
-        new(1, CommandKind.PlaceFlag, 18, 6),
-        new(2, CommandKind.PlaceFlag, 19, 4),
-        new(3, CommandKind.PlaceFlag, 17, 3),
-        new(4, CommandKind.BuildRoad, 16, 6, [0, 0]),
-        new(5, CommandKind.BuildRoad, 18, 6, [5, 5, 0]),
-        new(6, CommandKind.BuildRoad, 17, 3, [0, 1]),
-        new(7, FinishedHut, 16, 2),
+        new()
+        {
+            Tick = 0,
+            Kind = CommandKind.PlaceCastle,
+            X = 15,
+            Y = 5,
+        },
+        new()
+        {
+            Tick = 1,
+            Kind = CommandKind.PlaceFlag,
+            X = 18,
+            Y = 6,
+        },
+        new()
+        {
+            Tick = 2,
+            Kind = CommandKind.PlaceFlag,
+            X = 19,
+            Y = 4,
+        },
+        new()
+        {
+            Tick = 3,
+            Kind = CommandKind.PlaceFlag,
+            X = 17,
+            Y = 3,
+        },
+        new()
+        {
+            Tick = 4,
+            Kind = CommandKind.BuildRoad,
+            X = 16,
+            Y = 6,
+            Directions = [0, 0],
+        },
+        new()
+        {
+            Tick = 5,
+            Kind = CommandKind.BuildRoad,
+            X = 18,
+            Y = 6,
+            Directions = [5, 5, 0],
+        },
+        new()
+        {
+            Tick = 6,
+            Kind = CommandKind.BuildRoad,
+            X = 17,
+            Y = 3,
+            Directions = [0, 1],
+        },
+        new()
+        {
+            Tick = 7,
+            Kind = FinishedHut,
+            X = 16,
+            Y = 2,
+        },
     ];
 
     // The class 4 the removal click takes a building for.
-    private const byte BuildingClass = 4;
+    const byte BuildingClass = 4;
 
-    private static readonly int[] Loop = [0, 1, 2, 3, 4, 5];
+    static readonly int[] Loop = [0, 1, 2, 3, 4, 5];
 
-    private static readonly IReadOnlyList<int> Checkpoints = [100, 700, 1500, 3000, 6000];
+    static readonly IReadOnlyList<int> Checkpoints = [100, 700, 1500, 3000, 6000];
 
-    private static Game Generated(bool everyPass)
+    static Game Generated(bool everyPass)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), GeneratedSeed, MapSize.Offered[0]);
 
@@ -79,14 +146,14 @@ public sealed class GoldenTests
 
     // The game as the game view runs it (the castle's hand-out on, GameFactory.Create's handsOutGoods), on the made-up tables of the
     // construction rules.
-    private static Game HandingOut(bool everyPass)
+    static Game HandingOut(bool everyPass)
     {
         var map = MapGenerator.Generate(TestProgram.Made(), GeneratedSeed, MapSize.Offered[0]);
 
         return GameFactory.Create(ConstructionTables.Tables(), map, everyPassTurns: everyPass, handsOutGoods: true);
     }
 
-    private static Func<bool, Game> OnLayout(string file) =>
+    static Func<bool, Game> OnLayout(string file) =>
         everyPass =>
         {
             var path = Path.Combine(CheckedInLayoutsTests.LayoutsFolder(), file);
@@ -102,84 +169,263 @@ public sealed class GoldenTests
             return game;
         };
 
-    private static readonly Scenario[] Scenarios =
+    static readonly Scenario[] Scenarios =
     [
-        new("town-woodcutter-goods", GeneratedWhere, Generated, Town, Checkpoints),
-        new(
-            "town-removals",
-            GeneratedWhere,
-            Generated,
+        new()
+        {
+            Name = "town-woodcutter-goods",
+            Where = GeneratedWhere,
+            Start = Generated,
+            Script = Town,
+            Checkpoints = Checkpoints,
+        },
+        new()
+        {
+            Name = "town-removals",
+            Where = GeneratedWhere,
+            Start = Generated,
+            Script =
             [
                 .. Town,
-                new(900, CommandKind.RemoveFlag, 18, 6),
-                new(1500, CommandKind.RemoveBuilding, 16, 2),
-                new(2200, CommandKind.RemoveRoad, 17, 6),
-                new(2800, CommandKind.RemoveFlag, 17, 3),
+                new()
+                {
+                    Tick = 900,
+                    Kind = CommandKind.RemoveFlag,
+                    X = 18,
+                    Y = 6,
+                },
+                new()
+                {
+                    Tick = 1500,
+                    Kind = CommandKind.RemoveBuilding,
+                    X = 16,
+                    Y = 2,
+                },
+                new()
+                {
+                    Tick = 2200,
+                    Kind = CommandKind.RemoveRoad,
+                    X = 17,
+                    Y = 6,
+                },
+                new()
+                {
+                    Tick = 2800,
+                    Kind = CommandKind.RemoveFlag,
+                    X = 17,
+                    Y = 3,
+                },
             ],
-            Checkpoints
-        ),
-        new(
-            "loop-and-split",
-            GeneratedWhere,
-            Generated,
+            Checkpoints = Checkpoints,
+        },
+        new()
+        {
+            Name = "loop-and-split",
+            Where = GeneratedWhere,
+            Start = Generated,
+            Script =
             [
-                new(0, CommandKind.PlaceCastle, 15, 5),
-                new(1, CommandKind.BuildRoad, 16, 6, Loop),
-                new(1600, CommandKind.PlaceFlag, 18, 8),
-                new(3200, CommandKind.PlaceFlag, 17, 6),
+                new()
+                {
+                    Tick = 0,
+                    Kind = CommandKind.PlaceCastle,
+                    X = 15,
+                    Y = 5,
+                },
+                new()
+                {
+                    Tick = 1,
+                    Kind = CommandKind.BuildRoad,
+                    X = 16,
+                    Y = 6,
+                    Directions = Loop,
+                },
+                new()
+                {
+                    Tick = 1600,
+                    Kind = CommandKind.PlaceFlag,
+                    X = 18,
+                    Y = 8,
+                },
+                new()
+                {
+                    Tick = 3200,
+                    Kind = CommandKind.PlaceFlag,
+                    X = 17,
+                    Y = 6,
+                },
             ],
-            Checkpoints
-        ),
-        new(
-            "head-on",
-            GeneratedWhere,
-            Generated,
+            Checkpoints = Checkpoints,
+        },
+        new()
+        {
+            Name = "head-on",
+            Where = GeneratedWhere,
+            Start = Generated,
+            Script =
             [
-                new(0, CommandKind.PlaceCastle, 15, 5),
-                new(1, CommandKind.PlaceFlag, 18, 6),
-                new(2, CommandKind.PlaceFlag, 20, 6),
-                new(3, CommandKind.BuildRoad, 16, 6, [0, 0]),
-                new(4, CommandKind.BuildRoad, 18, 6, [0, 0]),
-                new(405, CommandKind.RemoveRoad, 19, 6),
-                new(406, CommandKind.BuildRoad, 18, 6, [0, 0]),
+                new()
+                {
+                    Tick = 0,
+                    Kind = CommandKind.PlaceCastle,
+                    X = 15,
+                    Y = 5,
+                },
+                new()
+                {
+                    Tick = 1,
+                    Kind = CommandKind.PlaceFlag,
+                    X = 18,
+                    Y = 6,
+                },
+                new()
+                {
+                    Tick = 2,
+                    Kind = CommandKind.PlaceFlag,
+                    X = 20,
+                    Y = 6,
+                },
+                new()
+                {
+                    Tick = 3,
+                    Kind = CommandKind.BuildRoad,
+                    X = 16,
+                    Y = 6,
+                    Directions = [0, 0],
+                },
+                new()
+                {
+                    Tick = 4,
+                    Kind = CommandKind.BuildRoad,
+                    X = 18,
+                    Y = 6,
+                    Directions = [0, 0],
+                },
+                new()
+                {
+                    Tick = 405,
+                    Kind = CommandKind.RemoveRoad,
+                    X = 19,
+                    Y = 6,
+                },
+                new()
+                {
+                    Tick = 406,
+                    Kind = CommandKind.BuildRoad,
+                    X = 18,
+                    Y = 6,
+                    Directions = [0, 0],
+                },
             ],
-            Checkpoints
-        ),
-        new(
-            "site-with-handout",
-            GeneratedWhere + " hands-out-goods=on",
-            HandingOut,
+            Checkpoints = Checkpoints,
+        },
+        new()
+        {
+            Name = "site-with-handout",
+            Where = GeneratedWhere + " hands-out-goods=on",
+            Start = HandingOut,
+            Script =
             [
-                new(0, CommandKind.PlaceCastle, 15, 5),
-                new(1, CommandKind.PlaceFlag, 18, 6),
-                new(2, CommandKind.BuildRoad, 16, 6, [0, 0]),
-                new(3, CommandKind.PlaceBuilding, 17, 5, Building: BuildingType.Woodcutter),
+                new()
+                {
+                    Tick = 0,
+                    Kind = CommandKind.PlaceCastle,
+                    X = 15,
+                    Y = 5,
+                },
+                new()
+                {
+                    Tick = 1,
+                    Kind = CommandKind.PlaceFlag,
+                    X = 18,
+                    Y = 6,
+                },
+                new()
+                {
+                    Tick = 2,
+                    Kind = CommandKind.BuildRoad,
+                    X = 16,
+                    Y = 6,
+                    Directions = [0, 0],
+                },
+                new()
+                {
+                    Tick = 3,
+                    Kind = CommandKind.PlaceBuilding,
+                    X = 17,
+                    Y = 5,
+                    Building = BuildingType.Woodcutter,
+                },
             ],
-            Checkpoints
-        ),
-        new(
-            "woodcutter-layout",
-            "layouts/woodcutter.jsonc size=1",
-            OnLayout("woodcutter.jsonc"),
+            Checkpoints = Checkpoints,
+        },
+        new()
+        {
+            Name = "woodcutter-layout",
+            Where = "layouts/woodcutter.jsonc size=1",
+            Start = OnLayout("woodcutter.jsonc"),
+            Script =
             [
-                new(2500, CommandKind.RemoveBuilding, 13, 10),
-                new(3500, CommandKind.RemoveRoad, 12, 11),
-                new(4500, CommandKind.RemoveFlag, 14, 11),
+                new()
+                {
+                    Tick = 2500,
+                    Kind = CommandKind.RemoveBuilding,
+                    X = 13,
+                    Y = 10,
+                },
+                new()
+                {
+                    Tick = 3500,
+                    Kind = CommandKind.RemoveRoad,
+                    X = 12,
+                    Y = 11,
+                },
+                new()
+                {
+                    Tick = 4500,
+                    Kind = CommandKind.RemoveFlag,
+                    X = 14,
+                    Y = 11,
+                },
             ],
-            Checkpoints
-        ),
-        new("carrier-layout", "layouts/carrier.jsonc size=1", OnLayout("carrier.jsonc"), [], Checkpoints),
-        new(
-            "head-on-pass-layout",
-            "layouts/head-on-pass.jsonc size=1",
-            OnLayout("head-on-pass.jsonc"),
-            [new(400, CommandKind.RemoveRoad, 15, 11), new(401, FinishedHut, 13, 10)],
-            Checkpoints
-        ),
+            Checkpoints = Checkpoints,
+        },
+        new()
+        {
+            Name = "carrier-layout",
+            Where = "layouts/carrier.jsonc size=1",
+            Start = OnLayout("carrier.jsonc"),
+            Script = [],
+            Checkpoints = Checkpoints,
+        },
+        new()
+        {
+            Name = "head-on-pass-layout",
+            Where = "layouts/head-on-pass.jsonc size=1",
+            Start = OnLayout("head-on-pass.jsonc"),
+            Script =
+            [
+                new()
+                {
+                    Tick = 400,
+                    Kind = CommandKind.RemoveRoad,
+                    X = 15,
+                    Y = 11,
+                },
+                new()
+                {
+                    Tick = 401,
+                    Kind = FinishedHut,
+                    X = 13,
+                    Y = 10,
+                },
+            ],
+            Checkpoints = Checkpoints,
+        },
     ];
 
     // The 64-bit FNV-1a of the events as lines, in the order recorded.
-    private static ulong EventDigest(IEnumerable<ThingEvent> events)
+    static ulong EventDigest(IEnumerable<ThingEvent> events)
     {
         var hash = 0xcbf29ce484222325UL;
         foreach (var e in events)
@@ -194,17 +440,33 @@ public sealed class GoldenTests
         return hash;
     }
 
-    private sealed record Outcome(string Line, Game Game);
+    sealed record Outcome
+    {
+        public required string Line { get; init; }
+
+        public required Game Game { get; init; }
+    }
 
     // Plays the scenario once and reads no event until it has ended, so the digests at the checkpoints are those of a run
     // that nothing reads the events of (INV-0007). The events as of each checkpoint are the log's events up to its tick.
     // eachTick, where given, runs after every tick.
-    private static Outcome Run(Scenario scenario, bool everyPass, Action<Game>? eachTick = null)
+    static Outcome Run(Scenario scenario, bool everyPass, Action<Game>? eachTick = null)
     {
         var game = scenario.Start(everyPass);
         foreach (var step in scenario.Script.Where(step => step.Kind != FinishedHut))
         {
-            game.Enqueue(new Command(step.Tick, 0, step.Kind, step.X, step.Y, step.Directions, step.Building));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = step.Tick,
+                    Player = 0,
+                    Kind = step.Kind,
+                    X = step.X,
+                    Y = step.Y,
+                    Directions = step.Directions,
+                    Building = step.Building,
+                }
+            );
         }
 
         var digests = new List<string>();
@@ -238,11 +500,11 @@ public sealed class GoldenTests
         var line =
             $"{scenario.Name} | {scenario.Where} every-pass={(everyPass ? "on" : "off")} | {string.Join(" ", points)}";
 
-        return new Outcome(line, game);
+        return new Outcome { Line = line, Game = game };
     }
 
     // Each scenario plays once per test run; the tests below assert its properties on this outcome.
-    private static readonly Lazy<IReadOnlyList<Outcome>> Outcomes = new(() =>
+    static readonly Lazy<IReadOnlyList<Outcome>> Outcomes = new(() =>
         Scenarios.SelectMany(scenario => new[] { true, false }.Select(everyPass => Run(scenario, everyPass))).ToList()
     );
 
@@ -315,14 +577,14 @@ public sealed class GoldenTests
         CollectionAssert.AreEqual(expected, actual);
     }
 
-    private static Func<ThingEvent, bool> OfType(params string[] types) => e => types.Contains(e.Type);
+    static Func<ThingEvent, bool> OfType(params string[] types) => e => types.Contains(e.Type);
 
     // Every behaviour the engine has leaves at least its minimum of these events in the log of one scenario: a recurring
     // behaviour at least Recurring times, a behaviour a scenario sets going once (a removal, a split, the loop road, a
     // head-on meeting, the woodcutter's one log) once.
-    private const int Recurring = 3;
+    const int Recurring = 3;
 
-    private static readonly (string Behaviour, int Min, Func<ThingEvent, bool> Is)[] Behaviours =
+    static readonly (string Behaviour, int Min, Func<ThingEvent, bool> Is)[] Behaviours =
     [
         ("castle", 1, OfType(EventType.PlaceCastle)),
         ("flags", Recurring, OfType(EventType.PlaceFlag)),

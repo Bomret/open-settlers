@@ -1,0 +1,7 @@
+root = true
+
+# docs/agents/CODING.md, "Access modifiers": omit a modifier that is the default where it stands. The build fails on one
+# (EnforceCodeStyleInBuild in Directory.Build.props, warnings as errors).
+[*.cs]
+dotnet_style_require_accessibility_modifiers = omit_if_default
+dotnet_diagnostic.IDE0040.severity = warning

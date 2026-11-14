@@ -10,10 +10,14 @@ namespace OpenSettlers.MapView;
 /// <c>building</c>, <c>flag</c>, <c>road</c>), a name from the name table, or <c>object:0xNN</c> for one raw map
 /// object code. A name several codes share matches a thing of any of them.
 /// </summary>
-/// <param name="Text">The selector as written.</param>
-/// <param name="RawCode">The raw object code of <c>object:0xNN</c>; null for a kind or a name.</param>
-public sealed record ThingSelector(string Text, int? RawCode)
+public sealed record ThingSelector
 {
+    /// <summary>The selector as written.</summary>
+    public required string Text { get; init; }
+
+    /// <summary>The raw object code of <c>object:0xNN</c>; null for a kind or a name.</summary>
+    public required int? RawCode { get; init; }
+
     /// <summary>The kinds a game view lists; the map view lists <see cref="Thing.ObjectKind"/> only.</summary>
     static readonly string[] Kinds = [Thing.ObjectKind, "settler", "building", "flag", "road"];
 
@@ -36,11 +40,19 @@ public sealed record ThingSelector(string Text, int? RawCode)
             )
                 return (null, $"'{text}' is over 0xff");
 
-            return (new ThingSelector(text, code), null);
+            return (new ThingSelector { Text = text, RawCode = code }, null);
         }
 
         return Array.IndexOf(Kinds, text) >= 0 || NameTable.IsName(text)
-            ? (new ThingSelector(text, null) { UnlistedInMapView = UnlistedKind(text) }, null)
+            ? (
+                new ThingSelector
+                {
+                    Text = text,
+                    RawCode = null,
+                    UnlistedInMapView = UnlistedKind(text),
+                },
+                null
+            )
             : (
                 null,
                 $"unknown name '{text}', use a kind ({string.Join(", ", Kinds)}), a name of the name table, or object:0xNN"

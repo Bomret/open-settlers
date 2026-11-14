@@ -9,10 +9,32 @@ public sealed class ThingCheckTests
 {
     const double Frame = 1.0 / 30;
 
-    static readonly Thing Tree = new("object", 12, 4, [("code", "0x0a")], "tree");
-    static readonly Thing Rock = new("object", 13, 4, [("code", "0x31")], null);
+    static readonly Thing Tree = new()
+    {
+        Kind = "object",
+        X = 12,
+        Y = 4,
+        Values = [("code", "0x0a")],
+        Name = "tree",
+    };
+    static readonly Thing Rock = new()
+    {
+        Kind = "object",
+        X = 13,
+        Y = 4,
+        Values = [("code", "0x31")],
+        Name = null,
+    };
 
-    PlayState _state = new(0, 0, 1f, "1", 1, Things: [Tree, Rock]);
+    PlayState _state = new()
+    {
+        CameraX = 0,
+        CameraY = 0,
+        Zoom = 1f,
+        Seed = "1",
+        Size = 1,
+        Things = [Tree, Rock],
+    };
 
     static PlayScript Parse(string text) => PlayScript.Parse(text, "play/t.play");
 
@@ -104,7 +126,20 @@ public sealed class ThingCheckTests
     [TestMethod]
     public void ANameSharedBySeveralCodesMatchesAnyOfThem()
     {
-        _state = _state with { Things = [new Thing("object", 1, 1, [("code", "0x17")], "tree")] };
+        _state = _state with
+        {
+            Things =
+            [
+                new Thing
+                {
+                    Kind = "object",
+                    X = 1,
+                    Y = 1,
+                    Values = [("code", "0x17")],
+                    Name = "tree",
+                },
+            ],
+        };
 
         Assert.IsEmpty(Problems("expect-at 1 1 tree"));
     }
@@ -176,7 +211,20 @@ public sealed class ThingCheckTests
     [TestMethod]
     public void ARawCodeValueWithoutThePrefixMatchesNothingAndDoesNotThrow()
     {
-        _state = _state with { Things = [new Thing("object", 1, 1, [("code", "a")], null)] };
+        _state = _state with
+        {
+            Things =
+            [
+                new Thing
+                {
+                    Kind = "object",
+                    X = 1,
+                    Y = 1,
+                    Values = [("code", "a")],
+                    Name = null,
+                },
+            ],
+        };
 
         StringAssert.Contains(Problems("expect-at 1 1 object:0x0a")[0], "the node holds object 1,1 code=a");
     }
@@ -184,7 +232,14 @@ public sealed class ThingCheckTests
     [TestMethod]
     public void AKindTheGameViewListsIsCounted()
     {
-        var settler = new Thing("settler", 3, 3, [], null);
+        var settler = new Thing
+        {
+            Kind = "settler",
+            X = 3,
+            Y = 3,
+            Values = [],
+            Name = null,
+        };
         _state = _state with { Ticks = 0, Things = [Tree, settler] };
 
         Assert.IsEmpty(Problems("expect-count settler = 1\nexpect-at 3 3 settler"));
@@ -195,7 +250,20 @@ public sealed class ThingCheckTests
     [DataRow("building")]
     public void InTheMapViewTheKindShadowsTheObjectNameAndTheRawCodeReachesTheObject(string word)
     {
-        _state = _state with { Things = [new Thing("object", 5, 5, [("code", "0x01")], word)] };
+        _state = _state with
+        {
+            Things =
+            [
+                new Thing
+                {
+                    Kind = "object",
+                    X = 5,
+                    Y = 5,
+                    Values = [("code", "0x01")],
+                    Name = word,
+                },
+            ],
+        };
 
         StringAssert.Contains(Problems($"expect-count {word} = 1")[0], $"the map view cannot list {word}");
         Assert.IsEmpty(Problems("expect-at 5 5 object:0x01"));

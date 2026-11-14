@@ -4,11 +4,17 @@ namespace OpenSettlers.Domain;
 /// The original's random generator: three unsigned 16-bit words that <c>Rng_Step</c> (<c>0x466ade</c>) advances
 /// one step at a time (<c>docs/rules/map-start.md</c>). The words are the generator's whole state.
 /// </summary>
-/// <param name="W0">The word the step writes last; the zero flag the original leaves follows it.</param>
-/// <param name="W1">The second state word.</param>
-/// <param name="W2">The third state word.</param>
-public readonly record struct RandomGenerator(ushort W0, ushort W1, ushort W2)
+public readonly record struct RandomGenerator
 {
+    /// <summary>The word the step writes last; the zero flag the original leaves follows it.</summary>
+    public required ushort W0 { get; init; }
+
+    /// <summary>The second state word.</summary>
+    public required ushort W1 { get; init; }
+
+    /// <summary>The third state word.</summary>
+    public required ushort W2 { get; init; }
+
     /// <summary>The generator one step on.</summary>
     public RandomGenerator Step()
     {
@@ -17,8 +23,13 @@ public readonly record struct RandomGenerator(ushort W0, ushort W1, ushort W2)
         var third = (ushort)(W2 + W1);
         var second = (ushort)(W1 ^ third);
 
-        return new RandomGenerator(first, RotateRight(second), RotateRight(third));
+        return new RandomGenerator
+        {
+            W0 = first,
+            W1 = RotateRight(second),
+            W2 = RotateRight(third),
+        };
     }
 
-    private static ushort RotateRight(ushort word) => (ushort)((word >> 1) | (word << 15));
+    static ushort RotateRight(ushort word) => (ushort)((word >> 1) | (word << 15));
 }

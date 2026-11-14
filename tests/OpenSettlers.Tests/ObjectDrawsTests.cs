@@ -14,9 +14,27 @@ public sealed class ObjectDrawsTests
     static (Map Map, Game Game) CastleWorld()
     {
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15; its flag stands at 16,6 on height 15.
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(TestProgram.Made(), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
 
         return (map, game);
@@ -44,9 +62,29 @@ public sealed class ObjectDrawsTests
         var draws = ObjectDraws.Of(Generated());
 
         // Seed 1234567812345678, size 1. Object (3,0) code 13 on height 5: x = 3 * 32, y = 0 - 5 * 4.
-        CollectionAssert.Contains(draws, new MapObjectDraw(0, 96, -20, new MapObject(13), 0));
+        CollectionAssert.Contains(
+            draws,
+            new MapObjectDraw
+            {
+                Row = 0,
+                X = 96,
+                Y = -20,
+                Object = new MapObject { Code = 13 },
+                Step = 0,
+            }
+        );
         // Object (9,0) code 82 on height 29: x = 9 * 32, y = 0 - 29 * 4.
-        CollectionAssert.Contains(draws, new MapObjectDraw(0, 288, -116, new MapObject(82), 0));
+        CollectionAssert.Contains(
+            draws,
+            new MapObjectDraw
+            {
+                Row = 0,
+                X = 288,
+                Y = -116,
+                Object = new MapObject { Code = 82 },
+                Step = 0,
+            }
+        );
     }
 
     [TestMethod]
@@ -60,7 +98,16 @@ public sealed class ObjectDrawsTests
         // node is that of the objects, inferred from the picture; no emulator or debugger run of the draw confirms it
         // for the castle.
         var castle = draws.OfType<BuildingDraw>().Single();
-        Assert.AreEqual(new BuildingDraw(5, 400, 40, BuildingType.Castle), castle);
+        Assert.AreEqual(
+            new BuildingDraw
+            {
+                Row = 5,
+                X = 400,
+                Y = 40,
+                Type = BuildingType.Castle,
+            },
+            castle
+        );
         CollectionAssert.AreEqual(
             draws.Select(draw => draw.Row).Order().ToList(),
             draws.Select(draw => draw.Row).ToList()
@@ -72,13 +119,40 @@ public sealed class ObjectDrawsTests
     {
         // The hut at 16,2 stands tied to the flag at 17,3 (the road test world of HutTests); its node's height is read from
         // the map: x = 16 * 32 - 2 * 16, y = 2 * 20 - height * 4.
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 3,
+            }
+        );
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
         var height = map.At(16, 2).Height;
@@ -86,7 +160,13 @@ public sealed class ObjectDrawsTests
         var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings);
 
         Assert.AreEqual(
-            new BuildingDraw(2, 480, 40 - height * 4, BuildingType.Woodcutter),
+            new BuildingDraw
+            {
+                Row = 2,
+                X = 480,
+                Y = 40 - height * 4,
+                Type = BuildingType.Woodcutter,
+            },
             draws.OfType<BuildingDraw>().Single(draw => draw.Type == BuildingType.Woodcutter)
         );
         CollectionAssert.AreEqual(
@@ -98,7 +178,16 @@ public sealed class ObjectDrawsTests
     [TestMethod]
     public void ABuildingSiteIsDrawnAtItsNodeWithItsProgressAndAFinishedBuildingWithNone()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
@@ -107,12 +196,38 @@ public sealed class ObjectDrawsTests
             new RuleTables(classes, TestProgram.Made().StartStock, buildingSizes: sizes),
             map
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
-        game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         game.Enqueue(
-            new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2, Building: BuildingType.Stonecutter)
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 3,
+            }
+        );
+        game.Tick();
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = 16,
+                Y = 2,
+                Building = BuildingType.Stonecutter,
+            }
         );
         game.Tick();
         Assert.IsTrue(game.Buildings[1].Constructing, "the command placed a site");
@@ -120,7 +235,17 @@ public sealed class ObjectDrawsTests
         var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings).OfType<BuildingDraw>().ToList();
 
         var height = map.At(16, 2).Height;
-        CollectionAssert.Contains(draws, new BuildingDraw(2, 480, 40 - height * 4, BuildingType.Stonecutter, 1));
+        CollectionAssert.Contains(
+            draws,
+            new BuildingDraw
+            {
+                Row = 2,
+                X = 480,
+                Y = 40 - height * 4,
+                Type = BuildingType.Stonecutter,
+                SiteProgress = 1,
+            }
+        );
         Assert.IsTrue(
             draws.Where(draw => draw.Type == BuildingType.Castle).All(draw => draw.SiteProgress is null),
             "the castle is no site"
@@ -130,11 +255,29 @@ public sealed class ObjectDrawsTests
     [TestMethod]
     public void AFinishedBuildingOfEachTypeIsDrawnWithItsType()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         Assert.IsTrue(game.PlaceFinishedBuilding(BuildingType.Forester, 16, 2));
 
@@ -150,7 +293,17 @@ public sealed class ObjectDrawsTests
 
         var draws = ObjectDraws.Of(map, game.CastleStock.Castle, counter: 8);
 
-        CollectionAssert.Contains(draws, new MapObjectDraw(6, 416, 60, MapObject.Flag, 8));
+        CollectionAssert.Contains(
+            draws,
+            new MapObjectDraw
+            {
+                Row = 6,
+                X = 416,
+                Y = 60,
+                Object = MapObject.Flag,
+                Step = 8,
+            }
+        );
     }
 
     [TestMethod]
@@ -178,7 +331,7 @@ public sealed class ObjectDrawsTests
         var (map, game) = CastleWorld();
         var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>>
         {
-            [(16, 6)] = [.. goods.Select(good => new Good(good))],
+            [(16, 6)] = [.. goods.Select(good => new Good { Code = good })],
         };
 
         return ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6).ToList();
@@ -195,15 +348,70 @@ public sealed class ObjectDrawsTests
         CollectionAssert.AreEqual(
             new ObjectTerm[]
             {
-                new GoodAtFlag(6, 422, 56, new Good(1)),
-                new GoodAtFlag(6, 426, 58, new Good(2)),
-                new GoodAtFlag(6, 412, 56, new Good(3)),
-                new MapObjectDraw(6, 416, 60, MapObject.Flag, 0),
-                new GoodAtFlag(6, 426, 62, new Good(4)),
-                new GoodAtFlag(6, 408, 58, new Good(5)),
-                new GoodAtFlag(6, 422, 64, new Good(6)),
-                new GoodAtFlag(6, 408, 62, new Good(7)),
-                new GoodAtFlag(6, 412, 64, new Good(8)),
+                new GoodAtFlag
+                {
+                    Row = 6,
+                    X = 422,
+                    Y = 56,
+                    Good = new Good { Code = 1 },
+                },
+                new GoodAtFlag
+                {
+                    Row = 6,
+                    X = 426,
+                    Y = 58,
+                    Good = new Good { Code = 2 },
+                },
+                new GoodAtFlag
+                {
+                    Row = 6,
+                    X = 412,
+                    Y = 56,
+                    Good = new Good { Code = 3 },
+                },
+                new MapObjectDraw
+                {
+                    Row = 6,
+                    X = 416,
+                    Y = 60,
+                    Object = MapObject.Flag,
+                    Step = 0,
+                },
+                new GoodAtFlag
+                {
+                    Row = 6,
+                    X = 426,
+                    Y = 62,
+                    Good = new Good { Code = 4 },
+                },
+                new GoodAtFlag
+                {
+                    Row = 6,
+                    X = 408,
+                    Y = 58,
+                    Good = new Good { Code = 5 },
+                },
+                new GoodAtFlag
+                {
+                    Row = 6,
+                    X = 422,
+                    Y = 64,
+                    Good = new Good { Code = 6 },
+                },
+                new GoodAtFlag
+                {
+                    Row = 6,
+                    X = 408,
+                    Y = 62,
+                    Good = new Good { Code = 7 },
+                },
+                new GoodAtFlag
+                {
+                    Row = 6,
+                    X = 412,
+                    Y = 64,
+                    Good = new Good { Code = 8 },
+                },
             },
             draws.Skip(flag - 3).Take(9).ToList()
         );
@@ -213,16 +421,43 @@ public sealed class ObjectDrawsTests
     public void TheCastleAndAHutAreDrawnAfterTheLastTermOfTheirRowAndBeforeTheFirstOfTheNextRow()
     {
         // The castle at 15,5 with its flag at 16,6 (goods on it), and the hut at 16,2 tied to the flag at 17,3.
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 3,
+            }
+        );
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
-        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [new Good(1)] };
+        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [new Good { Code = 1 }] };
 
         var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
 
@@ -232,21 +467,123 @@ public sealed class ObjectDrawsTests
         CollectionAssert.AreEqual(
             new ObjectTerm[]
             {
-                new MapObjectDraw(2, 480, 8, new MapObject(2), 0),
-                new MapObjectDraw(2, 576, 40, new MapObject(31), 0),
-                new BuildingDraw(2, 480, 8, BuildingType.Woodcutter),
-                new MapObjectDraw(3, 496, 40, MapObject.Flag, 0),
-                new MapObjectDraw(3, 656, 60, new MapObject(89), 0),
-                new MapObjectDraw(3, 720, 60, new MapObject(88), 0),
-                new MapObjectDraw(4, 416, 20, new MapObject(16), 0),
-                new MapObjectDraw(4, 448, 36, new MapObject(9), 0),
-                new MapObjectDraw(5, 400, 40, new MapObject(4), 0),
-                new MapObjectDraw(5, 752, 100, new MapObject(89), 0),
-                new BuildingDraw(5, 400, 40, BuildingType.Castle),
-                new MapObjectDraw(6, 224, 60, new MapObject(9), 0),
-                new MapObjectDraw(6, 256, 60, new MapObject(8), 0),
-                new GoodAtFlag(6, 422, 56, new Good(1)),
-                new MapObjectDraw(6, 416, 60, MapObject.Flag, 0),
+                new MapObjectDraw
+                {
+                    Row = 2,
+                    X = 480,
+                    Y = 8,
+                    Object = new MapObject { Code = 2 },
+                    Step = 0,
+                },
+                new MapObjectDraw
+                {
+                    Row = 2,
+                    X = 576,
+                    Y = 40,
+                    Object = new MapObject { Code = 31 },
+                    Step = 0,
+                },
+                new BuildingDraw
+                {
+                    Row = 2,
+                    X = 480,
+                    Y = 8,
+                    Type = BuildingType.Woodcutter,
+                },
+                new MapObjectDraw
+                {
+                    Row = 3,
+                    X = 496,
+                    Y = 40,
+                    Object = MapObject.Flag,
+                    Step = 0,
+                },
+                new MapObjectDraw
+                {
+                    Row = 3,
+                    X = 656,
+                    Y = 60,
+                    Object = new MapObject { Code = 89 },
+                    Step = 0,
+                },
+                new MapObjectDraw
+                {
+                    Row = 3,
+                    X = 720,
+                    Y = 60,
+                    Object = new MapObject { Code = 88 },
+                    Step = 0,
+                },
+                new MapObjectDraw
+                {
+                    Row = 4,
+                    X = 416,
+                    Y = 20,
+                    Object = new MapObject { Code = 16 },
+                    Step = 0,
+                },
+                new MapObjectDraw
+                {
+                    Row = 4,
+                    X = 448,
+                    Y = 36,
+                    Object = new MapObject { Code = 9 },
+                    Step = 0,
+                },
+                new MapObjectDraw
+                {
+                    Row = 5,
+                    X = 400,
+                    Y = 40,
+                    Object = new MapObject { Code = 4 },
+                    Step = 0,
+                },
+                new MapObjectDraw
+                {
+                    Row = 5,
+                    X = 752,
+                    Y = 100,
+                    Object = new MapObject { Code = 89 },
+                    Step = 0,
+                },
+                new BuildingDraw
+                {
+                    Row = 5,
+                    X = 400,
+                    Y = 40,
+                    Type = BuildingType.Castle,
+                },
+                new MapObjectDraw
+                {
+                    Row = 6,
+                    X = 224,
+                    Y = 60,
+                    Object = new MapObject { Code = 9 },
+                    Step = 0,
+                },
+                new MapObjectDraw
+                {
+                    Row = 6,
+                    X = 256,
+                    Y = 60,
+                    Object = new MapObject { Code = 8 },
+                    Step = 0,
+                },
+                new GoodAtFlag
+                {
+                    Row = 6,
+                    X = 422,
+                    Y = 56,
+                    Good = new Good { Code = 1 },
+                },
+                new MapObjectDraw
+                {
+                    Row = 6,
+                    X = 416,
+                    Y = 60,
+                    Object = MapObject.Flag,
+                    Step = 0,
+                },
             },
             draws.Where(draw => draw.Row is >= 2 and <= 6).ToList()
         );
@@ -260,7 +597,16 @@ public sealed class ObjectDrawsTests
 
         Assert.IsEmpty(empty.OfType<GoodAtFlag>());
         Assert.AreEqual(empty.Count + 1, one.Count);
-        Assert.Contains(new GoodAtFlag(6, 422, 56, new Good(0x27)), one);
+        Assert.Contains(
+            new GoodAtFlag
+            {
+                Row = 6,
+                X = 422,
+                Y = 56,
+                Good = new Good { Code = 0x27 },
+            },
+            one
+        );
     }
 
     [TestMethod]
@@ -279,7 +625,16 @@ public sealed class ObjectDrawsTests
     {
         var image = HistoryEditionSource
             .Load(TestProgram.OpenInstall())
-            .Draw(new MapObjectDraw(0, 0, 0, MapObject.Flag, 0))!
+            .Draw(
+                new MapObjectDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Object = MapObject.Flag,
+                    Step = 0,
+                }
+            )!
             .Image!;
 
         Assert.AreEqual(
@@ -306,13 +661,14 @@ public sealed class ObjectDrawsTests
         Assert.IsNotEmpty(tiles);
         CollectionAssert.AreEqual(
             tiles
-                .Select(tile => new WaterRipple(
-                    tile / width,
-                    Camera.NodePosition(tile % width, tile / width).X - 16,
-                    Camera.NodePosition(tile % width, tile / width).Y,
-                    tile,
-                    40
-                ))
+                .Select(tile => new WaterRipple
+                {
+                    Row = tile / width,
+                    X = Camera.NodePosition(tile % width, tile / width).X - 16,
+                    Y = Camera.NodePosition(tile % width, tile / width).Y,
+                    Tile = tile,
+                    Step = 40,
+                })
                 .ToList(),
             draws
         );

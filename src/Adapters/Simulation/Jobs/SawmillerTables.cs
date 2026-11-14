@@ -39,11 +39,12 @@ public sealed class SawmillerTables : JobTables<Sawmiller>
         data.Add(
             (
                 Job,
-                new SawmillerFigureAdds(
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.SawmillerWalkAddress),
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.SawmillerCarryingAddress),
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.SawmillerSawAddress)
-                )
+                new SawmillerFigureAdds
+                {
+                    Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.SawmillerWalkAddress),
+                    Carrying = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.SawmillerCarryingAddress),
+                    Saw = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.SawmillerSawAddress),
+                }
             )
         );
     }

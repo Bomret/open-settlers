@@ -12,16 +12,16 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SawmillSiteTests
 {
-    private const int SiteX = 14;
-    private const int SiteY = 8;
-    private const int Planks = 3;
-    private const int Stones = 2;
+    const int SiteX = 14;
+    const int SiteY = 8;
+    const int Planks = 3;
+    const int Stones = 2;
 
     // A plank on site or on the way counts against the planks the castle handed out; the third plank's rank is below the castle's floor
     // while no builder is inside (the start rank shifted right by 2 more: 0xff >> 2 >> 2 with bit 0 cleared is 0x0e, a rank below 15 at 2 held).
-    private const int PlanksWithNoBuilder = 2;
+    const int PlanksWithNoBuilder = 2;
 
-    private static (Game Game, Building Site) World()
+    static (Game Game, Building Site) World()
     {
         var needs = new byte[2 * RuleTables.BuildingTypeCount];
         needs[2 * BuildingType.Sawmill.Code] = Planks;
@@ -51,8 +51,7 @@ public sealed class SawmillSiteTests
     }
 
     // The planks the site holds on site, has on the way, or has used.
-    private static int PlanksHeld(Building site) =>
-        (site.FillLow >> 4) + (site.FillLow & 0xf) + (Planks - site.Site!.Planks);
+    static int PlanksHeld(Building site) => (site.FillLow >> 4) + (site.FillLow & 0xf) + (Planks - site.Site!.Planks);
 
     [TestMethod]
     public void ASawmillSiteLevelledByTheDiggerAndWithItsBuilderInsideReceivesThreePlanksAndTwoStonesFromTheCastle()

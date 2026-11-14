@@ -12,7 +12,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ThingHistoryTests
 {
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -33,7 +33,16 @@ public sealed class ThingHistoryTests
 
     internal static Game NewGame()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < map.Count; index++)
         {
             if (map.At(index).Object.Kind == MapObjectKind.Tree)
@@ -45,14 +54,24 @@ public sealed class ThingHistoryTests
         return GameFactory.Create(Made(), map);
     }
 
-    private static void Do(Game game, int kind, int x, int y, int[]? directions = null)
+    static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
     // The world of GameThingTests: flags at 18,6 (slot 1), 19,4 (2), 17,3 (3), roads between them, a hut at 16,2.
-    private static Game World()
+    static Game World()
     {
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
@@ -80,7 +99,7 @@ public sealed class ThingHistoryTests
         Assert.AreEqual(7057416915496346654UL, World().Digest());
     }
 
-    private static Game Castle()
+    static Game Castle()
     {
         var game = NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
@@ -219,9 +238,37 @@ public sealed class ThingHistoryTests
     public void SeveralEventsInOneTickResolveToTheLast()
     {
         var game = Castle();
-        game.Enqueue(new Command(1, 0, CommandKind.PlaceFlag, 18, 6));
-        game.Enqueue(new Command(1, 0, CommandKind.PlaceFlag, 19, 4));
-        game.Enqueue(new Command(1, 0, CommandKind.BuildRoad, 18, 6, [5, 5, 0]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 1,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 18,
+                Y = 6,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 1,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 19,
+                Y = 4,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 1,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 6,
+                Directions = [5, 5, 0],
+            }
+        );
         game.Tick();
         var flag = game.History.FlagId(1);
 
@@ -256,7 +303,11 @@ public sealed class ThingHistoryTests
         var settler = game.Settlers[5];
         game.History.CarryCause(5, command);
 
-        settler.Activity = new Walks(new ToStorage(), new Heading(0));
+        settler.Activity = new Walks
+        {
+            Errand = new ToStorage(),
+            Heading = new Heading { Value = 0 },
+        };
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
         settler.Activity = new WaitsInCastle();
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
@@ -274,11 +325,20 @@ public sealed class ThingHistoryTests
         var settler = game.Settlers[5];
 
         game.History.CarryCause(5, command);
-        settler.Activity = new WaitsAtFlag(0, 0, new Heading(0));
+        settler.Activity = new WaitsAtFlag
+        {
+            Flag = 0,
+            Direction = 0,
+            Approach = new Heading { Value = 0 },
+        };
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Carriers);
         game.History.CarryCause(5, command);
-        settler.Activity = new Walks(new ToStorage(), new Heading(0));
+        settler.Activity = new Walks
+        {
+            Errand = new ToStorage(),
+            Heading = new Heading { Value = 0 },
+        };
         game.History.EndCarry(5);
         game.History.RecordSettler(5, EventType.PlaceCastle, Cause.Settlers);
 
@@ -294,7 +354,7 @@ public sealed class ThingHistoryTests
         Assert.ThrowsExactly<ArgumentException>(() => game.History.CarryCause(5, Cause.Woodcutting));
     }
 
-    private const string Built = """
+    const string Built = """
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
@@ -313,7 +373,7 @@ public sealed class ThingHistoryTests
         return game;
     }
 
-    private static string Text(Game game) =>
+    static string Text(Game game) =>
         string.Join(
             "\n",
             game.History.Events.All.Select(e => $"{e.Tick} {e.Type} {e.Thing} [{e.State}] {e.Cause} {e.Other}")
@@ -352,7 +412,7 @@ public sealed class ThingHistoryTests
         Assert.AreEqual(Text(World()), Text(World()));
     }
 
-    private static List<string> Lines(Game game) =>
+    static List<string> Lines(Game game) =>
         [.. Thing.Of(game, new NameTable(TestProgram.Made())).Select(thing => thing.Line())];
 
     [TestMethod]

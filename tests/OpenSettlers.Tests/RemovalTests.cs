@@ -22,9 +22,16 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class RemovalTests
 {
-    private const string Fixture = "removals.txt";
+    const string Fixture = "removals.txt";
 
-    internal sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
+    internal sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<Dictionary<string, string>> Lines { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios =>
         Load()
@@ -47,7 +54,14 @@ public sealed class RemovalTests
             {
                 if (!command.Split(':')[0].Contains(' ') && command.Contains(':'))
                 {
-                    scenarios.Add(new Scenario(head, command, []));
+                    scenarios.Add(
+                        new Scenario
+                        {
+                            Name = head,
+                            Command = command,
+                            Lines = [],
+                        }
+                    );
                 }
 
                 continue;
@@ -69,7 +83,7 @@ public sealed class RemovalTests
         return scenarios;
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]: the game before the first pass.
@@ -82,27 +96,46 @@ public sealed class RemovalTests
             handsOutGoods: handsOutGoods
         );
         var castle = Points(parts[4]).Single();
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         // The flags take their slots in the order the verb lists them, which the order of the commands of one tick (by node) would
         // change: each is applied at once.
         game.ApplyCommands();
         foreach (var flag in Points(parts[5]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
             game.ApplyCommands();
         }
 
         foreach (var road in parts[6].Split(';').Where(text => text.Length > 0).Select(text => text.Split(',')))
         {
             game.Enqueue(
-                new Command(
-                    0,
-                    0,
-                    CommandKind.BuildRoad,
-                    int.Parse(road[0], CultureInfo.InvariantCulture),
-                    int.Parse(road[1], CultureInfo.InvariantCulture),
-                    [.. road[2].Select(c => c - '0')]
-                )
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0], CultureInfo.InvariantCulture),
+                    Y = int.Parse(road[1], CultureInfo.InvariantCulture),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
             );
         }
 
@@ -111,7 +144,7 @@ public sealed class RemovalTests
         foreach (var hut in Points(parts[7]))
         {
             Assert.IsTrue(
-                Huts.Place(game, hut[0] - 1, hut[1] - 1, new BuildingType(hut[2])),
+                Huts.Place(game, hut[0] - 1, hut[1] - 1, new BuildingType { Code = hut[2] }),
                 "the fixture's hut has its site"
             );
         }
@@ -124,7 +157,16 @@ public sealed class RemovalTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
 
-        return MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        return MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
     }
 
     // The class the check 0x44b6e6 gives each node, for the classes 1 to 4 that the remove click and the road click act on
@@ -169,7 +211,7 @@ public sealed class RemovalTests
     // original and 0 in the engine, where 0 is also the target before the pick. A settler that was a carrier waiting next to a
     // flag and went home (state 0x19 with the bytes 14 and 15 of the pointer, 0 and 0x23) keeps the pointer there until its
     // search for a flag writes the vector.
-    private static string Masked(string expected, string actual)
+    static string Masked(string expected, string actual)
     {
         var state = Convert.ToByte(expected[20..22], 16);
         var mode = Convert.ToByte(expected[22..24], 16);
@@ -191,7 +233,7 @@ public sealed class RemovalTests
 
     // The flag item's fields the engine holds, in the order of the verb's 70 bytes: byte 4 bit 7, the status, the road bytes, the
     // goods and their destination words, and the bytes of the directions (0x3c to 0x41).
-    private static string FlagFields(Game game, int slot) =>
+    static string FlagFields(Game game, int slot) =>
         Convert.ToHexString([
             FlagEncoder.GoodsByte(game.Flags[slot]),
             FlagEncoder.Status(game.Flags[slot]),
@@ -201,7 +243,7 @@ public sealed class RemovalTests
             .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[slot].Side(direction))),
         ]);
 
-    private static string Fields(string item) =>
+    static string Fields(string item) =>
         string.Concat(
             (Convert.ToByte(item[8..10], 16) & 0x80).ToString("X2", CultureInfo.InvariantCulture),
             item[10..24],
@@ -239,7 +281,7 @@ public sealed class RemovalTests
     }
 
     // The map bytes of the flag, object, and link layers that a step changed, as the verb lists them: "x,y:0=old>new/3=old>new/4=old>new".
-    private static string MapChanges(byte[][] before, Map map)
+    static string MapChanges(byte[][] before, Map map)
     {
         var width = map.Size.Width;
         var exported = MapLayerExporter.Export(map);
@@ -274,7 +316,7 @@ public sealed class RemovalTests
 
     // The verb also lists the changes of byte 5 of a node, the mark a settler leaves on the node it stands on (0x80); the engine
     // keeps that mark in its settler table (Game.Occupant) and no map layer holds it, so the settlers' bytes check it.
-    private static string WithoutOccupancy(string changes) =>
+    static string WithoutOccupancy(string changes) =>
         string.Join(
             ';',
             changes
@@ -290,7 +332,7 @@ public sealed class RemovalTests
                 .Select(entry => $"{entry.Node}:{string.Join('/', entry.Layers)}")
         );
 
-    private static byte[][] Snapshot(Map map) =>
+    static byte[][] Snapshot(Map map) =>
         [Layers.Of(map, MapLayer.Flags), [], [], Layers.Of(map, MapLayer.Object), Layers.Of(map, MapLayer.Resource)];
 
     [TestMethod]
@@ -479,8 +521,20 @@ public sealed class RemovalTests
                     {
                         // A building click names the type of the building as its third number.
                         BuildingType? type =
-                            kind == CommandKind.PlaceBuilding && node.Length > 2 ? new BuildingType(node[2]) : null;
-                        game.Enqueue(new Command(game.TickCount, 0, kind, node[0], node[1], Building: type));
+                            kind == CommandKind.PlaceBuilding && node.Length > 2
+                                ? new BuildingType { Code = node[2] }
+                                : null;
+                        game.Enqueue(
+                            new Command
+                            {
+                                Tick = game.TickCount,
+                                Player = 0,
+                                Kind = kind,
+                                X = node[0],
+                                Y = node[1],
+                                Building = type,
+                            }
+                        );
                     }
 
                     game.ApplyCommands();

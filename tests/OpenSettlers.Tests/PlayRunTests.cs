@@ -13,7 +13,14 @@ public sealed class PlayRunTests
 
     readonly string _out = Path.Combine(Path.GetTempPath(), "play-run-tests-" + Guid.NewGuid().ToString("N"), "stem");
     readonly List<PlayStep> _sent = [];
-    PlayState _state = new(5, 6, 1f, "1", 1);
+    PlayState _state = new()
+    {
+        CameraX = 5,
+        CameraY = 6,
+        Zoom = 1f,
+        Seed = "1",
+        Size = 1,
+    };
 
     [TestCleanup]
     public void Cleanup()
@@ -149,7 +156,20 @@ public sealed class PlayRunTests
     [TestMethod]
     public void AListWritesTheThingsOfTheStateToItsFileInTheOutputFolder()
     {
-        _state = _state with { Things = [new Thing("object", 3, 1, [("code", "0x0a")], "tree")] };
+        _state = _state with
+        {
+            Things =
+            [
+                new Thing
+                {
+                    Kind = "object",
+                    X = 3,
+                    Y = 1,
+                    Values = [("code", "0x0a")],
+                    Name = "tree",
+                },
+            ],
+        };
         var run = Run("list here");
 
         run.Advance(Frame);

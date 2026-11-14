@@ -13,9 +13,9 @@ public sealed class ClickGesture
     /// <summary>The distance in screen pixels from the press that a click may stray.</summary>
     public const double Slop = 4;
 
-    private (double X, double Y) _press;
-    private bool _pressed;
-    private bool _moved;
+    (double X, double Y) _press;
+    bool _pressed;
+    bool _moved;
 
     /// <summary>Starts a gesture with a press at a position in screen pixels.</summary>
     public void Press(double x, double y)

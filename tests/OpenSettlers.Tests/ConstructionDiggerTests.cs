@@ -18,9 +18,9 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class ConstructionDiggerTests
 {
-    private const string Fixture = "construction-digger.txt";
-    private const int DiggerSlot = 13;
-    private const int SiteSlot = 2;
+    const string Fixture = "construction-digger.txt";
+    const int DiggerSlot = 13;
+    const int SiteSlot = 2;
 
     [TestMethod]
     [DataRow("digger-sawmill")]
@@ -156,7 +156,7 @@ public sealed class ConstructionDiggerTests
         AssertJudgedAsTheOriginalJudges(game, scenario);
     }
 
-    private static void AssertJudgedAsTheOriginalJudges(Game game, RemovalTests.Scenario scenario)
+    static void AssertJudgedAsTheOriginalJudges(Game game, RemovalTests.Scenario scenario)
     {
         var expected = scenario
             .Lines[0]["verdicts"]
@@ -193,7 +193,15 @@ public sealed class ConstructionDiggerTests
             var game = Clicked(parts, withSite);
             var revision = game.Revision;
             game.Enqueue(
-                new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 12, 9, Building: BuildingType.Sawmill)
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceBuilding,
+                    X = 12,
+                    Y = 9,
+                    Building = BuildingType.Sawmill,
+                }
             );
             game.Tick();
 
@@ -230,7 +238,17 @@ public sealed class ConstructionDiggerTests
         }
 
         var revision = game.Revision;
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 12, 9, Building: BuildingType.Sawmill));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = 12,
+                Y = 9,
+                Building = BuildingType.Sawmill,
+            }
+        );
         game.Tick();
 
         Assert.AreEqual(placed, game.Revision != revision, $"the {state} site");
@@ -238,7 +256,7 @@ public sealed class ConstructionDiggerTests
 
     // The game of the scenario's command at the pass after its clicks: the site's click only where `withSite`, the heights of the clicks
     // l@x,y,H (the verb's click sets the node and its six neighbours to H), and none of the sweep's clicks v@.
-    private static Game Clicked(string[] parts, bool withSite)
+    static Game Clicked(string[] parts, bool withSite)
     {
         // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS
         var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
@@ -275,7 +293,7 @@ public sealed class ConstructionDiggerTests
         return game;
     }
 
-    private static (int X, int Y) SiteNode(string click)
+    static (int X, int Y) SiteNode(string click)
     {
         var node = click[2..].Split(',');
 
@@ -283,27 +301,28 @@ public sealed class ConstructionDiggerTests
     }
 
     // The node and its six neighbours.
-    private static IEnumerable<(int X, int Y)> Seven(int x, int y) =>
+    static IEnumerable<(int X, int Y)> Seven(int x, int y) =>
         new[] { (0, 0) }.Concat(Direction.Steps).Select(step => (x + step.Item1, y + step.Item2));
 
-    private static void Place(Game game, string click)
+    static void Place(Game game, string click)
     {
         game.ApplyCommands();
         var node = click[2..].Split(',').Select(number => int.Parse(number, CultureInfo.InvariantCulture)).ToArray();
         game.Enqueue(
-            new Command(
-                game.TickCount,
-                0,
-                CommandKind.PlaceBuilding,
-                node[0],
-                node[1],
-                Building: new BuildingType(node[2])
-            )
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = node[0],
+                Y = node[1],
+                Building = new BuildingType { Code = node[2] },
+            }
         );
         game.ApplyCommands();
     }
 
-    private static ((int X, int Y) Node, int From, int To) Change(string text)
+    static ((int X, int Y) Node, int From, int To) Change(string text)
     {
         var halves = text.Split(':');
         var node = halves[0].Split(',').Select(number => int.Parse(number, CultureInfo.InvariantCulture)).ToArray();
@@ -314,7 +333,7 @@ public sealed class ConstructionDiggerTests
 
     // The settler's 16 bytes as the original's item holds them. The slots the item names (a flag or a building) are one higher than the
     // engine's, the dummies of the original's tables; the digger's work holds the site's height and a node index in that word, no slot.
-    private static string Settler(Settler settler, int width)
+    static string Settler(Settler settler, int width)
     {
         var bytes = Convert.FromHexString(WorkerWalkTests.Hex(settler, width));
         if (

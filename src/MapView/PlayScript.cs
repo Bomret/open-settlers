@@ -107,7 +107,20 @@ public sealed record ShotStep : PlayStep
 /// The tile a <see cref="ShotStep"/> crops around: its column and row, zero or more; the radius in steps, zero or
 /// more; and the whole factor that enlarges the crop, 1 or more.
 /// </summary>
-public sealed record ShotTile(int Column, int Row, int Radius, int Scale);
+public sealed record ShotTile
+{
+    /// <summary>The column of the tile, zero or more.</summary>
+    public required int Column { get; init; }
+
+    /// <summary>The row of the tile, zero or more.</summary>
+    public required int Row { get; init; }
+
+    /// <summary>The radius of the crop in steps around the tile, zero or more.</summary>
+    public required int Radius { get; init; }
+
+    /// <summary>The whole factor that enlarges the crop, 1 or more.</summary>
+    public required int Scale { get; init; }
+}
 
 /// <summary><c>click-tile &lt;column&gt; &lt;row&gt;</c>: a left click on the map tile where it shows on the canvas.</summary>
 public sealed record ClickTileStep : PlayStep
@@ -558,7 +571,13 @@ public sealed class PlayScript
                     {
                         Line = number,
                         Name = args[0],
-                        Tile = new ShotTile(whole[0], whole[1], whole[2], whole[3]),
+                        Tile = new ShotTile
+                        {
+                            Column = whole[0],
+                            Row = whole[1],
+                            Radius = whole[2],
+                            Scale = whole[3],
+                        },
                     },
                     null
                 );

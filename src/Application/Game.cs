@@ -16,8 +16,8 @@ public sealed class Game
     /// <summary>Ticks in a second at normal speed: 4 timer calls of 20 milliseconds make one tick.</summary>
     public const double TicksPerSecond = 12.5;
 
-    private readonly GameParts _parts;
-    private readonly List<Command> _applied = [];
+    readonly GameParts _parts;
+    readonly List<Command> _applied = [];
 
     /// <summary>
     /// A game of <paramref name="parts"/>, at tick 0 with no command queued and no castle. Throws
@@ -126,7 +126,16 @@ public sealed class Game
             return false;
         }
 
-        _applied.Add(new Command(TickCount, 0, CommandKind.PlaceBuilding, x, y));
+        _applied.Add(
+            new Command
+            {
+                Tick = TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = x,
+                Y = y,
+            }
+        );
 
         return true;
     }
@@ -167,7 +176,7 @@ public sealed class Game
     }
 
     // Applies a command if its rule allows it and tells whether it did.
-    private bool Apply(Command command)
+    bool Apply(Command command)
     {
         if (command.Player != 0)
         {

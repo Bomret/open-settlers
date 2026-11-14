@@ -28,15 +28,22 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class WoodcutterTests
 {
-    private const string Fixture = "wood-walks.txt";
-    private const int WorkerSlot = 10;
-    private const int HutSlot = 1;
+    const string Fixture = "wood-walks.txt";
+    const int WorkerSlot = 10;
+    const int HutSlot = 1;
 
-    private sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<Dictionary<string, string>> Lines { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -44,7 +51,14 @@ public sealed class WoodcutterTests
             if (line.StartsWith("# ", StringComparison.Ordinal))
             {
                 var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Lines = [],
+                    }
+                );
                 continue;
             }
 
@@ -55,14 +69,14 @@ public sealed class WoodcutterTests
         return scenarios;
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
-    private static string Words(RandomGenerator generator) =>
+    static string Words(RandomGenerator generator) =>
         string.Join(',', new[] { generator.W0, generator.W1, generator.W2 }.Select(word => word.ToString("X4")));
 
     // The object bytes of a map that differ from a copy, as the verb lists them: "x,y:old>new" joined by ";".
-    private static string Changes(byte[] before, Map map)
+    static string Changes(byte[] before, Map map)
     {
         var now = Layers.Of(map, MapLayer.Object);
         var width = map.Size.Width;
@@ -94,36 +108,64 @@ public sealed class WoodcutterTests
             : bytes;
     }
 
-    private static Game Start(string command, out Map map, out int hutFlag, out int passes)
+    static Game Start(string command, out Map map, out int hutFlag, out int passes)
     {
         // wood:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES
         var parts = command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var flags = Points(parts[5]);
         var hut = parts[7].Split(',').Select(int.Parse).ToArray();
         passes = int.Parse(parts[8], CultureInfo.InvariantCulture);
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         foreach (var flag in flags)
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
         }
 
         foreach (var road in parts[6].Split(';').Select(text => text.Split(',')))
         {
             game.Enqueue(
-                new Command(
-                    0,
-                    0,
-                    CommandKind.BuildRoad,
-                    int.Parse(road[0]),
-                    int.Parse(road[1]),
-                    [.. road[2].Select(c => c - '0')]
-                )
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0]),
+                    Y = int.Parse(road[1]),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
             );
         }
 

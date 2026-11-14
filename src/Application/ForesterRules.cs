@@ -11,21 +11,21 @@ namespace OpenSettlers.Simulation;
 /// <param name="parts">The shared parts.</param>
 public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
 {
-    private readonly SettlerMovement movement = parts.Movement;
-    private readonly IRandomDraws draws = parts.Draws;
-    private readonly HutWork hut = parts.Hut;
+    readonly SettlerMovement movement = parts.Movement;
+    readonly IRandomDraws draws = parts.Draws;
+    readonly HutWork hut = parts.Hut;
 
     // The time a node he may not plant on adds to the search's timer (0x438de7), where the woodcutter's adds 400.
-    private const int SpotMiss = 0x2bc;
+    const int SpotMiss = 0x2bc;
 
     // The direction of the tile north-west of a node (the offset at +0x14 of the state block, 0x438d4a to 0x438d75).
-    private const int NorthWest = 4;
+    const int NorthWest = 4;
 
     // The time he waits on the node before the sapling goes down (0x4381de), and after it (0x438a6a).
-    private const int ArrivalWait = 0xbf;
-    private const int PlantWait = 0x80;
+    const int ArrivalWait = 0xbf;
+    const int PlantWait = 0x80;
 
-    private Map Map => movement.Map;
+    Map Map => movement.Map;
 
     /// <inheritdoc />
     public override bool CanStandInHut => true;
@@ -52,7 +52,7 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
 
     // A node he plants on: no road, no object, no mark of a lake or a large object, and the lowland terrain on both triangles of the
     // node's tile and of the tile north-west of it (0x438ce2 to 0x438d75).
-    private bool CanPlant(int x, int y)
+    bool CanPlant(int x, int y)
     {
         ref var node = ref Map.At(x, y);
         if (!node.Roads.IsEmpty || node.LakeMark || node.Object.Exists || !IsMeadow(ref node))
@@ -66,12 +66,12 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
     }
 
     // A tile whose two triangles are both lowland (the terrain byte 0x55): the node and its north-west neighbour need it.
-    private static bool IsMeadow(ref Node node) => node.Upper == Terrain.Lowland && node.Lower == Terrain.Lowland;
+    static bool IsMeadow(ref Node node) => node.Upper == Terrain.Lowland && node.Lower == Terrain.Lowland;
 
     // State 0x13, the forester's search (0x438c9f). When its timer has run out he draws a node of the spiral around the hut, entries 1
     // to 128, until a node he may plant on comes up; each node he may not adds 0x2bc to the timer, and the search ends for this turn
     // when that wraps the timer.
-    private void SearchSpot(int slot, Settler settler)
+    void SearchSpot(int slot, Settler settler)
     {
         var found = SearchSpotTurn(settler);
         hut.RecordWork(slot, EventType.SearchSpot);
@@ -82,7 +82,7 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
     }
 
     // One turn of the search; true where he found a node and took state 7.
-    private bool SearchSpotTurn(Settler settler)
+    bool SearchSpotTurn(Settler settler)
     {
         if (!movement.TimerRan(settler))
         {
@@ -98,8 +98,12 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
             if (CanPlant(x, y))
             {
                 // The vector to the node is taken from the flag the first step reaches: one less each way.
-                var way = new Trip(new Vector(dx - 1, dy - 1), new ToSpot(new Vector(-(dx - 1), -(dy - 1))));
-                settler.Activity = new StepsOntoFlag(new WalksFree(way));
+                var way = new Trip
+                {
+                    Remaining = new Vector(dx - 1, dy - 1),
+                    Purpose = new ToSpot { Back = new Vector(-(dx - 1), -(dy - 1)) },
+                };
+                settler.Activity = new StepsOntoFlag { Then = new WalksFree { Trip = way } };
 
                 return true;
             }
@@ -138,14 +142,26 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
 
         if (Map.At(settler.X, settler.Y).Object.Exists)
         {
-            settler.Activity = new WalksFree(new Trip(spot.Back, new BackToHut(false)));
+            settler.Activity = new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = spot.Back,
+                    Purpose = new BackToHut { Carrying = false },
+                },
+            };
             settler.Timer = 0;
             hut.RecordWork(slot, EventType.Arrive);
 
             return;
         }
 
-        settler.Activity = new Plants(spot.Back, false, trip.Memory);
+        settler.Activity = new Plants
+        {
+            Back = spot.Back,
+            Planted = false,
+            Memory = trip.Memory,
+        };
         settler.Frame = 0x79;
         settler.Timer = ArrivalWait;
         hut.RecordWork(slot, EventType.Arrive);
@@ -154,13 +170,13 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
     // State 0x14 (0x4389bf). When the timer has run out the first turn puts the sapling down: the code 0x67, or 0x68 by a draw's low
     // bit, on the node where no object and no road is, with the frame 0x7a, and waits 0x80 more units; the turn after that, or at once
     // where the wait does not wrap the timer, sends him back to the flag without a load.
-    private void Plant(int slot, Settler settler)
+    void Plant(int slot, Settler settler)
     {
         PlantTurn(settler);
         hut.RecordWork(slot, EventType.PlantSapling, ThingId.OfObject("sapling", settler.X, settler.Y).ToString());
     }
 
-    private void PlantTurn(Settler settler)
+    void PlantTurn(Settler settler)
     {
         if (!movement.TimerRan(settler))
         {
@@ -175,7 +191,7 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
             ref var node = ref Map.At(settler.X, settler.Y);
             if (!node.Object.Exists && node.Roads.IsEmpty)
             {
-                node.Object = new MapObject((byte)code);
+                node.Object = new MapObject { Code = (byte)code };
             }
 
             plants = plants with { Planted = true };
@@ -188,7 +204,14 @@ public sealed class ForesterRules(JobParts parts) : JobRules<Forester>(parts)
             }
         }
 
-        settler.Activity = new WalksFree(new Trip(plants.Back, new BackToHut(false)));
+        settler.Activity = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = plants.Back,
+                Purpose = new BackToHut { Carrying = false },
+            },
+        };
         settler.Timer = 0;
     }
 }

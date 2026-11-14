@@ -3,7 +3,7 @@ using System.Linq;
 namespace OpenSettlers.Tests;
 
 /// <summary>Reads of the typed map that several tests share.</summary>
-internal static class TestMaps
+static class TestMaps
 {
     /// <summary>The object on each node, in row-major node order.</summary>
     public static MapObject[] Objects(Map map) =>

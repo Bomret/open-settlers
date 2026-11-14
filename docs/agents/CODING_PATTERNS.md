@@ -45,7 +45,7 @@ files, layer by layer:
    the hooks the job needs (`CanStandInHut`, `Cause`, `SiteWorker`, `Register`, `Start`, `Arrive`, `WalkTurn`, `Pass`,
    `Turn`); a hook left alone keeps the shared default. `SiteWorker` names the request a building site makes for the
    job's worker at a `SiteStage`, so the shared site pass names no job. A job needing a part `JobParts` lacks extends `JobParts`, and the
-   `new JobParts(...)` calls of the tests. It never reaches into a shared behavior. The shared states of the workers who
+   `new JobParts { ... }` initializers of the tests. It never reaches into a shared behavior. The shared states of the workers who
    go out from a building are the step out, the entry, and the arrival home. A module reaches them through `Parts.Hut`
    alone.
    `JobModules.Build(parts)` builds every module.

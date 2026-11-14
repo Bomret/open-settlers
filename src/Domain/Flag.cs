@@ -11,9 +11,9 @@ namespace OpenSettlers.Domain;
 /// </summary>
 public sealed class Flag
 {
-    private readonly FlagSide[] _sides = [.. Enumerable.Range(0, Direction.Count).Select(_ => new FlagSide())];
-    private readonly Request[] _requests = new Request[2];
-    private readonly WaitingGood[] _places = [.. Enumerable.Range(0, PlaceCount).Select(_ => new WaitingGood())];
+    readonly FlagSide[] _sides = [.. Enumerable.Range(0, Direction.Count).Select(_ => new FlagSide())];
+    readonly Request[] _requests = new Request[2];
+    readonly WaitingGood[] _places = [.. Enumerable.Range(0, PlaceCount).Select(_ => new WaitingGood())];
 
     /// <summary>The number of places for goods on a flag.</summary>
     public const int PlaceCount = 8;

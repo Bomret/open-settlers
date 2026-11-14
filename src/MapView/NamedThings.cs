@@ -99,11 +99,12 @@ public sealed class NamedThings
         var hash = text.IndexOf('#');
         var dot = text.IndexOf('.', hash);
 
-        return new ThingId(
-            text[..hash],
-            int.Parse(text[(hash + 1)..dot], CultureInfo.InvariantCulture),
-            int.Parse(text[(dot + 1)..], CultureInfo.InvariantCulture)
-        );
+        return new ThingId
+        {
+            Kind = text[..hash],
+            Slot = int.Parse(text[(hash + 1)..dot], CultureInfo.InvariantCulture),
+            Fill = int.Parse(text[(dot + 1)..], CultureInfo.InvariantCulture),
+        };
     }
 
     static Thing? Live(PlayState state, string id) =>

@@ -26,7 +26,15 @@ public sealed class PaletteFileTests
     {
         var palette = PaletteFile.Read(Triples(0xFF, 0x80, 0x07));
 
-        Assert.AreEqual(new Rgb(63, 32, 1), palette[1]);
+        Assert.AreEqual(
+            new Rgb
+            {
+                R = 63,
+                G = 32,
+                B = 1,
+            },
+            palette[1]
+        );
     }
 
     [TestMethod]
@@ -34,7 +42,15 @@ public sealed class PaletteFileTests
     {
         var palette = PaletteFile.Read(Triples(0xFF, 0xFF, 0xFF));
 
-        Assert.AreEqual(new Rgb(0, 0, 0), palette[0]);
+        Assert.AreEqual(
+            new Rgb
+            {
+                R = 0,
+                G = 0,
+                B = 0,
+            },
+            palette[0]
+        );
     }
 
     [TestMethod]
@@ -42,7 +58,15 @@ public sealed class PaletteFileTests
     {
         var palette = PaletteFile.Read(Triples(0xFC, 0x04, 0x08));
 
-        Assert.AreEqual(new Rgb(63, 1, 2), palette[1]);
+        Assert.AreEqual(
+            new Rgb
+            {
+                R = 63,
+                G = 1,
+                B = 2,
+            },
+            palette[1]
+        );
     }
 
     [TestMethod]
@@ -66,7 +90,15 @@ public sealed class PaletteFileTests
     {
         var palette = PaletteFile.Read(Triples(0xFF, 0x80, 0x07));
 
-        Assert.AreEqual(new Rgb(63, 32, 1), palette[255]);
+        Assert.AreEqual(
+            new Rgb
+            {
+                R = 63,
+                G = 32,
+                B = 1,
+            },
+            palette[255]
+        );
         CollectionAssert.AreEqual(new byte[] { 252, 128, 4, 255 }, palette.Rgba(255).ToArray());
     }
 

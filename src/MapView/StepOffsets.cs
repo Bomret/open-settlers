@@ -4,7 +4,14 @@ using OpenSettlers.Formats;
 namespace OpenSettlers.MapView;
 
 /// <summary>How far a walking settler is moved from its node, in map pixels, at one step of its walk.</summary>
-public readonly record struct StepOffset(int Dx, int Dy);
+public readonly record struct StepOffset
+{
+    /// <summary>The horizontal offset in map pixels.</summary>
+    public required int Dx { get; init; }
+
+    /// <summary>The vertical offset in map pixels.</summary>
+    public required int Dy { get; init; }
+}
 
 /// <summary>
 /// The dx and dy of every step of every walk frame, from entry 2 of the graphics archive: the table the placement of a
@@ -48,7 +55,9 @@ public sealed class StepOffsets
     /// has no sequence or the time reaches past the end of the entry.
     /// </summary>
     public StepOffset? At(int frame, int timeLeft) =>
-        TripleAt(_data, frame, timeLeft) is { } at ? new StepOffset((sbyte)_data[at + 1], (sbyte)_data[at + 2]) : null;
+        TripleAt(_data, frame, timeLeft) is { } at
+            ? new StepOffset { Dx = (sbyte)_data[at + 1], Dy = (sbyte)_data[at + 2] }
+            : null;
 
     /// <summary>The offset in <paramref name="data"/> at which the sequence of a frame starts.</summary>
     internal static int SequenceStart(byte[] data, int frame)

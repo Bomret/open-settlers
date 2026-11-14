@@ -25,10 +25,11 @@ public sealed class BuilderTables : JobTables<Builder>
         data.Add(
             (
                 Job,
-                new BuilderFigureAdds(
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.BuilderWalkAddress),
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.BuilderWorkAddress)
-                )
+                new BuilderFigureAdds
+                {
+                    Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.BuilderWalkAddress),
+                    Work = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.BuilderWorkAddress),
+                }
             )
         );
         data.Add((Job, ProgramTablesImporter.WorkerRequest(exe, ProgramTablesImporter.BuilderRequestAddress)));

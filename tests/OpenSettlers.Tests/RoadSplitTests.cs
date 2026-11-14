@@ -13,7 +13,7 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class RoadSplitTests
 {
-    private const string Fixture = "road-splits.txt";
+    const string Fixture = "road-splits.txt";
 
     // The scenarios whose clicks are flag buttons: the building placements (b@x,y) are the build site's slice.
     public static IEnumerable<object[]> Scenarios =>

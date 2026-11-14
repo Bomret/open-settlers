@@ -19,7 +19,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RoadBuildingTests
 {
-    private const string Fixture = "road-builds.txt";
+    const string Fixture = "road-builds.txt";
 
     public static IEnumerable<object[]> Runs =>
         File.ReadAllLines(Fixture).Select(Run).Distinct().Select(run => new object[] { run });
@@ -39,13 +39,31 @@ public sealed class RoadBuildingTests
             map,
             int.Parse(header["level"], CultureInfo.InvariantCulture)
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         game.ApplyCommands();
 
         foreach (var line in lines.Where(line => line.StartsWith("road-flag ", StringComparison.Ordinal)))
         {
             var tile = Fields(line)["tile"].Split(',').Select(int.Parse).ToArray();
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, tile[0], tile[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = tile[0],
+                    Y = tile[1],
+                }
+            );
             game.ApplyCommands();
         }
 
@@ -101,7 +119,17 @@ public sealed class RoadBuildingTests
             }
 
             var built = outcome.Contains(" outcome=BUILT ", StringComparison.Ordinal);
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, start[0], start[1], directions));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = start[0],
+                    Y = start[1],
+                    Directions = directions,
+                }
+            );
             game.ApplyCommands();
 
             Assert.AreEqual(built ? roads + 1 : roads, game.Network.Roads.Count, label);
@@ -139,7 +167,7 @@ public sealed class RoadBuildingTests
 
     // Whether a built road's changed nodes lie on both sides of the map's edge: two of them are further apart than
     // half the map in columns or in rows.
-    private static bool CrossesTheWrap(string line)
+    static bool CrossesTheWrap(string line)
     {
         var width = int.Parse(Fields(line)["size"], CultureInfo.InvariantCulture) == 1 ? 32 : 64;
         var nodes = Between(line, " roadchanges=", " items=")
@@ -153,7 +181,7 @@ public sealed class RoadBuildingTests
     // The flag table's items the road changed: the bit of each end's direction in the item's road bits (+3), the same
     // bit in +4 for a land road (a water road leaves it clear), and in the byte of the end's direction (+0x3c +
     // direction) the direction of the other end in bits 3 to 5.
-    private static void AssertItems(string label, Road road, string outcome)
+    static void AssertItems(string label, Road road, string outcome)
     {
         var items = outcome[(outcome.IndexOf(" items=", StringComparison.Ordinal) + " items=".Length)..]
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
@@ -199,10 +227,10 @@ public sealed class RoadBuildingTests
     }
 
     // The map, castle, and stock level a line belongs to: its fields after the line's own name.
-    private static string Run(string line) => string.Join(' ', line.Split(' ').Skip(1).Take(4));
+    static string Run(string line) => string.Join(' ', line.Split(' ').Skip(1).Take(4));
 
     // The road lines in groups: the step lines of one road and the line that ends it, its outcome or a refused start.
-    private static List<List<string>> Attempts(IEnumerable<string> lines)
+    static List<List<string>> Attempts(IEnumerable<string> lines)
     {
         var attempts = new List<List<string>>();
         var current = new List<string>();
@@ -222,26 +250,26 @@ public sealed class RoadBuildingTests
         return attempts;
     }
 
-    private static string Between(string line, string from, string to)
+    static string Between(string line, string from, string to)
     {
         var begin = line.IndexOf(from, StringComparison.Ordinal) + from.Length;
 
         return line[begin..line.IndexOf(to, begin, StringComparison.Ordinal)];
     }
 
-    private static Dictionary<string, string> Fields(string line) =>
+    static Dictionary<string, string> Fields(string line) =>
         line.Split(' ')
             .Select(word => word.Split('=', 2))
             .Where(pair => pair.Length == 2)
             .ToDictionary(pair => pair[0], pair => pair[1]);
 
-    private static byte[][] Snapshot(Map map) =>
+    static byte[][] Snapshot(Map map) =>
         new[] { MapLayer.Flags, MapLayer.Height, MapLayer.Terrain, MapLayer.Object, MapLayer.Resource }
             .Select(layer => Layers.Of(map, layer))
             .ToArray();
 
     // The changed bytes as the harness lists them: each changed tile in row-major order with "position=old>new".
-    private static string Changes(byte[][] before, byte[][] after, int width) =>
+    static string Changes(byte[][] before, byte[][] after, int width) =>
         string.Join(
             ' ',
             Enumerable
@@ -264,16 +292,16 @@ public sealed class RoadBuildingTests
 
     // The cursor update (0x44b6ce) refuses a step onto an object of class 2 or 4 of the class table (0x41e640) and lets
     // a tree (class 1) through. The steps go forward onto nodes that hold no road bits, so the class check decides.
-    private const byte TreeCode = 0x08;
-    private const byte StoneCode = 0x48;
-    private const byte SmallBuildingCode = 0x02;
+    const byte TreeCode = 0x08;
+    const byte StoneCode = 0x48;
+    const byte SmallBuildingCode = 0x02;
 
     [TestMethod]
     [TestCategory(Needs.Install)]
     public void ARoadDrawnForwardAcrossATreeNodeCompletesAtAFlag()
     {
         var map = OwnedLandWithFlags();
-        map.At(11, 10).Object = new MapObject(TreeCode);
+        map.At(11, 10).Object = new MapObject { Code = TreeCode };
 
         var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
 
@@ -288,7 +316,7 @@ public sealed class RoadBuildingTests
     public void ARoadDrawnForwardAcrossAClassFiveOrSixNodeCompletesAtAFlag(byte code)
     {
         var map = OwnedLandWithFlags();
-        map.At(11, 10).Object = new MapObject(code);
+        map.At(11, 10).Object = new MapObject { Code = code };
 
         var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
 
@@ -302,7 +330,7 @@ public sealed class RoadBuildingTests
     public void ARoadStepOntoAStoneOrASmallBuildingIsRefused(byte code)
     {
         var map = OwnedLandWithFlags();
-        map.At(11, 10).Object = new MapObject(code);
+        map.At(11, 10).Object = new MapObject { Code = code };
 
         var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
 
@@ -314,13 +342,13 @@ public sealed class RoadBuildingTests
     public void AFlagMayNotBePlacedOnATreeNode()
     {
         var map = OwnedLandWithFlags();
-        map.At(11, 12).Object = new MapObject(TreeCode);
+        map.At(11, 12).Object = new MapObject { Code = TreeCode };
 
         Assert.AreEqual(0, BuildSite.Evaluate(TestProgram.Tables(), map, 11, 12, 0, hasCastle: true).Site);
     }
 
     // A map whose every node is player 0's and land, with flags (object code 1) at 10,10 and 12,10.
-    private static Map OwnedLandWithFlags()
+    static Map OwnedLandWithFlags()
     {
         var map = new Map(MapSize.Offered[0]);
         for (var index = 0; index < map.Count; index++)
@@ -336,10 +364,15 @@ public sealed class RoadBuildingTests
         return map;
     }
 
-    private static MapSeed ParseSeed(string text)
+    static MapSeed ParseSeed(string text)
     {
         var words = text.Split(',').Select(word => ushort.Parse(word, NumberStyles.HexNumber)).ToArray();
 
-        return new MapSeed(words[0], words[1], words[2]);
+        return new MapSeed
+        {
+            W0 = words[0],
+            W1 = words[1],
+            W2 = words[2],
+        };
     }
 }

@@ -18,10 +18,10 @@ public sealed class StepOffsetsTests
     {
         var steps = new StepOffsets(SettlerFiguresTests.Sequences());
 
-        Assert.AreEqual(new StepOffset(1, 2), steps.At(7, 0));
-        Assert.AreEqual(new StepOffset(1, 2), steps.At(7, 7));
-        Assert.AreEqual(new StepOffset(-1, 0), steps.At(7, 8));
-        Assert.AreEqual(new StepOffset(0, 0), steps.At(7, 16));
+        Assert.AreEqual(new StepOffset { Dx = 1, Dy = 2 }, steps.At(7, 0));
+        Assert.AreEqual(new StepOffset { Dx = 1, Dy = 2 }, steps.At(7, 7));
+        Assert.AreEqual(new StepOffset { Dx = -1, Dy = 0 }, steps.At(7, 8));
+        Assert.AreEqual(new StepOffset { Dx = 0, Dy = 0 }, steps.At(7, 16));
     }
 
     [TestMethod]
@@ -74,7 +74,7 @@ public sealed class StepOffsetsTests
 
         var steps = StepOffsets.Load(Open(fake));
 
-        Assert.AreEqual(new StepOffset(-1, 0), steps.At(7, 8));
+        Assert.AreEqual(new StepOffset { Dx = -1, Dy = 0 }, steps.At(7, 8));
     }
 
     [TestMethod]

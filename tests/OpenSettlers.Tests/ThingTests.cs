@@ -21,7 +21,17 @@ public sealed class ThingTests
     {
         Assert.AreEqual(
             "object 12,4 code=0x0a tree",
-            Thing.Of(new PlacedObject(12, 4, new MapObject(0x0a)), Names()).Line()
+            Thing
+                .Of(
+                    new PlacedObject
+                    {
+                        X = 12,
+                        Y = 4,
+                        Object = new MapObject { Code = 0x0a },
+                    },
+                    Names()
+                )
+                .Line()
         );
     }
 
@@ -30,7 +40,17 @@ public sealed class ThingTests
     {
         Assert.AreEqual(
             "object 13,4 code=0x31",
-            Thing.Of(new PlacedObject(13, 4, new MapObject(0x31)), Names()).Line()
+            Thing
+                .Of(
+                    new PlacedObject
+                    {
+                        X = 13,
+                        Y = 4,
+                        Object = new MapObject { Code = 0x31 },
+                    },
+                    Names()
+                )
+                .Line()
         );
     }
 
@@ -38,10 +58,38 @@ public sealed class ThingTests
     public void TheFileOrdersThingsByKindThenRowThenColumn()
     {
         var text = Thing.File([
-            new Thing("object", 5, 2, [("code", "0x31")], null),
-            new Thing("object", 9, 1, [("code", "0x31")], null),
-            new Thing("object", 2, 2, [("code", "0x31")], null),
-            new Thing("flag", 7, 7, [], null),
+            new Thing
+            {
+                Kind = "object",
+                X = 5,
+                Y = 2,
+                Values = [("code", "0x31")],
+                Name = null,
+            },
+            new Thing
+            {
+                Kind = "object",
+                X = 9,
+                Y = 1,
+                Values = [("code", "0x31")],
+                Name = null,
+            },
+            new Thing
+            {
+                Kind = "object",
+                X = 2,
+                Y = 2,
+                Values = [("code", "0x31")],
+                Name = null,
+            },
+            new Thing
+            {
+                Kind = "flag",
+                X = 7,
+                Y = 7,
+                Values = [],
+                Name = null,
+            },
         ]);
 
         Assert.AreEqual("flag 7,7\nobject 9,1 code=0x31\nobject 2,2 code=0x31\nobject 5,2 code=0x31\n", text);

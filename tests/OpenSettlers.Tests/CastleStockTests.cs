@@ -8,7 +8,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CastleStockTests
 {
-    private static CastleStock Stocked(params (int Good, int Count)[] counts)
+    static CastleStock Stocked(params (int Good, int Count)[] counts)
     {
         var stock = new int[StartStock.Goods];
         foreach (var (good, count) in counts)
@@ -17,7 +17,15 @@ public sealed class CastleStockTests
         }
 
         var castle = new CastleStock();
-        castle.Place(new Castle(1, 1, 1), stock);
+        castle.Place(
+            new Castle
+            {
+                X = 1,
+                Y = 1,
+                Height = 1,
+            },
+            stock
+        );
 
         return castle;
     }
@@ -41,7 +49,7 @@ public sealed class CastleStockTests
 
         Assert.AreEqual(53, castle.Planks);
         Assert.AreEqual(28, castle.Stones);
-        Assert.AreEqual(53, castle.Count(new Good(8)));
+        Assert.AreEqual(53, castle.Count(new Good { Code = 8 }));
     }
 
     [TestMethod]

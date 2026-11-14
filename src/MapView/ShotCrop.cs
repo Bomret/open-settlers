@@ -5,7 +5,20 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.MapView;
 
 /// <summary>A rectangle of a frame in whole pixels: the left and top edges, the width, and the height.</summary>
-public readonly record struct CropBox(int X, int Y, int Width, int Height);
+public readonly record struct CropBox
+{
+    /// <summary>The left edge in pixels.</summary>
+    public required int X { get; init; }
+
+    /// <summary>The top edge in pixels.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>The width in pixels.</summary>
+    public required int Width { get; init; }
+
+    /// <summary>The height in pixels.</summary>
+    public required int Height { get; init; }
+}
 
 /// <summary>
 /// The part of a frame a play run's <c>shot &lt;name&gt; &lt;column&gt; &lt;row&gt;</c> step keeps: the screen bounds
@@ -92,7 +105,13 @@ public static class ShotCrop
         var y0 = (int)Math.Max(0, Math.Floor(top));
         var x1 = (int)Math.Min(Math.Floor(viewWidth), Math.Ceiling(right));
         var y1 = (int)Math.Min(Math.Floor(viewHeight), Math.Ceiling(bottom));
-        box = new CropBox(x0 + (int)originX, y0 + (int)originY, x1 - x0, y1 - y0);
+        box = new CropBox
+        {
+            X = x0 + (int)originX,
+            Y = y0 + (int)originY,
+            Width = x1 - x0,
+            Height = y1 - y0,
+        };
 
         return null;
     }

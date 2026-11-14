@@ -18,8 +18,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RoadDrawsTests
 {
-    private const int Column = 10;
-    private const int Row = 10;
+    const int Column = 10;
+    const int Row = 10;
 
     public static IEnumerable<object[]> Cases =>
         File.ReadAllLines("road-strips.txt").Select(line => new object[] { line });
@@ -51,8 +51,8 @@ public sealed class RoadDrawsTests
             ref var node = ref map.At(Column + dx, Row + dy);
             node.Height = values[0];
             // The fixture holds the original's terrain byte: the upper triangle in the high nibble.
-            node.Upper = new Terrain(values[1] >> 4);
-            node.Lower = new Terrain(values[1] & 0xf);
+            node.Upper = new Terrain { Code = values[1] >> 4 };
+            node.Lower = new Terrain { Code = values[1] & 0xf };
         }
 
         map.At(Column, Row).Roads = RoadSet.Of(direction);
@@ -98,29 +98,39 @@ public sealed class RoadDrawsTests
         Assert.AreEqual(3, strips.Count);
         var land = Terrain.Lowland;
         Assert.AreEqual(
-            new RoadStrip(Camera.NodePosition(5, 5).X, Camera.NodePosition(5, 5).Y - 2, RoadDirection.East, 0, 0, land),
+            new RoadStrip
+            {
+                X = Camera.NodePosition(5, 5).X,
+                Y = Camera.NodePosition(5, 5).Y - 2,
+                Direction = RoadDirection.East,
+                Difference = 0,
+                Slope = 0,
+                Ground = land,
+            },
             strips[0]
         );
         Assert.AreEqual(
-            new RoadStrip(
-                Camera.NodePosition(8, 6).X,
-                Camera.NodePosition(8, 6).Y - 2,
-                RoadDirection.SouthEast,
-                0,
-                0,
-                land
-            ),
+            new RoadStrip
+            {
+                X = Camera.NodePosition(8, 6).X,
+                Y = Camera.NodePosition(8, 6).Y - 2,
+                Direction = RoadDirection.SouthEast,
+                Difference = 0,
+                Slope = 0,
+                Ground = land,
+            },
             strips[1]
         );
         Assert.AreEqual(
-            new RoadStrip(
-                Camera.NodePosition(12, 7).X - 16,
-                Camera.NodePosition(12, 7).Y - 2,
-                RoadDirection.South,
-                0,
-                0,
-                land
-            ),
+            new RoadStrip
+            {
+                X = Camera.NodePosition(12, 7).X - 16,
+                Y = Camera.NodePosition(12, 7).Y - 2,
+                Direction = RoadDirection.South,
+                Difference = 0,
+                Slope = 0,
+                Ground = land,
+            },
             strips[2]
         );
     }
@@ -168,17 +178,17 @@ public sealed class RoadDrawsTests
         Assert.IsEmpty(RoadDraws.Of(map));
     }
 
-    private static Map Blank() => new(MapSize.Offered[0]);
+    static Map Blank() => new(MapSize.Offered[0]);
 
     // Both triangles of a node take the terrain code.
-    private static void SetTerrain(Map map, int x, int y, int code)
+    static void SetTerrain(Map map, int x, int y, int code)
     {
-        map.At(x, y).Upper = new Terrain(code);
-        map.At(x, y).Lower = new Terrain(code);
+        map.At(x, y).Upper = new Terrain { Code = code };
+        map.At(x, y).Lower = new Terrain { Code = code };
     }
 
     // Every triangle of the map is the lowest land.
-    private static void Land(Map map)
+    static void Land(Map map)
     {
         for (var index = 0; index < map.Count; index++)
         {

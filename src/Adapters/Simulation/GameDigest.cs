@@ -10,8 +10,8 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class GameDigest : IGameDigest
 {
-    private const ulong FnvOffset = 0xcbf29ce484222325;
-    private const ulong FnvPrime = 0x100000001b3;
+    const ulong FnvOffset = 0xcbf29ce484222325;
+    const ulong FnvPrime = 0x100000001b3;
 
     /// <inheritdoc/>
     public ulong Of(Game game)
@@ -56,7 +56,7 @@ public sealed class GameDigest : IGameDigest
     }
 
     // The commands the game applied, folded one after the other.
-    private static ulong Applied(Game game)
+    static ulong Applied(Game game)
     {
         var applied = FnvOffset;
         foreach (var command in game.Applied)
@@ -79,7 +79,7 @@ public sealed class GameDigest : IGameDigest
         return applied;
     }
 
-    private static void MixWoodcutting(Game game, ref ulong hash)
+    static void MixWoodcutting(Game game, ref ulong hash)
     {
         foreach (var word in FlagEncoder.Words(game.Flags))
         {
@@ -101,7 +101,7 @@ public sealed class GameDigest : IGameDigest
         }
     }
 
-    private static void MixSettlers(Game game, ref ulong hash)
+    static void MixSettlers(Game game, ref ulong hash)
     {
         hash = Mix(
             Mix(Mix(Mix(hash, game.Clock.Now), game.Pass.Phase), game.Pass.ScanCursor),
@@ -169,7 +169,7 @@ public sealed class GameDigest : IGameDigest
         }
     }
 
-    private static ulong Mix(ulong hash, long value)
+    static ulong Mix(ulong hash, long value)
     {
         for (var shift = 0; shift < 64; shift += 8)
         {

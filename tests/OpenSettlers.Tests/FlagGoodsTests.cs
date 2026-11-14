@@ -41,17 +41,20 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class FlagGoodsTests
 {
-    private const string Fixture = "flag-goods.txt";
+    const string Fixture = "flag-goods.txt";
 
-    private sealed record Scenario(
-        string Name,
-        string Command,
-        List<(int Pass, Dictionary<string, string> Values)> Lines
-    );
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<(int Pass, Dictionary<string, string> Values)> Lines { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -59,7 +62,14 @@ public sealed class FlagGoodsTests
             if (line.StartsWith("# ", StringComparison.Ordinal))
             {
                 var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Lines = [],
+                    }
+                );
                 continue;
             }
 
@@ -72,11 +82,11 @@ public sealed class FlagGoodsTests
         return scenarios;
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     // A flag's goods fields in the order of the fixture's f fields.
-    private static string Fields(Game game, int flag) =>
+    static string Fields(Game game, int flag) =>
         Convert.ToHexString([
             .. new[] { FlagEncoder.GoodsByte(game.Flags[flag]), FlagEncoder.Status(game.Flags[flag]) },
             .. game.Flags[flag].Places.Select(FlagEncoder.GoodByte),
@@ -84,11 +94,11 @@ public sealed class FlagGoodsTests
             .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[flag].Side(direction))),
         ]);
 
-    private static string Expected(string fields) =>
+    static string Expected(string fields) =>
         string.Concat((Convert.ToByte(fields[..2], 16) & 0x80).ToString("X2"), fields[2..]);
 
     // The carrier's 16 bytes as the original's item holds them while it waits and the turn it fetches a good.
-    private static string Carrier(Settler s, int width)
+    static string Carrier(Settler s, int width)
     {
         var raw = SettlerEncoder.Fields(s);
         var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
@@ -114,7 +124,16 @@ public sealed class FlagGoodsTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var flags = Points(parts[5]);
@@ -133,23 +152,42 @@ public sealed class FlagGoodsTests
                     .ToList()
                 : [];
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         foreach (var flag in flags)
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
         }
 
         foreach (var road in parts[6].Split(';').Select(text => text.Split(',')))
         {
             game.Enqueue(
-                new Command(
-                    0,
-                    0,
-                    CommandKind.BuildRoad,
-                    int.Parse(road[0]),
-                    int.Parse(road[1]),
-                    [.. road[2].Select(c => c - '0')]
-                )
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0]),
+                    Y = int.Parse(road[1]),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
             );
         }
 
@@ -216,7 +254,7 @@ public sealed class FlagGoodsTests
     // in state 3 while the carrier carries a good (its byte 11 is not 0), and else the flag it walks to or what it held last,
     // which the engine keeps in its own numbering and nothing reads: only the first three are compared. The fixture's bytes
     // say which: the state at 10 and the good at 11.
-    private static string Masked(string expected, string bytes)
+    static string Masked(string expected, string bytes)
     {
         var state = Convert.ToByte(expected[20..22], 16);
         var carrying = state == 3 && Convert.ToByte(expected[22..24], 16) != 0;
@@ -231,11 +269,38 @@ public sealed class FlagGoodsTests
     {
         var game = GameFactory.Create(
             TestProgram.Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x1234,
+                    W1 = 0x5678,
+                    W2 = 0x9ABC,
+                },
+                MapSize.Offered[0]
+            )
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 6));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 18,
+                Y = 6,
+            }
+        );
         game.Tick();
         game.Goods.LayGood(1, 0, 7);
         var before = game.Digest();
@@ -245,7 +310,7 @@ public sealed class FlagGoodsTests
             game.Tick();
         }
 
-        Assert.AreEqual(new Good(7), game.Flags[1].Places[0].Good);
+        Assert.AreEqual(new Good { Code = 7 }, game.Flags[1].Places[0].Good);
         Assert.IsNull(game.Flags[1].Places[0].Way, "the good has no direction");
         Assert.IsTrue(game.Flags[1].NeedsGoodsTurn, "the flag asks again at its next turn");
         Assert.IsNull(game.Flags[1].Places[0].Destination);

@@ -7,9 +7,14 @@ using System.Text.Json;
 namespace OpenSettlers.Simulation;
 
 /// <summary>What reading a layout gave: the layout, or the problems that kept it from loading.</summary>
-/// <param name="Layout">The layout; null when <paramref name="Problems"/> is not empty.</param>
-/// <param name="Problems">One line per problem, each naming the file and the entry; empty when the layout loaded.</param>
-public sealed record LayoutResult(Layout? Layout, IReadOnlyList<string> Problems);
+public sealed record LayoutResult
+{
+    /// <summary>The layout; null when <paramref name="Problems"/> is not empty.</summary>
+    public required Layout? Layout { get; init; }
+
+    /// <summary>One line per problem, each naming the file and the entry; empty when the layout loaded.</summary>
+    public required IReadOnlyList<string> Problems { get; init; }
+}
 
 /// <summary>
 /// A layout: the JSONC file that sets up a game in the game view (ADR 0009, <c>CONTEXT.md</c>). This type holds the
@@ -55,21 +60,21 @@ public sealed partial class Layout
     /// <summary>The characters of the <c>lakes</c> grid: <c>.</c> leaves Flags bit 6 clear, <c>L</c> sets it.</summary>
     public const string LakeCharacters = ".L";
 
-    private static readonly JsonDocumentOptions Options = new()
+    static readonly JsonDocumentOptions Options = new()
     {
         CommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
     };
 
-    private readonly string[] _height;
-    private readonly string[] _terrain;
-    private readonly string[] _terrainLower;
-    private readonly string[]? _lakes;
-    private readonly IReadOnlyList<PlacedObject> _objects;
-    private readonly IReadOnlyList<Step> _steps;
-    private readonly string _file;
+    readonly string[] _height;
+    readonly string[] _terrain;
+    readonly string[] _terrainLower;
+    readonly string[]? _lakes;
+    readonly IReadOnlyList<PlacedObject> _objects;
+    readonly IReadOnlyList<Step> _steps;
+    readonly string _file;
 
-    private Layout(
+    Layout(
         string file,
         MapSize size,
         Seed seed,
@@ -109,8 +114,8 @@ public sealed partial class Layout
         var layout = reader.Read(jsonc);
 
         return layout is not null && reader.Problems.Count == 0
-            ? new LayoutResult(layout, [])
-            : new LayoutResult(null, reader.Problems);
+            ? new LayoutResult { Layout = layout, Problems = [] }
+            : new LayoutResult { Layout = null, Problems = reader.Problems };
     }
 
     /// <summary>
@@ -121,7 +126,7 @@ public sealed partial class Layout
     {
         if (path.Length == 0)
         {
-            return new LayoutResult(null, ["'': file: the path is empty"]);
+            return new LayoutResult { Layout = null, Problems = ["'': file: the path is empty"] };
         }
 
         string text;
@@ -131,7 +136,7 @@ public sealed partial class Layout
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            return new LayoutResult(null, [$"{path}: file: cannot be read: {e.Message}"]);
+            return new LayoutResult { Layout = null, Problems = [$"{path}: file: cannot be read: {e.Message}"] };
         }
 
         return Read(text, path);
@@ -160,7 +165,14 @@ public sealed partial class Layout
     {
         var map = new MapLayers(Size);
         var seed = Seed.ToMapSeed();
-        map.Generator = new RandomGenerator(seed.W0, seed.W1, seed.W2).Step().Step();
+        map.Generator = new RandomGenerator
+        {
+            W0 = seed.W0,
+            W1 = seed.W1,
+            W2 = seed.W2,
+        }
+            .Step()
+            .Step();
         var height = map.Bytes(MapLayer.Height);
         var terrain = map.Bytes(MapLayer.Terrain);
         var objects = map.Bytes(MapLayer.Object);
@@ -212,7 +224,7 @@ public sealed partial class Layout
     // west, north-west, and north, are at height 0 too. Against generated maps (LayoutTests) this marks every tile
     // the generator marks, and also tiles at height 0 that it leaves unmarked; a layout that draws the marks in its
     // lakes grid has no need of the rule.
-    private static void MarkLakeMiddles(MapLayers map)
+    static void MarkLakeMiddles(MapLayers map)
     {
         var height = map.Bytes(MapLayer.Height);
         var terrain = map.Bytes(MapLayer.Terrain);
@@ -237,9 +249,9 @@ public sealed partial class Layout
     }
 
     // Reads one file's text and collects every problem it can find; entries that depend on a bad entry are skipped.
-    private sealed partial class Reader(string file)
+    sealed partial class Reader(string file)
     {
-        private readonly List<string> _problems = [];
+        readonly List<string> _problems = [];
 
         public IReadOnlyList<string> Problems => _problems;
 
@@ -338,9 +350,9 @@ public sealed partial class Layout
             }
         }
 
-        private void Fail(string entry, string reason) => _problems.Add($"{file}: {entry}: {reason}");
+        void Fail(string entry, string reason) => _problems.Add($"{file}: {entry}: {reason}");
 
-        private MapSize? ReadSize(JsonElement entry)
+        MapSize? ReadSize(JsonElement entry)
         {
             if (entry.ValueKind != JsonValueKind.Number || !entry.TryGetInt32(out var value))
             {
@@ -357,7 +369,7 @@ public sealed partial class Layout
             return size;
         }
 
-        private Seed? ReadSeed(JsonElement entry)
+        Seed? ReadSeed(JsonElement entry)
         {
             var text = entry.ValueKind == JsonValueKind.String ? entry.GetString() : null;
             if (text is null)
@@ -378,7 +390,7 @@ public sealed partial class Layout
         }
 
         // A grid of one string for each row; the shape is checked against the size where the size is good.
-        private string[]? ReadGrid(string name, JsonElement entry, MapSize? size, string alphabet, string expected)
+        string[]? ReadGrid(string name, JsonElement entry, MapSize? size, string alphabet, string expected)
         {
             if (
                 entry.ValueKind != JsonValueKind.Array
@@ -415,7 +427,7 @@ public sealed partial class Layout
             return good ? rows : null;
         }
 
-        private List<PlacedObject>? ReadObjects(JsonElement entry, MapSize? size)
+        List<PlacedObject>? ReadObjects(JsonElement entry, MapSize? size)
         {
             if (entry.ValueKind != JsonValueKind.Array)
             {
@@ -480,14 +492,21 @@ public sealed partial class Layout
                 }
                 else
                 {
-                    objects.Add(new PlacedObject(x, y, new MapObject((byte)code)));
+                    objects.Add(
+                        new PlacedObject
+                        {
+                            X = x,
+                            Y = y,
+                            Object = new MapObject { Code = (byte)code },
+                        }
+                    );
                 }
             }
 
             return good ? objects : null;
         }
 
-        private static bool Whole(JsonElement drawn, string key, out int value)
+        static bool Whole(JsonElement drawn, string key, out int value)
         {
             value = 0;
 

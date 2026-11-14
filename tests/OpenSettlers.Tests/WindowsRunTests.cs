@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class WindowsRunTests
 {
-    private const string Origin = "Windows run | ";
+    const string Origin = "Windows run | ";
 
     [TestMethod]
     public void EveryWindowsRunRowEqualsTheEmulatorRow()

@@ -4,7 +4,14 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.MapView;
 
 /// <summary>The mask and the texture the original draws a road strip with (entries of <c>loca/SPAD.PA</c>).</summary>
-public readonly record struct RoadDraw(int Mask, int Texture);
+public readonly record struct RoadDraw
+{
+    /// <summary>The entry of the mask.</summary>
+    public required int Mask { get; init; }
+
+    /// <summary>The entry of the texture.</summary>
+    public required int Texture { get; init; }
+}
 
 /// <summary>
 /// How the original picks the mask and the texture of a road strip (<c>docs/rules/roads.md</c>): the strip routines
@@ -15,17 +22,17 @@ public static class RoadRules
 {
     // The first mask entry of a strip for the height difference 0: the east strips take 230 to 238, the south-east
     // 239 to 247, and the south 248 to 256, a difference of -4 to 4 each.
-    private const int EastMask = 234;
-    private const int SouthEastMask = 243;
-    private const int SouthMask = 252;
-    private const int MaxDifference = 4;
+    const int EastMask = 234;
+    const int SouthEastMask = 243;
+    const int SouthMask = 252;
+    const int MaxDifference = 4;
 
     // The texture entry for a slope of 5 or more, and the entries of the other two slopes follow it; the entry
     // of a strip beside water; and the steps up from the land textures to those of mountain and of snow.
-    private const int SteepTexture = 300;
-    private const int WaterTexture = 309;
-    private const int MountainStep = 3;
-    private const int SnowStep = 6;
+    const int SteepTexture = 300;
+    const int WaterTexture = 309;
+    const int MountainStep = 3;
+    const int SnowStep = 6;
 
     /// <summary>
     /// The draw of a strip: the mask of its direction and height difference, and the texture of its slope and ground.
@@ -57,6 +64,6 @@ public static class RoadRules
             texture += strip.Ground.IsSnow ? SnowStep : MountainStep;
         }
 
-        return new RoadDraw(maskBase + strip.Difference, texture);
+        return new RoadDraw { Mask = maskBase + strip.Difference, Texture = texture };
     }
 }

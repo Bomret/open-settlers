@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CarrierTests
 {
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -29,30 +29,67 @@ public sealed class CarrierTests
     }
 
     // The castle and the three flags.
-    private static Game World()
+    static Game World()
     {
         var game = GameFactory.Create(
             Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x1234,
+                    W1 = 0x5678,
+                    W2 = 0x9ABC,
+                },
+                MapSize.Offered[0]
+            )
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
         {
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = x,
+                    Y = y,
+                }
+            );
             game.Tick();
         }
 
         return game;
     }
 
-    private static void Build(Game game, int x, int y, params int[] directions)
+    static void Build(Game game, int x, int y, params int[] directions)
     {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
         {
@@ -60,7 +97,7 @@ public sealed class CarrierTests
         }
     }
 
-    private static Settler[] Carriers(Game game) => [.. game.Settlers.Where(settler => settler.Job == new Carrier())];
+    static Settler[] Carriers(Game game) => [.. game.Settlers.Where(settler => settler.Job == new Carrier())];
 
     [TestMethod]
     public void ARoadAsksTheCastleForACarrierAtItsFlagsTurnAndTheCastleSendsASettlerWithoutAJob()
@@ -75,7 +112,7 @@ public sealed class CarrierTests
         var carrier = Carriers(game).Single();
         Assert.IsInstanceOfType<Leaving>(carrier.Activity, "the carrier leaves the castle");
         Assert.AreEqual(
-            new ToRoad(0, 0),
+            new ToRoad { At = 0, Direction = 0 },
             ((Leaving)carrier.Activity).Errand,
             "it takes the road that leaves the castle's flag east, walking to the castle's flag"
         );
@@ -109,7 +146,11 @@ public sealed class CarrierTests
         var waiting = (WaitsAtFlag)carrier.Activity;
         Assert.AreEqual((17, 6), (carrier.X, carrier.Y), "the node of the road next to the flag at 18,6");
         Assert.AreEqual(1, waiting.Flag, "the flag it waits next to");
-        Assert.AreEqual(new Direction(3), waiting.Direction, "the direction in which the road leaves that flag");
+        Assert.AreEqual(
+            new Direction { Value = 3 },
+            waiting.Direction,
+            "the direction in which the road leaves that flag"
+        );
         Assert.AreEqual(0x71, carrier.Frame, "the frame of the idle carrier: 0x6e plus the direction it came by");
     }
 
@@ -118,7 +159,17 @@ public sealed class CarrierTests
     {
         var game = World();
         Build(game, 16, 6, 0, 0);
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 6, [5, 5, 0]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 6,
+                Directions = [5, 5, 0],
+            }
+        );
         game.Tick();
 
         Run(game, 27);
@@ -181,7 +232,17 @@ public sealed class CarrierTests
 
         Run(a, 1);
         Run(b, 1);
-        a.Enqueue(new Command(a.TickCount, 0, CommandKind.BuildRoad, 18, 6, [5, 5, 0]));
+        a.Enqueue(
+            new Command
+            {
+                Tick = a.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 6,
+                Directions = [5, 5, 0],
+            }
+        );
         a.Tick();
         b.Tick();
 

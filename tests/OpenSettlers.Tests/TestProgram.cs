@@ -15,9 +15,9 @@ namespace OpenSettlers.Tests;
 /// inconclusive without it. <see cref="Made"/> holds tables a test builds in code, for the tests that check the
 /// game's own logic and hold no original value.
 /// </summary>
-internal static class TestProgram
+static class TestProgram
 {
-    private static RuleTables? _tables;
+    static RuleTables? _tables;
 
     /// <summary>
     /// Tables of made-up values, no restatement of the original's: every object code has class 0, so no object
@@ -56,7 +56,7 @@ internal static class TestProgram
                         (
                             job,
                             type == typeof(WorkerRequest)
-                                ? new WorkerRequest(job, Good.None)
+                                ? new WorkerRequest { Job = job, Tool = Good.None }
                                 : Activator.CreateInstance(type)!
                         )
                     )
@@ -70,11 +70,15 @@ internal static class TestProgram
     public static WorkerRequest?[] MadeWorkers(bool stonecutter = false)
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Woodcutter.Code] = new WorkerRequest(new Woodcutter(), new Good(1));
-        workers[BuildingType.Forester.Code] = new WorkerRequest(new Forester(), Good.None);
+        workers[BuildingType.Woodcutter.Code] = new WorkerRequest
+        {
+            Job = new Woodcutter(),
+            Tool = new Good { Code = 1 },
+        };
+        workers[BuildingType.Forester.Code] = new WorkerRequest { Job = new Forester(), Tool = Good.None };
         if (stonecutter)
         {
-            workers[BuildingType.Stonecutter.Code] = new WorkerRequest(new Stonecutter(), Good.None);
+            workers[BuildingType.Stonecutter.Code] = new WorkerRequest { Job = new Stonecutter(), Tool = Good.None };
         }
 
         return workers;

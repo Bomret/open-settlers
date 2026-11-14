@@ -23,7 +23,17 @@ public sealed class PlayNamedThingTests
 
     static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
@@ -38,7 +48,19 @@ public sealed class PlayNamedThingTests
     }
 
     static PlayState StateOf(Game game) =>
-        new(0, 0, 1f, "1", 1, game.TickCount, 0, new Dictionary<(int X, int Y), int>(), Thing.Of(game, null), game);
+        new()
+        {
+            CameraX = 0,
+            CameraY = 0,
+            Zoom = 1f,
+            Seed = "1",
+            Size = 1,
+            Ticks = game.TickCount,
+            Logs = 0,
+            FlagGoods = new Dictionary<(int X, int Y), int>(),
+            Things = Thing.Of(game, null),
+            Game = game,
+        };
 
     static PlayScript Parse(string text) => PlayScript.Parse(text, "play/t.play");
 
@@ -448,7 +470,15 @@ public sealed class PlayNamedThingTests
                     Steps = [step],
                     Problems = [],
                 },
-                () => new PlayState(0, 0, 1f, "1", 1),
+                () =>
+                    new PlayState
+                    {
+                        CameraX = 0,
+                        CameraY = 0,
+                        Zoom = 1f,
+                        Seed = "1",
+                        Size = 1,
+                    },
                 _out,
                 _ => null
             );
@@ -476,18 +506,19 @@ public sealed class PlayNamedThingTests
 
     // A state of the game with a map size value the original does not offer.
     static PlayState StateOfSize(Game game, int size, Thing[]? things = null) =>
-        new(
-            0,
-            0,
-            1f,
-            "1",
-            size,
-            game.TickCount,
-            0,
-            new Dictionary<(int X, int Y), int>(),
-            things ?? Thing.Of(game, null),
-            game
-        );
+        new()
+        {
+            CameraX = 0,
+            CameraY = 0,
+            Zoom = 1f,
+            Seed = "1",
+            Size = size,
+            Ticks = game.TickCount,
+            Logs = 0,
+            FlagGoods = new Dictionary<(int X, int Y), int>(),
+            Things = things ?? Thing.Of(game, null),
+            Game = game,
+        };
 
     string RunProblem(string text, Game game) => Problem(Run(text, game));
 
@@ -649,7 +680,17 @@ public sealed class PlayNamedThingTests
     public void ExpectOfAListedValueThatIsNoNumberFailsAndNamesTheValue()
     {
         var game = Castle();
-        Thing[] things = [new("settler", 1, 1, [("job", "carrier"), ("id", "settler#0.1")], null)];
+        Thing[] things =
+        [
+            new()
+            {
+                Kind = "settler",
+                X = 1,
+                Y = 1,
+                Values = [("job", "carrier"), ("id", "settler#0.1")],
+                Name = null,
+            },
+        ];
         var state = StateOfSize(game, 1, things);
         var run = new PlayRun(Parse("name s 1 1 settler\nexpect s.job = 0"), () => state, _out, _ => null);
         run.Advance(1.0 / 30);

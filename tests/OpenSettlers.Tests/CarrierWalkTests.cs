@@ -22,18 +22,21 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class CarrierWalkTests
 {
-    private const string Fixture = "carrier-walks.txt";
-    private const string NoFlagBytes = "00000000000000";
+    const string Fixture = "carrier-walks.txt";
+    const string NoFlagBytes = "00000000000000";
 
-    private sealed record Scenario(
-        string Name,
-        string Command,
-        List<(int Pass, Dictionary<string, string> Values)> Lines
-    );
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<(int Pass, Dictionary<string, string> Values)> Lines { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -41,7 +44,14 @@ public sealed class CarrierWalkTests
             if (line.StartsWith("# ", StringComparison.Ordinal))
             {
                 var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Lines = [],
+                    }
+                );
                 continue;
             }
 
@@ -57,7 +67,7 @@ public sealed class CarrierWalkTests
     }
 
     // The settler's 16 bytes as the original's item holds them (Table16), as in WorkerWalkTests.
-    private static string Hex(Settler s, int width)
+    static string Hex(Settler s, int width)
     {
         var raw = SettlerEncoder.Fields(s);
         var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
@@ -78,41 +88,51 @@ public sealed class CarrierWalkTests
         return Convert.ToHexString([.. bytes]);
     }
 
-    private static string Hex(Game game, int flag) =>
+    static string Hex(Game game, int flag) =>
         Convert.ToHexString([
             FlagEncoder.Status(game.Flags[flag]),
             .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.RoadByte(game.Flags[flag].Side(direction))),
         ]);
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
-    private static void Roads(Game game, string list, long tick)
+    static void Roads(Game game, string list, long tick)
     {
         foreach (var road in list.Split(';').Select(text => text.Split(',')))
         {
             game.Enqueue(
-                new Command(
-                    tick,
-                    0,
-                    CommandKind.BuildRoad,
-                    int.Parse(road[0]),
-                    int.Parse(road[1]),
-                    [.. road[2].Select(c => c - '0')]
-                )
+                new Command
+                {
+                    Tick = tick,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0]),
+                    Y = int.Parse(road[1]),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
             );
         }
     }
 
     // The longest run of passes in which a walking carrier's step had no time left, as the view draws it: the frame
     // stands still until the carrier's next turn.
-    private static int LongestStall(bool everyPassTurns)
+    static int LongestStall(bool everyPassTurns)
     {
         var scenario = Load()[0];
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var game = GameFactory.Create(
             TestProgram.Tables(),
             map,
@@ -120,10 +140,28 @@ public sealed class CarrierWalkTests
             everyPassTurns
         );
         var castle = Points(parts[4]).Single();
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         foreach (var flag in Points(parts[5]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
         }
 
         Roads(game, parts[6], 0);
@@ -161,15 +199,42 @@ public sealed class CarrierWalkTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var passes = int.Parse(parts[7], CultureInfo.InvariantCulture);
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         foreach (var flag in Points(parts[5]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
         }
 
         Roads(game, parts[6], 0);

@@ -10,7 +10,7 @@ namespace OpenSettlers.MapView;
 /// <param name="tables">The tables of the exe: the stonecutter's adds.</param>
 public sealed class StonecutterLook(RuleTables tables) : HistoryEditionLook<Stonecutter>
 {
-    private readonly FigureAdds _adds = tables.Get<FigureAdds>(new Stonecutter());
+    readonly FigureAdds _adds = tables.Get<FigureAdds>(new Stonecutter());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) =>

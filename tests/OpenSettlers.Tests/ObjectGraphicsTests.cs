@@ -81,7 +81,14 @@ public sealed class ObjectGraphicsTests
     [TestMethod]
     public void APaddedImageKeepsItsSizeAndOffsetsAndItsRowsMoveToTheLayersStride()
     {
-        var image = new ObjectImage(2, 2, -1, -2, [1, 1, 1, 255, 2, 2, 2, 255, 3, 3, 3, 255, 4, 4, 4, 255]);
+        var image = new ObjectImage
+        {
+            Width = 2,
+            Height = 2,
+            OffsetX = -1,
+            OffsetY = -2,
+            Rgba = [1, 1, 1, 255, 2, 2, 2, 255, 3, 3, 3, 255, 4, 4, 4, 255],
+        };
 
         var padded = image.Padded(3, 3);
 
@@ -181,14 +188,14 @@ public sealed class ObjectGraphicsTests
     public void TheGoodsAndTheFlagsFurtherFramesAndTheWaterAreRead()
     {
         var payloads = Payloads();
-        payloads[ObjectSprites.GoodEntry(new Good(7))] = Square(3, 1);
+        payloads[ObjectSprites.GoodEntry(new Good { Code = 7 })] = Square(3, 1);
         payloads[ObjectSprites.FlagEntry + 3] = Square(2, 2);
         payloads[ObjectSprites.WaterFirstEntry] = Square(4, 4);
         using var fake = Install(payloads);
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
-        Assert.AreEqual(3, graphics.Sprites[ObjectSprites.GoodEntry(new Good(7))].OffsetX);
+        Assert.AreEqual(3, graphics.Sprites[ObjectSprites.GoodEntry(new Good { Code = 7 })].OffsetX);
         Assert.AreEqual(2, graphics.Sprites[ObjectSprites.FlagEntry + 3].OffsetX);
         Assert.AreEqual(4, graphics.Sprites[ObjectSprites.WaterFirstEntry].OffsetX);
     }
@@ -275,14 +282,14 @@ public sealed class ObjectGraphicsTests
     {
         var payloads = Payloads();
         payloads[1250 + ObjectGraphics.ShadowOffset] = ShadowMask();
-        payloads[ObjectSprites.GoodEntry(new Good(7)) + ObjectGraphics.ShadowOffset] = ShadowMask();
+        payloads[ObjectSprites.GoodEntry(new Good { Code = 7 }) + ObjectGraphics.ShadowOffset] = ShadowMask();
         using var fake = Install(payloads, rows: 1700);
 
         var graphics = ObjectGraphics.Load(Open(fake));
 
         Assert.AreEqual(2, graphics.Shadows[1250].Width);
         Assert.IsFalse(graphics.Shadows.ContainsKey(1251));
-        Assert.IsFalse(graphics.Shadows.ContainsKey(ObjectSprites.GoodEntry(new Good(7))));
+        Assert.IsFalse(graphics.Shadows.ContainsKey(ObjectSprites.GoodEntry(new Good { Code = 7 })));
         Assert.IsFalse(graphics.Shadows.ContainsKey(ObjectSprites.WaterFirstEntry));
     }
 

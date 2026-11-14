@@ -24,21 +24,37 @@ public sealed class SiteStagesTests
     [TestMethod]
     public void AProgressOf0DrawsOnlyTheGroundOfALargeSite()
     {
-        CollectionAssert.AreEqual(new[] { new SitePart(SiteLayer.Ground, null) }, SiteStages.Parts(0).ToArray());
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new SitePart { Layer = SiteLayer.Ground, Fraction = null },
+            },
+            SiteStages.Parts(0).ToArray()
+        );
     }
 
     [TestMethod]
     public void AProgressOf1DrawsTheBaseAndNoStageYet()
     {
         // Twice the word is 2, below the 3 the routine tests (0x44fc6d).
-        CollectionAssert.AreEqual(new[] { new SitePart(SiteLayer.Base, null) }, SiteStages.Parts(1).ToArray());
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new SitePart { Layer = SiteLayer.Base, Fraction = null },
+            },
+            SiteStages.Parts(1).ToArray()
+        );
     }
 
     [TestMethod]
     public void AProgressBelowTheTopBitDrawsTheBaseAndAStageGrownByTwiceTheWord()
     {
         CollectionAssert.AreEqual(
-            new[] { new SitePart(SiteLayer.Base, null), new SitePart(SiteLayer.Stage, 0x2002) },
+            new[]
+            {
+                new SitePart { Layer = SiteLayer.Base, Fraction = null },
+                new SitePart { Layer = SiteLayer.Stage, Fraction = 0x2002 },
+            },
             SiteStages.Parts(0x1001).ToArray()
         );
     }
@@ -47,11 +63,18 @@ public sealed class SiteStagesTests
     public void AProgressFromTheTopBitDrawsTheWholeStageAndTheFinishedBuildingGrownByTwiceTheRest()
     {
         CollectionAssert.AreEqual(
-            new[] { new SitePart(SiteLayer.Stage, null), new SitePart(SiteLayer.Finished, 0x0002) },
+            new[]
+            {
+                new SitePart { Layer = SiteLayer.Stage, Fraction = null },
+                new SitePart { Layer = SiteLayer.Finished, Fraction = 0x0002 },
+            },
             SiteStages.Parts(0x8001).ToArray()
         );
         CollectionAssert.AreEqual(
-            new[] { new SitePart(SiteLayer.Stage, null) },
+            new[]
+            {
+                new SitePart { Layer = SiteLayer.Stage, Fraction = null },
+            },
             SiteStages.Parts(0x8000).ToArray(),
             "a fraction of 0 draws nothing of the building"
         );
@@ -104,7 +127,7 @@ public sealed class SiteStagesTests
         Assert.IsNull(ObjectSprites.SiteLayerEntry(SiteLayer.Stage, BuildingType.Storehouse));
     }
 
-    private static ObjectImage Image(int width, int height, int offsetX = 0, int offsetY = 0, byte value = 7)
+    static ObjectImage Image(int width, int height, int offsetX = 0, int offsetY = 0, byte value = 7)
     {
         var rgba = new byte[width * height * 4];
         for (var pixel = 0; pixel < width * height; pixel++)
@@ -114,6 +137,13 @@ public sealed class SiteStagesTests
             rgba[pixel * 4 + 3] = 255;
         }
 
-        return new ObjectImage(width, height, offsetX, offsetY, rgba);
+        return new ObjectImage
+        {
+            Width = width,
+            Height = height,
+            OffsetX = offsetX,
+            OffsetY = offsetY,
+            Rgba = rgba,
+        };
     }
 }

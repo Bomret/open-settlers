@@ -38,7 +38,7 @@ public sealed class BuildingPlacement(
     /// </summary>
     public bool PlaceFinished(BuildingType type, int x, int y) => Place(type, x, y, finished: true);
 
-    private bool Place(BuildingType type, int x, int y, bool finished)
+    bool Place(BuildingType type, int x, int y, bool finished)
     {
         if (!Types.Contains(type))
         {
@@ -108,7 +108,7 @@ public sealed class BuildingPlacement(
             {
                 if (tables.ClassOfGood(good) is { } asked)
                 {
-                    flags[flag].SetRequest(asked.Word, new Request(asked, 0));
+                    flags[flag].SetRequest(asked.Word, new Request { Asks = asked, Rank = 0 });
                 }
             }
         }

@@ -23,20 +23,29 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class HomeWalkTests
 {
-    private const string Fixture = "home-walks.txt";
+    const string Fixture = "home-walks.txt";
 
     // The scenario of a settler on a flag no road leads from to the castle: it looks for another flag (state 0x19, mode 1).
-    private const string NoStorage = "no-storage-road";
+    const string NoStorage = "no-storage-road";
 
-    private sealed record Scenario(
-        string Name,
-        string Command,
-        List<(int Pass, string? Settler, string? Rng, string? Waiting, string? Other)> Lines
-    );
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<(
+            int Pass,
+            string? Settler,
+            string? Rng,
+            string? Waiting,
+            string? Other
+        )> Lines { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -44,7 +53,14 @@ public sealed class HomeWalkTests
             if (line.StartsWith("# ", StringComparison.Ordinal))
             {
                 var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Lines = [],
+                    }
+                );
                 continue;
             }
 
@@ -66,17 +82,54 @@ public sealed class HomeWalkTests
         return scenarios;
     }
 
-    private static List<int[]> Points(string list) =>
+    static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
-    private static Game CastleWithRoad()
+    static Game CastleWithRoad()
     {
         MapSize.TryFromValue(1, out var size, out _);
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(0x1234, 0x5678, 0x9ABC), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, 0);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 18, 20));
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, 16, 20));
-        game.Enqueue(new Command(0, 0, CommandKind.BuildRoad, 19, 21, [3, 4, 3]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 18,
+                Y = 20,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 16,
+                Y = 20,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 19,
+                Y = 21,
+                Directions = [3, 4, 3],
+            }
+        );
 
         return game;
     }
@@ -154,7 +207,16 @@ public sealed class HomeWalkTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var who = parts[7].Split('@');
@@ -162,23 +224,42 @@ public sealed class HomeWalkTests
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         foreach (var flag in Points(parts[5]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
         }
 
         foreach (var road in parts[6].Split(';').Select(text => text.Split(',')))
         {
             game.Enqueue(
-                new Command(
-                    0,
-                    0,
-                    CommandKind.BuildRoad,
-                    int.Parse(road[0]),
-                    int.Parse(road[1]),
-                    [.. road[2].Select(c => c - '0')]
-                )
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0]),
+                    Y = int.Parse(road[1]),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
             );
         }
 
@@ -206,8 +287,12 @@ public sealed class HomeWalkTests
                     var force = parts[10].Split(',').Select(int.Parse).ToArray();
                     sent.Activity = (force[0], force[1]) switch
                     {
-                        (0x19, 1) => new SearchesHome(true),
-                        (2, 0xfe) => new Walks(new ToStorage(), new Heading(0)),
+                        (0x19, 1) => new SearchesHome { FarEndFirst = true },
+                        (2, 0xfe) => new Walks
+                        {
+                            Errand = new ToStorage(),
+                            Heading = new Heading { Value = 0 },
+                        },
                         _ => throw new InvalidOperationException($"{name}: no activity for the forced {parts[10]}"),
                     };
                 }

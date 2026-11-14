@@ -38,10 +38,10 @@ public sealed class StorageDistribution(
 )
 {
     // The castle's flag is the first of the flag table, and the only storage's.
-    private const int CastleFlag = 0;
+    const int CastleFlag = 0;
 
     // The lowest rank a request serves above (0x42965c compares 0xf below the rank).
-    private const int LowestRank = 0xf;
+    const int LowestRank = 0xf;
 
     /// <summary>Runs the routine of one phase cycle: the draw, then each step of the drawn order in turn.</summary>
     public void Run()
@@ -64,7 +64,7 @@ public sealed class StorageDistribution(
     }
 
     // 0x429a05 to 0x42a0ad for the search, 0x42a0ad to 0x42a2f4 for the hand-out.
-    private void Serve(DistributionStep step, Good good)
+    void Serve(DistributionStep step, Good good)
     {
         var asking = FlagRequestSearch.Find(flags, roads, CastleFlag, step.Class, LowestRank);
         if (asking < 0)

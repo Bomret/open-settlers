@@ -19,7 +19,7 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class ConstructionBuilderTests
 {
-    private const string Fixture = "construction-builder.txt";
+    const string Fixture = "construction-builder.txt";
 
     [TestMethod]
     [DataRow("builder-forester")]
@@ -80,7 +80,7 @@ public sealed class ConstructionBuilderTests
                 if (click[0] == 'k')
                 {
                     // k@G,N: the castle's stock of the good G written by hand to N.
-                    var good = new Good(node[0]);
+                    var good = new Good { Code = node[0] };
                     while (game.CastleStock.Take(good)) { }
 
                     for (var i = 0; i < node[1]; i++)
@@ -92,14 +92,15 @@ public sealed class ConstructionBuilderTests
                 }
 
                 game.Enqueue(
-                    new Command(
-                        game.TickCount,
-                        0,
-                        CommandKind.PlaceBuilding,
-                        node[0],
-                        node[1],
-                        Building: new BuildingType(node[2])
-                    )
+                    new Command
+                    {
+                        Tick = game.TickCount,
+                        Player = 0,
+                        Kind = CommandKind.PlaceBuilding,
+                        X = node[0],
+                        Y = node[1],
+                        Building = new BuildingType { Code = node[2] },
+                    }
                 );
                 game.ApplyCommands();
             }
@@ -138,7 +139,7 @@ public sealed class ConstructionBuilderTests
         }
     }
 
-    private static void Check(Game game, Dictionary<string, string> line, int width, string when)
+    static void Check(Game game, Dictionary<string, string> line, int width, string when)
     {
         foreach (var (key, value) in line)
         {
@@ -216,5 +217,5 @@ public sealed class ConstructionBuilderTests
     }
 
     // The emulator's class byte of a request word: bit k set asks for the class k.
-    private static byte ClassByte(Request request) => request.Asks is { } asked ? (byte)(1 << asked.Class) : (byte)0;
+    static byte ClassByte(Request request) => request.Asks is { } asked ? (byte)(1 << asked.Class) : (byte)0;
 }

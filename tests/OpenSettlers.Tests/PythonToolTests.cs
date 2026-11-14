@@ -10,7 +10,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class PythonToolTests
 {
-    private string _folder = "";
+    string _folder = "";
 
     [TestInitialize]
     public void Initialize()

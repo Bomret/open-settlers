@@ -14,16 +14,16 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ProgramTablesTests
 {
-    private const ulong FnvOffset = 0xcbf29ce484222325;
-    private const ulong FnvPrime = 0x100000001b3;
-    private const int ImageBase = 0x400000;
-    private const int SectionStart = 0x1e000;
-    private const int SectionSize = 0x260000;
-    private const int RawStart = 0x200;
+    const ulong FnvOffset = 0xcbf29ce484222325;
+    const ulong FnvPrime = 0x100000001b3;
+    const int ImageBase = 0x400000;
+    const int SectionStart = 0x1e000;
+    const int SectionSize = 0x260000;
+    const int RawStart = 0x200;
 
     // A PE32 file with one section that holds the addresses 0x41e000 to 0x67e000 (the waiting carriers' offsets lie at 0x674923) at the file offset 0x200, with a made-up
     // default transport priority order: the routine's instructions give good g the rank 27 - g.
-    private static byte[] Executable(Action<byte[]> fill, int sectionAt = SectionStart)
+    static byte[] Executable(Action<byte[]> fill, int sectionAt = SectionStart)
     {
         var exe = new byte[RawStart + SectionSize];
         exe[0] = (byte)'M';
@@ -57,7 +57,7 @@ public sealed class ProgramTablesTests
     // The tables of the materials that reach a building site, made up: the good class table (only the good 8 has a class), three orders
     // of the storage's hand-out of one step each that a word of -1 ends, and the player setup's routine that loads the word 0x9234 and
     // stores it at +0x148 of the player block.
-    private static void WriteConstructionTables(byte[] exe)
+    static void WriteConstructionTables(byte[] exe)
     {
         void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
 
@@ -84,7 +84,7 @@ public sealed class ProgramTablesTests
     // the job 7 and the tool word 0x30, the building of the type t for the job t + 10 and the tool word 2 * (t + 3) (none for the
     // forester). The builder's order of materials and steps of blows are made up: the order word of the type t has the bit t % 5 set,
     // and its steps are 0x100 * (2t + 1) and one more.
-    private static void WriteWorkerTables(byte[] exe)
+    static void WriteWorkerTables(byte[] exe)
     {
         void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
 
@@ -114,7 +114,7 @@ public sealed class ProgramTablesTests
 
     // The instructions of the draw routine and the woodcutter's handler that Read checks: the loads of the two tables,
     // the stub of job 5 that jumps to its handler, and the three adds to the figure word.
-    private static void WriteFigureRoutines(byte[] exe)
+    static void WriteFigureRoutines(byte[] exe)
     {
         void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
 
@@ -179,7 +179,7 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.SawmillerSawAddress, 0x1800);
     }
 
-    private static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
+    static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
 
     [TestMethod]
     public void TheTablesAreFoundByTheirAddressInTheSection()
@@ -199,7 +199,7 @@ public sealed class ProgramTablesTests
 
         var tables = ProgramTablesImporter.Import(exe);
 
-        Assert.AreEqual(new ObjectClass(17 * 3), tables.ClassOf(new MapObject(17)));
+        Assert.AreEqual(new ObjectClass { Value = 17 * 3 }, tables.ClassOf(new MapObject { Code = 17 }));
         Assert.AreEqual((byte)(2 * StartStock.Goods + 5 + 1), tables.StartStock[2][5]);
     }
 
@@ -316,9 +316,9 @@ public sealed class ProgramTablesTests
 
         var tables = ProgramTablesImporter.Import(exe);
 
-        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(new BuildingType(5)));
-        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(new BuildingType(7)));
-        Assert.AreEqual(new BuildingNeeds(9, 10), tables.NeedsOf(new BuildingType(8)));
+        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(new BuildingType { Code = 5 }));
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(new BuildingType { Code = 7 }));
+        Assert.AreEqual(new BuildingNeeds { Planks = 9, Stones = 10 }, tables.NeedsOf(new BuildingType { Code = 8 }));
     }
 
     [TestMethod]
@@ -342,10 +342,10 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(BuildingSize.Small, tables.SizeOf(BuildingType.Stonecutter));
         Assert.AreEqual(BuildingSize.Small, tables.SizeOf(BuildingType.Forester));
         Assert.AreEqual(BuildingSize.Large, tables.SizeOf(BuildingType.Sawmill));
-        Assert.AreEqual(new BuildingNeeds(2, 0), tables.NeedsOf(BuildingType.Woodcutter));
-        Assert.AreEqual(new BuildingNeeds(2, 0), tables.NeedsOf(BuildingType.Stonecutter));
-        Assert.AreEqual(new BuildingNeeds(2, 0), tables.NeedsOf(BuildingType.Forester));
-        Assert.AreEqual(new BuildingNeeds(3, 2), tables.NeedsOf(BuildingType.Sawmill));
+        Assert.AreEqual(new BuildingNeeds { Planks = 2, Stones = 0 }, tables.NeedsOf(BuildingType.Woodcutter));
+        Assert.AreEqual(new BuildingNeeds { Planks = 2, Stones = 0 }, tables.NeedsOf(BuildingType.Stonecutter));
+        Assert.AreEqual(new BuildingNeeds { Planks = 2, Stones = 0 }, tables.NeedsOf(BuildingType.Forester));
+        Assert.AreEqual(new BuildingNeeds { Planks = 3, Stones = 2 }, tables.NeedsOf(BuildingType.Sawmill));
     }
 
     [TestMethod]
@@ -508,7 +508,7 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new GoodClass(1, RequestWord.First), tables.ClassOfGood(Good.Plank));
+        Assert.AreEqual(new GoodClass { Class = 1, Word = RequestWord.First }, tables.ClassOfGood(Good.Plank));
         Assert.IsNull(tables.ClassOfGood(Good.Stone), "a class byte of 0xff sends the good to storage at once");
         // The synthetic orders hold one step each: order 0 the class 1 of the first word and the good 8 (stock offset 14), order 1
         // the class 2 of the second word and the good 10 (offset 18), order 2 the class 3 of the first word and the good 12 (offset 22).
@@ -535,7 +535,7 @@ public sealed class ProgramTablesTests
     }
 
     // A step as text: its request word, its class, and the goods it hands out.
-    private static string[] Steps(DistributionStep[] order) =>
+    static string[] Steps(DistributionStep[] order) =>
         [.. order.Select(step => $"{step.Class.Word} {step.Class.Class}: {string.Join(',', step.Goods)}")];
 
     [TestMethod]
@@ -574,11 +574,42 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new WorkerRequest(Job.Of(7), new Good(0x18)), tables.Get<WorkerRequest>(new Builder()));
-        Assert.AreEqual(new WorkerRequest(Job.Of(12), new Good(5)), tables.WorkerOf(BuildingType.Woodcutter));
-        Assert.AreEqual(new WorkerRequest(Job.Of(14), new Good(7)), tables.WorkerOf(BuildingType.Stonecutter));
-        Assert.AreEqual(new WorkerRequest(Job.Of(19), Good.None), tables.WorkerOf(BuildingType.Forester));
-        Assert.AreEqual(new WorkerRequest(Job.Of(27), new Good(20)), tables.WorkerOf(BuildingType.Sawmill));
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = Job.Of(7),
+                Tool = new Good { Code = 0x18 },
+            },
+            tables.Get<WorkerRequest>(new Builder())
+        );
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = Job.Of(12),
+                Tool = new Good { Code = 5 },
+            },
+            tables.WorkerOf(BuildingType.Woodcutter)
+        );
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = Job.Of(14),
+                Tool = new Good { Code = 7 },
+            },
+            tables.WorkerOf(BuildingType.Stonecutter)
+        );
+        Assert.AreEqual(
+            new WorkerRequest { Job = Job.Of(19), Tool = Good.None },
+            tables.WorkerOf(BuildingType.Forester)
+        );
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = Job.Of(27),
+                Tool = new Good { Code = 20 },
+            },
+            tables.WorkerOf(BuildingType.Sawmill)
+        );
         Assert.IsNull(tables.WorkerOf(BuildingType.Castle), "the castle's handler asks for no worker of this kind");
     }
 
@@ -610,7 +641,10 @@ public sealed class ProgramTablesTests
     public void TheBuildersFigureAddsAreReadFromItsHandlerAndItsStubIsChecked()
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
-        Assert.AreEqual(new BuilderFigureAdds(0x1500, 0x1580), tables.Get<BuilderFigureAdds>(new Builder()));
+        Assert.AreEqual(
+            new BuilderFigureAdds { Walk = 0x1500, Work = 0x1580 },
+            tables.Get<BuilderFigureAdds>(new Builder())
+        );
 
         var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Builder.Number;
         var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
@@ -625,8 +659,23 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         // The made-up handler loads the job 5 and the tool word 0x24: the request is what the handler says, not the digger's own numbers.
-        Assert.AreEqual(new WorkerRequest(Job.Of(5), new Good(18)), tables.Get<WorkerRequest>(new Digger()));
-        Assert.AreEqual(new FigureAdds(0x1600, 0x1600, 0x1680), tables.Get<FigureAdds>(new Digger()));
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = Job.Of(5),
+                Tool = new Good { Code = 18 },
+            },
+            tables.Get<WorkerRequest>(new Digger())
+        );
+        Assert.AreEqual(
+            new FigureAdds
+            {
+                Walk = 0x1600,
+                Carrying = 0x1600,
+                Cutting = 0x1680,
+            },
+            tables.Get<FigureAdds>(new Digger())
+        );
 
         var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Digger.Number;
         var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
@@ -643,7 +692,14 @@ public sealed class ProgramTablesTests
         // peek:43fa87:100 (the handler: add word [edi+8], 0x380 at 0x43fade and 0x300 at 0x43fae9).
         var tables = TestProgram.Tables();
 
-        Assert.AreEqual(new WorkerRequest(new Digger(), new Good(16)), tables.Get<WorkerRequest>(new Digger()));
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = new Digger(),
+                Tool = new Good { Code = 16 },
+            },
+            tables.Get<WorkerRequest>(new Digger())
+        );
         Assert.AreEqual(0x300, tables.Get<FigureAdds>(new Digger()).Walk);
         Assert.AreEqual(0x380, tables.Get<FigureAdds>(new Digger()).Cutting);
     }
@@ -654,7 +710,12 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(
-            new SawmillerFigureAdds(0x1700, 0x1780, 0x1800),
+            new SawmillerFigureAdds
+            {
+                Walk = 0x1700,
+                Carrying = 0x1780,
+                Saw = 0x1800,
+            },
             tables.Get<SawmillerFigureAdds>(new Sawmiller())
         );
 
@@ -673,7 +734,12 @@ public sealed class ProgramTablesTests
         // for a figure byte from 0x80, 0x1700 at 0x43fcc2 for the state 5 that lays the plank down next (byte 15 is 0xd), and 0xc00 at 0x43fccd
         // for the walk; the draw run of the recording (settler-draws.txt, sawmiller) draws with them.
         Assert.AreEqual(
-            new SawmillerFigureAdds(0xc00, 0x1700, 0x1580),
+            new SawmillerFigureAdds
+            {
+                Walk = 0xc00,
+                Carrying = 0x1700,
+                Saw = 0x1580,
+            },
             TestProgram.Tables().Get<SawmillerFigureAdds>(new Sawmiller())
         );
     }
@@ -684,7 +750,7 @@ public sealed class ProgramTablesTests
     {
         // peek:43faf4:120 (the handler: add word [edi+8], 0x580 at 0x43fb55 and 0x500 at 0x43fb60).
         Assert.AreEqual(
-            new BuilderFigureAdds(0x500, 0x580),
+            new BuilderFigureAdds { Walk = 0x500, Work = 0x580 },
             TestProgram.Tables().Get<BuilderFigureAdds>(new Builder())
         );
     }
@@ -698,11 +764,42 @@ public sealed class ProgramTablesTests
         // peek:42d5fc:15, peek:42d952:15, peek:42d994:15, peek:42d9d6:15, peek:42da18:15 (the handlers' job and tool words; the tool
         // word halved is the good whose stock word lies at 4 plus the word in the storage item), peek:43f0ba:48 (the order words), and
         // peek:43f0fa:96 (the steps).
-        Assert.AreEqual(new WorkerRequest(new Builder(), new Good(17)), tables.Get<WorkerRequest>(new Builder()));
-        Assert.AreEqual(new WorkerRequest(new Woodcutter(), new Good(21)), tables.WorkerOf(BuildingType.Woodcutter));
-        Assert.AreEqual(new WorkerRequest(Job.Of(7), new Good(23)), tables.WorkerOf(BuildingType.Stonecutter));
-        Assert.AreEqual(new WorkerRequest(Job.Of(8), Good.None), tables.WorkerOf(BuildingType.Forester));
-        Assert.AreEqual(new WorkerRequest(Job.Of(6), new Good(22)), tables.WorkerOf(BuildingType.Sawmill));
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = new Builder(),
+                Tool = new Good { Code = 17 },
+            },
+            tables.Get<WorkerRequest>(new Builder())
+        );
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = new Woodcutter(),
+                Tool = new Good { Code = 21 },
+            },
+            tables.WorkerOf(BuildingType.Woodcutter)
+        );
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = Job.Of(7),
+                Tool = new Good { Code = 23 },
+            },
+            tables.WorkerOf(BuildingType.Stonecutter)
+        );
+        Assert.AreEqual(
+            new WorkerRequest { Job = Job.Of(8), Tool = Good.None },
+            tables.WorkerOf(BuildingType.Forester)
+        );
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = Job.Of(6),
+                Tool = new Good { Code = 22 },
+            },
+            tables.WorkerOf(BuildingType.Sawmill)
+        );
         Assert.IsFalse(tables.StoneAt(BuildingType.Woodcutter, 0));
         Assert.IsFalse(tables.StoneAt(BuildingType.Sawmill, 0));
         Assert.IsFalse(tables.StoneAt(BuildingType.Sawmill, 1));
@@ -729,8 +826,8 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         // peek:464117:64, peek:42a313:150 (the three orders of 12 steps), and peek:445752:16 (mov ax, 0xffdc, stored at +0x148).
-        Assert.AreEqual(new GoodClass(1, RequestWord.First), tables.ClassOfGood(Good.Plank));
-        Assert.AreEqual(new GoodClass(4, RequestWord.Second), tables.ClassOfGood(Good.Stone));
+        Assert.AreEqual(new GoodClass { Class = 1, Word = RequestWord.First }, tables.ClassOfGood(Good.Plank));
+        Assert.AreEqual(new GoodClass { Class = 4, Word = RequestWord.Second }, tables.ClassOfGood(Good.Stone));
         var first = tables.DistributionOrder(2);
         var second = tables.DistributionOrder(0);
         var third = tables.DistributionOrder(1);
@@ -743,7 +840,7 @@ public sealed class ProgramTablesTests
         // orders, as text (the draws 0, 1, and 2 in turn): the digest is of that text built from the same peeks, decoded as the reader does.
         var classes = Enumerable
             .Range(0, RuleTables.GoodClassCount)
-            .Select(good => tables.ClassOfGood(new Good(good)) is { } c ? $"{c.Word} {c.Class}" : "storage");
+            .Select(good => tables.ClassOfGood(new Good { Code = good }) is { } c ? $"{c.Word} {c.Class}" : "storage");
         var orders = Enumerable.Range(0, 3).SelectMany(draw => Steps(tables.DistributionOrder(draw)));
         Assert.AreEqual(
             0xC2431101D4476AF0UL,
@@ -824,7 +921,15 @@ public sealed class ProgramTablesTests
         var adds = TestProgram.Tables().Get<FigureAdds>(new Woodcutter());
 
         // 0x43fb6b, the handler of job 5: add word [edi+8], imm16 at 0x43fc16 (walk), 0x43fc0b (way back with the log), 0x43fbe5 (figure byte from 0x80).
-        Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), adds);
+        Assert.AreEqual(
+            new FigureAdds
+            {
+                Walk = 0x0b00,
+                Carrying = 0x1000,
+                Cutting = 0x0e80,
+            },
+            adds
+        );
     }
 
     [TestMethod]
@@ -832,7 +937,15 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new FigureAdds(0x0b00, 0x1000, 0x0e80), tables.Get<FigureAdds>(new Woodcutter()));
+        Assert.AreEqual(
+            new FigureAdds
+            {
+                Walk = 0x0b00,
+                Carrying = 0x1000,
+                Cutting = 0x0e80,
+            },
+            tables.Get<FigureAdds>(new Woodcutter())
+        );
     }
 
     [TestMethod]
@@ -843,7 +956,15 @@ public sealed class ProgramTablesTests
 
         // 0x43fcd8, the handler of job 7: add word [edi+8], imm16 at 0x43fd7d (walk), 0x43fd55 (way back with the stone), 0x43fd2f
         // (figure byte from 0x80).
-        Assert.AreEqual(new FigureAdds(0x0d00, 0x1200, 0x1280), adds);
+        Assert.AreEqual(
+            new FigureAdds
+            {
+                Walk = 0x0d00,
+                Carrying = 0x1200,
+                Cutting = 0x1280,
+            },
+            adds
+        );
     }
 
     [TestMethod]
@@ -851,7 +972,15 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new FigureAdds(0x0d00, 0x1200, 0x1280), tables.Get<FigureAdds>(new Stonecutter()));
+        Assert.AreEqual(
+            new FigureAdds
+            {
+                Walk = 0x0d00,
+                Carrying = 0x1200,
+                Cutting = 0x1280,
+            },
+            tables.Get<FigureAdds>(new Stonecutter())
+        );
     }
 
     [TestMethod]
@@ -861,7 +990,7 @@ public sealed class ProgramTablesTests
         var adds = TestProgram.Tables().Get<ForesterFigureAdds>(new Forester());
 
         // 0x43fd88, the handler of job 8: add word [edi+8], imm16 at 0x43fdea (walk) and 0x43fddf (figure byte from 0x80).
-        Assert.AreEqual(new ForesterFigureAdds(0x0e00, 0x1080), adds);
+        Assert.AreEqual(new ForesterFigureAdds { Walk = 0x0e00, Work = 0x1080 }, adds);
     }
 
     [TestMethod]
@@ -869,7 +998,10 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new ForesterFigureAdds(0x0e00, 0x1080), tables.Get<ForesterFigureAdds>(new Forester()));
+        Assert.AreEqual(
+            new ForesterFigureAdds { Walk = 0x0e00, Work = 0x1080 },
+            tables.Get<ForesterFigureAdds>(new Forester())
+        );
     }
 
     [TestMethod]
@@ -900,7 +1032,16 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(new HutFigureAdds(0x2c00, 0x2f00, 0x2c80, 0x2d80), tables.Get<HutFigureAdds>(new TypeOneHut()));
+        Assert.AreEqual(
+            new HutFigureAdds
+            {
+                Walk = 0x2c00,
+                Carrying = 0x2f00,
+                High = 0x2c80,
+                HighFacing = 0x2d80,
+            },
+            tables.Get<HutFigureAdds>(new TypeOneHut())
+        );
     }
 
     [TestMethod]
@@ -1072,7 +1213,7 @@ public sealed class ProgramTablesTests
         Assert.AreEqual((sbyte)125, tables.IdleOffsets[127]);
     }
 
-    private static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
+    static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
 
     // The waiting carriers' tables of the reference build (0x44d87d, 0x44d89d, 0x674923): the first phase word, the first
     // figure word (row 0x88), and the offsets of a node whose road runs north and south (directions 2 and 5, bits 0x24).

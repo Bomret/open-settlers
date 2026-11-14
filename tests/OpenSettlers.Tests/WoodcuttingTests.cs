@@ -12,12 +12,12 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class WoodcuttingTests
 {
-    private const int HutFlag = 3;
+    const int HutFlag = 3;
 
     // The direction each heading class (0x437072) takes first, as 4 times its number plus 4: a step that cuts the vector
     // the class describes. The classes 12 to 15 point west and north, 16 and 17 west and south, 18 to 21 east and south,
     // 22 and 23 east and north.
-    private static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
+    static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
 
     internal static RuleTables Made(WorkerRequest?[]? workers = null)
     {
@@ -47,26 +47,34 @@ public sealed class WoodcuttingTests
     }
 
     // The 128 nodes around the hut the worker draws from, as the spiral gives them.
-    private static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == new Good(7));
+    static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == new Good { Code = 7 });
 
     // The goods on the hut's flag, place by place.
-    private static Good[] Goods(Game game) => [.. game.Flags[HutFlag].Places.Select(place => place.Good)];
+    static Good[] Goods(Game game) => [.. game.Flags[HutFlag].Places.Select(place => place.Good)];
 
-    private static (int X, int Y)[] Reach() =>
+    static (int X, int Y)[] Reach() =>
         [
             .. Enumerable
                 .Range(1, 128)
                 .Select(entry => (16 + MapGenerator.SpiralOffsets[entry].Dx, 2 + MapGenerator.SpiralOffsets[entry].Dy)),
         ];
 
-    private static bool IsTree(Map map, (int X, int Y) node) =>
-        map.At(node.X, node.Y).Object.Kind == MapObjectKind.Tree;
+    static bool IsTree(Map map, (int X, int Y) node) => map.At(node.X, node.Y).Object.Kind == MapObjectKind.Tree;
 
     // The castle, the flags, the roads, and the hut; a tree stands on every node of the hut's reach where trees is true,
     // and the generated trees are gone from the whole map.
     internal static Game World(bool trees, out Map map)
     {
-        map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < map.Count; index++)
         {
             if (map.At(index).Object.Kind == MapObjectKind.Tree)
@@ -82,17 +90,35 @@ public sealed class WoodcuttingTests
                 var index = map.Index(x & 31, y & 31);
                 if (!map.At(index).Object.Exists)
                 {
-                    map.At(index).Object = new MapObject(8);
+                    map.At(index).Object = new MapObject { Code = 8 };
                 }
             }
         }
 
         var game = GameFactory.Create(Made(), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
         {
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = x,
+                    Y = y,
+                }
+            );
             game.Tick();
         }
 
@@ -105,7 +131,17 @@ public sealed class WoodcuttingTests
             }
         )
         {
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = x,
+                    Y = y,
+                    Directions = directions,
+                }
+            );
             game.Tick();
         }
 
@@ -126,7 +162,11 @@ public sealed class WoodcuttingTests
             game.Tick();
         }
 
-        Assert.AreEqual(new Good(7), game.Flags[HutFlag].Places[0].Good, "the log lies on the first place of the flag");
+        Assert.AreEqual(
+            new Good { Code = 7 },
+            game.Flags[HutFlag].Places[0].Good,
+            "the log lies on the first place of the flag"
+        );
         Assert.AreEqual(8, game.Flags[HutFlag].Places.Count);
         Assert.AreEqual(before - 1, reach.Count(node => IsTree(map, node)), "one tree is felled");
     }
@@ -185,7 +225,7 @@ public sealed class WoodcuttingTests
         Assert.IsTrue(watch.Changed(game));
 
         // Only a tick changes the game, so a look between two ticks does not read the layers again.
-        map.At(0).Object = new MapObject((byte)(map.At(0).Object.Code ^ 0x7f));
+        map.At(0).Object = new MapObject { Code = (byte)(map.At(0).Object.Code ^ 0x7f) };
 
         Assert.IsFalse(watch.Changed(game));
     }
@@ -220,7 +260,16 @@ public sealed class WoodcuttingTests
     [TestMethod]
     public void TheWorkersDrawsComeFromTheGamesGeneratorAndShowInTheDigest()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(Made(), map);
         Assert.AreEqual(
             map.Generator,
@@ -229,11 +278,29 @@ public sealed class WoodcuttingTests
         );
         var same = GameFactory.Create(
             Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x1234,
+                    W1 = 0x5678,
+                    W2 = 0x9ABC,
+                },
+                MapSize.Offered[0]
+            )
         );
         Assert.AreEqual(game.Digest(), same.Digest());
 
-        var other = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var other = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         other.Generator = other.Generator.Step();
 
         Assert.AreNotEqual(game.Digest(), GameFactory.Create(Made(), other).Digest());

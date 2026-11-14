@@ -26,7 +26,7 @@ public sealed class SettlerMovement(
     Func<Activity, Residue> residueOf
 )
 {
-    private readonly Dictionary<int, int> _occupant = [];
+    readonly Dictionary<int, int> _occupant = [];
 
     /// <summary>The map the settlers walk on.</summary>
     public Map Map => map;
@@ -133,7 +133,12 @@ public sealed class SettlerMovement(
     {
         var residue = residueOf(activity);
 
-        return new SearchesHome(residue.Mode != 0, residue.Mode) { Residue = residue };
+        return new SearchesHome
+        {
+            FarEndFirst = residue.Mode != 0,
+            FarEndMark = residue.Mode,
+            Residue = residue,
+        };
     }
 
     /// <summary>

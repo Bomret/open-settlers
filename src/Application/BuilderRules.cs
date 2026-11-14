@@ -17,36 +17,36 @@ namespace OpenSettlers.Simulation;
 /// <param name="parts">The shared parts.</param>
 public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
 {
-    private readonly SettlerMovement movement = parts.Movement;
-    private readonly BuildingTable buildings = parts.Buildings;
-    private readonly FlagTable flags = parts.Flags;
-    private readonly GameHistory history = parts.History;
-    private readonly IRandomDraws draws = parts.Draws;
-    private readonly HutWork hut = parts.Hut;
+    readonly SettlerMovement movement = parts.Movement;
+    readonly BuildingTable buildings = parts.Buildings;
+    readonly FlagTable flags = parts.Flags;
+    readonly GameHistory history = parts.History;
+    readonly IRandomDraws draws = parts.Draws;
+    readonly HutWork hut = parts.Hut;
 
     // The types whose builder takes the second figure: the mask 0x4a0400 tests the type's bit (0x43ceb4).
-    private const int SecondFigureTypes = 0x4a0400;
+    const int SecondFigureTypes = 0x4a0400;
 
     // The frame of the builder looking for a material (0x62, and 0x64 for the second figure), the frame of a blow (0x66 to 0x69 by the
     // draw's low two bits, four more for the second figure), and the timer the start routine gives.
-    private const int FirstFigureFrame = 0x62;
-    private const int SecondFigureFrame = 0x64;
-    private const int BlowFrame = 0x66;
-    private const int StartTimer = 0x7f;
+    const int FirstFigureFrame = 0x62;
+    const int SecondFigureFrame = 0x64;
+    const int BlowFrame = 0x66;
+    const int StartTimer = 0x7f;
 
     // The blows of one material.
-    private const int BlowsPerMaterial = 8;
+    const int BlowsPerMaterial = 8;
 
     // The fill counters hold the goods on site in their high nibble.
-    private const int OnSite = 0xf0;
-    private const int OneOnSite = 0x10;
+    const int OnSite = 0xf0;
+    const int OneOnSite = 0x10;
 
     // The wait for a material: a quarter of a step, which sets the timer to 0xff where it would not carry (0x43ee01).
-    private const int WaitStep = 0x100;
-    private const int WaitTimer = 0xff;
+    const int WaitStep = 0x100;
+    const int WaitTimer = 0xff;
 
     // The settler's node and the site's flag lie one step apart, south-east (direction 1).
-    private const int ToFlag = 1;
+    const int ToFlag = 1;
 
     /// <summary>The builder is the worker a site asks for when it starts (<c>0x42d5fc</c>).</summary>
     public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
@@ -66,14 +66,24 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     public override void Start(int slot, Settler settler, Building site)
     {
         var secondFigure = (SecondFigureTypes >> site.Type.Code & 1) != 0;
-        movement.Become(settler, new Builds(buildings.SlotOf(site), false, 0, secondFigure, 0));
+        movement.Become(
+            settler,
+            new Builds
+            {
+                Site = buildings.SlotOf(site),
+                Blowing = false,
+                Materials = 0,
+                SecondFigure = secondFigure,
+                Blows = 0,
+            }
+        );
         settler.Frame = secondFigure ? SecondFigureFrame : FirstFigureFrame;
         settler.Timer = StartTimer;
     }
 
     // State 9 (0x43ec82): the time since the last turn comes off the timer; when it has run out the builder works until the timer is
     // positive again.
-    private void Turn(int slot, Settler settler)
+    void Turn(int slot, Settler settler)
     {
         var site = ((Builds)settler.Activity).Site;
         if (movement.TimerRan(settler))
@@ -90,7 +100,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
 
     // The builder's loop (0x43ecba): a blow where he is making them, else the next material; after the blow or the material a figure
     // is picked and the time of its step goes onto the timer, and he goes on while that does not run the timer over.
-    private void Work(int slot, Settler settler)
+    void Work(int slot, Settler settler)
     {
         while (true)
         {
@@ -123,7 +133,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
 
     // One blow (0x43ee1b): the step of the type's table, before or after the word reaches 0x8000, is added to the site's progress word. A
     // carry out of the word finishes the building; false then.
-    private bool Blow(int slot, Settler settler, Building site, Builds builds)
+    bool Blow(int slot, Settler settler, Building site, Builds builds)
     {
         var sum = site.Progress + movement.Tables.BlowStep(site.Type, site.Progress >= 0x8000);
         site.Progress = (ushort)sum;
@@ -142,7 +152,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     // The next material (0x43ecca, 0x43ecf6): the order word says plank or stone; one on site (the high nibble of the fill byte) goes out
     // of the fill and out of the count the site still needs, and eight blows follow. With none on site the timer gains a quarter of a
     // step (0xff where that would not carry) and the builder waits; false then.
-    private bool TakeMaterial(Settler settler, Building site, Builds builds)
+    bool TakeMaterial(Settler settler, Building site, Builds builds)
     {
         settler.Frame = builds.SecondFigure ? SecondFigureFrame : FirstFigureFrame;
         var needs = site.Site!;
@@ -172,7 +182,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
         return true;
     }
 
-    private bool Wait(Settler settler, Builds builds)
+    bool Wait(Settler settler, Builds builds)
     {
         settler.Activity = builds;
         var sum = settler.Timer + WaitStep;
@@ -183,7 +193,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
 
     // The figure of the blow (0x43eebd): the generator's next value picks one of four frames, and the time of that frame's step goes onto
     // the timer. False where the sum carries out of the timer: the builder's turn ends there.
-    private bool Animate(Settler settler)
+    bool Animate(Settler settler)
     {
         var builds = (Builds)settler.Activity;
         settler.Frame = BlowFrame + (draws.Draw() & 3) + (builds.SecondFigure ? 4 : 0);
@@ -195,7 +205,7 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
 
     // The end of the building (0x43ef20): the site's progress word, the worker bit, the worker's slot, and the construction bit go, the
     // site's flag asks for nothing, and the builder takes state 0x4a with no timer and goes on at once.
-    private void Finish(int slot, Settler settler, Building site)
+    void Finish(int slot, Settler settler, Building site)
     {
         var siteSlot = buildings.SlotOf(site);
         site.Progress = 0;
@@ -226,12 +236,19 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
 
     // State 0x4a (0x43e008): when the node of the flag holds no settler the builder takes the step onto it (the turn of state 7, which the
     // original's code falls into) and goes home along the roads (state 2, mode 0xfe, to the castle).
-    private void Leave(int slot, Settler settler)
+    void Leave(int slot, Settler settler)
     {
         var (_, _, next) = movement.Neighbour(settler, ToFlag);
         if (movement.Occupant(next) == 0)
         {
-            settler.Activity = new StepsOntoFlag(new Walks(new ToStorage(), new Heading(0)));
+            settler.Activity = new StepsOntoFlag
+            {
+                Then = new Walks
+                {
+                    Errand = new ToStorage(),
+                    Heading = new Heading { Value = 0 },
+                },
+            };
             hut.StepOut(slot, settler);
 
             return;

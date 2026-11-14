@@ -206,7 +206,13 @@ public sealed class PlayScriptTests
             {
                 Line = 1,
                 Name = "a",
-                Tile = new ShotTile(3, 4, 1, 1),
+                Tile = new ShotTile
+                {
+                    Column = 3,
+                    Row = 4,
+                    Radius = 1,
+                    Scale = 1,
+                },
             },
             script.Steps[0]
         );
@@ -215,7 +221,13 @@ public sealed class PlayScriptTests
             {
                 Line = 2,
                 Name = "b",
-                Tile = new ShotTile(3, 4, 0, 1),
+                Tile = new ShotTile
+                {
+                    Column = 3,
+                    Row = 4,
+                    Radius = 0,
+                    Scale = 1,
+                },
             },
             script.Steps[1]
         );
@@ -224,7 +236,13 @@ public sealed class PlayScriptTests
             {
                 Line = 3,
                 Name = "c",
-                Tile = new ShotTile(3, 4, 2, 3),
+                Tile = new ShotTile
+                {
+                    Column = 3,
+                    Row = 4,
+                    Radius = 2,
+                    Scale = 3,
+                },
             },
             script.Steps[2]
         );

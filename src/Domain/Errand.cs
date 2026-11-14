@@ -10,18 +10,24 @@ public abstract record Errand
 }
 
 /// <summary>The walk of a worker to the building at a flag, which takes it as its worker.</summary>
-/// <param name="At">The slot of the building's flag.</param>
-public sealed record ToBuilding(int At) : Errand
+public sealed record ToBuilding : Errand
 {
+    /// <summary>The slot of the building's flag.</summary>
+    public required int At { get; init; }
+
     /// <inheritdoc />
     public override int Flag => At;
 }
 
 /// <summary>The walk of a carrier to a road: the road that leaves a flag in a direction.</summary>
-/// <param name="At">The slot of the flag the road leaves.</param>
-/// <param name="Direction">The direction the road leaves the flag in.</param>
-public sealed record ToRoad(int At, Direction Direction) : Errand
+public sealed record ToRoad : Errand
 {
+    /// <summary>The slot of the flag the road leaves.</summary>
+    public required int At { get; init; }
+
+    /// <summary>The direction the road leaves the flag in.</summary>
+    public required Direction Direction { get; init; }
+
     /// <inheritdoc />
     public override int Flag => At;
 }
@@ -37,6 +43,11 @@ public sealed record ToStorage : Errand
 }
 
 /// <summary>A good a carrier carries, and the flag it goes to.</summary>
-/// <param name="Good">The good.</param>
-/// <param name="Destination">The slot of the flag the good is to go to, or null where it has none.</param>
-public readonly record struct Load(Good Good, int? Destination);
+public readonly record struct Load
+{
+    /// <summary>The good.</summary>
+    public required Good Good { get; init; }
+
+    /// <summary>The slot of the flag the good is to go to, or null where it has none.</summary>
+    public required int? Destination { get; init; }
+}

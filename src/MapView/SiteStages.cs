@@ -21,11 +21,14 @@ public enum SiteLayer
 }
 
 /// <summary>One layer of a building site's drawing.</summary>
-/// <param name="Layer">The layer.</param>
-/// <param name="Fraction">
-/// How much of the layer shows, in 65536ths of its height from the bottom up (<see cref="ObjectImage.Grown"/>), or null for the whole.
-/// </param>
-public readonly record struct SitePart(SiteLayer Layer, int? Fraction);
+public readonly record struct SitePart
+{
+    /// <summary>The layer.</summary>
+    public required SiteLayer Layer { get; init; }
+
+    /// <summary>How much of the layer shows, in 65536ths of its height from the bottom up (<see cref="ObjectImage.Grown"/>), or null for the whole.</summary>
+    public required int? Fraction { get; init; }
+}
 
 /// <summary>
 /// The drawing of a building site by its progress word, as the common part of the draw routine for buildings under construction
@@ -50,7 +53,7 @@ public static class SiteStages
     {
         if (progress == 0)
         {
-            return [new SitePart(SiteLayer.Ground, null)];
+            return [new SitePart { Layer = SiteLayer.Ground, Fraction = null }];
         }
 
         if (progress < 0x8000)
@@ -58,15 +61,23 @@ public static class SiteStages
             var fraction = (ushort)(2 * progress);
 
             return fraction < 3
-                ? [new SitePart(SiteLayer.Base, null)]
-                : [new SitePart(SiteLayer.Base, null), new SitePart(SiteLayer.Stage, fraction)];
+                ? [new SitePart { Layer = SiteLayer.Base, Fraction = null }]
+                :
+                [
+                    new SitePart { Layer = SiteLayer.Base, Fraction = null },
+                    new SitePart { Layer = SiteLayer.Stage, Fraction = fraction },
+                ];
         }
 
         var rest = (ushort)(2 * (progress - 0x8000));
 
         return rest == 0
-            ? [new SitePart(SiteLayer.Stage, null)]
-            : [new SitePart(SiteLayer.Stage, null), new SitePart(SiteLayer.Finished, rest)];
+            ? [new SitePart { Layer = SiteLayer.Stage, Fraction = null }]
+            :
+            [
+                new SitePart { Layer = SiteLayer.Stage, Fraction = null },
+                new SitePart { Layer = SiteLayer.Finished, Fraction = rest },
+            ];
     }
 
     /// <summary>
@@ -90,10 +101,10 @@ public static class SiteStages
             shadow = Join(shadow, drawing.Shadow);
         }
 
-        return image is null && shadow is null ? null : new ObjectDrawing(image, shadow);
+        return image is null && shadow is null ? null : new ObjectDrawing { Image = image, Shadow = shadow };
     }
 
-    private static ObjectImage? Join(ObjectImage? below, ObjectImage? above) =>
+    static ObjectImage? Join(ObjectImage? below, ObjectImage? above) =>
         below is null ? above
         : above is null ? below
         : below.Over(above);
@@ -107,7 +118,7 @@ public static class SiteStages
 /// <param name="layer">The source's art for a layer of the site of a type, or null where it has none.</param>
 public sealed class SiteDrawings(Func<BuildingType, SiteLayer, ObjectDrawing?> layer)
 {
-    private readonly Dictionary<(BuildingType Type, ushort Progress), ObjectDrawing?> _made = [];
+    readonly Dictionary<(BuildingType Type, ushort Progress), ObjectDrawing?> _made = [];
 
     /// <summary>The drawing of the site of <paramref name="type"/> at <paramref name="progress"/>, or null where no layer has art.</summary>
     public ObjectDrawing? Of(BuildingType type, ushort progress)

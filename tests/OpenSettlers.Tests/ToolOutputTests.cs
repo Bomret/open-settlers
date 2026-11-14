@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed partial class ToolOutputTests
 {
-    private string _folder = "";
+    string _folder = "";
 
     [TestInitialize]
     public void Initialize()
@@ -23,7 +23,7 @@ public sealed partial class ToolOutputTests
     [TestCleanup]
     public void Cleanup() => Directory.Delete(_folder, true);
 
-    private static string Section(string text, string name)
+    static string Section(string text, string name)
     {
         var start = $"<!-- {name}:start -->\n";
         var from = text.IndexOf(start, StringComparison.Ordinal) + start.Length;

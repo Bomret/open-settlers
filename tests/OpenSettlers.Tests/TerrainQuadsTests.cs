@@ -18,10 +18,26 @@ public sealed class TerrainQuadsTests
         public ObjectImage? Draw(TerrainTriangle triangle) =>
             triangle.Terrain.Code == 99 ? null
             : _images.TryGetValue(triangle.Terrain.Code, out var image) ? image
-            : _images[triangle.Terrain.Code] = new ObjectImage(30, 10, -13, -2, new byte[30 * 10 * 4]);
+            : _images[triangle.Terrain.Code] = new ObjectImage
+            {
+                Width = 30,
+                Height = 10,
+                OffsetX = -13,
+                OffsetY = -2,
+                Rgba = new byte[30 * 10 * 4],
+            };
 
         public ObjectImage? Draw(RoadStrip strip) =>
-            strip.Difference == 0 ? new ObjectImage(8, 5, 1, -3, new byte[8 * 5 * 4]) : null;
+            strip.Difference == 0
+                ? new ObjectImage
+                {
+                    Width = 8,
+                    Height = 5,
+                    OffsetX = 1,
+                    OffsetY = -3,
+                    Rgba = new byte[8 * 5 * 4],
+                }
+                : null;
 
         public ObjectDrawing? Draw(MapObjectDraw draw) => null;
 
@@ -37,7 +53,18 @@ public sealed class TerrainQuadsTests
     }
 
     static TerrainTriangle Triangle(int row, int code = 5, int x = 100, int y = 50) =>
-        new(0, row, true, new Domain.Terrain(code), 5, 5, 5, x, y);
+        new()
+        {
+            Column = 0,
+            Row = row,
+            Upper = true,
+            Terrain = new Domain.Terrain { Code = code },
+            Apex = 5,
+            Left = 5,
+            Right = 5,
+            X = x,
+            Y = y,
+        };
 
     static List<List<ObjectQuad>> Bands(
         IReadOnlyList<TerrainTriangle> triangles,
@@ -114,14 +141,40 @@ public sealed class TerrainQuadsTests
         Bands([Triangle(0)], 4, layers);
         var strips = new[]
         {
-            new RoadStrip(100, 200, RoadDirection.East, 0, 0, new Domain.Terrain(5)),
-            new RoadStrip(300, 200, RoadDirection.East, 5, 0, new Domain.Terrain(5)),
+            new RoadStrip
+            {
+                X = 100,
+                Y = 200,
+                Direction = RoadDirection.East,
+                Difference = 0,
+                Slope = 0,
+                Ground = new Domain.Terrain { Code = 5 },
+            },
+            new RoadStrip
+            {
+                X = 300,
+                Y = 200,
+                Direction = RoadDirection.East,
+                Difference = 5,
+                Slope = 0,
+                Ground = new Domain.Terrain { Code = 5 },
+            },
         };
 
         var quads = TerrainQuads.Strips(strips, new FakeSource(), layers);
 
         Assert.HasCount(1, quads);
-        Assert.AreEqual(new ObjectQuad(101, 197, 8, 5, 1), quads[0]);
+        Assert.AreEqual(
+            new ObjectQuad
+            {
+                X = 101,
+                Y = 197,
+                Width = 8,
+                Height = 5,
+                Layer = 1,
+            },
+            quads[0]
+        );
     }
 
     [TestMethod]

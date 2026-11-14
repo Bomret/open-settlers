@@ -31,11 +31,12 @@ public sealed class DiggerTables : JobTables<Digger>
         data.Add(
             (
                 Job,
-                new FigureAdds(
-                    walk,
-                    walk,
-                    ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.DiggerHighAddress)
-                )
+                new FigureAdds
+                {
+                    Walk = walk,
+                    Carrying = walk,
+                    Cutting = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.DiggerHighAddress),
+                }
             )
         );
         data.Add((Job, ProgramTablesImporter.WorkerRequest(exe, ProgramTablesImporter.DiggerRequestAddress)));

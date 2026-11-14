@@ -10,14 +10,40 @@ namespace OpenSettlers.MapView;
 /// (<c>0x44d89d</c>), and the x and y offsets, as signed bytes, for each value of a node's six road direction bits
 /// (<c>0x674923</c>).
 /// </summary>
-public sealed record IdleCarrierTables(short[] Phases, short[] Figures, sbyte[] Offsets);
+public sealed record IdleCarrierTables
+{
+    /// <summary>The 16 phase words (<c>0x44d87d</c>).</summary>
+    public required short[] Phases { get; init; }
+
+    /// <summary>The 128 figure words (<c>0x44d89d</c>).</summary>
+    public required short[] Figures { get; init; }
+
+    /// <summary>The x and y offsets, as signed bytes, for each value of a node's six road direction bits (<c>0x674923</c>).</summary>
+    public required sbyte[] Offsets { get; init; }
+}
 
 /// <summary>
 /// What the figure tables pick for one term of a settler: the sprite entry, the palette index its fill takes (-1 for a
 /// sprite drawn as it is), the entry of the figure whose header shifts it (-1 for none; only the second figure is shifted),
 /// and the offset the node's road directions move a waiting carrier by (0 for any other).
 /// </summary>
-public readonly record struct SettlerPick(int Entry, int Colour, int ShiftedBy, int Dx, int Dy);
+public readonly record struct SettlerPick
+{
+    /// <summary>The sprite entry.</summary>
+    public required int Entry { get; init; }
+
+    /// <summary>The palette index the sprite's fill takes; -1 for a sprite drawn as it is.</summary>
+    public required int Colour { get; init; }
+
+    /// <summary>The entry of the figure whose header shifts the sprite; -1 for none.</summary>
+    public required int ShiftedBy { get; init; }
+
+    /// <summary>The horizontal offset the node's road directions move a waiting carrier by; 0 for any other settler.</summary>
+    public required int Dx { get; init; }
+
+    /// <summary>The vertical offset the node's road directions move a waiting carrier by; 0 for any other settler.</summary>
+    public required int Dy { get; init; }
+}
 
 /// <summary>
 /// Which sprites a settler is drawn with, by the exe's figure tables (<c>docs/rules/settlers.md</c>, "Drawing the walk"): the
@@ -42,20 +68,20 @@ public sealed class SettlerFigureTables
     /// <summary>The sprite entry of the first colour overlay; the figures lie below it.</summary>
     public const int OverlayBase = 2500;
 
-    private const int SecondBase = 3150;
+    const int SecondBase = 3150;
 
     // The palette index of the first player's colour, and the step between players (0x406610).
-    private const int ColourBase = 0x40;
-    private const int ColourStep = 4;
+    const int ColourBase = 0x40;
+    const int ColourStep = 4;
 
     // The node's lake mark picks the fixed figure word, and its road directions the offsets (0x44d77e).
-    private const int FixedFigureWord = 0x203;
+    const int FixedFigureWord = 0x203;
 
-    private readonly short[] _bases;
-    private readonly short[] _offsets;
-    private readonly byte[] _data;
-    private readonly Dictionary<Job, HistoryEditionLook> _looks;
-    private readonly IdleCarrierTables? _idle;
+    readonly short[] _bases;
+    readonly short[] _offsets;
+    readonly byte[] _data;
+    readonly Dictionary<Job, HistoryEditionLook> _looks;
+    readonly IdleCarrierTables? _idle;
 
     // The looks the History Edition source holds read the job data of the tables (the registry is generated from the look modules).
     // The figure bases, offsets, and idle tables are given apart from the tables for a test that draws with part of them.
@@ -82,7 +108,12 @@ public sealed class SettlerFigureTables
             tables.FigureBases,
             tables.FigureOffsets,
             sequences,
-            new IdleCarrierTables(tables.IdlePhases, tables.IdleFigures, tables.IdleOffsets)
+            new IdleCarrierTables
+            {
+                Phases = tables.IdlePhases,
+                Figures = tables.IdleFigures,
+                Offsets = tables.IdleOffsets,
+            }
         );
 
     /// <summary>Whether the tables hold the figure handler of <paramref name="job"/>: a job without one has no drawn figure.</summary>
@@ -147,7 +178,7 @@ public sealed class SettlerFigureTables
     // The part of a figure word: the figure, its colour overlay filled with the colour, or the second figure where the base has
     // one, with the figure entry whose header shifts it (-1 for none: only the second figure is shifted). The high byte of the
     // word picks the pair of bases, the low byte the pair of offsets (0x44fff3). None where either lies outside the tables.
-    private SettlerPick? PickOf(int word, SettlerPart part, int colour, int dx, int dy)
+    SettlerPick? PickOf(int word, SettlerPart part, int colour, int dx, int dy)
     {
         var row = (word >> 8) & 0xff;
         var figure = word & 0xff;
@@ -161,18 +192,33 @@ public sealed class SettlerFigureTables
         switch (part)
         {
             case SettlerPart.Figure:
-                return new SettlerPick(FigureBase + first, -1, -1, dx, dy);
+                return new SettlerPick
+                {
+                    Entry = FigureBase + first,
+                    Colour = -1,
+                    ShiftedBy = -1,
+                    Dx = dx,
+                    Dy = dy,
+                };
             case SettlerPart.Overlay:
-                return new SettlerPick(OverlayBase + first, colour, -1, dx, dy);
+                return new SettlerPick
+                {
+                    Entry = OverlayBase + first,
+                    Colour = colour,
+                    ShiftedBy = -1,
+                    Dx = dx,
+                    Dy = dy,
+                };
             default:
                 return _bases[2 * row + 1] >= 0
-                    ? new SettlerPick(
-                        SecondBase + _bases[2 * row + 1] + _offsets[2 * figure + 1],
-                        -1,
-                        FigureBase + first,
-                        dx,
-                        dy
-                    )
+                    ? new SettlerPick
+                    {
+                        Entry = SecondBase + _bases[2 * row + 1] + _offsets[2 * figure + 1],
+                        Colour = -1,
+                        ShiftedBy = FigureBase + first,
+                        Dx = dx,
+                        Dy = dy,
+                    }
                     : null;
         }
     }

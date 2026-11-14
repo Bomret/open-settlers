@@ -33,26 +33,26 @@ public sealed class HutWork(
 {
     // The object pass (0x428d10): the clock at its last run, its countdown (a debt that wraps while 20 units are due),
     // and the cursor's column and row.
-    private ushort _objectStamp;
-    private ushort _objectTimer;
-    private int _objectX;
-    private int _objectY;
+    ushort _objectStamp;
+    ushort _objectTimer;
+    int _objectX;
+    int _objectY;
 
     /// <summary>The object pass's state, for the digest: the clock at its last run, its countdown, and the cursor's column and row.</summary>
     public (ushort Stamp, ushort Timer, int X, int Y) ObjectPassState =>
         (_objectStamp, _objectTimer, _objectX, _objectY);
 
     // The job rules modules by the type of their job: the hooks the shared states call. A job without a module has none.
-    private readonly System.Collections.Generic.Dictionary<Type, JobRules> _modules = [];
+    readonly System.Collections.Generic.Dictionary<Type, JobRules> _modules = [];
 
-    private Map Map => movement.Map;
+    Map Map => movement.Map;
 
     /// <summary>
     /// Registers a job rules module: the start routine, the arrival, and the cause the shared states call for a settler of its job.
     /// </summary>
     public void RegisterModule(JobRules rules) => _modules.Add(rules.JobType, rules);
 
-    private JobRules? RulesOf(Job job) => _modules.TryGetValue(job.GetType(), out var rules) ? rules : null;
+    JobRules? RulesOf(Job job) => _modules.TryGetValue(job.GetType(), out var rules) ? rules : null;
 
     /// <summary>
     /// The arrival at the end of a free walk of a job whose module overrides none: the generic arrival home where the job arrives home
@@ -83,7 +83,7 @@ public sealed class HutWork(
 
     // State 4, a settler that stepped through a door (0x43c96b): once its timer is down to the time the door leaves it, it
     // runs the routine of its job when a building stands there that is not marked bit 5; else it is state 0x19.
-    private void PassDoor(int slot, Settler settler)
+    void PassDoor(int slot, Settler settler)
     {
         var door = (Door)settler.Activity;
         var delta = (ushort)(movement.Clock - settler.Stamp);
@@ -160,7 +160,7 @@ public sealed class HutWork(
             var speed = (byte)(movement.Tables.DoorSpeed(door) ^ 0x1f);
             settler.Timer = (ushort)((ushort)(movement.Tables.StepTime(shape) * speed) >> 5);
             settler.Stamp = movement.Clock;
-            settler.Activity = new WaitsOutStep(((StepsOntoFlag)settler.Activity).Then);
+            settler.Activity = new WaitsOutStep { Then = ((StepsOntoFlag)settler.Activity).Then };
             RecordWork(slot, EventType.StepOut);
 
             return;
@@ -177,7 +177,7 @@ public sealed class HutWork(
     // time into the timer, and goes on while that does not wrap it.
     // **Not ported:** the passing of settlers when every direction is taken (the settler waits 0x7f units with the
     // frame 0x52 as it does when a blocked step is tried again), and the checks of a target node marked solid.
-    private void FreeWalk(int slot, Settler settler)
+    void FreeWalk(int slot, Settler settler)
     {
         var arrived = FreeWalkTurn(slot, settler);
         RecordWork(slot, EventType.FreeWalk);
@@ -195,7 +195,7 @@ public sealed class HutWork(
     }
 
     // One turn of the free walk; true where the vector is used up and the settler has arrived.
-    private bool FreeWalkTurn(int slot, Settler settler)
+    bool FreeWalkTurn(int slot, Settler settler)
     {
         if (!movement.TimerRan(settler))
         {
@@ -252,11 +252,11 @@ public sealed class HutWork(
     }
 
     // A node the walk may step onto: not marked solid (the lake mark) and holding no settler.
-    private bool Free(int index) => !Map.At(index).LakeMark && movement.Occupant(index) == 0;
+    bool Free(int index) => !Map.At(index).LakeMark && movement.Occupant(index) == 0;
 
     // The direction a row entry names (0 east to 5 north, -1 for an entry that names none: a table with no row) where the
     // step it leads to is free; -1 for such an entry and for a node that is taken.
-    private int Candidate(Settler settler, int direction) =>
+    int Candidate(Settler settler, int direction) =>
         direction >= 0 && Free(movement.Neighbour(settler, direction).Index) ? direction : -1;
 
     // The direction of the next step (0 to 5) or -1 where all are taken, and the memory it leaves in byte 15. A settler with a
@@ -265,7 +265,7 @@ public sealed class HutWork(
     // run out takes the step with the memory cleared, one that would overflow starts again from the vector. Else the
     // first direction of the vector's heading class is tried, and then the other five (0x4375ee) with a memory of the
     // step, the parity of the class and the candidate, and half of 6 less the candidate's counter as the debt.
-    private int Choose(Settler settler, Vector remaining, ref int memory, int memoryRow)
+    int Choose(Settler settler, Vector remaining, ref int memory, int memoryRow)
     {
         if (memoryRow >= 0)
         {
@@ -317,7 +317,7 @@ public sealed class HutWork(
     }
 
     // The choice from the vector's heading class (0x437072).
-    private int Fresh(Settler settler, Vector remaining, ref int memory)
+    int Fresh(Settler settler, Vector remaining, ref int memory)
     {
         var heading = HeadingClass(remaining.East, remaining.South);
         var first = Candidate(settler, movement.Tables.WalkDirection(heading, 0));
@@ -348,7 +348,7 @@ public sealed class HutWork(
 
     // The class of the vector (east, south) left to walk, which picks the row of directions (0x437072): 12 for a vector
     // that points west and north, 18 for one that points east and south, plus 1 to 5 for how flat it is.
-    private static int HeadingClass(int east, int south)
+    static int HeadingClass(int east, int south)
     {
         var hint = 0xc;
         if (east < 0)
@@ -416,7 +416,7 @@ public sealed class HutWork(
     /// </summary>
     internal void ReturnToHut(int slot, Settler settler, Trip trip)
     {
-        settler.Activity = new WalksFree(trip with { Remaining = new Vector(0, trip.Remaining.South) });
+        settler.Activity = new WalksFree { Trip = trip with { Remaining = new Vector(0, trip.Remaining.South) } };
         EnterHut(slot, settler);
     }
 
@@ -465,7 +465,11 @@ public sealed class HutWork(
         var storage = ((EntersBuilding)settler.Activity).Storage;
         movement.Become(
             settler,
-            new Door((ushort)(time * movement.Tables.DoorSpeed(movement.BuildingAt(node))) >> 5, storage)
+            new Door
+            {
+                TimeLeft = (ushort)(time * movement.Tables.DoorSpeed(movement.BuildingAt(node))) >> 5,
+                EnteringStorage = storage,
+            }
         );
         RecordWork(slot, EventType.EnterHut);
     }
@@ -535,7 +539,7 @@ public sealed class HutWork(
 
     // The object pass's handler of the saplings (0x4290d5, 0x42910f): one draw; where its bits 8 and 9 are clear the sapling is
     // a tree of its own range, picked by the draw's low three bits, and keeps the node's water mark.
-    private void GrowSapling(ref Node node)
+    void GrowSapling(ref Node node)
     {
         var draw = draws.Draw();
         if ((draw & 0x300) == 0)
@@ -547,7 +551,7 @@ public sealed class HutWork(
     // The lake detail of a node (0x428d6e): one draw; below 10 the detail may grow by one (when the draw's bits 8 to 13 are
     // 0), and it moves one to a neighbour that is a lake node too (south-east, south, north-west, or north by the draw's
     // bits 2 and 3).
-    private void MoveLakeDetail(int node)
+    void MoveLakeDetail(int node)
     {
         var draw = draws.Draw();
         ref var at = ref Map.At(node);

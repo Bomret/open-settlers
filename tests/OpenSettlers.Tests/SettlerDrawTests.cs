@@ -25,39 +25,66 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SettlerDrawTests
 {
-    private const string Fixture = "settler-draws.txt";
+    const string Fixture = "settler-draws.txt";
 
     // The build the recordings came from: the sha256 of the first "install=" line of the fixture (every recording must
     // name the same one).
-    private static readonly string ReferenceSha256 = File.ReadLines(Fixture)
+    static readonly string ReferenceSha256 = File.ReadLines(Fixture)
         .First(line => line.StartsWith("install=", StringComparison.Ordinal))
         .Split(' ')
         .Single(part => part.StartsWith("sha256=", StringComparison.Ordinal))["sha256=".Length..];
 
     // 0x44ffe7 moves a record's position by 0x10 and 8 before the blit.
-    private const int OffsetX = 0x10;
-    private const int OffsetY = 8;
+    const int OffsetX = 0x10;
+    const int OffsetY = 8;
 
-    private sealed record Sprite(int Entry, int Colour, int X, int Y)
+    sealed record Sprite
     {
+        public required int Entry { get; init; }
+
+        public required int Colour { get; init; }
+
+        public required int X { get; init; }
+
+        public required int Y { get; init; }
+
         public override string ToString() => $"{Entry}/{Colour}/{X},{Y}";
     }
 
-    private sealed record Record(int Slot, List<Sprite> Sprites);
+    sealed record Record
+    {
+        public required int Slot { get; init; }
 
-    private sealed record Pass(
-        int Number,
-        ushort Clock,
-        Dictionary<int, (byte[] Bytes, int Height)> Changed,
-        Dictionary<int, (ushort Timer, ushort Stamp)> Held,
-        List<Record> Records
-    );
+        public required List<Sprite> Sprites { get; init; }
+    }
 
-    private sealed record Scenario(string Name, string Command, List<string> Header, List<Pass> Passes);
+    sealed record Pass
+    {
+        public required int Number { get; init; }
+
+        public required ushort Clock { get; init; }
+
+        public required Dictionary<int, (byte[] Bytes, int Height)> Changed { get; init; }
+
+        public required Dictionary<int, (ushort Timer, ushort Stamp)> Held { get; init; }
+
+        public required List<Record> Records { get; init; }
+    }
+
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<string> Header { get; init; }
+
+        public required List<Pass> Passes { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
-    private static List<Scenario> Load()
+    static List<Scenario> Load()
     {
         var scenarios = new List<Scenario>();
         foreach (var line in File.ReadAllLines(Fixture))
@@ -65,7 +92,15 @@ public sealed class SettlerDrawTests
             if (line.StartsWith("# ", StringComparison.Ordinal))
             {
                 var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], [], []));
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Header = [],
+                        Passes = [],
+                    }
+                );
             }
             else if (!line.StartsWith("pass=", StringComparison.Ordinal))
             {
@@ -80,7 +115,7 @@ public sealed class SettlerDrawTests
         return scenarios;
     }
 
-    private static Pass ParsePass(string line)
+    static Pass ParsePass(string line)
     {
         var fields = line.Split(' ')
             .Select(field => field.Split('=', 2))
@@ -110,8 +145,10 @@ public sealed class SettlerDrawTests
             .Select(text =>
             {
                 var halves = text.Split(':');
-                return new Record(
-                    int.Parse(halves[0], CultureInfo.InvariantCulture),
+                return new Record
+                {
+                    Slot = int.Parse(halves[0], CultureInfo.InvariantCulture),
+                    Sprites =
                     [
                         .. halves[1]
                             .Split(';')
@@ -119,29 +156,31 @@ public sealed class SettlerDrawTests
                             {
                                 var numbers = sprite.Split('/');
                                 var position = numbers[2].Split(',');
-                                return new Sprite(
-                                    int.Parse(numbers[0], CultureInfo.InvariantCulture),
-                                    int.Parse(numbers[1], CultureInfo.InvariantCulture),
-                                    int.Parse(position[0], CultureInfo.InvariantCulture),
-                                    int.Parse(position[1], CultureInfo.InvariantCulture)
-                                );
+                                return new Sprite
+                                {
+                                    Entry = int.Parse(numbers[0], CultureInfo.InvariantCulture),
+                                    Colour = int.Parse(numbers[1], CultureInfo.InvariantCulture),
+                                    X = int.Parse(position[0], CultureInfo.InvariantCulture),
+                                    Y = int.Parse(position[1], CultureInfo.InvariantCulture),
+                                };
                             }),
-                    ]
-                );
+                    ],
+                };
             })
             .ToList();
 
-        return new Pass(
-            int.Parse(fields["pass"], CultureInfo.InvariantCulture),
-            ushort.Parse(fields["clock"], CultureInfo.InvariantCulture),
-            changed,
-            held,
-            records
-        );
+        return new Pass
+        {
+            Number = int.Parse(fields["pass"], CultureInfo.InvariantCulture),
+            Clock = ushort.Parse(fields["clock"], CultureInfo.InvariantCulture),
+            Changed = changed,
+            Held = held,
+            Records = records,
+        };
     }
 
     // The settler of the original's 16 bytes (Table16), as in CarrierWalkTests: the node is the dword at 4, (y * 2 * width + x) * 4.
-    private static Settler FromBytes(byte[] bytes, int width)
+    static Settler FromBytes(byte[] bytes, int width)
     {
         var node = BitConverter.ToInt32(bytes, 4) / 4;
         var state = bytes[10];
@@ -163,75 +202,138 @@ public sealed class SettlerDrawTests
 
     // The importer of a recorded item's state bytes into the activity they stand for. A state the engine has no activity for
     // (a settler at work, or a state of the original's that the engine does not reach) takes the activity that is not drawn.
-    private static Activity ActivityOf(byte[] bytes, int state)
+    static Activity ActivityOf(byte[] bytes, int state)
     {
         var mode = bytes[11];
         var target =
             state == 0x42 ? (BitConverter.ToInt32(bytes, 12) - 0x23000000) / 0x46 : BitConverter.ToUInt16(bytes, 12);
-        var heading = new Heading((sbyte)bytes[14]);
+        var heading = new Heading { Value = (sbyte)bytes[14] };
         var next = bytes[15];
-        var approach = new Heading((sbyte)BitConverter.ToUInt16(bytes, 8));
-        var load = mode > 0 ? new Load(new Good(mode), null) : (Load?)null;
+        var approach = new Heading { Value = (sbyte)BitConverter.ToUInt16(bytes, 8) };
+        var load =
+            mode > 0
+                ? new Load
+                {
+                    Good = new Good { Code = mode },
+                    Destination = null,
+                }
+                : (Load?)null;
         var vector = new Vector((sbyte)mode, (sbyte)target);
         var mark = target >> 8;
 
         return state switch
         {
-            1 => new WaitsInCastle(heading.Value),
-            2 => new Walks(new ToStorage(), heading, next),
-            3 => new WalksRoad(load, heading, next == 0xff ? 0 : next, next == 0xff),
-            4 => new Door(target, mode == 0xfe),
-            9 => new Builds(
-                BitConverter.ToUInt16(bytes, 12),
-                mode == 0xff,
-                bytes[14] & 0x0f,
-                (bytes[14] & 0x80) != 0,
-                next
-            ),
+            1 => new WaitsInCastle { Storage = heading.Value },
+            2 => new Walks
+            {
+                Errand = new ToStorage(),
+                Heading = heading,
+                Tries = next,
+            },
+            3 => new WalksRoad
+            {
+                Load = load,
+                Heading = heading,
+                Waits = next == 0xff ? 0 : next,
+                Marked = next == 0xff,
+            },
+            4 => new Door { TimeLeft = target, EnteringStorage = mode == 0xfe },
+            9 => new Builds
+            {
+                Site = BitConverter.ToUInt16(bytes, 12),
+                Blowing = mode == 0xff,
+                Materials = bytes[14] & 0x0f,
+                SecondFigure = (bytes[14] & 0x80) != 0,
+                Blows = next,
+            },
             0x4a => new LeavesSite(),
-            8 => new Digs(mode, bytes[12], bytes[13], bytes[14]),
-            5 => new WaitsOutStep(next == 0xd ? new PutsDownGood(new Good(mode)) : new Walks(new ToStorage(), heading)),
-            0xb => new StepsOutWithGood(new Good(mode)),
-            0xd => new PutsDownGood(new Good(mode)),
-            0xe => new HandsOver(load, heading, next == 0xff),
-            0xf => new Leaving(new ToStorage()),
-            0x10 => new WalksFree(
-                new Trip(
-                    vector,
-                    mark != 0x80 ? new ToTree(new Vector((sbyte)mark, heading.Value))
+            8 => new Digs
+            {
+                Pass = mode,
+                Target = bytes[12],
+                Node = bytes[13],
+                Phase = bytes[14],
+            },
+            5 => new WaitsOutStep
+            {
+                Then =
+                    next == 0xd
+                        ? new PutsDownGood { Good = new Good { Code = mode } }
+                        : new Walks { Errand = new ToStorage(), Heading = heading },
+            },
+            0xb => new StepsOutWithGood { Good = new Good { Code = mode } },
+            0xd => new PutsDownGood { Good = new Good { Code = mode } },
+            0xe => new HandsOver
+            {
+                Load = load,
+                Heading = heading,
+                Marked = next == 0xff,
+            },
+            0xf => new Leaving { Errand = new ToStorage() },
+            0x10 => new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = vector,
+                    Purpose =
+                        mark != 0x80 ? new ToTree { Back = new Vector((sbyte)mark, heading.Value) }
                         : heading.Value < 0 ? new Home()
-                        : new BackToHut(heading.Value != 0),
-                    next
-                )
-            ),
-            0x11 => new Cuts(new Vector((sbyte)mode, (sbyte)target), mark != 0, heading.Value, next),
+                        : new BackToHut { Carrying = heading.Value != 0 },
+                    Memory = next,
+                },
+            },
+            0x11 => new Cuts
+            {
+                Back = new Vector((sbyte)mode, (sbyte)target),
+                SecondVariant = mark != 0,
+                Count = heading.Value,
+                Memory = next,
+            },
             0x12 => new LooksForTree(),
             0x13 => new LooksForSpot(),
-            0x14 => new Plants(vector, bytes[14] != 0, next),
+            0x14 => new Plants
+            {
+                Back = vector,
+                Planted = bytes[14] != 0,
+                Memory = next,
+            },
             0x15 => new LooksForStone(),
-            0x16 => new WalksFree(
-                new Trip(
-                    vector,
-                    mark != 0x80 ? new ToHeap(new Vector((sbyte)mark, heading.Value))
+            0x16 => new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = vector,
+                    Purpose =
+                        mark != 0x80 ? new ToHeap { Back = new Vector((sbyte)mark, heading.Value) }
                         : heading.Value < 0 ? new Home()
-                        : new BackToHut(heading.Value != 0),
-                    next
-                ),
-                true
-            ),
-            0x17 => new CutsStone(vector, mark, (bytes[14] | (next << 8))),
-            0x18 => new Saws(mode != 0),
-            0x19 => new SearchesHome(mode != 0, mode),
-            0x42 => new WaitsAtFlag(target, mode, approach),
-            0x43 => new ClaimsNode(heading, approach),
-            0x44 => new WaitsToGoHome(approach),
-            0x45 => new WaitsToRejoin(approach),
+                        : new BackToHut { Carrying = heading.Value != 0 },
+                    Memory = next,
+                },
+                EyesHeaps = true,
+            },
+            0x17 => new CutsStone
+            {
+                Back = vector,
+                Phase = mark,
+                Quarter = (bytes[14] | (next << 8)),
+            },
+            0x18 => new Saws { Sawing = mode != 0 },
+            0x19 => new SearchesHome { FarEndFirst = mode != 0, FarEndMark = mode },
+            0x42 => new WaitsAtFlag
+            {
+                Flag = target,
+                Direction = mode,
+                Approach = approach,
+            },
+            0x43 => new ClaimsNode { Heading = heading, Approach = approach },
+            0x44 => new WaitsToGoHome { Approach = approach },
+            0x45 => new WaitsToRejoin { Approach = approach },
             _ => new BuiltCastle(),
         };
     }
 
     // The header bytes 0 and 1 of each figure entry that reads: the shift of its second figure (0x4066d2, 0x4066e4).
-    private static Dictionary<int, (int X, int Y)> Shifts(Install install)
+    static Dictionary<int, (int X, int Y)> Shifts(Install install)
     {
         var archive = Formats.ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var shifts = new Dictionary<int, (int X, int Y)>();
@@ -260,7 +362,7 @@ public sealed class SettlerDrawTests
         return shifts;
     }
 
-    private static string Describe(IEnumerable<Sprite> sprites) => string.Join(" ", sprites);
+    static string Describe(IEnumerable<Sprite> sprites) => string.Join(" ", sprites);
 
     [TestMethod]
     public void EveryRecordingNamesTheReferenceInstallItCameFrom()
@@ -298,7 +400,16 @@ public sealed class SettlerDrawTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[4], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[5].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var width = map.Size.Width;
 
         var known = new SortedDictionary<int, byte[]>();
@@ -356,7 +467,13 @@ public sealed class SettlerDrawTests
                 );
 
                 var actual = drawn
-                    .Select(draw => new Sprite(draw.Entry, draw.Colour, draw.X + OffsetX, draw.Y + OffsetY))
+                    .Select(draw => new Sprite
+                    {
+                        Entry = draw.Entry,
+                        Colour = draw.Colour,
+                        X = draw.X + OffsetX,
+                        Y = draw.Y + OffsetY,
+                    })
                     .ToList();
 
                 var next = 0;

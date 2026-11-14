@@ -18,8 +18,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class BuildSiteTests
 {
-    private const ulong FnvOffset = 0xcbf29ce484222325;
-    private const ulong FnvPrime = 0x100000001b3;
+    const ulong FnvOffset = 0xcbf29ce484222325;
+    const ulong FnvPrime = 0x100000001b3;
 
     public static IEnumerable<object[]> Lines =>
         File.ReadAllLines("build-sites.txt").Select(line => new object[] { line });
@@ -56,7 +56,16 @@ public sealed class BuildSiteTests
         var map = MapGenerator.Generate(TestProgram.Tables(), ParseSeed(fields["seed"]), size!);
         var tile = fields["tile"].Split(',').Select(int.Parse).ToArray();
         var game = GameFactory.Create(TestProgram.Tables(), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, tile[0], tile[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = tile[0],
+                Y = tile[1],
+            }
+        );
         game.Tick();
 
         Assert.AreEqual(
@@ -72,7 +81,16 @@ public sealed class BuildSiteTests
         var site = BuildSite.Evaluate(TestProgram.Made(), map, 15, 5, 0, hasCastle: false);
 
         var game = GameFactory.Create(TestProgram.Made(), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
 
         Assert.IsTrue(site.IsCastleSite);
@@ -99,11 +117,12 @@ public sealed class BuildSiteTests
             var flagged = int.Parse(counts[0], CultureInfo.InvariantCulture);
             var judged = int.Parse(counts[1], CultureInfo.InvariantCulture);
             Assert.IsTrue(flagged == 0 || flagged == judged, $"the emulator splits the pair {pair}");
-            var result = new BuildSiteResult(
-                int.Parse(kind[0], CultureInfo.InvariantCulture),
-                int.Parse(kind[1], CultureInfo.InvariantCulture),
-                0
-            );
+            var result = new BuildSiteResult
+            {
+                Node = int.Parse(kind[0], CultureInfo.InvariantCulture),
+                Site = int.Parse(kind[1], CultureInfo.InvariantCulture),
+                Height = 0,
+            };
 
             Assert.AreEqual(flagged == judged, result.AllowsFlag, $"pair {pair}");
         }
@@ -111,7 +130,7 @@ public sealed class BuildSiteTests
 
     // The judgment of every node whose object has a class below 3, as the harness line states it. Without a castle
     // the valid nodes are the castle sites; with one they are the sites of a large building (site 4).
-    private static string Observe(Map map, bool hasCastle)
+    static string Observe(Map map, bool hasCastle)
     {
         var width = map.Size.Width;
         var hash = FnvOffset;
@@ -155,10 +174,15 @@ public sealed class BuildSiteTests
             + $"kinds={string.Join(' ', kinds.Select(pair => $"{pair.Key}:{pair.Value}"))} first={string.Join(' ', first)}";
     }
 
-    private static MapSeed ParseSeed(string text)
+    static MapSeed ParseSeed(string text)
     {
         var words = text.Split(',').Select(word => ushort.Parse(word, NumberStyles.HexNumber)).ToArray();
 
-        return new MapSeed(words[0], words[1], words[2]);
+        return new MapSeed
+        {
+            W0 = words[0],
+            W1 = words[1],
+            W2 = words[2],
+        };
     }
 }

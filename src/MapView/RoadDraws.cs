@@ -23,14 +23,26 @@ public enum RoadDirection
 /// source's image offsets hang the image from. <c>Difference</c> is the height of the strip's start node less that of
 /// its end node, <c>Slope</c> the slope of the ground across the strip, and <c>Ground</c> the terrain it lies on.
 /// </summary>
-public readonly record struct RoadStrip(
-    int X,
-    int Y,
-    RoadDirection Direction,
-    int Difference,
-    int Slope,
-    Terrain Ground
-);
+public readonly record struct RoadStrip
+{
+    /// <summary>The horizontal position in map pixels the source's image offsets hang the image from.</summary>
+    public required int X { get; init; }
+
+    /// <summary>The vertical position in map pixels the source's image offsets hang the image from.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>The direction the strip leaves its start node in.</summary>
+    public required RoadDirection Direction { get; init; }
+
+    /// <summary>The height of the strip's start node less that of its end node.</summary>
+    public required int Difference { get; init; }
+
+    /// <summary>The slope of the ground across the strip.</summary>
+    public required int Slope { get; init; }
+
+    /// <summary>The terrain the strip lies on.</summary>
+    public required Terrain Ground { get; init; }
+}
 
 /// <summary>
 /// Where the roads of a map are drawn and over what (<c>docs/rules/roads.md</c>). The original draws
@@ -42,7 +54,7 @@ public static class RoadDraws
 {
     // Pixels the strip reaches above its higher node (0x428008 subtracts 2 more after the height); the level strip is
     // 5 rows high, so it is centered on the line.
-    private const int Above = 2;
+    const int Above = 2;
 
     /// <summary>
     /// The strips of the map's roads in row-major order of the node each is drawn from. Every strip gives a term; the
@@ -71,7 +83,7 @@ public static class RoadDraws
     }
 
     // The strip of the road that leaves a node east, south-east, or south.
-    private static RoadStrip Strip(Map map, int column, int row, RoadDirection direction)
+    static RoadStrip Strip(Map map, int column, int row, RoadDirection direction)
     {
         int H(int dx, int dy) => map.At(column + dx, row + dy).Height;
         Terrain Low(int dx, int dy) => map.At(column + dx, row + dy).Lower;
@@ -112,6 +124,14 @@ public static class RoadDraws
                 break;
         }
 
-        return new RoadStrip(left, top - Above, direction, difference, slope, ground);
+        return new RoadStrip
+        {
+            X = left,
+            Y = top - Above,
+            Direction = direction,
+            Difference = difference,
+            Slope = slope,
+            Ground = ground,
+        };
     }
 }

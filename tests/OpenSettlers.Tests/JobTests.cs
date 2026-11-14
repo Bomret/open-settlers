@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class JobTests
 {
-    private static readonly (int Code, Type Type)[] Ported =
+    static readonly (int Code, Type Type)[] Ported =
     [
         (0, typeof(Carrier)),
         (2, typeof(Digger)),
@@ -113,7 +113,15 @@ public sealed class JobTests
     [TestMethod]
     public void AWorkerRequestIsNeverWithoutAJob()
     {
-        Assert.ThrowsExactly<ArgumentNullException>(() => new WorkerRequest(null!, Good.None));
+        var built = Assert.ThrowsExactly<ArgumentNullException>(() =>
+            new WorkerRequest { Job = null!, Tool = Good.None }
+        );
+        Assert.AreEqual("Job", built.ParamName);
+
+        var request = new WorkerRequest { Job = new Carrier(), Tool = Good.None };
+        var copied = Assert.ThrowsExactly<ArgumentNullException>(() => request with { Job = null! });
+        Assert.AreEqual("Job", copied.ParamName);
+        Assert.AreEqual(new Carrier(), request.Job);
     }
 
     [TestMethod]

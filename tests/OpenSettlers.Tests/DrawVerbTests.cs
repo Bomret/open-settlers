@@ -15,11 +15,11 @@ public sealed class DrawVerbTests
 {
     // The carrier game of the recordings (goods:, a log laid on the hut's flag before pass 5): the carrier is on its road at
     // pass 100, the first pass the view finds a settler in; no settler is out before pass 30.
-    private const string Game = "goods:1:1234,5678,9ABC:0:18,20:16,20:19,21,343:16,20,2:102:0::-1:5,0,7";
+    const string Game = "goods:1:1234,5678,9ABC:0:18,20:16,20:19,21,343:16,20,2:102:0::-1:5,0,7";
 
-    private static string _project = "";
+    static string _project = "";
 
-    private string _folder = "";
+    string _folder = "";
 
     // One Ghidra project for every run of the class that reaches the install: the first run imports the program, the others
     // run against the import. The Ghidra tests share one batch run in it.
@@ -33,7 +33,7 @@ public sealed class DrawVerbTests
     [ClassCleanup]
     public static void CleanupClass() => Directory.Delete(_project, true);
 
-    private static string NewFolder()
+    static string NewFolder()
     {
         var folder = Path.Combine(Path.GetTempPath(), "draw-verb-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
@@ -51,7 +51,7 @@ public sealed class DrawVerbTests
     public void Cleanup() => Directory.Delete(_folder, true);
 
     // realHeadless: the runs that reach the real Ghidra keep the host's path; the others see only the stand-in on the path.
-    private static (int Exit, string Output) Emulate(
+    static (int Exit, string Output) Emulate(
         string game,
         string command,
         string? project = null,
@@ -59,7 +59,7 @@ public sealed class DrawVerbTests
         bool realHeadless = false
     ) => Emulate(game, [command], project, path, realHeadless);
 
-    private static (int Exit, string Output) Emulate(
+    static (int Exit, string Output) Emulate(
         string game,
         string[] commands,
         string? project = null,
@@ -72,7 +72,7 @@ public sealed class DrawVerbTests
         return (run.Exit, run.Stdout);
     }
 
-    private static ToolRun EmulateRun(
+    static ToolRun EmulateRun(
         string game,
         string[] commands,
         string? project = null,
@@ -91,7 +91,7 @@ public sealed class DrawVerbTests
     }
 
     // Ghidra on the path and the reference install: the runs that reach the emulator need both.
-    private static string ReferenceInstall()
+    static string ReferenceInstall()
     {
         if (
             !(Environment.GetEnvironmentVariable("PATH") ?? "")
@@ -142,17 +142,17 @@ public sealed class DrawVerbTests
     }
 
     // The commands of the Ghidra tests, run as one batch the first time a test that reaches the install asks for it.
-    private const string NoSettlerAtPass3 = $"draw:3-4:17,20:{Game}";
-    private const string BeyondTheLastPass = $"draw:500-501:17,20:{Game}";
-    private const string Reference = $"draw:100-101:17,20:{Game}";
+    const string NoSettlerAtPass3 = $"draw:3-4:17,20:{Game}";
+    const string BeyondTheLastPass = $"draw:500-501:17,20:{Game}";
+    const string Reference = $"draw:100-101:17,20:{Game}";
 
-    private static readonly string[] Commands = [NoSettlerAtPass3, BeyondTheLastPass, Reference];
+    static readonly string[] Commands = [NoSettlerAtPass3, BeyondTheLastPass, Reference];
 
     // Started by the first test that reaches the install, at most once per class run.
-    private static Lazy<string[]> _batch = null!;
+    static Lazy<string[]> _batch = null!;
 
     // The command's result in the class's batch: whether it ended, and its lines under the install line.
-    private static (bool Ended, string[] Lines) BatchResult(string command)
+    static (bool Ended, string[] Lines) BatchResult(string command)
     {
         ReferenceInstall();
         var lines = _batch.Value;
@@ -218,7 +218,7 @@ public sealed class DrawVerbTests
 
     // A stand-in for analyzeHeadless that logs its arguments, makes the project file an import makes, and prints a line the
     // script's output filter keeps. Without Ghidra these runs show which program the project holds.
-    private string FakeHeadless()
+    string FakeHeadless()
     {
         if (OperatingSystem.IsWindows())
         {
@@ -241,9 +241,9 @@ public sealed class DrawVerbTests
         return bin;
     }
 
-    private string[] Calls() => File.ReadAllLines(Path.Combine(_folder, "calls.log"));
+    string[] Calls() => File.ReadAllLines(Path.Combine(_folder, "calls.log"));
 
-    private string Install(string content)
+    string Install(string content)
     {
         var install = Path.Combine(_folder, "install");
         Directory.CreateDirectory(install);
@@ -335,7 +335,7 @@ public sealed class DrawVerbTests
     // A stand-in for analyzeHeadless in a draw batch: it logs its arguments and, for each -postScript, prints the line Ghidra
     // opens a script run with, then a recording that ends, or, for a command holding "fail", a partial one that does not.
     // With crashes, it exits 1 after the first script run, as a Ghidra that dies part-way.
-    private string FakeDrawHeadless(bool importFails = false, bool crashes = false)
+    string FakeDrawHeadless(bool importFails = false, bool crashes = false)
     {
         var bin = FakeHeadless();
         var log = Path.Combine(_folder, "calls.log");
@@ -358,8 +358,7 @@ public sealed class DrawVerbTests
         return bin;
     }
 
-    private static string[] Lines(string output) =>
-        output.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+    static string[] Lines(string output) => output.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
     [TestMethod]
     [TestCategory(Needs.Install)]

@@ -7,7 +7,7 @@ namespace OpenSettlers.Tests;
 
 // The pieces a settler behaviour is built from, made by hand: the map, the item tables, the movement, a history, and a fixed
 // sequence of random draws. A test builds a behaviour from them and runs its turns without a castle or a game.
-internal sealed class BehaviourBench
+sealed class BehaviourBench
 {
     public BehaviourBench(params ushort[] draws)
         : this((byte[]?)null, draws) { }
@@ -24,7 +24,7 @@ internal sealed class BehaviourBench
         Movement = new SettlerMovement(Map, Buildings, Tables, () => Clock, _ => new Residue());
         History = new GameHistory(new NoSnapshots(), () => 0);
         // Slot 0 of the settler table reads as a free node in an occupant list: the settlers under test take later slots.
-        Settlers.Add(new Settler(new Jobless(), 0, 0, 0, 0, new RawState(0)));
+        Settlers.Add(new Settler(new Jobless(), 0, 0, 0, 0, new RawState { StateCode = 0 }));
     }
 
     public ushort Clock { get; set; }
@@ -60,7 +60,15 @@ internal sealed class BehaviourBench
     // network and the flags' sides, with a carrier on it or none. The map is not touched: the goods rules read the flag table.
     public Road Join(int from, int direction, int to, int back, int steps = 2, bool carrier = true)
     {
-        var road = new Road(from, direction, to, back, [.. System.Linq.Enumerable.Repeat(direction, steps)], false);
+        var road = new Road
+        {
+            FromSlot = from,
+            FromDirection = direction,
+            ToSlot = to,
+            ToDirection = back,
+            Directions = [.. System.Linq.Enumerable.Repeat(direction, steps)],
+            Water = false,
+        };
         Roads.Add(road);
         var length = LengthClass.OfSteps(steps);
         var start = Flags[from].Side(direction);
@@ -86,9 +94,9 @@ internal sealed class BehaviourBench
     }
 }
 
-internal sealed class QueuedDraws(ushort[] draws) : IRandomDraws
+sealed class QueuedDraws(ushort[] draws) : IRandomDraws
 {
-    private readonly Queue<ushort> _draws = new(draws);
+    readonly Queue<ushort> _draws = new(draws);
 
     public int Taken { get; private set; }
 
@@ -104,11 +112,11 @@ internal sealed class QueuedDraws(ushort[] draws) : IRandomDraws
     }
 }
 
-internal sealed class NoSnapshots : IThingSnapshots
+sealed class NoSnapshots : IThingSnapshots
 {
-    public ThingState Building(int slot) => new([]);
+    public ThingState Building(int slot) => new() { Fields = [] };
 
-    public ThingState Flag(int slot) => new([]);
+    public ThingState Flag(int slot) => new() { Fields = [] };
 
-    public ThingState Settler(int slot) => new([]);
+    public ThingState Settler(int slot) => new() { Fields = [] };
 }

@@ -14,7 +14,7 @@ public sealed class Causes(GameHistory history, BuildingTable buildings, WalkHom
 {
     // The command cause a placed building carries until its worker has entered, the worker turns away, or the building is
     // freed: the events of the building and of the settler sent to it name the placing.
-    private readonly Dictionary<ThingId, Cause> _placements = [];
+    readonly Dictionary<ThingId, Cause> _placements = [];
 
     /// <summary>
     /// Set while a layout builds its entries: the commands it applies are the layout's entries, not the player's, and what a

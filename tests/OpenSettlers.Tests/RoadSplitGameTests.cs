@@ -11,33 +11,36 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RoadSplitGameTests
 {
-    private static Game Started(int castleX, int castleY, int endX, int endY, params int[] road) =>
+    static Game Started(int castleX, int castleY, int endX, int endY, params int[] road) =>
         Started(null, castleX, castleY, endX, endY, road);
 
     // The road from the castle's flag to the flag at the end; beforeRoad changes the map after the flags stand and before the road.
-    private static Game Started(
-        Action<Map>? beforeRoad,
-        int castleX,
-        int castleY,
-        int endX,
-        int endY,
-        params int[] road
-    )
+    static Game Started(Action<Map>? beforeRoad, int castleX, int castleY, int endX, int endY, params int[] road)
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(RemovalLogicTests.Made(), map);
         Apply(game, CommandKind.PlaceCastle, castleX, castleY);
         Apply(game, CommandKind.PlaceFlag, endX, endY);
         beforeRoad?.Invoke(map);
         game.Enqueue(
-            new Command(
-                game.TickCount,
-                0,
-                CommandKind.BuildRoad,
-                (castleX + 1) & (map.Size.Width - 1),
-                (castleY + 1) & (map.Size.Height - 1),
-                road
-            )
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = (castleX + 1) & (map.Size.Width - 1),
+                Y = (castleY + 1) & (map.Size.Height - 1),
+                Directions = road,
+            }
         );
         game.Tick();
         Assert.AreEqual(1, game.Network.Roads.Count, "the road is built");
@@ -45,15 +48,24 @@ public sealed class RoadSplitGameTests
         return game;
     }
 
-    private static Game EastRoad() => Started(15, 5, 20, 6, 0, 0, 0, 0);
+    static Game EastRoad() => Started(15, 5, 20, 6, 0, 0, 0, 0);
 
-    private static void Apply(Game game, int kind, int x, int y)
+    static void Apply(Game game, int kind, int x, int y)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+            }
+        );
         game.Tick();
     }
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
         {
@@ -61,7 +73,7 @@ public sealed class RoadSplitGameTests
         }
     }
 
-    private static int[] Path(Game game) =>
+    static int[] Path(Game game) =>
         [.. game.Network.Roads.OrderBy(road => road.FromSlot).SelectMany(road => road.Directions)];
 
     [TestMethod]
@@ -85,11 +97,11 @@ public sealed class RoadSplitGameTests
         Apply(game, CommandKind.PlaceFlag, 18, 6);
 
         // The direction byte holds the direction the road leaves the far end by in bits 3 to 5; the road byte the length class.
-        Assert.AreEqual(new Direction(3), game.Flags[0].Side(0).FarDirection, "castle flag to the new flag");
-        Assert.AreEqual(new Direction(0), game.Flags[2].Side(3).FarDirection, "new flag to the castle flag");
-        Assert.AreEqual(new Direction(3), game.Flags[2].Side(0).FarDirection, "new flag to the far flag");
-        Assert.AreEqual(new Direction(0), game.Flags[1].Side(3).FarDirection, "far flag to the new flag");
-        Assert.AreEqual(new LengthClass(0), game.Flags[2].Side(0).Length, "a half of 2 steps is class 0");
+        Assert.AreEqual(new Direction { Value = 3 }, game.Flags[0].Side(0).FarDirection, "castle flag to the new flag");
+        Assert.AreEqual(new Direction { Value = 0 }, game.Flags[2].Side(3).FarDirection, "new flag to the castle flag");
+        Assert.AreEqual(new Direction { Value = 3 }, game.Flags[2].Side(0).FarDirection, "new flag to the far flag");
+        Assert.AreEqual(new Direction { Value = 0 }, game.Flags[1].Side(3).FarDirection, "far flag to the new flag");
+        Assert.AreEqual(new LengthClass { Value = 0 }, game.Flags[2].Side(0).Length, "a half of 2 steps is class 0");
     }
 
     [TestMethod]
@@ -107,14 +119,14 @@ public sealed class RoadSplitGameTests
 
     // The triangles beside the steps from 16,6 to 20,6 are water (the lower triangle of a node and the upper of its north node,
     // nibbles below 4); the other triangles around the nodes stay land, so a flag is allowed on the road.
-    private static Game WaterRoad() =>
+    static Game WaterRoad() =>
         Started(
             map =>
             {
                 for (var x = 16; x < 20; x++)
                 {
-                    map.At(x, 6).Lower = new Terrain(map.At(x, 6).Lower.Code & 3);
-                    map.At(x, 5).Upper = new Terrain(map.At(x, 5).Upper.Code & 3);
+                    map.At(x, 6).Lower = new Terrain { Code = map.At(x, 6).Lower.Code & 3 };
+                    map.At(x, 5).Upper = new Terrain { Code = map.At(x, 5).Upper.Code & 3 };
                 }
             },
             15,
@@ -127,11 +139,11 @@ public sealed class RoadSplitGameTests
             0
         );
 
-    private static string Show(Road road) =>
+    static string Show(Road road) =>
         $"{road.FromSlot}.{road.FromDirection}>{road.ToSlot}.{road.ToDirection} {string.Concat(road.Directions)} {road.Water}";
 
     // A road as its two ends and its path, read from the lower slot: the joined road may start at either end.
-    private static string Describe(Road road) =>
+    static string Describe(Road road) =>
         road.FromSlot <= road.ToSlot
             ? $"{road.FromSlot}.{road.FromDirection}>{road.ToSlot}.{road.ToDirection} {string.Concat(road.Directions)} {road.Water}"
             : $"{road.ToSlot}.{road.ToDirection}>{road.FromSlot}.{road.FromDirection} {string.Concat(road.Directions.Reverse().Select(step => (step + 3) % 6))} {road.Water}";
@@ -183,7 +195,16 @@ public sealed class RoadSplitGameTests
         var game = EastRoad();
         var digest = game.Digest();
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 6));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 6,
+            }
+        );
         game.ApplyCommands();
 
         Assert.AreEqual(digest, game.Digest());
@@ -196,8 +217,17 @@ public sealed class RoadSplitGameTests
     {
         var game = EastRoad();
         var node = game.Map.Index(18, 6);
-        game.Map.At(node).Roads = new RoadSet(0b0000_0001);
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 6));
+        game.Map.At(node).Roads = new RoadSet { Bits = 0b0000_0001 };
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 18,
+                Y = 6,
+            }
+        );
         var digest = game.Digest();
 
         var failure = Assert.ThrowsExactly<InvalidOperationException>(game.ApplyCommands);
@@ -340,8 +370,8 @@ public sealed class RoadSplitGameTests
     public void AHutOnARoadNodeWhoseSiteIsTooSmallIsRefusedAndNothingChanges()
     {
         var game = EastRoad();
-        game.Map.At(17, 5).Upper = new Terrain(0);
-        game.Map.At(17, 5).Lower = new Terrain(0);
+        game.Map.At(17, 5).Upper = new Terrain { Code = 0 };
+        game.Map.At(17, 5).Lower = new Terrain { Code = 0 };
         var site = BuildSite.Evaluate(TestProgram.Made(), game.Map, 17, 5, 0, hasCastle: true);
         Assert.AreEqual((6, 1), (site.Node, site.Site), "a road on the flag node, a site for a flag only");
         var digest = game.Digest();
@@ -359,7 +389,7 @@ public sealed class RoadSplitGameTests
     {
         var game = EastRoad();
         var node = game.Map.Index(18, 6);
-        game.Map.At(node).Roads = new RoadSet(0b0000_0001);
+        game.Map.At(node).Roads = new RoadSet { Bits = 0b0000_0001 };
         var digest = game.Digest();
 
         var failure = Assert.ThrowsExactly<InvalidOperationException>(() => Huts.Place(game, 17, 5));
@@ -375,7 +405,17 @@ public sealed class RoadSplitGameTests
         Huts.PlaceAndTick(game, 17, 5);
         Apply(game, CommandKind.PlaceFlag, 18, 8);
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 6, [2, 2]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 6,
+                Directions = [2, 2],
+            }
+        );
         game.Tick();
 
         Assert.AreEqual(

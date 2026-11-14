@@ -11,15 +11,15 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class StonecuttingTests
 {
-    private const int HutFlag = 3;
-    private const int WorkerSlot = 12;
-    private const int HutX = 16;
-    private const int HutY = 2;
+    const int HutFlag = 3;
+    const int WorkerSlot = 12;
+    const int HutX = 16;
+    const int HutY = 2;
 
-    private static readonly Good Stone = new(10);
+    static readonly Good Stone = new() { Code = 10 };
 
     // The nodes a heap can stand on for the stonecutter: the north-west neighbour of each of the 128 nodes around the hut.
-    private static (int X, int Y)[] Reach() =>
+    static (int X, int Y)[] Reach() =>
         [
             .. Enumerable
                 .Range(1, 128)
@@ -32,26 +32,34 @@ public sealed class StonecuttingTests
         ];
 
     // The made-up workers: the stonecutter's building asks for the stonecutter's job with no tool.
-    private static WorkerRequest?[] Workers()
+    static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Stonecutter.Code] = new WorkerRequest(new Stonecutter(), Good.None);
+        workers[BuildingType.Stonecutter.Code] = new WorkerRequest { Job = new Stonecutter(), Tool = Good.None };
 
         return workers;
     }
 
-    private static int Heaps(Map map) =>
-        Reach().Count(node => map.At(node.X, node.Y).Object.Kind == MapObjectKind.StoneHeap);
+    static int Heaps(Map map) => Reach().Count(node => map.At(node.X, node.Y).Object.Kind == MapObjectKind.StoneHeap);
 
     // A heap stands on the nodes of his reach whose column plus twice the row is a multiple of 7: none beside another and none on
     // the node beside a heap, so the nodes he walks to and steps back to are free.
-    private static bool HeapNode((int X, int Y) node) => (node.X + 2 * node.Y) % 7 == 0;
+    static bool HeapNode((int X, int Y) node) => (node.X + 2 * node.Y) % 7 == 0;
 
     // The castle, the flags, the roads, and the stonecutter's hut; a heap of the code stands on each such free node of his reach
     // where a code is given, and the generated trees and heaps are gone from the whole map.
     internal static Game World(byte? heap, out Map map, RuleTables? tables = null, bool everyPass = false)
     {
-        var made = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var made = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < made.Count; index++)
         {
             if (made.At(index).Object.Kind is MapObjectKind.Tree || made.At(index).Object.Code is >= 0x48 and < 0x50)
@@ -64,7 +72,7 @@ public sealed class StonecuttingTests
         {
             foreach (var (x, y) in Reach().Where(node => HeapNode(node) && !made.At(node.X, node.Y).Object.Exists))
             {
-                made.At(x, y).Object = new MapObject(code);
+                made.At(x, y).Object = new MapObject { Code = code };
                 made.At(x, y).LakeMark = true;
             }
         }
@@ -72,11 +80,29 @@ public sealed class StonecuttingTests
         map = made;
 
         var game = GameFactory.Create(tables ?? WoodcuttingTests.Made(Workers()), made, everyPassTurns: everyPass);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
         {
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = x,
+                    Y = y,
+                }
+            );
             game.Tick();
         }
 
@@ -89,7 +115,17 @@ public sealed class StonecuttingTests
             }
         )
         {
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = x,
+                    Y = y,
+                    Directions = directions,
+                }
+            );
             game.Tick();
         }
 
@@ -98,7 +134,7 @@ public sealed class StonecuttingTests
         return game;
     }
 
-    private static bool HoldsStone(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == Stone);
+    static bool HoldsStone(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == Stone);
 
     [TestMethod]
     public void AStonecutterCutsAHeapOfHisReachAndLaysAStoneOnTheHutsFlag()
@@ -181,7 +217,7 @@ public sealed class StonecuttingTests
     }
 
     // The tables of ConstructionTables with a forester that needs two stones and no plank, the stone asking the class it asks there.
-    private static RuleTables SiteTables()
+    static RuleTables SiteTables()
     {
         var needs = new byte[2 * RuleTables.BuildingTypeCount];
         needs[(2 * BuildingType.Forester.Code) + 1] = 2;
@@ -217,7 +253,17 @@ public sealed class StonecuttingTests
     public void AStoneGoesToASiteThatAsksForStonesInsteadOfTheCastle()
     {
         var game = World(0x4d, out _, SiteTables());
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 17, 5, Building: BuildingType.Forester));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = 17,
+                Y = 5,
+                Building = BuildingType.Forester,
+            }
+        );
         game.Tick();
         var site = game.Buildings.Single(building => building.Type == BuildingType.Forester);
         var stones = game.CastleStock.Stones;

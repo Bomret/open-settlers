@@ -7,8 +7,17 @@ namespace OpenSettlers.Domain;
 /// activity carries them over, and the exporters write them again so that the original's item is produced exactly
 /// (<c>docs/rules/settlers.md</c>).
 /// </summary>
-/// <param name="Mode">Byte 11.</param>
-/// <param name="Target">The word at 12.</param>
-/// <param name="Heading">Byte 14.</param>
-/// <param name="Next">Byte 15.</param>
-public readonly record struct Residue(int Mode = 0, int Target = 0, int Heading = 0, int Next = 0);
+public readonly record struct Residue
+{
+    /// <summary>Byte 11.</summary>
+    public int Mode { get; init; }
+
+    /// <summary>The word at 12.</summary>
+    public int Target { get; init; }
+
+    /// <summary>Byte 14.</summary>
+    public int Heading { get; init; }
+
+    /// <summary>Byte 15.</summary>
+    public int Next { get; init; }
+}

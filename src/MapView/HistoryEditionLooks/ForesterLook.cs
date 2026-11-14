@@ -10,7 +10,7 @@ namespace OpenSettlers.MapView;
 /// <param name="tables">The tables of the exe: the forester's adds.</param>
 public sealed class ForesterLook(RuleTables tables) : HistoryEditionLook<Forester>
 {
-    private readonly ForesterFigureAdds _adds = tables.Get<ForesterFigureAdds>(new Forester());
+    readonly ForesterFigureAdds _adds = tables.Get<ForesterFigureAdds>(new Forester());
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) => FigureBytes.IsWork(figure) ? _adds.Work : _adds.Walk;

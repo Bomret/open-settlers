@@ -43,7 +43,15 @@ public sealed class PlaceCastleHandler(
             return false;
         }
 
-        castle.Place(new Castle(x, y, site.Height), startStock);
+        castle.Place(
+            new Castle
+            {
+                X = x,
+                Y = y,
+                Height = site.Height,
+            },
+            startStock
+        );
         CastlePlacement.Apply(map, x, y, site.Height, 0);
         // The castle's flag stands south-east of it and takes the first slot of the flag table.
         FlagSlots.Add(flags, history, (x + 1) & (map.Size.Width - 1), (y + 1) & (map.Size.Height - 1));

@@ -30,9 +30,9 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class InstallInitializerTests
 {
-    private static readonly string[] InstallCalls = ["Tables", "OpenInstall"];
+    static readonly string[] InstallCalls = ["Tables", "OpenInstall"];
 
-    private static string ProjectDirectory()
+    static string ProjectDirectory()
     {
         var dir = AppContext.BaseDirectory;
         while (!File.Exists(Path.Combine(dir, "OpenSettlers.Tests.csproj")))
@@ -330,7 +330,7 @@ public sealed class InstallInitializerTests
         CollectionAssert.AreEqual(Array.Empty<int>(), Lines(source).ToArray());
     }
 
-    private static bool IsBuildOutput(string relative)
+    static bool IsBuildOutput(string relative)
     {
         var first = relative.Split(Path.DirectorySeparatorChar)[0];
         return first is "bin" or "obj";
@@ -338,30 +338,45 @@ public sealed class InstallInitializerTests
 
     // A static method or property of a type of the source, and the code that runs when it is called or read: the
     // method's body, the property's expression body or getter.
-    private sealed record Member(string Type, string Name, bool IsProperty, SyntaxNode Body);
+    sealed record Member
+    {
+        public required string Type { get; init; }
+
+        public required string Name { get; init; }
+
+        public required bool IsProperty { get; init; }
+
+        public required SyntaxNode Body { get; init; }
+    }
 
     // How the source names TestProgram: whether `using static` imports it, and the receivers that name it, its own name
     // and each alias a using directive gives it.
-    private sealed record TestProgramNames(bool Bare, HashSet<string> Receivers);
+    sealed record TestProgramNames
+    {
+        public required bool Bare { get; init; }
+
+        public required HashSet<string> Receivers { get; init; }
+    }
 
     // The 1-based line of the '=' of every static field or static auto-property initializer, and of the name of every
     // static constructor, in the source that reaches the install outside a lambda or local function: by calling it, or
     // by calling a static method or reading a static property of the source that reaches it, through any number of them.
-    private static IEnumerable<int> Lines(string source)
+    static IEnumerable<int> Lines(string source)
     {
         var root = CSharpSyntaxTree.ParseText(source).GetRoot();
         var imports = root.DescendantNodes()
             .OfType<UsingDirectiveSyntax>()
             .Where(directive => directive.Name is { } name && Name(name) == "TestProgram")
             .ToList();
-        var testProgram = new TestProgramNames(
-            imports.Any(directive => directive.StaticKeyword != default),
-            imports
+        var testProgram = new TestProgramNames
+        {
+            Bare = imports.Any(directive => directive.StaticKeyword != default),
+            Receivers = imports
                 .Select(directive => directive.Alias?.Name.Identifier.Text)
                 .OfType<string>()
                 .Append("TestProgram")
-                .ToHashSet()
-        );
+                .ToHashSet(),
+        };
         var types = root.DescendantNodes()
             .OfType<TypeDeclarationSyntax>()
             .Select(type => type.Identifier.Text)
@@ -387,13 +402,19 @@ public sealed class InstallInitializerTests
     }
 
     // The static method or property the declaration declares with the code it runs, null for any other declaration.
-    private static Member? Declared(MemberDeclarationSyntax declaration) =>
+    static Member? Declared(MemberDeclarationSyntax declaration) =>
         (declaration.Parent as TypeDeclarationSyntax)?.Identifier.Text is not { } type
             ? null
             : declaration switch
             {
                 MethodDeclarationSyntax method when (method.Body ?? (SyntaxNode?)method.ExpressionBody) is { } body =>
-                    new Member(type, method.Identifier.Text, false, body),
+                    new Member
+                    {
+                        Type = type,
+                        Name = method.Identifier.Text,
+                        IsProperty = false,
+                        Body = body,
+                    },
                 PropertyDeclarationSyntax property
                     when (
                         property.ExpressionBody
@@ -402,12 +423,18 @@ public sealed class InstallInitializerTests
                             .Select(a => a.Body ?? (SyntaxNode?)a.ExpressionBody)
                             .FirstOrDefault()
                     )
-                        is { } body => new Member(type, property.Identifier.Text, true, body),
+                        is { } body => new Member
+                {
+                    Type = type,
+                    Name = property.Identifier.Text,
+                    IsProperty = true,
+                    Body = body,
+                },
                 _ => null,
             };
 
     // Whether the node, outside the body of a lambda or local function, calls the install or calls or reads a helper.
-    private static bool Runs(
+    static bool Runs(
         SyntaxNode node,
         TestProgramNames testProgram,
         HashSet<string> types,
@@ -425,7 +452,7 @@ public sealed class InstallInitializerTests
     // or an object initializer's member names no helper. A qualified name resolves through its receiver where that is
     // a type of the source and resolves to nothing otherwise; a bare name resolves through the types around it. A
     // method name not called is a method group, which runs nothing yet.
-    private static bool IsHelperUse(
+    static bool IsHelperUse(
         SimpleNameSyntax name,
         HashSet<string> types,
         Dictionary<(string Type, string Name), bool> helpers
@@ -456,12 +483,12 @@ public sealed class InstallInitializerTests
     }
 
     // Whether the node is a nameof(...) expression, which evaluates nothing.
-    private static bool IsNameOf(SyntaxNode node) =>
+    static bool IsNameOf(SyntaxNode node) =>
         node is InvocationExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "nameof" } };
 
     // The token whose line names the node when it runs during type initialization: the '=' of a static field or static
     // auto-property initializer, the name of a static constructor; null for any other node.
-    private static SyntaxToken? Anchor(SyntaxNode node) =>
+    static SyntaxToken? Anchor(SyntaxNode node) =>
         node switch
         {
             EqualsValueClauseSyntax clause
@@ -472,12 +499,12 @@ public sealed class InstallInitializerTests
         };
 
     // Whether the node is a member declared static: a field, property, method, or constructor.
-    private static bool IsStatic(SyntaxNode? node) =>
+    static bool IsStatic(SyntaxNode? node) =>
         node is MemberDeclarationSyntax member && member.Modifiers.Any(SyntaxKind.StaticKeyword);
 
     // Whether the call is TestProgram.Tables() or TestProgram.OpenInstall(): qualified by TestProgram or an alias of it,
     // or, where the source imports TestProgram with `using static`, bare.
-    private static bool IsInstallCall(InvocationExpressionSyntax call, TestProgramNames testProgram) =>
+    static bool IsInstallCall(InvocationExpressionSyntax call, TestProgramNames testProgram) =>
         InstallCalls.Contains(Name(call.Expression))
         && call.Expression switch
         {
@@ -487,7 +514,7 @@ public sealed class InstallInitializerTests
         };
 
     // The rightmost name of a name or member access, null for any other expression.
-    private static string? Name(ExpressionSyntax expression) =>
+    static string? Name(ExpressionSyntax expression) =>
         expression switch
         {
             SimpleNameSyntax name => name.Identifier.Text,

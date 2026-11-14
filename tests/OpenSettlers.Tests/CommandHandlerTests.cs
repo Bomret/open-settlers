@@ -15,12 +15,29 @@ public sealed class CommandHandlerTests
 
         return GameFactory.Create(
             tables,
-            MapGenerator.Generate(tables, new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+            MapGenerator.Generate(
+                tables,
+                new MapSeed
+                {
+                    W0 = 0x6359,
+                    W1 = 0xA0D2,
+                    W2 = 0xB4FA,
+                },
+                MapSize.Offered[0]
+            )
         );
     }
 
     static Command Of(int kind, int x, int y, long tick = 0) =>
-        new(tick, 0, kind, x, y, kind == CommandKind.BuildRoad ? new[] { 0 } : null);
+        new()
+        {
+            Tick = tick,
+            Player = 0,
+            Kind = kind,
+            X = x,
+            Y = y,
+            Directions = kind == CommandKind.BuildRoad ? new[] { 0 } : null,
+        };
 
     static (int X, int Y) NodeWhere(Game game, System.Func<BuildSiteResult, bool> wanted, bool hasCastle)
     {
@@ -122,7 +139,16 @@ public sealed class CommandHandlerTests
         var revision = game.Revision;
         var (x, y) = NodeWhere(game, site => site.AllowsFlag, hasCastle: true);
 
-        game.Enqueue(new Command(game.TickCount, 1, CommandKind.PlaceFlag, x, y));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 1,
+                Kind = CommandKind.PlaceFlag,
+                X = x,
+                Y = y,
+            }
+        );
         game.Enqueue(Of(CommandKind.PlaceFlag, -1, 0, game.TickCount));
         game.Enqueue(Of(CommandKind.PlaceFlag, 0, game.Map.Size.Height, game.TickCount));
 
@@ -153,7 +179,16 @@ public sealed class CommandHandlerTests
         var revision = game.Revision;
         var roads = game.Network.Roads.Count;
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 1));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 1,
+            }
+        );
         game.ApplyCommands();
 
         Assert.AreEqual(roads, game.Network.Roads.Count);

@@ -17,7 +17,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class MapGeneratorTests
 {
-    private static readonly string[] Seeds = ["1234,5678,9ABC", "6359,A0D2,B4FA", "FFFF,0001,8001"];
+    static readonly string[] Seeds = ["1234,5678,9ABC", "6359,A0D2,B4FA", "FFFF,0001,8001"];
 
     public static IEnumerable<object[]> Passes => Enum.GetValues<MapPass>().Select(pass => new object[] { pass });
 
@@ -73,7 +73,12 @@ public sealed class MapGeneratorTests
 
         var generated = MapGenerator.TryGenerate(
             TestProgram.Made(),
-            new MapSeed(1, 2, 3),
+            new MapSeed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            },
             4,
             (_, _, _) => passes++,
             out var map,
@@ -90,7 +95,16 @@ public sealed class MapGeneratorTests
     public void GeneratingWithNoTablesIsRefusedNamingThem()
     {
         var refusal = Assert.ThrowsExactly<ArgumentNullException>(() =>
-            MapGenerator.Generate(null!, new MapSeed(1, 2, 3), MapSize.Offered[0])
+            MapGenerator.Generate(
+                null!,
+                new MapSeed
+                {
+                    W0 = 1,
+                    W1 = 2,
+                    W2 = 3,
+                },
+                MapSize.Offered[0]
+            )
         );
         Assert.AreEqual("tables", refusal.ParamName);
     }
@@ -99,7 +113,19 @@ public sealed class MapGeneratorTests
     public void TryGeneratingWithNoTablesIsRefusedNamingThem()
     {
         var refusal = Assert.ThrowsExactly<ArgumentNullException>(() =>
-            MapGenerator.TryGenerate(null!, new MapSeed(1, 2, 3), 1, null, out _, out _)
+            MapGenerator.TryGenerate(
+                null!,
+                new MapSeed
+                {
+                    W0 = 1,
+                    W1 = 2,
+                    W2 = 3,
+                },
+                1,
+                null,
+                out _,
+                out _
+            )
         );
         Assert.AreEqual("tables", refusal.ParamName);
     }
@@ -112,7 +138,12 @@ public sealed class MapGeneratorTests
 
         var generated = MapGenerator.TryGenerate(
             TestProgram.Made(),
-            new MapSeed(1, 2, 3),
+            new MapSeed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            },
             1,
             (_, _, _) => passes++,
             out var map,
@@ -140,11 +171,11 @@ public sealed class MapGeneratorTests
         Assert.AreEqual(0x80 | MadeCode, ObjectAfterOverlap(objectClass: 1, -1, 0));
     }
 
-    private const int MadeCode = 5;
+    const int MadeCode = 5;
 
     // Generates with made tables that give MadeCode the class, puts that code with the water bit on one tile before the
     // overlap pass and marks its neighbor at (dx, dy) as occupied, and returns the tile's object byte after the pass.
-    private static int ObjectAfterOverlap(int objectClass, int dx, int dy)
+    static int ObjectAfterOverlap(int objectClass, int dx, int dy)
     {
         var made = TestProgram.Made();
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -154,7 +185,12 @@ public sealed class MapGeneratorTests
 
         var map = MapGenerator.Generate(
             tables,
-            new MapSeed(1, 2, 3),
+            new MapSeed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            },
             MapSize.Offered[0],
             (pass, map, _) =>
             {
@@ -194,7 +230,12 @@ public sealed class MapGeneratorTests
 
         MapGenerator.Generate(
             TestProgram.Made(),
-            new MapSeed(1, 2, 3),
+            new MapSeed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            },
             MapSize.Offered[0],
             (pass, _, _) => seen.Add(pass)
         );
@@ -277,9 +318,24 @@ public sealed class MapGeneratorTests
         CollectionAssert.AreEqual(
             new[]
             {
-                new PlacedObject(9, 0, new MapObject(82)),
-                new PlacedObject(22, 0, new MapObject(73)),
-                new PlacedObject(45, 0, new MapObject(21)),
+                new PlacedObject
+                {
+                    X = 9,
+                    Y = 0,
+                    Object = new MapObject { Code = 82 },
+                },
+                new PlacedObject
+                {
+                    X = 22,
+                    Y = 0,
+                    Object = new MapObject { Code = 73 },
+                },
+                new PlacedObject
+                {
+                    X = 45,
+                    Y = 0,
+                    Object = new MapObject { Code = 21 },
+                },
             },
             map.Objects.Take(3).ToList()
         );
@@ -287,17 +343,44 @@ public sealed class MapGeneratorTests
         CollectionAssert.AreEqual(
             new[]
             {
-                new ResourceDeposit(34, 0, 3, 4),
-                new ResourceDeposit(35, 0, 3, 8),
-                new ResourceDeposit(36, 0, 3, 8),
+                new ResourceDeposit
+                {
+                    X = 34,
+                    Y = 0,
+                    Type = 3,
+                    Amount = 4,
+                },
+                new ResourceDeposit
+                {
+                    X = 35,
+                    Y = 0,
+                    Type = 3,
+                    Amount = 8,
+                },
+                new ResourceDeposit
+                {
+                    X = 36,
+                    Y = 0,
+                    Type = 3,
+                    Amount = 8,
+                },
             },
             map.Deposits.Take(3).ToList()
         );
-        Assert.AreEqual(new ResourceDeposit(18, 20, 1, 4), map.Deposits.First(deposit => deposit.Type == 1));
+        Assert.AreEqual(
+            new ResourceDeposit
+            {
+                X = 18,
+                Y = 20,
+                Type = 1,
+                Amount = 4,
+            },
+            map.Deposits.First(deposit => deposit.Type == 1)
+        );
         Assert.AreEqual(956, map.Resource1Total);
     }
 
-    private static int DrawsBetween(RandomGenerator from, RandomGenerator to)
+    static int DrawsBetween(RandomGenerator from, RandomGenerator to)
     {
         var steps = 0;
         for (var generator = from; generator != to; generator = generator.Step())
@@ -309,7 +392,7 @@ public sealed class MapGeneratorTests
         return steps;
     }
 
-    private static IEnumerable<ExpectedLine> Observe(MapSize size, MapSeed seed)
+    static IEnumerable<ExpectedLine> Observe(MapSize size, MapSeed seed)
     {
         var lines = new List<ExpectedLine>();
         MapGenerator.Generate(
@@ -340,21 +423,26 @@ public sealed class MapGeneratorTests
         return lines;
     }
 
-    private static IEnumerable<ExpectedLine> ExpectedLines() =>
+    static IEnumerable<ExpectedLine> ExpectedLines() =>
         File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "map-digests.txt"))
             .Where(line => line.Length > 0)
             .Select(line => new ExpectedLine { Pass = Enum.Parse<MapPass>(line.Split(' ')[2]), Text = line });
 
-    private static MapSeed ParseSeed(string words)
+    static MapSeed ParseSeed(string words)
     {
         var parts = words.Split(',').Select(part => ushort.Parse(part, NumberStyles.HexNumber)).ToArray();
 
-        return new MapSeed(parts[0], parts[1], parts[2]);
+        return new MapSeed
+        {
+            W0 = parts[0],
+            W1 = parts[1],
+            W2 = parts[2],
+        };
     }
 
-    private static string Format(MapSeed seed) => $"{seed.W0:X4},{seed.W1:X4},{seed.W2:X4}";
+    static string Format(MapSeed seed) => $"{seed.W0:X4},{seed.W1:X4},{seed.W2:X4}";
 
-    private sealed record ExpectedLine
+    sealed record ExpectedLine
     {
         public required MapPass Pass { get; init; }
         public required string Text { get; init; }

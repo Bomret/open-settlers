@@ -10,7 +10,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class GoodsHistoryTests
 {
-    private const string Carry = """
+    const string Carry = """
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
@@ -22,7 +22,7 @@ public sealed class GoodsHistoryTests
         """;
 
     // Runs the carry until the castle holds a delivered log, or fails.
-    private static Game Carried()
+    static Game Carried()
     {
         var read = Layout.Read(LayoutTests.Text(extra: "\n" + Carry), "test.jsonc");
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
@@ -36,7 +36,7 @@ public sealed class GoodsHistoryTests
         return game;
     }
 
-    private static ThingId Carrier(Game game) =>
+    static ThingId Carrier(Game game) =>
         game
             .History.Events.All.First(e =>
                 e.Thing.Kind == ThingId.SettlerKind && e.Type == EventType.LayoutWaitingOnRoad
@@ -83,7 +83,7 @@ public sealed class GoodsHistoryTests
         Assert.IsTrue(game.History.Events.All.Where(e => ours.Contains(e.Type)).All(e => e.Cause == Cause.Goods));
     }
 
-    private static readonly string[] Fields =
+    static readonly string[] Fields =
     [
         "job",
         "state",

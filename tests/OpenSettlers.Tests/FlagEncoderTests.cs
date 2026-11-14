@@ -35,7 +35,7 @@ public sealed class FlagEncoderTests
     public void TheRoadByteHoldsTheLengthClassInBits4To6TheWayMarkInBit7AndTheCarriersInTheLowNibble()
     {
         var side = new Flag(4, 5).Side(2);
-        side.Length = new LengthClass(2);
+        side.Length = new LengthClass { Value = 2 };
         side.CarrierOnTheWay = true;
         side.Carriers = 3;
 
@@ -104,7 +104,7 @@ public sealed class FlagEncoderTests
     public void AGoodWithADirectionEncodesAsTheGoodInBits0To4AndTheDirectionPlusOneInBits5To7()
     {
         var place = new Flag(4, 5).Places[2];
-        place.Good = new Good(7);
+        place.Good = new Good { Code = 7 };
         place.Way = 3;
 
         Assert.AreEqual(7 | 4 << 5, FlagEncoder.GoodByte(place));
@@ -114,7 +114,7 @@ public sealed class FlagEncoderTests
     public void AGoodWithNoDirectionAndAnEmptyPlaceEncodeAsTheCodeAndZero()
     {
         var flag = new Flag(4, 5);
-        flag.Places[0].Good = new Good(9);
+        flag.Places[0].Good = new Good { Code = 9 };
 
         Assert.AreEqual(9, FlagEncoder.GoodByte(flag.Places[0]));
         Assert.AreEqual(0, FlagEncoder.GoodByte(flag.Places[1]));
@@ -136,7 +136,7 @@ public sealed class FlagEncoderTests
     public void AnEmptyPlaceKeepsTheDestinationOfItsLastGoodInTheEncoding()
     {
         var place = new Flag(4, 5).Places[4];
-        place.Good = new Good(7);
+        place.Good = new Good { Code = 7 };
         place.Destination = 0;
 
         place.Good = Good.None;
@@ -161,14 +161,14 @@ public sealed class FlagEncoderTests
     public void ThePlaceOfAFlagIsTheFirstEmptyOneAndNoneWhenAllHoldAGood()
     {
         var flag = new Flag(4, 5);
-        flag.Places[0].Good = new Good(7);
-        flag.Places[1].Good = new Good(7);
+        flag.Places[0].Good = new Good { Code = 7 };
+        flag.Places[1].Good = new Good { Code = 7 };
 
         Assert.AreEqual(2, flag.FirstEmptyPlace());
 
         foreach (var place in flag.Places)
         {
-            place.Good = new Good(7);
+            place.Good = new Good { Code = 7 };
         }
 
         Assert.AreEqual(-1, flag.FirstEmptyPlace());
@@ -195,8 +195,24 @@ public sealed class FlagEncoderTests
     {
         var table = new FlagTable();
         table.Add(4, 5);
-        table[0].SetRequest(RequestWord.First, new Request(new GoodClass(3, RequestWord.First), 0x3e));
-        table[0].SetRequest(RequestWord.Second, new Request(new GoodClass(0, RequestWord.Second), 7));
+        table[0]
+            .SetRequest(
+                RequestWord.First,
+                new Request
+                {
+                    Asks = new GoodClass { Class = 3, Word = RequestWord.First },
+                    Rank = 0x3e,
+                }
+            );
+        table[0]
+            .SetRequest(
+                RequestWord.Second,
+                new Request
+                {
+                    Asks = new GoodClass { Class = 0, Word = RequestWord.Second },
+                    Rank = 7,
+                }
+            );
         table.Add(6, 5);
 
         CollectionAssert.AreEqual(
@@ -211,8 +227,8 @@ public sealed class FlagEncoderTests
     {
         var table = new FlagTable();
         table.Add(4, 5);
-        table[0].Places[0].Good = new Good(9);
-        table[0].Places[7].Good = new Good(7);
+        table[0].Places[0].Good = new Good { Code = 9 };
+        table[0].Places[7].Good = new Good { Code = 7 };
         table[0].Places[7].Way = 0;
 
         CollectionAssert.AreEqual(new long[] { 9, 0, 0, 0, 0, 0, 0, 7 | 1 << 5 }, FlagEncoder.Places(table).ToArray());
@@ -236,6 +252,6 @@ public sealed class FlagEncoderTests
     [DataRow(60, 7)]
     public void ARoadOfSomeStepsIsOfALengthClass(int steps, int expected)
     {
-        Assert.AreEqual(new LengthClass(expected), LengthClass.OfSteps(steps));
+        Assert.AreEqual(new LengthClass { Value = expected }, LengthClass.OfSteps(steps));
     }
 }

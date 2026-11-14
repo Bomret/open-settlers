@@ -11,16 +11,15 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ConstructionDeliveryTests
 {
-    private const string Layout = """
+    const string Layout = """
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
         """;
 
-    private const string Carrier =
-        """{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}""";
+    const string Carrier = """{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}""";
 
-    private static Game Started(bool carrier = true)
+    static Game Started(bool carrier = true)
     {
         var read = OpenSettlers.Simulation.Layout.Read(
             LayoutTests.Text(extra: "\n" + Layout + (carrier ? $"\"settlers\": [{Carrier}]," : "")),
@@ -33,7 +32,7 @@ public sealed class ConstructionDeliveryTests
         return game;
     }
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var tick = 0; tick < ticks; tick++)
         {
@@ -41,18 +40,28 @@ public sealed class ConstructionDeliveryTests
         }
     }
 
-    private static void Place(Game game, BuildingType type)
+    static void Place(Game game, BuildingType type)
     {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 13, 10, Building: type));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = 13,
+                Y = 10,
+                Building = type,
+            }
+        );
         game.Tick();
     }
 
-    private static void Drain(Game game, Good good)
+    static void Drain(Game game, Good good)
     {
         while (game.CastleStock.Take(good)) { }
     }
 
-    private static int GoodsOnFlags(Game game) =>
+    static int GoodsOnFlags(Game game) =>
         Enumerable.Range(0, game.Flags.Count).Sum(flag => game.Flags[flag].Places.Count(place => !place.IsEmpty));
 
     [TestMethod]
@@ -97,7 +106,16 @@ public sealed class ConstructionDeliveryTests
             "the site asks for planks at a rank the hand-out serves"
         );
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.RemoveBuilding, 13, 10));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.RemoveBuilding,
+                X = 13,
+                Y = 10,
+            }
+        );
         game.Tick();
         game.CastleStock.Add(Good.Plank);
         Run(game, 400);

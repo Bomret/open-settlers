@@ -16,7 +16,7 @@ namespace OpenSettlers.Tests;
 [TestCategory(Needs.Install)]
 public sealed class ConstructionRemovalTests
 {
-    private const string Fixture = "construction-removal.txt";
+    const string Fixture = "construction-removal.txt";
 
     [TestMethod]
     [DataRow("builder-at-work")]
@@ -38,7 +38,7 @@ public sealed class ConstructionRemovalTests
     public void RemovingASiteThatHoldsGoodsClearsItsCountsAsTheOriginalDoes(string name) =>
         Replay(name, construct: true);
 
-    private static void Replay(string name, bool construct) =>
+    static void Replay(string name, bool construct) =>
         RemovalTests.Replay(
             Fixture,
             name,
@@ -75,21 +75,31 @@ public sealed class ConstructionRemovalTests
             {
                 game.ApplyCommands();
                 game.Enqueue(
-                    new Command(
-                        game.TickCount,
-                        0,
-                        CommandKind.PlaceBuilding,
-                        site[0],
-                        site[1],
-                        Building: new BuildingType(site[2])
-                    )
+                    new Command
+                    {
+                        Tick = game.TickCount,
+                        Player = 0,
+                        Kind = CommandKind.PlaceBuilding,
+                        X = site[0],
+                        Y = site[1],
+                        Building = new BuildingType { Code = site[2] },
+                    }
                 );
                 game.ApplyCommands();
             }
 
             if (pass == removeAt)
             {
-                game.Enqueue(new Command(game.TickCount, 0, CommandKind.RemoveBuilding, site[0], site[1]));
+                game.Enqueue(
+                    new Command
+                    {
+                        Tick = game.TickCount,
+                        Player = 0,
+                        Kind = CommandKind.RemoveBuilding,
+                        X = site[0],
+                        Y = site[1],
+                    }
+                );
                 game.ApplyCommands();
             }
 
@@ -124,7 +134,7 @@ public sealed class ConstructionRemovalTests
 
     // The settler's 16 bytes as the builder's fixture reads them, and the site's flag the builder's walk home keeps in the word at 12 (it
     // leaves the site with the word the work held, which numbers the flag one higher than the engine's table).
-    private static string Settler(OpenSettlers.Domain.Settler settler, int width)
+    static string Settler(OpenSettlers.Domain.Settler settler, int width)
     {
         var bytes = Convert.FromHexString(ConstructionBuilderTests.Settler(settler, width));
         if (settler.Job == new Builder() && bytes[10] is 0x19 or 0x1c)

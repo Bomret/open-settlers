@@ -7,7 +7,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class GameDigestPortTests
 {
-    private sealed class FixedDigest(ulong value) : IGameDigest
+    sealed class FixedDigest(ulong value) : IGameDigest
     {
         public Game? Asked { get; private set; }
 
@@ -23,7 +23,16 @@ public sealed class GameDigestPortTests
     public void TheDigestOfTheGameIsWhatTheDigestPortGivesForTheGame()
     {
         var tables = TestProgram.Made();
-        var map = MapGenerator.Generate(tables, new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            tables,
+            new MapSeed
+            {
+                W0 = 0x6359,
+                W1 = 0xA0D2,
+                W2 = 0xB4FA,
+            },
+            MapSize.Offered[0]
+        );
         var port = new FixedDigest(42);
         var game = GameFactory.Create(tables, map, digest: port);
 
@@ -38,12 +47,39 @@ public sealed class GameDigestPortTests
         Game Make() =>
             GameFactory.Create(
                 tables,
-                MapGenerator.Generate(tables, new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+                MapGenerator.Generate(
+                    tables,
+                    new MapSeed
+                    {
+                        W0 = 0x6359,
+                        W1 = 0xA0D2,
+                        W2 = 0xB4FA,
+                    },
+                    MapSize.Offered[0]
+                )
             );
         var a = Make();
         var b = Make();
-        a.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 17, 0));
-        b.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 18, 0));
+        a.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 17,
+                Y = 0,
+            }
+        );
+        b.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 18,
+                Y = 0,
+            }
+        );
         a.Tick();
         b.Tick();
 

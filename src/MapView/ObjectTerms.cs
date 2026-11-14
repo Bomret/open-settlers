@@ -7,15 +7,30 @@ namespace OpenSettlers.MapView;
 /// <c>Row</c> is the tile row that orders it, and <c>X</c> and <c>Y</c> the position in map pixels the source's image
 /// offsets hang the image from. A term holds no entry number, archive, or palette index.
 /// </summary>
-public abstract record ObjectTerm(int Row, int X, int Y)
+public abstract record ObjectTerm
 {
+    /// <summary>The tile row that orders the term.</summary>
+    public required int Row { get; init; }
+
+    /// <summary>The horizontal position in map pixels the source's image offsets hang the image from.</summary>
+    public required int X { get; init; }
+
+    /// <summary>The vertical position in map pixels the source's image offsets hang the image from.</summary>
+    public required int Y { get; init; }
+
     /// <summary>Asks <paramref name="source"/> what it draws for this term.</summary>
     public abstract ObjectDrawing? Ask(IGraphicsSource source);
 }
 
 /// <summary>A map object: its kind and the animation step (the game's frame counter) it is drawn at.</summary>
-public sealed record MapObjectDraw(int Row, int X, int Y, MapObject Object, ushort Step) : ObjectTerm(Row, X, Y)
+public sealed record MapObjectDraw : ObjectTerm
 {
+    /// <summary>The kind of map object.</summary>
+    public required MapObject Object { get; init; }
+
+    /// <summary>The animation step (the game's frame counter) the object is drawn at.</summary>
+    public required ushort Step { get; init; }
+
     /// <inheritdoc />
     public override ObjectDrawing? Ask(IGraphicsSource source) => source.Draw(this);
 }
@@ -25,16 +40,24 @@ public sealed record MapObjectDraw(int Row, int X, int Y, MapObject Object, usho
 /// the progress word of its building (<c>SiteProgress</c>, null for a finished building), which picks the drawing of its
 /// construction stage: a source draws the stage a site that has not started shows (<c>docs/rules/build-sites.md</c>).
 /// </summary>
-public sealed record BuildingDraw(int Row, int X, int Y, BuildingType Type, ushort? SiteProgress = null)
-    : ObjectTerm(Row, X, Y)
+public sealed record BuildingDraw : ObjectTerm
 {
+    /// <summary>The building's type.</summary>
+    public required BuildingType Type { get; init; }
+
+    /// <summary>The progress word of the site's building, which picks the drawing of its construction stage; null for a finished building.</summary>
+    public ushort? SiteProgress { get; init; } = null;
+
     /// <inheritdoc />
     public override ObjectDrawing? Ask(IGraphicsSource source) => source.Draw(this);
 }
 
 /// <summary>A good lying at a place of a flag; <c>X</c> and <c>Y</c> already hold the place's offset from the flag.</summary>
-public sealed record GoodAtFlag(int Row, int X, int Y, Good Good) : ObjectTerm(Row, X, Y)
+public sealed record GoodAtFlag : ObjectTerm
 {
+    /// <summary>The good.</summary>
+    public required Good Good { get; init; }
+
     /// <inheritdoc />
     public override ObjectDrawing? Ask(IGraphicsSource source) => source.Draw(this);
 }
@@ -43,7 +66,23 @@ public sealed record GoodAtFlag(int Row, int X, int Y, Good Good) : ObjectTerm(R
 /// The ripple of a tile with a water triangle at an animation step. <c>Tile</c> is the tile's record index (row times
 /// width plus column), which varies the ripple from tile to tile.
 /// </summary>
-public sealed record WaterRipple(int Row, int X, int Y, int Tile, ushort Step);
+public sealed record WaterRipple
+{
+    /// <summary>The tile row that orders the ripple.</summary>
+    public required int Row { get; init; }
+
+    /// <summary>The horizontal position in map pixels the source's image offsets hang the image from.</summary>
+    public required int X { get; init; }
+
+    /// <summary>The vertical position in map pixels the source's image offsets hang the image from.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>The tile's record index (row times width plus column), which varies the ripple from tile to tile.</summary>
+    public required int Tile { get; init; }
+
+    /// <summary>The animation step.</summary>
+    public required ushort Step { get; init; }
+}
 
 /// <summary>The three images a settler is drawn with, in the order they are drawn.</summary>
 public enum SettlerPart
@@ -62,7 +101,17 @@ public enum SettlerPart
 /// The facts of the node a waiting carrier stands off: its column, whether it holds the lake mark, and the roads that
 /// leave it. A source picks the carrier's figure and its offset by them.
 /// </summary>
-public sealed record WaitingNode(int Column, bool LakeMark, RoadSet Roads);
+public sealed record WaitingNode
+{
+    /// <summary>The column of the node.</summary>
+    public required int Column { get; init; }
+
+    /// <summary>Whether the node holds the lake mark.</summary>
+    public required bool LakeMark { get; init; }
+
+    /// <summary>The roads that leave the node.</summary>
+    public required RoadSet Roads { get; init; }
+}
 
 /// <summary>
 /// One image of a settler, named in game terms (INV-0010): the settler's job, activity, heading (null for an activity with
@@ -71,21 +120,35 @@ public sealed record WaitingNode(int Column, bool LakeMark, RoadSet Roads);
 /// in map pixels, placed by the shared step offsets, and <c>Row</c> is the tile row that orders it. <c>Part</c> says which
 /// of the settler's images this term asks for. <c>Node</c> is set for a carrier that waits off its node.
 /// </summary>
-public sealed record SettlerDraw(
-    int Row,
-    int X,
-    int Y,
-    SettlerPart Part,
-    Job Job,
-    Activity Activity,
-    Heading? Heading,
-    int Frame,
-    int Step,
-    int Player,
-    Good Carried,
-    WaitingNode? Node = null
-) : ObjectTerm(Row, X, Y)
+public sealed record SettlerDraw : ObjectTerm
 {
+    /// <summary>Which of the settler's images the term asks for.</summary>
+    public required SettlerPart Part { get; init; }
+
+    /// <summary>The settler's job.</summary>
+    public required Job Job { get; init; }
+
+    /// <summary>The settler's activity.</summary>
+    public required Activity Activity { get; init; }
+
+    /// <summary>The settler's heading; null for an activity with none.</summary>
+    public required Heading? Heading { get; init; }
+
+    /// <summary>The frame of the settler's walk.</summary>
+    public required int Frame { get; init; }
+
+    /// <summary>The animation step: the time left of the settler's step in clock units; for a waiting carrier, the game's clock.</summary>
+    public required int Step { get; init; }
+
+    /// <summary>The settler's player.</summary>
+    public required int Player { get; init; }
+
+    /// <summary>The good the settler carries; none for none.</summary>
+    public required Good Carried { get; init; }
+
+    /// <summary>The node a carrier waits off; null for any other settler.</summary>
+    public WaitingNode? Node { get; init; } = null;
+
     /// <inheritdoc />
     public override ObjectDrawing? Ask(IGraphicsSource source) => source.Draw(this);
 }

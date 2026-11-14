@@ -11,7 +11,7 @@ namespace OpenSettlers.Simulation;
 /// and the search ends where that carries out of the byte or no flag is left, so a farther request must rank above what the nearer has
 /// grown to.
 /// </summary>
-internal static class FlagRequestSearch
+static class FlagRequestSearch
 {
     /// <summary>Finds the flag; -1 where no flag asks for the class with a rank above <paramref name="floor"/>.</summary>
     public static int Find(FlagTable flags, RoadNetwork roads, int start, GoodClass goodClass, int floor)

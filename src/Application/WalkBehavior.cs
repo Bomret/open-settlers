@@ -59,14 +59,14 @@ public sealed class WalkBehavior(
     // (StorageFlag), and at its flag the settler enters it as a worker enters its hut. A step east, south-east, or south onto
     // a settler that comes the other way and is blocked passes it (RoadStep). **Not ported:** the states the original reaches
     // from here for other modes.
-    private void Walk(int slot, Settler settler)
+    void Walk(int slot, Settler settler)
     {
         // `walked` records the turn of state 2; a step or entry inside it records its own change first (`stepped`, `entered`).
         WalkTurn(slot, settler);
         history.RecordSettler(slot, EventType.Walked, causes.OfSettler(slot));
     }
 
-    private void WalkTurn(int slot, Settler settler)
+    void WalkTurn(int slot, Settler settler)
     {
         var map = movement.Map;
         if (!movement.TimerRan(settler))
@@ -107,7 +107,7 @@ public sealed class WalkBehavior(
                 {
                     // No storage chosen yet (0x45d09b); none a road leads to sends the settler to look for a flag again,
                     // from the far end of the search.
-                    movement.Become(settler, new SearchesHome(true));
+                    movement.Become(settler, new SearchesHome { FarEndFirst = true });
                     settler.Timer = 0;
                     return;
                 }
@@ -132,7 +132,7 @@ public sealed class WalkBehavior(
                 if (direction < 0 && errand is ToStorage)
                 {
                     // 0x43a24e: a settler on its way to a storage that finds no road leads on looks for a flag again.
-                    movement.Become(settler, new SearchesHome(true));
+                    movement.Become(settler, new SearchesHome { FarEndFirst = true });
                     settler.Timer = 0;
                     return;
                 }
@@ -189,7 +189,7 @@ public sealed class WalkBehavior(
         var buildingId = history.BuildingId(buildings.SlotOf(building));
         causes.RecordBuilding(building, EventType.Entered, history.SettlerId(slot).ToString());
         var storage = settler.Activity.GoingTo is ToStorage;
-        movement.Become(settler, new EntersBuilding(storage));
+        movement.Become(settler, new EntersBuilding { Storage = storage });
         if (movement.Occupant(node) != 0)
         {
             settler.Frame = 0x55;
@@ -204,7 +204,10 @@ public sealed class WalkBehavior(
         var time = tables.StepTime(shape);
         settler.Timer = time;
         settler.Stamp = clock.Now;
-        movement.Become(settler, new Door((ushort)(time * tables.DoorSpeed(building)) >> 5, storage));
+        movement.Become(
+            settler,
+            new Door { TimeLeft = (ushort)(time * tables.DoorSpeed(building)) >> 5, EnteringStorage = storage }
+        );
         history.RecordSettler(slot, EventType.Entered, causes.OfSettler(slot), buildingId.ToString());
         causes.ForgetPlacement(buildingId);
     }
@@ -266,7 +269,7 @@ public sealed class WalkBehavior(
         }
 
         hut.WorkerOnTheWay = true;
-        movement.Become(settler, new Leaving(new ToBuilding(hut.Flag)));
+        movement.Become(settler, new Leaving { Errand = new ToBuilding { At = hut.Flag } });
         settler.X = flag.X;
         settler.Y = flag.Y;
         Enter(slot, settler);
@@ -286,7 +289,7 @@ public sealed class WalkBehavior(
         && modules.Any(rules => rules.JobType == request.Job.GetType() && rules.CanStandInHut);
 
     // What a sentence calls a settler of the module's job: the job type's name in lower case.
-    private static string NameOf(JobRules rules) => rules.JobType.Name.ToLowerInvariant();
+    static string NameOf(JobRules rules) => rules.JobType.Name.ToLowerInvariant();
 
     // The refusal for a node with no building that stands a worker. It names the jobs whose modules let their settler stand in the hut:
     // "no finished woodcutter's, stonecutter's, or forester's building stands on the node" for three, "a's or b's" for two, "a's" for

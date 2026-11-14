@@ -9,17 +9,20 @@ namespace OpenSettlers.MapView;
 /// The buttons of the map view that decide what a click does. Several may be pressed at once; <see cref="ClickDecision"/>
 /// picks by precedence.
 /// </summary>
-/// <param name="Road">The road button is pressed.</param>
-/// <param name="Remove">The remove button is pressed.</param>
-/// <param name="Flag">The flag button is pressed.</param>
-/// <param name="Buildings">The building types whose buttons are pressed, in button order.</param>
-public readonly record struct ClickMode(
-    bool Road = false,
-    bool Remove = false,
-    bool Flag = false,
-    IReadOnlyList<BuildingType>? Buildings = null
-)
+public readonly record struct ClickMode
 {
+    /// <summary>The road button is pressed.</summary>
+    public bool Road { get; init; }
+
+    /// <summary>The remove button is pressed.</summary>
+    public bool Remove { get; init; }
+
+    /// <summary>The flag button is pressed.</summary>
+    public bool Flag { get; init; }
+
+    /// <summary>The building types whose buttons are pressed, in button order.</summary>
+    public IReadOnlyList<BuildingType>? Buildings { get; init; }
+
     /// <summary>No button pressed: a click places the castle.</summary>
     public static ClickMode None => default;
 }
@@ -60,14 +63,38 @@ public static class ClickDecision
 
         if (mode.Remove)
         {
-            return removal(x, y) is { } kind ? new Command(game.TickCount, 0, kind, x, y) : null;
+            return removal(x, y) is { } kind
+                ? new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = kind,
+                    X = x,
+                    Y = y,
+                }
+                : null;
         }
 
         if (mode.Buildings is { Count: > 0 } buildings)
         {
-            return new Command(game.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: buildings[0]);
+            return new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = x,
+                Y = y,
+                Building = buildings[0],
+            };
         }
 
-        return new Command(game.TickCount, 0, mode.Flag ? CommandKind.PlaceFlag : CommandKind.PlaceCastle, x, y);
+        return new Command
+        {
+            Tick = game.TickCount,
+            Player = 0,
+            Kind = mode.Flag ? CommandKind.PlaceFlag : CommandKind.PlaceCastle,
+            X = x,
+            Y = y,
+        };
     }
 }

@@ -5,10 +5,42 @@ using System.Linq;
 namespace OpenSettlers.MapView;
 
 /// <summary>The bits of a key code: one mask per modifier, and the mask of the bits that hold the bare key.</summary>
-public readonly record struct KeyMasks(long Shift, long Ctrl, long Alt, long Meta, long Code);
+public readonly record struct KeyMasks
+{
+    /// <summary>The mask of the Shift modifier.</summary>
+    public required long Shift { get; init; }
+
+    /// <summary>The mask of the Ctrl modifier.</summary>
+    public required long Ctrl { get; init; }
+
+    /// <summary>The mask of the Alt modifier.</summary>
+    public required long Alt { get; init; }
+
+    /// <summary>The mask of the Meta modifier.</summary>
+    public required long Meta { get; init; }
+
+    /// <summary>The mask of the bits that hold the bare key.</summary>
+    public required long Code { get; init; }
+}
 
 /// <summary>A key code split into the bare key and the modifier flags.</summary>
-public readonly record struct KeyChord(long Key, bool Shift, bool Ctrl, bool Alt, bool Meta);
+public readonly record struct KeyChord
+{
+    /// <summary>The bare key.</summary>
+    public required long Key { get; init; }
+
+    /// <summary>Whether Shift is held.</summary>
+    public required bool Shift { get; init; }
+
+    /// <summary>Whether Ctrl is held.</summary>
+    public required bool Ctrl { get; init; }
+
+    /// <summary>Whether Alt is held.</summary>
+    public required bool Alt { get; init; }
+
+    /// <summary>Whether Meta is held.</summary>
+    public required bool Meta { get; init; }
+}
 
 /// <summary>The key handling of a play run that needs no window: the split of a key code (<see cref="Split"/>).</summary>
 public static class PlayKeys
@@ -20,13 +52,14 @@ public static class PlayKeys
     public static string? Split(string name, long code, KeyMasks masks, out KeyChord chord)
     {
         var key = code & masks.Code;
-        chord = new KeyChord(
-            key,
-            (code & masks.Shift) != 0,
-            (code & masks.Ctrl) != 0,
-            (code & masks.Alt) != 0,
-            (code & masks.Meta) != 0
-        );
+        chord = new KeyChord
+        {
+            Key = key,
+            Shift = (code & masks.Shift) != 0,
+            Ctrl = (code & masks.Ctrl) != 0,
+            Alt = (code & masks.Alt) != 0,
+            Meta = (code & masks.Meta) != 0,
+        };
 
         return key == 0 ? $"'{name}' is no Godot key name" : null;
     }

@@ -10,10 +10,10 @@ namespace OpenSettlers.Tests;
 public sealed class RoadsTests
 {
     // The castle of the seed's map stands at 15,5 and its flag at 16,6; a flag goes on 18,6, two nodes east.
-    private const int CastleX = 15;
-    private const int CastleY = 5;
+    const int CastleX = 15;
+    const int CastleY = 5;
 
-    private static RuleTables Made()
+    static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
@@ -29,20 +29,57 @@ public sealed class RoadsTests
 
     internal static Game TwoFlags()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(Made(), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, CastleX, CastleY));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = CastleX,
+                Y = CastleY,
+            }
+        );
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 6));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 18,
+                Y = 6,
+            }
+        );
         game.Tick();
         Assert.AreEqual(2, game.Flags.Count);
 
         return game;
     }
 
-    private static void Build(Game game, params int[] directions)
+    static void Build(Game game, params int[] directions)
     {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 16, 6, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 16,
+                Y = 6,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
@@ -55,9 +92,9 @@ public sealed class RoadsTests
 
         var road = game.Network.Roads.Single();
         Assert.AreEqual(0, road.FromSlot);
-        Assert.AreEqual(new Direction(0), road.FromDirection);
+        Assert.AreEqual(new Direction { Value = 0 }, road.FromDirection);
         Assert.AreEqual(1, road.ToSlot);
-        Assert.AreEqual(new Direction(3), road.ToDirection);
+        Assert.AreEqual(new Direction { Value = 3 }, road.ToDirection);
         CollectionAssert.AreEqual(new Direction[] { 0, 0 }, road.Directions.ToArray());
         Assert.IsTrue(game.Map.At(16, 6).Roads.Has(0));
         Assert.AreEqual(RoadSet.Of(0).With(3), game.Map.At(17, 6).Roads);
@@ -150,19 +187,76 @@ public sealed class RoadsTests
         var same = TwoFlags();
         var fresh = GameFactory.Create(
             Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x1234,
+                    W1 = 0x5678,
+                    W2 = 0x9ABC,
+                },
+                MapSize.Offered[0]
+            )
         );
 
-        game.Enqueue(new Command(game.TickCount, 1, CommandKind.BuildRoad, 16, 6, [0, 0]));
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, -1, 6, [0, 0]));
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 16, 6));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 1,
+                Kind = CommandKind.BuildRoad,
+                X = 16,
+                Y = 6,
+                Directions = [0, 0],
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = -1,
+                Y = 6,
+                Directions = [0, 0],
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 16,
+                Y = 6,
+            }
+        );
         game.Tick();
         same.Tick();
-        fresh.Enqueue(new Command(0, 0, CommandKind.BuildRoad, 16, 6, [0, 0]));
+        fresh.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 16,
+                Y = 6,
+                Directions = [0, 0],
+            }
+        );
         fresh.Tick();
         var freshSame = GameFactory.Create(
             Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x1234,
+                    W1 = 0x5678,
+                    W2 = 0x9ABC,
+                },
+                MapSize.Offered[0]
+            )
         );
         freshSame.Tick();
 
@@ -185,9 +279,33 @@ public sealed class RoadsTests
     [TestMethod]
     public void CommandsOfTheSameRoadAreEqualAndTheOrderOfTheirEnqueueingDoesNotMatter()
     {
-        var a = new Command(5, 0, CommandKind.BuildRoad, 16, 6, new[] { 0, 0 });
-        var b = new Command(5, 0, CommandKind.BuildRoad, 16, 6, new[] { 0, 0 });
-        var c = new Command(5, 0, CommandKind.BuildRoad, 16, 6, new[] { 0, 1 });
+        var a = new Command
+        {
+            Tick = 5,
+            Player = 0,
+            Kind = CommandKind.BuildRoad,
+            X = 16,
+            Y = 6,
+            Directions = new[] { 0, 0 },
+        };
+        var b = new Command
+        {
+            Tick = 5,
+            Player = 0,
+            Kind = CommandKind.BuildRoad,
+            X = 16,
+            Y = 6,
+            Directions = new[] { 0, 0 },
+        };
+        var c = new Command
+        {
+            Tick = 5,
+            Player = 0,
+            Kind = CommandKind.BuildRoad,
+            X = 16,
+            Y = 6,
+            Directions = new[] { 0, 1 },
+        };
 
         Assert.AreEqual(a, b);
         Assert.AreEqual(a.GetHashCode(), b.GetHashCode());

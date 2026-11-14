@@ -10,7 +10,7 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class ActivityRegistry
 {
-    private readonly Dictionary<Type, Action<int, Settler>> _behaviours = [];
+    readonly Dictionary<Type, Action<int, Settler>> _behaviours = [];
 
     /// <summary>The activity types that have a behaviour.</summary>
     public IReadOnlyCollection<Type> Registered => _behaviours.Keys;

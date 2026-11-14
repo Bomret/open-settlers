@@ -11,18 +11,27 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RoadLoopTests
 {
-    private static readonly int[] Loop = [0, 1, 2, 3, 4, 5];
+    static readonly int[] Loop = [0, 1, 2, 3, 4, 5];
 
-    private static Game Started()
+    static Game Started()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(RemovalLogicTests.Made(), map);
         Apply(game, CommandKind.PlaceCastle, 15, 5);
 
         return game;
     }
 
-    private static Game WithLoop()
+    static Game WithLoop()
     {
         var game = Started();
         Apply(game, CommandKind.BuildRoad, 16, 6, Loop);
@@ -30,13 +39,23 @@ public sealed class RoadLoopTests
         return game;
     }
 
-    private static void Apply(Game game, int kind, int x, int y, int[]? directions = null)
+    static void Apply(Game game, int kind, int x, int y, int[]? directions = null)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
-    private static void Run(Game game, int ticks)
+    static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
         {
@@ -52,14 +71,18 @@ public sealed class RoadLoopTests
         var road = game.Network.Roads.Single();
         Assert.AreEqual((0, 0, 0, 2), (road.FromSlot, road.FromDirection.Value, road.ToSlot, road.ToDirection.Value));
         CollectionAssert.AreEqual(Loop, road.Directions.Select(step => step.Value).ToArray());
-        Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length, "class 2 for six steps at the start end");
-        Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(2).Length, "and at the other end");
         Assert.AreEqual(
-            new Direction(2),
+            new LengthClass { Value = 2 },
+            game.Flags[0].Side(0).Length,
+            "class 2 for six steps at the start end"
+        );
+        Assert.AreEqual(new LengthClass { Value = 2 }, game.Flags[0].Side(2).Length, "and at the other end");
+        Assert.AreEqual(
+            new Direction { Value = 2 },
             game.Flags[0].Side(0).FarDirection,
             "each end names the direction of the other"
         );
-        Assert.AreEqual(new Direction(0), game.Flags[0].Side(2).FarDirection);
+        Assert.AreEqual(new Direction { Value = 0 }, game.Flags[0].Side(2).FarDirection);
     }
 
     [TestMethod]
@@ -170,7 +193,7 @@ public sealed class RoadLoopTests
             new[] { road.FromDirection.Value, road.ToDirection.Value },
             "the joined road starts at either end"
         );
-        Assert.AreEqual(new LengthClass(2), game.Flags[0].Side(0).Length);
+        Assert.AreEqual(new LengthClass { Value = 2 }, game.Flags[0].Side(0).Length);
     }
 
     [TestMethod]

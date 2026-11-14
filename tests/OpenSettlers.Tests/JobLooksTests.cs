@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class JobLooksTests
 {
-    private static readonly Job[] Drawn =
+    static readonly Job[] Drawn =
     [
         new Carrier(),
         new Woodcutter(),
@@ -21,14 +21,14 @@ public sealed class JobLooksTests
         new Sawmiller(),
     ];
 
-    private static RuleTables Tables() =>
+    static RuleTables Tables() =>
         new(
             [.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)],
             NoStock(),
             jobData: TestProgram.MadeJobData()
         );
 
-    private static byte[][] NoStock() =>
+    static byte[][] NoStock() =>
         [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[RuleTables.Goods])];
 
     [TestMethod]

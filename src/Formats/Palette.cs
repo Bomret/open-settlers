@@ -5,7 +5,17 @@ using System.IO;
 namespace OpenSettlers.Formats;
 
 /// <summary>One palette color with each component at 6 bits (0 to 63), as the program holds it.</summary>
-public readonly record struct Rgb(byte R, byte G, byte B);
+public readonly record struct Rgb
+{
+    /// <summary>The red component, 0 to 63.</summary>
+    public required byte R { get; init; }
+
+    /// <summary>The green component, 0 to 63.</summary>
+    public required byte G { get; init; }
+
+    /// <summary>The blue component, 0 to 63.</summary>
+    public required byte B { get; init; }
+}
 
 /// <summary>
 /// The game's 256-color palette (<c>docs/rules/graphics-images.md</c>). The program holds each component
@@ -63,11 +73,12 @@ public static class PaletteFile
         var colors = new Rgb[Palette.ColorCount];
         for (var i = 1; i < colors.Length; i++)
         {
-            colors[i] = new Rgb(
-                (byte)(bytes[i * 3] >> 2),
-                (byte)(bytes[i * 3 + 1] >> 2),
-                (byte)(bytes[i * 3 + 2] >> 2)
-            );
+            colors[i] = new Rgb
+            {
+                R = (byte)(bytes[i * 3] >> 2),
+                G = (byte)(bytes[i * 3 + 1] >> 2),
+                B = (byte)(bytes[i * 3 + 2] >> 2),
+            };
         }
 
         return new Palette(colors);

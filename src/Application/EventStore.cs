@@ -8,8 +8,8 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class EventStore
 {
-    private readonly List<ThingEvent> _events = [];
-    private readonly Dictionary<ThingId, List<ThingEvent>> _byThing = [];
+    readonly List<ThingEvent> _events = [];
+    readonly Dictionary<ThingId, List<ThingEvent>> _byThing = [];
 
     /// <summary>All events in the order they were recorded.</summary>
     public IReadOnlyList<ThingEvent> All => _events;

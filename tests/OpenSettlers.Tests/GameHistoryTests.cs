@@ -13,13 +13,13 @@ namespace OpenSettlers.Tests;
 public sealed class GameHistoryTests
 {
     // A stand-in for the exporter: every thing's state is its slot.
-    private sealed class SlotSnapshots : IThingSnapshots
+    sealed class SlotSnapshots : IThingSnapshots
     {
-        public ThingState Building(int slot) => new([("slot", slot)]);
+        public ThingState Building(int slot) => new() { Fields = [("slot", slot)] };
 
-        public ThingState Flag(int slot) => new([("slot", slot)]);
+        public ThingState Flag(int slot) => new() { Fields = [("slot", slot)] };
 
-        public ThingState Settler(int slot) => new([("slot", slot), ("state", State)]);
+        public ThingState Settler(int slot) => new() { Fields = [("slot", slot), ("state", State)] };
 
         public int State { get; set; }
     }
@@ -78,7 +78,13 @@ public sealed class GameHistoryTests
             7,
             9,
             0,
-            new WaitsAtFlag(300, new Direction(254), new Heading(11)) { Residue = new Residue(Heading: 3, Next: 15) }
+            new WaitsAtFlag
+            {
+                Flag = 300,
+                Direction = new Direction { Value = 254 },
+                Approach = new Heading { Value = 11 },
+                Residue = new Residue { Heading = 3, Next = 15 },
+            }
         )
         {
             Frame = 6,
@@ -108,8 +114,8 @@ public sealed class GameHistoryTests
             flags[0].Side(direction).Carriers = direction + 1;
         }
 
-        flags[0].Places[0].Good = new Good(9);
-        flags[0].Places[7].Good = new Good(1);
+        flags[0].Places[0].Good = new Good { Code = 9 };
+        flags[0].Places[7].Good = new Good { Code = 1 };
         flags[0].Places[7].Way = 0;
 
         var exporter = new SnapshotExporter(new SettlerTable(), new BuildingTable(), flags);
@@ -157,7 +163,16 @@ public sealed class GameHistoryTests
     public void TheGameRecordsThroughItsHistory()
     {
         var game = ThingHistoryTests.NewGame();
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
 
         Assert.IsNotEmpty(game.History.EventsOf(game.History.BuildingId(0)));

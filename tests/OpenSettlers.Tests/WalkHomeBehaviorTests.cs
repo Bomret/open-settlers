@@ -7,7 +7,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class WalkHomeBehaviorTests
 {
-    private static WalkHomeBehavior Behaviour(BehaviourBench bench, System.Func<int, int, int>? route = null) =>
+    static WalkHomeBehavior Behaviour(BehaviourBench bench, System.Func<int, int, int>? route = null) =>
         new(
             bench.Movement,
             bench.Buildings,
@@ -18,7 +18,7 @@ public sealed class WalkHomeBehaviorTests
             route ?? ((_, _) => -1)
         );
 
-    private static Settler Walker(int x, int y, Activity activity) => new(new Woodcutter(), 0, x, y, 0, activity);
+    static Settler Walker(int x, int y, Activity activity) => new(new Woodcutter(), 0, x, y, 0, activity);
 
     [TestMethod]
     public void ASettlerClaimsItsNodeWhenNoOtherSettlerStandsThere()
@@ -40,7 +40,7 @@ public sealed class WalkHomeBehaviorTests
     public void ASettlerWaitsWhereAnotherSettlerStandsOnItsNode()
     {
         var bench = new BehaviourBench();
-        bench.Place(Walker(6, 6, new RawState(0)));
+        bench.Place(Walker(6, 6, new RawState { StateCode = 0 }));
         var settler = Walker(6, 6, new ClaimsHomeNode());
         var slot = bench.Settlers.Add(settler);
         var behaviour = Behaviour(bench);
@@ -63,7 +63,13 @@ public sealed class WalkHomeBehaviorTests
         Behaviour(bench).Search(slot, settler);
 
         Assert.AreEqual(
-            (new WalksFree(new Trip(new Vector(3, 2), new Home())), 1),
+            (
+                new WalksFree
+                {
+                    Trip = new Trip { Remaining = new Vector(3, 2), Purpose = new Home() },
+                },
+                1
+            ),
             (settler.Activity with { Residue = default }, bench.Draws.Taken)
         );
     }
@@ -84,7 +90,14 @@ public sealed class WalkHomeBehaviorTests
     public void ASettlerThatArrivesOffAFlagSearchesAgain()
     {
         var bench = new BehaviourBench();
-        var settler = Walker(6, 6, new WalksFree(new Trip(new Vector(0, 0), new Home())));
+        var settler = Walker(
+            6,
+            6,
+            new WalksFree
+            {
+                Trip = new Trip { Remaining = new Vector(0, 0), Purpose = new Home() },
+            }
+        );
         var slot = bench.Place(settler);
 
         Behaviour(bench).ArriveHome(slot, settler);
@@ -96,7 +109,7 @@ public sealed class WalkHomeBehaviorTests
     public void ASettlerThatEntersTheStorageFreesItsNodeAndWaitsThere()
     {
         var bench = new BehaviourBench();
-        var settler = Walker(6, 6, new Door(0, true));
+        var settler = Walker(6, 6, new Door { TimeLeft = 0, EnteringStorage = true });
         var slot = bench.Place(settler);
         var node = bench.Map.Index(6, 6);
 

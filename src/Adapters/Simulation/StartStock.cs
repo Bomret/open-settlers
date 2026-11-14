@@ -20,7 +20,7 @@ public static class StartStock
     // the emulator (castle:, 7 start stock levels in castle-placements.txt), not read from the routine's own
     // subtractions; docs/rules/castle.md states its origin. Upgrade path: read the subtractions of 0x442704 and its
     // callees.
-    private static readonly (int Good, int Count)[] Taken =
+    static readonly (int Good, int Count)[] Taken =
     [
         (7, 7),
         (9, 2),
@@ -75,11 +75,12 @@ public static class StartStock
     /// </summary>
     public static int LevelOf(Seed seed)
     {
-        var generator = new RandomGenerator(
-            (ushort)(seed.W0 ^ 0x5a5a),
-            (ushort)(seed.W1 ^ 0xa5a5),
-            (ushort)(seed.W2 ^ 0xc3c3)
-        );
+        var generator = new RandomGenerator
+        {
+            W0 = (ushort)(seed.W0 ^ 0x5a5a),
+            W1 = (ushort)(seed.W1 ^ 0xa5a5),
+            W2 = (ushort)(seed.W2 ^ 0xc3c3),
+        };
 
         // The draws, in order: 4 rounds of 4 for the four opponents' settings, then the pair for player 1 and the
         // pair for player 0, whose first draw is the human's level.

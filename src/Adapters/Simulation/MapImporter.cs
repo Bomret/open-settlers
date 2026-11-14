@@ -25,14 +25,14 @@ public static class MapImporter
         for (var index = 0; index < map.Count; index++)
         {
             ref var node = ref map.At(index);
-            node.Roads = new RoadSet((byte)(flags[index] & 0x3f));
+            node.Roads = new RoadSet { Bits = (byte)(flags[index] & 0x3f) };
             node.LakeMark = (flags[index] & 0x40) != 0;
             node.FlagMark = (flags[index] & 0x80) != 0;
             node.Height = heights[index] & 0x1f;
-            node.Owner = new Owner(heights[index] >> 5);
-            node.Upper = new Terrain(terrain[index] >> 4);
-            node.Lower = new Terrain(terrain[index] & 0xf);
-            node.Object = new MapObject((byte)(objects[index] & 0x7f));
+            node.Owner = new Owner { Code = heights[index] >> 5 };
+            node.Upper = new Terrain { Code = terrain[index] >> 4 };
+            node.Lower = new Terrain { Code = terrain[index] & 0xf };
+            node.Object = new MapObject { Code = (byte)(objects[index] & 0x7f) };
             node.WaterTriangle = (objects[index] & 0x80) != 0;
             node.DepositType = deposits[index] >> 5;
             node.DepositAmount = deposits[index] & 0x1f;

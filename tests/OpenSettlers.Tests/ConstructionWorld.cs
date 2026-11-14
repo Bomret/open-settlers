@@ -8,11 +8,20 @@ namespace OpenSettlers.Tests;
 // A game on made-up tables for the rules of construction that need no install: the map of the seed 1234,5678,9ABC with its castle at
 // 15,5 and its flag at 16,6, no tree anywhere, the flags 18,6, 19,4, and 17,3 (slots 1 to 3) with roads from the castle's flag east
 // to 18,6 and from there to 19,4, as HutTests lays them. A building at 17,5 has its flag at 18,6, which a road joins to the castle.
-internal static class ConstructionWorld
+static class ConstructionWorld
 {
     public static Game Create(RuleTables? tables = null, bool handsOutGoods = false, bool everyPassTurns = false)
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < map.Count; index++)
         {
             if (map.At(index).Object.Kind == MapObjectKind.Tree)
@@ -27,7 +36,16 @@ internal static class ConstructionWorld
             handsOutGoods: handsOutGoods,
             everyPassTurns: everyPassTurns
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
         {
@@ -42,13 +60,33 @@ internal static class ConstructionWorld
 
     public static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
     public static void Site(Game game, BuildingType type, int x, int y)
     {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: type));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = x,
+                Y = y,
+                Building = type,
+            }
+        );
         game.Tick();
     }
 

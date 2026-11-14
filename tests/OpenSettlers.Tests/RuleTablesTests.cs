@@ -22,13 +22,13 @@ public sealed class RuleTablesTests
     [TestMethod]
     public void AnObjectClassNamesWhatTheRulesAskOfIt()
     {
-        Assert.IsTrue(new ObjectClass(0).IsEmpty);
-        Assert.IsTrue(new ObjectClass(1).IsEmpty is false && new ObjectClass(1).IsLarge is false);
-        Assert.IsTrue(new ObjectClass(2).IsStone && new ObjectClass(2).IsLarge);
-        Assert.IsTrue(new ObjectClass(3).IsFlag && new ObjectClass(3).IsFlagOrBuilding);
-        Assert.IsTrue(new ObjectClass(4).IsBuilding && new ObjectClass(4).IsSmallBuilding);
-        Assert.IsTrue(new ObjectClass(5).IsLargeBuilding && !new ObjectClass(5).IsCastle);
-        Assert.IsTrue(new ObjectClass(6).IsCastle && new ObjectClass(6).IsLargeBuilding);
+        Assert.IsTrue(new ObjectClass { Value = 0 }.IsEmpty);
+        Assert.IsTrue(new ObjectClass { Value = 1 }.IsEmpty is false && new ObjectClass { Value = 1 }.IsLarge is false);
+        Assert.IsTrue(new ObjectClass { Value = 2 }.IsStone && new ObjectClass { Value = 2 }.IsLarge);
+        Assert.IsTrue(new ObjectClass { Value = 3 }.IsFlag && new ObjectClass { Value = 3 }.IsFlagOrBuilding);
+        Assert.IsTrue(new ObjectClass { Value = 4 }.IsBuilding && new ObjectClass { Value = 4 }.IsSmallBuilding);
+        Assert.IsTrue(new ObjectClass { Value = 5 }.IsLargeBuilding && !new ObjectClass { Value = 5 }.IsCastle);
+        Assert.IsTrue(new ObjectClass { Value = 6 }.IsCastle && new ObjectClass { Value = 6 }.IsLargeBuilding);
     }
 
     [TestMethod]
@@ -80,10 +80,10 @@ public sealed class RuleTablesTests
             goodKinds: kinds
         );
 
-        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(new Good(3)));
-        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(new Good(4)));
-        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good(5)));
-        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good(6)));
+        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(new Good { Code = 3 }));
+        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(new Good { Code = 4 }));
+        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Code = 5 }));
+        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Code = 6 }));
     }
 
     [TestMethod]
@@ -95,10 +95,10 @@ public sealed class RuleTablesTests
 
         var tables = TestProgram.Made(ranks);
 
-        Assert.AreEqual(26, tables.TransportPriority(new Good(1)));
-        Assert.AreEqual(1, tables.TransportPriority(new Good(26)));
-        Assert.AreEqual(0, tables.TransportPriority(new Good(0)));
-        Assert.AreEqual(0, tables.TransportPriority(new Good(27)));
+        Assert.AreEqual(26, tables.TransportPriority(new Good { Code = 1 }));
+        Assert.AreEqual(1, tables.TransportPriority(new Good { Code = 26 }));
+        Assert.AreEqual(0, tables.TransportPriority(new Good { Code = 0 }));
+        Assert.AreEqual(0, tables.TransportPriority(new Good { Code = 27 }));
     }
 
     [TestMethod]
@@ -118,11 +118,11 @@ public sealed class RuleTablesTests
             buildingNeeds: needs
         );
 
-        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(new BuildingType(4)));
-        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(new BuildingType(5)));
-        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(new BuildingType(6)));
-        Assert.AreEqual(new BuildingNeeds(7, 3), tables.NeedsOf(new BuildingType(6)));
-        Assert.AreEqual(new BuildingNeeds(0, 0), tables.NeedsOf(new BuildingType(5)));
+        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(new BuildingType { Code = 4 }));
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(new BuildingType { Code = 5 }));
+        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(new BuildingType { Code = 6 }));
+        Assert.AreEqual(new BuildingNeeds { Planks = 7, Stones = 3 }, tables.NeedsOf(new BuildingType { Code = 6 }));
+        Assert.AreEqual(new BuildingNeeds { Planks = 0, Stones = 0 }, tables.NeedsOf(new BuildingType { Code = 5 }));
     }
 
     [TestMethod]
@@ -132,7 +132,7 @@ public sealed class RuleTablesTests
 
         Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.Castle));
         Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.None));
-        Assert.AreEqual(new BuildingNeeds(0, 0), tables.NeedsOf(BuildingType.Castle));
+        Assert.AreEqual(new BuildingNeeds { Planks = 0, Stones = 0 }, tables.NeedsOf(BuildingType.Castle));
     }
 
     [TestMethod]
@@ -145,33 +145,97 @@ public sealed class RuleTablesTests
         Assert.AreEqual(RuleTables.FrameRowCount, frameSpan);
     }
 
-    private static RuleTables WithJobData(params (Job, object)[] data) =>
+    static RuleTables WithJobData(params (Job, object)[] data) =>
         new(new ObjectClass[RuleTables.ClassCount], TestProgram.Made().StartStock, jobData: data);
 
     [TestMethod]
     public void JobDataIsKeptByJobAndByType()
     {
-        var woodcutter = new FigureAdds(1, 2, 3);
-        var stonecutter = new FigureAdds(4, 5, 6);
+        var woodcutter = new FigureAdds
+        {
+            Walk = 1,
+            Carrying = 2,
+            Cutting = 3,
+        };
+        var stonecutter = new FigureAdds
+        {
+            Walk = 4,
+            Carrying = 5,
+            Cutting = 6,
+        };
         var tables = WithJobData(
             (new Woodcutter(), woodcutter),
             (new Stonecutter(), stonecutter),
-            (new Digger(), new FigureAdds(7, 8, 9)),
-            (new Digger(), new WorkerRequest(new Digger(), new Good(16))),
-            (new Builder(), new WorkerRequest(new Builder(), new Good(17)))
+            (
+                new Digger(),
+                new FigureAdds
+                {
+                    Walk = 7,
+                    Carrying = 8,
+                    Cutting = 9,
+                }
+            ),
+            (
+                new Digger(),
+                new WorkerRequest
+                {
+                    Job = new Digger(),
+                    Tool = new Good { Code = 16 },
+                }
+            ),
+            (
+                new Builder(),
+                new WorkerRequest
+                {
+                    Job = new Builder(),
+                    Tool = new Good { Code = 17 },
+                }
+            )
         );
 
         Assert.AreEqual(woodcutter, tables.Get<FigureAdds>(new Woodcutter()));
         Assert.AreEqual(stonecutter, tables.Get<FigureAdds>(new Stonecutter()));
-        Assert.AreEqual(new FigureAdds(7, 8, 9), tables.Get<FigureAdds>(new Digger()));
-        Assert.AreEqual(new WorkerRequest(new Digger(), new Good(16)), tables.Get<WorkerRequest>(new Digger()));
-        Assert.AreEqual(new WorkerRequest(new Builder(), new Good(17)), tables.Get<WorkerRequest>(new Builder()));
+        Assert.AreEqual(
+            new FigureAdds
+            {
+                Walk = 7,
+                Carrying = 8,
+                Cutting = 9,
+            },
+            tables.Get<FigureAdds>(new Digger())
+        );
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = new Digger(),
+                Tool = new Good { Code = 16 },
+            },
+            tables.Get<WorkerRequest>(new Digger())
+        );
+        Assert.AreEqual(
+            new WorkerRequest
+            {
+                Job = new Builder(),
+                Tool = new Good { Code = 17 },
+            },
+            tables.Get<WorkerRequest>(new Builder())
+        );
     }
 
     [TestMethod]
     public void AJobWhoseDataTheTablesLackIsAnErrorAndNoDefault()
     {
-        var tables = WithJobData((new Woodcutter(), new FigureAdds(1, 2, 3)));
+        var tables = WithJobData(
+            (
+                new Woodcutter(),
+                new FigureAdds
+                {
+                    Walk = 1,
+                    Carrying = 2,
+                    Cutting = 3,
+                }
+            )
+        );
 
         var missingJob = Assert.ThrowsExactly<InvalidOperationException>(() =>
             tables.Get<FigureAdds>(new Stonecutter())
@@ -189,7 +253,7 @@ public sealed class RuleTablesTests
         CollectionAssert.AreEquivalent(declared.ToList(), made.ToList());
         Assert.IsTrue(declared.Any(), "the jobs declare data");
         Assert.AreEqual(
-            new WorkerRequest(new Builder(), Good.None),
+            new WorkerRequest { Job = new Builder(), Tool = Good.None },
             TestProgram.Made().Get<WorkerRequest>(new Builder())
         );
     }

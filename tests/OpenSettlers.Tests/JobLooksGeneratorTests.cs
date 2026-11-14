@@ -14,7 +14,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class JobLooksGeneratorTests
 {
-    private const string Framework = """
+    const string Framework = """
         namespace OpenSettlers.Domain
         {
             public abstract record Job;
@@ -35,16 +35,14 @@ public sealed class JobLooksGeneratorTests
         }
         """;
 
-    private static readonly MetadataReference[] References =
+    static readonly MetadataReference[] References =
     [
         .. ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Select(path => MetadataReference.CreateFromFile(path)),
     ];
 
-    private static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(
-        params string[] sources
-    )
+    static (ImmutableArray<Diagnostic> Diagnostics, string Text, Compilation Output) Run(params string[] sources)
     {
         var compilation = CSharpCompilation.Create(
             "MapView",
@@ -58,7 +56,7 @@ public sealed class JobLooksGeneratorTests
         return (diagnostics, text, output);
     }
 
-    private static readonly string[] WellFormed =
+    static readonly string[] WellFormed =
     [
         Framework,
         """

@@ -9,7 +9,7 @@ namespace OpenSettlers.Domain;
 /// </summary>
 public sealed class Map
 {
-    private readonly Node[] _nodes;
+    readonly Node[] _nodes;
 
     /// <summary>A map of the size with every node empty.</summary>
     public Map(MapSize size)
@@ -43,7 +43,14 @@ public sealed class Map
             {
                 if (_nodes[index].Object.Exists)
                 {
-                    objects.Add(new PlacedObject(index % Size.Width, index / Size.Width, _nodes[index].Object));
+                    objects.Add(
+                        new PlacedObject
+                        {
+                            X = index % Size.Width,
+                            Y = index / Size.Width,
+                            Object = _nodes[index].Object,
+                        }
+                    );
                 }
             }
 
@@ -62,12 +69,13 @@ public sealed class Map
                 if (_nodes[index].DepositType != 0)
                 {
                     deposits.Add(
-                        new ResourceDeposit(
-                            index % Size.Width,
-                            index / Size.Width,
-                            _nodes[index].DepositType,
-                            _nodes[index].DepositAmount
-                        )
+                        new ResourceDeposit
+                        {
+                            X = index % Size.Width,
+                            Y = index / Size.Width,
+                            Type = _nodes[index].DepositType,
+                            Amount = _nodes[index].DepositAmount,
+                        }
                     );
                 }
             }

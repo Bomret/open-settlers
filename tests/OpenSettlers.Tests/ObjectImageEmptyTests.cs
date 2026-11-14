@@ -19,7 +19,14 @@ public sealed class ObjectImageEmptyTests
     [TestMethod]
     public void TheEmptyImageDrawnOverAnImageLeavesItsPixels()
     {
-        var image = new ObjectImage(1, 1, 0, 0, [1, 2, 3, 255]);
+        var image = new ObjectImage
+        {
+            Width = 1,
+            Height = 1,
+            OffsetX = 0,
+            OffsetY = 0,
+            Rgba = [1, 2, 3, 255],
+        };
 
         CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 255 }, image.Over(ObjectImage.Empty).Rgba);
     }

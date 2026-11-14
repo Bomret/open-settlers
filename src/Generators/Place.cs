@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace OpenSettlers.Generators;
 
 /// <summary>Where a declaration's name stands, kept as values so that a model of it compares equal across compilations.</summary>
-internal sealed record Place(string Path, TextSpan Span, LinePositionSpan Lines)
+sealed record Place(string Path, TextSpan Span, LinePositionSpan Lines)
 {
     public static Place Of(Location location)
     {

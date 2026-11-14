@@ -4,9 +4,11 @@ namespace OpenSettlers.Domain;
 /// One of the six directions of the map's node grid, numbered as the original numbers them (0 to 5). The direction
 /// opposite to a direction is the one three on.
 /// </summary>
-/// <param name="Value">The direction's number, 0 to 5.</param>
-public readonly record struct Direction(int Value)
+public readonly record struct Direction
 {
+    /// <summary>The direction's number, 0 to 5.</summary>
+    public required int Value { get; init; }
+
     /// <summary>The number of directions.</summary>
     public const int Count = 6;
 
@@ -18,10 +20,10 @@ public readonly record struct Direction(int Value)
     [(1, 0), (1, 1), (0, 1), (-1, 0), (-1, -1), (0, -1)];
 
     /// <summary>The direction that leads back along a step in this direction.</summary>
-    public Direction Opposite => new((Value + 3) % Count);
+    public Direction Opposite => new() { Value = (Value + 3) % Count };
 
     /// <summary>A direction from its number.</summary>
-    public static implicit operator Direction(int value) => new(value);
+    public static implicit operator Direction(int value) => new() { Value = value };
 
     /// <summary>A direction's number.</summary>
     public static implicit operator int(Direction direction) => direction.Value;

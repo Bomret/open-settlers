@@ -11,22 +11,22 @@ namespace OpenSettlers.Simulation;
 public sealed class GameHistory
 {
     // The state of a settler waiting next to a flag (docs/rules/carriers.md).
-    private const int WaitingState = 0x42;
+    const int WaitingState = 0x42;
 
     // The state of a settler idle in a storage.
-    private const int IdleState = 1;
+    const int IdleState = 1;
 
     // How often each slot of the settler, building, and flag lists was filled. A list the free slots at its end trimmed keeps
     // its counts, and nothing lowers one.
-    private readonly List<int> _settlerFills = [];
-    private readonly List<int> _buildingFills = [];
-    private readonly List<int> _flagFills = [];
+    readonly List<int> _settlerFills = [];
+    readonly List<int> _buildingFills = [];
+    readonly List<int> _flagFills = [];
 
     // The command cause each settler carries on until its behaviour ends.
-    private readonly Dictionary<ThingId, Cause> _carried = [];
+    readonly Dictionary<ThingId, Cause> _carried = [];
 
-    private readonly IThingSnapshots _snapshots;
-    private readonly Func<long> _tickCount;
+    readonly IThingSnapshots _snapshots;
+    readonly Func<long> _tickCount;
 
     /// <summary>
     /// A history that takes each thing's state from <paramref name="snapshots"/> and reads the number of ticks the game has
@@ -48,13 +48,31 @@ public sealed class GameHistory
     public IReadOnlyList<ThingEvent> EventsOf(ThingId thing) => Events.Of(thing);
 
     /// <summary>The ID of the settler in the slot of the settler list; the fill count 0 for a slot never filled.</summary>
-    public ThingId SettlerId(int slot) => new(ThingId.SettlerKind, slot, FillOf(_settlerFills, slot));
+    public ThingId SettlerId(int slot) =>
+        new()
+        {
+            Kind = ThingId.SettlerKind,
+            Slot = slot,
+            Fill = FillOf(_settlerFills, slot),
+        };
 
     /// <summary>The ID of the building in the slot of the building list; the fill count 0 for a slot never filled.</summary>
-    public ThingId BuildingId(int slot) => new(ThingId.BuildingKind, slot, FillOf(_buildingFills, slot));
+    public ThingId BuildingId(int slot) =>
+        new()
+        {
+            Kind = ThingId.BuildingKind,
+            Slot = slot,
+            Fill = FillOf(_buildingFills, slot),
+        };
 
     /// <summary>The ID of the flag in the slot of the flag list; the fill count 0 for a slot never filled.</summary>
-    public ThingId FlagId(int slot) => new(ThingId.FlagKind, slot, FillOf(_flagFills, slot));
+    public ThingId FlagId(int slot) =>
+        new()
+        {
+            Kind = ThingId.FlagKind,
+            Slot = slot,
+            Fill = FillOf(_flagFills, slot),
+        };
 
     /// <summary>Counts a fill of the settler slot: its next settler takes the next count.</summary>
     internal void FillSettler(int slot) => Fill(_settlerFills, slot);
@@ -145,12 +163,22 @@ public sealed class GameHistory
         }
     }
 
-    private void Record(string type, ThingId thing, ThingState state, Cause cause, string? other) =>
-        Events.Add(new ThingEvent(_tickCount(), type, thing, state, cause, other));
+    void Record(string type, ThingId thing, ThingState state, Cause cause, string? other) =>
+        Events.Add(
+            new ThingEvent
+            {
+                Tick = _tickCount(),
+                Type = type,
+                Thing = thing,
+                State = state,
+                Cause = cause,
+                Other = other,
+            }
+        );
 
-    private static int FillOf(List<int> fills, int slot) => slot >= 0 && slot < fills.Count ? fills[slot] : 0;
+    static int FillOf(List<int> fills, int slot) => slot >= 0 && slot < fills.Count ? fills[slot] : 0;
 
-    private static void Fill(List<int> fills, int slot)
+    static void Fill(List<int> fills, int slot)
     {
         while (fills.Count <= slot)
         {

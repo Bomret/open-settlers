@@ -22,15 +22,38 @@ public enum LaunchStream
 /// </summary>
 public abstract record MapLaunch
 {
-    /// <summary>The launch is refused: print <paramref name="Message"/> on <paramref name="Stream"/> and quit with <paramref name="Code"/>.</summary>
-    public sealed record Exit(int Code, string Message, LaunchStream Stream) : MapLaunch;
+    /// <summary>The launch is refused: print <see cref="Message"/> on <see cref="Stream"/> and quit with <see cref="Code"/>.</summary>
+    public sealed record Exit : MapLaunch
+    {
+        /// <summary>The exit code to quit with.</summary>
+        public required int Code { get; init; }
+
+        /// <summary>The message to print.</summary>
+        public required string Message { get; init; }
+
+        /// <summary>The stream to print the message on.</summary>
+        public required LaunchStream Stream { get; init; }
+    }
 
     /// <summary>
-    /// Every check passed: open the view on <paramref name="Install"/> and <paramref name="Layout"/> (null without
+    /// Every check passed: open the view on <see cref="Install"/> and <see cref="Layout"/> (null without
     /// <c>--layout</c>). A play script comes with the folder its shots go to, <c>play-out/&lt;stem&gt;</c> under the
     /// project folder.
     /// </summary>
-    public sealed record Open(Layout? Layout, Install Install, PlayScript? Script, string? PlayOutFolder) : MapLaunch;
+    public sealed record Open : MapLaunch
+    {
+        /// <summary>The layout to open the view on; null without <c>--layout</c>.</summary>
+        public required Layout? Layout { get; init; }
+
+        /// <summary>The install to open the view on.</summary>
+        public required Install Install { get; init; }
+
+        /// <summary>The play script to run; null without one.</summary>
+        public required PlayScript? Script { get; init; }
+
+        /// <summary>The folder the play script's shots go to, <c>play-out/&lt;stem&gt;</c> under the project folder; null without a play script.</summary>
+        public required string? PlayOutFolder { get; init; }
+    }
 
     /// <summary>
     /// The exit for a bad argument of any mode (<see cref="LaunchArgs.BadArgumentExitCode"/>, stderr, <c>ERROR</c> and
@@ -39,7 +62,12 @@ public abstract record MapLaunch
     /// </summary>
     public static Exit? BadArgument(LaunchArgs args) =>
         args.Problems.Count > 0
-            ? new Exit(LaunchArgs.BadArgumentExitCode, $"ERROR {string.Join("; ", args.Problems)}", LaunchStream.Stderr)
+            ? new Exit
+            {
+                Code = LaunchArgs.BadArgumentExitCode,
+                Message = $"ERROR {string.Join("; ", args.Problems)}",
+                Stream = LaunchStream.Stderr,
+            }
             : null;
 
     /// <summary>
@@ -72,7 +100,12 @@ public abstract record MapLaunch
             var load = loadLayout(args.Layout);
             if (load.Code != 0)
             {
-                return new Exit(load.Code, load.Message ?? "", LaunchStream.Stdout);
+                return new Exit
+                {
+                    Code = load.Code,
+                    Message = load.Message ?? "",
+                    Stream = LaunchStream.Stdout,
+                };
             }
 
             layout = load.Layout;
@@ -81,7 +114,12 @@ public abstract record MapLaunch
         var (install, problem) = openInstall(args);
         if (install is null)
         {
-            return new Exit(2, $"ERROR {problem}", LaunchStream.Stdout);
+            return new Exit
+            {
+                Code = 2,
+                Message = $"ERROR {problem}",
+                Stream = LaunchStream.Stdout,
+            };
         }
 
         PlayScript? script = null;
@@ -91,16 +129,23 @@ public abstract record MapLaunch
             script = readScript(Path.Combine(projectFolder(), args.Play));
             if (script.Problems.Count > 0)
             {
-                return new Exit(
-                    PlayRun.FailedExitCode,
-                    $"ERROR {string.Join("; ", script.Problems)}",
-                    LaunchStream.Stderr
-                );
+                return new Exit
+                {
+                    Code = PlayRun.FailedExitCode,
+                    Message = $"ERROR {string.Join("; ", script.Problems)}",
+                    Stream = LaunchStream.Stderr,
+                };
             }
 
             folder = Path.Combine(projectFolder(), "play-out", script.Stem);
         }
 
-        return new Open(layout, install, script, folder);
+        return new Open
+        {
+            Layout = layout,
+            Install = install,
+            Script = script,
+            PlayOutFolder = folder,
+        };
     }
 }

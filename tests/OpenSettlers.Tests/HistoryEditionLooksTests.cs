@@ -13,9 +13,14 @@ namespace OpenSettlers.Tests;
 public sealed class HistoryEditionLooksTests
 {
     // The made-up adds: the walk 1, the way back with a load 2, the work 4, the work facing back 8.
-    private static readonly FigureAdds Adds = new(Walk: 1, Carrying: 2, Cutting: 4);
+    static readonly FigureAdds Adds = new()
+    {
+        Walk = 1,
+        Carrying = 2,
+        Cutting = 4,
+    };
 
-    private static RuleTables Tables(short[]? carried = null) =>
+    static RuleTables Tables(short[]? carried = null) =>
         new(
             [.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)],
             [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[RuleTables.Goods])],
@@ -24,18 +29,47 @@ public sealed class HistoryEditionLooksTests
             [
                 .. TestProgram.MadeJobData(),
                 (new Stonecutter(), Adds),
-                (new Forester(), new ForesterFigureAdds(Walk: 1, Work: 4)),
-                (new TypeOneHut(), new HutFigureAdds(Walk: 1, Carrying: 2, High: 4, HighFacing: 8)),
+                (new Forester(), new ForesterFigureAdds { Walk = 1, Work = 4 }),
+                (
+                    new TypeOneHut(),
+                    new HutFigureAdds
+                    {
+                        Walk = 1,
+                        Carrying = 2,
+                        High = 4,
+                        HighFacing = 8,
+                    }
+                ),
             ]
         );
 
-    private static SettlerDraw Draw(Job job, Activity activity, Heading? heading = null, Good carried = default) =>
-        new(0, 0, 0, SettlerPart.Figure, job, activity, heading, 0, 0, 0, carried);
+    static SettlerDraw Draw(Job job, Activity activity, Heading? heading = null, Good carried = default) =>
+        new()
+        {
+            Row = 0,
+            X = 0,
+            Y = 0,
+            Part = SettlerPart.Figure,
+            Job = job,
+            Activity = activity,
+            Heading = heading,
+            Frame = 0,
+            Step = 0,
+            Player = 0,
+            Carried = carried,
+        };
 
-    private const int Low = 0x7f;
-    private const int High = 0x80;
+    const int Low = 0x7f;
+    const int High = 0x80;
 
-    private static readonly Activity BackWithLoad = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(true)));
+    static readonly Activity BackWithLoad = new WalksFree
+    {
+        Trip = new Trip
+        {
+            Remaining = new Vector(0, 0),
+            Purpose = new BackToHut { Carrying = true },
+        },
+    };
 
     // The stonecutter's handler at 0x43fcd8: the stroke from 0x80, below it the way back with the stone and the step back off the
     // heap (state 0x17, byte 13 = 2, the phase 2 of cutting stone) the carrying constant, any other frame the walk's.
@@ -60,7 +94,21 @@ public sealed class HistoryEditionLooksTests
     {
         var look = new StonecutterLook(Tables());
 
-        Assert.AreEqual(2, look.Add(Draw(new Stonecutter(), new CutsStone(new Vector(0, 0), 2, 0)), Low));
+        Assert.AreEqual(
+            2,
+            look.Add(
+                Draw(
+                    new Stonecutter(),
+                    new CutsStone
+                    {
+                        Back = new Vector(0, 0),
+                        Phase = 2,
+                        Quarter = 0,
+                    }
+                ),
+                Low
+            )
+        );
     }
 
     [TestMethod]
@@ -68,10 +116,37 @@ public sealed class HistoryEditionLooksTests
     {
         var look = new StonecutterLook(Tables());
 
-        Assert.AreEqual(1, look.Add(Draw(new Stonecutter(), new CutsStone(new Vector(0, 0), 1, 0)), Low));
         Assert.AreEqual(
             1,
-            look.Add(Draw(new Stonecutter(), new WalksFree(new Trip(new Vector(0, 0), new BackToHut(false)))), Low)
+            look.Add(
+                Draw(
+                    new Stonecutter(),
+                    new CutsStone
+                    {
+                        Back = new Vector(0, 0),
+                        Phase = 1,
+                        Quarter = 0,
+                    }
+                ),
+                Low
+            )
+        );
+        Assert.AreEqual(
+            1,
+            look.Add(
+                Draw(
+                    new Stonecutter(),
+                    new WalksFree
+                    {
+                        Trip = new Trip
+                        {
+                            Remaining = new Vector(0, 0),
+                            Purpose = new BackToHut { Carrying = false },
+                        },
+                    }
+                ),
+                Low
+            )
         );
     }
 
@@ -80,7 +155,17 @@ public sealed class HistoryEditionLooksTests
     public void AForestersLookAddsTheWorkFromFigureByte0x80AndTheWalkBelowIt()
     {
         var look = new ForesterLook(Tables());
-        var draw = Draw(new Forester(), new WalksFree(new Trip(new Vector(0, 0), new BackToHut(false))));
+        var draw = Draw(
+            new Forester(),
+            new WalksFree
+            {
+                Trip = new Trip
+                {
+                    Remaining = new Vector(0, 0),
+                    Purpose = new BackToHut { Carrying = false },
+                },
+            }
+        );
 
         Assert.AreEqual(4, look.Add(draw, High));
         Assert.AreEqual(1, look.Add(draw, Low));
@@ -94,7 +179,18 @@ public sealed class HistoryEditionLooksTests
 
         Assert.AreEqual(
             8,
-            look.Add(Draw(new TypeOneHut(), new Walks(new ToStorage(), new Heading(1)), new Heading(1)), High)
+            look.Add(
+                Draw(
+                    new TypeOneHut(),
+                    new Walks
+                    {
+                        Errand = new ToStorage(),
+                        Heading = new Heading { Value = 1 },
+                    },
+                    new Heading { Value = 1 }
+                ),
+                High
+            )
         );
     }
 
@@ -105,11 +201,33 @@ public sealed class HistoryEditionLooksTests
 
         Assert.AreEqual(
             4,
-            look.Add(Draw(new TypeOneHut(), new Walks(new ToStorage(), new Heading(0)), new Heading(0)), High)
+            look.Add(
+                Draw(
+                    new TypeOneHut(),
+                    new Walks
+                    {
+                        Errand = new ToStorage(),
+                        Heading = new Heading { Value = 0 },
+                    },
+                    new Heading { Value = 0 }
+                ),
+                High
+            )
         );
         Assert.AreEqual(
             4,
-            look.Add(Draw(new TypeOneHut(), new Walks(new ToStorage(), new Heading(2)), new Heading(2)), High)
+            look.Add(
+                Draw(
+                    new TypeOneHut(),
+                    new Walks
+                    {
+                        Errand = new ToStorage(),
+                        Heading = new Heading { Value = 2 },
+                    },
+                    new Heading { Value = 2 }
+                ),
+                High
+            )
         );
     }
 
@@ -127,7 +245,14 @@ public sealed class HistoryEditionLooksTests
     public void ATypeOneHutLookAddsThePlainWorkConstantOnAFreeWalkWithNoLoad()
     {
         var look = new TypeOneHutLook(Tables());
-        var empty = new WalksFree(new Trip(new Vector(0, 0), new BackToHut(false)));
+        var empty = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = new Vector(0, 0),
+                Purpose = new BackToHut { Carrying = false },
+            },
+        };
 
         Assert.AreEqual(4, look.Add(Draw(new TypeOneHut(), empty), High));
     }
@@ -141,7 +266,21 @@ public sealed class HistoryEditionLooksTests
         carried[0] = 0x1100;
         var look = new CarrierLook(Tables(carried));
 
-        Assert.AreEqual(0, look.Add(Draw(new Carrier(), new WalksRoad(null, new Heading(0)), carried: Good.None), 0));
+        Assert.AreEqual(
+            0,
+            look.Add(
+                Draw(
+                    new Carrier(),
+                    new WalksRoad
+                    {
+                        Load = null,
+                        Heading = new Heading { Value = 0 },
+                    },
+                    carried: Good.None
+                ),
+                0
+            )
+        );
     }
 
     // The carrier's handler at 0x43f8ae: a good beyond the carried table (27 entries, goods 0 to 26) adds nothing, and the last good
@@ -152,13 +291,20 @@ public sealed class HistoryEditionLooksTests
         var carried = new short[RuleTables.CarriedFigureCount];
         carried[RuleTables.CarriedFigureCount - 1] = 0x1a00;
         var look = new CarrierLook(Tables(carried));
-        var road = new WalksRoad(null, new Heading(0));
+        var road = new WalksRoad
+        {
+            Load = null,
+            Heading = new Heading { Value = 0 },
+        };
 
         Assert.AreEqual(
             0x1a00,
-            look.Add(Draw(new Carrier(), road, carried: new Good(RuleTables.CarriedFigureCount - 1)), 0)
+            look.Add(Draw(new Carrier(), road, carried: new Good { Code = RuleTables.CarriedFigureCount - 1 }), 0)
         );
-        Assert.AreEqual(0, look.Add(Draw(new Carrier(), road, carried: new Good(RuleTables.CarriedFigureCount)), 0));
-        Assert.AreEqual(0, look.Add(Draw(new Carrier(), road, carried: new Good(99)), 0));
+        Assert.AreEqual(
+            0,
+            look.Add(Draw(new Carrier(), road, carried: new Good { Code = RuleTables.CarriedFigureCount }), 0)
+        );
+        Assert.AreEqual(0, look.Add(Draw(new Carrier(), road, carried: new Good { Code = 99 }), 0));
     }
 }

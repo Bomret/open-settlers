@@ -22,8 +22,16 @@ public sealed class SimulationBoundaryTests
     public void AGoodCodeOutsideOneToTwentySixHasNoCountAndTheStockIgnoresIt(int code)
     {
         var castle = new CastleStock();
-        castle.Place(new Castle(1, 1, 1), new int[StartStock.Goods]);
-        var good = new Good(code);
+        castle.Place(
+            new Castle
+            {
+                X = 1,
+                Y = 1,
+                Height = 1,
+            },
+            new int[StartStock.Goods]
+        );
+        var good = new Good { Code = code };
 
         castle.Add(good);
 
@@ -61,14 +69,14 @@ public sealed class SimulationBoundaryTests
         Assert.AreEqual((0xFFF8, 0), (before, (int)clock.Now));
     }
 
-    private sealed class KindHandler(int kind) : ICommandHandler
+    sealed class KindHandler(int kind) : ICommandHandler
     {
         public int Kind => kind;
 
         public bool Handle(Command command) => true;
     }
 
-    private static GameParts PartsOf(params ICommandHandler[] handlers) =>
+    static GameParts PartsOf(params ICommandHandler[] handlers) =>
         new()
         {
             Tables = null!,
@@ -115,18 +123,27 @@ public sealed class SimulationBoundaryTests
 
     // ----- Cursor windows (F31): 0x428728 clears a window of entries from a cursor, stops after the tenth flagged one -----
 
-    private static Game WindowGame(int window)
+    static Game WindowGame(int window)
     {
         var tables = LayoutSettlersTests.MadeTables();
         tables.ScanWindows[MapSize.Offered[0].Value] = (ushort)window;
 
         return GameFactory.Create(
             tables,
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x1234,
+                    W1 = 0x5678,
+                    W2 = 0x9ABC,
+                },
+                MapSize.Offered[0]
+            )
         );
     }
 
-    private static BuildingTable WithBuildings(Game game, int count, bool failed = false)
+    static BuildingTable WithBuildings(Game game, int count, bool failed = false)
     {
         var table = (BuildingTable)game.Buildings;
         for (var i = 0; i < count; i++)
@@ -188,7 +205,7 @@ public sealed class SimulationBoundaryTests
         );
     }
 
-    private static void WithFlags(Game game, int count, bool failed = false)
+    static void WithFlags(Game game, int count, bool failed = false)
     {
         for (var i = 0; i < count; i++)
         {
@@ -247,11 +264,11 @@ public sealed class SimulationBoundaryTests
 
     // ----- Walk home (F33 the far end first, F34 the rings of the random node) -----
 
-    private static WalkHomeBehavior Behaviour(BehaviourBench bench) =>
+    static WalkHomeBehavior Behaviour(BehaviourBench bench) =>
         new(bench.Movement, bench.Buildings, bench.Flags, bench.Roads, bench.History, bench.Draws, (_, _) => -1);
 
     // A flag of player 0 on the node with a road leaving it (to a flag far off).
-    private static void HomeFlag(BehaviourBench bench, int x, int y, int direction)
+    static void HomeFlag(BehaviourBench bench, int x, int y, int direction)
     {
         var slot = bench.Flags.Add(x, y);
         bench.Map.At(x, y).FlagMark = true;
@@ -260,16 +277,16 @@ public sealed class SimulationBoundaryTests
         bench.Join(slot, direction, elsewhere, (direction + 3) % 6);
     }
 
-    private static Settler Searching(BehaviourBench bench, bool far, out int slot)
+    static Settler Searching(BehaviourBench bench, bool far, out int slot)
     {
-        var settler = new Settler(new Woodcutter(), 0, 10, 10, 0, new SearchesHome(far));
+        var settler = new Settler(new Woodcutter(), 0, 10, 10, 0, new SearchesHome { FarEndFirst = far });
         slot = bench.Place(settler);
         bench.Clock = 8;
 
         return settler;
     }
 
-    private static Vector WalkTarget(Settler settler) =>
+    static Vector WalkTarget(Settler settler) =>
         ((WalksFree)(settler.Activity with { Residue = default })).Trip.Remaining;
 
     [TestMethod]
@@ -288,7 +305,7 @@ public sealed class SimulationBoundaryTests
         Assert.AreEqual(new Vector(dx, dy), WalkTarget(settler));
     }
 
-    private static (Vector Walk, int Draws) HomeNodeAfter(ushort[] draws, Action<Map>? prepare = null)
+    static (Vector Walk, int Draws) HomeNodeAfter(ushort[] draws, Action<Map>? prepare = null)
     {
         var bench = new BehaviourBench(draws);
         prepare?.Invoke(bench.Map);
@@ -299,9 +316,9 @@ public sealed class SimulationBoundaryTests
         return (WalkTarget(settler), bench.Draws.Taken);
     }
 
-    private static ushort[] Draws(int fillers, ushort last) => [.. Enumerable.Repeat((ushort)0, fillers).Append(last)];
+    static ushort[] Draws(int fillers, ushort last) => [.. Enumerable.Repeat((ushort)0, fillers).Append(last)];
 
-    private static void Qualify(Map map, int x, int y, Owner owner)
+    static void Qualify(Map map, int x, int y, Owner owner)
     {
         map.At(x, y).Height = 1;
         map.At(x, y).Owner = owner;
@@ -348,7 +365,7 @@ public sealed class SimulationBoundaryTests
 
     // ----- Lake detail (F35): 0x428d6e takes one draw; the object pass reaches (23, 0) first -----
 
-    private static (HutWork Work, BehaviourBench Bench) LakeBench(params ushort[] draws)
+    static (HutWork Work, BehaviourBench Bench) LakeBench(params ushort[] draws)
     {
         var bench = new BehaviourBench(draws);
         var walkHome = Behaviour(bench);
@@ -368,7 +385,7 @@ public sealed class SimulationBoundaryTests
         return (work, bench);
     }
 
-    private static void Lake(Map map, int x, int y, int detail)
+    static void Lake(Map map, int x, int y, int detail)
     {
         map.At(x, y).WaterTriangle = true;
         map.At(x, y).LakeMark = true;

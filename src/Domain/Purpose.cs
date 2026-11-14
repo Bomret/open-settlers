@@ -7,29 +7,48 @@ public abstract record Purpose
 }
 
 /// <summary>The walk of a woodcutter out to the tree it found; the vector is the way back to the hut's flag.</summary>
-/// <param name="Back">The steps of the way back, east and south.</param>
-public sealed record ToTree(Vector Back) : Purpose;
+public sealed record ToTree : Purpose
+{
+    /// <summary>The steps of the way back, east and south.</summary>
+    public required Vector Back { get; init; }
+}
 
 /// <summary>The walk of a stonecutter out to the heap he found; the vector is the way back to the hut's flag.</summary>
-/// <param name="Back">The steps of the way back, east and south.</param>
-public sealed record ToHeap(Vector Back) : Purpose;
+public sealed record ToHeap : Purpose
+{
+    /// <summary>The steps of the way back, east and south.</summary>
+    public required Vector Back { get; init; }
+}
 
 /// <summary>The walk of a forester out to the node he found to plant on; the vector is the way back to the hut's flag.</summary>
-/// <param name="Back">The steps of the way back, east and south.</param>
-public sealed record ToSpot(Vector Back) : Purpose;
+public sealed record ToSpot : Purpose
+{
+    /// <summary>The steps of the way back, east and south.</summary>
+    public required Vector Back { get; init; }
+}
 
 /// <summary>The way back to the hut's flag after the cut, or at once where the tree was gone.</summary>
-/// <param name="Carrying">Whether the woodcutter carries the log, which it lays on the flag.</param>
-public sealed record BackToHut(bool Carrying) : Purpose;
+public sealed record BackToHut : Purpose
+{
+    /// <summary>Whether the woodcutter carries the log, which it lays on the flag.</summary>
+    public required bool Carrying { get; init; }
+}
 
 /// <summary>The walk home to the nearest flag of the settler's player, as a settler whose work was taken away takes it.</summary>
 public sealed record Home : Purpose;
 
 /// <summary>A free walk: the steps left to take, what they are for, and the walk's memory of its last step.</summary>
-/// <param name="Remaining">The steps left, east and south.</param>
-/// <param name="Purpose">What the walk is for.</param>
-/// <param name="Memory">
-/// The walk's memory (byte 15): the low three bits name the last step's direction plus one, bit 3 marks the vector used up,
-/// and bits 4 to 7 hold a debt of turns (<c>docs/rules/woodcutting.md</c>).
-/// </param>
-public sealed record Trip(Vector Remaining, Purpose Purpose, int Memory = 0);
+public sealed record Trip
+{
+    /// <summary>The steps left, east and south.</summary>
+    public required Vector Remaining { get; init; }
+
+    /// <summary>What the walk is for.</summary>
+    public required Purpose Purpose { get; init; }
+
+    /// <summary>
+    /// The walk's memory (byte 15): the low three bits name the last step's direction plus one, bit 3 marks the vector used up,
+    /// and bits 4 to 7 hold a debt of turns (<c>docs/rules/woodcutting.md</c>).
+    /// </summary>
+    public int Memory { get; init; } = 0;
+}

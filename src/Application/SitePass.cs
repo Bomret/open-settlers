@@ -28,7 +28,7 @@ public sealed class SitePass(
 )
 {
     // The rank the stones start from: a constant of the routine (0x42d8ff), unlike the planks', which the player word gives.
-    private const byte StoneRankStart = 0xff;
+    const byte StoneRankStart = 0xff;
 
     /// <summary>Runs the turn of a building site.</summary>
     public void Turn(Building site)
@@ -75,7 +75,7 @@ public sealed class SitePass(
     // The site's request for the worker of the stage, none where no module names one. Two modules that name the worker of one stage
     // are refused, so no module's answer depends on the registry's order. The answers read the tables, which a partial table set
     // holds no data for until a site asks, so the refusal comes with the first ask of the stage.
-    private void Ask(Building site, SiteStage stage)
+    void Ask(Building site, SiteStage stage)
     {
         JobRules? first = null;
         WorkerRequest? worker = null;
@@ -104,7 +104,7 @@ public sealed class SitePass(
     }
 
     // The ground is levelled where the node and its six neighbours all lie at the site's height (0x42d34e to 0x42d490).
-    private bool Levelled(Building site, int height)
+    bool Levelled(Building site, int height)
     {
         if (map.At(site.X, site.Y).Height != height)
         {
@@ -127,7 +127,7 @@ public sealed class SitePass(
     // those on the way in its low nibble. A site that holds, with what is on the way, the goods it needs (or 8 or more) asks for no
     // more: its rank is 0. Otherwise the start shifted right by the goods held, again by 2 where no builder is inside, with bit 0
     // cleared.
-    private static void Keep(Flag flag, RequestWord word, int needed, int fill, byte start, bool builderInside)
+    static void Keep(Flag flag, RequestWord word, int needed, int fill, byte start, bool builderInside)
     {
         var held = (fill >> 4) + (fill & 0xf);
         var rank = 0;

@@ -8,7 +8,7 @@ namespace OpenSettlers.Domain;
 /// </summary>
 public sealed class RoadNetwork
 {
-    private readonly List<Road> _roads = [];
+    readonly List<Road> _roads = [];
 
     /// <summary>The roads in the order they were built (a road that was split or joined takes the end of the list).</summary>
     public IReadOnlyList<Road> Roads => _roads;

@@ -32,7 +32,7 @@ public sealed class SnapshotExporter(SettlerTable settlers, BuildingTable buildi
             fields.AddRange([("planks", site.Planks), ("stones", site.Stones), ("height", site.TargetHeight)]);
         }
 
-        return new ThingState(fields);
+        return new ThingState { Fields = fields };
     }
 
     /// <summary>The flag in the slot: its node, status byte, road bytes, and the goods on it.</summary>
@@ -47,7 +47,7 @@ public sealed class SnapshotExporter(SettlerTable settlers, BuildingTable buildi
 
         fields.AddRange(flag.Places.Select((place, index) => ($"good{index}", (int)FlagEncoder.GoodByte(place))));
 
-        return new ThingState(fields);
+        return new ThingState { Fields = fields };
     }
 
     /// <summary>The settler in the slot: the fields of its table item.</summary>
@@ -55,19 +55,23 @@ public sealed class SnapshotExporter(SettlerTable settlers, BuildingTable buildi
     {
         var s = settlers[slot];
         var raw = SettlerEncoder.Fields(s);
-        return new ThingState([
-            ("job", s.Job.Code),
-            ("state", raw.State),
-            ("player", s.Player),
-            ("mode", raw.Mode),
-            ("target", raw.Target),
-            ("next", raw.Next),
-            ("heading", raw.Heading),
-            ("frame", s.Frame),
-            ("timer", s.Timer),
-            ("stamp", raw.Stamp),
-            ("x", s.X),
-            ("y", s.Y),
-        ]);
+        return new ThingState
+        {
+            Fields =
+            [
+                ("job", s.Job.Code),
+                ("state", raw.State),
+                ("player", s.Player),
+                ("mode", raw.Mode),
+                ("target", raw.Target),
+                ("next", raw.Next),
+                ("heading", raw.Heading),
+                ("frame", s.Frame),
+                ("timer", s.Timer),
+                ("stamp", raw.Stamp),
+                ("x", s.X),
+                ("y", s.Y),
+            ],
+        };
     }
 }

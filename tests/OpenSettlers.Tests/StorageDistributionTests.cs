@@ -12,22 +12,26 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class StorageDistributionTests
 {
-    private const int East = 0;
-    private const int West = 3;
-    private const int Planks = 8;
-    private const int Stones = 10;
+    const int East = 0;
+    const int West = 3;
+    const int Planks = 8;
+    const int Stones = 10;
 
-    private sealed record Rig(
-        BehaviourBench Bench,
-        CastleStock Castle,
-        StorageDistribution Distribution,
-        GoodsTransport Goods
-    );
+    sealed record Rig
+    {
+        public required BehaviourBench Bench { get; init; }
+
+        public required CastleStock Castle { get; init; }
+
+        public required StorageDistribution Distribution { get; init; }
+
+        public required GoodsTransport Goods { get; init; }
+    }
 
     // Flag 0 is the castle's; flags 1 and 2 are sites' flags on roads that hold a carrier (flag 2 beyond flag 1). The castle holds
     // the planks and stones given. A flagCount below 3 leaves out the last flags and their roads, and withCastle false leaves the
     // castle unplaced.
-    private static Rig Started(
+    static Rig Started(
         int planks,
         int stones,
         ushort draw = 2,
@@ -65,7 +69,15 @@ public sealed class StorageDistributionTests
         var castle = new CastleStock();
         if (withCastle)
         {
-            castle.Place(new Castle(3, 3, 1), stock);
+            castle.Place(
+                new Castle
+                {
+                    X = 3,
+                    Y = 3,
+                    Height = 1,
+                },
+                stock
+            );
         }
 
         var goods = new GoodsTransport(bench.Movement, bench.Flags, bench.Roads, bench.History, bench.Buildings);
@@ -80,13 +92,21 @@ public sealed class StorageDistributionTests
             bench.History
         );
 
-        return new Rig(bench, castle, distribution, goods);
+        return new Rig
+        {
+            Bench = bench,
+            Castle = castle,
+            Distribution = distribution,
+            Goods = goods,
+        };
     }
 
-    private static Building Site(Rig rig, int flag, byte plankRank, byte stoneRank = 0)
+    static Building Site(Rig rig, int flag, byte plankRank, byte stoneRank = 0)
     {
-        rig.Bench.Flags[flag].SetRequest(RequestWord.First, new Request(ConstructionTables.PlankClass, plankRank));
-        rig.Bench.Flags[flag].SetRequest(RequestWord.Second, new Request(ConstructionTables.StoneClass, stoneRank));
+        rig.Bench.Flags[flag]
+            .SetRequest(RequestWord.First, new Request { Asks = ConstructionTables.PlankClass, Rank = plankRank });
+        rig.Bench.Flags[flag]
+            .SetRequest(RequestWord.Second, new Request { Asks = ConstructionTables.StoneClass, Rank = stoneRank });
         var site = new Building(BuildingType.Woodcutter, 3 + 2 * flag, 3, flag, constructing: true)
         {
             Progress = 1,
@@ -123,22 +143,28 @@ public sealed class StorageDistributionTests
     }
 
     // The food step of the program's orders hands out the one of the food goods 1, 3, and 6 that the castle holds most of.
-    private static readonly int[] FoodGoods = [1, 3, 6];
+    static readonly int[] FoodGoods = [1, 3, 6];
 
     [TestMethod]
     public void AFoodStepHandsOutTheFoodGoodTheCastleHoldsMostOf()
     {
-        var food = new GoodClass(7, RequestWord.First);
+        var food = new GoodClass { Class = 7, Word = RequestWord.First };
         var tables = LayoutSettlersTests.MadeTables(
             distribution:
             [
-                [new DistributionStep(food, [.. FoodGoods.Select(good => new Good(good))])],
+                [
+                    new DistributionStep
+                    {
+                        Class = food,
+                        Goods = [.. FoodGoods.Select(good => new Good { Code = good })],
+                    },
+                ],
                 [],
                 [],
             ]
         );
         var rig = Started(planks: 0, stones: 0, tables: tables, food: [2, 5, 3]);
-        rig.Bench.Flags[1].SetRequest(RequestWord.First, new Request(food, 0x3e));
+        rig.Bench.Flags[1].SetRequest(RequestWord.First, new Request { Asks = food, Rank = 0x3e });
 
         rig.Distribution.Run();
 
@@ -147,9 +173,9 @@ public sealed class StorageDistributionTests
             rig.Bench.Flags[0].Places[0].Good.Code,
             "the good 3, of which the castle holds 5, lies on the flag"
         );
-        Assert.AreEqual(4, rig.Castle.Count(new Good(3)), "its count fell by one");
-        Assert.AreEqual(2, rig.Castle.Count(new Good(1)), "the other foods stay");
-        Assert.AreEqual(3, rig.Castle.Count(new Good(6)), "the other foods stay");
+        Assert.AreEqual(4, rig.Castle.Count(new Good { Code = 3 }), "its count fell by one");
+        Assert.AreEqual(2, rig.Castle.Count(new Good { Code = 1 }), "the other foods stay");
+        Assert.AreEqual(3, rig.Castle.Count(new Good { Code = 6 }), "the other foods stay");
     }
 
     [TestMethod]

@@ -7,13 +7,40 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CommandEqualityTests
 {
-    private static Command Road(int[]? directions) => new(3, 0, CommandKind.BuildRoad, 5, 6, directions);
+    static Command Road(int[]? directions) =>
+        new()
+        {
+            Tick = 3,
+            Player = 0,
+            Kind = CommandKind.BuildRoad,
+            X = 5,
+            Y = 6,
+            Directions = directions,
+        };
 
     [TestMethod]
     public void CommandsWithTheSameFieldsAreEqualWithEqualHashes()
     {
-        var one = new Command(3, 0, CommandKind.PlaceBuilding, 5, 6, null, BuildingType.Woodcutter);
-        var other = new Command(3, 0, CommandKind.PlaceBuilding, 5, 6, null, BuildingType.Woodcutter);
+        var one = new Command
+        {
+            Tick = 3,
+            Player = 0,
+            Kind = CommandKind.PlaceBuilding,
+            X = 5,
+            Y = 6,
+            Directions = null,
+            Building = BuildingType.Woodcutter,
+        };
+        var other = new Command
+        {
+            Tick = 3,
+            Player = 0,
+            Kind = CommandKind.PlaceBuilding,
+            X = 5,
+            Y = 6,
+            Directions = null,
+            Building = BuildingType.Woodcutter,
+        };
 
         Assert.AreEqual(one, other);
         Assert.AreEqual(one.GetHashCode(), other.GetHashCode());
@@ -42,8 +69,26 @@ public sealed class CommandEqualityTests
     [TestMethod]
     public void ADifferentBuildingMakesCommandsUnequal()
     {
-        var woodcutter = new Command(3, 0, CommandKind.PlaceBuilding, 5, 6, null, BuildingType.Woodcutter);
-        var forester = new Command(3, 0, CommandKind.PlaceBuilding, 5, 6, null, BuildingType.Forester);
+        var woodcutter = new Command
+        {
+            Tick = 3,
+            Player = 0,
+            Kind = CommandKind.PlaceBuilding,
+            X = 5,
+            Y = 6,
+            Directions = null,
+            Building = BuildingType.Woodcutter,
+        };
+        var forester = new Command
+        {
+            Tick = 3,
+            Player = 0,
+            Kind = CommandKind.PlaceBuilding,
+            X = 5,
+            Y = 6,
+            Directions = null,
+            Building = BuildingType.Forester,
+        };
 
         Assert.AreNotEqual(woodcutter, forester);
         Assert.AreNotEqual(woodcutter, woodcutter with { Building = null });
