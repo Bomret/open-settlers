@@ -315,7 +315,7 @@ Sites:
 | `0x44591d` | `Panel_HandleClick` | Hit-tests a panel's buttons and dispatches the action through the table at `0x44668c`. | inferred | game | Called by `0x440c24` and `StartScreen_HandleClick`. |
 | `0x451355` | `Panel_Update` | For each view, runs the handler of the requested or current panel screen. | inferred | game | Called by `Main_Loop`. |
 | `0x45ce5a` | `Panel_CopyToScreen` | For each view, copies the panel into the view's screen. | inferred | game | Called by `Main_Loop`. |
-| `0x44d38d` | `Render_DrawMapView` | For each view, draws the map row by row. | inferred | game | Called by `Main_Loop` in a game. |
+| `0x44d38d` | `Render_DrawMapView` | Draws the map of each view: names the view record at `+0x78` of the game state block as the view and runs `Render_DrawViewRows`, then the same for the view record at `+0x7c`. It calls nothing else. | confirmed | game | Called by `Main_Loop` in a game, before `Render_DrawViewOverlay`. See [Build sites](build-sites.md#the-build-site-overlay). |
 | `0x44d3ae` | `Render_DrawViewRows` | Walks the rows of one view two at a time and runs `Render_DrawRowTiles` for each. | confirmed | game | Called by `Render_DrawMapView`. See [Map objects](map-objects.md). |
 | `0x44d77e` | `Render_AddWaitingCarrier` | Appends a draw record (the low two bits of record B byte 1, the figure word, x, y) to the list at `Render_WaitingCarriers` for a tile whose record B byte 1 has bit 7 set. Where bit 6 of the tile's record A byte 0 is set, the figure word is `0x203` and the position the tile's (x the column counter times 8, y the row position less 4 times the height). Otherwise it takes a phase word from `Render_WaitingCarrierPhases` by bits 2 to 5 of the tile record's address (`0x44d832`), adds the clock (`+0x206`), shifts right 2, masks with `0xfe`, and takes that byte offset in `Render_WaitingCarrierFigures` as the figure word (`0x44d85d`). It then adds the two signed bytes of `Render_WaitingCarrierOffsets` at twice the low six bits of record A byte 0 to the position (`0x44d9b2`). | confirmed | game | Called at `0x44d5ef` by `Render_DrawRowTiles`. [Carriers](carriers.md#drawing). |
 | `0x44d5b4` | `Render_DrawRowTiles` | Draws the tiles of one row from west to east. For each tile it first reads byte 1 of record B (at the state's `+0x36` from the tile's record) and calls `Render_AddWaitingCarrier` where bit 7 is set (`0x44d5ef`). Then, for the object code in byte 3 of record A: no sprite for 0, other routines for 1 to 7, the animated or still sprite through `Gfx_DrawObjectSprite` from 8 on. It starts the list at `Render_WaitingCarriers` and ends it with `0xffff`. | confirmed | game | Called by `Render_DrawViewRows`. See [Map objects](map-objects.md). |
@@ -1309,7 +1309,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44d263` | — | unknown | Main loop |
 | `0x44d270` | `Msg_DrawIconAlt` | inferred | Main loop |
 | `0x44d2fc` | — | unknown | Views, panels, and drawing |
-| `0x44d38d` | `Render_DrawMapView` | inferred | Views, panels, and drawing |
+| `0x44d38d` | `Render_DrawMapView` | confirmed | Views, panels, and drawing |
 | `0x44d3ae` | `Render_DrawViewRows` | confirmed | Views, panels, and drawing |
 | `0x44d5b4` | `Render_DrawRowTiles` | confirmed | Views, panels, and drawing |
 | `0x44d77e` | `Render_AddWaitingCarrier` | confirmed | Views, panels, and drawing |
@@ -1489,7 +1489,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 362 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 306 confirmed, 70 inferred, 51 unknown.
+Coverage: the index names 362 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 307 confirmed, 69 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:

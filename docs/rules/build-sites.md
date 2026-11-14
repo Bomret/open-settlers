@@ -97,7 +97,8 @@ by `Building_Free` (`0x42cf9d`) and the computer player. The build-site overlay 
 
 ## The build-site overlay
 
-**Status:** confirmed for the nodes, the markers, the toggle, and the drawing; the meaning of the four images is **inferred**
+**Status:** confirmed for the nodes, the markers, the toggle, the drawing, and the draw order; what the two sprite lists
+above the markers show is open; the meaning of the four images is **inferred**
 from what they show.
 
 The overlay shows, on the nodes of a view, what the evaluator allows there. `Render_DrawViewOverlay` (`0x450a35`) runs
