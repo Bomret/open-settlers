@@ -17,7 +17,16 @@ public sealed class StorageDistributionTests
     const int Planks = 8;
     const int Stones = 10;
 
-    sealed record Rig(BehaviourBench Bench, CastleStock Castle, StorageDistribution Distribution, GoodsTransport Goods);
+    sealed record Rig
+    {
+        public required BehaviourBench Bench { get; init; }
+
+        public required CastleStock Castle { get; init; }
+
+        public required StorageDistribution Distribution { get; init; }
+
+        public required GoodsTransport Goods { get; init; }
+    }
 
     // Flag 0 is the castle's; flags 1 and 2 are sites' flags on roads that hold a carrier (flag 2 beyond flag 1). The castle holds
     // the planks and stones given. A flagCount below 3 leaves out the last flags and their roads, and withCastle false leaves the
@@ -83,7 +92,13 @@ public sealed class StorageDistributionTests
             bench.History
         );
 
-        return new Rig(bench, castle, distribution, goods);
+        return new Rig
+        {
+            Bench = bench,
+            Castle = castle,
+            Distribution = distribution,
+            Goods = goods,
+        };
     }
 
     static Building Site(Rig rig, int flag, byte plankRank, byte stoneRank = 0)

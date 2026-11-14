@@ -38,22 +38,49 @@ public sealed class SettlerDrawTests
     const int OffsetX = 0x10;
     const int OffsetY = 8;
 
-    sealed record Sprite(int Entry, int Colour, int X, int Y)
+    sealed record Sprite
     {
+        public required int Entry { get; init; }
+
+        public required int Colour { get; init; }
+
+        public required int X { get; init; }
+
+        public required int Y { get; init; }
+
         public override string ToString() => $"{Entry}/{Colour}/{X},{Y}";
     }
 
-    sealed record Record(int Slot, List<Sprite> Sprites);
+    sealed record Record
+    {
+        public required int Slot { get; init; }
 
-    sealed record Pass(
-        int Number,
-        ushort Clock,
-        Dictionary<int, (byte[] Bytes, int Height)> Changed,
-        Dictionary<int, (ushort Timer, ushort Stamp)> Held,
-        List<Record> Records
-    );
+        public required List<Sprite> Sprites { get; init; }
+    }
 
-    sealed record Scenario(string Name, string Command, List<string> Header, List<Pass> Passes);
+    sealed record Pass
+    {
+        public required int Number { get; init; }
+
+        public required ushort Clock { get; init; }
+
+        public required Dictionary<int, (byte[] Bytes, int Height)> Changed { get; init; }
+
+        public required Dictionary<int, (ushort Timer, ushort Stamp)> Held { get; init; }
+
+        public required List<Record> Records { get; init; }
+    }
+
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<string> Header { get; init; }
+
+        public required List<Pass> Passes { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
@@ -65,7 +92,15 @@ public sealed class SettlerDrawTests
             if (line.StartsWith("# ", StringComparison.Ordinal))
             {
                 var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], [], []));
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Header = [],
+                        Passes = [],
+                    }
+                );
             }
             else if (!line.StartsWith("pass=", StringComparison.Ordinal))
             {
@@ -110,8 +145,10 @@ public sealed class SettlerDrawTests
             .Select(text =>
             {
                 var halves = text.Split(':');
-                return new Record(
-                    int.Parse(halves[0], CultureInfo.InvariantCulture),
+                return new Record
+                {
+                    Slot = int.Parse(halves[0], CultureInfo.InvariantCulture),
+                    Sprites =
                     [
                         .. halves[1]
                             .Split(';')
@@ -119,25 +156,27 @@ public sealed class SettlerDrawTests
                             {
                                 var numbers = sprite.Split('/');
                                 var position = numbers[2].Split(',');
-                                return new Sprite(
-                                    int.Parse(numbers[0], CultureInfo.InvariantCulture),
-                                    int.Parse(numbers[1], CultureInfo.InvariantCulture),
-                                    int.Parse(position[0], CultureInfo.InvariantCulture),
-                                    int.Parse(position[1], CultureInfo.InvariantCulture)
-                                );
+                                return new Sprite
+                                {
+                                    Entry = int.Parse(numbers[0], CultureInfo.InvariantCulture),
+                                    Colour = int.Parse(numbers[1], CultureInfo.InvariantCulture),
+                                    X = int.Parse(position[0], CultureInfo.InvariantCulture),
+                                    Y = int.Parse(position[1], CultureInfo.InvariantCulture),
+                                };
                             }),
-                    ]
-                );
+                    ],
+                };
             })
             .ToList();
 
-        return new Pass(
-            int.Parse(fields["pass"], CultureInfo.InvariantCulture),
-            ushort.Parse(fields["clock"], CultureInfo.InvariantCulture),
-            changed,
-            held,
-            records
-        );
+        return new Pass
+        {
+            Number = int.Parse(fields["pass"], CultureInfo.InvariantCulture),
+            Clock = ushort.Parse(fields["clock"], CultureInfo.InvariantCulture),
+            Changed = changed,
+            Held = held,
+            Records = records,
+        };
     }
 
     // The settler of the original's 16 bytes (Table16), as in CarrierWalkTests: the node is the dword at 4, (y * 2 * width + x) * 4.
@@ -428,7 +467,13 @@ public sealed class SettlerDrawTests
                 );
 
                 var actual = drawn
-                    .Select(draw => new Sprite(draw.Entry, draw.Colour, draw.X + OffsetX, draw.Y + OffsetY))
+                    .Select(draw => new Sprite
+                    {
+                        Entry = draw.Entry,
+                        Colour = draw.Colour,
+                        X = draw.X + OffsetX,
+                        Y = draw.Y + OffsetY,
+                    })
                     .ToList();
 
                 var next = 0;

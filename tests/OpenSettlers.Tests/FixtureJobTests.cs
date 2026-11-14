@@ -135,7 +135,14 @@ public sealed class FixtureJobTests
     ];
 
     // One layer: the generated text, the compilation with the generated files, and the diagnostics of the generators.
-    sealed record Layer(string Text, Compilation Output, int Diagnostics);
+    sealed record Layer
+    {
+        public required string Text { get; init; }
+
+        public required Compilation Output { get; init; }
+
+        public required int Diagnostics { get; init; }
+    }
 
     static Layer Run(string name, string engine, string? fixture, params Compilation[] below)
     {
@@ -156,7 +163,12 @@ public sealed class FixtureJobTests
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics);
         var text = string.Concat(driver.GetRunResult().GeneratedTrees.Select(tree => tree.ToString()));
 
-        return new Layer(text, output, diagnostics.Length);
+        return new Layer
+        {
+            Text = text,
+            Output = output,
+            Diagnostics = diagnostics.Length,
+        };
     }
 
     // The four layers, each compiled on the Domain's output, with or without the fixture's files.

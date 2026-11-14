@@ -28,11 +28,20 @@ public sealed class HomeWalkTests
     // The scenario of a settler on a flag no road leads from to the castle: it looks for another flag (state 0x19, mode 1).
     const string NoStorage = "no-storage-road";
 
-    sealed record Scenario(
-        string Name,
-        string Command,
-        List<(int Pass, string? Settler, string? Rng, string? Waiting, string? Other)> Lines
-    );
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<(
+            int Pass,
+            string? Settler,
+            string? Rng,
+            string? Waiting,
+            string? Other
+        )> Lines { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
@@ -44,7 +53,14 @@ public sealed class HomeWalkTests
             if (line.StartsWith("# ", StringComparison.Ordinal))
             {
                 var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Lines = [],
+                    }
+                );
                 continue;
             }
 

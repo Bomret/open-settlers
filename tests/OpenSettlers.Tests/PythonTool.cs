@@ -8,7 +8,14 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace OpenSettlers.Tests;
 
 /// <summary>The exit status and the output of one run of a python tool.</summary>
-readonly record struct ToolRun(int Exit, string Stdout, string Stderr);
+readonly record struct ToolRun
+{
+    public required int Exit { get; init; }
+
+    public required string Stdout { get; init; }
+
+    public required string Stderr { get; init; }
+}
 
 /// <summary>
 /// The one place the tests spawn python3 for the scripts under <c>tools/</c>. A missing python3 fails the test with the hint
@@ -112,7 +119,12 @@ static class PythonTool
         var stderr = process.StandardError.ReadToEndAsync();
         process.WaitForExit();
 
-        return new ToolRun(process.ExitCode, stdout.Result, stderr.Result);
+        return new ToolRun
+        {
+            Exit = process.ExitCode,
+            Stdout = stdout.Result,
+            Stderr = stderr.Result,
+        };
     }
 
     /// <summary>

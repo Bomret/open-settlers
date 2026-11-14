@@ -24,7 +24,14 @@ public sealed class RemovalTests
 {
     const string Fixture = "removals.txt";
 
-    internal sealed record Scenario(string Name, string Command, List<Dictionary<string, string>> Lines);
+    internal sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<Dictionary<string, string>> Lines { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios =>
         Load()
@@ -47,7 +54,14 @@ public sealed class RemovalTests
             {
                 if (!command.Split(':')[0].Contains(' ') && command.Contains(':'))
                 {
-                    scenarios.Add(new Scenario(head, command, []));
+                    scenarios.Add(
+                        new Scenario
+                        {
+                            Name = head,
+                            Command = command,
+                            Lines = [],
+                        }
+                    );
                 }
 
                 continue;

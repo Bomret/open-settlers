@@ -48,7 +48,18 @@ public sealed class HeadOnPassTests
         );
     }
 
-    sealed record Meeting(Game Game, ThingEvent Pass, ThingEvent Wait, int Stepper, int Passer);
+    sealed record Meeting
+    {
+        public required Game Game { get; init; }
+
+        public required ThingEvent Pass { get; init; }
+
+        public required ThingEvent Wait { get; init; }
+
+        public required int Stepper { get; init; }
+
+        public required int Passer { get; init; }
+    }
 
     static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
@@ -109,7 +120,14 @@ public sealed class HeadOnPassTests
             .History.EventsOf(pass.Thing)
             .Last(e => e.Type == EventType.Stepped && e.Tick < pass.Tick && e.State.Get("heading") < 0);
 
-        return new Meeting(game, pass, wait, stepper, passer);
+        return new Meeting
+        {
+            Game = game,
+            Pass = pass,
+            Wait = wait,
+            Stepper = stepper,
+            Passer = passer,
+        };
     }
 
     static int Height(Game game, int x, int y) => game.Map.At(x, y).Height;

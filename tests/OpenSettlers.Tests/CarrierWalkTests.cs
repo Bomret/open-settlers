@@ -25,7 +25,14 @@ public sealed class CarrierWalkTests
     const string Fixture = "carrier-walks.txt";
     const string NoFlagBytes = "00000000000000";
 
-    sealed record Scenario(string Name, string Command, List<(int Pass, Dictionary<string, string> Values)> Lines);
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<(int Pass, Dictionary<string, string> Values)> Lines { get; init; }
+    }
 
     public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
 
@@ -37,7 +44,14 @@ public sealed class CarrierWalkTests
             if (line.StartsWith("# ", StringComparison.Ordinal))
             {
                 var parts = line[2..].Split(' ', 2);
-                scenarios.Add(new Scenario(parts[0], parts[1], []));
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Lines = [],
+                    }
+                );
                 continue;
             }
 

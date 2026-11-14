@@ -338,11 +338,25 @@ public sealed class InstallInitializerTests
 
     // A static method or property of a type of the source, and the code that runs when it is called or read: the
     // method's body, the property's expression body or getter.
-    sealed record Member(string Type, string Name, bool IsProperty, SyntaxNode Body);
+    sealed record Member
+    {
+        public required string Type { get; init; }
+
+        public required string Name { get; init; }
+
+        public required bool IsProperty { get; init; }
+
+        public required SyntaxNode Body { get; init; }
+    }
 
     // How the source names TestProgram: whether `using static` imports it, and the receivers that name it, its own name
     // and each alias a using directive gives it.
-    sealed record TestProgramNames(bool Bare, HashSet<string> Receivers);
+    sealed record TestProgramNames
+    {
+        public required bool Bare { get; init; }
+
+        public required HashSet<string> Receivers { get; init; }
+    }
 
     // The 1-based line of the '=' of every static field or static auto-property initializer, and of the name of every
     // static constructor, in the source that reaches the install outside a lambda or local function: by calling it, or
@@ -354,14 +368,15 @@ public sealed class InstallInitializerTests
             .OfType<UsingDirectiveSyntax>()
             .Where(directive => directive.Name is { } name && Name(name) == "TestProgram")
             .ToList();
-        var testProgram = new TestProgramNames(
-            imports.Any(directive => directive.StaticKeyword != default),
-            imports
+        var testProgram = new TestProgramNames
+        {
+            Bare = imports.Any(directive => directive.StaticKeyword != default),
+            Receivers = imports
                 .Select(directive => directive.Alias?.Name.Identifier.Text)
                 .OfType<string>()
                 .Append("TestProgram")
-                .ToHashSet()
-        );
+                .ToHashSet(),
+        };
         var types = root.DescendantNodes()
             .OfType<TypeDeclarationSyntax>()
             .Select(type => type.Identifier.Text)
@@ -393,7 +408,13 @@ public sealed class InstallInitializerTests
             : declaration switch
             {
                 MethodDeclarationSyntax method when (method.Body ?? (SyntaxNode?)method.ExpressionBody) is { } body =>
-                    new Member(type, method.Identifier.Text, false, body),
+                    new Member
+                    {
+                        Type = type,
+                        Name = method.Identifier.Text,
+                        IsProperty = false,
+                        Body = body,
+                    },
                 PropertyDeclarationSyntax property
                     when (
                         property.ExpressionBody
@@ -402,7 +423,13 @@ public sealed class InstallInitializerTests
                             .Select(a => a.Body ?? (SyntaxNode?)a.ExpressionBody)
                             .FirstOrDefault()
                     )
-                        is { } body => new Member(type, property.Identifier.Text, true, body),
+                        is { } body => new Member
+                {
+                    Type = type,
+                    Name = property.Identifier.Text,
+                    IsProperty = true,
+                    Body = body,
+                },
                 _ => null,
             };
 
