@@ -15,7 +15,9 @@ public sealed class TickPacer
     public int Due(double seconds)
     {
         if (_held)
+        {
             return 0;
+        }
 
         _carry += seconds * Game.TicksPerSecond;
         var ticks = (int)_carry;

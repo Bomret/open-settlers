@@ -17,3 +17,7 @@ dotnet_diagnostic.IDE0007.severity = warning
 # A private field that is assigned only in its declaration or constructor is readonly.
 dotnet_style_readonly_field = true
 dotnet_diagnostic.IDE0044.severity = warning
+
+# "Braces / control flow": braces around every if, else, and loop body, a sole jump statement included.
+csharp_prefer_braces = true
+dotnet_diagnostic.IDE0011.severity = warning

@@ -26,7 +26,9 @@ public sealed class PlayRunTests
     public void Cleanup()
     {
         if (Directory.Exists(Path.GetDirectoryName(_out)))
+        {
             Directory.Delete(Path.GetDirectoryName(_out)!, true);
+        }
     }
 
     PlayRun Run(string script, Func<PlayStep, string?>? input = null) =>
@@ -47,7 +49,9 @@ public sealed class PlayRunTests
     static void Frames(PlayRun run, int count)
     {
         for (var i = 0; i < count; i++)
+        {
             run.Advance(Frame);
+        }
     }
 
     [TestMethod]

@@ -18,7 +18,9 @@ public sealed class PlayNamedThingTests
     public void Cleanup()
     {
         if (Directory.Exists(Path.GetDirectoryName(_out)))
+        {
             Directory.Delete(Path.GetDirectoryName(_out)!, true);
+        }
     }
 
     static void Do(Game game, int kind, int x, int y, int[]? directions = null)
@@ -406,7 +408,10 @@ public sealed class PlayNamedThingTests
         for (var line = 2; line <= 12; line++)
         {
             if (line == 3)
+            {
                 continue;
+            }
+
             Assert.IsTrue(problems.Any(p => p.StartsWith($"play/t.play line {line}:")), $"line {line}");
         }
 
@@ -716,7 +721,9 @@ public sealed class PlayNamedThingTests
     {
         Assert.AreEqual(ok, NamedThings.Numeric(text, out var read));
         if (ok)
+        {
             Assert.AreEqual(value, read);
+        }
     }
 
     [TestMethod]
@@ -779,9 +786,13 @@ public sealed class PlayNamedThingTests
         for (var i = 0; i < lines.Length; i++)
         {
             if (events[i].Other is { } other)
+            {
                 StringAssert.Contains(lines[i], $" other={other} ");
+            }
             else
+            {
                 Assert.DoesNotContain(" other=", lines[i]);
+            }
         }
     }
 }

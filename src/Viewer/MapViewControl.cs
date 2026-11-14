@@ -199,7 +199,9 @@ public partial class MapViewControl : Control
     {
         var problem = step.Apply(_game, _gameView, _pacer, Snapshot);
         if (_game is null || !_gameView)
+        {
             return problem;
+        }
 
         _ticks.Text = $"Tick {_game.TickCount}";
         _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);

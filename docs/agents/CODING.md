@@ -31,9 +31,10 @@ Prefer composing small, focused types over deep inheritance hierarchies.
 Always put a blank line before a jump statement **unless it is the sole statement in its block**.
 
 ```
-// sole statement — no blank line, no braces needed
-if (condition)
+// sole statement — no blank line
+if (condition) {
     return;
+}
 
 // preceding code — blank line before jump
 if (condition) {
@@ -45,7 +46,7 @@ if (condition) {
 
 ### Braces / control flow
 
-Always use braces around loops and conditional branching. The one exception is a branch whose sole statement is a jump (`return`, `break`, `continue`, `throw`): it may go without braces. CSharpier puts that statement on its own line.
+Always use braces around loops and conditional branching, a body whose sole statement is a jump (`return`, `break`, `continue`, `throw`) included. IDE0011 enforces the rule.
 
 ### Document
 
@@ -66,6 +67,7 @@ The root `.editorconfig` turns these rules into build errors. Each has its own `
 | Access modifiers: no default modifier | IDE0040 |
 | `var` wherever it gives the same type | IDE0007 |
 | A private field assigned only in its declaration or constructor is `readonly` | IDE0044 |
+| Braces / control flow: braces around every branch and loop body | IDE0011 |
 
 These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, and composition over inheritance. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
 
