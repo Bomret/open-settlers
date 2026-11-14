@@ -144,8 +144,8 @@ public sealed class WalkHomeBehavior(
         var width = Map.Size.Width - 1;
         var height = Map.Size.Height - 1;
         var far = ((SearchesHome)settler.Activity).FarEndFirst;
-        int dx = 0;
-        int dy = 0;
+        var dx = 0;
+        var dy = 0;
         var found = false;
         for (var count = 0; count < SearchEntries && !found; count++)
         {

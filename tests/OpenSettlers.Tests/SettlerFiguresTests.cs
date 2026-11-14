@@ -288,7 +288,7 @@ public sealed class SettlerFiguresTests
                         Destination = null,
                     }
                 );
-        Activity activity = state switch
+        var activity = state switch
         {
             3 => new WalksRoad
             {

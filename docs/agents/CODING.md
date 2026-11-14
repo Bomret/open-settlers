@@ -57,6 +57,18 @@ A new script or shader in a Godot-scanned folder (`src/Assets/`, `src/Formats/`,
 
 ## C# Style
 
+### What the build enforces
+
+The root `.editorconfig` turns these rules into build errors. Each has its own `dotnet_diagnostic.<ID>.severity = warning` line, and `Directory.Build.props` sets `EnforceCodeStyleInBuild` with `TreatWarningsAsErrors`. Every build of every project fails on a violation and names the file, line, and rule ID.
+
+| Rule | ID |
+|------|----|
+| Access modifiers: no default modifier | IDE0040 |
+| `var` wherever it gives the same type | IDE0007 |
+| A private field assigned only in its declaration or constructor is `readonly` | IDE0044 |
+
+These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, and composition over inheritance. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
+
 ### Member ordering
 
 Order by visibility first (`public` → `protected` → `private`), then within each group:
@@ -74,7 +86,7 @@ The build enforces the rule. `.editorconfig` sets IDE0040 to `omit_if_default` a
 
 ### var
 
-Default to `var`. Use explicit types only when it aids readability, e.g. `IReadOnlyCollection<string> names = ["alice", "bob"]`.
+Use `var` wherever it gives the same type. Write the type only where `var` would give another type or none, as with a target-typed expression: `IReadOnlyCollection<string> names = ["alice", "bob"]`, `int? count = null`. IDE0007 enforces the rule.
 
 ### Naming
 
