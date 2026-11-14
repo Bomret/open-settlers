@@ -74,7 +74,7 @@ The root `.editorconfig` turns these rules into build errors. Each has its own `
 | A collection expression of the same type in place of an array creation, a collection initializer, or a trailing `ToArray`/`ToList` call | IDE0028, IDE0300–IDE0305 |
 | Classes: a primary constructor where the constructor only assigns its parameters | IDE0290 |
 
-The documentation rule ("Document") is enforced for the source projects through the compiler's doc-comment diagnostics. These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, composition over inheritance, and the documentation of the test project. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
+The documentation rule ("Document") is enforced for the source projects through the compiler's doc-comment diagnostics. `CodeStyleBuildTests` reads the rule IDs of this table and the diagnostics of "Document", and fails when the root `.editorconfig` drops a rule's severity line or an option that a rule reads, when an `.editorconfig` sets one of them to another value, when an MSBuild file switches off `EnforceCodeStyleInBuild`, `TreatWarningsAsErrors`, or `GenerateDocumentationFile`, or when a `NoWarn` names one of the IDs. These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, composition over inheritance, and the documentation of the test project. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
 
 ### Member ordering
 
@@ -89,7 +89,7 @@ Order by visibility first (`public` → `protected` → `private`), then within 
 
 Omit every access modifier that is the default where it stands: `private` on every member and nested type (fields, methods, properties, constructors, events, nested classes and records), and `internal` on every top-level type, one inside a block-scoped namespace included. These modifiers are not the default and stay: `private protected`, an accessor's own modifier (`{ get; private set; }`), `file`, `internal` on a member, and `internal` on a nested type. Both parts of a partial type follow the rule together. A partial method with a return type, such as a `[GeneratedRegex]` method, keeps its `private`, because the compiler requires an explicit modifier there.
 
-The build enforces the rule. `.editorconfig` sets IDE0040 to `omit_if_default` at warning severity. `Directory.Build.props` sets `EnforceCodeStyleInBuild` with `TreatWarningsAsErrors`, so a default modifier fails the build. `CodeStyleBuildTests` fails when either file drops one of these settings. It also fails when an `.editorconfig` section or an MSBuild file sets either setting to another value.
+The build enforces the rule. `.editorconfig` sets IDE0040 to `omit_if_default` at warning severity. `Directory.Build.props` sets `EnforceCodeStyleInBuild` with `TreatWarningsAsErrors`, so a default modifier fails the build.
 
 ### var
 

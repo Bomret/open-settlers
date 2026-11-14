@@ -40,7 +40,9 @@
   build enforces") lists, each at warning severity, and no formatting rule. `Directory.Build.props` sets
   `EnforceCodeStyleInBuild` beside `TreatWarningsAsErrors`, and `GenerateDocumentationFile` for every project except the
   test project. A violation therefore fails every build of the project that holds it: `mise run check`, `mise run build`,
-  a plain `dotnet build`, a play run, and the Godot editor's build. The analyzers ship with the .NET SDK, so the rules
+  a plain `dotnet build`, a play run, and the Godot editor's build. The test project compiles `src/Launch`,
+  `src/Formats`, `src/Assets`, and `src/MapView` without a documentation file, so a doc-comment diagnostic in these
+  folders fails the build of `OpenSettlers.csproj` and not the build of the test project. The analyzers ship with the .NET SDK, so the rules
   follow the SDK version that `global.json` and `mise.toml` pin; a new SDK can report new findings. No other linter is
   wired.
 - A code-style finding prints as `<file>(<line>,<column>): error <rule ID>: <message>`. Fix it by hand, or apply the
