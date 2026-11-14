@@ -50,6 +50,49 @@ public sealed class CodeStyleBuildTests
         CollectionAssert.AreEqual(new[] { "EnforceCodeStyleInBuild=true", "TreatWarningsAsErrors=true" }, values);
     }
 
+    // docs/agents/CODING.md, "Document": every source project generates a documentation file, so the compiler reports the
+    // doc-comment diagnostics. The test project alone is left out.
+    [TestMethod]
+    public void EverySourceProjectGeneratesADocumentationFile()
+    {
+        var settings = XDocument
+            .Load(Path.Combine(RootOf(), "Directory.Build.props"))
+            .Descendants("PropertyGroup")
+            .Elements("GenerateDocumentationFile")
+            .Select(e => $"{e.Attribute("Condition")?.Value} => {e.Value.Trim()}")
+            .ToArray();
+
+        CollectionAssert.AreEqual(new[] { "'$(MSBuildProjectName)' != 'OpenSettlers.Tests' => true" }, settings);
+    }
+
+    // A NoWarn that names a build-enforced rule or a doc-comment diagnostic switches it off for a whole project.
+    [TestMethod]
+    public void NoMsBuildFileSuppressesABuildEnforcedRule()
+    {
+        var root = RootOf();
+        var guarded = BuildEnforcedRuleIds().Concat(DocCommentDiagnosticIds()).ToHashSet();
+        var suppressions = ConfigFiles(root, file => Path.GetExtension(file) is ".csproj" or ".props" or ".targets")
+            .SelectMany(relative =>
+                XDocument
+                    .Load(Path.Combine(root, relative))
+                    .Descendants()
+                    .Where(e => e.Name.LocalName == "NoWarn")
+                    .SelectMany(e => e.Value.Split(';', ',').Select(id => id.Trim()))
+                    .Where(guarded.Contains)
+                    .Select(id => $"{relative}: NoWarn {id}")
+            )
+            .ToList();
+
+        Assert.IsEmpty(suppressions, string.Join(Environment.NewLine, suppressions));
+    }
+
+    // The guide must list the doc-comment diagnostics, or the NoWarn check would miss them.
+    [TestMethod]
+    public void TheCodingGuideListsTheDocCommentDiagnostics()
+    {
+        CollectionAssert.IsSubsetOf(new[] { "CS1591", "CS1570", "CS0419" }, DocCommentDiagnosticIds());
+    }
+
     // A later section, a nested .editorconfig, or a project file could switch a rule off past the pins above, so every
     // place that sets one of the pinned settings must set it to the pinned value.
     [TestMethod]
@@ -79,7 +122,12 @@ public sealed class CodeStyleBuildTests
                 XDocument
                     .Load(Path.Combine(root, relative))
                     .Descendants()
-                    .Where(e => e.Name.LocalName is "EnforceCodeStyleInBuild" or "TreatWarningsAsErrors")
+                    .Where(e =>
+                        e.Name.LocalName
+                            is "EnforceCodeStyleInBuild"
+                                or "TreatWarningsAsErrors"
+                                or "GenerateDocumentationFile"
+                    )
                     .Where(e => e.Value.Trim() != "true")
                     .Select(e => $"{relative}: {e.Name.LocalName} = {e.Value.Trim()}")
             )
@@ -96,16 +144,9 @@ public sealed class CodeStyleBuildTests
             .ToDictionary(pin => pin.Key, pin => pin.Value);
 
     // The rule IDs of the table, a range such as IDE0300–IDE0305 expanded to each ID in it.
-    static string[] BuildEnforcedRuleIds()
-    {
-        var section = File.ReadAllLines(Path.Combine(RootOf(), "docs", "agents", "CODING.md"))
-            .SkipWhile(line => line.Trim() != "### What the build enforces")
-            .Skip(1)
-            .TakeWhile(line => !line.StartsWith('#'));
-
-        return
+    static string[] BuildEnforcedRuleIds() =>
         [
-            .. section
+            .. CodingGuideSection("What the build enforces")
                 .Where(line => line.StartsWith('|'))
                 .SelectMany(line => Regex.Matches(line, @"IDE(\d{4})(?:–IDE(\d{4}))?"))
                 .SelectMany(match =>
@@ -115,7 +156,16 @@ public sealed class CodeStyleBuildTests
                     return Enumerable.Range(first, last - first + 1).Select(n => $"IDE{n:D4}");
                 }),
         ];
-    }
+
+    // The compiler diagnostics that "Document" names as failing the build of a source project.
+    static string[] DocCommentDiagnosticIds() =>
+        [.. CodingGuideSection("Document").SelectMany(line => Regex.Matches(line, @"CS\d{4}")).Select(m => m.Value)];
+
+    static IEnumerable<string> CodingGuideSection(string heading) =>
+        File.ReadAllLines(Path.Combine(RootOf(), "docs", "agents", "CODING.md"))
+            .SkipWhile(line => line.Trim() != $"### {heading}")
+            .Skip(1)
+            .TakeWhile(line => !line.StartsWith('#'));
 
     static IEnumerable<string> ConfigFiles(string root, Func<string, bool> matches) =>
         Directory
