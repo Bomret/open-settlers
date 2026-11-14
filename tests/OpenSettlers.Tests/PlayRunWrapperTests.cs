@@ -208,8 +208,8 @@ public class PlayRunWrapperTests
 
         public Running(Process process, string name)
         {
-            this._process = process;
-            this._name = name;
+            _process = process;
+            _name = name;
             process.OutputDataReceived += (_, e) => Append(_stdout, e.Data);
             process.ErrorDataReceived += (_, e) => Append(_stderr, e.Data);
             process.BeginOutputReadLine();
