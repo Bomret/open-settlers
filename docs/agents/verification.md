@@ -12,10 +12,12 @@ The full command restores the local tools, checks formatting (CSharpier names ea
 `mise run format` fixes them), runs the unit tests, and builds the project. `mise.toml` holds the
 steps.
 
-Every build enforces the code-style rules of `docs/agents/CODING.md` ("What the build enforces" and "Document"). A
-violation fails the full command at its test step, which builds the test project and the projects it references. The
-focused command fails at its build on the same violations. Two kinds of violation fail only the build step of the full
-command, which builds `OpenSettlers.csproj`, and the focused command does not report them:
+Every build enforces the code-style rules of `docs/agents/CODING.md` ("What the build enforces" and "Document").
+A violation fails the full command at its test step. That step builds the test project and the projects it references.
+The focused command fails at its build on the same violations.
+
+Two kinds of violation fail only the build step of the full command, which builds `OpenSettlers.csproj`. The focused
+command does not report them:
 
 - A violation in a file under `src/Viewer`. Only `OpenSettlers.csproj` compiles that folder.
 - A doc-comment diagnostic (CS1591 and the others that "Document" names) in a file under `src/Launch`, `src/Formats`,
