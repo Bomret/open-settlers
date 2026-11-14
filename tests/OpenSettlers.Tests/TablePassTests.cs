@@ -68,7 +68,7 @@ public sealed class TablePassTests
         var registry = new ActivityRegistry();
         registry.Register<WaitsInCastle>((slot, _, _) => seen.Add(slot));
         registry.Register<BuildsCastle>((slot, _, _) => seen.Add(slot));
-        var pass = new TablePass(Settlers(19), new BuildingTable(), registry);
+        var pass = new TablePass(Settlers(19), [], registry);
 
         pass.Run(2, () => { }, (_, _) => { });
         pass.Run(3, () => { }, (_, _) => { });
@@ -96,7 +96,7 @@ public sealed class TablePassTests
         var registry = new ActivityRegistry();
         registry.Register<WaitsInCastle>((slot, _, _) => seen.Add($"castle {slot}"));
         registry.Register<BuildsCastle>((slot, _, _) => seen.Add($"builds {slot}"));
-        var pass = new TablePass(Settlers(3), new BuildingTable(), registry);
+        var pass = new TablePass(Settlers(3), [], registry);
 
         pass.Visit(1);
         pass.Visit(2);

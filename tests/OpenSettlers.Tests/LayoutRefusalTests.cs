@@ -20,7 +20,7 @@ public sealed class LayoutRefusalTests
     const string Good = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": 1 to 25}";
     const string Directions = "directions must be a list of one or more whole numbers from 0 to 5";
 
-    static string[] Problems(string text) => Layout.Read(text, "t.jsonc").Problems.ToArray();
+    static string[] Problems(string text) => [.. Layout.Read(text, "t.jsonc").Problems];
 
     static string[] Extra(string extra) => Problems(LayoutTests.Text(extra: "\n" + extra));
 

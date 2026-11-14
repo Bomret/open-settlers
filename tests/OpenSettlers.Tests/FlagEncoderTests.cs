@@ -58,10 +58,12 @@ public sealed class FlagEncoderTests
     [TestMethod]
     public void AFlagsItemsAreItsNodeItsStatusAndItsSixRoadBytesAndAFreeSlotKeepsItsBytes()
     {
-        var table = new FlagTable();
-        table.Add(4, 5);
-        table.Add(6, 7);
-        table.Add(2, 2);
+        var table = new FlagTable
+        {
+            { 4, 5 },
+            { 6, 7 },
+            { 2, 2 },
+        };
         table[1].Side(3).Carriers = 1;
         table[1].CarrierRequestFailed = true;
         table.Free(1);
@@ -177,8 +179,7 @@ public sealed class FlagEncoderTests
     [TestMethod]
     public void TheDigestWordsOfAFlagAreItsTurnBitItsEightDestinationWordsAndItsSixDirectionBytes()
     {
-        var table = new FlagTable();
-        table.Add(4, 5);
+        var table = new FlagTable { { 4, 5 } };
         table[0].NeedsGoodsTurn = true;
         table[0].Places[1].Destination = 0;
         table[0].Side(2).WaitingPlace = 1;
@@ -193,8 +194,7 @@ public sealed class FlagEncoderTests
     [TestMethod]
     public void TheDigestRequestsOfAFlagAreTheClassAndRankOfEachOfItsTwoRequestWords()
     {
-        var table = new FlagTable();
-        table.Add(4, 5);
+        var table = new FlagTable { { 4, 5 } };
         table[0]
             .SetRequest(
                 RequestWord.First,
@@ -225,8 +225,7 @@ public sealed class FlagEncoderTests
     [TestMethod]
     public void TheDigestPlacesOfAFlagAreTheEightGoodBytes()
     {
-        var table = new FlagTable();
-        table.Add(4, 5);
+        var table = new FlagTable { { 4, 5 } };
         table[0].Places[0].Good = new Good { Code = 9 };
         table[0].Places[7].Good = new Good { Code = 7 };
         table[0].Places[7].Way = 0;

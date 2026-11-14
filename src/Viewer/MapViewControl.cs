@@ -181,7 +181,7 @@ public partial class MapViewControl : Control
             Logs = _gameView ? _game?.CastleStock.Logs ?? 0 : null,
             FlagGoods =
                 !_gameView ? null
-                : _game is null ? new System.Collections.Generic.Dictionary<(int X, int Y), int>()
+                : _game is null ? []
                 : ObjectDraws
                     .FlagGoodsOf(_game)
                     .ToDictionary(flag => flag.Key, flag => flag.Value.Count(good => !good.IsNone)),

@@ -72,3 +72,14 @@ dotnet_naming_style.underscore_camel_case.required_prefix = _
 
 dotnet_naming_style.i_pascal_case.capitalization = pascal_case
 dotnet_naming_style.i_pascal_case.required_prefix = I
+
+# "Modern C# features": a collection expression of the same type where one can replace an array creation, a collection
+# initializer, or a trailing ToArray/ToList call. `true` matches the type exactly, so a rewrite keeps the type the code creates.
+dotnet_style_prefer_collection_expression = true
+dotnet_diagnostic.IDE0028.severity = warning
+dotnet_diagnostic.IDE0300.severity = warning
+dotnet_diagnostic.IDE0301.severity = warning
+dotnet_diagnostic.IDE0302.severity = warning
+dotnet_diagnostic.IDE0303.severity = warning
+dotnet_diagnostic.IDE0304.severity = warning
+dotnet_diagnostic.IDE0305.severity = warning

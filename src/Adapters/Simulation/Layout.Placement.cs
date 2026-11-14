@@ -436,7 +436,7 @@ public sealed partial class Layout
                 return false;
             }
 
-            directions = list.EnumerateArray().Select(d => d.GetInt32()).ToArray();
+            directions = [.. list.EnumerateArray().Select(d => d.GetInt32())];
 
             return true;
         }

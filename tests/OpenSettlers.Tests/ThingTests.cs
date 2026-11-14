@@ -12,7 +12,7 @@ public sealed class ThingTests
         new(
             new RuleTables(
                 new ObjectClass[RuleTables.ClassCount],
-                Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray()
+                [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods])]
             )
         );
 

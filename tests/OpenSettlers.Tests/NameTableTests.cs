@@ -184,5 +184,5 @@ public sealed class NameTableTests
     }
 
     static byte[][] ZeroStock() =>
-        Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
+        [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods])];
 }

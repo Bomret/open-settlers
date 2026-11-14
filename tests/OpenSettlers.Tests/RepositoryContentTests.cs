@@ -128,11 +128,13 @@ public sealed class RepositoryContentTests
     // The set's files by path relative to the folder, with forward slashes.
     static List<string> SetFiles(string folder) =>
         Directory.Exists(folder)
-            ? Directory
-                .EnumerateFiles(folder, "*", SearchOption.AllDirectories)
-                .Select(file => Path.GetRelativePath(folder, file).Replace('\\', '/'))
-                .Order(StringComparer.Ordinal)
-                .ToList()
+            ?
+            [
+                .. Directory
+                    .EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+                    .Select(file => Path.GetRelativePath(folder, file).Replace('\\', '/'))
+                    .Order(StringComparer.Ordinal),
+            ]
             : [];
 
     // A file's bytes; for a PNG its chunk types and data in order, with the image data decompressed.

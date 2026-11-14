@@ -50,7 +50,7 @@ public sealed class ImageKindTests
     {
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
-        return new T().Enumerate(Open(fake), all).ToList();
+        return [.. new T().Enumerate(Open(fake), all)];
     }
 
     [TestMethod]

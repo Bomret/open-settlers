@@ -319,7 +319,7 @@ public sealed class CastlePlacementTests
         return fields;
     }
 
-    static byte[][] Snapshot(Map map) => Enum.GetValues<MapLayer>().Select(layer => Layers.Of(map, layer)).ToArray();
+    static byte[][] Snapshot(Map map) => [.. Enum.GetValues<MapLayer>().Select(layer => Layers.Of(map, layer))];
 
     static int Changes(byte[][] before, byte[][] after)
     {

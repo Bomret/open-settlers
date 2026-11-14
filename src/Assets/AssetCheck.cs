@@ -62,7 +62,7 @@ public static class AssetCheck
             List<Asset> assets;
             try
             {
-                assets = kind.Enumerate(install).ToList();
+                assets = [.. kind.Enumerate(install)];
             }
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
