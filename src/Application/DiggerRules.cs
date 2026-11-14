@@ -19,10 +19,10 @@ namespace OpenSettlers.Simulation;
 /// <param name="parts">The shared parts.</param>
 public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
 {
-    readonly SettlerMovement movement = parts.Movement;
-    readonly BuildingTable buildings = parts.Buildings;
-    readonly GameHistory history = parts.History;
-    readonly HutWork hut = parts.Hut;
+    readonly SettlerMovement _movement = parts.Movement;
+    readonly BuildingTable _buildings = parts.Buildings;
+    readonly GameHistory _history = parts.History;
+    readonly HutWork _hut = parts.Hut;
 
     // The first pass and the first node of a pass; the start routine gives them (0x43cdb2, 0x43ce0d), and phase 1 (the next node).
     const int FirstPass = 15;
@@ -67,7 +67,7 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
     /// step through the door left them.
     /// </summary>
     public override void Start(int slot, Settler settler, Building site) =>
-        movement.Become(
+        _movement.Become(
             settler,
             new Digs
             {
@@ -81,14 +81,14 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
     // State 8: the time since the last turn comes off the timer; when it has run out the digger works until the timer is positive again.
     void Turn(int slot, Settler settler)
     {
-        if (movement.TimerRan(settler))
+        if (_movement.TimerRan(settler))
         {
             while (Step(slot, settler)) { }
         }
 
         if (settler.Activity is Digs)
         {
-            history.RecordSettler(slot, EventType.Digs, Cause.Settlers);
+            _history.RecordSettler(slot, EventType.Digs, Cause.Settlers);
         }
     }
 
@@ -142,10 +142,10 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
             return NextPass(slot, settler, digs);
         }
 
-        var here = movement.Map.Index(settler.X, settler.Y);
+        var here = _movement.Map.Index(settler.X, settler.Y);
         if (digs.Node == 0)
         {
-            if (movement.Height(here) != goal)
+            if (_movement.Height(here) != goal)
             {
                 return NextNode(slot, settler, digs);
             }
@@ -155,8 +155,8 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
             return Animate(settler, digs.Pass);
         }
 
-        var (_, _, next) = movement.Neighbour(settler, DirectionOf(digs.Node));
-        if (movement.Height(next) != goal)
+        var (_, _, next) = _movement.Neighbour(settler, DirectionOf(digs.Node));
+        if (_movement.Height(next) != goal)
         {
             return NextNode(slot, settler, digs);
         }
@@ -183,8 +183,8 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
     bool StepOnto(int slot, Settler settler, int node)
     {
         var direction = DirectionOf(node);
-        var (x, y, next) = movement.Neighbour(settler, direction);
-        if (movement.Occupant(next) != 0)
+        var (x, y, next) = _movement.Neighbour(settler, direction);
+        if (_movement.Occupant(next) != 0)
         {
             Wait(settler, (Digs)settler.Activity);
 
@@ -199,12 +199,12 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
 
     bool Walk(int slot, Settler settler, int x, int y, int next, int direction)
     {
-        var from = movement.Map.Index(settler.X, settler.Y);
-        var climb = movement.Height(next) - movement.Height(from);
-        movement.Move(slot, settler, x, y, next);
+        var from = _movement.Map.Index(settler.X, settler.Y);
+        var climb = _movement.Height(next) - _movement.Height(from);
+        _movement.Move(slot, settler, x, y, next);
         settler.Frame = (climb + StepFrameBase + (StepFrameSpan * direction)) & ByteMask;
 
-        return AddTime(settler, movement.Tables.StepTime(settler.Frame));
+        return AddTime(settler, _movement.Tables.StepTime(settler.Frame));
     }
 
     // The time of a step or of a dig goes onto the timer; the work goes on at once while the sum does not carry out of the word.
@@ -228,7 +228,7 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
     // own). The site's node itself he leaves where he is.
     bool Dig(int slot, Settler settler, Digs digs)
     {
-        ref var node = ref movement.Map.At(settler.X, settler.Y);
+        ref var node = ref _movement.Map.At(settler.X, settler.Y);
         node.Height += (digs.Pass & 1) != 0 ? -1 : 1;
         if (digs.Node == 0)
         {
@@ -236,7 +236,7 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
         }
 
         var back = (DirectionOf(digs.Node) + (DirectionCount / 2)) % DirectionCount;
-        var (x, y, next) = movement.Neighbour(settler, back);
+        var (x, y, next) = _movement.Neighbour(settler, back);
 
         return Walk(slot, settler, x, y, next, back);
     }
@@ -245,16 +245,16 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
     // state 7, 0x43e02e): a walk to the storage, as the builder's end leaves it.
     void Finish(int slot, Settler settler)
     {
-        if (movement.BuildingAt(movement.Map.Index(settler.X, settler.Y)) is { } site)
+        if (_movement.BuildingAt(_movement.Map.Index(settler.X, settler.Y)) is { } site)
         {
             site.Progress = 1;
             site.WorkerInside = false;
             site.Worker = 0;
-            history.RecordBuilding(
-                buildings.SlotOf(site),
+            _history.RecordBuilding(
+                _buildings.SlotOf(site),
                 EventType.Levelled,
                 Cause.Settlers,
-                history.SettlerId(slot).ToString()
+                _history.SettlerId(slot).ToString()
             );
         }
 
@@ -266,6 +266,6 @@ public sealed class DiggerRules(JobParts parts) : JobRules<Digger>(parts)
                 Heading = new Heading { Value = 0 },
             },
         };
-        hut.StepOut(slot, settler);
+        _hut.StepOut(slot, settler);
     }
 }

@@ -18,10 +18,10 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class NameTable
 {
-    readonly RuleTables tables;
+    readonly RuleTables _tables;
 
     /// <summary>The names of the object codes as the class table <paramref name="tables"/> reads them.</summary>
-    public NameTable(RuleTables tables) => this.tables = tables;
+    public NameTable(RuleTables tables) => this._tables = tables;
 
     // The object codes the engine and docs/rules/map-object-codes.md name; Game.Woodcutting reads the ranges from here.
     internal const int FirstTree = MapObject.FirstTreeCode;
@@ -76,7 +76,7 @@ public sealed class NameTable
     public string? ObjectName(byte code)
     {
         var name = Find(CodeKind.Object, code & 0x7f);
-        return name == "stone" && !tables.ClassOf(new MapObject { Code = (byte)(code & 0x7f) }).IsStone ? null : name;
+        return name == "stone" && !_tables.ClassOf(new MapObject { Code = (byte)(code & 0x7f) }).IsStone ? null : name;
     }
 
     /// <summary>The name of the settler job, or null where the table has none.</summary>

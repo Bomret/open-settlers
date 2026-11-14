@@ -68,6 +68,7 @@ The root `.editorconfig` turns these rules into build errors. Each has its own `
 | `var` wherever it gives the same type | IDE0007 |
 | A private field assigned only in its declaration or constructor is `readonly` | IDE0044 |
 | Braces / control flow: braces around every branch and loop body | IDE0011 |
+| Naming: the table under "Naming" | IDE1006 |
 
 These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, and composition over inheritance. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
 
@@ -96,9 +97,14 @@ Use `var` wherever it gives the same type. Write the type only where `var` would
 |-------|-----------|---------|
 | Classes / interfaces | PascalCase | `Archive`, `AssetKind` |
 | Interface prefix | `I` | `IComparer<T>` |
-| Private fields | `_camelCase` | `_entries` |
+| Private fields (instance, readonly or not) | `_camelCase` | `_entries` |
+| Private mutable static fields | `_camelCase` | `_templateRoot` |
+| Private static readonly fields | PascalCase | `GeneratedFolders` |
 | Records | PascalCase | `TextEntry`, `Rgb` |
-| Constants | PascalCase | `PaletteKind.KindName`, `Palette.ColorCount` |
+| Constants (fields) | PascalCase | `PaletteKind.KindName`, `Palette.ColorCount` |
+| Local constants | PascalCase | `const int Scale = 3;` |
+
+IDE1006 enforces the table. The table sets no rule for non-private fields, properties, methods, or parameters.
 
 ### Modern C# features
 

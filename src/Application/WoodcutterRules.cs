@@ -14,14 +14,14 @@ namespace OpenSettlers.Simulation;
 /// <param name="parts">The shared parts.</param>
 public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts)
 {
-    readonly SettlerMovement movement = parts.Movement;
-    readonly IRandomDraws draws = parts.Draws;
-    readonly HutWork hut = parts.Hut;
+    readonly SettlerMovement _movement = parts.Movement;
+    readonly IRandomDraws _draws = parts.Draws;
+    readonly HutWork _hut = parts.Hut;
 
     /// <summary>The good of a log (the byte 7 the settler writes onto the flag, 0x438011).</summary>
     public const int GoodLog = 7;
 
-    Map Map => movement.Map;
+    Map Map => _movement.Map;
 
     /// <inheritdoc />
     public override bool CanStandInHut => true;
@@ -39,8 +39,8 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
     /// <summary>0x43cf15: the woodcutter leaves the hut's node and looks for a tree.</summary>
     public override void Start(int slot, Settler settler, Building building)
     {
-        movement.Release(Map.Index(settler.X, settler.Y));
-        movement.Become(settler, new LooksForTree());
+        _movement.Release(Map.Index(settler.X, settler.Y));
+        _movement.Become(settler, new LooksForTree());
     }
 
     // State 0x12, the woodcutter's search (0x438b8c). When its timer has run out it draws a node of the spiral around the
@@ -49,24 +49,24 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
     void SearchTree(int slot, Settler settler)
     {
         var found = SearchTurn(settler);
-        hut.RecordWork(slot, EventType.SearchTree);
+        _hut.RecordWork(slot, EventType.SearchTree);
         if (found)
         {
-            hut.StepOut(slot, settler);
+            _hut.StepOut(slot, settler);
         }
     }
 
     // One turn of the search; true where it found a tree and took state 7.
     bool SearchTurn(Settler settler)
     {
-        if (!movement.TimerRan(settler))
+        if (!_movement.TimerRan(settler))
         {
             return false;
         }
 
         while (true)
         {
-            var entry = ((draws.Draw() & 0x1fc) + 4) >> 2;
+            var entry = ((_draws.Draw() & 0x1fc) + 4) >> 2;
             var (dx, dy) = Spiral.Offsets[entry];
             var x = (settler.X + dx) & (Map.Size.Width - 1);
             var y = (settler.Y + dy) & (Map.Size.Height - 1);
@@ -106,17 +106,17 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
             // The walk home (0x4385ab).
             if (trip.Purpose is Home)
             {
-                hut.ArriveHome(slot, settler);
+                _hut.ArriveHome(slot, settler);
 
                 return;
             }
 
             if (trip.Purpose is BackToHut { Carrying: true })
             {
-                hut.PutGood(slot, settler, GoodLog, Cause);
+                _hut.PutGood(slot, settler, GoodLog, Cause);
             }
 
-            hut.ReturnToHut(slot, settler, trip);
+            _hut.ReturnToHut(slot, settler, trip);
 
             return;
         }
@@ -133,7 +133,7 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
             };
             settler.Frame = 0x74;
             settler.Timer = 0x3ff;
-            hut.RecordWork(slot, EventType.Arrive);
+            _hut.RecordWork(slot, EventType.Arrive);
 
             return;
         }
@@ -147,7 +147,7 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
             },
         };
         settler.Timer = 0;
-        hut.RecordWork(slot, EventType.Arrive);
+        _hut.RecordWork(slot, EventType.Arrive);
     }
 
     // State 0x11, the cut (0x438a9e): each time the timer runs out the tree takes the next of its falling codes (0x5d to
@@ -157,12 +157,12 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
     {
         var tree = ThingId.OfObject("tree", settler.X, settler.Y).ToString();
         CutTurn(settler);
-        hut.RecordWork(slot, EventType.CutTree, tree);
+        _hut.RecordWork(slot, EventType.CutTree, tree);
     }
 
     void CutTurn(Settler settler)
     {
-        if (!movement.TimerRan(settler))
+        if (!_movement.TimerRan(settler))
         {
             return;
         }
@@ -182,7 +182,7 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
 
             settler.Frame = (byte)(count + 0x74);
             var old = settler.Timer;
-            settler.Timer = (ushort)(old + movement.Tables.StepTime(settler.Frame));
+            settler.Timer = (ushort)(old + _movement.Tables.StepTime(settler.Frame));
             if (settler.Timer < old)
             {
                 return;

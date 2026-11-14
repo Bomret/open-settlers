@@ -146,14 +146,14 @@ public sealed class GameHistoryTests
             "RecordSettler",
             "Record",
         };
-        const BindingFlags all =
+        const BindingFlags All =
             BindingFlags.Instance
             | BindingFlags.Static
             | BindingFlags.Public
             | BindingFlags.NonPublic
             | BindingFlags.DeclaredOnly;
 
-        var left = typeof(Game).GetMembers(all).Select(m => m.Name).Where(historyNames.Contains).ToArray();
+        var left = typeof(Game).GetMembers(All).Select(m => m.Name).Where(historyNames.Contains).ToArray();
 
         Assert.IsEmpty(left);
         Assert.IsNotNull(typeof(Game).GetProperty(nameof(Game.History)));

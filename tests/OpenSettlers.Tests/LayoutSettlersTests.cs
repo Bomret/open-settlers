@@ -442,7 +442,7 @@ public sealed class LayoutSettlersTests
     {
         // Six roads joined to the castle's flag, one more than the castle's five jobless settlers: three east along row 11,
         // two south from the castle's flag, and one east along row 15.
-        const string sixRoads = """
+        const string SixRoads = """
             "castle": {"x": 10, "y": 10},
             "flags": [{"x": 13, "y": 11}, {"x": 15, "y": 11}, {"x": 17, "y": 11}, {"x": 11, "y": 13}, {"x": 11, "y": 15}, {"x": 13, "y": 15}],
             "roads": [
@@ -460,7 +460,7 @@ public sealed class LayoutSettlersTests
             CarrierAt(11, 0, 15)
         );
 
-        var problem = Refused(sixRoads + $"\"settlers\": [{carriers}]");
+        var problem = Refused(SixRoads + $"\"settlers\": [{carriers}]");
 
         Assert.AreEqual("test.jsonc: settlers[5]: the castle holds no carrier", problem);
     }

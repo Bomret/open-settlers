@@ -165,8 +165,8 @@ public sealed class DiggerTests
         var (game, site, target) = World(0, 2, 0, 0, 0, 0, 0);
         var east = game.Map.Index(SiteX + 1, SiteY);
         var digger = ConstructionWorld.OfJob(game, new Digger()).Single();
-        const int stranger = 200;
-        game.Movement.Occupy(east, stranger);
+        const int Stranger = 200;
+        game.Movement.Occupy(east, Stranger);
 
         Digs? waiting = null;
         for (var tick = 0; tick < 6000 && waiting is null; tick++)

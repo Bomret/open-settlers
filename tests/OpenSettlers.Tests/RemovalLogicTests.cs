@@ -292,25 +292,25 @@ public sealed class RemovalLogicTests
     [TestMethod]
     public void WhenARemovalFreesARoadsWaitingPlaceTheGoodOfTheHighestTransportPriorityForThatRoadWaitsNext()
     {
-        const int stone = 9;
-        const int board = 1;
-        const int way = 0;
+        const int Stone = 9;
+        const int Board = 1;
+        const int Way = 0;
         var ranks = new byte[StartStock.Goods];
         ranks[WoodcutterRules.GoodLog - 1] = 5;
-        ranks[stone - 1] = 9;
-        ranks[board - 1] = 2;
+        ranks[Stone - 1] = 9;
+        ranks[Board - 1] = 2;
         var game = World(transportPriorities: ranks);
-        game.Goods.LayGood(1, 0, board, way: way);
-        game.Goods.LayGood(1, 1, WoodcutterRules.GoodLog, way: way);
-        game.Goods.LayGood(1, 2, stone, way: way);
-        game.Goods.LayGood(1, 5, board, destination: 3, way: way);
-        game.Goods.WaitForRoad(1, way, 5);
+        game.Goods.LayGood(1, 0, Board, way: Way);
+        game.Goods.LayGood(1, 1, WoodcutterRules.GoodLog, way: Way);
+        game.Goods.LayGood(1, 2, Stone, way: Way);
+        game.Goods.LayGood(1, 5, Board, destination: 3, way: Way);
+        game.Goods.WaitForRoad(1, Way, 5);
 
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
 
         Assert.IsNull(game.Flags[1].Places[5].Way, "the good for the hut loses its direction");
-        Assert.AreEqual(new Good { Code = board }, game.Flags[1].Places[5].Good);
-        Assert.AreEqual(2, game.Flags[1].Side(way).WaitingPlace, "the stone waits for the road next");
+        Assert.AreEqual(new Good { Code = Board }, game.Flags[1].Places[5].Good);
+        Assert.AreEqual(2, game.Flags[1].Side(Way).WaitingPlace, "the stone waits for the road next");
     }
 
     [TestMethod]

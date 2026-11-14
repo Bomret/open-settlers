@@ -98,12 +98,12 @@ public sealed class ShotCropTests
     public void TheBoxCoversEveryTileWithinTheRadiusAndTheHeadroomAbove()
     {
         var camera = (300.0, 200.0);
-        const double scale = 1.5;
-        const int headroom = 50;
-        var problem = Box(camera, scale, 10, 10, 1, headroom, out var box);
+        const double Scale = 1.5;
+        const int Headroom = 50;
+        var problem = Box(camera, Scale, 10, 10, 1, Headroom, out var box);
 
         Assert.IsNull(problem);
-        var (x, y) = Aimed(camera, scale, 10, 10);
+        var (x, y) = Aimed(camera, Scale, 10, 10);
         // The aimed tile's drawn point less its own lift and position: the screen point of the copy's origin.
         var aimHeight = Height(10, 10);
         var (nx, ny) = Camera.NodePosition(10, 10);
@@ -111,16 +111,16 @@ public sealed class ShotCropTests
         foreach (var (dc, dr) in ring)
         {
             var (px, py) = Camera.NodePosition(10 + dc, 10 + dr);
-            var sx = x + (px - nx) * scale + OriginX;
-            var sy = y + (py - Height(10 + dc, 10 + dr) - (ny - aimHeight)) * scale + OriginY;
+            var sx = x + (px - nx) * Scale + OriginX;
+            var sy = y + (py - Height(10 + dc, 10 + dr) - (ny - aimHeight)) * Scale + OriginY;
             Assert.IsTrue(sx >= box.X && sx <= box.X + box.Width, $"x of {dc},{dr}");
             Assert.IsTrue(sy >= box.Y && sy <= box.Y + box.Height, $"y of {dc},{dr}");
         }
 
         // Two steps away is not in a radius of 1: (2, 0) lies beyond the box east.
         var (fx, _) = Camera.NodePosition(12, 10);
-        Assert.IsTrue(x + (fx - nx) * scale + OriginX > box.X + box.Width);
-        Assert.IsTrue(box.Y <= y + OriginY - (10 + headroom) * scale);
+        Assert.IsTrue(x + (fx - nx) * Scale + OriginX > box.X + box.Width);
+        Assert.IsTrue(box.Y <= y + OriginY - (10 + Headroom) * Scale);
     }
 
     [TestMethod]

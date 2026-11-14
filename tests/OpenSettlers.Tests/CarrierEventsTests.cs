@@ -168,15 +168,15 @@ public sealed class CarrierEventsTests
     public void TheEventStoreGrowsNoFasterThanLinearlyOverALongGame()
     {
         var game = RoadWithACarrier();
-        const int ticks = 2000;
+        const int Ticks = 2000;
         var start = game.History.Events.Count;
-        for (var i = 0; i < ticks; i++)
+        for (var i = 0; i < Ticks; i++)
         {
             game.Tick();
         }
 
         var first = game.History.Events.Count - start;
-        for (var i = 0; i < ticks; i++)
+        for (var i = 0; i < Ticks; i++)
         {
             game.Tick();
         }
