@@ -7,11 +7,17 @@ namespace OpenSettlers.Simulation;
 /// the count of how often that slot was filled, as in <c>settler#12.3</c>. A slot filled again gives the new thing the next
 /// count, so no ID is handed out twice in one game.
 /// </summary>
-/// <param name="Kind"><see cref="SettlerKind"/>, <see cref="BuildingKind"/>, or <see cref="FlagKind"/>.</param>
-/// <param name="Slot">The slot in <c>Game.Settlers</c>, <c>Game.Buildings</c>, or <c>Game.Flags</c>.</param>
-/// <param name="Fill">How often the slot was filled, from 1.</param>
-public readonly record struct ThingId(string Kind, int Slot, int Fill)
+public readonly record struct ThingId
 {
+    /// <summary><see cref="SettlerKind"/>, <see cref="BuildingKind"/>, or <see cref="FlagKind"/>.</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>The slot in <c>Game.Settlers</c>, <c>Game.Buildings</c>, or <c>Game.Flags</c>.</summary>
+    public required int Slot { get; init; }
+
+    /// <summary>How often the slot was filled, from 1.</summary>
+    public required int Fill { get; init; }
+
     /// <summary>The kind of a settler.</summary>
     public const string SettlerKind = "settler";
 

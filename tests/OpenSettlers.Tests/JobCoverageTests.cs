@@ -44,7 +44,20 @@ public sealed class JobCoverageTests
         jobs.GroupBy(job => job).Where(group => group.Count() > 1).Select(group => group.Key);
 
     static IEnumerable<Type> RulesJobs() =>
-        JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!)).Select(rules => rules.JobType);
+        JobModules
+            .Build(
+                new JobParts
+                {
+                    Movement = null!,
+                    Buildings = null!,
+                    Flags = null!,
+                    History = null!,
+                    Draws = null!,
+                    LayGood = null!,
+                    Hut = null!,
+                }
+            )
+            .Select(rules => rules.JobType);
 
     static Dictionary<string, IEnumerable<Type>> Looks(params Type[] extra) =>
         new()

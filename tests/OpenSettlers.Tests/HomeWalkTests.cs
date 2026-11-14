@@ -72,11 +72,48 @@ public sealed class HomeWalkTests
     static Game CastleWithRoad()
     {
         MapSize.TryFromValue(1, out var size, out _);
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(0x1234, 0x5678, 0x9ABC), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, 0);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 18, 20));
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, 16, 20));
-        game.Enqueue(new Command(0, 0, CommandKind.BuildRoad, 19, 21, [3, 4, 3]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 18,
+                Y = 20,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 16,
+                Y = 20,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 19,
+                Y = 21,
+                Directions = [3, 4, 3],
+            }
+        );
 
         return game;
     }
@@ -154,7 +191,16 @@ public sealed class HomeWalkTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var who = parts[7].Split('@');
@@ -162,23 +208,42 @@ public sealed class HomeWalkTests
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         foreach (var flag in Points(parts[5]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
         }
 
         foreach (var road in parts[6].Split(';').Select(text => text.Split(',')))
         {
             game.Enqueue(
-                new Command(
-                    0,
-                    0,
-                    CommandKind.BuildRoad,
-                    int.Parse(road[0]),
-                    int.Parse(road[1]),
-                    [.. road[2].Select(c => c - '0')]
-                )
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0]),
+                    Y = int.Parse(road[1]),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
             );
         }
 

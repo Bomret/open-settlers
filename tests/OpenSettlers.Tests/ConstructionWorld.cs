@@ -12,7 +12,16 @@ static class ConstructionWorld
 {
     public static Game Create(RuleTables? tables = null, bool handsOutGoods = false, bool everyPassTurns = false)
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < map.Count; index++)
         {
             if (map.At(index).Object.Kind == MapObjectKind.Tree)
@@ -27,7 +36,16 @@ static class ConstructionWorld
             handsOutGoods: handsOutGoods,
             everyPassTurns: everyPassTurns
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
         {
@@ -42,13 +60,33 @@ static class ConstructionWorld
 
     public static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
     public static void Site(Game game, BuildingType type, int x, int y)
     {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: type));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = x,
+                Y = y,
+                Building = type,
+            }
+        );
         game.Tick();
     }
 

@@ -92,14 +92,15 @@ public sealed class ConstructionBuilderTests
                 }
 
                 game.Enqueue(
-                    new Command(
-                        game.TickCount,
-                        0,
-                        CommandKind.PlaceBuilding,
-                        node[0],
-                        node[1],
-                        Building: new BuildingType { Code = node[2] }
-                    )
+                    new Command
+                    {
+                        Tick = game.TickCount,
+                        Player = 0,
+                        Kind = CommandKind.PlaceBuilding,
+                        X = node[0],
+                        Y = node[1],
+                        Building = new BuildingType { Code = node[2] },
+                    }
                 );
                 game.ApplyCommands();
             }

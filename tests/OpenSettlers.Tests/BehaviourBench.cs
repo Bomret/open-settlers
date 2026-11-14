@@ -114,9 +114,9 @@ sealed class QueuedDraws(ushort[] draws) : IRandomDraws
 
 sealed class NoSnapshots : IThingSnapshots
 {
-    public ThingState Building(int slot) => new([]);
+    public ThingState Building(int slot) => new() { Fields = [] };
 
-    public ThingState Flag(int slot) => new([]);
+    public ThingState Flag(int slot) => new() { Fields = [] };
 
-    public ThingState Settler(int slot) => new([]);
+    public ThingState Settler(int slot) => new() { Fields = [] };
 }

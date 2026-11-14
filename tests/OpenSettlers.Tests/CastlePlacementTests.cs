@@ -40,7 +40,16 @@ public sealed class CastlePlacementTests
             int.Parse(fields["level"], CultureInfo.InvariantCulture)
         );
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, tile[0], tile[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = tile[0],
+                Y = tile[1],
+            }
+        );
         game.ApplyCommands();
 
         var site = BuildSite.Evaluate(
@@ -69,10 +78,28 @@ public sealed class CastlePlacementTests
         var before = game.Digest();
 
         // The node 0,0 is a node state 7, site 0: no castle goes there (emulator: site:1:1234,5678,9ABC).
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 0, 0));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 0,
+                Y = 0,
+            }
+        );
         var tick = game.Digest();
         game.Tick();
-        game.Enqueue(new Command(1, 0, CommandKind.PlaceCastle, 0, 0));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 1,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 0,
+                Y = 0,
+            }
+        );
         game.Tick();
 
         Assert.IsNull(game.CastleStock.Castle);
@@ -99,8 +126,26 @@ public sealed class CastlePlacementTests
             MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
 
-        game.Enqueue(new Command(0, 0, 2, 15, 5));
-        game.Enqueue(new Command(0, 0, 3, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = 2,
+                X = 15,
+                Y = 5,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = 3,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         fresh.Tick();
 
@@ -115,9 +160,36 @@ public sealed class CastlePlacementTests
             MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, -1, 5));
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 32));
-        game.Enqueue(new Command(0, 1, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = -1,
+                Y = 5,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 32,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 1,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
 
         Assert.IsNull(game.CastleStock.Castle);
@@ -131,12 +203,38 @@ public sealed class CastlePlacementTests
             MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
-        game.Enqueue(new Command(1, 0, CommandKind.PlaceCastle, 9, 7));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 1,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 9,
+                Y = 7,
+            }
+        );
         game.Tick();
         game.Tick();
 
-        Assert.AreEqual(new Castle(15, 5, 15), game.CastleStock.Castle);
+        Assert.AreEqual(
+            new Castle
+            {
+                X = 15,
+                Y = 5,
+                Height = 15,
+            },
+            game.CastleStock.Castle
+        );
     }
 
     [TestMethod]
@@ -149,7 +247,16 @@ public sealed class CastlePlacementTests
                 MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0]),
                 7
             );
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceCastle,
+                    X = 15,
+                    Y = 5,
+                }
+            );
             game.Tick();
 
             return game;
@@ -176,7 +283,17 @@ public sealed class CastlePlacementTests
     {
         var map = ParseSeed(words);
 
-        Assert.AreEqual(expected, StartStock.LevelOf(new Seed(map.W0, map.W1, map.W2)));
+        Assert.AreEqual(
+            expected,
+            StartStock.LevelOf(
+                new Seed
+                {
+                    W0 = map.W0,
+                    W1 = map.W1,
+                    W2 = map.W2,
+                }
+            )
+        );
     }
 
     // The fields of a line: a word with an equals sign starts a field, and the words after it, up to the next such
@@ -237,6 +354,11 @@ public sealed class CastlePlacementTests
     {
         var words = text.Split(',').Select(word => ushort.Parse(word, NumberStyles.HexNumber)).ToArray();
 
-        return new MapSeed(words[0], words[1], words[2]);
+        return new MapSeed
+        {
+            W0 = words[0],
+            W1 = words[1],
+            W2 = words[2],
+        };
     }
 }

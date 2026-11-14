@@ -361,7 +361,16 @@ public sealed class SettlerDrawTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[4], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[5].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var width = map.Size.Width;
 
         var known = new SortedDictionary<int, byte[]>();

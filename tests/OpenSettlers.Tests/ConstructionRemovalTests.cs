@@ -75,21 +75,31 @@ public sealed class ConstructionRemovalTests
             {
                 game.ApplyCommands();
                 game.Enqueue(
-                    new Command(
-                        game.TickCount,
-                        0,
-                        CommandKind.PlaceBuilding,
-                        site[0],
-                        site[1],
-                        Building: new BuildingType { Code = site[2] }
-                    )
+                    new Command
+                    {
+                        Tick = game.TickCount,
+                        Player = 0,
+                        Kind = CommandKind.PlaceBuilding,
+                        X = site[0],
+                        Y = site[1],
+                        Building = new BuildingType { Code = site[2] },
+                    }
                 );
                 game.ApplyCommands();
             }
 
             if (pass == removeAt)
             {
-                game.Enqueue(new Command(game.TickCount, 0, CommandKind.RemoveBuilding, site[0], site[1]));
+                game.Enqueue(
+                    new Command
+                    {
+                        Tick = game.TickCount,
+                        Player = 0,
+                        Kind = CommandKind.RemoveBuilding,
+                        X = site[0],
+                        Y = site[1],
+                    }
+                );
                 game.ApplyCommands();
             }
 

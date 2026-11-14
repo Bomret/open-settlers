@@ -10,7 +10,27 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class MapImporterTests
 {
-    static readonly MapSeed[] Seeds = [new(0x1234, 0x5678, 0x9ABC), new(0x6359, 0xA0D2, 0xB4FA), new(1, 2, 3)];
+    static readonly MapSeed[] Seeds =
+    [
+        new()
+        {
+            W0 = 0x1234,
+            W1 = 0x5678,
+            W2 = 0x9ABC,
+        },
+        new()
+        {
+            W0 = 0x6359,
+            W1 = 0xA0D2,
+            W2 = 0xB4FA,
+        },
+        new()
+        {
+            W0 = 1,
+            W1 = 2,
+            W2 = 3,
+        },
+    ];
 
     public static IEnumerable<object[]> SizesAndSeeds =>
         MapSize.Offered.SelectMany(size => Seeds.Select(seed => new object[] { size, seed }));

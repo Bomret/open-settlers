@@ -558,7 +558,16 @@ public sealed class Removal(
         }
     }
 
-    sealed record Walked(int Steps, List<int> Settlers, int Far, int FarDirection);
+    sealed record Walked
+    {
+        public required int Steps { get; init; }
+
+        public required List<int> Settlers { get; init; }
+
+        public required int Far { get; init; }
+
+        public required int FarDirection { get; init; }
+    }
 
     // 0x463a40: the walk along the road that leaves the flag in a direction, to the flag at its end. It counts the steps, takes
     // the settlers on the road (a carrier in state 3 that is not marked to go, at the first flag and at the far flag only when
@@ -601,7 +610,13 @@ public sealed class Removal(
                     gathered.Add(standing);
                 }
 
-                return new Walked(steps, gathered, Map.At(index).LinkedSlot, back);
+                return new Walked
+                {
+                    Steps = steps,
+                    Settlers = gathered,
+                    Far = Map.At(index).LinkedSlot,
+                    FarDirection = back,
+                };
             }
 
             direction = rest.First;

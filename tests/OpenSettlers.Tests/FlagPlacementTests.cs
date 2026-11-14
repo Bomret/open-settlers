@@ -40,7 +40,16 @@ public sealed class FlagPlacementTests
             map,
             int.Parse(header["level"], CultureInfo.InvariantCulture)
         );
-        game.Enqueue(new Command(CastleTick, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = CastleTick,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         game.ApplyCommands();
 
         foreach (var line in lines)
@@ -50,7 +59,16 @@ public sealed class FlagPlacementTests
             var before = Snapshot(map);
             var flags = game.Flags.Count;
 
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, tile[0], tile[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = tile[0],
+                    Y = tile[1],
+                }
+            );
             game.ApplyCommands();
 
             var placed = game.Flags.Count > flags;
@@ -70,7 +88,16 @@ public sealed class FlagPlacementTests
         var game = GameWithCastle();
         var (x, y) = FirstFlagSite(game);
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = x,
+                Y = y,
+            }
+        );
         game.Tick();
 
         Assert.AreEqual((16, 6), (game.Flags[0].X, game.Flags[0].Y));
@@ -86,8 +113,26 @@ public sealed class FlagPlacementTests
         var same = GameWithCastle();
 
         // The castle's own node holds a building: no flag goes there.
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 15, 5));
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 16, 6));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 15,
+                Y = 5,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 16,
+                Y = 6,
+            }
+        );
         game.Tick();
         same.Tick();
 
@@ -106,7 +151,16 @@ public sealed class FlagPlacementTests
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         fresh.Tick();
         Assert.AreEqual(fresh.Digest(), game.Digest());
@@ -114,9 +168,36 @@ public sealed class FlagPlacementTests
         game = GameWithCastle();
         fresh = GameWithCastle();
         var (x, y) = FirstFlagSite(game);
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, -1, y));
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, 32));
-        game.Enqueue(new Command(game.TickCount, 1, CommandKind.PlaceFlag, x, y));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = -1,
+                Y = y,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = x,
+                Y = 32,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 1,
+                Kind = CommandKind.PlaceFlag,
+                X = x,
+                Y = y,
+            }
+        );
         game.Tick();
         fresh.Tick();
 
@@ -129,7 +210,16 @@ public sealed class FlagPlacementTests
         var one = GameWithCastle();
         var two = GameWithCastle();
         var (x, y) = FirstFlagSite(two);
-        two.Enqueue(new Command(two.TickCount, 0, CommandKind.PlaceFlag, x, y));
+        two.Enqueue(
+            new Command
+            {
+                Tick = two.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = x,
+                Y = y,
+            }
+        );
         two.Tick();
         one.Tick();
 
@@ -146,7 +236,16 @@ public sealed class FlagPlacementTests
             .Select(column => (X: column, Y: game.Map.Size.Height - 1))
             .First(node => Allows(game, node.X, node.Y));
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = x,
+                Y = y,
+            }
+        );
         game.Tick();
 
         Assert.AreEqual(2, game.Flags.Count);
@@ -163,14 +262,32 @@ public sealed class FlagPlacementTests
         {
             for (var node = 0; node < width * game.Map.Size.Height; node++)
             {
-                game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, node % width, node / width));
+                game.Enqueue(
+                    new Command
+                    {
+                        Tick = game.TickCount,
+                        Player = 0,
+                        Kind = CommandKind.PlaceFlag,
+                        X = node % width,
+                        Y = node / width,
+                    }
+                );
             }
 
             game.Tick();
         }
 
         var (x, y) = FirstFlagSite(game);
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = x,
+                Y = y,
+            }
+        );
         game.Tick();
 
         Assert.AreEqual(256, game.Flags.Count);
@@ -213,7 +330,16 @@ public sealed class FlagPlacementTests
             TestProgram.Made(),
             MapGenerator.Generate(TestProgram.Made(), ParseSeed(seed), MapSize.Offered[0])
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, x, y));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = x,
+                Y = y,
+            }
+        );
         game.Tick();
 
         return game;
@@ -266,6 +392,11 @@ public sealed class FlagPlacementTests
     {
         var words = text.Split(',').Select(word => ushort.Parse(word, NumberStyles.HexNumber)).ToArray();
 
-        return new MapSeed(words[0], words[1], words[2]);
+        return new MapSeed
+        {
+            W0 = words[0],
+            W1 = words[1],
+            W2 = words[2],
+        };
     }
 }

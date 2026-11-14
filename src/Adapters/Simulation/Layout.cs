@@ -7,9 +7,14 @@ using System.Text.Json;
 namespace OpenSettlers.Simulation;
 
 /// <summary>What reading a layout gave: the layout, or the problems that kept it from loading.</summary>
-/// <param name="Layout">The layout; null when <paramref name="Problems"/> is not empty.</param>
-/// <param name="Problems">One line per problem, each naming the file and the entry; empty when the layout loaded.</param>
-public sealed record LayoutResult(Layout? Layout, IReadOnlyList<string> Problems);
+public sealed record LayoutResult
+{
+    /// <summary>The layout; null when <paramref name="Problems"/> is not empty.</summary>
+    public required Layout? Layout { get; init; }
+
+    /// <summary>One line per problem, each naming the file and the entry; empty when the layout loaded.</summary>
+    public required IReadOnlyList<string> Problems { get; init; }
+}
 
 /// <summary>
 /// A layout: the JSONC file that sets up a game in the game view (ADR 0009, <c>CONTEXT.md</c>). This type holds the
@@ -109,8 +114,8 @@ public sealed partial class Layout
         var layout = reader.Read(jsonc);
 
         return layout is not null && reader.Problems.Count == 0
-            ? new LayoutResult(layout, [])
-            : new LayoutResult(null, reader.Problems);
+            ? new LayoutResult { Layout = layout, Problems = [] }
+            : new LayoutResult { Layout = null, Problems = reader.Problems };
     }
 
     /// <summary>
@@ -121,7 +126,7 @@ public sealed partial class Layout
     {
         if (path.Length == 0)
         {
-            return new LayoutResult(null, ["'': file: the path is empty"]);
+            return new LayoutResult { Layout = null, Problems = ["'': file: the path is empty"] };
         }
 
         string text;
@@ -131,7 +136,7 @@ public sealed partial class Layout
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            return new LayoutResult(null, [$"{path}: file: cannot be read: {e.Message}"]);
+            return new LayoutResult { Layout = null, Problems = [$"{path}: file: cannot be read: {e.Message}"] };
         }
 
         return Read(text, path);

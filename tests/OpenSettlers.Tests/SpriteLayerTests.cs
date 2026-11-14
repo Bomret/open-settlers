@@ -26,7 +26,16 @@ public sealed class SpriteLayerTests
         var tables = TestProgram.Tables();
         var pair = SettlerPair.Of(install, tables);
         var source = HistoryEditionSource.Load(install, tables);
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var layers = new ImageLayers();
         var walks = new Walks
         {

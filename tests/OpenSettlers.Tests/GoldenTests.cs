@@ -24,7 +24,12 @@ namespace OpenSettlers.Tests;
 public sealed class GoldenTests
 {
     const string Fixture = "golden.txt";
-    static readonly MapSeed GeneratedSeed = new(0x1234, 0x5678, 0x9ABC);
+    static readonly MapSeed GeneratedSeed = new()
+    {
+        W0 = 0x1234,
+        W1 = 0x5678,
+        W2 = 0x9ABC,
+    };
     const string GeneratedWhere = "generated seed=1234,5678,9ABC size=1";
 
     // The kind of a step that stands a finished woodcutter's hut on the node before the tick: no command gives a finished
@@ -197,7 +202,18 @@ public sealed class GoldenTests
         var game = scenario.Start(everyPass);
         foreach (var step in scenario.Script.Where(step => step.Kind != FinishedHut))
         {
-            game.Enqueue(new Command(step.Tick, 0, step.Kind, step.X, step.Y, step.Directions, step.Building));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = step.Tick,
+                    Player = 0,
+                    Kind = step.Kind,
+                    X = step.X,
+                    Y = step.Y,
+                    Directions = step.Directions,
+                    Building = step.Building,
+                }
+            );
         }
 
         var digests = new List<string>();

@@ -193,7 +193,15 @@ public sealed class ConstructionDiggerTests
             var game = Clicked(parts, withSite);
             var revision = game.Revision;
             game.Enqueue(
-                new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 12, 9, Building: BuildingType.Sawmill)
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceBuilding,
+                    X = 12,
+                    Y = 9,
+                    Building = BuildingType.Sawmill,
+                }
             );
             game.Tick();
 
@@ -230,7 +238,17 @@ public sealed class ConstructionDiggerTests
         }
 
         var revision = game.Revision;
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 12, 9, Building: BuildingType.Sawmill));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = 12,
+                Y = 9,
+                Building = BuildingType.Sawmill,
+            }
+        );
         game.Tick();
 
         Assert.AreEqual(placed, game.Revision != revision, $"the {state} site");
@@ -291,14 +309,15 @@ public sealed class ConstructionDiggerTests
         game.ApplyCommands();
         var node = click[2..].Split(',').Select(number => int.Parse(number, CultureInfo.InvariantCulture)).ToArray();
         game.Enqueue(
-            new Command(
-                game.TickCount,
-                0,
-                CommandKind.PlaceBuilding,
-                node[0],
-                node[1],
-                Building: new BuildingType { Code = node[2] }
-            )
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = node[0],
+                Y = node[1],
+                Building = new BuildingType { Code = node[2] },
+            }
         );
         game.ApplyCommands();
     }

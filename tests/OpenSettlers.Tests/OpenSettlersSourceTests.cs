@@ -1083,13 +1083,40 @@ public sealed class OpenSettlersSourceTests
     public void TheCheckedInContentSetCoversEveryObjectTermTheBuildersEmit()
     {
         var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 3,
+            }
+        );
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
         var goods = Enumerable.Range(0, 8).Select(place => new Good { Code = place + 1 }).ToList();
@@ -1140,7 +1167,16 @@ public sealed class OpenSettlersSourceTests
     public void TheCheckedInContentSetDrawsEverySettlerTheBuildersEmit()
     {
         var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var figures = new SettlerFigures(new StepOffsets(SettlerFiguresTests.Sequences()), []);
         var heading = new Heading { Value = 0 };
         // The activities the builder draws (a frame that has a step gives each a figure term) and those it does not.

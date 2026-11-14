@@ -52,7 +52,17 @@ public sealed class HeadOnPassTests
 
     static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
@@ -60,7 +70,16 @@ public sealed class HeadOnPassTests
     // to the third. The settler coming home heads the opposite way.
     static Meeting Meet(int direction = East)
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(Tables, map);
         var (dx, dy) = RoadBuilding.Steps[direction];
         Do(game, CommandKind.PlaceCastle, 15, 5);

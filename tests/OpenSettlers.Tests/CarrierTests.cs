@@ -33,13 +33,40 @@ public sealed class CarrierTests
     {
         var game = GameFactory.Create(
             Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x1234,
+                    W1 = 0x5678,
+                    W2 = 0x9ABC,
+                },
+                MapSize.Offered[0]
+            )
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
         {
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = x,
+                    Y = y,
+                }
+            );
             game.Tick();
         }
 
@@ -48,7 +75,17 @@ public sealed class CarrierTests
 
     static void Build(Game game, int x, int y, params int[] directions)
     {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
@@ -122,7 +159,17 @@ public sealed class CarrierTests
     {
         var game = World();
         Build(game, 16, 6, 0, 0);
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 6, [5, 5, 0]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 6,
+                Directions = [5, 5, 0],
+            }
+        );
         game.Tick();
 
         Run(game, 27);
@@ -185,7 +232,17 @@ public sealed class CarrierTests
 
         Run(a, 1);
         Run(b, 1);
-        a.Enqueue(new Command(a.TickCount, 0, CommandKind.BuildRoad, 18, 6, [5, 5, 0]));
+        a.Enqueue(
+            new Command
+            {
+                Tick = a.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 6,
+                Directions = [5, 5, 0],
+            }
+        );
         a.Tick();
         b.Tick();
 

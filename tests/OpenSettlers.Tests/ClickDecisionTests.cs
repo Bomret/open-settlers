@@ -43,7 +43,17 @@ public sealed class ClickDecisionTests
 
         var command = Decide(ClickMode.None, game);
 
-        Assert.AreEqual(new Command(game.TickCount, 0, CommandKind.PlaceCastle, 20, 8), command);
+        Assert.AreEqual(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 20,
+                Y = 8,
+            },
+            command
+        );
         Assert.AreNotEqual(0, game.TickCount);
     }
 
@@ -54,7 +64,17 @@ public sealed class ClickDecisionTests
 
         var command = Decide(ClickMode.None with { Flag = true }, game);
 
-        Assert.AreEqual(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 20, 8), command);
+        Assert.AreEqual(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 20,
+                Y = 8,
+            },
+            command
+        );
     }
 
     [TestMethod]
@@ -66,7 +86,15 @@ public sealed class ClickDecisionTests
         var command = Decide(mode, game);
 
         Assert.AreEqual(
-            new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 20, 8, Building: BuildingType.Sawmill),
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = 20,
+                Y = 8,
+                Building = BuildingType.Sawmill,
+            },
             command
         );
     }
@@ -90,7 +118,17 @@ public sealed class ClickDecisionTests
 
         var command = Decide(mode, game, removal: (_, _) => CommandKind.RemoveRoad);
 
-        Assert.AreEqual(new Command(game.TickCount, 0, CommandKind.RemoveRoad, 20, 8), command);
+        Assert.AreEqual(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.RemoveRoad,
+                X = 20,
+                Y = 8,
+            },
+            command
+        );
     }
 
     [TestMethod]
@@ -125,7 +163,18 @@ public sealed class ClickDecisionTests
 
         var command = ClickDecision.Decide(mode, game, game.Map, drawing, Refuses, 18, 6);
 
-        Assert.AreEqual(new Command(game.TickCount, 0, CommandKind.BuildRoad, 16, 6, [0, 0]), command);
+        Assert.AreEqual(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 16,
+                Y = 6,
+                Directions = [0, 0],
+            },
+            command
+        );
     }
 
     [TestMethod]

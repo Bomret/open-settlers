@@ -30,13 +30,32 @@ public sealed class SettlerJobTests
 
     static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
     static Game Town()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < map.Count; index++)
         {
             if (map.At(index).Object.Kind == MapObjectKind.Tree)

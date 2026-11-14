@@ -34,7 +34,16 @@ public sealed class GameThingTests
 
     static Game World()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < map.Count; index++)
         {
             // No tree stands anywhere, so the woodcutter waits in his hut.
@@ -45,7 +54,16 @@ public sealed class GameThingTests
         }
 
         var game = GameFactory.Create(Made(), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
         {
@@ -62,7 +80,17 @@ public sealed class GameThingTests
 
     static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 

@@ -60,14 +60,38 @@ public static class ClickDecision
 
         if (mode.Remove)
         {
-            return removal(x, y) is { } kind ? new Command(game.TickCount, 0, kind, x, y) : null;
+            return removal(x, y) is { } kind
+                ? new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = kind,
+                    X = x,
+                    Y = y,
+                }
+                : null;
         }
 
         if (mode.Buildings is { Count: > 0 } buildings)
         {
-            return new Command(game.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: buildings[0]);
+            return new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = x,
+                Y = y,
+                Building = buildings[0],
+            };
         }
 
-        return new Command(game.TickCount, 0, mode.Flag ? CommandKind.PlaceFlag : CommandKind.PlaceCastle, x, y);
+        return new Command
+        {
+            Tick = game.TickCount,
+            Player = 0,
+            Kind = mode.Flag ? CommandKind.PlaceFlag : CommandKind.PlaceCastle,
+            X = x,
+            Y = y,
+        };
     }
 }

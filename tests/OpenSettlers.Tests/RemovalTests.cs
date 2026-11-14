@@ -82,27 +82,46 @@ public sealed class RemovalTests
             handsOutGoods: handsOutGoods
         );
         var castle = Points(parts[4]).Single();
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         // The flags take their slots in the order the verb lists them, which the order of the commands of one tick (by node) would
         // change: each is applied at once.
         game.ApplyCommands();
         foreach (var flag in Points(parts[5]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
             game.ApplyCommands();
         }
 
         foreach (var road in parts[6].Split(';').Where(text => text.Length > 0).Select(text => text.Split(',')))
         {
             game.Enqueue(
-                new Command(
-                    0,
-                    0,
-                    CommandKind.BuildRoad,
-                    int.Parse(road[0], CultureInfo.InvariantCulture),
-                    int.Parse(road[1], CultureInfo.InvariantCulture),
-                    [.. road[2].Select(c => c - '0')]
-                )
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0], CultureInfo.InvariantCulture),
+                    Y = int.Parse(road[1], CultureInfo.InvariantCulture),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
             );
         }
 
@@ -124,7 +143,16 @@ public sealed class RemovalTests
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
 
-        return MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        return MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
     }
 
     // The class the check 0x44b6e6 gives each node, for the classes 1 to 4 that the remove click and the road click act on
@@ -482,7 +510,17 @@ public sealed class RemovalTests
                             kind == CommandKind.PlaceBuilding && node.Length > 2
                                 ? new BuildingType { Code = node[2] }
                                 : null;
-                        game.Enqueue(new Command(game.TickCount, 0, kind, node[0], node[1], Building: type));
+                        game.Enqueue(
+                            new Command
+                            {
+                                Tick = game.TickCount,
+                                Player = 0,
+                                Kind = kind,
+                                X = node[0],
+                                Y = node[1],
+                                Building = type,
+                            }
+                        );
                     }
 
                     game.ApplyCommands();

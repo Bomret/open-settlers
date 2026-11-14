@@ -126,7 +126,16 @@ public sealed class Game
             return false;
         }
 
-        _applied.Add(new Command(TickCount, 0, CommandKind.PlaceBuilding, x, y));
+        _applied.Add(
+            new Command
+            {
+                Tick = TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = x,
+                Y = y,
+            }
+        );
 
         return true;
     }

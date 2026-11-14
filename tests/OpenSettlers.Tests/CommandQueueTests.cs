@@ -9,7 +9,14 @@ namespace OpenSettlers.Tests;
 public sealed class CommandQueueTests
 {
     static Command At(long tick, int x = 0, int y = 0, int player = 0) =>
-        new(tick, player, CommandKind.PlaceFlag, x, y);
+        new()
+        {
+            Tick = tick,
+            Player = player,
+            Kind = CommandKind.PlaceFlag,
+            X = x,
+            Y = y,
+        };
 
     [TestMethod]
     public void ACommandForATickThatHasRunIsRefused()
@@ -70,9 +77,33 @@ public sealed class CommandQueueTests
     public void TheDirectionsOfARoadCompareOneByOneThenByLength()
     {
         var queue = new CommandQueue();
-        var longer = new Command(1, 0, CommandKind.BuildRoad, 1, 1, new[] { 1, 2, 3 });
-        var shorter = new Command(1, 0, CommandKind.BuildRoad, 1, 1, new[] { 1, 2 });
-        var other = new Command(1, 0, CommandKind.BuildRoad, 1, 1, new[] { 0, 5 });
+        var longer = new Command
+        {
+            Tick = 1,
+            Player = 0,
+            Kind = CommandKind.BuildRoad,
+            X = 1,
+            Y = 1,
+            Directions = new[] { 1, 2, 3 },
+        };
+        var shorter = new Command
+        {
+            Tick = 1,
+            Player = 0,
+            Kind = CommandKind.BuildRoad,
+            X = 1,
+            Y = 1,
+            Directions = new[] { 1, 2 },
+        };
+        var other = new Command
+        {
+            Tick = 1,
+            Player = 0,
+            Kind = CommandKind.BuildRoad,
+            X = 1,
+            Y = 1,
+            Directions = new[] { 0, 5 },
+        };
         queue.Add(longer, 0);
         queue.Add(shorter, 0);
         queue.Add(other, 0);
@@ -91,14 +122,34 @@ public sealed class CommandQueueTests
     {
         var queue = new CommandQueue();
         var directions = new[] { 1, 2 };
-        queue.Add(new Command(0, 0, CommandKind.BuildRoad, 1, 1, directions), 0);
+        queue.Add(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 1,
+                Y = 1,
+                Directions = directions,
+            },
+            0
+        );
         directions[0] = 5;
 
         Assert.IsTrue(queue.TryTakeDue(0, out var command));
         CollectionAssert.AreEqual(new[] { 1, 2 }, (System.Collections.ICollection)command.Directions!);
     }
 
-    static Command Place(BuildingType? building) => new(1, 0, CommandKind.PlaceBuilding, 4, 4, Building: building);
+    static Command Place(BuildingType? building) =>
+        new()
+        {
+            Tick = 1,
+            Player = 0,
+            Kind = CommandKind.PlaceBuilding,
+            X = 4,
+            Y = 4,
+            Building = building,
+        };
 
     static Command Taken(CommandQueue queue)
     {

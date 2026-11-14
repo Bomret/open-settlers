@@ -42,7 +42,16 @@ public sealed class NameTable
     }
 
     /// <summary>One entry: the code, its name, and the evidence for the name.</summary>
-    internal readonly record struct Entry(CodeKind Kind, int Code, string Name, string Evidence);
+    internal readonly record struct Entry
+    {
+        public required CodeKind Kind { get; init; }
+
+        public required int Code { get; init; }
+
+        public required string Name { get; init; }
+
+        public required string Evidence { get; init; }
+    }
 
     /// <summary>The evidence of a state whose name rests on the code of the Activity record alone.</summary>
     internal const string StateEvidence = "the code of the Activity record (src/Domain/Activity.cs)";
@@ -103,7 +112,15 @@ public sealed class NameTable
         {
             for (var code = first; code < end; code++)
             {
-                entries.Add(new Entry(kind, code, name, evidence));
+                entries.Add(
+                    new Entry
+                    {
+                        Kind = kind,
+                        Code = code,
+                        Name = name,
+                        Evidence = evidence,
+                    }
+                );
             }
         }
 

@@ -10,7 +10,18 @@ namespace OpenSettlers.Tests;
 public sealed class JobModulesTests
 {
     static System.Collections.Generic.IReadOnlyList<JobRules> Modules() =>
-        JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!));
+        JobModules.Build(
+            new JobParts
+            {
+                Movement = null!,
+                Buildings = null!,
+                Flags = null!,
+                History = null!,
+                Draws = null!,
+                LayGood = null!,
+                Hut = null!,
+            }
+        );
 
     [TestMethod]
     public void TheRegistryHoldsTheModulesOfTheHutsAndTheBuildingJobsInTheOrderOfTheirTypeNames()

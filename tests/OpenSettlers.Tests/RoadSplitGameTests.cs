@@ -17,20 +17,30 @@ public sealed class RoadSplitGameTests
     // The road from the castle's flag to the flag at the end; beforeRoad changes the map after the flags stand and before the road.
     static Game Started(Action<Map>? beforeRoad, int castleX, int castleY, int endX, int endY, params int[] road)
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(RemovalLogicTests.Made(), map);
         Apply(game, CommandKind.PlaceCastle, castleX, castleY);
         Apply(game, CommandKind.PlaceFlag, endX, endY);
         beforeRoad?.Invoke(map);
         game.Enqueue(
-            new Command(
-                game.TickCount,
-                0,
-                CommandKind.BuildRoad,
-                (castleX + 1) & (map.Size.Width - 1),
-                (castleY + 1) & (map.Size.Height - 1),
-                road
-            )
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = (castleX + 1) & (map.Size.Width - 1),
+                Y = (castleY + 1) & (map.Size.Height - 1),
+                Directions = road,
+            }
         );
         game.Tick();
         Assert.AreEqual(1, game.Network.Roads.Count, "the road is built");
@@ -42,7 +52,16 @@ public sealed class RoadSplitGameTests
 
     static void Apply(Game game, int kind, int x, int y)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+            }
+        );
         game.Tick();
     }
 
@@ -176,7 +195,16 @@ public sealed class RoadSplitGameTests
         var game = EastRoad();
         var digest = game.Digest();
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 6));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 6,
+            }
+        );
         game.ApplyCommands();
 
         Assert.AreEqual(digest, game.Digest());
@@ -190,7 +218,16 @@ public sealed class RoadSplitGameTests
         var game = EastRoad();
         var node = game.Map.Index(18, 6);
         game.Map.At(node).Roads = new RoadSet { Bits = 0b0000_0001 };
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 6));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 18,
+                Y = 6,
+            }
+        );
         var digest = game.Digest();
 
         var failure = Assert.ThrowsExactly<InvalidOperationException>(game.ApplyCommands);
@@ -368,7 +405,17 @@ public sealed class RoadSplitGameTests
         Huts.PlaceAndTick(game, 17, 5);
         Apply(game, CommandKind.PlaceFlag, 18, 8);
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 6, [2, 2]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 6,
+                Directions = [2, 2],
+            }
+        );
         game.Tick();
 
         Assert.AreEqual(

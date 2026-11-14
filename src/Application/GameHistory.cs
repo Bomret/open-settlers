@@ -48,13 +48,31 @@ public sealed class GameHistory
     public IReadOnlyList<ThingEvent> EventsOf(ThingId thing) => Events.Of(thing);
 
     /// <summary>The ID of the settler in the slot of the settler list; the fill count 0 for a slot never filled.</summary>
-    public ThingId SettlerId(int slot) => new(ThingId.SettlerKind, slot, FillOf(_settlerFills, slot));
+    public ThingId SettlerId(int slot) =>
+        new()
+        {
+            Kind = ThingId.SettlerKind,
+            Slot = slot,
+            Fill = FillOf(_settlerFills, slot),
+        };
 
     /// <summary>The ID of the building in the slot of the building list; the fill count 0 for a slot never filled.</summary>
-    public ThingId BuildingId(int slot) => new(ThingId.BuildingKind, slot, FillOf(_buildingFills, slot));
+    public ThingId BuildingId(int slot) =>
+        new()
+        {
+            Kind = ThingId.BuildingKind,
+            Slot = slot,
+            Fill = FillOf(_buildingFills, slot),
+        };
 
     /// <summary>The ID of the flag in the slot of the flag list; the fill count 0 for a slot never filled.</summary>
-    public ThingId FlagId(int slot) => new(ThingId.FlagKind, slot, FillOf(_flagFills, slot));
+    public ThingId FlagId(int slot) =>
+        new()
+        {
+            Kind = ThingId.FlagKind,
+            Slot = slot,
+            Fill = FillOf(_flagFills, slot),
+        };
 
     /// <summary>Counts a fill of the settler slot: its next settler takes the next count.</summary>
     internal void FillSettler(int slot) => Fill(_settlerFills, slot);
@@ -146,7 +164,17 @@ public sealed class GameHistory
     }
 
     void Record(string type, ThingId thing, ThingState state, Cause cause, string? other) =>
-        Events.Add(new ThingEvent(_tickCount(), type, thing, state, cause, other));
+        Events.Add(
+            new ThingEvent
+            {
+                Tick = _tickCount(),
+                Type = type,
+                Thing = thing,
+                State = state,
+                Cause = cause,
+                Other = other,
+            }
+        );
 
     static int FillOf(List<int> fills, int slot) => slot >= 0 && slot < fills.Count ? fills[slot] : 0;
 

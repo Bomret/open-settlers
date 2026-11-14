@@ -22,7 +22,15 @@ public sealed class SimulationBoundaryTests
     public void AGoodCodeOutsideOneToTwentySixHasNoCountAndTheStockIgnoresIt(int code)
     {
         var castle = new CastleStock();
-        castle.Place(new Castle(1, 1, 1), new int[StartStock.Goods]);
+        castle.Place(
+            new Castle
+            {
+                X = 1,
+                Y = 1,
+                Height = 1,
+            },
+            new int[StartStock.Goods]
+        );
         var good = new Good { Code = code };
 
         castle.Add(good);
@@ -122,7 +130,16 @@ public sealed class SimulationBoundaryTests
 
         return GameFactory.Create(
             tables,
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x1234,
+                    W1 = 0x5678,
+                    W2 = 0x9ABC,
+                },
+                MapSize.Offered[0]
+            )
         );
     }
 

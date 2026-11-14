@@ -73,7 +73,12 @@ public sealed class MapGeneratorTests
 
         var generated = MapGenerator.TryGenerate(
             TestProgram.Made(),
-            new MapSeed(1, 2, 3),
+            new MapSeed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            },
             4,
             (_, _, _) => passes++,
             out var map,
@@ -90,7 +95,16 @@ public sealed class MapGeneratorTests
     public void GeneratingWithNoTablesIsRefusedNamingThem()
     {
         var refusal = Assert.ThrowsExactly<ArgumentNullException>(() =>
-            MapGenerator.Generate(null!, new MapSeed(1, 2, 3), MapSize.Offered[0])
+            MapGenerator.Generate(
+                null!,
+                new MapSeed
+                {
+                    W0 = 1,
+                    W1 = 2,
+                    W2 = 3,
+                },
+                MapSize.Offered[0]
+            )
         );
         Assert.AreEqual("tables", refusal.ParamName);
     }
@@ -99,7 +113,19 @@ public sealed class MapGeneratorTests
     public void TryGeneratingWithNoTablesIsRefusedNamingThem()
     {
         var refusal = Assert.ThrowsExactly<ArgumentNullException>(() =>
-            MapGenerator.TryGenerate(null!, new MapSeed(1, 2, 3), 1, null, out _, out _)
+            MapGenerator.TryGenerate(
+                null!,
+                new MapSeed
+                {
+                    W0 = 1,
+                    W1 = 2,
+                    W2 = 3,
+                },
+                1,
+                null,
+                out _,
+                out _
+            )
         );
         Assert.AreEqual("tables", refusal.ParamName);
     }
@@ -112,7 +138,12 @@ public sealed class MapGeneratorTests
 
         var generated = MapGenerator.TryGenerate(
             TestProgram.Made(),
-            new MapSeed(1, 2, 3),
+            new MapSeed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            },
             1,
             (_, _, _) => passes++,
             out var map,
@@ -154,7 +185,12 @@ public sealed class MapGeneratorTests
 
         var map = MapGenerator.Generate(
             tables,
-            new MapSeed(1, 2, 3),
+            new MapSeed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            },
             MapSize.Offered[0],
             (pass, map, _) =>
             {
@@ -194,7 +230,12 @@ public sealed class MapGeneratorTests
 
         MapGenerator.Generate(
             TestProgram.Made(),
-            new MapSeed(1, 2, 3),
+            new MapSeed
+            {
+                W0 = 1,
+                W1 = 2,
+                W2 = 3,
+            },
             MapSize.Offered[0],
             (pass, _, _) => seen.Add(pass)
         );
@@ -391,7 +432,12 @@ public sealed class MapGeneratorTests
     {
         var parts = words.Split(',').Select(part => ushort.Parse(part, NumberStyles.HexNumber)).ToArray();
 
-        return new MapSeed(parts[0], parts[1], parts[2]);
+        return new MapSeed
+        {
+            W0 = parts[0],
+            W1 = parts[1],
+            W2 = parts[2],
+        };
     }
 
     static string Format(MapSeed seed) => $"{seed.W0:X4},{seed.W1:X4},{seed.W2:X4}";

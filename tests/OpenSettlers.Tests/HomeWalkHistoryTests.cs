@@ -15,11 +15,48 @@ public sealed class HomeWalkHistoryTests
     static Game SentHome(Cause? carried)
     {
         MapSize.TryFromValue(1, out var size, out _);
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(0x1234, 0x5678, 0x9ABC), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, 0);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 18, 20));
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, 16, 20));
-        game.Enqueue(new Command(0, 0, CommandKind.BuildRoad, 19, 21, [3, 4, 3]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 18,
+                Y = 20,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 16,
+                Y = 20,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 19,
+                Y = 21,
+                Directions = [3, 4, 3],
+            }
+        );
         for (var pass = 0; pass < 5; pass++)
         {
             game.Tick();
@@ -63,7 +100,14 @@ public sealed class HomeWalkHistoryTests
     [TestMethod]
     public void ARazedSettlerKeepsTheRazedCauseUntilItIsInTheCastle()
     {
-        var razed = Cause.Razed(new ThingId(ThingId.BuildingKind, 3, 1));
+        var razed = Cause.Razed(
+            new ThingId
+            {
+                Kind = ThingId.BuildingKind,
+                Slot = 3,
+                Fill = 1,
+            }
+        );
         var game = SentHome(razed);
         var walk = Walk(game);
 
@@ -81,7 +125,14 @@ public sealed class HomeWalkHistoryTests
     [TestMethod]
     public void ArrivingOnANodeThatIsNoHomeFlagSearchesAgainAndKeepsTheCarry()
     {
-        var razed = Cause.Razed(new ThingId(ThingId.BuildingKind, 3, 1));
+        var razed = Cause.Razed(
+            new ThingId
+            {
+                Kind = ThingId.BuildingKind,
+                Slot = 3,
+                Fill = 1,
+            }
+        );
         var game = SentHome(razed);
         var settler = game.Settlers[Sent];
         settler.X = 30;

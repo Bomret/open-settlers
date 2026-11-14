@@ -52,15 +52,16 @@ public sealed class HutWorkTests
             layGood,
             () => false
         );
-        var parts = new JobParts(
-            bench.Movement,
-            bench.Buildings,
-            bench.Flags,
-            bench.History,
-            bench.Draws,
-            layGood,
-            behaviour
-        );
+        var parts = new JobParts
+        {
+            Movement = bench.Movement,
+            Buildings = bench.Buildings,
+            Flags = bench.Flags,
+            History = bench.History,
+            Draws = bench.Draws,
+            LayGood = layGood,
+            Hut = behaviour,
+        };
 
         return (bench, behaviour, laid, new Causes(bench.History, bench.Buildings, walkHome), parts);
     }

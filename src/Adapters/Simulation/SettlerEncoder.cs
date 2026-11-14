@@ -1,13 +1,26 @@
 namespace OpenSettlers.Simulation;
 
 /// <summary>The fields of the original's settler item that the typed settler does not hold as they are (bytes 10 to 15, and the stamp).</summary>
-/// <param name="State">Byte 10, the state.</param>
-/// <param name="Mode">Byte 11, what the settler walks to, or the good a carrier carries.</param>
-/// <param name="Target">The word at 12: the flag the settler walks to, a good's destination, the door's time, or a vector.</param>
-/// <param name="Heading">Byte 14: the direction back, a storage's slot, or a walk's count.</param>
-/// <param name="Next">Byte 15: the state after a step's wait, a walk's memory, or a count.</param>
-/// <param name="Stamp">The word at 8; for the carrier that waits next to a flag its low byte holds the approach.</param>
-public readonly record struct SettlerFields(int State, int Mode, int Target, int Heading, int Next, ushort Stamp);
+public readonly record struct SettlerFields
+{
+    /// <summary>Byte 10, the state.</summary>
+    public required int State { get; init; }
+
+    /// <summary>Byte 11, what the settler walks to, or the good a carrier carries.</summary>
+    public required int Mode { get; init; }
+
+    /// <summary>The word at 12: the flag the settler walks to, a good's destination, the door's time, or a vector.</summary>
+    public required int Target { get; init; }
+
+    /// <summary>Byte 14: the direction back, a storage's slot, or a walk's count.</summary>
+    public required int Heading { get; init; }
+
+    /// <summary>Byte 15: the state after a step's wait, a walk's memory, or a count.</summary>
+    public required int Next { get; init; }
+
+    /// <summary>The word at 8; for the carrier that waits next to a flag its low byte holds the approach.</summary>
+    public required ushort Stamp { get; init; }
+}
 
 /// <summary>
 /// The exporter of the typed settler: it writes the original's state, mode, target, heading, and next (bytes 10 to 15 of the
@@ -38,7 +51,15 @@ public static class SettlerEncoder
             stamp = (ushort)((stamp & 0xff00) | (byte)approach.Value);
         }
 
-        return new SettlerFields(raw.State, raw.Mode, raw.Target, raw.Heading, raw.Next, stamp);
+        return new SettlerFields
+        {
+            State = raw.State,
+            Mode = raw.Mode,
+            Target = raw.Target,
+            Heading = raw.Heading,
+            Next = raw.Next,
+            Stamp = stamp,
+        };
     }
 
     /// <summary>The bytes the activity leaves as they are when the settler takes up another activity.</summary>
@@ -61,7 +82,18 @@ public static class SettlerEncoder
     /// <summary>The word the original's settler item holds for a good's destination flag: the flag's slot plus one, 0 for none.</summary>
     internal static int DestinationWord(int? destination) => destination is { } slot ? slot + 1 : 0;
 
-    readonly record struct Raw(int State, int Mode, int Target, int Heading, int Next);
+    readonly record struct Raw
+    {
+        public required int State { get; init; }
+
+        public required int Mode { get; init; }
+
+        public required int Target { get; init; }
+
+        public required int Heading { get; init; }
+
+        public required int Next { get; init; }
+    }
 
     static Raw Of(Activity activity)
     {
@@ -69,72 +101,176 @@ public static class SettlerEncoder
 
         return activity switch
         {
-            WaitsInCastle a => new(a.Code, r.Mode, r.Target, a.Storage, r.Next),
-            Walks a => new(a.Code, ModeOf(a.Errand), TargetOf(a.Errand), a.Heading.Value, a.Tries),
-            WalksRoad a => new(
-                a.Code,
-                a.Load?.Good.Code ?? 0,
-                a.Load is { } load ? DestinationWord(load.Destination) : r.Target,
-                a.Heading.Value,
-                a.Marked ? 0xff : a.Waits
-            ),
-            Door a => new(a.Code, a.EnteringStorage ? StorageMode : r.Mode, a.TimeLeft, r.Heading, r.Next),
+            WaitsInCastle a => new()
+            {
+                State = a.Code,
+                Mode = r.Mode,
+                Target = r.Target,
+                Heading = a.Storage,
+                Next = r.Next,
+            },
+            Walks a => new()
+            {
+                State = a.Code,
+                Mode = ModeOf(a.Errand),
+                Target = TargetOf(a.Errand),
+                Heading = a.Heading.Value,
+                Next = a.Tries,
+            },
+            WalksRoad a => new()
+            {
+                State = a.Code,
+                Mode = a.Load?.Good.Code ?? 0,
+                Target = a.Load is { } load ? DestinationWord(load.Destination) : r.Target,
+                Heading = a.Heading.Value,
+                Next = a.Marked ? 0xff : a.Waits,
+            },
+            Door a => new()
+            {
+                State = a.Code,
+                Mode = a.EnteringStorage ? StorageMode : r.Mode,
+                Target = a.TimeLeft,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
             WaitsOutStep a => Of(a.Then) with { State = a.Code, Next = a.Then.Code },
-            EntersBuilding a => new(a.Code, a.Storage ? StorageMode : r.Mode, r.Target, r.Heading, r.Next),
+            EntersBuilding a => new()
+            {
+                State = a.Code,
+                Mode = a.Storage ? StorageMode : r.Mode,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
             StepsOntoFlag a => Of(a.Then) with { State = a.Code, Next = a.Then.Code },
-            Builds a => new(
-                a.Code,
-                a.Blowing ? BlowingMode : SearchingMode,
-                a.Site,
-                a.Materials | (a.SecondFigure ? SecondFigureBit : 0),
-                a.Blows
-            ),
-            LeavesSite a => new(a.Code, StorageMode, 0, 0, WalksState),
+            Builds a => new()
+            {
+                State = a.Code,
+                Mode = a.Blowing ? BlowingMode : SearchingMode,
+                Target = a.Site,
+                Heading = a.Materials | (a.SecondFigure ? SecondFigureBit : 0),
+                Next = a.Blows,
+            },
+            LeavesSite a => new()
+            {
+                State = a.Code,
+                Mode = StorageMode,
+                Target = 0,
+                Heading = 0,
+                Next = WalksState,
+            },
             // The digger's work: the pass in byte 11, the site's height and the node of the pass in the word at 12, the phase in byte 14.
-            Digs a => new(a.Code, a.Pass, a.Target | (a.Node << 8), a.Phase, r.Next),
+            Digs a => new()
+            {
+                State = a.Code,
+                Mode = a.Pass,
+                Target = a.Target | (a.Node << 8),
+                Heading = a.Phase,
+                Next = r.Next,
+            },
             // The sawmiller's work: byte 11 is 0xff while he saws and 0 while he waits for a log; with the plank in his hands it holds the
             // good, the word at 12 is 0, and byte 15 is the state he lays it down in.
-            Saws a => new(a.Code, a.Sawing ? BlowingMode : 0, r.Target, r.Heading, r.Next),
-            StepsOutWithGood a => new(a.Code, a.Good.Code, 0, r.Heading, PutsDownState),
-            PutsDownGood a => new(a.Code, a.Good.Code, 0, r.Heading, r.Next),
-            HandsOver a => new(
-                a.Code,
-                a.Load?.Good.Code ?? 0,
-                a.Load is { } load ? DestinationWord(load.Destination) : r.Target,
-                a.Heading.Value,
-                a.Marked ? 0xff : 0
-            ),
-            Leaving a => new(a.Code, ModeOf(a.Errand), TargetOf(a.Errand), r.Heading, r.Next),
+            Saws a => new()
+            {
+                State = a.Code,
+                Mode = a.Sawing ? BlowingMode : 0,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
+            StepsOutWithGood a => new()
+            {
+                State = a.Code,
+                Mode = a.Good.Code,
+                Target = 0,
+                Heading = r.Heading,
+                Next = PutsDownState,
+            },
+            PutsDownGood a => new()
+            {
+                State = a.Code,
+                Mode = a.Good.Code,
+                Target = 0,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
+            HandsOver a => new()
+            {
+                State = a.Code,
+                Mode = a.Load?.Good.Code ?? 0,
+                Target = a.Load is { } load ? DestinationWord(load.Destination) : r.Target,
+                Heading = a.Heading.Value,
+                Next = a.Marked ? 0xff : 0,
+            },
+            Leaving a => new()
+            {
+                State = a.Code,
+                Mode = ModeOf(a.Errand),
+                Target = TargetOf(a.Errand),
+                Heading = r.Heading,
+                Next = r.Next,
+            },
             WalksFree a => OfTrip(a.Code, a.Trip),
             KnightWalks a => OfTrip(a.Code, a.Trip),
-            Cuts a => new(
-                a.Code,
-                a.Back.East & 0xff,
-                ((a.SecondVariant ? 0xff : 0) << 8) | (a.Back.South & 0xff),
-                a.Count,
-                a.Memory
-            ),
+            Cuts a => new()
+            {
+                State = a.Code,
+                Mode = a.Back.East & 0xff,
+                Target = ((a.SecondVariant ? 0xff : 0) << 8) | (a.Back.South & 0xff),
+                Heading = a.Count,
+                Next = a.Memory,
+            },
             // The stonecutter's cut: the way back in bytes 11 and 12, the part of the cut in byte 13, the quarter in the word at 14.
-            CutsStone a => new(
-                a.Code,
-                a.Back.East & 0xff,
-                (a.Phase << 8) | (a.Back.South & 0xff),
-                a.Quarter & 0xff,
-                a.Quarter >> 8
-            ),
+            CutsStone a => new()
+            {
+                State = a.Code,
+                Mode = a.Back.East & 0xff,
+                Target = (a.Phase << 8) | (a.Back.South & 0xff),
+                Heading = a.Quarter & 0xff,
+                Next = a.Quarter >> 8,
+            },
             // The forester's wait: the way back in bytes 11 and 12 (and again, as the arrival left it, in byte 13 and the next word's
             // low byte), byte 14 not 0 once the sapling is down, and the walk's memory in byte 15.
-            Plants a => new(
-                a.Code,
-                a.Back.East & 0xff,
-                ((a.Back.East & 0xff) << 8) | (a.Back.South & 0xff),
-                a.Planted ? 0xff : 0,
-                a.Memory
-            ),
-            SearchesHome a => new(a.Code, a.FarEndFirst ? a.FarEndMark : 0, r.Target, r.Heading, r.Next),
-            WaitsAtFlag a => new(a.Code, a.Direction.Value, a.Flag, r.Heading, r.Next),
-            ClaimsNode a => new(a.Code, r.Mode, r.Target, a.Heading.Value, r.Next),
-            _ => new(activity.Code, r.Mode, r.Target, r.Heading, r.Next),
+            Plants a => new()
+            {
+                State = a.Code,
+                Mode = a.Back.East & 0xff,
+                Target = ((a.Back.East & 0xff) << 8) | (a.Back.South & 0xff),
+                Heading = a.Planted ? 0xff : 0,
+                Next = a.Memory,
+            },
+            SearchesHome a => new()
+            {
+                State = a.Code,
+                Mode = a.FarEndFirst ? a.FarEndMark : 0,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
+            WaitsAtFlag a => new()
+            {
+                State = a.Code,
+                Mode = a.Direction.Value,
+                Target = a.Flag,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
+            ClaimsNode a => new()
+            {
+                State = a.Code,
+                Mode = r.Mode,
+                Target = r.Target,
+                Heading = a.Heading.Value,
+                Next = r.Next,
+            },
+            _ => new()
+            {
+                State = activity.Code,
+                Mode = r.Mode,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
         };
     }
 
@@ -161,12 +297,13 @@ public static class SettlerEncoder
             _ => (WayBackMark, -1),
         };
 
-        return new Raw(
-            state,
-            trip.Remaining.East & 0xff,
-            (mark << 8) | (trip.Remaining.South & 0xff),
-            heading,
-            trip.Memory
-        );
+        return new Raw
+        {
+            State = state,
+            Mode = trip.Remaining.East & 0xff,
+            Target = (mark << 8) | (trip.Remaining.South & 0xff),
+            Heading = heading,
+            Next = trip.Memory,
+        };
     }
 }

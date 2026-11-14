@@ -15,11 +15,11 @@ public sealed class GameHistoryTests
     // A stand-in for the exporter: every thing's state is its slot.
     sealed class SlotSnapshots : IThingSnapshots
     {
-        public ThingState Building(int slot) => new([("slot", slot)]);
+        public ThingState Building(int slot) => new() { Fields = [("slot", slot)] };
 
-        public ThingState Flag(int slot) => new([("slot", slot)]);
+        public ThingState Flag(int slot) => new() { Fields = [("slot", slot)] };
 
-        public ThingState Settler(int slot) => new([("slot", slot), ("state", State)]);
+        public ThingState Settler(int slot) => new() { Fields = [("slot", slot), ("state", State)] };
 
         public int State { get; set; }
     }
@@ -163,7 +163,16 @@ public sealed class GameHistoryTests
     public void TheGameRecordsThroughItsHistory()
     {
         var game = ThingHistoryTests.NewGame();
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
 
         Assert.IsNotEmpty(game.History.EventsOf(game.History.BuildingId(0)));

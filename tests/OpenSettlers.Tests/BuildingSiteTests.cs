@@ -44,9 +44,27 @@ public sealed class BuildingSiteTests
 
     static Game World()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(Made(), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
 
         return game;
@@ -55,7 +73,17 @@ public sealed class BuildingSiteTests
     static bool Place(Game game, BuildingType? type, int x, int y)
     {
         var revision = game.Revision;
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, x, y, Building: type));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = x,
+                Y = y,
+                Building = type,
+            }
+        );
         game.Tick();
 
         return game.Revision != revision;
@@ -171,7 +199,16 @@ public sealed class BuildingSiteTests
     {
         var game = World();
         var (x, y, _) = Find(game, 4);
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x + 1, y + 1));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = x + 1,
+                Y = y + 1,
+            }
+        );
         game.Tick();
         var flags = game.Flags.Count;
         Assert.AreEqual(5, BuildSite.Evaluate(game.Tables, game.Map, x, y, 0, hasCastle: true).Node);
@@ -275,7 +312,15 @@ public sealed class BuildingSiteTests
     [TestMethod]
     public void TwoCommandsThatDifferInTheTypeAreTwoCommands()
     {
-        var wood = new Command(1, 0, CommandKind.PlaceBuilding, 3, 4, Building: BuildingType.Woodcutter);
+        var wood = new Command
+        {
+            Tick = 1,
+            Player = 0,
+            Kind = CommandKind.PlaceBuilding,
+            X = 3,
+            Y = 4,
+            Building = BuildingType.Woodcutter,
+        };
         var stone = wood with { Building = BuildingType.Stonecutter };
 
         Assert.AreNotEqual(wood, stone);
@@ -320,14 +365,15 @@ public sealed class BuildingSiteTests
         var forward = World();
         var backward = World();
         var (x, y, _) = Find(forward, 4);
-        var woodcutter = new Command(
-            forward.TickCount,
-            0,
-            CommandKind.PlaceBuilding,
-            x,
-            y,
-            Building: BuildingType.Woodcutter
-        );
+        var woodcutter = new Command
+        {
+            Tick = forward.TickCount,
+            Player = 0,
+            Kind = CommandKind.PlaceBuilding,
+            X = x,
+            Y = y,
+            Building = BuildingType.Woodcutter,
+        };
         var sawmill = woodcutter with { Building = BuildingType.Sawmill };
 
         forward.Enqueue(woodcutter);

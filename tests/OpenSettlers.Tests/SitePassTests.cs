@@ -51,7 +51,19 @@ public sealed class SitePassTests
                 bench.Map,
                 bench.Flags,
                 tables,
-                modules ?? JobModules.Build(new JobParts(null!, null!, null!, null!, null!, null!, null!)),
+                modules
+                    ?? JobModules.Build(
+                        new JobParts
+                        {
+                            Movement = null!,
+                            Buildings = null!,
+                            Flags = null!,
+                            History = null!,
+                            Draws = null!,
+                            LayGood = null!,
+                            Hut = null!,
+                        }
+                    ),
                 (building, request) => Asked.Add((building, request))
             ),
             site
@@ -269,7 +281,21 @@ public sealed class SitePassTests
     [TestMethod]
     public void ASiteAsksForTheWorkersTheModulesNameForItsTwoStages()
     {
-        var modules = new JobRules[] { new SiteRules(new JobParts(null!, null!, null!, null!, null!, null!, null!)) };
+        var modules = new JobRules[]
+        {
+            new SiteRules(
+                new JobParts
+                {
+                    Movement = null!,
+                    Buildings = null!,
+                    Flags = null!,
+                    History = null!,
+                    Draws = null!,
+                    LayGood = null!,
+                    Hut = null!,
+                }
+            ),
+        };
         var (bench, pass, site) = Bench(
             BuildingType.Sawmill,
             new BuildingNeeds { Planks = 3, Stones = 2 },
@@ -316,7 +342,16 @@ public sealed class SitePassTests
     [TestMethod]
     public void TwoModulesThatNameTheWorkerOfOneStageRefuseTheAskNamingBoth()
     {
-        var parts = new JobParts(null!, null!, null!, null!, null!, null!, null!);
+        var parts = new JobParts
+        {
+            Movement = null!,
+            Buildings = null!,
+            Flags = null!,
+            History = null!,
+            Draws = null!,
+            LayGood = null!,
+            Hut = null!,
+        };
         var modules = new JobRules[] { new SiteRules(parts), new OtherSiteRules(parts) };
         var (bench, pass, site) = Bench(
             BuildingType.Sawmill,

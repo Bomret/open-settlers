@@ -9,13 +9,30 @@ public sealed class GameTests
 {
     const int Ticks = 40;
 
-    static Command Place(long tick, int x, int y, int player = 0) => new(tick, player, CommandKind.PlaceCastle, x, y);
+    static Command Place(long tick, int x, int y, int player = 0) =>
+        new()
+        {
+            Tick = tick,
+            Player = player,
+            Kind = CommandKind.PlaceCastle,
+            X = x,
+            Y = y,
+        };
 
     static Game Run(params Command[] commands)
     {
         var game = GameFactory.Create(
             TestProgram.Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x6359,
+                    W1 = 0xA0D2,
+                    W2 = 0xB4FA,
+                },
+                MapSize.Offered[0]
+            )
         );
         foreach (var command in commands)
         {
@@ -59,7 +76,16 @@ public sealed class GameTests
         var directions = new[] { 1, 2 };
         var game = GameFactory.Create(
             TestProgram.Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x6359, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x6359,
+                    W1 = 0xA0D2,
+                    W2 = 0xB4FA,
+                },
+                MapSize.Offered[0]
+            )
         );
         game.Enqueue(Place(0, 17, 0) with { Directions = directions });
         directions[0] = 5;

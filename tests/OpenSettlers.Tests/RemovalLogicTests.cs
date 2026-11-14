@@ -40,7 +40,16 @@ public sealed class RemovalLogicTests
 
     static Game World(byte capacity = 8, bool hut = true, byte[]? transportPriorities = null)
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < map.Count; index++)
         {
             // No tree stands anywhere, so the worker waits in its hut.
@@ -51,11 +60,29 @@ public sealed class RemovalLogicTests
         }
 
         var game = GameFactory.Create(Made(capacity, transportPriorities), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         foreach (var (x, y) in new[] { (18, 6), (19, 4), (17, 3) })
         {
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = x,
+                    Y = y,
+                }
+            );
             game.Tick();
         }
 
@@ -72,7 +99,17 @@ public sealed class RemovalLogicTests
 
     static void Build(Game game, int x, int y, params int[] directions)
     {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
@@ -87,7 +124,16 @@ public sealed class RemovalLogicTests
     static bool Applied(Game game, int kind, int x, int y)
     {
         var digest = game.Digest();
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+            }
+        );
         game.ApplyCommands();
 
         return digest != game.Digest();

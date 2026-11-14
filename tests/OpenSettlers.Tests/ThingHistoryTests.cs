@@ -33,7 +33,16 @@ public sealed class ThingHistoryTests
 
     internal static Game NewGame()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < map.Count; index++)
         {
             if (map.At(index).Object.Kind == MapObjectKind.Tree)
@@ -47,7 +56,17 @@ public sealed class ThingHistoryTests
 
     static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
-        game.Enqueue(new Command(game.TickCount, 0, kind, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
@@ -219,9 +238,37 @@ public sealed class ThingHistoryTests
     public void SeveralEventsInOneTickResolveToTheLast()
     {
         var game = Castle();
-        game.Enqueue(new Command(1, 0, CommandKind.PlaceFlag, 18, 6));
-        game.Enqueue(new Command(1, 0, CommandKind.PlaceFlag, 19, 4));
-        game.Enqueue(new Command(1, 0, CommandKind.BuildRoad, 18, 6, [5, 5, 0]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 1,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 18,
+                Y = 6,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 1,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 19,
+                Y = 4,
+            }
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 1,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 6,
+                Directions = [5, 5, 0],
+            }
+        );
         game.Tick();
         var flag = game.History.FlagId(1);
 

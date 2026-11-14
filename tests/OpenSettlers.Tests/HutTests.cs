@@ -35,7 +35,16 @@ public sealed class HutTests
     // The castle, the three flags (slots 1 to 3), and the roads between the flags 0 and 1 and between 1 and 2.
     static Game World()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         for (var index = 0; index < map.Count; index++)
         {
             // No tree stands anywhere, so the worker waits in its hut (WoodcuttingTests holds the work).
@@ -46,11 +55,29 @@ public sealed class HutTests
         }
 
         var game = GameFactory.Create(Made(), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         foreach (var (x, y) in Flags)
         {
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, x, y));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = x,
+                    Y = y,
+                }
+            );
             game.Tick();
         }
 
@@ -62,7 +89,17 @@ public sealed class HutTests
 
     static void Build(Game game, int x, int y, params int[] directions)
     {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, x, y, directions));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
         game.Tick();
     }
 
@@ -172,7 +209,16 @@ public sealed class HutTests
     {
         var game = GameFactory.Create(
             Made(),
-            MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0])
+            MapGenerator.Generate(
+                TestProgram.Made(),
+                new MapSeed
+                {
+                    W0 = 0x1234,
+                    W1 = 0x5678,
+                    W2 = 0x9ABC,
+                },
+                MapSize.Offered[0]
+            )
         );
 
         PlaceHut(game);

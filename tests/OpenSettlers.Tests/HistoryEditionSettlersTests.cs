@@ -22,7 +22,16 @@ public sealed class HistoryEditionSettlersTests
     }
 
     static Map Map() =>
-        MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
 
     static Settler Woodcutter(int frame, int timer, Activity activity) =>
         new(new Woodcutter(), 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)timer };

@@ -60,7 +60,15 @@ public sealed class StorageDistributionTests
         var castle = new CastleStock();
         if (withCastle)
         {
-            castle.Place(new Castle(3, 3, 1), stock);
+            castle.Place(
+                new Castle
+                {
+                    X = 3,
+                    Y = 3,
+                    Height = 1,
+                },
+                stock
+            );
         }
 
         var goods = new GoodsTransport(bench.Movement, bench.Flags, bench.Roads, bench.History, bench.Buildings);

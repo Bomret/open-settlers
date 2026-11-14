@@ -42,7 +42,17 @@ public sealed class ConstructionDeliveryTests
 
     static void Place(Game game, BuildingType type)
     {
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 13, 10, Building: type));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = 13,
+                Y = 10,
+                Building = type,
+            }
+        );
         game.Tick();
     }
 
@@ -96,7 +106,16 @@ public sealed class ConstructionDeliveryTests
             "the site asks for planks at a rank the hand-out serves"
         );
 
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.RemoveBuilding, 13, 10));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.RemoveBuilding,
+                X = 13,
+                Y = 10,
+            }
+        );
         game.Tick();
         game.CastleStock.Add(Good.Plank);
         Run(game, 400);

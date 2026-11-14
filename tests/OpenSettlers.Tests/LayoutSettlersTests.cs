@@ -181,7 +181,17 @@ public sealed class LayoutSettlersTests
             }
         )
         {
-            game.Enqueue(new Command(game.TickCount, 0, kind, x, 11, directions));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = kind,
+                    X = x,
+                    Y = 11,
+                    Directions = directions,
+                }
+            );
             game.ApplyCommands();
         }
 
@@ -359,7 +369,15 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}],", ""));
         game.Enqueue(
-            new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 13, 10, Building: BuildingType.Woodcutter)
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = 13,
+                Y = 10,
+                Building = BuildingType.Woodcutter,
+            }
         );
         game.Tick();
         Assert.IsTrue(game.Buildings[1].Constructing);

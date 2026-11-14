@@ -39,13 +39,31 @@ public sealed class RoadBuildingTests
             map,
             int.Parse(header["level"], CultureInfo.InvariantCulture)
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         game.ApplyCommands();
 
         foreach (var line in lines.Where(line => line.StartsWith("road-flag ", StringComparison.Ordinal)))
         {
             var tile = Fields(line)["tile"].Split(',').Select(int.Parse).ToArray();
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, tile[0], tile[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = tile[0],
+                    Y = tile[1],
+                }
+            );
             game.ApplyCommands();
         }
 
@@ -101,7 +119,17 @@ public sealed class RoadBuildingTests
             }
 
             var built = outcome.Contains(" outcome=BUILT ", StringComparison.Ordinal);
-            game.Enqueue(new Command(game.TickCount, 0, CommandKind.BuildRoad, start[0], start[1], directions));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = game.TickCount,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = start[0],
+                    Y = start[1],
+                    Directions = directions,
+                }
+            );
             game.ApplyCommands();
 
             Assert.AreEqual(built ? roads + 1 : roads, game.Network.Roads.Count, label);
@@ -340,6 +368,11 @@ public sealed class RoadBuildingTests
     {
         var words = text.Split(',').Select(word => ushort.Parse(word, NumberStyles.HexNumber)).ToArray();
 
-        return new MapSeed(words[0], words[1], words[2]);
+        return new MapSeed
+        {
+            W0 = words[0],
+            W1 = words[1],
+            W2 = words[2],
+        };
     }
 }

@@ -100,7 +100,16 @@ public sealed class LayoutTests
         Enumerable
             .Range(first, 200)
             .Select(word =>
-                MapGenerator.Generate(TestProgram.Made(), new MapSeed((ushort)word, 0xA0D2, 0xB4FA), MapSize.Offered[0])
+                MapGenerator.Generate(
+                    TestProgram.Made(),
+                    new MapSeed
+                    {
+                        W0 = (ushort)word,
+                        W1 = 0xA0D2,
+                        W2 = 0xB4FA,
+                    },
+                    MapSize.Offered[0]
+                )
             )
             .First(map => Enumerable.Range(0, map.Count).Any(tile => map.At(tile).Upper.IsWater));
 

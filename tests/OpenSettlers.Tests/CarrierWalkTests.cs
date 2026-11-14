@@ -88,14 +88,15 @@ public sealed class CarrierWalkTests
         foreach (var road in list.Split(';').Select(text => text.Split(',')))
         {
             game.Enqueue(
-                new Command(
-                    tick,
-                    0,
-                    CommandKind.BuildRoad,
-                    int.Parse(road[0]),
-                    int.Parse(road[1]),
-                    [.. road[2].Select(c => c - '0')]
-                )
+                new Command
+                {
+                    Tick = tick,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0]),
+                    Y = int.Parse(road[1]),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
             );
         }
     }
@@ -108,7 +109,16 @@ public sealed class CarrierWalkTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var game = GameFactory.Create(
             TestProgram.Tables(),
             map,
@@ -116,10 +126,28 @@ public sealed class CarrierWalkTests
             everyPassTurns
         );
         var castle = Points(parts[4]).Single();
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         foreach (var flag in Points(parts[5]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
         }
 
         Roads(game, parts[6], 0);
@@ -157,15 +185,42 @@ public sealed class CarrierWalkTests
         var parts = scenario.Command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
-        var map = MapGenerator.Generate(TestProgram.Tables(), new MapSeed(seed[0], seed[1], seed[2]), size!);
+        var map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
         var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
         var castle = Points(parts[4]).Single();
         var passes = int.Parse(parts[7], CultureInfo.InvariantCulture);
 
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, castle[0], castle[1]));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
         foreach (var flag in Points(parts[5]))
         {
-            game.Enqueue(new Command(0, 0, CommandKind.PlaceFlag, flag[0], flag[1]));
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
         }
 
         Roads(game, parts[6], 0);

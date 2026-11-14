@@ -8,9 +8,11 @@ namespace OpenSettlers.Simulation;
 /// The state of a settler, building, or flag at one moment: the raw values the engine holds for it, each as a field name and
 /// its number, in a fixed order. The names of a settler and a building are the ones the <c>list</c> step shows.
 /// </summary>
-/// <param name="Fields">The fields in order.</param>
-public sealed record ThingState(IReadOnlyList<(string Field, int Value)> Fields)
+public sealed record ThingState
 {
+    /// <summary>The fields in order.</summary>
+    public required IReadOnlyList<(string Field, int Value)> Fields { get; init; }
+
     /// <summary>The value of the field, or null for a field the state has not.</summary>
     public int? Get(string field) => Fields.Where(f => f.Field == field).Select(f => (int?)f.Value).FirstOrDefault();
 

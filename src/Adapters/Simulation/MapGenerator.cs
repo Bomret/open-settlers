@@ -90,39 +90,192 @@ public static class MapGenerator
         // table.
         static readonly Scatter[] ScatterPasses =
         [
-            new(8, 0xff, 5, 7, 0x08, 0x0f, 10),
-            new(1, 0x3f, 5, 7, 0x08, 0x07, 45),
-            new(1, 0x3f, 4, 7, 0x10, 0x07, 30),
-            new(1, 0x7f, 5, 7, 0x08, 0x0f, 20),
-            new(1, 0x3f, 5, 7, 0x48, 0x07, 40),
-            new(1, 0xff, 5, 7, 0x48, 0x07, 15),
-            new(1, 0xff, 5, 7, 0x5c, 0x00, 2),
-            new(1, 0xff, 5, 7, 0x50, 0x01, 6),
-            new(1, 0x7f, 2, 4, 0x1c, 0x03, 50),
-            new(1, 0xff, 5, 7, 0x53, 0x00, 5),
-            new(1, 0xff, 5, 7, 0x54, 0x01, 10),
-            new(1, 0x0f, 10, 11, 0x56, 0x01, 2),
-            new(1, 0x7f, 8, 11, 0x5a, 0x01, 6),
-            new(1, 0x7f, 0, 3, 0x58, 0x01, 8),
-            new(1, 0x3f, 10, 11, 0x18, 0x03, 6),
+            new()
+            {
+                CountPerPatch = 8,
+                IndexMask = 0xff,
+                LowTerrain = 5,
+                HighTerrain = 7,
+                BaseCode = 0x08,
+                CodeMask = 0x0f,
+                ClusterSize = 10,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0x3f,
+                LowTerrain = 5,
+                HighTerrain = 7,
+                BaseCode = 0x08,
+                CodeMask = 0x07,
+                ClusterSize = 45,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0x3f,
+                LowTerrain = 4,
+                HighTerrain = 7,
+                BaseCode = 0x10,
+                CodeMask = 0x07,
+                ClusterSize = 30,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0x7f,
+                LowTerrain = 5,
+                HighTerrain = 7,
+                BaseCode = 0x08,
+                CodeMask = 0x0f,
+                ClusterSize = 20,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0x3f,
+                LowTerrain = 5,
+                HighTerrain = 7,
+                BaseCode = 0x48,
+                CodeMask = 0x07,
+                ClusterSize = 40,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0xff,
+                LowTerrain = 5,
+                HighTerrain = 7,
+                BaseCode = 0x48,
+                CodeMask = 0x07,
+                ClusterSize = 15,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0xff,
+                LowTerrain = 5,
+                HighTerrain = 7,
+                BaseCode = 0x5c,
+                CodeMask = 0x00,
+                ClusterSize = 2,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0xff,
+                LowTerrain = 5,
+                HighTerrain = 7,
+                BaseCode = 0x50,
+                CodeMask = 0x01,
+                ClusterSize = 6,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0x7f,
+                LowTerrain = 2,
+                HighTerrain = 4,
+                BaseCode = 0x1c,
+                CodeMask = 0x03,
+                ClusterSize = 50,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0xff,
+                LowTerrain = 5,
+                HighTerrain = 7,
+                BaseCode = 0x53,
+                CodeMask = 0x00,
+                ClusterSize = 5,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0xff,
+                LowTerrain = 5,
+                HighTerrain = 7,
+                BaseCode = 0x54,
+                CodeMask = 0x01,
+                ClusterSize = 10,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0x0f,
+                LowTerrain = 10,
+                HighTerrain = 11,
+                BaseCode = 0x56,
+                CodeMask = 0x01,
+                ClusterSize = 2,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0x7f,
+                LowTerrain = 8,
+                HighTerrain = 11,
+                BaseCode = 0x5a,
+                CodeMask = 0x01,
+                ClusterSize = 6,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0x7f,
+                LowTerrain = 0,
+                HighTerrain = 3,
+                BaseCode = 0x58,
+                CodeMask = 0x01,
+                ClusterSize = 8,
+            },
+            new()
+            {
+                CountPerPatch = 1,
+                IndexMask = 0x3f,
+                LowTerrain = 10,
+                HighTerrain = 11,
+                BaseCode = 0x18,
+                CodeMask = 0x03,
+                ClusterSize = 6,
+            },
         ];
 
         // The deposit passes in the order they run (MapGen_PlaceDeposits3, 2, 1, and 4): deposits per patch count
         // and resource type. All four place on terrain from 11 up to but not including 15. The original writes these as
         // immediates in its code (from 0x424a03), not as a table.
-        static readonly Deposit[] DepositPasses = [new(9, 3), new(4, 2), new(2, 1), new(2, 4)];
+        static readonly Deposit[] DepositPasses =
+        [
+            new() { CountPerPatch = 9, Type = 3 },
+            new() { CountPerPatch = 4, Type = 2 },
+            new() { CountPerPatch = 2, Type = 1 },
+            new() { CountPerPatch = 2, Type = 4 },
+        ];
 
-        readonly record struct Scatter(
-            int CountPerPatch,
-            int IndexMask,
-            int LowTerrain,
-            int HighTerrain,
-            int BaseCode,
-            int CodeMask,
-            int ClusterSize
-        );
+        readonly record struct Scatter
+        {
+            public required int CountPerPatch { get; init; }
 
-        readonly record struct Deposit(int CountPerPatch, int Type);
+            public required int IndexMask { get; init; }
+
+            public required int LowTerrain { get; init; }
+
+            public required int HighTerrain { get; init; }
+
+            public required int BaseCode { get; init; }
+
+            public required int CodeMask { get; init; }
+
+            public required int ClusterSize { get; init; }
+        }
+
+        readonly record struct Deposit
+        {
+            public required int CountPerPatch { get; init; }
+
+            public required int Type { get; init; }
+        }
 
         // The six neighbors of a tile in the order the passes visit them: east, south-east, south, west,
         // north-west, north (the offsets of the original's 0x04, 0x08, 0x0c, 0x10, 0x14, 0x18 steps).

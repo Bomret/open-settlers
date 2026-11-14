@@ -14,9 +14,27 @@ public sealed class ObjectDrawsTests
     static (Map Map, Game Game) CastleWorld()
     {
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15; its flag stands at 16,6 on height 15.
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(TestProgram.Made(), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
 
         return (map, game);
@@ -72,13 +90,40 @@ public sealed class ObjectDrawsTests
     {
         // The hut at 16,2 stands tied to the flag at 17,3 (the road test world of HutTests); its node's height is read from
         // the map: x = 16 * 32 - 2 * 16, y = 2 * 20 - height * 4.
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 3,
+            }
+        );
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
         var height = map.At(16, 2).Height;
@@ -98,7 +143,16 @@ public sealed class ObjectDrawsTests
     [TestMethod]
     public void ABuildingSiteIsDrawnAtItsNodeWithItsProgressAndAFinishedBuildingWithNone()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
@@ -107,12 +161,38 @@ public sealed class ObjectDrawsTests
             new RuleTables(classes, TestProgram.Made().StartStock, buildingSizes: sizes),
             map
         );
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
-        game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         game.Enqueue(
-            new Command(game.TickCount, 0, CommandKind.PlaceBuilding, 16, 2, Building: BuildingType.Stonecutter)
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 3,
+            }
+        );
+        game.Tick();
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = 16,
+                Y = 2,
+                Building = BuildingType.Stonecutter,
+            }
         );
         game.Tick();
         Assert.IsTrue(game.Buildings[1].Constructing, "the command placed a site");
@@ -130,11 +210,29 @@ public sealed class ObjectDrawsTests
     [TestMethod]
     public void AFinishedBuildingOfEachTypeIsDrawnWithItsType()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
         Assert.IsTrue(game.PlaceFinishedBuilding(BuildingType.Forester, 16, 2));
 
@@ -213,13 +311,40 @@ public sealed class ObjectDrawsTests
     public void TheCastleAndAHutAreDrawnAfterTheLastTermOfTheirRowAndBeforeTheFirstOfTheNextRow()
     {
         // The castle at 15,5 with its flag at 16,6 (goods on it), and the hut at 16,2 tied to the flag at 17,3.
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
-        game.Enqueue(new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
         game.Tick();
-        game.Enqueue(new Command(game.TickCount, 0, CommandKind.PlaceFlag, 17, 3));
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 3,
+            }
+        );
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
         var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [new Good { Code = 1 }] };

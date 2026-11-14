@@ -8,8 +8,17 @@ namespace OpenSettlers.Simulation;
 /// The free-game seed: 48 bits held as three unsigned 16-bit words. The free-game screen shows and takes it as
 /// four groups of four digits <c>1</c> to <c>8</c>, three bits to a digit (<c>docs/rules/map-start.md</c>).
 /// </summary>
-public readonly record struct Seed(ushort W0, ushort W1, ushort W2)
+public readonly record struct Seed
 {
+    /// <summary>The first of the seed's three 16-bit words.</summary>
+    public required ushort W0 { get; init; }
+
+    /// <summary>The second of the seed's three 16-bit words.</summary>
+    public required ushort W1 { get; init; }
+
+    /// <summary>The third of the seed's three 16-bit words.</summary>
+    public required ushort W2 { get; init; }
+
     const int Groups = 4;
     const int DigitsPerGroup = 4;
 
@@ -48,7 +57,12 @@ public readonly record struct Seed(ushort W0, ushort W1, ushort W2)
         var digits = text.Select(c => c - '1').ToArray();
         var high = Combine(digits[..8]);
         var low = Combine(digits[8..]);
-        seed = new Seed(Word(high >> 16, high >> 8), Word(high, low >> 16), Word(low >> 8, low));
+        seed = new Seed
+        {
+            W0 = Word(high >> 16, high >> 8),
+            W1 = Word(high, low >> 16),
+            W2 = Word(low >> 8, low),
+        };
         return true;
     }
 
@@ -66,7 +80,13 @@ public readonly record struct Seed(ushort W0, ushort W1, ushort W2)
     }
 
     /// <summary>The map seed a free game starts with: each word xor a fixed mask (<c>0x468b3d</c>).</summary>
-    public MapSeed ToMapSeed() => new((ushort)(W0 ^ 0x5A5A), (ushort)(W1 ^ 0xA5A5), (ushort)(W2 ^ 0xC3C3));
+    public MapSeed ToMapSeed() =>
+        new()
+        {
+            W0 = (ushort)(W0 ^ 0x5A5A),
+            W1 = (ushort)(W1 ^ 0xA5A5),
+            W2 = (ushort)(W2 ^ 0xC3C3),
+        };
 
     static int Combine(int[] digits) => digits.Aggregate(0, (value, digit) => value << 3 | digit);
 

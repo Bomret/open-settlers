@@ -10,7 +10,7 @@ public sealed class ThingStateTests
     [TestMethod]
     public void AFieldTheStateDoesNotListAnswersNull()
     {
-        var state = new ThingState([("x", 4)]);
+        var state = new ThingState { Fields = [("x", 4)] };
 
         Assert.IsNull(state.Get("y"));
     }
@@ -18,7 +18,7 @@ public sealed class ThingStateTests
     [TestMethod]
     public void AFieldListedTwiceAnswersItsFirstValue()
     {
-        var state = new ThingState([("x", 4), ("y", 1), ("x", 9)]);
+        var state = new ThingState { Fields = [("x", 4), ("y", 1), ("x", 9)] };
 
         Assert.AreEqual(4, state.Get("x"));
     }
@@ -26,8 +26,8 @@ public sealed class ThingStateTests
     [TestMethod]
     public void StatesWithTheSameFieldsInTheSameOrderAreEqualWithEqualHashes()
     {
-        var one = new ThingState([("x", 4), ("y", 1)]);
-        var other = new ThingState([("x", 4), ("y", 1)]);
+        var one = new ThingState { Fields = [("x", 4), ("y", 1)] };
+        var other = new ThingState { Fields = [("x", 4), ("y", 1)] };
 
         Assert.AreEqual(one, other);
         Assert.AreEqual(one.GetHashCode(), other.GetHashCode());
@@ -36,12 +36,18 @@ public sealed class ThingStateTests
     [TestMethod]
     public void StatesDifferWhereAValueDiffers()
     {
-        Assert.AreNotEqual(new ThingState([("x", 4), ("y", 1)]), new ThingState([("x", 4), ("y", 2)]));
+        Assert.AreNotEqual(
+            new ThingState { Fields = [("x", 4), ("y", 1)] },
+            new ThingState { Fields = [("x", 4), ("y", 2)] }
+        );
     }
 
     [TestMethod]
     public void StatesDifferWhereTheOrderDiffers()
     {
-        Assert.AreNotEqual(new ThingState([("x", 4), ("y", 1)]), new ThingState([("y", 1), ("x", 4)]));
+        Assert.AreNotEqual(
+            new ThingState { Fields = [("x", 4), ("y", 1)] },
+            new ThingState { Fields = [("y", 1), ("x", 4)] }
+        );
     }
 }

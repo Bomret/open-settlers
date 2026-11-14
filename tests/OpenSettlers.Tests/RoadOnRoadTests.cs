@@ -14,12 +14,62 @@ public sealed class RoadOnRoadTests
 {
     static Game Started()
     {
-        var map = MapGenerator.Generate(TestProgram.Made(), new MapSeed(0x1234, 0x5678, 0x9ABC), MapSize.Offered[0]);
+        var map = MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
         var game = GameFactory.Create(RemovalLogicTests.Made(), map);
-        Apply(game, new Command(0, 0, CommandKind.PlaceCastle, 15, 5));
-        Apply(game, new Command(game.TickCount, 0, CommandKind.PlaceFlag, 20, 6));
-        Apply(game, new Command(game.TickCount, 0, CommandKind.PlaceFlag, 18, 8));
-        Apply(game, new Command(game.TickCount, 0, CommandKind.BuildRoad, 16, 6, [0, 0, 0, 0]));
+        Apply(
+            game,
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
+        Apply(
+            game,
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 20,
+                Y = 6,
+            }
+        );
+        Apply(
+            game,
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 18,
+                Y = 8,
+            }
+        );
+        Apply(
+            game,
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 16,
+                Y = 6,
+                Directions = [0, 0, 0, 0],
+            }
+        );
         Assert.AreEqual(1, game.Network.Roads.Count, "the east road is built");
 
         return game;
@@ -50,7 +100,18 @@ public sealed class RoadOnRoadTests
         var roads = TestMaps.Roads(game.Map);
         var road = game.Network.Roads.Single();
 
-        Apply(game, new Command(game.TickCount, 0, CommandKind.BuildRoad, 18, 8, OntoTheRoad));
+        Apply(
+            game,
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.BuildRoad,
+                X = 18,
+                Y = 8,
+                Directions = OntoTheRoad,
+            }
+        );
 
         Assert.AreEqual(1, game.Network.Roads.Count);
         Assert.AreEqual(road, game.Network.Roads.Single());

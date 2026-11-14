@@ -17,7 +17,15 @@ public sealed class CastleStockTests
         }
 
         var castle = new CastleStock();
-        castle.Place(new Castle(1, 1, 1), stock);
+        castle.Place(
+            new Castle
+            {
+                X = 1,
+                Y = 1,
+                Height = 1,
+            },
+            stock
+        );
 
         return castle;
     }

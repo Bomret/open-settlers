@@ -11,7 +11,14 @@ public sealed partial class Layout
     // reports the reason Refusal gives for the command's kind. A building, settler, or good entry is no command a player gives:
     // its Place puts it in the game directly (Game.PlaceFinishedBuilding, WalkBehavior.StandWorkerInHut,
     // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null.
-    sealed record Step(string Name, Command Command, Func<Game, string?>? Place = null);
+    sealed record Step
+    {
+        public required string Name { get; init; }
+
+        public required Command Command { get; init; }
+
+        public Func<Game, string?>? Place { get; init; } = null;
+    }
 
     /// <summary>
     /// Builds the castle, flags, roads, and buildings of the layout in the game, one entry at a time in the order the
@@ -208,7 +215,15 @@ public sealed partial class Layout
                 return false;
             }
 
-            var command = new Command(0, 0, CommandKind.PlaceBuilding, x, y, Building: type);
+            var command = new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = x,
+                Y = y,
+                Building = type,
+            };
             var repeated = steps.FirstOrDefault(step => step.Command == command);
             if (repeated is not null)
             {
@@ -220,14 +235,15 @@ public sealed partial class Layout
             // The mission start creates a building's settlers inside it: the huts of the jobs whose rules let their settler stand in the
             // hut (the woodcutter's, the stonecutter's, and the forester's) stand with their workers.
             steps.Add(
-                new Step(
-                    name,
-                    command,
-                    game =>
+                new Step
+                {
+                    Name = name,
+                    Command = command,
+                    Place = game =>
                         !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
                         : game.Walks.StandsWorker(type) ? game.Walks.StandWorkerInHut(x, y)
-                        : null
-                )
+                        : null,
+                }
             );
 
             return true;
@@ -285,7 +301,14 @@ public sealed partial class Layout
                 return false;
             }
 
-            steps.Add(new Step(name, default, game => game.Carriers.PlaceCarrierOnRoad(x, y, direction)));
+            steps.Add(
+                new Step
+                {
+                    Name = name,
+                    Command = default,
+                    Place = game => game.Carriers.PlaceCarrierOnRoad(x, y, direction),
+                }
+            );
 
             return true;
         }
@@ -325,7 +348,14 @@ public sealed partial class Layout
                 return false;
             }
 
-            steps.Add(new Step(name, default, game => game.Goods.PlaceGood(x, y, place, good)));
+            steps.Add(
+                new Step
+                {
+                    Name = name,
+                    Command = default,
+                    Place = game => game.Goods.PlaceGood(x, y, place, good),
+                }
+            );
 
             return true;
         }
@@ -367,7 +397,15 @@ public sealed partial class Layout
                 return false;
             }
 
-            var command = new Command(0, 0, kind, x, y, directions);
+            var command = new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            };
             var repeated = steps.FirstOrDefault(step => step.Place is null && step.Command == command);
             if (repeated is not null)
             {
@@ -376,7 +414,7 @@ public sealed partial class Layout
                 return false;
             }
 
-            steps.Add(new Step(name, command));
+            steps.Add(new Step { Name = name, Command = command });
 
             return true;
         }

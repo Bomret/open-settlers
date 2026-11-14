@@ -43,7 +43,15 @@ public sealed class LayoutApplyTests
     }
 
     static Command At(int kind, int x, int y, params int[] directions) =>
-        new(0, 0, kind, x, y, kind == CommandKind.BuildRoad ? directions : null);
+        new()
+        {
+            Tick = 0,
+            Player = 0,
+            Kind = kind,
+            X = x,
+            Y = y,
+            Directions = kind == CommandKind.BuildRoad ? directions : null,
+        };
 
     [TestMethod]
     public void ACastleTwoFlagsARoadAndAHutStandAtTickZeroAndGiveTheDigestOfTheSameCommandsOneByOne()
