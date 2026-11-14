@@ -7,16 +7,13 @@ Code lives on GitHub. Use the `gh` CLI for push + pull requests. `gh` infers the
 
 - **Owner / repo**: `Bomret/open-settlers`.
 - **Remote**: `origin` (`https://github.com/Bomret/open-settlers.git`).
-- **Default PR posture**: `draft` (open as draft; the user flips to ready). Override: `ready` | `push-only`.
+- **Default PR posture**: `ready`.
 - **Base branch**: `main`.
 
 ## Conventions
 
 - **Push the scope branch**: `git push -u origin <scope-branch>`.
-- **Open the PR** (default draft):
-  `gh pr create --draft --base <base> --head <scope-branch> --title "<title>" --body-file <file>`.
-  Use a body file (heredoc) built per `/superdev:submit-pr`'s body rules.
-- **Ready (non-draft)**: same without `--draft`.
+- **Open the PR**: `gh pr create --base <base> --head <scope-branch> --title "<title>" --body-file <file>`. Use a body file (heredoc) built per `/superdev:submit-pr`'s body rules.
 - **Never interpolate a store-derived value into a shell string.** The title comes from the slice/plan;
   if the slice store is multi-writer, treat it as untrusted. Pass it as a single quoted `--title "<title>"`
   argument (so `gh` receives it as one argv, not a shell fragment) and always use `--body-file` for the
