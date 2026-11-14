@@ -89,20 +89,27 @@ flag cannot be taken down.
 
 ### Build help
 
-Build help turns the build-site overlay on and off. It starts off, and it turns off for a new seed or size, as a new game starts. Pressing it
-leaves the other buttons as they are, and pressing one of them leaves Build help as it is. It changes nothing in the game.
+Use Build help to see where a flag, a mine, or a building fits before you click. The button turns the build-site overlay on
+and off. It starts off. It turns off again when a new seed or size starts a new game.
 
-While it is on, every node shows what may be put there, judged for your player as a click would judge it:
+Pressing Build help leaves the other buttons as they are. Pressing another button leaves Build help as it is. Build help
+changes nothing in the game.
+
+While it is on, every node of your territory shows what may be put there. A click on that node with your player would be
+accepted for the same thing.
 
 - A flag marker: a flag.
 - A mine marker: a mine.
 - A small house: a small building.
-- A large house: a large or a small building. Before the castle stands, the castle sites show it.
+- A large house: a large or a small building.
 
-A node with no marker allows none of these: land outside your territory, a node that holds a flag or a building, and a node
-with no site. Where a flag stands south-east of a node, the node can show a flag marker although a click puts no flag there,
-as in the original. The markers follow every change of the game in the frame that shows it. The map view has no Build help
-button.
+Before the castle stands, no territory exists yet. The markers then show the sites where the castle may be placed.
+
+A node with no marker allows none of these. Land outside your territory has no marker. A node that holds a flag or a
+building has none, and neither does a node with no site.
+
+Where a flag stands south-east of a node, the node can show a flag marker. A click puts no flag there. The original does the
+same. The markers follow every change of the game in the frame that shows it. The map view has no Build help button.
 
 ### Refused clicks
 

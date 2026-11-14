@@ -88,8 +88,9 @@ _Avoid_: sprite ID, entry, frame number
 The markers the game view draws on every visible node of its player's territory, or before the castle stands, of every
 castle site, to show what may be put there: a
 flag, a mine, a small building, or a large building. Each marker is a build marker; the build-site evaluator's
-judgment of the node picks it. It is switched on and off as a whole.
-_Avoid_: build help, where-to-build overlay, placement overlay
+judgment of the node picks it. It is switched on and off as a whole. Build help is the label of the game view's button
+that toggles it.
+_Avoid_: where-to-build overlay, placement overlay
 
 **Content set**
 A folder under `content/` that holds a graphics source as PNG images and one JSON manifest mapping draw terms
