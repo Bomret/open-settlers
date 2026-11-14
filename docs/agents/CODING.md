@@ -70,6 +70,8 @@ Order by visibility first (`public` → `protected` → `private`), then within 
 
 Omit every access modifier that is the default where it stands: `private` on every member and nested type (fields, methods, properties, constructors, events, nested classes and records), and `internal` on every top-level type, one inside a block-scoped namespace included. These modifiers are not the default and stay: `private protected`, an accessor's own modifier (`{ get; private set; }`), `file`, `internal` on a member, and `internal` on a nested type. Both parts of a partial type follow the rule together. A partial method with a return type, such as a `[GeneratedRegex]` method, keeps its `private`, because the compiler requires an explicit modifier there.
 
+The build enforces the rule: `.editorconfig` sets IDE0040 to `omit_if_default` at warning severity, and `Directory.Build.props` sets `EnforceCodeStyleInBuild` with `TreatWarningsAsErrors`, so a default modifier fails the build.
+
 ### var
 
 Default to `var`. Use explicit types only when it aids readability, e.g. `IReadOnlyCollection<string> names = ["alice", "bob"]`.
@@ -121,4 +123,6 @@ Two exemptions stay positional:
 
 - **The job generator project** (`src/Generators`). It targets netstandard2.0, because Roslyn loads a generator into the compiler, and netstandard2.0 lacks the attributes that `required` members need.
 - **`Knight` and `UnportedJob`.** The generated `Job.Of` builds both from a number through their constructors, and `UnportedJob.Code` overrides the abstract get-only `Job.Code`, which an init property cannot.
+
+`PositionalRecordTests` enforces the rule: it parses every C# file under `src/` and `tests/` and fails on a positional record outside the two exemptions. A record inside a string literal, such as a generator test's fixture source, is no declaration and is not checked.
 
