@@ -45,10 +45,26 @@ sealed class Palette
     public IReadOnlyList<Rgb> Colors { get; }
 
     /// <summary>The color with this index (0 to 255), components at 6 bits.</summary>
-    public Rgb this[int index] => Colors[index];
+    public Rgb this[int index] => Colors[Checked(index)];
 
-    /// <summary>The color with this index as four bytes, red, green, blue, and an opaque alpha, as the game shows it.</summary>
-    public ReadOnlySpan<byte> Rgba(int index) => _rgba.AsSpan(index * 4, 4);
+    /// <summary>
+    /// The color with this index as four bytes, red, green, blue, and an opaque alpha, as the game shows it.
+    /// Throws <see cref="ArgumentOutOfRangeException"/> naming the index where it is not 0 to 255.
+    /// </summary>
+    public ReadOnlySpan<byte> Rgba(int index) => _rgba.AsSpan(Checked(index) * 4, 4);
+
+    /// <summary>
+    /// The color or index <paramref name="value"/> when it is 0 to 255. Throws <see cref="ArgumentOutOfRangeException"/>
+    /// naming the value otherwise, so no caller wraps it into another color.
+    /// </summary>
+    public static int Checked(int value, string? name = null) =>
+        value is >= 0 and < ColorCount
+            ? value
+            : throw new ArgumentOutOfRangeException(
+                name ?? "index",
+                value,
+                $"palette color {value} is outside 0 to {ColorCount - 1}"
+            );
 }
 
 /// <summary>The palette reader (<c>docs/rules/graphics-images.md</c>).</summary>

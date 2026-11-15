@@ -191,12 +191,13 @@ public sealed class SettlerSprites
     /// </summary>
     internal static ObjectImage Fill(ObjectImage overlay, Palette palette, int colour)
     {
+        var fill = palette.Rgba(colour);
         var rgba = (byte[])overlay.Rgba.Clone();
         for (var i = 0; i < rgba.Length; i += 4)
         {
             if (rgba[i + 3] != 0)
             {
-                palette.Rgba(colour).CopyTo(rgba.AsSpan(i, 4));
+                fill.CopyTo(rgba.AsSpan(i, 4));
             }
         }
 

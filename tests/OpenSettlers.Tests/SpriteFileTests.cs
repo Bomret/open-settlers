@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -74,6 +75,18 @@ public sealed class SpriteFileTests
             new byte[] { 252, 0, 0, 255, 252, 0, 0, 255, 0, 0, 0, 0, 252, 0, 0, 255 },
             sprite.ToRgba(Colors(), 1)
         );
+    }
+
+    [TestMethod]
+    [DataRow(256)]
+    [DataRow(-1)]
+    public void AOneColorOutsideThePaletteIsRefusedWithTheValue(int color)
+    {
+        var sprite = SpriteFile.Read(Sprite(1, 1, 0, 0, 0, 1, 2, 0, 0));
+
+        var failure = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => sprite.ToRgba(Colors(), color));
+
+        StringAssert.Contains(failure.Message, color.ToString());
     }
 
     [TestMethod]

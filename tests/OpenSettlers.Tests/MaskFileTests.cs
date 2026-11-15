@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -198,6 +199,21 @@ public sealed class MaskFileTests
         var rgba = mask.ToRgba(PaletteFile.Read(bytes), color);
 
         CollectionAssert.AreEqual(new byte[] { (byte)red, 0, 0, 255 }, rgba);
+    }
+
+    // Source: #268. A color cast to byte would wrap: 256 to color 0, -1 to color 255.
+    [TestMethod]
+    [DataRow(256)]
+    [DataRow(-1)]
+    public void AMaskColorOutsideThePaletteIsRefusedWithTheValue(int color)
+    {
+        var mask = MaskFile.Read(Entry(1, 1, 0, 1, 0, 0));
+
+        var failure = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
+            mask.ToRgba(PaletteFile.Read(new byte[768]), color)
+        );
+
+        StringAssert.Contains(failure.Message, color.ToString());
     }
 
     // The side bound is inclusive: a graphic exactly 2048 wide or tall reads.
