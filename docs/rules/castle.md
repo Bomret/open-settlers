@@ -55,7 +55,7 @@ every time (`tests/OpenSettlers.Tests/castle-placements.txt`).
 
 ## The start stock
 
-**Status:** confirmed for the table and the arithmetic; the level of a free game is **inferred**.
+**Status:** confirmed for the table, the arithmetic, and the level of a free game; the tools the settlers take are **inferred**.
 
 The storage item holds 26 counts of goods. The placement fills them from a table of five rows of 26 numbers: the
 stock at the levels 0, 10, 20, 30, and 40. A player's start stock level (player byte `+0x162`, 0 to 49) selects
@@ -76,19 +76,24 @@ the stock the emulator leaves is the interpolated row less this; the levels from
 
 The mission start applies more changes by mission number (`+0x354`); the free game applies none.
 
-**Where the level comes from.** The level is the free-game setting byte at state `+0x37a`, which
-`FreeGame_RandomizeOpponents` (`0x4692d4`) draws: it seeds the random generator from the free-game seed with the
-masks 0x5a5a, 0xa5a5, and 0xc3c3 and draws four rounds of four values for the opponents, then two pairs for the two
-human-capable players; the 19th draw, scaled to 0 to 40 (`draw * 0x29 / 65536`), is the level of player 0. The
-writers of `+0x37a` in the dump are this routine and the save loader. **Inferred:** the free-game screen draws the
-values whenever it opens (`0x4692aa`), and no click on it changes the byte, so the level follows from the seed on
-the screen. **Emulated:** the harness (`opponents:S0,S1,S2`) gave the level for three seeds, which the engine's
+**Where the level comes from.** The level is the free-game setting byte at state `+0x37a`. `FreeGame_RandomizeOpponents`
+(`0x4692d4`) draws it whenever the free-game screen opens (`FreeGame_OpenScreen`, `0x4692aa`): it seeds the random generator
+from the free-game seed with the masks 0x5a5a, 0xa5a5, and 0xc3c3 and draws four rounds of four values for the opponents,
+then two pairs for the two human-capable players; the 19th draw, scaled to 0 to 40 (`draw * 0x29 / 65536`), is the level of
+player 0. **Emulated:** the harness (`opponents:S0,S1,S2`) gave the level for three seeds, which the engine's
 `StartStock.LevelOf` reproduces.
+
+The player then sets the level on the screen. **Confirmed:** start-screen action 14 (`StartScreen_SetBar`, entry `0x4690aa`,
+slot 14 of the table at `0x468148`) points at `+0x37a`. The bar code it shares with the other bar actions (`0x46919a`) takes the
+height of the click on the bar, 0 at the bar's top, clamps it to 0 to 40, and writes 40 less it. So a click at the top sets 40
+and a click at the bottom sets 0. The actions 15 to 17, 20 to 22, 25 to 27, 30 to 32, and 35 to 37 set the screen's other bars
+through the same code. The seed thus gives only the level the screen opens with.
 
 ## In the engine
 
-`Game` takes the program's tables (`RuleTables`), the map, and a start stock level (`MapViewState.StockLevel`
-from the seed). `CommandKind.PlaceCastle`
+`Game` takes the program's tables (`RuleTables`), the map, and a start stock level: the launch flag `--stock`
+(`LaunchArgs.Stock`), which stands in for the bar of the free-game screen, or else the level the seed draws
+(`MapViewState.StockLevel`). `CommandKind.PlaceCastle`
 with the node in `Command.X` and `Command.Y` places the castle through `BuildSite.Evaluate` and
 `CastlePlacement.Apply`. `Game.CastleStock` holds the result. The game changes the map's layers it was
 given. The placement also adds the castle as building slot 0 and the 20 settlers (`Game.Buildings`, `Game.Settlers`).

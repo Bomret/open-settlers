@@ -603,4 +603,57 @@ public sealed class LaunchArgsTests
         );
         Assert.IsNull(args.Size);
     }
+
+    // The free-game screen's bar sets the human's start stock level from 0 to 40 (docs/rules/castle.md); --stock stands in for it.
+    [TestMethod]
+    [DataRow("0", 0)]
+    [DataRow("40", 40)]
+    public void AStockLevelFrom0To40IsTakenByTheGameView(string value, int level)
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--stock", value], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual(level, args.Stock);
+    }
+
+    [TestMethod]
+    public void NoStockFlagLeavesTheLevelToTheSeed()
+    {
+        Assert.IsNull(LaunchArgs.Parse(["--game-view"], null).Stock);
+    }
+
+    [TestMethod]
+    [DataRow("41")]
+    [DataRow("-1")]
+    [DataRow("ten")]
+    public void AStockOutside0To40IsOneProblemNamingIt(string value)
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--stock", value], null);
+
+        CollectionAssert.AreEqual(
+            new[] { $"bad --stock '{value}': not a start stock level, use 0 to 40" },
+            args.Problems.ToArray()
+        );
+        Assert.IsNull(args.Stock);
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--check")]
+    [DataRow("--layout", "x.layout")]
+    public void AStockOutsideTheGameViewIsAProblem(string flag, string? value = null)
+    {
+        string[] mode = value is null ? [flag] : [flag, value];
+        var args = LaunchArgs.Parse([.. mode, "--stock", "10"], null);
+
+        Assert.IsTrue(args.Problems.Contains("--stock applies to --game-view without --layout only"));
+    }
+
+    [TestMethod]
+    public void ARepeatedStockIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--stock", "10", "--stock", "20"], null);
+
+        CollectionAssert.AreEqual(new[] { "repeated --stock" }, args.Problems.ToArray());
+    }
 }

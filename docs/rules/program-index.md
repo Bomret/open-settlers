@@ -555,6 +555,7 @@ Note: [Map start](map-start.md).
 | `0x41ee3b` | `FreeGame_NewSeed` | Draws three values as the free-game seed, then falls through into `Game_Start`. Its only entry is the jump at `0x41e701` at program start. | confirmed | game | Calls `Rng_Step`. |
 | `0x4692d4` | `FreeGame_RandomizeOpponents` | Seeds the generator from the masked free-game seed and draws the settings of the computer players. | confirmed | game | Called by `FreeGame_NewSeed` and `FreeGame_OpenScreen`. |
 | `0x4692aa` | `FreeGame_OpenScreen` | Action 12: opens the free-game page and calls `FreeGame_RandomizeOpponents`; draws no new seed. Entry inferred. | inferred | game | Slot `0x4681a8`. |
+| `0x4690aa` | `StartScreen_SetBar` | Action 14: points at the human player's start stock level (`+0x37a`) and sets it from the height of the click on the bar, 40 at the top to 0 at the bottom, through the bar code at `0x46919a` that the other bar actions share ([Castle](castle.md#the-start-stock)). Entry inferred; not a function in the dump. | confirmed | game | Slot `0x4681b8` of the table at `0x468148`. |
 
 Sites:
 
@@ -1425,6 +1426,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x468717` | `Game_SetStartParams` | confirmed | Program start and game flow |
 | `0x468ba9` | — | inferred | Program start and game flow |
 | `0x468c1c` | — | inferred | Program start and game flow |
+| `0x4690aa` | `StartScreen_SetBar` | confirmed | Random generator and map start |
 | `0x4692aa` | `FreeGame_OpenScreen` | inferred | Random generator and map start |
 | `0x4692d4` | `FreeGame_RandomizeOpponents` | confirmed | Random generator and map start |
 | `0x4694e0` | `Game_RequestQuit` | confirmed | Program start and game flow |
@@ -1489,7 +1491,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 362 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 307 confirmed, 69 inferred, 51 unknown.
+Coverage: the index names 363 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 308 confirmed, 69 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:

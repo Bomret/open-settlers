@@ -56,6 +56,8 @@ public enum GraphicsSourceName
 /// <c>--size</c>, <c>--map</c>, <c>--check</c>, or <c>--seed-info</c> (the layout holds its own seed and size); a
 /// <c>--graphics</c> that names no known source, repeats, or comes with <c>--check</c>, <c>--seed-info</c>, or no mode
 /// flag and no layout. Each <c>--graphics</c> problem names the known sources (<see cref="KnownGraphics"/>).
+/// <c>--stock &lt;0..40&gt;</c> sets the start stock level of the human player (<see cref="Stock"/>) and belongs to
+/// <c>--game-view</c> without a layout only; a value that is no integer from 0 to 40, a repeat, or another mode is a bad argument.
 /// </para>
 /// </summary>
 public sealed class LaunchArgs
@@ -93,6 +95,12 @@ public sealed class LaunchArgs
     /// <summary>The flag that names the graphics source (<see cref="GraphicsSourceName"/>) of the map view.</summary>
     public const string GraphicsFlag = "--graphics";
 
+    /// <summary>The flag that gives the start stock level of the human player in the game view.</summary>
+    public const string StockFlag = "--stock";
+
+    /// <summary>The highest start stock level the free-game screen's bar sets.</summary>
+    public const int MaxStock = 40;
+
     /// <summary>The known graphics sources as the flag spells them, which the refusals name.</summary>
     const string KnownGraphics = "history-edition, open-settlers";
 
@@ -122,6 +130,12 @@ public sealed class LaunchArgs
 
     /// <summary>The layout file path as given; null when no valid layout flag was given.</summary>
     public string? Layout { get; init; }
+
+    /// <summary>
+    /// The start stock level the stock flag gave, 0 to <see cref="MaxStock"/>; null when no valid stock flag was given, and the
+    /// game then takes the level the seed draws (<see cref="StartStock.LevelOf"/>).
+    /// </summary>
+    public int? Stock { get; init; }
 
     /// <summary>The play script path as given; null when no valid play flag was given.</summary>
     public string? Play { get; init; }
@@ -153,10 +167,12 @@ public sealed class LaunchArgs
         var sizeGiven = false;
         var graphics = GraphicsSourceName.HistoryEdition;
         var graphicsGiven = false;
+        int? stock = null;
+        var stockGiven = false;
         for (var i = 0; i < args.Length; i++)
         {
             var flag = args[i];
-            if (flag is GameFlag or SeedFlag or SizeFlag or PlayFlag or LayoutFlag or GraphicsFlag)
+            if (flag is GameFlag or SeedFlag or SizeFlag or PlayFlag or LayoutFlag or GraphicsFlag or StockFlag)
             {
                 // The value is the next argument unless it is missing or another flag; it is not consumed
                 // then, so a mode flag after the flag still selects its mode.
@@ -167,6 +183,7 @@ public sealed class LaunchArgs
                     playGiven |= flag == PlayFlag;
                     layoutGiven |= flag == LayoutFlag;
                     graphicsGiven |= flag == GraphicsFlag;
+                    stockGiven |= flag == StockFlag;
 
                     continue;
                 }
@@ -191,6 +208,7 @@ public sealed class LaunchArgs
                     || flag == SeedFlag && seedGiven
                     || flag == SizeFlag && sizeGiven
                     || flag == GraphicsFlag && graphicsGiven
+                    || flag == StockFlag && stockGiven
                 )
                 {
                     problems.Add($"repeated {flag}{Known(flag)}");
@@ -211,6 +229,21 @@ public sealed class LaunchArgs
                     else
                     {
                         problems.Add($"bad {GraphicsFlag} '{value}'{Known(flag)}");
+                    }
+                }
+                else if (flag == StockFlag)
+                {
+                    stockGiven = true;
+                    if (
+                        int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var level)
+                        && level <= MaxStock
+                    )
+                    {
+                        stock = level;
+                    }
+                    else
+                    {
+                        problems.Add($"bad {StockFlag} '{value}': not a start stock level, use 0 to {MaxStock}");
                     }
                 }
                 else if (flag == PlayFlag)
@@ -334,6 +367,11 @@ public sealed class LaunchArgs
             );
         }
 
+        if (stockGiven && (modeFlag != GameViewFlag || conflictFlag is not null || layoutGiven))
+        {
+            problems.Add($"{StockFlag} applies to {GameViewFlag} without {LayoutFlag} only");
+        }
+
         if (playGiven && modeFlag is not (MapFlag or GameViewFlag) && !(layoutGiven && modeFlag is null))
         {
             problems.Add($"{PlayFlag} needs {MapFlag} or {GameViewFlag}");
@@ -357,6 +395,7 @@ public sealed class LaunchArgs
             Seed = seed,
             Size = size,
             Graphics = graphics,
+            Stock = stock,
             Problems = problems,
         };
     }

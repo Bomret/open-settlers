@@ -33,12 +33,14 @@ namespace OpenSettlers.Viewer;
 /// <param name="sizeValue">The map size the view opens on.</param>
 /// <param name="gameView">Whether a game ticks on the shown map.</param>
 /// <param name="graphics">The graphics source the view draws from.</param>
+/// <param name="stockLevel">The start stock level of the game's castle; null takes the level the seed draws.</param>
 public partial class MapViewControl(
     Install install,
     string seedText,
     int sizeValue,
     bool gameView = false,
-    GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
+    GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition,
+    int? stockLevel = null
 ) : Control
 {
     // Rows of tiles in one mesh; 16 rows of the widest map are about 8,200 vertices.
@@ -55,6 +57,7 @@ public partial class MapViewControl(
     readonly Install _install = install;
     readonly bool _gameView = gameView;
     readonly GraphicsSourceName _graphics = graphics;
+    readonly int? _stockLevel = stockLevel;
     Game? _game;
     readonly TickPacer _pacer = new();
 
@@ -484,7 +487,13 @@ public partial class MapViewControl(
             // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
             var exit = LayoutLoad.Start(
                 _layout,
-                GameFactory.Create(_tables, _state.Map, _state.StockLevel, everyPassTurns: true, handsOutGoods: true),
+                GameFactory.Create(
+                    _tables,
+                    _state.Map,
+                    _stockLevel ?? _state.StockLevel,
+                    everyPassTurns: true,
+                    handsOutGoods: true
+                ),
                 out _game,
                 out var layoutProblem
             );
