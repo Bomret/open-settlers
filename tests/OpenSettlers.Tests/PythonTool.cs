@@ -21,7 +21,8 @@ readonly record struct ToolRun
 /// The one place the tests spawn python3 for the scripts under <c>tools/</c>. A missing python3 fails the test with the hint
 /// to run <c>mise install</c>, as <c>docs/agents/verification.md</c> states, except in <see cref="RunOnPath"/>, which reports
 /// inconclusive. Each run sets its environment: <c>SIEDLER_DIR</c>
-/// is absent unless the caller passes it, and the path holds no <c>analyzeHeadless</c> of the host unless the caller asks for it.
+/// is absent unless the caller passes it, no <c>GIT_*</c> variable of the host reaches the child, and the path holds no <c>analyzeHeadless</c> of the host unless the caller asks for it.
+/// <see cref="Worktree"/> builds a git repository with a linked worktree for the tools that find the main checkout.
 /// </summary>
 static class PythonTool
 {
@@ -55,11 +56,85 @@ static class PythonTool
         return found;
     }
 
-    static string? Locate(string? searchPath) =>
+    static string? Locate(string? searchPath, string name = "python3") =>
         (searchPath ?? Environment.GetEnvironmentVariable("PATH") ?? "")
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
-            .SelectMany(dir => new[] { Path.Combine(dir, "python3"), Path.Combine(dir, "python3.exe") })
+            .SelectMany(dir => new[] { Path.Combine(dir, name), Path.Combine(dir, name + ".exe") })
             .FirstOrDefault(File.Exists);
+
+    /// <summary>
+    /// Builds a git repository <c>main</c> with one commit in <paramref name="folder"/>, and a linked worktree of it at
+    /// <c>.scopes/tree</c>, under a folder whose name starts with a dot as a superdev scopetree's path does. git runs with
+    /// every <c>GIT_*</c> variable of the host removed and the commit identity on its command line. Returns the host's git
+    /// and both trees. Reports inconclusive where the host has no git.
+    /// </summary>
+    public static (string Git, string Main, string Worktree) Worktree(string folder)
+    {
+        var git = Locate(null, "git");
+        if (git is null)
+        {
+            Assert.Inconclusive("git is not on the path");
+        }
+
+        var main = Path.Combine(folder, "main");
+        var worktree = Path.Combine(folder, ".scopes", "tree");
+        Directory.CreateDirectory(main);
+        RunGit(git, main, "init", "-q");
+        RunGit(
+            git,
+            main,
+            "-c",
+            "user.name=test",
+            "-c",
+            "user.email=test@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "start"
+        );
+        RunGit(git, main, "worktree", "add", "-q", worktree);
+
+        return (git, main, worktree);
+    }
+
+    static void RunGit(string git, string workingDirectory, params string[] arguments)
+    {
+        var info = new ProcessStartInfo(git)
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        foreach (var argument in arguments)
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        RemoveGitVariables(info);
+
+        using var process = Process.Start(info)!;
+        var stderr = process.StandardError.ReadToEndAsync();
+        process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        if (process.ExitCode != 0)
+        {
+            Assert.Fail($"git {string.Join(' ', arguments)} exited {process.ExitCode}: {stderr.Result}");
+        }
+    }
+
+    // A GIT_DIR of the host, as a git hook sets it, would make git resolve the host's repository.
+    static void RemoveGitVariables(ProcessStartInfo info)
+    {
+        foreach (
+            var name in info.Environment.Keys.Where(key => key.StartsWith("GIT_", StringComparison.Ordinal)).ToList()
+        )
+        {
+            info.Environment.Remove(name);
+        }
+    }
 
     /// <summary>Starts the process, or fails the test with the hint where the program cannot be started.</summary>
     public static Process Start(ProcessStartInfo info)
@@ -145,6 +220,7 @@ static class PythonTool
         info.RedirectStandardOutput = true;
         info.RedirectStandardError = true;
         info.Environment.Remove("SIEDLER_DIR");
+        RemoveGitVariables(info);
         if (siedlerDir is not null)
         {
             info.Environment["SIEDLER_DIR"] = siedlerDir;

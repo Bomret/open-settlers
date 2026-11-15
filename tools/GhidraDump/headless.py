@@ -2,8 +2,9 @@
 
 Usage: python3 -I headless.py natives | import | update | dump [index-only]
 
-Run from the repository root. Needs analyzeHeadless on PATH (mise puts it there) and, for import,
-SIEDLER_DIR.
+Run from the root of the repository or of one of its git worktrees. The Ghidra project and the dump lie in
+re-local/ of the main checkout, which every worktree shares; the scripts and the program index come from the
+current tree. Needs analyzeHeadless on PATH (mise puts it there) and, for import, SIEDLER_DIR.
 """
 
 import os
@@ -12,8 +13,28 @@ import subprocess
 import sys
 
 ROOT = os.getcwd()
-PROJECT = os.path.join(ROOT, "re-local", "ghidra")
-DUMP = os.path.join(ROOT, "re-local", "dump")
+
+
+# Keep identical to main_checkout() in program_index.py: python3 -I cannot import one from the other.
+def main_checkout():
+    """The main checkout: the parent of git's common dir. The current folder outside git, without git, or where git
+    prints anything but one absolute path whose last part is .git (git before 2.31, a bare repository)."""
+    try:
+        found = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True, text=True,
+        )
+    except OSError:
+        return ROOT
+    common = found.stdout.strip()
+    if found.returncode != 0 or "\n" in common or not os.path.isabs(common) or os.path.basename(common) != ".git":
+        return ROOT
+    return os.path.realpath(os.path.dirname(common))
+
+
+MAIN = main_checkout()
+PROJECT = os.path.join(MAIN, "re-local", "ghidra")
+DUMP = os.path.join(MAIN, "re-local", "dump")
 SCRIPTS = os.path.join(ROOT, "tools", "GhidraDump")
 INDEX = os.path.join(ROOT, "docs", "rules", "program-index.md")
 APPLY_INDEX = ["-postScript", "CreateMissingFunctions.java", "-postScript", "ApplyIndexNames.java", INDEX]
@@ -28,6 +49,15 @@ def headless():
     if path is None:
         fail("analyzeHeadless is not on PATH; run `mise install` and run this through `mise run`")
     return path
+
+
+def refuse_locked():
+    """Stops before a folder is touched while a run holds the project. Ghidra keeps Siedler1.lock beside Siedler1.gpr
+    while a run has the project open (ProjectLocator.getProjectLockFile) and deletes it when the run ends."""
+    lock = os.path.join(PROJECT, "Siedler1.lock")
+    if os.path.exists(lock):
+        fail(f"the Ghidra project is open in another run ({lock} exists); wait for it to end, "
+             "or delete the lock when no Ghidra has the project open")
 
 
 def run(args, cwd=None):
@@ -49,6 +79,7 @@ def main(argv):
     elif mode == "import":
         game = os.environ.get("SIEDLER_DIR") or fail("set SIEDLER_DIR in mise.local.toml")
         tool = headless()
+        refuse_locked()
         os.makedirs(PROJECT, exist_ok=True)
         analyze(tool, "-import", os.path.join(game, "Siedler1.exe"), "-overwrite", *APPLY_INDEX)
     elif mode == "update":
@@ -58,6 +89,7 @@ def main(argv):
         if rest and not index_only:
             fail(f"unknown dump mode: {' '.join(rest)}")
         tool = headless()
+        refuse_locked()
         if not index_only:
             shutil.rmtree(DUMP, ignore_errors=True)
         os.makedirs(DUMP, exist_ok=True)

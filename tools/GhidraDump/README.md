@@ -32,8 +32,8 @@ The dump has these files:
   The script follows the state block pointer through straight-line code only, so it misses accesses
   that pass through other registers or across branches.
 
-The dump and the Ghidra project hold decompiler output of the game's program. They stay in `re-local/`,
-which git ignores ([INV-0001](../../docs/invariants.md#inv-0001)). Record findings in
+The dump and the Ghidra project hold decompiler output of the game's program. They stay in `re-local/`
+of the main checkout, which git ignores ([INV-0001](../../docs/invariants.md#inv-0001)). Record findings in
 `docs/rules/program-index.md` in our own words.
 
 ## Requirements
@@ -57,6 +57,19 @@ analysis of `Siedler1.exe` can exceed. Ghidra headless has no timeout. The tasks
 `headless.py`, which calls Ghidra's `analyzeHeadless` on the project in `re-local/ghidra`. Each task
 looks up `analyzeHeadless` (and `gradle` for `ghidra:natives`) before it creates or removes a folder, so on
 a host without Ghidra a task stops with its message and leaves `re-local/` as it was.
+
+Every git worktree of the repository shares the Ghidra project and the dump in `re-local/` of the main
+checkout. The main checkout is the parent folder of git's common directory (`git rev-parse
+--git-common-dir`). The tasks take the scripts and the program index from the tree they run in. Thus
+`mise run ghidra:update` from a scope applies the index of that scope to the shared project. An import or
+a full dump from any tree replaces the shared project or the shared dump. While a run has the project
+open, Ghidra keeps the lock file `Siedler1.lock` next to `Siedler1.gpr` in `re-local/ghidra` and refuses
+a second run on the project. `ghidra:import` and `ghidra:dump` stop with a message while that lock file
+exists, before they create or remove a folder, so a second run leaves the running dump as it is. Ghidra
+deletes the lock file when the run ends. A run that crashes can leave it behind: delete it by hand only
+when no Ghidra has the project open. Outside a git repository, without git, or where git gives no single
+absolute path that ends in `.git` (git before 2.31, a bare repository), the tasks use `re-local/` under the
+current folder.
 
 Build the project only when `re-local/ghidra` holds no project. The import replaces an existing project
 and loses every change applied to it. The build takes about 7 minutes. It imports the program, runs
@@ -92,14 +105,17 @@ mise run ghidra:dump index-only
 
 `program_index.py` rebuilds the generated sections of the program index from its topic tables: the
 "By address" table, which `ApplyIndexNames.java` reads, and the coverage line. It passes the dump folder
-as its second argument, so the coverage line also counts the functions of the game code band in the dump:
+as its second argument, so the coverage line also counts the functions of the game code band in the dump.
+It rewrites the index of the tree it runs in and reads the dump of the main checkout. When the dump folder
+holds no `functions.tsv`, it stops with a message that names the folder and leaves the index as it was:
 
 ```sh
 mise run index
 ```
 
-The project path must be absolute, and no element of it may start with a dot: Ghidra headless rejects
-such a path.
+Ghidra headless rejects a project path that is relative or that holds an element starting with a dot.
+The project lies in the main checkout, so the tasks run from a worktree under a dot folder, such as a
+superdev scopetree. A main checkout under a dot folder fails.
 
 Run one analysis at a time on a machine. Two Ghidra analyses at once can overload the machine.
 

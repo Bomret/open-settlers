@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
@@ -7,7 +8,9 @@ namespace OpenSettlers.Tests;
 // tools/GhidraDump/headless.py, the entry `mise run ghidra:natives|ghidra:import|ghidra:update|ghidra:dump [index-only]`
 // runs, run as a process in a fresh temporary folder, which it takes as the repository root. The child's path holds only
 // the folders of the stand-in analyzeHeadless and gradle, shell scripts that record their arguments and working directory
-// with shell builtins alone. No case reaches Ghidra, Gradle, the install, or the repository's re-local folder.
+// with shell builtins alone, so git is absent. The worktree cases build a repository and a linked worktree of it under a
+// folder whose name starts with a dot (PythonTool.Worktree), and add a stand-in git that runs the host's git. No case
+// reaches Ghidra, Gradle, the install, or the repository's re-local folder.
 [TestClass]
 public sealed class HeadlessEntryTests
 {
@@ -22,6 +25,8 @@ public sealed class HeadlessEntryTests
     string GradleBin => Path.Combine(_folder, "gradle-bin");
 
     string Record => Path.Combine(_folder, "record");
+
+    string GitBin => Path.Combine(_folder, "git-bin");
 
     string Game => Path.Combine(_folder, "game");
 
@@ -46,15 +51,16 @@ public sealed class HeadlessEntryTests
 
     // The stand-in writes its working directory, its arguments one to a line, and whether the dump folder and the file
     // old.txt in it exist, then exits with the given status.
-    void StandInHeadless(int exit = 0) =>
+    void StandInHeadless(int exit = 0, string? dump = null) =>
         PythonTool.StandIn(
             Bin,
             "analyzeHeadless",
             $"""
             pwd -P > '{Record}/headless.cwd'
             printf '%s\n' "$@" > '{Record}/headless.args'
-            if [ -d re-local/dump ]; then echo dump > '{Record}/dump.state'; else echo none > '{Record}/dump.state'; fi
-            if [ -e re-local/dump/old.txt ]; then echo old >> '{Record}/dump.state'; fi
+            if [ -d '{dump
+                ?? Dump}' ]; then echo dump > '{Record}/dump.state'; else echo none > '{Record}/dump.state'; fi
+            if [ -e '{dump ?? Dump}/old.txt' ]; then echo old >> '{Record}/dump.state'; fi
             exit {exit}
 
             """
@@ -72,11 +78,18 @@ public sealed class HeadlessEntryTests
             """
         );
 
-    ToolRun Run(string[] arguments, bool headless, bool gradle, string? siedlerDir = null) =>
+    ToolRun Run(
+        string[] arguments,
+        bool headless,
+        bool gradle,
+        string? siedlerDir = null,
+        string? root = null,
+        bool git = false
+    ) =>
         PythonTool.RunOnPath(
-            Root,
+            root ?? Root,
             [Entry(), .. arguments],
-            [.. headless ? new[] { Bin } : [], .. gradle ? new[] { GradleBin } : []],
+            [.. headless ? new[] { Bin } : [], .. gradle ? new[] { GradleBin } : [], .. git ? new[] { GitBin } : []],
             siedlerDir
         );
 
@@ -336,5 +349,270 @@ public sealed class HeadlessEntryTests
         AssertRefused(run, "headless.py: analyzeHeadless is not on PATH");
         Assert.IsFalse(Directory.Exists(Project));
         Assert.IsFalse(Directory.Exists(Dump));
+    }
+
+    // A linked worktree of a fresh repository under a folder whose name starts with a dot, as a superdev scopetree lies,
+    // and git on the child's path as a stand-in that runs the host's git. Returns the main checkout and the worktree.
+    (string Main, string Worktree) InAWorktree()
+    {
+        var (git, main, worktree) = PythonTool.Worktree(Path.Combine(_folder, "repo"));
+        PythonTool.StandIn(GitBin, "git", $"exec '{git}' \"$@\"\n");
+
+        return (main, worktree);
+    }
+
+    // The main checkout as the entry sees it: the stand-in ran in the worktree, two folders below the main checkout's
+    // parent.
+    string MainSeen() =>
+        Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(Recorded("headless.cwd")[0]))!, "main");
+
+    static void AssertNoReLocal(string tree) => Assert.IsFalse(Directory.Exists(Path.Combine(tree, "re-local")), tree);
+
+    [TestMethod]
+    public void ImportInAWorktreeUnderADotFolderCreatesTheMainCheckoutsProjectAndAppliesTheWorktreesIndex()
+    {
+        var (main, worktree) = InAWorktree();
+        StandInHeadless(exit: 3);
+
+        var run = Run(["import"], headless: true, gradle: false, siedlerDir: Game, root: worktree, git: true);
+
+        Assert.AreEqual(3, run.Exit, run.Stderr);
+        var tree = Recorded("headless.cwd")[0];
+        string[] expected =
+        [
+            Path.Combine(MainSeen(), "re-local", "ghidra"),
+            "Siedler1",
+            "-import",
+            Path.Combine(Game, "Siedler1.exe"),
+            "-overwrite",
+            .. ApplyIndex(tree),
+            .. Scripts(tree),
+        ];
+        CollectionAssert.AreEqual(expected, Recorded("headless.args"));
+        Assert.IsTrue(Directory.Exists(Path.Combine(main, "re-local", "ghidra")));
+        AssertNoReLocal(worktree);
+    }
+
+    [TestMethod]
+    public void UpdateInAWorktreeUnderADotFolderOpensTheMainCheckoutsProjectAndAppliesTheWorktreesIndex()
+    {
+        var (main, worktree) = InAWorktree();
+        StandInHeadless(exit: 3);
+
+        var run = Run(["update"], headless: true, gradle: false, root: worktree, git: true);
+
+        Assert.AreEqual(3, run.Exit, run.Stderr);
+        var tree = Recorded("headless.cwd")[0];
+        string[] expected =
+        [
+            Path.Combine(MainSeen(), "re-local", "ghidra"),
+            "Siedler1",
+            "-process",
+            "Siedler1.exe",
+            "-noanalysis",
+            .. ApplyIndex(tree),
+            .. Scripts(tree),
+        ];
+        CollectionAssert.AreEqual(expected, Recorded("headless.args"));
+        AssertNoReLocal(main);
+        AssertNoReLocal(worktree);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void DumpInAWorktreeUnderADotFolderWritesTheMainCheckoutsDump(bool indexOnly)
+    {
+        var (main, worktree) = InAWorktree();
+        var mainDump = Path.Combine(main, "re-local", "dump");
+        Directory.CreateDirectory(mainDump);
+        File.WriteAllText(Path.Combine(mainDump, "old.txt"), "old");
+        StandInHeadless(exit: 3, dump: mainDump);
+
+        var run = Run(
+            indexOnly ? ["dump", "index-only"] : ["dump"],
+            headless: true,
+            gradle: false,
+            root: worktree,
+            git: true
+        );
+
+        Assert.AreEqual(3, run.Exit, run.Stderr);
+        var tree = Recorded("headless.cwd")[0];
+        var dump = Path.Combine(MainSeen(), "re-local", "dump");
+        string[] expected =
+        [
+            Path.Combine(MainSeen(), "re-local", "ghidra"),
+            "Siedler1",
+            "-process",
+            "Siedler1.exe",
+            "-noanalysis",
+            "-readOnly",
+            "-postScript",
+            "DumpProgram.java",
+            dump,
+            .. indexOnly ? new[] { "index-only" } : [],
+            "-postScript",
+            "StateFields.java",
+            dump,
+            .. Scripts(tree),
+        ];
+        CollectionAssert.AreEqual(expected, Recorded("headless.args"));
+        string[] state = indexOnly ? ["dump", "old"] : ["dump"];
+        CollectionAssert.AreEqual(state, Recorded("dump.state"));
+        AssertNoReLocal(worktree);
+    }
+
+    [TestMethod]
+    [DataRow("headless.py: Usage:", true, true)]
+    [DataRow("headless.py: unknown mode: bogus", true, true, "bogus")]
+    [DataRow("headless.py: unknown dump mode: X", true, true, "dump", "X")]
+    [DataRow("headless.py: analyzeHeadless is not on PATH", false, true, "update")]
+    [DataRow("headless.py: analyzeHeadless is not on PATH", false, true, "dump")]
+    [DataRow("headless.py: gradle is not on PATH", true, false, "natives")]
+    [DataRow("headless.py: set SIEDLER_DIR in mise.local.toml", true, true, "import")]
+    public void ARefusalInAWorktreeCreatesNoFolder(
+        string message,
+        bool headless,
+        bool gradle,
+        params string[] arguments
+    )
+    {
+        var (main, worktree) = InAWorktree();
+        if (headless)
+        {
+            StandInHeadless();
+        }
+
+        if (gradle)
+        {
+            StandInGradle();
+        }
+
+        var run = Run(arguments, headless, gradle, root: worktree, git: true);
+
+        AssertRefused(run, message);
+        AssertStartedNothing();
+        AssertNoReLocal(main);
+        AssertNoReLocal(worktree);
+    }
+
+    const string Locked = "headless.py: the Ghidra project";
+
+    // Ghidra writes Siedler1.lock next to Siedler1.gpr in the project folder while a run holds the project.
+    static void LockProject(string tree)
+    {
+        var project = Path.Combine(tree, "re-local", "ghidra");
+        Directory.CreateDirectory(project);
+        File.WriteAllText(Path.Combine(project, "Siedler1.lock"), "");
+    }
+
+    static void WriteOldDump(string tree)
+    {
+        var dump = Path.Combine(tree, "re-local", "dump");
+        Directory.CreateDirectory(dump);
+        File.WriteAllText(Path.Combine(dump, "old.txt"), "old");
+    }
+
+    static void AssertOldDumpKept(string tree) =>
+        CollectionAssert.AreEqual(
+            new[] { "old.txt" },
+            Directory.GetFiles(Path.Combine(tree, "re-local", "dump")).Select(Path.GetFileName).ToArray()
+        );
+
+    [TestMethod]
+    [DataRow("dump")]
+    [DataRow("dump", "index-only")]
+    [DataRow("import")]
+    public void AModeOnALockedProjectIsRefusedAndKeepsTheDump(params string[] arguments)
+    {
+        StandInHeadless();
+        LockProject(Root);
+        WriteOldDump(Root);
+
+        var run = Run(arguments, headless: true, gradle: false, siedlerDir: Game);
+
+        AssertRefused(run, Locked);
+        Assert.IsFalse(run.Stderr.TrimEnd('\n').Contains('\n'), run.Stderr);
+        AssertStartedNothing();
+        AssertOldDumpKept(Root);
+    }
+
+    [TestMethod]
+    [DataRow("dump")]
+    [DataRow("import")]
+    public void AModeInAWorktreeOnTheMainCheckoutsLockedProjectIsRefusedAndKeepsTheSharedDump(params string[] arguments)
+    {
+        var (main, worktree) = InAWorktree();
+        StandInHeadless();
+        LockProject(main);
+        WriteOldDump(main);
+
+        var run = Run(arguments, headless: true, gradle: false, siedlerDir: Game, root: worktree, git: true);
+
+        AssertRefused(run, Locked);
+        AssertStartedNothing();
+        AssertOldDumpKept(main);
+        AssertNoReLocal(worktree);
+    }
+
+    // git before 2.31 echoes the unknown --path-format=absolute; a bare repository's common dir is repo.git; a relative
+    // line is no absolute path. The stand-in git prints the lines under the temporary folder and exits 0.
+    [TestMethod]
+    [DataRow("--path-format=absolute", "other/.git")]
+    [DataRow("other/repo.git")]
+    [DataRow(".git")]
+    public void GitOutputThatIsNotOneAbsoluteDotGitPathLeavesTheCurrentFolder(params string[] lines)
+    {
+        var printed = lines.Select(line =>
+            line.StartsWith("other/", StringComparison.Ordinal) ? Path.Combine(_folder, line) : line
+        );
+        PythonTool.StandIn(GitBin, "git", $"printf '%s\\n' {string.Join(' ', printed.Select(line => $"'{line}'"))}\n");
+        StandInHeadless(exit: 3);
+
+        var run = Run(["update"], headless: true, gradle: false, git: true);
+
+        Assert.AreEqual(3, run.Exit, run.Stderr);
+        Assert.AreEqual(Path.Combine(RootSeen(), "re-local", "ghidra"), Recorded("headless.args")[0]);
+    }
+
+    [TestMethod]
+    public void UpdateInTheMainCheckoutWithGitOnThePathUsesTheCurrentFolder()
+    {
+        var (main, _) = InAWorktree();
+        StandInHeadless(exit: 3);
+
+        var run = Run(["update"], headless: true, gradle: false, root: main, git: true);
+
+        Assert.AreEqual(3, run.Exit, run.Stderr);
+        var root = Recorded("headless.cwd")[0];
+        string[] expected =
+        [
+            Path.Combine(root, "re-local", "ghidra"),
+            "Siedler1",
+            "-process",
+            "Siedler1.exe",
+            "-noanalysis",
+            .. ApplyIndex(root),
+            .. Scripts(root),
+        ];
+        CollectionAssert.AreEqual(expected, Recorded("headless.args"));
+        Assert.AreEqual("", run.Stderr);
+    }
+
+    [TestMethod]
+    public void DumpOutsideAGitRepositoryWithGitOnThePathUsesTheCurrentFolderAndPrintsNoGitError()
+    {
+        InAWorktree();
+        StandInHeadless(exit: 3);
+
+        var run = Run(["dump"], headless: true, gradle: false, git: true);
+
+        Assert.AreEqual(3, run.Exit, run.Stderr);
+        var root = RootSeen();
+        Assert.AreEqual(Path.Combine(root, "re-local", "ghidra"), Recorded("headless.args")[0]);
+        Assert.AreEqual(Path.Combine(root, "re-local", "dump"), Recorded("headless.args")[8]);
+        Assert.AreEqual("", run.Stderr);
+        Assert.IsTrue(Directory.Exists(Dump));
     }
 }

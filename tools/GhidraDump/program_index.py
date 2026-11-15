@@ -7,11 +7,15 @@ The topic tables are the source; run this after editing them. ApplyIndexNames.ja
 by-address section.
 
 Usage: python3 -I program_index.py <program-index.md> [<dump directory>]
+
+The index path is relative to the current folder. A relative dump directory is relative to the main checkout
+of the repository, which every git worktree shares (see headless.py).
 """
 
 import collections
 import os
 import re
+import subprocess
 import sys
 
 # The game code band (docs/rules/game-code.md).
@@ -76,7 +80,28 @@ def coverage(rows, dump):
     )
 
 
+# Keep identical to main_checkout() in headless.py: python3 -I cannot import one from the other.
+def main_checkout():
+    """The main checkout: the parent of git's common dir. The current folder outside git, without git, or where git
+    prints anything but one absolute path whose last part is .git (git before 2.31, a bare repository)."""
+    try:
+        found = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True, text=True,
+        )
+    except OSError:
+        return os.getcwd()
+    common = found.stdout.strip()
+    if found.returncode != 0 or "\n" in common or not os.path.isabs(common) or os.path.basename(common) != ".git":
+        return os.getcwd()
+    return os.path.realpath(os.path.dirname(common))
+
+
 def main(path, dump=None):
+    if dump:
+        dump = os.path.join(main_checkout(), dump)
+        if not os.path.isfile(os.path.join(dump, "functions.tsv")):
+            sys.exit(f"program_index.py: no functions.tsv in {dump}; run mise run ghidra:dump")
     with open(path) as f:
         text = f.read()
     rows = topic_rows(text)
@@ -87,4 +112,6 @@ def main(path, dump=None):
 
 
 if __name__ == "__main__":
+    if not 1 <= len(sys.argv) - 1 <= 2:
+        sys.exit(next(line for line in __doc__.splitlines() if line.startswith("Usage:")))
     main(*sys.argv[1:])
