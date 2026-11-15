@@ -16,6 +16,7 @@ public sealed class JobLooksGeneratorTests
 {
     const string Framework = """
         global using OpenSettlers.Import.HistoryEdition;
+        global using OpenSettlers.Import.ContentSet;
         namespace OpenSettlers.Domain
         {
             public abstract record Job;
@@ -29,7 +30,7 @@ public sealed class JobLooksGeneratorTests
             public abstract class HistoryEditionLook { }
             public abstract class HistoryEditionLook<TJob> : HistoryEditionLook where TJob : Job { }
         }
-        namespace OpenSettlers.MapView
+        namespace OpenSettlers.Import.ContentSet
         {
             using OpenSettlers.Domain;
             public abstract class OpenSettlersLook { }

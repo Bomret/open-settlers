@@ -33,7 +33,7 @@ public sealed class GraphicsSourceBoundaryTests
     [DataRow("src/MapView/MapKeys.cs")]
     [DataRow("src/MapView/ShotCrop.cs")]
     [DataRow("src/MapView/SpriteLayer.cs")]
-    [DataRow("src/MapView/OpenSettlersSource.cs")]
+    [DataRow("src/Import.OpenSettlers/OpenSettlersSource.cs")]
     [DataRow("src/Viewer/MapViewControl.cs")]
     public void TheSharedTerrainRoadAndObjectCodeReadsNoRulesNoArchiveAndNoEntry(string path)
     {

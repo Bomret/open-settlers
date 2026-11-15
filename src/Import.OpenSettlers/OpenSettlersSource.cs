@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using OpenSettlers.Domain;
 
-namespace OpenSettlers.MapView;
+namespace OpenSettlers.Import.ContentSet;
 
 /// <summary>
 /// The graphics source of the repository's own content set <c>content/open-settlers/</c> (ADR 0014, ADR 0015). The set
