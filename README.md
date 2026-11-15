@@ -194,6 +194,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 - `docs/roadmap.md`: the milestone plan.
 - `docs/controls.md`: the controls of the map view and the game view.
 - `docs/rules/`: the rules recovered from the game's program, each with its address as evidence.
+- `docs/install-data.md`: the data the engine reads from an install, its readers, and its typed results.
 - `docs/agents/`: instructions for coding agents.
 - `tools/play-run.sh`: the play-run wrapper ("Run a play script").
 - `tools/open-settlers-art.py`: writes the manifest and PNGs of `content/open-settlers/`. A unit test runs it into a temporary folder and fails where the checked-in set holds a file it does not write the same.
