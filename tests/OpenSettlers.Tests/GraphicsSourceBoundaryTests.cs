@@ -156,8 +156,45 @@ public sealed class GraphicsSourceBoundaryTests
         return found;
     }
 
-    [TestMethod]
-    public void NoClassOfTheMapViewTheAssetsOrTheViewerOutsideTheCompositionRootNamesAHistoryEditionType()
+    // What the shared code may not name of the content set: its source and looks, their namespace, and its folder. The look
+    // names are the files of the looks folder, so a new look is caught without a change here.
+    static List<string> ContentSetNames(string text)
+    {
+        var looks = Directory
+            .GetFiles(Path.Combine(RootOf(), "src/Import.OpenSettlers/OpenSettlersLooks"), "*.cs")
+            .Select(Path.GetFileNameWithoutExtension)
+            .Order(StringComparer.Ordinal);
+        var found = new List<string>();
+        foreach (
+            var forbidden in new[]
+            {
+                "OpenSettlersSource",
+                "OpenSettlersLook",
+                "Import.ContentSet",
+                "content/open-settlers",
+            }
+        )
+        {
+            if (text.Contains(forbidden, StringComparison.Ordinal))
+            {
+                found.Add(forbidden);
+            }
+        }
+
+        foreach (var look in looks)
+        {
+            if (Regex.IsMatch(text, $@"\b{look}\b"))
+            {
+                found.Add(look!);
+            }
+        }
+
+        return found;
+    }
+
+    // The map view, src/Assets, and the viewer classes outside the composition root; each folder holds classes to scan, so a
+    // moved folder does not empty the check.
+    static List<string> PortsOnlyFiles()
     {
         var root = RootOf();
         var folders = PortsOnlyFolders
@@ -168,16 +205,45 @@ public sealed class GraphicsSourceBoundaryTests
                     .ToList()
             )
             .ToList();
+        Assert.IsTrue(folders.All(f => f.Count > 0));
         var files = folders.SelectMany(f => f).Concat(PortsOnly.Select(path => Path.Combine(root, path))).ToList();
+        Assert.IsGreaterThan(20, files.Count);
 
-        foreach (var file in files)
+        return files;
+    }
+
+    [TestMethod]
+    public void NoClassOfTheMapViewTheAssetsOrTheViewerOutsideTheCompositionRootNamesAHistoryEditionType()
+    {
+        foreach (var file in PortsOnlyFiles())
         {
             Assert.IsEmpty(HistoryEditionNames(File.ReadAllText(file)), $"{file} names a History Edition type");
         }
+    }
 
-        // Each folder holds classes to scan, so a moved folder does not empty the check.
-        Assert.IsTrue(folders.All(f => f.Count > 0));
-        Assert.IsGreaterThan(20, files.Count);
+    [TestMethod]
+    public void NoClassOfTheMapViewTheAssetsOrTheViewerOutsideTheCompositionRootNamesAContentSetType()
+    {
+        foreach (var file in PortsOnlyFiles())
+        {
+            Assert.IsEmpty(ContentSetNames(File.ReadAllText(file)), $"{file} names a content-set type");
+        }
+    }
+
+    // The positive control of the content-set check: it fails on a planted violation, the look named without its namespace too.
+    [TestMethod]
+    public void ThePortsOnlyCheckFailsOnAPlantedContentSetType()
+    {
+        CollectionAssert.AreEqual(
+            new[] { "OpenSettlersSource", "content/open-settlers" },
+            ContentSetNames("OpenSettlersSource.Load(\"res://content/open-settlers\", decoder)")
+        );
+        CollectionAssert.AreEqual(
+            new[] { "Import.ContentSet" },
+            ContentSetNames("using OpenSettlers.Import.ContentSet;")
+        );
+        CollectionAssert.AreEqual(new[] { "WoodcutterKey" }, ContentSetNames("new WoodcutterKey()"));
+        Assert.IsEmpty(ContentSetNames("GraphicsSourceName.OpenSettlers and InputEventKey"));
     }
 
     // The positive control: the check fails on a planted violation.

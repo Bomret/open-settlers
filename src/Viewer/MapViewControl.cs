@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using Godot;
 using OpenSettlers.Domain;
-using OpenSettlers.Import.ContentSet;
 using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -23,18 +22,18 @@ namespace OpenSettlers.Viewer;
 /// the map point under the pointer in place. A two-finger touchpad swipe moves the camera.
 /// </summary>
 /// <remarks>
-/// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
+/// The view of the map, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
 /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
 /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
-/// <paramref name="graphics"/> is the source the view draws from; the rules come from the install under both.
+/// <paramref name="loadGraphics"/> gives the source the view draws from, which the host picks; the rules come from the install
+/// under every source.
 /// </remarks>
 /// <param name="tablesSource">The rule tables port; reading it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the tables cannot be read.</param>
-/// <param name="loadGraphics">Loads the install's graphics source, given the rule tables the settlers are drawn by (null outside the game view).</param>
+/// <param name="loadGraphics">Loads the graphics source the view draws from, given the rule tables the settlers are drawn by (null outside the game view); it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the source cannot be read.</param>
 /// <param name="loadSteps">Reads the walk steps where the graphics source has none, as under the Open Settlers source.</param>
 /// <param name="seedText">The seed the view opens on, as the seed field shows it.</param>
 /// <param name="sizeValue">The map size the view opens on.</param>
 /// <param name="gameView">Whether a game ticks on the shown map.</param>
-/// <param name="graphics">The graphics source the view draws from.</param>
 /// <param name="stockLevel">The start stock level of the game's castle; null takes the level the seed draws.</param>
 public partial class MapViewControl(
     IRuleTablesSource tablesSource,
@@ -43,7 +42,6 @@ public partial class MapViewControl(
     string seedText,
     int sizeValue,
     bool gameView = false,
-    GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition,
     int? stockLevel = null
 ) : Control
 {
@@ -59,7 +57,6 @@ public partial class MapViewControl(
     const int MaxArrayLayers = 2048;
 
     readonly bool _gameView = gameView;
-    readonly GraphicsSourceName _graphics = graphics;
     readonly int? _stockLevel = stockLevel;
     Game? _game;
     readonly TickPacer _pacer = new();
@@ -146,10 +143,9 @@ public partial class MapViewControl(
         IRuleTablesSource tablesSource,
         Func<RuleTables?, GraphicsLoad> loadGraphics,
         Func<IWalkSteps> loadSteps,
-        Layout layout,
-        GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
+        Layout layout
     )
-        : this(tablesSource, loadGraphics, loadSteps, layout.Seed.ToScreen(), layout.Size.Value, true, graphics)
+        : this(tablesSource, loadGraphics, loadSteps, layout.Seed.ToScreen(), layout.Size.Value, true)
     {
         _layout = layout;
     }
@@ -415,18 +411,8 @@ public partial class MapViewControl(
 
         try
         {
-            if (_graphics == GraphicsSourceName.OpenSettlers)
-            {
-                // A broken content set names its file and key here, and the view draws no map, as for a missing install file.
-                _source = OpenSettlersSource.Load(
-                    ProjectSettings.GlobalizePath("res://content/open-settlers"),
-                    new GodotImageDecoder()
-                );
-            }
-            else
-            {
-                LoadInstallSource();
-            }
+            // A broken content set or a missing install file names its file here, and the view draws no map.
+            LoadSource();
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -456,8 +442,8 @@ public partial class MapViewControl(
         ShowMessage();
     }
 
-    // The graphics source of the install; a problem with the roads, objects, or settlers is kept for the message.
-    void LoadInstallSource()
+    // The graphics source the host loads; a problem with the roads, objects, or settlers is kept for the message.
+    void LoadSource()
     {
         // The settlers are drawn in the game view only: the source gets the exe's tables for them there.
         var source = loadGraphics(_gameView ? _tables : null);

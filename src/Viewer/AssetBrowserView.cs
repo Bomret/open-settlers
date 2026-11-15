@@ -3,6 +3,7 @@ using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
 using OpenSettlers.Domain;
+using OpenSettlers.Import.ContentSet;
 using OpenSettlers.Import.HistoryEdition;
 using OpenSettlers.Launch;
 using OpenSettlers.MapView;
@@ -159,10 +160,21 @@ public partial class AssetBrowserView : Control
         var script = open.Script;
         var folder = open.PlayOutFolder;
         IRuleTablesSource tablesSource = new HistoryEditionRuleTables(install);
-        Func<RuleTables?, GraphicsLoad> loadGraphics = tables => HistoryEditionSource.LoadGraphics(install, tables);
+        // The view calls this where it catches a read failure: a broken content set names its file and key, and the view draws
+        // no map, as for a missing install file.
+        Func<RuleTables?, GraphicsLoad> loadGraphics =
+            args.Graphics == GraphicsSourceName.OpenSettlers
+                ? _ => new GraphicsLoad
+                {
+                    Source = OpenSettlersSource.Load(
+                        ProjectSettings.GlobalizePath("res://content/open-settlers"),
+                        new GodotImageDecoder()
+                    ),
+                }
+                : tables => HistoryEditionSource.LoadGraphics(install, tables);
         Func<IWalkSteps> loadSteps = () => StepOffsets.Load(install);
         var view = layout is not null
-            ? new MapViewControl(tablesSource, loadGraphics, loadSteps, layout, args.Graphics)
+            ? new MapViewControl(tablesSource, loadGraphics, loadSteps, layout)
             : new MapViewControl(
                 tablesSource,
                 loadGraphics,
@@ -170,7 +182,6 @@ public partial class AssetBrowserView : Control
                 args.SeedText ?? MapViewState.DefaultSeed,
                 args.Size?.Value ?? MapSize.Offered[0].Value,
                 args.Mode == LaunchMode.GameView,
-                args.Graphics,
                 args.Stock
             );
         AddChild(view);
