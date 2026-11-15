@@ -1045,7 +1045,7 @@ public sealed class HistoryEditionSourceTests
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.Made().StartStock,
-            figureBases: SettlerTables().FigureBases,
+            figureBases: [.. SettlerTables().Figures.Bases],
             figureOffsets: offsets,
             jobData: TestProgram.MadeJobData()
         );

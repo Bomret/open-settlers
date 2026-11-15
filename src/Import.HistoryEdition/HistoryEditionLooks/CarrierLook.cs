@@ -11,11 +11,9 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// <param name="tables">The tables of the exe: for each good the word a carrier carrying it adds.</param>
 public sealed class CarrierLook(RuleTables tables) : HistoryEditionLook<Carrier>
 {
-    readonly short[] _carried = tables.CarriedFigures;
+    readonly FigureTables _figures = tables.Figures;
 
     /// <inheritdoc />
     public override int Add(SettlerDraw draw, int figure) =>
-        draw.Activity is WalksRoad or HandsOver && draw.Carried.Code > 0 && draw.Carried.Code < _carried.Length
-            ? _carried[draw.Carried.Code]
-            : 0;
+        draw.Activity is WalksRoad or HandsOver && draw.Carried.Code > 0 ? _figures.CarriedWord(draw.Carried.Code) : 0;
 }

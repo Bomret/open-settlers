@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -355,8 +356,8 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         // peek:4501a1:548 (274 words, 2 for each row 0 to 0x88) and peek:4503c5:1024 (512 words, 2 for each figure byte).
-        Assert.AreEqual(0x7A4340847303DFB6UL, Fnv([.. tables.FigureBases.SelectMany(BitConverter.GetBytes)]));
-        Assert.AreEqual(0x9074A7BD864B08BDUL, Fnv([.. tables.FigureOffsets.SelectMany(BitConverter.GetBytes)]));
+        Assert.AreEqual(0x7A4340847303DFB6UL, Fnv([.. tables.Figures.Bases.SelectMany(BitConverter.GetBytes)]));
+        Assert.AreEqual(0x9074A7BD864B08BDUL, Fnv([.. tables.Figures.Offsets.SelectMany(BitConverter.GetBytes)]));
     }
 
     [TestMethod]
@@ -398,7 +399,7 @@ public sealed class ProgramTablesTests
                 0x5700,
                 0x5600,
             },
-            tables.CarriedFigures
+            tables.Figures.Carried.ToArray()
         );
     }
 
@@ -409,7 +410,7 @@ public sealed class ProgramTablesTests
 
         Assert.AreEqual(
             0x2a00,
-            ProgramTablesImporter.Import(exe).CarriedFigures[7],
+            ProgramTablesImporter.Import(exe).Figures.Carried[7],
             "the word of good 7 at the address plus 2 * 7"
         );
     }
@@ -452,9 +453,9 @@ public sealed class ProgramTablesTests
 
         var tables = ProgramTablesImporter.Import(exe);
 
-        Assert.AreEqual(RuleTables.FrameRowCount, tables.FrameRows.Length);
-        Assert.AreEqual(-1, tables.FrameRows[10], "a signed byte for the frame 10");
-        Assert.AreEqual(2, tables.FrameRows[11]);
+        Assert.AreEqual(RuleTables.FrameRowCount, tables.Figures.FrameRows.Length);
+        Assert.AreEqual(-1, tables.Figures.FrameRow(10), "a signed byte for the frame 10");
+        Assert.AreEqual(2, tables.Figures.FrameRow(11));
 #pragma warning disable MSTEST0032 // The assertion pins the constant to its value.
         Assert.AreEqual(0x43f402, ProgramTablesImporter.FrameRowAddress);
 #pragma warning restore MSTEST0032
@@ -467,7 +468,7 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         // peek:43f402:181 (the bytes up to the carried goods' table at 0x43f4b7).
-        Assert.AreEqual(0x02AE63A4FDE36C2DUL, Fnv([.. tables.FrameRows.Select(row => (byte)row)]));
+        Assert.AreEqual(0x02AE63A4FDE36C2DUL, Fnv([.. tables.Figures.FrameRows.Select(row => (byte)row)]));
     }
 
     [TestMethod]
@@ -535,7 +536,7 @@ public sealed class ProgramTablesTests
     }
 
     // A step as text: its request word, its class, and the goods it hands out.
-    static string[] Steps(DistributionStep[] order) =>
+    static string[] Steps(IEnumerable<DistributionStep> order) =>
         [.. order.Select(step => $"{step.Class.Word} {step.Class.Class}: {string.Join(',', step.Goods)}")];
 
     [TestMethod]
@@ -832,9 +833,9 @@ public sealed class ProgramTablesTests
         var second = tables.DistributionOrder(0);
         var third = tables.DistributionOrder(1);
         CollectionAssert.AreEqual(new[] { 12, 12, 12 }, new[] { first.Length, second.Length, third.Length });
-        CollectionAssert.AreEqual(new[] { "First 1: 8", "Second 4: 10" }, Steps(first[..2]));
-        CollectionAssert.AreEqual(new[] { "Second 4: 10" }, Steps(second[..1]));
-        CollectionAssert.AreEqual(new[] { "First 0: 1,3,6" }, Steps(third[..1]));
+        CollectionAssert.AreEqual(new[] { "First 1: 8", "Second 4: 10" }, Steps(first.Take(2)));
+        CollectionAssert.AreEqual(new[] { "Second 4: 10" }, Steps(second.Take(1)));
+        CollectionAssert.AreEqual(new[] { "First 0: 1,3,6" }, Steps(third.Take(1)));
         Assert.AreEqual(0xff, tables.PlankRankBase);
         // The whole class table (the class and request word of each of the 32 goods, the log's included) and all 36 steps of the three
         // orders, as text (the draws 0, 1, and 2 in turn): the digest is of that text built from the same peeks, decoded as the reader does.
@@ -906,12 +907,14 @@ public sealed class ProgramTablesTests
         // 0x44fff3 reads a pair of words at 4 times the high byte of the figure word in the bases (0x4501a1, odd) and at 4
         // times its low byte in the offsets (0x4503c5, odd): the woodcutter's rows 0x0b (walk), 0x10 (way back with the log),
         // and 0x0f (felling), the carrier's row 0, and the offsets of the figure bytes 9 and 0.
-        CollectionAssert.AreEqual(new short[] { 0, 0 }, tables.FigureBases[..2]);
-        CollectionAssert.AreEqual(new short[] { 48, 54 }, tables.FigureBases[(2 * 0x0b)..(2 * 0x0b + 2)]);
-        CollectionAssert.AreEqual(new short[] { 272, -1 }, tables.FigureBases[(2 * 0x0f)..(2 * 0x0f + 2)]);
-        CollectionAssert.AreEqual(new short[] { 48, 60 }, tables.FigureBases[(2 * 0x10)..(2 * 0x10 + 2)]);
-        CollectionAssert.AreEqual(new short[] { 9, 1 }, tables.FigureOffsets[18..20]);
-        CollectionAssert.AreEqual(new short[] { 0, 0 }, tables.FigureOffsets[..2]);
+        var bases = tables.Figures.Bases;
+        var offsets = tables.Figures.Offsets;
+        CollectionAssert.AreEqual(new short[] { 0, 0 }, bases.AsSpan()[..2].ToArray());
+        CollectionAssert.AreEqual(new short[] { 48, 54 }, bases.AsSpan()[(2 * 0x0b)..(2 * 0x0b + 2)].ToArray());
+        CollectionAssert.AreEqual(new short[] { 272, -1 }, bases.AsSpan()[(2 * 0x0f)..(2 * 0x0f + 2)].ToArray());
+        CollectionAssert.AreEqual(new short[] { 48, 60 }, bases.AsSpan()[(2 * 0x10)..(2 * 0x10 + 2)].ToArray());
+        CollectionAssert.AreEqual(new short[] { 9, 1 }, offsets.AsSpan()[18..20].ToArray());
+        CollectionAssert.AreEqual(new short[] { 0, 0 }, offsets.AsSpan()[..2].ToArray());
     }
 
     [TestMethod]
@@ -1201,19 +1204,20 @@ public sealed class ProgramTablesTests
 
         var tables = ProgramTablesImporter.Import(exe);
 
-        Assert.AreEqual(RuleTables.IdlePhaseCount, tables.IdlePhases.Length);
-        Assert.AreEqual((short)7, tables.IdlePhases[0]);
-        Assert.AreEqual((short)0x0f07, tables.IdlePhases[15]);
-        Assert.AreEqual(RuleTables.IdleFigureCount, tables.IdleFigures.Length);
-        Assert.AreEqual(unchecked((short)0x8800), tables.IdleFigures[0]);
-        Assert.AreEqual(unchecked((short)0x887f), tables.IdleFigures[127]);
-        Assert.AreEqual(RuleTables.IdleOffsetCount, tables.IdleOffsets.Length);
-        Assert.AreEqual((sbyte)0, tables.IdleOffsets[0]);
-        Assert.AreEqual((sbyte)-127, tables.IdleOffsets[43]);
-        Assert.AreEqual((sbyte)125, tables.IdleOffsets[127]);
+        var figures = tables.Figures;
+        Assert.AreEqual(RuleTables.IdlePhaseCount, figures.IdlePhases.Length);
+        Assert.AreEqual((short)7, figures.IdlePhases[0]);
+        Assert.AreEqual((short)0x0f07, figures.IdlePhases[15]);
+        Assert.AreEqual(RuleTables.IdleFigureCount, figures.IdleFigures.Length);
+        Assert.AreEqual(unchecked((short)0x8800), figures.IdleFigures[0]);
+        Assert.AreEqual(unchecked((short)0x887f), figures.IdleFigures[127]);
+        Assert.AreEqual(RuleTables.IdleOffsetCount, figures.IdleOffsets.Length);
+        Assert.AreEqual((sbyte)0, figures.IdleOffsets[0]);
+        Assert.AreEqual((sbyte)-127, figures.IdleOffsets[43]);
+        Assert.AreEqual((sbyte)125, figures.IdleOffsets[127]);
     }
 
-    static ulong Fnv(byte[] bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
+    static ulong Fnv(IEnumerable<byte> bytes) => bytes.Aggregate(FnvOffset, (hash, value) => (hash ^ value) * FnvPrime);
 
     // The waiting carriers' tables of the reference build (0x44d87d, 0x44d89d, 0x674923): the first phase word, the first
     // figure word (row 0x88), and the offsets of a node whose road runs north and south (directions 2 and 5, bits 0x24).
@@ -1223,11 +1227,15 @@ public sealed class ProgramTablesTests
     {
         var tables = TestProgram.Tables();
 
-        Assert.AreEqual(0x0240, tables.IdlePhases[0]);
-        Assert.AreEqual(unchecked((short)0x8800), tables.IdleFigures[0]);
-        Assert.AreEqual((sbyte)2, tables.IdleOffsets[2 * 0x24]);
-        Assert.AreEqual((sbyte)1, tables.IdleOffsets[2 * 0x24 + 1]);
+        var figures = tables.Figures;
+        Assert.AreEqual(0x0240, figures.IdlePhases[0]);
+        Assert.AreEqual(unchecked((short)0x8800), figures.IdleFigures[0]);
+        Assert.AreEqual((sbyte)2, figures.IdleOffsets[2 * 0x24]);
+        Assert.AreEqual((sbyte)1, figures.IdleOffsets[2 * 0x24 + 1]);
         // The row 0x88 of the figure bases, the last before the figure offsets: the base 192 and no second figure.
-        CollectionAssert.AreEqual(new short[] { 192, -1 }, tables.FigureBases[(2 * 0x88)..(2 * 0x88 + 2)]);
+        CollectionAssert.AreEqual(
+            new short[] { 192, -1 },
+            figures.Bases.AsSpan()[(2 * 0x88)..(2 * 0x88 + 2)].ToArray()
+        );
     }
 }

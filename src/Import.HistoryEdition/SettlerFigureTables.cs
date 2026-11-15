@@ -5,23 +5,6 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
-/// The tables the tile pass draws a waiting carrier with (<c>0x44d77e</c>): 16 phase words (<c>0x44d87d</c>), 128 figure words
-/// (<c>0x44d89d</c>), and the x and y offsets, as signed bytes, for each value of a node's six road direction bits
-/// (<c>0x674923</c>).
-/// </summary>
-public sealed record IdleCarrierTables
-{
-    /// <summary>The 16 phase words (<c>0x44d87d</c>).</summary>
-    public required short[] Phases { get; init; }
-
-    /// <summary>The 128 figure words (<c>0x44d89d</c>).</summary>
-    public required short[] Figures { get; init; }
-
-    /// <summary>The x and y offsets, as signed bytes, for each value of a node's six road direction bits (<c>0x674923</c>).</summary>
-    public required sbyte[] Offsets { get; init; }
-}
-
-/// <summary>
 /// What the figure tables pick for one term of a settler: the sprite entry, the palette index its fill takes (-1 for a
 /// sprite drawn as it is), the entry of the figure whose header shifts it (-1 for none; only the second figure is shifted),
 /// and the offset the node's road directions move a waiting carrier by (0 for any other).
@@ -76,44 +59,22 @@ public sealed class SettlerFigureTables
     // The node's lake mark picks the fixed figure word, and its road directions the offsets (0x44d77e).
     const int FixedFigureWord = 0x203;
 
-    readonly short[] _bases;
-    readonly short[] _offsets;
+    readonly FigureTables _figures;
     readonly byte[] _data;
     readonly Dictionary<Job, HistoryEditionLook> _looks;
-    readonly IdleCarrierTables? _idle;
 
     // The looks the History Edition source holds read the job data of the tables (the registry is generated from the look modules).
-    // The figure bases, offsets, and idle tables are given apart from the tables for a test that draws with part of them.
-    internal SettlerFigureTables(
-        RuleTables tables,
-        short[] bases,
-        short[] offsets,
-        byte[] sequences,
-        IdleCarrierTables? idle
-    )
+    // The figure tables are the tables' own, so a test that draws with part of them gives the rule tables those parts.
+    internal SettlerFigureTables(RuleTables tables, byte[] sequences)
     {
         // The handler table at 0x43f744 holds 8 bytes for each job; the engine holds the looks of the jobs it draws.
         _looks = HistoryEditionLookRegistry.Build(tables).ToDictionary(look => look.Job);
-        _idle = idle;
-        _bases = bases;
-        _offsets = offsets;
+        _figures = tables.Figures;
         _data = sequences;
     }
 
     /// <summary>The figure tables of the exe's <paramref name="tables"/> over the walk <paramref name="sequences"/>.</summary>
-    public static SettlerFigureTables From(RuleTables tables, byte[] sequences) =>
-        new(
-            tables,
-            tables.FigureBases,
-            tables.FigureOffsets,
-            sequences,
-            new IdleCarrierTables
-            {
-                Phases = tables.IdlePhases,
-                Figures = tables.IdleFigures,
-                Offsets = tables.IdleOffsets,
-            }
-        );
+    public static SettlerFigureTables From(RuleTables tables, byte[] sequences) => new(tables, sequences);
 
     /// <summary>Whether the tables hold the figure handler of <paramref name="job"/>: a job without one has no drawn figure.</summary>
     internal bool HasHandler(Job job) => _looks.ContainsKey(job);
@@ -132,7 +93,7 @@ public sealed class SettlerFigureTables
         var dy = 0;
         if (draw.Activity is WaitsOffRoad)
         {
-            if (draw.Job is not Carrier || _idle is null || draw.Node is not { } node)
+            if (draw.Job is not Carrier || draw.Node is not { } node)
             {
                 return null;
             }
@@ -147,12 +108,13 @@ public sealed class SettlerFigureTables
             {
                 // **Stand-in:** the original picks the phase by bits 2 to 5 of the address of the node's record, so by the
                 // node's column only where the map buffer starts on a multiple of 64; the engine takes the column.
-                var phase = _idle.Phases[node.Column & (_idle.Phases.Length - 1)];
-                word = (ushort)_idle.Figures[((ushort)(phase + draw.Step) >> 3) & (_idle.Figures.Length - 1)];
+                var phase = _figures.IdlePhases[node.Column & (_figures.IdlePhases.Length - 1)];
+                word = (ushort)
+                    _figures.IdleFigures[((ushort)(phase + draw.Step) >> 3) & (_figures.IdleFigures.Length - 1)];
                 // The offsets table has an entry for each set of road directions (its six bits as a number).
                 var direction = node.Roads.Bits;
-                dx = _idle.Offsets[2 * direction];
-                dy = _idle.Offsets[2 * direction + 1];
+                dx = _figures.IdleOffsets[2 * direction];
+                dy = _figures.IdleOffsets[2 * direction + 1];
             }
         }
         else
@@ -181,12 +143,14 @@ public sealed class SettlerFigureTables
     {
         var row = (word >> 8) & 0xff;
         var figure = word & 0xff;
-        if (2 * row + 1 >= _bases.Length || 2 * figure + 1 >= _offsets.Length)
+        var bases = _figures.Bases;
+        var offsets = _figures.Offsets;
+        if (2 * row + 1 >= bases.Length || 2 * figure + 1 >= offsets.Length)
         {
             return null;
         }
 
-        var first = _bases[2 * row] + _offsets[2 * figure];
+        var first = bases[2 * row] + offsets[2 * figure];
 
         switch (part)
         {
@@ -209,10 +173,10 @@ public sealed class SettlerFigureTables
                     Dy = dy,
                 };
             default:
-                return _bases[2 * row + 1] >= 0
+                return bases[2 * row + 1] >= 0
                     ? new SettlerPick
                     {
-                        Entry = SecondBase + _bases[2 * row + 1] + _offsets[2 * figure + 1],
+                        Entry = SecondBase + bases[2 * row + 1] + offsets[2 * figure + 1],
                         Colour = -1,
                         ShiftedBy = FigureBase + first,
                         Dx = dx,

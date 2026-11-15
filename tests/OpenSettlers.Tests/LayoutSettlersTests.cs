@@ -65,7 +65,8 @@ public sealed class LayoutSettlersTests
         ushort[]? materialOrder = null,
         ushort[]? blowSteps = null,
         ushort stepTime = 100,
-        WorkerRequest? diggerRequest = null
+        WorkerRequest? diggerRequest = null,
+        ushort[]? scanWindows = null
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -92,7 +93,7 @@ public sealed class LayoutSettlersTests
             ],
             [.. Enumerable.Repeat(stepTime, RuleTables.StepTimeCount)],
             [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
-            [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
+            scanWindows ?? [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
             transportPriorities: transportPriorities,
             buildingSizes: buildingSizes,

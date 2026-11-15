@@ -125,8 +125,10 @@ public sealed class SimulationBoundaryTests
 
     static Game WindowGame(int window)
     {
-        var tables = LayoutSettlersTests.MadeTables();
-        tables.ScanWindows[MapSize.Offered[0].Value] = (ushort)window;
+        var windows = new ushort[RuleTables.ScanWindowCount];
+        Array.Fill(windows, (ushort)16);
+        windows[MapSize.Offered[0].Value] = (ushort)window;
+        var tables = LayoutSettlersTests.MadeTables(scanWindows: windows);
 
         return GameFactory.Create(
             tables,
