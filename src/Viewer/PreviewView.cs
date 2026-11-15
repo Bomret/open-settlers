@@ -9,7 +9,7 @@ namespace OpenSettlers.Viewer;
 /// <summary>
 /// The Godot view of one <see cref="Preview"/> type, whichever asset kinds produce it. A view is a class with a
 /// parameterless constructor in its own file; <see cref="Discover"/> finds it, so adding a view edits no shared
-/// list. It lives here because <see cref="AssetKind"/> is Godot-free. A preview type without a view shows its
+/// list. It lives here because <see cref="Preview"/> is Godot-free. A preview type without a view shows its
 /// summary as text.
 /// </summary>
 public abstract class PreviewView

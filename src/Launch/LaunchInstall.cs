@@ -55,4 +55,13 @@ public static class LaunchInstall
         TryOpen(args, out var install, out var problem)
             ? new HistoryEditionRuleTables(install)
             : new MissingInstallTables(problem);
+
+    /// <summary>
+    /// The assets port of the install the launch arguments name. Listing its kinds fails with the problem
+    /// <see cref="TryOpen"/> returns where the launch names no usable install.
+    /// </summary>
+    public static IAssetsSource Assets(LaunchArgs args) =>
+        TryOpen(args, out var install, out var problem)
+            ? new HistoryEditionAssets(install)
+            : new MissingInstallAssets(problem);
 }

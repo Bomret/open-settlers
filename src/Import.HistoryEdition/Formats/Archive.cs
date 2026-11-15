@@ -6,7 +6,7 @@ using System.Linq;
 namespace OpenSettlers.Formats;
 
 /// <summary>How the program sees one archive slot (<c>docs/rules/graphics-archives.md</c>).</summary>
-public enum EntryState
+enum EntryState
 {
     /// <summary>The slot holds no entry and the program leaves it empty.</summary>
     Absent,
@@ -23,7 +23,7 @@ public enum EntryState
 /// so entries start at 1. <see cref="Offset"/> and <see cref="Size"/> are the entry's location in the file; for an
 /// <see cref="EntryState.Alias"/> they are those of <see cref="AliasOf"/>; for an absent slot both are 0.
 /// </summary>
-public sealed record ArchiveEntry
+sealed record ArchiveEntry
 {
     /// <summary>The slot number, as the program numbers it.</summary>
     public required int Number { get; init; }
@@ -42,7 +42,7 @@ public sealed record ArchiveEntry
 }
 
 /// <summary>A graphics archive: its entries and the bytes they point into.</summary>
-public sealed class Archive
+sealed class Archive
 {
     readonly byte[] _bytes;
     readonly ArchiveEntry[] _rows;
@@ -100,7 +100,7 @@ public sealed class Archive
 /// The graphics archive reader (<c>docs/rules/graphics-archives.md</c>). An archive is a header (file size, row
 /// count, flag) followed by 8-byte table rows (size, offset); the header takes the place of row 0.
 /// </summary>
-public static class ArchiveFile
+static class ArchiveFile
 {
     const int RowSize = 8;
 

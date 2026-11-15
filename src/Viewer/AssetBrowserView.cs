@@ -73,10 +73,9 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        var kinds = AssetKind.Discover();
         if (args.Mode == LaunchMode.Check)
         {
-            RunCheck(args, kinds);
+            RunCheck(args, LaunchInstall.Assets(args));
 
             return;
         }
@@ -90,8 +89,7 @@ public partial class AssetBrowserView : Control
 
         var views = PreviewView.Discover();
         _state = AssetBrowserState.Open(
-            args,
-            kinds,
+            LaunchInstall.Assets(args),
             selectFirst: false,
             previewClash: PreviewClash.Of(views.Select(v => (v.GetType().Name, v.PreviewType)))
         );
@@ -183,12 +181,12 @@ public partial class AssetBrowserView : Control
     }
 
     // A Godot callback exception does not set the exit code, so the check owns it.
-    void RunCheck(LaunchArgs args, System.Collections.Generic.IReadOnlyList<AssetKind> kinds)
+    void RunCheck(LaunchArgs args, IAssetsSource assets)
     {
         int code;
         try
         {
-            var report = AssetCheck.Run(args, kinds);
+            var report = AssetCheck.Run(args, assets);
             foreach (var line in report.Lines)
             {
                 GD.Print(line);

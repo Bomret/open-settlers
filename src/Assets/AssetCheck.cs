@@ -25,13 +25,14 @@ public sealed record CheckReport
 public static class AssetCheck
 {
     /// <summary>
-    /// Runs the check of <c>kinds</c> over the install the launch arguments name. Exit code 4 (a bad launch argument) wins over all;
-    /// exit code 2 (no install given, folder missing, or no program in it) wins over 1; exit code 3 (two kinds of one name) stops
-    /// the check before it reads. A kind or an asset that throws <c>IOException</c>, <c>InvalidDataException</c> or
-    /// <c>UnauthorizedAccessException</c> fails only itself; the check goes on with the rest. Any other exception
-    /// propagates to the caller. A file that fails as a whole is reported once, however many kinds list it.
+    /// Runs the check over the kinds of the assets port <c>assets</c>. Exit code 4 (a bad launch argument) wins over all;
+    /// exit code 2 (the port has no usable data, with the reason its <c>IOException</c> gives) wins over 1; exit code 3
+    /// (two kinds of one name) stops the check before it reads. A kind or an asset that throws <c>IOException</c>,
+    /// <c>InvalidDataException</c> or <c>UnauthorizedAccessException</c> fails only itself; the check goes on with the
+    /// rest. Any other exception propagates to the caller. A file that fails as a whole is reported once, however many
+    /// kinds list it.
     /// </summary>
-    public static CheckReport Run(LaunchArgs args, IEnumerable<AssetKind> kinds)
+    public static CheckReport Run(LaunchArgs args, IAssetsSource assets)
     {
         if (args.Problems.Count > 0)
         {
@@ -42,13 +43,17 @@ public static class AssetCheck
             };
         }
 
-        if (!LaunchInstall.TryOpen(args, out var install, out var problem))
+        IReadOnlyList<IAssetKind> kinds;
+        try
         {
-            return new CheckReport { ExitCode = 2, Lines = [$"ERROR {problem}"] };
+            kinds = assets.Kinds();
+        }
+        catch (IOException e)
+        {
+            return new CheckReport { ExitCode = 2, Lines = [$"ERROR {e.Message}"] };
         }
 
-        kinds = kinds.ToList();
-        if (AssetKind.NameClash(kinds) is { } clash)
+        if (AssetKinds.NameClash(kinds) is { } clash)
         {
             return new CheckReport { ExitCode = 3, Lines = [$"ERROR {clash}"] };
         }
@@ -59,10 +64,10 @@ public static class AssetCheck
         var failedFiles = new HashSet<string>();
         foreach (var kind in kinds)
         {
-            List<Asset> assets;
+            List<Asset> listed;
             try
             {
-                assets = [.. kind.Enumerate(install)];
+                listed = [.. kind.Enumerate()];
             }
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
@@ -71,7 +76,7 @@ public static class AssetCheck
                 continue;
             }
 
-            foreach (var asset in assets)
+            foreach (var asset in listed)
             {
                 try
                 {

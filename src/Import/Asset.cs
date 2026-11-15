@@ -1,10 +1,11 @@
 using System;
 
-namespace OpenSettlers.Assets;
+namespace OpenSettlers.Import;
 
 /// <summary>
-/// What an asset's preview shows, as plain data. A <c>PreviewView</c> (<c>src/Viewer/PreviewView.cs</c>) draws a
-/// <see cref="Preview"/> type; a type without a view shows its <see cref="Summary"/>.
+/// What an asset's preview shows, as plain data that names no file format. A <c>PreviewView</c>
+/// (<c>src/Viewer/PreviewView.cs</c>) draws a <see cref="Preview"/> type; a type without a view shows its
+/// <see cref="Summary"/>.
 /// </summary>
 public abstract record Preview
 {
@@ -13,12 +14,12 @@ public abstract record Preview
 }
 
 /// <summary>
-/// One asset of an install, as an <see cref="AssetKind"/> lists it. The asset check and the asset browser read
+/// One asset of an install, as an <see cref="IAssetKind"/> lists it. The asset check and the asset browser read
 /// it through <see cref="Load"/>.
 /// </summary>
 public sealed record Asset
 {
-    /// <summary>The name of the asset's <see cref="AssetKind"/>.</summary>
+    /// <summary>The name of the asset's <see cref="IAssetKind"/>.</summary>
     public required string Kind { get; init; }
 
     /// <summary>The install file that holds the asset, relative to the install root, with <c>/</c>.</summary>

@@ -1,7 +1,7 @@
 using System;
 using OpenSettlers.Formats;
 
-namespace OpenSettlers.Assets;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The entries that no routine of the program is shown to reach: every routine that finds an entry in the archive
@@ -9,7 +9,7 @@ namespace OpenSettlers.Assets;
 /// these numbers (<c>docs/rules/graphics-archives.md</c>, "Entries no routine reads"). The status is inferred: the
 /// search found no reader, and a list the search did not follow could still hold one.
 /// </summary>
-public sealed class UnreadEntryKind : ArchiveEntryKind
+sealed class UnreadEntryKind : ArchiveEntryKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "unread";
@@ -36,7 +36,9 @@ public sealed class UnreadEntryKind : ArchiveEntryKind
     protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
         new LocatedEntryPreview
         {
-            Entry = entry,
+            Number = entry.Number,
+            Offset = entry.Offset,
+            Size = entry.Size,
             Summary = $"Entry {entry.Number}: offset {entry.Offset}, size {entry.Size}; not read by the program.",
         };
 }

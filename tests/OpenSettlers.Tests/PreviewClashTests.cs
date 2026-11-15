@@ -40,7 +40,9 @@ public sealed class PreviewClashTests
     [TestMethod]
     public void AMissingInstallWinsOverTheClash()
     {
-        var state = AssetBrowserState.Open(LaunchArgs.Parse([], null), [], selectFirst: false, previewClash: "clash");
+        var args = LaunchArgs.Parse([], null);
+
+        var state = AssetBrowserState.Open(LaunchInstall.Assets(args), selectFirst: false, previewClash: "clash");
 
         StringAssert.Contains(state.Message, "no install given");
     }
@@ -48,13 +50,7 @@ public sealed class PreviewClashTests
     [TestMethod]
     public void TheClashOpensTheBrowserOnAMessageWithNoCategories()
     {
-        using var fake = new FakeInstall();
-
-        var state = AssetBrowserState.Open(
-            LaunchArgs.Parse(["--game", fake.Root], null),
-            [new SoundKind()],
-            previewClash: "clash"
-        );
+        var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("sound")), previewClash: "clash");
 
         Assert.AreEqual("clash", state.Message);
         Assert.IsEmpty(state.Categories);

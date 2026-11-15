@@ -1,7 +1,4 @@
-using System.Linq;
 using Godot;
-using OpenSettlers.Assets;
-using OpenSettlers.Formats;
 
 namespace OpenSettlers.Viewer;
 
@@ -9,16 +6,12 @@ namespace OpenSettlers.Viewer;
 public sealed class PaletteView : PreviewView
 {
     const int Columns = 16;
+    const int ColorCount = 256;
 
     /// <inheritdoc/>
     public override System.Type PreviewType => typeof(PalettePreview);
 
     /// <inheritdoc/>
-    public override Control Create(Preview preview)
-    {
-        var palette = ((PalettePreview)preview).Palette;
-        var rgba = IndexedImage.ToRgba(Enumerable.Range(0, Palette.ColorCount).Select(i => (byte)i).ToArray(), palette);
-
-        return Picture(preview.Summary, Columns, Palette.ColorCount / Columns, rgba);
-    }
+    public override Control Create(Preview preview) =>
+        Picture(preview.Summary, Columns, ColorCount / Columns, ((PalettePreview)preview).Rgba);
 }

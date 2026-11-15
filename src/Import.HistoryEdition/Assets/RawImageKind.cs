@@ -1,20 +1,7 @@
 using System;
 using OpenSettlers.Formats;
 
-namespace OpenSettlers.Assets;
-
-/// <summary>The preview of a raw image: its size and its pixels as RGBA, drawn in the game's palette.</summary>
-public sealed record RawImagePreview : Preview
-{
-    /// <summary>The image width in pixels.</summary>
-    public required int Width { get; init; }
-
-    /// <summary>The image height in pixels.</summary>
-    public required int Height { get; init; }
-
-    /// <summary>Four bytes per pixel (red, green, blue, alpha), row by row from the top, all opaque.</summary>
-    public required byte[] Rgba { get; init; }
-}
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The entries the program draws as raw images: the routine at <c>0x405730</c>, reached from
@@ -22,7 +9,7 @@ public sealed record RawImagePreview : Preview
 /// (<c>docs/rules/graphics-images.md</c>). Each range names the code that picks its entries; the bounds of a range
 /// that an index picks are the entries the archives hold.
 /// </summary>
-public sealed class RawImageKind : ArchiveEntryKind
+sealed class RawImageKind : ArchiveEntryKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "raw image";

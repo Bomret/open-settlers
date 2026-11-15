@@ -5,7 +5,7 @@ using System.Text;
 namespace OpenSettlers.Formats;
 
 /// <summary>One key of a text file and its value.</summary>
-public sealed record TextEntry
+sealed record TextEntry
 {
     /// <summary>The key.</summary>
     public required string Key { get; init; }
@@ -15,7 +15,7 @@ public sealed record TextEntry
 }
 
 /// <summary>A line of a text file that the program's parser does not accept, with its 1-based number and the reason.</summary>
-public sealed record RejectedLine
+sealed record RejectedLine
 {
     /// <summary>The 1-based number of the line.</summary>
     public required int Line { get; init; }
@@ -28,7 +28,7 @@ public sealed record RejectedLine
 /// The keys and values of one language: what the program's text parser reads from a file under <c>loca/</c>
 /// (<c>docs/rules/text-files.md</c>), and the lines it does not accept.
 /// </summary>
-public sealed class TextFile
+sealed class TextFile
 {
     /// <summary>The longest line the program reads, in bytes before its terminator.</summary>
     public const int LongestLine = 254;

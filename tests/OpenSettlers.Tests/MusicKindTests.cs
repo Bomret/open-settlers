@@ -61,8 +61,8 @@ public sealed class MusicKindTests
 
         var preview = (MusicPreview)new MusicKind().Enumerate(Open(fake)).Single().Load();
 
-        Assert.AreEqual(1, preview.Music.Tracks.Count);
-        Assert.AreEqual(0.5, preview.Music.LengthSeconds, 1e-9);
+        CollectionAssert.AreEqual(new[] { 2 }, preview.TrackEventCounts.ToList());
+        Assert.AreEqual(0.5, preview.LengthSeconds, 1e-9);
         StringAssert.Contains(preview.Summary, "1 track");
         StringAssert.Contains(preview.Summary, "0.5 s");
     }

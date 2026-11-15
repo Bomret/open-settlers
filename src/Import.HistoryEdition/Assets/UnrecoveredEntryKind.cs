@@ -4,13 +4,13 @@ using System.IO;
 using System.Linq;
 using OpenSettlers.Formats;
 
-namespace OpenSettlers.Assets;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The graphics-archive entries that no other <see cref="ArchiveEntryKind"/> claims: each is a gap in the
 /// entry-kind map, so its asset fails with the entry and the reason, and the check fails.
 /// </summary>
-public sealed class UnrecoveredEntryKind : ArchiveEntryKind
+sealed class UnrecoveredEntryKind : ArchiveEntryKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "unrecovered";

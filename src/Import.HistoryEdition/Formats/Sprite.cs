@@ -7,7 +7,7 @@ namespace OpenSettlers.Formats;
 /// A transparent sprite (<c>docs/rules/graphics-images.md</c>): a <see cref="GraphicHeader"/> and a
 /// width x height grid of palette indices of which only some pixels are drawn.
 /// </summary>
-public sealed record Sprite
+sealed record Sprite
 {
     /// <summary>The 10-byte header.</summary>
     public required GraphicHeader Header { get; init; }
@@ -49,7 +49,7 @@ public sealed record Sprite
 }
 
 /// <summary>The decoder of the transparent encoding that the program draws with <c>0x405590</c> and, in one color, with <c>0x405880</c>.</summary>
-public static class SpriteFile
+static class SpriteFile
 {
     /// <summary>
     /// Decodes an entry: after the header, each of the height rows is a sequence of runs, each run a skip byte, a

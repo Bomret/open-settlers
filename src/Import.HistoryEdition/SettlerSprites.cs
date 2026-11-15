@@ -189,7 +189,7 @@ public sealed class SettlerSprites
     /// A colour overlay drawn in one colour: every covered pixel takes the colour of palette index
     /// <paramref name="colour"/>, and the transparent pixels stay transparent (0x405880 skips them).
     /// </summary>
-    public static ObjectImage Fill(ObjectImage overlay, Palette palette, int colour)
+    internal static ObjectImage Fill(ObjectImage overlay, Palette palette, int colour)
     {
         var rgba = (byte[])overlay.Rgba.Clone();
         for (var i = 0; i < rgba.Length; i += 4)

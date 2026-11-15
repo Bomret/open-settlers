@@ -88,9 +88,9 @@ public sealed class InstallTests
 
         var before = Snapshot(fake.Root);
         var args = LaunchArgs.Parse(["--game", fake.Root], null);
-        var kinds = AssetKind.Discover();
-        AssetCheck.Run(args, kinds);
-        var state = AssetBrowserState.Open(args, kinds);
+        var assets = LaunchInstall.Assets(args);
+        AssetCheck.Run(args, assets);
+        var state = AssetBrowserState.Open(assets);
         foreach (var category in state.Categories)
         {
             state.SelectKind(category);

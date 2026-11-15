@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using OpenSettlers.Import.HistoryEdition;
 
-namespace OpenSettlers.Assets;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// One kind of asset. A kind is a class with a parameterless constructor in its own file; <see cref="Discover"/>
 /// finds it, so adding a kind edits no shared list. A kind covers the install files it lists: the asset check
 /// reads exactly those, and the browser shows them under the kind's name. A kind's assets load to a
 /// <see cref="Preview"/>; a <c>PreviewView</c> in <c>src/Viewer</c> draws a <see cref="Preview"/> type, and a type
-/// without a view shows its <see cref="Preview.Summary"/>.
+/// without a view shows its <see cref="Preview.Summary"/>. <see cref="HistoryEditionAssets"/> hands the kinds out
+/// through the assets port, bound to an install.
 /// </summary>
-public abstract class AssetKind
+abstract class AssetKind
 {
     /// <summary>The kind's category name in the browser and in the check's report; unique among kinds.</summary>
     public abstract string Name { get; }
@@ -37,13 +37,4 @@ public abstract class AssetKind
             .Select(t => (AssetKind)Activator.CreateInstance(t)!)
             .OrderBy(k => k.Name, StringComparer.Ordinal)
             .ToList();
-
-    /// <summary>
-    /// The problem with <c>kinds</c> that stops the check and the browser: two kinds of one <see cref="Name"/>.
-    /// Null when every name is unique.
-    /// </summary>
-    public static string? NameClash(IEnumerable<AssetKind> kinds) =>
-        kinds.GroupBy(k => k.Name).FirstOrDefault(g => g.Count() > 1) is { } twice
-            ? $"two asset kinds are named \"{twice.Key}\"; a kind's name must be unique"
-            : null;
 }

@@ -11,7 +11,7 @@ public static class ObjectImages
     public const int ShadowColor = 0x80;
 
     /// <summary>Converts a decoded sprite through <paramref name="palette"/>.</summary>
-    public static ObjectImage From(Sprite sprite, Palette palette)
+    internal static ObjectImage From(Sprite sprite, Palette palette)
     {
         var rgba = new byte[sprite.Indices.Length * 4];
         for (var i = 0; i < sprite.Indices.Length; i++)
@@ -36,7 +36,7 @@ public static class ObjectImages
     /// A shadow mask as an image: every covered pixel in the color of palette index <see cref="ShadowColor"/>, as
     /// <c>Gfx_BlitShadow</c> (<c>0x405b80</c>) stores it with no blending.
     /// </summary>
-    public static ObjectImage Shadow(Mask mask, Palette palette)
+    internal static ObjectImage Shadow(Mask mask, Palette palette)
     {
         var rgba = new byte[mask.Covered.Length * 4];
         for (var i = 0; i < mask.Covered.Length; i++)

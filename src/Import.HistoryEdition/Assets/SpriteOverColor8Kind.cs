@@ -1,7 +1,7 @@
 using System;
 using OpenSettlers.Formats;
 
-namespace OpenSettlers.Assets;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The sprites the program draws only over destination pixels of palette index 8: entries 630 to 645, drawn by
@@ -10,7 +10,7 @@ namespace OpenSettlers.Assets;
 /// (<c>docs/rules/graphics-images.md</c>); the preview draws every pixel of the stream, because the pixels
 /// under it are not known. The entries are claimed by this kind and by no kind of <see cref="SpriteKind"/>'s ranges.
 /// </summary>
-public sealed class SpriteOverColor8Kind : ArchiveEntryKind
+sealed class SpriteOverColor8Kind : ArchiveEntryKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "sprite over color 8";

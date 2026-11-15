@@ -7,7 +7,7 @@ namespace OpenSettlers.Formats;
 /// A mask: a graphic that holds only runs of skipped and covered pixels and no pixel colors
 /// (<c>docs/rules/graphics-images.md</c>). The program fills the covered pixels with one color, or with a texture.
 /// </summary>
-public sealed record Mask
+sealed record Mask
 {
     /// <summary>The 10-byte header.</summary>
     public required GraphicHeader Header { get; init; }
@@ -43,7 +43,7 @@ public sealed record Mask
 }
 
 /// <summary>The mask reader (<c>docs/rules/graphics-images.md</c>).</summary>
-public static class MaskFile
+static class MaskFile
 {
     /// <summary>
     /// Reads an entry as a mask. Throws <see cref="InvalidDataException"/> with its reason, naming the row where
