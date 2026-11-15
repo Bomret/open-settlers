@@ -41,8 +41,9 @@ its tool through `PythonTool`. `PythonTool` removes `SIEDLER_DIR` and any host `
 `RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
 `content/open-settlers/` holds a file the generator does not write the same. `HeadlessEntryTests` runs
 `tools/GhidraDump/headless.py` in a temporary folder on a path that holds only stand-in `analyzeHeadless` and `gradle`
-shell scripts, so a Ghidra or Gradle of the host never runs. It reports inconclusive without python3, and its stand-in
-runs report inconclusive on Windows. `PlayRunWrapperTests` reports its wrapper signal cases for a signal inconclusive
+shell scripts, so a Ghidra or Gradle of the host never runs. Its worktree cases build a git repository with a linked
+worktree and add a stand-in `git` that runs the host's git. It reports inconclusive without python3, and its stand-in
+runs report inconclusive on Windows. The worktree cases also report inconclusive without git. `PlayRunWrapperTests` reports its wrapper signal cases for a signal inconclusive
 when the test host started with that signal ignored, such as under `nohup`, because a non-interactive shell cannot trap
 a signal that was ignored on entry.
 
