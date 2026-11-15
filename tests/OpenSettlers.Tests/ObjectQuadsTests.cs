@@ -77,15 +77,19 @@ public sealed class ObjectQuadsTests
             Step = 0,
         };
 
+    // The runs of objects alone, in bands of 16 rows.
+    static List<SpriteRun> ObjectRuns(ObjectTerm[] terms, IGraphicsSource source, ImageLayers layers, int rows) =>
+        ObjectQuads.Runs(terms, [], source, layers, new ImageLayers(), rows, 16);
+
     [TestMethod]
     public void AQuadHangsFromTheDrawPositionByTheImagesOffsets()
     {
-        var bands = ObjectQuads.Bands([FlagAt(0, 100, 50)], new FakeSource(), new ImageLayers(), 1, 16);
+        var quad = ObjectRuns([FlagAt(0, 100, 50)], new FakeSource(), new ImageLayers(), 1)[0].Quads[1];
 
-        Assert.AreEqual(99, bands[0][1].X);
-        Assert.AreEqual(48, bands[0][1].Y);
-        Assert.AreEqual(3, bands[0][1].Width);
-        Assert.AreEqual(1, bands[0][1].Height);
+        Assert.AreEqual(99, quad.X);
+        Assert.AreEqual(48, quad.Y);
+        Assert.AreEqual(3, quad.Width);
+        Assert.AreEqual(1, quad.Height);
     }
 
     [TestMethod]
@@ -93,7 +97,7 @@ public sealed class ObjectQuadsTests
     {
         var layers = new ImageLayers();
 
-        var bands = ObjectQuads.Bands([FlagAt(0, 100, 50), FlagAt(0, 200, 50)], new FakeSource(), layers, 1, 16);
+        var runs = ObjectRuns([FlagAt(0, 100, 50), FlagAt(0, 200, 50)], new FakeSource(), layers, 1);
 
         CollectionAssert.AreEqual(
             new[]
@@ -131,7 +135,7 @@ public sealed class ObjectQuadsTests
                     Layer = 1,
                 },
             },
-            bands[0]
+            runs.Single().Quads
         );
         Assert.HasCount(2, layers.Images);
     }
@@ -152,9 +156,9 @@ public sealed class ObjectQuadsTests
             },
         };
 
-        var bands = ObjectQuads.Bands(terms, new FakeSource(), layers, 1, 16);
+        var runs = ObjectRuns(terms, new FakeSource(), layers, 1);
 
-        Assert.IsEmpty(bands);
+        Assert.IsEmpty(runs);
         Assert.IsEmpty(layers.Images);
     }
 
@@ -175,7 +179,7 @@ public sealed class ObjectQuadsTests
         };
         var layers = new ImageLayers();
 
-        var bands = ObjectQuads.Bands(
+        var runs = ObjectRuns(
             [
                 new GoodAtFlag
                 {
@@ -187,11 +191,10 @@ public sealed class ObjectQuadsTests
             ],
             new EmptySource(empty),
             layers,
-            1,
-            16
+            1
         );
 
-        Assert.IsEmpty(bands);
+        Assert.IsEmpty(runs);
         Assert.IsEmpty(layers.Images);
     }
 
@@ -217,7 +220,7 @@ public sealed class ObjectQuadsTests
     }
 
     [TestMethod]
-    public void TermsOfTheSameRowsFormOneBandAndABandWithoutTermsIsLeftOut()
+    public void TermsOfOneBandFormOneRunAndABandWithoutTermsAddsNoRun()
     {
         var terms = new ObjectTerm[]
         {
@@ -229,14 +232,15 @@ public sealed class ObjectQuadsTests
                 Y = 50,
                 Type = BuildingType.Woodcutter,
             },
-            FlagAt(20, 100, 450),
+            FlagAt(35, 100, 450),
         };
 
-        var bands = ObjectQuads.Bands(terms, new FakeSource(), new ImageLayers(), 21, 16);
+        // Rows 0 to 15, 16 to 31, and 32 to 39: the middle band holds no term.
+        var runs = ObjectRuns(terms, new FakeSource(), new ImageLayers(), 40);
 
-        Assert.HasCount(2, bands);
-        Assert.HasCount(3, bands[0]);
-        Assert.AreEqual(448, bands[1][1].Y);
+        Assert.HasCount(2, runs);
+        Assert.HasCount(3, runs[0].Quads);
+        Assert.AreEqual(448, runs[1].Quads[1].Y);
     }
 
     [TestMethod]
@@ -261,9 +265,9 @@ public sealed class ObjectQuadsTests
             },
         };
 
-        var bands = ObjectQuads.Bands(terms, new FakeSource(), new ImageLayers(), 1, 16);
+        var runs = ObjectRuns(terms, new FakeSource(), new ImageLayers(), 1);
 
-        CollectionAssert.AreEqual(new[] { 13, 101, 99, 23 }, bands[0].Select(q => q.X).ToList());
+        CollectionAssert.AreEqual(new[] { 13, 101, 99, 23 }, runs.Single().Quads.Select(q => q.X).ToList());
     }
 
     [TestMethod]
@@ -509,5 +513,27 @@ public sealed class ObjectQuadsTests
         var runs = Runs([HutAt(0, 10), HutAt(0, 20)], [SettlerAt(SettlerPart.SecondFigure, 0, 300, 0)], 1);
 
         Assert.HasCount(1, runs);
+    }
+
+    [TestMethod]
+    public void TheSettlersQuadsTakeTheirLayersFromTheSettlersImagesAndTheObjectsFromTheObjects()
+    {
+        var objectLayers = new ImageLayers();
+        var settlerLayers = new ImageLayers();
+
+        var runs = ObjectQuads.Runs(
+            [FlagAt(0, 100, 50)],
+            [SettlerAt(SettlerPart.Overlay, 0, 300, 50)],
+            new FakeSource(),
+            objectLayers,
+            settlerLayers,
+            1,
+            16
+        );
+
+        CollectionAssert.AreEqual(new[] { 0, 1 }, runs[0].Quads.Select(q => q.Layer).ToList());
+        Assert.AreEqual(0, runs[1].Quads.Single().Layer);
+        CollectionAssert.AreEqual(new[] { FlagShadow, Flag }, objectLayers.Images.ToList());
+        CollectionAssert.AreEqual(new[] { GoodImage }, settlerLayers.Images.ToList());
     }
 }

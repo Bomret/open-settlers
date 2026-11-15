@@ -520,21 +520,14 @@ public partial class MapViewControl(
         if (_game is not null)
         {
             // The frame rate does not set the tick rate: whole ticks are due, the fraction carries.
-            var ticked = false;
+            // A tick moves the clock, so UpdateObjects below builds the settlers' new positions into the sprites.
             for (var due = _pacer.Due(delta); due > 0; due--)
             {
                 _game.Tick();
-                ticked = true;
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
             _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);
-            if (ticked)
-            {
-                // The settlers moved: they paint between the objects, so the objects' meshes are built again with them.
-                UpdateSprites();
-            }
-
             // Evaluated each frame, so the watch sees every change.
             var objectsChanged = _objectWatch.Changed(_game);
             if (
@@ -920,16 +913,13 @@ public partial class MapViewControl(
             return;
         }
 
-        // The step may have drawn images the array does not hold yet: the material takes them in then.
-        if (waterMesh is not null && WaterMaterial() is null)
-        {
-            return;
-        }
-
+        // The step may have drawn images the array does not hold yet: the material takes them in then. Where the ripples
+        // pass the layer limit they draw nothing, and the objects and the settlers still draw.
+        var waterMaterial = waterMesh is null ? null : WaterMaterial();
         foreach (var node in _waterNodes)
         {
-            node.Mesh = waterMesh;
-            node.Material = _waterMaterial;
+            node.Mesh = waterMaterial is null ? null : waterMesh;
+            node.Material = waterMaterial;
         }
 
         UpdateSprites();
@@ -937,7 +927,8 @@ public partial class MapViewControl(
 
     // The objects and the walking settlers in the nodes Redraw made, one mesh per run of ObjectQuads.Runs, the same in
     // every wrap copy: a settler paints after the objects of its row and before those of the rows below. The animation
-    // steps come from the frame counter and the game's clock, not from the frame time. A node past the runs draws nothing.
+    // steps come from the frame counter and the game's clock, not from the frame time. A node past the runs draws nothing,
+    // and so does a run whose material failed.
     void UpdateSprites()
     {
         if (_state.Map is null || _source is null || _spriteNodes.Count == 0)
@@ -966,25 +957,24 @@ public partial class MapViewControl(
             BandRows
         );
 
-        // The runs may have drawn images the arrays do not hold yet: the materials take them in then.
-        if (ObjectMaterial() is not { } objectMaterial)
-        {
-            return;
-        }
-
-        ShaderMaterial? settlerMaterial = null;
-        if (runs.Any(run => run.Kind == RunKind.Settlers) && (settlerMaterial = SettlerMaterial()) is null)
-        {
-            return;
-        }
-
+        // The runs may have drawn images the arrays do not hold yet: the materials take them in then. A kind whose images
+        // pass the layer limit has no material and draws nothing; the other kind still draws. A kind's material is asked
+        // for only where it has a run.
+        var objectMaterial = runs.Any(run => run.Kind == RunKind.Objects) ? ObjectMaterial() : null;
+        var settlerMaterial = runs.Any(run => run.Kind == RunKind.Settlers) ? SettlerMaterial() : null;
         var meshes = runs.Select(run =>
-                (
-                    Mesh: BuildQuadMesh(run.Quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))),
-                    Material: run.Kind == RunKind.Objects ? objectMaterial : settlerMaterial
-                )
-            )
+            {
+                var material = run.Kind == RunKind.Objects ? objectMaterial : settlerMaterial;
+                var mesh = material is null
+                    ? null
+                    : BuildQuadMesh(run.Quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))));
+
+                return (Mesh: mesh, Material: material);
+            })
             .ToList();
+
+        // Every node is set again, since a run's place in the list moves with every build: a node never keeps a mesh
+        // without its material.
         foreach (var sprites in _spriteNodes)
         {
             while (sprites.GetChildCount() < meshes.Count)

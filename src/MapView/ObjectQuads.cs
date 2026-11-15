@@ -45,53 +45,16 @@ public sealed record SpriteRun
 public static class ObjectQuads
 {
     /// <summary>
-    /// Asks <c>source</c> for each of <c>terms</c>, in the row-major order <see cref="ObjectDraws.Of"/> returns them,
-    /// and groups the rectangles in bands of <c>bandRows</c> rows, the grouping <see cref="TerrainQuads.Bands"/> uses, so
-    /// a band's objects paint after its terrain. An object's shadow, where the source answers with one, comes right
-    /// before its image, as <c>0x44da4d</c> draws the mask before the sprite. An image hangs from the term's position by
-    /// its offsets and gets its layer from <c>layers</c>. A term the source draws nothing for, and an image with no
-    /// pixel, get no quad and no layer, and a band without a quad is left out.
-    /// </summary>
-    public static List<List<ObjectQuad>> Bands(
-        IReadOnlyList<ObjectTerm> terms,
-        IGraphicsSource source,
-        ImageLayers layers,
-        int rows,
-        int bandRows
-    )
-    {
-        var bands = new List<List<ObjectQuad>>();
-        var next = 0;
-        foreach (var band in TerrainTiling.Chunks(1, rows, bandRows))
-        {
-            var quads = new List<ObjectQuad>();
-            while (next < terms.Count && terms[next].Row < band.Row + band.Height)
-            {
-                var term = terms[next++];
-                if (term.Ask(source) is { } drawing)
-                {
-                    Add(quads, term.X, term.Y, drawing.Shadow, layers);
-                    Add(quads, term.X, term.Y, drawing.Image, layers);
-                }
-            }
-
-            if (quads.Count > 0)
-            {
-                bands.Add(quads);
-            }
-        }
-
-        return bands;
-    }
-
-    /// <summary>
     /// The objects and the settlers in the order <c>0x44d3ae</c> paints them: row by row from the top, each row's
     /// <c>objects</c> and then its <c>settlers</c> (<c>docs/rules/build-sites.md</c>, "The draw order"). A settler a
     /// row above a building is painted over by it; a settler in its row paints over it. Both lists come ordered by row.
     /// Neighboring terms of one kind join one run, and a run ends at the end of its band of <c>bandRows</c> rows, so no
-    /// mesh grows with the map. The rectangles come as in <see cref="Bands"/>, the objects' layers from
-    /// <c>objectLayers</c> and the settlers' from <c>settlerLayers</c>. A term above the top row falls in the first band;
-    /// a term the source draws nothing for starts no run.
+    /// mesh grows with the map: the bands are the ones <see cref="TerrainQuads.Bands"/> uses, so a band's runs paint after
+    /// its terrain. A term's shadow, where the source answers with one, comes right before its image, as <c>0x44da4d</c>
+    /// draws the mask before the sprite. An image hangs from the term's position by its offsets and gets its layer from
+    /// <c>objectLayers</c> for an object and from <c>settlerLayers</c> for a settler. A term above the top row falls in the
+    /// first band. A term the source draws nothing for, and an image with no pixel, get no quad and no layer and start no
+    /// run.
     /// </summary>
     public static List<SpriteRun> Runs(
         IReadOnlyList<ObjectTerm> objects,
