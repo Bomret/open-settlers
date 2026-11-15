@@ -67,8 +67,9 @@ assemblies that hold those modules.
 - `RuleTables` exposes no raw array: each table the engine reads is a dedicated type or a typed accessor.
 - The boundary of ADR 0014 between the shared map view and the History Edition source is an assembly
   boundary: the entry tables and the format types are internal, so the map view cannot name them.
-- Two namespaces of the source assemblies differ from their folders: the format readers in
-  `src/Import.HistoryEdition/Formats/` are `OpenSettlers.Formats`, and the content-set assembly `OpenSettlers.Import.OpenSettlers` uses `OpenSettlers.Import.ContentSet`, because a
-  namespace `OpenSettlers.Import.OpenSettlers` would shadow the root namespace `OpenSettlers` inside
+- The format readers in `src/Import.HistoryEdition/Formats/` are in the namespace `OpenSettlers.Formats`, not
+  one that follows their folder.
+- The content-set assembly `OpenSettlers.Import.OpenSettlers` uses the namespace `OpenSettlers.Import.ContentSet`,
+  because a namespace `OpenSettlers.Import.OpenSettlers` would shadow the root namespace `OpenSettlers` inside
   `OpenSettlers.Import`.
 - The layouts (ADR 0009) are repository test fixtures and are not read through a port.
