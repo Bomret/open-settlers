@@ -15,6 +15,7 @@ namespace OpenSettlers.Tests;
 public sealed class JobLooksGeneratorTests
 {
     const string Framework = """
+        global using OpenSettlers.Import.HistoryEdition;
         namespace OpenSettlers.Domain
         {
             public abstract record Job;
@@ -22,11 +23,15 @@ public sealed class JobLooksGeneratorTests
             public sealed record Beta : Job;
             public sealed class RuleTables;
         }
-        namespace OpenSettlers.MapView
+        namespace OpenSettlers.Import.HistoryEdition
         {
             using OpenSettlers.Domain;
             public abstract class HistoryEditionLook { }
             public abstract class HistoryEditionLook<TJob> : HistoryEditionLook where TJob : Job { }
+        }
+        namespace OpenSettlers.MapView
+        {
+            using OpenSettlers.Domain;
             public abstract class OpenSettlersLook { }
             public abstract class OpenSettlersLook<TJob> : OpenSettlersLook where TJob : Job
             {

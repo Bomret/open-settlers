@@ -11,7 +11,7 @@ public sealed class SoundKindTests
 {
     static Install Open(FakeInstall fake)
     {
-        Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
 
         return install!;
     }

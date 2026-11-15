@@ -6,13 +6,13 @@
     <!-- The Godot-free engine code is compiled in directly, so the tests run without Godot. A folder left
          out of this list is silently untested. -->
     <Compile Include="../../src/Launch/**/*.cs" />
-    <Compile Include="../../src/Formats/**/*.cs" />
     <Compile Include="../../src/Assets/**/*.cs" />
     <Compile Include="../../src/MapView/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="OpenSettlers.Domain" />
     <Using Include="OpenSettlers.Import" />
+    <Using Include="OpenSettlers.Import.HistoryEdition" />
   </ItemGroup>
   <ItemGroup>
     <!-- InstallInitializerTests parses the test sources with it. -->
@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Domain/OpenSettlers.Domain.csproj" />
     <ProjectReference Include="../../src/Import/OpenSettlers.Import.csproj" />
+    <ProjectReference Include="../../src/Import.HistoryEdition/OpenSettlers.Import.HistoryEdition.csproj" />
     <ProjectReference Include="../../src/Application/OpenSettlers.Application.csproj" />
     <ProjectReference Include="../../src/Adapters/OpenSettlers.Adapters.csproj" />
     <!-- JobGeneratorTests drive the generator through the compiler API, so the tests reference its assembly as well as run it. -->

@@ -31,7 +31,7 @@ public sealed class EntryMapTests
     static List<Asset> List<T>(FakeInstall fake)
         where T : ArchiveEntryKind, new()
     {
-        Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
         return [.. new T().Enumerate(install!, all)];

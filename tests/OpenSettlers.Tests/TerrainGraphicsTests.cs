@@ -66,15 +66,9 @@ public sealed class TerrainGraphicsTests
     static FakeInstall Install(Dictionary<int, byte[]> payloads) =>
         new FakeInstall().Put(Archive, ArchiveBytes.Build(293, payloads));
 
-    static OpenSettlers.Assets.Install Open(FakeInstall fake)
+    static OpenSettlers.Import.HistoryEdition.Install Open(FakeInstall fake)
     {
-        Assert.IsTrue(
-            OpenSettlers.Assets.Install.TryOpen(
-                OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null),
-                out var install,
-                out _
-            )
-        );
+        Assert.IsTrue(OpenSettlers.Import.HistoryEdition.Install.TryOpen(fake.Root, out var install, out _));
 
         return install;
     }

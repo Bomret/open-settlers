@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using OpenSettlers.Formats;
+using OpenSettlers.Import.HistoryEdition;
 
 namespace OpenSettlers.Assets;
 

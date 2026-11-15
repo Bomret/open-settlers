@@ -26,7 +26,7 @@ public sealed class MapLaunchTests
     static (int Code, Layout? Layout, string? Message) Fails(string path) => (4, null, "ERROR bad layout");
 
     static (Install? Install, string? Problem) Opens(LaunchArgs args) =>
-        Install.TryOpen(args, out var install, out var problem) ? (install, null) : (null, problem);
+        LaunchInstall.TryOpen(args, out var install, out var problem) ? (install, null) : (null, problem);
 
     static PlayScript Script(string path) => PlayScript.Parse("wait 1", path);
 

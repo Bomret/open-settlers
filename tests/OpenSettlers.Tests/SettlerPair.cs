@@ -26,7 +26,7 @@ sealed record Drawn
 sealed class SettlerPair(SettlerFigures shared, SettlerFigureTables tables)
 {
     /// <summary>The pair over the install's walk sequences and the tables of the exe.</summary>
-    public static SettlerPair Of(Assets.Install install, Domain.RuleTables tables)
+    public static SettlerPair Of(Install install, Domain.RuleTables tables)
     {
         var archive = Formats.ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var sequences = archive.Data(archive[2]).ToArray();

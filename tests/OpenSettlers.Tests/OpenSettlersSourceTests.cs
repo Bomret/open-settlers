@@ -1516,6 +1516,12 @@ public sealed class OpenSettlersSourceTests
         }
     }
 
+    // A walk steps port with no install behind it: the frames 7 and 8 have a step at the node, every other frame none.
+    sealed class FakeWalkSteps : IWalkSteps
+    {
+        public StepOffset? At(int frame, int timeLeft) => frame is 7 or 8 ? new StepOffset { Dx = 0, Dy = 0 } : null;
+    }
+
     [TestMethod]
     public void TheCheckedInContentSetDrawsEverySettlerTheBuildersEmit()
     {
@@ -1530,7 +1536,7 @@ public sealed class OpenSettlersSourceTests
             },
             MapSize.Offered[0]
         );
-        var figures = new SettlerFigures(new StepOffsets(SettlerFiguresTests.Sequences()), []);
+        var figures = new SettlerFigures(new FakeWalkSteps(), []);
         var heading = new Heading { Value = 0 };
         // The activities the builder draws (a frame that has a step gives each a figure term) and those it does not.
         Activity[] drawnActivities =

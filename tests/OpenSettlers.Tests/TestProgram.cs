@@ -94,7 +94,7 @@ static class TestProgram
     public static Install OpenInstall()
     {
         var args = LaunchArgs.Parse([], Environment.GetEnvironmentVariable(LaunchArgs.GameVariable));
-        if (!Install.TryOpen(args, out var install, out var problem))
+        if (!LaunchInstall.TryOpen(args, out var install, out var problem))
         {
             Assert.Inconclusive($"The emulator values need the reference install: {problem}");
         }

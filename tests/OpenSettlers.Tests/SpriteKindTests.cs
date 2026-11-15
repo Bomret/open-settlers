@@ -29,7 +29,7 @@ public sealed class SpriteKindTests
 
     static List<Asset> List(FakeInstall fake)
     {
-        Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
         return [.. new SpriteKind().Enumerate(install!, all)];

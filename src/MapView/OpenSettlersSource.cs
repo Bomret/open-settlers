@@ -150,12 +150,12 @@ public sealed class OpenSettlersSource : IGraphicsSource
     ObjectDrawing? SiteLayer(SiteLayer layer, BuildingType type) =>
         layer switch
         {
-            MapView.SiteLayer.Ground => _buildings[SiteLargeKey],
-            MapView.SiteLayer.Base => _buildings[SiteSmallKey],
-            MapView.SiteLayer.Stage when SiteStages.ScaffoldIsLarge(type) is { } large => _buildings[
+            Import.SiteLayer.Ground => _buildings[SiteLargeKey],
+            Import.SiteLayer.Base => _buildings[SiteSmallKey],
+            Import.SiteLayer.Stage when SiteStages.ScaffoldIsLarge(type) is { } large => _buildings[
                 large ? StageLargeKey : StageSmallKey
             ],
-            MapView.SiteLayer.Finished => FinishedKeys.FirstOrDefault(finished => finished.Type == type)
+            Import.SiteLayer.Finished => FinishedKeys.FirstOrDefault(finished => finished.Type == type)
                 is { Key: not null } known
                 ? _buildings[known.Key]
                 : null,

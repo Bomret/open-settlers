@@ -1,5 +1,6 @@
 using System;
 using OpenSettlers.Formats;
+using OpenSettlers.Import.HistoryEdition;
 
 namespace OpenSettlers.Assets;
 
@@ -14,7 +15,7 @@ public sealed class MaskKind : ArchiveEntryKind
     public const string KindName = "mask";
 
     /// <summary>The palette index the shadow routine at <c>0x405b80</c> stores.</summary>
-    public const int ShadowColor = 0x80;
+    public const int ShadowColor = ObjectImages.ShadowColor;
 
     /// <summary>
     /// The palette index of the first player's color, <c>0x40 + 4 x player</c> with player 0 (the formula of the

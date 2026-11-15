@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using OpenSettlers.Formats;
+using OpenSettlers.Import.HistoryEdition;
 
 namespace OpenSettlers.Assets;
 

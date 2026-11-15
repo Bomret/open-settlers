@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
@@ -19,6 +22,8 @@ public sealed class GraphicsSourceBoundaryTests
     [DataRow("src/Import/IGraphicsSource.cs")]
     [DataRow("src/MapView/ObjectDraws.cs")]
     [DataRow("src/MapView/ObjectQuads.cs")]
+    [DataRow("src/Import/IWalkSteps.cs")]
+    [DataRow("src/Import/GraphicsLoad.cs")]
     [DataRow("src/Import/ObjectTerms.cs")]
     [DataRow("src/Import/TerrainTriangle.cs")]
     [DataRow("src/Import/RoadStrip.cs")]
@@ -41,7 +46,7 @@ public sealed class GraphicsSourceBoundaryTests
     [TestMethod]
     public void TheStepOffsetsReadOnlyTheArchiveEntryOfTheWalkSequences()
     {
-        AssertMentions("src/MapView/StepOffsets.cs", ["TerrainGraphics"]);
+        AssertMentions("src/Import.HistoryEdition/StepOffsets.cs", ["TerrainGraphics"]);
     }
 
     [TestMethod]
@@ -50,7 +55,7 @@ public sealed class GraphicsSourceBoundaryTests
         // Every source file under src, so a helper in another folder (src/Adapters, src/Assets) is caught too. The asset check's
         // palette read (src/Assets/ArchiveEntryKind.cs, PaletteOf) reads an entry of any archive, not of the map view's graphics
         // archive the helper names, and is the one file besides the helper that holds the filter.
-        string[] own = ["src/MapView/TerrainGraphics.cs", "src/Assets/ArchiveEntryKind.cs"];
+        string[] own = ["src/Import.HistoryEdition/TerrainGraphics.cs", "src/Assets/ArchiveEntryKind.cs"];
         var root = RootOf();
         var folder = Path.Combine(root, "src");
         var checkedFiles = 0;
@@ -84,41 +89,96 @@ public sealed class GraphicsSourceBoundaryTests
         );
 
         // The positive control: the helper still holds the strings the guard above looks for elsewhere.
-        var helper = Read("src/MapView/TerrainGraphics.cs");
+        var helper = Read("src/Import.HistoryEdition/TerrainGraphics.cs");
         Assert.Contains("internal static T Entry<T>(", helper);
         Assert.Contains("e is InvalidDataException or ArgumentOutOfRangeException", helper);
         Assert.Contains("is unreadable:", helper);
-        Assert.DoesNotContain("static T Read<T>(", Read("src/MapView/ObjectGraphics.cs"));
+        Assert.DoesNotContain("static T Read<T>(", Read("src/Import.HistoryEdition/ObjectGraphics.cs"));
     }
 
-    // The figure handlers and the figure adds are the History Edition's (ADR 0016, INV-0010): the looks of that source and the figure
-    // tables that hold them are the one place that names them.
-    [TestMethod]
-    public void NoClassOfTheMapViewOutsideTheHistoryEditionSourceNamesAFigureHandlerOrFigureAdd()
-    {
-        string[] historyEdition = ["HistoryEditionLook.cs", "SettlerFigureTables.cs"];
-        var folder = Path.GetDirectoryName(Path.Combine(RootOf(), "src/MapView/x"))!;
-        var checkedFiles = 0;
-        foreach (var file in Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
-        {
-            // The looks of the source are the files of its own folder, one for each job.
-            if (
-                Array.IndexOf(historyEdition, Path.GetFileName(file)) >= 0
-                || Path.GetFileName(Path.GetDirectoryName(file)) == "HistoryEditionLooks"
-            )
-            {
-                continue;
-            }
+    // The History Edition assembly is the one place that names its types, the format readers, and the figure handlers and adds
+    // (ADR 0016, ADR 0017, INV-0010). The map view and the viewer classes outside the composition root (the launch code and the
+    // main scene, `AssetBrowserView`) draw through the ports. The asset browser's views read the install until their move.
+    static readonly string[] PortsOnly =
+    [
+        "src/Viewer/MapViewControl.cs",
+        "src/Viewer/PlayDriver.cs",
+        "src/Viewer/GodotImageDecoder.cs",
+    ];
 
-            checkedFiles++;
-            var text = File.ReadAllText(file);
-            foreach (var forbidden in new[] { "HistoryEditionLook", "FigureAdds", "FigureHandler", "FigureBytes" })
+    // What the shared code may not name: a History Edition type, its namespace, the format readers, and the figure terms.
+    static List<string> HistoryEditionNames(string text)
+    {
+        var found = new List<string>();
+        foreach (
+            var forbidden in new[]
             {
-                Assert.DoesNotContain(forbidden, text, $"{file} mentions {forbidden}");
+                "HistoryEditionSource",
+                "HistoryEditionLook",
+                "Import.HistoryEdition",
+                "OpenSettlers.Formats",
+                "StepOffsets",
+                "FigureAdds",
+                "FigureHandler",
+                "FigureBytes",
+            }
+        )
+        {
+            if (text.Contains(forbidden, StringComparison.Ordinal))
+            {
+                found.Add(forbidden);
             }
         }
 
-        Assert.IsGreaterThan(20, checkedFiles);
+        if (Regex.IsMatch(text, @"\bInstall\b"))
+        {
+            found.Add("Install");
+        }
+
+        return found;
+    }
+
+    [TestMethod]
+    public void NoClassOfTheMapViewOrTheViewerOutsideTheCompositionRootNamesAHistoryEditionType()
+    {
+        var root = RootOf();
+        var files = Directory
+            .EnumerateFiles(Path.Combine(root, "src/MapView"), "*.cs", SearchOption.AllDirectories)
+            .Where(file => !file.Contains("/obj/") && !file.Contains("/bin/"))
+            .Concat(PortsOnly.Select(path => Path.Combine(root, path)))
+            .ToList();
+
+        foreach (var file in files)
+        {
+            Assert.IsEmpty(HistoryEditionNames(File.ReadAllText(file)), $"{file} names a History Edition type");
+        }
+
+        Assert.IsGreaterThan(20, files.Count);
+    }
+
+    // The positive control: the check fails on a planted violation.
+    [TestMethod]
+    public void ThePortsOnlyCheckFailsOnAPlantedHistoryEditionType()
+    {
+        CollectionAssert.AreEqual(
+            new[] { "HistoryEditionSource", "Install" },
+            HistoryEditionNames("var source = HistoryEditionSource.Load(install: Install.Open());")
+        );
+        CollectionAssert.AreEqual(
+            new[] { "Import.HistoryEdition" },
+            HistoryEditionNames("using OpenSettlers.Import.HistoryEdition;")
+        );
+        Assert.IsEmpty(HistoryEditionNames("GraphicsSourceName.HistoryEdition and the install's folder"));
+    }
+
+    // The History Edition assembly holds the looks and the figure tables: the one place that names the figure handlers.
+    [TestMethod]
+    public void TheHistoryEditionAssemblyHoldsTheLooksAndTheFigureTables()
+    {
+        var folder = Path.Combine(RootOf(), "src/Import.HistoryEdition");
+        Assert.IsTrue(File.Exists(Path.Combine(folder, "HistoryEditionLook.cs")));
+        Assert.IsTrue(File.Exists(Path.Combine(folder, "SettlerFigureTables.cs")));
+        Assert.IsNotEmpty(Directory.GetFiles(Path.Combine(folder, "HistoryEditionLooks"), "*Look.cs"));
     }
 
     static string RootOf()
