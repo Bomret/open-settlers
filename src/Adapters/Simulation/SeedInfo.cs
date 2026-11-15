@@ -61,7 +61,7 @@ public static class SeedInfo
 
     /// <summary>
     /// Reads the program's rule tables, generates the map of a seed and size, and reports it. Returns 0 with the report
-    /// in <c>text</c>; <see cref="NoTablesExitCode"/> with the problem, and no map, where <c>readTables</c> fails with
+    /// in <c>text</c>; <see cref="NoTablesExitCode"/> with the problem, and no map, where <c>tablesSource</c> fails with
     /// an <see cref="IOException"/>, an <see cref="InvalidDataException"/>, or an
     /// <see cref="UnauthorizedAccessException"/> (no install, or an unreadable program); or
     /// <see cref="NoMapExitCode"/> with a message where the generator refuses the seed (no land mass) or fails in any
@@ -69,7 +69,7 @@ public static class SeedInfo
     /// <see cref="MapGenerator.Generate"/>.
     /// </summary>
     public static int Run(
-        Func<RuleTables> readTables,
+        IRuleTablesSource tablesSource,
         string seedText,
         Seed seed,
         MapSize size,
@@ -80,7 +80,7 @@ public static class SeedInfo
         RuleTables tables;
         try
         {
-            tables = readTables();
+            tables = tablesSource.Read();
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {

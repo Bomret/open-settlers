@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using OpenSettlers.Domain;
-using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Import.HistoryEdition;
 

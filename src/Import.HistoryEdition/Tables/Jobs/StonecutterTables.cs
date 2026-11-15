@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace OpenSettlers.Simulation;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The stonecutter's tables: his figure adds, read as the woodcutter's are (the stub of job 7 must jump to his handler, and the add

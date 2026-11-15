@@ -76,7 +76,13 @@ public sealed class SeedInfoTests
     {
         Seed.TryParse(SeedText, out var seed, out _);
 
-        var code = SeedInfo.Run(TestProgram.Tables, SeedText, seed, MapSize.Offered[0], out var text);
+        var code = SeedInfo.Run(
+            new FakeRuleTables(TestProgram.Tables),
+            SeedText,
+            seed,
+            MapSize.Offered[0],
+            out var text
+        );
 
         Assert.AreEqual(0, code);
         Assert.AreEqual(SeedInfo.Report(SeedText, MapOf(SeedText, 1)), text);
@@ -112,7 +118,7 @@ public sealed class SeedInfoTests
         Seed.TryParse(SeedText, out var seed, out _);
         var expected = SeedInfo.Report(SeedText, MapOf(SeedText, 1, TestProgram.Made()));
 
-        var code = SeedInfo.Run(TestProgram.Made, SeedText, seed, MapSize.Offered[0], out var text);
+        var code = SeedInfo.Run(FakeRuleTables.Made, SeedText, seed, MapSize.Offered[0], out var text);
 
         Assert.AreEqual(0, code);
         Assert.AreEqual(expected, text);
@@ -128,7 +134,7 @@ public sealed class SeedInfoTests
         Seed.TryParse(SeedText, out var seed, out _);
 
         var code = SeedInfo.Run(
-            TestProgram.Made,
+            FakeRuleTables.Made,
             SeedText,
             seed,
             MapSize.Offered[0],
@@ -150,7 +156,7 @@ public sealed class SeedInfoTests
         var generated = false;
 
         var code = SeedInfo.Run(
-            () =>
+            new FakeRuleTables(() =>
                 throw (
                     failure switch
                     {
@@ -158,7 +164,8 @@ public sealed class SeedInfoTests
                         "data" => new System.IO.InvalidDataException("no install"),
                         _ => (Exception)new UnauthorizedAccessException("no install"),
                     }
-                ),
+                )
+            ),
             SeedText,
             seed,
             MapSize.Offered[0],
@@ -183,7 +190,7 @@ public sealed class SeedInfoTests
         Seed.TryParse(SeedText, out var seed, out _);
 
         var code = SeedInfo.Run(
-            TestProgram.Made,
+            FakeRuleTables.Made,
             SeedText,
             seed,
             MapSize.Offered[0],

@@ -1,5 +1,4 @@
 using OpenSettlers.Domain;
-using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Import.HistoryEdition;
 

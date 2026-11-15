@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace OpenSettlers.Simulation;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The digger's tables: his figure adds from the immediates of his handler (<c>0x43fa87</c>), where the stub of job 2 must jump to

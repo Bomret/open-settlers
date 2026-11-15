@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace OpenSettlers.Simulation;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// Builds the <see cref="RuleTables"/> from the bytes of the install's <c>Siedler1.exe</c> (INV-0001): the original's

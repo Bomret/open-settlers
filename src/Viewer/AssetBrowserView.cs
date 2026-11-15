@@ -50,13 +50,10 @@ public partial class AssetBrowserView : Control
 
         if (args.Mode == LaunchMode.SeedInfo)
         {
-            // Seed info reads the large objects from the install's program. A Godot callback exception does not set
+            // Seed info reads the large objects through the rule tables port. A Godot callback exception does not set
             // the exit code, so this owns it.
             var code = SeedInfo.Run(
-                () =>
-                    LaunchInstall.TryOpen(args, out var install, out var problem)
-                        ? ProgramTablesImporter.Import(install.ReadAll(Install.Program))
-                        : throw new System.IO.IOException(problem),
+                LaunchInstall.RuleTables(args),
                 args.SeedText!,
                 args.Seed!.Value,
                 args.Size ?? MapSize.Offered[0],
@@ -163,13 +160,13 @@ public partial class AssetBrowserView : Control
         var install = open.Install;
         var script = open.Script;
         var folder = open.PlayOutFolder;
-        Func<RuleTables> readTables = () => ProgramTablesImporter.Import(install.ReadAll(Install.Program));
+        IRuleTablesSource tablesSource = new HistoryEditionRuleTables(install);
         Func<RuleTables?, GraphicsLoad> loadGraphics = tables => HistoryEditionSource.LoadGraphics(install, tables);
         Func<IWalkSteps> loadSteps = () => StepOffsets.Load(install);
         var view = layout is not null
-            ? new MapViewControl(readTables, loadGraphics, loadSteps, layout, args.Graphics)
+            ? new MapViewControl(tablesSource, loadGraphics, loadSteps, layout, args.Graphics)
             : new MapViewControl(
-                readTables,
+                tablesSource,
                 loadGraphics,
                 loadSteps,
                 args.SeedText ?? MapViewState.DefaultSeed,

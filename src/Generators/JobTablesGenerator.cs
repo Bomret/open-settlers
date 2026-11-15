@@ -11,7 +11,7 @@ namespace OpenSettlers.Generators;
 
 /// <summary>
 /// Writes <c>JobTablesRegistry</c> (ADR 0016), which builds every tables module of the compilation that declares
-/// <c>OpenSettlers.Simulation.JobTables&lt;TJob&gt;</c>, and lists the job and state names the modules state with
+/// <c>OpenSettlers.Import.HistoryEdition.JobTables&lt;TJob&gt;</c>, and lists the job and state names the modules state with
 /// <c>JobNameAttribute</c> and <c>StateNameAttribute</c>. A generic module, a module the registry cannot reach, a module with no
 /// accessible parameterless constructor, a second module for
 /// one job, two modules that name one job or one state, a module that names one state twice, and a module that names a state the
@@ -20,7 +20,7 @@ namespace OpenSettlers.Generators;
 [Generator]
 public sealed class JobTablesGenerator : IIncrementalGenerator
 {
-    const string TablesMetadataName = "OpenSettlers.Simulation.JobTables`1";
+    const string TablesMetadataName = "OpenSettlers.Import.HistoryEdition.JobTables`1";
 
     static readonly DiagnosticDescriptor NoConstructor = new(
         "TAB001",
@@ -112,7 +112,7 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
                         .Assembly.GetAttributes()
                         .Where(attribute =>
                             attribute.AttributeClass?.ToDisplayString()
-                            == "OpenSettlers.Simulation.CoreStateCodesAttribute"
+                            == "OpenSettlers.Import.HistoryEdition.CoreStateCodesAttribute"
                         )
                         .SelectMany(attribute => attribute.ConstructorArguments[0].Values)
                         .Select(value => (int)value.Value!),

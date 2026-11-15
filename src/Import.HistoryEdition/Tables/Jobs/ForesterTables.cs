@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace OpenSettlers.Simulation;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The forester's tables: his figure adds from the immediates of his handler (<c>0x43fd88</c>), where the stub of job 8 must jump to

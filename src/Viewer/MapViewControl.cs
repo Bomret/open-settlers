@@ -28,7 +28,7 @@ namespace OpenSettlers.Viewer;
 /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
 /// <paramref name="graphics"/> is the source the view draws from; the rules come from the install under both.
 /// </remarks>
-/// <param name="readTables">Reads the rule tables of the install; throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where they cannot be read.</param>
+/// <param name="tablesSource">The rule tables port; reading it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the tables cannot be read.</param>
 /// <param name="loadGraphics">Loads the install's graphics source, given the rule tables the settlers are drawn by (null outside the game view).</param>
 /// <param name="loadSteps">Reads the walk steps where the graphics source has none, as under the Open Settlers source.</param>
 /// <param name="seedText">The seed the view opens on, as the seed field shows it.</param>
@@ -37,7 +37,7 @@ namespace OpenSettlers.Viewer;
 /// <param name="graphics">The graphics source the view draws from.</param>
 /// <param name="stockLevel">The start stock level of the game's castle; null takes the level the seed draws.</param>
 public partial class MapViewControl(
-    Func<RuleTables> readTables,
+    IRuleTablesSource tablesSource,
     Func<RuleTables?, GraphicsLoad> loadGraphics,
     Func<IWalkSteps> loadSteps,
     string seedText,
@@ -143,13 +143,13 @@ public partial class MapViewControl(
     /// size picker its size, and neither can change.
     /// </summary>
     public MapViewControl(
-        Func<RuleTables> readTables,
+        IRuleTablesSource tablesSource,
         Func<RuleTables?, GraphicsLoad> loadGraphics,
         Func<IWalkSteps> loadSteps,
         Layout layout,
         GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
     )
-        : this(readTables, loadGraphics, loadSteps, layout.Seed.ToScreen(), layout.Size.Value, true, graphics)
+        : this(tablesSource, loadGraphics, loadSteps, layout.Seed.ToScreen(), layout.Size.Value, true, graphics)
     {
         _layout = layout;
     }
@@ -409,7 +409,7 @@ public partial class MapViewControl(
 
         try
         {
-            _tables = readTables();
+            _tables = tablesSource.Read();
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {

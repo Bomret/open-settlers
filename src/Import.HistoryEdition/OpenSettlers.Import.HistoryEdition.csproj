@@ -2,6 +2,7 @@
   <ItemGroup>
     <!-- The tests read the internal members of the source, such as the registry of the job looks. -->
     <InternalsVisibleTo Include="OpenSettlers" />
+    <InternalsVisibleTo Include="OpenSettlers.Adapters" />
     <InternalsVisibleTo Include="OpenSettlers.Tests" />
   </ItemGroup>
   <ItemGroup>
@@ -19,6 +20,5 @@
   <ItemGroup>
     <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
     <ProjectReference Include="../Import/OpenSettlers.Import.csproj" />
-    <ProjectReference Include="../Application/OpenSettlers.Application.csproj" />
   </ItemGroup>
 </Project>

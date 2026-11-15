@@ -22,7 +22,7 @@ public sealed class JobTablesGeneratorTests
             public sealed record Alpha : Job { public const int Number = 1; public override int Code => Number; }
             public sealed record Beta : Job { public const int Number = 2; public override int Code => Number; }
         }
-        namespace OpenSettlers.Simulation
+        namespace OpenSettlers.Import.HistoryEdition
         {
             using OpenSettlers.Domain;
             internal interface IJobTables
@@ -45,7 +45,7 @@ public sealed class JobTablesGeneratorTests
         """;
 
     // The assembly that holds the core states 2 and 3 of the made-up name table.
-    const string Core = "[assembly: OpenSettlers.Simulation.CoreStateCodes(2, 3)]";
+    const string Core = "[assembly: OpenSettlers.Import.HistoryEdition.CoreStateCodes(2, 3)]";
 
     static readonly MetadataReference[] References =
     [
@@ -79,7 +79,7 @@ public sealed class JobTablesGeneratorTests
 
     static string Module(string name, string job, string attributes = "", string body = "") =>
         $$"""
-            namespace OpenSettlers.Simulation;
+            namespace OpenSettlers.Import.HistoryEdition;
             {{attributes}}
             public sealed class {{name}} : JobTables<OpenSettlers.Domain.{{job}}> { {{body}} }
             """;
@@ -101,8 +101,8 @@ public sealed class JobTablesGeneratorTests
             output.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error),
             string.Join("; ", output.GetDiagnostics())
         );
-        StringAssert.Contains(text, "new global::OpenSettlers.Simulation.AlphaTables()");
-        StringAssert.Contains(text, "new global::OpenSettlers.Simulation.BetaTables()");
+        StringAssert.Contains(text, "new global::OpenSettlers.Import.HistoryEdition.AlphaTables()");
+        StringAssert.Contains(text, "new global::OpenSettlers.Import.HistoryEdition.BetaTables()");
         StringAssert.Contains(text, "(global::OpenSettlers.Domain.Alpha.Number, \"alpha\", \"why alpha\")");
         StringAssert.Contains(text, "(17, \"acts\", \"why acts\")");
         StringAssert.Contains(text, "(18, \"rests\", \"why rests\")");
@@ -217,7 +217,7 @@ public sealed class JobTablesGeneratorTests
     {
         var (diagnostics, text, _) = Run(
             """
-            namespace OpenSettlers.Simulation;
+            namespace OpenSettlers.Import.HistoryEdition;
             public sealed class GenericTables<T> : JobTables<OpenSettlers.Domain.Alpha> { }
             """
         );
@@ -237,7 +237,7 @@ public sealed class JobTablesGeneratorTests
     {
         var (diagnostics, text, output) = Run(
             $$"""
-            namespace OpenSettlers.Simulation;
+            namespace OpenSettlers.Import.HistoryEdition;
             public class Holder
             {
                 {{outer}} class Mid
@@ -298,7 +298,7 @@ public sealed class JobTablesGeneratorTests
     {
         var (diagnostics, text, _) = Run(
             """
-            namespace OpenSettlers.Simulation;
+            namespace OpenSettlers.Import.HistoryEdition;
             public abstract class BaseTables<T> : JobTables<OpenSettlers.Domain.Alpha> where T : class { }
             """
         );
@@ -312,7 +312,7 @@ public sealed class JobTablesGeneratorTests
     {
         var (diagnostics, text, _) = Run(
             """
-            namespace OpenSettlers.Simulation;
+            namespace OpenSettlers.Import.HistoryEdition;
             public class Outer<T>
             {
                 public sealed class InnerTables : JobTables<OpenSettlers.Domain.Alpha> { }
