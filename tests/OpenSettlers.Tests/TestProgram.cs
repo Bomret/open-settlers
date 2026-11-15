@@ -103,7 +103,7 @@ static class TestProgram
         {
             try
             {
-                _tables = ProgramTablesImporter.Import(install.ReadAll(Install.Program));
+                _tables = new HistoryEditionRuleTables(install).Read();
             }
             catch (InvalidDataException e)
             {

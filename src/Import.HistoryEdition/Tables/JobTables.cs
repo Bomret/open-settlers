@@ -1,7 +1,12 @@
 using System;
 using System.Collections.Generic;
+using OpenSettlers.Import.HistoryEdition;
 
-namespace OpenSettlers.Simulation;
+// The states NameTable (the adapter assembly) names itself; NameTableTests checks the list against them, the generator
+// against the modules (TAB006).
+[assembly: CoreStateCodes(1, 2, 3, 4, 5, 6, 7, 0xf, 0x10, 0x19, 0x1c, 0x42, 0x4a)]
+
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// What the importer and the name table ask of a <see cref="JobTables{TJob}"/> module without knowing its job type. The generated
@@ -52,8 +57,8 @@ public sealed class JobNameAttribute(string name, string evidence) : Attribute
 }
 
 /// <summary>
-/// The codes of the states <see cref="NameTable"/> names itself, the ones that belong to no one job. The generator reads it at build
-/// time and fails the build for a module that names one of them, which <see cref="NameTable"/> could not hold twice.
+/// The codes of the states <c>NameTable</c> names itself, the ones that belong to no one job. The generator reads it at build
+/// time and fails the build for a module that names one of them, which <c>NameTable</c> could not hold twice.
 /// </summary>
 [AttributeUsage(AttributeTargets.Assembly)]
 public sealed class CoreStateCodesAttribute(params int[] codes) : Attribute
@@ -74,4 +79,11 @@ public sealed class StateNameAttribute(int code, string name, string evidence) :
 
     /// <summary>The evidence for the name.</summary>
     public string Evidence { get; } = evidence;
+}
+
+/// <summary>The evidence the job tables modules cite for a name.</summary>
+static class TableEvidence
+{
+    /// <summary>The evidence of a state whose name rests on the code of the Activity record alone.</summary>
+    public const string State = "the code of the Activity record (src/Domain/Activity.cs)";
 }

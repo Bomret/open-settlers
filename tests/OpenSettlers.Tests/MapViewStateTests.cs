@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -231,5 +233,31 @@ public sealed class MapViewStateTests
         Assert.IsFalse(state.Apply("0000000000000001", 2));
         Assert.IsNull(state.Map);
         StringAssert.Contains(state.Problem, "Siedler1.exe is missing");
+    }
+
+    [TestMethod]
+    public void OpeningOnAPortThatReadsDrawsTheMapFromItsTables()
+    {
+        var tables = MapViewState.ReadTables(FakeRuleTables.Made, out var problem);
+        var state = MapViewState.Open(tables, Seed, 1, problem);
+
+        Assert.IsNull(problem);
+        Assert.IsNotNull(state.Map);
+    }
+
+    [TestMethod]
+    [DataRow(typeof(IOException))]
+    [DataRow(typeof(InvalidDataException))]
+    public void OpeningOnAPortThatFailsDrawsNoMapAndShowsTheFailure(Type failure)
+    {
+        var port = new FakeRuleTables(() =>
+            throw (Exception)Activator.CreateInstance(failure, "the program is unreadable")!
+        );
+
+        var tables = MapViewState.ReadTables(port, out var problem);
+        var state = MapViewState.Open(tables, Seed, 1, problem);
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "the program is unreadable");
     }
 }

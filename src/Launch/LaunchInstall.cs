@@ -46,4 +46,13 @@ public static class LaunchInstall
 
         return true;
     }
+
+    /// <summary>
+    /// The rule tables port of the install the launch arguments name. Reading it fails with the problem
+    /// <see cref="TryOpen"/> returns where the launch names no usable install.
+    /// </summary>
+    public static IRuleTablesSource RuleTables(LaunchArgs args) =>
+        TryOpen(args, out var install, out var problem)
+            ? new HistoryEditionRuleTables(install)
+            : new MissingInstallTables(problem);
 }

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace OpenSettlers.Simulation;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The tables of the settler of the type 1 hut: his figure adds from the immediates of his handler (<c>0x43fed8</c>), where the stub

@@ -127,7 +127,7 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheCoreStateCodesTheGeneratorChecksAreTheStatesTheTableNamesItself()
     {
-        var listed = typeof(NameTable)
+        var listed = typeof(CoreStateCodesAttribute)
             .Assembly.GetCustomAttributes(typeof(CoreStateCodesAttribute), false)
             .Cast<CoreStateCodesAttribute>()
             .SelectMany(attribute => attribute.Codes);

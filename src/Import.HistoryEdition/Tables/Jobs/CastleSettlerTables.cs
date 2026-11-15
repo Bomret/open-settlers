@@ -1,4 +1,4 @@
-namespace OpenSettlers.Simulation;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>The castle settler's tables: his name.</summary>
 [JobName(

@@ -1,9 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using OpenSettlers.Simulation;
-
-// The states NameTable names itself (Build); NameTableTests checks the list against them, the generator against the modules.
-[assembly: CoreStateCodes(1, 2, 3, 4, 5, 6, 7, 0xf, 0x10, 0x19, 0x1c, 0x42, 0x4a)]
 
 namespace OpenSettlers.Simulation;
 
@@ -53,7 +49,7 @@ public sealed class NameTable(RuleTables tables)
     }
 
     /// <summary>The evidence of a state whose name rests on the code of the Activity record alone.</summary>
-    internal const string StateEvidence = "the code of the Activity record (src/Domain/Activity.cs)";
+    internal const string StateEvidence = TableEvidence.State;
 
     const string TreeEvidence =
         "the program compares a node's code with 8 and 0x18 (0x438c11, 0x437f8f); docs/rules/woodcutting.md (codes 8 to 0x17); class 1";

@@ -6,6 +6,8 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="OpenSettlers.Domain" />
+    <Using Include="OpenSettlers.Import" />
+    <Using Include="OpenSettlers.Import.HistoryEdition" />
     <Using Include="OpenSettlers.Domain.RoadNetwork" Static="true" />
   </ItemGroup>
   <ItemGroup>
@@ -18,6 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
+    <ProjectReference Include="../Import/OpenSettlers.Import.csproj" />
+    <ProjectReference Include="../Import.HistoryEdition/OpenSettlers.Import.HistoryEdition.csproj" />
     <ProjectReference Include="../Application/OpenSettlers.Application.csproj" />
   </ItemGroup>
 </Project>
