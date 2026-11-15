@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Launch;
@@ -638,13 +639,25 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
+    [DataRow("--game-view --stock")]
+    [DataRow("--stock --game-view")]
+    public void AStockWithoutAValueIsOneProblem(string arguments)
+    {
+        var args = LaunchArgs.Parse(arguments.Split(' '), null);
+
+        CollectionAssert.AreEqual(new[] { "--stock needs a value" }, args.Problems.ToArray());
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
+    }
+
+    [TestMethod]
     [DataRow("--map")]
     [DataRow("--check")]
-    [DataRow("--layout", "x.layout")]
-    public void AStockOutsideTheGameViewIsAProblem(string flag, string? value = null)
+    [DataRow("--layout x.layout")]
+    [DataRow("--seed-info --seed 1234567812345678")]
+    [DataRow("")]
+    public void AStockOutsideTheGameViewIsAProblem(string mode)
     {
-        string[] mode = value is null ? [flag] : [flag, value];
-        var args = LaunchArgs.Parse([.. mode, "--stock", "10"], null);
+        var args = LaunchArgs.Parse([.. mode.Split(' ', StringSplitOptions.RemoveEmptyEntries), "--stock", "10"], null);
 
         Assert.IsTrue(args.Problems.Contains("--stock applies to --game-view without --layout only"));
     }
