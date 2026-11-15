@@ -1,5 +1,6 @@
 using System;
 using OpenSettlers.Formats;
+using OpenSettlers.Import.HistoryEdition;
 
 namespace OpenSettlers.Assets;
 
@@ -20,7 +21,7 @@ public sealed class PaletteKind : ArchiveEntryKind
     public const string KindName = "palette";
 
     /// <summary>The entry of the palette the game draws with (<c>0x407250</c> and <c>0x407400</c> load it).</summary>
-    public const int GamePalette = 3;
+    public const int GamePalette = TerrainGraphics.GamePaletteEntry;
 
     /// <summary>The entry of the palette the title scene draws with (<c>0x407410</c>, called at <c>0x451ee9</c>).</summary>
     public const int TitlePalette = 3997;

@@ -42,7 +42,7 @@ public static class AssetCheck
             };
         }
 
-        if (!Install.TryOpen(args, out var install, out var problem))
+        if (!LaunchInstall.TryOpen(args, out var install, out var problem))
         {
             return new CheckReport { ExitCode = 2, Lines = [$"ERROR {problem}"] };
         }

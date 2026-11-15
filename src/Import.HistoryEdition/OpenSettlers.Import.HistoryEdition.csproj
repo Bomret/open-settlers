@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- The tests read the internal members of the source, such as the registry of the job looks. -->
+    <InternalsVisibleTo Include="OpenSettlers" />
+    <InternalsVisibleTo Include="OpenSettlers.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="OpenSettlers.Domain" />
+    <Using Include="OpenSettlers.Import" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The generator writes the registry of the job looks; it runs in the compiler and is no run-time dependency (ADR 0016). -->
+    <ProjectReference
+      Include="../Generators/OpenSettlers.Generators.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
+    <ProjectReference Include="../Import/OpenSettlers.Import.csproj" />
+    <ProjectReference Include="../Application/OpenSettlers.Application.csproj" />
+  </ItemGroup>
+</Project>

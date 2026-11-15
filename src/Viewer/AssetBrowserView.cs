@@ -3,6 +3,7 @@ using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
 using OpenSettlers.Domain;
+using OpenSettlers.Import.HistoryEdition;
 using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -53,7 +54,7 @@ public partial class AssetBrowserView : Control
             // the exit code, so this owns it.
             var code = SeedInfo.Run(
                 () =>
-                    Install.TryOpen(args, out var install, out var problem)
+                    LaunchInstall.TryOpen(args, out var install, out var problem)
                         ? ProgramTablesImporter.Import(install.ReadAll(Install.Program))
                         : throw new System.IO.IOException(problem),
                 args.SeedText!,
@@ -137,7 +138,7 @@ public partial class AssetBrowserView : Control
 
                 return (code, loaded, message);
             },
-            a => Install.TryOpen(a, out var opened, out var problem) ? (opened, null) : (null, problem),
+            a => LaunchInstall.TryOpen(a, out var opened, out var problem) ? (opened, null) : (null, problem),
             PlayScript.Read,
             () => ProjectSettings.GlobalizePath("res://")
         );
@@ -162,10 +163,15 @@ public partial class AssetBrowserView : Control
         var install = open.Install;
         var script = open.Script;
         var folder = open.PlayOutFolder;
+        Func<RuleTables> readTables = () => ProgramTablesImporter.Import(install.ReadAll(Install.Program));
+        Func<RuleTables?, GraphicsLoad> loadGraphics = tables => HistoryEditionSource.LoadGraphics(install, tables);
+        Func<IWalkSteps> loadSteps = () => StepOffsets.Load(install);
         var view = layout is not null
-            ? new MapViewControl(install, layout, args.Graphics)
+            ? new MapViewControl(readTables, loadGraphics, loadSteps, layout, args.Graphics)
             : new MapViewControl(
-                install,
+                readTables,
+                loadGraphics,
+                loadSteps,
                 args.SeedText ?? MapViewState.DefaultSeed,
                 args.Size?.Value ?? MapSize.Offered[0].Value,
                 args.Mode == LaunchMode.GameView,

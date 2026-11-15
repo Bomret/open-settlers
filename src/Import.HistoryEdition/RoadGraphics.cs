@@ -1,0 +1,88 @@
+using System.Collections.Generic;
+using System.IO;
+using OpenSettlers.Formats;
+
+namespace OpenSettlers.Import.HistoryEdition;
+
+/// <summary>
+/// The road graphics of an install as the GPU takes them, the way <see cref="TerrainGraphics"/> takes the terrain's:
+/// each strip mask (entries 230 to 256; <see cref="RoadRules"/> says which) as a layer of
+/// <see cref="TerrainGraphics.LayerWidth"/> x <see cref="TerrainGraphics.MaskLayerHeight"/>, and each road texture (entries
+/// 300 to 309) as a 32 x 20 layer of RGBA pixels through the terrain's palette.
+/// </summary>
+public sealed class RoadGraphics
+{
+    /// <summary>The first and last entry of the strip masks.</summary>
+    public const int FirstMask = 230;
+
+    /// <inheritdoc cref="FirstMask"/>
+    public const int LastMask = 256;
+
+    /// <summary>The first and last entry of the road textures.</summary>
+    public const int FirstTexture = 300;
+
+    /// <inheritdoc cref="FirstTexture"/>
+    public const int LastTexture = 309;
+
+    /// <summary>The masks from <see cref="FirstMask"/> on, one per entry.</summary>
+    public required IReadOnlyList<MaskImage> Masks { get; init; }
+
+    /// <summary>The textures from <see cref="FirstTexture"/> on, 32 x 20 RGBA pixels each, four bytes a pixel, all opaque.</summary>
+    public required IReadOnlyList<byte[]> Textures { get; init; }
+
+    /// <summary>The layer of a mask entry.</summary>
+    public static int MaskLayer(int entry) => entry - FirstMask;
+
+    /// <summary>The layer of a texture entry.</summary>
+    public static int TextureLayer(int entry) => entry - FirstTexture;
+
+    /// <summary>
+    /// Reads the road graphics from the archive of <see cref="TerrainGraphics"/>. Throws
+    /// <see cref="FileNotFoundException"/> for a missing archive and <see cref="InvalidDataException"/>, naming the
+    /// entry and the reason, for an entry that is absent or unreadable or of a shape the drawing cannot take.
+    /// </summary>
+    public static RoadGraphics Load(Install install)
+    {
+        if (!install.Exists(TerrainGraphics.ArchiveFile))
+        {
+            throw new FileNotFoundException(
+                $"the archive {TerrainGraphics.ArchiveFile} is missing: the install must hold it"
+            );
+        }
+
+        var archive = ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
+        var palette = TerrainGraphics.Entry(
+            archive,
+            TerrainGraphics.GamePaletteEntry,
+            "the palette",
+            data => PaletteFile.Read(data.Span)
+        );
+        var masks = new List<MaskImage>();
+        for (var entry = FirstMask; entry <= LastMask; entry++)
+        {
+            masks.Add(
+                TerrainGraphics.Entry(
+                    archive,
+                    entry,
+                    "the road mask",
+                    data => TerrainGraphics.ToLayer(MaskFile.Read(data))
+                )
+            );
+        }
+
+        var textures = new List<byte[]>();
+        for (var entry = FirstTexture; entry <= LastTexture; entry++)
+        {
+            textures.Add(
+                TerrainGraphics.Entry(
+                    archive,
+                    entry,
+                    "the road texture",
+                    data => TerrainGraphics.ToTexture(GraphicFile.ReadRaw(data), palette)
+                )
+            );
+        }
+
+        return new RoadGraphics { Masks = masks, Textures = textures };
+    }
+}

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using OpenSettlers.Import.HistoryEdition;
 using OpenSettlers.Launch;
 
 namespace OpenSettlers.Assets;
@@ -66,7 +67,7 @@ public sealed class AssetBrowserState
         string? previewClash = null
     )
     {
-        if (!Install.TryOpen(args, out var install, out var problem))
+        if (!LaunchInstall.TryOpen(args, out var install, out var problem))
         {
             return new AssetBrowserState(problem, null, new Dictionary<string, AssetKind>());
         }

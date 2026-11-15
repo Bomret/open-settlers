@@ -8,7 +8,7 @@ namespace OpenSettlers.MapView;
 /// <summary>
 /// Where and in what order the walking settlers are drawn, under every graphics source (<c>docs/rules/settlers.md</c>,
 /// "Drawing the walk"). A settler's frame (the shape of its step, which holds the direction) and the time it has left of the
-/// step pick a step of the <see cref="StepOffsets"/>; the settler is drawn at its node, lifted by 4 times its height and 2
+/// step pick a step of the <see cref="IWalkSteps"/>; the settler is drawn at its node, lifted by 4 times its height and 2
 /// more, plus the step's offsets (<c>0x43f537</c>). The record joins the row of the settler plus the byte of its frame's row
 /// (<c>0x43f402</c>), and the rows are drawn from the top; the records of one row come in the order of the nodes, row by row
 /// and from the west. A settler is drawn as three terms: its figure, then its overlay, then its second figure (a source
@@ -21,7 +21,7 @@ namespace OpenSettlers.MapView;
 /// </summary>
 /// <param name="steps">The dx and dy of every step of every walk frame.</param>
 /// <param name="frameRows">For each frame what the record builder adds to the row of the settler's record (<c>0x43f402</c>); none for no frame.</param>
-public sealed class SettlerFigures(StepOffsets steps, sbyte[] frameRows)
+public sealed class SettlerFigures(IWalkSteps steps, sbyte[] frameRows)
 {
     // The record builder lifts a settler 2 pixels above the node's height (0x43f537: the height times 4, then 2 more).
     const int SettlerLift = 2;

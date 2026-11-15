@@ -16,7 +16,11 @@ public sealed class InstallTests
     {
         using var fake = new FakeInstall();
 
-        var opened = Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out var problem);
+        var opened = LaunchInstall.TryOpen(
+            LaunchArgs.Parse(["--game", fake.Root], null),
+            out var install,
+            out var problem
+        );
 
         Assert.IsTrue(opened);
         Assert.AreEqual(fake.Root, install!.Root);
@@ -26,7 +30,7 @@ public sealed class InstallTests
     [TestMethod]
     public void NoInstallGivenNamesTheGameFlagAndTheEnvironmentVariable()
     {
-        var opened = Install.TryOpen(LaunchArgs.Parse([], null), out _, out var problem);
+        var opened = LaunchInstall.TryOpen(LaunchArgs.Parse([], null), out _, out var problem);
 
         Assert.IsFalse(opened);
         StringAssert.Contains(problem, "--game");
@@ -38,7 +42,7 @@ public sealed class InstallTests
     {
         var missing = Path.Combine(Path.GetTempPath(), "open-settlers-tests-missing-folder");
 
-        var opened = Install.TryOpen(LaunchArgs.Parse(["--game", missing], null), out _, out var problem);
+        var opened = LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", missing], null), out _, out var problem);
 
         Assert.IsFalse(opened);
         StringAssert.Contains(problem, missing);
@@ -51,7 +55,7 @@ public sealed class InstallTests
     {
         using var fake = new FakeInstall(withProgram: false);
 
-        var opened = Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out _, out var problem);
+        var opened = LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out _, out var problem);
 
         Assert.IsFalse(opened);
         StringAssert.Contains(problem, "Siedler1.exe");
@@ -64,7 +68,7 @@ public sealed class InstallTests
     {
         using var fake = new FakeInstall();
 
-        var opened = Install.TryOpen(LaunchArgs.Parse(["--game"], fake.Root), out _, out var problem);
+        var opened = LaunchInstall.TryOpen(LaunchArgs.Parse(["--game"], fake.Root), out _, out var problem);
 
         Assert.IsFalse(opened);
         StringAssert.Contains(problem, "--game needs a value");

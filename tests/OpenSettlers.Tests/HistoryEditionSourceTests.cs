@@ -87,9 +87,7 @@ public sealed class HistoryEditionSourceTests
 
     static HistoryEditionSource Open(FakeInstall fake)
     {
-        Assert.IsTrue(
-            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
-        );
+        Assert.IsTrue(Install.TryOpen(fake.Root, out var install, out _));
 
         return HistoryEditionSource.Load(install);
     }
@@ -953,9 +951,7 @@ public sealed class HistoryEditionSourceTests
 
     static HistoryEditionSource OpenWithSettlers(FakeInstall fake, RuleTables? tables = null)
     {
-        Assert.IsTrue(
-            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
-        );
+        Assert.IsTrue(Install.TryOpen(fake.Root, out var install, out _));
 
         return HistoryEditionSource.Load(install, tables ?? SettlerTables());
     }

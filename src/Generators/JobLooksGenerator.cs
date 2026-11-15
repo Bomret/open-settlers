@@ -10,7 +10,7 @@ namespace OpenSettlers.Generators;
 
 /// <summary>
 /// Writes the registries of the job looks (ADR 0016, INV-0010), one for each graphics source, from the classes of the compilation
-/// that declare <c>OpenSettlers.MapView.HistoryEditionLook&lt;TJob&gt;</c> or <c>OpenSettlers.MapView.OpenSettlersLook&lt;TJob&gt;</c>.
+/// that declare <c>OpenSettlers.Import.HistoryEdition.HistoryEditionLook&lt;TJob&gt;</c> or <c>OpenSettlers.MapView.OpenSettlersLook&lt;TJob&gt;</c>.
 /// A registry builds each look of its source in the order of the looks' full type names. A History Edition look needs a constructor
 /// that takes the <c>RuleTables</c> alone and an Open Settlers look a constructor without parameters. A look without its
 /// constructor, a second look for one job under one source, a generic look, and a look the registry cannot reach are build errors.
@@ -61,7 +61,7 @@ public sealed class JobLooksGenerator : IIncrementalGenerator
     [
         new(
             "History Edition source",
-            "OpenSettlers.MapView.HistoryEditionLook`1",
+            "OpenSettlers.Import.HistoryEdition.HistoryEditionLook`1",
             "HistoryEditionLook",
             "HistoryEditionLookRegistry",
             "takes the RuleTables alone",

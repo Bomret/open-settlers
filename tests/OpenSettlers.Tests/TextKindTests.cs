@@ -14,7 +14,7 @@ public sealed class TextKindTests
 {
     static Install Open(FakeInstall fake)
     {
-        Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
 
         return install!;
     }

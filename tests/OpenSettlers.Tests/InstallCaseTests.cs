@@ -21,7 +21,7 @@ public sealed class InstallCaseTests
     static Install Open(CaseSensitiveFolder folder)
     {
         Assert.IsTrue(
-            Install.TryOpen(LaunchArgs.Parse(["--game", folder.Root], null), out var install, out var problem),
+            LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", folder.Root], null), out var install, out var problem),
             problem
         );
         return install!;
@@ -32,10 +32,13 @@ public sealed class InstallCaseTests
     {
         using var folder = _volume!.NewFolder().Put("siedler2.exe", [1]);
 
-        var opened = Install.TryOpen(LaunchArgs.Parse(["--game", folder.Root], null), out _, out var problem);
+        var opened = LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", folder.Root], null), out _, out var problem);
 
         Assert.IsFalse(opened);
-        Assert.AreEqual($"no Siedler1.exe in {folder.Root}, so it is not an install ({Install.HowToGive})", problem);
+        Assert.AreEqual(
+            $"no Siedler1.exe in {folder.Root}, so it is not an install ({LaunchInstall.HowToGive})",
+            problem
+        );
     }
 
     [TestMethod]
