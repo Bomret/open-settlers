@@ -558,6 +558,26 @@ public sealed class HeadlessEntryTests
         AssertNoReLocal(worktree);
     }
 
+    // git before 2.31 echoes the unknown --path-format=absolute; a bare repository's common dir is repo.git; a relative
+    // line is no absolute path. The stand-in git prints the lines under the temporary folder and exits 0.
+    [TestMethod]
+    [DataRow("--path-format=absolute", "other/.git")]
+    [DataRow("other/repo.git")]
+    [DataRow(".git")]
+    public void GitOutputThatIsNotOneAbsoluteDotGitPathLeavesTheCurrentFolder(params string[] lines)
+    {
+        var printed = lines.Select(line => line.StartsWith("other/", StringComparison.Ordinal)
+            ? Path.Combine(_folder, line)
+            : line);
+        PythonTool.StandIn(GitBin, "git", $"printf '%s\\n' {string.Join(' ', printed.Select(line => $"'{line}'"))}\n");
+        StandInHeadless(exit: 3);
+
+        var run = Run(["update"], headless: true, gradle: false, git: true);
+
+        Assert.AreEqual(3, run.Exit, run.Stderr);
+        Assert.AreEqual(Path.Combine(RootSeen(), "re-local", "ghidra"), Recorded("headless.args")[0]);
+    }
+
     [TestMethod]
     public void UpdateInTheMainCheckoutWithGitOnThePathUsesTheCurrentFolder()
     {

@@ -123,6 +123,25 @@ public sealed partial class ToolOutputTests
         StringAssert.Contains(Section(generated, "coverage"), " of the 2 functions in the dump's game code band");
     }
 
+    // A bare repository's common dir is repo.git, whose parent is no checkout. The stand-in git prints it and exits 0.
+    [TestMethod]
+    public void AGitCommonDirNotNamedDotGitLeavesTheDumpUnderTheCurrentFolder()
+    {
+        File.WriteAllText(Path.Combine(_folder, "program-index.md"), EmptyIndex);
+        DumpWithTwoBandFunctions(Path.Combine(_folder, "re-local", "dump"));
+        var git = PythonTool.StandIn(
+            Path.Combine(_folder, "git-bin"),
+            "git",
+            $"printf '%s\\n' '{Path.Combine(_folder, "other", "repo.git")}'\n"
+        );
+
+        var run = PythonTool.Run(_folder, [IndexTool(), "program-index.md", "re-local/dump"], prependPath: git);
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        var generated = File.ReadAllText(Path.Combine(_folder, "program-index.md"));
+        StringAssert.Contains(Section(generated, "coverage"), " of the 2 functions in the dump's game code band");
+    }
+
     // A failed ghidra:dump leaves an empty dump folder: headless.py creates it before Ghidra runs.
     [TestMethod]
     [DataRow(false)]

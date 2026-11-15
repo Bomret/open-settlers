@@ -67,8 +67,9 @@ open, Ghidra keeps the lock file `Siedler1.lock` next to `Siedler1.gpr` in `re-l
 a second run on the project. `ghidra:import` and `ghidra:dump` stop with a message while that lock file
 exists, before they create or remove a folder, so a second run leaves the running dump as it is. Ghidra
 deletes the lock file when the run ends. A run that crashes can leave it behind: delete it by hand only
-when no Ghidra has the project open. Outside a git repository, or without git, the tasks use `re-local/`
-under the current folder.
+when no Ghidra has the project open. Outside a git repository, without git, or where git gives no single
+absolute path that ends in `.git` (git before 2.31, a bare repository), the tasks use `re-local/` under the
+current folder.
 
 Build the project only when `re-local/ghidra` holds no project. The import replaces an existing project
 and loses every change applied to it. The build takes about 7 minutes. It imports the program, runs

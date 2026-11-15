@@ -15,8 +15,10 @@ import sys
 ROOT = os.getcwd()
 
 
+# Keep identical to main_checkout() in program_index.py: python3 -I cannot import one from the other.
 def main_checkout():
-    """The main checkout: the parent of git's common dir. The current folder outside git or without git."""
+    """The main checkout: the parent of git's common dir. The current folder outside git, without git, or where git
+    prints anything but one absolute path whose last part is .git (git before 2.31, a bare repository)."""
     try:
         found = subprocess.run(
             ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
@@ -25,7 +27,7 @@ def main_checkout():
     except OSError:
         return ROOT
     common = found.stdout.strip()
-    if found.returncode != 0 or not common:
+    if found.returncode != 0 or "\n" in common or not os.path.isabs(common) or os.path.basename(common) != ".git":
         return ROOT
     return os.path.realpath(os.path.dirname(common))
 
