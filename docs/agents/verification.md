@@ -23,8 +23,8 @@ Two kinds of violation fail only the build step of the full command, which build
 command does not report them:
 
 - A violation in a file under `src/Viewer`. Only `OpenSettlers.csproj` compiles that folder.
-- A doc-comment diagnostic (CS1591 and the others that "Document" names) in a file under `src/Launch`, `src/Formats`,
-  `src/Assets`, or `src/MapView`. The test project compiles these folders but generates no documentation file.
+- A doc-comment diagnostic (CS1591 and the others that "Document" names) in a file under `src/Launch`, `src/Assets`, or
+  `src/MapView`. The test project compiles these folders but generates no documentation file.
 
 A violation prints as
 `<file>(<line>,<column>): error <rule ID>: <message>`. A play run with a violation exits 3 and prints the build output.

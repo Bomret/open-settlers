@@ -41,7 +41,7 @@
   `EnforceCodeStyleInBuild` beside `TreatWarningsAsErrors`. It also sets `GenerateDocumentationFile` for every project
   except the test project. A violation fails every build of the project that holds it: `mise run check`,
   `mise run build`, a plain `dotnet build`, a play run, and the Godot editor's build.
-  The test project compiles `src/Launch`, `src/Formats`, `src/Assets`, and `src/MapView` without a documentation file.
+  The test project compiles `src/Launch`, `src/Assets`, and `src/MapView` without a documentation file.
   A doc-comment diagnostic in these folders therefore fails the build of `OpenSettlers.csproj`. It does not fail the
   build of the test project.
   The analyzers ship with the .NET SDK. The rules follow the SDK version that `global.json` and `mise.toml` pin, and a
