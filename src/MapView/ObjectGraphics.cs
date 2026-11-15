@@ -67,7 +67,7 @@ public sealed class ObjectGraphics
                     archive,
                     entry,
                     what,
-                    data => ObjectImage.From(SpriteFile.Read(data), palette)
+                    data => ObjectImages.From(SpriteFile.Read(data), palette)
                 );
             }
         }
@@ -113,7 +113,7 @@ public sealed class ObjectGraphics
                 archive,
                 entry + ShadowOffset,
                 "the shadow mask",
-                data => ObjectImage.Shadow(MaskFile.Read(data), palette)
+                data => ObjectImages.Shadow(MaskFile.Read(data), palette)
             );
         }
 

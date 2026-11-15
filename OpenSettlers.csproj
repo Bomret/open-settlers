@@ -5,11 +5,15 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <!-- The layer libraries (Domain, Application, Adapters) are their own projects, and so is the job generator, which runs in the compiler. -->
-    <Compile Remove="tools/**;tests/**;src/Domain/**;src/Application/**;src/Adapters/**;src/Generators/**" />
+    <!-- The layer libraries (Domain, Import, Application, Adapters) are their own projects, and so is the job generator, which runs in the compiler. -->
+    <Compile Remove="tools/**;tests/**;src/Domain/**;src/Import/**;src/Application/**;src/Adapters/**;src/Generators/**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="OpenSettlers.Import" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="src/Domain/OpenSettlers.Domain.csproj" />
+    <ProjectReference Include="src/Import/OpenSettlers.Import.csproj" />
     <ProjectReference Include="src/Application/OpenSettlers.Application.csproj" />
     <ProjectReference Include="src/Adapters/OpenSettlers.Adapters.csproj" />
     <ProjectReference

@@ -66,7 +66,7 @@ public sealed class SettlerSprites
                 archive,
                 ShadowEntry,
                 "the shadow mask",
-                data => ObjectImage.Shadow(MaskFile.Read(data), palette)
+                data => ObjectImages.Shadow(MaskFile.Read(data), palette)
             );
         }
 
@@ -172,7 +172,7 @@ public sealed class SettlerSprites
                 try
                 {
                     var sprite = SpriteFile.Read(_archive.Data(_archive[entry]));
-                    cached = (ObjectImage.From(sprite, _palette), sprite.Header.First, sprite.Header.Second);
+                    cached = (ObjectImages.From(sprite, _palette), sprite.Header.First, sprite.Header.Second);
                 }
                 catch (InvalidDataException)
                 {
