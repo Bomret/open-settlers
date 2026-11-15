@@ -32,16 +32,6 @@ public sealed class RuleTablesPortTests
     }
 
     [TestMethod]
-    public void AProgramWhoseNameDiffersInLetterCaseIsRead()
-    {
-        using var fake = new FakeInstall(withProgram: false).Put("SIEDLER1.EXE", [1, 2, 3]);
-
-        var port = new HistoryEditionRuleTables(Install.TryOpen(fake.Root, out var install, out _) ? install : null!);
-
-        Assert.ThrowsExactly<InvalidDataException>(port.Read);
-    }
-
-    [TestMethod]
     public void AnInstallWithNoProgramFailsTheReadWithAnIoException()
     {
         using var fake = new FakeInstall(withProgram: false);

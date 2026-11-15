@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using OpenSettlers.Import.HistoryEdition;
 
 namespace OpenSettlers.Simulation;
 

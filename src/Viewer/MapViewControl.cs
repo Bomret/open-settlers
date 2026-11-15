@@ -407,14 +407,10 @@ public partial class MapViewControl(
         _preview = new Node2D { ZAsRelative = false, ZIndex = 2 };
         _world.AddChild(_preview);
 
-        try
+        _tables = MapViewState.ReadTables(tablesSource, out _tablesProblem);
+        if (_tablesProblem is not null)
         {
-            _tables = tablesSource.Read();
-        }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _tablesProblem = e.Message;
-            GD.PrintErr($"map view: {e.Message}");
+            GD.PrintErr($"map view: {_tablesProblem}");
         }
 
         try
