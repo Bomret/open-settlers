@@ -5,7 +5,7 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <!-- The layer libraries (Domain, Import, Import.HistoryEdition, Application, Adapters) are their own projects, and so is the job generator, which runs in the compiler. -->
+    <!-- The layer libraries (Domain, Import, Import.HistoryEdition, Import.OpenSettlers, Application, Adapters) are their own projects, and so is the job generator, which runs in the compiler. -->
     <Compile Remove="tools/**;tests/**;src/Domain/**;src/Import/**;src/Import.HistoryEdition/**;src/Import.OpenSettlers/**;src/Application/**;src/Adapters/**;src/Generators/**" />
   </ItemGroup>
   <ItemGroup>

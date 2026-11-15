@@ -186,7 +186,7 @@ _Avoid_: core, model layer
 **Adapter**
 The assembly that converts the original's packed bytes, map layers, and bare codes to and from the typed
 model (`src/Adapters/`, ADR 0013). It references the domain, the application, and the History Edition source
-assembly.
+assembly, of which it names only `JobTableNames`, for the job and state names (INV-0011).
 _Avoid_: converter layer, edge
 
 **Platform layer**

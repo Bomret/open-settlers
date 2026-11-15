@@ -16,7 +16,7 @@ namespace OpenSettlers.Import.HistoryEdition;
     "0x438c9f draws nodes of the spiral until a free node of lowland terrain comes up; docs/rules/forestry.md"
 )]
 [StateName(0x14, "plants", "0x4389bf waits on the node and puts the sapling down; docs/rules/forestry.md")]
-public sealed class ForesterTables : JobTables<Forester>
+sealed class ForesterTables : JobTables<Forester>
 {
     /// <inheritdoc />
     public override void Read(byte[] exe, ICollection<(Job Job, object Data)> data)

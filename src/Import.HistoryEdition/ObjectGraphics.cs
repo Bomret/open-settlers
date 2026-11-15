@@ -11,7 +11,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// 1250 to 1369), the castle's, the flag's with its further frames, the hut's, the goods', the water's, and the build markers', and the
 /// shadow masks of those that have one. Only the History Edition source reads it.
 /// </summary>
-public sealed class ObjectGraphics
+sealed class ObjectGraphics
 {
     /// <summary>
     /// The color of palette index <see cref="SurfaceIndex"/> as four bytes (red, green, blue, alpha): the surface the

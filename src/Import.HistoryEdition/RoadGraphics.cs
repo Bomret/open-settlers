@@ -10,7 +10,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// <see cref="TerrainGraphics.LayerWidth"/> x <see cref="TerrainGraphics.MaskLayerHeight"/>, and each road texture (entries
 /// 300 to 309) as a 32 x 20 layer of RGBA pixels through the terrain's palette.
 /// </summary>
-public sealed class RoadGraphics
+sealed class RoadGraphics
 {
     /// <summary>The first and last entry of the strip masks.</summary>
     public const int FirstMask = 230;

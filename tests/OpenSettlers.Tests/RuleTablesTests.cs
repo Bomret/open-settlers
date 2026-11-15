@@ -12,7 +12,7 @@ public sealed class RuleTablesTests
     [TestMethod]
     public void TablesGivenNoJobDataHoldNoneAndAnyJobIsAnError()
     {
-        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], TestProgram.Made().StartStock);
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], TestProgram.MadeStartStock());
 
         Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<FigureAdds>(new Woodcutter()));
         Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<BuilderFigureAdds>(Job.Of(99)));
@@ -37,7 +37,7 @@ public sealed class RuleTablesTests
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
 
-        var tables = new RuleTables(classes, TestProgram.Made().StartStock);
+        var tables = new RuleTables(classes, TestProgram.MadeStartStock());
 
         Assert.IsTrue(tables.ClassOf(MapObject.Flag).IsFlag);
         Assert.IsTrue(tables.ClassOf(MapObject.None).IsEmpty);
@@ -54,7 +54,7 @@ public sealed class RuleTablesTests
 
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             walkRows: rows
         );
 
@@ -76,7 +76,7 @@ public sealed class RuleTablesTests
 
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             goodKinds: kinds
         );
 
@@ -113,7 +113,7 @@ public sealed class RuleTablesTests
 
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             buildingSizes: sizes,
             buildingNeeds: needs
         );
@@ -146,7 +146,7 @@ public sealed class RuleTablesTests
     }
 
     static RuleTables WithJobData(params (Job, object)[] data) =>
-        new(new ObjectClass[RuleTables.ClassCount], TestProgram.Made().StartStock, jobData: data);
+        new(new ObjectClass[RuleTables.ClassCount], TestProgram.MadeStartStock(), jobData: data);
 
     [TestMethod]
     public void JobDataIsKeptByJobAndByType()
@@ -256,7 +256,7 @@ public sealed class RuleTablesTests
         };
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             distribution: order
         );
 

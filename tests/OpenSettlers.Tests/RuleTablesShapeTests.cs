@@ -54,7 +54,7 @@ public sealed class RuleTablesShapeTests
     static RuleTables Distinct() =>
         new(
             [.. Enumerable.Range(0, RuleTables.ClassCount).Select(i => (ObjectClass)(i % 4))],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             stepTimes: [.. Enumerable.Range(0, RuleTables.StepTimeCount).Select(i => (ushort)(1000 + i))],
             doorSpeeds: [.. Enumerable.Range(0, RuleTables.DoorSpeedCount).Select(i => (byte)(100 + i))],
             scanWindows: [.. Enumerable.Range(0, RuleTables.ScanWindowCount).Select(i => (ushort)(300 + i))],
@@ -97,7 +97,7 @@ public sealed class RuleTablesShapeTests
     {
         var tables = TestProgram.Made();
 
-        Assert.AreEqual(RuleTables.StartStockRows, tables.StartStock.Count);
+        Assert.AreEqual(RuleTables.StartStockRows, tables.StartStock.Length);
         for (var row = 0; row < RuleTables.StartStockRows; row++)
         {
             Assert.AreEqual(RuleTables.Goods, tables.StartStock[row].Length);
@@ -143,6 +143,23 @@ public sealed class RuleTablesShapeTests
 
         Assert.AreEqual((short)0, figures.Bases[0]);
         Assert.IsEmpty(Offenders(typeof(FigureTables)).ToList());
-        Assert.IsEmpty(Offenders(typeof(StartStockTable)).ToList());
+    }
+
+    [TestMethod]
+    public void TheStartStockIsCopiedAndHoldsNoRowOfTheCaller()
+    {
+        var rows = TestProgram.MadeStartStock();
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows);
+        rows[2][4] = 99;
+
+        Assert.AreEqual((byte)24, tables.StartStock[2][4]);
+    }
+
+    [TestMethod]
+    public void AStartStockRowPastTheLastIsNoRow()
+    {
+        var tables = TestProgram.Made();
+
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => tables.StartStock[RuleTables.StartStockRows]);
     }
 }

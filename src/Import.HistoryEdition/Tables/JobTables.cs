@@ -35,7 +35,7 @@ interface IJobTables
 /// data and no names needs no module.
 /// </summary>
 /// <typeparam name="TJob">The job the module is for.</typeparam>
-public abstract class JobTables<TJob> : IJobTables
+abstract class JobTables<TJob> : IJobTables
     where TJob : Job, new()
 {
     /// <summary>The job the module is for.</summary>
@@ -47,7 +47,7 @@ public abstract class JobTables<TJob> : IJobTables
 
 /// <summary>The name of the module's job and the evidence for it (INV-0006). The generator reads it at build time.</summary>
 [AttributeUsage(AttributeTargets.Class)]
-public sealed class JobNameAttribute(string name, string evidence) : Attribute
+sealed class JobNameAttribute(string name, string evidence) : Attribute
 {
     /// <summary>The name.</summary>
     public string Name { get; } = name;
@@ -61,7 +61,7 @@ public sealed class JobNameAttribute(string name, string evidence) : Attribute
 /// time and fails the build for a module that names one of them, which <c>NameTable</c> could not hold twice.
 /// </summary>
 [AttributeUsage(AttributeTargets.Assembly)]
-public sealed class CoreStateCodesAttribute(params int[] codes) : Attribute
+sealed class CoreStateCodesAttribute(params int[] codes) : Attribute
 {
     /// <summary>The codes.</summary>
     public int[] Codes { get; } = codes;
@@ -69,7 +69,7 @@ public sealed class CoreStateCodesAttribute(params int[] codes) : Attribute
 
 /// <summary>The name of a settler state the module's job owns and the evidence for it (INV-0006). The generator reads it at build time.</summary>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-public sealed class StateNameAttribute(int code, string name, string evidence) : Attribute
+sealed class StateNameAttribute(int code, string name, string evidence) : Attribute
 {
     /// <summary>The state's code.</summary>
     public int Code { get; } = code;

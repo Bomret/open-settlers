@@ -70,7 +70,7 @@ public sealed class AssetBrowserState
         }
 
         var sorted = kinds.OrderBy(k => k.Name, StringComparer.Ordinal).ToList();
-        if (AssetKinds.NameClash(sorted) is { } clash)
+        if (AssetCheck.NameClash(sorted) is { } clash)
         {
             return new AssetBrowserState(clash, new Dictionary<string, IAssetKind>());
         }

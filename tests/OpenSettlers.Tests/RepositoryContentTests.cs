@@ -125,6 +125,50 @@ public sealed class RepositoryContentTests
         Assert.AreEqual("object/sapling-1.png", Image("object/104"));
     }
 
+    // A project folder the Godot project leaves out of its compile holds a .gdignore, so Godot imports nothing of it, and the
+    // solution lists each of its projects, so the solution builds it.
+    [TestMethod]
+    public void EachProjectFolderTheGodotProjectLeavesOutIsGodotIgnoredAndInTheSolution()
+    {
+        var root = RepositoryRoot();
+        var removed = System
+            .Xml.Linq.XDocument.Load(Path.Combine(root, "OpenSettlers.csproj"))
+            .Descendants("Compile")
+            .Select(compile => (string?)compile.Attribute("Remove"))
+            .OfType<string>()
+            .SelectMany(remove => remove.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            .Select(pattern => pattern.Trim().TrimEnd('*').TrimEnd('/'))
+            .ToList();
+        var solution = System
+            .Xml.Linq.XDocument.Load(Path.Combine(root, "OpenSettlers.slnx"))
+            .Descendants("Project")
+            .Select(project => (string?)project.Attribute("Path"))
+            .ToHashSet();
+
+        var projectFolders = 0;
+        foreach (var folder in removed)
+        {
+            var projects = Files(Path.Combine(root, folder))
+                .Where(file => file.EndsWith(".csproj", StringComparison.Ordinal))
+                .Select(file => Path.GetRelativePath(root, file).Replace('\\', '/'))
+                .ToList();
+            if (projects.Count == 0)
+            {
+                continue;
+            }
+
+            projectFolders++;
+            Assert.IsTrue(File.Exists(Path.Combine(root, folder, ".gdignore")), $"{folder} holds no .gdignore");
+            foreach (var project in projects)
+            {
+                Assert.Contains(project, solution, $"{project} is not in OpenSettlers.slnx");
+            }
+        }
+
+        // The layer libraries, the two sources, the ports, the generator, and the tests.
+        Assert.AreEqual(8, projectFolders);
+    }
+
     // The set's files by path relative to the folder, with forward slashes.
     static List<string> SetFiles(string folder) =>
         Directory.Exists(folder)

@@ -28,7 +28,7 @@ static class RealKinds
     public static IAssetsSource Over(LaunchArgs args, params AssetKind[] kinds) =>
         LaunchInstall.TryOpen(args, out var install, out var problem)
             ? new FakeAssets([.. kinds.Select(k => (IAssetKind)new HistoryEditionAssets.BoundKind(k, install))])
-            : new MissingInstallAssets(problem);
+            : new MissingInstall(problem);
 }
 
 /// <summary>A preview type of a test's own: one no view draws.</summary>

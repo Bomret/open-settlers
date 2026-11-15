@@ -6,7 +6,7 @@ using OpenSettlers.Formats;
 namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>A fill mask as one layer of an array texture: <see cref="Width"/> by <see cref="Height"/> pixels at the top left.</summary>
-public sealed record MaskImage
+sealed record MaskImage
 {
     /// <summary>The width of the mask in pixels.</summary>
     public required int Width { get; init; }
@@ -29,7 +29,7 @@ public sealed record MaskImage
 /// (entries 60 to 221, an empty layer where the archive has none and no triangle needs it) as a <see cref="LayerWidth"/> x <see cref="MaskLayerHeight"/> layer holding 255 on a covered
 /// pixel, and each fill texture (entries 260 to 292) as a 32 x 20 layer of RGBA pixels, the palette applied at load.
 /// </summary>
-public sealed class TerrainGraphics
+sealed class TerrainGraphics
 {
     /// <summary>The archive that holds the graphics (the German one; the three carry the same terrain).</summary>
     public const string ArchiveFile = "loca/SPAD.PA";

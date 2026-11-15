@@ -16,7 +16,7 @@ namespace OpenSettlers.Import.HistoryEdition;
     "digs",
     "0x43e45e walks the node and its six neighbours of the site and changes the heights one a pass; docs/rules/digging.md"
 )]
-public sealed class DiggerTables : JobTables<Digger>
+sealed class DiggerTables : JobTables<Digger>
 {
     /// <inheritdoc />
     public override void Read(byte[] exe, ICollection<(Job Job, object Data)> data)

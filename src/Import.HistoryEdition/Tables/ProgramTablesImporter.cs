@@ -10,7 +10,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// addresses and packed bytes stay here (ADR 0013). <see cref="Import(byte[])"/> finds each table by its address in the program,
 /// through the section headers of the executable.
 /// </summary>
-public static class ProgramTablesImporter
+static class ProgramTablesImporter
 {
     /// <summary>The address of the object class table: 128 bytes, one for each object code (<c>0x41e640</c>).</summary>
     public const int ClassTableAddress = 0x41e640;

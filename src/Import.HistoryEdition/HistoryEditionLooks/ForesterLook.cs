@@ -7,7 +7,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// and the walk's below it.
 /// </summary>
 /// <param name="tables">The tables of the exe: the forester's adds.</param>
-public sealed class ForesterLook(RuleTables tables) : HistoryEditionLook<Forester>
+sealed class ForesterLook(RuleTables tables) : HistoryEditionLook<Forester>
 {
     readonly ForesterFigureAdds _adds = tables.Get<ForesterFigureAdds>(new Forester());
 

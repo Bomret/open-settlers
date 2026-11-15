@@ -7,7 +7,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// load, as the woodcutter's does, below it.
 /// </summary>
 /// <param name="tables">The tables of the exe: the hut's adds.</param>
-public sealed class TypeOneHutLook(RuleTables tables) : HistoryEditionLook<TypeOneHut>
+sealed class TypeOneHutLook(RuleTables tables) : HistoryEditionLook<TypeOneHut>
 {
     readonly HutFigureAdds _adds = tables.Get<HutFigureAdds>(new TypeOneHut());
 

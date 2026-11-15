@@ -9,7 +9,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// sprite drawn as it is), the entry of the figure whose header shifts it (-1 for none; only the second figure is shifted),
 /// and the offset the node's road directions move a waiting carrier by (0 for any other).
 /// </summary>
-public readonly record struct SettlerPick
+readonly record struct SettlerPick
 {
     /// <summary>The sprite entry.</summary>
     public required int Entry { get; init; }
@@ -39,7 +39,7 @@ public readonly record struct SettlerPick
 /// for the carrier (with each good), the woodcutter, and the settler of the type 1 hut. <b>Inferred:</b> every state the
 /// recordings hold no settler of.
 /// </summary>
-public sealed class SettlerFigureTables
+sealed class SettlerFigureTables
 {
     // The sprite entry of the figures, of their colour overlays, and of the second figures (0x406610): the figure 1850 + i
     // has the overlay 2500 + i.

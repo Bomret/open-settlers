@@ -12,14 +12,17 @@ terms and images (ADR 0014), the rule tables port, the walk steps port, and the 
 of game data is an assembly that implements the ports it can fill:
 
 - `OpenSettlers.Import.HistoryEdition` reads a History Edition install. It holds the install, the readers
-  of the original's file formats (internal), the program tables importer with its job tables modules, the
-  History Edition graphics source with its entry tables and job looks, the walk steps, and the asset kinds
-  of the asset browser. It implements every port.
+  of the original's file formats, the program tables importer with its job tables modules, the History
+  Edition graphics source with its entry tables and job looks, the walk steps, and the asset kinds of the
+  asset browser. It implements every port. Only the types the host builds and the job and state names
+  (`JobTableNames`) are public; the rest is internal.
 - `OpenSettlers.Import.OpenSettlers` reads the repository's content set (ADR 0015). It implements the
   graphics source.
 
 The Godot host is the composition root: the launch code builds the sources and gives each view the ports
-it needs. The map view and the host name no type of a source assembly except where the host builds it.
+it needs. The map view and the host name no type of a source assembly except where the host builds it. The
+map view compiles inside the Godot project, which references both source assemblies, so a repository test
+holds it to the ports where the compiler does not (INV-0011).
 
 ```mermaid
 flowchart LR
@@ -58,8 +61,13 @@ assemblies that hold those modules.
 
 ## Consequences
 
-- The adapter assembly references the History Edition assembly for the job and state names.
+- The adapter assembly references the History Edition assembly for the job and state names, and names only
+  `JobTableNames` of it.
 - `RuleTables` exposes no raw array: each table the engine reads is a dedicated type or a typed accessor.
 - The boundary of ADR 0014 between the shared map view and the History Edition source is an assembly
-  boundary: the map view cannot name an entry table or a format type.
+  boundary: the entry tables and the format types are internal, so the map view cannot name them.
+- Two namespaces of the source assemblies differ from their folders: the format readers in
+  `src/Import.HistoryEdition/Formats/` are `OpenSettlers.Formats`, and the content-set assembly `OpenSettlers.Import.OpenSettlers` uses `OpenSettlers.Import.ContentSet`, because a
+  namespace `OpenSettlers.Import.OpenSettlers` would shadow the root namespace `OpenSettlers` inside
+  `OpenSettlers.Import`.
 - The layouts (ADR 0009) are repository test fixtures and are not read through a port.

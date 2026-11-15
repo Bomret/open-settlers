@@ -4,7 +4,7 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>The mask and the texture the original draws a road strip with (entries of <c>loca/SPAD.PA</c>).</summary>
-public readonly record struct RoadDraw
+readonly record struct RoadDraw
 {
     /// <summary>The entry of the mask.</summary>
     public required int Mask { get; init; }
@@ -18,7 +18,7 @@ public readonly record struct RoadDraw
 /// <c>0x428008</c>, <c>0x428105</c>, and <c>0x4281cc</c>. The History Edition source applies it to a
 /// <see cref="RoadStrip"/>.
 /// </summary>
-public static class RoadRules
+static class RoadRules
 {
     // The first mask entry of a strip for the height difference 0: the east strips take 230 to 238, the south-east
     // 239 to 247, and the south 248 to 256, a difference of -4 to 4 each.

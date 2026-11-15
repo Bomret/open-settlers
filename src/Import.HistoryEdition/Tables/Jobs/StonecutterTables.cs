@@ -26,7 +26,7 @@ namespace OpenSettlers.Import.HistoryEdition;
     "cuts-stone",
     "0x435c5c steps onto the heap's node, strikes, and takes a stone off it; docs/rules/stonecutting.md"
 )]
-public sealed class StonecutterTables : JobTables<Stonecutter>
+sealed class StonecutterTables : JobTables<Stonecutter>
 {
     /// <inheritdoc />
     public override void Read(byte[] exe, ICollection<(Job Job, object Data)> data)

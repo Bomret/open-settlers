@@ -9,8 +9,9 @@ namespace OpenSettlers.Simulation;
 /// raw value. A name several codes share (<c>tree</c>) resolves to all of them through <see cref="CodesNamed"/>. The
 /// object names read the class table the engine loaded (<see cref="RuleTables"/>): <c>stone</c> names a code the
 /// docs call a stone only where that table says class 2. The job, state, and building names need no table and are
-/// static. The names of the jobs, and of the states a job owns, come from the jobs' tables modules
-/// (<see cref="JobTables{TJob}"/>); the states that belong to no one job are stated here.
+/// static. The names of the jobs, and of the states a job owns, come from the jobs' tables modules of the History
+/// Edition source through <see cref="JobTableNames"/>, the one type of that source this assembly names (INV-0011); the
+/// states that belong to no one job are stated here.
 /// </summary>
 /// <remarks>The names of the object codes as the class table <paramref name="tables"/> reads them.</remarks>
 /// <param name="tables">The rule tables whose class table the names are read from.</param>

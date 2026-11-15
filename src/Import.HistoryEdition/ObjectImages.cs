@@ -5,7 +5,7 @@ using OpenSettlers.Import;
 namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>The History Edition's sprites and masks as <see cref="ObjectImage"/>s.</summary>
-public static class ObjectImages
+static class ObjectImages
 {
     /// <summary>The palette index the shadow routine at <c>0x405b80</c> stores.</summary>
     public const int ShadowColor = 0x80;

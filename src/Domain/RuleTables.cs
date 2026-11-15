@@ -8,7 +8,7 @@ namespace OpenSettlers.Domain;
 /// <summary>
 /// The tables of the original's program data that the rules read, as typed values: the object classes, the start stock,
 /// the step times, and the others below. They come from the install's <c>Siedler1.exe</c> and are never restated in
-/// source (INV-0001): <c>ProgramTablesImporter</c> in the adapters builds them from the program's bytes, and a test
+/// source (INV-0001): <c>ProgramTablesImporter</c> in the History Edition source builds them from the program's bytes, and a test
 /// builds its own from made-up values. The rules read the typed accessors (<see cref="ClassOf"/>, <see cref="StepTime"/>,
 /// <see cref="DoorSpeed(int)"/>, and the others). The raw tables the importer's tests check against the original, and the
 /// <see cref="Figures"/> the map view draws from, are read-only values: no member hands out the stored data for change, and the constructor
@@ -101,7 +101,7 @@ public sealed class RuleTables
     /// </summary>
     public RuleTables(
         ObjectClass[] classes,
-        StartStockTable startStock,
+        byte[][] startStock,
         ushort[]? stepTimes = null,
         byte[]? doorSpeeds = null,
         ushort[]? scanWindows = null,
@@ -129,8 +129,8 @@ public sealed class RuleTables
     {
         if (
             classes.Length != ClassCount
-            || startStock.Count != StartStockRows
-            || Enumerable.Range(0, startStock.Count).Any(row => startStock[row].Length != Goods)
+            || startStock.Length != StartStockRows
+            || startStock.Any(row => row.Length != Goods)
         )
         {
             throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows of 26.");
@@ -138,7 +138,7 @@ public sealed class RuleTables
 
         // Every table is copied, the goods of each distribution step included, so no caller keeps a hand on what the tables hold.
         _classes = [.. classes];
-        StartStock = startStock;
+        StartStock = [.. startStock.Select(row => row.ToImmutableArray())];
         StepTimes = [.. stepTimes ?? new ushort[StepTimeCount]];
         _doorSpeeds = [.. doorSpeeds ?? new byte[DoorSpeedCount]];
         _scanWindows = [.. scanWindows ?? new ushort[ScanWindowCount]];
@@ -210,7 +210,7 @@ public sealed class RuleTables
     public ObjectClass ClassOf(MapObject mapObject) => _classes[mapObject.Code];
 
     /// <summary>The start stock rows, each <see cref="Goods"/> counts.</summary>
-    public StartStockTable StartStock { get; }
+    public ImmutableArray<ImmutableArray<byte>> StartStock { get; }
 
     /// <summary>The figure tables the settlers are drawn from.</summary>
     public FigureTables Figures { get; }

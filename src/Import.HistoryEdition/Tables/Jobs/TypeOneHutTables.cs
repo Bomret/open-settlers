@@ -6,7 +6,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// The tables of the settler of the type 1 hut: his figure adds from the immediates of his handler (<c>0x43fed8</c>), where the stub
 /// of job 11 must jump to it. The job has no name.
 /// </summary>
-public sealed class TypeOneHutTables : JobTables<TypeOneHut>
+sealed class TypeOneHutTables : JobTables<TypeOneHut>
 {
     /// <inheritdoc />
     public override void Read(byte[] exe, ICollection<(Job Job, object Data)> data)

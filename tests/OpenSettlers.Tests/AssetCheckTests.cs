@@ -137,11 +137,11 @@ public sealed class AssetCheckTests
     [TestMethod]
     public void TwoKindsOfOneNameClashAndUniqueNamesDoNot()
     {
-        var clash = AssetKinds.NameClash([new ListedKind("text"), new ListedKind("sound"), new ListedKind("text")]);
+        var clash = AssetCheck.NameClash([new ListedKind("text"), new ListedKind("sound"), new ListedKind("text")]);
 
         StringAssert.Contains(clash, "\"text\"");
-        Assert.IsNull(AssetKinds.NameClash([new ListedKind("text"), new ListedKind("sound")]));
-        Assert.IsNull(AssetKinds.NameClash([]));
+        Assert.IsNull(AssetCheck.NameClash([new ListedKind("text"), new ListedKind("sound")]));
+        Assert.IsNull(AssetCheck.NameClash([]));
     }
 
     [TestMethod]
@@ -163,7 +163,7 @@ public sealed class AssetCheckTests
     {
         var report = AssetCheck.Run(
             Check,
-            new MissingInstallAssets("no install given: pass --game <dir> or set SIEDLER_DIR")
+            new MissingInstall("no install given: pass --game <dir> or set SIEDLER_DIR")
         );
 
         Assert.AreEqual(2, report.ExitCode);
@@ -176,10 +176,7 @@ public sealed class AssetCheckTests
     [TestMethod]
     public void ABadArgumentExitsFourBeforeThePortIsAsked()
     {
-        var report = AssetCheck.Run(
-            LaunchArgs.Parse(["--check", "--map"], null),
-            new MissingInstallAssets("never asked")
-        );
+        var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--map"], null), new MissingInstall("never asked"));
 
         Assert.AreEqual(4, report.ExitCode);
         Assert.IsFalse(report.Lines.Any(l => l.Contains("never asked")));

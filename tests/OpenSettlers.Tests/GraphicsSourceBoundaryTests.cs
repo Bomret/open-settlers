@@ -101,14 +101,25 @@ public sealed class GraphicsSourceBoundaryTests
     }
 
     // The History Edition assembly is the one place that names its types, the format readers, and the figure handlers and adds
-    // (ADR 0016, ADR 0017, INV-0010). The map view and the viewer classes outside the composition root (the launch code and the
-    // main scene, `AssetBrowserView`) draw through the ports. The asset browser's views read the install until their move.
+    // (ADR 0016, ADR 0017, INV-0010, INV-0011). The map view compiles inside the Godot project, which references both source
+    // assemblies, so the compiler does not keep it from their public types: this scan does. The map view, the asset check and
+    // the asset browser's state (src/Assets), and the viewer classes outside the composition root (the launch code and the main
+    // scene, `AssetBrowserView`) read and draw through the ports.
     static readonly string[] PortsOnly =
     [
         "src/Viewer/MapViewControl.cs",
         "src/Viewer/PlayDriver.cs",
         "src/Viewer/GodotImageDecoder.cs",
+        "src/Viewer/PreviewView.cs",
+        "src/Viewer/PaletteView.cs",
+        "src/Viewer/RawImageView.cs",
+        "src/Viewer/SoundView.cs",
+        "src/Viewer/SpriteView.cs",
+        "src/Viewer/TextView.cs",
     ];
+
+    // The folders whose every class reads and draws through the ports.
+    static readonly string[] PortsOnlyFolders = ["src/MapView", "src/Assets"];
 
     // What the shared code may not name: a History Edition type, its namespace, the format readers, and the figure terms.
     static List<string> HistoryEditionNames(string text)
@@ -143,20 +154,26 @@ public sealed class GraphicsSourceBoundaryTests
     }
 
     [TestMethod]
-    public void NoClassOfTheMapViewOrTheViewerOutsideTheCompositionRootNamesAHistoryEditionType()
+    public void NoClassOfTheMapViewTheAssetsOrTheViewerOutsideTheCompositionRootNamesAHistoryEditionType()
     {
         var root = RootOf();
-        var files = Directory
-            .EnumerateFiles(Path.Combine(root, "src/MapView"), "*.cs", SearchOption.AllDirectories)
-            .Where(file => !file.Contains("/obj/") && !file.Contains("/bin/"))
-            .Concat(PortsOnly.Select(path => Path.Combine(root, path)))
+        var folders = PortsOnlyFolders
+            .Select(folder =>
+                Directory
+                    .EnumerateFiles(Path.Combine(root, folder), "*.cs", SearchOption.AllDirectories)
+                    .Where(file => !file.Contains("/obj/") && !file.Contains("/bin/"))
+                    .ToList()
+            )
             .ToList();
+        var files = folders.SelectMany(f => f).Concat(PortsOnly.Select(path => Path.Combine(root, path))).ToList();
 
         foreach (var file in files)
         {
             Assert.IsEmpty(HistoryEditionNames(File.ReadAllText(file)), $"{file} names a History Edition type");
         }
 
+        // Each folder holds classes to scan, so a moved folder does not empty the check.
+        Assert.IsTrue(folders.All(f => f.Count > 0));
         Assert.IsGreaterThan(20, files.Count);
     }
 

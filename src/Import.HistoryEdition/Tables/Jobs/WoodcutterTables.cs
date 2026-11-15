@@ -9,7 +9,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 [JobName("woodcutter", "Woodcutter; docs/rules/woodcutting.md")]
 [StateName(0x11, "cuts-tree", TableEvidence.State)]
 [StateName(0x12, "looks-for-tree", TableEvidence.State)]
-public sealed class WoodcutterTables : JobTables<Woodcutter>
+sealed class WoodcutterTables : JobTables<Woodcutter>
 {
     /// <inheritdoc />
     public override void Read(byte[] exe, ICollection<(Job Job, object Data)> data)

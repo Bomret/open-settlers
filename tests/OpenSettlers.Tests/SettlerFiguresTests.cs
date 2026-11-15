@@ -150,7 +150,7 @@ public sealed class SettlerFiguresTests
         new(
             new RuleTables(
                 new ObjectClass[RuleTables.ClassCount],
-                TestProgram.Made().StartStock,
+                TestProgram.MadeStartStock(),
                 figureBases: bases,
                 figureOffsets: offsets,
                 carriedFigures: carried ?? [],

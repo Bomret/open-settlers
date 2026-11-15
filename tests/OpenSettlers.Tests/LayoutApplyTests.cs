@@ -39,7 +39,7 @@ public sealed class LayoutApplyTests
         classes[MapObject.Flag.Code] = 3;
         var tables = new RuleTables(
             classes,
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             workers: TestProgram.MadeWorkers(stonecutter: true)
         );
 
@@ -133,7 +133,7 @@ public sealed class LayoutApplyTests
         return GameFactory.Create(
             new RuleTables(
                 classes,
-                TestProgram.Made().StartStock,
+                TestProgram.MadeStartStock(),
                 buildingSizes: sizes,
                 workers: TestProgram.MadeWorkers(stonecutter: true)
             ),

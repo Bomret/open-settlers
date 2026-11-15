@@ -7,7 +7,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// adds to a settler's figure byte to make the figure word (<see cref="SettlerFigureTables"/>). A job without a look has no drawn
 /// figure. The figure tables stay inside this source (ADR 0014, INV-0010).
 /// </summary>
-public abstract class HistoryEditionLook
+abstract class HistoryEditionLook
 {
     /// <summary>The job the look is for.</summary>
     public abstract Job Job { get; }
@@ -23,7 +23,7 @@ public abstract class HistoryEditionLook
 /// build for a look with no such constructor and for a second look of one job.
 /// </summary>
 /// <typeparam name="TJob">The job the look is for.</typeparam>
-public abstract class HistoryEditionLook<TJob> : HistoryEditionLook
+abstract class HistoryEditionLook<TJob> : HistoryEditionLook
     where TJob : Job, new()
 {
     /// <inheritdoc />

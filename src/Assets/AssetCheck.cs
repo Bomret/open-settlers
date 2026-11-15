@@ -25,6 +25,15 @@ public sealed record CheckReport
 public static class AssetCheck
 {
     /// <summary>
+    /// The problem with <c>kinds</c> that stops the check and the browser: two kinds of one name. Null when every
+    /// name is unique.
+    /// </summary>
+    internal static string? NameClash(IEnumerable<IAssetKind> kinds) =>
+        kinds.GroupBy(k => k.Name).FirstOrDefault(g => g.Count() > 1) is { } twice
+            ? $"two asset kinds are named \"{twice.Key}\"; a kind's name must be unique"
+            : null;
+
+    /// <summary>
     /// Runs the check over the kinds of the assets port <c>assets</c>. Exit code 4 (a bad launch argument) wins over all;
     /// exit code 2 (the port has no usable data, with the reason its <c>IOException</c> gives) wins over 1; exit code 3
     /// (two kinds of one name) stops the check before it reads. A kind or an asset that throws <c>IOException</c>,
@@ -53,7 +62,7 @@ public static class AssetCheck
             return new CheckReport { ExitCode = 2, Lines = [$"ERROR {e.Message}"] };
         }
 
-        if (AssetKinds.NameClash(kinds) is { } clash)
+        if (NameClash(kinds) is { } clash)
         {
             return new CheckReport { ExitCode = 3, Lines = [$"ERROR {clash}"] };
         }

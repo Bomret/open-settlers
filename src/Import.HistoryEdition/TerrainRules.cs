@@ -3,7 +3,7 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>The mask and the texture the original draws a terrain triangle with (entries of <c>loca/SPAD.PA</c>).</summary>
-public readonly record struct TerrainDraw
+readonly record struct TerrainDraw
 {
     /// <summary>The entry of the mask.</summary>
     public required int Mask { get; init; }
@@ -18,7 +18,7 @@ public readonly record struct TerrainDraw
 /// read five-bit heights and form <c>(a + 4 - b) + 9 * (a' + 4 - b')</c> of the three nodes; the sum indexes a
 /// table of 81 values that picks the texture variant, and the terrain of the triangle picks a row of eight.
 /// </summary>
-public static class TerrainRules
+static class TerrainRules
 {
     const int FirstUpperMask = 60;
     const int FirstLowerMask = 141;

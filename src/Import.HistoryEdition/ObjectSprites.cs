@@ -7,7 +7,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// subtracts 8 from the code and, below 24, picks a frame of an animation from a counter; the sprite entry is that
 /// index plus 1250 (<c>Gfx_DrawObjectSprite</c>, <c>0x44da4d</c>).
 /// </summary>
-public static class ObjectSprites
+static class ObjectSprites
 {
     /// <summary>The first code this view draws besides the flag; codes 2 to 7 draw through other routines (buildings).</summary>
     public const int FirstCode = 8;

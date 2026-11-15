@@ -54,7 +54,7 @@ public static class LaunchInstall
     public static IRuleTablesSource RuleTables(LaunchArgs args) =>
         TryOpen(args, out var install, out var problem)
             ? new HistoryEditionRuleTables(install)
-            : new MissingInstallTables(problem);
+            : new MissingInstall(problem);
 
     /// <summary>
     /// The assets port of the install the launch arguments name. Listing its kinds fails with the problem
@@ -63,5 +63,5 @@ public static class LaunchInstall
     public static IAssetsSource Assets(LaunchArgs args) =>
         TryOpen(args, out var install, out var problem)
             ? new HistoryEditionAssets(install)
-            : new MissingInstallAssets(problem);
+            : new MissingInstall(problem);
 }

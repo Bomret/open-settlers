@@ -13,7 +13,7 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// adds the settler's shadow to a figure. Equal picks answer with one image instance. A sprite the archive does not hold, or
 /// cannot read, draws nothing. Only the History Edition source reads it.
 /// </summary>
-public sealed class SettlerSprites
+sealed class SettlerSprites
 {
     /// <summary>
     /// The mask entry of a settler's shadow: <c>Gfx_DrawSettlerRecords</c> stores 4 at <c>0x45006a</c> and draws it

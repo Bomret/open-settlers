@@ -26,7 +26,7 @@ public sealed class AssetBrowserStateTests
     public void APortWithNoUsableDataGivesOneMessageAndNoCategories()
     {
         var state = AssetBrowserState.Open(
-            new MissingInstallAssets("no install given: pass --game <dir> or set SIEDLER_DIR")
+            new MissingInstall("no install given: pass --game <dir> or set SIEDLER_DIR")
         );
 
         Assert.AreEqual("no install given: pass --game <dir> or set SIEDLER_DIR", state.Message);

@@ -59,7 +59,7 @@ public sealed class HistoryEditionAssetsTests
 
         var kinds = LaunchInstall.Assets(Check(fake)).Kinds();
 
-        Assert.IsNull(AssetKinds.NameClash(kinds));
+        Assert.IsNull(AssetCheck.NameClash(kinds));
         foreach (var kind in kinds)
         {
             var assets = kind.Enumerate().ToList();

@@ -25,7 +25,7 @@ namespace OpenSettlers.Import.HistoryEdition;
     "saws",
     "0x4359fe takes a log out of the building's fill and saws it for 0x93f clock units; docs/rules/sawmilling.md"
 )]
-public sealed class SawmillerTables : JobTables<Sawmiller>
+sealed class SawmillerTables : JobTables<Sawmiller>
 {
     /// <inheritdoc />
     public override void Read(byte[] exe, ICollection<(Job Job, object Data)> data)

@@ -927,7 +927,7 @@ public sealed class HistoryEditionSourceTests
 
         return new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             figureBases: bases,
             idleOffsets: idleOffsets,
             jobData: TestProgram.MadeJobData()
@@ -1044,7 +1044,7 @@ public sealed class HistoryEditionSourceTests
         offsets[2 * 4] = 1;
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             figureBases: [.. SettlerTables().Figures.Bases],
             figureOffsets: offsets,
             jobData: TestProgram.MadeJobData()
