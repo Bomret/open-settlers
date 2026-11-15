@@ -2,8 +2,9 @@
 
 Usage: python3 -I headless.py natives | import | update | dump [index-only]
 
-Run from the repository root. Needs analyzeHeadless on PATH (mise puts it there) and, for import,
-SIEDLER_DIR.
+Run from the root of the repository or of one of its git worktrees. The Ghidra project and the dump lie in
+re-local/ of the main checkout, which every worktree shares; the scripts and the program index come from the
+current tree. Needs analyzeHeadless on PATH (mise puts it there) and, for import, SIEDLER_DIR.
 """
 
 import os
@@ -12,8 +13,26 @@ import subprocess
 import sys
 
 ROOT = os.getcwd()
-PROJECT = os.path.join(ROOT, "re-local", "ghidra")
-DUMP = os.path.join(ROOT, "re-local", "dump")
+
+
+def main_checkout():
+    """The main checkout: the parent of git's common dir. The current folder outside git or without git."""
+    try:
+        found = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True, text=True,
+        )
+    except OSError:
+        return ROOT
+    common = found.stdout.strip()
+    if found.returncode != 0 or not common:
+        return ROOT
+    return os.path.realpath(os.path.dirname(common))
+
+
+MAIN = main_checkout()
+PROJECT = os.path.join(MAIN, "re-local", "ghidra")
+DUMP = os.path.join(MAIN, "re-local", "dump")
 SCRIPTS = os.path.join(ROOT, "tools", "GhidraDump")
 INDEX = os.path.join(ROOT, "docs", "rules", "program-index.md")
 APPLY_INDEX = ["-postScript", "CreateMissingFunctions.java", "-postScript", "ApplyIndexNames.java", INDEX]
