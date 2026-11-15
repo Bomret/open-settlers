@@ -38,11 +38,11 @@ public sealed class LaunchInstallTests
     public void SeedInfoOnAMissingInstallFolderExitsWithNoTablesAndNamesTheFolder()
     {
         var folder = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        Seed.TryParse("7", out var seed, out _);
+        Seed.TryParse("1234567812345678", out var seed, out _);
 
         var code = SeedInfo.Run(
             LaunchInstall.RuleTables(LaunchArgs.Parse(["--game", folder], null)),
-            "7",
+            "1234567812345678",
             seed,
             MapSize.Offered[0],
             out var text
