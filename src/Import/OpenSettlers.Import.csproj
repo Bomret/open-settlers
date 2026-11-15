@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Using Include="OpenSettlers.Domain" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
+  </ItemGroup>
+</Project>

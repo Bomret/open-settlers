@@ -1,4 +1,4 @@
-namespace OpenSettlers.MapView;
+namespace OpenSettlers.Import;
 
 /// <summary>A decoded image: <see cref="Width"/> by <see cref="Height"/> pixels, four bytes (red, green, blue, alpha) each, row by row.</summary>
 public sealed record DecodedImage

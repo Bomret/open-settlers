@@ -1,6 +1,6 @@
 using OpenSettlers.Domain;
 
-namespace OpenSettlers.MapView;
+namespace OpenSettlers.Import;
 
 /// <summary>
 /// One draw term of the map's objects, named in game terms (INV-0010): a map object, a building, or a good at a flag.
