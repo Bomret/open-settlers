@@ -6,7 +6,7 @@ namespace OpenSettlers.Import.ContentSet;
 /// The look of a job under the Open Settlers source: the name its frames carry in the content set's manifest
 /// (<see cref="OpenSettlersSource.SettlerKey"/>). A job without a look draws nothing under the source.
 /// </summary>
-public abstract class OpenSettlersLook
+abstract class OpenSettlersLook
 {
     /// <summary>The job the look is for.</summary>
     public abstract Job Job { get; }
@@ -22,7 +22,7 @@ public abstract class OpenSettlersLook
 /// </summary>
 /// <typeparam name="TJob">The job the look is for.</typeparam>
 /// <param name="key">The job's name in the manifest keys.</param>
-public abstract class OpenSettlersLook<TJob>(string key) : OpenSettlersLook
+abstract class OpenSettlersLook<TJob>(string key) : OpenSettlersLook
     where TJob : Job, new()
 {
     /// <inheritdoc />

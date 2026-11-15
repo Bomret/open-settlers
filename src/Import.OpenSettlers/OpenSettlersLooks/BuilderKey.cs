@@ -3,4 +3,4 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.Import.ContentSet;
 
 /// <summary>The builder's key in the content set.</summary>
-public sealed class BuilderKey() : OpenSettlersLook<Builder>("builder");
+sealed class BuilderKey() : OpenSettlersLook<Builder>("builder");
