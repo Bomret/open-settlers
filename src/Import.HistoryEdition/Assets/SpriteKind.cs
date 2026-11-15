@@ -106,7 +106,7 @@ sealed class SpriteKind : ArchiveEntryKind
             Height = header.Height,
             OffsetX = header.OffsetX,
             OffsetY = header.OffsetY,
-            Rgba = sprite.ToRgba(palette, (byte?)oneColor),
+            Rgba = sprite.ToRgba(palette, oneColor),
             OneColor = oneColor,
         };
     }

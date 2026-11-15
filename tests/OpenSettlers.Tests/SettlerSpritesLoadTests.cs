@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,6 +20,29 @@ public sealed class SettlerSpritesLoadTests
         Assert.IsTrue(Install.TryOpen(fake.Root, out var install, out _));
 
         return install;
+    }
+
+    // A player color outside the palette is refused with its value, whether or not the overlay has a covered pixel.
+    [TestMethod]
+    [DataRow(256, true)]
+    [DataRow(-1, true)]
+    [DataRow(256, false)]
+    public void APlayerColorOutsideThePaletteIsRefusedWithTheValue(int colour, bool covered)
+    {
+        var overlay = new ObjectImage
+        {
+            Width = 1,
+            Height = 1,
+            OffsetX = 0,
+            OffsetY = 0,
+            Rgba = covered ? [1, 2, 3, 255] : [0, 0, 0, 0],
+        };
+
+        var failure = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
+            SettlerSprites.Fill(overlay, OpenSettlers.Formats.PaletteFile.Read(new byte[768]), colour)
+        );
+
+        StringAssert.Contains(failure.Message, colour.ToString());
     }
 
     // The rule tables are read only after the three entries, so a load that fails on an entry never reaches them.

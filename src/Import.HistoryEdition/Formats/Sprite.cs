@@ -23,15 +23,16 @@ sealed record Sprite
     /// the palette's color for <paramref name="oneColor"/> where the program draws the sprite in one color
     /// (<c>0x405880</c>); every other pixel fully transparent.
     /// </summary>
-    public byte[] ToRgba(Palette palette, byte? oneColor = null)
+    public byte[] ToRgba(Palette palette, int? oneColor = null)
     {
         var indices = Indices;
         if (oneColor is { } color)
         {
+            var one = (byte)Palette.Checked(color, nameof(oneColor));
             indices = new byte[Indices.Length];
             for (var pixel = 0; pixel < indices.Length; pixel++)
             {
-                indices[pixel] = Drawn[pixel] ? color : (byte)0;
+                indices[pixel] = Drawn[pixel] ? one : (byte)0;
             }
         }
 

@@ -28,7 +28,7 @@ sealed record Mask
     public byte[] ToRgba(Palette palette, int color)
     {
         var indices = new byte[Covered.Length];
-        Array.Fill(indices, (byte)color);
+        Array.Fill(indices, (byte)Palette.Checked(color, nameof(color)));
         var rgba = IndexedImage.ToRgba(indices, palette);
         for (var i = 0; i < Covered.Length; i++)
         {

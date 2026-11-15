@@ -116,6 +116,25 @@ public sealed class PaletteFileTests
         });
     }
 
+    // Source: #269. 1 << 30 times 4 overflows int to 0, which would otherwise read as color 0.
+    [TestMethod]
+    [DataRow(1 << 30)]
+    [DataRow(int.MaxValue)]
+    [DataRow(int.MinValue)]
+    [DataRow(-1)]
+    [DataRow(256)]
+    public void AnIndexOutsideThePaletteIsRefusedWithTheValue(int index)
+    {
+        var palette = PaletteFile.Read(Triples(0, 0, 0));
+
+        var failure = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
+        {
+            _ = palette.Rgba(index);
+        });
+
+        StringAssert.Contains(failure.Message, index.ToString());
+    }
+
     [TestMethod]
     public void APaletteShorterThan768BytesIsUnreadableWithItsSize()
     {
