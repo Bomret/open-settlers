@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
@@ -42,6 +44,27 @@ public sealed class MapViewState
 
     /// <summary>Why the last change was refused; null after a change that was accepted.</summary>
     public string? Problem { get; private set; }
+
+    /// <summary>
+    /// Reads the rule tables from the port. Where the port cannot read them (an <see cref="IOException"/>,
+    /// <see cref="InvalidDataException"/>, or <see cref="UnauthorizedAccessException"/>) the result is null and
+    /// <paramref name="problem"/> is the failure's message; otherwise <paramref name="problem"/> is null.
+    /// </summary>
+    public static RuleTables? ReadTables(IRuleTablesSource source, out string? problem)
+    {
+        try
+        {
+            problem = null;
+
+            return source.Read();
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            problem = e.Message;
+
+            return null;
+        }
+    }
 
     /// <summary>
     /// Opens the state on the program's rule tables, a seed, and a size, generating their map unless one is refused.

@@ -61,7 +61,7 @@ The test project does not generate a documentation file. Its documentation stays
 
 ### Godot `.uid` files
 
-A new script or shader in a Godot-scanned folder (`src/Assets/`, `src/Formats/`, `src/Launch/`, `src/MapView/`, `src/Viewer/`) gets a `.uid` file from the Godot editor. Generate it with `mise exec -- <godot> --headless --import --path .`, where `<godot>` is the `GODOT` name in `mise.toml` for the platform, and commit it with the source. A new folder of C# sources outside the Godot assembly (`<Compile Remove>` in `OpenSettlers.csproj`) gets a `.gdignore`.
+A new script or shader in a Godot-scanned folder (`src/Assets/`, `src/Launch/`, `src/MapView/`, `src/Viewer/`) gets a `.uid` file from the Godot editor. Generate it with `mise exec -- <godot> --headless --import --path .`, where `<godot>` is the `GODOT` name in `mise.toml` for the platform, and commit it with the source. A new folder of C# sources outside the Godot assembly (`<Compile Remove>` in `OpenSettlers.csproj`) gets a `.gdignore`.
 
 ## C# Style
 

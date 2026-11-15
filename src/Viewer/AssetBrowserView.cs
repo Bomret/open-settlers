@@ -3,6 +3,8 @@ using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
 using OpenSettlers.Domain;
+using OpenSettlers.Import.ContentSet;
+using OpenSettlers.Import.HistoryEdition;
 using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -49,13 +51,10 @@ public partial class AssetBrowserView : Control
 
         if (args.Mode == LaunchMode.SeedInfo)
         {
-            // Seed info reads the large objects from the install's program. A Godot callback exception does not set
+            // Seed info reads the large objects through the rule tables port. A Godot callback exception does not set
             // the exit code, so this owns it.
             var code = SeedInfo.Run(
-                () =>
-                    Install.TryOpen(args, out var install, out var problem)
-                        ? ProgramTablesImporter.Import(install.ReadAll(Install.Program))
-                        : throw new System.IO.IOException(problem),
+                LaunchInstall.RuleTables(args),
                 args.SeedText!,
                 args.Seed!.Value,
                 args.Size ?? MapSize.Offered[0],
@@ -75,10 +74,9 @@ public partial class AssetBrowserView : Control
             return;
         }
 
-        var kinds = AssetKind.Discover();
         if (args.Mode == LaunchMode.Check)
         {
-            RunCheck(args, kinds);
+            RunCheck(args, LaunchInstall.Assets(args));
 
             return;
         }
@@ -92,8 +90,7 @@ public partial class AssetBrowserView : Control
 
         var views = PreviewView.Discover();
         _state = AssetBrowserState.Open(
-            args,
-            kinds,
+            LaunchInstall.Assets(args),
             selectFirst: false,
             previewClash: PreviewClash.Of(views.Select(v => (v.GetType().Name, v.PreviewType)))
         );
@@ -137,7 +134,7 @@ public partial class AssetBrowserView : Control
 
                 return (code, loaded, message);
             },
-            a => Install.TryOpen(a, out var opened, out var problem) ? (opened, null) : (null, problem),
+            a => LaunchInstall.TryOpen(a, out var opened, out var problem) ? (opened, null) : (null, problem),
             PlayScript.Read,
             () => ProjectSettings.GlobalizePath("res://")
         );
@@ -162,14 +159,29 @@ public partial class AssetBrowserView : Control
         var install = open.Install;
         var script = open.Script;
         var folder = open.PlayOutFolder;
+        IRuleTablesSource tablesSource = new HistoryEditionRuleTables(install);
+        // The view calls this where it catches a read failure: a broken content set names its file and key, and the view draws
+        // no map, as for a missing install file.
+        Func<RuleTables?, GraphicsLoad> loadGraphics =
+            args.Graphics == GraphicsSourceName.OpenSettlers
+                ? _ => new GraphicsLoad
+                {
+                    Source = OpenSettlersSource.Load(
+                        ProjectSettings.GlobalizePath("res://content/open-settlers"),
+                        new GodotImageDecoder()
+                    ),
+                }
+                : tables => HistoryEditionSource.LoadGraphics(install, tables);
+        Func<IWalkSteps> loadSteps = () => StepOffsets.Load(install);
         var view = layout is not null
-            ? new MapViewControl(install, layout, args.Graphics)
+            ? new MapViewControl(tablesSource, loadGraphics, loadSteps, layout)
             : new MapViewControl(
-                install,
+                tablesSource,
+                loadGraphics,
+                loadSteps,
                 args.SeedText ?? MapViewState.DefaultSeed,
                 args.Size?.Value ?? MapSize.Offered[0].Value,
                 args.Mode == LaunchMode.GameView,
-                args.Graphics,
                 args.Stock
             );
         AddChild(view);
@@ -180,12 +192,12 @@ public partial class AssetBrowserView : Control
     }
 
     // A Godot callback exception does not set the exit code, so the check owns it.
-    void RunCheck(LaunchArgs args, System.Collections.Generic.IReadOnlyList<AssetKind> kinds)
+    void RunCheck(LaunchArgs args, IAssetsSource assets)
     {
         int code;
         try
         {
-            var report = AssetCheck.Run(args, kinds);
+            var report = AssetCheck.Run(args, assets);
             foreach (var line in report.Lines)
             {
                 GD.Print(line);

@@ -1,0 +1,72 @@
+using OpenSettlers.Formats;
+
+namespace OpenSettlers.Import.HistoryEdition;
+
+/// <summary>
+/// The dx and dy of every step of every walk frame, from entry 2 of the graphics archive: the table the placement of a
+/// walking settler reads under every graphics source (<c>docs/rules/settlers.md</c>, "Drawing the walk"). The entry holds a
+/// dword, then 200 big-endian offsets, one for each frame, from the first byte after that dword; each offset names a
+/// sequence of (figure byte, dx, dy) triples. The settler's frame picks the sequence and the time it has left, in ticks (8
+/// clock units), picks the triple. The figure byte belongs to the History Edition source, which picks the figure by it.
+/// </summary>
+/// <remarks>The table of the bytes of entry 2.</remarks>
+/// <param name="entry">The bytes of entry 2 of the graphics archive.</param>
+public sealed class StepOffsets(byte[] entry) : IWalkSteps
+{
+    /// <summary>The number of walk frames the entry holds a sequence offset for.</summary>
+    public const int Frames = 200;
+
+    // The end of the table of sequence offsets in the entry: a count word, then a dword for each frame.
+    internal const int TableEnd = 4 + 4 * Frames;
+
+    // The entry of the graphics archive that holds the sequences.
+    const int Entry = 2;
+
+    readonly byte[] _data = entry;
+
+    /// <summary>Reads the table from the install. Throws <see cref="System.IO.InvalidDataException"/> where the entry is absent.</summary>
+    public static StepOffsets Load(Install install) =>
+        From(ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile)));
+
+    /// <summary>Reads the table from an archive already read. Throws <see cref="System.IO.InvalidDataException"/> where the entry is absent.</summary>
+    internal static StepOffsets From(Archive archive) =>
+        new(TerrainGraphics.Entry(archive, Entry, "the walk sequences", data => data.ToArray()));
+
+    /// <summary>The bytes of entry 2, which the History Edition's figure tables read the figure bytes from.</summary>
+    internal byte[] Sequences => _data;
+
+    /// <inheritdoc />
+    public StepOffset? At(int frame, int timeLeft) =>
+        TripleAt(_data, frame, timeLeft) is { } at
+            ? new StepOffset { Dx = (sbyte)_data[at + 1], Dy = (sbyte)_data[at + 2] }
+            : null;
+
+    /// <summary>The offset in <paramref name="data"/> at which the sequence of a frame starts.</summary>
+    internal static int SequenceStart(byte[] data, int frame)
+    {
+        var slot = 4 + 4 * frame;
+
+        return 4 + ((data[slot] << 24) | (data[slot + 1] << 16) | (data[slot + 2] << 8) | data[slot + 3]);
+    }
+
+    /// <summary>
+    /// The offset in <paramref name="data"/> of the triple a frame holds for the time left (the time shifted right 3), or
+    /// null where there is none.
+    /// </summary>
+    internal static int? TripleAt(byte[] data, int frame, int timeLeft)
+    {
+        if (frame is < 0 or >= Frames || data.Length < TableEnd)
+        {
+            return null;
+        }
+
+        var start = SequenceStart(data, frame);
+        var at = start + 3 * (timeLeft >> 3);
+        if (start <= TableEnd - 4 || at + 3 > data.Length)
+        {
+            return null;
+        }
+
+        return at;
+    }
+}

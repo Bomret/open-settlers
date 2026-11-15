@@ -1,9 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using OpenSettlers.Simulation;
-
-// The states NameTable names itself (Build); NameTableTests checks the list against them, the generator against the modules.
-[assembly: CoreStateCodes(1, 2, 3, 4, 5, 6, 7, 0xf, 0x10, 0x19, 0x1c, 0x42, 0x4a)]
 
 namespace OpenSettlers.Simulation;
 
@@ -13,8 +9,9 @@ namespace OpenSettlers.Simulation;
 /// raw value. A name several codes share (<c>tree</c>) resolves to all of them through <see cref="CodesNamed"/>. The
 /// object names read the class table the engine loaded (<see cref="RuleTables"/>): <c>stone</c> names a code the
 /// docs call a stone only where that table says class 2. The job, state, and building names need no table and are
-/// static. The names of the jobs, and of the states a job owns, come from the jobs' tables modules
-/// (<see cref="JobTables{TJob}"/>); the states that belong to no one job are stated here.
+/// static. The names of the jobs, and of the states a job owns, come from the jobs' tables modules of the History
+/// Edition source through <see cref="JobTableNames"/>, the one type of that source this assembly names (INV-0011); the
+/// states that belong to no one job are stated here.
 /// </summary>
 /// <remarks>The names of the object codes as the class table <paramref name="tables"/> reads them.</remarks>
 /// <param name="tables">The rule tables whose class table the names are read from.</param>
@@ -53,7 +50,7 @@ public sealed class NameTable(RuleTables tables)
     }
 
     /// <summary>The evidence of a state whose name rests on the code of the Activity record alone.</summary>
-    internal const string StateEvidence = "the code of the Activity record (src/Domain/Activity.cs)";
+    internal const string StateEvidence = JobTableNames.StateEvidence;
 
     const string TreeEvidence =
         "the program compares a node's code with 8 and 0x18 (0x438c11, 0x437f8f); docs/rules/woodcutting.md (codes 8 to 0x17); class 1";
@@ -155,14 +152,14 @@ public sealed class NameTable(RuleTables tables)
             "docs/rules/woodcutting.md (the cut writes 0x5d to 0x66, the object pass turns each into 0x53, 0x428eb8)"
         );
 
-        // The names of the jobs and of the states a job owns come from the tables modules (JobTablesRegistry); the states that
+        // The names of the jobs and of the states a job owns come from the tables modules (JobTableNames); the states that
         // belong to no one job, the walks and the door among them, are here.
-        foreach (var (code, name, evidence) in JobTablesRegistry.JobNames)
+        foreach (var (code, name, evidence) in JobTableNames.Jobs)
         {
             AddOne(CodeKind.Job, code, name, evidence);
         }
 
-        foreach (var (code, name, evidence) in JobTablesRegistry.StateNames)
+        foreach (var (code, name, evidence) in JobTableNames.States)
         {
             AddOne(CodeKind.State, code, name, evidence);
         }

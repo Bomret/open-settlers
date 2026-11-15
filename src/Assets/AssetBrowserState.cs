@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using OpenSettlers.Launch;
 
 namespace OpenSettlers.Assets;
 
@@ -12,20 +11,18 @@ namespace OpenSettlers.Assets;
 /// </summary>
 public sealed class AssetBrowserState
 {
-    readonly Install? _install;
-    readonly IReadOnlyDictionary<string, AssetKind> _kinds;
+    readonly IReadOnlyDictionary<string, IAssetKind> _kinds;
 
-    AssetBrowserState(string? message, Install? install, IReadOnlyDictionary<string, AssetKind> kinds)
+    AssetBrowserState(string? message, IReadOnlyDictionary<string, IAssetKind> kinds)
     {
         Message = message;
-        _install = install;
         _kinds = kinds;
         Categories = kinds.Keys.ToList();
     }
 
     /// <summary>
-    /// Set when there is no usable install (the message names <c>--game</c> and <c>SIEDLER_DIR</c>) or when two kinds
-    /// share a name: the one message the browser shows.
+    /// Set when the assets port has no usable data (the reason it gives; for a launch it names <c>--game</c> and
+    /// <c>SIEDLER_DIR</c>) or when two kinds share a name: the one message the browser shows.
     /// </summary>
     public string? Message { get; }
 
@@ -53,36 +50,37 @@ public sealed class AssetBrowserState
     public string? Failure { get; private set; }
 
     /// <summary>
-    /// Opens the install the launch arguments name and, unless <c>selectFirst</c> is false, selects the first kind and
-    /// its first asset. The view passes false so it can guard the first selection itself; the default serves callers
-    /// that want the first kind selected on open. Without a usable install, with two kinds of one name, or with a
-    /// <c>previewClash</c> (checked last, from <see cref="PreviewClash.Of"/>), the state holds <see cref="Message"/>
-    /// and no categories. Only the first selection can throw, as <see cref="SelectKind"/> does.
+    /// Opens the browser on the kinds of the assets port <c>assets</c> and, unless <c>selectFirst</c> is false, selects
+    /// the first kind and its first asset. The view passes false so it can guard the first selection itself; the
+    /// default serves callers that want the first kind selected on open. Where the port has no usable data (it throws
+    /// an <see cref="IOException"/>), with two kinds of one name, or with a <c>previewClash</c> (checked last, from
+    /// <see cref="PreviewClash.Of"/>), the state holds <see cref="Message"/> and no categories. Only the first
+    /// selection can throw, as <see cref="SelectKind"/> does.
     /// </summary>
-    public static AssetBrowserState Open(
-        LaunchArgs args,
-        IEnumerable<AssetKind> kinds,
-        bool selectFirst = true,
-        string? previewClash = null
-    )
+    public static AssetBrowserState Open(IAssetsSource assets, bool selectFirst = true, string? previewClash = null)
     {
-        if (!Install.TryOpen(args, out var install, out var problem))
+        IReadOnlyList<IAssetKind> kinds;
+        try
         {
-            return new AssetBrowserState(problem, null, new Dictionary<string, AssetKind>());
+            kinds = assets.Kinds();
+        }
+        catch (IOException e)
+        {
+            return new AssetBrowserState(e.Message, new Dictionary<string, IAssetKind>());
         }
 
         var sorted = kinds.OrderBy(k => k.Name, StringComparer.Ordinal).ToList();
-        if (AssetKind.NameClash(sorted) is { } clash)
+        if (AssetCheck.NameClash(sorted) is { } clash)
         {
-            return new AssetBrowserState(clash, null, new Dictionary<string, AssetKind>());
+            return new AssetBrowserState(clash, new Dictionary<string, IAssetKind>());
         }
 
         if (previewClash != null)
         {
-            return new AssetBrowserState(previewClash, null, new Dictionary<string, AssetKind>());
+            return new AssetBrowserState(previewClash, new Dictionary<string, IAssetKind>());
         }
 
-        var state = new AssetBrowserState(null, install, sorted.ToDictionary(k => k.Name));
+        var state = new AssetBrowserState(null, sorted.ToDictionary(k => k.Name));
         if (selectFirst && state.Categories.Count > 0)
         {
             state.SelectKind(state.Categories[0]);
@@ -97,7 +95,7 @@ public sealed class AssetBrowserState
     /// </summary>
     public void SelectKind(string name)
     {
-        if (_install == null || !_kinds.TryGetValue(name, out var kind))
+        if (!_kinds.TryGetValue(name, out var kind))
         {
             return;
         }
@@ -110,7 +108,7 @@ public sealed class AssetBrowserState
         Failure = null;
         try
         {
-            Assets = kind.Enumerate(_install).ToList();
+            Assets = kind.Enumerate().ToList();
             if (Assets.Count == 0)
             {
                 Notice = $"no {name} assets";

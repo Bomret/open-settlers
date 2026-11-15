@@ -46,7 +46,7 @@ public sealed class ArchiveEntryKindTests
 
     static Install Open(FakeInstall fake)
     {
-        Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
 
         return install!;
     }
@@ -173,7 +173,7 @@ public sealed class ArchiveEntryKindTests
         using var fake = InstallWith(ArchiveBytes.Build(Rows, new Dictionary<int, byte[]> { [12] = [1] }));
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, [new UnrecoveredEntryKind()]);
+        var report = AssetCheck.Run(args, RealKinds.Over(args, new UnrecoveredEntryKind()));
 
         Assert.AreEqual(1, report.ExitCode);
         var line = report.Lines.Single(l => l.StartsWith("FAIL loca/SPAF.PA entry 12:"));
@@ -213,7 +213,10 @@ public sealed class ArchiveEntryKindTests
         using var fake = new FakeInstall().Put(Files[0], Small()).Put(Files[1], Small()[..20]);
         var args = LaunchArgs.Parse(["--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, [new ClaimingKind("palette", 1, 7), new UnrecoveredEntryKind()]);
+        var report = AssetCheck.Run(
+            args,
+            RealKinds.Over(args, new ClaimingKind("palette", 1, 7), new UnrecoveredEntryKind())
+        );
 
         Assert.AreEqual(1, report.Lines.Count(l => l.StartsWith($"FAIL {Files[1]}:")));
         Assert.AreEqual(1, report.Lines.Count(l => l.StartsWith($"FAIL {Files[2]}:")));
@@ -334,7 +337,7 @@ public sealed class ArchiveEntryKindTests
 
         var report = AssetCheck.Run(
             args,
-            [new PaletteKind(), new SpriteKind(), new RuleDataKind(), new UnrecoveredEntryKind()]
+            RealKinds.Over(args, new PaletteKind(), new SpriteKind(), new RuleDataKind(), new UnrecoveredEntryKind())
         );
 
         Assert.AreEqual(0, report.ExitCode);

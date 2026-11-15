@@ -15,6 +15,22 @@ ADR 0015). See `README.md` for layout and usage.
 - Layout, requirements, and how to get an install: `README.md`. Controls of the map view and the game view:
   `docs/controls.md`.
 
+## Where game data is read
+
+The engine reads game data only through the import ports in `src/Import/` (ADR 0017, INV-0011). Each port is an
+interface that returns dedicated types, never a format type.
+
+- `src/Import.HistoryEdition/` reads the install (formats, assets, program tables, graphics) and implements every
+  port. Its readers and tables are internal; its public types are the ones the host builds, plus `JobTableNames`
+  for the adapters.
+- `src/Import.OpenSettlers/` reads `content/open-settlers/` and implements the graphics source.
+- The map view, `src/Assets/`, the domain, and the application name no source type. The launch code and the asset
+  browser build a source.
+
+`tests/OpenSettlers.Tests/` references all six assemblies and the job generator, and compiles `src/Launch/`,
+`src/Assets/`, and `src/MapView/` directly. `src/Viewer/` is not compiled into it. A new Godot-free folder of the
+Godot project goes into that list, or its code is untested.
+
 ## Game install
 
 The path of the local install is in `CLAUDE.local.md`, a gitignored file per checkout. Read it there,

@@ -14,7 +14,7 @@ public sealed class TextKindTests
 {
     static Install Open(FakeInstall fake)
     {
-        Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
 
         return install!;
     }
@@ -180,7 +180,9 @@ public sealed class TextKindTests
     {
         using var fake = Install3("ALPHA=\"one\"\r\n", "ALPHA=\"eins\"\r\nbroken\r\n", "ALPHA=\"un\"\r\n");
 
-        var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--game", fake.Root], null), [new TextKind()]);
+        var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
+
+        var report = AssetCheck.Run(args, RealKinds.Over(args, new TextKind()));
 
         Assert.AreEqual(1, report.ExitCode);
         Assert.IsTrue(report.Lines.Any(l => l.StartsWith("FAIL loca/ger.txt: line 2")));

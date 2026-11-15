@@ -14,7 +14,7 @@ public sealed class DomainRuleLookupTests
     static RuleTables DoorTables() =>
         new(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             doorSpeeds: [.. Enumerable.Range(0, RuleTables.DoorSpeedCount).Select(i => (byte)(100 + i))]
         );
 
@@ -41,7 +41,7 @@ public sealed class DomainRuleLookupTests
     static RuleTables LookupTables() =>
         new(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             stepTimes: [.. Enumerable.Range(0, RuleTables.StepTimeCount).Select(i => (ushort)(1000 + i))],
             materialOrder: [.. Enumerable.Repeat((ushort)0xffff, RuleTables.BuildingTypeCount)],
             blowSteps: [.. Enumerable.Range(0, 2 * RuleTables.BuildingTypeCount).Select(i => (ushort)(500 + i))],

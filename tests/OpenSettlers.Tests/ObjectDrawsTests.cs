@@ -131,7 +131,7 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
+        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
         game.Enqueue(
             new Command
             {
@@ -192,10 +192,7 @@ public sealed class ObjectDrawsTests
         classes[1] = 3;
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
         sizes[BuildingType.Sawmill.Code] = 2;
-        var game = GameFactory.Create(
-            new RuleTables(classes, TestProgram.Made().StartStock, buildingSizes: sizes),
-            map
-        );
+        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock(), buildingSizes: sizes), map);
         game.Enqueue(
             new Command
             {
@@ -267,7 +264,7 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
+        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
         game.Enqueue(
             new Command
             {
@@ -433,7 +430,7 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.Made().StartStock), map);
+        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
         game.Enqueue(
             new Command
             {

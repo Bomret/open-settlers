@@ -1,5 +1,4 @@
 using Godot;
-using OpenSettlers.Assets;
 
 namespace OpenSettlers.Viewer;
 

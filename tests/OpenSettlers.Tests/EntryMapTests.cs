@@ -31,7 +31,7 @@ public sealed class EntryMapTests
     static List<Asset> List<T>(FakeInstall fake)
         where T : ArchiveEntryKind, new()
     {
-        Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
         return [.. new T().Enumerate(install!, all)];
@@ -64,7 +64,10 @@ public sealed class EntryMapTests
         StringAssert.Contains(asset.Name, "offset 32000");
         StringAssert.Contains(asset.Name, "meaning pending");
         var preview = asset.Load();
-        Assert.IsInstanceOfType<LocatedEntryPreview>(preview);
+        var located = Assert.IsInstanceOfType<LocatedEntryPreview>(preview);
+        Assert.AreEqual(2, located.Number);
+        Assert.AreEqual(32000u, located.Offset);
+        Assert.AreEqual(12u, located.Size);
         StringAssert.Contains(preview.Summary, "meaning pending");
         StringAssert.Contains(preview.Summary, "size 12");
     }

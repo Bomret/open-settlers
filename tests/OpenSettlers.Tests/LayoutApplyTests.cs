@@ -35,9 +35,13 @@ public sealed class LayoutApplyTests
     // given that class.
     static Game NewGame(Layout layout)
     {
-        var made = TestProgram.Made();
-        var tables = new RuleTables(made.Classes, made.StartStock, workers: TestProgram.MadeWorkers(stonecutter: true));
-        tables.Classes[MapObject.Flag.Code] = 3;
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[MapObject.Flag.Code] = 3;
+        var tables = new RuleTables(
+            classes,
+            TestProgram.MadeStartStock(),
+            workers: TestProgram.MadeWorkers(stonecutter: true)
+        );
 
         return GameFactory.Create(tables, layout.BuildMap());
     }
@@ -129,7 +133,7 @@ public sealed class LayoutApplyTests
         return GameFactory.Create(
             new RuleTables(
                 classes,
-                TestProgram.Made().StartStock,
+                TestProgram.MadeStartStock(),
                 buildingSizes: sizes,
                 workers: TestProgram.MadeWorkers(stonecutter: true)
             ),

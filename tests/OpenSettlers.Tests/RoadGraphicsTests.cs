@@ -65,9 +65,7 @@ public sealed class RoadGraphicsTests
 
     static Install Open(FakeInstall fake)
     {
-        Assert.IsTrue(
-            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
-        );
+        Assert.IsTrue(Install.TryOpen(fake.Root, out var install, out _));
 
         return install;
     }

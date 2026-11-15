@@ -6,7 +6,10 @@ Target audience: LLMs working in this repo. The folder layout is in `README.md` 
 
 `OpenSettlers.<Folder>`, one namespace per folder of `src/`. For example, `OpenSettlers.Formats`. Tests use
 `OpenSettlers.Tests`. The layers are the exception: `src/Domain/` is `OpenSettlers.Domain`, and both
-`src/Application/` and `src/Adapters/Simulation/` are `OpenSettlers.Simulation`.
+`src/Application/` and `src/Adapters/Simulation/` are `OpenSettlers.Simulation`. Two source folders are exceptions
+too (ADR 0017): `src/Import.HistoryEdition/Formats/` is `OpenSettlers.Formats`, and `src/Import.OpenSettlers/` is
+`OpenSettlers.Import.ContentSet`, because `OpenSettlers.Import.OpenSettlers` would shadow the root namespace inside
+`OpenSettlers.Import`.
 
 ## Simulation layers
 
@@ -18,9 +21,11 @@ The simulation is three class-library assemblies under `src/` that depend only i
   `CommandQueue`, the history, and the rules as behaviors (`CarrierBehavior`, `GoodsTransport`, `Removal`,
   `WalkHomeBehavior`, `HutWork`, `SettlerMovement`). It references the domain. A behavior takes its parts
   through its constructor. `GameParts` holds them wired, and `GameFactory` in the adapters builds them.
-- `Adapters/Simulation/` (`OpenSettlers.Simulation`): the edge. Importers (`ProgramTablesImporter`, `MapImporter`,
-  `MapGenerator`, `Layout`), exporters (`GameDigest`, `SnapshotExporter`, `FlagEncoder`, `SettlerEncoder`,
-  `BuildingEncoder`, `MapLayerExporter`), and `GameFactory`. It references the domain and the application.
+- `Adapters/Simulation/` (`OpenSettlers.Simulation`): the edge. Importers (`MapImporter`, `MapGenerator`, `Layout`),
+  exporters (`GameDigest`, `SnapshotExporter`, `FlagEncoder`, `SettlerEncoder`, `BuildingEncoder`,
+  `MapLayerExporter`), and `GameFactory`. It references the domain, the application, and the History Edition source,
+  of which it names only `JobTableNames` (INV-0011). `ProgramTablesImporter` is internal to the History Edition
+  source (`src/Import.HistoryEdition/Tables/`, ADR 0017).
 
 Place new code by what it does: a rule goes in the application, a type that states what a rule reads goes in the
 domain, and a conversion from or to the original's bytes goes in the adapters.
@@ -49,11 +54,14 @@ files, layer by layer:
    go out from a building are the step out, the entry, and the arrival home. A module reaches them through `Parts.Hut`
    alone.
    `JobModules.Build(parts)` builds every module.
-3. Adapters, `src/Adapters/Simulation/Jobs/XTables.cs`: `public sealed class XTables : JobTables<X>` with `[JobName]` and
+3. History Edition source, `src/Import.HistoryEdition/Tables/Jobs/XTables.cs`: `sealed class XTables : JobTables<X>`
+   (internal, as are `JobTables<TJob>` and its attributes) with `[JobName]` and
    `[StateName]` (each carries its evidence, INV-0006) and a `Read` override that adds the job's data records from
-   `Siedler1.exe`. The generator writes `JobTablesRegistry`, which holds the modules, and `NameTable`, which holds the names.
-4. Map view: `src/MapView/HistoryEditionLooks/XLook.cs` with `XLook(RuleTables tables) : HistoryEditionLook<X>`
-   for the History Edition source and `src/MapView/OpenSettlersLooks/XKey.cs` with
+   `Siedler1.exe`. The generator writes `JobTablesRegistry`, which holds the modules and the names; `NameTable` in the
+   adapters reads the names through `JobTableNames`.
+4. Looks: `src/Import.HistoryEdition/HistoryEditionLooks/XLook.cs` with the internal
+   `XLook(RuleTables tables) : HistoryEditionLook<X>` for the History Edition source and
+   `src/Import.OpenSettlers/OpenSettlersLooks/XKey.cs` with the internal
    `XKey() : OpenSettlersLook<X>("x")` for the content set (`HistoryEditionLookRegistry`, `OpenSettlersLookRegistry`).
    A job without a look draws nothing; `JobCoverageTests` fails a job that has rules and no look under a source.
 5. Building: a job whose worker the handler of a building type asks for is a building concern too. Add the address of

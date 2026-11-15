@@ -2,6 +2,9 @@
   <Project Path="OpenSettlers.csproj" />
   <Folder Name="/src/">
     <Project Path="src/Domain/OpenSettlers.Domain.csproj" />
+    <Project Path="src/Import/OpenSettlers.Import.csproj" />
+    <Project Path="src/Import.HistoryEdition/OpenSettlers.Import.HistoryEdition.csproj" />
+    <Project Path="src/Import.OpenSettlers/OpenSettlers.Import.OpenSettlers.csproj" />
     <Project Path="src/Application/OpenSettlers.Application.csproj" />
     <Project Path="src/Adapters/OpenSettlers.Adapters.csproj" />
     <Project Path="src/Generators/OpenSettlers.Generators.csproj" />

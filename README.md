@@ -180,16 +180,18 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
   - `Application/` holds the game with its commands, roads, settlers, carriers, goods, and removal. It also holds the job rules: woodcutting, stonecutting, forestry, and the construction rules of `BuilderRules.cs`, `DiggerRules.cs`, and `ForesterRules.cs`.
   - `Adapters/Simulation/` holds the importers and exporters of the original's bytes, the seed, and the map generator. Domain, Application, and Adapters are three assemblies ([ADR 0013](docs/adr/0013-the-simulation-is-typed-and-the-original-s-bytes-stay-at-its-edge.md)).
   - `Generators/` holds the source generators that find the job modules ([ADR 0016](docs/adr/0016-jobs-are-types-and-each-layer-finds-its-job-modules.md)).
-  - `Assets/` holds the asset kinds and the asset check.
-  - `Formats/` holds the file readers.
+  - `Import/` holds the import ports, the interfaces through which the engine reads game data, and the terms they return ([ADR 0017](docs/adr/0017-install-data-enters-through-import-ports.md)): the rule tables, the walk steps, the assets, and the graphics source.
+  - `Import.HistoryEdition/` is the source assembly for the install. It holds the file readers (`Formats/`), the asset kinds, the program tables importer, and the graphics reading and looks, and implements every port. Only this assembly reads the install.
+  - `Import.OpenSettlers/` is the source assembly for the repository's content set (`content/`). It implements the graphics source.
+  - `Assets/` holds the asset check and the asset browser state, which read assets through the assets port.
   - `Launch/` holds the command-line arguments, the decision whether a map launch opens or exits, and the text of a crash.
   - `MapView/` holds the terrain, object, road, and settler drawing plans, the click handling, and the camera.
   - `Viewer/` holds the asset browser, the map view, the play driver, and the shaders. `MapViewControl.cs` also shows the game view.
-- `.gdignore` files: the C# folders outside the Godot assembly (`src/Domain/`, `src/Application/`, `src/Adapters/`, `src/Generators/`, `tests/`) carry one, so the Godot editor does not scan them. The editor writes a `.uid` file beside each script and shader it scans; those are committed with their source.
+- `.gdignore` files: the C# folders outside the Godot assembly (`src/Domain/`, `src/Import/`, `src/Import.HistoryEdition/`, `src/Import.OpenSettlers/`, `src/Application/`, `src/Adapters/`, `src/Generators/`, `tests/`) carry one, so the Godot editor does not scan them. The editor writes a `.uid` file beside each script and shader it scans; those are committed with their source.
 - `content/`: the content sets the repository ships (ADR 0015). `content/open-settlers/` is the Open Settlers graphics source: a manifest, PNGs, and a `.gdignore`.
 - `play/`: the checked-in play scripts ("Run a play script").
 - `layouts/`: the checked-in layouts ("Layouts" under "Run a play script").
-- `tests/OpenSettlers.Tests/`: the unit tests (MSTest). The project also holds the `Install` and `Ghidra` test categories, which the unit commands filter out; the unit tests need neither Godot nor an install.
+- `tests/OpenSettlers.Tests/`: the unit tests (MSTest). The project also holds the `Install` and `Ghidra` test categories, which the unit commands filter out; the unit tests need neither Godot nor an install. It references the six assemblies and the generator, and compiles `src/Launch/`, `src/Assets/`, and `src/MapView/` directly. `src/Viewer/` is not compiled into it.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.
 - `docs/controls.md`: the controls of the map view and the game view.

@@ -31,17 +31,19 @@ static class TestProgram
     public static RuleTables Made(byte[]? transportPriorities) =>
         new(
             new ObjectClass[RuleTables.ClassCount],
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ],
+            MadeStartStock(),
             transportPriorities: transportPriorities,
             workers: MadeWorkers(),
             jobData: MadeJobData()
         );
+
+    /// <summary>The start stock rows of <see cref="Made()"/>: each count is the row number times 10 plus the good's index.</summary>
+    public static byte[][] MadeStartStock() =>
+        [
+            .. Enumerable
+                .Range(0, RuleTables.StartStockRows)
+                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()),
+        ];
 
     /// <summary>The job of each number 0 to 31.</summary>
     public static IEnumerable<Job> Jobs() => Enumerable.Range(0, ProgramTablesImporter.JobNumbers).Select(Job.Of);
@@ -94,7 +96,7 @@ static class TestProgram
     public static Install OpenInstall()
     {
         var args = LaunchArgs.Parse([], Environment.GetEnvironmentVariable(LaunchArgs.GameVariable));
-        if (!Install.TryOpen(args, out var install, out var problem))
+        if (!LaunchInstall.TryOpen(args, out var install, out var problem))
         {
             Assert.Inconclusive($"The emulator values need the reference install: {problem}");
         }
@@ -103,7 +105,7 @@ static class TestProgram
         {
             try
             {
-                _tables = ProgramTablesImporter.Import(install.ReadAll(Install.Program));
+                _tables = new HistoryEditionRuleTables(install).Read();
             }
             catch (InvalidDataException e)
             {

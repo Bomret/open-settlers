@@ -27,7 +27,7 @@ public sealed class MaskKindTests
     static List<Asset> List<T>(FakeInstall fake)
         where T : ArchiveEntryKind, new()
     {
-        Install.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
         return [.. new T().Enumerate(install!, all)];
@@ -244,7 +244,7 @@ public sealed class MaskKindTests
         );
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, [new MaskKind()]);
+        var report = AssetCheck.Run(args, RealKinds.Over(args, new MaskKind()));
 
         Assert.AreEqual(1, report.ExitCode);
         Assert.IsTrue(report.Lines.Any(l => l.StartsWith("FAIL loca/SPAD.PA entry 60: ") && l.Contains("width 2")));

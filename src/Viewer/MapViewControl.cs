@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using Godot;
-using OpenSettlers.Assets;
 using OpenSettlers.Domain;
 using OpenSettlers.Launch;
 using OpenSettlers.MapView;
@@ -23,23 +22,26 @@ namespace OpenSettlers.Viewer;
 /// the map point under the pointer in place. A two-finger touchpad swipe moves the camera.
 /// </summary>
 /// <remarks>
-/// The view of the map of this install's graphics, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
+/// The view of the map, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
 /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
 /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
-/// <paramref name="graphics"/> is the source the view draws from; the rules come from the install under both.
+/// <paramref name="loadGraphics"/> gives the source the view draws from, which the host picks; the rules come from the install
+/// under every source.
 /// </remarks>
-/// <param name="install">The install whose graphics and rules the view reads.</param>
+/// <param name="tablesSource">The rule tables port; reading it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the tables cannot be read.</param>
+/// <param name="loadGraphics">Loads the graphics source the view draws from, given the rule tables the settlers are drawn by (null outside the game view); it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the source cannot be read.</param>
+/// <param name="loadSteps">Reads the walk steps where the graphics source has none, as under the Open Settlers source.</param>
 /// <param name="seedText">The seed the view opens on, as the seed field shows it.</param>
 /// <param name="sizeValue">The map size the view opens on.</param>
 /// <param name="gameView">Whether a game ticks on the shown map.</param>
-/// <param name="graphics">The graphics source the view draws from.</param>
 /// <param name="stockLevel">The start stock level of the game's castle; null takes the level the seed draws.</param>
 public partial class MapViewControl(
-    Install install,
+    IRuleTablesSource tablesSource,
+    Func<RuleTables?, GraphicsLoad> loadGraphics,
+    Func<IWalkSteps> loadSteps,
     string seedText,
     int sizeValue,
     bool gameView = false,
-    GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition,
     int? stockLevel = null
 ) : Control
 {
@@ -54,9 +56,7 @@ public partial class MapViewControl(
     // report. Nothing queries the device (the layers Vulkan guarantees are 256).
     const int MaxArrayLayers = 2048;
 
-    readonly Install _install = install;
     readonly bool _gameView = gameView;
-    readonly GraphicsSourceName _graphics = graphics;
     readonly int? _stockLevel = stockLevel;
     Game? _game;
     readonly TickPacer _pacer = new();
@@ -106,6 +106,9 @@ public partial class MapViewControl(
     // The graphics source, and for each kind of draw the images it drew so far and the material over them: the terrain
     // and the roads, the objects, and the water ripples. The ripples keep the surface color their images show over.
     IGraphicsSource? _source;
+
+    // The walk steps the installed graphics parsed, or null under the other source or where they did not load.
+    IWalkSteps? _installSteps;
     readonly ImageLayers _layers = new();
     ShaderMaterial? _surfaceMaterial;
     int _surfaceLayers;
@@ -137,11 +140,12 @@ public partial class MapViewControl(
     /// size picker its size, and neither can change.
     /// </summary>
     public MapViewControl(
-        Install install,
-        Layout layout,
-        GraphicsSourceName graphics = GraphicsSourceName.HistoryEdition
+        IRuleTablesSource tablesSource,
+        Func<RuleTables?, GraphicsLoad> loadGraphics,
+        Func<IWalkSteps> loadSteps,
+        Layout layout
     )
-        : this(install, layout.Seed.ToScreen(), layout.Size.Value, true, graphics)
+        : this(tablesSource, loadGraphics, loadSteps, layout.Seed.ToScreen(), layout.Size.Value, true)
     {
         _layout = layout;
     }
@@ -399,30 +403,16 @@ public partial class MapViewControl(
         _preview = new Node2D { ZAsRelative = false, ZIndex = 2 };
         _world.AddChild(_preview);
 
-        try
+        _tables = MapViewState.ReadTables(tablesSource, out _tablesProblem);
+        if (_tablesProblem is not null)
         {
-            _tables = ProgramTablesImporter.Import(_install.ReadAll(Install.Program));
-        }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _tablesProblem = e.Message;
-            GD.PrintErr($"map view: {e.Message}");
+            GD.PrintErr($"map view: {_tablesProblem}");
         }
 
         try
         {
-            if (_graphics == GraphicsSourceName.OpenSettlers)
-            {
-                // A broken content set names its file and key here, and the view draws no map, as for a missing install file.
-                _source = OpenSettlersSource.Load(
-                    ProjectSettings.GlobalizePath("res://content/open-settlers"),
-                    new GodotImageDecoder()
-                );
-            }
-            else
-            {
-                LoadHistoryEditionSource();
-            }
+            // A broken content set or a missing install file names its file here, and the view draws no map.
+            LoadSource();
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -434,10 +424,7 @@ public partial class MapViewControl(
         {
             try
             {
-                _settlerFigures = new SettlerFigures(
-                    (_source as HistoryEditionSource)?.Steps ?? StepOffsets.Load(_install),
-                    _tables.FrameRows
-                );
+                _settlerFigures = new SettlerFigures(_installSteps ?? loadSteps(), _tables.Figures);
             }
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {
@@ -455,12 +442,13 @@ public partial class MapViewControl(
         ShowMessage();
     }
 
-    // The History Edition source of the install; a problem with the roads, objects, or settlers is kept for the message.
-    void LoadHistoryEditionSource()
+    // The graphics source the host loads; a problem with the roads, objects, or settlers is kept for the message.
+    void LoadSource()
     {
         // The settlers are drawn in the game view only: the source gets the exe's tables for them there.
-        var source = HistoryEditionSource.Load(_install, _gameView ? _tables : null);
-        _source = source;
+        var source = loadGraphics(_gameView ? _tables : null);
+        _source = source.Source;
+        _installSteps = source.Steps;
         if (source.RoadsProblem is not null)
         {
             _roadsProblem = source.RoadsProblem;

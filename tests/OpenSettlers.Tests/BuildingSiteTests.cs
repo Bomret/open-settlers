@@ -34,7 +34,7 @@ public sealed class BuildingSiteTests
 
         return new RuleTables(
             classes,
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             buildingSizes: sizes,
             buildingNeeds: needs,
             workers: TestProgram.MadeWorkers(),

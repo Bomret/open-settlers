@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0017](0017-install-data-enters-through-import-ports.md)
+
 The simulation has an onion shape. Its core is a typed domain model: the map's nodes, flags, roads,
 buildings, goods, and settlers, each with named fields and no packed bytes or bare codes of the original.
 Around it, the application layer applies commands and runs the tick in the original's order. At the edge,

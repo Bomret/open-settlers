@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -8,46 +7,36 @@ using OpenSettlers.Launch;
 
 namespace OpenSettlers.Tests;
 
+/// <summary>The asset browser's state on a fake assets port: no install on disk.</summary>
 [TestClass]
 public sealed class AssetBrowserStateTests
 {
-    sealed record TextPreview : Preview;
-
-    sealed class ListedKind(string name, params Asset[] assets) : AssetKind
-    {
-        public override string Name => name;
-
-        public override IEnumerable<Asset> Enumerate(Install install) => assets;
-    }
-
     static Asset Item(string kind, string name, Func<Preview>? load = null) =>
         new()
         {
             Kind = kind,
             File = $"x/{name}",
             Name = name,
-            Load = load ?? (() => new TextPreview { Summary = $"preview of {name}" }),
+            Load = load ?? (() => new NotePreview { Summary = $"preview of {name}" }),
         };
 
-    static AssetBrowserState Open(FakeInstall fake, params AssetKind[] kinds) =>
-        AssetBrowserState.Open(LaunchArgs.Parse(["--game", fake.Root], null), kinds);
+    static AssetBrowserState Open(params IAssetKind[] kinds) => AssetBrowserState.Open(new FakeAssets(kinds));
 
     [TestMethod]
-    public void WithoutAnInstallTheBrowserHoldsOneMessageThatNamesBothWaysToGiveOne()
+    public void APortWithNoUsableDataGivesOneMessageAndNoCategories()
     {
-        var state = AssetBrowserState.Open(LaunchArgs.Parse([], null), [new SoundKind()]);
+        var state = AssetBrowserState.Open(
+            new MissingInstall("no install given: pass --game <dir> or set SIEDLER_DIR")
+        );
 
-        StringAssert.Contains(state.Message, "--game");
-        StringAssert.Contains(state.Message, "SIEDLER_DIR");
+        Assert.AreEqual("no install given: pass --game <dir> or set SIEDLER_DIR", state.Message);
         Assert.IsEmpty(state.Categories);
     }
 
     [TestMethod]
     public void TwoKindsOfOneNameOpenTheBrowserOnAMessageThatNamesIt()
     {
-        using var fake = new FakeInstall();
-
-        var state = Open(fake, new ListedKind("text"), new ListedKind("text"));
+        var state = Open(new ListedKind("text", Item("text", "a")), new ListedKind("text", Item("text", "b")));
 
         StringAssert.Contains(state.Message, "\"text\"");
         Assert.IsEmpty(state.Categories);
@@ -56,33 +45,27 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void KindsOfUniqueNamesOpenTheBrowserWithNoMessage()
     {
-        using var fake = new FakeInstall();
-
-        var state = Open(fake, new ListedKind("text"), new ListedKind("palette"));
+        var state = Open(new ListedKind("text"), new ListedKind("palette"));
 
         Assert.IsNull(state.Message);
     }
 
     [TestMethod]
-    public void AFolderWithoutTheProgramShowsTheMessageToo()
+    public void APreviewClashShowsItsMessageAndNoCategories()
     {
-        using var fake = new FakeInstall(withProgram: false);
+        var state = AssetBrowserState.Open(
+            new FakeAssets(new ListedKind("text")),
+            previewClash: "two preview views draw X"
+        );
 
-        var state = Open(fake, new SoundKind());
-
-        StringAssert.Contains(state.Message, "Siedler1.exe");
-        StringAssert.Contains(state.Message, "SIEDLER_DIR");
+        Assert.AreEqual("two preview views draw X", state.Message);
+        Assert.IsEmpty(state.Categories);
     }
 
     [TestMethod]
     public void TheCategoriesAreTheKindsByNameAndTheFirstIsSelectedWithItsFirstAsset()
     {
-        using var fake = new FakeInstall();
-        var state = Open(
-            fake,
-            new ListedKind("text", Item("text", "a")),
-            new ListedKind("palette", Item("palette", "p"))
-        );
+        var state = Open(new ListedKind("text", Item("text", "a")), new ListedKind("palette", Item("palette", "p")));
 
         CollectionAssert.AreEqual(new[] { "palette", "text" }, state.Categories.ToList());
         Assert.AreEqual("palette", state.SelectedKind);
@@ -93,8 +76,10 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void SelectingAKindListsItsAssetsInTheOrderTheKindGaveThem()
     {
-        using var fake = new FakeInstall().Put("snd/10.SND", [1]).Put("snd/02.SND", [1]);
-        var state = Open(fake, new ListedKind("text", Item("text", "a")), new SoundKind());
+        var state = Open(
+            new ListedKind("text", Item("text", "a")),
+            new ListedKind("sound", Item("sound", "02.SND"), Item("sound", "10.SND"))
+        );
 
         state.SelectKind("sound");
 
@@ -105,8 +90,7 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void SelectingAnAssetShowsItsPreview()
     {
-        using var fake = new FakeInstall();
-        var state = Open(fake, new ListedKind("text", Item("text", "a"), Item("text", "b")));
+        var state = Open(new ListedKind("text", Item("text", "a"), Item("text", "b")));
 
         state.SelectAsset(1);
 
@@ -118,8 +102,9 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void AFailedAssetShowsItsReasonInPlaceOfAPreview()
     {
-        using var fake = new FakeInstall().Put("snd/01.SND", []);
-        var state = Open(fake, new SoundKind());
+        var empty = Item("sound", "01.SND", () => throw new InvalidDataException("the file is empty"));
+
+        var state = Open(new ListedKind("sound", empty));
 
         Assert.IsNull(state.Preview);
         StringAssert.Contains(state.Failure, "empty");
@@ -128,8 +113,8 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void AFailedAssetDoesNotStopTheNextSelection()
     {
-        using var fake = new FakeInstall().Put("snd/01.SND", []).Put("snd/02.SND", [0x80]);
-        var state = Open(fake, new SoundKind());
+        var empty = Item("sound", "01.SND", () => throw new InvalidDataException("the file is empty"));
+        var state = Open(new ListedKind("sound", empty, Item("sound", "02.SND")));
 
         state.SelectAsset(1);
 
@@ -140,8 +125,7 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void AKindThatCannotListItsAssetsShowsANoticeAndNoAssets()
     {
-        using var fake = new FakeInstall();
-        var state = Open(fake, new ThrowingKind());
+        var state = Open(new ListedKind("broken") { ListingFails = new IOException("cannot list") });
 
         Assert.IsEmpty(state.Assets);
         StringAssert.Contains(state.Notice, "cannot list");
@@ -151,19 +135,17 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void AProgrammingErrorWhileLoadingAPreviewIsNotShownAsAFailure()
     {
-        using var fake = new FakeInstall();
         var bug = Item("sprite", "A", () => throw new IndexOutOfRangeException("reader bug"));
 
-        Assert.ThrowsExactly<IndexOutOfRangeException>(() => Open(fake, new ListedKind("sprite", bug)));
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => Open(new ListedKind("sprite", bug)));
     }
 
     [TestMethod]
     public void AnAssetThatThrowsLeavesNoPreviewOrFailureOfThePreviousAsset()
     {
-        using var fake = new FakeInstall();
         var failed = Item("text", "f", () => throw new InvalidDataException("bad"));
         var bug = Item("text", "bug", () => throw new IndexOutOfRangeException("reader bug"));
-        var state = Open(fake, new ListedKind("text", Item("text", "a"), failed, bug));
+        var state = Open(new ListedKind("text", Item("text", "a"), failed, bug));
 
         Assert.ThrowsExactly<IndexOutOfRangeException>(() => state.SelectAsset(2));
         Assert.AreSame(bug, state.SelectedAsset);
@@ -178,8 +160,8 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void AKindThatThrowsWhileListingLeavesNoAssetsOfThePreviousKind()
     {
-        using var fake = new FakeInstall();
-        var state = Open(fake, new ListedKind("a", Item("a", "x")), new BuggyKind());
+        var buggy = new ListedKind("buggy") { ListingFails = new IndexOutOfRangeException("bug") };
+        var state = Open(new ListedKind("a", Item("a", "x")), buggy);
 
         Assert.ThrowsExactly<IndexOutOfRangeException>(() => state.SelectKind("buggy"));
         Assert.AreEqual("buggy", state.SelectedKind);
@@ -195,94 +177,18 @@ public sealed class AssetBrowserStateTests
     [TestMethod]
     public void OpeningWithoutTheFirstSelectionLeavesItToTheCaller()
     {
-        using var fake = new FakeInstall();
-        var state = AssetBrowserState.Open(LaunchArgs.Parse(["--game", fake.Root], null), [new BuggyKind()], false);
+        var buggy = new ListedKind("buggy") { ListingFails = new IndexOutOfRangeException("bug") };
+        var state = AssetBrowserState.Open(new FakeAssets(buggy), false);
 
         Assert.IsNull(state.SelectedKind);
         Assert.ThrowsExactly<IndexOutOfRangeException>(() => state.SelectKind(state.Categories[0]));
         Assert.AreEqual("buggy", state.SelectedKind);
     }
 
-    sealed class BuggyKind : AssetKind
-    {
-        public override string Name => "buggy";
-
-        public override IEnumerable<Asset> Enumerate(Install install) => throw new IndexOutOfRangeException("bug");
-    }
-
-    sealed class ThrowingKind : AssetKind
-    {
-        public override string Name => "broken";
-
-        public override IEnumerable<Asset> Enumerate(Install install) => throw new IOException("cannot list");
-    }
-
-    [TestMethod]
-    public void TwoKindsOfTheSameNameShowOneMessageAndNoCategoriesInsteadOfThrowing()
-    {
-        using var fake = new FakeInstall();
-
-        var state = Open(fake, new ListedKind("text", Item("text", "a")), new ListedKind("text", Item("text", "b")));
-
-        StringAssert.Contains(state.Message, "\"text\"");
-        Assert.IsEmpty(state.Categories);
-    }
-
-    [TestMethod]
-    public void TheRealKindsHaveUniqueNamesAndStampTheirAssetsWithTheirOwnName()
-    {
-        // One minimal file per kind, built here: every entry of the three archives is one byte, so each kind's normal
-        // listing path runs and not only its missing-file path.
-        var archive = ArchiveBytes.Build(4000, Enumerable.Range(1, 3999).ToDictionary(n => n, _ => new byte[] { 0 }));
-        byte[] midi =
-        [
-            .. "MThd"u8.ToArray(),
-            0,
-            0,
-            0,
-            6,
-            0,
-            0,
-            0,
-            1,
-            0,
-            96,
-            .. "MTrk"u8.ToArray(),
-            0,
-            0,
-            0,
-            4,
-            0,
-            0xFF,
-            0x2F,
-            0,
-        ];
-        using var fake = new FakeInstall()
-            .Put("loca/SPAD.PA", archive)
-            .Put("loca/SPAE.PA", archive)
-            .Put("loca/SPAF.PA", archive)
-            .Put("snd/01.SND", [1])
-            .Put("snd/music_1.midi", midi)
-            .Put("loca/eng.txt", "A=\"x\"\r\n"u8.ToArray())
-            .Put("loca/ger.txt", "A=\"y\"\r\n"u8.ToArray())
-            .Put("loca/fre.txt", "A=\"z\"\r\n"u8.ToArray());
-        var kinds = AssetKind.Discover().Where(k => k.GetType().Namespace == "OpenSettlers.Assets").ToList();
-
-        Assert.AreEqual(kinds.Count, kinds.Select(k => k.Name).Distinct().Count());
-        foreach (var kind in kinds)
-        {
-            var assets = kind.Enumerate(new Install { Root = fake.Root }).ToList();
-
-            Assert.IsNotEmpty(assets, kind.Name);
-            Assert.IsTrue(assets.All(a => a.Kind == kind.Name), kind.Name);
-        }
-    }
-
     [TestMethod]
     public void SelectingAnUnknownKindOrAssetChangesNothing()
     {
-        using var fake = new FakeInstall();
-        var state = Open(fake, new ListedKind("text", Item("text", "a")));
+        var state = Open(new ListedKind("text", Item("text", "a")));
 
         state.SelectKind("nope");
         state.SelectAsset(5);
@@ -292,21 +198,9 @@ public sealed class AssetBrowserStateTests
     }
 
     [TestMethod]
-    public void AnArchiveKindShowsAMissingArchiveAsTheFailureOfItsSelectedAsset()
-    {
-        using var fake = new FakeInstall();
-
-        var state = Open(fake, new PaletteKind());
-
-        StringAssert.Contains(state.Failure, "loca/SPAD.PA");
-    }
-
-    [TestMethod]
     public void AKindThatListsNoAssetsShowsANotice()
     {
-        using var fake = new FakeInstall();
-
-        var state = Open(fake, new ListedKind("unrecovered"));
+        var state = Open(new ListedKind("unrecovered"));
 
         Assert.AreEqual("no unrecovered assets", state.Notice);
     }

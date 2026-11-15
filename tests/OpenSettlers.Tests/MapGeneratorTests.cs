@@ -200,10 +200,9 @@ public sealed class MapGeneratorTests
     // overlap pass and marks its neighbor at (dx, dy) as occupied, and returns the tile's object byte after the pass.
     static int ObjectAfterOverlap(int objectClass, int dx, int dy)
     {
-        var made = TestProgram.Made();
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MadeCode] = (byte)objectClass;
-        var tables = new RuleTables(classes, made.StartStock);
+        var tables = new RuleTables(classes, TestProgram.MadeStartStock());
         var tile = -1;
 
         var map = MapGenerator.Generate(

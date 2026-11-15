@@ -1,5 +1,4 @@
 using Godot;
-using OpenSettlers.Assets;
 
 namespace OpenSettlers.Viewer;
 
@@ -12,7 +11,7 @@ public sealed class SoundView : PreviewView
     /// <inheritdoc/>
     public override Control Create(Preview preview)
     {
-        var sound = ((SoundPreview)preview).Sound;
+        var sound = (SoundPreview)preview;
         var player = new AudioStreamPlayer
         {
             Stream = new AudioStreamWav
@@ -20,7 +19,7 @@ public sealed class SoundView : PreviewView
                 Format = AudioStreamWav.FormatEnum.Format8Bits,
                 MixRate = sound.SampleRate,
                 Stereo = false,
-                Data = sound.SignedSamples(),
+                Data = sound.SignedSamples,
             },
         };
         var play = new Button { Text = "Play" };

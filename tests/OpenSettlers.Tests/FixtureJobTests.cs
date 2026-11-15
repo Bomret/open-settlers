@@ -49,8 +49,8 @@ public sealed class FixtureJobTests
     const string AdaptersEngine = """
         using System;
         using System.Collections.Generic;
-        [assembly: OpenSettlers.Simulation.CoreStateCodes(2, 3)]
-        namespace OpenSettlers.Simulation
+        [assembly: OpenSettlers.Import.HistoryEdition.CoreStateCodes(2, 3)]
+        namespace OpenSettlers.Import.HistoryEdition
         {
             using OpenSettlers.Domain;
             internal interface IJobTables
@@ -73,11 +73,17 @@ public sealed class FixtureJobTests
         """;
 
     const string MapViewEngine = """
-        namespace OpenSettlers.MapView
+        global using OpenSettlers.Import.HistoryEdition;
+        global using OpenSettlers.Import.ContentSet;
+        namespace OpenSettlers.Import.HistoryEdition
         {
             using OpenSettlers.Domain;
             public abstract class HistoryEditionLook { }
             public abstract class HistoryEditionLook<TJob> : HistoryEditionLook where TJob : Job { }
+        }
+        namespace OpenSettlers.Import.ContentSet
+        {
+            using OpenSettlers.Domain;
             public abstract class OpenSettlersLook { }
             public abstract class OpenSettlersLook<TJob> : OpenSettlersLook where TJob : Job
             {
@@ -112,7 +118,7 @@ public sealed class FixtureJobTests
     const string FixtureAdapters = """
         using System.Collections.Generic;
         using OpenSettlers.Domain;
-        namespace OpenSettlers.Simulation;
+        namespace OpenSettlers.Import.HistoryEdition;
         [JobName("fixture", "a made-up job")]
         [StateName(0x30, "fixes", "a made-up state")]
         public sealed class FixtureTables : JobTables<Fixture>
@@ -221,7 +227,7 @@ public sealed class FixtureJobTests
         );
         StringAssert.Contains(
             adapters.Text,
-            "new global::OpenSettlers.Simulation.FixtureTables()",
+            "new global::OpenSettlers.Import.HistoryEdition.FixtureTables()",
             "the tables registry"
         );
         StringAssert.Contains(

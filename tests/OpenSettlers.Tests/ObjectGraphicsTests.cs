@@ -49,15 +49,9 @@ public sealed class ObjectGraphicsTests
         return payloads;
     }
 
-    static OpenSettlers.Assets.Install Open(FakeInstall fake)
+    static OpenSettlers.Import.HistoryEdition.Install Open(FakeInstall fake)
     {
-        Assert.IsTrue(
-            OpenSettlers.Assets.Install.TryOpen(
-                OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null),
-                out var install,
-                out _
-            )
-        );
+        Assert.IsTrue(OpenSettlers.Import.HistoryEdition.Install.TryOpen(fake.Root, out var install, out _));
 
         return install;
     }
@@ -71,7 +65,7 @@ public sealed class ObjectGraphicsTests
     [TestMethod]
     public void ACoveredPixelIsOpaqueEvenAtPaletteIndexZeroAndAnUncoveredPixelIsTransparent()
     {
-        var image = ObjectImage.From(SpriteFile.Read(Sprite()), PaletteFile.Read(Palette()));
+        var image = ObjectImages.From(SpriteFile.Read(Sprite()), PaletteFile.Read(Palette()));
 
         CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0, 0, 0, 0, 255, 28, 0, 0, 255 }, image.Rgba);
         Assert.AreEqual(-1, image.OffsetX);
@@ -334,7 +328,7 @@ public sealed class ObjectGraphicsTests
             Covered = [false, true],
         };
 
-        var image = ObjectImage.Shadow(mask, PaletteFile.Read(Palette()));
+        var image = ObjectImages.Shadow(mask, PaletteFile.Read(Palette()));
 
         CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0, 36, 0, 0, 255 }, image.Rgba);
         Assert.AreEqual(3, image.OffsetX);

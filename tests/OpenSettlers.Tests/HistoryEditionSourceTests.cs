@@ -87,9 +87,7 @@ public sealed class HistoryEditionSourceTests
 
     static HistoryEditionSource Open(FakeInstall fake)
     {
-        Assert.IsTrue(
-            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
-        );
+        Assert.IsTrue(Install.TryOpen(fake.Root, out var install, out _));
 
         return HistoryEditionSource.Load(install);
     }
@@ -929,7 +927,7 @@ public sealed class HistoryEditionSourceTests
 
         return new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
+            TestProgram.MadeStartStock(),
             figureBases: bases,
             idleOffsets: idleOffsets,
             jobData: TestProgram.MadeJobData()
@@ -953,9 +951,7 @@ public sealed class HistoryEditionSourceTests
 
     static HistoryEditionSource OpenWithSettlers(FakeInstall fake, RuleTables? tables = null)
     {
-        Assert.IsTrue(
-            Install.TryOpen(OpenSettlers.Launch.LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _)
-        );
+        Assert.IsTrue(Install.TryOpen(fake.Root, out var install, out _));
 
         return HistoryEditionSource.Load(install, tables ?? SettlerTables());
     }
@@ -1048,8 +1044,8 @@ public sealed class HistoryEditionSourceTests
         offsets[2 * 4] = 1;
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.Made().StartStock,
-            figureBases: SettlerTables().FigureBases,
+            TestProgram.MadeStartStock(),
+            figureBases: [.. SettlerTables().Figures.Bases],
             figureOffsets: offsets,
             jobData: TestProgram.MadeJobData()
         );

@@ -411,7 +411,7 @@ public sealed class RemovalLogicTests
         int Huts() =>
             OpenSettlers
                 .MapView.ObjectDraws.Of(game.Map, game.CastleStock.Castle, game.Buildings)
-                .OfType<OpenSettlers.MapView.BuildingDraw>()
+                .OfType<OpenSettlers.Import.BuildingDraw>()
                 .Count(draw => draw.Type == BuildingType.Woodcutter);
         Assert.AreEqual(1, Huts());
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));

@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0017](0017-install-data-enters-through-import-ports.md)
+
 Amends [ADR 0007](0007-the-engine-draws-the-map-on-the-gpu.md): the palette is no longer the one source of
 color.
 
