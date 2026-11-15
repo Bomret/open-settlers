@@ -449,4 +449,65 @@ public sealed class ObjectQuadsTests
         Assert.IsNull(surface);
         Assert.IsEmpty(layers.Images);
     }
+
+    static BuildingDraw HutAt(int row, int x) =>
+        new()
+        {
+            Row = row,
+            X = x,
+            Y = 20 * row,
+            Type = BuildingType.Woodcutter,
+        };
+
+    static List<(RunKind Kind, List<int> Xs)> Runs(ObjectTerm[] objects, SettlerDraw[] settlers, int rows) =>
+        [
+            .. ObjectQuads
+                .Runs(objects, settlers, new FakeSource(), new ImageLayers(), new ImageLayers(), rows, 16)
+                .Select(run => (run.Kind, run.Quads.Select(q => q.X).ToList())),
+        ];
+
+    // 0x44d3ae draws each row's objects and then the row's settlers, from the top row down: a settler a row above a
+    // building is painted over by it, and a settler in the building's row paints over it.
+    [TestMethod]
+    public void ARowsObjectsPaintBeforeItsSettlersAndAfterTheSettlersOfTheRowAbove()
+    {
+        var runs = Runs(
+            [HutAt(5, 132)],
+            [SettlerAt(SettlerPart.Overlay, 4, 300, 80), SettlerAt(SettlerPart.Overlay, 5, 400, 100)],
+            8
+        );
+
+        Assert.HasCount(3, runs);
+        Assert.AreEqual((RunKind.Settlers, 303), (runs[0].Kind, runs[0].Xs.Single()));
+        Assert.AreEqual((RunKind.Objects, 131), (runs[1].Kind, runs[1].Xs.Single()));
+        Assert.AreEqual((RunKind.Settlers, 403), (runs[2].Kind, runs[2].Xs.Single()));
+    }
+
+    [TestMethod]
+    public void TermsOfOneKindInOneBandJoinOneRunAndARunEndsAtItsBand()
+    {
+        var runs = Runs([HutAt(0, 10), HutAt(1, 20), HutAt(20, 30)], [], 21);
+
+        Assert.HasCount(2, runs);
+        CollectionAssert.AreEqual(new[] { 9, 19 }, runs[0].Xs);
+        CollectionAssert.AreEqual(new[] { 29 }, runs[1].Xs);
+        Assert.IsTrue(runs.All(run => run.Kind == RunKind.Objects));
+    }
+
+    // A frame that moves a settler's record up a row (0x43f402) can put a settler of row 0 in row -1.
+    [TestMethod]
+    public void ASettlerMovedAboveTheTopRowPaintsBeforeTheTopRowsObjects()
+    {
+        var runs = Runs([HutAt(0, 10)], [SettlerAt(SettlerPart.Overlay, -1, 300, 0)], 4);
+
+        CollectionAssert.AreEqual(new[] { RunKind.Settlers, RunKind.Objects }, runs.Select(r => r.Kind).ToList());
+    }
+
+    [TestMethod]
+    public void ATermTheSourceDrawsNothingForStartsNoRun()
+    {
+        var runs = Runs([HutAt(0, 10), HutAt(0, 20)], [SettlerAt(SettlerPart.SecondFigure, 0, 300, 0)], 1);
+
+        Assert.HasCount(1, runs);
+    }
 }

@@ -21,6 +21,21 @@ public readonly record struct ObjectQuad
     public required int Layer { get; init; }
 }
 
+/// <summary>Which images a <see cref="SpriteRun"/> draws from: the map objects' or the settlers'.</summary>
+public enum RunKind
+{
+    /// <summary>The map objects, the buildings, and the goods at flags.</summary>
+    Objects,
+
+    /// <summary>The walking settlers.</summary>
+    Settlers,
+}
+
+/// <summary>Rectangles of one kind that paint one after the other, their layers from that kind's images.</summary>
+/// <param name="Kind">Whose images the layers name.</param>
+/// <param name="Quads">The rectangles in painting order.</param>
+public sealed record SpriteRun(RunKind Kind, List<ObjectQuad> Quads);
+
 /// <summary>The drawing plan of a map's objects: one rectangle per image the source draws, grouped into bands of rows.</summary>
 public static class ObjectQuads
 {
@@ -65,8 +80,74 @@ public static class ObjectQuads
     }
 
     /// <summary>
-    /// The rectangles of <c>terms</c> in the order they come, with no banding: the settlers, which the view draws as one
-    /// mesh. A term's shadow, where the source answers with one, comes right before its image. A term the source draws
+    /// The objects and the settlers in the order <c>0x44d3ae</c> paints them: row by row from the top, each row's
+    /// <c>objects</c> and then its <c>settlers</c> (<c>docs/rules/build-sites.md</c>, "The draw order"). A settler a
+    /// row above a building is painted over by it; a settler in its row paints over it. Both lists come ordered by row.
+    /// Neighboring terms of one kind join one run, and a run ends at the end of its band of <c>bandRows</c> rows, so no
+    /// mesh grows with the map. The rectangles come as in <see cref="Bands"/>, the objects' layers from
+    /// <c>objectLayers</c> and the settlers' from <c>settlerLayers</c>. A term above the top row falls in the first band;
+    /// a term the source draws nothing for starts no run.
+    /// </summary>
+    public static List<SpriteRun> Runs(
+        IReadOnlyList<ObjectTerm> objects,
+        IReadOnlyList<ObjectTerm> settlers,
+        IGraphicsSource source,
+        ImageLayers objectLayers,
+        ImageLayers settlerLayers,
+        int rows,
+        int bandRows
+    )
+    {
+        var runs = new List<SpriteRun>();
+        var nextObject = 0;
+        var nextSettler = 0;
+        foreach (var band in TerrainTiling.Chunks(1, rows, bandRows))
+        {
+            var end = band.Row + band.Height;
+            SpriteRun? run = null;
+            while (true)
+            {
+                var objectDue = nextObject < objects.Count && objects[nextObject].Row < end;
+                var settlerDue = nextSettler < settlers.Count && settlers[nextSettler].Row < end;
+                if (!objectDue && !settlerDue)
+                {
+                    break;
+                }
+
+                // A row's objects come before its settlers.
+                var takeObject = objectDue && (!settlerDue || objects[nextObject].Row <= settlers[nextSettler].Row);
+                var (term, kind, layers) = takeObject
+                    ? (objects[nextObject++], RunKind.Objects, objectLayers)
+                    : (settlers[nextSettler++], RunKind.Settlers, settlerLayers);
+                if (term.Ask(source) is not { } drawing)
+                {
+                    continue;
+                }
+
+                var quads = new List<ObjectQuad>();
+                Add(quads, term.X, term.Y, drawing.Shadow, layers);
+                Add(quads, term.X, term.Y, drawing.Image, layers);
+                if (quads.Count == 0)
+                {
+                    continue;
+                }
+
+                if (run is null || run.Kind != kind)
+                {
+                    run = new SpriteRun(kind, []);
+                    runs.Add(run);
+                }
+
+                run.Quads.AddRange(quads);
+            }
+        }
+
+        return runs;
+    }
+
+    /// <summary>
+    /// The rectangles of <c>terms</c> in the order they come, with no banding: the build markers, which the view draws as
+    /// one mesh. A term's shadow, where the source answers with one, comes right before its image. A term the source draws
     /// nothing for gets no quad and no layer.
     /// </summary>
     public static List<ObjectQuad> Flat(IReadOnlyList<ObjectTerm> terms, IGraphicsSource source, ImageLayers layers)

@@ -63,7 +63,9 @@ public partial class MapViewControl(
     readonly TickPacer _framePacer = new();
     ushort _frameCounter;
     ushort _framesDrawn;
-    readonly System.Collections.Generic.List<System.Collections.Generic.List<MeshInstance2D>> _objectNodes = [];
+
+    // For each wrap copy, the node that holds the meshes of the objects and the settlers in painting order.
+    readonly System.Collections.Generic.List<Node2D> _spriteNodes = [];
     Label _ticks = null!;
     Label _logs = null!;
     Button _flagButton = null!;
@@ -78,7 +80,6 @@ public partial class MapViewControl(
     readonly ImageLayers _settlerLayers = new();
     ShaderMaterial? _settlerMaterial;
     int _settlerImages;
-    readonly System.Collections.Generic.List<MeshInstance2D> _settlerMeshes = [];
     int _flagsDrawn;
     ObjectLayerWatch _objectWatch = new();
     int _buildingsDrawn;
@@ -214,7 +215,6 @@ public partial class MapViewControl(
 
         _ticks.Text = $"Tick {_game.TickCount}";
         _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);
-        UpdateSettlers();
         Redraw();
 
         return problem;
@@ -520,14 +520,21 @@ public partial class MapViewControl(
         if (_game is not null)
         {
             // The frame rate does not set the tick rate: whole ticks are due, the fraction carries.
+            var ticked = false;
             for (var due = _pacer.Due(delta); due > 0; due--)
             {
                 _game.Tick();
+                ticked = true;
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
             _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);
-            UpdateSettlers();
+            if (ticked)
+            {
+                // The settlers moved: they paint between the objects, so the objects' meshes are built again with them.
+                UpdateSprites();
+            }
+
             // Evaluated each frame, so the watch sees every change.
             var objectsChanged = _objectWatch.Changed(_game);
             if (
@@ -820,9 +827,8 @@ public partial class MapViewControl(
 
         var meshes = BuildMeshes(_source, TerrainTriangles.Of(_state.Map), _state.Map.Size);
         var roadMesh = BuildRoadMesh(_source, _state.Map);
-        var objectMeshes = BuildObjectMeshes(_source, _state.Map);
         var waterMesh = BuildWaterMesh(_source, _state.Map);
-        if (SurfaceMaterial() is not { } surface || ObjectMaterial() is not { } objectMaterial)
+        if (SurfaceMaterial() is not { } surface)
         {
             return;
         }
@@ -844,9 +850,8 @@ public partial class MapViewControl(
         }
 
         _framesDrawn = _frameCounter;
-        _objectNodes.Clear();
+        _spriteNodes.Clear();
         _waterNodes.Clear();
-        _settlerMeshes.Clear();
         foreach (var (x, y) in _camera.Copies())
         {
             var copy = new Node2D { Position = new Vector2(x, y) };
@@ -871,30 +876,11 @@ public partial class MapViewControl(
                 _waterNodes.Add(water);
             }
 
-            // Objects paint over the terrain of every copy: an absolute z index above the terrain's 0.
-            var objectNodes = new System.Collections.Generic.List<MeshInstance2D>();
-            foreach (var mesh in objectMeshes)
-            {
-                var node = new MeshInstance2D
-                {
-                    Mesh = mesh,
-                    Material = objectMaterial,
-                    ZAsRelative = false,
-                    ZIndex = 1,
-                };
-                copy.AddChild(node);
-                objectNodes.Add(node);
-            }
-
-            _objectNodes.Add(objectNodes);
-
-            // The settlers walk over the objects of every wrap copy; their mesh and material are set after each tick.
-            if (_settlerFigures is not null)
-            {
-                var settlers = new MeshInstance2D { ZAsRelative = false, ZIndex = 2 };
-                copy.AddChild(settlers);
-                _settlerMeshes.Add(settlers);
-            }
+            // Objects and settlers paint over the terrain of every copy: an absolute z index above the terrain's 0. Their
+            // meshes are set by UpdateSprites.
+            var sprites = new Node2D { ZAsRelative = false, ZIndex = 1 };
+            copy.AddChild(sprites);
+            _spriteNodes.Add(sprites);
 
             // The markers paint over the terrain, the objects, and the settlers of every copy.
             if (markerMesh is not null)
@@ -913,7 +899,7 @@ public partial class MapViewControl(
             _world.AddChild(copy);
         }
 
-        UpdateSettlers();
+        UpdateSprites();
         DrawPreview();
     }
 
@@ -921,7 +907,7 @@ public partial class MapViewControl(
     void UpdateObjects()
     {
         _framesDrawn = _frameCounter;
-        if (_state.Map is null || _source is null || _objectNodes.Count == 0)
+        if (_state.Map is null || _source is null || _spriteNodes.Count == 0)
         {
             return;
         }
@@ -934,9 +920,8 @@ public partial class MapViewControl(
             return;
         }
 
-        var meshes = BuildObjectMeshes(_source, _state.Map);
         // The step may have drawn images the array does not hold yet: the material takes them in then.
-        if (ObjectMaterial() is not { } objectMaterial || (waterMesh is not null && WaterMaterial() is null))
+        if (waterMesh is not null && WaterMaterial() is null)
         {
             return;
         }
@@ -947,57 +932,72 @@ public partial class MapViewControl(
             node.Material = _waterMaterial;
         }
 
-        foreach (var nodes in _objectNodes)
-        {
-            if (nodes.Count != meshes.Count)
-            {
-                Redraw();
-                return;
-            }
-
-            for (var band = 0; band < meshes.Count; band++)
-            {
-                nodes[band].Mesh = meshes[band];
-                nodes[band].Material = objectMaterial;
-            }
-        }
+        UpdateSprites();
     }
 
-    // The walking settlers as one mesh of quads, the same in every wrap copy: the frame and the animation step come from
-    // the game's settlers and clock, not from the frame time.
-    void UpdateSettlers()
+    // The objects and the walking settlers in the nodes Redraw made, one mesh per run of ObjectQuads.Runs, the same in
+    // every wrap copy: a settler paints after the objects of its row and before those of the rows below. The animation
+    // steps come from the frame counter and the game's clock, not from the frame time. A node past the runs draws nothing.
+    void UpdateSprites()
     {
-        if (
-            _game is null
-            || _settlerFigures is null
-            || _source is null
-            || _state.Map is null
-            || _settlerMeshes.Count == 0
-        )
+        if (_state.Map is null || _source is null || _spriteNodes.Count == 0)
         {
             return;
         }
 
         // A term the source has no image for draws nothing: the render loop neither throws nor warns.
-        var quads = ObjectQuads.Flat(
-            _settlerFigures.Draws(_state.Map, _game.Settlers, _game.Clock.Now),
+        var settlers =
+            _game is not null && _settlerFigures is not null
+                ? _settlerFigures.Draws(_state.Map, _game.Settlers, _game.Clock.Now)
+                : [];
+        var runs = ObjectQuads.Runs(
+            ObjectDraws.Of(
+                _state.Map,
+                _game?.CastleStock.Castle,
+                _game?.Buildings,
+                _game is null ? null : ObjectDraws.FlagGoodsOf(_game),
+                _frameCounter
+            ),
+            settlers,
             _source,
-            _settlerLayers
+            _objectLayers,
+            _settlerLayers,
+            _state.Map.Size.Height,
+            BandRows
         );
-        var material = quads.Count > 0 ? SettlerMaterial() : null;
-        if (quads.Count > 0 && material is null)
+
+        // The runs may have drawn images the arrays do not hold yet: the materials take them in then.
+        if (ObjectMaterial() is not { } objectMaterial)
         {
             return;
         }
 
-        var mesh =
-            quads.Count > 0
-                ? BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))))
-                : null;
-        foreach (var node in _settlerMeshes)
+        ShaderMaterial? settlerMaterial = null;
+        if (runs.Any(run => run.Kind == RunKind.Settlers) && (settlerMaterial = SettlerMaterial()) is null)
         {
-            node.Mesh = mesh;
-            node.Material = material;
+            return;
+        }
+
+        var meshes = runs.Select(run =>
+                (
+                    Mesh: BuildQuadMesh(run.Quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))),
+                    Material: run.Kind == RunKind.Objects ? objectMaterial : settlerMaterial
+                )
+            )
+            .ToList();
+        foreach (var sprites in _spriteNodes)
+        {
+            while (sprites.GetChildCount() < meshes.Count)
+            {
+                sprites.AddChild(new MeshInstance2D());
+            }
+
+            for (var index = 0; index < sprites.GetChildCount(); index++)
+            {
+                var node = sprites.GetChild<MeshInstance2D>(index);
+                node.Mesh = index < meshes.Count ? meshes[index].Mesh : null;
+                node.Material = index < meshes.Count ? meshes[index].Material : null;
+            }
         }
     }
 
@@ -1172,32 +1172,6 @@ public partial class MapViewControl(
         return quads.Count > 0
             ? BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))))
             : null;
-    }
-
-    // One mesh per band of rows, one quad per object image and shadow: the layer in COLOR.
-    System.Collections.Generic.List<ArrayMesh> BuildObjectMeshes(IGraphicsSource source, Map map)
-    {
-        var meshes = new System.Collections.Generic.List<ArrayMesh>();
-        foreach (
-            var band in ObjectQuads.Bands(
-                ObjectDraws.Of(
-                    map,
-                    _game?.CastleStock.Castle,
-                    _game?.Buildings,
-                    _game is null ? null : ObjectDraws.FlagGoodsOf(_game),
-                    _frameCounter
-                ),
-                source,
-                _objectLayers,
-                map.Size.Height,
-                BandRows
-            )
-        )
-        {
-            meshes.Add(BuildQuadMesh(band.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer)))));
-        }
-
-        return meshes;
     }
 
     // One mesh per band of rows, so the painting order of the rows holds across bands (each band is added after the
