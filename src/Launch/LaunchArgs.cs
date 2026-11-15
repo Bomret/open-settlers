@@ -58,6 +58,7 @@ public enum GraphicsSourceName
 /// flag and no layout. Each <c>--graphics</c> problem names the known sources (<see cref="KnownGraphics"/>).
 /// <c>--stock &lt;0..40&gt;</c> sets the start stock level of the human player (<see cref="Stock"/>) and belongs to
 /// <c>--game-view</c> without a layout only; a value that is no integer from 0 to 40, a repeat, or another mode is a bad argument.
+/// Two different mode flags with <c>--stock</c> give only the mode problem.
 /// </para>
 /// </summary>
 public sealed class LaunchArgs
@@ -99,7 +100,7 @@ public sealed class LaunchArgs
     public const string StockFlag = "--stock";
 
     /// <summary>The highest start stock level the free-game screen's bar sets.</summary>
-    public const int MaxStock = 40;
+    const int MaxStock = 40;
 
     /// <summary>The known graphics sources as the flag spells them, which the refusals name.</summary>
     const string KnownGraphics = "history-edition, open-settlers";
@@ -367,7 +368,7 @@ public sealed class LaunchArgs
             );
         }
 
-        if (stockGiven && (modeFlag != GameViewFlag || conflictFlag is not null || layoutGiven))
+        if (stockGiven && conflictFlag is null && (modeFlag != GameViewFlag || layoutGiven))
         {
             problems.Add($"{StockFlag} applies to {GameViewFlag} without {LayoutFlag} only");
         }

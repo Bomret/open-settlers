@@ -650,6 +650,17 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
+    public void AStockWithTwoModeFlagsGivesOnlyTheConflict()
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--map", "--stock", "10"], null);
+
+        CollectionAssert.AreEqual(
+            new[] { "--game-view and --map are different modes, give only one" },
+            args.Problems.ToArray()
+        );
+    }
+
+    [TestMethod]
     public void ARepeatedStockIsAProblem()
     {
         var args = LaunchArgs.Parse(["--game-view", "--stock", "10", "--stock", "20"], null);
