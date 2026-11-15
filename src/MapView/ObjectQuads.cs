@@ -32,9 +32,14 @@ public enum RunKind
 }
 
 /// <summary>Rectangles of one kind that paint one after the other, their layers from that kind's images.</summary>
-/// <param name="Kind">Whose images the layers name.</param>
-/// <param name="Quads">The rectangles in painting order.</param>
-public sealed record SpriteRun(RunKind Kind, List<ObjectQuad> Quads);
+public sealed record SpriteRun
+{
+    /// <summary>Whose images the layers name.</summary>
+    public required RunKind Kind { get; init; }
+
+    /// <summary>The rectangles in painting order.</summary>
+    public required List<ObjectQuad> Quads { get; init; }
+}
 
 /// <summary>The drawing plan of a map's objects: one rectangle per image the source draws, grouped into bands of rows.</summary>
 public static class ObjectQuads
@@ -134,7 +139,7 @@ public static class ObjectQuads
 
                 if (run is null || run.Kind != kind)
                 {
-                    run = new SpriteRun(kind, []);
+                    run = new SpriteRun { Kind = kind, Quads = [] };
                     runs.Add(run);
                 }
 
