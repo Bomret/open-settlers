@@ -21,7 +21,7 @@ readonly record struct ToolRun
 /// The one place the tests spawn python3 for the scripts under <c>tools/</c>. A missing python3 fails the test with the hint
 /// to run <c>mise install</c>, as <c>docs/agents/verification.md</c> states, except in <see cref="RunOnPath"/>, which reports
 /// inconclusive. Each run sets its environment: <c>SIEDLER_DIR</c>
-/// is absent unless the caller passes it, and the path holds no <c>analyzeHeadless</c> of the host unless the caller asks for it.
+/// is absent unless the caller passes it, no <c>GIT_*</c> variable of the host reaches the child, and the path holds no <c>analyzeHeadless</c> of the host unless the caller asks for it.
 /// <see cref="Worktree"/> builds a git repository with a linked worktree for the tools that find the main checkout.
 /// </summary>
 static class PythonTool
@@ -113,12 +113,7 @@ static class PythonTool
             info.ArgumentList.Add(argument);
         }
 
-        foreach (
-            var name in info.Environment.Keys.Where(key => key.StartsWith("GIT_", StringComparison.Ordinal)).ToList()
-        )
-        {
-            info.Environment.Remove(name);
-        }
+        RemoveGitVariables(info);
 
         using var process = Process.Start(info)!;
         var stderr = process.StandardError.ReadToEndAsync();
@@ -127,6 +122,17 @@ static class PythonTool
         if (process.ExitCode != 0)
         {
             Assert.Fail($"git {string.Join(' ', arguments)} exited {process.ExitCode}: {stderr.Result}");
+        }
+    }
+
+    // A GIT_DIR of the host, as a git hook sets it, would make git resolve the host's repository.
+    static void RemoveGitVariables(ProcessStartInfo info)
+    {
+        foreach (
+            var name in info.Environment.Keys.Where(key => key.StartsWith("GIT_", StringComparison.Ordinal)).ToList()
+        )
+        {
+            info.Environment.Remove(name);
         }
     }
 
@@ -214,6 +220,7 @@ static class PythonTool
         info.RedirectStandardOutput = true;
         info.RedirectStandardError = true;
         info.Environment.Remove("SIEDLER_DIR");
+        RemoveGitVariables(info);
         if (siedlerDir is not null)
         {
             info.Environment["SIEDLER_DIR"] = siedlerDir;

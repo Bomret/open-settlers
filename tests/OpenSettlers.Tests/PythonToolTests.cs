@@ -88,4 +88,24 @@ public sealed class PythonToolTests
         Assert.AreEqual("unset", PythonTool.Run(_folder, [script]).Stdout.Trim(), "whatever the host sets");
         Assert.AreEqual("given", PythonTool.Run(_folder, [script], siedlerDir: "given").Stdout.Trim());
     }
+
+    // A git hook runs the suite with GIT_DIR set; the tool's git must not resolve that repository. The case sets GIT_DIR on
+    // the test process for the run and restores it.
+    [TestMethod]
+    public void TheChildGetsNoGitVariableOfTheHost()
+    {
+        var script = Path.Combine(_folder, "env.py");
+        File.WriteAllText(script, "import os\nprint(sorted(k for k in os.environ if k.startswith('GIT_')))\n");
+        var before = Environment.GetEnvironmentVariable("GIT_DIR");
+        Environment.SetEnvironmentVariable("GIT_DIR", _folder);
+        try
+        {
+            Assert.AreEqual("[]", PythonTool.Run(_folder, [script]).Stdout.Trim());
+            Assert.AreEqual("[]", PythonTool.RunOnPath(_folder, [script], [], null).Stdout.Trim());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("GIT_DIR", before);
+        }
+    }
 }
