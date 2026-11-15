@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace OpenSettlers.Domain;
@@ -9,8 +10,9 @@ namespace OpenSettlers.Domain;
 /// the step times, and the others below. They come from the install's <c>Siedler1.exe</c> and are never restated in
 /// source (INV-0001): <c>ProgramTablesImporter</c> in the adapters builds them from the program's bytes, and a test
 /// builds its own from made-up values. The rules read the typed accessors (<see cref="ClassOf"/>, <see cref="StepTime"/>,
-/// <see cref="DoorSpeed(int)"/>, and the others); the arrays that remain public are the raw tables the importer's tests check against the original and the figure tables
-/// the map view draws from.
+/// <see cref="DoorSpeed(int)"/>, and the others). The raw tables the importer's tests check against the original, and the
+/// <see cref="Figures"/> the map view draws from, are read-only values: no member hands out the stored data for change, and the constructor
+/// copies the arrays it is given.
 /// </summary>
 public sealed class RuleTables
 {
@@ -77,20 +79,20 @@ public sealed class RuleTables
     /// <summary>The number of candidates of a row of the free walk's direction choice, and its width in the program.</summary>
     public const int WalkRowSize = 8;
 
-    readonly ObjectClass[] _classes;
-    readonly byte[] _goodKinds;
-    readonly byte[] _roadCapacities;
-    readonly byte[] _walkRows;
-    readonly byte[] _transportPriorities;
-    readonly byte[] _doorSpeeds;
-    readonly ushort[] _scanWindows;
-    readonly byte[] _buildingSizes;
-    readonly byte[] _buildingNeeds;
-    readonly GoodClass?[] _goodClasses;
-    readonly DistributionStep[][] _distribution;
-    readonly WorkerRequest?[] _workers;
-    readonly ushort[] _materialOrder;
-    readonly ushort[] _blowSteps;
+    readonly ImmutableArray<ObjectClass> _classes;
+    readonly ImmutableArray<byte> _goodKinds;
+    readonly ImmutableArray<byte> _roadCapacities;
+    readonly ImmutableArray<byte> _walkRows;
+    readonly ImmutableArray<byte> _transportPriorities;
+    readonly ImmutableArray<byte> _doorSpeeds;
+    readonly ImmutableArray<ushort> _scanWindows;
+    readonly ImmutableArray<byte> _buildingSizes;
+    readonly ImmutableArray<byte> _buildingNeeds;
+    readonly ImmutableArray<GoodClass?> _goodClasses;
+    readonly ImmutableArray<ImmutableArray<DistributionStep>> _distribution;
+    readonly ImmutableArray<WorkerRequest?> _workers;
+    readonly ImmutableArray<ushort> _materialOrder;
+    readonly ImmutableArray<ushort> _blowSteps;
 
     /// <summary>
     /// Creates tables from their contents. The tables of the settlers' walk (<paramref name="stepTimes"/>,
@@ -99,7 +101,7 @@ public sealed class RuleTables
     /// </summary>
     public RuleTables(
         ObjectClass[] classes,
-        byte[][] startStock,
+        StartStockTable startStock,
         ushort[]? stepTimes = null,
         byte[]? doorSpeeds = null,
         ushort[]? scanWindows = null,
@@ -127,48 +129,55 @@ public sealed class RuleTables
     {
         if (
             classes.Length != ClassCount
-            || startStock.Length != StartStockRows
-            || startStock.Any(row => row.Length != Goods)
+            || startStock.Count != StartStockRows
+            || Enumerable.Range(0, startStock.Count).Any(row => startStock[row].Length != Goods)
         )
         {
             throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows of 26.");
         }
 
-        _classes = classes;
+        // Every table is copied, so no caller keeps a hand on what the tables hold.
+        _classes = [.. classes];
         StartStock = startStock;
-        StepTimes = stepTimes ?? new ushort[StepTimeCount];
-        _doorSpeeds = doorSpeeds ?? new byte[DoorSpeedCount];
-        _scanWindows = scanWindows ?? new ushort[ScanWindowCount];
-        FigureBases = figureBases ?? new short[2 * FigureBaseRowCount];
-        FigureOffsets = figureOffsets ?? new short[512];
-        _walkRows = walkRows ?? new byte[WalkRowCount * WalkRowSize];
-        CarriedFigures = carriedFigures ?? new short[CarriedFigureCount];
-        _goodKinds = goodKinds ?? new byte[GoodKindCount];
-        _roadCapacities = roadCapacities ?? new byte[RoadCapacityCount];
-        _transportPriorities = transportPriorities ?? new byte[Goods];
-        FrameRows = frameRows ?? new sbyte[FrameRowCount];
-        IdlePhases = idlePhases ?? new short[IdlePhaseCount];
-        IdleFigures = idleFigures ?? new short[IdleFigureCount];
-        IdleOffsets = idleOffsets ?? new sbyte[IdleOffsetCount];
+        StepTimes = [.. stepTimes ?? new ushort[StepTimeCount]];
+        _doorSpeeds = [.. doorSpeeds ?? new byte[DoorSpeedCount]];
+        _scanWindows = [.. scanWindows ?? new ushort[ScanWindowCount]];
+        _walkRows = [.. walkRows ?? new byte[WalkRowCount * WalkRowSize]];
+        _goodKinds = [.. goodKinds ?? new byte[GoodKindCount]];
+        _roadCapacities = [.. roadCapacities ?? new byte[RoadCapacityCount]];
+        _transportPriorities = [.. transportPriorities ?? new byte[Goods]];
+        Figures = new FigureTables(
+            figureBases,
+            figureOffsets,
+            carriedFigures,
+            idlePhases,
+            idleFigures,
+            idleOffsets,
+            frameRows
+        );
         // stand-in: a table a test does not give makes every type small, so a test that places a building needs no table.
-        _buildingSizes = buildingSizes ?? [.. Enumerable.Repeat((byte)1, BuildingTypeCount)];
-        _buildingNeeds = buildingNeeds ?? new byte[2 * BuildingTypeCount];
+        _buildingSizes = [.. buildingSizes ?? [.. Enumerable.Repeat((byte)1, BuildingTypeCount)]];
+        _buildingNeeds = [.. buildingNeeds ?? new byte[2 * BuildingTypeCount]];
         // stand-in: a table a test does not give sends every good to storage at once, and no storage hands any good out.
-        _goodClasses = goodClasses ?? new GoodClass?[GoodClassCount];
+        _goodClasses = [.. goodClasses ?? new GoodClass?[GoodClassCount]];
         _distribution =
-            distribution
-            ??
-            [
-                [],
-                [],
-                [],
-            ];
+        [
+            .. (
+                distribution
+                ??
+                [
+                    [],
+                    [],
+                    [],
+                ]
+            ).Select(step => ImmutableArray.Create(step)),
+        ];
         PlankRankBase = plankRankBase;
         // stand-in: a table a test does not give makes no building ask for a worker.
-        _workers = workers ?? new WorkerRequest?[BuildingTypeCount];
+        _workers = [.. workers ?? new WorkerRequest?[BuildingTypeCount]];
         // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
-        _materialOrder = materialOrder ?? new ushort[BuildingTypeCount];
-        _blowSteps = blowSteps ?? new ushort[2 * BuildingTypeCount];
+        _materialOrder = [.. materialOrder ?? new ushort[BuildingTypeCount]];
+        _blowSteps = [.. blowSteps ?? new ushort[2 * BuildingTypeCount]];
         // A job's data is exactly what is given: a job's data that is missing is an error when read (see Get).
         _jobData = [];
         foreach (var (job, data) in jobData ?? [])
@@ -193,25 +202,19 @@ public sealed class RuleTables
             );
 
     /// <summary>The class of each object code.</summary>
-    public ObjectClass[] Classes => _classes;
+    public ImmutableArray<ObjectClass> Classes => _classes;
 
     /// <summary>The class of the object <paramref name="mapObject"/>.</summary>
     public ObjectClass ClassOf(MapObject mapObject) => _classes[mapObject.Code];
 
     /// <summary>The start stock rows, each <see cref="Goods"/> counts.</summary>
-    public byte[][] StartStock { get; }
+    public StartStockTable StartStock { get; }
 
-    /// <summary>The waiting carriers' phases.</summary>
-    public short[] IdlePhases { get; }
-
-    /// <summary>The waiting carriers' figure words.</summary>
-    public short[] IdleFigures { get; }
-
-    /// <summary>The waiting carriers' offsets by road directions, x and y for each.</summary>
-    public sbyte[] IdleOffsets { get; }
+    /// <summary>The figure tables the settlers are drawn from.</summary>
+    public FigureTables Figures { get; }
 
     /// <summary>The default transport priorities of the goods 1 to 26, as the importer read them (index good - 1).</summary>
-    public byte[] TransportPriorities => _transportPriorities;
+    public ImmutableArray<byte> TransportPriorities => _transportPriorities;
 
     /// <summary>
     /// The default transport priority of the good <paramref name="good"/>, 1 to 26: its rank, 1 to 26, each once; the
@@ -221,7 +224,7 @@ public sealed class RuleTables
     public int TransportPriority(Good good) => good.Code is >= 1 and <= Goods ? _transportPriorities[good.Code - 1] : 0;
 
     /// <summary>The byte counts of the good kind table as the importer read them.</summary>
-    public byte[] GoodKinds => _goodKinds;
+    public ImmutableArray<byte> GoodKinds => _goodKinds;
 
     /// <summary>
     /// Which byte of a building's fill a lost good counts against (<c>docs/rules/removal.md</c>). <paramref name="good"/> is a
@@ -236,13 +239,13 @@ public sealed class RuleTables
         };
 
     /// <summary>The number of carriers each length class of a road holds at most, as the importer read them.</summary>
-    public byte[] RoadCapacities => _roadCapacities;
+    public ImmutableArray<byte> RoadCapacities => _roadCapacities;
 
     /// <summary>The number of carriers a road of the length class <paramref name="lengthClass"/> holds at most.</summary>
     public byte RoadCapacity(int lengthClass) => _roadCapacities[lengthClass];
 
     /// <summary>The rows of the free walk's direction choice as the importer read them.</summary>
-    public byte[] WalkRows => _walkRows;
+    public ImmutableArray<byte> WalkRows => _walkRows;
 
     /// <summary>
     /// The direction, 0 east to 5 north, of the candidate <paramref name="candidate"/> (0 to 5, best first) of the walk row
@@ -256,24 +259,12 @@ public sealed class RuleTables
         return code is >= 4 and <= 24 && code % 4 == 0 ? code / 4 - 1 : -1;
     }
 
-    /// <summary>For each good a word that a carrier carrying it adds to its figure byte: the row in the high byte.</summary>
-    public short[] CarriedFigures { get; }
-
-    /// <summary>For each high byte of the figure word 2 words: the figure base and the second figure base (negative: none).</summary>
-    public short[] FigureBases { get; }
-
-    /// <summary>For each low byte of the figure word 2 words: what it adds to the figure and to the second figure.</summary>
-    public short[] FigureOffsets { get; }
-
-    /// <summary>For each frame of a settler what the record builder adds to the row of its record's list.</summary>
-    public sbyte[] FrameRows { get; }
-
     /// <summary>
     /// The time in clock units of a step, by step shape: <c>4 + 9 * direction + (height of the node reached minus
     /// height of the node left)</c>, with the directions east 0 to north 5 (<c>docs/rules/settlers.md</c>). Index with
     /// <see cref="StepTime"/>.
     /// </summary>
-    public ushort[] StepTimes { get; }
+    public ImmutableArray<ushort> StepTimes { get; }
 
     /// <summary>The time of the step shape <paramref name="shape"/>; a shape outside the table reads as 0.</summary>
     public ushort StepTime(int shape)
@@ -284,7 +275,7 @@ public sealed class RuleTables
     }
 
     /// <summary>The speed table of the doors as the importer read it.</summary>
-    public byte[] DoorSpeeds => _doorSpeeds;
+    public ImmutableArray<byte> DoorSpeeds => _doorSpeeds;
 
     /// <summary>The speed of the door of the building type <paramref name="buildingType"/>, in 32nds of a step time.</summary>
     public byte DoorSpeed(int buildingType) => _doorSpeeds[buildingType];
@@ -297,7 +288,7 @@ public sealed class RuleTables
         _doorSpeeds[building is null ? 0 : building.Type.Code | (building.Constructing ? 0x20 : 0)];
 
     /// <summary>The size table as the importer read it: one byte for each building type, 0 a mine, 1 small, 2 large.</summary>
-    public byte[] BuildingSizes => _buildingSizes;
+    public ImmutableArray<byte> BuildingSizes => _buildingSizes;
 
     /// <summary>
     /// How much room the building type <paramref name="type"/> takes (<c>0x42d307</c>, <c>docs/rules/build-sites.md</c>). A type
@@ -309,7 +300,7 @@ public sealed class RuleTables
             : BuildingSize.Mine;
 
     /// <summary>The needs table as the importer read it: planks then stones for each building type.</summary>
-    public byte[] BuildingNeedsTable => _buildingNeeds;
+    public ImmutableArray<byte> BuildingNeedsTable => _buildingNeeds;
 
     /// <summary>
     /// The planks and stones the building type <paramref name="type"/> needs (<c>0x449f18</c>); none for a type outside the table.
@@ -329,7 +320,7 @@ public sealed class RuleTables
     /// The order a storage serves the requests in, by the draw the phase routine takes at each cycle (<c>0x42965c</c>): the draw taken
     /// to 0 to 7 picks the second table at 0, the third at 1, and the first at any other value.
     /// </summary>
-    public DistributionStep[] DistributionOrder(int draw) =>
+    public ImmutableArray<DistributionStep> DistributionOrder(int draw) =>
         (draw & 7) switch
         {
             0 => _distribution[1],
@@ -367,7 +358,7 @@ public sealed class RuleTables
         type.Code is >= 0 and < BuildingTypeCount ? _blowSteps[2 * type.Code + (late ? 1 : 0)] : (ushort)0;
 
     /// <summary>The scan window table as the importer read it.</summary>
-    public ushort[] ScanWindows => _scanWindows;
+    public ImmutableArray<ushort> ScanWindows => _scanWindows;
 
     /// <summary>
     /// The number of buildings the retry scan clears in one pass on a map of the size value <paramref name="sizeValue"/>.

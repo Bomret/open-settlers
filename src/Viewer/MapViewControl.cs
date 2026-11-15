@@ -438,7 +438,7 @@ public partial class MapViewControl(
         {
             try
             {
-                _settlerFigures = new SettlerFigures(_installSteps ?? loadSteps(), _tables.FrameRows);
+                _settlerFigures = new SettlerFigures(_installSteps ?? loadSteps(), _tables.Figures);
             }
             catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
             {

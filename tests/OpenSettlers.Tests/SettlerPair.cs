@@ -32,7 +32,7 @@ sealed class SettlerPair(SettlerFigures shared, SettlerFigureTables tables)
         var sequences = archive.Data(archive[2]).ToArray();
 
         return new SettlerPair(
-            new SettlerFigures(new StepOffsets(sequences), tables.FrameRows),
+            new SettlerFigures(new StepOffsets(sequences), tables.Figures),
             SettlerFigureTables.From(tables, sequences)
         );
     }

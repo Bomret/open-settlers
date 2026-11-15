@@ -58,7 +58,7 @@ public sealed class SettlerFiguresTests
     // The woodcutter: the figure base 100 and the second base 50 in the row 0x0b, 200 and none in the row 0x10, 300 and
     // none in the row 0x0f; each figure byte adds its own number and, to the second, 1. The carrier's row 0: 100, none.
     static SettlerPair Figures(sbyte[]? frameRows = null) =>
-        new(new SettlerFigures(new StepOffsets(Sequences()), frameRows ?? []), Tables());
+        new(new SettlerFigures(new StepOffsets(Sequences()), new FigureTables(frameRows: frameRows)), Tables());
 
     static SettlerFigureTables Tables()
     {
@@ -140,7 +140,7 @@ public sealed class SettlerFiguresTests
         short[]? carried = null,
         FigureAdds woodcutter = default,
         HutFigureAdds typeOneHut = default,
-        IdleCarrierTables? idle = null,
+        (short[] Phases, short[] Figures, sbyte[] Offsets)? idle = null,
         BuilderFigureAdds builder = default,
         FigureAdds stonecutter = default,
         ForesterFigureAdds forester = default,
@@ -151,7 +151,12 @@ public sealed class SettlerFiguresTests
             new RuleTables(
                 new ObjectClass[RuleTables.ClassCount],
                 TestProgram.Made().StartStock,
+                figureBases: bases,
+                figureOffsets: offsets,
                 carriedFigures: carried ?? [],
+                idlePhases: idle?.Phases,
+                idleFigures: idle?.Figures,
+                idleOffsets: idle?.Offsets,
                 jobData:
                 [
                     (new Woodcutter(), woodcutter),
@@ -163,10 +168,7 @@ public sealed class SettlerFiguresTests
                     (new TypeOneHut(), typeOneHut),
                 ]
             ),
-            bases,
-            offsets,
-            sequences,
-            idle
+            sequences
         );
 
     // The adds of the sawmiller's handler (0x43fc21), made up: 0x1900 for a figure byte below 0x80, 0x1a00 for the step that takes the
@@ -188,18 +190,17 @@ public sealed class SettlerFiguresTests
 
     // The waiting carriers' tables: the phase of the column c is 8 * c, the figure word of the index i is i (row 0), and the
     // road directions 0x09 (east and west) move the figure 3 right and 1 up.
-    static IdleCarrierTables Idle()
+    static (short[] Phases, short[] Figures, sbyte[] Offsets) Idle()
     {
         var offsets = new sbyte[128];
         offsets[2 * 0x09] = 3;
         offsets[2 * 0x09 + 1] = -1;
 
-        return new IdleCarrierTables
-        {
-            Phases = [.. Enumerable.Range(0, 16).Select(c => (short)(8 * c))],
-            Figures = [.. Enumerable.Range(0, 128).Select(i => (short)i)],
-            Offsets = offsets,
-        };
+        return (
+            [.. Enumerable.Range(0, 16).Select(c => (short)(8 * c))],
+            [.. Enumerable.Range(0, 128).Select(i => (short)i)],
+            offsets
+        );
     }
 
     // A map whose node of the waiting carriers (4,3) has the roads given, and the lake mark where asked.
@@ -797,7 +798,7 @@ public sealed class SettlerFiguresTests
         offsets[2 * 3] = 7;
 
         var tables = TablesOf(bases, offsets, Sequences(), null, Adds);
-        var draws = new SettlerPair(new SettlerFigures(new StepOffsets(Sequences()), []), tables).Draws(
+        var draws = new SettlerPair(new SettlerFigures(new StepOffsets(Sequences()), new FigureTables()), tables).Draws(
             Map(),
             [Walker(7, 0)],
             0
@@ -873,7 +874,7 @@ public sealed class SettlerFiguresTests
         var tables = TablesOf(bases, new short[4], Sequences(), null, Adds);
 
         Assert.IsEmpty(
-            new SettlerPair(new SettlerFigures(new StepOffsets(Sequences()), []), tables).Draws(
+            new SettlerPair(new SettlerFigures(new StepOffsets(Sequences()), new FigureTables()), tables).Draws(
                 Map(),
                 [Walker(7, 0)],
                 0

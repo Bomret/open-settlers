@@ -1536,7 +1536,7 @@ public sealed class OpenSettlersSourceTests
             },
             MapSize.Offered[0]
         );
-        var figures = new SettlerFigures(new FakeWalkSteps(), []);
+        var figures = new SettlerFigures(new FakeWalkSteps(), new FigureTables());
         var heading = new Heading { Value = 0 };
         // The activities the builder draws (a frame that has a step gives each a figure term) and those it does not.
         Activity[] drawnActivities =
