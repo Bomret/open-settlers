@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Assets;
+using OpenSettlers.Launch;
 
 namespace OpenSettlers.Tests;
 
@@ -25,7 +26,7 @@ public sealed class AssetBrowserStateTests
     public void APortWithNoUsableDataGivesOneMessageAndNoCategories()
     {
         var state = AssetBrowserState.Open(
-            new UnusableAssets("no install given: pass --game <dir> or set SIEDLER_DIR")
+            new MissingInstallAssets("no install given: pass --game <dir> or set SIEDLER_DIR")
         );
 
         Assert.AreEqual("no install given: pass --game <dir> or set SIEDLER_DIR", state.Message);

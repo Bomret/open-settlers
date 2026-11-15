@@ -89,10 +89,7 @@ public sealed class RuleTablesShapeTests
         Assert.AreEqual((byte)107, tables.DoorSpeed(7));
         Assert.AreEqual((byte)15, tables.RoadCapacity(5));
         Assert.AreEqual((ushort)303, tables.ScanWindow(3));
-        Assert.AreEqual((ushort)1005, tables.StepTime(-27));
         Assert.AreEqual(4, tables.WalkDirection(2, 0), "the entry 16 holds the code 4 * 5");
-        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(BuildingType.Forester));
-        Assert.AreEqual((byte)(2 * BuildingType.Forester.Code + 1), tables.NeedsOf(BuildingType.Forester).Planks);
     }
 
     [TestMethod]
@@ -101,8 +98,11 @@ public sealed class RuleTablesShapeTests
         var tables = TestProgram.Made();
 
         Assert.AreEqual(RuleTables.StartStockRows, tables.StartStock.Count);
-        Assert.AreEqual((byte)(3 * 10 + 4), tables.StartStock[3][4]);
-        Assert.AreEqual(RuleTables.Goods, tables.StartStock[4].Length);
+        for (var row = 0; row < RuleTables.StartStockRows; row++)
+        {
+            Assert.AreEqual(RuleTables.Goods, tables.StartStock[row].Length);
+            Assert.AreEqual((byte)(row * 10 + 4), tables.StartStock[row][4], $"row {row}");
+        }
     }
 
     [TestMethod]

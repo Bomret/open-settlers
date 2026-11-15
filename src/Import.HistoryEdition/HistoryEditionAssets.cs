@@ -13,7 +13,7 @@ public sealed class HistoryEditionAssets(Install install) : IAssetsSource
     public IReadOnlyList<IAssetKind> Kinds() =>
         AssetKind.Discover().Select(k => (IAssetKind)new BoundKind(k, install)).ToList();
 
-    sealed class BoundKind(AssetKind kind, Install install) : IAssetKind
+    internal sealed class BoundKind(AssetKind kind, Install install) : IAssetKind
     {
         public string Name => kind.Name;
 

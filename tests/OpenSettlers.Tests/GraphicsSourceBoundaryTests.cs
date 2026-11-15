@@ -212,7 +212,6 @@ public sealed class GraphicsSourceBoundaryTests
                 "SettlerGraphics",
                 "SettlerFigureTables",
                 "SettlerSprites",
-                "IdleCarrierTables",
                 "SPAD.PA",
                 "MaskLayer",
             }

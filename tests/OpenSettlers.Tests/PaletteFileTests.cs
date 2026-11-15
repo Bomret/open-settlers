@@ -136,6 +136,18 @@ public sealed class PaletteFileTests
     }
 
     [TestMethod]
+    [DataRow(-1)]
+    [DataRow(256)]
+    public void TheIndexerRefusesAnIndexOutsideThePaletteWithTheValue(int index)
+    {
+        var palette = PaletteFile.Read(Triples(0, 0, 0));
+
+        var failure = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => palette[index]);
+
+        StringAssert.Contains(failure.Message, index.ToString());
+    }
+
+    [TestMethod]
     public void APaletteShorterThan768BytesIsUnreadableWithItsSize()
     {
         var failure = Assert.ThrowsExactly<InvalidDataException>(() => PaletteFile.Read(new byte[767]));

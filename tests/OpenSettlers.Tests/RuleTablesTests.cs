@@ -245,6 +245,27 @@ public sealed class RuleTablesTests
     }
 
     [TestMethod]
+    public void ChangingTheGoodsOfADistributionStepAfterConstructionLeavesTheTableUnchanged()
+    {
+        var goods = new[] { Good.Plank };
+        var order = new DistributionStep[][]
+        {
+            [new() { Class = ConstructionTables.PlankClass, Goods = goods }],
+            [],
+            [],
+        };
+        var tables = new RuleTables(
+            new ObjectClass[RuleTables.ClassCount],
+            TestProgram.Made().StartStock,
+            distribution: order
+        );
+
+        goods[0] = Good.Stone;
+
+        Assert.AreEqual(Good.Plank, tables.DistributionOrder(2)[0].Goods.Single());
+    }
+
+    [TestMethod]
     public void TheMadeUpJobDataHoldsExactlyTheDataTheJobTypesDeclare()
     {
         var declared = TestProgram.Jobs().SelectMany(job => job.Data.Select(type => (job, type)));

@@ -163,7 +163,7 @@ public sealed class AssetCheckTests
     {
         var report = AssetCheck.Run(
             Check,
-            new UnusableAssets("no install given: pass --game <dir> or set SIEDLER_DIR")
+            new MissingInstallAssets("no install given: pass --game <dir> or set SIEDLER_DIR")
         );
 
         Assert.AreEqual(2, report.ExitCode);
@@ -176,7 +176,10 @@ public sealed class AssetCheckTests
     [TestMethod]
     public void ABadArgumentExitsFourBeforeThePortIsAsked()
     {
-        var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--map"], null), new UnusableAssets("never asked"));
+        var report = AssetCheck.Run(
+            LaunchArgs.Parse(["--check", "--map"], null),
+            new MissingInstallAssets("never asked")
+        );
 
         Assert.AreEqual(4, report.ExitCode);
         Assert.IsFalse(report.Lines.Any(l => l.Contains("never asked")));

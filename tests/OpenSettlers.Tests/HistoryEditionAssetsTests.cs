@@ -173,6 +173,16 @@ public sealed class HistoryEditionAssetsTests
     }
 
     [TestMethod]
+    public void AnArchiveKindShowsAMissingArchiveAsTheFailureOfItsSelectedAsset()
+    {
+        using var fake = new FakeInstall();
+
+        var state = AssetBrowserState.Open(LaunchInstall.Assets(Check(fake)));
+
+        StringAssert.Contains(state.Failure, "loca/SPAD.PA");
+    }
+
+    [TestMethod]
     public void TheBrowserListsASoundKindsFilesInNumberOrderAndShowsAFailedFileAsItsReason()
     {
         using var fake = new FakeInstall().Put("snd/10.SND", [1]).Put("snd/02.SND", []);

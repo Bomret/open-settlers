@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using OpenSettlers.Launch;
 
@@ -10,12 +9,6 @@ namespace OpenSettlers.Tests;
 public sealed class FakeAssets(params IAssetKind[] kinds) : IAssetsSource
 {
     public IReadOnlyList<IAssetKind> Kinds() => kinds;
-}
-
-/// <summary>An assets port with no usable data: its kinds throw the reason, as a launch with no install does.</summary>
-public sealed class UnusableAssets(string reason) : IAssetsSource
-{
-    public IReadOnlyList<IAssetKind> Kinds() => throw new IOException(reason);
 }
 
 /// <summary>A kind that lists the assets the test hands it, or throws what it is told to when it lists.</summary>
@@ -34,15 +27,8 @@ static class RealKinds
     /// <summary>The port over <c>kinds</c> and that install; where the launch names no usable install, the port is unusable with the launch's problem.</summary>
     public static IAssetsSource Over(LaunchArgs args, params AssetKind[] kinds) =>
         LaunchInstall.TryOpen(args, out var install, out var problem)
-            ? new FakeAssets([.. kinds.Select(k => (IAssetKind)new Bound(k, install))])
-            : new UnusableAssets(problem);
-
-    sealed class Bound(AssetKind kind, Install install) : IAssetKind
-    {
-        public string Name => kind.Name;
-
-        public IEnumerable<Asset> Enumerate() => kind.Enumerate(install);
-    }
+            ? new FakeAssets([.. kinds.Select(k => (IAssetKind)new HistoryEditionAssets.BoundKind(k, install))])
+            : new MissingInstallAssets(problem);
 }
 
 /// <summary>A preview type of a test's own: one no view draws.</summary>

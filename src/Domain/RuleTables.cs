@@ -136,7 +136,7 @@ public sealed class RuleTables
             throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows of 26.");
         }
 
-        // Every table is copied, so no caller keeps a hand on what the tables hold.
+        // Every table is copied, the goods of each distribution step included, so no caller keeps a hand on what the tables hold.
         _classes = [.. classes];
         StartStock = startStock;
         StepTimes = [.. stepTimes ?? new ushort[StepTimeCount]];
@@ -170,7 +170,9 @@ public sealed class RuleTables
                     [],
                     [],
                 ]
-            ).Select(step => ImmutableArray.Create(step)),
+            ).Select(order =>
+                order.Select(step => step with { Goods = step.Goods.ToImmutableArray() }).ToImmutableArray()
+            ),
         ];
         PlankRankBase = plankRankBase;
         // stand-in: a table a test does not give makes no building ask for a worker.
