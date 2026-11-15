@@ -169,7 +169,8 @@ public partial class AssetBrowserView : Control
                 args.SeedText ?? MapViewState.DefaultSeed,
                 args.Size?.Value ?? MapSize.Offered[0].Value,
                 args.Mode == LaunchMode.GameView,
-                args.Graphics
+                args.Graphics,
+                args.Stock
             );
         AddChild(view);
         if (script is not null)

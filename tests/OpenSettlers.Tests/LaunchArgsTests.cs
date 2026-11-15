@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Launch;
@@ -602,5 +603,81 @@ public sealed class LaunchArgsTests
             args.Problems.ToArray()
         );
         Assert.IsNull(args.Size);
+    }
+
+    // The free-game screen's bar sets the human's start stock level from 0 to 40 (docs/rules/castle.md); --stock stands in for it.
+    [TestMethod]
+    [DataRow("0", 0)]
+    [DataRow("40", 40)]
+    public void AStockLevelFrom0To40IsTakenByTheGameView(string value, int level)
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--stock", value], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual(level, args.Stock);
+    }
+
+    [TestMethod]
+    public void NoStockFlagLeavesTheLevelToTheSeed()
+    {
+        Assert.IsNull(LaunchArgs.Parse(["--game-view"], null).Stock);
+    }
+
+    [TestMethod]
+    [DataRow("41")]
+    [DataRow("-1")]
+    [DataRow("ten")]
+    public void AStockOutside0To40IsOneProblemNamingIt(string value)
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--stock", value], null);
+
+        CollectionAssert.AreEqual(
+            new[] { $"bad --stock '{value}': not a start stock level, use 0 to 40" },
+            args.Problems.ToArray()
+        );
+        Assert.IsNull(args.Stock);
+    }
+
+    [TestMethod]
+    [DataRow("--game-view --stock")]
+    [DataRow("--stock --game-view")]
+    public void AStockWithoutAValueIsOneProblem(string arguments)
+    {
+        var args = LaunchArgs.Parse(arguments.Split(' '), null);
+
+        CollectionAssert.AreEqual(new[] { "--stock needs a value" }, args.Problems.ToArray());
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--check")]
+    [DataRow("--layout x.layout")]
+    [DataRow("--seed-info --seed 1234567812345678")]
+    [DataRow("")]
+    public void AStockOutsideTheGameViewIsAProblem(string mode)
+    {
+        var args = LaunchArgs.Parse([.. mode.Split(' ', StringSplitOptions.RemoveEmptyEntries), "--stock", "10"], null);
+
+        Assert.IsTrue(args.Problems.Contains("--stock applies to --game-view without --layout only"));
+    }
+
+    [TestMethod]
+    public void AStockWithTwoModeFlagsGivesOnlyTheConflict()
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--map", "--stock", "10"], null);
+
+        CollectionAssert.AreEqual(
+            new[] { "--game-view and --map are different modes, give only one" },
+            args.Problems.ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void ARepeatedStockIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--stock", "10", "--stock", "20"], null);
+
+        CollectionAssert.AreEqual(new[] { "repeated --stock" }, args.Problems.ToArray());
     }
 }
