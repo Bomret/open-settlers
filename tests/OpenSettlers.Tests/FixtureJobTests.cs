@@ -74,13 +74,14 @@ public sealed class FixtureJobTests
 
     const string MapViewEngine = """
         global using OpenSettlers.Import.HistoryEdition;
+        global using OpenSettlers.Import.ContentSet;
         namespace OpenSettlers.Import.HistoryEdition
         {
             using OpenSettlers.Domain;
             public abstract class HistoryEditionLook { }
             public abstract class HistoryEditionLook<TJob> : HistoryEditionLook where TJob : Job { }
         }
-        namespace OpenSettlers.MapView
+        namespace OpenSettlers.Import.ContentSet
         {
             using OpenSettlers.Domain;
             public abstract class OpenSettlersLook { }

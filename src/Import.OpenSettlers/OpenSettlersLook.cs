@@ -1,6 +1,6 @@
 using OpenSettlers.Domain;
 
-namespace OpenSettlers.MapView;
+namespace OpenSettlers.Import.ContentSet;
 
 /// <summary>
 /// The look of a job under the Open Settlers source: the name its frames carry in the content set's manifest
