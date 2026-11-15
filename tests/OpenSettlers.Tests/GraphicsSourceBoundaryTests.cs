@@ -130,6 +130,9 @@ public sealed class GraphicsSourceBoundaryTests
             {
                 "HistoryEditionSource",
                 "HistoryEditionLook",
+                "HistoryEditionRuleTables",
+                "HistoryEditionAssets",
+                "JobTableNames",
                 "Import.HistoryEdition",
                 "OpenSettlers.Formats",
                 "StepOffsets",
@@ -190,6 +193,16 @@ public sealed class GraphicsSourceBoundaryTests
             HistoryEditionNames("using OpenSettlers.Import.HistoryEdition;")
         );
         Assert.IsEmpty(HistoryEditionNames("GraphicsSourceName.HistoryEdition and the install's folder"));
+    }
+
+    // A global using leaves the namespace out of the file: the check still finds the public types by name.
+    [TestMethod]
+    public void ThePortsOnlyCheckFindsAHistoryEditionTypeNamedWithoutItsNamespace()
+    {
+        CollectionAssert.AreEqual(
+            new[] { "HistoryEditionRuleTables", "HistoryEditionAssets", "JobTableNames" },
+            HistoryEditionNames("new HistoryEditionRuleTables(i); new HistoryEditionAssets(i); JobTableNames.Jobs")
+        );
     }
 
     // The History Edition assembly holds the looks and the figure tables: the one place that names the figure handlers.
