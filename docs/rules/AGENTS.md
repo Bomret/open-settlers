@@ -84,7 +84,9 @@ none: the import replaces the project and loses every change applied to it.
 Every git worktree, a scope's included, shares the Ghidra project and the dump in `re-local/` of the
 main checkout (`tools/GhidraDump/README.md`). `mise run ghidra:update` from a scope applies the index of
 that scope to the shared project. An import or a full dump from any tree replaces the shared project or
-the shared dump. Ghidra's project lock refuses a second run on the project while one runs.
+the shared dump. Ghidra's project lock refuses a second run on the project while one runs, and an
+import or a dump stops before it touches a folder while the lock file exists
+(`tools/GhidraDump/README.md`, "Run").
 
 REA's Ghidra provider keeps names only while the program stays open in REA, and it names only routines
 that it found: use `annotate_native_function`, since it rejects `set_address_name` and

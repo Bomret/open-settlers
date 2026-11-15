@@ -49,6 +49,15 @@ def headless():
     return path
 
 
+def refuse_locked():
+    """Stops before a folder is touched while a run holds the project. Ghidra keeps Siedler1.lock beside Siedler1.gpr
+    while a run has the project open (ProjectLocator.getProjectLockFile) and deletes it when the run ends."""
+    lock = os.path.join(PROJECT, "Siedler1.lock")
+    if os.path.exists(lock):
+        fail(f"the Ghidra project is open in another run ({lock} exists); wait for it to end, "
+             "or delete the lock when no Ghidra has the project open")
+
+
 def run(args, cwd=None):
     sys.exit(subprocess.call(args, cwd=cwd))
 
@@ -68,6 +77,7 @@ def main(argv):
     elif mode == "import":
         game = os.environ.get("SIEDLER_DIR") or fail("set SIEDLER_DIR in mise.local.toml")
         tool = headless()
+        refuse_locked()
         os.makedirs(PROJECT, exist_ok=True)
         analyze(tool, "-import", os.path.join(game, "Siedler1.exe"), "-overwrite", *APPLY_INDEX)
     elif mode == "update":
@@ -77,6 +87,7 @@ def main(argv):
         if rest and not index_only:
             fail(f"unknown dump mode: {' '.join(rest)}")
         tool = headless()
+        refuse_locked()
         if not index_only:
             shutil.rmtree(DUMP, ignore_errors=True)
         os.makedirs(DUMP, exist_ok=True)

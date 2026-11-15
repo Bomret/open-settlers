@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
@@ -493,6 +494,67 @@ public sealed class HeadlessEntryTests
         AssertRefused(run, message);
         AssertStartedNothing();
         AssertNoReLocal(main);
+        AssertNoReLocal(worktree);
+    }
+
+    const string Locked = "headless.py: the Ghidra project";
+
+    // Ghidra writes Siedler1.lock next to Siedler1.gpr in the project folder while a run holds the project.
+    static void LockProject(string tree)
+    {
+        var project = Path.Combine(tree, "re-local", "ghidra");
+        Directory.CreateDirectory(project);
+        File.WriteAllText(Path.Combine(project, "Siedler1.lock"), "");
+    }
+
+    static void WriteOldDump(string tree)
+    {
+        var dump = Path.Combine(tree, "re-local", "dump");
+        Directory.CreateDirectory(dump);
+        File.WriteAllText(Path.Combine(dump, "old.txt"), "old");
+    }
+
+    static void AssertOldDumpKept(string tree) =>
+        CollectionAssert.AreEqual(
+            new[] { "old.txt" },
+            Directory.GetFiles(Path.Combine(tree, "re-local", "dump")).Select(Path.GetFileName).ToArray()
+        );
+
+    [TestMethod]
+    [DataRow("dump")]
+    [DataRow("dump", "index-only")]
+    [DataRow("import")]
+    public void AModeOnALockedProjectIsRefusedAndKeepsTheDump(params string[] arguments)
+    {
+        StandInHeadless();
+        LockProject(Root);
+        WriteOldDump(Root);
+
+        var run = Run(arguments, headless: true, gradle: false, siedlerDir: Game);
+
+        AssertRefused(run, Locked);
+        Assert.IsFalse(run.Stderr.TrimEnd('\n').Contains('\n'), run.Stderr);
+        AssertStartedNothing();
+        AssertOldDumpKept(Root);
+    }
+
+    [TestMethod]
+    [DataRow("dump")]
+    [DataRow("import")]
+    public void AModeInAWorktreeOnTheMainCheckoutsLockedProjectIsRefusedAndKeepsTheSharedDump(
+        params string[] arguments
+    )
+    {
+        var (main, worktree) = InAWorktree();
+        StandInHeadless();
+        LockProject(main);
+        WriteOldDump(main);
+
+        var run = Run(arguments, headless: true, gradle: false, siedlerDir: Game, root: worktree, git: true);
+
+        AssertRefused(run, Locked);
+        AssertStartedNothing();
+        AssertOldDumpKept(main);
         AssertNoReLocal(worktree);
     }
 

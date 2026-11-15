@@ -62,9 +62,13 @@ Every git worktree of the repository shares the Ghidra project and the dump in `
 checkout. The main checkout is the parent folder of git's common directory (`git rev-parse
 --git-common-dir`). The tasks take the scripts and the program index from the tree they run in. Thus
 `mise run ghidra:update` from a scope applies the index of that scope to the shared project. An import or
-a full dump from any tree replaces the shared project or the shared dump. Ghidra locks a project while a
-run has it open, so it refuses a second run on the shared project. Outside a git repository, or without
-git, the tasks use `re-local/` under the current folder.
+a full dump from any tree replaces the shared project or the shared dump. While a run has the project
+open, Ghidra keeps the lock file `Siedler1.lock` next to `Siedler1.gpr` in `re-local/ghidra` and refuses
+a second run on the project. `ghidra:import` and `ghidra:dump` stop with a message while that lock file
+exists, before they create or remove a folder, so a second run leaves the running dump as it is. Ghidra
+deletes the lock file when the run ends. A run that crashes can leave it behind: delete it by hand only
+when no Ghidra has the project open. Outside a git repository, or without git, the tasks use `re-local/`
+under the current folder.
 
 Build the project only when `re-local/ghidra` holds no project. The import replaces an existing project
 and loses every change applied to it. The build takes about 7 minutes. It imports the program, runs
