@@ -541,9 +541,7 @@ public sealed class HeadlessEntryTests
     [TestMethod]
     [DataRow("dump")]
     [DataRow("import")]
-    public void AModeInAWorktreeOnTheMainCheckoutsLockedProjectIsRefusedAndKeepsTheSharedDump(
-        params string[] arguments
-    )
+    public void AModeInAWorktreeOnTheMainCheckoutsLockedProjectIsRefusedAndKeepsTheSharedDump(params string[] arguments)
     {
         var (main, worktree) = InAWorktree();
         StandInHeadless();
@@ -566,9 +564,9 @@ public sealed class HeadlessEntryTests
     [DataRow(".git")]
     public void GitOutputThatIsNotOneAbsoluteDotGitPathLeavesTheCurrentFolder(params string[] lines)
     {
-        var printed = lines.Select(line => line.StartsWith("other/", StringComparison.Ordinal)
-            ? Path.Combine(_folder, line)
-            : line);
+        var printed = lines.Select(line =>
+            line.StartsWith("other/", StringComparison.Ordinal) ? Path.Combine(_folder, line) : line
+        );
         PythonTool.StandIn(GitBin, "git", $"printf '%s\\n' {string.Join(' ', printed.Select(line => $"'{line}'"))}\n");
         StandInHeadless(exit: 3);
 
