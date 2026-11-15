@@ -8,6 +8,13 @@ data files. The engine reads all game data from it and ships none of its own. Th
 The Settlers History Edition, whose program is `Siedler1.exe`.
 _Avoid_: game folder, game directory, assets folder
 
+**Import port**
+An interface through which the engine reads one kind of game data, such as the rule tables, the walk
+steps, the assets, or the graphics source, as dedicated types (`OpenSettlers.Import`, ADR 0017). A source
+assembly implements the ports it can fill: the History Edition install every port, the content set the
+graphics source.
+_Avoid_: loader, reader (a reader decodes one file format inside a source assembly)
+
 **Asset**
 One loadable piece of game data in an install, such as a palette, sprite, sound, or map.
 _Avoid_: resource, game file
@@ -178,7 +185,8 @@ _Avoid_: core, model layer
 
 **Adapter**
 The assembly that converts the original's packed bytes, map layers, and bare codes to and from the typed
-model (`src/Adapters/`, ADR 0013). It references the domain and the application.
+model (`src/Adapters/`, ADR 0013). It references the domain, the application, and the History Edition source
+assembly.
 _Avoid_: converter layer, edge
 
 **Platform layer**

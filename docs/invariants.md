@@ -60,7 +60,7 @@ Check: `GoldenTests` plays each scenario once, reads no event until the run has 
 
 Class: architecture
 Concepts: Simulation, Domain, Adapter
-Statement: The simulation's layers are separate assemblies, and each depends only inward. The domain assembly references no other project assembly. The application assembly references only the domain. The adapter assembly references the domain and the application. None of them references a Godot type. The original's packed state bytes, map layers, and bare codes appear only in the adapter assembly; the map view and every other caller read the typed model (ADR 0013). The thing readouts of the map view are the one exception: they show the original's encoding of a settler or building through `SettlerEncoder` and `BuildingEncoder` as read-only display, and no rule takes it as input.
+Statement: The simulation's layers are separate assemblies, and each depends only inward. The domain assembly references no other project assembly. The application assembly references only the domain. The ports assembly references only the domain, and each source assembly the ports assembly and the domain. The adapter assembly references the domain, the application, and the History Edition source assembly. None of them references a Godot type. The original's packed state bytes, map layers, and bare codes appear only in the adapter assembly; the map view and every other caller read the typed model (ADR 0013). The thing readouts of the map view are the one exception: they show the original's encoding of a settler or building through `SettlerEncoder` and `BuildingEncoder` as read-only display, and no rule takes it as input.
 Breaks: loudly
 Check: the project references in each layer's `.csproj`. The compiler refuses a reference that points outward. Reviewers check that no packed byte or bare code of the original enters the domain or the application.
 
@@ -79,3 +79,11 @@ Concepts: Graphics source, Entry
 Statement: The original's graphics encoding stays inside the History Edition source. Entry numbers, archive files, palette indexes, and the slope and figure tables of `Siedler1.exe` used to pick an image appear in no draw term and in no class of the map view outside that source (ADR 0014). The one exception is `StepOffsets`, which reads entry 2 of the graphics archive under every graphics source, because the placement of a walking settler comes from the install.
 Breaks: silently
 Check: `GraphicsSourceBoundaryTests` pins the classes of the map view outside the source and `StepOffsets`'s exception. Reviewers check each draw term and every map view class outside the History Edition source. A test of the draw-list builders runs with no install-backed source.
+
+### INV-0011
+
+Class: architecture
+Concepts: Import port, Graphics source, Install
+Statement: The engine reaches game data only through import ports. Only the History Edition source assembly reads the install or names a type of the original's file formats, and only the Open Settlers source assembly reads the content set. The map view, the simulation, and the Godot host name no type of a source assembly, except where the host builds a source (ADR 0017).
+Breaks: loudly
+Check: the project references: the map view and the simulation assemblies reference the ports assembly and no source assembly, and the format readers are internal to the History Edition assembly, so the compiler refuses a use from outside. Reviewers check that no port returns a format type.
