@@ -17,12 +17,13 @@ of game data is an assembly that implements the ports it can fill:
   asset browser. It implements every port. Only the types the host builds and the job and state names
   (`JobTableNames`) are public; the rest is internal.
 - `OpenSettlers.Import.OpenSettlers` reads the repository's content set (ADR 0015). It implements the
-  graphics source.
+  graphics source. Only the source the host builds (`OpenSettlersSource`) is public; its job looks are
+  internal.
 
 The Godot host is the composition root: the launch code builds the sources and gives each view the ports
 it needs. The map view and the host name no type of a source assembly except where the host builds it. The
 map view compiles inside the Godot project, which references both source assemblies, so a repository test
-holds it to the ports where the compiler does not (INV-0011).
+holds it to the ports where the compiler does not: it scans for the names of both sources (INV-0011).
 
 ```mermaid
 flowchart LR

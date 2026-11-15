@@ -100,9 +100,10 @@ public sealed class GraphicsSourceBoundaryTests
         Assert.DoesNotContain("static T Read<T>(", Read("src/Import.HistoryEdition/ObjectGraphics.cs"));
     }
 
-    // The History Edition assembly is the one place that names its types, the format readers, and the figure handlers and adds
-    // (ADR 0016, ADR 0017, INV-0010, INV-0011). The map view compiles inside the Godot project, which references both source
-    // assemblies, so the compiler does not keep it from their public types: this scan does. The map view, the asset check and
+    // The History Edition assembly is the one place that names its types, the format readers, and the figure handlers and adds,
+    // and the Open Settlers assembly the one place that reads the content set (ADR 0016, ADR 0017, INV-0010, INV-0011). Each
+    // source is built only in the composition root. The map view compiles inside the Godot project, which references both
+    // source assemblies, so the compiler does not keep it from their public types: this scan does. The map view, the asset check and
     // the asset browser's state (src/Assets), and the viewer classes outside the composition root (the launch code and the main
     // scene, `AssetBrowserView`) read and draw through the ports.
     static readonly string[] PortsOnly =
@@ -246,7 +247,7 @@ public sealed class GraphicsSourceBoundaryTests
         Assert.IsEmpty(ContentSetNames("GraphicsSourceName.OpenSettlers and InputEventKey"));
     }
 
-    // The positive control: the check fails on a planted violation.
+    // The positive control of the History Edition check: it fails on a planted violation.
     [TestMethod]
     public void ThePortsOnlyCheckFailsOnAPlantedHistoryEditionType()
     {

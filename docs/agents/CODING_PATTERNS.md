@@ -61,7 +61,7 @@ files, layer by layer:
    adapters reads the names through `JobTableNames`.
 4. Looks: `src/Import.HistoryEdition/HistoryEditionLooks/XLook.cs` with the internal
    `XLook(RuleTables tables) : HistoryEditionLook<X>` for the History Edition source and
-   `src/Import.OpenSettlers/OpenSettlersLooks/XKey.cs` with
+   `src/Import.OpenSettlers/OpenSettlersLooks/XKey.cs` with the internal
    `XKey() : OpenSettlersLook<X>("x")` for the content set (`HistoryEditionLookRegistry`, `OpenSettlersLookRegistry`).
    A job without a look draws nothing; `JobCoverageTests` fails a job that has rules and no look under a source.
 5. Building: a job whose worker the handler of a building type asks for is a building concern too. Add the address of
