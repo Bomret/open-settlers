@@ -49,7 +49,7 @@ public sealed class NameTable(RuleTables tables)
     }
 
     /// <summary>The evidence of a state whose name rests on the code of the Activity record alone.</summary>
-    internal const string StateEvidence = TableEvidence.State;
+    internal const string StateEvidence = JobTableNames.StateEvidence;
 
     const string TreeEvidence =
         "the program compares a node's code with 8 and 0x18 (0x438c11, 0x437f8f); docs/rules/woodcutting.md (codes 8 to 0x17); class 1";
@@ -151,14 +151,14 @@ public sealed class NameTable(RuleTables tables)
             "docs/rules/woodcutting.md (the cut writes 0x5d to 0x66, the object pass turns each into 0x53, 0x428eb8)"
         );
 
-        // The names of the jobs and of the states a job owns come from the tables modules (JobTablesRegistry); the states that
+        // The names of the jobs and of the states a job owns come from the tables modules (JobTableNames); the states that
         // belong to no one job, the walks and the door among them, are here.
-        foreach (var (code, name, evidence) in JobTablesRegistry.JobNames)
+        foreach (var (code, name, evidence) in JobTableNames.Jobs)
         {
             AddOne(CodeKind.Job, code, name, evidence);
         }
 
-        foreach (var (code, name, evidence) in JobTablesRegistry.StateNames)
+        foreach (var (code, name, evidence) in JobTableNames.States)
         {
             AddOne(CodeKind.State, code, name, evidence);
         }
