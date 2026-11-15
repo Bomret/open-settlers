@@ -97,8 +97,8 @@ pixel of index 0 shows color 0 of the palette.
 ## In the engine
 
 `src/MapView/ObjectDraws.cs` (the draw terms of `ObjectTerms.cs`: the tile, the position, and the order),
-`ObjectImage.cs` (RGBA pixels), `ObjectQuads.cs` (the quads of the images a graphics source answers, in bands of 16
-rows), and, inside the History Edition source, `ObjectSprites.cs` (code to entry, the phase folding) and
+`ObjectImage.cs` (RGBA pixels), `ObjectQuads.cs` (the quads of the images a graphics source answers, in runs of objects
+and settlers in row order, each ending at its band of 16 rows), and, inside the History Edition source, `ObjectSprites.cs` (code to entry, the phase folding) and
 `ObjectGraphics.cs` (the install's sprites and shadow masks by entry). `src/Viewer/MapViewControl.cs` and
 `Objects.gdshader` draw them over the terrain of all nine copies. Resources (`Map.Deposits`) are never drawn. The tile routine
 `0x44d5b4` reads the flag, height, and object bytes of record A and, at the tile's record-B offset (the state

@@ -224,6 +224,8 @@ door, fells, and walks back with a hat, an axe, and a log.
 **In the engine** (`SettlerFigures`, `StepOffsets`, `SettlerFigureTables`, `SettlerSprites`, `src/MapView`): a settler of the job 0,
 5, or 11 in state 2, 3, 4, 5, 0xe, 0x10, 0x11, or 0x19 is drawn. `SettlerFigures` places it and orders it under every graphics
 source. It emits three draw terms for it: the figure, the overlay, and the second figure.
+`ObjectQuads.Runs` paints the settlers of a row after that row's objects and before the objects of the rows below it, as
+`Render_DrawMapView` does. So a building paints over a settler in a row above it.
 
 A term names the settler's job, activity, heading, frame, animation step (the time left), player, and carried good. It holds no
 entry and no colour index (INV-0010).

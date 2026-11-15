@@ -1,0 +1,10 @@
+# The woodcutter walks on screen between two shots: after the first shot the game ticks frame by frame, and each frame
+# that ticks draws him at his new place, painted between the objects in row order.
+# Run it on the layout: sh tools/play-run.sh woodcutter-walks-on --layout layouts/woodcutter.jsonc --fps 10
+wait 0.3
+fast-forward woodcutter state 0x10 max 20000
+scroll up 6 1056 520
+wait 0.3
+shot before 14 11 2 4
+wait 1.5
+shot after 14 11 2 4
