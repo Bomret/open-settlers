@@ -282,7 +282,7 @@ public sealed class SpriteKindTests
         );
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, [new PaletteKind(), new SpriteKind()]);
+        var report = AssetCheck.Run(args, RealKinds.Over(args, new PaletteKind(), new SpriteKind()));
 
         Assert.AreEqual(1, report.ExitCode);
         Assert.IsTrue(

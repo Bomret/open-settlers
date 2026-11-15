@@ -1,21 +1,14 @@
 using System;
+using System.Linq;
 using OpenSettlers.Formats;
-using OpenSettlers.Import.HistoryEdition;
 
-namespace OpenSettlers.Assets;
-
-/// <summary>The preview of a palette: its 256 colors.</summary>
-public sealed record PalettePreview : Preview
-{
-    /// <summary>The palette.</summary>
-    public required Palette Palette { get; init; }
-}
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The palette entries of the graphics archives (<c>docs/rules/graphics-images.md</c>): entry 3, the palette the
 /// game draws with, and entries 3997 and 3998, which the program loads through the same routine.
 /// </summary>
-public sealed class PaletteKind : ArchiveEntryKind
+sealed class PaletteKind : ArchiveEntryKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "palette";
@@ -40,6 +33,9 @@ public sealed class PaletteKind : ArchiveEntryKind
         new PalettePreview
         {
             Summary = $"Palette of entry {entry.Number}: 256 colors, 6 bits per component, color 0 black.",
-            Palette = PaletteFile.Read(data.Span),
+            Rgba = IndexedImage.ToRgba(
+                Enumerable.Range(0, Palette.ColorCount).Select(i => (byte)i).ToArray(),
+                PaletteFile.Read(data.Span)
+            ),
         };
 }

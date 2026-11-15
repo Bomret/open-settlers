@@ -4,7 +4,7 @@ using System.IO;
 namespace OpenSettlers.Formats;
 
 /// <summary>A sound: unsigned 8-bit mono PCM samples and the rate at which the program plays them.</summary>
-public sealed class Sound
+sealed class Sound
 {
     /// <summary>The samples as stored: unsigned, 0x80 is silence.</summary>
     public required ReadOnlyMemory<byte> Samples { get; init; }
@@ -32,7 +32,7 @@ public sealed class Sound
 /// The sound file reader (<c>docs/rules/sound-files.md</c>). A sound file has no header: every byte is one
 /// sample.
 /// </summary>
-public static class SoundFile
+static class SoundFile
 {
     /// <summary>The sample rate the program's platform layer gives DirectSound for every sound.</summary>
     public const int SampleRate = 8403;

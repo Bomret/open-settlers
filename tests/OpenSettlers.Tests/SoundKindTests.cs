@@ -46,8 +46,8 @@ public sealed class SoundKindTests
 
         var preview = (SoundPreview)new SoundKind().Enumerate(Open(fake)).Single().Load();
 
-        Assert.AreEqual(8403, preview.Sound.SampleRate);
-        Assert.AreEqual(2, preview.Sound.Samples.Length);
+        Assert.AreEqual(8403, preview.SampleRate);
+        CollectionAssert.AreEqual(new byte[] { 0x00, 0x10 }, preview.SignedSamples);
     }
 
     [TestMethod]

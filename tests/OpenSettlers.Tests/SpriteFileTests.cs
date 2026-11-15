@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 public sealed class SpriteFileTests
 {
     // Colors 1 and 2 are red and green at 6 bits; color 0 is black.
-    public static Palette Colors()
+    static Palette Colors()
     {
         var bytes = new byte[768];
         bytes[3] = 0xFC;

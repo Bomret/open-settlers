@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -8,202 +7,147 @@ using OpenSettlers.Launch;
 
 namespace OpenSettlers.Tests;
 
+/// <summary>The asset check on a fake assets port: no install on disk.</summary>
 [TestClass]
 public sealed class AssetCheckTests
 {
-    sealed record TextPreview : Preview;
+    static readonly LaunchArgs Check = LaunchArgs.Parse(["--check"], null);
 
-    // A kind that lists whatever the test hands it, without reading the install.
-    sealed class ListedKind(string name, params Asset[] assets) : AssetKind
-    {
-        public override string Name => name;
-
-        public override IEnumerable<Asset> Enumerate(Install install) => assets;
-    }
-
-    static Asset Entry(string kind, string file, string? entry, Func<Preview>? load = null) =>
+    static Asset Entry(string kind, string file, string? entry, Func<Preview>? load = null, bool alias = false) =>
         new()
         {
             Kind = kind,
             File = file,
             Entry = entry,
+            IsAlias = alias,
             Name = entry ?? file,
-            Load = load ?? (() => new TextPreview { Summary = "ok" }),
+            Load = load ?? (() => new NotePreview { Summary = "ok" }),
         };
 
-    static CheckReport Run(FakeInstall fake, params AssetKind[] kinds) =>
-        AssetCheck.Run(LaunchArgs.Parse(["--check", "--game", fake.Root], null), kinds);
+    static CheckReport Run(params IAssetKind[] kinds) => AssetCheck.Run(Check, new FakeAssets(kinds));
 
     [TestMethod]
-    public void EveryPresentSoundFileIsListedWithItsEntryCountAndKindAndTheExitCodeIsZero()
+    public void EveryListedFileIsReportedWithItsEntryCountAndKindAndTheExitCodeIsZero()
     {
-        using var fake = new FakeInstall().Put("snd/01.SND", [1, 2]).Put("snd/03.SND", [1]);
-
-        var report = Run(fake, new SoundKind());
+        var report = Run(
+            new ListedKind("sound", Entry("sound", "snd/01.SND", null), Entry("sound", "snd/03.SND", null))
+        );
 
         Assert.AreEqual(0, report.ExitCode);
-        CollectionAssert.Contains(report.Lines.ToList(), "snd/01.SND: 1 entry (sound)");
-        CollectionAssert.Contains(report.Lines.ToList(), "snd/03.SND: 1 entry (sound)");
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "snd/01.SND: 1 entry (sound)",
+                "snd/03.SND: 1 entry (sound)",
+                "2 files read, 2 entries read, 0 failed",
+            },
+            report.Lines.ToList()
+        );
     }
 
     [TestMethod]
     public void AFileWithSeveralEntriesAndKindsListsTheCountAndEachKindOnce()
     {
-        using var fake = new FakeInstall();
-        var kinds = new AssetKind[]
-        {
+        var report = Run(
             new ListedKind("palette", Entry("palette", "loca/A.PA", "1")),
-            new ListedKind("sprite", Entry("sprite", "loca/A.PA", "2"), Entry("sprite", "loca/A.PA", "3")),
-        };
-
-        var report = Run(fake, kinds);
+            new ListedKind("sprite", Entry("sprite", "loca/A.PA", "2"), Entry("sprite", "loca/A.PA", "3"))
+        );
 
         CollectionAssert.Contains(report.Lines.ToList(), "loca/A.PA: 3 entries (palette, sprite)");
     }
 
     [TestMethod]
-    public void AnEmptySoundFileIsReportedWithItsFileAndTheOtherFilesAreStillRead()
+    public void AliasesAreCountedApartFromEntries()
     {
-        using var fake = new FakeInstall().Put("snd/01.SND", []).Put("snd/02.SND", [1]);
+        var report = Run(
+            new ListedKind("sprite", Entry("sprite", "loca/A.PA", "2"), Entry("sprite", "loca/A.PA", "3", alias: true))
+        );
 
-        var report = Run(fake, new SoundKind());
+        CollectionAssert.Contains(report.Lines.ToList(), "loca/A.PA: 1 entry, 1 alias (sprite)");
+        Assert.AreEqual("1 files read, 1 entries read, 1 alias, 0 failed", report.Lines[^1]);
+    }
+
+    [TestMethod]
+    public void AFailingFileIsReportedWithItsFileAndTheOtherFilesAreStillRead()
+    {
+        var bad = Entry("sound", "snd/01.SND", null, () => throw new InvalidDataException("the file is empty"));
+
+        var report = Run(new ListedKind("sound", bad, Entry("sound", "snd/02.SND", null)));
 
         Assert.AreEqual(1, report.ExitCode);
-        Assert.IsTrue(report.Lines.Any(l => l.StartsWith("FAIL snd/01.SND: ") && l.Contains("empty")));
+        CollectionAssert.Contains(report.Lines.ToList(), "FAIL snd/01.SND: the file is empty");
         CollectionAssert.Contains(report.Lines.ToList(), "snd/02.SND: 1 entry (sound)");
     }
 
     [TestMethod]
     public void AFailureNamesTheFileTheEntryAndTheReason()
     {
-        using var fake = new FakeInstall();
         var bad = Entry("sprite", "loca/A.PA", "7", () => throw new InvalidDataException("run past the end"));
 
-        var report = Run(fake, new ListedKind("sprite", bad));
+        var report = Run(new ListedKind("sprite", bad));
 
         CollectionAssert.Contains(report.Lines.ToList(), "FAIL loca/A.PA entry 7: run past the end");
     }
 
     [TestMethod]
-    public void AProgrammingErrorWhileLoadingIsNotReportedAsAnUnreadableEntry()
+    public void AFileThatFailsAsAWholeIsReportedOnceHoweverManyKindsListIt()
     {
-        using var fake = new FakeInstall();
-        var bug = Entry("sprite", "loca/A.PA", "7", () => throw new IndexOutOfRangeException("reader bug"));
+        var missing = new FileNotFoundException("the archive loca/A.PA is missing");
 
-        Assert.ThrowsExactly<IndexOutOfRangeException>(() => Run(fake, new ListedKind("sprite", bug)));
+        var report = Run(
+            new ListedKind("palette", Entry("palette", "loca/A.PA", null, () => throw missing)),
+            new ListedKind("sprite", Entry("sprite", "loca/A.PA", null, () => throw missing))
+        );
+
+        Assert.AreEqual(1, report.ExitCode);
+        CollectionAssert.AreEqual(
+            new[] { "FAIL loca/A.PA: the archive loca/A.PA is missing", "0 files read, 0 entries read, 1 failed" },
+            report.Lines.ToList()
+        );
     }
 
     [TestMethod]
-    public void AMissingSndFolderIsReportedAndTheOtherKindsAreStillRead()
+    public void AProgrammingErrorWhileLoadingIsNotReportedAsAnUnreadableEntry()
     {
-        using var fake = new FakeInstall();
-        var other = new ListedKind("text", Entry("text", "loca/T.TXT", null));
+        var bug = Entry("sprite", "loca/A.PA", "7", () => throw new IndexOutOfRangeException("reader bug"));
 
-        var report = Run(fake, new SoundKind(), other);
-
-        Assert.AreEqual(1, report.ExitCode);
-        Assert.IsTrue(report.Lines.Any(l => l.StartsWith("FAIL snd: no sound file")));
-        CollectionAssert.Contains(report.Lines.ToList(), "loca/T.TXT: 1 entry (text)");
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => Run(new ListedKind("sprite", bug)));
     }
 
     [TestMethod]
     public void AKindThatCannotListItsAssetsFailsOnceAndTheOtherKindsAreStillRead()
     {
-        using var fake = new FakeInstall();
-        var other = new ListedKind("text", Entry("text", "loca/T.TXT", null));
+        var broken = new ListedKind("broken") { ListingFails = new IOException("cannot list") };
 
-        var report = Run(fake, new ThrowingKind(), other);
+        var report = Run(broken, new ListedKind("text", Entry("text", "loca/T.TXT", null)));
 
         Assert.AreEqual(1, report.ExitCode);
-        Assert.IsTrue(report.Lines.Any(l => l.StartsWith("FAIL broken: ") && l.Contains("cannot list")));
+        CollectionAssert.Contains(report.Lines.ToList(), "FAIL broken: cannot list the assets: cannot list");
         CollectionAssert.Contains(report.Lines.ToList(), "loca/T.TXT: 1 entry (text)");
+    }
+
+    [TestMethod]
+    public void AKindThatCrashesWhileListingPropagates()
+    {
+        var buggy = new ListedKind("buggy") { ListingFails = new IndexOutOfRangeException("bug") };
+
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => Run(buggy));
     }
 
     [TestMethod]
     public void TwoKindsOfOneNameClashAndUniqueNamesDoNot()
     {
-        var clash = AssetKind.NameClash([new ListedKind("text"), new ListedKind("sound"), new ListedKind("text")]);
+        var clash = AssetKinds.NameClash([new ListedKind("text"), new ListedKind("sound"), new ListedKind("text")]);
 
         StringAssert.Contains(clash, "\"text\"");
-        Assert.IsNull(AssetKind.NameClash([new ListedKind("text"), new ListedKind("sound")]));
-        Assert.IsNull(AssetKind.NameClash([]));
-    }
-
-    sealed class ThrowingKind : AssetKind
-    {
-        public override string Name => "broken";
-
-        public override IEnumerable<Asset> Enumerate(Install install) => throw new IOException("cannot list");
-    }
-
-    [TestMethod]
-    public void FilesTheProgramDoesNotReadAppearNowhereInTheReport()
-    {
-        using var fake = new FakeInstall().Put("snd/01.SND", [1]).Put("snd/100.SND", [1]).Put("loca/OTHER.DAT", [1]);
-
-        var report = Run(fake, new SoundKind());
-
-        CollectionAssert.Contains(report.Lines.ToList(), "snd/01.SND: 1 entry (sound)");
-        Assert.IsFalse(report.Lines.Any(l => l.Contains("100.SND") || l.Contains("OTHER.DAT")));
-    }
-
-    [TestMethod]
-    public void WithoutAnInstallTheExitCodeIsTwoAndTheReportNamesBothWaysToGiveOne()
-    {
-        var report = AssetCheck.Run(LaunchArgs.Parse(["--check"], null), [new SoundKind()]);
-
-        Assert.AreEqual(2, report.ExitCode);
-        Assert.IsTrue(report.Lines.Any(l => l.Contains("--game") && l.Contains("SIEDLER_DIR")));
-    }
-
-    [TestMethod]
-    public void AFolderWithoutTheProgramExitsTwo()
-    {
-        using var fake = new FakeInstall(withProgram: false).Put("snd/01.SND", []);
-
-        var report = Run(fake, new SoundKind());
-
-        Assert.AreEqual(2, report.ExitCode);
-        Assert.IsFalse(report.Lines.Any(l => l.StartsWith("FAIL")));
-    }
-
-    [TestMethod]
-    public void AFlagWithoutItsValueExitsFour()
-    {
-        using var fake = new FakeInstall();
-
-        var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--game"], fake.Root), [new SoundKind()]);
-
-        Assert.AreEqual(4, report.ExitCode);
-        Assert.IsTrue(report.Lines.Any(l => l.Contains("--game needs a value")));
-    }
-
-    [TestMethod]
-    public void ABadArgumentExitsFourEvenWithNoInstall()
-    {
-        var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--map"], null), [new SoundKind()]);
-
-        Assert.AreEqual(4, report.ExitCode);
-    }
-
-    [TestMethod]
-    public void ExitTwoWinsOverOneWhenTheInstallIsMissingAndAnEntryWouldFail()
-    {
-        var report = AssetCheck.Run(
-            LaunchArgs.Parse(["--check", "--game", "/no/such/folder"], null),
-            [new SoundKind()]
-        );
-
-        Assert.AreEqual(2, report.ExitCode);
+        Assert.IsNull(AssetKinds.NameClash([new ListedKind("text"), new ListedKind("sound")]));
+        Assert.IsNull(AssetKinds.NameClash([]));
     }
 
     [TestMethod]
     public void TwoKindsOfTheSameNameStopTheCheckWithExitCodeThree()
     {
-        using var fake = new FakeInstall().Put("snd/01.SND", [1]);
-
         var report = Run(
-            fake,
             new ListedKind("text", Entry("text", "snd/01.SND", "1")),
             new ListedKind("text", Entry("text", "snd/01.SND", "2"))
         );
@@ -212,5 +156,38 @@ public sealed class AssetCheckTests
         Assert.HasCount(1, report.Lines);
         StringAssert.StartsWith(report.Lines[0], "ERROR ");
         StringAssert.Contains(report.Lines[0], "\"text\"");
+    }
+
+    [TestMethod]
+    public void APortWithNoUsableDataExitsTwoWithItsReasonAndReadsNothing()
+    {
+        var report = AssetCheck.Run(
+            Check,
+            new UnusableAssets("no install given: pass --game <dir> or set SIEDLER_DIR")
+        );
+
+        Assert.AreEqual(2, report.ExitCode);
+        CollectionAssert.AreEqual(
+            new[] { "ERROR no install given: pass --game <dir> or set SIEDLER_DIR" },
+            report.Lines.ToList()
+        );
+    }
+
+    [TestMethod]
+    public void ABadArgumentExitsFourBeforeThePortIsAsked()
+    {
+        var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--map"], null), new UnusableAssets("never asked"));
+
+        Assert.AreEqual(4, report.ExitCode);
+        Assert.IsFalse(report.Lines.Any(l => l.Contains("never asked")));
+    }
+
+    [TestMethod]
+    public void AFlagWithoutItsValueExitsFour()
+    {
+        var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--game"], null), new FakeAssets());
+
+        Assert.AreEqual(4, report.ExitCode);
+        Assert.IsTrue(report.Lines.Any(l => l.Contains("--game needs a value")));
     }
 }

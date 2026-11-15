@@ -53,9 +53,13 @@ public sealed class GraphicsSourceBoundaryTests
     public void NoClassReadsAnArchiveEntryButThroughTheOneHelper()
     {
         // Every source file under src, so a helper in another folder (src/Adapters, src/Assets) is caught too. The asset check's
-        // palette read (src/Assets/ArchiveEntryKind.cs, PaletteOf) reads an entry of any archive, not of the map view's graphics
-        // archive the helper names, and is the one file besides the helper that holds the filter.
-        string[] own = ["src/Import.HistoryEdition/TerrainGraphics.cs", "src/Assets/ArchiveEntryKind.cs"];
+        // palette read (src/Import.HistoryEdition/Assets/ArchiveEntryKind.cs, PaletteOf) reads an entry of any archive, not of the
+        // map view's graphics archive the helper names, and is the one file besides the helper that holds the filter.
+        string[] own =
+        [
+            "src/Import.HistoryEdition/TerrainGraphics.cs",
+            "src/Import.HistoryEdition/Assets/ArchiveEntryKind.cs",
+        ];
         var root = RootOf();
         var folder = Path.Combine(root, "src");
         var checkedFiles = 0;

@@ -1,14 +1,14 @@
 using System;
 using OpenSettlers.Formats;
 
-namespace OpenSettlers.Assets;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The textures of the textured fill: raw images that the routine at <c>0x47b19c</c>, reached through
 /// <c>0x406120</c>, tiles over the covered pixels of a mask (<c>docs/rules/graphics-images.md</c>). The preview is
 /// the texture as a <see cref="RawImagePreview"/>, opaque, in the game's palette.
 /// </summary>
-public sealed class FillTextureKind : ArchiveEntryKind
+sealed class FillTextureKind : ArchiveEntryKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "fill texture";

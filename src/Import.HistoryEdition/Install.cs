@@ -15,7 +15,7 @@ public sealed class Install
     public const string Program = "Siedler1.exe";
 
     /// <summary>The install folder.</summary>
-    public required string Root { get; init; }
+    internal string Root { get; init; } = "";
 
     /// <summary>
     /// Opens the install in <paramref name="folder"/>. Returns false with a <c>problem</c> that names what is wrong
@@ -47,10 +47,10 @@ public sealed class Install
     }
 
     /// <summary>Whether the install holds a file at <c>path</c>, in any letter case.</summary>
-    public bool Exists(string path) => Find(Root, path) != null;
+    internal bool Exists(string path) => Find(Root, path) != null;
 
     /// <summary>The bytes of the file at <c>path</c>, in any letter case. Throws when it cannot be read.</summary>
-    public byte[] ReadAll(string path) => File.ReadAllBytes(Find(Root, path) ?? Path.Combine(Root, path));
+    internal byte[] ReadAll(string path) => File.ReadAllBytes(Find(Root, path) ?? Path.Combine(Root, path));
 
     /// <summary>
     /// The file at the relative <c>path</c> under <c>root</c>, each segment matched without regard to letter

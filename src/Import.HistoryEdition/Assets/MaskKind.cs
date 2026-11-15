@@ -1,15 +1,14 @@
 using System;
 using OpenSettlers.Formats;
-using OpenSettlers.Import.HistoryEdition;
 
-namespace OpenSettlers.Assets;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The entries the program draws as masks, the graphics that hold only runs of skipped and covered pixels
 /// (<c>docs/rules/graphics-images.md</c>). The preview is the mask drawn alone in the one palette color the
 /// program stores for it, as a <see cref="RawImagePreview"/> whose uncovered pixels have alpha 0.
 /// </summary>
-public sealed class MaskKind : ArchiveEntryKind
+sealed class MaskKind : ArchiveEntryKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "mask";

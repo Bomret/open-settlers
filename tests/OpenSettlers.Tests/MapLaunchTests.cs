@@ -198,31 +198,17 @@ public sealed class MapLaunchTests
         Assert.AreEqual("a/b.dat: crashed: InvalidOperationException: boom", text);
     }
 
-    sealed record TextPreview : Preview;
-
-    sealed class OneKind(string name, params Asset[] assets) : AssetKind
-    {
-        public override string Name => name;
-
-        public override IEnumerable<Asset> Enumerate(Install install) => assets;
-    }
-
     [TestMethod]
     public void TheCrashSubjectIsTheSelectedAssetFile()
     {
-        using var fake = new FakeInstall();
         var asset = new Asset
         {
             Kind = "text",
             File = "x/a",
             Name = "a",
-            Load = () => new TextPreview { Summary = "s" },
+            Load = () => new NotePreview { Summary = "s" },
         };
-        var state = AssetBrowserState.Open(
-            LaunchArgs.Parse(["--game", fake.Root], null),
-            [new OneKind("text", asset)],
-            selectFirst: false
-        );
+        var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("text", asset)), selectFirst: false);
         state.SelectKind("text");
 
         Assert.AreEqual("x/a", CrashText.Subject(state));
@@ -231,12 +217,7 @@ public sealed class MapLaunchTests
     [TestMethod]
     public void WithNoSelectedAssetTheCrashSubjectIsTheSelectedKind()
     {
-        using var fake = new FakeInstall();
-        var state = AssetBrowserState.Open(
-            LaunchArgs.Parse(["--game", fake.Root], null),
-            [new OneKind("empty")],
-            selectFirst: false
-        );
+        var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("empty")), selectFirst: false);
         state.SelectKind("empty");
 
         Assert.AreEqual("empty", CrashText.Subject(state));
@@ -245,12 +226,7 @@ public sealed class MapLaunchTests
     [TestMethod]
     public void WithNeitherSelectedTheCrashSubjectIsNull()
     {
-        using var fake = new FakeInstall();
-        var state = AssetBrowserState.Open(
-            LaunchArgs.Parse(["--game", fake.Root], null),
-            [new OneKind("empty")],
-            selectFirst: false
-        );
+        var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("empty")), selectFirst: false);
 
         Assert.IsNull(CrashText.Subject(state));
     }

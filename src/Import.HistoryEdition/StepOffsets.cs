@@ -29,7 +29,7 @@ public sealed class StepOffsets(byte[] entry) : IWalkSteps
         From(ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile)));
 
     /// <summary>Reads the table from an archive already read. Throws <see cref="System.IO.InvalidDataException"/> where the entry is absent.</summary>
-    public static StepOffsets From(Archive archive) =>
+    internal static StepOffsets From(Archive archive) =>
         new(TerrainGraphics.Entry(archive, Entry, "the walk sequences", data => data.ToArray()));
 
     /// <summary>The bytes of entry 2, which the History Edition's figure tables read the figure bytes from.</summary>

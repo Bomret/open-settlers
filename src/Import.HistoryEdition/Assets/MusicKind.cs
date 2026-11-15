@@ -3,22 +3,14 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using OpenSettlers.Formats;
-using OpenSettlers.Import.HistoryEdition;
 
-namespace OpenSettlers.Assets;
-
-/// <summary>The preview of the music file: its tracks and length. It is shown as text and never played.</summary>
-public sealed record MusicPreview : Preview
-{
-    /// <summary>The music file.</summary>
-    public required MusicFile Music { get; init; }
-}
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The music file <c>snd/music_1.midi</c>, the only music file the program loads
 /// (<c>docs/rules/music-file.md</c>). A missing file is a failure.
 /// </summary>
-public sealed class MusicKind : AssetKind
+sealed class MusicKind : AssetKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "music";
@@ -52,7 +44,8 @@ public sealed class MusicKind : AssetKind
 
         return new MusicPreview
         {
-            Music = music,
+            TrackEventCounts = music.Tracks.Select(t => t.EventCount).ToList(),
+            LengthSeconds = music.LengthSeconds,
             Summary =
                 $"{music.Tracks.Count} {(music.Tracks.Count == 1 ? "track" : "tracks")} ({tracks}), {music.LengthSeconds.ToString("0.0", CultureInfo.InvariantCulture)} s",
         };

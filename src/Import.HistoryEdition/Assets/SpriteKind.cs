@@ -1,32 +1,7 @@
 using System;
 using OpenSettlers.Formats;
 
-namespace OpenSettlers.Assets;
-
-/// <summary>
-/// The preview of a transparent sprite: its size, its offsets from the draw position, and its pixels as RGBA, drawn
-/// in the game's palette (or in one color) over a transparent background.
-/// </summary>
-public sealed record SpritePreview : Preview
-{
-    /// <summary>The sprite width in pixels.</summary>
-    public required int Width { get; init; }
-
-    /// <summary>The sprite height in pixels.</summary>
-    public required int Height { get; init; }
-
-    /// <summary>The signed offset of the sprite's left edge from the draw position. The preview draws the sprite alone, so it only reports this.</summary>
-    public required int OffsetX { get; init; }
-
-    /// <summary>The signed offset of the sprite's top edge from the draw position. The preview draws the sprite alone, so it only reports this.</summary>
-    public required int OffsetY { get; init; }
-
-    /// <summary>Four bytes per pixel (red, green, blue, alpha), row by row from the top; alpha is 0 where the program draws nothing.</summary>
-    public required byte[] Rgba { get; init; }
-
-    /// <summary>The palette index every drawn pixel has when the program draws the sprite in one color, or null when it draws the stored pixels.</summary>
-    public int? OneColor { get; init; }
-}
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The entries the program draws as transparent sprites: the stream that <c>0x405590</c> reads (called from
@@ -34,7 +9,7 @@ public sealed record SpritePreview : Preview
 /// <c>0x406610</c>); see <c>docs/rules/graphics-images.md</c>. Each range names the code that picks its entries;
 /// the entries of a range are the ones the archive holds. An overlay of 2500 to 3040 may have no drawn pixel.
 /// </summary>
-public sealed class SpriteKind : ArchiveEntryKind
+sealed class SpriteKind : ArchiveEntryKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "sprite";

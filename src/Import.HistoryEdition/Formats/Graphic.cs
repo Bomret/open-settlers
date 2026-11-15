@@ -8,7 +8,7 @@ namespace OpenSettlers.Formats;
 /// that no drawing routine reads, the width and the height in pixels, and the signed offsets of the image from
 /// the position it is drawn at.
 /// </summary>
-public sealed record GraphicHeader
+sealed record GraphicHeader
 {
     /// <summary>The size of the header in bytes; the pixel data starts after it.</summary>
     public const int Size = 10;
@@ -36,7 +36,7 @@ public sealed record GraphicHeader
 /// A graphics entry split into its header and the body after it. What the body holds depends on the routine that
 /// reads the entry (raw pixels for <see cref="RawImage"/>); <see cref="GraphicFile.Read"/> only splits it.
 /// </summary>
-public sealed record Graphic
+sealed record Graphic
 {
     /// <summary>The 10-byte header.</summary>
     public required GraphicHeader Header { get; init; }
@@ -49,7 +49,7 @@ public sealed record Graphic
 /// A raw image: <see cref="GraphicHeader.Width"/> x <see cref="GraphicHeader.Height"/> palette indices, row by
 /// row from the top, with no transparency (the program copies the rows as they are).
 /// </summary>
-public sealed record RawImage
+sealed record RawImage
 {
     /// <summary>The 10-byte header.</summary>
     public required GraphicHeader Header { get; init; }
@@ -59,7 +59,7 @@ public sealed record RawImage
 }
 
 /// <summary>The graphics-entry reader (<c>docs/rules/graphics-images.md</c>).</summary>
-public static class GraphicFile
+static class GraphicFile
 {
     /// <summary>
     /// Splits an entry into its header and body. Throws <see cref="InvalidDataException"/> for an entry shorter
@@ -118,7 +118,7 @@ public static class GraphicFile
 }
 
 /// <summary>The conversion from palette indices to RGBA, shared by every kind that previews pixels.</summary>
-public static class IndexedImage
+static class IndexedImage
 {
     /// <summary>
     /// The most pixels a side of a preview image holds, 2048 (stand-in: the program builds no image; the bound is

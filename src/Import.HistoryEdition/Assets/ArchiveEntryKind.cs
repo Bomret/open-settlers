@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using OpenSettlers.Formats;
-using OpenSettlers.Import.HistoryEdition;
 
-namespace OpenSettlers.Assets;
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// A kind of graphics-archive entry: the base of every kind that reads entries of <c>loca/SPAD.PA</c>,
@@ -21,7 +20,7 @@ namespace OpenSettlers.Assets;
 /// claimed by no kind fails, listed by <see cref="UnrecoveredEntryKind"/>. An entry claimed by two kinds fails in both,
 /// with a reason that names both; the test over the discovered kinds fails too.
 /// </remarks>
-public abstract class ArchiveEntryKind : AssetKind
+abstract class ArchiveEntryKind : AssetKind
 {
     /// <summary>The graphics archives of the install, in the order the browser lists them.</summary>
     public static readonly IReadOnlyList<string> Files = ["loca/SPAD.PA", "loca/SPAE.PA", "loca/SPAF.PA"];

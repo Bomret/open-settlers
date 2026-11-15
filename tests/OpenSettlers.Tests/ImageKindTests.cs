@@ -68,24 +68,9 @@ public sealed class ImageKindTests
 
         var preview = (PalettePreview)List<PaletteKind>(fake).First(a => a.File == Files[0]).Load();
 
-        Assert.AreEqual(
-            new Rgb
-            {
-                R = 63,
-                G = 0,
-                B = 0,
-            },
-            preview.Palette[1]
-        );
-        Assert.AreEqual(
-            new Rgb
-            {
-                R = 0,
-                G = 0,
-                B = 0,
-            },
-            preview.Palette[0]
-        );
+        Assert.HasCount(256 * 4, preview.Rgba);
+        CollectionAssert.AreEqual(new byte[] { 252, 0, 0, 255 }, preview.Rgba[4..8]);
+        CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 255 }, preview.Rgba[0..4]);
     }
 
     [TestMethod]
@@ -289,7 +274,7 @@ public sealed class ImageKindTests
         );
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, [new PaletteKind(), new RawImageKind()]);
+        var report = AssetCheck.Run(args, RealKinds.Over(args, new PaletteKind(), new RawImageKind()));
 
         Assert.AreEqual(1, report.ExitCode);
         CollectionAssert.Contains(report.Lines.ToList(), "loca/SPAD.PA: 1 entry (palette)");

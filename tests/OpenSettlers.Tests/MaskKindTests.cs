@@ -244,7 +244,7 @@ public sealed class MaskKindTests
         );
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, [new MaskKind()]);
+        var report = AssetCheck.Run(args, RealKinds.Over(args, new MaskKind()));
 
         Assert.AreEqual(1, report.ExitCode);
         Assert.IsTrue(report.Lines.Any(l => l.StartsWith("FAIL loca/SPAD.PA entry 60: ") && l.Contains("width 2")));

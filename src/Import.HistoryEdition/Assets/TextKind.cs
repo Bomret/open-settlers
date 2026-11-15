@@ -3,29 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using OpenSettlers.Formats;
-using OpenSettlers.Import.HistoryEdition;
 
-namespace OpenSettlers.Assets;
-
-/// <summary>One key of the text table and its value in each language, in <see cref="TextPreview.Languages"/> order; null where the language has no such key.</summary>
-public sealed record TextRow
-{
-    /// <summary>The key of the text table.</summary>
-    public required string Key { get; init; }
-
-    /// <summary>The key's value in each language, in <see cref="TextPreview.Languages"/> order; null where the language has no such key.</summary>
-    public required IReadOnlyList<string?> Values { get; init; }
-}
-
-/// <summary>The preview of the texts: one table of every key, with one value column per language.</summary>
-public sealed record TextPreview : Preview
-{
-    /// <summary>The languages, one column each, in the program's order.</summary>
-    public required IReadOnlyList<string> Languages { get; init; }
-
-    /// <summary>The keys in order of first appearance across the languages.</summary>
-    public required IReadOnlyList<TextRow> Rows { get; init; }
-}
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The text files <c>loca/eng.txt</c>, <c>loca/ger.txt</c>, <c>loca/fre.txt</c> (<c>docs/rules/text-files.md</c>).
@@ -33,7 +12,7 @@ public sealed record TextPreview : Preview
 /// files; its <see cref="Asset.Load"/> fails only for a line of its own file the program does not accept, so a bad
 /// file stops neither the check of the others nor their table.
 /// </summary>
-public sealed class TextKind : AssetKind
+sealed class TextKind : AssetKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "text";

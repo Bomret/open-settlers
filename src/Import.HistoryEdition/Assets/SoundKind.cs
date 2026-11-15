@@ -1,23 +1,15 @@
 using System.Collections.Generic;
 using System.IO;
 using OpenSettlers.Formats;
-using OpenSettlers.Import.HistoryEdition;
 
-namespace OpenSettlers.Assets;
-
-/// <summary>The preview of a sound: the sound itself, which the view plays.</summary>
-public sealed record SoundPreview : Preview
-{
-    /// <summary>The sound to play.</summary>
-    public required Sound Sound { get; init; }
-}
+namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The sound files <c>snd/01.SND</c> to <c>snd/99.SND</c>, the numbers the program tries in turn
 /// (<c>docs/rules/sound-files.md</c>). A number with no file is a gap, not a failure; a folder with no sound file
 /// at all is one failure.
 /// </summary>
-public sealed class SoundKind : AssetKind
+sealed class SoundKind : AssetKind
 {
     /// <summary>The kind's name.</summary>
     public const string KindName = "sound";
@@ -70,7 +62,8 @@ public sealed class SoundKind : AssetKind
     static Preview Preview(Sound sound) =>
         new SoundPreview
         {
-            Sound = sound,
+            SampleRate = sound.SampleRate,
+            SignedSamples = sound.SignedSamples(),
             Summary = $"{sound.Samples.Length} samples, unsigned 8-bit mono, {sound.SampleRate} Hz",
         };
 }

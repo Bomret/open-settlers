@@ -6,7 +6,7 @@ using System.Linq;
 namespace OpenSettlers.Formats;
 
 /// <summary>One track of a music file: its position and how many events it holds.</summary>
-public sealed record MidiTrack
+sealed record MidiTrack
 {
     /// <summary>The track's position in the file, from 0.</summary>
     public required int Index { get; init; }
@@ -16,7 +16,7 @@ public sealed record MidiTrack
 }
 
 /// <summary>A music file: its tracks, the header's format and time division, and its length.</summary>
-public sealed record MusicFile
+sealed record MusicFile
 {
     /// <summary>The header's file format (0, 1, or 2).</summary>
     public required int Format { get; init; }
@@ -35,7 +35,7 @@ public sealed record MusicFile
 /// The music file reader (<c>docs/rules/music-file.md</c>): a Standard MIDI File of a header chunk and track
 /// chunks. Events are counted, not interpreted, except tempo changes, which give the length.
 /// </summary>
-public static class MidiFile
+static class MidiFile
 {
     const int DefaultMicrosecondsPerQuarter = 500_000;
 
