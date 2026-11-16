@@ -525,7 +525,7 @@ entries per phase (see "Item tables").
 
 Sites:
 
-- `0x428d6e`: the lake detail of a node: one draw, may grow below 10, moves to a lake neighbour (in `Map_ObjectPass`).
+- `0x428e1c`: the lake detail of a node: one draw; `0x428e21` gates only the growth on the detail less 10 as a signed byte; the move to a lake neighbour at `0x428e3f` runs for every detail (in `Map_ObjectPass`).
 - `0x42bbea`: the request clears the job bits of a jobless settler (`& 0x83`) to make it a carrier; no tool taken (in the Ghidra function `0x42b4bc`, `Road_RequestBoatman`).
 - `0x42fc88`: the jump by the state byte into the table at `0x42fca1` (in `Settler_Dispatch`).
 - `0x4354b8`: forms the owner bits of the settler's player; `0x43560c`: the random choice where no flag is near; `0x435821`: a knight takes state 0x35 in place of the free walk (in `Settler_SearchFlag`, `0x4353ef`).

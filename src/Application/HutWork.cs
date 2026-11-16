@@ -548,19 +548,15 @@ public sealed class HutWork(
         }
     }
 
-    // The lake detail of a node (0x428d6e): one draw; below 10 the detail may grow by one (when the draw's bits 8 to 13 are
-    // 0), and it moves one to a neighbour that is a lake node too (south-east, south, north-west, or north by the draw's
-    // bits 2 and 3).
+    // The lake detail of a node (0x428e1c): one draw. The cap gates only the growth (0x428e21 compares the detail with 10 as a
+    // signed byte, so a detail of 138 or more counts as below it): below the cap the detail grows by one when the draw's bits 8
+    // to 13 are 0. The move (0x428e3f) runs for every detail: one goes to the neighbour the draw's bits 2 and 3 pick (south-east,
+    // south, north-west, or north) when that is a lake node too. The detail is a byte and wraps from 255 to 0.
     void MoveLakeDetail(int node)
     {
         var draw = draws.Draw();
         ref var at = ref Map.At(node);
-        if ((sbyte)(at.LakeDetail - 10) >= 0)
-        {
-            return;
-        }
-
-        if ((draw & 0x3f00) == 0)
+        if ((sbyte)(at.LakeDetail - 10) < 0 && (draw & 0x3f00) == 0)
         {
             at.LakeDetail++;
         }
