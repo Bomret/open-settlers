@@ -13,12 +13,17 @@ namespace OpenSettlers.Viewer;
 /// event through the view's own handlers (<c>OnCanvasInput</c>, <c>_UnhandledKeyInput</c>, the polled
 /// <see cref="Input"/> state), at canvas coordinates; nothing calls the camera or the zoom. The node has the lowest
 /// process priority, so a frame's steps run before the view's own step reads them. The run pins the window to
-/// <see cref="WindowSize"/>, so frames and <see cref="Zoom.Fit"/> do not depend on the display.
+/// <see cref="WindowSize"/>, so frames and <see cref="Zoom.Fit"/> do not depend on the display. A minimized run
+/// (<c>--minimized</c>, the hidden run of the wrapper's repro mode) minimizes the window before its first frame and keeps
+/// the content size; when the window could draw on every frame, it prints <see cref="NeverHiddenLine"/> at the end.
 /// </summary>
 public partial class PlayDriver : Node
 {
     /// <summary>The window and content size of a play run.</summary>
     public static readonly Vector2I WindowSize = new(1280, 720);
+
+    /// <summary>The line a minimized run prints when its window could draw on every frame; the wrapper reads it.</summary>
+    public const string NeverHiddenLine = "WARN play run: the window was never hidden";
 
     static readonly KeyMasks Masks = new()
     {
@@ -33,11 +38,17 @@ public partial class PlayDriver : Node
     readonly PlayRun _run;
     readonly string _outputFolder;
     readonly HeldKeys _held = new();
+    readonly bool _minimized;
+    bool _hidden;
 
-    /// <summary>The driver of a run of <c>script</c> on the view; shots go to <c>outputFolder</c>.</summary>
-    public PlayDriver(MapViewControl view, PlayScript script, string outputFolder)
+    /// <summary>
+    /// The driver of a run of <c>script</c> on the view; shots go to <c>outputFolder</c>. <c>minimized</c> minimizes the
+    /// window.
+    /// </summary>
+    public PlayDriver(MapViewControl view, PlayScript script, string outputFolder, bool minimized = false)
     {
         _view = view;
+        _minimized = minimized;
         _outputFolder = outputFolder;
         _run = new PlayRun(script, view.Snapshot, outputFolder, RunInput);
         ProcessPriority = int.MinValue;
@@ -50,6 +61,11 @@ public partial class PlayDriver : Node
         window.ContentScaleSize = WindowSize;
         window.ContentScaleAspect = Window.ContentScaleAspectEnum.Keep;
         window.Size = WindowSize;
+        if (_minimized)
+        {
+            window.Mode = Window.ModeEnum.Minimized;
+        }
+
         // Keyboard steps act whatever had the focus at start, such as the seed field.
         GetViewport().GuiReleaseFocus();
     }
@@ -57,11 +73,17 @@ public partial class PlayDriver : Node
     /// <inheritdoc/>
     public override void _Process(double delta)
     {
+        _hidden |= !DisplayServer.WindowCanDraw();
         KeepHeld();
         _run.Advance(delta);
         if (!_run.Finished)
         {
             return;
+        }
+
+        if (_minimized && !_hidden)
+        {
+            GD.Print(NeverHiddenLine);
         }
 
         foreach (var problem in _run.Problems)

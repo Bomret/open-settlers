@@ -382,6 +382,56 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
+    [DataRow(["--map", "--play", "play/zoom.play", "--minimized"])]
+    [DataRow(["--minimized", "--layout", "layouts/carrier.jsonc", "--play", "play/zoom.play"])]
+    public void TheMinimizedFlagWithThePlayFlagMinimizesThePlayRun(string[] given)
+    {
+        var args = LaunchArgs.Parse(given, null, movieMaker: true);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.IsTrue(args.Minimized);
+        Assert.IsNotNull(args.Play);
+    }
+
+    [TestMethod]
+    public void WithoutTheMinimizedFlagAPlayRunIsNotMinimized() =>
+        Assert.IsFalse(LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: true).Minimized);
+
+    [TestMethod]
+    [DataRow(["--map", "--minimized"])]
+    [DataRow(["--minimized"])]
+    [DataRow(["--game-view", "--minimized", "--seed", "1234567812345678"])]
+    public void TheMinimizedFlagWithoutThePlayFlagIsAProblem(string[] given)
+    {
+        var args = LaunchArgs.Parse(given, null, movieMaker: true);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--minimized needs --play");
+    }
+
+    [TestMethod]
+    public void ARepeatedMinimizedFlagIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--map", "--minimized", "--play", "play/zoom.play", "--minimized"], null, true);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "repeated --minimized");
+    }
+
+    // The flag takes no value, so a path after it is no value of it, and a value flag before it lacks its value.
+    [TestMethod]
+    public void TheMinimizedFlagTakesNoValueAndIsNoneOfAnotherFlag()
+    {
+        var after = LaunchArgs.Parse(["--map", "--minimized", "--play", "play/zoom.play"], null, movieMaker: true);
+        var before = LaunchArgs.Parse(["--map", "--play", "--minimized"], null, movieMaker: true);
+
+        Assert.AreEqual("play/zoom.play", after.Play);
+        Assert.IsEmpty(after.Problems);
+        Assert.IsNull(before.Play);
+        CollectionAssert.Contains(before.Problems.ToList(), "--play needs a value");
+    }
+
+    [TestMethod]
     public void ThePlayFlagWithoutMovieMakerIsAProblem()
     {
         var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null);

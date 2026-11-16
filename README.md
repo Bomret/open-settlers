@@ -117,6 +117,8 @@ Give `--game-view` in place of `--map` to run the script on the game view.
 
 `--play <file>` needs `--map` or `--game-view`, and Movie Maker (`--write-movie` with `--fixed-fps`); without them, or without a file, it is a bad argument and exits with code 4. A missing value or an empty path counts as no file. The script path resolves against the project folder. `play-out/<script name>/` holds the frames and every `shot` and `dump` of the run (a result `tools/play-run.sh` reuses holds no frames; `--fresh` runs again and writes them); the script name is the script's file name without its extension. Git ignores `play-out/`. The run pins the window to 1280 x 720, so frames and the view's fit do not depend on the display. Two runs of the same script, seed, and size give equal dumps and frames. `play/zoom-pan.play` is an example that zooms and pans.
 
+`--minimized` minimizes the window of a play run before its first frame and keeps its content size. It takes no value. Without `--play`, or repeated, it is a bad argument and exits with code 4. A minimized run whose window could draw on every frame prints `WARN play run: the window was never hidden` at its end.
+
 A play script has one step per line. Blank lines and lines that start with `#` are skipped. A problem in the script (an unknown step, a bad argument, an unreadable file) or a failed `expect` prints one `ERROR` that names the script and the line and exits with code 1; a failed `expect` states the expectation and the actual value. After the last step the run exits with code 0. Steps:
 
 - `wait <seconds>` lets that much simulated time pass.
