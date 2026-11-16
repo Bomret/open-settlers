@@ -110,7 +110,7 @@ Taking his building down sends the settlers inside it home (`0x461b77`, [Removal
 
 ## Drawing
 
-**Status:** the figure words are **confirmed** for the walk by the draw run of the `job11` recording (`settler-draws.txt`). The cast's words are read from the code only (**inferred**).
+**Status:** the figure words are **confirmed** for the walk by the draw run of the `job11` recording (`settler-draws.txt`). The words of the cast with no catch (`0x2c80`) are read from the code and seen in a play run (`play/fisher.play` on `layouts/fisher.jsonc`): at the shore, frame `0x84`, the figure holds a rod out over the water. The words with a catch (`0x2d80`, and `0x2f00` on the way back) are read from the code only (**inferred**), because the hand-drawn lake of that layout holds no lake detail to catch from.
 
 The figure handler of job 11 is at `0x43fed8`, reached by the stub at `0x43f79c`. It adds a value to the figure byte:
 

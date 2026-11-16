@@ -243,6 +243,9 @@ script alone. Add a layout only where none of them holds the situation.
 - `layouts/woodcutter.jsonc` and `play/woodcutter-cut.play`: a woodcutter in his hut beside trees,
   fast-forwarded to the cut (state `0x11`).
 - `play/woodcutter-figures.play` on the same layout: crops of the woodcutter at his door, on the way out, at the cut, and on the way back with the log.
+- `layouts/fisher.jsonc` and `play/fisher.play`: a fisher in his building beside a hand-drawn lake. The script fast-forwards to his
+  walk out (state `0x10`) and to his cast (state `0x20`) and takes cropped shots of each. The lake holds a lake detail of 0, so he
+  catches nothing. The run gives one digest under both graphics sources.
 - `play/build-help.play` on the same layout checks the build markers of the castle's territory, on and off. It checks their
   change after a flag is placed.
 - `play/build-help-start.play` runs on the game view of the default seed. It checks the castle sites before the castle stands.
