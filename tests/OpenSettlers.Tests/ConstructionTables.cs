@@ -15,12 +15,16 @@ static class ConstructionTables
     public static readonly GoodClass StoneClass = new() { Class = 6, Word = RequestWord.Second };
     public static readonly GoodClass LogClass = new() { Class = 2, Word = RequestWord.Second };
 
+    // The made-up grain class: class 1 of the first word, which the mill's flag asks it in.
+    public static readonly GoodClass GrainClass = new() { Class = 1, Word = RequestWord.First };
+
     public static GoodClass?[] Classes()
     {
         var table = new GoodClass?[RuleTables.GoodClassCount];
         table[Good.Plank.Code] = PlankClass;
         table[Good.Stone.Code] = StoneClass;
         table[Good.Log.Code] = LogClass;
+        table[Good.Grain.Code] = GrainClass;
 
         return table;
     }
@@ -35,6 +39,13 @@ static class ConstructionTables
 
     // Every draw picks the first table below 0 and 1, so the draw 2 picks PlanksFirst, the draw 0 StonesFirst.
     public static DistributionStep[][] Orders() => [PlanksFirst(), StonesFirst(), PlanksFirst()];
+
+    // The made-up order of a castle that hands out grain too: the order of PlanksFirst with the grain step last.
+    public static DistributionStep[][] GrainOrders() =>
+        [.. Orders().Select(order => order.Append(new() { Class = GrainClass, Goods = [Good.Grain] }).ToArray())];
+
+    // The made-up rank the mill's request for grain starts from, which differs from the program's own (0x7f).
+    public const byte MillRankBase = 0x3f;
 
     // The sizes of the four types of M4: the sawmill (0x11) is large, the others small.
     public static byte[] Sizes()
@@ -68,13 +79,14 @@ static class ConstructionTables
     public static readonly Good SawTool = new() { Code = 20 };
 
     // The made-up workers: the woodcutter's hut asks for the woodcutter's job with no tool, the forester's for job 8 with a tool, the
-    // sawmill for the sawmiller's job with a tool.
+    // sawmill for the sawmiller's job with a tool, the mill for the miller's job with no tool.
     public static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
         workers[BuildingType.Woodcutter.Code] = new WorkerRequest { Job = new Woodcutter(), Tool = Good.None };
         workers[BuildingType.Forester.Code] = new WorkerRequest { Job = Job.Of(8), Tool = ForesterTool };
         workers[BuildingType.Sawmill.Code] = new WorkerRequest { Job = new Sawmiller(), Tool = SawTool };
+        workers[BuildingType.Mill.Code] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
 
         return workers;
     }
@@ -112,7 +124,9 @@ static class ConstructionTables
         ushort[]? materialOrder = null,
         byte[]? sizes = null,
         WorkerRequest?[]? workers = null,
-        ushort[]? blowSteps = null
+        ushort[]? blowSteps = null,
+        DistributionStep[][]? distribution = null,
+        byte[]? goodKinds = null
     ) =>
         LayoutSettlersTests.MadeTables(
             stepTime: stepTime,
@@ -126,9 +140,11 @@ static class ConstructionTables
             transportPriorities: [.. Enumerable.Range(1, RuleTables.Goods).Select(good => (byte)good)],
             buildingSizes: sizes ?? Sizes(),
             buildingNeeds: needs ?? Needs(),
+            goodKinds: goodKinds,
             goodClasses: Classes(),
-            distribution: Orders(),
+            distribution: distribution ?? Orders(),
             plankRankBase: plankRankBase,
+            millRankBase: MillRankBase,
             diggerRequest: new WorkerRequest { Job = new Digger(), Tool = DiggerTool }
         );
 }

@@ -241,12 +241,30 @@ public sealed record Saws : Activity
 }
 
 /// <summary>
-/// State 0xb: the sawmiller waits at the sawmill's door with the plank in his hands until the node of the flag is free and the flag has a
-/// free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the plank down.
+/// State 0x23: the miller works in the mill he stands in (<c>0x43386b</c>, <c>docs/rules/milling.md</c>). Without grain on site he waits for
+/// some; with grain, he takes it out of the building's fill and grinds in four stretches (byte 11 counts them from 1): two grindings of
+/// 0x17f clock units with the node held, each followed by a pause of 0x5dc units with the node free. After the fourth he carries
+/// the flour out to the flag.
+/// </summary>
+public sealed record Grinds : Activity
+{
+    /// <summary>The stretch of the work (byte 11): 0 waits for grain, 1 and 3 grind, 2 and 4 pause.</summary>
+    public required int Phase { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x23;
+
+    /// <summary>Drawn while he grinds, with the node held (the stretches 1 and 3); waiting for grain or pausing he is not drawn.</summary>
+    public override bool IsDrawn => Phase is 1 or 3;
+}
+
+/// <summary>
+/// State 0xb: the sawmiller or the miller waits at his building's door with the good in his hands until the node of the flag is free and the
+/// flag has a free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the good down.
 /// </summary>
 public sealed record StepsOutWithGood : Activity
 {
-    /// <summary>The good he carries out (byte 11), the plank.</summary>
+    /// <summary>The good he carries out (byte 11): the plank, the flour.</summary>
     public required Good Good { get; init; }
 
     /// <inheritdoc />

@@ -69,8 +69,10 @@ public readonly record struct Good
     public bool CountsAgainstResource1 => (Code & 0x1f) is 0xe or 0xf;
 
     /// <summary>
-    /// Whether a good of this kind handed into a building counts against the high byte of its fill: the log (7) and the goods
-    /// from 9 on except 13; every other good counts against the low byte.
+    /// Whether a good that the kind table (<see cref="RuleTables.FillCounterOf"/>) gives no counter counts against the high byte of the
+    /// fill it is handed into (the castle's): the goods from 9 on except 13, and the log (7); every other good counts against the low
+    /// byte. The carrier's handover reads the kind table first, so the byte a good is counted in on its way, counted back from, and
+    /// delivered in is the table's.
     /// </summary>
     public bool FillsHigh => Code >= 9 ? Code != 13 : Code == 7;
 

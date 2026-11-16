@@ -60,13 +60,15 @@ public sealed class LayoutSettlersTests
         GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0,
+        byte millRankBase = 0,
         WorkerRequest?[]? workers = null,
         WorkerRequest? builderRequest = null,
         ushort[]? materialOrder = null,
         ushort[]? blowSteps = null,
         ushort stepTime = 100,
         WorkerRequest? diggerRequest = null,
-        ushort[]? scanWindows = null
+        ushort[]? scanWindows = null,
+        byte[]? goodKinds = null
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -98,9 +100,11 @@ public sealed class LayoutSettlersTests
             transportPriorities: transportPriorities,
             buildingSizes: buildingSizes,
             buildingNeeds: buildingNeeds,
+            goodKinds: goodKinds ?? KindsOf(goodClasses),
             goodClasses: goodClasses,
             distribution: distribution,
             plankRankBase: plankRankBase,
+            millRankBase: millRankBase,
             workers: workers ?? TestProgram.MadeWorkers(stonecutter: true),
             materialOrder: materialOrder,
             blowSteps: blowSteps,
@@ -112,6 +116,17 @@ public sealed class LayoutSettlersTests
             ]
         );
     }
+
+    // The made-up kind table of a made-up class table: a good counts in the byte of the word that asks for it (the first word's low
+    // byte, the second's high), and a good that no word asks for counts in none, as the program's table does.
+    static byte[]? KindsOf(GoodClass?[]? classes) =>
+        classes is null
+            ? null
+            :
+            [
+                .. classes.Select(asked => asked is { } c ? (byte)(c.Word == RequestWord.First ? 0 : 1) : (byte)0xff),
+                .. new byte[RuleTables.GoodKindCount - classes.Length],
+            ];
 
     static Game Applied(string extra, string objects = "[]")
     {

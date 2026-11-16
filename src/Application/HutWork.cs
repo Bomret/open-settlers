@@ -72,13 +72,70 @@ public sealed class HutWork(
         }
     }
 
-    /// <summary>Registers the behaviour of the shared activities: the door, the entry into a hut, the step onto the flag, and the free walk.</summary>
+    /// <summary>
+    /// Registers the behaviour of the shared activities: the door, the entry into a hut, the step onto the flag, the free walk, and the step
+    /// out with a good and its put (the sawmiller's and the miller's).
+    /// </summary>
     public void Register(ActivityRegistry registry)
     {
         registry.Register<Door>((slot, settler, _) => PassDoor(slot, settler));
         registry.Register<EntersBuilding>((slot, settler, _) => EnterHut(slot, settler));
         registry.Register<StepsOntoFlag>((slot, settler, _) => StepOut(slot, settler));
+        registry.Register<StepsOutWithGood>((slot, settler, _) => StepOutWithGood(slot, settler));
+        registry.Register<PutsDownGood>((slot, settler, _) => PutDownGood(slot, settler));
         registry.Register<WalksFree>((slot, settler, _) => FreeWalk(slot, settler));
+    }
+
+    // The frame of a settler that waits for a busy node (0x43e44b).
+    const int WaitFrame = 0x52;
+    const int FlagPlaces = 8;
+
+    /// <summary>
+    /// State 0xb (0x43e228): the step from the door onto the flag south-east of it, as the step of state 7 is (0x43e036), with one more
+    /// condition: the flag must have a free place. A node with another settler on it, or a flag with no free place, makes him wait
+    /// with the frame 0x52. The time of the step is scaled by the door's speed, and he waits it out in state 5 before he lays the good down.
+    /// </summary>
+    internal void StepOutWithGood(int slot, Settler settler)
+    {
+        var here = Map.Index(settler.X, settler.Y);
+        var (x, y, next) = movement.Neighbour(settler, 1);
+        var standing = movement.Occupant(here);
+        if (
+            (standing == slot || standing == 0)
+            && movement.Occupant(next) == 0
+            && flags[Map.At(next).LinkedSlot].FirstEmptyPlace() >= 0
+        )
+        {
+            var door = movement.BuildingAt(here);
+            var shape = 0xd + movement.Height(next) - movement.Height(here);
+            var carried = ((StepsOutWithGood)settler.Activity).Good;
+            movement.Move(slot, settler, x, y, next);
+            settler.Frame = (byte)shape;
+            var speed = (byte)(movement.Tables.DoorSpeed(door) ^ 0x1f);
+            settler.Timer = (ushort)((ushort)(movement.Tables.StepTime(shape) * speed) >> 5);
+            settler.Stamp = movement.Clock;
+            settler.Activity = new WaitsOutStep { Then = new PutsDownGood { Good = carried } };
+        }
+        else
+        {
+            settler.Frame = WaitFrame;
+            settler.Timer = 0;
+        }
+
+        history.RecordSettler(slot, EventType.StepOut, Cause.Settlers);
+    }
+
+    // State 0xd (0x43c6aa): the good goes on the first empty place of the flag, or on the last place where the first seven hold goods;
+    // the flag's turn is due. The settler's byte 11 is 0 from here on, and he goes into the building (state 6).
+    void PutDownGood(int slot, Settler settler)
+    {
+        var good = ((PutsDownGood)settler.Activity).Good;
+        var flag = Map.At(settler.X, settler.Y).LinkedSlot;
+        var place = flags[flag].FirstEmptyPlace();
+        layGood(flag, place >= 0 ? place : FlagPlaces - 1, good.Code);
+        history.RecordFlag(flag, EventType.PutGood, Cause.Settlers, history.SettlerId(slot).ToString());
+        movement.Become(settler, new EntersBuilding(), movement.ResidueOf(settler.Activity) with { Mode = 0 });
+        EnterHut(slot, settler);
     }
 
     // State 4, a settler that stepped through a door (0x43c96b): once its timer is down to the time the door leaves it, it

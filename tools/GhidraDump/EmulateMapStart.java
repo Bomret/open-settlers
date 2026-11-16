@@ -86,13 +86,16 @@
 //                            code in decimal, as a stone heap's stage is set for the stonecutter's scenarios
 //                            (docs/rules/stonecutting.md). A building of type 17 (the sawmill) is a large building: its node takes
 //                            the object code 3 and its item the pointer to its flag at +0xe that a built site leaves (0x43ef82),
-//                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). The lines also list the castle's item
+//                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). A building of type 15 (the mill) is a
+//                            small building with the same pointer, which its handler 0x42e2a0 reads (docs/rules/milling.md). The lines also list the castle's item
 //                            (c=) where it changed, and the start lines the castle's item and the transport priorities
 //                            (prio=, 32 bytes for the goods 0 to 31) that the flag exchange reads (0x43b054). Before the
 //                            castle the verb runs 0x445570 on the player block, as the player setup of a new game (0x42055e)
 //                            does, so the priorities hold the original's default ranks; it then runs 0x445752, which writes the
 //                            player words at +0x148 to +0x150 (the high byte of the word at +0x148 is the rank a building site's
-//                            request for planks starts from, docs/rules/construction-materials.md)
+//                            request for planks starts from, docs/rules/construction-materials.md), and 0x44579c, which writes the
+//                            words at +0x152 to +0x15a (the high byte of the word at +0x15a is the rank the mill's request for
+//                            grain starts from, docs/rules/milling.md)
 //   carrier:N:S0,S1,S2:L:cx,cy:x,y;...:sx,sy,D;...:PASSES[:sx,sy,D;...:AT]
 //                            the passes of worker (docs/rules/carriers.md) on a game with a castle, flags, and roads and no
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
@@ -1055,6 +1058,7 @@ public class EmulateMapStart extends GhidraScript {
         if (defaultPriorities) {
             call(0x445570);
             call(0x445752);
+            call(0x44579c);
         }
         if (phaseRoutine) {
             // The clock step (+0x1fe, 2.0 while the clock runs) that the phase 32 routine tests.
@@ -1106,11 +1110,14 @@ public class EmulateMapStart extends GhidraScript {
     // The sawmill's building type, a large building (size table 0x42d307).
     private static final int SAWMILL = 17;
 
+    // The mill's building type, a small building (size table 0x42d307) whose handler (0x42e2a0) reads the flag pointer too.
+    private static final int MILL = 15;
+
     // What a placed building holds beyond the small building's: the object code at the node (2 for a small building, 3 for a large one,
-    // its top bit kept) and, for the sawmill, the flag pointer a building holds at +0xe once its site is built (0x43ef82), through which
-    // the sawmill's handler (0x42da0b) keeps its log request's rank.
+    // its top bit kept) and, for the sawmill and the mill, the flag pointer a building holds at +0xe once its site is built (0x43ef82),
+    // through which the handlers (0x42da0b, 0x42e2a0) keep their request's rank.
     private void markBuilding(int type, long item, long flag, long codeAddress) throws Exception {
-        if (type == SAWMILL) {
+        if (type == SAWMILL || type == MILL) {
             putInt(item + 0xe, flag);
         }
         emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL ? 3 : 2))});
@@ -1949,8 +1956,8 @@ public class EmulateMapStart extends GhidraScript {
 
     /**
      * Whether startWorld runs the default transport priority routine 0x445570 on the player block, as the player setup of a new
-     * game (0x42055e) does: it writes the rank of each good 1 to 26 at the player's block -0x55 + good. It also runs 0x445752,
-     * the next default routine of that setup (the words at +0x148 to +0x150).
+     * game (0x42055e) does: it writes the rank of each good 1 to 26 at the player's block -0x55 + good. It also runs 0x445752 and
+     * 0x44579c, the next default routines of that setup (the words at +0x148 to +0x150 and at +0x152 to +0x15a).
      */
     protected boolean defaultPriorities;
 
