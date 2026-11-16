@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 
@@ -6,6 +7,41 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ObjectSpritesTests
 {
+    // The finished building's object (the table at 0x44fd16, and the first sprite of the draw stub the jump table at 0x44e3aa reaches) and
+    // the scaffold's object (the table at 0x44fcfe) of the six food types, as the emulator's peek of both tables prints them (ADR 0008):
+    // peek 44fcfe 00BABABABAB9B9B9B9BAC1BAB1B8B1BBB7B5B6B0B8B3AFB4, peek 44fd16 00A7A8AEA9A3A4A5A6AAC0AB9A9C9BBCA2A0A1999D9E989F.
+    [TestMethod]
+    [DataRow(1, 167, 186)]
+    [DataRow(0xc, 154, 177)]
+    [DataRow(0xd, 156, 184)]
+    [DataRow(0xe, 155, 177)]
+    [DataRow(0xf, 188, 187)]
+    [DataRow(0x10, 162, 183)]
+    public void AFoodBuildingTakesTheFinishedAndScaffoldObjectsOfTheOriginalsTables(int code, int finished, int scaffold)
+    {
+        var type = new OpenSettlers.Domain.BuildingType { Code = code };
+
+        Assert.AreEqual(1250 + finished, ObjectSprites.FinishedEntry(type));
+        Assert.AreEqual(1250 + scaffold, ObjectSprites.StageEntry(type));
+    }
+
+    [TestMethod]
+    public void EachFoodGoodOnAFlagTakesTheEntryOf320PlusItsNumber()
+    {
+        var entries = OpenSettlers.Domain.Good.Foods.Select(ObjectSprites.GoodEntry).ToArray();
+
+        CollectionAssert.AreEqual(new[] { 321, 322, 323, 324, 325, 326 }, entries);
+    }
+
+    [TestMethod]
+    public void EveryBuildingEntryIsOneTheSpritesAreReadFor()
+    {
+        foreach (var entry in new[] { 167, 154, 156, 155, 188, 162, 177, 184, 187, 183 })
+        {
+            CollectionAssert.Contains(ObjectSprites.BuildingEntries.ToArray(), 1250 + entry);
+        }
+    }
+
     [TestMethod]
     public void ACodeBelowEightAndACodeAbove127HaveNoSprite()
     {

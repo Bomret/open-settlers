@@ -22,6 +22,17 @@ public sealed class SiteStagesTests
     }
 
     [TestMethod]
+    public void TheScaffoldOfAFoodTypeIsLargeWhereItsSizeIsLarge()
+    {
+        Assert.AreEqual(false, SiteStages.ScaffoldIsLarge(BuildingType.Fisher));
+        Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.Farm));
+        Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.Baker));
+        Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.Mill));
+        Assert.AreEqual(false, SiteStages.ScaffoldIsLarge(BuildingType.PigFarm));
+        Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.Butcher));
+    }
+
+    [TestMethod]
     public void AProgressOf0DrawsOnlyTheGroundOfALargeSite()
     {
         CollectionAssert.AreEqual(
