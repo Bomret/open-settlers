@@ -94,7 +94,8 @@ word is 0, so the digests of the M3 layouts stay (`Game.PlaceFinishedBuilding`).
 types, following the size-table caller `0x42cf9d` of `Building_Place`, where the mission start writes 2 only for type `0xb` and
 3 for every other type. The woodcutter's worker is the castle's woodcutter, and the stonecutter's the castle's stonecutter, walked in as above, where the mission
 start creates a new settler. The forester's worker is a settler without a job that the castle makes the forester (the request's second way, no tool,
-[Forestry](forestry.md)), walked in the same way, and the farmer's a settler without a job and a scythe from the castle's stock. The sawmill stands with no worker inside: its worker comes through the building's worker request as the game runs
+[Forestry](forestry.md)), walked in the same way, and the farmer's a settler without a job and a scythe from the castle's stock (the request's second way with its tool; a castle whose
+stock holds no scythe refuses the entry, so a layout's seed must draw a start stock level that holds one: `layouts/farm.jsonc`'s draws 38). The sawmill stands with no worker inside: its worker comes through the building's worker request as the game runs
 (`CastleRoster.HandleBuilding`, [Sawmilling](sawmilling.md#the-building-and-the-job)). A player's command places a building
 site and never a finished building.
 

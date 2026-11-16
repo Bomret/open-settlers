@@ -1,10 +1,11 @@
 // A farm at 13,10 with its flag at 14,11, a road of three steps west to the castle's flag at 11,11 (the castle stands at 10,10),
 // and its farmer inside, a settler without a job that the castle made the farmer with a scythe. The land is meadow. He sows the
 // free nodes around the farm, harvests the ripe fields, and puts the grain on the flag. Seven fields of the stages 0x69, 0x6b,
-// 0x6e, 0x6f, 0x79, 0x7c, and 0x7e stand on row 22. Play it with play/farm.play.
+// 0x6e, 0x6f, 0x79, 0x7c, and 0x7e stand on row 22. The seed draws the start stock level 38, which holds the scythe the farmer takes.
+// Play it with play/farm.play.
 {
   "size": 1,
-  "seed": "1234567812345678",
+  "seed": "1234567812345674",
   "height": [
     "11111111111111111111111111111111",
     "11111111111111111111111111111111",

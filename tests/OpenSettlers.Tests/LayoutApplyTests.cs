@@ -185,22 +185,32 @@ public sealed class LayoutApplyTests
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
         sizes[BuildingType.Farm.Code] = 2;
         var workers = TestProgram.MadeWorkers();
-        workers[BuildingType.Farm.Code] = new WorkerRequest { Job = new Farmer(), Tool = Good.None };
+        var scythe = new Good { Code = 20 };
+        workers[BuildingType.Farm.Code] = new WorkerRequest { Job = new Farmer(), Tool = scythe };
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
-        var game = GameFactory.Create(
-            new RuleTables(
-                classes,
-                TestProgram.MadeStartStock(),
-                buildingSizes: sizes,
-                workers: workers,
-                jobData: TestProgram.MadeJobData()
-            ),
-            layout.BuildMap()
-        );
+        Game Made(Layout of) =>
+            GameFactory.Create(
+                new RuleTables(
+                    classes,
+                    TestProgram.MadeStartStock(),
+                    buildingSizes: sizes,
+                    workers: workers,
+                    jobData: TestProgram.MadeJobData()
+                ),
+                of.BuildMap()
+            );
+        var game = Made(layout);
+        var without = Made(Read(Castle + Flag + Road));
+        Assert.IsNull(Read(Castle + Flag + Road).Apply(without));
 
         Assert.IsNull(layout.Apply(game));
 
+        Assert.AreEqual(
+            without.CastleStock.Count(scythe) - 1,
+            game.CastleStock.Count(scythe),
+            "the castle gives up the scythe the farmer takes"
+        );
         var worker = game.Settlers.Single(settler => settler.Job == new Farmer());
         Assert.IsInstanceOfType<Door>(worker.Activity, "he stands in the doorway of his farm");
         Assert.AreEqual((13, 10), (worker.X, worker.Y));

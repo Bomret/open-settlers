@@ -243,8 +243,9 @@ public sealed class WalkBehavior(
         var asked = request.Job;
         var slot = roster.CastleSettler(asked);
         // The castle holds none of the job: the request's second way (0x42be63) makes one of a settler without a job where the
-        // request names no tool (the forester's, docs/rules/forestry.md). A job whose request names a tool is not made in a layout.
-        var made = slot < 0 && request.Tool.IsNone;
+        // request names no tool (the forester's, docs/rules/forestry.md), or its tool is in the castle's stock (the farmer's scythe,
+        // docs/rules/farming.md), which the castle then gives up.
+        var made = slot < 0 && roster.HasTool(request.Tool);
         if (made)
         {
             slot = roster.CastleSettler(new Jobless());
@@ -266,6 +267,7 @@ public sealed class WalkBehavior(
         if (made)
         {
             settler.TakeUp(asked);
+            roster.TakeTool(request.Tool);
         }
 
         hut.WorkerOnTheWay = true;
