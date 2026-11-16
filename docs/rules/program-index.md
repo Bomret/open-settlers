@@ -259,6 +259,8 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x405b40` | `Gfx_FillTextured` | Hands the mask and the texture entry to `Gfx_BlitTextured`. | confirmed | platform | Called at `0x40618c`, in `Gfx_DrawTexturedFill`. |
 | `0x406120` | `Gfx_DrawTexturedFill` | Sets the clip rectangle, finds the texture entry from the draw block's fourth field, and fills the mask of its third field with it. | confirmed | platform | Called at `0x4279a9`, `0x427b0d`, and `0x428363`, in the routines at `0x4278be`, `0x427a25`, and `0x428008`, `0x428105`, `0x4281cc`, which form the mask (60 plus an index, 141 plus an index, or a base of 234, 243, or 252 plus a height difference) and the texture (260 or 300 plus an offset). |
 | `0x427642` | `Terrain_DrawTiles` | Draws the terrain triangles of the view rows with the routines at `0x4278be` and `0x427a25` and the tables of [Terrain drawing](graphics-images.md#terrain-drawing). | confirmed | game | Called by `0x4275d6`. |
+| `0x4278be` | `Terrain_DrawUpper` | Draws the upper triangle of a tile: forms the index `(a + 4 - l) + 9 x (a + 4 - r)` from the heights of the apex `a` and the base nodes `l` and `r` and reads `Render_TriangleVariantsUpper` at it with no range check on a slope, so a slope outside 0 to 8 reaches another row (or, for an index outside 0 to 80, a byte before or past the table); a texture byte with bit 7 set (`0xff`) draws nothing. | confirmed | game | Called by `Terrain_DrawTiles`; calls `Gfx_DrawTexturedFill` at `0x4279a9`. [Terrain drawing](graphics-images.md#terrain-drawing). |
+| `0x427a25` | `Terrain_DrawLower` | Draws the lower triangle of a tile in the same way, with the index `(l + 4 - a) + 9 x (r + 4 - a)` of the top nodes `l` and `r` over the apex `a` and `Render_TriangleVariantsLower`, again with no range check on a slope. | confirmed | game | Called by `Terrain_DrawTiles`; calls `Gfx_DrawTexturedFill` at `0x427b0d`. [Terrain drawing](graphics-images.md#terrain-drawing). |
 | `0x42f7ea` | — | Works out the screen position of the node at `+0xfc` and `+0xfe` of the view's record relative to the view origin, wrapping at the map size. Its full role is unknown. | unknown | game | Called by `View_HandleClick`, `0x427133`, and `0x440b01`. |
 | `0x406420` | `Gfx_DrawSpriteOverColor8` | Sets the clip rectangle from the target surface and draws the entry of the draw block through `Gfx_SpriteOverColor8`. | confirmed | platform | Called at `0x44ffcd`, in `0x44ff59`. |
 | `0x405d00` | `Gfx_SpriteOverColor8` | Passes the surface, the position, and the entry's address to `Gfx_BlitSpriteOverColor8`. | confirmed | platform | Called at `0x40647a`, in `Gfx_DrawSpriteOverColor8`. |
@@ -525,7 +527,7 @@ entries per phase (see "Item tables").
 
 Sites:
 
-- `0x428d6e`: the lake detail of a node: one draw, may grow below 10, moves to a lake neighbour (in `Map_ObjectPass`).
+- `0x428e1c`: the lake detail of a node: one draw; `0x428e21` gates only the growth on the detail less 10 as a signed byte; the move to a lake neighbour at `0x428e3f` runs for every detail (in `Map_ObjectPass`).
 - `0x42bbea`: the request clears the job bits of a jobless settler (`& 0x83`) to make it a carrier; no tool taken (in the Ghidra function `0x42b4bc`, `Road_RequestBoatman`).
 - `0x42fc88`: the jump by the state byte into the table at `0x42fca1` (in `Settler_Dispatch`).
 - `0x4354b8`: forms the owner bits of the settler's player; `0x43560c`: the random choice where no flag is near; `0x435821`: a knight takes state 0x35 in place of the free walk (in `Settler_SearchFlag`, `0x4353ef`).
@@ -1132,7 +1134,9 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x427062` | `Input_ApplyPointerMotion` | confirmed | Input |
 | `0x427133` | `Render_RedrawViewBase` | inferred | Views, panels, and drawing |
 | `0x427642` | `Terrain_DrawTiles` | confirmed | Graphics images |
+| `0x4278be` | `Terrain_DrawUpper` | confirmed | Graphics images |
 | `0x4279d4` | `Render_TriangleVariantsUpper` | confirmed | Graphics images |
+| `0x427a25` | `Terrain_DrawLower` | confirmed | Graphics images |
 | `0x427b38` | `Render_TriangleVariantsLower` | confirmed | Graphics images |
 | `0x427b89` | `Render_TerrainTextures` | confirmed | Graphics images |
 | `0x427c09` | `Render_DrawRoadsAndBorders` | confirmed | Roads |
@@ -1491,7 +1495,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 363 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 308 confirmed, 69 inferred, 51 unknown.
+Coverage: the index names 365 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 310 confirmed, 69 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:

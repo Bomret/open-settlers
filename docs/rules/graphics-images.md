@@ -282,8 +282,12 @@ height `a` minus the left base node and the right base node for the upper triang
 apex for the lower. The mask is 60 + index (upper) or 141 + index (lower). A table of 81 bytes (`0x4279d4` upper,
 `0x427b38` lower) gives a multiple of 4, `0xff` for no texture; the terrain code of the triangle (high nibble upper, low
 nibble lower) times 8 plus that value divided by 4 indexes the 128 bytes at `0x427b89`, whose value plus 260 is the
-texture. Codes 0 to 3 are water (texture 292), 4 to 7 give 260 to 267, 8 to 10 give 284 to 291, 11 to 13 give 268 to 275,
-14 and 15 give 276 to 283. The archive leaves out exactly the masks whose table value is `0xff`.
+texture. Neither routine checks a slope's range: a slope outside 0 to 8 (a height difference of more than four) moves the
+index into another row of the table, and that row's entry is drawn. The engine's `TerrainRules` computes the same index.
+The index is a signed 16-bit value. Where it falls outside 0 to 80, the original reads a byte outside the table: before
+it for a negative index, past it for an index above 80. The engine draws no texture there (**stand-in**). Codes 0 to 3
+are water (texture 292), 4 to 7 give 260 to 267, 8 to 10 give 284 to 291, 11 to 13 give 268 to 275, 14 and 15 give 276
+to 283. The archive leaves out exactly the masks whose table value is `0xff`.
 
 Screen layout (**inferred**): a node (column, row) is at x = 32 x column - 16 x row, y = 20 x row - 4 x height. A mask is
 drawn with its left edge 16 pixels west of its anchor node (the apex) and its top at the anchor's y plus the header's

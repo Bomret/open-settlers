@@ -102,8 +102,10 @@ countdown that wraps as a debt, so a late pass catches up) it takes as many node
 32)` (state `+0x21c`), moving a cursor 23 columns east and a row south where it wraps the row. At each node:
 
 - A node whose object byte has bit 7 (a water triangle), whose flag byte has bit 6, and whose resource byte (the lake detail) is not 0
-  takes a draw; where the detail is below 10 it grows by one when the draw's bits 8 to 13 are 0, and one moves to the neighbour that
-  the draw's bits 2 and 3 pick (south-east, south, north-west, north) when that is a lake node too.
+  takes a draw (`0x428e1c`). The cap of 10 gates only the growth: `0x428e21` compares the detail less 10 as a signed byte and skips
+  to the move when it is not negative, so a detail below 10, and one of 138 or more, grows by one when the draw's bits 8 to 13 are 0.
+  The move (`0x428e3f`) runs for every detail: one moves to the neighbour that the draw's bits 2 and 3 pick (south-east, south,
+  north-west, north) when that is a lake node too. The detail is a byte, so it wraps from 255 to 0.
 - An object code from 0x53 goes through the table at `0x428eb8`: 0x53 vanishes (bit 7 kept) when a draw's low two bits are 0; the cut
   tree's codes `0x5d` to `0x66` become `0x53`; 0x54 to 0x5c do nothing; the saplings 0x67 and 0x68 grow into trees where a draw's bits 8
   and 9 are clear ([Forestry](forestry.md#growth)); the codes from 0x69 grow or decay and are not ported, because the generation places

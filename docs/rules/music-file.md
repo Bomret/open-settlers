@@ -40,10 +40,11 @@ microseconds per quarter note, 500000 until one occurs.
 
 ## In the engine
 
-The engine reads the file as bytes in and tracks out (`src/Formats/MidiFile.cs`): the tracks with their
-event counts and the length in seconds from the tempo changes of all tracks. A bad header tag, a header length
-other than 6, a bad track tag, a chunk past the end of the file, a missing track, and an event cut short are
-unreadable and name the reason. A division of 0, or a frame-based division with 0 ticks per frame, gives a
-length of 0, which is the engine's choice. The program checks the events in routines this note does not
-cover, so what it does with a cut event is open. The browser shows the tracks and the length and does not
-play the file.
+The engine reads the file as bytes in and tracks out (`src/Import.HistoryEdition/Formats/MidiFile.cs`): the tracks
+with their event counts and the length in seconds from the tempo changes of all tracks. A bad header tag, a header
+length other than 6, a bad track tag, a chunk past the end of the file, a missing track, and an event cut short are
+unreadable and name the reason. A tempo event (meta type `0x51`) whose length is not 3 is unreadable too and names the
+track and the length, which is the engine's choice: a tempo holds 3 bytes of microseconds per quarter note. A division
+of 0, or a frame-based division with 0 ticks per frame, gives a length of 0, which is the engine's choice. The program
+checks the events in routines this note does not cover, so what it does with a cut event is open. The browser shows
+the tracks and the length and does not play the file.

@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 // The boundaries of the simulation's application layer: the castle stock's guards, the clock's wrap, the handler table, the storage
 // hand-out's guards, the cursor windows of the retry scans, the walk home's search and random node, and the lake detail. Parts are
 // made by hand (no install). The expected values are hand arithmetic from the rules the routines cite: the 0x428728 scan and the
-// 0x428d6e lake detail in docs/rules/ and the routines' own comments, and the spiral table's first entries.
+// 0x428e1c lake detail in docs/rules/ and the routines' own comments, and the spiral table's first entries.
 [TestClass]
 public sealed class SimulationBoundaryTests
 {
@@ -365,7 +365,7 @@ public sealed class SimulationBoundaryTests
         Assert.AreEqual((new Vector(-8, -8), 51), result);
     }
 
-    // ----- Lake detail (F35): 0x428d6e takes one draw; the object pass reaches (23, 0) first -----
+    // ----- Lake detail (F35): 0x428e1c takes one draw; the object pass reaches (23, 0) first -----
 
     static (HutWork Work, BehaviourBench Bench) LakeBench(params ushort[] draws)
     {
@@ -435,19 +435,55 @@ public sealed class SimulationBoundaryTests
         Assert.AreEqual((2, 3, 1), (bench.Map.At(23, 0).LakeDetail, bench.Map.At(x, y).LakeDetail, bench.Draws.Taken));
     }
 
+    // The cap compares the detail less 10 as a signed byte and gates only the growth; the move follows for every detail. The draw 0
+    // clears bits 8 to 13 and names the lake neighbour (24, 1). 1 to 9 grows and moves; 10 to 137 moves only; 138 to 255 is
+    // negative as a signed byte, so it grows and moves, and 255 wraps to 0 before the move takes it back to 255.
     [TestMethod]
-    public void ALakeDetailOfTenStaysAndDoesNotMoveYetTheDrawIsTaken()
+    [DataRow(5, 5)]
+    [DataRow(10, 9)]
+    [DataRow(137, 136)]
+    [DataRow(138, 138)]
+    [DataRow(255, 255)]
+    public void ALakeDetailMovesOneToALakeNeighbourAtEveryDetailAndGrowsOnlyBelowTheCap(int detail, int after)
     {
         var (work, bench) = LakeBench(0x0000);
-        Lake(bench.Map, 23, 0, 10);
+        Lake(bench.Map, 23, 0, detail);
         Lake(bench.Map, 24, 1, 2);
 
         work.ObjectPass();
 
         Assert.AreEqual(
-            (10, 2, 1),
+            (after, 3, 1),
             (bench.Map.At(23, 0).LakeDetail, bench.Map.At(24, 1).LakeDetail, bench.Draws.Taken)
         );
+    }
+
+    [TestMethod]
+    [DataRow(10)]
+    [DataRow(200)]
+    public void ALakeDetailOfTenOrMoreNextToANodeThatIsNoLakeMovesNothingYetTheDrawIsTaken(int detail)
+    {
+        var (work, bench) = LakeBench(0x0100);
+        Lake(bench.Map, 23, 0, detail);
+
+        work.ObjectPass();
+
+        Assert.AreEqual(
+            (detail, 0, 1),
+            (bench.Map.At(23, 0).LakeDetail, bench.Map.At(24, 1).LakeDetail, bench.Draws.Taken)
+        );
+    }
+
+    [TestMethod]
+    public void ALakeNeighbourAt255WrapsToZeroWhenItReceivesTheDetail()
+    {
+        var (work, bench) = LakeBench(0x0000);
+        Lake(bench.Map, 23, 0, 10);
+        Lake(bench.Map, 24, 1, 255);
+
+        work.ObjectPass();
+
+        Assert.AreEqual((9, 0, 1), (bench.Map.At(23, 0).LakeDetail, bench.Map.At(24, 1).LakeDetail, bench.Draws.Taken));
     }
 
     [TestMethod]
