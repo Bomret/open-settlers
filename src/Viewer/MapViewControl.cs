@@ -393,6 +393,20 @@ public partial class MapViewControl(
         };
         _buildHelpButton.Toggled += _ => Redraw();
         buttons.AddChild(_buildHelpButton);
+        // Stand-in for the History Edition's game-speed switch (Speed_SetFactor, 0x405fe0): each press doubles the tick
+        // rate, and 8 times goes back to normal speed (docs/rules/timing.md). The speed stays when a new game starts.
+        var speedButton = new Button
+        {
+            Text = SpeedText(),
+            Visible = _gameView,
+            FocusMode = FocusModeEnum.None,
+        };
+        speedButton.Pressed += () =>
+        {
+            _pacer.NextSpeed();
+            speedButton.Text = SpeedText();
+        };
+        buttons.AddChild(speedButton);
 
         _canvas = new Control
         {
@@ -447,6 +461,8 @@ public partial class MapViewControl(
         Redraw();
         ShowMessage();
     }
+
+    string SpeedText() => $"Speed {_pacer.Speed}x";
 
     // The graphics source the host loads; a problem with the roads, objects, or settlers is kept for the message.
     void LoadSource()

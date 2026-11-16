@@ -76,7 +76,7 @@ mise run map
 
 [Controls](docs/controls.md) describes how to use the map view and the game view. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. In the game view, unreadable settler sprites or step offsets (entry 2 of the install's graphics archive, read under either graphics source) show an error in the view, and no settler is drawn. An unreadable `Siedler1.exe` shows an error in the view and draws no map: the map generation reads which objects are large from it. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
 
-The game view is the map view with a game on the shown map that ticks at the original's normal speed:
+The game view is the map view with a game on the shown map that starts at the original's normal speed. Its Speed button runs the game 2, 4, or 8 times as fast:
 
 ```sh
 mise run game -- [--seed <seed>] [--size <1|2|3>]

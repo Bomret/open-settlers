@@ -111,6 +111,13 @@ building has none, and neither does a node with no site.
 Where a flag stands south-east of a node, the node can show a flag marker. A click puts no flag there. The original does the
 same. The markers follow every change of the game in the frame that shows it. The map view has no Build help button.
 
+### Speed
+
+The Speed button sets how fast the game runs. It shows the speed factor and starts at 1x, the original's normal speed
+of 12.5 ticks a second. Each press doubles the speed: 1x, 2x, 4x, 8x, and back to 1x. These are the factors of the
+History Edition's game-speed switch. The speed stays when a new seed or size starts a new game. The map view has no
+Speed button.
+
 ### Refused clicks
 
 A click that is refused changes nothing, and the view shows nothing for it. The game keeps running.

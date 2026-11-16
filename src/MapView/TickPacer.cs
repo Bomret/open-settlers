@@ -4,12 +4,22 @@ namespace OpenSettlers.MapView;
 
 /// <summary>
 /// Turns the time of the frames into whole game ticks at <see cref="Game.TicksPerSecond"/>: the frame rate does not set
-/// the tick rate, and the fraction of a tick a frame leaves carries to the next.
+/// the tick rate, and the fraction of a tick a frame leaves carries to the next. <see cref="Speed"/> multiplies the
+/// rate.
 /// </summary>
 public sealed class TickPacer
 {
     double _carry;
     bool _held;
+
+    /// <summary>
+    /// The speed factor: 1, 2, 4, or 8, the factors of the History Edition's game-speed switch (<c>Speed_SetFactor</c>,
+    /// <c>0x405fe0</c>, docs/rules/timing.md). It starts at 1, normal speed.
+    /// </summary>
+    public int Speed { get; private set; } = 1;
+
+    /// <summary>Doubles <see cref="Speed"/>, and takes 8 back to 1.</summary>
+    public void NextSpeed() => Speed = Speed == 8 ? 1 : Speed * 2;
 
     /// <summary>The whole ticks that fall due after a frame of <paramref name="seconds"/>.</summary>
     public int Due(double seconds)
@@ -19,7 +29,7 @@ public sealed class TickPacer
             return 0;
         }
 
-        _carry += seconds * Game.TicksPerSecond;
+        _carry += seconds * Game.TicksPerSecond * Speed;
         var ticks = (int)_carry;
         _carry -= ticks;
 
@@ -39,7 +49,7 @@ public sealed class TickPacer
     /// <summary>A shot has been taken: lets a held game run on.</summary>
     public void ShotTaken() => _held = false;
 
-    /// <summary>Drops the carry and releases a hold, as a new game starts.</summary>
+    /// <summary>Drops the carry and releases a hold, as a new game starts. The speed stays.</summary>
     public void Reset()
     {
         _carry = 0;

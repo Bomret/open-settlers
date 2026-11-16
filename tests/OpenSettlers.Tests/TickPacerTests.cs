@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 
@@ -56,5 +57,41 @@ public sealed class TickPacerTests
         pacer.Reset();
 
         Assert.AreEqual(25, pacer.Due(2));
+    }
+
+    [TestMethod]
+    public void TheSpeedStepsThroughTheFactorsOfTheHistoryEditionAndBackToNormal()
+    {
+        var pacer = new TickPacer();
+        var factors = new List<int> { pacer.Speed };
+
+        for (var press = 0; press < 4; press++)
+        {
+            pacer.NextSpeed();
+            factors.Add(pacer.Speed);
+        }
+
+        CollectionAssert.AreEqual(new[] { 1, 2, 4, 8, 1 }, factors);
+    }
+
+    [TestMethod]
+    public void TheSpeedMultipliesTheTicksAFrameRuns()
+    {
+        var pacer = new TickPacer();
+        pacer.NextSpeed();
+        pacer.NextSpeed();
+
+        Assert.AreEqual(100, pacer.Due(2), "4 times 25 ticks");
+    }
+
+    [TestMethod]
+    public void ResetKeepsTheSpeedForTheNextGame()
+    {
+        var pacer = new TickPacer();
+        pacer.NextSpeed();
+
+        pacer.Reset();
+
+        Assert.AreEqual(2, pacer.Speed);
     }
 }
