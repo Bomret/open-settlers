@@ -235,7 +235,8 @@ static class ProgramTablesImporter
     /// The same instructions in the handlers of the ten types: the woodcutter's (<c>0x42d945</c>), the stonecutter's (<c>0x42d987</c>), the
     /// forester's (<c>0x42d9c9</c>), the sawmill's (<c>0x42da0b</c>), the fisher's (<c>0x42e0b8</c>), the farm's (<c>0x42e25e</c>), the
     /// baker's (<c>0x42e1b3</c>), the mill's (<c>0x42e0fa</c>), the pig farm's (<c>0x42e2a0</c>), and the butcher's (<c>0x42e37e</c>),
-    /// each 13 bytes in.
+    /// each 13 bytes in, except the pig farm's, whose handler first reads the building's bytes (<c>0x42e2a0</c> to <c>0x42e2c5</c>) and
+    /// asks at <c>0x42e2d2</c>.
     /// </summary>
     public static readonly (BuildingType Type, int Address)[] WorkerRequestAddresses =
     [
@@ -247,7 +248,7 @@ static class ProgramTablesImporter
         (BuildingType.Farm, 0x42e26b),
         (BuildingType.Baker, 0x42e1c0),
         (BuildingType.Mill, 0x42e107),
-        (BuildingType.PigFarm, 0x42e2ad),
+        (BuildingType.PigFarm, 0x42e2d2),
         (BuildingType.Butcher, 0x42e38b),
     ];
 

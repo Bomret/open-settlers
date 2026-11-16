@@ -334,7 +334,7 @@ public partial class MapViewControl(
             }
         };
         buttons.AddChild(_roadButton);
-        // Stand-in for the original's build panel: one toggle for each building type of M4. While one is pressed a click
+        // Stand-in for the original's build panel: one toggle for each building type the placement builds. While one is pressed a click
         // asks for a building site of that type on the node under it, tied to the flag south-east of it (docs/rules/build-sites.md).
         _buildButtons =
         [
@@ -344,6 +344,12 @@ public partial class MapViewControl(
                 ("Forester", BuildingType.Forester),
                 ("Stonecutter", BuildingType.Stonecutter),
                 ("Sawmill", BuildingType.Sawmill),
+                ("Fisher", BuildingType.Fisher),
+                ("Farm", BuildingType.Farm),
+                ("Mill", BuildingType.Mill),
+                ("Baker", BuildingType.Baker),
+                ("Pig farm", BuildingType.PigFarm),
+                ("Butcher", BuildingType.Butcher),
             }.Select(entry =>
             {
                 var button = new Button

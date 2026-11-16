@@ -1,0 +1,23 @@
+# The six food buildings stand finished on layouts/food.jsonc, each with its flag south-east of it, and the dump names each food good.
+# A building asks for its worker and finds no road, so none walks out.
+# Run it on the layout, under either graphics source:
+#   sh tools/play-run.sh food --layout layouts/food.jsonc --fps 10
+#   sh tools/play-run.sh food --layout layouts/food.jsonc --fps 10 --graphics open-settlers
+# The castle stands at 10,10. The farm is at 7,6, the baker at 12,6, the fisher at 14,10, the pig farm at 14,13, the mill at 7,14, and the
+# butcher at 12,14; each flag is south-east of its building.
+wait 0.3
+expect-at 7 6 farm
+expect-at 12 6 baker
+expect-at 14 10 fisher-hut
+expect-at 14 13 pig-farm
+expect-at 7 14 mill
+expect-at 12 14 butcher
+expect-count building = 7
+expect fish >= 0
+expect flour >= 0
+expect bread >= 0
+expect grain >= 0
+expect pigs >= 0
+expect meat >= 0
+dump food
+shot food 10 10 6 6
