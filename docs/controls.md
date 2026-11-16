@@ -39,7 +39,7 @@ A click is a press and release of the left mouse button, or a tap on a touchpad,
 press that moves the view by more than a few pixels is a drag and places nothing. A click goes to the node whose
 point is nearest to it. A click on a flag's picture goes to that flag's node. Where two flag pictures overlap, the click goes to the southern flag. If both flags are in one row, it goes to the eastern one.
 
-The Flag, Road, Woodcutter, Forester, Stonecutter, Sawmill, and Remove buttons are on/off buttons. At most one is on: pressing one turns the others
+The game view's buttons stand in one column at the right edge of the map, top to bottom in the order named here. The Flag, Road, Woodcutter, Forester, Stonecutter, Sawmill, and Remove buttons are on/off buttons. At most one is on: pressing one turns the others
 off. The Build help button is an on/off button apart from them (below).
 
 ### No button on

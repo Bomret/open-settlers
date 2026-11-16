@@ -38,7 +38,7 @@ public static class ShotCrop
     /// <see cref="MapPicking.Aim(Map, double, double, double, double, double, double, int, int, out double, out
     /// double)"/> gives, with an empty box. The view is the canvas of <paramref name="viewWidth"/> by
     /// <paramref name="viewHeight"/> screen pixels at (<paramref name="originX"/>, <paramref name="originY"/>) of the
-    /// frame, with the button bar the <paramref name="originY"/> pixels above it. A tile is within
+    /// frame, with the seed bar the <paramref name="originY"/> pixels above it. A tile is within
     /// <paramref name="radius"/> when that many steps or fewer to a neighbouring node reach it.
     /// <paramref name="headroom"/> map pixels above the box, at the zoom, leave room for an object sprite. The box is
     /// floored at the top and left, ceiled at the bottom and right, clipped to the canvas, and in frame coordinates.

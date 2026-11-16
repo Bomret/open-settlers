@@ -153,7 +153,7 @@ public partial class MapViewControl(
     /// <summary>The area the map is drawn in and the mouse acts on; a play run aims its input at it.</summary>
     public Control Canvas => _canvas;
 
-    /// <summary>The game-view buttons on show, in bar order; none in the map view. A play run's <c>button</c> step clicks one.</summary>
+    /// <summary>The game-view buttons on show, in column order, top to bottom; none in the map view. A play run's <c>button</c> step clicks one.</summary>
     public System.Collections.Generic.IReadOnlyList<Button> ShownButtons =>
         [
             .. new[] { _flagButton, _roadButton }
@@ -278,6 +278,10 @@ public partial class MapViewControl(
         bar.AddChild(_ticks);
         _logs = new Label { Visible = _gameView };
         bar.AddChild(_logs);
+        // The game-view buttons stand in one column at the right edge of the canvas, so the bar keeps its width for the
+        // seed, the message, and the readouts.
+        var row = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
+        var buttons = new VBoxContainer { Visible = _gameView };
         // Stand-in for the original's flag button (0x442244): while it is pressed a click asks for a flag on the node
         // under it instead of the castle. The original's build panel is a later slice's.
         _flagButton = new Button
@@ -287,7 +291,7 @@ public partial class MapViewControl(
             Visible = _gameView,
             FocusMode = FocusModeEnum.None,
         };
-        bar.AddChild(_flagButton);
+        buttons.AddChild(_flagButton);
         // Stand-in for the original's road button (0x440d23, action 0x18): while it is pressed the clicks draw a road,
         // from a flag a node at a time to the flag it ends on; Escape, a right click, or the button again cancels it.
         _roadButton = new Button
@@ -319,7 +323,7 @@ public partial class MapViewControl(
                 _removeButton.ButtonPressed = false;
             }
         };
-        bar.AddChild(_roadButton);
+        buttons.AddChild(_roadButton);
         // Stand-in for the original's build panel: one toggle for each building type of M4. While one is pressed a click
         // asks for a building site of that type on the node under it, tied to the flag south-east of it (docs/rules/build-sites.md).
         _buildButtons =
@@ -352,7 +356,7 @@ public partial class MapViewControl(
                         }
                     }
                 };
-                bar.AddChild(button);
+                buttons.AddChild(button);
 
                 return (button, entry.Type);
             }),
@@ -376,7 +380,7 @@ public partial class MapViewControl(
                 ReleaseBuildButtons();
             }
         };
-        bar.AddChild(_removeButton);
+        buttons.AddChild(_removeButton);
         // Stand-in for the original's build-site overlay toggle (0x440d23): while it is pressed every node shows the build
         // marker of its judgment (docs/rules/build-sites.md, "The build-site overlay"). It starts off, stands apart from
         // the buttons above, and turns off when a game starts (StartGame).
@@ -388,16 +392,18 @@ public partial class MapViewControl(
             FocusMode = FocusModeEnum.None,
         };
         _buildHelpButton.Toggled += _ => Redraw();
-        bar.AddChild(_buildHelpButton);
+        buttons.AddChild(_buildHelpButton);
 
         _canvas = new Control
         {
-            SizeFlagsVertical = SizeFlags.ExpandFill,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
             ClipContents = true,
             FocusMode = FocusModeEnum.Click,
         };
         _canvas.GuiInput += OnCanvasInput;
-        column.AddChild(_canvas);
+        column.AddChild(row);
+        row.AddChild(_canvas);
+        row.AddChild(buttons);
         _world = new Node2D();
         _canvas.AddChild(_world);
         _preview = new Node2D { ZAsRelative = false, ZIndex = 2 };

@@ -196,7 +196,7 @@ public partial class PlayDriver : Node
     }
 
     // A press and release on one point, which the view's click gesture reads as a click on the tile drawn there. The
-    // strip above the canvas is the button bar.
+    // strip above the canvas is the seed bar.
     string? ClickTile(ClickTileStep tile)
     {
         if (_view.Map is not { } map)
@@ -213,7 +213,7 @@ public partial class PlayDriver : Node
             view.Zoom,
             size.X,
             size.Y,
-            // The button bar is taken to be the only thing above the canvas, so the canvas's offset is its height.
+            // The seed bar is taken to be the only thing above the canvas, so the canvas's offset is its height.
             _view.Canvas.GlobalPosition.Y,
             tile.Column,
             tile.Row,
@@ -366,7 +366,7 @@ public partial class PlayDriver : Node
                     size.X,
                     size.Y,
                     origin.X,
-                    // The button bar is taken to be the only thing above the canvas, as for click-tile.
+                    // The seed bar is taken to be the only thing above the canvas, as for click-tile.
                     origin.Y,
                     tile.Column,
                     tile.Row,
