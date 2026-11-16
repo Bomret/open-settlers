@@ -1,0 +1,16 @@
+# A farmer sows a free meadow node near his farm and harvests the ripe fields, on layouts/farm.jsonc.
+# Run it on the layout: sh tools/play-run.sh farm --layout layouts/farm.jsonc --fps 10
+# The castle stands at 10,10, so its flag is at 11,11. The farm at 13,10 has its flag at 14,11, a road of three steps leads west to the
+# castle's flag, and the farmer stands inside. Seven fields of the stages 0x69 to 0x7e stand on row 22. He searches the nodes around the
+# farm, walks to a free one, waits, and sows it, and then the fields grow.
+wait 0.3
+expect-at 13 10 building
+expect-at 14 11 flag
+expect-count field = 3
+shot placed 13 10 1 2
+
+fast-forward until count field >= 4 max 40000
+wait 0.3
+expect-count field >= 4
+dump field-sown
+shot field-sown 13 10 1 2

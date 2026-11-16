@@ -165,6 +165,7 @@ public sealed class NameTableTests
                 "sawmiller",
                 "stonecutter",
                 "forester",
+                "farmer",
                 "jobless",
             },
             jobs.Select(entry => entry.Name).ToArray()
@@ -229,9 +230,10 @@ public sealed class NameTableTests
     [TestMethod]
     public void AClassTwoCodeTheDocNamesOtherwiseKeepsItsName()
     {
-        var names = Table((0x50, 2), (0x6a, 2));
+        var names = Table((0x50, 2), (0x1c, 2), (0x6a, 2));
         Assert.AreEqual("rock", names.ObjectName(0x50));
-        Assert.IsNull(names.ObjectName(0x6a));
+        Assert.IsNull(names.ObjectName(0x1c));
+        Assert.AreEqual("field", names.ObjectName(0x6a));
     }
 
     [TestMethod]
