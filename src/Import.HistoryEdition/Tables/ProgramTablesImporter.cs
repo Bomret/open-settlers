@@ -152,6 +152,18 @@ static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of the sawmiller's handler for any other figure byte below 0x80 (the walk).</summary>
     public const int SawmillerWalkAddress = 0x43fccd;
 
+    /// <summary>The handler of the miller's figure (<c>0x4400d3</c>, the target of the stub of job 15).</summary>
+    public const int MillerHandlerAddress = 0x4400d3;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the miller's handler for a figure byte from 0x80 (the grinding).</summary>
+    public const int MillerGrindAddress = 0x4400df;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the miller's handler for the step that takes the flour out (state 5, byte 15 0xd).</summary>
+    public const int MillerCarryingAddress = 0x4400fc;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the miller's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int MillerWalkAddress = 0x440107;
+
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
     static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
@@ -223,6 +235,13 @@ static class ProgramTablesImporter
     /// planks starts from (<c>docs/rules/construction-materials.md</c>).
     /// </summary>
     public const int PlankRankAddress = 0x445752;
+
+    /// <summary>
+    /// The instruction pair of the player setup's last store of <c>0x44579c</c> (called by <c>0x42055e</c>): it loads the word <c>0x7fee</c> and stores it
+    /// at <c>+0x15a</c> of the player block, whose high byte is the rank the mill's request for grain starts from
+    /// (<c>docs/rules/milling.md</c>).
+    /// </summary>
+    public const int MillRankAddress = 0x4457d4;
 
     /// <summary>
     /// The instructions of the building under construction's request for a builder (<c>0x42d5fc</c>, in <c>0x42d55f</c>): <c>mov eax, job</c> and
@@ -308,6 +327,7 @@ static class ProgramTablesImporter
             GoodClasses(Slice(exe, GoodClassAddress, 2 * RuleTables.GoodClassCount)),
             [.. DistributionAddresses.Select(address => DistributionOrder(exe, address))],
             PlankRankBase(exe),
+            MillRankBase(exe),
             Workers(exe),
             [.. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
@@ -467,6 +487,21 @@ static class ProgramTablesImporter
         );
 
         return Slice(exe, PlankRankAddress + 2, 2)[1];
+    }
+
+    // The rank the mill's request for grain starts from: the high byte of the word the player setup loads and stores at +0x15a of the
+    // player block (0x44579c: mov ax, imm16; mov ebx, [edi+0x30]; mov [ebx+0x15a], ax).
+    static byte MillRankBase(byte[] exe)
+    {
+        Expect(exe, MillRankAddress, [0x66, 0xb8], "loads the word of the player's default");
+        Expect(
+            exe,
+            MillRankAddress + 4,
+            [0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x5a, 0x01, 0x00, 0x00],
+            "stores the word at +0x15a of the player block"
+        );
+
+        return Slice(exe, MillRankAddress + 2, 2)[1];
     }
 
     internal static ushort Immediate(byte[] exe, int address)

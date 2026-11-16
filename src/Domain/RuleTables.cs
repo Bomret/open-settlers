@@ -121,6 +121,7 @@ public sealed class RuleTables
         GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0,
+        byte millRankBase = 0,
         WorkerRequest?[]? workers = null,
         ushort[]? materialOrder = null,
         ushort[]? blowSteps = null,
@@ -175,6 +176,7 @@ public sealed class RuleTables
             ),
         ];
         PlankRankBase = plankRankBase;
+        MillRankBase = millRankBase;
         // stand-in: a table a test does not give makes no building ask for a worker.
         _workers = [.. workers ?? new WorkerRequest?[BuildingTypeCount]];
         // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
@@ -229,8 +231,10 @@ public sealed class RuleTables
     public ImmutableArray<byte> GoodKinds => _goodKinds;
 
     /// <summary>
-    /// Which byte of a building's fill a lost good counts against (<c>docs/rules/removal.md</c>). <paramref name="good"/> is a
-    /// good, its number taken to 0 to 31 (the original masks it with 0x1f).
+    /// Which byte of a building's fill a good counts in: the table <c>0x462d6d</c> (<c>docs/rules/removal.md</c>), the one rule for
+    /// every place that counts a good on its way (the request search and the storage's hand-out), counts it back where it is lost
+    /// (<c>0x462ca4</c>, the removal's), and counts its delivery (the carrier's handover): the food goods 1 to 6 count in the low byte.
+    /// <paramref name="good"/> is a good, its number taken to 0 to 31 (the original masks it with 0x1f).
     /// </summary>
     public FillCounter FillCounterOf(Good good) =>
         _goodKinds[good.Code & 0x1f] switch
@@ -337,6 +341,13 @@ public sealed class RuleTables
     public byte PlankRankBase { get; }
 
     /// <summary>
+    /// The rank the mill's request for grain starts from: the high byte of the player word at <c>+0x15a</c>, which the player setup of a
+    /// new game writes (<c>0x44579c</c>, <c>docs/rules/milling.md</c>). The mill's handler (<c>0x42e2a0</c>) shifts it right by the goods
+    /// the mill holds.
+    /// </summary>
+    public byte MillRankBase { get; }
+
+    /// <summary>
     /// What a finished building of <paramref name="type"/> asks for as its worker (the handlers of the jump table <c>0x42cd1d</c>); null for
     /// a type whose handler asks for none of this kind, the castle included.
     /// </summary>
@@ -411,6 +422,22 @@ public readonly record struct SawmillerFigureAdds
 
     /// <summary>The add for a figure byte from 0x80: the saw's frames.</summary>
     public required ushort Saw { get; init; }
+}
+
+/// <summary>
+/// What the miller's handler adds to the figure byte (<c>0x4400d3</c>): <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in the
+/// step that takes the flour out (state 5 with state 0xd next), and <see cref="Grind"/> for a byte from 0x80, the mill's frames.
+/// </summary>
+public readonly record struct MillerFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add in the step that takes the flour out (state 5 with state 0xd next).</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80: the grinding frames.</summary>
+    public required ushort Grind { get; init; }
 }
 
 /// <summary>

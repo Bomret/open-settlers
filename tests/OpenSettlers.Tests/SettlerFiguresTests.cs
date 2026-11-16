@@ -117,6 +117,15 @@ public sealed class SettlerFiguresTests
         bases[2 * 0x1c] = 1600;
         bases[2 * 0x1c + 1] = -1;
 
+        // The miller's rows (0x4400d3): 0x1d for the walk, 0x1e for the step that takes the flour out, and 0x20 for a figure byte from
+        // 0x80 (made up).
+        bases[2 * 0x1d] = 1700;
+        bases[2 * 0x1d + 1] = -1;
+        bases[2 * 0x1e] = 1800;
+        bases[2 * 0x1e + 1] = -1;
+        bases[2 * 0x20] = 2000;
+        bases[2 * 0x20 + 1] = -1;
+
         return TablesOf(
             bases,
             offsets,
@@ -127,7 +136,8 @@ public sealed class SettlerFiguresTests
             Idle(),
             BuilderAdds,
             digger: DiggerAdds,
-            sawmiller: SawmillerAdds
+            sawmiller: SawmillerAdds,
+            miller: MillerAdds
         );
     }
 
@@ -145,7 +155,8 @@ public sealed class SettlerFiguresTests
         FigureAdds stonecutter = default,
         ForesterFigureAdds forester = default,
         FigureAdds digger = default,
-        SawmillerFigureAdds sawmiller = default
+        SawmillerFigureAdds sawmiller = default,
+        MillerFigureAdds miller = default
     ) =>
         new(
             new RuleTables(
@@ -165,6 +176,7 @@ public sealed class SettlerFiguresTests
                     (new Builder(), builder),
                     (new Forester(), forester),
                     (new Sawmiller(), sawmiller),
+                    (new Miller(), miller),
                     (new TypeOneHut(), typeOneHut),
                 ]
             ),
@@ -178,6 +190,15 @@ public sealed class SettlerFiguresTests
         Walk = 0x1900,
         Carrying = 0x1a00,
         Saw = 0x1b80,
+    };
+
+    // The adds of the miller's handler (0x4400d3), made up: 0x1d00 for a figure byte below 0x80, 0x1e00 for the step that takes the flour
+    // out, and 0x1f80 from 0x80 on.
+    static readonly MillerFigureAdds MillerAdds = new()
+    {
+        Walk = 0x1d00,
+        Carrying = 0x1e00,
+        Grind = 0x1f80,
     };
 
     // The adds of the digger's handler (0x43fa87), made up: 0x1700 for a figure byte below 0x80 and 0x1780 from there on.
@@ -740,6 +761,33 @@ public sealed class SettlerFiguresTests
         CollectionAssert.AreEqual(new[] { 3353, 4003 }, carries);
         CollectionAssert.AreEqual(new[] { 3451, 4101 }, saws);
         Assert.IsEmpty(waits);
+    }
+
+    [TestMethod]
+    public void AMillerWalkingGrindingAndCarryingFlourOutIsDrawnInTheRowsOfHisHandlerAndNotWhereHeWaitsOrPauses()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Miller(int frame, Activity activity) =>
+            new(new Miller(), 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Miller(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var grinds = figures.Draws(map, [Miller(8, new Grinds { Phase = 1 })], 0).Select(d => d.Entry).ToArray();
+        var carries = figures
+            .Draws(map, [Miller(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Flour } })], 0)
+            .Select(d => d.Entry)
+            .ToArray();
+
+        // Figure byte 3 in the row 0x1d (base 1700) for the walk and in the row 0x1e (base 1800) for the step with the flour, figure byte
+        // 0x81 in the work state: the word 0x1f80 + 0x81 = 0x2001, the row 0x20 (base 2000) and the offset 1. Waiting for grain, or
+        // pausing with the node free, he is not drawn.
+        CollectionAssert.AreEqual(new[] { 3553, 4203 }, walk);
+        CollectionAssert.AreEqual(new[] { 3653, 4303 }, carries);
+        CollectionAssert.AreEqual(new[] { 3851, 4501 }, grinds);
+        Assert.IsEmpty(figures.Draws(map, [Miller(8, new Grinds { Phase = 0 })], 0));
+        Assert.IsEmpty(figures.Draws(map, [Miller(8, new Grinds { Phase = 2 })], 0));
+        Assert.AreEqual(3851, figures.Draws(map, [Miller(8, new Grinds { Phase = 3 })], 0).First().Entry);
+        Assert.IsEmpty(figures.Draws(map, [Miller(8, new Grinds { Phase = 4 })], 0));
     }
 
     [TestMethod]

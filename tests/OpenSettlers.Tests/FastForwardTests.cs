@@ -198,9 +198,9 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AnUnknownJobNameIsRefusedWithTheNamesTheTableHolds()
     {
-        var problem = Problem("fast-forward miller state 1 max 5");
+        var problem = Problem("fast-forward baker state 1 max 5");
 
-        Assert.StartsWith("play/t.play line 1: 'miller' is not a job name, use ", problem);
+        Assert.StartsWith("play/t.play line 1: 'baker' is not a job name, use ", problem);
         foreach (var name in new[] { "carrier", "digger", "builder", "woodcutter", "stonecutter", "forester" })
         {
             Assert.Contains(name, problem);

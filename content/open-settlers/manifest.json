@@ -1783,5 +1783,47 @@
       -7,
       -21
     ]
+  },
+  "settler/miller/walks": {
+    "image": "settler/miller-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/carries": {
+    "image": "settler/miller-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/cuts": {
+    "image": "settler/miller-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/door": {
+    "image": "settler/miller-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/hands-over": {
+    "image": "settler/miller-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/waits": {
+    "image": "settler/miller-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
   }
 }

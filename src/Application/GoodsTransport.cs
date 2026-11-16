@@ -147,7 +147,7 @@ public sealed class GoodsTransport(
             && FlagRequestSearch.Find(flags, roads, flag, goodClass, floor: 0) is >= 0 and var asking
         )
         {
-            Serve(asking, goodClass.Word);
+            Serve(asking, goodClass.Word, good);
             flags[flag].Places[place].Destination = asking;
             flags[flag].NeedsGoodsTurn = true;
 
@@ -194,15 +194,17 @@ public sealed class GoodsTransport(
     }
 
     // 0x464999 to 0x4649e0: the flag that was found is served: its rank, shifted right by one where bit 0 is set, else 0, and the
-    // building of the flag counts one more good on the way, in the fill byte of the word's kind (the first word is the planks').
-    void Serve(int asking, RequestWord word)
+    // building of the flag counts one more good on the way, in the fill byte of the good's kind (RuleTables.FillCounterOf), the byte
+    // the good is counted back from where it is lost (ReleaseRequest, Removal) and the byte its delivery counts in (the carrier's handover).
+    void Serve(int asking, RequestWord word, Good good)
     {
         var request = flags[asking].RequestOf(word);
         flags[asking]
             .SetRequest(word, request with { Rank = (request.Rank & 1) != 0 ? (byte)(request.Rank >> 1) : (byte)0 });
-        if (buildings?.OfFlag(asking) is { } building)
+        var counter = movement.Tables.FillCounterOf(good);
+        if (counter != FillCounter.None && buildings?.OfFlag(asking) is { } building)
         {
-            building.SetFill(word.Counter(), building.FillOf(word.Counter()) + 1);
+            building.SetFill(counter, building.FillOf(counter) + 1);
         }
     }
 

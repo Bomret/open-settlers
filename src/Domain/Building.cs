@@ -48,6 +48,15 @@ public sealed class Building(BuildingType type, int x, int y, int flag, bool con
     /// <summary>Whether the building was taken down: it burns until its countdown ends (<see cref="BurnLeft"/>).</summary>
     public bool IsDemolishing { get; set; }
 
+    /// <summary>The status bit the miller sets while he grinds and clears with the flour (bit 4 of byte 5, <c>0x4338d0</c>, <c>0x433a0d</c>).</summary>
+    public bool Grinding
+    {
+        get => (OtherStatus & GrindingBit) != 0;
+        set => OtherStatus = value ? OtherStatus | GrindingBit : OtherStatus & ~GrindingBit;
+    }
+
+    const int GrindingBit = 0x10;
+
     /// <summary>The status bits with no recovered meaning (bits 0, 1, 3, and 4 of byte 5), kept so the exporters stay lossless.</summary>
     public int OtherStatus { get; set; }
 

@@ -142,7 +142,7 @@ The nine tools are the nine of the manual's list (hammer, saw, hatchet, shovel, 
 and the two workers with two tools are the manual's iron worker (hammer and saw, the type 0x13) and blacksmith (hammer and pliers, the
 type 0x14). The names of the goods 9 and 11 to 26 rest on those chains, the manual, and the sprites; the program names none of them.
 
-A good counts into the low byte of a building's fill (byte 8) unless it is 7 or from 9 on but not 13 (`Good.FillsHigh`), so the
+A good counts into the byte of a building's fill that the table `0x462d6d` names (`RuleTables.FillCounterOf`, [Milling](milling.md#the-fill-byte-of-a-food-good)), so the
 food goods 1 to 6 count into byte 8, the byte the pig farm's and the mill's handlers read as held (high nibble) and on the way (low
 nibble).
 
@@ -167,5 +167,5 @@ at `0x44fcfe` the scaffold's: 186, 177, 184, 177, 187, and 183. A good on a flag
   the art of `tools/open-settlers-art.py`. The other goods 7 to 26 have `NameTable` entries only.
 - `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar.
   The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) through `NameTable.GoodName`.
-- **Stand-in:** the six types' workers run no work cycle yet: a settler who takes a food job enters the building and stands. The job
-  slices add the cycles.
+- **Stand-in:** the workers of the fisher, farm, pig farm, butcher, and baker run no work cycle yet: a settler who takes one of those jobs enters the building and stands. The
+  mill's miller works ([Milling](milling.md)); the job slices add the other cycles.
