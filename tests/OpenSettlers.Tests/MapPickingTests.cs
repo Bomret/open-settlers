@@ -320,7 +320,7 @@ public sealed class MapPickingTests
 
         var problem = Aim(camera, 4, 10, 10, out _);
 
-        StringAssert.Contains(problem, "under the button bar");
+        StringAssert.Contains(problem, "under the seed bar");
     }
 
     // A flag's box of 16 by 19 pixels stands on its node: its left edge 2 west of the node, its top 19 above it.
