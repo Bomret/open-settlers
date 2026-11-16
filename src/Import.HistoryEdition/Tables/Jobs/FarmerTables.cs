@@ -15,7 +15,11 @@ namespace OpenSettlers.Import.HistoryEdition;
     "looks-for-field",
     "0x433b35 draws nodes of the spiral until a ripe field or a free meadow node comes up; docs/rules/farming.md"
 )]
-[StateName(0x22, "tends-field", "0x433a3a waits on the node, then sows it or harvests the field; docs/rules/farming.md")]
+[StateName(
+    0x22,
+    "tends-field",
+    "0x433a3a waits on the node, then sows it or harvests the field; docs/rules/farming.md"
+)]
 sealed class FarmerTables : JobTables<Farmer>
 {
     /// <inheritdoc />

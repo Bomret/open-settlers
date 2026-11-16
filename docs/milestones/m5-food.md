@@ -22,10 +22,13 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
   the classes of all goods: [Food buildings](../rules/food-buildings.md). The names of the two grain-fed chains, of the goods 9 and 11
   to 26, are inferred: [which evidence settles each](../rules/food-buildings.md#which-chain-is-which). known
 - The original has no well: [Food buildings](../rules/food-buildings.md#the-well). known
+- The farmer's work cycle (the search at `0x433b35`, the sowing and harvest at `0x433a3a`, the arrival at `0x438391`), the fields' codes
+  (`0x69` to `0x6f`, `0x79` to `0x7e`), their growth and decay in the object pass (the table entries 22 to 28 and 38 to 43, and the decay
+  counter at `+0x28c`), and the farm's removal: [Farming](../rules/farming.md). known
 
 ## Open questions
 
 - Is good 25 the sword and good 26 the shield, or the reverse? [Food buildings](../rules/food-buildings.md#the-goods) names them in that
   order from the sprite of good 25; no routine read puts or asks either, and a layout cannot lay good 26 on a flag.
-- The work cycle of each food job: the fisher's walk to the water (`0x433f71`, `0x438232`), the farm's fields (`0x433b35`,
-  `0x438391`), and the indoor jobs' states `0x23` to `0x26`.
+- The work cycle of each food job: the fisher's walk to the water (`0x433f71`, `0x438232`) and the indoor jobs' states `0x23` to
+  `0x26`. The farm's fields are known ([Farming](../rules/farming.md)).

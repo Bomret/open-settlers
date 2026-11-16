@@ -179,6 +179,35 @@ public sealed class LayoutApplyTests
     }
 
     [TestMethod]
+    public void AFarmEntryStandsAJoblessSettlerInsideAsTheFarmerInTheSearchForAField()
+    {
+        var layout = Read(Castle + Flag + Road + Hut.Replace("woodcutter", "farm"));
+        var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
+        sizes[BuildingType.Farm.Code] = 2;
+        var workers = TestProgram.MadeWorkers();
+        workers[BuildingType.Farm.Code] = new WorkerRequest { Job = new Farmer(), Tool = Good.None };
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[MapObject.Flag.Code] = 3;
+        var game = GameFactory.Create(
+            new RuleTables(
+                classes,
+                TestProgram.MadeStartStock(),
+                buildingSizes: sizes,
+                workers: workers,
+                jobData: TestProgram.MadeJobData()
+            ),
+            layout.BuildMap()
+        );
+
+        Assert.IsNull(layout.Apply(game));
+
+        var worker = game.Settlers.Single(settler => settler.Job == new Farmer());
+        Assert.IsInstanceOfType<Door>(worker.Activity, "he stands in the doorway of his farm");
+        Assert.AreEqual((13, 10), (worker.X, worker.Y));
+        Assert.IsTrue(game.Buildings.Single(building => building.Type == BuildingType.Farm).WorkerInside);
+    }
+
+    [TestMethod]
     public void ALargeFinishedBuildingTakesTheObjectCode3()
     {
         var layout = Read(Castle + """ "buildings": [{"type": "sawmill", "x": 13, "y": 10}] """);

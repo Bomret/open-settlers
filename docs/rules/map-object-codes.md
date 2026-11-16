@@ -132,13 +132,13 @@ The table gives what the sprite shows in either case, so a later rule can name i
 | 102 (`0x66`) | 0 | broad-leaved tree falling, stages 1 to 5 | none | `felled-tree` | the cut writes 0x62 to 0x66 for codes 8 to 15 ([Woodcutting](woodcutting.md)) |
 | 103 (`0x67`) | 1 | small sapling (103 smaller) | none | `sapling` | class 1; the forester's planting `0x4389bf` puts it down and the object pass `0x4290d5` grows it into the trees `0x10` to `0x17` ([Forestry](forestry.md)) |
 | 104 (`0x68`) | 1 | small sapling (103 smaller) | none | `sapling` | class 1; the forester's planting `0x4389bf` puts it down and the object pass `0x42910f` grows it into the trees 8 to `0xf` ([Forestry](forestry.md)) |
-| 105 (`0x69`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | unnamed | class 2; sprite only; no handler ported |
-| 106 (`0x6a`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | unnamed | class 2; sprite only; no handler ported |
-| 107 (`0x6b`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | unnamed | class 2; sprite only; no handler ported |
-| 108 (`0x6c`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | unnamed | class 2; sprite only; no handler ported |
-| 109 (`0x6d`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | unnamed | class 2; sprite only; no handler ported |
-| 110 (`0x6e`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | unnamed | class 2; sprite only; no handler ported |
-| 111 (`0x6f`) | 0 | harvested field | none | unnamed | class 0; sprite only |
+| 105 (`0x69`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | `field` | class 2; sown by the farmer, grown in the object pass; [Farming](farming.md) |
+| 106 (`0x6a`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | `field` | class 2; sown by the farmer, grown in the object pass; [Farming](farming.md) |
+| 107 (`0x6b`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | `field` | class 2; sown by the farmer, grown in the object pass; [Farming](farming.md) |
+| 108 (`0x6c`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | `field` | class 2; sown by the farmer, grown in the object pass; [Farming](farming.md) |
+| 109 (`0x6d`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | `field` | class 2; sown by the farmer, grown in the object pass; [Farming](farming.md) |
+| 110 (`0x6e`) | 2 | field, green (105 to 107) to ripe yellow (108 to 110) | none | `field` | class 2; sown by the farmer, grown in the object pass; [Farming](farming.md) |
+| 111 (`0x6f`) | 0 | harvested field | none | `harvested-field` | class 0; left by the harvest of the last ripe stage, cleared by the object pass; [Farming](farming.md) |
 | 112 (`0x70`) | 0 | sign on a post: yellow (112, 113), red (114, 115), black (116, 117), white (118, 119), blank (120); the odd code of each pair smaller | none | unnamed | class 0; sprite only; meaning not recovered |
 | 113 (`0x71`) | 0 | sign on a post: yellow (112, 113), red (114, 115), black (116, 117), white (118, 119), blank (120); the odd code of each pair smaller | none | unnamed | class 0; sprite only; meaning not recovered |
 | 114 (`0x72`) | 0 | sign on a post: yellow (112, 113), red (114, 115), black (116, 117), white (118, 119), blank (120); the odd code of each pair smaller | none | unnamed | class 0; sprite only; meaning not recovered |
@@ -148,12 +148,12 @@ The table gives what the sprite shows in either case, so a later rule can name i
 | 118 (`0x76`) | 0 | sign on a post: yellow (112, 113), red (114, 115), black (116, 117), white (118, 119), blank (120); the odd code of each pair smaller | none | unnamed | class 0; sprite only; meaning not recovered |
 | 119 (`0x77`) | 0 | sign on a post: yellow (112, 113), red (114, 115), black (116, 117), white (118, 119), blank (120); the odd code of each pair smaller | none | unnamed | class 0; sprite only; meaning not recovered |
 | 120 (`0x78`) | 0 | sign on a post: yellow (112, 113), red (114, 115), black (116, 117), white (118, 119), blank (120); the odd code of each pair smaller | none | unnamed | class 0; sprite only; meaning not recovered |
-| 121 (`0x79`) | 2 | ripe field | none | unnamed | class 2; sprite only |
-| 122 (`0x7a`) | 2 | ripe field | none | unnamed | class 2; sprite only |
-| 123 (`0x7b`) | 2 | ripe field | none | unnamed | class 2; sprite only |
-| 124 (`0x7c`) | 2 | ripe field | none | unnamed | class 2; sprite only |
-| 125 (`0x7d`) | 2 | ripe field | none | unnamed | class 2; sprite only |
-| 126 (`0x7e`) | 2 | ripe field | none | unnamed | class 2; sprite only |
+| 121 (`0x79`) | 2 | ripe field | none | `ripe-field` | class 2; harvested by the farmer, decays in the object pass; [Farming](farming.md) |
+| 122 (`0x7a`) | 2 | ripe field | none | `ripe-field` | class 2; harvested by the farmer, decays in the object pass; [Farming](farming.md) |
+| 123 (`0x7b`) | 2 | ripe field | none | `ripe-field` | class 2; harvested by the farmer, decays in the object pass; [Farming](farming.md) |
+| 124 (`0x7c`) | 2 | ripe field | none | `ripe-field` | class 2; harvested by the farmer, decays in the object pass; [Farming](farming.md) |
+| 125 (`0x7d`) | 2 | ripe field | none | `ripe-field` | class 2; harvested by the farmer, decays in the object pass; [Farming](farming.md) |
+| 126 (`0x7e`) | 2 | ripe field | none | `ripe-field` | class 2; harvested by the farmer, decays in the object pass; [Farming](farming.md) |
 | 127 (`0x7f`) | 255 | none (empty entry) | none | unnamed | class 255; no pass |
 
 ## Open leads

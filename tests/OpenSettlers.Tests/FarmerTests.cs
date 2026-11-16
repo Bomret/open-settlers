@@ -228,7 +228,9 @@ public sealed class FarmerTests
 
             if (line.TryGetValue("g", out var goods))
             {
-                var bytes = string.Concat(game.Flags[HutFlag].Places.Select(place => FlagEncoder.GoodByte(place).ToString("X2")));
+                var bytes = string.Concat(
+                    game.Flags[HutFlag].Places.Select(place => FlagEncoder.GoodByte(place).ToString("X2"))
+                );
                 Assert.AreEqual(goods.Split('/')[1], bytes, $"{name}: the goods on the farm's flag after pass {pass}");
             }
 

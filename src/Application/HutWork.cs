@@ -552,7 +552,8 @@ public sealed class HutWork(
                 at.Object = field;
             }
             else if (
-                at.Object.Code is >= MapObject.FirstDecayingCode and < MapObject.EndDecayingCode && _objectDecay == 0
+                at.Object.Code is >= MapObject.FirstDecayingCode and < MapObject.EndDecayingCode
+                && _objectDecay == 0
             )
             {
                 at.Object = MapObject.None;
