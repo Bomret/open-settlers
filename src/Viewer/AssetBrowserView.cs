@@ -187,7 +187,7 @@ public partial class AssetBrowserView : Control
         AddChild(view);
         if (script is not null)
         {
-            AddChild(new PlayDriver(view, script, folder!));
+            AddChild(new PlayDriver(view, script, folder!, args.Minimized));
         }
     }
 

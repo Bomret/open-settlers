@@ -59,6 +59,8 @@ public enum GraphicsSourceName
 /// <c>--stock &lt;0..40&gt;</c> sets the start stock level of the human player (<see cref="Stock"/>) and belongs to
 /// <c>--game-view</c> without a layout only; a value that is no integer from 0 to 40, a repeat, or another mode is a bad argument.
 /// Two different mode flags with <c>--stock</c> give only the mode problem.
+/// <c>--minimized</c> takes no value and minimizes the window of a play run (<see cref="Minimized"/>); without
+/// <c>--play</c>, or repeated, it is a bad argument.
 /// </para>
 /// </summary>
 public sealed class LaunchArgs
@@ -98,6 +100,9 @@ public sealed class LaunchArgs
 
     /// <summary>The flag that gives the start stock level of the human player in the game view.</summary>
     public const string StockFlag = "--stock";
+
+    /// <summary>The flag that minimizes the window of a play run.</summary>
+    public const string MinimizedFlag = "--minimized";
 
     /// <summary>The highest start stock level the free-game screen's bar sets.</summary>
     const int MaxStock = 40;
@@ -141,6 +146,9 @@ public sealed class LaunchArgs
     /// <summary>The play script path as given; null when no valid play flag was given.</summary>
     public string? Play { get; init; }
 
+    /// <summary>Whether the play run minimizes its window (<see cref="MinimizedFlag"/>); false without the flag.</summary>
+    public bool Minimized { get; init; }
+
     /// <summary>One line per bad argument; empty when the arguments are good.</summary>
     public IReadOnlyList<string> Problems { get; init; } = [];
 
@@ -170,6 +178,7 @@ public sealed class LaunchArgs
         var graphicsGiven = false;
         int? stock = null;
         var stockGiven = false;
+        var minimized = false;
         for (var i = 0; i < args.Length; i++)
         {
             var flag = args[i];
@@ -310,6 +319,15 @@ public sealed class LaunchArgs
                     mode = LaunchMode.Browser;
                 }
             }
+            else if (flag == MinimizedFlag)
+            {
+                if (minimized)
+                {
+                    problems.Add($"repeated {MinimizedFlag}");
+                }
+
+                minimized = true;
+            }
             else if (flag.StartsWith("--"))
             {
                 problems.Add($"unknown flag {flag}");
@@ -378,6 +396,11 @@ public sealed class LaunchArgs
             problems.Add($"{PlayFlag} needs {MapFlag} or {GameViewFlag}");
         }
 
+        if (minimized && !playGiven)
+        {
+            problems.Add($"{MinimizedFlag} needs {PlayFlag}");
+        }
+
         if (playGiven && !movieMaker)
         {
             problems.Add($"{PlayFlag} needs Movie Maker: start with --write-movie and --fixed-fps");
@@ -397,6 +420,7 @@ public sealed class LaunchArgs
             Size = size,
             Graphics = graphics,
             Stock = stock,
+            Minimized = minimized,
             Problems = problems,
         };
     }

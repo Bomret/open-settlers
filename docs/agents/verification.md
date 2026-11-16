@@ -128,7 +128,7 @@ situation and takes named screenshots and dumps, then run it under Movie Maker t
 wrapper, from the repository root, with `SIEDLER_DIR` set:
 
 ```sh
-sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--graphics <source>] --fps <fps>
+sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--graphics <source>] --fps <fps> [--fresh] [--repro]
 ```
 
 Without `--game-view` the wrapper runs the map view. `--game-view` runs the game view on `--seed` and `--size`.
@@ -156,7 +156,7 @@ failed `expect` or a problem in the script.
 - Each call appends one tab-separated line of 13 fields to `play-out/runs.log`. The fields are the UTC time, the
   input hash, `HEAD`, `clean` or `dirty` (an untracked file counts), the stem, `mode=<map|game-view>`,
   `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `graphics=<source>` (`history-edition` without the flag), `exit=<status>`, and `run`,
-  `reused`, or `build` (a failed build). A line proves a run at a tip when its `HEAD` equals the tip and it reads
+  `reused`, `build` (a failed build), or a `repro-` outcome (Repro mode below). A line proves a run at a tip when its `HEAD` equals the tip and it reads
   `clean`.
 - Calls for one stem run one at a time. A second call waits on the lock directory `play-out/.lock-<stem>`, says so
   once on stderr, then hashes its inputs and reuses what the first stored. Other stems run in parallel.
@@ -192,6 +192,41 @@ than the whole frame: it keeps the tiles within `radius` steps of the tile (defa
 for the tallest object sprite, enlarged by the whole factor `scale` (default 1). The tile is placed as
 `click-tile` places it and fails with its messages; a crop is clipped to the canvas, and one over 16384 pixels
 on a side once enlarged fails the step. README.md's "Run a play script" lists every step. The named-thing steps (`name`, `mark`, `expect <alias>.<field>`, `expect-event`, `expect-gone`, `events`) check one thing's fields and events in the game view; `play/named-woodcutter.play` shows them on `layouts/woodcutter.jsonc`.
+
+### Repro mode
+
+Two fresh play runs of one commit with the same arguments write the same frames, shots, and dumps. This holds
+whether the Godot window stays visible or is covered or minimized while the run records. The play driver forces each
+frame's draw for this. `PlayDriver`'s class summary states the rule.
+
+Platform-layer finding, Godot 4.7.2 on macOS, the only host checked: when the window cannot draw, Godot skips the
+frame's draw (`main/main.cpp:5081`). Movie Maker still writes a frame from the last drawn viewport texture
+(`main/main.cpp:5151`). A `shot` reads that same texture.
+
+`--repro` checks the rule on a script:
+
+```sh
+sh tools/play-run.sh head-on-pass --layout layouts/head-on-pass.jsonc --fps 10 --repro
+```
+
+- It holds the stem's lock across both runs and builds once. It runs Godot twice with the same arguments. The second
+  run, the hidden run, adds the launch flag `--minimized`.
+- It neither reads nor writes `play-out/.cache`, and `--fresh` beside it changes nothing. A repeated `--repro` exits 2.
+- `play-out/<stem>/` holds the visible run's output afterwards. `play-out/.repro/<stem>/hidden/` holds the hidden
+  run's output. A stem starts with no dot, so no stem's output or lock names that folder.
+- A signal (INT, TERM, HUP) during the hidden run puts the visible run's output back in `play-out/<stem>/`. It then
+  exits 130.
+- It compares the exit statuses. It also compares every file of the two folders, in byte order of the file name:
+  frames, `frame.wav`, shots, dumps, lists, and events.
+- Exit 0 is a match. Exit 5 is no match. It names the first difference: the two exit statuses, a file one run lacks,
+  or a file whose bytes differ.
+- A hidden run whose window could draw on every frame prints the line `WARN play run: the window was never hidden`.
+  When the hidden run prints that whole line, repro mode reports that the window was never hidden and exits 5. The
+  runs compared nothing.
+- A failed build exits 3 and runs nothing. A run that exits with neither 0 nor 1 ends repro mode with that status and
+  reports no comparison.
+- It logs one line to `play-out/runs.log`. Its last field is `repro-match`, `repro-differ`, `repro-never-hidden`,
+  `repro-build`, or `repro-run` (a run that exited with neither 0 nor 1).
 
 ### Layouts: reach a moment without clicks
 
