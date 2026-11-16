@@ -19,4 +19,14 @@ public sealed class BuildingSitePlacementTests
             (_, _) => [CommandKind.PlaceBuilding],
             line => false
         );
+
+    // The six food types: the farm, fisher, and pig farm in one game, and the baker, mill, and butcher (large) each at the farm's node.
+    // The refusals of a size are the evaluator's (the same for every type of the size), pinned by building-sites.txt.
+    [TestMethod]
+    [DataRow("food-farm-fisher-pig-farm")]
+    [DataRow("food-baker")]
+    [DataRow("food-mill")]
+    [DataRow("food-butcher")]
+    public void AFoodSiteHoldsTheBytesTheOriginalWrites(string scenario) =>
+        RemovalTests.Replay("food-sites.txt", scenario, (_, _) => [CommandKind.PlaceBuilding], line => false);
 }
