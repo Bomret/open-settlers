@@ -211,7 +211,7 @@ def sapling(variant):
 
 
 def field(stage):
-    """A field of the farmer, 24 by 14: rows of green shoots growing taller with the stage (0 to 5), of ripe yellow ears (6 to 11), or of
+    """A field of the farmer, 24 by 14: rows of green shoots growing taller with the stage (0 to 5), of ripe ears that darken with each stage (6 to 11), or of
     stubble (12, the harvested field)."""
     c = Canvas(24, 14)
     for row in range(3):
@@ -222,7 +222,8 @@ def field(stage):
             elif stage < 6:
                 c.rect(x, y + 3 - stage // 2, 2, 1 + stage // 2, shade(LEAF, 10 * stage))
             else:
-                c.rect(x, y, 2, 4, (225, 195, 70) if stage < 11 else (200, 165, 50))
+                age = stage - 6
+                c.rect(x, y, 2, 4, (225 - 5 * age, 195 - 6 * age, 70 - 4 * age))
     c.outline(INK)
     return c, (-12, -9)
 

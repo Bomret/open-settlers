@@ -92,8 +92,11 @@ public readonly record struct MapObject
     /// <summary>The object code of a field just ripe, the first of the ripe codes 0x79 to 0x7e.</summary>
     public const int RipeFieldCode = 0x79;
 
+    /// <summary>The object code of the last ripe field, which the object pass makes the harvested field (<c>0x429184</c>).</summary>
+    public const int LastRipeFieldCode = 0x7e;
+
     /// <summary>The object code after the last ripe field.</summary>
-    public const int EndRipeFieldCode = 0x7f;
+    public const int EndRipeFieldCode = LastRipeFieldCode + 1;
 
     /// <summary>The first object code the object pass clears while its decay counter is 0 (<c>0x42918f</c>): the signs 0x70 to 0x78.</summary>
     public const int FirstDecayingCode = 0x70;
@@ -142,9 +145,9 @@ public readonly record struct MapObject
     public MapObject? AfterObjectPass =>
         Code switch
         {
-            >= SownFieldCode and < GrownFieldCode or (>= RipeFieldCode and < 0x7e) => new() { Code = (byte)(Code + 1) },
+            >= SownFieldCode and < GrownFieldCode or (>= RipeFieldCode and < LastRipeFieldCode) => new() { Code = (byte)(Code + 1) },
             GrownFieldCode => new() { Code = RipeFieldCode },
-            0x7e => new() { Code = HarvestedFieldCode },
+            LastRipeFieldCode => new() { Code = HarvestedFieldCode },
             HarvestedFieldCode => None,
             _ => null,
         };
