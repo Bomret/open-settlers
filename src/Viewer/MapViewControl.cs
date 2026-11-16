@@ -278,7 +278,7 @@ public partial class MapViewControl(
         bar.AddChild(_ticks);
         _logs = new Label { Visible = _gameView };
         bar.AddChild(_logs);
-        // The game-view buttons stand in one column at the right edge of the canvas, so the bar keeps its width for the
+        // The game-view buttons stand in one column right of the canvas, so the bar keeps its width for the
         // seed, the message, and the readouts.
         var row = new HBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
         var buttons = new VBoxContainer { Visible = _gameView };
