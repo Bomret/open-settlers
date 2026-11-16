@@ -47,6 +47,12 @@ public static class EventType
     /// <summary>The forester's planting; the other thing is the sapling, named by its node.</summary>
     public const string PlantSapling = "plant-sapling";
 
+    /// <summary>The farmer's search for a node to sow or a ripe field.</summary>
+    public const string SearchField = "search-field";
+
+    /// <summary>The farmer's sowing or harvest; the other thing is the field, named by its node.</summary>
+    public const string TendField = "tend-field";
+
     /// <summary>The woodcutter's step from the hut onto its flag.</summary>
     public const string StepOut = "step-out";
 
@@ -277,6 +283,8 @@ public static class EventType
         Handout,
         SearchSpot,
         PlantSapling,
+        SearchField,
+        TendField,
         Builds,
         Digs,
         Levelled,

@@ -210,6 +210,23 @@ def sapling(variant):
     return c, (-5, -15)
 
 
+def field(stage):
+    """A field of the farmer, 24 by 14: rows of green shoots growing taller with the stage (0 to 5), of ripe yellow ears (6 to 11), or of
+    stubble (12, the harvested field)."""
+    c = Canvas(24, 14)
+    for row in range(3):
+        for column in range(5):
+            x, y = 2 + column * 4 + (row % 2) * 2, 4 + row * 4
+            if stage == 12:
+                c.rect(x, y + 2, 1, 2, (150, 125, 70))
+            elif stage < 6:
+                c.rect(x, y + 3 - stage // 2, 2, 1 + stage // 2, shade(LEAF, 10 * stage))
+            else:
+                c.rect(x, y, 2, 4, (225, 195, 70) if stage < 11 else (200, 165, 50))
+    c.outline(INK)
+    return c, (-12, -9)
+
+
 def falling(step, second):
     """A cut tree leaning over: step 1 to 5 of its fall, leaning further each step."""
     c = Canvas(40, 30)
@@ -490,8 +507,10 @@ JOBS = {
     "forester": (90, 160, 80),
     "digger": (120, 90, 50),
     "sawmiller": (200, 160, 90),
+    "farmer": (210, 190, 80),
 }
 STONE = (185, 185, 190)
+GRAIN = (225, 195, 70)
 KINDS = ("walks", "carries", "cuts", "door", "hands-over", "waits")
 
 
@@ -555,7 +574,7 @@ def main():
     add("object/flag", "object/flag.png", flag())
     # Map objects by code (docs/rules/map-objects.md): trees 8 to 23, palms 24 to 27 and plants 28 to 31 (drawn as
     # bushes), boulders 32 to 71 and 80 to 82, stone heaps 72 to 79, the stump 83 (0x53), plants 84 to 92, falling trees
-    # 93 to 102 (0x5d to 0x66), saplings 103 and 104 (0x67, 0x68), and litter from 105. Codes of one kind that look alike
+    # 93 to 102 (0x5d to 0x66), saplings 103 and 104 (0x67, 0x68), fields 105 to 111 and 121 to 126 (0x69 to 0x6f, 0x79 to 0x7e), and litter in the rest. Codes of one kind that look alike
     # share a file and so an image.
     for code in range(8, 128):
         key = f"object/{code}"
@@ -576,6 +595,12 @@ def main():
             add(key, f"object/fall-{int(second)}-{step}.png", falling(step, second))
         elif code in (103, 104):
             add(key, f"object/sapling-{code - 103}.png", sapling(code - 103))
+        elif code < 111:
+            add(key, f"object/field-{code - 105}.png", field(code - 105))
+        elif code == 111:
+            add(key, "object/field-harvested.png", field(12))
+        elif 121 <= code < 127:
+            add(key, f"object/field-{code - 115}.png", field(code - 115))
         else:
             add(key, f"object/litter-{code % 4}.png", litter(code))
     add("building/castle", "building/castle.png", castle())
@@ -599,7 +624,7 @@ def main():
         add(f"marker/{kind}", f"marker/{kind}.png", marker(kind))
     for job, color in JOBS.items():
         for kind in KINDS:
-            load = STONE if job == "stonecutter" else WOOD
+            load = STONE if job == "stonecutter" else GRAIN if job == "farmer" else WOOD
             add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind, load))
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)

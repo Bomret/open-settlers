@@ -84,7 +84,7 @@
 //                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The SET field writes an object code into
 //                            a node's object byte before a pass (bit 7 of the byte kept): each SET is PASS,X,Y,CODE with the
 //                            code in decimal, as a stone heap's stage is set for the stonecutter's scenarios
-//                            (docs/rules/stonecutting.md). A building of type 17 (the sawmill) is a large building: its node takes
+//                            (docs/rules/stonecutting.md). A building of type 17 (the sawmill) or 12 (the farm) is a large building: its node takes
 //                            the object code 3 and its item the pointer to its flag at +0xe that a built site leaves (0x43ef82),
 //                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). The lines also list the castle's item
 //                            (c=) where it changed, and the start lines the castle's item and the transport priorities
@@ -1106,6 +1106,10 @@ public class EmulateMapStart extends GhidraScript {
     // The sawmill's building type, a large building (size table 0x42d307).
     private static final int SAWMILL = 17;
 
+    // The farm's building type, a large building (size table 0x42d307): its node takes the object code 3, which the farmer's search for a
+    // node to sow reads on the six nodes around a candidate (0x433b35).
+    private static final int FARM = 0xc;
+
     // What a placed building holds beyond the small building's: the object code at the node (2 for a small building, 3 for a large one,
     // its top bit kept) and, for the sawmill, the flag pointer a building holds at +0xe once its site is built (0x43ef82), through which
     // the sawmill's handler (0x42da0b) keeps its log request's rank.
@@ -1113,7 +1117,7 @@ public class EmulateMapStart extends GhidraScript {
         if (type == SAWMILL) {
             putInt(item + 0xe, flag);
         }
-        emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL ? 3 : 2))});
+        emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL || type == FARM ? 3 : 2))});
     }
 
     /** Draws one road as road does, silently: a start flag and its directions; returns whether it was built. */

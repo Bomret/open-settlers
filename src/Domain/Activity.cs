@@ -399,6 +399,32 @@ public sealed record Plants : Activity
     public override bool IsDrawn => true;
 }
 
+/// <summary>State 33 (0x21): the farmer inside his farm looks for a node to sow or a ripe field (<c>0x433b35</c>).</summary>
+public sealed record LooksForField : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x21;
+}
+
+/// <summary>State 34 (0x22): the farmer stands on a node and sows it or harvests the field on it (<c>0x433a3a</c>).</summary>
+public sealed record TendsField : Activity
+{
+    /// <summary>The steps of the way back to the farm's flag, east and south (bytes 11 and 12).</summary>
+    public required Vector Back { get; init; }
+
+    /// <summary>Whether he harvests a ripe field (byte 13 is 1) and not sows (byte 13 is 0).</summary>
+    public required bool Harvests { get; init; }
+
+    /// <summary>The memory the free walk to the node left (byte 15).</summary>
+    public required int Memory { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x22;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
+}
+
 /// <summary>State 21: the stonecutter inside his hut looks for a stone heap.</summary>
 public sealed record LooksForStone : Activity
 {

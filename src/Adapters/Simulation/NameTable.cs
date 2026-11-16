@@ -175,6 +175,26 @@ public sealed class NameTable(RuleTables tables)
             "sapling",
             "the planting 0x4389bf puts 0x67 or 0x68 on the node, and the object pass grows each into a tree of the codes 0x10 to 0x17 or 8 to 0xf (0x4290d5, 0x42910f); docs/rules/forestry.md"
         );
+        Add(
+            CodeKind.Object,
+            MapObject.SownFieldCode,
+            MapObject.GrownFieldCode + 1,
+            "field",
+            "the sowing 0x433b0e puts 0x69 on the node, and the object pass takes each code one up to 0x6e and then to the ripe 0x79 (0x429146, 0x429151); the farmer harvests 0x6e (0x4383cd); class 2; docs/rules/farming.md"
+        );
+        AddOne(
+            CodeKind.Object,
+            MapObject.HarvestedFieldCode,
+            "harvested-field",
+            "the harvest 0x433aa0 leaves 0x6f after the last ripe code, and the object pass clears it (0x429184); class 0; docs/rules/farming.md"
+        );
+        Add(
+            CodeKind.Object,
+            MapObject.RipeFieldCode,
+            MapObject.EndRipeFieldCode,
+            "ripe-field",
+            "the object pass takes 0x6e to 0x79 and each ripe code one up to 0x7e (0x429151, 0x429165), which the farmer harvests (0x4383d3); class 2; docs/rules/farming.md"
+        );
         AddOne(CodeKind.State, 1, "waits-in-castle", StateEvidence);
         AddOne(CodeKind.State, 2, "walks", StateEvidence);
         AddOne(CodeKind.State, 3, "walks-along-road", StateEvidence);
