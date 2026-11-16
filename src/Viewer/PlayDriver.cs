@@ -16,6 +16,17 @@ namespace OpenSettlers.Viewer;
 /// <see cref="WindowSize"/>, so frames and <see cref="Zoom.Fit"/> do not depend on the display. A minimized run
 /// (<c>--minimized</c>, the hidden run of the wrapper's repro mode) minimizes the window before its first frame and keeps
 /// the content size; when the window could draw on every frame, it prints <see cref="NeverHiddenLine"/> at the end.
+/// <para>
+/// Every frame of the run is drawn, whatever the window's visibility. Platform-layer finding (Godot 4.7.2, checked on
+/// macOS only): when the display server reports that the window cannot draw (hidden, minimized, or covered), the main
+/// loop skips the frame's draw (<c>main/main.cpp:5081</c>), while Movie Maker still writes a frame on every iteration
+/// (<c>main/main.cpp:5151</c>) from the last drawn viewport texture, and a shot reads that same stale texture. So each
+/// frame the driver schedules a zero-second, process-always <see cref="SceneTreeTimer"/>; the tree runs timers after the
+/// frame's last deferred-call flush and before Movie Maker takes the frame, and its callback forces the draw
+/// (<see cref="RenderingServer.ForceDraw"/> with a frame step of 0) when <see cref="DisplayServer.WindowCanDraw"/> is
+/// false. A frame the window can draw is drawn by Godot alone, as without the driver. The frame step of 0 holds a
+/// shader's <c>TIME</c> still on a forced draw; no shader of the viewer reads it.
+/// </para>
 /// </summary>
 public partial class PlayDriver : Node
 {
@@ -40,6 +51,7 @@ public partial class PlayDriver : Node
     readonly HeldKeys _held = new();
     readonly bool _minimized;
     bool _hidden;
+    ulong? _drawScheduled;
 
     /// <summary>
     /// The driver of a run of <c>script</c> on the view; shots go to <c>outputFolder</c>. <c>minimized</c> minimizes the
@@ -68,12 +80,16 @@ public partial class PlayDriver : Node
 
         // Keyboard steps act whatever had the focus at start, such as the seed field.
         GetViewport().GuiReleaseFocus();
+        // The frame the driver enters may draw before its first _Process.
+        ScheduleDraw();
     }
 
     /// <inheritdoc/>
     public override void _Process(double delta)
     {
         _hidden |= !DisplayServer.WindowCanDraw();
+        // Scheduled before the run can finish, so the last frame before Quit is drawn too.
+        ScheduleDraw();
         KeepHeld();
         _run.Advance(delta);
         if (!_run.Finished)
@@ -93,6 +109,27 @@ public partial class PlayDriver : Node
 
         GetTree().Quit(_run.Problems.Count == 0 ? 0 : PlayRun.FailedExitCode);
         SetProcess(false);
+    }
+
+    // One timer per frame: it fires in the frame it was made in and is gone after it.
+    void ScheduleDraw()
+    {
+        var frame = Engine.GetProcessFrames();
+        if (_drawScheduled == frame)
+        {
+            return;
+        }
+
+        _drawScheduled = frame;
+        GetTree().CreateTimer(0, processAlways: true).Timeout += DrawIfHidden;
+    }
+
+    static void DrawIfHidden()
+    {
+        if (!DisplayServer.WindowCanDraw())
+        {
+            RenderingServer.ForceDraw(false, 0);
+        }
     }
 
     string? RunInput(PlayStep step)
