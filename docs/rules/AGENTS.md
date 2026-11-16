@@ -136,7 +136,6 @@ When the dump is missing, build it before you investigate.
   delivery counts into the site.
 - [Digging](digging.md): how a large building site asks for a digger and how he levels the site's ground.
 - [Forestry](forestry.md): the forester's work cycle and how a sapling grows into a tree.
-- [Fishing](fishing.md): the fisher's work cycle and how a cast takes a fish from a lake detail.
 - [Stonecutting](stonecutting.md): the stonecutter's work cycle and how a stone heap leaves the map.
 - [Sawmilling](sawmilling.md): the sawmiller's work cycle and how a sawmill turns logs into planks.
 - [Removal](removal.md): what taking down a flag, a road, or a building does.

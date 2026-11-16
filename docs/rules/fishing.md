@@ -14,6 +14,8 @@ The engine runs the same commands. It matches these values in two games (`tests/
 
 The first game (`fisher-lake`) runs 3000 passes. The fisher finds a node, casts seven times at a lake detail of 1, and catches a fish at the seventh. The detail falls to 0. He lays the fish on the flag at pass 1928, and the fish reaches the castle at pass 2875, so the castle's count of fish is 1. The second game (`fisher-full-flag`) lays eight logs on the flag before the fish comes. The fish is lost, and nothing else changes.
 
+The third game (`fisher-dry-lake`) is the first game with a lake detail of 0 written into the nodes x 20 to 30, y 0 to 12 before the pass 940 (the verb's `ld@PASS,X0,Y0,X1,Y1,VALUE` field of the SET list). The fisher casts ten times from pass 954 on, and no cast draws, catches, or lowers a detail. The generator's words stay the same through the casts, and he turns back at pass 2076 with nothing.
+
 The removal of his building matches the original in three games (`removals.txt`: `fisher-inside`, `fisher-fishing`, `fisher-with-fish`).
 
 ## The building and the job

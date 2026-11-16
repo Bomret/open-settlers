@@ -18,6 +18,9 @@ namespace OpenSettlers.Tests;
 // (rng=). The engine runs the same commands and must hold the same values at each listed pass, and no object byte or lake detail
 // may change at any other pass.
 //
+// A scenario's last command field may write a lake detail into a rectangle of nodes before a pass (ld@PASS,X0,Y0,X1,Y1,VALUE), as the
+// verb's SET list does; the ld= line of that pass lists the write.
+//
 // **Inferred input:** the verb writes the marks 0x42 on the building's node and 0x10 on its flag's node by hand, as the
 // woodcutter's scenarios have them (WoodcutterTests).
 [TestClass]
@@ -91,10 +94,12 @@ public sealed class FisherTests
         out Map map,
         out int hutFlag,
         out int passes,
-        out List<(int Pass, int Place, int Good)> puts
+        out List<(int Pass, int Place, int Good)> puts,
+        out List<int[]> lakes
     )
     {
-        // goods:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PASS,PLACE,GOOD;...]]]
+        // goods:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PASS,PLACE,GOOD;...[:ld@PASS,X0,Y0,X1,Y1,VALUE]]]]
+        // The last field writes a lake detail into every node of a rectangle before a pass (the verb's SET of that form).
         var parts = command.Split(':');
         MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
         var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
@@ -121,6 +126,15 @@ public sealed class FisherTests
                     .Split(';')
                     .Select(text => text.Split(',').Select(int.Parse).ToArray())
                     .Select(put => (put[0], put[1], put[2]))
+                : [],
+        ];
+
+        lakes =
+        [
+            .. parts.Length > 13
+                ? parts[13]
+                    .Split(';')
+                    .Select(text => text["ld@".Length..].Split(',').Select(int.Parse).ToArray())
                 : [],
         ];
 
@@ -179,7 +193,7 @@ public sealed class FisherTests
     public void TheFisherWorksAsTheOriginalsPassesRunIt(string name)
     {
         var scenario = Load().Single(candidate => candidate.Name == name);
-        var game = Start(scenario.Command, out var map, out var hutFlag, out var passes, out var puts);
+        var game = Start(scenario.Command, out var map, out var hutFlag, out var passes, out var puts, out var lakes);
         var width = map.Size.Width;
         var last = scenario.Lines.Max(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
         var fish = 0;
@@ -191,6 +205,17 @@ public sealed class FisherTests
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
                 game.Goods.LayGood(hutFlag, put.Place, put.Good);
+            }
+
+            foreach (var lake in lakes.Where(lake => lake[0] == pass))
+            {
+                for (var y = lake[2]; y <= lake[4]; y++)
+                {
+                    for (var x = lake[1]; x <= lake[3]; x++)
+                    {
+                        map.At(x, y).LakeDetail = lake[5];
+                    }
+                }
             }
 
             game.Tick();

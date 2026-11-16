@@ -85,7 +85,8 @@
 //                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The SET field writes an object code into
 //                            a node's object byte before a pass (bit 7 of the byte kept): each SET is PASS,X,Y,CODE with the
 //                            code in decimal, as a stone heap's stage is set for the stonecutter's scenarios
-//                            (docs/rules/stonecutting.md). A building of type 17 (the sawmill) is a large building: its node takes
+//                            (docs/rules/stonecutting.md). A SET of the form ld@PASS,X0,Y0,X1,Y1,VALUE writes a lake detail
+//                            (byte 0 of record B) into every node of the rectangle before a pass (docs/rules/fishing.md). A building of type 17 (the sawmill) is a large building: its node takes
 //                            the object code 3 and its item the pointer to its flag at +0xe that a built site leaves (0x43ef82),
 //                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). The lines also list the castle's item
 //                            (c=) where it changed, and the start lines the castle's item and the transport priorities
@@ -1287,6 +1288,22 @@ public class EmulateMapStart extends GhidraScript {
             for (String text : sets) {
                 // An object code written by hand into a node's object byte before a pass (bit 7 of the byte kept): PASS,X,Y,CODE
                 // with the code in decimal (a stone heap's code is 72 to 79).
+                if (text.startsWith("ld@")) {
+                    // Lake details written by hand into a rectangle of nodes before a pass: ld@PASS,X0,Y0,X1,Y1,VALUE (corners
+                    // included, the value in decimal), as the fisher's scenario of a lake with no fish has them. The byte is the
+                    // link of a flag or building node, so the rectangle must hold none.
+                    String[] lake = text.substring(3).split(",");
+                    if (pass != Integer.parseInt(lake[0])) {
+                        continue;
+                    }
+                    for (int ly = Integer.parseInt(lake[2]); ly <= Integer.parseInt(lake[4]); ly++) {
+                        for (int lx = Integer.parseInt(lake[1]); lx <= Integer.parseInt(lake[3]); lx++) {
+                            long detail = layerA + layerB + ((((long) ly << bits) + lx) * 4);
+                            emu.writeMemory(toAddr(detail), new byte[] {(byte) Integer.parseInt(lake[5])});
+                        }
+                    }
+                    continue;
+                }
                 String[] set = text.split(",");
                 if (pass != Integer.parseInt(set[0])) {
                     continue;
