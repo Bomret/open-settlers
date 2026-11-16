@@ -295,6 +295,49 @@ public sealed class MidiFileTests
     }
 
     // Source: music-file.md, "The file format": four bytes are the most a delta time takes.
+    // Source: music-file.md, "In the engine": a tempo event holds 3 bytes, and another length is unreadable (the engine's choice).
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(2)]
+    [DataRow(4)]
+    [DataRow(5)]
+    public void ATempoEventOfALengthOtherThanThreeIsUnreadable(int length)
+    {
+        byte[] tempo = [0, 0xFF, 0x51, (byte)length, .. new byte[length]];
+
+        var error = Assert.ThrowsExactly<InvalidDataException>(() =>
+            MidiFile.Read(File(Header(1, 2, 96), Track(EndOfTrack), Track(tempo, EndOfTrack)))
+        );
+
+        StringAssert.Contains(error.Message, "track 1");
+        StringAssert.Contains(error.Message, $"length {length}");
+    }
+
+    // The chunk check comes first: a tempo event whose length runs past its chunk is cut short, whatever its length.
+    [TestMethod]
+    public void ATempoEventWhoseDataRunsPastItsChunkIsCutShort()
+    {
+        var error = Assert.ThrowsExactly<InvalidDataException>(() =>
+            MidiFile.Read(File(Header(0, 1, 96), Track(Ev(0, 0xFF, 0x51, 4, 1, 2))))
+        );
+
+        StringAssert.Contains(error.Message, "cut short");
+    }
+
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(4)]
+    public void AMetaEventOfAnotherTypeReadsAtAnyLength(int length)
+    {
+        byte[] meta = [0, 0xFF, 0x58, (byte)length, .. new byte[length]];
+
+        var music = MidiFile.Read(File(Header(0, 1, 96), Track(meta, EndOfTrack)));
+
+        Assert.AreEqual(2, music.Tracks[0].EventCount);
+    }
+
     [TestMethod]
     public void AVariableLengthNumberOfFourBytesIsReadable()
     {

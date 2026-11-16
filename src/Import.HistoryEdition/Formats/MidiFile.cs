@@ -41,7 +41,8 @@ static class MidiFile
 
     /// <summary>
     /// Reads a music file. Throws <see cref="InvalidDataException"/>, with the reason in the message, for a bad
-    /// header or track tag, a header length other than 6, a chunk past the end of the file, a missing track, or an event cut short.
+    /// header or track tag, a header length other than 6, a chunk past the end of the file, a missing track, an event cut short,
+    /// or a tempo event whose length is not 3.
     /// </summary>
     public static MusicFile Read(byte[] bytes)
     {
@@ -141,8 +142,13 @@ static class MidiFile
                 var type = bytes[position++];
                 var length = ReadVariable(bytes, ref position, end, track);
                 Need(position, length, end, track);
-                if (type == 0x51 && length == 3)
+                if (type == 0x51)
                 {
+                    if (length != 3)
+                    {
+                        throw new InvalidDataException($"track {track} has a tempo event of length {length}, not 3");
+                    }
+
                     tempos.Add((tick, ReadInt(bytes, position, 3)));
                 }
 
