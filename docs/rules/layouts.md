@@ -35,10 +35,10 @@ takes one of job 21, which is a jobless settler, and makes him a carrier, as `0x
 
 | Entry | Key | Routine that writes it |
 | --- | --- | --- |
-| Woodcutter, stonecutter, or forester in his building | the `buildings` entry of the type (below), the building's node | the entering of `Settler_Walk` (`0x4398ea`), which hands over to `Settler_PassDoor` (`0x43c96b`, then `0x43cf15`) |
+| Woodcutter, stonecutter, forester, or miller in his building | the `buildings` entry of the type (below), the building's node | the entering of `Settler_Walk` (`0x4398ea`), which hands over to `Settler_PassDoor` (`0x43c96b`, then `0x43cf15`) |
 | Carrier waiting on his road | `{"job": "carrier", "state": "waiting-on-road", "x", "y", "direction"}`, a flag of the road and the direction the road leaves it | `Carrier_WaitAtEnd` (`0x43bc52`), after the road's entering in `Settler_Walk` (`0x4398ea`) |
 
-The woodcutter is in state 4 at the hut's node, with the step through the door just taken. The timer holds the step's
+The miller is a settler without a job that the castle makes the miller (the request names no tool), walked in as the forester is; his start routine `0x43d33d` then asks for grain ([Milling](milling.md)). The woodcutter is in state 4 at the hut's node, with the step through the door just taken. The timer holds the step's
 time. The target holds the part of it that the door's speed leaves. The stamp holds the clock, and the mode is 255.
 
 The carrier is in state `0x42` on the node of the road next to the flag at the road's far end. The far end is the end
@@ -87,7 +87,7 @@ of that type on the node, with its flag south-east of it. The entry state is the
 leaves: `0x41f2d2` places it through `Building_Place` (`0x449a63`, at `0x41f2f6`) and finishes it ([Build
 sites](build-sites.md#the-building-types)). The placement and its refusals are those of the building site, since the evaluator
 judges the node the same way, and a node that holds no site for the type's size, or no room for the flag, fails the load with
-the entry named. A type the placement does not build (the storehouse, the castle, any other name; the food types are in [Food buildings](food-buildings.md), and a food building's worker is not placed by a layout yet) and an entry with no type fail the
+the entry named. A type the placement does not build (the storehouse, the castle, any other name; the food types are in [Food buildings](food-buildings.md), and a mill's miller is placed as below, the other food buildings' workers not yet) and an entry with no type fail the
 read, naming the types. **Stand-ins:** the finished building has no status bit 4 and no pointer in its item, and its progress
 word is 0, so the digests of the M3 layouts stay (`Game.PlaceFinishedBuilding`). Its object code is 2 for the three small
 types, following the size-table caller `0x42cf9d` of `Building_Place`, where the mission start writes 2 only for type `0xb` and
@@ -105,7 +105,7 @@ contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut, 
 ## In the engine
 
 `Layout.Placement.cs` reads the `buildings`, `settlers`, and `goods` keys. `Game.PlaceFinishedBuilding` stands the finished building
-(`BuildingPlacement.PlaceFinished`). For a building of a job whose rules module declares `CanStandInHut` (a woodcutter, a stonecutter, or a forester; `WalkBehavior.StandsWorker`) the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
+(`BuildingPlacement.PlaceFinished`). For a building of a job whose rules module declares `CanStandInHut` (a woodcutter, a stonecutter, a forester, or a miller; `WalkBehavior.StandsWorker`) the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
 the settler in his hut.
 `CarrierBehavior.PlaceCarrierOnRoad` and `GoodsTransport.PlaceGood` are the carrier's and the good's. A settler for a road that the layout has not built before it fails the
 load with the entry named. A good on a flag that does not stand fails it the same way.

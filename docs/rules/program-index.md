@@ -1220,7 +1220,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4332a8` | `Butcher_Work` | inferred | Simulation |
 | `0x4333c1` | `PigFarmer_Work` | inferred | Simulation |
 | `0x433694` | `BakerWorker_Work` | inferred | Simulation |
-| `0x43386b` | `MillWorker_Work` | inferred | Simulation |
+| `0x43386b` | `MillWorker_Work` | confirmed | Simulation |
 | `0x434946` | `Settler_ClaimNode` | confirmed | Simulation |
 | `0x4350f8` | — | unknown | Simulation |
 | `0x4353ef` | `Settler_SearchFlag` | confirmed | Simulation |
@@ -1296,6 +1296,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43fcd8` | `Stonecutter_FigureWord` | confirmed | Simulation |
 | `0x43fd88` | `Forester_FigureWord` | confirmed | Simulation |
 | `0x43fed8` | `Settler_FigureJob11` | confirmed | Views, panels, and drawing |
+| `0x4400d3` | `MillWorker_FigureWord` | confirmed | Simulation |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
 | `0x440c24` | `View_HandleClick` | inferred | Roads |
 | `0x440d23` | `View_RunButtonAction` | inferred | Roads |
@@ -1532,7 +1533,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 383 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 324 confirmed, 73 inferred, 51 unknown.
+Coverage: the index names 384 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 326 confirmed, 72 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:

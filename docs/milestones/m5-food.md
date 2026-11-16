@@ -21,6 +21,7 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
   log, plank, boat, stone; 11 to 15: iron ore, iron, coal, gold ore, gold; 16 to 24: the nine tools; 25 and 26: sword, shield) with
   the classes of all goods: [Food buildings](../rules/food-buildings.md). The names of the two grain-fed chains, of the goods 9 and 11
   to 26, are inferred: [which evidence settles each](../rules/food-buildings.md#which-chain-is-which). known
+- The mill's work cycle (state `0x23`, `0x43386b`), its request for grain and its rank (`0x43d33d`, `0x42e2a0`, the player word at `+0x15a`), the miller's figure (`0x4400d3`), the castle's hand-out of grain, and the fill byte of a food good: [Milling](../rules/milling.md). known
 - The original has no well: [Food buildings](../rules/food-buildings.md#the-well). known
 
 ## Open questions
@@ -28,4 +29,4 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
 - Is good 25 the sword and good 26 the shield, or the reverse? [Food buildings](../rules/food-buildings.md#the-goods) names them in that
   order from the sprite of good 25; no routine read puts or asks either, and a layout cannot lay good 26 on a flag.
 - The work cycle of each food job: the fisher's walk to the water (`0x433f71`, `0x438232`), the farm's fields (`0x433b35`,
-  `0x438391`), and the indoor jobs' states `0x23` to `0x26`.
+  `0x438391`), and the indoor jobs' states `0x24` to `0x26` (the mill's `0x23` is known).
