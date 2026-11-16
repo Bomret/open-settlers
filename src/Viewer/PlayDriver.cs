@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Godot;
+using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 
 namespace OpenSettlers.Viewer;
@@ -12,10 +13,20 @@ namespace OpenSettlers.Viewer;
 /// delta is the fixed time step, so the run is on simulated time. Every input step reaches the view as a Godot input
 /// event through the view's own handlers (<c>OnCanvasInput</c>, <c>_UnhandledKeyInput</c>, the polled
 /// <see cref="Input"/> state), at canvas coordinates; nothing calls the camera or the zoom. The node has the lowest
-/// process priority, so a frame's steps run before the view's own step reads them. The run pins the window to
-/// <see cref="WindowSize"/>, so frames and <see cref="Zoom.Fit"/> do not depend on the display. A minimized run
+/// process priority, so a frame's steps run before the view's own step reads them. The window starts at
+/// <see cref="WindowSize"/> (project.godot sets it under Movie Maker, and <see cref="Launch.LaunchArgs"/> refuses a play run whose
+/// window starts at another size), and the driver pins the content size to it, so frames and <see cref="Zoom.Fit"/> do not
+/// depend on the display. A minimized run
 /// (<c>--minimized</c>, the hidden run of the wrapper's repro mode) minimizes the window before its first frame and keeps
 /// the content size; when the window could draw on every frame, it prints <see cref="NeverHiddenLine"/> at the end.
+/// <para>
+/// Platform-layer finding (Godot 4.7.2, checked on macOS only): Movie Maker fixes its frame size when the movie begins,
+/// from the project settings <c>display/window/size/viewport_width</c> and <c>viewport_height</c>, which
+/// <c>window_width_override</c> and <c>window_height_override</c> replace under the <c>canvas_items</c> stretch mode
+/// (<c>main/main.cpp:4841</c>), and scales every frame to that size (<c>servers/movie_writer/movie_writer.cpp:231</c>).
+/// The window's size, the <c>--resolution</c> flag included, never sets it, so project.godot gives the play run's size
+/// through the <c>.movie</c> feature-tagged overrides.
+/// </para>
 /// <para>
 /// Every frame of the run is drawn, whatever the window's visibility. Platform-layer finding (Godot 4.7.2, checked on
 /// macOS only): when the display server reports that the window cannot draw (hidden, minimized, or covered), the main
@@ -31,7 +42,7 @@ namespace OpenSettlers.Viewer;
 public partial class PlayDriver : Node
 {
     /// <summary>The window and content size of a play run.</summary>
-    public static readonly Vector2I WindowSize = new(1280, 720);
+    public static readonly Vector2I WindowSize = new(LaunchArgs.PlayWindowWidth, LaunchArgs.PlayWindowHeight);
 
     /// <summary>
     /// The line a minimized run prints when its window could draw on every frame. tools/play-run.sh matches the
