@@ -42,9 +42,9 @@ public sealed class SettlerFiguresTests
         Cutting = 0x0e80,
     };
 
-    // The adds of the handler of the settler of the type 1 hut (0x43fed8), with made-up rows: 0x11 for the walk, 0x12 for the
-    // way back with a load, 0x13 and 0x14 for a figure byte from 0x80.
-    static readonly HutFigureAdds HutAdds = new()
+    // The adds of the fisher's handler (0x43fed8), with made-up rows: 0x11 for the walk, 0x12 for the way back with a load, 0x13 and
+    // 0x14 for a figure byte from 0x80.
+    static readonly FisherFigureAdds HutAdds = new()
     {
         Walk = 0x1100,
         Carrying = 0x1200,
@@ -139,7 +139,7 @@ public sealed class SettlerFiguresTests
         byte[] sequences,
         short[]? carried = null,
         FigureAdds woodcutter = default,
-        HutFigureAdds typeOneHut = default,
+        FisherFigureAdds typeOneHut = default,
         (short[] Phases, short[] Figures, sbyte[] Offsets)? idle = null,
         BuilderFigureAdds builder = default,
         FigureAdds stonecutter = default,
@@ -165,7 +165,7 @@ public sealed class SettlerFiguresTests
                     (new Builder(), builder),
                     (new Forester(), forester),
                     (new Sawmiller(), sawmiller),
-                    (new TypeOneHut(), typeOneHut),
+                    (new Fisher(), typeOneHut),
                 ]
             ),
             sequences
@@ -439,10 +439,10 @@ public sealed class SettlerFiguresTests
         CollectionAssert.AreEqual(new[] { 2353, 3003 }, draws.Select(d => d.Entry).ToArray());
     }
 
-    // The handler of the settler of the type 1 hut (0x43fed8) adds, for a figure byte below 0x80, 0x2c00 or 0x2f00 on the way back
-    // with a load and, from 0x80, 0x2c80 or, where the heading (byte 14) is 1, 0x2d80; the rows here are made up.
+    // The fisher's handler (0x43fed8) adds, for a figure byte below 0x80, 0x2c00 or 0x2f00 on the way back with a fish and, from
+    // 0x80, 0x2c80 or, where byte 14 is 1 (a catch), 0x2d80; the rows here are made up.
     static Settler Hut(int frame, Activity? activity = null) =>
-        new(new TypeOneHut(), 0, 4, 3, 0, activity ?? ActivityOf(2)) { Frame = frame };
+        new(new Fisher(), 0, 4, 3, 0, activity ?? ActivityOf(2)) { Frame = frame };
 
     // The free walk back to the hut's flag, with the log in the woodcutter's hands or without it.
     static Activity WayBack(bool carrying) =>
@@ -455,26 +455,26 @@ public sealed class SettlerFiguresTests
             },
         };
 
-    // The woodcutter's cut at the step `count`.
-    static Activity Cut(int count) =>
-        new Cuts
+    // The fisher's cast, with a fish caught or not.
+    static Activity Cast(bool caught) =>
+        new Fishes
         {
             Back = new Vector(0, 0),
-            SecondVariant = false,
-            Count = count,
-            Memory = 0,
+            Turns = 1,
+            Caught = caught,
+            Casts = 1,
         };
 
     [TestMethod]
-    public void TheSettlerOfTheTypeOneHutIsDrawnInTheRowsOfHisHandler()
+    public void TheFisherIsDrawnInTheRowsOfHisHandler()
     {
         var figures = Figures();
         var map = Map();
 
         var walk = figures.Draws(map, [Hut(7)], 0).Select(d => d.Entry).ToArray();
         var back = figures.Draws(map, [Hut(7, WayBack(true))], 0).Select(d => d.Entry).ToArray();
-        var high = figures.Draws(map, [Hut(8, Cut(0))], 0).Select(d => d.Entry).ToArray();
-        var highFacing = figures.Draws(map, [Hut(8, Cut(1))], 0).Select(d => d.Entry).ToArray();
+        var high = figures.Draws(map, [Hut(8, Cast(false))], 0).Select(d => d.Entry).ToArray();
+        var highFacing = figures.Draws(map, [Hut(8, Cast(true))], 0).Select(d => d.Entry).ToArray();
 
         // Figure byte 3 in the row 0x11 (base 600), in the row 0x12 (700) on the way back; byte 0x81 makes the word 0x1301 in the
         // row 0x13 (800), or 0x1401 in the row 0x14 (900), with the offset 1.

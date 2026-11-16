@@ -5,7 +5,7 @@ namespace OpenSettlers.Simulation;
 
 /// <summary>
 /// The states the workers who go out from a hut and come back to it share: the woodcutter's, the stonecutter's, the forester's, and the
-/// type 1 hut's settler (their rules modules hold what each does). The shared states are the door, the step out onto the hut's flag, the
+/// fisher's (their rules modules hold what each does). The shared states are the door, the step out onto the hut's flag, the
 /// free walk (the walk home's too), the entry into a hut, the search home, and the map's object pass (docs/rules/woodcutting.md). At the
 /// door a settler entering a storage goes first, then the start routine of the module of its job runs; at the end of a free walk the
 /// module's arrival runs; an event's cause is the layout's or the walk home's before the module's. A settler whose job has no module

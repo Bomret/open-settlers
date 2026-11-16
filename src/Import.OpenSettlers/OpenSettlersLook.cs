@@ -11,7 +11,7 @@ abstract class OpenSettlersLook
     /// <summary>The job the look is for.</summary>
     public abstract Job Job { get; }
 
-    /// <summary>The job's name in the manifest keys (<c>carrier</c>, <c>woodcutter</c>, <c>type-one-hut</c>).</summary>
+    /// <summary>The job's name in the manifest keys (<c>carrier</c>, <c>woodcutter</c>, <c>fisher</c>).</summary>
     public abstract string Key { get; }
 }
 

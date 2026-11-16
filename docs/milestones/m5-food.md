@@ -22,10 +22,11 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
   the classes of all goods: [Food buildings](../rules/food-buildings.md). The names of the two grain-fed chains, of the goods 9 and 11
   to 26, are inferred: [which evidence settles each](../rules/food-buildings.md#which-chain-is-which). known
 - The original has no well: [Food buildings](../rules/food-buildings.md#the-well). known
+- The fisher's work cycle: the search for a node at a shore (`0x433f71`), the arrival (`0x438232`), the cast (`0x433e05`), the catch from the
+  lake details, and the fish on the flag: [Fishing](../rules/fishing.md). known
 
 ## Open questions
 
 - Is good 25 the sword and good 26 the shield, or the reverse? [Food buildings](../rules/food-buildings.md#the-goods) names them in that
   order from the sprite of good 25; no routine read puts or asks either, and a layout cannot lay good 26 on a flag.
-- The work cycle of each food job: the fisher's walk to the water (`0x433f71`, `0x438232`), the farm's fields (`0x433b35`,
-  `0x438391`), and the indoor jobs' states `0x23` to `0x26`.
+- The work cycle of the farm's fields (`0x433b35`, `0x438391`) and of the indoor jobs' states `0x23` to `0x26`.

@@ -140,10 +140,9 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
-    public void TheTypeOneHutSettlerHasNoNameAndEveryOtherPortedJobHasOne()
+    public void EveryPortedJobHasAName()
     {
-        Assert.IsNull(NameTable.JobName(TypeOneHut.Number));
-        foreach (var number in new[] { 0, 2, 3, 4, 5, 6, 7, 8, 21 })
+        foreach (var number in new[] { 0, 2, 3, 4, 5, 6, 7, 8, 11, 21 })
         {
             Assert.IsNotNull(NameTable.JobName(number), $"job {number}");
         }
@@ -165,6 +164,7 @@ public sealed class NameTableTests
                 "sawmiller",
                 "stonecutter",
                 "forester",
+                "fisher",
                 "jobless",
             },
             jobs.Select(entry => entry.Name).ToArray()

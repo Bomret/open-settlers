@@ -194,7 +194,7 @@ draw record. `0x44fff3` reads it. The job does not index the tables. The constan
   It gets `0x1000` (`0x43fc0b`) where byte 13 is 0x80, byte 14 is 1, and the state is 0x10. That is the way back with the log
   ([Woodcutting](woodcutting.md#the-cut)). A figure byte from 0x80 gets `0x0e80` (`0x43fbe5`), so its word is `0x0f00` plus the
   byte less 0x80. That is the felling. The bytes 0x85 and 0x86 also play a sound (`0x44fe13`), which the engine leaves out.
-- Job 11, the settler of the type 1 hut (stub `0x43f79c`, handler `0x43fed8`): a figure byte below 0x80 gets `0x2c00`
+- Job 11, the fisher (stub `0x43f79c`, handler `0x43fed8`): a figure byte below 0x80 gets `0x2c00`
   (`0x43ff4b`, the walk). It gets `0x2f00` (`0x43ff40`) under the same test as the woodcutter's way back (byte 13 0x80,
   byte 14 1, state 0x10). A figure byte from 0x80 gets `0x2c80` (`0x43ff0f`). It gets `0x2d80` (`0x43ff1a`) where byte 14 is 1.
   The bytes 0x80, 0x87, 0x88, and 0x8f skip the sound request that the others make. The `job11` recording confirms the walk
@@ -242,7 +242,7 @@ A settler in any other state has no record:
 - a carrier that waits next to a flag (0x42),
 - a carrier told to go home (0x44, 0x45),
 - a settler that claims its node on its way home (0x1c),
-- a settler at work (the woodcutter's 0x12, the type 1 hut's 0x1f).
+- a settler at work (the woodcutter's 0x12, the fisher's 0x1f).
 
 The tile pass draws the carriers in 0x42 to 0x45 instead ([Carriers](carriers.md#drawing)).
 

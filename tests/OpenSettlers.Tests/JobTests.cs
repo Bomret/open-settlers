@@ -19,7 +19,7 @@ public sealed class JobTests
         (6, typeof(Sawmiller)),
         (7, typeof(Stonecutter)),
         (8, typeof(Forester)),
-        (11, typeof(TypeOneHut)),
+        (11, typeof(Fisher)),
         (21, typeof(Jobless)),
     ];
 
@@ -68,7 +68,7 @@ public sealed class JobTests
     {
         Assert.AreEqual(Job.Of(0), new Carrier());
         Assert.AreEqual(Job.Of(5), new Woodcutter());
-        Assert.AreEqual(Job.Of(11), new TypeOneHut());
+        Assert.AreEqual(Job.Of(11), new Fisher());
         Assert.AreEqual(Job.Of(21), new Jobless());
         Assert.AreEqual(Job.Of(24), new Knight(2));
         Assert.AreEqual(Job.Of(9).GetHashCode(), new UnportedJob(9).GetHashCode());

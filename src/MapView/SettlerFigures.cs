@@ -15,7 +15,7 @@ namespace OpenSettlers.MapView;
 /// that has no second figure for a job draws nothing for the third). A carrier that waits off its node is drawn by the tile
 /// pass (<c>0x44d77e</c>), after the settlers of its row, at its node lifted by 4 times its height.
 /// <b>Confirmed</b> by the draw runs of <c>tests/OpenSettlers.Tests/settler-draws.txt</c> for the carrier (with each good), the
-/// woodcutter, and the settler of the type 1 hut. A carrier that waits next to a flag (state 0x42), a carrier told to go home
+/// woodcutter, and the fisher (the settler of job 11). A carrier that waits next to a flag (state 0x42), a carrier told to go home
 /// (0x44, 0x45), a settler that claims its node (0x1c), and a settler at work (0x12, 0x1f) have no record.
 /// <b>Inferred:</b> every state the recordings hold no settler of.
 /// </summary>
@@ -34,8 +34,7 @@ public sealed class SettlerFigures(IWalkSteps steps, FigureTables figures)
     // (draw run, settler-draws.txt): a carrier that waits next to a flag (state 0x42) is not drawn at all: the carrier's figure
     // handler (0x43f8ae) returns at once for it. **Confirmed** the same way: a carrier whose road was taken down or joined and
     // that waits for its turn to go home (states 0x44 and 0x45, docs/rules/removal.md) is not drawn either, nor is a settler
-    // that claims its node (0x1c) on its way home, nor a settler at work (the woodcutter's 0x12, the state 0x1f of the settler
-    // of the type 1 hut). A carrier hands the good it carries over to the castle in state 0xe (docs/rules/goods.md);
+    // that claims its node (0x1c) on its way home, nor a settler at work (the woodcutter's 0x12, the fisher's state 0x1f). A carrier hands the good it carries over to the castle in state 0xe (docs/rules/goods.md);
     // **Confirmed** (draw run): it is drawn as one on its road is, with the good in its hands. A woodcutter that steps through
     // its door, walks free along its vector, or cuts is drawn with the frame and the timer it holds as a walking settler is
     // (docs/rules/woodcutting.md). A settler that searches for the nearest flag on its way home is drawn with the frame 0x52

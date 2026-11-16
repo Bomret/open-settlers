@@ -140,15 +140,12 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.StonecutterCarryingAddress, 0x1200);
         Add(ProgramTablesImporter.StonecutterStepBackAddress, 0x1200);
         Add(ProgramTablesImporter.StonecutterCuttingAddress, 0x1280);
-        var hutStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * TypeOneHut.Number;
-        Write(
-            hutStub,
-            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.TypeOneHutHandlerAddress - (hutStub + 5))]
-        );
-        Add(ProgramTablesImporter.TypeOneHutWalkAddress, 0x2c00);
-        Add(ProgramTablesImporter.TypeOneHutCarryingAddress, 0x2f00);
-        Add(ProgramTablesImporter.TypeOneHutHighAddress, 0x2c80);
-        Add(ProgramTablesImporter.TypeOneHutHighFacingAddress, 0x2d80);
+        var hutStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Fisher.Number;
+        Write(hutStub, [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.FisherHandlerAddress - (hutStub + 5))]);
+        Add(ProgramTablesImporter.FisherWalkAddress, 0x2c00);
+        Add(ProgramTablesImporter.FisherCarryingAddress, 0x2f00);
+        Add(ProgramTablesImporter.FisherHighAddress, 0x2c80);
+        Add(ProgramTablesImporter.FisherHighFacingAddress, 0x2d80);
         var builderStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Builder.Number;
         Write(
             builderStub,
@@ -1091,34 +1088,33 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
-    public void TheFigureWordsOfTheSettlerOfTheTypeOneHutAreTheImmediatesOfHisHandler()
+    public void TheFigureWordsOfTheFisherAreTheImmediatesOfHisHandler()
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(
-            new HutFigureAdds
+            new FisherFigureAdds
             {
                 Walk = 0x2c00,
                 Carrying = 0x2f00,
                 High = 0x2c80,
                 HighFacing = 0x2d80,
             },
-            tables.Get<HutFigureAdds>(new TypeOneHut())
+            tables.Get<FisherFigureAdds>(new Fisher())
         );
     }
 
     [TestMethod]
-    public void AStubOfTheTypeOneHutSettlerThatJumpsElsewhereIsRefused()
+    public void AStubOfTheFisherThatJumpsElsewhereIsRefused()
     {
         var exe = Executable(bytes =>
             bytes[
-                FileOffset(ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * TypeOneHut.Number)
-                    + 1
+                FileOffset(ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Fisher.Number) + 1
             ] ^= 1
         );
 
         var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
-        StringAssert.Contains(refusal.Message, "type 1 hut");
+        StringAssert.Contains(refusal.Message, "fisher");
     }
 
     [TestMethod]

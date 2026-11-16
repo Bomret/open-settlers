@@ -414,11 +414,11 @@ public readonly record struct SawmillerFigureAdds
 }
 
 /// <summary>
-/// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <see cref="Walk"/>
-/// (or <see cref="Carrying"/> on the way back with a load), for one from 0x80 <see cref="High"/>
-/// (<see cref="HighFacing"/> where the settler's heading, byte 14, is 1).
+/// What the fisher's figure handler (<c>0x43fed8</c>) adds to the figure byte: for a byte below 0x80 <see cref="Walk"/>
+/// (or <see cref="Carrying"/> on the way back with a fish), for one from 0x80 <see cref="High"/>
+/// (<see cref="HighFacing"/> once he has caught a fish, byte 14 is 1).
 /// </summary>
-public readonly record struct HutFigureAdds
+public readonly record struct FisherFigureAdds
 {
     /// <summary>The add for a figure byte below 0x80: the walk.</summary>
     public required ushort Walk { get; init; }

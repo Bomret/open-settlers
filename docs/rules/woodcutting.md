@@ -21,8 +21,8 @@ first felled tree gone from the map) and a hut with no tree in its reach for 250
 The handler of the building type 2 (`0x42d945`, entry 2 of the table at `0x42cd1d`) asks for a settler of job 5, as the handler of
 the type 1 (`0x42e0b8`) asks for job 11 ([Settlers](settlers.md#the-request)). Job 5's work is the one below: it looks for objects
 from 8 to 0x17, the animated ones the map generation calls trees (class 1 in the class table), so the type 2 is the woodcutter's hut
-and job 5 the woodcutter. The castle's 20 first settlers hold one of job 5, in slot 10. The type 1 is the hut of the settler of job 11,
-whose work (`0x433f71`, state 0x1f) looks for a node with no object and no road by the water: **likely** a fisherman's. An earlier
+and job 5 the woodcutter. The castle's 20 first settlers hold one of job 5, in slot 10. The type 1 is the building of the settler of job 11,
+the fisher, whose work (`0x433f71`, state 0x1f) looks for a node at a shore ([Fishing](fishing.md)). An earlier
 reading of [Settlers](settlers.md) took type 1 and job 11 for the woodcutter's; no run had named the hut. The hut's sprite is the
 object 0xa8, entry 1418 (`0x44e63b`); the type 1's is 0xa7, entry 1417 (`0x44e62b`).
 
@@ -173,8 +173,8 @@ read from the registers the decompile shows); an open lead.
 At the end of a free walk the module's `Arrive` runs. At each turn of the walk, before its steps, the module's `WalkTurn` runs.
 The cause of an event is the layout's or the walk home's. The module's `Cause` comes after them.
 `src/Application/WoodcutterRules.cs`, the rules module of the woodcutter (`JobRules<Woodcutter>`), holds `Start`, `SearchTree`, `Arrive`,
-and `Cut`. `MainPass` runs `HutWork.ObjectPass` once each pass, before the modules' `Pass` hooks. The stonecutter, forester, and type 1 hut have rules modules of their
-own (`StonecutterRules`, `ForesterRules`, `TypeOneHutRules`). A job with no module starts nothing and records as the settlers' rules.
+and `Cut`. `MainPass` runs `HutWork.ObjectPass` once each pass, before the modules' `Pass` hooks. The stonecutter, forester, and fisher have rules modules of their
+own (`StonecutterRules`, `ForesterRules`, `FisherRules`). A job with no module starts nothing and records as the settlers' rules.
 They are built from the settlers' movement, the tables, and a random generator port (`IRandomDraws`). The woodcutter, stonecutter, and
 forester modules declare `CanStandInHut`. A layout stands a worker only in their huts.
 `Flag.Places` holds the 8 places of a flag. `Woodcutter` is job 5, and `BuildingType.Woodcutter` is type 2.

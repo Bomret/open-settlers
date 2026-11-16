@@ -101,20 +101,20 @@ static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte below 0x80 (the walk).</summary>
     public const int ForesterWalkAddress = 0x43fdea;
 
-    /// <summary>The handler of the figure of the settler of the type 1 hut (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
-    public const int TypeOneHutHandlerAddress = 0x43fed8;
+    /// <summary>The handler of the figure of the fisher (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
+    public const int FisherHandlerAddress = 0x43fed8;
 
-    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where the heading is not 1.</summary>
-    public const int TypeOneHutHighAddress = 0x43ff0f;
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where byte 14 is not 1 (no catch yet).</summary>
+    public const int FisherHighAddress = 0x43ff0f;
 
-    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where the heading is 1.</summary>
-    public const int TypeOneHutHighFacingAddress = 0x43ff1a;
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where byte 14 is 1 (a fish caught).</summary>
+    public const int FisherHighFacingAddress = 0x43ff1a;
 
-    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the way back with a load (state 0x10, byte 13 0x80, byte 14 1).</summary>
-    public const int TypeOneHutCarryingAddress = 0x43ff40;
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the way back with a fish (state 0x10, byte 13 0x80, byte 14 1).</summary>
+    public const int FisherCarryingAddress = 0x43ff40;
 
     /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
-    public const int TypeOneHutWalkAddress = 0x43ff4b;
+    public const int FisherWalkAddress = 0x43ff4b;
 
     /// <summary>The handler of the builder's figure (<c>0x43faf4</c>, the target of the stub of job 3).</summary>
     public const int BuilderHandlerAddress = 0x43faf4;

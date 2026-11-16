@@ -13,7 +13,7 @@ public sealed class JobLooksTests
         new Carrier(),
         new Woodcutter(),
         new Stonecutter(),
-        new TypeOneHut(),
+        new Fisher(),
         new Builder(),
         new Forester(),
         new Digger(),
@@ -45,17 +45,7 @@ public sealed class JobLooksTests
 
         CollectionAssert.AreEquivalent(Drawn, looks.Select(look => look.Job).ToArray());
         CollectionAssert.AreEquivalent(
-            new[]
-            {
-                "carrier",
-                "woodcutter",
-                "stonecutter",
-                "type-one-hut",
-                "builder",
-                "forester",
-                "digger",
-                "sawmiller",
-            },
+            new[] { "carrier", "woodcutter", "stonecutter", "fisher", "builder", "forester", "digger", "sawmiller" },
             looks.Select(look => look.Key).ToArray()
         );
     }

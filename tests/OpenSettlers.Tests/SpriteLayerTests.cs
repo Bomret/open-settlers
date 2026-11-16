@@ -75,7 +75,7 @@ public sealed class SpriteLayerTests
                 Timer = (ushort)(step * 8),
             };
         var others =
-            from job in new Job[] { new Woodcutter(), new TypeOneHut() }
+            from job in new Job[] { new Woodcutter(), new Fisher() }
             from frame in Enumerable.Range(4, 0x79 - 4)
             from step in Enumerable.Range(0, 128)
             from activity in new Activity[] { walks, back }
