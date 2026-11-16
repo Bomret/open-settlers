@@ -1135,8 +1135,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x427133` | `Render_RedrawViewBase` | inferred | Views, panels, and drawing |
 | `0x427642` | `Terrain_DrawTiles` | confirmed | Graphics images |
 | `0x4278be` | `Terrain_DrawUpper` | confirmed | Graphics images |
-| `0x427a25` | `Terrain_DrawLower` | confirmed | Graphics images |
 | `0x4279d4` | `Render_TriangleVariantsUpper` | confirmed | Graphics images |
+| `0x427a25` | `Terrain_DrawLower` | confirmed | Graphics images |
 | `0x427b38` | `Render_TriangleVariantsLower` | confirmed | Graphics images |
 | `0x427b89` | `Render_TerrainTextures` | confirmed | Graphics images |
 | `0x427c09` | `Render_DrawRoadsAndBorders` | confirmed | Roads |
@@ -1495,7 +1495,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 363 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 308 confirmed, 69 inferred, 51 unknown.
+Coverage: the index names 365 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 310 confirmed, 69 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:
