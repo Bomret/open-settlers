@@ -79,6 +79,10 @@ public sealed class ProgramTablesTests
             ProgramTablesImporter.PlankRankAddress,
             [0x66, 0xb8, 0x34, 0x92, 0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x48, 0x01, 0x00, 0x00]
         );
+        Write(
+            ProgramTablesImporter.MillRankAddress,
+            [0x66, 0xb8, 0x56, 0x6d, 0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x5a, 0x01, 0x00, 0x00]
+        );
     }
 
     // The handlers that ask for a worker, made up: each loads a job into [edi] and a tool word into [edi+0x18]; the builder's asks for
@@ -178,6 +182,14 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.SawmillerWalkAddress, 0x1700);
         Add(ProgramTablesImporter.SawmillerCarryingAddress, 0x1780);
         Add(ProgramTablesImporter.SawmillerSawAddress, 0x1800);
+        var millerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Miller.Number;
+        Write(
+            millerStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.MillerHandlerAddress - (millerStub + 5))]
+        );
+        Add(ProgramTablesImporter.MillerWalkAddress, 0x1900);
+        Add(ProgramTablesImporter.MillerCarryingAddress, 0x1980);
+        Add(ProgramTablesImporter.MillerGrindAddress, 0x1a00);
     }
 
     static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -571,6 +583,22 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    public void TheMillRankStartIsTheHighByteOfTheWordThePlayerSetupStoresAtTheMillsOffset()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(0x6d, tables.MillRankBase);
+    }
+
+    [TestMethod]
+    public void APlayerSetupThatDoesNotStoreItsWordAtTheMillsOffsetIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.MillRankAddress) + 10] = 0x58);
+
+        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+    }
+
+    [TestMethod]
     public void TheJobAndToolEachBuildingAsksForAreReadFromItsHandler()
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
@@ -803,6 +831,43 @@ public sealed class ProgramTablesTests
             },
             TestProgram.Tables().Get<SawmillerFigureAdds>(new Sawmiller())
         );
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheMillersFigureAddsAndTheMillsRankStartOfTheInstallMatchTheProgram()
+    {
+        // The handler of the stub of job 15 (0x4400d3, read from the program's instructions): add word [edi+8], 0x4380 at 0x4400df for a
+        // figure byte from 0x80, 0x4500 at 0x4400fc for the state 5 that lays the flour down next (byte 15 is 0xd), and 0x4300 at 0x440107
+        // for the walk; the draw run of the recording (settler-draws.txt, miller) draws with them. The player setup 0x44579c stores
+        // 0x7fee at +0x15a, whose high byte the mill's handler shifts for the rank of its request for grain.
+        var tables = TestProgram.Tables();
+        Assert.AreEqual(
+            new MillerFigureAdds
+            {
+                Walk = 0x4300,
+                Carrying = 0x4500,
+                Grind = 0x4380,
+            },
+            tables.Get<MillerFigureAdds>(new Miller())
+        );
+        Assert.AreEqual(0x7f, tables.MillRankBase);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheFillByteOfEveryGoodWithAClassIsTheByteOfTheRequestWordThatAsksForIt()
+    {
+        // peek:462d6d:32 (the kind table) and peek:464117:64 (the class table): one rule counts a good on its way, back, and in.
+        var tables = TestProgram.Tables();
+        for (var code = 1; code < RuleTables.Goods; code++)
+        {
+            var good = new Good { Code = code };
+            var expected = tables.ClassOfGood(good) is { } asked
+                ? (asked.Word == RequestWord.First ? FillCounter.Low : FillCounter.High)
+                : FillCounter.None;
+            Assert.AreEqual(expected, tables.FillCounterOf(good), $"the fill byte of the good {code}");
+        }
     }
 
     [TestMethod]
