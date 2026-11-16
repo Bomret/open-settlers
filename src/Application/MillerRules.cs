@@ -46,13 +46,14 @@ public sealed class MillerRules(JobParts parts) : JobRules<Miller>(parts)
 
     /// <summary>
     /// The handler of the mill's type (<c>0x42e2a0</c>) after its request for a worker, in the turn of each building that is no site: with
-    /// the worker inside, the rank of the flag's request for grain is the player's start rank (<see cref="RuleTables.MillRankBase"/>)
-    /// shifted right by the goods the building holds, on site and on the way, and 0 where it holds eight or more. A building of another type
-    /// is left alone.
+    /// the worker inside, or where the request it just made found no worker (the failed request leaves the word at <c>[edi]</c> with bit 6
+    /// set, which the handler tests next), the rank of the flag's request for grain is the player's start rank
+    /// (<see cref="RuleTables.MillRankBase"/>) shifted right by the goods the building holds, on site and on the way, and 0 where it holds
+    /// eight or more. A building of another type is left alone.
     /// </summary>
     public override void Turn(Building mill)
     {
-        if (mill.Type != BuildingType.Mill || mill.Constructing || !mill.WorkerInside)
+        if (mill.Type != BuildingType.Mill || mill.Constructing || !(mill.WorkerInside || mill.RequestFailed))
         {
             return;
         }

@@ -139,4 +139,112 @@ public sealed class MillTests
         Assert.AreEqual(0, mill.FillLow, "no grain stays counted as on its way in the low byte");
         Assert.AreEqual(0, mill.FillHigh, "and none was counted back out of the high byte");
     }
+
+    [TestMethod]
+    public void WithNoGrainTheMillMakesNoFlourAndTheMillerWaits()
+    {
+        var (game, mill) = World();
+        var miller = MillerInside(game);
+        var flour = game.CastleStock.Count(Good.Flour);
+
+        ConstructionWorld.Run(game, 4000);
+
+        Assert.AreEqual(flour, game.CastleStock.Count(Good.Flour), "no flour without grain");
+        Assert.AreEqual(0, ((Grinds)miller.Activity).Phase, "he still waits for grain");
+        Assert.IsFalse(mill.Grinding);
+        Assert.AreEqual(0, mill.FillLow);
+    }
+
+    [TestMethod]
+    public void GrainInTheCastlesStockIsHandedOutToTheAskingMillAndGroundIntoFlourThatReachesTheCastle()
+    {
+        var (game, mill) = World(handsOutGoods: true, grainOrder: true);
+        while (game.CastleStock.Take(Good.Grain)) { }
+
+        game.CastleStock.Add(Good.Grain);
+        var flour = game.CastleStock.Count(Good.Flour);
+        MillerInside(game);
+
+        ConstructionWorld.Run(game, 14000);
+
+        Assert.AreEqual(0, game.CastleStock.Count(Good.Grain), "the castle handed its grain out");
+        Assert.AreEqual(
+            flour + 1,
+            game.CastleStock.Count(Good.Flour),
+            "the mill made one flour of it and the castle holds it"
+        );
+        Assert.AreEqual(0, mill.FillLow, "no grain stays counted on its way or on site");
+    }
+
+    [TestMethod]
+    public void WithNoGrainInTheStockTheCastleHandsNothingOutAndTheGameKeepsRunning()
+    {
+        var (game, mill) = World(handsOutGoods: true, grainOrder: true);
+        while (game.CastleStock.Take(Good.Grain)) { }
+
+        var miller = MillerInside(game);
+        ConstructionWorld.Run(game, 4000);
+
+        Assert.AreEqual(0, ((Grinds)miller.Activity).Phase, "the miller waits for grain");
+        Assert.AreEqual(0, mill.FillLow, "nothing was counted on its way");
+        Assert.AreEqual(
+            ConstructionTables.MillRankBase,
+            GrainRequest(game).Rank,
+            "the request keeps asking at the start rank"
+        );
+    }
+
+    // Lays a stone on every empty place of the mill's flag and returns how many it laid.
+    static int FillFlag(Game game)
+    {
+        var laid = 0;
+        for (var place = 0; place < game.Flags[MillFlag].Places.Count; place++)
+        {
+            if (game.Flags[MillFlag].Places[place].IsEmpty)
+            {
+                game.Goods.LayGood(MillFlag, place, Good.Stone.Code);
+                laid++;
+            }
+        }
+
+        return laid;
+    }
+
+    [TestMethod]
+    public void WhereTheFlagIsFullTheFlourWaitsInTheDoorAndIsLaidOnceAPlaceFreesWithoutLosingAGood()
+    {
+        var (game, _) = World();
+        var miller = MillerInside(game);
+        var stones = game.CastleStock.Count(Good.Stone);
+        var flour = game.CastleStock.Count(Good.Flour);
+        game.Goods.LayGood(CastleFlag, 0, Good.Grain.Code);
+        var laid = 0;
+        var tick = 0;
+        while (miller.Activity is not StepsOutWithGood && tick++ < 12000)
+        {
+            laid += FillFlag(game);
+            game.Tick();
+        }
+
+        Assert.IsInstanceOfType<StepsOutWithGood>(miller.Activity, "the flour is out of the mill");
+        Assert.AreEqual(0x52, miller.Frame, "the flag has no free place: he waits in the door");
+        Assert.IsTrue(
+            game.Flags[MillFlag].Places.All(place => place.Good == Good.Stone),
+            "no flour lies on the full flag"
+        );
+
+        for (var i = 0; i < 12000 && miller.Activity is StepsOutWithGood; i++)
+        {
+            game.Tick();
+        }
+
+        Assert.IsNotInstanceOfType<StepsOutWithGood>(miller.Activity, "a place freed and he stepped out");
+        ConstructionWorld.Run(game, 3000);
+        Assert.AreEqual(
+            laid,
+            game.CastleStock.Count(Good.Stone) - stones,
+            "every good laid on the flag reached the castle"
+        );
+        Assert.AreEqual(flour + 1, game.CastleStock.Count(Good.Flour), "and so did the flour");
+    }
 }

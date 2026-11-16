@@ -46,6 +46,9 @@
     <None Include="forester-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="saw-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="saw-removals.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="mill-walks.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="mill-removals.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="mill-materials.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="flag-goods.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="home-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />
