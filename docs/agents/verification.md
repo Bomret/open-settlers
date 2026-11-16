@@ -279,7 +279,7 @@ The entries follow, and the game applies them in the file's order:
 - `castle`: `{"x","y"}`.
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
-- `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, or sawmill (a
+- `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher (a
   woodcutter's, stonecutter's, or forester's with its worker inside).
 - `settlers`: a carrier waiting on a road.
 - `goods`: `{"x","y","place","good"}` on a flag.

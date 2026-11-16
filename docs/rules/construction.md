@@ -34,7 +34,7 @@ A site that holds its materials and has no builder inside does not progress. Not
 
 **Status:** confirmed for the search and the second way, emulated for both.
 
-`Building_RequestWorker` (`0x42be63`) takes the job and two tool words. The second tool word is 0 in every handler of the program. The search runs over the flags from the building's flag, as [Settlers](settlers.md#the-request) describes.
+`Building_RequestWorker` (`0x42be63`) takes the job and two tool words. The second tool word is 0 in every handler of the engine's types; only the handlers of the types 0x13 and 0x14 load one ([Food buildings](food-buildings.md#the-six-types)). The search runs over the flags from the building's flag, as [Settlers](settlers.md#the-request) describes.
 
 At the castle's flag, the request first takes the settler that the castle's list of waiting settlers holds for the job. That list is the word at `0x42` plus twice the job. The settler leaves the castle (state 15), the building takes bit 7 (a worker on the way), and the list loses him.
 
@@ -56,6 +56,12 @@ Each handler asks for one job and tool. `ProgramTablesImporter` reads them from 
 | Stonecutter's hut (type 4) | `0x42d994` | 7 | 23 (`0x2e`) |
 | Forester's hut (type 9) | `0x42d9d6` | 8 | none |
 | Sawmill (type 0x11) | `0x42da18` | 6 | 22 (`0x2c`) |
+| Fisher (type 1) | `0x42e0c5` | 11 | 18 (`0x24`) |
+| Farm (type 0xc) | `0x42e26b` | 14 | 20 (`0x28`) |
+| Baker (type 0xd) | `0x42e1c0` | 13 | 19 (`0x26`) |
+| Mill (type 0xe) | `0x42e107` | 12 | none |
+| Pig farm (type 0xf) | `0x42e2d2` | 15 | none |
+| Butcher (type 0x10) | `0x42e38b` | 16 | none |
 
 The castle's first settlers hold one builder (job 3), one woodcutter (job 5), one of job 6, and one of job 7. They hold none of job 8 and five without a job.
 

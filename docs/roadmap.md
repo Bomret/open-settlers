@@ -121,8 +121,8 @@ M4 adds construction: workers build buildings from materials.
 M5 adds the food chains.
 
 - **Runnable mode:** a game where a person builds the food buildings.
-- **Done when:** the fisher, the farm, the mill, the baker, the pig farm, the butcher, and the well
-  produce, and their goods reach storage. Checking the game needs an install.
+- **Done when:** the fisher, the farm, the mill, the baker, the pig farm, and the butcher produce, and
+  their goods reach storage. The original has no well ([Food buildings](rules/food-buildings.md#the-well)). Checking the game needs an install.
 - **Depends on:** M4.
 - **Investigate:** the production cycle of each food building and the transport priorities of goods. Scope: [M5 scope](milestones/m5-food.md).
 
