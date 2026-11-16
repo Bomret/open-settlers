@@ -111,7 +111,7 @@ public static class MapPicking
     /// its middle; of copies equally near, the first in that order. Null with the point in <paramref name="screenX"/>
     /// and <paramref name="screenY"/> when the click there picks the node; else the problem, with the point at 0: a
     /// node outside the map, a node with no copy on the view (<paramref name="barHeight"/> screen pixels above the view
-    /// are under the button bar, which the problem names), or a node drawn on the same point as another, which the
+    /// are under the seed bar, which the problem names), or a node drawn on the same point as another, which the
     /// pick takes instead. The point is rounded to single precision, as a click sends it.
     /// </summary>
     public static string? Aim(
@@ -204,7 +204,7 @@ public static class MapPicking
 
         if (best is not { } nearest)
         {
-            return underBar ? $"tile {column},{row} is under the button bar" : $"tile {column},{row} is not on screen";
+            return underBar ? $"tile {column},{row} is under the seed bar" : $"tile {column},{row} is not on screen";
         }
 
         // A click sends the point in single precision, so the pick is checked at that rounded point.
