@@ -17,7 +17,7 @@ public enum LaunchMode
     /// <summary>The map view: a generated map drawn from the install's terrain graphics.</summary>
     Map,
 
-    /// <summary>The game view: a game on a generated map that ticks at the original's normal speed.</summary>
+    /// <summary>The game view: a game on a generated map that starts at the original's normal speed; its Speed button raises the speed.</summary>
     GameView,
 
     /// <summary>Seed info: the headless run that prints the digests and counts of one seed and size.</summary>
