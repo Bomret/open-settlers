@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runs a play script under Movie Maker, from the repository root, and reuses the stored result when its inputs
 # are unchanged:
-#   sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh]
+#   sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh] [--repro]
 # The script is play/<stem>.play and the install is SIEDLER_DIR. Without --game-view the map view runs;
 # --game-view runs the game view with --seed and --size; --layout runs the game view on the layout file and
 # implies --game-view (a layout holds its own seed and size, so --layout with --seed or --size exits 2, and so
@@ -24,11 +24,19 @@
 # failed build starts no Godot, stores nothing, and exits 3. Build and Godot run through `mise exec`, which
 # supplies the pinned tools and $GODOT. PLAY_RUN_MISE replaces the mise binary (default mise), PLAY_RUN_GODOT
 # the Godot binary (default $GODOT from mise.toml), PLAY_RUN_DOTNET the dotnet binary (default dotnet).
+# --repro (once; --fresh beside it changes nothing) neither reads nor writes the cache: under the one lock it builds once,
+# runs Godot twice with the same arguments, the second time with the launch flag --minimized, and compares the runs.
+# play-out/<stem>/ keeps the visible run's output and play-out/.repro/<stem>/hidden/ the hidden run's, a path no stem
+# can name (a stem starts with no dot). Exit 0 is a match: both runs exit alike and write the same files with the
+# same bytes. Exit 5 is no match: the exit statuses differ, the hidden run printed that its window was never hidden,
+# or a file differs; the line names the first file in byte order of its name and whether a run lacks it or the
+# bytes differ. A failed build exits 3 and runs nothing; a run that exits neither 0 nor 1 ends repro mode with its
+# status and no comparison. The log line's last field is repro-<outcome>: match, differ, never-hidden, build, or run.
 set -u
 
 usage() {
   echo "play-run.sh: $1" >&2
-  echo "usage: sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh]" >&2
+  echo "usage: sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh] [--repro]" >&2
   exit 2
 }
 
@@ -43,6 +51,7 @@ seed=
 size=
 fps=
 fresh=
+repro=
 mode=map
 layout=
 graphics=
@@ -71,6 +80,11 @@ while [ $# -gt 0 ]; do
       ;;
     --fresh)
       fresh=1
+      shift
+      ;;
+    --repro)
+      [ -z "$repro" ] || usage "repeated --repro"
+      repro=1
       shift
       ;;
     *) usage "unknown argument: $1" ;;
@@ -217,9 +231,89 @@ out=play-out/$stem
 cache=play-out/.cache
 entry=$cache/$hash
 
+# Runs the play script under Godot with the arguments in $extra after it, writing into $out and the log into $log;
+# sets $status.
+play() {
+  set -- --path . --write-movie "$out/frame.png" --fixed-fps "$fps" -- --game "$SIEDLER_DIR"
+  if [ "$mode" = game-view ]; then set -- "$@" --game-view; else set -- "$@" --map; fi
+  [ -n "$layout" ] && set -- "$@" --layout "$layout"
+  [ -n "$seed" ] && set -- "$@" --seed "$seed"
+  [ -n "$size" ] && set -- "$@" --size "$size"
+  [ -n "$graphics" ] && set -- "$@" --graphics "$graphics"
+  godot "$@" --play "$script" $extra >"$log" 2>&1
+  status=$?
+}
+
+# Lists the files under folder $1, one relative path per line, in byte order.
+files() {
+  (cd "$1" && find . -type f | sed 's|^\./||' | sort)
+}
+
+# Compares the visible run's folder $1 with the hidden run's folder $2: prints the first difference and fails, or
+# succeeds when the folders hold the same files with the same bytes.
+same() {
+  { files "$1"; files "$2"; } | sort -u | while IFS= read -r f; do
+    if [ ! -f "$1/$f" ]; then
+      echo "play-run.sh: repro: $f: the visible run lacks it"
+    elif [ ! -f "$2/$f" ]; then
+      echo "play-run.sh: repro: $f: the hidden run lacks it"
+    elif ! cmp -s "$1/$f" "$2/$f"; then
+      echo "play-run.sh: repro: $f: the bytes differ"
+    else
+      continue
+    fi
+    exit 1
+  done
+}
+
 rm -rf "$out"
 mkdir -p "$out"
-if [ -z "$fresh" ] && [ -f "$entry/status" ]; then
+if [ -n "$repro" ]; then
+  # Both runs write into $out, where Godot puts a play run's shots and dumps. The visible run's output waits in
+  # $parked during the hidden run and goes back to $out after it.
+  stash=play-out/.repro/$stem
+  parked=$stash/visible
+  hidden=$stash/hidden
+  rm -rf "$stash"
+  mkdir -p "$stash"
+  log=$(mktemp)
+  if ! "$mise" exec -- "$dotnet" build OpenSettlers.csproj >"$log" 2>&1; then
+    how=repro-build
+    status=3
+    cat "$log"
+  else
+    extra=
+    play
+    cat "$log"
+    how=repro-run
+    if [ "$status" -le 1 ]; then
+      visible=$status
+      mv "$out" "$parked"
+      mkdir -p "$out"
+      extra=--minimized
+      play
+      cat "$log"
+      mv "$out" "$hidden"
+      mv "$parked" "$out"
+      if [ "$status" -le 1 ]; then
+        if [ "$status" -ne "$visible" ]; then
+          echo "play-run.sh: repro: the runs exit differently: visible $visible, hidden $status"
+          how=repro-differ
+        elif grep -q 'the window was never hidden' "$log"; then
+          echo "play-run.sh: repro: the window was never hidden, so the runs compare nothing"
+          how=repro-never-hidden
+        elif same "$out" "$hidden"; then
+          echo "play-run.sh: repro: match"
+          how=repro-match
+        else
+          how=repro-differ
+        fi
+        if [ "$how" = repro-match ]; then status=0; else status=5; fi
+      fi
+    fi
+  fi
+  rm -f "$log"
+elif [ -z "$fresh" ] && [ -f "$entry/status" ]; then
   how=reused
   cp -R "$entry/out/." "$out/"
   status=$(cat "$entry/status")
@@ -234,14 +328,8 @@ else
     how=build
     status=3
   else
-    set -- --path . --write-movie "$out/frame.png" --fixed-fps "$fps" -- --game "$SIEDLER_DIR"
-    if [ "$mode" = game-view ]; then set -- "$@" --game-view; else set -- "$@" --map; fi
-    [ -n "$layout" ] && set -- "$@" --layout "$layout"
-    [ -n "$seed" ] && set -- "$@" --seed "$seed"
-    [ -n "$size" ] && set -- "$@" --size "$size"
-    [ -n "$graphics" ] && set -- "$@" --graphics "$graphics"
-    godot "$@" --play "$script" >"$log" 2>&1
-    status=$?
+    extra=
+    play
   fi
   cat "$log"
   if [ "$status" -le 1 ]; then

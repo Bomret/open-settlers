@@ -15,7 +15,9 @@ namespace OpenSettlers.Tests;
 // tools/play-run.sh runs in a throwaway git repository against a fake mise (PLAY_RUN_MISE), a fake Godot
 // (PLAY_RUN_GODOT) and a fake dotnet (PLAY_RUN_DOTNET). The fake mise logs a call and runs the command after
 // `exec --`. The fake Godot counts its calls, waits until the FAKE_GATE file exists (when set), writes a dump,
-// two named shots, numbered frames, a WAV and log lines, and exits with FAKE_STATUS. The fake dotnet exits with
+// two named shots, numbered frames, a WAV and log lines, and exits with FAKE_STATUS. A call with --minimized (the
+// hidden run of repro mode) rewrites the files FAKE_HIDDEN_CHANGE names, removes FAKE_HIDDEN_DROP, prints the
+// never-hidden line when FAKE_HIDDEN_DRAWN is 1, and exits with FAKE_HIDDEN_STATUS when set. The fake dotnet exits with
 // FAKE_BUILD_STATUS. Both append their name and arguments to the order file. A test that needs two calls to
 // overlap holds the gate shut and polls for the effect it waits on, so it depends on no sleep and no clock.
 // The git fixture repository is built once per class and copied for each test. tools/play-run.sh is a POSIX
@@ -44,9 +46,12 @@ public class PlayRunWrapperTests
         echo call >> "$FAKE_DIR/calls"
         echo godot >> "$FAKE_DIR/order"
         printf '%s\n' "$@" > "$FAKE_DIR/args"
+        printf '%s\n' "$@" > "$FAKE_DIR/args.$(wc -l < "$FAKE_DIR/calls" | tr -d ' ')"
         prev=
+        hidden=
         for a; do
           [ "$prev" = --write-movie ] && out=$(dirname "$a")
+          [ "$a" = --minimized ] && hidden=1
           prev=$a
         done
         i=0
@@ -63,7 +68,14 @@ public class PlayRunWrapperTests
         echo "WARN: a warning"
         echo "plain output"
         echo "ERROR: an error" >&2
-        exit "${FAKE_STATUS:-0}"
+        status=${FAKE_STATUS:-0}
+        if [ -n "$hidden" ]; then
+          for f in ${FAKE_HIDDEN_CHANGE:-}; do echo changed > "$out/$f"; done
+          [ -n "${FAKE_HIDDEN_DROP:-}" ] && rm -f "$out/$FAKE_HIDDEN_DROP"
+          [ "${FAKE_HIDDEN_DRAWN:-}" = 1 ] && echo "WARN play run: the window was never hidden"
+          status=${FAKE_HIDDEN_STATUS:-$status}
+        fi
+        exit "$status"
         """;
 
     const string FakeDotnet = """
@@ -599,6 +611,123 @@ public class PlayRunWrapperTests
         Assert.AreEqual("state 2\n", File.ReadAllText(Out("demo/end.txt")));
     }
 
+    static readonly string[] Repro = [.. Args, "--repro"];
+
+    string[] CallArgs(int call) => File.ReadAllLines(Path.Combine(_fake, $"args.{call}"));
+
+    // Repro mode runs Godot twice, the second time alone with --minimized, leaves the visible run's output in
+    // play-out/<stem>/ and the hidden run's in play-out/.repro/<stem>/hidden/, and touches no cache entry.
+    [TestMethod]
+    public void ReproRunsTwiceTheSecondMinimizedAndEqualOutputsMatch()
+    {
+        var (status, stdout, _) = Run(Repro, new Dictionary<string, string?> { ["FAKE_MARK"] = "7" });
+
+        Assert.AreEqual(0, status, stdout);
+        StringAssert.Contains(stdout, "repro: match");
+        Assert.AreEqual(2, Calls);
+        CollectionAssert.AreEqual(new[] { "dotnet build OpenSettlers.csproj", "godot", "godot" }, Order);
+        CollectionAssert.DoesNotContain(CallArgs(1), "--minimized");
+        CollectionAssert.AreEqual((string[])[.. CallArgs(1), "--minimized"], CallArgs(2));
+        Assert.AreEqual("play-out/demo/frame.png", CallArgs(2)[Array.IndexOf(CallArgs(2), "--write-movie") + 1]);
+        Assert.AreEqual("state 7\n", File.ReadAllText(Out("demo/end.txt")));
+        Assert.IsTrue(File.Exists(Out("demo/frame00000001.png")));
+        Assert.AreEqual("state 7\n", File.ReadAllText(Out(".repro/demo/hidden/end.txt")));
+        Assert.IsFalse(Directory.Exists(Out(".cache")) && Directory.EnumerateFileSystemEntries(Out(".cache")).Any());
+        var line = LogLines.Single().Split('\t');
+        Assert.AreEqual(13, line.Length);
+        CollectionAssert.AreEqual(new[] { "exit=0", "repro-match" }, line[11..]);
+    }
+
+    [TestMethod]
+    public void ReproNeverReadsAStoredResult()
+    {
+        Run(Args);
+        var entry = Directory.GetDirectories(Out(".cache")).Single();
+        var before = Directory.GetFiles(entry, "*", SearchOption.AllDirectories).Select(File.ReadAllText).ToArray();
+
+        Assert.AreEqual(0, Run(Repro).Status);
+        Assert.AreEqual(0, Run([.. Repro, "--fresh"]).Status);
+
+        Assert.AreEqual(5, Calls);
+        Assert.AreEqual(entry, Directory.GetDirectories(Out(".cache")).Single());
+        CollectionAssert.AreEqual(
+            before,
+            Directory.GetFiles(entry, "*", SearchOption.AllDirectories).Select(File.ReadAllText).ToArray()
+        );
+    }
+
+    // The first difference in byte order of the file name: 42.png < end.txt < frame00000000.png < frame.wav < start.png.
+    [TestMethod]
+    [DataRow("frame00000001.png", "frame00000001.png")]
+    [DataRow("start.png", "start.png")]
+    [DataRow("end.txt", "end.txt")]
+    [DataRow("start.png end.txt frame00000000.png", "end.txt")]
+    [DataRow("frame.wav 42.png", "42.png")]
+    public void ReproNamesTheFirstFileWhoseBytesDifferAndExitsFive(string changed, string first)
+    {
+        var (status, stdout, _) = Run(Repro, new Dictionary<string, string?> { ["FAKE_HIDDEN_CHANGE"] = changed });
+
+        Assert.AreEqual(5, status, stdout);
+        StringAssert.Contains(stdout, $"repro: {first}: the bytes differ");
+        CollectionAssert.AreEqual(new[] { "exit=5", "repro-differ" }, LogLines.Single().Split('\t')[11..]);
+    }
+
+    [TestMethod]
+    public void ReproNamesAFileOnlyOneRunWroteAndExitsFive()
+    {
+        var (status, stdout, _) = Run(Repro, new Dictionary<string, string?> { ["FAKE_HIDDEN_DROP"] = "start.png" });
+
+        Assert.AreEqual(5, status, stdout);
+        StringAssert.Contains(stdout, "repro: start.png: the hidden run lacks it");
+    }
+
+    [TestMethod]
+    public void ReproReportsDifferentExitStatusesAndExitsFive()
+    {
+        var (status, stdout, _) = Run(Repro, new Dictionary<string, string?> { ["FAKE_HIDDEN_STATUS"] = "1" });
+
+        Assert.AreEqual(5, status, stdout);
+        StringAssert.Contains(stdout, "repro: the runs exit differently: visible 0, hidden 1");
+    }
+
+    [TestMethod]
+    public void AHiddenRunWhoseWindowWasNeverHiddenIsNoMatch()
+    {
+        var (status, stdout, _) = Run(Repro, new Dictionary<string, string?> { ["FAKE_HIDDEN_DRAWN"] = "1" });
+
+        Assert.AreEqual(5, status, stdout);
+        StringAssert.Contains(stdout, "repro: the window was never hidden");
+        Assert.IsFalse(stdout.Contains("repro: match"));
+        CollectionAssert.AreEqual(new[] { "exit=5", "repro-never-hidden" }, LogLines.Single().Split('\t')[11..]);
+    }
+
+    [TestMethod]
+    public void ReproWithAFailedBuildRunsNothingAndExitsThree()
+    {
+        var (status, stdout, _) = Run(Repro, new Dictionary<string, string?> { ["FAKE_BUILD_STATUS"] = "1" });
+
+        Assert.AreEqual(3, status);
+        StringAssert.Contains(stdout, "build output");
+        Assert.AreEqual(0, Calls);
+        CollectionAssert.AreEqual(new[] { "exit=3", "repro-build" }, LogLines.Single().Split('\t')[11..]);
+    }
+
+    [TestMethod]
+    [DataRow("4", null, 1)]
+    [DataRow(null, "4", 2)]
+    public void ARunExitingWithNeitherZeroNorOneEndsReproWithItsStatus(string? visible, string? hidden, int calls)
+    {
+        var env = new Dictionary<string, string?> { ["FAKE_STATUS"] = visible, ["FAKE_HIDDEN_STATUS"] = hidden };
+
+        var (status, stdout, _) = Run(Repro, env);
+
+        Assert.AreEqual(4, status, stdout);
+        Assert.AreEqual(calls, Calls);
+        Assert.IsFalse(stdout.Contains("repro: "), stdout);
+        Assert.IsFalse(Directory.Exists(Out(".cache")) && Directory.EnumerateFileSystemEntries(Out(".cache")).Any());
+        CollectionAssert.AreEqual(new[] { "exit=4", "repro-run" }, LogLines.Single().Split('\t')[11..]);
+    }
+
     [TestMethod]
     public void AnExitOtherThanZeroOrOneStoresNothing()
     {
@@ -848,6 +977,7 @@ public class PlayRunWrapperTests
     [DataRow("unknown graphics source", "demo", "--graphics", "retro", "--fps", "10")]
     [DataRow("graphics with no value", "demo", "--fps", "10", "--graphics")]
     [DataRow("repeated graphics", "demo", "--graphics", "open-settlers", "--graphics", "open-settlers", "--fps", "10")]
+    [DataRow("repeated repro", "demo", "--repro", "--fps", "10", "--repro")]
     [DataRow("no args")]
     public void BadArgumentsExitTwoAndLeaveNoTrace(string reason, params string[] args) =>
         AssertUsageError(Run(args), reason);
