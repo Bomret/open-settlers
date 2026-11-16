@@ -118,6 +118,38 @@ public sealed class GameThingTests
     }
 
     [TestMethod]
+    public void AFlagNamesTheGoodsOnItsPlacesInTheOrderOfThePlaces()
+    {
+        var game = World();
+        game.Goods.LayGood(1, 0, Good.Foods[1].Code);
+        game.Goods.LayGood(1, 3, Good.Foods[2].Code);
+        game.Goods.LayGood(1, 5, 0x1b);
+
+        var lines = Lines(game);
+
+        CollectionAssert.Contains(lines, "flag 18,6 slot=1 id=flag#1.1 goods=pig,meat,27");
+        CollectionAssert.Contains(lines, "flag 16,6 slot=0 id=flag#0.1");
+    }
+
+    [TestMethod]
+    [DataRow(2, "pig")]
+    [DataRow(5, "flour")]
+    public void ASettlerWhoCarriesAGoodNamesIt(int good, string name)
+    {
+        var settler = new Settler(new Carrier(), 0, 3, 4, 0, new PutsDownGood { Good = new Good { Code = good } });
+
+        CollectionAssert.Contains(Thing.Of(settler).Values.ToList(), ("carrying", name));
+    }
+
+    [TestMethod]
+    public void ASettlerWhoCarriesNothingShowsNoGood()
+    {
+        var settler = new Settler(new Carrier(), 0, 3, 4, 0, new BuildsCastle());
+
+        Assert.IsFalse(Thing.Of(settler).Values.Any(value => value.Item1 == "carrying"));
+    }
+
+    [TestMethod]
     public void EachRoadNodeShowsOnceWithTheDirectionsItsRoadsLeaveIn()
     {
         var lines = Lines(World());

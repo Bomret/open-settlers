@@ -80,6 +80,7 @@ public sealed record Thing
                 ("frame", settler.Frame.ToString(CultureInfo.InvariantCulture)),
                 ("timer", settler.Timer.ToString(CultureInfo.InvariantCulture)),
                 ("stamp", raw.Stamp.ToString(CultureInfo.InvariantCulture)),
+                .. CarriedGood(settler),
             ],
             Name = SettlerName(settler),
         };
@@ -162,6 +163,7 @@ public sealed record Thing
                 [
                     ("slot", entry.slot.ToString(CultureInfo.InvariantCulture)),
                     ("id", game.History.FlagId(entry.slot).ToString()),
+                    .. GoodsOf(entry.flag),
                 ],
                 Name = null,
             }),
@@ -176,6 +178,29 @@ public sealed record Thing
                 }),
         ];
     }
+
+    // The name the name table gives a good, or its number where it names none.
+    static string GoodText(Good good) =>
+        NameTable.GoodName(good.Code) ?? good.Code.ToString(CultureInfo.InvariantCulture);
+
+    // The goods that lie on the places of a flag, named and in the order of the places, as one value; none where the flag holds none.
+    static (string, string)[] GoodsOf(Flag flag)
+    {
+        var goods = flag.Places.Where(place => !place.IsEmpty).Select(place => GoodText(place.Good)).ToArray();
+
+        return goods.Length == 0 ? [] : [("goods", string.Join(",", goods))];
+    }
+
+    // The good a settler carries, named, as one value; none where he carries none (a carrier with a load, the settler who steps out
+    // with a good or puts it down).
+    static (string, string)[] CarriedGood(Settler settler) =>
+        settler.Activity switch
+        {
+            WalksRoad { Load: { Good.IsNone: false } load } => [("carrying", GoodText(load.Good))],
+            StepsOutWithGood stepping => [("carrying", GoodText(stepping.Good))],
+            PutsDownGood putting => [("carrying", GoodText(putting.Good))],
+            _ => [],
+        };
 
     // The settler with the ID of its slot, and the flag its state makes the target (state 0x42 waits next to it; state 2 walks to it
     // or along the road that leaves it, but not the walk home, which targets a storage). No other state is known to hold a flag
