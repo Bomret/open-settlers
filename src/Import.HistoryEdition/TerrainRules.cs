@@ -203,7 +203,9 @@ static class TerrainRules
     /// <summary>
     /// The draw of the upper triangle of a tile, whose apex is the tile's node and whose base nodes are the nodes
     /// south and south-east of it, with the five low bits of their heights and the terrain code of the triangle.
-    /// Null where a base node differs from the apex by more than four either way: the original has no mask for it.
+    /// The original checks no slope's range (<c>0x4278be</c>), so a slope outside -4 to 4 aliases into another row of
+    /// the table and draws that row's entry. Null where the index lies outside 0 to 80 (a stand-in: the original reads
+    /// past the table there) or the table's entry is <c>0xff</c>.
     /// </summary>
     public static TerrainDraw? Upper(int apex, int left, int right, Terrain terrain) =>
         Pick(
@@ -215,7 +217,9 @@ static class TerrainRules
 
     /// <summary>
     /// The draw of the lower triangle of a tile, whose apex is the node south-east of the tile's node and whose top
-    /// nodes are the tile's node (left) and the node east of it (right), arguments as for <see cref="Upper"/>.
+    /// nodes are the tile's node (left) and the node east of it (right), arguments as for <see cref="Upper"/>. As there,
+    /// an out-of-range slope aliases into another row (<c>0x427a25</c>), and the result is null only where the index
+    /// lies outside 0 to 80 or the table's entry is <c>0xff</c>.
     /// </summary>
     public static TerrainDraw? Lower(int apex, int left, int right, Terrain terrain) =>
         Pick(

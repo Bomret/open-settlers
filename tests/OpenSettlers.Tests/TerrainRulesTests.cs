@@ -124,7 +124,34 @@ public sealed class TerrainRulesTests
         Assert.IsNull(TerrainRules.Lower(10, 6, 15, new Terrain { Code = 5 }));
     }
 
-    // The aliasing of a slope of 9 or more with the next row (Upper(10, 5, 14) has the slopes 9 and 0, and the index 9 of the slopes 0
-    // and 1) is a defect case with no stated outcome: the rules document gives the index formula and the 81 values only, and
-    // TerrainRules.Upper's doc says null while the code draws. A triage record holds it; no test asserts it.
+    // The original checks no slope's range (0x4278be, 0x427a25): a slope outside 0 to 8 lands in another row of the table. Upper(10, 5,
+    // 14) has the slopes 9 and 0, the index 9 of the slopes 0 and 1; Upper(10, 15, 9) has the slopes -1 and 5, the index 44 of the
+    // slopes 8 and 4.
+    [TestMethod]
+    public void AnUpperSlopeOutOfRangeDrawsTheRowItsIndexReaches()
+    {
+        var terrain = new Terrain { Code = 5 };
+
+        Assert.AreEqual(
+            (TerrainRules.Upper(10, 14, 13, terrain), TerrainRules.Upper(10, 6, 10, terrain)),
+            (TerrainRules.Upper(10, 5, 14, terrain), TerrainRules.Upper(10, 15, 9, terrain))
+        );
+        Assert.IsNotNull(TerrainRules.Upper(10, 5, 14, terrain));
+        Assert.IsNotNull(TerrainRules.Upper(10, 15, 9, terrain));
+    }
+
+    // Lower(10, 15, 9) has the slopes 9 and 3, the index 36 of the slopes 0 and 4; Lower(10, 5, 12) has the slopes -1 and 6, the index
+    // 53 of the slopes 8 and 5.
+    [TestMethod]
+    public void ALowerSlopeOutOfRangeDrawsTheRowItsIndexReaches()
+    {
+        var terrain = new Terrain { Code = 5 };
+
+        Assert.AreEqual(
+            (TerrainRules.Lower(10, 6, 10, terrain), TerrainRules.Lower(10, 14, 11, terrain)),
+            (TerrainRules.Lower(10, 15, 9, terrain), TerrainRules.Lower(10, 5, 12, terrain))
+        );
+        Assert.IsNotNull(TerrainRules.Lower(10, 15, 9, terrain));
+        Assert.IsNotNull(TerrainRules.Lower(10, 5, 12, terrain));
+    }
 }
