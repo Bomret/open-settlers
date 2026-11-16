@@ -13,8 +13,10 @@ namespace OpenSettlers.Viewer;
 /// delta is the fixed time step, so the run is on simulated time. Every input step reaches the view as a Godot input
 /// event through the view's own handlers (<c>OnCanvasInput</c>, <c>_UnhandledKeyInput</c>, the polled
 /// <see cref="Input"/> state), at canvas coordinates; nothing calls the camera or the zoom. The node has the lowest
-/// process priority, so a frame's steps run before the view's own step reads them. The run pins the window to
-/// <see cref="WindowSize"/>, so frames and <see cref="Zoom.Fit"/> do not depend on the display. A minimized run
+/// process priority, so a frame's steps run before the view's own step reads them. The window starts at
+/// <see cref="WindowSize"/> (project.godot sets it under Movie Maker, and <see cref="Launch.LaunchArgs"/> refuses a play run whose
+/// window starts at another size), and the driver pins the content size to it, so frames and <see cref="Zoom.Fit"/> do not
+/// depend on the display. A minimized run
 /// (<c>--minimized</c>, the hidden run of the wrapper's repro mode) minimizes the window before its first frame and keeps
 /// the content size; when the window could draw on every frame, it prints <see cref="NeverHiddenLine"/> at the end.
 /// <para>

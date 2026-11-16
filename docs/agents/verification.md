@@ -141,6 +141,10 @@ Another value, a missing value, and a repeat exit 2.
 `mise exec`. Read the dumps and open the screenshots in `play-out/<stem>/`. Exit 0 is a finished run, 1 a
 failed `expect` or a problem in the script.
 
+Every frame and shot of a play run is 1280 x 720. `project.godot` sets that window and frame size under Movie Maker
+(`window/size/window_width_override.movie`, `window_height_override.movie`). A run whose window starts at another
+size, such as on a display that clamps or scales the window, exits 4 and stores no result.
+
 - The wrapper stores the result under a hash of the run's inputs in `play-out/.cache/<hash>/` and reuses
   it on the next call whose inputs hash the same: no Godot run, the stored dumps and screenshots copied
   back into `play-out/<stem>/` (no Movie Maker frames: the store leaves them out, and `--fresh` writes them again), the stored `WARN`/`ERROR` lines printed under a `reused` line that ends

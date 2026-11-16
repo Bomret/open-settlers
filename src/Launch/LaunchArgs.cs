@@ -60,7 +60,9 @@ public enum GraphicsSourceName
 /// <c>--game-view</c> without a layout only; a value that is no integer from 0 to 40, a repeat, or another mode is a bad argument.
 /// Two different mode flags with <c>--stock</c> give only the mode problem.
 /// <c>--minimized</c> takes no value and minimizes the window of a play run (<see cref="Minimized"/>); without
-/// <c>--play</c>, or repeated, it is a bad argument.
+/// <c>--play</c>, or repeated, it is a bad argument. <c>--play</c> under Movie Maker whose window started at any size
+/// other than <see cref="PlayWindowWidth"/> x <see cref="PlayWindowHeight"/> is a bad argument; without Movie Maker only
+/// the Movie Maker problem is reported.
 /// </para>
 /// </summary>
 public sealed class LaunchArgs
