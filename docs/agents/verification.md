@@ -195,12 +195,13 @@ on a side once enlarged fails the step. README.md's "Run a play script" lists ev
 
 ### Repro mode
 
-Two fresh play runs of one commit with the same arguments write the same frames, shots, and dumps, whether the Godot
-window stays visible or is covered or minimized while the run records. The play driver forces each frame's draw for
-this. Platform-layer finding (Godot 4.7.2, macOS, the only host checked): when the window cannot draw, Godot skips the
-frame's draw (`main/main.cpp:5081`) while Movie Maker still writes a frame from the last drawn viewport texture
-(`main/main.cpp:5151`), and a `shot` reads that same texture. The summary's "N frames" counts the frames Godot drew
-itself, not the files written. `PlayDriver`'s class summary states the rule.
+Two fresh play runs of one commit with the same arguments write the same frames, shots, and dumps. This holds
+whether the Godot window stays visible or is covered or minimized while the run records. The play driver forces each
+frame's draw for this. `PlayDriver`'s class summary states the rule.
+
+Platform-layer finding, Godot 4.7.2 on macOS, the only host checked: when the window cannot draw, Godot skips the
+frame's draw (`main/main.cpp:5081`). Movie Maker still writes a frame from the last drawn viewport texture
+(`main/main.cpp:5151`). A `shot` reads that same texture.
 
 `--repro` checks the rule on a script:
 
@@ -208,17 +209,20 @@ itself, not the files written. `PlayDriver`'s class summary states the rule.
 sh tools/play-run.sh head-on-pass --layout layouts/head-on-pass.jsonc --fps 10 --repro
 ```
 
-- It holds the stem's lock across both runs, builds once, and runs Godot twice with the same arguments, the second
-  time with the launch flag `--minimized`. It neither reads nor writes `play-out/.cache`; `--fresh` beside it changes
-  nothing. A repeated `--repro` exits 2.
-- `play-out/<stem>/` holds the visible run's output afterwards, and `play-out/.repro/<stem>/hidden/` the hidden run's.
-  A stem starts with no dot, so no stem's output or lock names that folder. A signal (INT, TERM, HUP) during the
-  hidden run puts the visible run's output back in `play-out/<stem>/` and exits 130.
-- It compares the exit statuses and every file of the two folders (frames, `frame.wav`, shots, dumps, lists, events)
-  in byte order of the file name. Exit 0 is a match. Exit 5 is no match and names the first difference: the two exit
-  statuses, a file one run lacks, or a file whose bytes differ.
-- A hidden run whose window could draw on every frame prints `WARN play run: the window was never hidden`. On that
-  whole line, repro mode reports that the window was never hidden and exits 5: the runs compared nothing.
+- It holds the stem's lock across both runs and builds once. It runs Godot twice with the same arguments. The second
+  run, the hidden run, adds the launch flag `--minimized`.
+- It neither reads nor writes `play-out/.cache`, and `--fresh` beside it changes nothing. A repeated `--repro` exits 2.
+- `play-out/<stem>/` holds the visible run's output afterwards. `play-out/.repro/<stem>/hidden/` holds the hidden
+  run's output. A stem starts with no dot, so no stem's output or lock names that folder.
+- A signal (INT, TERM, HUP) during the hidden run puts the visible run's output back in `play-out/<stem>/`. It then
+  exits 130.
+- It compares the exit statuses. It also compares every file of the two folders, in byte order of the file name:
+  frames, `frame.wav`, shots, dumps, lists, and events.
+- Exit 0 is a match. Exit 5 is no match. It names the first difference: the two exit statuses, a file one run lacks,
+  or a file whose bytes differ.
+- A hidden run whose window could draw on every frame prints the line `WARN play run: the window was never hidden`.
+  When the hidden run prints that whole line, repro mode reports that the window was never hidden and exits 5. The
+  runs compared nothing.
 - A failed build exits 3 and runs nothing. A run that exits with neither 0 nor 1 ends repro mode with that status and
   reports no comparison.
 - It logs one line to `play-out/runs.log`. Its last field is `repro-match`, `repro-differ`, `repro-never-hidden`,
