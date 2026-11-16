@@ -165,10 +165,18 @@ public sealed partial class Layout
             ["stonecutter"] = BuildingType.Stonecutter,
             ["forester"] = BuildingType.Forester,
             ["sawmill"] = BuildingType.Sawmill,
+            ["fisher"] = BuildingType.Fisher,
+            ["farm"] = BuildingType.Farm,
+            ["baker"] = BuildingType.Baker,
+            ["mill"] = BuildingType.Mill,
+            ["pig-farm"] = BuildingType.PigFarm,
+            ["butcher"] = BuildingType.Butcher,
         };
 
+        const string BuildingNameList = "woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher";
+
         const string BuildingShape =
-            "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", or \"sawmill\", \"x\", \"y\"} (the node of the building, "
+            "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", \"sawmill\", \"fisher\", \"farm\", \"baker\", \"mill\", \"pig-farm\", or \"butcher\", \"x\", \"y\"} (the node of the building, "
             + "finished with its flag south-east of it)";
 
         // A finished-building entry: the building stands finished at tick 0 as the original's mission start leaves a building
@@ -203,7 +211,7 @@ public sealed partial class Layout
             var typeName = typeEntry.GetString();
             if (typeName is null || !BuildingNames.TryGetValue(typeName, out var type))
             {
-                Fail(name, $"no building type {typeName}: M4 builds woodcutter, stonecutter, forester, or sawmill");
+                Fail(name, $"no building type {typeName}: a layout builds {BuildingNameList}");
 
                 return false;
             }

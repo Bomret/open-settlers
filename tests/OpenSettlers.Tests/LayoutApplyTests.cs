@@ -126,7 +126,11 @@ public sealed class LayoutApplyTests
     static Game NewGameWithALargeSawmill(Layout layout)
     {
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
-        sizes[BuildingType.Sawmill.Code] = 2;
+        foreach (var large in new[] { BuildingType.Sawmill, BuildingType.Farm, BuildingType.Baker, BuildingType.Mill, BuildingType.Butcher })
+        {
+            sizes[large.Code] = 2;
+        }
+
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
 
@@ -146,6 +150,12 @@ public sealed class LayoutApplyTests
     [DataRow("stonecutter", 4)]
     [DataRow("forester", 9)]
     [DataRow("sawmill", 0x11)]
+    [DataRow("fisher", 1)]
+    [DataRow("farm", 0xc)]
+    [DataRow("baker", 0xd)]
+    [DataRow("mill", 0xe)]
+    [DataRow("pig-farm", 0xf)]
+    [DataRow("butcher", 0x10)]
     public void AFinishedBuildingEntryStandsFinishedWithItsFlagAndNoSite(string name, int code)
     {
         var layout = Read(Castle + $$""" "buildings": [{"type": "{{name}}", "x": 13, "y": 10}] """);
@@ -173,8 +183,8 @@ public sealed class LayoutApplyTests
     [TestMethod]
     [DataRow("storehouse")]
     [DataRow("castle")]
-    [DataRow("farm")]
-    public void AnEntryThatNamesATypeM4DoesNotBuildFailsTheReadNamingTheTypes(string name)
+    [DataRow("well")]
+    public void AnEntryThatNamesATypeNoSliceBuildsFailsTheReadNamingTheTypes(string name)
     {
         var entry = $$""" "buildings": [{"type": "{{name}}", "x": 13, "y": 10}] """;
         var read = Layout.Read(LayoutTests.Text(extra: "\n" + entry), "test.jsonc");
@@ -183,7 +193,9 @@ public sealed class LayoutApplyTests
             read.Problems.Any(problem =>
                 problem.StartsWith("test.jsonc: buildings[0]: ")
                 && problem.Contains($"no building type {name}")
-                && problem.Contains("woodcutter, stonecutter, forester, or sawmill")
+                && problem.Contains(
+                    "woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher"
+                )
             ),
             string.Join("; ", read.Problems)
         );
