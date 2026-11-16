@@ -128,7 +128,7 @@ situation and takes named screenshots and dumps, then run it under Movie Maker t
 wrapper, from the repository root, with `SIEDLER_DIR` set:
 
 ```sh
-sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--graphics <source>] --fps <fps>
+sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--graphics <source>] --fps <fps> [--fresh] [--repro]
 ```
 
 Without `--game-view` the wrapper runs the map view. `--game-view` runs the game view on `--seed` and `--size`.
@@ -156,7 +156,7 @@ failed `expect` or a problem in the script.
 - Each call appends one tab-separated line of 13 fields to `play-out/runs.log`. The fields are the UTC time, the
   input hash, `HEAD`, `clean` or `dirty` (an untracked file counts), the stem, `mode=<map|game-view>`,
   `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `graphics=<source>` (`history-edition` without the flag), `exit=<status>`, and `run`,
-  `reused`, or `build` (a failed build). A line proves a run at a tip when its `HEAD` equals the tip and it reads
+  `reused`, `build` (a failed build), or a `repro-` outcome (Repro mode below). A line proves a run at a tip when its `HEAD` equals the tip and it reads
   `clean`.
 - Calls for one stem run one at a time. A second call waits on the lock directory `play-out/.lock-<stem>`, says so
   once on stderr, then hashes its inputs and reuses what the first stored. Other stems run in parallel.
@@ -186,6 +186,36 @@ failed `expect` or a problem in the script.
     second can remove a mutex a live holder took.
 - Remove the lock, the mutex, and the reap directories by hand only when no run is live.
 - An empty `--size` or `--seed` exits 2 with the usage message, as an empty `--fps` or `--layout` does.
+
+### Repro mode
+
+Two fresh play runs of one commit with the same arguments write the same frames, shots, and dumps, whether the Godot
+window stays visible or is covered or minimized while the run records. The play driver forces each frame's draw for
+this. Platform-layer finding (Godot 4.7.2, macOS, the only host checked): when the window cannot draw, Godot skips the
+frame's draw (`main/main.cpp:5081`) while Movie Maker still writes a frame from the last drawn viewport texture
+(`main/main.cpp:5151`), and a `shot` reads that same texture. The summary's "N frames" counts the frames Godot drew
+itself, not the files written. `PlayDriver`'s class summary states the rule.
+
+`--repro` checks the rule on a script:
+
+```sh
+sh tools/play-run.sh head-on-pass --layout layouts/head-on-pass.jsonc --fps 10 --repro
+```
+
+- It holds the stem's lock across both runs, builds once, and runs Godot twice with the same arguments, the second
+  time with the launch flag `--minimized`. It neither reads nor writes `play-out/.cache`; `--fresh` beside it changes
+  nothing. A repeated `--repro` exits 2.
+- `play-out/<stem>/` holds the visible run's output afterwards, and `play-out/.repro/<stem>/hidden/` the hidden run's.
+  A stem starts with no dot, so no stem's output or lock names that folder.
+- It compares the exit statuses and every file of the two folders (frames, `frame.wav`, shots, dumps, lists, events)
+  in byte order of the file name. Exit 0 is a match. Exit 5 is no match and names the first difference: the two exit
+  statuses, a file one run lacks, or a file whose bytes differ.
+- A hidden run whose window could draw on every frame prints `WARN play run: the window was never hidden`. Repro mode
+  then reports that the window was never hidden and exits 5: the runs compared nothing.
+- A failed build exits 3 and runs nothing. A run that exits with neither 0 nor 1 ends repro mode with that status and
+  reports no comparison.
+- It logs one line to `play-out/runs.log`. Its last field is `repro-match`, `repro-differ`, `repro-never-hidden`,
+  `repro-build`, or `repro-run` (a run that exited with neither 0 nor 1).
 
 When a line is about one place, take a cropped shot, `shot <name> <column> <row> [radius] [scale]`, rather
 than the whole frame: it keeps the tiles within `radius` steps of the tile (default 1) and the room above them
