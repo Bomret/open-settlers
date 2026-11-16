@@ -108,16 +108,13 @@ public sealed class LaunchArgs
 
     /// <summary>
     /// The window width of a play run in pixels. project.godot sets the window and Movie Maker's frame size to it under
-    /// Movie Maker (<see cref="PlayWindowSetting"/>); keep the two alike.
+    /// Movie Maker (<c>display/window/size/window_width_override.movie</c> and <c>window_height_override.movie</c>);
+    /// keep the two alike.
     /// </summary>
     public const int PlayWindowWidth = 1280;
 
     /// <summary>The window height of a play run in pixels; see <see cref="PlayWindowWidth"/>.</summary>
     public const int PlayWindowHeight = 720;
-
-    /// <summary>The project settings that start the window of a play run at its size under Movie Maker.</summary>
-    const string PlayWindowSetting =
-        "display/window/size/window_width_override.movie and window_height_override.movie in project.godot";
 
     /// <summary>The highest start stock level the free-game screen's bar sets.</summary>
     const int MaxStock = 40;
@@ -430,10 +427,13 @@ public sealed class LaunchArgs
         }
         else if (playGiven && startWindow != (PlayWindowWidth, PlayWindowHeight))
         {
-            // Movie Maker takes its frame size from the window size at startup, so a play run refuses any other.
+            // Movie Maker takes its frame size from the project settings and never from the window; the same settings
+            // start the window at that size, and the play driver pins the content size to the window. A window that
+            // starts at another size shows that the settings did not apply or the display clamped or scaled the window,
+            // so the frames would not show the view at the size it was drawn.
             var started = startWindow is { } window ? $"{window.Width} x {window.Height}" : "an unknown size";
             problems.Add(
-                $"{PlayFlag} needs a window of {PlayWindowWidth} x {PlayWindowHeight} at startup, not {started}: {PlayWindowSetting} set it, and the display must not clamp or scale it"
+                $"{PlayFlag} needs a window of {PlayWindowWidth} x {PlayWindowHeight} at startup, not {started}: display/window/size/window_width_override.movie and window_height_override.movie in project.godot set it, and the display must not clamp or scale it"
             );
         }
 

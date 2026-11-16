@@ -463,6 +463,9 @@ public sealed class LaunchArgsTests
     [DataRow(1280, 648)]
     [DataRow(1152, 720)]
     [DataRow(0, 0)]
+    [DataRow(2560, 1440)]
+    [DataRow(1600, 900)]
+    [DataRow(1281, 720)]
     public void APlayRunWhoseWindowStartsAtAnotherSizeIsAProblemNamingTheProjectSetting(int width, int height)
     {
         var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: true, (width, height));
