@@ -5,7 +5,7 @@ namespace OpenSettlers.MapView;
 /// <summary>
 /// Turns the time of the frames into whole game ticks at <see cref="Game.TicksPerSecond"/>: the frame rate does not set
 /// the tick rate, and the fraction of a tick a frame leaves carries to the next. <see cref="Speed"/> multiplies the
-/// rate.
+/// rate. A frame runs at most 4 ticks times <see cref="Speed"/> (<see cref="Due"/>).
 /// </summary>
 public sealed class TickPacer
 {
@@ -18,10 +18,16 @@ public sealed class TickPacer
     /// </summary>
     public int Speed { get; private set; } = 1;
 
-    /// <summary>Doubles <see cref="Speed"/>, and takes 8 back to 1.</summary>
+    /// <summary>
+    /// Doubles <see cref="Speed"/>, and takes 8 back to 1 (stand-in: the order of the History Edition's switch is not
+    /// recovered).
+    /// </summary>
     public void NextSpeed() => Speed = Speed == 8 ? 1 : Speed * 2;
 
-    /// <summary>The whole ticks that fall due after a frame of <paramref name="seconds"/>.</summary>
+    /// <summary>
+    /// The whole ticks that fall due after a frame of <paramref name="seconds"/>: at most 4 times <see cref="Speed"/>.
+    /// The ticks past that bound, and the carry, are dropped.
+    /// </summary>
     public int Due(double seconds)
     {
         if (_held)
@@ -32,6 +38,15 @@ public sealed class TickPacer
         _carry += seconds * Game.TicksPerSecond * Speed;
         var ticks = (int)_carry;
         _carry -= ticks;
+
+        // stand-in: the program has no such bound; a slow pass there gets more elapsed units (docs/rules/timing.md).
+        // The bound keeps a long frame from running a backlog of ticks that makes the next frame longer still.
+        var most = 4 * Speed;
+        if (ticks > most)
+        {
+            _carry = 0;
+            return most;
+        }
 
         return ticks;
     }

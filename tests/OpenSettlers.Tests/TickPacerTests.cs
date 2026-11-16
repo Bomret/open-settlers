@@ -32,9 +32,9 @@ public sealed class TickPacerTests
     }
 
     [TestMethod]
-    public void ALongFrameRunsEveryTickItHoldsAtOnce()
+    public void AFrameWithinTheBoundRunsEveryTickItHoldsAtOnce()
     {
-        Assert.AreEqual(25, new TickPacer().Due(2));
+        Assert.AreEqual(3, new TickPacer().Due(0.3), "0.3 s holds 3.75 ticks, below the bound of 4");
     }
 
     [TestMethod]
@@ -56,7 +56,7 @@ public sealed class TickPacerTests
 
         pacer.Reset();
 
-        Assert.AreEqual(25, pacer.Due(2));
+        Assert.AreEqual(3, pacer.Due(0.3));
     }
 
     [TestMethod]
@@ -81,7 +81,19 @@ public sealed class TickPacerTests
         pacer.NextSpeed();
         pacer.NextSpeed();
 
-        Assert.AreEqual(100, pacer.Due(2), "4 times 25 ticks");
+        Assert.AreEqual(15, pacer.Due(0.3), "4 times 3.75 ticks");
+    }
+
+    [TestMethod]
+    public void AFrameRunsAtMostFourTicksTimesTheSpeedAndDropsTheRest()
+    {
+        var pacer = new TickPacer();
+        for (var press = 0; press < 3; press++)
+        {
+            pacer.NextSpeed();
+        }
+
+        Assert.AreEqual(32, pacer.Due(10), "a 10 s frame at 8x holds 1000 ticks; 4 times 8 run");
     }
 
     [TestMethod]
