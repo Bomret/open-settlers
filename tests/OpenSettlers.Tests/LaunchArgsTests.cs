@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Launch;
@@ -8,6 +9,9 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class LaunchArgsTests
 {
+    // The start window size of a play run, which project.godot sets under Movie Maker.
+    static readonly (int Width, int Height) PlayWindow = (1280, 720);
+
     [TestMethod]
     public void WithoutAModeFlagTheModeIsTheAssetBrowser()
     {
@@ -305,7 +309,7 @@ public sealed class LaunchArgsTests
     [TestMethod]
     public void ThePlayFlagGivesTheScriptPath()
     {
-        var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: true);
+        var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: true, PlayWindow);
 
         Assert.IsEmpty(args.Problems);
         Assert.AreEqual("play/zoom.play", args.Play);
@@ -314,7 +318,7 @@ public sealed class LaunchArgsTests
     [TestMethod]
     public void ThePlayFlagWithTheGameViewFlagGivesTheGameViewAndTheScriptPath()
     {
-        var args = LaunchArgs.Parse(["--game-view", "--play", "play/loop.play"], null, movieMaker: true);
+        var args = LaunchArgs.Parse(["--game-view", "--play", "play/loop.play"], null, movieMaker: true, PlayWindow);
 
         Assert.IsEmpty(args.Problems);
         Assert.AreEqual(LaunchMode.GameView, args.Mode);
@@ -327,7 +331,8 @@ public sealed class LaunchArgsTests
         var args = LaunchArgs.Parse(
             ["--game-view", "--play", "play/loop.play", "--seed", "1234567812345678", "--size", "2"],
             null,
-            movieMaker: true
+            movieMaker: true,
+            PlayWindow
         );
 
         Assert.IsEmpty(args.Problems);
@@ -341,7 +346,7 @@ public sealed class LaunchArgsTests
     [DataRow(["--seed-info", "--seed", "1234567812345678", "--play", "play/zoom.play"])]
     public void ThePlayFlagWithoutTheMapOrGameViewFlagIsAProblemNamingBoth(string[] given)
     {
-        var args = LaunchArgs.Parse(given, null, movieMaker: true);
+        var args = LaunchArgs.Parse(given, null, movieMaker: true, PlayWindow);
 
         Assert.HasCount(1, args.Problems);
         StringAssert.Contains(args.Problems[0], "--play");
@@ -361,7 +366,7 @@ public sealed class LaunchArgsTests
     [TestMethod]
     public void ThePlayFlagWithoutAValueIsAProblem()
     {
-        var args = LaunchArgs.Parse(["--map", "--play"], null, movieMaker: true);
+        var args = LaunchArgs.Parse(["--map", "--play"], null, movieMaker: true, PlayWindow);
 
         Assert.HasCount(1, args.Problems);
         StringAssert.Contains(args.Problems[0], "--play needs a value");
@@ -376,7 +381,7 @@ public sealed class LaunchArgsTests
     [DataRow("--play", "play/a.play", "play/b.play")]
     public void ARepeatedValueFlagIsAProblem(string flag, string first, string second)
     {
-        var args = LaunchArgs.Parse(["--map", flag, first, flag, second], null, movieMaker: true);
+        var args = LaunchArgs.Parse(["--map", flag, first, flag, second], null, movieMaker: true, PlayWindow);
 
         StringAssert.Contains(string.Join("; ", args.Problems), $"repeated {flag}");
     }
@@ -386,7 +391,7 @@ public sealed class LaunchArgsTests
     [DataRow(["--minimized", "--layout", "layouts/carrier.jsonc", "--play", "play/zoom.play"])]
     public void TheMinimizedFlagWithThePlayFlagMinimizesThePlayRun(string[] given)
     {
-        var args = LaunchArgs.Parse(given, null, movieMaker: true);
+        var args = LaunchArgs.Parse(given, null, movieMaker: true, PlayWindow);
 
         Assert.IsEmpty(args.Problems);
         Assert.IsTrue(args.Minimized);
@@ -395,7 +400,9 @@ public sealed class LaunchArgsTests
 
     [TestMethod]
     public void WithoutTheMinimizedFlagAPlayRunIsNotMinimized() =>
-        Assert.IsFalse(LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: true).Minimized);
+        Assert.IsFalse(
+            LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: true, PlayWindow).Minimized
+        );
 
     [TestMethod]
     [DataRow(["--map", "--minimized"])]
@@ -403,7 +410,7 @@ public sealed class LaunchArgsTests
     [DataRow(["--game-view", "--minimized", "--seed", "1234567812345678"])]
     public void TheMinimizedFlagWithoutThePlayFlagIsAProblem(string[] given)
     {
-        var args = LaunchArgs.Parse(given, null, movieMaker: true);
+        var args = LaunchArgs.Parse(given, null, movieMaker: true, PlayWindow);
 
         Assert.HasCount(1, args.Problems);
         StringAssert.Contains(args.Problems[0], "--minimized needs --play");
@@ -412,7 +419,12 @@ public sealed class LaunchArgsTests
     [TestMethod]
     public void ARepeatedMinimizedFlagIsAProblem()
     {
-        var args = LaunchArgs.Parse(["--map", "--minimized", "--play", "play/zoom.play", "--minimized"], null, true);
+        var args = LaunchArgs.Parse(
+            ["--map", "--minimized", "--play", "play/zoom.play", "--minimized"],
+            null,
+            true,
+            PlayWindow
+        );
 
         Assert.HasCount(1, args.Problems);
         StringAssert.Contains(args.Problems[0], "repeated --minimized");
@@ -422,8 +434,13 @@ public sealed class LaunchArgsTests
     [TestMethod]
     public void TheMinimizedFlagTakesNoValueAndIsNoneOfAnotherFlag()
     {
-        var after = LaunchArgs.Parse(["--map", "--minimized", "--play", "play/zoom.play"], null, movieMaker: true);
-        var before = LaunchArgs.Parse(["--map", "--play", "--minimized"], null, movieMaker: true);
+        var after = LaunchArgs.Parse(
+            ["--map", "--minimized", "--play", "play/zoom.play"],
+            null,
+            movieMaker: true,
+            PlayWindow
+        );
+        var before = LaunchArgs.Parse(["--map", "--play", "--minimized"], null, movieMaker: true, PlayWindow);
 
         Assert.AreEqual("play/zoom.play", after.Play);
         Assert.IsEmpty(after.Problems);
@@ -438,6 +455,103 @@ public sealed class LaunchArgsTests
 
         Assert.HasCount(1, args.Problems);
         StringAssert.Contains(args.Problems[0], "--write-movie");
+    }
+
+    [TestMethod]
+    [DataRow(1152, 648)]
+    [DataRow(1280, 700)]
+    [DataRow(1280, 648)]
+    [DataRow(1152, 720)]
+    [DataRow(0, 0)]
+    public void APlayRunWhoseWindowStartsAtAnotherSizeIsAProblemNamingTheProjectSetting(int width, int height)
+    {
+        var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: true, (width, height));
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "window_width_override.movie");
+        StringAssert.Contains(args.Problems[0], $"{width} x {height}");
+    }
+
+    [TestMethod]
+    public void APlayRunWithoutAStartWindowSizeIsAProblemNamingTheProjectSetting()
+    {
+        var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: true);
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "window_width_override.movie");
+    }
+
+    [TestMethod]
+    [DataRow(["--map", "--play"])]
+    [DataRow(["--map", "--play", ""])]
+    [DataRow(["--map", "--play", "play/a.play", "--play", "play/b.play"])]
+    [DataRow(["--layout", "a.jsonc", "--play", "play/a.play"])]
+    [DataRow(["--game-view", "--play", "play/a.play"])]
+    [DataRow(["--check", "--play", "play/a.play"])]
+    public void EveryFormOfAPlayLaunchRefusesAnotherStartWindowSize(string[] given)
+    {
+        var args = LaunchArgs.Parse(given, null, movieMaker: true, (1152, 648));
+
+        Assert.IsTrue(
+            args.Problems.Any(p => p.Contains("window_width_override.movie")),
+            string.Join("; ", args.Problems)
+        );
+    }
+
+    [TestMethod]
+    public void APlayRunWithoutMovieMakerReportsTheMovieMakerProblemAlone()
+    {
+        var args = LaunchArgs.Parse(["--map", "--play", "play/zoom.play"], null, movieMaker: false, (1152, 648));
+
+        Assert.HasCount(1, args.Problems);
+        StringAssert.Contains(args.Problems[0], "--write-movie");
+    }
+
+    [TestMethod]
+    [DataRow(["--game", "/siedler"])]
+    [DataRow(["--map"])]
+    [DataRow(["--game-view"])]
+    [DataRow(["--check"])]
+    [DataRow(["--seed-info", "--seed", "1234567812345678"])]
+    [DataRow(["--layout", "a.jsonc"])]
+    public void ALaunchWithoutAPlayScriptHasNoProblemAtAnyStartWindowSize(string[] given)
+    {
+        Assert.IsEmpty(LaunchArgs.Parse(given, null, movieMaker: true, (1152, 648)).Problems);
+        Assert.IsEmpty(LaunchArgs.Parse(given, null, movieMaker: false, (0, 0)).Problems);
+        Assert.IsEmpty(LaunchArgs.Parse(given, null).Problems);
+    }
+
+    // Movie Maker takes its frame size from these project settings and starts the window at it; the movie feature tag
+    // keeps every launch without Movie Maker at the default window size.
+    [TestMethod]
+    public void TheProjectStartsAMovieMakerWindowAtThePlayWindowSize()
+    {
+        var lines = File.ReadAllLines(Path.Combine(PythonTool.RepoRoot(), "project.godot"));
+
+        CollectionAssert.Contains(lines, $"window/size/window_width_override.movie={LaunchArgs.PlayWindowWidth}");
+        CollectionAssert.Contains(lines, $"window/size/window_height_override.movie={LaunchArgs.PlayWindowHeight}");
+        Assert.IsFalse(
+            lines.Any(l => l.StartsWith("window/size/") && !l.Contains(".movie=")),
+            "a window size key without the movie tag"
+        );
+    }
+
+    [TestMethod]
+    public void AStartWindowSizeProblemJoinsTheOtherProblemsInOneBadArgumentReport()
+    {
+        var args = LaunchArgs.Parse(
+            ["--map", "--play", "play/zoom.play", "--bogus"],
+            null,
+            movieMaker: true,
+            (1152, 648)
+        );
+
+        var bad = MapLaunch.BadArgument(args)!;
+
+        Assert.HasCount(2, args.Problems);
+        Assert.AreEqual(LaunchArgs.BadArgumentExitCode, bad.Code);
+        StringAssert.Contains(bad.Message, "unknown flag --bogus; ");
+        StringAssert.Contains(bad.Message, "window_width_override.movie");
     }
 
     [TestMethod]
@@ -462,7 +576,12 @@ public sealed class LaunchArgsTests
     [TestMethod]
     public void TheLayoutFlagWithAPlayScriptIsNoProblem()
     {
-        var args = LaunchArgs.Parse(["--layout", "a.jsonc", "--play", "play/a.play"], null, movieMaker: true);
+        var args = LaunchArgs.Parse(
+            ["--layout", "a.jsonc", "--play", "play/a.play"],
+            null,
+            movieMaker: true,
+            PlayWindow
+        );
 
         Assert.AreEqual("play/a.play", args.Play);
         Assert.IsEmpty(args.Problems);
@@ -606,7 +725,7 @@ public sealed class LaunchArgsTests
     [DataRow("--layout")]
     public void AnEmptyPlayOrLayoutValueIsOneProblemLikeAnEmptyGame(string flag)
     {
-        var args = LaunchArgs.Parse(["--map", flag, ""], null, movieMaker: true);
+        var args = LaunchArgs.Parse(["--map", flag, ""], null, movieMaker: true, PlayWindow);
 
         Assert.IsTrue(args.Problems.Contains($"{flag} needs a value"));
         Assert.IsNull(flag == "--play" ? args.Play : args.Layout);

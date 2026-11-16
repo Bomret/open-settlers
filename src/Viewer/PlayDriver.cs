@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Godot;
+using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 
 namespace OpenSettlers.Viewer;
@@ -31,7 +32,7 @@ namespace OpenSettlers.Viewer;
 public partial class PlayDriver : Node
 {
     /// <summary>The window and content size of a play run.</summary>
-    public static readonly Vector2I WindowSize = new(1280, 720);
+    public static readonly Vector2I WindowSize = new(LaunchArgs.PlayWindowWidth, LaunchArgs.PlayWindowHeight);
 
     /// <summary>
     /// The line a minimized run prints when its window could draw on every frame. tools/play-run.sh matches the

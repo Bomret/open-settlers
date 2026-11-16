@@ -14,7 +14,7 @@ public sealed class MapLaunchTests
 {
     const string Project = "project";
 
-    static LaunchArgs Args(params string[] args) => LaunchArgs.Parse(args, null, movieMaker: true);
+    static LaunchArgs Args(params string[] args) => LaunchArgs.Parse(args, null, movieMaker: true, (1280, 720));
 
     static (int Code, Layout? Layout, string? Message) LoadsFine(string path) =>
         LayoutLoad.Run(path, out var layout, out var message) is var code && code == 0

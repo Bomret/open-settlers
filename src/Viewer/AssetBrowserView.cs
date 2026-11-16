@@ -35,10 +35,14 @@ public partial class AssetBrowserView : Control
     /// <inheritdoc/>
     public override void _Ready()
     {
+        // The window's pixel size at startup, read before PlayDriver resizes or minimizes it. Under canvas_items and
+        // expand the content scale size and the visible rect stay 1152 x 648 for any 16:9 window.
+        var window = DisplayServer.WindowGetSize();
         var args = LaunchArgs.Parse(
             OS.GetCmdlineUserArgs(),
             System.Environment.GetEnvironmentVariable(LaunchArgs.GameVariable),
-            movieMaker: !string.IsNullOrEmpty(Engine.GetWriteMoviePath())
+            movieMaker: !string.IsNullOrEmpty(Engine.GetWriteMoviePath()),
+            startWindow: (window.X, window.Y)
         );
         if (MapLaunch.BadArgument(args) is { } bad)
         {

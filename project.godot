@@ -20,5 +20,7 @@ project/assembly_name="OpenSettlers"
 
 [display]
 
+window/size/window_width_override.movie=1280
+window/size/window_height_override.movie=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"

@@ -104,6 +104,19 @@ public sealed class LaunchArgs
     /// <summary>The flag that minimizes the window of a play run.</summary>
     public const string MinimizedFlag = "--minimized";
 
+    /// <summary>
+    /// The window width of a play run in pixels. project.godot sets the window and Movie Maker's frame size to it under
+    /// Movie Maker (<see cref="PlayWindowSetting"/>); keep the two alike.
+    /// </summary>
+    public const int PlayWindowWidth = 1280;
+
+    /// <summary>The window height of a play run in pixels; see <see cref="PlayWindowWidth"/>.</summary>
+    public const int PlayWindowHeight = 720;
+
+    /// <summary>The project settings that start the window of a play run at its size under Movie Maker.</summary>
+    const string PlayWindowSetting =
+        "display/window/size/window_width_override.movie and window_height_override.movie in project.godot";
+
     /// <summary>The highest start stock level the free-game screen's bar sets.</summary>
     const int MaxStock = 40;
 
@@ -155,9 +168,17 @@ public sealed class LaunchArgs
     /// <summary>
     /// Reads <c>args</c>, the arguments after <c>--</c>. <c>siedlerDir</c> is the value of the
     /// <c>SIEDLER_DIR</c> environment variable, null or empty when unset; it is used only when the game flag is
-    /// absent. <c>movieMaker</c> tells whether Godot runs under Movie Maker, which <c>--play</c> needs. Never throws. A stray argument that is no flag and no flag's value is ignored.
+    /// absent. <c>movieMaker</c> tells whether Godot runs under Movie Maker, which <c>--play</c> needs. <c>startWindow</c> is
+    /// the window's pixel size at startup; <c>--play</c> under Movie Maker needs exactly
+    /// <see cref="PlayWindowWidth"/> x <see cref="PlayWindowHeight"/>, and null, the default, is no such size. Never throws. A
+    /// stray argument that is no flag and no flag's value is ignored.
     /// </summary>
-    public static LaunchArgs Parse(string[] args, string? siedlerDir, bool movieMaker = false)
+    public static LaunchArgs Parse(
+        string[] args,
+        string? siedlerDir,
+        bool movieMaker = false,
+        (int Width, int Height)? startWindow = null
+    )
     {
         string? play = null;
         var playGiven = false;
@@ -404,6 +425,14 @@ public sealed class LaunchArgs
         if (playGiven && !movieMaker)
         {
             problems.Add($"{PlayFlag} needs Movie Maker: start with --write-movie and --fixed-fps");
+        }
+        else if (playGiven && startWindow != (PlayWindowWidth, PlayWindowHeight))
+        {
+            // Movie Maker takes its frame size from the window size at startup, so a play run refuses any other.
+            var started = startWindow is { } window ? $"{window.Width} x {window.Height}" : "an unknown size";
+            problems.Add(
+                $"{PlayFlag} needs a window of {PlayWindowWidth} x {PlayWindowHeight} at startup, not {started}: {PlayWindowSetting} set it, and the display must not clamp or scale it"
+            );
         }
 
         return new LaunchArgs
