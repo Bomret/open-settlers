@@ -18,6 +18,7 @@ public sealed class JobLooksTests
         new Forester(),
         new Digger(),
         new Sawmiller(),
+        new Farmer(),
     ];
 
     static RuleTables Tables() =>
@@ -55,6 +56,7 @@ public sealed class JobLooksTests
                 "forester",
                 "digger",
                 "sawmiller",
+                "farmer",
             },
             looks.Select(look => look.Key).ToArray()
         );

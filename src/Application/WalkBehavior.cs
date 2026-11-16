@@ -213,7 +213,7 @@ public sealed class WalkBehavior(
     }
 
     /// <summary>
-    /// The worker a finished building of a job whose settler stands in the hut (the woodcutter's, stonecutter's, or forester's building) stands
+    /// The worker a finished building of a job whose settler stands in the hut (the woodcutter's, stonecutter's, forester's, or farmer's building) stands
     /// with (docs/rules/layouts.md, ADR 0009, INV-0005), as the
     /// mission start (<c>0x41f2d2</c>) creates a building's settlers inside it: the castle's woodcutter (or stonecutter, or a
     /// settler without a job that becomes the forester, the castle holding none) has
@@ -222,7 +222,7 @@ public sealed class WalkBehavior(
     /// (<c>0x42be63</c>) is made as the original makes it: the castle's list of waiting woodcutters loses him, the hut is
     /// marked as served so it asks for no second worker. The castle's counter of settlers sent out rises with the request and
     /// falls again where he leaves the castle (<c>0x43dd4a</c>), so it is the same as before. Refused for a node that is no
-    /// finished woodcutter's, stonecutter's, or forester's building, a hut that has its worker or has one on the way, a hut whose door node
+    /// finished woodcutter's, stonecutter's, forester's, or farmer's building, a hut that has its worker or has one on the way, a hut whose door node
     /// is taken, and a castle that holds no worker of the job. Returns why it refused, or null.
     /// </summary>
     public string? StandWorkerInHut(int x, int y)
@@ -292,7 +292,7 @@ public sealed class WalkBehavior(
     static string NameOf(JobRules rules) => rules.JobType.Name.ToLowerInvariant();
 
     // The refusal for a node with no building that stands a worker. It names the jobs whose modules let their settler stand in the hut:
-    // "no finished woodcutter's, stonecutter's, or forester's building stands on the node" for three, "a's or b's" for two, "a's" for
+    // "no finished woodcutter's, stonecutter's, forester's, or farmer's building stands on the node" for four, "a's or b's" for two, "a's" for
     // one, and no job for none. The names are in descending ordinal order, so three names read woodcutter, stonecutter, forester.
     internal static string NoHutRefusal(IEnumerable<JobRules> modules)
     {

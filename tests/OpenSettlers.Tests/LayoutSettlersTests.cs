@@ -331,7 +331,7 @@ public sealed class LayoutSettlersTests
         );
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, or forester's building stands on the node",
+            "no finished woodcutter's, stonecutter's, forester's, or farmer's building stands on the node",
             game.Walks.StandWorkerInHut(x, y)
         );
     }
@@ -387,7 +387,7 @@ public sealed class LayoutSettlersTests
         Assert.IsTrue(game.Buildings[1].Constructing);
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, or forester's building stands on the node",
+            "no finished woodcutter's, stonecutter's, forester's, or farmer's building stands on the node",
             game.Walks.StandWorkerInHut(13, 10)
         );
     }
