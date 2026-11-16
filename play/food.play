@@ -1,5 +1,5 @@
 # The six food buildings stand finished on layouts/food.jsonc, each with its flag south-east of it, and the dump names each food good.
-# A building asks for its worker and finds no road, so none walks out. The castle's start stock holds one grain and no other food.
+# A building asks for its worker and finds no road, so none walks out. The layout stands the fisher's worker inside his building. The castle's start stock holds one grain and no other food.
 # Run it on the layout, under either graphics source:
 #   sh tools/play-run.sh food --layout layouts/food.jsonc --fps 10
 #   sh tools/play-run.sh food --layout layouts/food.jsonc --fps 10 --graphics open-settlers
