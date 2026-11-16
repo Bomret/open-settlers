@@ -61,6 +61,26 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
+    public void TheFoodBuildingsAndGoodsHaveNamesWithEvidence()
+    {
+        Assert.AreEqual("fisher-hut", NameTable.BuildingName(BuildingType.Fisher.Code));
+        Assert.AreEqual("farm", NameTable.BuildingName(BuildingType.Farm.Code));
+        Assert.AreEqual("baker", NameTable.BuildingName(BuildingType.Baker.Code));
+        Assert.AreEqual("mill", NameTable.BuildingName(BuildingType.Mill.Code));
+        Assert.AreEqual("pig-farm", NameTable.BuildingName(BuildingType.PigFarm.Code));
+        Assert.AreEqual("butcher", NameTable.BuildingName(BuildingType.Butcher.Code));
+        CollectionAssert.AreEqual(
+            new[] { "fish", "flour", "bread", "grain", "pig", "meat" },
+            Enumerable.Range(1, 6).Select(NameTable.GoodName).ToArray()
+        );
+        Assert.AreEqual("log", NameTable.GoodName(7));
+        Assert.AreEqual("plank", NameTable.GoodName(8));
+        Assert.AreEqual("stone", NameTable.GoodName(10));
+        Assert.IsNull(NameTable.GoodName(9));
+        Assert.IsNull(NameTable.GoodName(0));
+    }
+
+    [TestMethod]
     public void AnUnknownCodeGetsNoName()
     {
         Assert.IsNull(NameTable.StateName(0x43));
