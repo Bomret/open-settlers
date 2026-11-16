@@ -294,7 +294,6 @@ public sealed class MidiFileTests
         StringAssert.Contains(error.Message, "longer than four bytes");
     }
 
-    // Source: music-file.md, "The file format": four bytes are the most a delta time takes.
     // Source: music-file.md, "In the engine": a tempo event holds 3 bytes, and another length is unreadable (the engine's choice).
     [TestMethod]
     [DataRow(0)]
@@ -338,6 +337,7 @@ public sealed class MidiFileTests
         Assert.AreEqual(2, music.Tracks[0].EventCount);
     }
 
+    // Source: music-file.md, "The file format": four bytes are the most a delta time takes.
     [TestMethod]
     public void AVariableLengthNumberOfFourBytesIsReadable()
     {

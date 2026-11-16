@@ -116,7 +116,7 @@ public sealed class TerrainRulesTests
         Assert.IsNull(TerrainRules.Lower(10, 11, 6, new Terrain { Code = 5 }));
     }
 
-    // A slope two nodes beyond the table's end (an index of 81 or more, or below 0) has no entry in the 81 values.
+    // An index outside 0 to 80 (here 81, from the slopes 0 and 9) has no entry in the 81 values.
     [TestMethod]
     public void AnIndexBeyondTheTableGivesNoDraw()
     {

@@ -205,7 +205,8 @@ static class TerrainRules
     /// south and south-east of it, with the five low bits of their heights and the terrain code of the triangle.
     /// The original checks no slope's range (<c>0x4278be</c>), so a slope outside -4 to 4 aliases into another row of
     /// the table and draws that row's entry. Null where the index lies outside 0 to 80 (a stand-in: the original reads
-    /// past the table there) or the table's entry is <c>0xff</c>.
+    /// outside the table there, before it for a negative index and past it otherwise) or the table's entry is
+    /// <c>0xff</c>.
     /// </summary>
     public static TerrainDraw? Upper(int apex, int left, int right, Terrain terrain) =>
         Pick(
