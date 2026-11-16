@@ -20,6 +20,14 @@ namespace OpenSettlers.Viewer;
 /// (<c>--minimized</c>, the hidden run of the wrapper's repro mode) minimizes the window before its first frame and keeps
 /// the content size; when the window could draw on every frame, it prints <see cref="NeverHiddenLine"/> at the end.
 /// <para>
+/// Platform-layer finding (Godot 4.7.2, checked on macOS only): Movie Maker fixes its frame size when the movie begins,
+/// from the project settings <c>display/window/size/viewport_width</c> and <c>viewport_height</c>, which
+/// <c>window_width_override</c> and <c>window_height_override</c> replace under the <c>canvas_items</c> stretch mode
+/// (<c>main/main.cpp:4841</c>), and scales every frame to that size (<c>servers/movie_writer/movie_writer.cpp:231</c>).
+/// The window's size, the <c>--resolution</c> flag included, never sets it, so project.godot gives the play run's size
+/// through the <c>.movie</c> feature-tagged overrides.
+/// </para>
+/// <para>
 /// Every frame of the run is drawn, whatever the window's visibility. Platform-layer finding (Godot 4.7.2, checked on
 /// macOS only): when the display server reports that the window cannot draw (hidden, minimized, or covered), the main
 /// loop skips the frame's draw (<c>main/main.cpp:5081</c>), while Movie Maker still writes a frame on every iteration
