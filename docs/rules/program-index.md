@@ -435,22 +435,22 @@ entries per phase (see "Item tables").
 | `0x42d9c9` | `Building_HandleType9` | The handler of the building type 9, the forester's building (his work puts the saplings `0x67` and `0x68` on the map): asks for a settler of job 8 with no tool. | confirmed | game | Entry 9 of `0x42cd1d`. [Build sites](build-sites.md#the-building-types). |
 | `0x42da0b` | `Building_HandleType17` | The handler of the building type 0x11, the sawmill: asks for a settler of job 6 with the tool of the stock word `0x2c` (good 22), and with the worker inside (status bit 6) keeps the rank of its flag's request for logs through the pointer at `+0xe` of its item: the byte at `0x45` is `0xff` shifted right by the goods the fill byte 9 counts (both nibbles), 0 where they are 8 or more. | confirmed | game | Entry 0x11 of `0x42cd1d`. [Build sites](build-sites.md#the-building-types), [Sawmilling](sawmilling.md#the-rank-of-the-request-for-logs). |
 | `0x42e25e` | `Building_HandleFarm` | The handler of the building type 0xc, the farm: asks for a settler of job 14 with the tool of the stock word `0x28` (good 20); asks for no input. | confirmed | game | Entry 0xc of `0x42cd1d`. [Food buildings](food-buildings.md#the-six-types). |
-| `0x42e1b3` | `Building_HandleBaker` | The handler of the building type 0xd, the baker: asks for a settler of job 13 with the tool of the stock word `0x26` (good 19); with the worker inside (status bit 6) sets the rank of the flag's first request word, `0xff` shifted right by the goods the fill byte 8 counts, 0 at 8 or more. | confirmed | game | Entry 0xd of `0x42cd1d`. [Food buildings](food-buildings.md#the-six-types). |
-| `0x42e0fa` | `Building_HandleMill` | The handler of the building type 0xe, the mill: asks for a settler of job 12 with no tool; with the worker inside sets the rank of the first request word from the high byte of the player word at `+0x158` shifted right by the goods the fill byte 8 counts. | confirmed | game | Entry 0xe of `0x42cd1d`. [Food buildings](food-buildings.md#the-six-types). |
-| `0x42e2a0` | `Building_HandlePigFarm` | The handler of the building type 0xf, the pig farm: asks (at `0x42e2d2`) for a settler of job 15 with no tool, and keeps the rank of its input request. | confirmed | game | Entry 0xf of `0x42cd1d`. [Food buildings](food-buildings.md#the-six-types). |
-| `0x42e37e` | `Building_HandleButcher` | The handler of the building type 0x10, the butcher: asks for a settler of job 16 with no tool, and keeps the rank of its input request. | confirmed | game | Entry 0x10 of `0x42cd1d`. [Food buildings](food-buildings.md#the-six-types). |
+| `0x42e1b3` | `Building_HandleButcher` | The handler of the building type 0xd, the butcher: asks for a settler of job 13 with the tool of the stock word `0x26` (good 19, the butcher's knife); with the worker inside (status bit 6) sets the rank of the flag's first request word, `0xff` shifted right by the goods the fill byte 8 counts, 0 at 8 or more. | confirmed | game | Entry 0xd of `0x42cd1d`. [Food buildings](food-buildings.md#the-six-types). |
+| `0x42e0fa` | `Building_HandlePigFarm` | The handler of the building type 0xe, the pig farm: asks for a settler of job 12 with no tool; with the worker inside sets the rank of the first request word from the high byte of the player word at `+0x158` shifted right by the goods the fill byte 8 counts. | confirmed | game | Entry 0xe of `0x42cd1d`. [Food buildings](food-buildings.md#the-six-types). |
+| `0x42e2a0` | `Building_HandleMill` | The handler of the building type 0xf, the mill: asks (at `0x42e2d2`) for a settler of job 15 with no tool, and keeps the rank of its input request. | confirmed | game | Entry 0xf of `0x42cd1d`. [Food buildings](food-buildings.md#the-six-types). |
+| `0x42e37e` | `Building_HandleBaker` | The handler of the building type 0x10, the baker: asks for a settler of job 16 with no tool, and keeps the rank of its input request. | confirmed | game | Entry 0x10 of `0x42cd1d`. [Food buildings](food-buildings.md#the-six-types). |
 | `0x43d14d` | `Fisher_Start` | The start routine of job 11, entry 0xb of `0x43ca54`: with byte 11 `0xfe` it goes into the storage as every job's does, else the settler takes state `0x1f`; sets no request class. | confirmed | game | Entry 0xb of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
-| `0x43d179` | `MillWorker_Start` | The start routine of job 12, entry 0xc of `0x43ca54`: sets class 4 (grain) in both request words of the building's flag and takes state `0x25`. | confirmed | game | Entry 0xc of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
-| `0x43d275` | `BakerWorker_Start` | The start routine of job 13, entry 0xd of `0x43ca54`: sets class 3 (flour) in both request words and takes state `0x26`. | confirmed | game | Entry 0xd of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
+| `0x43d179` | `PigFarmer_Start` | The start routine of job 12, the pig farmer's, entry 0xc of `0x43ca54`: sets class 4 (grain) in both request words of the building's flag and takes state `0x25`. | confirmed | game | Entry 0xc of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
+| `0x43d275` | `Butcher_Start` | The start routine of job 13, the butcher's, entry 0xd of `0x43ca54`: sets class 3 (pig) in both request words and takes state `0x26`. | confirmed | game | Entry 0xd of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
 | `0x43d311` | `Farmer_Start` | The start routine of job 14, entry 0xe of `0x43ca54`: sets no request class and takes state `0x21`. | confirmed | game | Entry 0xe of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
-| `0x43d33d` | `PigFarmer_Start` | The start routine of job 15, entry 0xf of `0x43ca54`: sets class 4 (grain) in both request words and takes state `0x23`. | confirmed | game | Entry 0xf of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
-| `0x43d3d9` | `Butcher_Start` | The start routine of job 16, entry 0x10 of `0x43ca54`: sets class 5 (pig) in both request words and takes state `0x24`. | confirmed | game | Entry 0x10 of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
+| `0x43d33d` | `MillWorker_Start` | The start routine of job 15, the miller's, entry 0xf of `0x43ca54`: sets class 4 (grain) in both request words and takes state `0x23`. | confirmed | game | Entry 0xf of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
+| `0x43d3d9` | `BakerWorker_Start` | The start routine of job 16, the baker's, entry 0x10 of `0x43ca54`: sets class 5 (flour) in both request words and takes state `0x24`. | confirmed | game | Entry 0x10 of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
 | `0x438232` | `Fisher_FreeWalkArrived` | The arrival of job 11 at the end of the free walk, entry 0xb of `0x437dfb`: its put of fish (good 1) is the call of `Flag_PutGood` at `0x43837f`. Its walk is a later slice's. | confirmed | game | Entry 0xb of `0x437dfb`. [Food buildings](food-buildings.md#the-goods). |
 | `0x438391` | `Farmer_FreeWalkArrived` | The arrival of job 14 at the end of the free walk, entry 0xe of `0x437dfb`: its put of grain (good 4) is the call of `Flag_PutGood` at `0x43847d`. Its walk is a later slice's. | confirmed | game | Entry 0xe of `0x437dfb`. [Food buildings](food-buildings.md#the-goods). |
-| `0x4333c1` | `MillWorker_Work` | State `0x25`, the work of job 12: sets byte 11 to 2 (flour, `0x433577`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x25` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
-| `0x4332a8` | `BakerWorker_Work` | State `0x26`, the work of job 13: sets byte 11 to 3 (bread, `0x4333a5`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x26` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
-| `0x43386b` | `PigFarmer_Work` | State `0x23`, the work of job 15: sets byte 11 to 5 (pig, `0x433a1e`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x23` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
-| `0x433694` | `Butcher_Work` | State `0x24`, the work of job 16: sets byte 11 to 6 (meat, `0x43384f`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x24` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
+| `0x4333c1` | `PigFarmer_Work` | State `0x25`, the work of job 12: sets byte 11 to 2 (pig, `0x433577`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x25` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
+| `0x4332a8` | `Butcher_Work` | State `0x26`, the work of job 13: sets byte 11 to 3 (meat, `0x4333a5`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x26` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
+| `0x43386b` | `MillWorker_Work` | State `0x23`, the work of job 15: sets byte 11 to 5 (flour, `0x433a1e`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x23` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
+| `0x433694` | `BakerWorker_Work` | State `0x24`, the work of job 16: sets byte 11 to 6 (bread, `0x43384f`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x24` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
 | `0x44ed02` | `Gfx_DrawFarm` | The draw stub of the building type 0xc: object 154 (`0x9a`). The tables at `0x44fcfe` and `0x44fd16` hold the scaffold and finished objects of every type, among them the six food types. | confirmed | graphics | Entry 0xc of `0x44e3aa`. [Food buildings](food-buildings.md#drawing). |
 | `0x42d55f` | `Building_HandleConstruction` | The handler a building under construction goes to: the entries `0x21` to `0x29` and a few more of `0x42cd1d` jump here instead of to the type's handler. Where the site's status bits 2, 6, and 7 are clear it sets the progress word to 1 and asks for the builder (job 3, tool `0x22`, at `0x42d5fc`; [the builder](construction.md#the-request-for-a-builder)), and it keeps the rank of the site's flag's requests for planks and stones from what the site holds on site and on the way ([Materials](construction-materials.md#the-building-passs-turn-of-a-site)). | confirmed | game | Entries `0x21` and on of `0x42cd1d`; the emulator's `construct:` games show the ranks and the builder's walk. |
 | `0x43ce20` | `Builder_Start` | The start routine of job 3 (entry 3 of `0x43ca54`, the jump at `0x43ca6c`), run where the builder has stepped through the door of a site: with byte 11 `0xfe` it goes into the storage as every job's does; else the builder takes state 9 with the frame `0x62` (`0x64` for the types 10, 17, 19, and 22 by the mask `0x4a0400`), the timer `0x7f`, the site's slot in the word at 12, and no material taken ([the builder](construction.md#the-builders-turn)). | confirmed | game | Entry 3 of `0x43ca54`; the engine's `BuilderRules.Start`. |
@@ -1196,11 +1196,11 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42d9c9` | `Building_HandleType9` | confirmed | Simulation |
 | `0x42da0b` | `Building_HandleType17` | confirmed | Simulation |
 | `0x42e0b8` | `Building_HandleType1` | confirmed | Simulation |
-| `0x42e0fa` | `Building_HandleMill` | confirmed | Simulation |
-| `0x42e1b3` | `Building_HandleBaker` | confirmed | Simulation |
+| `0x42e0fa` | `Building_HandlePigFarm` | confirmed | Simulation |
+| `0x42e1b3` | `Building_HandleButcher` | confirmed | Simulation |
 | `0x42e25e` | `Building_HandleFarm` | confirmed | Simulation |
-| `0x42e2a0` | `Building_HandlePigFarm` | confirmed | Simulation |
-| `0x42e37e` | `Building_HandleButcher` | confirmed | Simulation |
+| `0x42e2a0` | `Building_HandleMill` | confirmed | Simulation |
+| `0x42e37e` | `Building_HandleBaker` | confirmed | Simulation |
 | `0x42e7e0` | `Building_HandleCastle` | inferred | Simulation |
 | `0x42f3d9` | `Table16_Pass` | confirmed | Simulation |
 | `0x42f4f1` | `View_BuildSettlerRecords` | confirmed | Simulation |
@@ -1216,10 +1216,10 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x430fd3` | `Player_SwapOutSecondView` | confirmed | Input |
 | `0x4312ed` | `Flag_ReleaseGoods` | confirmed | Castle and build sites |
 | `0x431c31` | `Msg_Post` | confirmed | Main loop |
-| `0x4332a8` | `BakerWorker_Work` | inferred | Simulation |
-| `0x4333c1` | `MillWorker_Work` | inferred | Simulation |
-| `0x433694` | `Butcher_Work` | inferred | Simulation |
-| `0x43386b` | `PigFarmer_Work` | inferred | Simulation |
+| `0x4332a8` | `Butcher_Work` | inferred | Simulation |
+| `0x4333c1` | `PigFarmer_Work` | inferred | Simulation |
+| `0x433694` | `BakerWorker_Work` | inferred | Simulation |
+| `0x43386b` | `MillWorker_Work` | inferred | Simulation |
 | `0x434946` | `Settler_ClaimNode` | confirmed | Simulation |
 | `0x4350f8` | — | unknown | Simulation |
 | `0x4353ef` | `Settler_SearchFlag` | confirmed | Simulation |
@@ -1263,11 +1263,11 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43cfdd` | `Stonecutter_Start` | confirmed | Simulation |
 | `0x43d009` | `Forester_Start` | confirmed | Simulation |
 | `0x43d14d` | `Fisher_Start` | confirmed | Simulation |
-| `0x43d179` | `MillWorker_Start` | confirmed | Simulation |
-| `0x43d275` | `BakerWorker_Start` | confirmed | Simulation |
+| `0x43d179` | `PigFarmer_Start` | confirmed | Simulation |
+| `0x43d275` | `Butcher_Start` | confirmed | Simulation |
 | `0x43d311` | `Farmer_Start` | confirmed | Simulation |
-| `0x43d33d` | `PigFarmer_Start` | confirmed | Simulation |
-| `0x43d3d9` | `Butcher_Start` | confirmed | Simulation |
+| `0x43d33d` | `MillWorker_Start` | confirmed | Simulation |
+| `0x43d3d9` | `BakerWorker_Start` | confirmed | Simulation |
 | `0x43dceb` | `Settler_WaitStep` | confirmed | Simulation |
 | `0x43dd4a` | `Settler_LeaveBuilding` | confirmed | Simulation |
 | `0x43e008` | `Builder_LeaveSite` | confirmed | Simulation |

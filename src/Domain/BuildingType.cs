@@ -53,28 +53,28 @@ public readonly record struct BuildingType
     public static BuildingType Farm => new() { Code = 0xc };
 
     /// <summary>
-    /// The baker, a large building: the handler of the type 0xd (<c>0x42e1b3</c>) asks for job 13 with the tool of the stock word 0x26
-    /// (good 19); the job takes in good 2 (flour) and puts good 3 (bread, <c>0x4333a5</c>).
+    /// The butcher, a large building: the handler of the type 0xd (<c>0x42e1b3</c>) asks for job 13 with the tool of the stock word 0x26
+    /// (good 19, the butcher's knife); the job takes in good 2 (pig) and puts good 3 (meat, <c>0x4333a5</c>).
     /// </summary>
-    public static BuildingType Baker => new() { Code = 0xd };
+    public static BuildingType Butcher => new() { Code = 0xd };
 
     /// <summary>
-    /// The mill, a large building: the handler of the type 0xe (<c>0x42e0fa</c>) asks for job 12 with no tool; the job takes in good 4
-    /// (grain) and puts good 2 (flour, <c>0x433577</c>).
+    /// The pig farm, a large building and the farm's twin in size, materials, and scaffold: the handler of the type 0xe (<c>0x42e0fa</c>)
+    /// asks for job 12 with no tool; the job takes in good 4 (grain) and puts good 2 (pig, <c>0x433577</c>).
     /// </summary>
-    public static BuildingType Mill => new() { Code = 0xe };
+    public static BuildingType PigFarm => new() { Code = 0xe };
 
     /// <summary>
-    /// The pig farm, a small building: the handler of the type 0xf (<c>0x42e2a0</c>) asks for job 15 with no tool; the job takes in
-    /// good 4 (grain) and puts good 5 (pig, <c>0x433a1e</c>).
+    /// The mill, a small building that the History Edition draws as a windmill: the handler of the type 0xf (<c>0x42e2a0</c>) asks for
+    /// job 15 with no tool; the job takes in good 4 (grain) and puts good 5 (flour, <c>0x433a1e</c>).
     /// </summary>
-    public static BuildingType PigFarm => new() { Code = 0xf };
+    public static BuildingType Mill => new() { Code = 0xf };
 
     /// <summary>
-    /// The butcher, a large building: the handler of the type 0x10 (<c>0x42e37e</c>) asks for job 16 with no tool; the job takes in
-    /// good 5 (pig) and puts good 6 (meat, <c>0x43384f</c>).
+    /// The baker, a large building: the handler of the type 0x10 (<c>0x42e37e</c>) asks for job 16 with no tool; the job takes in
+    /// good 5 (flour) and puts good 6 (bread, <c>0x43384f</c>).
     /// </summary>
-    public static BuildingType Butcher => new() { Code = 0x10 };
+    public static BuildingType Baker => new() { Code = 0x10 };
 
     /// <summary>The storehouse: a storage like the castle (<c>docs/rules/removal.md</c>).</summary>
     public static BuildingType Storehouse => new() { Code = 0xa };

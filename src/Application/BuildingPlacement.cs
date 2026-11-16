@@ -29,10 +29,10 @@ public sealed class BuildingPlacement(
         BuildingType.Sawmill,
         BuildingType.Fisher,
         BuildingType.Farm,
-        BuildingType.Baker,
-        BuildingType.Mill,
-        BuildingType.PigFarm,
         BuildingType.Butcher,
+        BuildingType.PigFarm,
+        BuildingType.Mill,
+        BuildingType.Baker,
     ];
 
     /// <summary>

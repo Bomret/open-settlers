@@ -397,10 +397,10 @@ public sealed class OpenSettlersSourceTests
     [DataRow(0x11, "building/sawmill")]
     [DataRow(1, "building/fisher")]
     [DataRow(0xc, "building/farm")]
-    [DataRow(0xd, "building/baker")]
-    [DataRow(0xe, "building/mill")]
-    [DataRow(0xf, "building/pig-farm")]
-    [DataRow(0x10, "building/butcher")]
+    [DataRow(0xd, "building/butcher")]
+    [DataRow(0xe, "building/pig-farm")]
+    [DataRow(0xf, "building/mill")]
+    [DataRow(0x10, "building/baker")]
     public void ABuildingDrawsItsOwnImageWithNoShadow(int type, string key)
     {
         using var folder = new ContentFolder();

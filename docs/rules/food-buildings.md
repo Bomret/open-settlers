@@ -2,18 +2,23 @@
 
 This note names the building types of the food chain, the jobs and tools they ask for, and the goods 1 to 26. It covers what the
 placement, the builder, and the worker request need of them. The work cycle of each job (the fisher's catch, the farm's fields, the
-mill, the baker, the pig farm, and the butcher) is read by the later slices of M5. Addresses and routine names are in the
+pig farm, the butcher, the mill, and the baker) is read by the later slices of M5. Addresses and routine names are in the
 [Program index](program-index.md#simulation). The placement, the materials, and the builder are in
 [Build sites](build-sites.md), [Materials](construction-materials.md), and [Construction](construction.md).
 
 **Emulated.** The emulator's `peek` of the size table (`0x42d307`), the needs table (`0x449f18`), and the two draw tables (`0x44fcfe`
 and `0x44fd16`) gives the values below. `tests/OpenSettlers.Tests/food-sites.txt` holds the emulator's placement of a site of each
-food type (verb `remove`, click `b@x,y,T`), and `BuildingSitePlacementTests` matches the engine's bytes to it.
+food type (verb `remove`, click `b@x,y,T`), and `BuildingSitePlacementTests` matches the engine's bytes to it. The emulator's click
+places whatever the evaluator judged and refuses nothing, because the program's click on a panel's building is not recovered
+([Build sites](build-sites.md), "The node states"). The file therefore holds the evaluator's site of eight nodes of the same game (the
+scenario `food-evaluated`), and the test sets a food type's size against each: a large type is placed on a site of 4, a small one on a
+site of 3 or 4, and either is refused on a smaller site with the game unchanged. That size rule is the stand-in of the build panel
+(**stand-in**), not a recorded verdict of the program.
 
 ## The six types
 
-**Status:** confirmed for the table values and the handlers' requests. The names are **inferred** (INV-0006) from the chain below:
-what each job takes in and puts out.
+**Status:** confirmed for the table values and the handlers' requests. The names are **inferred** (INV-0006); the next section
+gives the evidence.
 
 The handler of a type is entry *type* of the jump table `Building_TypeJumpTable` (`0x42cd1d`). Each handler loads the job and the
 tool stock word for `Building_RequestWorker` (`0x42be63`), as [Construction](construction.md#the-worker-request) describes. The tool
@@ -23,18 +28,18 @@ good is the stock word halved.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | fisher | small | 2, 0 | `0x42e0b8` | job 11, good 18 | `0`, `0x1000` and `0x1000` | 167, 186 |
 | 0xc | farm | large | 4, 1 | `0x42e25e` | job 14, good 20 | `8`, `0x800` and `0x556` | 154, 177 |
-| 0xd | baker | large | 2, 1 | `0x42e1b3` | job 13, good 19 | `2`, `0x1000` and `0x800` | 156, 184 |
-| 0xe | mill | large | 4, 1 | `0x42e0fa` | job 12, no tool | `8`, `0x800` and `0x556` | 155, 177 |
-| 0xf | pig farm | small | 3, 1 | `0x42e2a0` | job 15, no tool | `4`, `0x800` and `0x800` | 188, 187 |
-| 0x10 | butcher | large | 2, 1 | `0x42e37e` | job 16, no tool | `4`, `0x1000` and `0x800` | 162, 183 |
+| 0xd | butcher | large | 2, 1 | `0x42e1b3` | job 13, good 19 | `2`, `0x1000` and `0x800` | 156, 184 |
+| 0xe | pig farm | large | 4, 1 | `0x42e0fa` | job 12, no tool | `8`, `0x800` and `0x556` | 155, 177 |
+| 0xf | mill | small | 3, 1 | `0x42e2a0` | job 15, no tool | `4`, `0x800` and `0x800` | 188, 187 |
+| 0x10 | baker | large | 2, 1 | `0x42e37e` | job 16, no tool | `4`, `0x1000` and `0x800` | 162, 183 |
 
 The order word is the material order of `Builder_MaterialOrder` (`0x43f0ba`): the set bits are the turns that take a stone, so the
-farm and the mill take their stone fourth, the baker its stone second, the pig farm and the butcher theirs third, and the fisher
-takes planks only. The steps are the two words of `Builder_BlowSteps` (`0x43f0fa`). The sizes are the size table: the pig
-farm is a small building and the other large food types are large. The door speeds (`0x43c92b`) are one byte for each type, read for
+farm and the pig farm take their stone fourth, the butcher its stone second, the mill and the baker theirs third, and the fisher
+takes planks only. The steps are the two words of `Builder_BlowSteps` (`0x43f0fa`). The sizes are the size table: the mill is a small
+building and the other large food types are large. The door speeds (`0x43c92b`) are one byte for each type, read for
 all of them.
 
-The handler of the pig farm reads the building's bytes before it asks, so its request lies at `0x42e2d2`; the other five ask at the
+The handler of the mill reads the building's bytes before it asks, so its request lies at `0x42e2d2`; the other five ask at the
 start of the handler (13 bytes in).
 
 **Not food types.** The same table holds the rest of the types 0 to 0x17. Types 2, 4, 9, and 0x11 are the huts and the sawmill
@@ -44,16 +49,38 @@ one tool, except types 0x13 and 0x14: those load a second tool word (stock words
 word of `Building_RequestWorker` is therefore not zero in every handler, as [Construction](construction.md#the-worker-request) first
 stated for the types of M4; no food handler uses it.
 
-### The well
+### Which chain is which
+
+**Status:** the names of the types 0xd to 0x10, of the jobs 12, 13, 15, and 16, and of the goods 2, 3, 5, and 6 are **inferred**. No text of
+the install names them (the `loca/` files hold no building or good name). The code fixes two chains and leaves the names open: the jobs 12
+and 15 each take grain in, and each puts one good that the next job of its chain (13 after 12, 16 after 15) takes in and turns into a
+third. Three kinds of evidence tell the chains apart:
+
+1. **The tool.** Only the handler of the type 0xd asks for a tool (good 19, stock word `0x26`); the types 0xe, 0xf, and 0x10 ask for none.
+   The install's manual (`THE SETTLERS - Manual-EN.pdf`, chapter 3, the list of tools) gives the butcher a butcher's knife and the baker
+   none (bakers and carriers need no tool). That makes the job 13 the butcher's and the chain 12, 13 the pig and meat chain, and it leaves
+   the chain 15, 16 the flour and bread chain. The manual is install documentation, not the program.
+2. **The art the program draws.** A play run of `layouts/food.jsonc` on the History Edition source draws each finished type from the
+   objects of the table at `0x44fd16`, and a good on a flag draws entry 320 plus its number. The object 188 of the type 0xf is a
+   windmill (small and tall) and the object 162 of the type 0x10 a house with an oven door, so the types 0xf and 0x10 are the mill
+   and the baker. The object 155 of the type 0xe is the farm's twin, a stone house with a barn, and the object 156 of the type 0xd a
+   wooden house. The goods 2, 5, and 6 draw a pig, a sack, and loaves of bread (entries 322, 325, 326).
+3. **The tables.** The types 0xc (the farm) and 0xe share the size, the needs, the order word, the steps, and the scaffold object 177,
+   so 0xe is the farm's sibling in the pig farm's place; 0xf is the one small grain-fed type, which fits a mill that only grinds.
+
+The manual also lists the chains in prose: the farmer's wheat goes to the miller, who makes flour sacks for the baker's bread, and to
+the pig farmer, whose pig the butcher turns into meat.
+
+## The well
 
 **Status:** inferred (a negative finding). The original has no well. No handler of the 24 types asks for a job that
-produces a good from nothing and no good takes water: the goods 1 to 6 form a closed chain of fish, grain, flour, bread, pig, and
-meat (below), and each of the six handlers above is accounted for. M5's food buildings are therefore the six above. The roadmap and
+produces a good from nothing and no good takes water: the goods 1 to 6 form a closed set of fish, grain, pig, meat, flour, and
+bread (below), and each of the six handlers above is accounted for. M5's food buildings are therefore the six above. The roadmap and
 the [M5 scope](../milestones/m5-food.md) name them.
 
 ## The jobs
 
-**Status:** confirmed for the start routines, **inferred** for the pairing of job and building name.
+**Status:** confirmed for the start routines, **inferred** for the pairing of job and building name (above).
 
 `Settler_JobStartTable` (`0x43ca54`) runs the start routine of the job where the settler has stepped through the door. The start
 routines of jobs 12, 13, 15, and 16 write the class of the good the building takes in into both request words of the building's
@@ -63,11 +90,11 @@ jobs 11 and 14 write none, so the fisher's and the farm's buildings ask for no g
 | Job | Start | Takes in (class) | Goes on to state | Puts (the state's byte 11) |
 | --- | --- | --- | --- | --- |
 | 11 fisher | `Fisher_Start` (`0x43d14d`) | nothing | `0x1f` | fish, by the put at `0x43837f` (the arrival `0x438232`) |
-| 12 mill | `MillWorker_Start` (`0x43d179`) | grain (class 4, first word) | `0x25` | flour, `0x433577` |
-| 13 baker | `BakerWorker_Start` (`0x43d275`) | flour (class 3, first word) | `0x26` | bread, `0x4333a5` |
+| 12 pig farmer | `PigFarmer_Start` (`0x43d179`) | grain (class 4, first word) | `0x25` | pig, `0x433577` |
+| 13 butcher | `Butcher_Start` (`0x43d275`) | pig (class 3, first word) | `0x26` | meat, `0x4333a5` |
 | 14 farm | `Farmer_Start` (`0x43d311`) | nothing | `0x21` | grain, by the put at `0x43847d` (the arrival `0x438391`) |
-| 15 pig farm | `PigFarmer_Start` (`0x43d33d`) | grain (class 4, first word) | `0x23` | pig, `0x433a1e` |
-| 16 butcher | `Butcher_Start` (`0x43d3d9`) | pig (class 5, first word) | `0x24` | meat, `0x43384f` |
+| 15 miller | `MillWorker_Start` (`0x43d33d`) | grain (class 4, first word) | `0x23` | flour, `0x433a1e` |
+| 16 baker | `BakerWorker_Start` (`0x43d3d9`) | flour (class 5, first word) | `0x24` | bread, `0x43384f` |
 
 Only two jobs put a good with `Flag_PutGood` (`0x436b46`) from a free walk: job 11 (good 1) and job 14 (good 4). The jobs inside a
 building set byte 11 and go on to state `0xd` (`Settler_PutDownGood`, `0x43c6aa`), the put of [Sawmilling](sawmilling.md). The
@@ -76,53 +103,69 @@ fisher's. The rename of the job is the next slice's.
 
 ## The goods
 
-**Status:** confirmed for the classes, inferred for the names. The names are those the chain above gives (INV-0006); no text of the
-install names a good.
+**Status:** confirmed for the classes, inferred for the names. The names are those the chains, the tool list, and the art give (INV-0006);
+no text of the install names a good. Every good 1 to 26 has an entry in the name table (`NameTable`) with its evidence.
 
-`Good_DestinationClasses` (`0x464117`) gives each good a class and a request word; a good of class `0xff` goes to storage at once.
+`Good_DestinationClasses` (`0x464117`) gives each good a class and a request word; a good of class `0xff` goes to storage at once. The
+goods 1 to 26 are the 26 steps of `Player_SetTransportPriorities` (`0x445570`).
 
 | Good | Name | Class, word | Evidence |
 | --- | --- | --- | --- |
 | 1 | fish | 0, first (`0x42`) | put by job 11 (`0x43837f`); shares class 0 with goods 3 and 6, the three goods of a request that takes any of them |
-| 2 | flour | 3, first | put by job 12 (`0x433577`); asked by job 13 (class 3) |
-| 3 | bread | 0, first | put by job 13 (`0x4333a5`) |
+| 2 | pig | 3, first | put by job 12 (`0x433577`); asked by job 13 (class 3); drawn as a pig (entry 322) |
+| 3 | meat | 0, first | put by job 13 (`0x4333a5`) |
 | 4 | grain | 4, first | put by job 14 (`0x43847d`); asked by jobs 12 and 15 (class 4) |
-| 5 | pig | 5, first | put by job 15 (`0x433a1e`); asked by job 16 (class 5) |
-| 6 | meat | 0, first | put by job 16 (`0x43384f`) |
+| 5 | flour | 5, first | put by job 15 (`0x433a1e`); asked by job 16 (class 5); drawn as a sack (entry 325) |
+| 6 | bread | 0, first | put by job 16 (`0x43384f`); drawn as loaves (entry 326) |
 | 7 | log | 5, second (`0x44`) | the woodcutter's put (`0x438013`); asked by the sawmiller's start ([Sawmilling](sawmilling.md)) |
 | 8 | plank | 1, first | the sawmiller's put (`0x43c6aa`); a site's first request ([Materials](construction-materials.md)) |
-| 9 | not named | none (storage) | no routine read puts or asks it |
+| 9 | boat | none (storage) | `0x464117`, row 9; no routine read puts or asks it; drawn as a boat hull (entry 329); the manual's boat builder makes boats of planks, and a boat leaves the castle for a waterway. **Inferred** |
 | 10 | stone | 4, second | the stonecutter's put (`0x438182`); a site's second request |
-| 11 | not named | 1, second | asked by the start of job 10 in the type 0x12; put by none read |
-| 12 | not named | 2, second | asked by the types 0x13 and 0x14; put by the work of job 10 (`0x4342df`) |
-| 13 | not named | 2, first | asked by the types 0x12, 0x14, and 0x17 |
-| 14 | not named | 0, second | asked by the type 0x17 |
-| 15 | not named | 3, second | put by the work of job 10 (`0x4342f1`) |
-| 16 to 26 | not named | none (storage) | the tool goods: 16 is the digger's tool (the handler of type 0 asks for it), 17 the builder's, 18 the fisher's, 19 the baker's, 20 the farm's, 21 the woodcutter's, 22 the sawmiller's, 23 the stonecutter's and the miners', 24 the tool of the type 0x14; 25 and 26 no routine read names |
+| 11 | iron ore | 1, second | asked by the start of job 10 in the type 0x12, the foundry; `0x464117`, row 11. **Inferred** from the manual's foundry chain |
+| 12 | iron | 2, second | put by the work of job 10 (`0x4342df`); asked by the types 0x13 and 0x14, the two smiths; `0x464117`, row 12. **Inferred** |
+| 13 | coal | 2, first | asked by the types 0x12, 0x14, and 0x17, the two foundries and the blacksmith; `0x464117`, row 13. **Inferred** |
+| 14 | gold ore | 0, second | asked by the type 0x17, the other foundry; `0x464117`, row 14; counts against resource 1 with good 15 (`0x462c8d`). **Inferred** |
+| 15 | gold | 3, second | put by the work of job 10 (`0x4342f1`); `0x464117`, row 15. **Inferred** |
+| 16 | shovel | none (storage) | the tool of the digger's request, job 2 (`0x42d328`, stock word `0x20`); [Digging](digging.md). **Inferred** from the manual's list |
+| 17 | hammer | none (storage) | the tool of the builder's request (`0x42d5fc`, stock word `0x22`) and the first tool of the types 0x13 and 0x14 |
+| 18 | fishing rod | none (storage) | the tool of the type 1 handler (`0x42e0b8`, stock word `0x24`) |
+| 19 | butcher's knife | none (storage) | the tool of the type 0xd handler (`0x42e1b3`, stock word `0x26`) |
+| 20 | scythe | none (storage) | the tool of the type 0xc handler (`0x42e25e`, stock word `0x28`) |
+| 21 | hatchet | none (storage) | the tool of the type 2 handler (`0x42d945`, stock word `0x2a`) |
+| 22 | saw | none (storage) | the tool of the type 0x11 handler (`0x42da0b`, stock word `0x2c`), the second tool of the type 0x13 |
+| 23 | pickaxe | none (storage) | the tool of the type 4 handler (`0x42d987`, stock word `0x2e`) |
+| 24 | pliers | none (storage) | the second tool of the type 0x14 (stock word `0x30`) |
+| 25 | sword | none (storage) | `0x464117`, row 25; no routine read puts or asks it; drawn as a blade with a yellow hilt (entry 345). **Inferred**: the manual's weapon smith makes swords and shields |
+| 26 | shield | none (storage) | `0x464117`, row 26; no routine read puts or asks it; no sprite observed (a layout cannot lay good 26 on a flag). **Inferred** by elimination: the second weapon of the manual's weapon smith. The order of 25 and 26 is **open** |
+
+The nine tools are the nine of the manual's list (hammer, saw, hatchet, shovel, scythe, pickaxe, fishing pole, pliers, butcher's knife),
+and the two workers with two tools are the manual's iron worker (hammer and saw, the type 0x13) and blacksmith (hammer and pliers, the
+type 0x14). The names of the goods 9 and 11 to 26 rest on those chains, the manual, and the sprites; the program names none of them.
 
 A good counts into the low byte of a building's fill (byte 8) unless it is 7 or from 9 on but not 13 (`Good.FillsHigh`), so the
-food goods 1 to 6 count into byte 8, the byte the baker's and the mill's handlers read as held (high nibble) and on the way (low
+food goods 1 to 6 count into byte 8, the byte the pig farm's and the mill's handlers read as held (high nibble) and on the way (low
 nibble).
 
 ### Request class of each food good
 
-Goods 1, 3, and 6 are class 0 of the first request word; flour is class 3, grain class 4, and the pig class 5, all of the first word.
+Goods 1, 3, and 6 are class 0 of the first request word; the pig is class 3, grain class 4, and flour class 5, all of the first word.
 The mines, which later slices read, take class 0; the food buildings ask by the class bits their jobs' start routines write.
 
 ## Drawing
 
 **Status:** confirmed. The draw routine `0x44e329` picks a stub by the type (the jump table `0x44e3aa`); the stub of each food type
-stores the object number of the finished building: 167 (fisher), 154 (farm), 156 (baker), 155 (mill), 188 (pig farm), and 162
-(butcher), each plus the 1250 of `0x44da4d`. The table at `0x44fd16` holds the same numbers for the site's last stage, and the table
+stores the object number of the finished building: 167 (fisher), 154 (farm), 156 (butcher), 155 (pig farm), 188 (mill), and 162
+(baker), each plus the 1250 of `0x44da4d`. The table at `0x44fd16` holds the same numbers for the site's last stage, and the table
 at `0x44fcfe` the scaffold's: 186, 177, 184, 177, 187, and 183. A good on a flag draws the entry 320 plus its number.
 
 ## In the engine
 
-- `src/Domain/BuildingType.cs` (`Fisher`, `Farm`, `Baker`, `Mill`, `PigFarm`, `Butcher`) and `src/Domain/Good.cs` (`Fish`, `Flour`, `Bread`,
-  `Grain`, `Pig`, `Meat`, `Foods`). A building type is added to every list by: `BuildingPlacement.Types`, `Layout.Placement`'s
+- `src/Domain/BuildingType.cs` (`Fisher`, `Farm`, `Butcher`, `PigFarm`, `Mill`, `Baker`) and `src/Domain/Good.cs` (`Fish`, `Pig`, `Meat`,
+  `Grain`, `Flour`, `Bread`, `Foods`). A building type is added to every list by: `BuildingPlacement.Types`, `Layout.Placement`'s
   `BuildingNames` and its refusal text, `ProgramTablesImporter.WorkerRequestAddresses`, `NameTable`, the build panel in
   `MapViewControl`, `SiteStages.ScaffoldIsLarge`, `ObjectSprites.Objects` (History Edition), and `OpenSettlersSource.FinishedKeys` with
-  the art of `tools/open-settlers-art.py`.
+  the art of `tools/open-settlers-art.py`. The other goods 7 to 26 have `NameTable` entries only.
 - `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar.
+  The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) through `NameTable.GoodName`.
 - **Stand-in:** the six types' workers run no work cycle yet: a settler who takes a food job enters the building and stands. The job
   slices add the cycles.

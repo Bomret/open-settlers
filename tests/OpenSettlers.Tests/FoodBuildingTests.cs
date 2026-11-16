@@ -38,7 +38,13 @@ public sealed class FoodBuildingTests
         steps[2 * type.Code] = 0x1000;
         steps[2 * type.Code + 1] = 0x1000;
         var game = ConstructionWorld.Create(
-            ConstructionTables.Tables(needs: needs, materialOrder: order, sizes: sizes, workers: workers, blowSteps: steps),
+            ConstructionTables.Tables(
+                needs: needs,
+                materialOrder: order,
+                sizes: sizes,
+                workers: workers,
+                blowSteps: steps
+            ),
             handsOutGoods: true
         );
         game.CastleStock.Add(ConstructionTables.DiggerTool);
@@ -68,10 +74,10 @@ public sealed class FoodBuildingTests
     [
         (BuildingType.Fisher, false),
         (BuildingType.Farm, true),
-        (BuildingType.Baker, true),
-        (BuildingType.Mill, true),
-        (BuildingType.PigFarm, false),
         (BuildingType.Butcher, true),
+        (BuildingType.PigFarm, true),
+        (BuildingType.Mill, false),
+        (BuildingType.Baker, true),
     ];
 
     [TestMethod]
@@ -89,7 +95,11 @@ public sealed class FoodBuildingTests
                 game.Tick();
                 if (large && site.Constructing && site.Progress == 0)
                 {
-                    Assert.AreEqual(planks, game.CastleStock.Planks, $"type {type}: a large site not yet level asks for no plank");
+                    Assert.AreEqual(
+                        planks,
+                        game.CastleStock.Planks,
+                        $"type {type}: a large site not yet level asks for no plank"
+                    );
                 }
             }
 
@@ -120,16 +130,23 @@ public sealed class FoodBuildingTests
 
             var asked = Request(type);
             Assert.IsTrue(site.WorkerOnTheWay || site.WorkerInside, $"type {type}: the worker is on the way");
-            Assert.IsTrue(game.Settlers.Any(settler => settler.Job == asked.Job), $"type {type}: a settler took the job {asked.Job}");
-            Assert.AreEqual(asked.Tool.IsNone ? tools : tools - 1, game.CastleStock.Count(FoodTool), $"type {type}: the tool left the stock");
+            Assert.IsTrue(
+                game.Settlers.Any(settler => settler.Job == asked.Job),
+                $"type {type}: a settler took the job {asked.Job}"
+            );
+            Assert.AreEqual(
+                asked.Tool.IsNone ? tools : tools - 1,
+                game.CastleStock.Count(FoodTool),
+                $"type {type}: the tool left the stock"
+            );
         }
     }
 
     [TestMethod]
     public void AFoodBuildingWhoseToolIsMissingWaitsAsksAgainAndTheGameKeepsRunning()
     {
-        // The mill's handler (type 0xe) asks for a tool in the made tables: an even number.
-        var (game, site) = World(BuildingType.Mill, large: true);
+        // The pig farm's handler (type 0xe) asks for a tool in the made tables: an even number.
+        var (game, site) = World(BuildingType.PigFarm, large: true);
         for (var tick = 0; tick < 60000 && site.Constructing; tick++)
         {
             game.Tick();

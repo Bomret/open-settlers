@@ -63,21 +63,71 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheFoodBuildingsAndGoodsHaveNamesWithEvidence()
     {
-        Assert.AreEqual("fisher-hut", NameTable.BuildingName(BuildingType.Fisher.Code));
-        Assert.AreEqual("farm", NameTable.BuildingName(BuildingType.Farm.Code));
-        Assert.AreEqual("baker", NameTable.BuildingName(BuildingType.Baker.Code));
-        Assert.AreEqual("mill", NameTable.BuildingName(BuildingType.Mill.Code));
-        Assert.AreEqual("pig-farm", NameTable.BuildingName(BuildingType.PigFarm.Code));
-        Assert.AreEqual("butcher", NameTable.BuildingName(BuildingType.Butcher.Code));
+        // The numbers are the program's: a type 0xd handler asks for the job whose tool is good 19, the butcher's knife.
         CollectionAssert.AreEqual(
-            new[] { "fish", "flour", "bread", "grain", "pig", "meat" },
+            new[] { "fisher-hut", "farm", "butcher", "pig-farm", "mill", "baker" },
+            new[] { 1, 0xc, 0xd, 0xe, 0xf, 0x10 }.Select(NameTable.BuildingName).ToArray()
+        );
+        CollectionAssert.AreEqual(
+            new[] { 1, 0xc, 0xd, 0xe, 0xf, 0x10 },
+            new[]
+            {
+                BuildingType.Fisher,
+                BuildingType.Farm,
+                BuildingType.Butcher,
+                BuildingType.PigFarm,
+                BuildingType.Mill,
+                BuildingType.Baker,
+            }
+                .Select(type => type.Code)
+                .ToArray()
+        );
+        CollectionAssert.AreEqual(
+            new[] { "fish", "pig", "meat", "grain", "flour", "bread" },
             Enumerable.Range(1, 6).Select(NameTable.GoodName).ToArray()
         );
-        Assert.AreEqual("log", NameTable.GoodName(7));
-        Assert.AreEqual("plank", NameTable.GoodName(8));
-        Assert.AreEqual("stone", NameTable.GoodName(10));
-        Assert.IsNull(NameTable.GoodName(9));
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "log",
+                "plank",
+                "boat",
+                "stone",
+                "iron-ore",
+                "iron",
+                "coal",
+                "gold-ore",
+                "gold",
+                "shovel",
+                "hammer",
+                "fishing-rod",
+                "butcher-knife",
+                "scythe",
+                "hatchet",
+                "saw",
+                "pickaxe",
+                "pliers",
+                "sword",
+                "shield",
+            },
+            Enumerable.Range(7, 20).Select(NameTable.GoodName).ToArray()
+        );
         Assert.IsNull(NameTable.GoodName(0));
+        Assert.IsNull(NameTable.GoodName(27));
+    }
+
+    [TestMethod]
+    public void EveryGoodFromOneToTwentySixHasAnEntryThatCitesAnAddress()
+    {
+        foreach (var good in Enumerable.Range(1, 26))
+        {
+            var entry = NameTable.Entries.Single(entry => entry.Kind == NameTable.CodeKind.Good && entry.Code == good);
+            StringAssert.Matches(
+                entry.Evidence,
+                new System.Text.RegularExpressions.Regex("0x[0-9a-f]{6}"),
+                $"good {good} {entry.Name}"
+            );
+        }
     }
 
     [TestMethod]

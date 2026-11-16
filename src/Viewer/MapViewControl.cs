@@ -346,10 +346,10 @@ public partial class MapViewControl(
                 ("Sawmill", BuildingType.Sawmill),
                 ("Fisher", BuildingType.Fisher),
                 ("Farm", BuildingType.Farm),
-                ("Mill", BuildingType.Mill),
-                ("Baker", BuildingType.Baker),
                 ("Pig farm", BuildingType.PigFarm),
                 ("Butcher", BuildingType.Butcher),
+                ("Mill", BuildingType.Mill),
+                ("Baker", BuildingType.Baker),
             }.Select(entry =>
             {
                 var button = new Button

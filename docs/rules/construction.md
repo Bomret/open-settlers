@@ -58,16 +58,16 @@ Each handler asks for one job and tool. `ProgramTablesImporter` reads them from 
 | Sawmill (type 0x11) | `0x42da18` | 6 | 22 (`0x2c`) |
 | Fisher (type 1) | `0x42e0c5` | 11 | 18 (`0x24`) |
 | Farm (type 0xc) | `0x42e26b` | 14 | 20 (`0x28`) |
-| Baker (type 0xd) | `0x42e1c0` | 13 | 19 (`0x26`) |
-| Mill (type 0xe) | `0x42e107` | 12 | none |
-| Pig farm (type 0xf) | `0x42e2d2` | 15 | none |
-| Butcher (type 0x10) | `0x42e38b` | 16 | none |
+| Butcher (type 0xd) | `0x42e1c0` | 13 | 19 (`0x26`) |
+| Pig farm (type 0xe) | `0x42e107` | 12 | none |
+| Mill (type 0xf) | `0x42e2d2` | 15 | none |
+| Baker (type 0x10) | `0x42e38b` | 16 | none |
 
 The castle's first settlers hold one builder (job 3), one woodcutter (job 5), one of job 6, and one of job 7. They hold none of job 8 and five without a job.
 
 **Emulated:** a second site placed at once gets a settler without a job and a hammer. The stock holds 21 hammers at level 25, and the word falls by one. A finished forester gets a settler without a job.
 
-The names of the tool goods are **inferred** from the job that asks for each (INV-0006). The engine names the builder's tool `Good 17` in the fixture and names none of the others.
+The names of the tool goods are **inferred** from the job that asks for each and from the tool list of the install's manual (INV-0006); the name table holds them ([Food buildings](food-buildings.md#the-goods)). The fixture names the builder's tool `Good 17`.
 
 **Emulated:** with no hammer in the stock, the second site's request fails at each of its turns. Bit 2 is set, which is the sign flag the routine leaves (`0x42d61a`). The retry scan clears it the next pass, and the site asks again 33 passes later. Once a hammer is in the stock, the next request makes a settler without a job the builder (`construction-builder.txt`, `builder-no-hammer`).
 

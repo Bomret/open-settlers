@@ -27,8 +27,8 @@ public sealed class SiteStagesTests
         Assert.AreEqual(false, SiteStages.ScaffoldIsLarge(BuildingType.Fisher));
         Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.Farm));
         Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.Baker));
-        Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.Mill));
-        Assert.AreEqual(false, SiteStages.ScaffoldIsLarge(BuildingType.PigFarm));
+        Assert.AreEqual(false, SiteStages.ScaffoldIsLarge(BuildingType.Mill));
+        Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.PigFarm));
         Assert.AreEqual(true, SiteStages.ScaffoldIsLarge(BuildingType.Butcher));
     }
 

@@ -1150,15 +1150,15 @@
   "building/mill": {
     "image": "building/mill.png",
     "anchor": [
-      -22,
-      -35
+      -14,
+      -29
     ]
   },
   "building/pig-farm": {
     "image": "building/pig-farm.png",
     "anchor": [
-      -14,
-      -29
+      -22,
+      -35
     ]
   },
   "building/butcher": {

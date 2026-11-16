@@ -126,7 +126,16 @@ public sealed class LayoutApplyTests
     static Game NewGameWithALargeSawmill(Layout layout)
     {
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
-        foreach (var large in new[] { BuildingType.Sawmill, BuildingType.Farm, BuildingType.Baker, BuildingType.Mill, BuildingType.Butcher })
+        foreach (
+            var large in new[]
+            {
+                BuildingType.Sawmill,
+                BuildingType.Farm,
+                BuildingType.Butcher,
+                BuildingType.PigFarm,
+                BuildingType.Baker,
+            }
+        )
         {
             sizes[large.Code] = 2;
         }
@@ -152,10 +161,10 @@ public sealed class LayoutApplyTests
     [DataRow("sawmill", 0x11)]
     [DataRow("fisher", 1)]
     [DataRow("farm", 0xc)]
-    [DataRow("baker", 0xd)]
-    [DataRow("mill", 0xe)]
-    [DataRow("pig-farm", 0xf)]
-    [DataRow("butcher", 0x10)]
+    [DataRow("butcher", 0xd)]
+    [DataRow("pig-farm", 0xe)]
+    [DataRow("mill", 0xf)]
+    [DataRow("baker", 0x10)]
     public void AFinishedBuildingEntryStandsFinishedWithItsFlagAndNoSite(string name, int code)
     {
         var layout = Read(Castle + $$""" "buildings": [{"type": "{{name}}", "x": 13, "y": 10}] """);

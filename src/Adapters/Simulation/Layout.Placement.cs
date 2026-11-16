@@ -173,7 +173,8 @@ public sealed partial class Layout
             ["butcher"] = BuildingType.Butcher,
         };
 
-        const string BuildingNameList = "woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher";
+        const string BuildingNameList =
+            "woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher";
 
         const string BuildingShape =
             "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", \"sawmill\", \"fisher\", \"farm\", \"baker\", \"mill\", \"pig-farm\", or \"butcher\", \"x\", \"y\"} (the node of the building, "

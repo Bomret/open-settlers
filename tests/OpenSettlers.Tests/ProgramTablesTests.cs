@@ -619,10 +619,24 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        foreach (var type in new[] { BuildingType.Fisher, BuildingType.Farm, BuildingType.Baker, BuildingType.Mill, BuildingType.PigFarm, BuildingType.Butcher })
+        foreach (
+            var type in new[]
+            {
+                BuildingType.Fisher,
+                BuildingType.Farm,
+                BuildingType.Baker,
+                BuildingType.Mill,
+                BuildingType.PigFarm,
+                BuildingType.Butcher,
+            }
+        )
         {
             Assert.AreEqual(
-                new WorkerRequest { Job = Job.Of(type.Code + 10), Tool = new Good { Code = type.Code + 3 } },
+                new WorkerRequest
+                {
+                    Job = Job.Of(type.Code + 10),
+                    Tool = new Good { Code = type.Code + 3 },
+                },
                 tables.WorkerOf(type),
                 $"type {type.Code:x}"
             );
@@ -639,15 +653,19 @@ public sealed class ProgramTablesTests
         [
             (BuildingType.Fisher, 11, 18, BuildingSize.Small, 2, 0),
             (BuildingType.Farm, 14, 20, BuildingSize.Large, 4, 1),
-            (BuildingType.Baker, 13, 19, BuildingSize.Large, 2, 1),
-            (BuildingType.Mill, 12, 0, BuildingSize.Large, 4, 1),
-            (BuildingType.PigFarm, 15, 0, BuildingSize.Small, 3, 1),
-            (BuildingType.Butcher, 16, 0, BuildingSize.Large, 2, 1),
+            (BuildingType.Butcher, 13, 19, BuildingSize.Large, 2, 1),
+            (BuildingType.PigFarm, 12, 0, BuildingSize.Large, 4, 1),
+            (BuildingType.Mill, 15, 0, BuildingSize.Small, 3, 1),
+            (BuildingType.Baker, 16, 0, BuildingSize.Large, 2, 1),
         ];
         foreach (var (type, job, tool, size, planks, stones) in expected)
         {
             Assert.AreEqual(
-                new WorkerRequest { Job = Job.Of(job), Tool = new Good { Code = tool } },
+                new WorkerRequest
+                {
+                    Job = Job.Of(job),
+                    Tool = new Good { Code = tool },
+                },
                 tables.WorkerOf(type),
                 $"type {type.Code:x}"
             );

@@ -36,13 +36,13 @@ public readonly record struct Good
     public static Good Fish => new() { Code = 1 };
 
     /// <summary>
-    /// The flour, good 2: the job of the type 0xe puts it (<c>0x433577</c>) and the job of the type 0xd takes it in (class 3 of the
-    /// request word at <c>0x42</c>, <c>0x43d249</c>). **Inferred** name.
+    /// The pig, good 2: the job of the type 0xe puts it (<c>0x433577</c>) and the job of the type 0xd takes it in (class 3 of the
+    /// request word at <c>0x42</c>, <c>0x43d249</c>); the History Edition draws it as a pig. **Inferred** name.
     /// </summary>
-    public static Good Flour => new() { Code = 2 };
+    public static Good Pig => new() { Code = 2 };
 
-    /// <summary>The bread, good 3: the job of the type 0xd puts it (<c>0x4333a5</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
-    public static Good Bread => new() { Code = 3 };
+    /// <summary>The meat, good 3: the job of the type 0xd puts it (<c>0x4333a5</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
+    public static Good Meat => new() { Code = 3 };
 
     /// <summary>
     /// The grain, good 4: the farm's walk ends with the put of it (<c>0x43847d</c>), and the jobs of the types 0xe and 0xf take it in
@@ -51,16 +51,16 @@ public readonly record struct Good
     public static Good Grain => new() { Code = 4 };
 
     /// <summary>
-    /// The pig, good 5: the job of the type 0xf puts it (<c>0x433a1e</c>) and the job of the type 0x10 takes it in (class 5 of the
+    /// The flour, good 5: the job of the type 0xf puts it (<c>0x433a1e</c>) and the job of the type 0x10 takes it in (class 5 of the
     /// request word at <c>0x42</c>, <c>0x43d44c</c>). **Inferred** name.
     /// </summary>
-    public static Good Pig => new() { Code = 5 };
+    public static Good Flour => new() { Code = 5 };
 
-    /// <summary>The meat, good 6: the job of the type 0x10 puts it (<c>0x43384f</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
-    public static Good Meat => new() { Code = 6 };
+    /// <summary>The bread, good 6: the job of the type 0x10 puts it (<c>0x43384f</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
+    public static Good Bread => new() { Code = 6 };
 
-    /// <summary>The six food goods in the order of their numbers, 1 to 6: fish, flour, bread, grain, pig, meat.</summary>
-    public static IReadOnlyList<Good> Foods { get; } = [Fish, Flour, Bread, Grain, Pig, Meat];
+    /// <summary>The six food goods in the order of their numbers, 1 to 6: fish, pig, meat, grain, flour, bread.</summary>
+    public static IReadOnlyList<Good> Foods { get; } = [Fish, Pig, Meat, Grain, Flour, Bread];
 
     /// <summary>Whether this is no good.</summary>
     public bool IsNone => Code == 0;

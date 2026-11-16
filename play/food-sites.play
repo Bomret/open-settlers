@@ -1,37 +1,46 @@
-# The build panel's food toggles place a building site of their type: a fisher and a pig farm (small buildings) and a farm (a large
-# building, which needs the site of a large building) on a map with the castle placed. Each site shows as the original draws a site
-# that has not started; the list holds the site's needs and target height.
-# Run it on the game view with seed 1234567812345678 and size 1, under either graphics source:
-#   sh tools/play-run.sh food-sites --game-view --seed 1234567812345678 --size 1 --fps 10
-#   sh tools/play-run.sh food-sites --game-view --seed 1234567812345678 --size 1 --fps 10 --graphics open-settlers
-# On that map the castle stands at 21,4, so its flag is at 22,5. Each building brings its flag south-east of it.
-expect seed = 1234567812345678
-expect size = 1
-wait 0.3
-click-tile 21 4
+# The build panel's six food toggles each place a building site of their type on the flat ground of layouts/food.jsonc: the fisher and
+# the mill (small buildings) and the farm, the pig farm, the butcher, and the baker (large buildings, which need the site of a large
+# building). Each site shows as the original draws a site that has not started; the list holds each site's needs and target height.
+# Run it on the layout, under either graphics source:
+#   sh tools/play-run.sh food-sites --layout layouts/food.jsonc --fps 10
+#   sh tools/play-run.sh food-sites --layout layouts/food.jsonc --fps 10 --graphics open-settlers
+# The castle stands at 10,10 with the six finished food buildings (7 buildings). Each site brings its flag south-east of it.
+expect-count building = 7
 wait 0.3
 
 button Fisher
-click-tile 26 4
+click-tile 12 10
 button Fisher
-button Pig farm
-click-tile 22 7
-button Pig farm
+button Mill
+click-tile 17 12
+button Mill
 button Farm
-click-tile 23 1
+click-tile 3 3
 button Farm
+button Pig farm
+click-tile 3 10
+button Pig farm
+button Butcher
+click-tile 17 16
+button Butcher
+button Baker
+click-tile 3 6
+button Baker
 wait 0.3
-expect-at 26 4 building
-expect-at 22 7 building
-expect-at 23 1 building
-expect-count building = 4
-shot food-sites 22 4 6 2
+expect-at 12 10 building
+expect-at 17 12 building
+expect-at 3 3 building
+expect-at 3 10 building
+expect-at 17 16 building
+expect-at 3 6 building
+expect-count building = 13
+shot food-sites 10 10 10 2
 list food-sites
 dump food-sites
 
-# A farm on a small site is refused: the node 22,3 holds a site for a small building only.
-button Farm
-click-tile 22 3
-button Farm
+# A building on the node of a site is refused: the farm's node holds a site already.
+button Baker
+click-tile 3 3
+button Baker
 wait 0.3
-expect-count building = 4
+expect-count building = 13

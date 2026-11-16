@@ -241,7 +241,7 @@ public static class PlayFields
     public const string Stones = "stones";
 
     /// <summary>
-    /// The game's digest (<c>Game.Digest()</c>) as 16 hex digits, in the game view's dump only after <see cref="Stones"/>. A
+    /// The game's digest (<c>Game.Digest()</c>) as 16 hex digits, in the game view's dump after the last game field. A
     /// dump only: no <c>expect</c> step names it.
     /// </summary>
     public const string Digest = "digest";
@@ -250,13 +250,10 @@ public static class PlayFields
     public static readonly string[] All = [CameraX, CameraY, Zoom, Seed, Size];
 
     /// <summary>
-    /// The castle's counts of the food goods 1 to 6 (<c>Good.Foods</c>: fish, flour, bread, grain, pig, meat), in the game view only.
-    /// The field of the pig is <c>pigs</c>.
+    /// The castle's counts of the food goods 1 to 6 (<c>Good.Foods</c>: fish, pig, meat, grain, flour, bread), in the game view only.
+    /// The field of the pig is <c>pigs</c>. The castle bar writes each field's word with a capital.
     /// </summary>
-    public static readonly string[] Food = ["fish", "flour", "bread", "grain", "pigs", "meat"];
-
-    /// <summary>The words the castle bar writes before the food counts, in the order of <see cref="Food"/>.</summary>
-    public static readonly string[] FoodLabels = ["Fish", "Flour", "Bread", "Grain", "Pigs", "Meat"];
+    public static readonly string[] Food = ["fish", "pigs", "meat", "grain", "flour", "bread"];
 
     /// <summary>The fields the game view dumps after <see cref="All"/>: the log, plank, and stone counts, then <see cref="Food"/>.</summary>
     public static readonly string[] Game = [Ticks, Logs, Planks, Stones, .. Food];

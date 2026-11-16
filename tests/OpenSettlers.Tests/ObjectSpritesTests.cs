@@ -17,7 +17,11 @@ public sealed class ObjectSpritesTests
     [DataRow(0xe, 155, 177)]
     [DataRow(0xf, 188, 187)]
     [DataRow(0x10, 162, 183)]
-    public void AFoodBuildingTakesTheFinishedAndScaffoldObjectsOfTheOriginalsTables(int code, int finished, int scaffold)
+    public void AFoodBuildingTakesTheFinishedAndScaffoldObjectsOfTheOriginalsTables(
+        int code,
+        int finished,
+        int scaffold
+    )
     {
         var type = new OpenSettlers.Domain.BuildingType { Code = code };
 

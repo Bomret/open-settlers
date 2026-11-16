@@ -336,29 +336,29 @@ def baker():
 
 
 def mill():
-    """The mill, a large building: a tower with four sails."""
-    c = Canvas(52, 36)
-    c.rect(14, 12, 20, 24, (200, 200, 195))
-    c.triangle((24, 2), 10, 12, (140, 90, 60))
-    c.rect(21, 24, 6, 12, INK)
-    c.line(24, 14, 4, 2, WOOD, 2)
-    c.line(24, 14, 44, 26, WOOD, 2)
-    c.line(24, 14, 44, 2, WOOD, 2)
-    c.line(24, 14, 4, 26, WOOD, 2)
+    """The mill, a small building: a tower with four sails."""
+    c = Canvas(34, 30)
+    c.rect(9, 10, 16, 20, (200, 200, 195))
+    c.triangle((17, 2), 8, 10, (140, 90, 60))
+    c.rect(14, 20, 6, 10, INK)
+    c.line(17, 12, 2, 2, WOOD, 2)
+    c.line(17, 12, 32, 22, WOOD, 2)
+    c.line(17, 12, 32, 2, WOOD, 2)
+    c.line(17, 12, 2, 22, WOOD, 2)
     c.outline(INK)
-    return c, (-22, -35)
+    return c, (-14, -29)
 
 
 def pig_farm():
-    """The pig farm, a small building: a low sty with a pink pig in a pen at its side."""
-    c = Canvas(34, 30)
-    c.rect(4, 14, 20, 16, shade(WOOD, 10))
-    c.triangle((14, 4), 11, 14, (120, 90, 70))
-    c.rect(11, 20, 7, 10, INK)
-    c.rect(24, 22, 10, 8, shade(WOOD, 50))
-    c.disc(29, 26, 3, (240, 160, 170))
+    """The pig farm, a large building: a long sty with a pink pig in a pen at its side."""
+    c = Canvas(52, 36)
+    c.rect(4, 14, 36, 22, shade(WOOD, 10))
+    c.triangle((22, 4), 18, 14, (120, 90, 70))
+    c.rect(16, 24, 10, 12, INK)
+    c.rect(41, 26, 10, 10, shade(WOOD, 50))
+    c.disc(46, 31, 3, (240, 160, 170))
     c.outline(INK)
-    return c, (-14, -29)
+    return c, (-22, -35)
 
 
 def butcher():
@@ -416,8 +416,8 @@ def heap(stage):
 
 def good(code):
     """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar and the stone (10) a grey stone, and the
-    food goods have a shape each: fish (1), a sack of flour (2), a loaf of bread (3), a sheaf of grain (4), a pig (5), and
-    a joint of meat (6)."""
+    food goods have a shape each: fish (1), a pig (2), a joint of meat (3), a sheaf of grain (4), a sack of flour (5), and
+    a loaf of bread (6)."""
     c = Canvas(8, 8)
     if code == 7:
         c.rect(0, 2, 8, 4, WOOD)
@@ -429,21 +429,21 @@ def good(code):
         c.disc(3, 4, 3, (110, 160, 210))
         c.triangle((7, 4), 1, 1, (110, 160, 210))
     elif code == 2:
-        c.rect(1, 2, 6, 5, (245, 245, 240))
-        c.rect(2, 1, 4, 2, (225, 225, 215))
+        c.disc(4, 4, 3, (240, 160, 170))
+        c.rect(1, 1, 2, 2, (240, 160, 170))
     elif code == 3:
-        c.rect(0, 3, 8, 4, (200, 140, 70))
-        c.rect(1, 2, 6, 2, (220, 165, 90))
+        c.disc(4, 4, 3, (190, 60, 70))
+        c.disc(3, 3, 1, (230, 120, 120))
     elif code == 4:
         c.rect(3, 1, 2, 6, (230, 200, 80))
         c.rect(1, 2, 2, 3, (230, 200, 80))
         c.rect(5, 2, 2, 3, (230, 200, 80))
     elif code == 5:
-        c.disc(4, 4, 3, (240, 160, 170))
-        c.rect(1, 1, 2, 2, (240, 160, 170))
+        c.rect(1, 2, 6, 5, (245, 245, 240))
+        c.rect(2, 1, 4, 2, (225, 225, 215))
     elif code == 6:
-        c.disc(4, 4, 3, (190, 60, 70))
-        c.disc(3, 3, 1, (230, 120, 120))
+        c.rect(0, 3, 8, 4, (200, 140, 70))
+        c.rect(1, 2, 6, 2, (220, 165, 90))
     else:
         hue = (code * 37) % 255
         color = (60 + hue % 160, 60 + (hue * 3) % 160, 60 + (hue * 7) % 160)

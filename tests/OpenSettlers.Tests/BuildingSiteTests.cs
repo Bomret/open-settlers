@@ -165,7 +165,11 @@ public sealed class BuildingSiteTests
             Assert.AreEqual(code % 4 + 1, placed.Site?.Planks, $"type {code:x} planks");
             Assert.AreEqual(code % 3, placed.Site?.Stones, $"type {code:x} stones");
             Assert.AreEqual(site.Height, placed.Site?.TargetHeight);
-            Assert.AreEqual(large ? 0 : 1, placed.Progress, $"type {code:x}: a large site waits for its ground, a small one starts");
+            Assert.AreEqual(
+                large ? 0 : 1,
+                placed.Progress,
+                $"type {code:x}: a large site waits for its ground, a small one starts"
+            );
             Assert.AreEqual(large ? 3 : 2, game.Map.At(x, y).Object.Code, $"type {code:x} object code by size");
         }
     }
@@ -178,7 +182,11 @@ public sealed class BuildingSiteTests
             var game = World();
             var (x, y, _) = Find(game, 3);
 
-            Assert.AreEqual(!large, Place(game, new BuildingType { Code = code }, x, y), $"type {code:x} on a site of 3");
+            Assert.AreEqual(
+                !large,
+                Place(game, new BuildingType { Code = code }, x, y),
+                $"type {code:x} on a site of 3"
+            );
         }
     }
 
