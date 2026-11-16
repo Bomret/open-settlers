@@ -206,7 +206,17 @@ public partial class MapViewControl(
             Game = _gameView ? _game : null,
             Planks = _gameView ? _game?.CastleStock.Planks ?? 0 : null,
             Stones = _gameView ? _game?.CastleStock.Stones ?? 0 : null,
+            Food = _gameView ? _game?.CastleStock.FoodCounts ?? new int[PlayFields.Food.Length] : null,
         };
+
+    // The castle bar's text: the castle's logs, planks, stones, and each food good.
+    static string CastleBar(Game game) =>
+        CastleReadout.Text(
+            game.CastleStock.Logs,
+            game.CastleStock.Planks,
+            game.CastleStock.Stones,
+            game.CastleStock.FoodCounts
+        );
 
     /// <summary>
     /// A play run's <c>fast-forward</c> step: ticks the game without drawing until the step's condition holds, then draws
@@ -221,7 +231,7 @@ public partial class MapViewControl(
         }
 
         _ticks.Text = $"Tick {_game.TickCount}";
-        _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);
+        _logs.Text = CastleBar(_game);
         Redraw();
 
         return problem;
@@ -530,7 +540,7 @@ public partial class MapViewControl(
             }
 
             _ticks.Text = $"Tick {_game.TickCount}";
-            _logs.Text = CastleReadout.Text(_game.CastleStock.Logs, _game.CastleStock.Planks, _game.CastleStock.Stones);
+            _logs.Text = CastleBar(_game);
             // Evaluated each frame, so the watch sees every change.
             var objectsChanged = _objectWatch.Changed(_game);
             if (
