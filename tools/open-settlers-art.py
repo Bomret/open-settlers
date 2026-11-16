@@ -2,8 +2,8 @@
 """Writes the art of the Open Settlers content set: content/open-settlers/manifest.json and its PNGs.
 
 The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
-flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the building
-sites that have not started with the scaffolds they grow, the goods, and one pose per job and kind of activity for the
+flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the six food
+buildings (fisher, farm, baker, mill, pig farm, butcher), the building sites that have not started with the scaffolds they grow, the goods, and one pose per job and kind of activity for the
 settlers, all drawn here from nothing but numbers. It holds nothing derived from an install (ADR 0015). A settler's
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
@@ -299,6 +299,80 @@ def sawmill():
     return c, (-22, -35)
 
 
+def fisher():
+    """The fisher's hut: a small hut with a blue roof and a net hung on poles at its side."""
+    c = Canvas(34, 30)
+    c.rect(4, 14, 20, 16, shade(WOOD, 30))
+    c.triangle((14, 2), 13, 14, (50, 100, 170))
+    c.rect(11, 20, 7, 10, INK)
+    c.rect(26, 16, 2, 14, WOOD)
+    c.rect(32, 16, 2, 14, WOOD)
+    c.rect(26, 18, 8, 6, (170, 190, 200))
+    c.outline(INK)
+    return c, (-14, -29)
+
+
+def farm():
+    """The farm, a large building: a long barn with a yellow roof and a strip of grain in front."""
+    c = Canvas(52, 36)
+    c.rect(4, 12, 40, 24, (150, 70, 50))
+    c.triangle((24, 0), 12, 22, (220, 190, 70))
+    c.rect(18, 22, 12, 14, INK)
+    c.rect(44, 28, 8, 8, (230, 200, 80))
+    c.outline(INK)
+    return c, (-22, -35)
+
+
+def baker():
+    """The baker, a large building: a house with a chimney and a loaf over the door."""
+    c = Canvas(52, 36)
+    c.rect(4, 14, 36, 22, (210, 190, 150))
+    c.triangle((22, 2), 12, 20, (170, 80, 50))
+    c.rect(32, 0, 5, 12, (120, 70, 60))
+    c.rect(16, 22, 10, 14, INK)
+    c.disc(40, 28, 4, (200, 140, 70))
+    c.outline(INK)
+    return c, (-22, -35)
+
+
+def mill():
+    """The mill, a large building: a tower with four sails."""
+    c = Canvas(52, 36)
+    c.rect(14, 12, 20, 24, (200, 200, 195))
+    c.triangle((24, 2), 10, 12, (140, 90, 60))
+    c.rect(21, 24, 6, 12, INK)
+    c.line(24, 14, 4, 2, WOOD, 2)
+    c.line(24, 14, 44, 26, WOOD, 2)
+    c.line(24, 14, 44, 2, WOOD, 2)
+    c.line(24, 14, 4, 26, WOOD, 2)
+    c.outline(INK)
+    return c, (-22, -35)
+
+
+def pig_farm():
+    """The pig farm, a small building: a low sty with a pink pig in a pen at its side."""
+    c = Canvas(34, 30)
+    c.rect(4, 14, 20, 16, shade(WOOD, 10))
+    c.triangle((14, 4), 11, 14, (120, 90, 70))
+    c.rect(11, 20, 7, 10, INK)
+    c.rect(24, 22, 10, 8, shade(WOOD, 50))
+    c.disc(29, 26, 3, (240, 160, 170))
+    c.outline(INK)
+    return c, (-14, -29)
+
+
+def butcher():
+    """The butcher, a large building: a house with a red roof and a hook with a joint of meat over the door."""
+    c = Canvas(52, 36)
+    c.rect(4, 14, 36, 22, (225, 225, 225))
+    c.triangle((22, 2), 12, 20, (190, 40, 40))
+    c.rect(16, 24, 10, 12, INK)
+    c.rect(41, 14, 2, 6, INK)
+    c.disc(42, 24, 4, (200, 70, 80))
+    c.outline(INK)
+    return c, (-22, -35)
+
+
 def site(large):
     """A building site that has not started: stakes and a board, wider for a large building."""
     width = 34 if large else 22
@@ -341,7 +415,9 @@ def heap(stage):
 
 
 def good(code):
-    """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar and the stone (10) a grey stone."""
+    """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar and the stone (10) a grey stone, and the
+    food goods have a shape each: fish (1), a sack of flour (2), a loaf of bread (3), a sheaf of grain (4), a pig (5), and
+    a joint of meat (6)."""
     c = Canvas(8, 8)
     if code == 7:
         c.rect(0, 2, 8, 4, WOOD)
@@ -349,6 +425,25 @@ def good(code):
     elif code == 10:
         c.disc(4, 4, 3, STONE)
         c.disc(3, 3, 1, shade(STONE, 40))
+    elif code == 1:
+        c.disc(3, 4, 3, (110, 160, 210))
+        c.triangle((7, 4), 1, 1, (110, 160, 210))
+    elif code == 2:
+        c.rect(1, 2, 6, 5, (245, 245, 240))
+        c.rect(2, 1, 4, 2, (225, 225, 215))
+    elif code == 3:
+        c.rect(0, 3, 8, 4, (200, 140, 70))
+        c.rect(1, 2, 6, 2, (220, 165, 90))
+    elif code == 4:
+        c.rect(3, 1, 2, 6, (230, 200, 80))
+        c.rect(1, 2, 2, 3, (230, 200, 80))
+        c.rect(5, 2, 2, 3, (230, 200, 80))
+    elif code == 5:
+        c.disc(4, 4, 3, (240, 160, 170))
+        c.rect(1, 1, 2, 2, (240, 160, 170))
+    elif code == 6:
+        c.disc(4, 4, 3, (190, 60, 70))
+        c.disc(3, 3, 1, (230, 120, 120))
     else:
         hue = (code * 37) % 255
         color = (60 + hue % 160, 60 + (hue * 3) % 160, 60 + (hue * 7) % 160)
@@ -488,6 +583,12 @@ def main():
     add("building/stonecutter", "building/stonecutter.png", stonecutter())
     add("building/forester", "building/forester.png", forester())
     add("building/sawmill", "building/sawmill.png", sawmill())
+    add("building/fisher", "building/fisher.png", fisher())
+    add("building/farm", "building/farm.png", farm())
+    add("building/baker", "building/baker.png", baker())
+    add("building/mill", "building/mill.png", mill())
+    add("building/pig-farm", "building/pig-farm.png", pig_farm())
+    add("building/butcher", "building/butcher.png", butcher())
     add("building/site-small", "building/site-small.png", site(False))
     add("building/site-large", "building/site-large.png", site(True))
     add("building/stage-small", "building/stage-small.png", scaffold(False))

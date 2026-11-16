@@ -114,6 +114,24 @@ public sealed class OpenSettlersSource : IGraphicsSource
     /// <summary>The manifest key of the sawmill.</summary>
     public const string SawmillKey = "building/sawmill";
 
+    /// <summary>The manifest key of the fisher's hut.</summary>
+    public const string FisherKey = "building/fisher";
+
+    /// <summary>The manifest key of the farm.</summary>
+    public const string FarmKey = "building/farm";
+
+    /// <summary>The manifest key of the baker.</summary>
+    public const string BakerKey = "building/baker";
+
+    /// <summary>The manifest key of the mill.</summary>
+    public const string MillKey = "building/mill";
+
+    /// <summary>The manifest key of the pig farm.</summary>
+    public const string PigFarmKey = "building/pig-farm";
+
+    /// <summary>The manifest key of the butcher.</summary>
+    public const string ButcherKey = "building/butcher";
+
     /// <summary>The manifest key of a building site of a small building that has not started (progress 1).</summary>
     public const string SiteSmallKey = "building/site-small";
 
@@ -128,6 +146,12 @@ public sealed class OpenSettlersSource : IGraphicsSource
         (BuildingType.Stonecutter, StonecutterKey),
         (BuildingType.Forester, ForesterKey),
         (BuildingType.Sawmill, SawmillKey),
+        (BuildingType.Fisher, FisherKey),
+        (BuildingType.Farm, FarmKey),
+        (BuildingType.Baker, BakerKey),
+        (BuildingType.Mill, MillKey),
+        (BuildingType.PigFarm, PigFarmKey),
+        (BuildingType.Butcher, ButcherKey),
     ];
 
     /// <summary>The manifest key of the scaffold a small building's site grows as its progress rises (the stage object 186 of the program).</summary>
