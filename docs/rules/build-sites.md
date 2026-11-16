@@ -222,6 +222,9 @@ The jump table of the type handlers is at `0x42cd1d`. It holds 8 bytes for each 
 | 9 | forester | small | 2, 0 | `0x42d9c9` | job 8, no tool | 170 |
 | 0x11 | sawmill | large | 3, 2 | `0x42da0b` | job 6, tool stock word `0x2c` (good 22) | 160 |
 
+The six food types (1, 0xc, 0xd, 0xe, 0xf, and 0x10) are in [Food buildings](food-buildings.md#the-six-types); the same two tables give
+their sizes and needs, and `BuildingPlacement` places each by the rules of its size.
+
 The names of types 4, 9, and 0x11 are **inferred** from the sizes, the needs, the jobs, and the game's manual. A stonecutter needs a pick, a sawmill worker needs a saw, and a forester needs no tool. The slices that build each type's work confirm the name from the goods it puts down:
 
 - Type 4 is **confirmed**. His worker lays the stone, good 10, on the flag ([Stonecutting](stonecutting.md#the-building-and-the-job)).
@@ -257,7 +260,7 @@ is slot 3.
 
 `OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Application/BuildSite.cs`) is the evaluator. The engine departs from the program in one place. A node with a flag or a building object gives 0, 0, 0 (above). The code 3 height term reads the building table. The flag button and the building placement hand that table to `BuildSite.Evaluate`. `BuildSiteResult.AllowsFlag` is the flag button's rule. The flag placement is in [Flags](flags.md).
 
-`BuildingPlacement` (`src/Application/BuildingPlacement.cs`) is `Building_Place`. The command `PlaceBuilding` carries a `BuildingType` and places a building site (`BuildingPlacement.PlaceSite`). No command places a finished building. A small type is placed on a site of 3 or 4. A large type is placed on a site of 4. The node state is 5 (a flag with no building), 6, or 7. `BuildingPlacement.Types` lists the types that M4 places. A command that names another type, or none, is refused. The size and the needs come from `RuleTables.SizeOf` and `RuleTables.NeedsOf`. `ProgramTablesImporter` reads `0x42d307` and `0x449f18`.
+`BuildingPlacement` (`src/Application/BuildingPlacement.cs`) is `Building_Place`. The command `PlaceBuilding` carries a `BuildingType` and places a building site (`BuildingPlacement.PlaceSite`). No command places a finished building. A small type is placed on a site of 3 or 4. A large type is placed on a site of 4. The node state is 5 (a flag with no building), 6, or 7. `BuildingPlacement.Types` lists the types it places: the four of M4 and the six food types. A command that names another type, or none, is refused. The size and the needs come from `RuleTables.SizeOf` and `RuleTables.NeedsOf`. `ProgramTablesImporter` reads `0x42d307` and `0x449f18`.
 
 The engine puts the flag down for the node states 6 and 7. For state 6 it splits the road under the flag (`Removal.SplitRoad`) before it sets the building's mark (bit `0x10`) at the flag. So the mark is never read as a road bit.
 

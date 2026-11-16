@@ -19,6 +19,18 @@ public sealed class BuildingSiteTests
         BuildingType.Sawmill,
     ];
 
+    // The six food buildings by the number the original gives each type, with the size and the needs of the made tables: a type's
+    // planks are its number modulo 4 plus 1 and its stones its number modulo 3, so no two types share both.
+    static readonly (int Code, bool Large)[] Food =
+    [
+        (1, false),
+        (0xc, true),
+        (0xd, true),
+        (0xe, true),
+        (0xf, false),
+        (0x10, true),
+    ];
+
     static RuleTables Made()
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -30,6 +42,13 @@ public sealed class BuildingSiteTests
             sizes[type.Code] = (byte)(type == BuildingType.Sawmill ? 2 : 1);
             needs[2 * type.Code] = (byte)(type == BuildingType.Sawmill ? 3 : 2);
             needs[2 * type.Code + 1] = (byte)(type == BuildingType.Sawmill ? 2 : 0);
+        }
+
+        foreach (var (code, large) in Food)
+        {
+            sizes[code] = (byte)(large ? 2 : 1);
+            needs[2 * code] = (byte)(code % 4 + 1);
+            needs[2 * code + 1] = (byte)(code % 3);
         }
 
         return new RuleTables(
@@ -128,6 +147,47 @@ public sealed class BuildingSiteTests
         Assert.AreEqual(stones, placed.Site?.Stones);
         Assert.AreEqual(site.Height, placed.Site?.TargetHeight);
         Assert.IsFalse(placed.WorkerInside || placed.WorkerOnTheWay);
+    }
+
+    [TestMethod]
+    public void EachFoodTypeIsPlacedAsABuildingSiteOfItsSizeAndNeeds()
+    {
+        foreach (var (code, large) in Food)
+        {
+            var game = World();
+            var (x, y, site) = Find(game, 4);
+
+            Assert.IsTrue(Place(game, new BuildingType { Code = code }, x, y), $"type {code:x}");
+
+            var placed = game.Buildings[1];
+            Assert.AreEqual(code, placed.Type.Code);
+            Assert.IsTrue(placed.Constructing, $"type {code:x} is a building site");
+            Assert.AreEqual(code % 4 + 1, placed.Site?.Planks, $"type {code:x} planks");
+            Assert.AreEqual(code % 3, placed.Site?.Stones, $"type {code:x} stones");
+            Assert.AreEqual(site.Height, placed.Site?.TargetHeight);
+            Assert.AreEqual(
+                large ? 0 : 1,
+                placed.Progress,
+                $"type {code:x}: a large site waits for its ground, a small one starts"
+            );
+            Assert.AreEqual(large ? 3 : 2, game.Map.At(x, y).Object.Code, $"type {code:x} object code by size");
+        }
+    }
+
+    [TestMethod]
+    public void AFoodTypeOnASiteOfASmallBuildingIsPlacedOnlyWhereItsSizeFits()
+    {
+        foreach (var (code, large) in Food)
+        {
+            var game = World();
+            var (x, y, _) = Find(game, 3);
+
+            Assert.AreEqual(
+                !large,
+                Place(game, new BuildingType { Code = code }, x, y),
+                $"type {code:x} on a site of 3"
+            );
+        }
     }
 
     // The pass of the building table gives a finished building to the handler of its type (0x42cd1d), which asks for its worker; a

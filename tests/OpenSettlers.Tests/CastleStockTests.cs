@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
 
@@ -8,6 +9,16 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CastleStockTests
 {
+    [TestMethod]
+    public void TheFoodCountsAreTheGoodsOneToSixInOrder()
+    {
+        var castle = Stocked((1, 11), (2, 12), (3, 13), (4, 14), (5, 15), (6, 16), (7, 17));
+
+        CollectionAssert.AreEqual(new[] { 11, 12, 13, 14, 15, 16 }, castle.FoodCounts.ToArray());
+        CollectionAssert.AreEqual(new[] { 0, 0, 0, 0, 0, 0 }, new CastleStock().FoodCounts.ToArray());
+        Assert.AreEqual(14, castle.Count(OpenSettlers.Domain.Good.Grain));
+    }
+
     static CastleStock Stocked(params (int Good, int Count)[] counts)
     {
         var stock = new int[StartStock.Goods];

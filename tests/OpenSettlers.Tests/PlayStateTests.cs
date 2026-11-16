@@ -56,13 +56,21 @@ public sealed class PlayStateTests
         Assert.AreEqual("expect camera-x > 200 failed: actual 120", problem);
     }
 
-    static readonly PlayState GameState = State with { Ticks = 300, Logs = 4, Planks = 9, Stones = 2 };
+    static readonly PlayState GameState = State with
+    {
+        Ticks = 300,
+        Logs = 4,
+        Planks = 9,
+        Stones = 2,
+        Food = [1, 2, 3, 4, 5, 6],
+    };
 
     [TestMethod]
-    public void AGameViewDumpAddsTheTicksLogsPlanksAndStonesAfterTheMapViewFields()
+    public void AGameViewDumpAddsTheTicksAndTheCastlesGoodsAfterTheMapViewFields()
     {
         var expected =
-            "camera-x=120\ncamera-y=40\nzoom=1.2500\nseed=1234567812345678\nsize=2\nticks=300\nlogs=4\nplanks=9\nstones=2\n";
+            "camera-x=120\ncamera-y=40\nzoom=1.2500\nseed=1234567812345678\nsize=2\nticks=300\nlogs=4\nplanks=9\nstones=2\n"
+            + "fish=1\npigs=2\nmeat=3\ngrain=4\nflour=5\nbread=6\n";
 
         Assert.AreEqual(expected, GameState.Dump());
     }
@@ -85,6 +93,24 @@ public sealed class PlayStateTests
         var problem = GameState.Check(Expect(field, op, value));
 
         Assert.AreEqual(holds, problem is null, problem);
+    }
+
+    [TestMethod]
+    [DataRow("fish", 1)]
+    [DataRow("pigs", 2)]
+    [DataRow("meat", 3)]
+    [DataRow("grain", 4)]
+    [DataRow("flour", 5)]
+    [DataRow("bread", 6)]
+    public void AGameViewExpectReadsEachFoodGoodAndNoOther(string field, int count)
+    {
+        Assert.IsTrue(PlayFields.IsKnown(field));
+        Assert.IsNull(GameState.Check(Expect(field, "=", count.ToString())));
+        Assert.IsNotNull(GameState.Check(Expect(field, "=", (count + 1).ToString())));
+        StringAssert.StartsWith(
+            State.Check(Expect(field, "=", "0")),
+            $"expect {field}: the map view has no {field}, use --game-view"
+        );
     }
 
     [TestMethod]
@@ -112,9 +138,19 @@ public sealed class PlayStateTests
             },
             stock
         );
-        var state = State with { Ticks = 1, Logs = castle.Logs, Planks = castle.Planks, Stones = castle.Stones };
+        var state = State with
+        {
+            Ticks = 1,
+            Logs = castle.Logs,
+            Planks = castle.Planks,
+            Stones = castle.Stones,
+            Food = castle.FoodCounts,
+        };
 
-        StringAssert.EndsWith(state.Dump(), "ticks=1\nlogs=3\nplanks=53\nstones=28\n");
+        StringAssert.EndsWith(
+            state.Dump(),
+            "ticks=1\nlogs=3\nplanks=53\nstones=28\nfish=0\npigs=0\nmeat=0\ngrain=0\nflour=0\nbread=0\n"
+        );
         Assert.IsNull(state.Check(Expect("planks", "=", "53")));
         Assert.IsNull(state.Check(Expect("stones", "=", "28")));
     }
@@ -148,7 +184,7 @@ public sealed class PlayStateTests
         game.Tick();
         var dump = (GameState with { Game = game }).Dump();
 
-        StringAssert.EndsWith(dump, $"stones=2\ndigest={game.Digest():x16}\n");
+        StringAssert.EndsWith(dump, $"bread=6\ndigest={game.Digest():x16}\n");
     }
 
     static readonly PlayState FlagState = GameState with
@@ -161,6 +197,7 @@ public sealed class PlayStateTests
     {
         var expected =
             "camera-x=120\ncamera-y=40\nzoom=1.2500\nseed=1234567812345678\nsize=2\nticks=300\nlogs=4\nplanks=9\nstones=2\n"
+            + "fish=1\npigs=2\nmeat=3\ngrain=4\nflour=5\nbread=6\n"
             + "flag-goods:3,1=1\nflag-goods:27,5=2\n";
 
         Assert.AreEqual(expected, FlagState.Dump());
@@ -268,6 +305,7 @@ public sealed class PlayStateTests
                     Logs = game.CastleStock.Logs,
                     Planks = game.CastleStock.Planks,
                     Stones = game.CastleStock.Stones,
+                    Food = game.CastleStock.FoodCounts,
                 }
             ).Dump();
         }

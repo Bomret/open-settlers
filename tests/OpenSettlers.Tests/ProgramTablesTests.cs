@@ -615,6 +615,66 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    public void EachFoodBuildingAsksForTheJobAndToolItsHandlerLoads()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        foreach (
+            var type in new[]
+            {
+                BuildingType.Fisher,
+                BuildingType.Farm,
+                BuildingType.Baker,
+                BuildingType.Mill,
+                BuildingType.PigFarm,
+                BuildingType.Butcher,
+            }
+        )
+        {
+            Assert.AreEqual(
+                new WorkerRequest
+                {
+                    Job = Job.Of(type.Code + 10),
+                    Tool = new Good { Code = type.Code + 3 },
+                },
+                tables.WorkerOf(type),
+                $"type {type.Code:x}"
+            );
+        }
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheFoodBuildingsAskForTheWorkersOfTheOriginalsHandlers()
+    {
+        var tables = TestProgram.Tables();
+
+        (BuildingType Type, int Job, int Tool, BuildingSize Size, int Planks, int Stones)[] expected =
+        [
+            (BuildingType.Fisher, 11, 18, BuildingSize.Small, 2, 0),
+            (BuildingType.Farm, 14, 20, BuildingSize.Large, 4, 1),
+            (BuildingType.Butcher, 13, 19, BuildingSize.Large, 2, 1),
+            (BuildingType.PigFarm, 12, 0, BuildingSize.Large, 4, 1),
+            (BuildingType.Mill, 15, 0, BuildingSize.Small, 3, 1),
+            (BuildingType.Baker, 16, 0, BuildingSize.Large, 2, 1),
+        ];
+        foreach (var (type, job, tool, size, planks, stones) in expected)
+        {
+            Assert.AreEqual(
+                new WorkerRequest
+                {
+                    Job = Job.Of(job),
+                    Tool = new Good { Code = tool },
+                },
+                tables.WorkerOf(type),
+                $"type {type.Code:x}"
+            );
+            Assert.AreEqual(size, tables.SizeOf(type), $"type {type.Code:x} size");
+            Assert.AreEqual(new BuildingNeeds { Planks = planks, Stones = stones }, tables.NeedsOf(type));
+        }
+    }
+
+    [TestMethod]
     public void AHandlerThatDoesNotLoadItsJobIsRefused()
     {
         var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.BuilderRequestAddress)] = 0x31);

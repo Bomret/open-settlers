@@ -51,6 +51,7 @@
     <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="road-splits.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="building-sites.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="food-sites.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="construction-materials.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="construction-builder.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="construction-digger.txt" CopyToOutputDirectory="PreserveNewest" />

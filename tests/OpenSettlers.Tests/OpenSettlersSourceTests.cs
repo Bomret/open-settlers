@@ -104,6 +104,12 @@ public sealed class OpenSettlersSourceTests
         "building/stonecutter",
         "building/forester",
         "building/sawmill",
+        "building/fisher",
+        "building/farm",
+        "building/baker",
+        "building/mill",
+        "building/pig-farm",
+        "building/butcher",
         "building/site-small",
         "building/site-large",
         "building/stage-small",
@@ -389,6 +395,12 @@ public sealed class OpenSettlersSourceTests
     [DataRow(4, "building/stonecutter")]
     [DataRow(9, "building/forester")]
     [DataRow(0x11, "building/sawmill")]
+    [DataRow(1, "building/fisher")]
+    [DataRow(0xc, "building/farm")]
+    [DataRow(0xd, "building/butcher")]
+    [DataRow(0xe, "building/pig-farm")]
+    [DataRow(0xf, "building/mill")]
+    [DataRow(0x10, "building/baker")]
     public void ABuildingDrawsItsOwnImageWithNoShadow(int type, string key)
     {
         using var folder = new ContentFolder();
@@ -563,6 +575,12 @@ public sealed class OpenSettlersSourceTests
     [DataRow("building/stonecutter")]
     [DataRow("building/forester")]
     [DataRow("building/sawmill")]
+    [DataRow("building/fisher")]
+    [DataRow("building/farm")]
+    [DataRow("building/baker")]
+    [DataRow("building/mill")]
+    [DataRow("building/pig-farm")]
+    [DataRow("building/butcher")]
     [DataRow("building/site-small")]
     [DataRow("building/site-large")]
     [DataRow("building/stage-small")]

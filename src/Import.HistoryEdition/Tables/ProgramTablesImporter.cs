@@ -232,8 +232,11 @@ static class ProgramTablesImporter
     public const int BuilderRequestAddress = 0x42d5fc;
 
     /// <summary>
-    /// The same instructions in the handlers of the four types: the woodcutter's (<c>0x42d945</c>), the stonecutter's (<c>0x42d987</c>), the
-    /// forester's (<c>0x42d9c9</c>), and the sawmill's (<c>0x42da0b</c>), each 13 bytes in.
+    /// The same instructions in the handlers of the ten types: the woodcutter's (<c>0x42d945</c>), the stonecutter's (<c>0x42d987</c>), the
+    /// forester's (<c>0x42d9c9</c>), the sawmill's (<c>0x42da0b</c>), the fisher's (<c>0x42e0b8</c>), the farm's (<c>0x42e25e</c>), the
+    /// butcher's (<c>0x42e1b3</c>), the pig farm's (<c>0x42e0fa</c>), the mill's (<c>0x42e2a0</c>), and the baker's (<c>0x42e37e</c>),
+    /// each 13 bytes in, except the mill's, whose handler first reads the building's bytes (<c>0x42e2a0</c> to <c>0x42e2c5</c>) and
+    /// asks at <c>0x42e2d2</c>.
     /// </summary>
     public static readonly (BuildingType Type, int Address)[] WorkerRequestAddresses =
     [
@@ -241,6 +244,12 @@ static class ProgramTablesImporter
         (BuildingType.Stonecutter, 0x42d994),
         (BuildingType.Forester, 0x42d9d6),
         (BuildingType.Sawmill, 0x42da18),
+        (BuildingType.Fisher, 0x42e0c5),
+        (BuildingType.Farm, 0x42e26b),
+        (BuildingType.Butcher, 0x42e1c0),
+        (BuildingType.PigFarm, 0x42e107),
+        (BuildingType.Mill, 0x42e2d2),
+        (BuildingType.Baker, 0x42e38b),
     ];
 
     /// <summary>The address of the builder's order of materials: a 16-bit word for each building type 0 to 0x17, a set bit meaning a stone (<c>0x43f0ba</c>).</summary>

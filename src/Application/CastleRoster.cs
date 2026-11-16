@@ -187,8 +187,8 @@ public sealed class CastleRoster(
     /// building's flag; the castle's flag is the only storage, so it finds a settler where the flag is reached. The settler is the one
     /// the castle's list of waiting settlers holds for the job; where there is none, a settler without a job takes the job and the tool
     /// of the request from the stock (the second way, <c>docs/rules/construction.md</c>), where one waits and the stock holds the tool.
-    /// A request that finds neither returns false and changes nothing. **Not ported:** the second tool word (the five requests of the
-    /// program pass none), the storage's counter of settlers (word at <c>0x40</c>), and the player's counts per job.
+    /// A request that finds neither returns false and changes nothing. **Not ported:** the second tool word (the requests of the
+    /// engine's types pass none), the storage's counter of settlers (word at <c>0x40</c>), and the player's counts per job.
     /// </summary>
     public bool RequestWorker(Building building, WorkerRequest request)
     {
