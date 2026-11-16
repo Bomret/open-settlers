@@ -93,11 +93,15 @@ harvest it. The cursor and the countdown are the woodcutter's. The decay counter
 
 ## What a field blocks
 
-**Status:** confirmed.
+**Status:** confirmed for the classes (read from the install); inferred for the refusals, which rest on the existing class reads and no
+emulator run places a field.
 
 The class table (`0x41e640`, [Map object codes](map-object-codes.md)) gives the growing and ripe codes (`0x69` to `0x6e`, `0x79` to `0x7e`)
 class 2, the class of a stone: the road cursor refuses a node of class 2 ([Roads](roads.md)), and the build-site evaluator reads it as it
 reads a stone ([Build sites](build-sites.md)). The harvested field `0x6f` and the signs `0x70` to `0x78` have class 0 and block nothing.
+`FieldBlockingTests` pins the install's class of the field codes and shows the engine refusing a road step, a flag, and a building on a
+growing or ripe field and allowing them on a harvested one, with the install's tables; the harness has no verb that places a field, so
+these refusals are the engine's own reads of the classes, not emulator verdicts.
 
 ## Drawing
 

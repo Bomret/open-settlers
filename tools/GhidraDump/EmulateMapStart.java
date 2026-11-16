@@ -116,7 +116,7 @@
 //                            state byte and mode byte (+0xb) instead of 0x1c, to reach a branch the teardown does not (state 0x19 with
 //                            mode 1 searches the spiral from its far end). With WATCH (a settler slot) the lines also list that
 //                            settler's 16 bytes (o=) when they changed, for a settler the walk meets (a carrier on the road).
-//   remove:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
+//   remove:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS[:SETS]]
 //                            the removal clicks (docs/rules/removal.md) in a game that starts as the original's start leaves its
 //                            tables (the dummies of the flag and building tables are taken and the default transport priorities
 //                            written, as for goods, with the prio= start line): a castle at cx,cy, the
@@ -132,7 +132,8 @@
 //                            storage's stock word of the good G set to N (a stock written by hand). The sound
 //                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
-//                            before that pass, as goods does, with the destination word DEST. A line per click and per pass lists
+//                            before that pass, as goods does, with the destination word DEST. SETS (PASS,X,Y,CODE;...) write an object
+//                            code into a node's object byte before that pass, as the SET field of goods does (a field ripe in the farmer's reach). A line per click and per pass lists
 //                            what changed: the map bytes of flags, object, link, and the waiting carrier's mark (record B byte 1,
 //                            i=5) (m=x,y:i=old>new), the heights of the nodes (h=x,y:old>new), the settlers (s<slot>=, 16
 //                            bytes), the flag items (f<slot>=, 70 bytes), the building items (b<slot>=, 18 bytes), the storage item
@@ -1606,8 +1607,19 @@ public class EmulateMapStart extends GhidraScript {
             clicksAt.computeIfAbsent(when, key -> new java.util.ArrayList<>()).add(spec.substring(equals + 1));
         }
 
+        String[] sets = parts.length > 11 && !parts[11].isEmpty() ? parts[11].split(";") : new String[0];
         int clock = 0;
         for (int pass = 0; pass < passes; pass++) {
+            for (String text : sets) {
+                // An object code written by hand into a node's object byte before a pass, as goods does: PASS,X,Y,CODE.
+                String[] set = text.split(",");
+                if (pass != Integer.parseInt(set[0])) {
+                    continue;
+                }
+                long setAt = layerA + (((long) Integer.parseInt(set[2]) << bits) + Integer.parseInt(set[1])) * 4 + 3;
+                int kept = emu.readMemory(toAddr(setAt), 1)[0] & 0x80;
+                emu.writeMemory(toAddr(setAt), new byte[] {(byte) (kept | Integer.parseInt(set[3]))});
+            }
             if (clicksAt.containsKey(pass)) {
                 for (String click : clicksAt.get(pass)) {
                     String kind = click.substring(0, 1);
