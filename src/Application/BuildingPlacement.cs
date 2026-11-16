@@ -20,9 +20,20 @@ public sealed class BuildingPlacement(
     Removal removal
 )
 {
-    /// <summary>The building types a placement builds: the types of the construction milestone.</summary>
+    /// <summary>The building types a placement builds: the types of the construction milestone and the six food buildings.</summary>
     public static IReadOnlyList<BuildingType> Types { get; } =
-    [BuildingType.Woodcutter, BuildingType.Stonecutter, BuildingType.Forester, BuildingType.Sawmill];
+    [
+        BuildingType.Woodcutter,
+        BuildingType.Stonecutter,
+        BuildingType.Forester,
+        BuildingType.Sawmill,
+        BuildingType.Fisher,
+        BuildingType.Farm,
+        BuildingType.Baker,
+        BuildingType.Mill,
+        BuildingType.PigFarm,
+        BuildingType.Butcher,
+    ];
 
     /// <summary>
     /// Places a building site of <paramref name="type"/> on the node, with the needs and the height the original writes. Refused,

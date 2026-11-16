@@ -40,6 +40,42 @@ public readonly record struct BuildingType
     /// </summary>
     public static BuildingType Sawmill => new() { Code = 0x11 };
 
+    /// <summary>
+    /// The fisher's hut, a small building (<c>docs/rules/food-buildings.md</c>). Its handler (<c>0x42e0b8</c>) asks for job 11 with the
+    /// tool of the stock word 0x24 (good 18), and job 11's walk ends by the water with the put of good 1 (fish, <c>0x43837f</c>).
+    /// </summary>
+    public static BuildingType Fisher => new() { Code = 1 };
+
+    /// <summary>
+    /// The farm, a large building: the handler of the type 0xc (<c>0x42e25e</c>) asks for job 14 with the tool of the stock word 0x28
+    /// (good 20), and job 14's walk ends with the put of good 4 (grain, <c>0x43847d</c>).
+    /// </summary>
+    public static BuildingType Farm => new() { Code = 0xc };
+
+    /// <summary>
+    /// The baker, a large building: the handler of the type 0xd (<c>0x42e1b3</c>) asks for job 13 with the tool of the stock word 0x26
+    /// (good 19); the job takes in good 2 (flour) and puts good 3 (bread, <c>0x4333a5</c>).
+    /// </summary>
+    public static BuildingType Baker => new() { Code = 0xd };
+
+    /// <summary>
+    /// The mill, a large building: the handler of the type 0xe (<c>0x42e0fa</c>) asks for job 12 with no tool; the job takes in good 4
+    /// (grain) and puts good 2 (flour, <c>0x433577</c>).
+    /// </summary>
+    public static BuildingType Mill => new() { Code = 0xe };
+
+    /// <summary>
+    /// The pig farm, a small building: the handler of the type 0xf (<c>0x42e2a0</c>) asks for job 15 with no tool; the job takes in
+    /// good 4 (grain) and puts good 5 (pig, <c>0x433a1e</c>).
+    /// </summary>
+    public static BuildingType PigFarm => new() { Code = 0xf };
+
+    /// <summary>
+    /// The butcher, a large building: the handler of the type 0x10 (<c>0x42e37e</c>) asks for job 16 with no tool; the job takes in
+    /// good 5 (pig) and puts good 6 (meat, <c>0x43384f</c>).
+    /// </summary>
+    public static BuildingType Butcher => new() { Code = 0x10 };
+
     /// <summary>The storehouse: a storage like the castle (<c>docs/rules/removal.md</c>).</summary>
     public static BuildingType Storehouse => new() { Code = 0xa };
 
