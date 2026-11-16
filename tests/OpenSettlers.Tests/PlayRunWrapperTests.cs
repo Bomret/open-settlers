@@ -16,8 +16,9 @@ namespace OpenSettlers.Tests;
 // (PLAY_RUN_GODOT) and a fake dotnet (PLAY_RUN_DOTNET). The fake mise logs a call and runs the command after
 // `exec --`. The fake Godot counts its calls, waits until the FAKE_GATE file exists (when set), writes a dump,
 // two named shots, numbered frames, a WAV and log lines, and exits with FAKE_STATUS. A call with --minimized (the
-// hidden run of repro mode) rewrites the files FAKE_HIDDEN_CHANGE names, removes FAKE_HIDDEN_DROP, prints the
-// never-hidden line when FAKE_HIDDEN_DRAWN is 1, and exits with FAKE_HIDDEN_STATUS when set. The fake dotnet exits with
+// hidden run of repro mode) waits on the FAKE_HIDDEN_GATE file instead when that is set, rewrites or adds the files
+// FAKE_HIDDEN_CHANGE names, removes FAKE_HIDDEN_DROP, prints the line FAKE_HIDDEN_SAYS holds, prints the never-hidden
+// line (PlayDriver.NeverHiddenLine) when FAKE_HIDDEN_DRAWN is 1, and exits with FAKE_HIDDEN_STATUS when set. The fake dotnet exits with
 // FAKE_BUILD_STATUS. Both append their name and arguments to the order file. A test that needs two calls to
 // overlap holds the gate shut and polls for the effect it waits on, so it depends on no sleep and no clock.
 // The git fixture repository is built once per class and copied for each test. tools/play-run.sh is a POSIX
@@ -54,8 +55,10 @@ public class PlayRunWrapperTests
           [ "$a" = --minimized ] && hidden=1
           prev=$a
         done
+        gate=${FAKE_GATE:-}
+        [ -n "$hidden" ] && [ -n "${FAKE_HIDDEN_GATE:-}" ] && gate=$FAKE_HIDDEN_GATE
         i=0
-        while [ -n "${FAKE_GATE:-}" ] && [ ! -e "$FAKE_GATE" ] && [ $i -lt 2400 ]; do
+        while [ -n "$gate" ] && [ ! -e "$gate" ] && [ $i -lt 2400 ]; do
           sleep 0.05
           i=$((i + 1))
         done
@@ -72,6 +75,7 @@ public class PlayRunWrapperTests
         if [ -n "$hidden" ]; then
           for f in ${FAKE_HIDDEN_CHANGE:-}; do echo changed > "$out/$f"; done
           [ -n "${FAKE_HIDDEN_DROP:-}" ] && rm -f "$out/$FAKE_HIDDEN_DROP"
+          [ -n "${FAKE_HIDDEN_SAYS:-}" ] && echo "$FAKE_HIDDEN_SAYS"
           [ "${FAKE_HIDDEN_DRAWN:-}" = 1 ] && echo "WARN play run: the window was never hidden"
           status=${FAKE_HIDDEN_STATUS:-$status}
         fi
@@ -679,6 +683,47 @@ public class PlayRunWrapperTests
 
         Assert.AreEqual(5, status, stdout);
         StringAssert.Contains(stdout, "repro: start.png: the hidden run lacks it");
+    }
+
+    [TestMethod]
+    public void ReproNamesAFileOnlyTheHiddenRunWroteAndExitsFive()
+    {
+        var (status, stdout, _) = Run(Repro, new Dictionary<string, string?> { ["FAKE_HIDDEN_CHANGE"] = "extra.txt" });
+
+        Assert.AreEqual(5, status, stdout);
+        StringAssert.Contains(stdout, "repro: extra.txt: the visible run lacks it");
+    }
+
+    // Only the play driver's whole line counts; a line that merely contains its words is no never-hidden report.
+    [TestMethod]
+    public void ALineThatOnlyContainsTheNeverHiddenWordsStillMatches()
+    {
+        var env = new Dictionary<string, string?> { ["FAKE_HIDDEN_SAYS"] = "note: the window was never hidden" };
+
+        var (status, stdout, _) = Run(Repro, env);
+
+        Assert.AreEqual(0, status, stdout);
+        StringAssert.Contains(stdout, "repro: match");
+    }
+
+    [TestMethod]
+    [DataRow("INT")]
+    [DataRow("TERM")]
+    [DataRow("HUP")]
+    public void ASignalDuringTheHiddenRunLeavesTheVisibleRunsOutputAndExitsOneHundredThirty(string signal)
+    {
+        InconclusiveUnlessTrappable(signal);
+        var gate = Path.Combine(_fake, "gate");
+        var env = new Dictionary<string, string?> { ["FAKE_HIDDEN_GATE"] = gate, ["FAKE_HIDDEN_CHANGE"] = "end.txt" };
+        using var call = Start(Repro, env);
+        WaitFor(() => Calls == 2, "the call to start the hidden run");
+
+        Signal(call, signal);
+        File.WriteAllText(gate, "");
+        var (status, _, _) = call.Finish();
+
+        Assert.AreEqual(130, status);
+        Assert.AreEqual("state 1\n", File.ReadAllText(Out("demo/end.txt")));
     }
 
     [TestMethod]

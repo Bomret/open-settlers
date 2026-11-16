@@ -31,7 +31,8 @@
 # same bytes. Exit 5 is no match: the exit statuses differ, the hidden run printed that its window was never hidden,
 # or a file differs; the line names the first file in byte order of its name and whether a run lacks it or the
 # bytes differ. A failed build exits 3 and runs nothing; a run that exits neither 0 nor 1 ends repro mode with its
-# status and no comparison. The log line's last field is repro-<outcome>: match, differ, never-hidden, build, or run.
+# status and no comparison. A signal during the hidden run puts the visible run's output back in play-out/<stem>/
+# and exits 130. The log line's last field is repro-<outcome>: match, differ, never-hidden, build, or run.
 set -u
 
 usage() {
@@ -199,7 +200,14 @@ until mkdir "$lock" 2>/dev/null; do
   sleep 1
 done
 trap 'if [ "$(cat "$lock/pid" 2>/dev/null)" = "$$" ]; then rm -rf "$lock"; fi' EXIT
-trap 'exit 130' INT TERM HUP
+# Puts the visible run's output, parked during repro mode's hidden run, back in $out over the hidden run's.
+unpark() {
+  if [ -n "${parked:-}" ] && [ -d "$parked" ]; then
+    rm -rf "$out"
+    mv "$parked" "$out"
+  fi
+}
+trap 'unpark; exit 130' INT TERM HUP
 echo $$ >"$lock/pid"
 
 export LC_ALL=C
@@ -270,7 +278,7 @@ rm -rf "$out"
 mkdir -p "$out"
 if [ -n "$repro" ]; then
   # Both runs write into $out, where Godot puts a play run's shots and dumps. The visible run's output waits in
-  # $parked during the hidden run and goes back to $out after it.
+  # $parked during the hidden run and goes back to $out after it, or on a signal (unpark).
   stash=play-out/.repro/$stem
   parked=$stash/visible
   hidden=$stash/hidden
@@ -299,7 +307,8 @@ if [ -n "$repro" ]; then
         if [ "$status" -ne "$visible" ]; then
           echo "play-run.sh: repro: the runs exit differently: visible $visible, hidden $status"
           how=repro-differ
-        elif grep -q 'the window was never hidden' "$log"; then
+        # The whole line PlayDriver.NeverHiddenLine (src/Viewer/PlayDriver.cs) holds; keep the two alike.
+        elif grep -qxF 'WARN play run: the window was never hidden' "$log"; then
           echo "play-run.sh: repro: the window was never hidden, so the runs compare nothing"
           how=repro-never-hidden
         elif same "$out" "$hidden"; then

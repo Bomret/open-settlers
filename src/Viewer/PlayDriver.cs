@@ -33,7 +33,10 @@ public partial class PlayDriver : Node
     /// <summary>The window and content size of a play run.</summary>
     public static readonly Vector2I WindowSize = new(1280, 720);
 
-    /// <summary>The line a minimized run prints when its window could draw on every frame; the wrapper reads it.</summary>
+    /// <summary>
+    /// The line a minimized run prints when its window could draw on every frame. tools/play-run.sh matches the
+    /// whole line as a literal in repro mode; keep the two alike.
+    /// </summary>
     public const string NeverHiddenLine = "WARN play run: the window was never hidden";
 
     static readonly KeyMasks Masks = new()
@@ -57,7 +60,7 @@ public partial class PlayDriver : Node
     /// The driver of a run of <c>script</c> on the view; shots go to <c>outputFolder</c>. <c>minimized</c> minimizes the
     /// window.
     /// </summary>
-    public PlayDriver(MapViewControl view, PlayScript script, string outputFolder, bool minimized = false)
+    public PlayDriver(MapViewControl view, PlayScript script, string outputFolder, bool minimized)
     {
         _view = view;
         _minimized = minimized;

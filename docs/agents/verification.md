@@ -187,6 +187,12 @@ failed `expect` or a problem in the script.
 - Remove the lock, the mutex, and the reap directories by hand only when no run is live.
 - An empty `--size` or `--seed` exits 2 with the usage message, as an empty `--fps` or `--layout` does.
 
+When a line is about one place, take a cropped shot, `shot <name> <column> <row> [radius] [scale]`, rather
+than the whole frame: it keeps the tiles within `radius` steps of the tile (default 1) and the room above them
+for the tallest object sprite, enlarged by the whole factor `scale` (default 1). The tile is placed as
+`click-tile` places it and fails with its messages; a crop is clipped to the canvas, and one over 16384 pixels
+on a side once enlarged fails the step. README.md's "Run a play script" lists every step. The named-thing steps (`name`, `mark`, `expect <alias>.<field>`, `expect-event`, `expect-gone`, `events`) check one thing's fields and events in the game view; `play/named-woodcutter.play` shows them on `layouts/woodcutter.jsonc`.
+
 ### Repro mode
 
 Two fresh play runs of one commit with the same arguments write the same frames, shots, and dumps, whether the Godot
@@ -206,22 +212,17 @@ sh tools/play-run.sh head-on-pass --layout layouts/head-on-pass.jsonc --fps 10 -
   time with the launch flag `--minimized`. It neither reads nor writes `play-out/.cache`; `--fresh` beside it changes
   nothing. A repeated `--repro` exits 2.
 - `play-out/<stem>/` holds the visible run's output afterwards, and `play-out/.repro/<stem>/hidden/` the hidden run's.
-  A stem starts with no dot, so no stem's output or lock names that folder.
+  A stem starts with no dot, so no stem's output or lock names that folder. A signal (INT, TERM, HUP) during the
+  hidden run puts the visible run's output back in `play-out/<stem>/` and exits 130.
 - It compares the exit statuses and every file of the two folders (frames, `frame.wav`, shots, dumps, lists, events)
   in byte order of the file name. Exit 0 is a match. Exit 5 is no match and names the first difference: the two exit
   statuses, a file one run lacks, or a file whose bytes differ.
-- A hidden run whose window could draw on every frame prints `WARN play run: the window was never hidden`. Repro mode
-  then reports that the window was never hidden and exits 5: the runs compared nothing.
+- A hidden run whose window could draw on every frame prints `WARN play run: the window was never hidden`. On that
+  whole line, repro mode reports that the window was never hidden and exits 5: the runs compared nothing.
 - A failed build exits 3 and runs nothing. A run that exits with neither 0 nor 1 ends repro mode with that status and
   reports no comparison.
 - It logs one line to `play-out/runs.log`. Its last field is `repro-match`, `repro-differ`, `repro-never-hidden`,
   `repro-build`, or `repro-run` (a run that exited with neither 0 nor 1).
-
-When a line is about one place, take a cropped shot, `shot <name> <column> <row> [radius] [scale]`, rather
-than the whole frame: it keeps the tiles within `radius` steps of the tile (default 1) and the room above them
-for the tallest object sprite, enlarged by the whole factor `scale` (default 1). The tile is placed as
-`click-tile` places it and fails with its messages; a crop is clipped to the canvas, and one over 16384 pixels
-on a side once enlarged fails the step. README.md's "Run a play script" lists every step. The named-thing steps (`name`, `mark`, `expect <alias>.<field>`, `expect-event`, `expect-gone`, `events`) check one thing's fields and events in the game view; `play/named-woodcutter.play` shows them on `layouts/woodcutter.jsonc`.
 
 ### Layouts: reach a moment without clicks
 
