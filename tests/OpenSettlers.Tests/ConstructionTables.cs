@@ -109,19 +109,22 @@ static class ConstructionTables
         byte plankRankBase = 0xff,
         ushort stepTime = 100,
         byte[]? needs = null,
-        ushort[]? materialOrder = null
+        ushort[]? materialOrder = null,
+        byte[]? sizes = null,
+        WorkerRequest?[]? workers = null,
+        ushort[]? blowSteps = null
     ) =>
         LayoutSettlersTests.MadeTables(
             stepTime: stepTime,
-            workers: Workers(),
+            workers: workers ?? Workers(),
             builderRequest: new WorkerRequest { Job = new Builder(), Tool = BuilderTool },
             materialOrder: materialOrder ?? MaterialOrder(),
-            blowSteps: BlowSteps(),
+            blowSteps: blowSteps ?? BlowSteps(),
             buildingClass: 4,
             // A made-up transport priority for each good (the good's own number): a carrier takes a waiting good only where its
             // priority is above 0.
             transportPriorities: [.. Enumerable.Range(1, RuleTables.Goods).Select(good => (byte)good)],
-            buildingSizes: Sizes(),
+            buildingSizes: sizes ?? Sizes(),
             buildingNeeds: needs ?? Needs(),
             goodClasses: Classes(),
             distribution: Orders(),
