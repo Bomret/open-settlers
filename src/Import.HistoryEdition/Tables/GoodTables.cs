@@ -16,7 +16,17 @@ static class GoodTables
     public const int Count = 26;
 
     /// <summary>One good of the original: its code, its stable name, and the evidence for the name.</summary>
-    internal readonly record struct Known(int Code, string Name, string Evidence);
+    internal readonly struct Known(int code, string name, string evidence)
+    {
+        /// <summary>The good's code, 1 to 26.</summary>
+        public int Code { get; } = code;
+
+        /// <summary>The good's stable name.</summary>
+        public string Name { get; } = name;
+
+        /// <summary>The evidence for the name (INV-0006).</summary>
+        public string Evidence { get; } = evidence;
+    }
 
     /// <summary>The goods of the original in the order of their codes, 1 to 26.</summary>
     public static IReadOnlyList<Known> All { get; } =
