@@ -76,7 +76,7 @@ while [ $# -gt 0 ]; do
       esac
       shift 2
       ;;
-    --graphics) usage "--graphics is gone, use --content-set basic or history-edition" ;;
+    --graphics) usage "--graphics is gone, use --content-set" ;;
     --game-view)
       mode=game-view
       shift

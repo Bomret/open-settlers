@@ -347,6 +347,30 @@ public sealed class BasicContentSetPlayTests
         Assert.IsNull(ConstructionLoop(CheckedIn(), out _));
     }
 
+    // The cheapest food building (the fisher's hut: 2 planks, no stone) placed as a site by command on the loop's map, with the
+    // castle's stock paying its needs and the builder's blows finishing it.
+    [TestMethod]
+    public void AFoodBuildingBuiltByCommandIsFinishedFromTheBasicStock()
+    {
+        var tables = new OpenSettlersRuleTables(CheckedIn()).Read();
+        Assert.IsTrue(Seed.TryParse(LoopSeed, out var seed, out var problem), problem);
+        var game = GameFactory.Create(
+            tables,
+            MapGenerator.Generate(tables, seed.ToMapSeed(), MapSize.Offered[0]),
+            everyPassTurns: true,
+            handsOutGoods: true
+        );
+
+        Do(game, CommandKind.PlaceCastle, 24, 3);
+        Do(game, CommandKind.PlaceBuilding, 26, 4, building: BuildingType.Fisher);
+        Do(game, CommandKind.BuildRoad, 25, 4, [1, 0]);
+        var fisher = game.Buildings[1];
+
+        Assert.AreEqual(BuildingType.Fisher, fisher.Type);
+        Assert.IsTrue(fisher.Constructing, "the site starts unfinished");
+        Assert.IsTrue(Until(game, LoopCap, () => !fisher.Constructing), "the fisher's site never finished");
+    }
+
     [TestMethod]
     public void FarmAndMillGiveFlourToTheCastle()
     {
