@@ -49,6 +49,9 @@
     <None Include="mill-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="mill-removals.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="mill-materials.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="baker-walks.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="baker-removals.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="baker-materials.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="flag-goods.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="home-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />

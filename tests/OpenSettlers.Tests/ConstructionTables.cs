@@ -18,6 +18,9 @@ static class ConstructionTables
     // The made-up grain class: class 1 of the first word, which the mill's flag asks it in.
     public static readonly GoodClass GrainClass = new() { Class = 1, Word = RequestWord.First };
 
+    // The made-up flour class: class 7 of the first word, which the bakery's flag asks it in.
+    public static readonly GoodClass FlourClass = new() { Class = 7, Word = RequestWord.First };
+
     public static GoodClass?[] Classes()
     {
         var table = new GoodClass?[RuleTables.GoodClassCount];
@@ -25,6 +28,7 @@ static class ConstructionTables
         table[Good.Stone.Code] = StoneClass;
         table[Good.Log.Code] = LogClass;
         table[Good.Grain.Code] = GrainClass;
+        table[Good.Flour.Code] = FlourClass;
 
         return table;
     }
@@ -43,6 +47,10 @@ static class ConstructionTables
     // The made-up order of a castle that hands out grain too: the order of PlanksFirst with the grain step last.
     public static DistributionStep[][] GrainOrders() =>
         [.. Orders().Select(order => order.Append(new() { Class = GrainClass, Goods = [Good.Grain] }).ToArray())];
+
+    // The made-up order of a castle that hands out flour: the order of PlanksFirst with the flour step last.
+    public static DistributionStep[][] FlourOrders() =>
+        [.. Orders().Select(order => order.Append(new() { Class = FlourClass, Goods = [Good.Flour] }).ToArray())];
 
     // The made-up rank the mill's request for grain starts from, which differs from the program's own (0x7f).
     public const byte MillRankBase = 0x3f;
@@ -87,6 +95,7 @@ static class ConstructionTables
         workers[BuildingType.Forester.Code] = new WorkerRequest { Job = Job.Of(8), Tool = ForesterTool };
         workers[BuildingType.Sawmill.Code] = new WorkerRequest { Job = new Sawmiller(), Tool = SawTool };
         workers[BuildingType.Mill.Code] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
+        workers[BuildingType.Baker.Code] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
 
         return workers;
     }

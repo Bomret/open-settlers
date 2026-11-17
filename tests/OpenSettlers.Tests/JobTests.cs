@@ -21,6 +21,7 @@ public sealed class JobTests
         (8, typeof(Forester)),
         (11, typeof(TypeOneHut)),
         (15, typeof(Miller)),
+        (16, typeof(Baker)),
         (21, typeof(Jobless)),
     ];
 

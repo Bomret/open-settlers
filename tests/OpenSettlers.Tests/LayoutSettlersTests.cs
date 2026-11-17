@@ -193,6 +193,31 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
+    public void AFinishedBakerEntryStandsABakerMadeOfASettlerWithoutAJobInItsDoorAndHeAsksForFlourAtHisNextTurn()
+    {
+        var layout = Read(Built.Replace("\"woodcutter\"", "\"baker\""));
+        var game = GameFactory.Create(
+            MadeTables(
+                workers: TestProgram.MadeWorkers(baker: true),
+                goodClasses: ConstructionTables.Classes()
+            ),
+            layout.BuildMap()
+        );
+
+        Assert.IsNull(layout.Apply(game));
+
+        var baker = game.Settlers.Single(settler => settler.Job == new Baker());
+        Assert.IsInstanceOfType<Door>(baker.Activity);
+        Assert.AreEqual((13, 10), (baker.X, baker.Y));
+        Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
+        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.Baker));
+        Run(game, 200);
+        Assert.AreEqual(new Bakes { Phase = 0 }.Code, baker.Activity.Code, "he waits for flour in the bakery");
+        Assert.AreEqual(ConstructionTables.FlourClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
+        Assert.AreEqual(0xff, game.Flags[1].RequestOf(RequestWord.First).Rank);
+    }
+
+    [TestMethod]
     public void ALayoutStandsAWorkerOnlyInTheHutOfAJobWhoseRulesLetItsSettlerStandInTheHut()
     {
         var game = Applied(Built);
@@ -373,7 +398,7 @@ public sealed class LayoutSettlersTests
         );
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, miller's, or forester's building stands on the node",
+            "no finished woodcutter's, stonecutter's, miller's, forester's, or baker's building stands on the node",
             game.Walks.StandWorkerInHut(x, y)
         );
     }
@@ -429,7 +454,7 @@ public sealed class LayoutSettlersTests
         Assert.IsTrue(game.Buildings[1].Constructing);
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, miller's, or forester's building stands on the node",
+            "no finished woodcutter's, stonecutter's, miller's, forester's, or baker's building stands on the node",
             game.Walks.StandWorkerInHut(13, 10)
         );
     }

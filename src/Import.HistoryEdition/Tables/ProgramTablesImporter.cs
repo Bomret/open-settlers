@@ -164,6 +164,18 @@ static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of the miller's handler for any other figure byte below 0x80 (the walk).</summary>
     public const int MillerWalkAddress = 0x440107;
 
+    /// <summary>The handler of the baker's figure (<c>0x440112</c>, the target of the stub of job 16).</summary>
+    public const int BakerHandlerAddress = 0x440112;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the baker's handler for a figure byte from 0x80 (the baking).</summary>
+    public const int BakerBakeAddress = 0x44011e;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the baker's handler for the step that takes the bread out (state 5, byte 15 0xd).</summary>
+    public const int BakerCarryingAddress = 0x44013b;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the baker's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int BakerWalkAddress = 0x440146;
+
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
     static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
 
