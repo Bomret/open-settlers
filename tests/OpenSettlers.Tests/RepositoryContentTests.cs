@@ -58,9 +58,14 @@ public sealed class RepositoryContentTests
 
             var checkedIn = Path.Combine(root, "content", "basic");
             var expected = SetFiles(generated);
-            // The rule files are hand-written, not generated: exactly the files the rule tables port names are exempt.
+            // The rule files and the walk steps file are hand-written, not generated: exactly the files the rule tables port
+            // and the walk steps port name are exempt.
             var actual = SetFiles(checkedIn)
-                .Where(file => file != ".gdignore" && !OpenSettlersRuleTables.Files.Contains(file))
+                .Where(file =>
+                    file != ".gdignore"
+                    && !OpenSettlersRuleTables.Files.Contains(file)
+                    && file != OpenSettlersWalkSteps.WalkStepsFile
+                )
                 .ToList();
             var differences = expected
                 .Except(actual)
