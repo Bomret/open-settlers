@@ -43,7 +43,8 @@ public sealed class FoodBuildingTests
                 materialOrder: order,
                 sizes: sizes,
                 workers: workers,
-                blowSteps: steps
+                blowSteps: steps,
+                jobData: ConstructionTables.PigData()
             ),
             handsOutGoods: true
         );
