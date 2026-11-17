@@ -65,6 +65,12 @@ public interface IGraphicsSource
     ObjectImage? Draw(BuildMarker marker);
 
     /// <summary>
+    /// The image of a road marker, or null where the source draws none. A marker has no shadow: the original draws none
+    /// (<c>docs/rules/roads.md</c>, "The road markers").
+    /// </summary>
+    ObjectImage? Draw(RoadMarker marker);
+
+    /// <summary>
     /// The height in map pixels of the tallest image the source draws for an object, 0 where it draws none. A play run's
     /// cropped shot leaves this much room above its tiles.
     /// </summary>

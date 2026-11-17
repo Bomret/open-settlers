@@ -145,6 +145,27 @@ static class ObjectSprites
     /// </summary>
     public static int MarkerEntry(BuildMarker marker) => MarkerFirstEntry + (int)marker;
 
+    /// <summary>The first entry of the sprites the road cursor's words reach through <c>0x44de9a</c>, which adds 320.</summary>
+    public const int CursorFirstEntry = 321;
+
+    /// <summary>The last of those sprites (<c>docs/rules/graphics-images.md</c>, "Transparent sprites").</summary>
+    public const int CursorLastEntry = 372;
+
+    /// <summary>
+    /// The sprite entry of a road marker: <c>Road_UpdateCursor</c> (<c>0x44b6ce</c>) writes the word 44 for a blocked
+    /// direction, 45 for the way back, and 39 plus the height difference for a slope, with no bound; the end mark is the
+    /// word 32 (<b>inferred</b>); <c>0x450f6e</c> draws each word plus 320 (<c>docs/rules/roads.md</c>, "The road
+    /// markers"). So a difference of 5 is the blocked mark's entry 364, as the original draws it.
+    /// </summary>
+    public static int RoadMarkerEntry(RoadMarker marker) =>
+        marker.Kind switch
+        {
+            RoadMarkerKind.End => 352,
+            RoadMarkerKind.Blocked => 364,
+            RoadMarkerKind.WayBack => 365,
+            _ => 359 + marker.Difference,
+        };
+
     /// <summary>The first of the 16 water entries, drawn only over palette index 8 (<c>docs/rules/map-objects.md</c>).</summary>
     public const int WaterFirstEntry = 630;
 

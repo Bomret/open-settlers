@@ -125,6 +125,8 @@ public sealed class OpenSettlersSourceTests
             .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
             .Concat(["marker/flag", "marker/mine", "marker/small", "marker/large"])
+            .Concat(["road-marker/end", "road-marker/blocked", "road-marker/way-back"])
+            .Concat(Enumerable.Range(-4, 9).Select(difference => $"road-marker/slope/{difference}"))
             .Concat(
                 from job in new[]
                 {
@@ -366,6 +368,46 @@ public sealed class OpenSettlersSourceTests
     [DataRow("marker/small")]
     [DataRow("marker/large")]
     public void AMarkerKeyTheManifestLacksIsRefusedByFileAndKey(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    [TestMethod]
+    [DataRow(RoadMarkerKind.End, 0, "road-marker/end")]
+    [DataRow(RoadMarkerKind.Blocked, 0, "road-marker/blocked")]
+    [DataRow(RoadMarkerKind.WayBack, 0, "road-marker/way-back")]
+    [DataRow(RoadMarkerKind.Slope, -4, "road-marker/slope/-4")]
+    [DataRow(RoadMarkerKind.Slope, 0, "road-marker/slope/0")]
+    [DataRow(RoadMarkerKind.Slope, 4, "road-marker/slope/4")]
+    public void EachRoadMarkerDrawsTheImageOfItsKey(RoadMarkerKind kind, int difference, string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries[key] = ContentFolder.Entry("r.png", "-4, -3");
+        folder.Png("r.png", "8x6:7");
+
+        var image = folder.Load().Draw(new RoadMarker { Kind = kind, Difference = difference })!;
+
+        Assert.AreEqual((8, 6, -4, -3), (image.Width, image.Height, image.OffsetX, image.OffsetY));
+    }
+
+    [TestMethod]
+    [DataRow(-5)]
+    [DataRow(5)]
+    public void ASlopeBeyondFourEitherWayDrawsNothing(int difference)
+    {
+        using var folder = new ContentFolder();
+
+        Assert.IsNull(folder.Load().Draw(new RoadMarker { Kind = RoadMarkerKind.Slope, Difference = difference }));
+    }
+
+    [TestMethod]
+    [DataRow("road-marker/end")]
+    [DataRow("road-marker/way-back")]
+    [DataRow("road-marker/slope/-4")]
+    public void ARoadMarkerKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();
         folder.Entries.Remove(key);

@@ -27,6 +27,7 @@ public sealed class GraphicsSourceBoundaryTests
     [DataRow("src/Import/ObjectTerms.cs")]
     [DataRow("src/Import/TerrainTriangle.cs")]
     [DataRow("src/Import/RoadStrip.cs")]
+    [DataRow("src/Import/RoadMarker.cs")]
     [DataRow("src/MapView/SettlerFigures.cs")]
     [DataRow("src/MapView/MapPicking.cs")]
     [DataRow("src/MapView/ClickDecision.cs")]

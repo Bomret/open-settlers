@@ -15,7 +15,8 @@ namespace OpenSettlers.Import.ContentSet;
 /// each terrain code and triangle, <see cref="RoadKey"/> for each road direction, <see cref="FlagKey"/> and
 /// <see cref="ObjectKey"/> for the flag and the object codes 8 to 127, <see cref="CastleKey"/> and
 /// <see cref="WoodcutterKey"/> for the buildings, <see cref="GoodKey"/> for each of the 32 goods, <see cref="MarkerKey"/>
-/// for each of the four build markers, and <see cref="SettlerKey"/> for each job and kind of activity of a settler. The art is flat: one image per terrain code
+/// for each of the four build markers, <see cref="RoadMarkerKey"/> for the end, blocked, and way-back marks and each slope from
+/// -4 to 4, and <see cref="SettlerKey"/> for each job and kind of activity of a settler. The art is flat: one image per terrain code
 /// and triangle, one strip per direction, whatever the slope, one frame per object, and one figure per job and kind of
 /// activity, whatever the settler's heading, step, or frame. A settler's pixels in <see cref="MarkColour"/> show the
 /// player's colour. The source draws no shadow, no water ripple, and no object of the codes 2 to 7. Every key above must
@@ -43,6 +44,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     readonly ObjectDrawing[] _goods;
     readonly ObjectImage[] _settlers;
     readonly ObjectImage[] _markers;
+    readonly IReadOnlyDictionary<RoadMarker, ObjectImage> _roadMarkers;
     readonly int _headroom;
 
     // The figure of a job and kind in a player's colour, one instance per job, kind, and colour.
@@ -60,11 +62,13 @@ public sealed class OpenSettlersSource : IGraphicsSource
         ObjectDrawing[] goods,
         ObjectImage[] settlers,
         ObjectImage[] markers,
+        IReadOnlyDictionary<RoadMarker, ObjectImage> roadMarkers,
         int headroom
     )
     {
         _settlers = settlers;
         _markers = markers;
+        _roadMarkers = roadMarkers;
         _headroom = headroom;
         _terrain = terrain;
         _roads = roads;
@@ -195,6 +199,32 @@ public sealed class OpenSettlersSource : IGraphicsSource
     /// <summary>The manifest key of a build marker: <c>marker/flag</c>, <c>marker/mine</c>, <c>marker/small</c>, or <c>marker/large</c>.</summary>
     public static string MarkerKey(BuildMarker marker) => $"marker/{marker.ToString().ToLowerInvariant()}";
 
+    /// <summary>The largest height difference either way the set draws a slope mark for.</summary>
+    public const int SlopeRange = 4;
+
+    /// <summary>
+    /// The manifest key of a road marker: <c>road-marker/end</c>, <c>road-marker/blocked</c>, <c>road-marker/way-back</c>, or
+    /// <c>road-marker/slope/</c> and the height difference.
+    /// </summary>
+    public static string RoadMarkerKey(RoadMarker marker) =>
+        marker.Kind switch
+        {
+            RoadMarkerKind.End => "road-marker/end",
+            RoadMarkerKind.Blocked => "road-marker/blocked",
+            RoadMarkerKind.WayBack => "road-marker/way-back",
+            _ => $"road-marker/slope/{marker.Difference}",
+        };
+
+    // The road markers the set draws: the three marks and a slope for each difference up to the range either way.
+    static IEnumerable<RoadMarker> RoadMarkers =>
+        new[] { RoadMarkerKind.End, RoadMarkerKind.Blocked, RoadMarkerKind.WayBack }
+            .Select(kind => new RoadMarker { Kind = kind })
+            .Concat(
+                Enumerable
+                    .Range(-SlopeRange, 2 * SlopeRange + 1)
+                    .Select(difference => new RoadMarker { Kind = RoadMarkerKind.Slope, Difference = difference })
+            );
+
     /// <summary>The manifest key of the flag.</summary>
     public const string FlagKey = "object/flag";
 
@@ -305,6 +335,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         }
 
         ObjectImage[] markers = [.. Enum.GetValues<BuildMarker>().Select(marker => Image(MarkerKey(marker)))];
+        var roadMarkers = RoadMarkers.ToDictionary(marker => marker, marker => Image(RoadMarkerKey(marker)));
 
         var headroom = objects
             .Concat([flag])
@@ -312,7 +343,18 @@ public sealed class OpenSettlersSource : IGraphicsSource
             .Concat(goods)
             .Max(drawing => drawing.Image!.Height);
 
-        return new OpenSettlersSource(terrain, roads, flag, objects, buildings, goods, settlers, markers, headroom);
+        return new OpenSettlersSource(
+            terrain,
+            roads,
+            flag,
+            objects,
+            buildings,
+            goods,
+            settlers,
+            markers,
+            roadMarkers,
+            headroom
+        );
     }
 
     // The jobs the game draws a settler for, by the name their manifest keys carry: the looks of the source (the registry is
@@ -531,4 +573,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectImage? Draw(BuildMarker marker) => _markers[(int)marker];
+
+    /// <inheritdoc />
+    public ObjectImage? Draw(RoadMarker marker) => _roadMarkers.GetValueOrDefault(marker);
 }
