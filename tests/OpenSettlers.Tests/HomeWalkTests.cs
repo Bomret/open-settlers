@@ -184,7 +184,7 @@ public sealed class HomeWalkTests
             game.Tick();
         }
 
-        var knight = game.Settlers.First(settler => settler.Job == Job.Of(22));
+        var knight = game.Settlers.First(settler => settler.Job == new Knight(0));
         knight.Activity = new ClaimsHomeNode();
         for (var pass = 0; pass < 80; pass++)
         {

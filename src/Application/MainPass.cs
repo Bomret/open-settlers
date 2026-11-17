@@ -7,8 +7,9 @@ namespace OpenSettlers.Simulation;
 /// One pass of the original's main loop for the item tables (ADR 0005): the clock step, the scan that clears the retry bits
 /// (<c>0x428728</c>), the objects' turn, the phase step (<c>0x4291c2</c>), then the slices of the flag table (<c>0x46414d</c>,
 /// the carriers' requests only), the building table (<c>0x42cb2d</c>), and the settler table (<c>0x42f3d9</c>); at the last phase of the
-/// cycle, where one is given, the castle's hand-out of goods (<c>0x42965c</c>). The original's other passes (the players' timers, the
-/// sound) are not ported.
+/// cycle, where one is given, the castle's hand-out of goods (<c>0x42965c</c>). Where the game runs it, the settler supply turns after
+/// the objects' turn, as the end of <c>0x4286d8</c> runs <c>Player_MakeSettlers</c>. The original's other passes (the players' other
+/// timers, the sound) are not ported.
 /// </summary>
 public sealed class MainPass(
     GameClock clock,
@@ -25,7 +26,8 @@ public sealed class MainPass(
     CastleRoster roster,
     SitePass sites,
     IReadOnlyList<JobRules> modules,
-    StorageDistribution? distribution = null
+    StorageDistribution? distribution = null,
+    SettlerSupply? supply = null
 )
 {
     // The phases of a pass cycle (docs/rules/timing.md). **Inferred** for a game with no computer opponent: the
@@ -64,10 +66,13 @@ public sealed class MainPass(
             module.Pass();
         }
 
+        supply?.Turn();
         Phase = (Phase + 1) % PhaseCount;
         if (Phase == TablePhases)
         {
-            // The phase routine (0x42965c) at the last phase of the cycle: the castle's goods go out to the requests.
+            // The phase routine (0x42965c) at the last phase of the cycle: the player's settler cap, then the castle's goods go out
+            // to the requests.
+            supply?.UpdateCap();
             distribution?.Run();
         }
 

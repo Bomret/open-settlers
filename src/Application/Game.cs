@@ -73,6 +73,9 @@ public sealed class Game(GameParts parts)
     /// <summary>The game clock, in clock units (16 bits, 8 for each tick): the settlers' timers and stamps count in it.</summary>
     public GameClock Clock => _parts.Clock;
 
+    /// <summary>The settler supply, or null in a game that does not run it.</summary>
+    internal SettlerSupply? Supply => _parts.Supply;
+
     /// <summary>The causes the rules give their events.</summary>
     internal Causes Causes => _parts.Causes;
 

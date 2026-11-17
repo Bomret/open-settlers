@@ -115,6 +115,15 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    public void TheSettlerRateIsThatOfTheAppliedSeed()
+    {
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+
+        // The free-game seed 3905,0577,7739 opens the screen with the rate 16 (opponents:3905,0577,7739, byte +0x37c).
+        Assert.AreEqual(16, state.SettlerRate);
+    }
+
+    [TestMethod]
     public void OpeningWithAnInvalidSeedHasNoMapAndAReason()
     {
         var state = MapViewState.Open(TestProgram.Made(), "0000000000000000", 1);
@@ -208,6 +217,7 @@ public sealed class MapViewStateTests
         Assert.AreEqual(layout.Seed.ToScreen(), state.SeedText);
         Assert.AreEqual(1, state.SizeValue);
         Assert.AreEqual(StartStock.LevelOf(layout.Seed), state.StockLevel);
+        Assert.AreEqual(StartStock.SettlerRateOf(layout.Seed), state.SettlerRate);
         Assert.IsNull(state.Problem);
     }
 
