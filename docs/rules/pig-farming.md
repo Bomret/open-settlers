@@ -43,12 +43,18 @@ there, so the rank is `0xff`, `0x7f`, and so on, down to 1 at seven grains and 0
 rank where its bit 0 is set, and the handler writes the rank again from the fill: the rank `0xff` shifted by any count below 8 keeps bit 0, so the pig farm takes eight grains, one more than the mill's seven.
 
 The mill's handler loads the pointer to the player block before it reads the word. The pig farm's handler has no such step: it reads the pointer that the code before it left in a scratch word of the
-item block, which is the player block only where that code left it. In a game the handlers of the buildings in the same group of 32 slots run in the order of their slots, and the castle's slot comes first.
-The castle's handler (type 0x18, `0x42e7e0`, **not ported**) leaves a pointer to something else on some turns: the emulator's pig farm then writes the rank 0 (the word that pointer leads to is 0), and
-its grain is never served. The harness part `castle-off@PASS` sets the castle's type to 0 for the building slice of each pass from that pass on, so the pig farm's handler reads the block; the type is back
-for the settler slice, which reads the door speed of the type. The pig farm's turns before the worker is inside are the exception: the games show the rank 0 at the turn that finds a worker (the pass
-98), which the engine writes for every turn while the worker is on the way (`PigFarmerRules.Turn`). Nothing reads the rank then, since the request has no class before the start routine runs.
-The engine keeps the rank that the player word gives, and no pointer of the castle's.
+item block (`[EDI+0x30]`), which the pass (`Table18_Pass`, `0x42cb2d`) leaves alone between buildings. Within a group of 32 slots the handlers run in the order of the slots. The castle's handler (type
+0x18, `0x42e7e0`, **not ported**) sets that word to a map-table address on every turn, at its common tail from `0x42edb9`, and on some turns to a slot address after that; it never leaves the player
+block there. So a pig farm whose handler runs after the castle's in the same group, with no handler between them that loads the player block, reads its rank from unrelated memory: the emulator's pig
+farm then writes the rank 0, and its grain is never served. The castle holds the first slot, and a pig farm in the slots up to 31 shares its group. Of the handlers that can run in between, the mill's
+(`0x42e2a0`) loads the player block in its preamble and so restores the word; the others' preambles are an open lead (the dump holds only the castle's and the type 1 handler's functions), as is
+which slot orders occur in a game.
+
+**Stand-in.** The engine always reads the player word. That departs from the original in the case above, where the original's value is unrelated memory that the engine does not model (ADR 0003);
+no deterministic original value is recovered. The harness part `castle-off@PASS` makes the emulator take the player word, so the rest of the rule can be compared: it sets the castle's type to 0 for
+the building slice of each pass from that pass on, and the type is back for the settler slice, which reads the door speed of the type. The pig farm's turns before the worker is inside are the
+exception: the games show the rank 0 at the turn that finds a worker (the pass 98), which the engine writes for every turn while the worker is on the way (`PigFarmerRules.Turn`). Nothing reads the
+rank then, since the request has no class before the start routine runs.
 
 ## State 0x25
 
@@ -96,7 +102,7 @@ counted as on its way (`pig-removals.txt`: inside, working, pausing, out with a 
 
 **Status:** confirmed by the draw run of the `pig-farmer` recording (`settler-draws.txt`) for the walk in and the work stretches 1 and 3. The step out with the pig has the shape of the
 miller's step out, which the `miller` recording confirms; the draw run's own turns of the settlers in view move the pig farmer's timeline, so a window at the pass of the first pig was not reached
-(**inferred** for that step; the add is the program's, read from `0x43ff7a`).
+(**inferred** for that step; the add is the program's, read from `0x43ff7a`). The play run of `play/pig-farm.play` shows the step out with the pig drawn.
 
 The figure handler of job 12 is at `0x43ff56`, reached by the stub at `0x43f7a4`. It adds `0x3200` to the figure byte for a byte below `0x80`, `0x3400` in state 5 with byte 15 at `0xd`, and `0x3280` for a
 byte from `0x80`, with no sound. The engine reads them through `RuleTables.Get<PigFarmerFigureAdds>(new PigFarmer())`. He is drawn while he works with the node held (the stretches 1, 3, and 5), on the step out with

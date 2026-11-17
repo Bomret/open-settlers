@@ -187,6 +187,8 @@ public class EmulateMapStart extends GhidraScript {
             String rest = command.substring(colon + 1);
             emu = new EmulatorHelper(currentProgram);
             try {
+                castleOffAt = -1; // no verb inherits the castle-off part of an earlier one (see withoutCastleOff)
+                passesRun = 0;
                 switch (name) {
                     case "rng" -> rng(rest);
                     case "steps" -> steps(rest);
@@ -1980,11 +1982,14 @@ public class EmulateMapStart extends GhidraScript {
      */
     protected boolean reserveBuildingZero;
 
-    // The castle's handler (building type 0x18, 0x42e7e0, not ported) leaves other pointers in the scratch word [EDI+0x30], where the
-    // pig farm's handler (0x42e0fa, which has no preamble of its own) reads the player block for its rank
-    // (docs/rules/pig-farming.md). The part "castle-off@PASS" of a goods or remove command sets the castle's building type to 0, whose
-    // handler returns at once, for the building slice of each pass from that pass on (counted from the first pass the command runs),
-    // so the pig farm reads the block; the type is back for the settler slice, which reads the door speed of the type.
+    // The castle's handler (building type 0x18, 0x42e7e0, not ported) sets the scratch word [EDI+0x30] to a map-table address on every
+    // turn, and the pig farm's handler (0x42e0fa, which has no preamble of its own) reads its rank through that word as the handlers
+    // before it left it. In the original a pig farm whose handler runs after the castle's, with no handler between them that loads
+    // the player block, therefore reads its rank from unrelated memory (docs/rules/pig-farming.md). The engine does not model that
+    // value: it always reads the player word (a stand-in). The part "castle-off@PASS" of a goods or remove command makes the
+    // emulator take the player word, so the rest of the rule can be compared: it sets the castle's building type to 0, whose handler
+    // returns at once, for the building slice of each pass from that pass on (counted from the first pass the command runs); the
+    // type is back for the settler slice, which reads the door speed of the type.
     private int castleOffAt = -1;
     private int passesRun;
 

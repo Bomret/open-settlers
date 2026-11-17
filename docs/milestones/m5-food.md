@@ -27,6 +27,9 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
 
 ## Open questions
 
+- Which handlers between the castle's (`0x42e7e0`) and a pig farm's in the same group of 32 slots load the player block before the pig
+  farm's handler reads its rank, and which slot orders occur in a game? The engine always reads the player word, a stand-in:
+  [Pig farming](../rules/pig-farming.md#the-rank-of-the-request-for-grain).
 - Is good 25 the sword and good 26 the shield, or the reverse? [Food buildings](../rules/food-buildings.md#the-goods) names them in that
   order from the sprite of good 25; no routine read puts or asks either, and a layout cannot lay good 26 on a flag.
 - The work cycle of each food job: the fisher's walk to the water (`0x433f71`, `0x438232`), the farm's fields (`0x433b35`,

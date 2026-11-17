@@ -63,9 +63,11 @@ public sealed class PigFarmerRules(JobParts parts) : JobRules<PigFarmer>(parts)
     /// holds eight or more. A building of another type is left alone.
     /// <para>
     /// **Stand-in:** the handler has no preamble that sets the pointer to the player block (the mill's has one): it reads the pointer the code
-    /// before it left in a scratch word. After the request that finds a worker the castle's handler (not ported) left a pointer to something
-    /// else, so the rank the emulator shows is 0 for the turns while the worker is on the way, and the farm asks for no grain then, as its
-    /// request has no class before the worker's start routine runs. The engine writes 0 in those turns.
+    /// before it left in a scratch word. The castle's handler (not ported) sets that word to a map-table address on every turn, so in the
+    /// original a pig farm that runs after the castle in the same group of 32 slots, with no handler between them that loads the player
+    /// block, reads its rank from unrelated memory (the emulator shows 0 and the grain is never served). The engine does not model that
+    /// value and always reads the player word: a deliberate departure from the original in that case. For the turns while the worker is
+    /// on the way the emulator shows 0 and the request has no class before the worker's start routine runs; the engine writes 0 there.
     /// </para>
     /// </summary>
     public override void Turn(Building farm)

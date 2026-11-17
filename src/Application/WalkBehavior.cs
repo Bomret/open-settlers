@@ -288,8 +288,9 @@ public sealed class WalkBehavior(
         movement.Tables.WorkerOf(type) is { } request
         && modules.Any(rules => rules.JobType == request.Job.GetType() && rules.CanStandInHut);
 
-    // What a sentence calls a settler of the module's job: the job type's name in lower case.
-    static string NameOf(JobRules rules) => rules.JobType.Name.ToLowerInvariant();
+    // What a sentence calls a settler of the module's job: the job type's name in lower case, one word per capital ("pig farmer").
+    static string NameOf(JobRules rules) =>
+        System.Text.RegularExpressions.Regex.Replace(rules.JobType.Name, "(?<=[a-z])(?=[A-Z])", " ").ToLowerInvariant();
 
     // The refusal for a node with no building that stands a worker. It names the jobs whose modules let their settler stand in the hut:
     // "no finished woodcutter's, stonecutter's, or forester's building stands on the node" for three, "a's or b's" for two, "a's" for
