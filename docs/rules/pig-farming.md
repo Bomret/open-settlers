@@ -94,7 +94,9 @@ counted as on its way (`pig-removals.txt`: inside, working, pausing, out with a 
 
 ## Drawing
 
-**Status:** confirmed by the draw run of the `pig-farmer` recording (`settler-draws.txt`).
+**Status:** confirmed by the draw run of the `pig-farmer` recording (`settler-draws.txt`) for the walk in and the work stretches 1 and 3. The step out with the pig has the shape of the
+miller's step out, which the `miller` recording confirms; the draw run's own turns of the settlers in view move the pig farmer's timeline, so a window at the pass of the first pig was not reached
+(**inferred** for that step; the add is the program's, read from `0x43ff7a`).
 
 The figure handler of job 12 is at `0x43ff56`, reached by the stub at `0x43f7a4`. It adds `0x3200` to the figure byte for a byte below `0x80`, `0x3400` in state 5 with byte 15 at `0xd`, and `0x3280` for a
 byte from `0x80`, with no sound. The engine reads them through `RuleTables.Get<PigFarmerFigureAdds>(new PigFarmer())`. He is drawn while he works with the node held (the stretches 1, 3, and 5), on the step out with
