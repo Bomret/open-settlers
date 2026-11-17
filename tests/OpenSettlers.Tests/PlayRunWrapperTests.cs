@@ -137,7 +137,7 @@ public class PlayRunWrapperTests
         Put("Directory.Build.props", "<Project />");
         Put("play/demo.play", "wait 1");
         Put("play/.cache.play", "wait 1");
-        Put("content/open-settlers/manifest.json", "{}");
+        Put("content/basic/manifest.json", "{}");
         Put("README.md", "readme");
         Put("tests/T.cs", "class T {}");
         Put(".gitignore", "play-out/\nsrc/ignored.txt\n");
@@ -874,46 +874,95 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
-    public void GodotGetsTheGraphicsFlagOnlyWhereTheRunGaveOne()
+    public void GodotGetsTheContentSetFlagOnlyWhereTheRunGaveOne()
     {
         string[] Launch() => File.ReadAllLines(Path.Combine(_fake, "args"));
 
-        Run([.. Args, "--graphics", "open-settlers"]);
+        Run([.. Args, "--content-set", "basic"]);
         CollectionAssert.AreEqual(
-            new[] { "--size", "2", "--graphics", "open-settlers", "--play", "play/demo.play" },
+            new[] { "--size", "2", "--content-set", "basic", "--play", "play/demo.play" },
             Launch()[^6..]
         );
 
-        Run(["demo", "--fps", "10", "--graphics", "history-edition"]);
-        CollectionAssert.AreEqual(new[] { "--graphics", "history-edition" }, Launch()[^4..^2]);
+        Run(["demo", "--fps", "10", "--content-set", "history-edition"]);
+        CollectionAssert.AreEqual(new[] { "--content-set", "history-edition" }, Launch()[^4..^2]);
 
         Run(["demo", "--fps", "10", "--seed", "abc"]);
-        CollectionAssert.DoesNotContain(Launch(), "--graphics");
+        CollectionAssert.DoesNotContain(Launch(), "--content-set");
     }
 
-    // The two sources never share a result, and the default is the History Edition: naming it changes nothing. A
-    // change to the content set, a new file in it included, starts Godot again.
+    // The basic set reads no install: the wrapper neither requires SIEDLER_DIR nor passes --game, and the result does not depend
+    // on the variable, so a run with it unset and a run with it set share one stored result.
     [TestMethod]
-    public void TheGraphicsSourceAndTheContentSetAreHashed()
+    public void ABasicRunNeedsNoSiedlerDirPassesNoGameFlagAndStoresOneResultForAnyValue()
     {
-        string[] History = [.. Args, "--graphics", "history-edition"];
-        string[] Own = [.. Args, "--graphics", "open-settlers"];
+        string[] Own = [.. Args, "--content-set", "basic"];
+        var unset = new Dictionary<string, string?> { ["SIEDLER_DIR"] = null };
+        var other = new Dictionary<string, string?> { ["SIEDLER_DIR"] = "/games/other" };
+
+        var (status, _, stderr) = Run(Own, unset);
+
+        Assert.AreEqual(0, status, stderr);
+        Assert.AreEqual(1, Calls);
+        CollectionAssert.DoesNotContain(File.ReadAllLines(Path.Combine(_fake, "args")), "--game");
+
+        var (reusedStatus, _, _) = Run(Own, other);
+        Assert.AreEqual(0, reusedStatus);
+        Assert.AreEqual(1, Calls, "a run with SIEDLER_DIR set did not reuse the result of a run with it unset");
+        Run(Own);
+        Assert.AreEqual(1, Calls, "a run with the install's own path did not reuse the stored result");
+        Assert.AreEqual(1, Directory.GetDirectories(Out(".cache")).Length, "one result is stored for every value");
+        CollectionAssert.AreEqual(new[] { "content-set=basic", "exit=0" }, LogLines[0].Split('\t')[10..12]);
+    }
+
+    [TestMethod]
+    public void ABasicRunPassesNoGameFlagWhereSiedlerDirIsSetToo()
+    {
+        Run([.. Args, "--content-set", "basic"]);
+
+        CollectionAssert.DoesNotContain(File.ReadAllLines(Path.Combine(_fake, "args")), "--game");
+        CollectionAssert.DoesNotContain(File.ReadAllLines(Path.Combine(_fake, "args")), Siedler);
+    }
+
+    [TestMethod]
+    public void AHistoryEditionRunStillNeedsSiedlerDirAndPassesItAsGame()
+    {
+        AssertUsageError(
+            Run(
+                [.. Args, "--content-set", "history-edition"],
+                new Dictionary<string, string?> { ["SIEDLER_DIR"] = null }
+            ),
+            "history edition, unset"
+        );
+
+        Run([.. Args, "--content-set", "history-edition"]);
+        var args = File.ReadAllLines(Path.Combine(_fake, "args"));
+        Assert.AreEqual(Siedler, args[Array.IndexOf(args, "--game") + 1]);
+    }
+
+    // The two sets never share a result, and the default is the History Edition: naming it changes nothing. A
+    // change to the basic set's files, a new file in it included, starts Godot again.
+    [TestMethod]
+    public void TheContentSetAndItsFilesAreHashed()
+    {
+        string[] History = [.. Args, "--content-set", "history-edition"];
+        string[] Own = [.. Args, "--content-set", "basic"];
 
         Run(Args);
         Run(History);
         Assert.AreEqual(1, Calls, "naming the History Edition is not the default");
         Run(Own);
-        Assert.AreEqual(2, Calls, "an open-settlers run reused a History Edition result");
+        Assert.AreEqual(2, Calls, "a basic run reused a History Edition result");
         Run(Own);
-        Assert.AreEqual(2, Calls, "a repeated open-settlers call did not reuse");
+        Assert.AreEqual(2, Calls, "a repeated basic call did not reuse");
 
-        Write("content/open-settlers/manifest.json", "{ }");
+        Write("content/basic/manifest.json", "{ }");
         Run(Own);
         Assert.AreEqual(3, Calls, "an edited manifest did not start Godot");
-        Write("content/open-settlers/terrain/new.png", "png");
+        Write("content/basic/terrain/new.png", "png");
         Run(Own);
         Assert.AreEqual(4, Calls, "a new image did not start Godot");
-        File.Delete(Path.Combine(_repo, "content/open-settlers/manifest.json"));
+        File.Delete(Path.Combine(_repo, "content/basic/manifest.json"));
         Run(Own);
         Assert.AreEqual(5, Calls, "a removed manifest did not start Godot");
     }
@@ -988,7 +1037,7 @@ public class PlayRunWrapperTests
                 "seed=abc",
                 "size=2",
                 "fps=10",
-                "graphics=history-edition",
+                "content-set=history-edition",
                 "exit=0",
                 "run",
             },
@@ -1019,9 +1068,10 @@ public class PlayRunWrapperTests
     [DataRow("missing layout", "demo", "--layout", "play/none.layout", "--fps", "10")]
     [DataRow("layout with no value", "demo", "--fps", "10", "--layout")]
     [DataRow("empty layout", "demo", "--layout", "", "--fps", "10")]
-    [DataRow("unknown graphics source", "demo", "--graphics", "retro", "--fps", "10")]
-    [DataRow("graphics with no value", "demo", "--fps", "10", "--graphics")]
-    [DataRow("repeated graphics", "demo", "--graphics", "open-settlers", "--graphics", "open-settlers", "--fps", "10")]
+    [DataRow("unknown content set", "demo", "--content-set", "retro", "--fps", "10")]
+    [DataRow("content set with no value", "demo", "--fps", "10", "--content-set")]
+    [DataRow("repeated content set", "demo", "--content-set", "basic", "--content-set", "basic", "--fps", "10")]
+    [DataRow("retired graphics flag", "demo", "--graphics", "basic", "--fps", "10")]
     [DataRow("repeated repro", "demo", "--repro", "--fps", "10", "--repro")]
     [DataRow("no args")]
     public void BadArgumentsExitTwoAndLeaveNoTrace(string reason, params string[] args) =>
@@ -1040,6 +1090,15 @@ public class PlayRunWrapperTests
 
         AssertUsageError(result, reason);
         StringAssert.Contains(result.Stderr, reason.Contains("empty") ? "needs a value" : "own seed and size", reason);
+    }
+
+    [TestMethod]
+    public void TheGraphicsFlagIsRefusedWithAMessageThatNamesTheContentSetFlag()
+    {
+        var result = Run(["demo", "--graphics", "basic", "--fps", "10"]);
+
+        AssertUsageError(result, "graphics flag");
+        StringAssert.Contains(result.Stderr, "--graphics is gone, use --content-set");
     }
 
     [TestMethod]

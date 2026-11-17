@@ -1,0 +1,118 @@
+// The stand-in rules of the basic content set that shape the world: what stands on a node, how long a step takes, how a
+// settler picks a direction, and how many carriers a road holds. Every value is the project's own invention, never taken
+// from the original game (INV-0001, ADR 0018); the comment on each line states why the value is what it is. The rule
+// files load as JSONC: comments and trailing commas are allowed, and a repeated key is an error.
+{
+  // The class of each object code 0 to 127, listed by class name; a code no class lists is class "none", which takes
+  // no room on its node. A code is a number or a [first, last] range, and no code is listed twice.
+  "objectClasses": {
+    // Trees and everything a forester, a farmer, or a falling tree leaves on a node are small: they hide beside a
+    // building site and give way to it. Codes 8 to 27 are the trees and palms, 83 the stump, 90 to 104 the cacti, the
+    // dead tree, the falling trees, and the saplings, and 105 to 126 the fields and their signs.
+    "plant": [[8, 27], 83, [90, 126]],
+    // The stone heaps (72 to 79) and the rocks (80 to 82) are large objects: no building stands beside them.
+    "stone": [[72, 82]],
+    // Object 1 is the flag; the rules and the map view both name it as such.
+    "flag": [1],
+    // Object 2 marks the node of a small building the player places, finished or not.
+    "small-building": [2],
+    // Object 3 marks the node of a large building the player places, finished or not.
+    "large-building": [3],
+    // Object 4 marks the castle, the one building the player cannot remove.
+    "castle": [4],
+  },
+
+  // The time in clock units of one step of a settler by the rise of the ground it crosses, from the node it leaves
+  // to the node it reaches (a negative rise is a descent). The table repeats for every walk, in every direction.
+  "stepTimes": {
+    // A steep descent: the settler hurries, but never faster than a quarter of the flat step.
+    "-4": 28,
+    // A descent of three height steps.
+    "-3": 36,
+    // A descent of two height steps.
+    "-2": 44,
+    // A descent of one height step.
+    "-1": 54,
+    // Flat ground: 64 clock units, eight passes, so a settler crosses one node a second at the engine's pace.
+    "0": 64,
+    // A climb of one height step: about a fifth slower than flat ground.
+    "1": 76,
+    // A climb of two height steps.
+    "2": 90,
+    // A climb of three height steps.
+    "3": 106,
+    // A steep climb: about twice the flat step.
+    "4": 124,
+  },
+
+  // How many buildings the retry scan clears in one pass, by map size. The scan walks every building in turn, so a
+  // larger map needs a larger window to come round in the same number of passes.
+  "scanWindows": {
+    // The smallest map has the fewest buildings.
+    "32x32": 8,
+    // Twice the nodes of the smallest map.
+    "64x32": 12,
+    // Four times the nodes of the smallest map.
+    "64x64": 16,
+  },
+
+  // A row offset added to the settler's own node row when the map view orders figures for drawing, by the settler's
+  // frame. A settler is drawn after every figure of a lower row.
+  "frameRows": {
+    // A frame with no entry below draws in its node's own row.
+    "default": 0,
+    // The frames 80 to 82 are a settler stepping through a door: they draw one row behind, so the building covers them.
+    "frames": {
+      // The first frame of a settler leaving a building.
+      "80": -1,
+      // The second frame of a settler leaving a building.
+      "81": -1,
+      // The frame of a settler entering a building.
+      "82": -1,
+    },
+  },
+
+  // The number of carriers a road holds at most, by the length class of the road. Index 0 is a road of up to 3 steps,
+  // then up to 5, 6, up to 9, up to 12, up to 17, up to 23, and every longer road.
+  "roadCapacities": [
+    1, // A short road needs one carrier, who also shuttles the goods back.
+    1, // Up to five steps is still one carrier's walk.
+    2, // A road of six steps takes a second carrier, so goods flow both ways.
+    2, // Up to nine steps: two carriers.
+    3, // Up to twelve steps: three carriers.
+    3, // Up to seventeen steps: three carriers.
+    4, // Up to twenty-three steps: four carriers.
+    4, // Every longer road: four carriers, the most the road tables allow for.
+  ],
+
+  // The 24 rows of the free walk's direction choice. A row lists the six directions a walking settler tries, best first.
+  // Rows 0 to 5 are for a settler who last stepped in east, south-east, south, west, north-west, north; they keep
+  // going and veer to the side after it. Rows 6 to 11 are the same walks that veer to the other side first. Rows
+  // 12 to 23 are for a settler who starts fresh toward a target, by the class of the vector left to walk.
+  "walkRows": [
+    ["east", "south-east", "north", "south", "north-west", "west"], // Last stepped east: on, then veer south.
+    ["south-east", "south", "east", "west", "north", "north-west"], // Last stepped south-east: on, then veer south.
+    ["south", "west", "south-east", "north-west", "east", "north"], // Last stepped south: on, then veer west.
+    ["west", "north-west", "south", "north", "south-east", "east"], // Last stepped west: on, then veer north.
+    ["north-west", "north", "west", "east", "south", "south-east"], // Last stepped north-west: on, then veer north.
+    ["north", "east", "north-west", "south-east", "west", "south"], // Last stepped north: on, then veer east.
+    ["east", "north", "south-east", "north-west", "south", "west"], // Last stepped east, veering north first.
+    ["south-east", "east", "south", "north", "west", "north-west"], // Last stepped south-east, veering east first.
+    ["south", "south-east", "west", "east", "north-west", "north"], // Last stepped south, veering south-east first.
+    ["west", "south", "north-west", "south-east", "north", "east"], // Last stepped west, veering south first.
+    ["north-west", "west", "north", "south", "east", "south-east"], // Last stepped north-west, veering west first.
+    ["north", "north-west", "east", "west", "south-east", "south"], // Last stepped north, veering north-west first.
+    ["north", "north-west", "east", "west", "south-east", "south"], // The target lies due north.
+    ["north-west", "north", "west", "east", "south", "south-east"], // The target lies north, a little west.
+    ["north-west", "west", "north", "south", "east", "south-east"], // The target lies west, a little north.
+    ["west", "north-west", "south", "north", "south-east", "east"], // The target lies due west, a little north.
+    ["west", "south", "north-west", "south-east", "north", "east"], // The target lies west, a little south.
+    ["south", "west", "south-east", "north-west", "east", "north"], // The target lies south, a little west.
+    ["south", "south-east", "west", "east", "north-west", "north"], // The target lies due south.
+    ["south-east", "south", "east", "west", "north", "north-west"], // The target lies south, a little east.
+    ["south-east", "east", "south", "north", "west", "north-west"], // The target lies east, a little south.
+    ["east", "south-east", "north", "south", "north-west", "west"], // The target lies due east, a little south.
+    ["east", "north", "south-east", "north-west", "south", "west"], // The target lies east, a little north.
+    ["north", "east", "north-west", "south-east", "west", "south"], // The target lies north, a little east.
+  ],
+}

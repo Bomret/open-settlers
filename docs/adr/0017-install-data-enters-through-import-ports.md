@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0018](0018-a-content-set-carries-its-own-rules-and-one-flag-picks-it.md)
+
 Amends [ADR 0013](0013-the-simulation-is-typed-and-the-original-s-bytes-stay-at-its-edge.md),
 [ADR 0014](0014-the-map-view-draws-through-a-graphics-source.md), and
 [ADR 0016](0016-jobs-are-types-and-each-layer-finds-its-job-modules.md).

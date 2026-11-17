@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0018](0018-a-content-set-carries-its-own-rules-and-one-flag-picks-it.md)
+
 Amends [ADR 0006](0006-the-engine-reads-what-siedler1-reads.md) and [ADR 0001](0001-read-original-files-at-runtime.md).
 
 The engine reads the files of a History Edition install that `Siedler1.exe` reads, and the content sets

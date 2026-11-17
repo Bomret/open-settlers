@@ -90,7 +90,7 @@ so grain held on site and grain on its way are lost, and the flag's request word
 **Status:** confirmed by the draw run of the `miller` recording (`settler-draws.txt`).
 
 The figure handler of job 15 is at `0x4400d3`, reached by the stub at `0x43f7bc`. It adds `0x4300` to the figure byte for a byte below `0x80`, `0x4500` in state 5 with byte 15 at `0xd`, and `0x4380` for a byte from `0x80`,
-with no sound. The engine reads them through `RuleTables.Get<FoodHutFigureAdds>(new Miller())`. He is drawn while he grinds with the node held, on the step out with the flour, on the put, and at the door. The `open-settlers` content set draws him as a pale figure
+with no sound. The engine reads them through `RuleTables.Get<FoodHutFigureAdds>(new Miller())`. He is drawn while he grinds with the node held, on the step out with the flour, on the put, and at the door. The `basic` content set draws him as a pale figure
 (`settler/miller/*`); the flour has the sack of the goods.
 
 ## In the engine

@@ -9,7 +9,7 @@ Status: the engine reads the data files of an install and generates the map of a
 - [mise](https://mise.jdx.dev). It installs the pinned tools listed in `mise.toml`: the .NET SDKs 10 and 8, the Godot 4.7.2 .NET build, and, for rule recovery, a JDK, Gradle, Python, and Ghidra. Install mise on macOS or Linux with `curl https://mise.run | sh`, or on Windows with `winget install jdx.mise`.
 - Windows: the Microsoft Visual C++ Redistributable, which mise needs (`winget install Microsoft.VCRedist.2015+.x64`, or `.arm64` on ARM).
 - Linux: the ICU library, which .NET loads (Debian and Ubuntu: the `libicu` package).
-- A History Edition install (see below). Rule recovery from the game's program needs it too.
+- A History Edition install (see below) for the original's art and rules, and for rule recovery from the game's program. Without one, run on the basic content set ("Without the game").
 
 ## Set up
 
@@ -17,7 +17,7 @@ Status: the engine reads the data files of an install and generates the map of a
 mise install
 ```
 
-Then create `mise.local.toml`, a gitignored file per checkout, with the path of your install:
+Then, to use a History Edition install, create `mise.local.toml`, a gitignored file per checkout, with the path of your install (the basic content set needs no such file, see "Without the game"):
 
 ```toml
 [env]
@@ -25,6 +25,35 @@ SIEDLER_DIR = "/path/to/thesettlers"
 ```
 
 Run every command below from the repository root. `mise tasks` lists the tasks.
+
+## Without the game: the basic content set
+
+A contributor without a Die Siedler install builds, tests, and runs the engine on the basic content set. The set is the repository's own. `content/basic/` holds crude art, which `tools/basic-art.py` writes. `content/basic/rules/` holds the rules of the game and the walk steps as JSONC files. Every value in those files is a stand-in the project invented ([ADR 0018](docs/adr/0018-a-content-set-carries-its-own-rules-and-one-flag-picks-it.md)). These are not the original's rules. A game on the basic set plays the original's loops with its own numbers and looks. The loops are construction, wood, stone, and food. A fidelity check against the original needs the install.
+
+With no install, no `SIEDLER_DIR`, and no `mise.local.toml`, run these from the repository root:
+
+```sh
+mise install                                   # the pinned tools
+mise run test                                  # the unit tests, which need neither the install nor Ghidra
+mise run check                                 # format check, the unit tests, and build
+mise run map -- --content-set basic            # the map view; add --seed <seed> --size <1|2|3>
+mise run game -- --content-set basic           # the game view; add --seed <16 digits> --size <1|2|3>
+mise run seed-info -- --content-set basic --seed 1234567812345678
+sh tools/play-run.sh zoom-pan --content-set basic --fps 10   # a play script on the map view
+```
+
+`--content-set basic` is on every command that opens a game or a map. On it `--game` and `SIEDLER_DIR` are not read, and `--game` is a bad argument. A launch on the History Edition without an install exits with code 2 and a message that names the basic set as the way to run without one.
+
+Two play scripts prove the game's loops on the basic set. Each runs to its last step with no install and holds its `expect` lines. "Run a play script" lists the steps. `--repro` checks that two runs give the same files.
+
+```sh
+sh tools/play-run.sh basic-construction --game-view --content-set basic --seed 1234567812345634 --size 1 --fps 10
+sh tools/play-run.sh basic-production --game-view --content-set basic --seed 4455544685788642 --size 1 --fps 10
+```
+
+`basic-construction` builds a sawmill, a woodcutter's hut, and a stonecutter's hut from a fresh game. The castle's materials build the first two sites. The woodcutter's logs go to the sawmill, and its planks build the third site. `basic-production` plays bread, meat, and fish, each in a fresh game. Bread comes from the mill and the baker, and flour from the farm and the mill. Meat comes from the butcher and the pig farm. Fish comes from the fisher. A game holds five settlers without a job, and the whole chain needs more. The other game-view scripts in `play/` run with the install. Their `expect` values are the History Edition's.
+
+These need the install: `mise run assets` and `mise run browser` (the asset check and the asset browser read the install), `mise run test:integration` (the `Install` and `Ghidra` test categories, which also need Ghidra), the commands above without `--content-set basic`, `--game <dir>`, and the rule recovery in `docs/rules/`.
 
 ## Get the History Edition install
 
@@ -38,7 +67,7 @@ The engine does not support an install of the DOS CD release.
 
 ## Run the asset check, the asset browser, and the map view
 
-All three modes need an install. The tasks take it from `SIEDLER_DIR`. Each task builds the C# project first, because without the build Godot cannot load the C# scripts: the asset check prints `Cannot instantiate C# script` and does not exit, and the browser shows an empty window.
+The asset check and the asset browser need an install. The map view needs one on the History Edition, which is its default. The tasks take it from `SIEDLER_DIR`. Each task builds the C# project first, because without the build Godot cannot load the C# scripts: the asset check prints `Cannot instantiate C# script` and does not exit, and the browser shows an empty window.
 
 The asset check runs without a window:
 
@@ -70,7 +99,7 @@ mise run map
 
 `--seed <seed>` and `--size <1|2|3>` open the view on that map (`-- --map --seed 1234567812345678 --size 2`): the seed field shows the seed, the size picker selects the size, and the next Apply keeps both. The seed takes the 16-digit form or four groups in one quoted argument (`--seed "1234 5678 1234 5678"`); unquoted groups are a bad seed. Without `--seed` the view opens on its default seed, without `--size` on size 1.
 
-`--graphics <history-edition|open-settlers>` chooses the source of the images for the map view and the game view. It works with `--map`, `--game-view`, or `--layout`, including with `--play` (`-- --map --graphics open-settlers`). `history-edition` is the default and draws the art of the install. `open-settlers` draws from the repository's own content set `content/open-settlers/`. The set is a `manifest.json` that maps draw terms to PNG files and anchors, plus the PNGs, which hold nothing derived from an install (`tools/open-settlers-art.py` writes the set). The launch names its two sources in code, so a folder added under `content/` is not selectable. The set draws these things:
+`--content-set <basic|history-edition>` chooses the content set for the map view, the game view, and seed info. It works with `--map`, `--game-view`, `--layout`, or `--seed-info`, including with `--play` (`-- --map --content-set basic`). With the asset browser or `--check` it is a bad argument. `history-edition` is the default and draws the art of the install. `basic` draws from the repository's own content set `content/basic/`. The set is a `manifest.json` that maps draw terms to PNG files and anchors, plus the PNGs, which hold nothing derived from an install (`tools/basic-art.py` writes the set). The launch names its two sets in code, so a folder added under `content/` is not selectable. The set draws these things:
 
 - Flat terrain and road strips, and crude shapes for the flag.
 - The map objects of the codes 8 to 127. The farmer's fields are among them.
@@ -82,11 +111,11 @@ mise run map
 - The four build markers of the build-site overlay.
 - One figure per job and kind of activity for the settlers.
 
- A settler's heading, step, and frame all draw that one figure, and the player shows as a colored mark on it. It draws nothing for the water ripple and for shadows. The rules come from `Siedler1.exe` under both sources, so the launch still needs the install. One seed, layout, and command list give the same game under both. A broken content set shows an error in the view that names `manifest.json` and the key, and draws no map. These break a set: a malformed manifest, a term with no image, a missing or undecodable PNG, a missing or non-integer anchor, a duplicate key, and an absolute path or one that leaves the set. A bad `--graphics` is a bad argument and exits with code 4, naming the known sources (`history-edition`, `open-settlers`). These are bad: an unknown name, a missing value, a value that is another flag, a repeat, and use with the asset browser, `--check`, or `--seed-info`.
+ A settler's heading, step, and frame all draw that one figure, and the player shows as a colored mark on it. It draws nothing for the water ripple and for shadows. The History Edition set's rules come from the install's `Siedler1.exe`. The basic set's rules come from `content/basic/rules/`, so the basic set needs no install ("Without the game"). The two sets play by different rules. One seed, layout, and command list give the same game under both only where the rules agree. A broken content set shows an error in the view that names `manifest.json` and the key, and draws no map. These break a set: a malformed manifest, a term with no image, a missing or undecodable PNG, a missing or non-integer anchor, a duplicate key, and an absolute path or one that leaves the set. A bad `--content-set` is a bad argument. It exits with code 4 and names the known sets, `basic` and `history-edition`. These are bad: an unknown name, a missing value, a value that is another flag, a repeat, and use with the asset browser or `--check` (even with `history-edition`). `--graphics` is a bad argument too. Its message names `--content-set` and the known sets.
 
 `--stock <0..40>` sets the start stock level of the castle in the game view (`-- --game-view --stock 20`), as the bar of the original's free-game screen does. The level holds for every game the view starts, a game on a new seed or size included. Without it the game takes the level the seed draws. The level picks the goods the castle starts with ([Castle](docs/rules/castle.md#the-start-stock)): at level 0 it holds no planks and no stones. A value that is no integer from 0 to 40, a missing value, a repeat, and use without `--game-view` or with `--layout` are bad arguments and exit with code 4.
 
-[Controls](docs/controls.md) describes how to use the map view and the game view. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. In the game view, unreadable settler sprites or step offsets (entry 2 of the install's graphics archive, read under either graphics source) show an error in the view, and no settler is drawn. An unreadable `Siedler1.exe` shows an error in the view and draws no map: the map generation reads which objects are large from it. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
+[Controls](docs/controls.md) describes how to use the map view and the game view. On the History Edition, without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. In the game view, unreadable settler sprites or step offsets (entry 2 of the install's graphics archive) show an error in the view, and no settler is drawn. On the basic set the step offsets come from `content/basic/rules/walk-steps.jsonc`, and a broken file shows an error in the view and draws no map. A broken rule file of the basic set (`world.jsonc`, `goods.jsonc`, `buildings.jsonc`, or `jobs.jsonc` in `content/basic/rules/`) shows an error in the view that ends in `<file>: <key>: <reason>` and draws no map. An unreadable `Siedler1.exe` shows an error in the view and draws no map: the map generation reads which objects are large from it. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
 
 The game view is the map view with a game on the shown map that starts at the original's normal speed. Its Speed button runs the game 2, 4, or 8 times as fast:
 
@@ -98,7 +127,7 @@ The task builds the C# project first, so the game runs the current code.
 
 It takes `--seed` and `--size` as the map view does, and it has the map view's exit codes. `--layout <file>` in place of `--seed` and `--size` starts it on a layout. "Layouts" under "Run a play script" describes layouts.
 
-Seed info prints the digests and counts of the map of one seed and size. It is headless and needs the install (`--game` or `SIEDLER_DIR`): the map generation reads which objects are large from its `Siedler1.exe`.
+Seed info prints the digests and counts of the map of one seed and size. It is headless. On the History Edition it needs the install (`--game` or `SIEDLER_DIR`). The map generation reads which objects are large from its `Siedler1.exe`. With `--content-set basic` it needs none.
 
 ```sh
 mise run seed-info -- --seed 1234567812345678 --size 3
@@ -125,7 +154,7 @@ mise exec -- <godot> --path . --write-movie play-out/zoom-pan/frame.png --fixed-
 
 Give `--game-view` in place of `--map` to run the script on the game view.
 
-`sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh] [--repro]` (or `mise run play -- <stem> ...`) does the same from `play/<stem>.play` with `SIEDLER_DIR` as `--game`. It runs on the map view, on the game view with `--game-view`, or on a layout with `--layout`. `--layout` implies `--game-view` and takes no `--seed` or `--size`. `--graphics history-edition|open-settlers` passes the graphics source on; another value, a missing value, and a repeat exit 2. The wrapper clears `play-out/<stem>/` and builds `OpenSettlers.csproj`, where a failed build exits 3 and runs no Godot. It stores the result under a hash of the run's inputs, the graphics source (`history-edition` without the flag) and the files of `content/` among them, and reuses it while they are unchanged. It logs each call to `play-out/runs.log`. `--repro` checks that a run does not depend on the window. It runs the script twice without the cache, the second time with `--minimized`. It exits 0 when both runs exit alike (0 or 1) and write the same files with the same bytes. It exits 5 when the runs differ and names the first difference. It also exits 5 when the minimized run never hid its window, and then it names no difference. `docs/agents/verification.md` describes it.
+`sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--content-set <set>] --fps <n> [--fresh] [--repro]` (or `mise run play -- <stem> ...`) does the same from `play/<stem>.play` with `SIEDLER_DIR` as `--game`. It runs on the map view, on the game view with `--game-view`, or on a layout with `--layout`. `--layout` implies `--game-view` and takes no `--seed` or `--size`. `--content-set basic|history-edition` passes the content set on. Another value, a missing value, and a repeat exit 2. The wrapper clears `play-out/<stem>/` and builds `OpenSettlers.csproj`, where a failed build exits 3 and runs no Godot. It stores the result under a hash of the run's inputs and reuses it while they are unchanged. The inputs include the content set (`history-edition` without the flag) and the files of `content/`. It logs each call to `play-out/runs.log`. `--repro` checks that a run does not depend on the window. It runs the script twice without the cache, the second time with `--minimized`. It exits 0 when both runs exit alike (0 or 1) and write the same files with the same bytes. It exits 5 when the runs differ and names the first difference. It also exits 5 when the minimized run never hid its window, and then it names no difference. `docs/agents/verification.md` describes it.
 
 `--play <file>` needs `--map` or `--game-view`, Movie Maker (`--write-movie` with `--fixed-fps`), and a window that starts at 1280 x 720; without them, or without a file, it is a bad argument and exits with code 4. A missing value or an empty path counts as no file. The script path resolves against the project folder. `play-out/<script name>/` holds the frames and every `shot` and `dump` of the run (a result `tools/play-run.sh` reuses holds no frames; `--fresh` runs again and writes them); the script name is the script's file name without its extension. Git ignores `play-out/`. Movie Maker records each frame at the size the project settings give it, not at the window's size; `--resolution` does not change it. This is a platform-layer finding (Godot 4.7.2, macOS, `PlayDriver`). `project.godot` sets `window/size/window_width_override.movie` and `window_height_override.movie` to 1280 x 720. The `movie` feature tag applies them under Movie Maker alone: they start the window and size the frames at 1280 x 720, and every other launch opens at Godot's default window size. A play run whose window starts at another size, such as on a display that clamps or scales the window, is refused with a problem that names the two settings. So frames and shots are 1280 x 720, and the view's fit does not depend on the display. Two runs of the same script, seed, and size on the same commit give equal dumps, shots, and frames. This holds whether the window stays visible or is covered or minimized. A play run draws every frame for that. When the window cannot draw, Godot 4.7.2 skips the frame's draw. Movie Maker still writes a frame from the last drawn image. This is a platform-layer finding. The run forces the draw itself (`PlayDriver`). Only macOS was checked. `play/zoom-pan.play` is an example that zooms and pans.
 
@@ -196,13 +225,13 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
   - `Generators/` holds the source generators that find the job modules ([ADR 0016](docs/adr/0016-jobs-are-types-and-each-layer-finds-its-job-modules.md)).
   - `Import/` holds the import ports, the interfaces through which the engine reads game data, and the terms they return ([ADR 0017](docs/adr/0017-install-data-enters-through-import-ports.md)): the rule tables, the walk steps, the assets, and the graphics source.
   - `Import.HistoryEdition/` is the source assembly for the install. It holds the file readers (`Formats/`), the asset kinds, the program tables importer, and the graphics reading and looks, and implements every port. Only this assembly reads the install.
-  - `Import.OpenSettlers/` is the source assembly for the repository's content set (`content/`). It implements the graphics source.
+  - `Import.OpenSettlers/` is the source assembly for the basic content set (`content/basic/`). It implements the graphics source, the rule tables port (stand-in rules read from `content/basic/rules/`), and the walk steps port.
   - `Assets/` holds the asset check and the asset browser state, which read assets through the assets port.
   - `Launch/` holds the command-line arguments, the decision whether a map launch opens or exits, and the text of a crash.
   - `MapView/` holds the terrain, object, road, and settler drawing plans, the click handling, and the camera.
   - `Viewer/` holds the asset browser, the map view, the play driver, and the shaders. `MapViewControl.cs` also shows the game view.
 - `.gdignore` files: the C# folders outside the Godot assembly (`src/Domain/`, `src/Import/`, `src/Import.HistoryEdition/`, `src/Import.OpenSettlers/`, `src/Application/`, `src/Adapters/`, `src/Generators/`, `tests/`) carry one, so the Godot editor does not scan them. The editor writes a `.uid` file beside each script and shader it scans; those are committed with their source.
-- `content/`: the content sets the repository ships (ADR 0015). `content/open-settlers/` is the Open Settlers graphics source: a manifest, PNGs, and a `.gdignore`.
+- `content/`: the content sets the repository ships (ADR 0015). `content/basic/` is the basic content set: a manifest, PNGs, and a `.gdignore`.
 - `play/`: the checked-in play scripts ("Run a play script").
 - `layouts/`: the checked-in layouts ("Layouts" under "Run a play script").
 - `tests/OpenSettlers.Tests/`: the unit tests (MSTest). The project also holds the `Install` and `Ghidra` test categories, which the unit commands filter out; the unit tests need neither Godot nor an install. It references the six assemblies and the generator, and compiles `src/Launch/`, `src/Assets/`, and `src/MapView/` directly. `src/Viewer/` is not compiled into it.
@@ -213,7 +242,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
 - `docs/install-data.md`: the data the engine reads from an install, its readers, and its typed results.
 - `docs/agents/`: instructions for coding agents.
 - `tools/play-run.sh`: the play-run wrapper ("Run a play script").
-- `tools/open-settlers-art.py`: writes the manifest and PNGs of `content/open-settlers/`. A unit test runs it into a temporary folder and fails where the checked-in set holds a file it does not write the same.
+- `tools/basic-art.py`: writes the manifest and PNGs of `content/basic/`. A unit test runs it into a temporary folder and fails where the checked-in set holds a file it does not write the same.
 - `tools/GhidraDump/`: Ghidra scripts that build a local Ghidra project and write a searchable dump of the game's program, and the emulator harness that runs the original's map-start code for reference values.
 - `tools/WindowsCheck/`: the procedures that run the original in Windows: the check that confirms the emulator's values, and the probe `elapsed-probe.ps1` that tallies the clock units of the main loop's passes.
 

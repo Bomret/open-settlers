@@ -1,0 +1,29 @@
+// The stand-in rules of the basic content set that the simulation reads from a job: the data of the builder, the digger,
+// and the pig farmer. Every value is the project's own invention, never taken from the original game (INV-0001,
+// ADR 0018); the comment on each line states why.
+{
+  "jobs": {
+    "builder": {
+      "tool": "hammer", // A building site asks for a builder, and a jobless settler takes a hammer to become one.
+    },
+    "digger": {
+      "tool": "shovel", // A large site asks for a digger to level its ground, and a jobless settler takes a shovel.
+    },
+    "pig-farmer": {
+      // The rank the pig farm's grain request starts from, 1 to 255; it falls as the farm fills.
+      "rankBase": 180, // Below the mill's grain request, so the mill is served first.
+      // The chance in percent, 0 to 100, that another pig grows in a pause of the work, for a farm that holds 0 to 7
+      // pigs: exactly eight values.
+      "growth": [
+        90, // An empty farm: a pig nearly always grows.
+        80, // One pig held.
+        70, // Two pigs held.
+        60, // Three pigs held.
+        50, // Four pigs held.
+        40, // Five pigs held.
+        30, // Six pigs held.
+        20, // Seven pigs held: the pens are crowded, so growth slows.
+      ],
+    },
+  },
+}

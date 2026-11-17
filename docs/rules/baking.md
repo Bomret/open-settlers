@@ -86,7 +86,7 @@ bread (the bread is lost). The fill byte is cleared with the building, so flour 
 **Status:** confirmed by the draw run of the `baker` recording (`settler-draws.txt`).
 
 The figure handler of job 16 is at `0x440112`, reached by the stub at `0x43f7c4`. It adds `0x4800` to the figure byte for a byte below `0x80`, `0x4a00` in state 5 with byte 15 at `0xd`, and `0x4880` for a byte from `0x80`,
-with no sound. The engine reads them through `RuleTables.Get<FoodHutFigureAdds>(new Baker())`. He is drawn while he bakes with the node held, on the step out with the bread, on the put, and at the door. The `open-settlers`
+with no sound. The engine reads them through `RuleTables.Get<FoodHutFigureAdds>(new Baker())`. He is drawn while he bakes with the node held, on the step out with the bread, on the put, and at the door. The `basic`
 content set draws him as a tan figure (`settler/baker/*`); the bread has the loaf of the goods.
 
 ## In the engine
