@@ -50,10 +50,12 @@ click-tile 21 13
 button Road
 wait 0.3
 expect-count building = 4
-fast-forward until bread >= 5 max 100000
+fast-forward until bread >= 8 max 200000
+shot drawn 19 9 5 5
+wait 0.5
 shot chain 19 9 5 5
 expect fish >= 8
 expect meat >= 6
-expect bread >= 5
+expect bread >= 8
 list chain
 dump chain
