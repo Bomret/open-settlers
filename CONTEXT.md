@@ -88,7 +88,7 @@ _Avoid_: skin, theme, renderer, asset pack
 
 **Draw term**
 What the map view asks a graphics source to draw, named in game terms: a terrain triangle, a map object, a
-settler, a road, or a build marker, with the data that picks its image, such as a settler's job, activity, heading, and
+settler, a road, a build marker, or a road marker, with the data that picks its image, such as a settler's job, activity, heading, and
 animation step. A draw term never holds an entry number (INV-0010).
 _Avoid_: sprite ID, entry, frame number
 
@@ -234,6 +234,13 @@ _Avoid_: item, cargo
 **Road**
 A path between two flags, built one of six directions at a time. One carrier serves each road.
 _Avoid_: edge, path, street
+
+**Road marker**
+A sign the game view shows in road mode on the end of the road being drawn and on each of its six neighbors: the end
+mark on the end itself, and on each neighbor a blocked mark where no step may go, a way-back mark on the node the road
+came from, or otherwise a slope mark for the height difference of that step. The original's road cursor picks each
+neighbor's mark. A click on a neighbor's mark is a click on that node.
+_Avoid_: cursor symbol, pointer sprite, slope icon
 
 **Carrier**
 A settler who walks one road and carries goods between its two flags.
