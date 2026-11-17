@@ -56,17 +56,14 @@ public sealed class GameDigest : IGameDigest
         // A game without the supply mixes nothing for it, so its digest stays as it was.
         if (game.Supply is { } supply)
         {
-            hash = Mix(
-                Mix(
-                    Mix(
-                        Mix(Mix(Mix(hash, supply.Period), supply.Countdown), supply.LastClock),
-                        supply.KnightAccumulator
-                    ),
-                    supply.KnightsOwed
-                ),
-                supply.Running ? 1 : 0
-            );
-            hash = Mix(Mix(hash, supply.Cap), supply.MayMake ? 1 : 0);
+            hash = Mix(hash, supply.Period);
+            hash = Mix(hash, supply.Countdown);
+            hash = Mix(hash, supply.LastClock);
+            hash = Mix(hash, supply.KnightAccumulator);
+            hash = Mix(hash, supply.KnightsOwed);
+            hash = Mix(hash, supply.Running ? 1 : 0);
+            hash = Mix(hash, supply.Cap);
+            hash = Mix(hash, supply.MayMake ? 1 : 0);
         }
 
         return hash;
