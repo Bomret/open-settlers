@@ -4,8 +4,8 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
 
 ## Goods order
 
-The order of the goods fixes the transport priorities that the castle's hand-out and the flags' goods use, and so the food goods' share
-of the traffic in M5. `0x42055e` (known) calls these routines when it fills the player blocks of a new game:
+A new game ranks each of the 26 goods for transport, the food goods among them. `0x42055e` (known) calls these routines
+when it fills the player blocks of a new game:
 
 - `0x445570`: writes the default transport priorities of the 26 goods before the player block
   (player `-0x54`): `Player_SetTransportPriorities` in the
