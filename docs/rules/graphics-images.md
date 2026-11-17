@@ -298,7 +298,8 @@ The masks 230 to 256 and the textures 300 to 309 are the strips of the roads, no
 `src/MapView/TerrainQuads.cs` planning each band's rectangles) paints the fill masks 60 to 221 and the fill textures
 260 to 292 as the terrain, and the road strips over it (`src/MapView/RoadDraws.cs`), each as one RGBA image the
 History Edition source bakes from a mask and a texture. The borders of the territories are sprites, not masks: the
-border posts 610 to 619 ([Roads](roads.md#how-a-border-is-drawn)).
+border posts 610 to 619 ([Roads](roads.md#how-a-border-is-drawn)), which the map view draws with the road strips
+(`src/MapView/BorderDraws.cs`).
 
 ### Corrupt masks
 

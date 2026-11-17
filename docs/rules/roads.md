@@ -376,7 +376,15 @@ game, a node at a time, and sends one command where the road reaches a flag; Esc
 again cancels. `RoadDraws` gives a draw term for each strip (direction, height difference, slope, ground), the History Edition
 source answers it through `RoadRules` and `RoadGraphics` (no image where the difference is over 4), and the control draws
 the strips over the terrain in every copy of the map;
-the road being drawn is a white line. Departures: the length class, the second bit byte at `+5`, and the items'
+the road being drawn is a white line.
+The border posts ([How a border is drawn](#how-a-border-is-drawn)) come from `BorderDraws` (`src/MapView/BorderDraws.cs`):
+a `BorderPost` term per edge east, south-east, and south of a node whose owner differs from the neighbor's and where the
+node holds no road bit of that direction, with the slope sum and ground of the road strip of that edge
+(`RoadDraws.SlopeAndGround`). `TerrainQuads.Edges` builds the road pass of the map view and the game view alike: per node in
+row-major order, its edges east, south-east, and south, each the strip or the post. The History Edition source picks 610 to
+619 through `BorderRules`, and the basic content set draws `border/pole` on land and `border/water` in water. The game view
+redraws the posts when the castle's placement claims the territory. Departure: the original walks the view column by
+column (`Render_DrawRoadsAndBorders`), so where two posts or a post and a strip overlap, the engine's order can differ. Departures: the length class, the second bit byte at `+5`, and the items'
 pointers are not kept (a later slice reads the road from the map and from `Game.Network.Roads`). Also left out are the `+0x37e` option, the
 second-button click that puts a flag on a road ([A flag on a road](#a-flag-on-a-road)), the step back at the start, the sounds, and the
 pixel alignment of the strips. Directions after the road reached a flag are refused.
