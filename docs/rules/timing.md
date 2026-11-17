@@ -182,5 +182,5 @@ requests only ([Carriers](carriers.md#the-flag-pass)), and the slices of the bui
 ([Settlers](settlers.md#the-pass)). With `Game.EveryPassTurns`, it then gives one more turn to every
 settler in a state the view draws in motion.
 
-The clock starts at 0 and gains 8 a pass. The phase at 0 goes to 1 on the first pass. The players' timers
-are not in the engine yet.
+The clock starts at 0 and gains 8 a pass. The phase at 0 goes to 1 on the first pass. Of the players' timers only the
+settler supply is in the engine, in a game that runs it ([New settlers](new-settlers.md#in-the-engine)).

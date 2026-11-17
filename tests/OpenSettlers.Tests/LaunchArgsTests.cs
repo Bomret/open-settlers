@@ -909,4 +909,79 @@ public sealed class LaunchArgsTests
 
         CollectionAssert.AreEqual(new[] { "repeated --stock" }, args.Problems.ToArray());
     }
+
+    // The free-game screen's bar sets the human's settler rate from 0 to 40 (docs/rules/new-settlers.md); --rate stands in for it.
+    [TestMethod]
+    [DataRow("0", 0)]
+    [DataRow("40", 40)]
+    public void ASettlerRateFrom0To40IsTakenByTheGameView(string value, int rate)
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--rate", value], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual(rate, args.Rate);
+    }
+
+    [TestMethod]
+    public void NoRateFlagLeavesTheRateToTheSeed()
+    {
+        Assert.IsNull(LaunchArgs.Parse(["--game-view"], null).Rate);
+    }
+
+    [TestMethod]
+    [DataRow("41")]
+    [DataRow("-1")]
+    [DataRow("+3")]
+    [DataRow("x")]
+    public void ARateOutside0To40IsOneProblemNamingIt(string value)
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--rate", value], null);
+
+        CollectionAssert.AreEqual(
+            new[] { $"bad --rate '{value}': not a settler rate, use 0 to 40" },
+            args.Problems.ToArray()
+        );
+        Assert.IsNull(args.Rate);
+    }
+
+    [TestMethod]
+    [DataRow("--game-view --rate")]
+    [DataRow("--rate --game-view")]
+    public void ARateWithoutAValueIsOneProblem(string arguments)
+    {
+        var args = LaunchArgs.Parse(arguments.Split(' '), null);
+
+        CollectionAssert.AreEqual(new[] { "--rate needs a value" }, args.Problems.ToArray());
+        Assert.AreEqual(LaunchMode.GameView, args.Mode);
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--check")]
+    [DataRow("--layout x.layout")]
+    [DataRow("--seed-info --seed 1234567812345678")]
+    [DataRow("")]
+    public void ARateOutsideTheGameViewIsAProblem(string mode)
+    {
+        var args = LaunchArgs.Parse([.. mode.Split(' ', StringSplitOptions.RemoveEmptyEntries), "--rate", "10"], null);
+
+        Assert.IsTrue(args.Problems.Contains("--rate applies to --game-view without --layout only"));
+    }
+
+    [TestMethod]
+    public void ARepeatedRateIsAProblem()
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--rate", "10", "--rate", "20"], null);
+
+        CollectionAssert.AreEqual(new[] { "repeated --rate" }, args.Problems.ToArray());
+    }
+
+    [TestMethod]
+    public void ARateAndAStockTogetherAreTaken()
+    {
+        var args = LaunchArgs.Parse(["--game-view", "--stock", "5", "--rate", "30"], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual((5, 30), (args.Stock, args.Rate));
+    }
 }

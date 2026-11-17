@@ -296,6 +296,30 @@ public sealed class CastlePlacementTests
         );
     }
 
+    // Emulator: opponents:S0,S1,S2 wrote the setting byte at +0x37c, the human player's settler rate, as the 19th value of each
+    // line (docs/rules/new-settlers.md).
+    [TestMethod]
+    [DataRow("1234,5678,9ABC", 4)]
+    [DataRow("FFFF,0001,8001", 7)]
+    [DataRow("3905,0577,7739", 16)]
+    [DataRow("6359,A0D2,B4FA", 27)]
+    public void TheSettlerRateOfAFreeGameFollowsFromItsSeed(string words, int expected)
+    {
+        var map = ParseSeed(words);
+
+        Assert.AreEqual(
+            expected,
+            StartStock.SettlerRateOf(
+                new Seed
+                {
+                    W0 = map.W0,
+                    W1 = map.W1,
+                    W2 = map.W2,
+                }
+            )
+        );
+    }
+
     // The fields of a line: a word with an equals sign starts a field, and the words after it, up to the next such
     // word, are its value (the digests of "layers" are five words).
     static Dictionary<string, string> Fields(string line)
