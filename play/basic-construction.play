@@ -100,7 +100,7 @@ list full-loop
 # The castle held 11 logs at the start and the sawmill saws them first. When the castle's logs are gone, the planks that go on arriving at the
 # castle are sawn from the logs the woodcutter fells: they travel from his flag to the sawmill's, and the planks back to the castle.
 fast-forward until logs = 0 max 300000
-wait 0.3
+shot logs-gone 25 3 5 2
 dump logs-gone
 expect logs = 0
 expect planks >= 1
