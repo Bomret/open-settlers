@@ -116,7 +116,9 @@ The storage's first settler carries the good out. That is the castle's job-4 set
 
 - **Stand-in:** the engine lays the good on the castle's flag at once, on its first empty place, with the destination. It hands nothing out where the flag has no empty place. It keeps no outstanding slots and runs no settler of the castle. So it hands out where the original's slots are still full. `ConstructionMaterialsTests` therefore stops at the passes before the first lay.
 - The builder reaches the forester site at pass 211 in the engine, as in the original. A rank with the builder inside is `0xfe`, not `0x3e`. `ConstructionBuilderTests` empties the castle of planks and stones. It adds the goods to the site's fill at the passes the original delivered them ([The builder](construction.md)).
-- The engine runs the phase routine only where a game asks for it, with `GameFactory.Create(..., handsOutGoods: true)`. The game view passes that value. The routine draws from the generator once in every cycle. The emulator verbs other than `construct:` do not draw. So the scenarios that compare a game with those verbs leave the routine off.
+- The engine runs the phase routine's hand-out of goods only where a game asks for it, with
+  `GameFactory.Create(..., handsOutGoods: true)`. The settler cap, which the routine works out first, runs in every game with
+  the settler supply, with or without the hand-out ([New settlers](new-settlers.md#in-the-engine)). The game view passes that value. The routine draws from the generator once in every cycle. The emulator verbs other than `construct:` do not draw. So the scenarios that compare a game with those verbs leave the routine off.
 - **Not ported:** the special branch for a storage with bit 1 of its second byte set, the three routines of the statistics, and the storehouse. The castle is the only storage.
 
 ## In the engine
