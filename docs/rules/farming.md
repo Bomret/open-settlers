@@ -111,7 +111,7 @@ The figure handler of job 14 (`0x44002b`, stub 14 of `0x43f744`) adds `0x3d80` t
 `0x3e80` while it is not (harvesting; it also asks for the sound `0x34` at the figure bytes `0x83` and `0x84`, which the engine's frames do
 not reach). Below `0x80` it adds `0x4000` on the way back with the grain (byte 13 `0x80`, byte 14 1, state `0x10`) and `0x3d00` otherwise.
 The engine reads the four constants from the install (`FarmerTables`). The field stages are drawn from the map like any object (the entries
-of the codes `0x69` to `0x7e`). The `open-settlers` set draws the farmer with the figure of its other workers in the farmer's colour, a field
+of the codes `0x69` to `0x7e`). The `basic` set draws the farmer with the figure of its other workers in the farmer's colour, a field
 of each stage in its own image, and the grain on a flag as the other goods.
 
 ## Open leads

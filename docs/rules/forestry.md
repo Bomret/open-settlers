@@ -112,7 +112,7 @@ The figure handler of job 8 is at `0x43fd88`, reached by the stub at `0x43f784`.
 
 The engine reads the two words from the program's instructions (`RuleTables.Get<ForesterFigureAdds>(new Forester())`). The engine draws state `0x14`. It does not draw state `0x13`, in the building.
 
-The sapling stages are the objects `0x67` and `0x68`. The engine draws them from the map like any object. They are entries 1345 and 1346 of the graphics archive, where the entry is 1250 plus the code less 8. The `open-settlers` content set draws them as a thin stem with a small crown (`object/103`, `object/104`). It draws the forester as a green figure in each pose (`settler/forester/*`). The planting has the pose of work.
+The sapling stages are the objects `0x67` and `0x68`. The engine draws them from the map like any object. They are entries 1345 and 1346 of the graphics archive, where the entry is 1250 plus the code less 8. The `basic` content set draws them as a thin stem with a small crown (`object/103`, `object/104`). It draws the forester as a green figure in each pose (`settler/forester/*`). The planting has the pose of work.
 
 ## Removal
 

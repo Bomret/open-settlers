@@ -1,16 +1,17 @@
 #!/bin/sh
 # Runs a play script under Movie Maker, from the repository root, and reuses the stored result when its inputs
 # are unchanged:
-#   sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh] [--repro]
-# The script is play/<stem>.play and the install is SIEDLER_DIR. Without --game-view the map view runs;
+#   sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--content-set <set>] --fps <n> [--fresh] [--repro]
+# The script is play/<stem>.play and the install is SIEDLER_DIR, which --content-set basic neither needs nor passes (the
+# result key and the Godot launch line then hold no install path). Without --game-view the map view runs;
 # --game-view runs the game view with --seed and --size; --layout runs the game view on the layout file and
 # implies --game-view (a layout holds its own seed and size, so --layout with --seed or --size exits 2, and so
 # does a missing layout file or an empty layout value). The input hash covers the mode, the layout's path and
 # content, the content and path of every tracked or untracked, not ignored file under src/, scenes/ and content/, the
-# project files (project.godot, OpenSettlers.csproj, global.json, Directory.Build.props), the play script, the seed, the size, the graphics source (history-edition when none is given), the
-# fps, the Godot version and the SIEDLER_DIR path. --graphics takes history-edition or open-settlers, once. A result is stored in
+# project files (project.godot, OpenSettlers.csproj, global.json, Directory.Build.props), the play script, the seed, the size, the content set (history-edition when none is given), the
+# fps, the Godot version and the SIEDLER_DIR path (not on the basic set). --content-set takes basic or history-edition, once. A result is stored in
 # play-out/.cache/<hash>/ only for exit status 0 or 1. Each call past the argument checks appends one line to
-# play-out/runs.log; the line names the mode (map or game-view), the layout, and the graphics source. Bad arguments exit 2 and leave no trace.
+# play-out/runs.log; the line names the mode (map or game-view), the layout, and the content set. Bad arguments exit 2 and leave no trace.
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
 # call waits on a live owner (a process of another user counts as live), says so once on stderr, and takes over
 # the lock of a dead one, or of one with no pid older than 5 seconds, under the takeover mutex
@@ -37,7 +38,7 @@ set -u
 
 usage() {
   echo "play-run.sh: $1" >&2
-  echo "usage: sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh] [--repro]" >&2
+  echo "usage: sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--content-set <set>] --fps <n> [--fresh] [--repro]" >&2
   exit 2
 }
 
@@ -55,26 +56,27 @@ fresh=
 repro=
 mode=map
 layout=
-graphics=
+content_set=
 while [ $# -gt 0 ]; do
   case "$1" in
-    --seed | --size | --fps | --layout | --graphics)
+    --seed | --size | --fps | --layout | --content-set)
       [ $# -ge 2 ] || usage "$1 needs a value"
       case "$1" in
         --seed) [ -n "$2" ] || usage "--seed needs a value"; seed=$2 ;;
         --size) [ -n "$2" ] || usage "--size needs a value"; size=$2 ;;
         --fps) fps=$2 ;;
         --layout) [ -n "$2" ] || usage "--layout needs a file"; layout=$2 ;;
-        --graphics)
-          [ -z "$graphics" ] || usage "repeated --graphics"
+        --content-set)
+          [ -z "$content_set" ] || usage "repeated --content-set"
           case "$2" in
-            history-edition | open-settlers) graphics=$2 ;;
-            *) usage "--graphics takes history-edition or open-settlers" ;;
+            basic | history-edition) content_set=$2 ;;
+            *) usage "--content-set takes basic or history-edition" ;;
           esac
           ;;
       esac
       shift 2
       ;;
+    --graphics) usage "--graphics is gone, use --content-set" ;;
     --game-view)
       mode=game-view
       shift
@@ -105,7 +107,8 @@ if [ -n "$layout" ]; then
 fi
 script=play/$stem.play
 [ -f "$script" ] || usage "no play script $script"
-[ -n "${SIEDLER_DIR:-}" ] || usage "set SIEDLER_DIR to a History Edition install"
+# The basic content set reads no install: it needs no SIEDLER_DIR, passes no --game, and ignores the variable.
+[ "$content_set" = basic ] || [ -n "${SIEDLER_DIR:-}" ] || usage "set SIEDLER_DIR to a History Edition install, or run --content-set basic"
 mise=${PLAY_RUN_MISE:-mise}
 dotnet=${PLAY_RUN_DOTNET:-dotnet}
 
@@ -228,10 +231,11 @@ hash=$(
     [ -n "$layout" ] && echo "layout-content $(git hash-object -- "$layout")"
     echo "seed $seed"
     echo "size $size"
-    echo "graphics ${graphics:-history-edition}"
+    echo "content-set ${content_set:-history-edition}"
     echo "fps $fps"
     echo "godot $version"
-    echo "siedler $SIEDLER_DIR"
+    # No install path on the basic set, so its result is the same whatever SIEDLER_DIR holds.
+    [ "$content_set" = basic ] && echo "siedler none" || echo "siedler $SIEDLER_DIR"
   } | git hash-object --stdin
 )
 
@@ -242,12 +246,13 @@ entry=$cache/$hash
 # Runs the play script under Godot with the arguments in $extra after it, writing into $out and the log into $log;
 # sets $status.
 play() {
-  set -- --path . --write-movie "$out/frame.png" --fixed-fps "$fps" -- --game "$SIEDLER_DIR"
+  set -- --path . --write-movie "$out/frame.png" --fixed-fps "$fps" --
+  [ "$content_set" = basic ] || set -- "$@" --game "$SIEDLER_DIR"
   if [ "$mode" = game-view ]; then set -- "$@" --game-view; else set -- "$@" --map; fi
   [ -n "$layout" ] && set -- "$@" --layout "$layout"
   [ -n "$seed" ] && set -- "$@" --seed "$seed"
   [ -n "$size" ] && set -- "$@" --size "$size"
-  [ -n "$graphics" ] && set -- "$@" --graphics "$graphics"
+  [ -n "$content_set" ] && set -- "$@" --content-set "$content_set"
   godot "$@" --play "$script" $extra >"$log" 2>&1
   status=$?
 }
@@ -363,6 +368,6 @@ fi
 
 head=$(git rev-parse HEAD 2>/dev/null || echo none)
 if [ -n "$(git status --porcelain)" ]; then dirty=dirty; else dirty=clean; fi
-printf '%s\t%s\t%s\t%s\t%s\tmode=%s\tlayout=%s\tseed=%s\tsize=%s\tfps=%s\tgraphics=%s\texit=%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$hash" \
-  "$head" "$dirty" "$stem" "$mode" "$layout" "$seed" "$size" "$fps" "${graphics:-history-edition}" "$status" "$how" >>play-out/runs.log
+printf '%s\t%s\t%s\t%s\t%s\tmode=%s\tlayout=%s\tseed=%s\tsize=%s\tfps=%s\tcontent-set=%s\texit=%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$hash" \
+  "$head" "$dirty" "$stem" "$mode" "$layout" "$seed" "$size" "$fps" "${content_set:-history-edition}" "$status" "$how" >>play-out/runs.log
 exit "$status"

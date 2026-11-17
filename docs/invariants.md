@@ -4,9 +4,9 @@
 
 Class: legal
 Concepts: Install, Asset
-Statement: The repository contains no bytes taken from an install and no code transcribed from the game's program; tests build their fixtures in code, and rules recovered from the program are described in our own words. A test may hold a short sequence of values observed in a run of the original, or a digest of the original's output. The test states the seed and the origin of each sequence and each digest. A test never holds a dump of the original's output.
+Statement: The repository contains no bytes taken from an install and no code transcribed from the game's program; tests build their fixtures in code, and rules recovered from the program are described in our own words. The stand-in rules of the basic content set are values of the project's own making. They are never read from the program (ADR 0018). A test may hold a short sequence of values observed in a run of the original, or a digest of the original's output. The test states the seed and the origin of each sequence and each digest. A test never holds a dump of the original's output.
 Breaks: silently
-Check: `RepositoryContentTests` fails on a file with the extension of an install's file types; no cheap test can tell a copied byte sequence or a transcribed routine from an original one, so reviewers check that fixtures are built in code and that the recovered rules in `docs/rules/` are restated, not transcribed.
+Check: `RepositoryContentTests` fails on a file with the extension of an install's file types; no cheap test can tell a copied byte sequence or a transcribed routine from an original one, so reviewers check three things. Fixtures are built in code. The recovered rules in `docs/rules/` are restated, not transcribed. The basic set's stand-in values are invented.
 
 ### INV-0002
 
@@ -20,7 +20,7 @@ Check: `GameTests` (`TheSameSeedAndCommandsGiveTheSameDigest`, `ACommandAtAnothe
 
 Class: fidelity
 Concepts: Simulation, Rule
-Statement: The engine's random generator produces the same sequence as the original game's generator for the same seed. The engine's map generator produces the same map from a seed as the original game's map generator. The original game is the game code that both releases share, as `Siedler1.exe` carries it (ADR 0004).
+Statement: The engine's random generator produces the same sequence as the original game's generator for the same seed. The engine's map generator produces the same map from a seed as the original game's map generator. The original game is the game code that both releases share, as `Siedler1.exe` carries it (ADR 0004). The map rule holds under the History Edition content set. The basic set's stand-in rules give other maps (ADR 0018).
 Breaks: silently
 Check: `RandomGeneratorTests` and `SeedTests` compare generated sequences and parsed seeds with values observed in the original, and `MapGeneratorTests` (`EveryPassMatchesTheEmulatorForEverySizeAndSeed`) compares generated maps with digests of the original's maps (INV-0001).
 
@@ -68,25 +68,25 @@ Check: the project references in each layer's `.csproj`. The compiler refuses a 
 
 Class: architecture
 Concepts: Graphics source, Simulation
-Statement: The simulation is independent of the graphics source. No domain, application, or adapter type references a graphics source, and the same seed and commands give the same `Game.Digest()` under every graphics source (ADR 0014).
-Breaks: silently
-Check: `play/graphics-digest.play` drives one seed and one click list through the game view under `--graphics history-edition` and `--graphics open-settlers`, and the `digest` lines of the two dumps are equal. A click reaches the game only as the node it picks, so `TheFlagGeometryIsTheBoxOfTheHistoryEditionsFlagAtRest` keeps the flag geometry the view picks with equal to the History Edition's flag sprite. The project references keep the graphics sources out of the simulation assemblies.
+Statement: The simulation is independent of the graphics source. No domain, application, or adapter type references a graphics source (ADR 0014, ADR 0018).
+Breaks: loudly
+Check: the project references keep the graphics sources out of the simulation assemblies, and the compiler refuses a reference that points outward.
 
 ### INV-0010
 
 Class: architecture
 Concepts: Graphics source, Entry
-Statement: The original's graphics encoding stays inside the History Edition source. Entry numbers, archive files, palette indexes, and the slope and figure tables of `Siedler1.exe` used to pick an image appear in no draw term and in no class of the map view outside that source (ADR 0014). The one exception is `StepOffsets`, which reads entry 2 of the graphics archive under every graphics source, because the placement of a walking settler comes from the install.
+Statement: The original's graphics encoding stays inside the History Edition source. Entry numbers, archive files, palette indexes, and the slope and figure tables of `Siedler1.exe` used to pick an image appear in no draw term and in no class of the map view outside that source (ADR 0014). The one exception is `StepOffsets`, which reads entry 2 of the graphics archive for the walk steps of the History Edition content set. The basic set brings its own walk steps (ADR 0018).
 Breaks: silently
-Check: `GraphicsSourceBoundaryTests` pins the classes of the map view outside the source and `StepOffsets`'s exception. Reviewers check each draw term and every map view class outside the History Edition source. A test of the draw-list builders runs with no install-backed source.
+Check: `GraphicsSourceBoundaryTests` pins the classes of the map view outside the source and `StepOffsets`'s exception for the History Edition. It also pins that `OpenSettlersWalkSteps` of the basic set reads no archive entry and names no install. Reviewers check each draw term and every map view class outside the History Edition source. A test of the draw-list builders runs with no install-backed source.
 
 ### INV-0011
 
 Class: architecture
 Concepts: Import port, Graphics source, Install
-Statement: The engine reaches game data only through import ports. Only the History Edition source assembly reads the install or names a type of the original's file formats, and only the Open Settlers source assembly reads the content set. The map view, the asset check, the asset browser, the domain, and the application name no type of a source assembly. The Godot host names one only where it builds a source: the launch code and the main scene, `AssetBrowserView`. The adapter assembly is the one exception: it names `JobTableNames` of the History Edition source, through which the name table reads the job and state names (ADR 0017).
+Statement: The engine reaches game data only through import ports. Only the History Edition source assembly reads the install or names a type of the original's file formats. Only the Open Settlers source assembly reads the basic content set: its graphics, its stand-in rules, and its walk steps (ADR 0018). The map view, the asset check, the asset browser, the domain, and the application name no type of a source assembly. The Godot host names one only where it builds a source: the launch code and the main scene, `AssetBrowserView`. The adapter assembly is the one exception: it names `JobTableNames` of the History Edition source, through which the name table reads the job and state names (ADR 0017).
 Breaks: loudly
-Check: the format readers, the asset kinds, the graphics readers and figure tables, the program tables importer, the job tables modules, and the looks are internal to the History Edition assembly, so the compiler refuses a use from outside it. Its public types are the ones the host builds (`Install`, `HistoryEditionSource`, `HistoryEditionRuleTables`, `HistoryEditionAssets`, `StepOffsets`) and `JobTableNames`. The looks are internal to the Open Settlers assembly; its one public type is the one the host builds, `OpenSettlersSource`. `ImportPortBoundaryTests` checks that the domain and the application reference no source assembly and that the adapter assembly's metadata names no History Edition type but `JobTableNames`. The map view, `src/Assets`, and `src/Viewer` compile inside the Godot project, which references both source assemblies, so the compiler does not keep them from those public types: `GraphicsSourceBoundaryTests` scans the map view, `src/Assets`, and the viewer classes outside the composition root for History Edition names and for content-set names (the source, the looks, their namespace, and the content set's folder). Reviewers check that no port returns a format type.
+Check: the format readers, the asset kinds, the graphics readers and figure tables, the program tables importer, the job tables modules, and the looks are internal to the History Edition assembly, so the compiler refuses a use from outside it. Its public types are the ones the host builds (`Install`, `HistoryEditionSource`, `HistoryEditionRuleTables`, `HistoryEditionAssets`, `StepOffsets`) and `JobTableNames`. The looks and the rule file reader are internal to the Open Settlers assembly. Its public types are the ones the host builds: `OpenSettlersSource`, `OpenSettlersRuleTables`, and `OpenSettlersWalkSteps`. `ImportPortBoundaryTests` checks that the domain and the application reference no source assembly and that the adapter assembly's metadata names no History Edition type but `JobTableNames`. The map view, `src/Assets`, and `src/Viewer` compile inside the Godot project, which references both source assemblies, so the compiler does not keep them from those public types. `GraphicsSourceBoundaryTests` scans the map view, `src/Assets`, and the viewer classes outside the composition root for History Edition names and for content-set names (the source, the looks, their namespace, and the content set's folder). Reviewers check that no port returns a format type.
 
 ### INV-0014
 

@@ -17,7 +17,7 @@ public static class SeedInfo
     /// <summary>The process exit code of a seed whose map cannot be generated.</summary>
     public const int NoMapExitCode = 1;
 
-    /// <summary>The process exit code where the program's rule tables cannot be read: the missing-install code of the other modes.</summary>
+    /// <summary>The process exit code where the rule tables cannot be read (no install, an unreadable program, or a broken basic rule file): the missing-install code of the other modes.</summary>
     public const int NoTablesExitCode = 2;
 
     /// <summary>Builds the report of a map. <c>seedText</c> is the seed as the user gave it.</summary>
@@ -60,10 +60,10 @@ public static class SeedInfo
     }
 
     /// <summary>
-    /// Reads the program's rule tables, generates the map of a seed and size, and reports it. Returns 0 with the report
+    /// Reads the rule tables of the content set, generates the map of a seed and size, and reports it. Returns 0 with the report
     /// in <c>text</c>; <see cref="NoTablesExitCode"/> with the problem, and no map, where <c>tablesSource</c> fails with
     /// an <see cref="IOException"/>, an <see cref="InvalidDataException"/>, or an
-    /// <see cref="UnauthorizedAccessException"/> (no install, or an unreadable program); or
+    /// <see cref="UnauthorizedAccessException"/> (no install, an unreadable program, or a broken basic rule file); or
     /// <see cref="NoMapExitCode"/> with a message where the generator refuses the seed (no land mass) or fails in any
     /// other way, so the run always ends with a code. <c>generate</c> replaces the generator; null uses
     /// <see cref="MapGenerator.Generate"/>.

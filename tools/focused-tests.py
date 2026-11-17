@@ -7,7 +7,8 @@ Run it from the repository root, with the changed paths as arguments:
 
 It runs `dotnet test` on tests/OpenSettlers.Tests, filtered to the selected classes and always to
 `TestCategory!=Install&TestCategory!=Ghidra`. With --list it prints the selection instead and runs nothing: one class
-name per line, or the line `all` for the whole unit suite.
+name per line, or the line `all` for the whole unit suite. Without a path it prints a usage line on stderr and exits 2.
+With --classes alone it prints every test class it knows, one full name per line, and runs nothing.
 
 The selection follows from the names in the test files. A test class is a class with [TestClass] in a top-level .cs
 file of the test project. A name in a comment does not count.
@@ -18,10 +19,11 @@ file of the test project. A name in a comment does not count.
 - A .cs file selects every test class whose file names a type the file declares, as a whole word. The test file of a
   class names that class, so a changed test file selects its own class. A helper file of the test project that names
   such a type adds its own types to the names. A deleted .cs file stands for the type named as the file.
+- A .cs file under src/ that selects no test class selects the whole unit suite, so a change no test names still gets a
+  build. Files under src/Viewer/ are exempt: the test project does not compile them, and they may select nothing.
 - Any other file selects every test class whose file names its repository path or its file name. Where none does, the
-  folders above it are tried, deepest first, each written as a path (`content/open-settlers`) or as quoted segments
-  (`"content", "open-settlers"`).
-- A selection of every test class runs the whole unit suite.
+  folders above it are tried, deepest first, each written as a path (`content/basic`) or as quoted segments
+  (`"content", "basic"`). A Markdown (.md) file tries no folder.
 
 Where nothing is selected, as for a prose change, it prints one line and exits 0 without a build: a filter that
 matches no test makes the test host exit 8. A selected class whose tests all carry the category Install or Ghidra
@@ -41,6 +43,9 @@ CATEGORIES = "TestCategory!=Install&TestCategory!=Ghidra"
 SHARED_FILES = {"Directory.Build.props", "Directory.Build.targets", "global.json", "mise.toml", ".editorconfig"}
 SHARED_SUFFIXES = (".csproj", ".props", ".targets", ".slnx")
 SHARED_FOLDERS = ("src/Generators/",)
+COMPILED_FOLDER = "src/"
+GODOT_FOLDER = "src/Viewer/"
+USAGE = "usage: python3 -I tools/focused-tests.py [--list] <path>... | --classes"
 
 DECLARATION = re.compile(r"\b(?:class|struct|interface|enum|record|delegate\s+\S+)\s+(?:class\s+|struct\s+)?([A-Za-z_]\w*)")
 TEST_CLASS = re.compile(r"\[TestClass\][^{;]*?\bclass\s+([A-Za-z_]\w*)", re.S)
@@ -71,17 +76,9 @@ def test_files():
 
 
 def changed_files(arguments):
-    """The changed paths as repository paths, a folder replaced by the files under it."""
-    root = os.getcwd()
-    for argument in arguments:
-        path = os.path.relpath(os.path.abspath(argument), root).replace(os.sep, "/")
-        if os.path.isdir(path):
-            for folder, folders, names in os.walk(path):
-                folders[:] = [name for name in folders if name not in ("bin", "obj", ".git")]
-                for name in names:
-                    yield os.path.join(folder, name).replace(os.sep, "/")
-        else:
-            yield path
+    """The changed paths as repository paths."""
+    root = os.path.realpath(os.getcwd())
+    return [os.path.relpath(os.path.realpath(argument), root).replace(os.sep, "/") for argument in arguments]
 
 
 def is_shared(path, test_classes):
@@ -141,21 +138,29 @@ def select(paths):
         if is_shared(path, test_classes):
             return ALL
         if path.endswith(".cs"):
-            selected |= matching([word(name) for name in type_names(path, files)], files)
+            found = matching([word(name) for name in type_names(path, files)], files)
+            if not found and path.startswith(COMPILED_FOLDER) and not path.startswith(GODOT_FOLDER):
+                return ALL
+            selected |= found
             continue
         found = matching([literal(path), literal(os.path.basename(path))], files)
-        folder = os.path.dirname(path)
+        folder = "" if path.endswith(".md") else os.path.dirname(path)
         while not found and folder:
             found = matching(folder_patterns(folder), files)
             folder = os.path.dirname(folder)
         selected |= found
-    every = {found for _, _, classes in files for found in classes}
-    return ALL if selected and selected == every else selected
+    return selected
 
 
 def main(arguments):
+    if arguments == ["--classes"]:
+        print("\n".join(sorted(found for _, _, classes in test_files() for found in classes)))
+        return 0
     listing = arguments[:1] == ["--list"]
-    paths = list(changed_files(arguments[1:] if listing else arguments))
+    paths = changed_files(arguments[1:] if listing else arguments)
+    if not paths:
+        print(USAGE, file=sys.stderr)
+        return 2
     selected = select(paths)
     if listing:
         print("all" if selected is ALL else "\n".join(sorted(selected)))

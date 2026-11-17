@@ -106,7 +106,7 @@ miller's step out, which the `miller` recording confirms; the draw run's own tur
 
 The figure handler of job 12 is at `0x43ff56`, reached by the stub at `0x43f7a4`. It adds `0x3200` to the figure byte for a byte below `0x80`, `0x3400` in state 5 with byte 15 at `0xd`, and `0x3280` for a
 byte from `0x80`, with no sound. The engine reads them through `RuleTables.Get<FoodHutFigureAdds>(new PigFarmer())`. He is drawn while he works with the node held (the stretches 1, 3, and 5), on the step out with
-the pig, on the put, and at the door. The `open-settlers` content set draws him as a pink figure (`settler/pig-farmer/*`); the pig has its own image among the goods.
+the pig, on the put, and at the door. The `basic` content set draws him as a pink figure (`settler/pig-farmer/*`); the pig has its own image among the goods.
 
 ## In the engine
 
