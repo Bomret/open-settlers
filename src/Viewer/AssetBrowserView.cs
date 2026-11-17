@@ -174,8 +174,9 @@ public partial class AssetBrowserView : Control
             var basicFolder = LaunchInstall.BasicFolder(ProjectSettings.GlobalizePath("res://"));
             tablesSource = new OpenSettlersRuleTables(basicFolder);
             // The view calls this where it catches a read failure: a broken content set names its file and key, and the
-            // view draws no map, as for a missing install file. The walk steps arrive with the graphics, so the view calls
-            // loadSteps only where the graphics load failed, and the read raises the walk steps file's own fault.
+            // view draws no map, as for a missing install file. The walk steps arrive with the graphics, and the view calls
+            // loadSteps only where a successful graphics load carries none, so no view path calls it here; a call still reads
+            // the walk steps file and raises its own fault.
             loadGraphics = _ => new GraphicsLoad
             {
                 Source = OpenSettlersSource.Load(basicFolder, new GodotImageDecoder()),
