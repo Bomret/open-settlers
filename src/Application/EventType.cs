@@ -116,6 +116,9 @@ public static class EventType
     /// <summary>A miller's turn in the mill: a grain taken out of the building's fill, a stretch of the grinding, or the wait for grain.</summary>
     public const string Grinds = "grinds";
 
+    /// <summary>A butcher's turn in the shop: a pig taken out of the building's fill, the work on it, or the wait for a pig.</summary>
+    public const string Butchers = "butchers";
+
     /// <summary>The builder's last blow: the building is finished and its flag asks for nothing.</summary>
     public const string BuildingFinished = "building-finished";
 
@@ -293,6 +296,7 @@ public static class EventType
         Levelled,
         Saws,
         Grinds,
+        Butchers,
         BuildingFinished,
         LeavesSite,
     ];

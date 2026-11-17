@@ -441,6 +441,22 @@ public readonly record struct MillerFigureAdds
 }
 
 /// <summary>
+/// What the butcher's handler adds to the figure byte (<c>0x43ff90</c>): <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in the
+/// step that takes the meat out (state 5 with state 0xd next), and <see cref="Work"/> for a byte from 0x80, the shop's frames.
+/// </summary>
+public readonly record struct ButcherFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add in the step that takes the meat out (state 5 with state 0xd next).</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80: the work's frames.</summary>
+    public required ushort Work { get; init; }
+}
+
+/// <summary>
 /// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <see cref="Walk"/>
 /// (or <see cref="Carrying"/> on the way back with a load), for one from 0x80 <see cref="High"/>
 /// (<see cref="HighFacing"/> where the settler's heading, byte 14, is 1).

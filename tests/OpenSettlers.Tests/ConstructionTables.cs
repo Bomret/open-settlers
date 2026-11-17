@@ -18,6 +18,9 @@ static class ConstructionTables
     // The made-up grain class: class 1 of the first word, which the mill's flag asks it in.
     public static readonly GoodClass GrainClass = new() { Class = 1, Word = RequestWord.First };
 
+    // The made-up pig class: class 5 of the first word, which the butcher's flag asks it in.
+    public static readonly GoodClass PigClass = new() { Class = 5, Word = RequestWord.First };
+
     public static GoodClass?[] Classes()
     {
         var table = new GoodClass?[RuleTables.GoodClassCount];
@@ -25,6 +28,7 @@ static class ConstructionTables
         table[Good.Stone.Code] = StoneClass;
         table[Good.Log.Code] = LogClass;
         table[Good.Grain.Code] = GrainClass;
+        table[Good.Pig.Code] = PigClass;
 
         return table;
     }
@@ -44,14 +48,19 @@ static class ConstructionTables
     public static DistributionStep[][] GrainOrders() =>
         [.. Orders().Select(order => order.Append(new() { Class = GrainClass, Goods = [Good.Grain] }).ToArray())];
 
+    // The made-up order of a castle that hands out pigs too: the order of PlanksFirst with the pig step last.
+    public static DistributionStep[][] PigOrders() =>
+        [.. Orders().Select(order => order.Append(new() { Class = PigClass, Goods = [Good.Pig] }).ToArray())];
+
     // The made-up rank the mill's request for grain starts from, which differs from the program's own (0x7f).
     public const byte MillRankBase = 0x3f;
 
-    // The sizes of the four types of M4: the sawmill (0x11) is large, the others small.
+    // The sizes of the types: the sawmill (0x11) and the butcher's shop (0xd) are large, the others small.
     public static byte[] Sizes()
     {
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
         sizes[BuildingType.Sawmill.Code] = 2;
+        sizes[BuildingType.Butcher.Code] = 2;
 
         return sizes;
     }
@@ -87,6 +96,7 @@ static class ConstructionTables
         workers[BuildingType.Forester.Code] = new WorkerRequest { Job = Job.Of(8), Tool = ForesterTool };
         workers[BuildingType.Sawmill.Code] = new WorkerRequest { Job = new Sawmiller(), Tool = SawTool };
         workers[BuildingType.Mill.Code] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
+        workers[BuildingType.Butcher.Code] = new WorkerRequest { Job = new Butcher(), Tool = Good.None };
 
         return workers;
     }
