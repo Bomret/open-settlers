@@ -272,10 +272,10 @@ script alone. Add a layout only where none of them holds the situation.
   fast-forwarded to the castle's first bread.
 - `layouts/pig-farm.jsonc` and `play/pig-farm.play`: a finished pig farm with its pig farmer inside, a road to the castle, and two grains on
   the castle's flag, fast-forwarded to the pig on the step out and then to the castle's first pig.
-- `play/basic-construction.play` and `play/basic-production.play` on the game view with `--content-set basic` and no install: the construction loop
-  (seed `1234567812345634`: the castle's materials build the sawmill and the woodcutter's hut, the woodcutter's logs reach the sawmill, and its
-  planks build a stonecutter's hut) and the production chains (seed `4455544685788642`, four fresh games started by `seed`: mill and baker give
-  bread, farm and mill give flour, butcher and pig farm give meat, a fisher gives fish). The run lines are in each script's header. The chains
+- `play/basic-construction.play` and `play/basic-production.play` on the game view with `--content-set basic` and no install.
+  The construction loop uses seed `1234567812345634`. The castle's materials build the sawmill and the woodcutter's hut. The woodcutter's logs reach
+  the sawmill, and its planks build a stonecutter's hut. The production chains use seed `4455544685788642` and four fresh games started by `seed`. Mill and baker give
+  bread, farm and mill give flour, butcher and pig farm give meat, and a fisher gives fish. The run lines are in each script's header. The chains
   split over four games because a game holds five settlers without a job. The other game-view scripts run with the install: their `expect` values
   are the History Edition's.
 - `play/food-chain.play` on the game view with seed `4455544685788642` and size 1: the fisher, the butcher, and the baker are built one after

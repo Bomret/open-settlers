@@ -7,31 +7,31 @@ Amends [ADR 0015](0015-the-repository-ships-content-sets.md),
 [ADR 0017](0017-install-data-enters-through-import-ports.md).
 
 A contributor without a copy of Die Siedler must be able to run the map view, the game view, layouts, and play runs.
-A content set is therefore where a run gets all of its game data: its graphics source, its rule data, and its walk
-steps. There are two sets. The History Edition set is the install, read through the History Edition source. The basic
-set is the repository's own, in `content/basic/`: PNG images, the manifest, and data files that hold stand-in rules,
-values of the project's own making. The launch flag `--content-set basic|history-edition` picks the set, and it
-replaces `--graphics`. A run on the basic set reads nothing from the install and needs none.
+A content set is therefore where a run gets all of its game data. That data is its graphics source, its rule data,
+and its walk steps. There are two sets. The History Edition set is the install, read through the History Edition
+source. The basic set is the repository's own, in `content/basic/`. It holds PNG images, the manifest, and data files
+with stand-in rules, which are values of the project's own making. The launch flag `--content-set basic|history-edition`
+picks the set and replaces `--graphics`. A run on the basic set reads nothing from the install and needs none.
 
 `OpenSettlers.Import.OpenSettlers` reads the basic set and implements the graphics source, the rule tables port, and
-the walk steps port. The data files are hand-written JSONC in readable terms (directions, sizes, materials, speeds);
-the source encodes them into the rule tables, so the original's encodings stay at the edge (ADR 0013). The settlers' step offsets come from the set the run uses, so the install's entry 2 is read only
-under the History Edition set.
+the walk steps port. The data files are hand-written JSONC in readable terms: directions, sizes, materials, and speeds.
+The source encodes them into the rule tables, so the original's encodings stay at the edge (ADR 0013). The settlers'
+step offsets come from the set the run uses. The install's entry 2 is read only under the History Edition set.
 
 ## Considered options
 
 The decision weighed these options:
 
-- Write the stand-in values in C#, as the tests' made-up tables are: no file format to design, but every change to a
+- Write the stand-in values in C#, as the tests' made-up tables are. This needs no file format. Every change to a
   value needs a build, and nothing prepares content defined by data.
-- Ship the stand-in rules as a separate set beside a graphics-only set: it keeps ADR 0015's graphics-only sets, but
+- Ship the stand-in rules as a separate set beside a graphics-only set. This keeps ADR 0015's graphics-only sets. It
   needs a second selection, and no run needs install rules under stand-in graphics or the reverse.
-- Fall back to the stand-in rules when no install is given: no new flag, but a missing or misspelled `SIEDLER_DIR`
+- Fall back to the stand-in rules when no install is given. This adds no flag. A missing or misspelled `SIEDLER_DIR`
   would silently change the game.
-- Write the files in the program's encodings, so the reader passes values through: no encoding code, but an editor
-  would need to know codes such as a walk row's 4 × (direction + 1).
-- Keep `--graphics` beside a flag for the rules: it keeps the digest comparison across graphics sources, at the cost
-  of two flags and of combinations nobody uses.
+- Write the files in the program's encodings, so the reader passes values through. This needs no encoding code. An
+  editor would need to know codes such as a walk row's 4 × (direction + 1).
+- Keep `--graphics` beside a flag for the rules. This keeps the digest comparison across graphics sources. It costs
+  two flags and combinations nobody uses.
 
 ## Consequences
 
