@@ -26,7 +26,7 @@ namespace OpenSettlers.Viewer;
 /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
 /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
 /// <paramref name="loadGraphics"/> gives the source the view draws from, which the host picks; <paramref name="tablesSource"/>
-/// gives the rules, read from the install on the History Edition and from <c>content/basic/rules/</c> on the basic set.
+/// gives the rules, read from the install on the History Edition and from the set's own rule files on the basic set.
 /// </remarks>
 /// <param name="tablesSource">The rule tables port; reading it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the tables cannot be read.</param>
 /// <param name="loadGraphics">Loads the graphics source the view draws from, given the rule tables the settlers are drawn by (null outside the game view); it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the source cannot be read.</param>
