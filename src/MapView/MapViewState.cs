@@ -106,7 +106,8 @@ public sealed class MapViewState
     {
         if (_layout)
         {
-            Problem = "The game runs on a layout: its seed and size cannot change.";
+            // A layout opened with a tables problem keeps that problem: it names the broken file and key.
+            Problem = _tablesProblem is null ? "The game runs on a layout: its seed and size cannot change." : Problem;
 
             return false;
         }

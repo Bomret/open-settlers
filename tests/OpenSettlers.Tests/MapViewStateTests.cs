@@ -224,6 +224,18 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    public void ApplyingOnALayoutWithUnreadableRuleTablesKeepsTheFileAndKeyInTheProblem()
+    {
+        var layout = Layout.Read(LayoutTests.Text()).Layout!;
+        var state = MapViewState.OpenLayout(layout, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+
+        state.Apply("abc", layout.Size.Value);
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+    }
+
+    [TestMethod]
     public void ALayoutStateRefusesANewSeedAndKeepsItsMap()
     {
         var state = MapViewState.OpenLayout(Layout.Read(LayoutTests.Text()).Layout!);
