@@ -74,13 +74,13 @@ Nothing of it is left on the map. Escape also turns the Road button off.
 
 ### Woodcutter, Forester, Stonecutter, Sawmill, Fisher, Farm, Pig farm, Butcher, Mill, and Baker
 
-These ten buttons are the stand-in for the original's build panel. A click puts a building site of the button's type on the
+These buttons are the stand-in for the original's build panel. A click puts a building site of the button's type on the
 node and its flag on the node south-east of it. Where a flag with no building stands there already, the site takes that flag.
 Where a road runs through the node south-east of the site, the flag splits that road like the Flag button does. The node must
-be a site for the type's size: a woodcutter, a forester, a stonecutter, a fisher, and a mill are small buildings and need a
-site for a small or a large building, and the sawmill, the farm, the pig farm, the butcher, and the baker are large buildings and need
-a site for a large building. For example, not a tree or a stone,
-and with nothing on or around the node south-east of it but such a flag. Connect the site's flag to the castle with a road. A
+be a site for the type's size. The woodcutter, the forester, the stonecutter, the fisher, and the mill are small buildings.
+They need a site for a small or a large building. The sawmill, the farm, the pig farm, the butcher, and the baker are large
+buildings. They need a site for a large building. Such a site has, for example, no tree or stone on it,
+and nothing on or around the node south-east of it but such a flag. Connect the site's flag to the castle with a road. A
 building site has no worker. The site shows as the original draws a site that has not started.
 
 ### Remove

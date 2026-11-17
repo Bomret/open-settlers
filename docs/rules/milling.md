@@ -5,7 +5,7 @@ miller's wait for grain, his grinding in four stretches, his step out with the f
 mill. The carriers' goods rules move the grain to the mill and the flour away from it ([Goods at a flag](goods.md)), and the castle's hand-out is
 in [Materials for a building site](construction-materials.md#the-castles-hand-out). The sawmill is the pattern the mill follows
 ([Sawmilling](sawmilling.md)). Addresses and routine names are in the [Program index](program-index.md#simulation). The names of the type, the job,
-and the goods are **inferred** ([Food buildings](food-buildings.md#which-chain-is-which)).
+and the goods are **inferred** ([Food buildings](food-buildings.md#the-evidence-for-the-chains)).
 
 **Emulated.** The harness verb `goods:` (`tools/GhidraDump/emulate.py`) puts a finished building of type 15 at a flag, as it does for the sawmill. The type is
 small (object code 2), and its item holds the pointer to its flag at `+0xe` that a built site leaves (`0x43ef82`), which the handler reads. The verb also runs

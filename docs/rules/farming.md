@@ -23,7 +23,7 @@ The handler of the building type 0xc (`0x42e25e`) asks for a settler of job 14 w
 scythe. The castle holds no farmer, so a jobless settler and a scythe become one, as for the other tool jobs ([Settlers](settlers.md#the-request)).
 At the door the start routine (`0x43d311`) empties the farm's node of the settler's slot and takes state `0x21`. A settler sent home
 (byte 11 equal `0xfe`) goes back to the castle's list instead: not ported, as for the woodcutter. The name of the job is **inferred**
-([Food buildings](food-buildings.md#which-chain-is-which)).
+([Food buildings](food-buildings.md#the-evidence-for-the-chains)).
 
 ## Choosing a node
 
