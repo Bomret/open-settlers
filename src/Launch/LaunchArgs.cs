@@ -56,7 +56,7 @@ public enum ContentSetName
 /// <c>--play</c>, or <c>--layout</c> (a repeated <c>--game</c> keeps the first); <c>--layout</c> with <c>--seed</c>,
 /// <c>--size</c>, <c>--map</c>, <c>--check</c>, or <c>--seed-info</c> (the layout holds its own seed and size); a
 /// <c>--content-set</c> that names no known set, repeats, or comes with <c>--check</c> or no mode
-/// flag and no layout; <c>--game</c> with <c>--content-set basic</c>; the retired <c>--graphics</c>, which names <c>--content-set</c>. Each <c>--content-set</c> problem
+/// flag and no layout; <c>--game</c> with <c>--content-set basic</c>. Each <c>--content-set</c> problem
 /// names the known sets (<see cref="KnownContentSets"/>).
 /// <c>--stock &lt;0..40&gt;</c> sets the start stock level of the human player (<see cref="Stock"/>) and belongs to
 /// <c>--game-view</c> without a layout only; a value that is no integer from 0 to 40, a repeat, or another mode is a bad argument.
@@ -102,7 +102,7 @@ public sealed class LaunchArgs
     /// <summary>The flag that names the content set (<see cref="ContentSetName"/>) of the run.</summary>
     public const string ContentSetFlag = "--content-set";
 
-    /// <summary>The retired flag of the content set; it is a bad argument that names <see cref="ContentSetFlag"/>.</summary>
+    /// <summary>A flag the launch refuses with a message that names <see cref="ContentSetFlag"/>, the flag that picks the graphics source.</summary>
     const string RetiredGraphicsFlag = "--graphics";
 
     /// <summary>The flag that gives the start stock level of the human player in the game view.</summary>

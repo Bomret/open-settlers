@@ -1093,6 +1093,15 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
+    public void TheGraphicsFlagIsRefusedWithAMessageThatNamesTheContentSetFlag()
+    {
+        var result = Run(["demo", "--graphics", "basic", "--fps", "10"]);
+
+        AssertUsageError(result, "graphics flag");
+        StringAssert.Contains(result.Stderr, "--graphics is gone, use --content-set");
+    }
+
+    [TestMethod]
     public void AnUnsetSiedlerDirExitsTwo() =>
         AssertUsageError(Run(Args, new Dictionary<string, string?> { ["SIEDLER_DIR"] = null }), "unset");
 
