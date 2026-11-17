@@ -1185,6 +1185,17 @@ public sealed class ProgramTablesTests
         );
     }
 
+    [TestMethod]
+    public void TheNameOfEachGoodInTheCatalogIsTheNameTablesNameUntilTheNameTableLetsGo()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        foreach (var entry in tables.Catalog.Goods)
+        {
+            Assert.AreEqual(OpenSettlers.Simulation.NameTable.GoodName(entry.OriginalCode!.Value), entry.Name);
+        }
+    }
+
     // The handover counter and resource-1 counting the domain derived from a good's number before the entries stated them
     // (0x43c4ea, 0x462c8d): the oracle the importer's facts are compared with.
     static FillCounter OldHandover(int code) =>
