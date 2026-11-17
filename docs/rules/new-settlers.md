@@ -43,6 +43,12 @@ player's start parameters (`Game_StartParams`, `+0x1d6 + 4 × player`). The coun
   countdown goes below zero, and one more follows every 375 or 125 passes.
 - A mission: r is byte `0xf` of the mission's record.
 
+**Where the free game's rate comes from.** `FreeGame_RandomizeOpponents` (`0x4692d4`) draws the setting bytes whenever the
+free-game screen opens, as for the start stock level ([Castle](castle.md#the-start-stock)): the 19th draw is the level of
+player 0 at `+0x37a`, and the 20th draw, scaled to 0 to 40 the same way, is its rate at `+0x37c`. The player then sets the
+rate on the screen's bar. **Emulated:** `opponents:S0,S1,S2` gave the rate 4 for the seed 1234,5678,9ABC, 7 for
+FFFF,0001,8001, 16 for 3905,0577,7739, and 27 for 6359,A0D2,B4FA, which the engine's `StartStock.SettlerRateOf` reproduces.
+
 ## Making one settler
 
 **Status:** confirmed.
@@ -147,6 +153,10 @@ any other rate. A game without it makes no new settler and digests as before.
   event. With a knight owed and a sword and a shield in `CastleStock`, it takes the knight's job 22 at once, the stock gives
   up one of each, and the debt falls by one.
 - The digest mixes the supply's state where the game runs it.
+- The game view runs the supply in every game, its play runs included. Its rate is the launch flag `--rate`
+  (`LaunchArgs.Rate`), which stands in for the free-game screen's bar, or else the rate the seed draws
+  (`StartStock.SettlerRateOf`, `MapViewState.SettlerRate`). A layout's game takes the rate of the layout's seed. The play-run
+  wrapper takes no rate, so a play run takes the seed's rate.
 - `SettlerSupplyRecordingTests` matches `settler-supply.txt` pass by pass: the new settlers' bytes, the timer, the stock of
   goods 25 and 26, and the generator's words. `SettlerSupplyTests` holds the rules the recording does not reach.
 
