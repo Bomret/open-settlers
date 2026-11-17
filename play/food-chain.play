@@ -1,0 +1,61 @@
+# The food chain a start of the generated map can staff. The castle's click places it at 15,5 (flag 16,6). The fisher's, butcher's, and baker's
+# sites stand at 18,5, 18,9, and 20,12; one road leads from the castle's flag to the fisher's, one on to the butcher's, and one on to the
+# baker's. The castle's 20 first settlers hold 5 jobless ones, and each road's carrier and each worker without a tool takes one: the
+# butcher takes the knife from the stock and a jobless settler, the baker a jobless settler, and the fisher is among the 20.
+# Run it on the game view with seed 4455544685788642 and size 1, under either graphics source:
+#   sh tools/play-run.sh food-chain --game-view --seed 4455544685788642 --size 1 --fps 10
+#   sh tools/play-run.sh food-chain --game-view --seed 4455544685788642 --size 1 --fps 10 --graphics open-settlers
+expect seed = 4455544685788642
+expect size = 1
+wait 0.3
+click-tile 15 5
+wait 0.3
+button Fisher
+click-tile 18 5
+button Fisher
+wait 0.3
+button Road
+click-tile 16 6
+click-tile 17 6
+click-tile 18 6
+click-tile 19 6
+button Road
+wait 0.3
+fast-forward fisher state 0x20 max 60000
+shot fisher 19 6 4 4
+button Butcher
+click-tile 18 9
+button Butcher
+wait 0.3
+button Road
+click-tile 19 6
+click-tile 19 7
+click-tile 19 8
+click-tile 19 9
+click-tile 19 10
+button Road
+wait 0.3
+fast-forward until ticks >= 40000 max 60000
+shot butcher 19 9 4 4
+button Baker
+click-tile 20 12
+button Baker
+wait 0.3
+button Road
+click-tile 19 10
+click-tile 20 10
+click-tile 21 11
+click-tile 21 12
+click-tile 21 13
+button Road
+wait 0.3
+expect-count building = 4
+fast-forward until bread >= 8 max 200000
+shot drawn 19 9 5 5
+wait 0.5
+shot chain 19 9 5 5
+expect fish >= 8
+expect meat >= 6
+expect bread >= 8
+list chain
+dump chain

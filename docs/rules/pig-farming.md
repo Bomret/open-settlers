@@ -88,7 +88,7 @@ then to a flag that asks for it or to the castle. No flag asks for pigs yet: the
 
 The three orders of `0x42a313` hold a step for grain (class 4, first word, good 4) as they hold the plank's. The castle hands grain out to the asking pig farm as it hands it out to the mill: the three
 grains of the stock went to the pig farm at once in the games (`pig-materials.txt`: the stock 3 to 0, fill byte 3, rank `0x1f` after the third). With only the pig farm asking, all grain goes to it; the
-split between the mill and the pig farm is a later slice's.
+split between the mill and the pig farm is the ranks' in the request search ([Grain split](grain-split.md)).
 
 ## Removal
 
