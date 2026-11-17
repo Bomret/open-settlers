@@ -15,7 +15,7 @@ path segment without regard to letter case.
 |---|---|---|---|
 | `Siedler1.exe`, data tables and instruction immediates | `ProgramTablesImporter` and the job tables modules (`src/Adapters/Simulation/`) | `RuleTables` (`src/Domain/RuleTables.cs`) | Simulation, map generator, seed info, History Edition graphics source |
 | `loca/SPAD.PA`, palette, masks, textures, sprites | `TerrainGraphics`, `RoadGraphics`, `ObjectGraphics`, `SettlerSprites` (`src/MapView/`) | GPU layers and `ObjectImage` | `HistoryEditionSource` (`IGraphicsSource`) |
-| `loca/SPAD.PA`, entry 2 (walk sequences) | `StepOffsets` (`src/MapView/`) | `StepOffsets`, and the raw bytes for `SettlerFigureTables` | Game view under both graphics sources |
+| `loca/SPAD.PA`, entry 2 (walk sequences) | `StepOffsets` (`src/MapView/`) | `StepOffsets`, and the raw bytes for `SettlerFigureTables` | Game view on the History Edition set |
 | `loca/SPAD.PA`, `SPAE.PA`, `SPAF.PA`, every entry | `ArchiveEntryKind` and its subclasses (`src/Assets/`) | Previews | Asset browser and asset check |
 | `loca/eng.txt`, `ger.txt`, `fre.txt` | `TextKind` | Previews | Asset browser |
 | `snd/01.SND` to `snd/99.SND` | `SoundKind` | Previews | Asset browser |

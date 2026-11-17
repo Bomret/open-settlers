@@ -1,9 +1,9 @@
 # A butcher's shop makes meat of the pigs the castle sends it: the butcher stands inside from the start, two pigs lie on the castle's flag (and the
 # castle's stock holds nine more), a carrier takes them over the road to the shop's flag and on into the shop, the butcher works on each, and the
 # meat goes back to the castle. The castle starts with 25 meat. The script fast-forwards to its second meat beyond that and takes a shot of the
-# shop and its road. Run it on the layout, under either content set:
+# shop and its road. Run it on the layout with the install; its expect values are the History Edition's (play/basic-production.play runs
+# the food chains on the basic set):
 #   sh tools/play-run.sh butcher --layout layouts/butcher.jsonc --fps 10
-#   sh tools/play-run.sh butcher --layout layouts/butcher.jsonc --fps 10 --content-set basic
 wait 0.3
 expect-at 13 10 building
 expect meat = 25

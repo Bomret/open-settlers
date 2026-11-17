@@ -256,7 +256,7 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/woodcutter-figures.play` on the same layout: crops of the woodcutter at his door, on the way out, at the cut, and on the way back with the log.
 - `layouts/fisher.jsonc` and `play/fisher.play`: a fisher in his building beside a hand-drawn lake. The script fast-forwards to his
   walk out (state `0x10`) and to his cast (state `0x20`) and takes cropped shots of each. The lake holds a lake detail of 0, so he
-  catches nothing. The run gives one digest under both content sets.
+  catches nothing.
 - `play/fisher-catch.play` on the game view with seed `4455544685788642` and size 1: the castle's click places it at 15,5, a fisher's site
   at 18,5 joins it by a road, and the fisher fishes at the generated lake to the east. The script fast-forwards to his cast, to his first
   catch (he carries the fish), and to the fish on his flag, with a shot of each and one of him on the way back.
@@ -276,7 +276,8 @@ script alone. Add a layout only where none of them holds the situation.
   (seed `1234567812345634`: the castle's materials build the sawmill and the woodcutter's hut, the woodcutter's logs reach the sawmill, and its
   planks build a stonecutter's hut) and the production chains (seed `4455544685788642`, four fresh games started by `seed`: mill and baker give
   bread, farm and mill give flour, butcher and pig farm give meat, a fisher gives fish). The run lines are in each script's header. The chains
-  split over four games because a game holds five settlers without a job. The other scripts' `expect` values are the History Edition's.
+  split over four games because a game holds five settlers without a job. The other game-view scripts run with the install: their `expect` values
+  are the History Edition's.
 - `play/food-chain.play` on the game view with seed `4455544685788642` and size 1: the fisher, the butcher, and the baker are built one after
   the other and joined by roads from the castle, and the script runs to 8 breads in the castle (it starts with 4), with fish and meat
   beyond their start stock too. The castle's 5 jobless settlers allow no more. The farm, the mill, and the pig farm would need 6 more.

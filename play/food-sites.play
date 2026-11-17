@@ -1,9 +1,9 @@
 # The build panel's six food toggles each place a building site of their type on the flat ground of layouts/food.jsonc: the fisher and
 # the mill (small buildings) and the farm, the pig farm, the butcher, and the baker (large buildings, which need the site of a large
 # building). Each site shows as the original draws a site that has not started; the list holds each site's needs and target height.
-# Run it on the layout, under either content set:
+# Run it on the layout with the install; its expect values are the History Edition's (play/basic-production.play runs the food chains
+# on the basic set):
 #   sh tools/play-run.sh food-sites --layout layouts/food.jsonc --fps 10
-#   sh tools/play-run.sh food-sites --layout layouts/food.jsonc --fps 10 --content-set basic
 # The castle stands at 10,10 with the six finished food buildings (7 buildings). Each site brings its flag south-east of it.
 expect-count building = 7
 wait 0.3
