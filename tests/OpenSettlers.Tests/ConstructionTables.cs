@@ -27,7 +27,7 @@ static class ConstructionTables
 
     public static GoodClass?[] Classes()
     {
-        var table = new GoodClass?[RuleTables.GoodClassCount];
+        var table = new GoodClass?[TestCatalog.Slots];
         table[Good.Plank.Code] = PlankClass;
         table[Good.Stone.Code] = StoneClass;
         table[Good.Log.Code] = LogClass;

@@ -153,7 +153,7 @@ public sealed class BakeryTests
     {
         // The made-up kind table sends the flour to the high byte where its request word counts the low one: the byte a flour is counted
         // in on its way and the byte it is counted back from agree whichever table says it.
-        var kinds = new byte[RuleTables.GoodKindCount];
+        var kinds = new byte[TestCatalog.Slots];
         kinds[Good.Flour.Code] = 1;
         var (game, bakery) = World(kinds: kinds);
         BakerInside(game);

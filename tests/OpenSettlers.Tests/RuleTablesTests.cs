@@ -65,40 +65,92 @@ public sealed class RuleTablesTests
         Assert.AreEqual(-1, tables.WalkDirection(0, 0), "an empty row names none");
     }
 
-    [TestMethod]
-    public void ALostGoodCountsAgainstTheByteItsKindNames()
-    {
-        var kinds = new byte[RuleTables.GoodKindCount];
-        kinds[3] = 0;
-        kinds[4] = 1;
-        kinds[5] = 0xff;
-        kinds[6] = 2;
-
-        var tables = new RuleTables(
+    // Facts chosen against the original's rules (the log's handover counts low here, coal counts against resource 1), so a rule that
+    // derives a fact from a good's code, not from its entry, reads a wrong value.
+    static RuleTables WithGoods() =>
+        new(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
-            goodKinds: kinds
+            goods: new ContentCatalog([
+                new GoodEntry
+                {
+                    Name = "log",
+                    OriginalCode = 7,
+                    Request = new GoodClass { Class = 2, Word = RequestWord.Second },
+                    Counter = FillCounter.Low,
+                    HandoverCounter = FillCounter.Low,
+                    CountsAgainstResource1 = true,
+                    TransportRank = 4,
+                },
+                new GoodEntry
+                {
+                    Name = "ai-token",
+                    Counter = FillCounter.None,
+                    HandoverCounter = FillCounter.High,
+                    CountsAgainstResource1 = false,
+                    TransportRank = 9,
+                },
+                new GoodEntry
+                {
+                    Name = "coal",
+                    OriginalCode = 13,
+                    Counter = FillCounter.High,
+                    HandoverCounter = FillCounter.Low,
+                    CountsAgainstResource1 = false,
+                    TransportRank = 1,
+                },
+            ])
         );
 
-        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(new Good { Code = 3 }));
-        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(new Good { Code = 4 }));
-        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Code = 5 }));
-        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Code = 6 }));
+    [TestMethod]
+    public void TheTransportPriorityIsTheRankOfTheGoodsEntryAndZeroForNoGoodAndForAGoodWithNoEntry()
+    {
+        var tables = WithGoods();
+
+        Assert.AreEqual(4, tables.TransportPriority(Good.Log));
+        Assert.AreEqual(9, tables.TransportPriority(new Good { Code = 40, Name = "ai-token" }));
+        Assert.AreEqual(0, tables.TransportPriority(Good.None));
+        Assert.AreEqual(0, tables.TransportPriority(Good.Plank));
     }
 
     [TestMethod]
-    public void ATransportPriorityIsOnlyDefinedForTheGoodsOneTo26()
+    public void TheClassOfAGoodIsTheRequestOfItsEntryAndNullForAGoodForStorage()
     {
-        var ranks = new byte[RuleTables.Goods];
-        ranks[0] = 26;
-        ranks[25] = 1;
+        var tables = WithGoods();
 
-        var tables = TestProgram.Made(ranks);
+        Assert.AreEqual(new GoodClass { Class = 2, Word = RequestWord.Second }, tables.ClassOfGood(Good.Log));
+        Assert.IsNull(tables.ClassOfGood(new Good { Code = 13 }), "an entry with no request goes to storage at once");
+        Assert.IsNull(tables.ClassOfGood(Good.Plank), "a good with no entry goes to storage at once");
+    }
 
-        Assert.AreEqual(26, tables.TransportPriority(new Good { Code = 1 }));
-        Assert.AreEqual(1, tables.TransportPriority(new Good { Code = 26 }));
-        Assert.AreEqual(0, tables.TransportPriority(new Good { Code = 0 }));
-        Assert.AreEqual(0, tables.TransportPriority(new Good { Code = 27 }));
+    [TestMethod]
+    public void ALostGoodCountsAgainstTheByteItsEntryNames()
+    {
+        var tables = WithGoods();
+
+        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(Good.Log));
+        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(new Good { Code = 13 }));
+        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Code = 40, Name = "ai-token" }));
+    }
+
+    [TestMethod]
+    public void TheHandoverFillsTheCounterOfTheGoodsEntryWhateverItsCode()
+    {
+        var tables = WithGoods();
+
+        Assert.AreEqual(FillCounter.Low, tables.HandoverCounterOf(Good.Log), "the original's rule would say high");
+        Assert.AreEqual(FillCounter.Low, tables.HandoverCounterOf(new Good { Code = 13 }));
+        Assert.AreEqual(FillCounter.High, tables.HandoverCounterOf(new Good { Code = 40, Name = "ai-token" }));
+    }
+
+    [TestMethod]
+    public void ALostGoodCountsAgainstResource1WhereItsEntryStatesIt()
+    {
+        var tables = WithGoods();
+
+        Assert.IsTrue(tables.CountsAgainstResource1(Good.Log), "the original's rule would say no");
+        Assert.IsFalse(tables.CountsAgainstResource1(new Good { Code = 14 }), "the original's rule would say yes");
+        Assert.IsFalse(tables.CountsAgainstResource1(Good.None));
     }
 
     [TestMethod]

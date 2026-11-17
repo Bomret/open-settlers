@@ -100,11 +100,11 @@ public sealed class LayoutSettlersTests
             [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             scanWindows ?? [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
-            transportPriorities: transportPriorities,
             buildingSizes: buildingSizes,
             buildingNeeds: buildingNeeds,
-            goodKinds: goodKinds ?? KindsOf(goodClasses),
-            goodClasses: goodClasses,
+            goods: goodKinds is null && goodClasses is null && transportPriorities is null
+                ? null
+                : TestCatalog.Of(transportPriorities, goodClasses, goodKinds ?? KindsOf(goodClasses)),
             distribution: distribution,
             plankRankBase: plankRankBase,
             millRankBase: millRankBase,
@@ -129,7 +129,7 @@ public sealed class LayoutSettlersTests
             :
             [
                 .. classes.Select(asked => asked is { } c ? (byte)(c.Word == RequestWord.First ? 0 : 1) : (byte)0xff),
-                .. new byte[RuleTables.GoodKindCount - classes.Length],
+                .. new byte[TestCatalog.Slots - classes.Length],
             ];
 
     static Game Applied(string extra, string objects = "[]")

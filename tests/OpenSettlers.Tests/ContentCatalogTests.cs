@@ -29,13 +29,25 @@ public sealed class ContentCatalogTests
     [TestMethod]
     public void TheCatalogOrdersItsGoodsByStableNameWhateverOrderTheSourceGives()
     {
-        GoodEntry[] entries = [Entry("plank", 1), Entry("ai-token", 2), Entry("log", 3), Entry("Zed".ToLowerInvariant(), 4)];
+        GoodEntry[] entries =
+        [
+            Entry("plank", 1),
+            Entry("ai-token", 2),
+            Entry("log", 3),
+            Entry("Zed".ToLowerInvariant(), 4),
+        ];
 
         var forward = new ContentCatalog(entries);
         var backward = new ContentCatalog(entries.Reverse());
 
-        CollectionAssert.AreEqual(new[] { "ai-token", "log", "plank", "zed" }, forward.Goods.Select(good => good.Name).ToArray());
-        CollectionAssert.AreEqual(forward.Goods.Select(good => good.Name).ToArray(), backward.Goods.Select(good => good.Name).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { "ai-token", "log", "plank", "zed" },
+            forward.Goods.Select(good => good.Name).ToArray()
+        );
+        CollectionAssert.AreEqual(
+            forward.Goods.Select(good => good.Name).ToArray(),
+            backward.Goods.Select(good => good.Name).ToArray()
+        );
     }
 
     [TestMethod]
@@ -43,13 +55,18 @@ public sealed class ContentCatalogTests
     {
         var catalog = new ContentCatalog([Entry("iron-ore", 1), Entry("iron", 2), Entry("iron2", 3)]);
 
-        CollectionAssert.AreEqual(new[] { "iron", "iron-ore", "iron2" }, catalog.Goods.Select(good => good.Name).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { "iron", "iron-ore", "iron2" },
+            catalog.Goods.Select(good => good.Name).ToArray()
+        );
     }
 
     [TestMethod]
     public void TwoGoodsWithOneStableNameAreRefusedNamingTheGood()
     {
-        var error = Assert.ThrowsExactly<ArgumentException>(() => new ContentCatalog([Entry("log", 1), Entry("log", 2)]));
+        var error = Assert.ThrowsExactly<ArgumentException>(() =>
+            new ContentCatalog([Entry("log", 1), Entry("log", 2)])
+        );
 
         StringAssert.Contains(error.Message, "log");
         StringAssert.Contains(error.Message, "stable name");
@@ -58,8 +75,8 @@ public sealed class ContentCatalogTests
     [TestMethod]
     public void TwoGoodsWithOneOriginalCodeAreRefusedNamingTheGood()
     {
-        var error = Assert.ThrowsExactly<ArgumentException>(
-            () => new ContentCatalog([Entry("log", 1, code: 7), Entry("plank", 2, code: 7)])
+        var error = Assert.ThrowsExactly<ArgumentException>(() =>
+            new ContentCatalog([Entry("log", 1, code: 7), Entry("plank", 2, code: 7)])
         );
 
         StringAssert.Contains(error.Message, "plank");
@@ -83,7 +100,9 @@ public sealed class ContentCatalogTests
     [TestMethod]
     public void TwoGoodsWithOneTransportRankAreRefusedNamingTheGood()
     {
-        var error = Assert.ThrowsExactly<ArgumentException>(() => new ContentCatalog([Entry("log", 5), Entry("plank", 5)]));
+        var error = Assert.ThrowsExactly<ArgumentException>(() =>
+            new ContentCatalog([Entry("log", 5), Entry("plank", 5)])
+        );
 
         StringAssert.Contains(error.Message, "plank");
         StringAssert.Contains(error.Message, "transport rank");
@@ -107,7 +126,9 @@ public sealed class ContentCatalogTests
     {
         var request = new GoodClass { Class = requestClass, Word = RequestWord.First };
 
-        var error = Assert.ThrowsExactly<ArgumentException>(() => new ContentCatalog([Entry("log", 1, request: request)]));
+        var error = Assert.ThrowsExactly<ArgumentException>(() =>
+            new ContentCatalog([Entry("log", 1, request: request)])
+        );
 
         StringAssert.Contains(error.Message, "log");
         StringAssert.Contains(error.Message, "request class");
@@ -116,12 +137,10 @@ public sealed class ContentCatalogTests
     [TestMethod]
     public void AClassOfZeroToSevenFitsEitherRequestWord()
     {
-        var catalog = new ContentCatalog(
-            [
-                Entry("log", 1, request: new GoodClass { Class = 0, Word = RequestWord.First }),
-                Entry("plank", 2, request: new GoodClass { Class = 7, Word = RequestWord.Second }),
-            ]
-        );
+        var catalog = new ContentCatalog([
+            Entry("log", 1, request: new GoodClass { Class = 0, Word = RequestWord.First }),
+            Entry("plank", 2, request: new GoodClass { Class = 7, Word = RequestWord.Second }),
+        ]);
 
         Assert.AreEqual(2, catalog.Goods.Length);
     }
@@ -132,7 +151,11 @@ public sealed class ContentCatalogTests
         var catalog = new ContentCatalog([Entry("log", 1, code: 7), Entry("ai-token", 2)]);
 
         Assert.AreEqual("log", catalog.EntryOf(new Good { Code = 7, Name = "log" })!.Name);
-        Assert.AreEqual("log", catalog.EntryOf(new Good { Code = 7, Name = "made-up" })!.Name, "by the code where the name is unknown");
+        Assert.AreEqual(
+            "log",
+            catalog.EntryOf(new Good { Code = 7, Name = "made-up" })!.Name,
+            "by the code where the name is unknown"
+        );
         Assert.AreEqual("log", catalog.EntryOf(new Good { Code = 7 })!.Name);
         Assert.AreEqual("ai-token", catalog.EntryOf(new Good { Code = 99, Name = "ai-token" })!.Name);
         Assert.IsNull(catalog.EntryOf(new Good { Code = 99 }));

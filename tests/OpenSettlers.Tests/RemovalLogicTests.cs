@@ -20,7 +20,7 @@ public sealed class RemovalLogicTests
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         classes[2] = 4;
-        var kinds = Enumerable.Repeat((byte)0xff, RuleTables.GoodKindCount).ToArray();
+        var kinds = Enumerable.Repeat((byte)0xff, TestCatalog.Slots).ToArray();
         kinds[WoodcutterRules.GoodLog] = 1;
 
         return new RuleTables(
@@ -35,9 +35,8 @@ public sealed class RemovalLogicTests
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
             [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            goodKinds: kinds,
             roadCapacities: [.. Enumerable.Repeat(capacity, RuleTables.RoadCapacityCount)],
-            transportPriorities: transportPriorities
+            goods: TestCatalog.Of(transportPriorities, kinds: kinds)
         );
     }
 

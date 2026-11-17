@@ -107,10 +107,13 @@ public sealed partial class OpenSettlersRuleTablesTests
         Assert.IsFalse(made.DoorSpeeds.SequenceEqual(empty.DoorSpeeds), "door speeds");
         Assert.IsFalse(made.ScanWindows.SequenceEqual(empty.ScanWindows), "scan windows");
         Assert.IsFalse(made.Figures.FrameRows.SequenceEqual(empty.Figures.FrameRows), "frame rows");
-        Assert.IsFalse(made.GoodKinds.SequenceEqual(empty.GoodKinds), "good kinds");
+        Assert.AreEqual(0, empty.Catalog.Goods.Length, "no goods by default");
+        Assert.AreEqual(26, made.Catalog.Goods.Length, "goods");
+        Assert.IsTrue(made.Catalog.Goods.All(good => good.OriginalCode is null), "no original codes");
+        Assert.AreEqual(FillCounter.High, made.FillCounterOf(Good.Log), "good kinds");
         Assert.IsFalse(made.RoadCapacities.SequenceEqual(empty.RoadCapacities), "road capacities");
         Assert.IsFalse(made.WalkRows.SequenceEqual(empty.WalkRows), "walk rows");
-        Assert.IsFalse(made.TransportPriorities.SequenceEqual(empty.TransportPriorities), "transport priorities");
+        Assert.AreNotEqual(0, made.TransportPriority(Good.Log), "transport priorities");
         Assert.IsFalse(made.BuildingSizes.SequenceEqual(empty.BuildingSizes), "building sizes");
         Assert.IsFalse(made.BuildingNeedsTable.SequenceEqual(empty.BuildingNeedsTable), "building needs");
         Assert.IsNotNull(made.ClassOfGood(Good.Plank), "good classes");
@@ -160,20 +163,51 @@ public sealed partial class OpenSettlersRuleTablesTests
     }
 
     [TestMethod]
-    public void TheCountsOfEveryGoodAgreeWithTheCarriersHandoverRule()
+    public void TheCountsOfEveryGoodAgreeWithItsHandoverCounter()
     {
         var tables = Checked();
 
-        foreach (var code in Enumerable.Range(1, RuleTables.Goods))
+        foreach (var entry in tables.Catalog.Goods)
         {
-            var good = new Good { Code = code };
+            var good = new Good { Code = 1, Name = entry.Name };
+
+            Assert.AreEqual(entry.HandoverCounter, tables.FillCounterOf(good), $"the counts of {entry.Name}");
+        }
+    }
+
+    // The handover counter and resource-1 counting the basic set plays with, as the file states them; the values are the ones the
+    // domain derived from the good's number before the file stated them.
+    [TestMethod]
+    public void TheFileStatesTheHandoverCounterAndResource1CountingOfEveryGood()
+    {
+        var tables = Checked();
+        var low = new[] { "fish", "pig", "meat", "grain", "flour", "bread", "plank", "coal" };
+
+        Assert.AreEqual(26, tables.Catalog.Goods.Length);
+        foreach (var entry in tables.Catalog.Goods)
+        {
+            var good = new Good { Code = 1, Name = entry.Name };
 
             Assert.AreEqual(
-                good.FillsHigh ? FillCounter.High : FillCounter.Low,
-                tables.FillCounterOf(good),
-                $"the counts of good {code}"
+                low.Contains(entry.Name) ? FillCounter.Low : FillCounter.High,
+                tables.HandoverCounterOf(good),
+                $"the handover of {entry.Name}"
+            );
+            Assert.AreEqual(
+                entry.Name is "gold-ore" or "gold",
+                tables.CountsAgainstResource1(good),
+                $"resource 1 counting of {entry.Name}"
             );
         }
+    }
+
+    [TestMethod]
+    public void TheCatalogOfTheFilesHoldsGoodsWithNoOriginalCodeInOrdinalOrderOfTheirNames()
+    {
+        var names = Checked().Catalog.Goods.Select(entry => entry.Name).ToArray();
+
+        CollectionAssert.AreEqual(names.Order(StringComparer.Ordinal).ToArray(), names);
+        Assert.IsTrue(Checked().Catalog.Goods.All(entry => entry.OriginalCode is null));
     }
 
     [GeneratedRegex(@"\.Get<(\w+)>\(new (\w+)\(\)\)")]
@@ -362,6 +396,42 @@ public sealed partial class OpenSettlersRuleTablesTests
     public void TransportPrioritiesThatAreNotEachRankOnceAreRefused()
     {
         Refuses(Goods, "\"priority\": 26,", "\"priority\": 25,", "goods.stone.priority", "rank 25");
+    }
+
+    [TestMethod]
+    public void AHandoverCounterOtherThanLowOrHighIsRefused()
+    {
+        Refuses(
+            Goods,
+            "\"fish\": { \"counts\": \"low\", \"handover\": \"low\",",
+            "\"fish\": { \"counts\": \"low\", \"handover\": \"none\",",
+            "goods.fish.handover",
+            "handover counter"
+        );
+    }
+
+    [TestMethod]
+    public void AResource1CountingOtherThanCountsOrNoneIsRefused()
+    {
+        Refuses(
+            Goods,
+            "\"fish\": { \"counts\": \"low\", \"handover\": \"low\", \"resource1\": \"none\",",
+            "\"fish\": { \"counts\": \"low\", \"handover\": \"low\", \"resource1\": \"yes\",",
+            "goods.fish.resource1",
+            "resource 1 counting"
+        );
+    }
+
+    [TestMethod]
+    public void AGoodWithNoHandoverKeyIsRefused()
+    {
+        Refuses(
+            Goods,
+            "\"fish\": { \"counts\": \"low\", \"handover\": \"low\", ",
+            "\"fish\": { \"counts\": \"low\", ",
+            "goods.fish.handover",
+            "missing"
+        );
     }
 
     [TestMethod]

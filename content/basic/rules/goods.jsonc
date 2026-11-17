@@ -2,42 +2,45 @@
 // a storage hands goods out, the castle's start stock, and the ranks of the requests. Every value is the project's own
 // invention, never taken from the original game (INV-0001, ADR 0018); the comment on each line states why.
 {
-  // The 26 goods, each by name, each with all three keys:
-  //   counts   which byte of a building's fill the good counts in: "low", "high", or "none". It must agree with the
-  //            carrier's handover rule, which counts by the good's number: goods 1 to 6 (food and the chain's pig, grain,
-  //            and flour), 8 (plank), and 13 (coal) count low, every other good counts high. A test checks this.
-  //   priority the transport priority, a rank from 1 to 26 that no other good shares; a carrier takes the good of the
-  //            highest rank first. The order: building materials (plank, stone, log), then food, then grain, flour, and
-  //            pigs for the chain, then tools, then metals and ore, and last boats and weapons, which nothing uses yet.
-  //   request  "storage" for a good that goes to storage at once, or { "class": 0 to 7, "word": "first" | "second" }
-  //            for a good a flag asks for: the class names what is asked, the word is the request word that holds it.
+  // The 26 goods, each by name, each with all five keys:
+  //   counts    which byte of a building's fill a good on its way counts in: "low", "high", or "none".
+  //   handover  which byte of a building's fill the carrier's handover of the good fills: "low" or "high". It is chosen to
+  //             agree with "counts", so a good counts in the byte its delivery fills: food and the chain's pig, grain, and
+  //             flour, plank, and coal count low, every other good counts high. A test checks the agreement.
+  //   resource1 whether a lost good counts against the total of resource 1: "counts" or "none". Only gold-ore and gold
+  //             count: the set's own rule, chosen so that a lost good lowers the total as it did before the key existed.
+  //   priority  the transport priority, a rank from 1 up that no other good shares; a carrier takes the good of the
+  //             highest rank first. The order: building materials (plank, stone, log), then food, then grain, flour, and
+  //             pigs for the chain, then tools, then metals and ore, and last boats and weapons, which nothing uses yet.
+  //   request   "storage" for a good that goes to storage at once, or { "class": 0 to 7, "word": "first" | "second" }
+  //             for a good a flag asks for: the class names what is asked, the word is the request word that holds it.
   "goods": {
-    "fish": { "counts": "low", "priority": 21, "request": "storage" }, // Food: stored for later; no building asks for it.
-    "pig": { "counts": "low", "priority": 18, "request": { "class": 6, "word": "first" } }, // The butcher asks for pigs.
-    "meat": { "counts": "low", "priority": 22, "request": "storage" }, // Food: stored for later; no building asks for it.
-    "grain": { "counts": "low", "priority": 19, "request": { "class": 4, "word": "first" } }, // The mill and the pig farm ask.
-    "flour": { "counts": "low", "priority": 20, "request": { "class": 5, "word": "first" } }, // The baker asks for flour.
-    "bread": { "counts": "low", "priority": 23, "request": "storage" }, // Food: stored for later; no building asks for it.
-    "log": { "counts": "high", "priority": 24, "request": { "class": 1, "word": "first" } }, // The sawmill asks for logs.
-    "plank": { "counts": "low", "priority": 26, "request": { "class": 2, "word": "first" } }, // Building sites ask: the most wanted good.
-    "boat": { "counts": "high", "priority": 3, "request": "storage" }, // Nothing builds or uses boats yet.
-    "stone": { "counts": "high", "priority": 25, "request": { "class": 3, "word": "second" } }, // Sites ask in the second word, apart from planks.
-    "iron-ore": { "counts": "high", "priority": 7, "request": "storage" }, // No mine yet: stored.
-    "iron": { "counts": "high", "priority": 8, "request": "storage" }, // No smelter yet: stored.
-    "coal": { "counts": "low", "priority": 6, "request": "storage" }, // No mine yet: stored.
-    "gold-ore": { "counts": "high", "priority": 4, "request": "storage" }, // No mine yet: stored.
-    "gold": { "counts": "high", "priority": 5, "request": "storage" }, // No smelter yet: stored.
-    "shovel": { "counts": "high", "priority": 17, "request": "storage" }, // Tools stay in the castle for jobless settlers.
-    "hammer": { "counts": "high", "priority": 16, "request": "storage" }, // Tools stay in the castle for jobless settlers.
-    "fishing-rod": { "counts": "high", "priority": 12, "request": "storage" }, // Tools stay in the castle for jobless settlers.
-    "butcher-knife": { "counts": "high", "priority": 10, "request": "storage" }, // Tools stay in the castle for jobless settlers.
-    "scythe": { "counts": "high", "priority": 11, "request": "storage" }, // Tools stay in the castle for jobless settlers.
-    "hatchet": { "counts": "high", "priority": 15, "request": "storage" }, // Tools stay in the castle for jobless settlers.
-    "saw": { "counts": "high", "priority": 14, "request": "storage" }, // Tools stay in the castle for jobless settlers.
-    "pickaxe": { "counts": "high", "priority": 13, "request": "storage" }, // Tools stay in the castle for jobless settlers.
-    "pliers": { "counts": "high", "priority": 9, "request": "storage" }, // Tools stay in the castle for jobless settlers.
-    "sword": { "counts": "high", "priority": 2, "request": "storage" }, // Weapons wait in the castle: least urgent.
-    "shield": { "counts": "high", "priority": 1, "request": "storage" }, // Weapons wait in the castle: least urgent.
+    "fish": { "counts": "low", "handover": "low", "resource1": "none", "priority": 21, "request": "storage" }, // Food: stored for later; no building asks for it.
+    "pig": { "counts": "low", "handover": "low", "resource1": "none", "priority": 18, "request": { "class": 6, "word": "first" } }, // The butcher asks for pigs.
+    "meat": { "counts": "low", "handover": "low", "resource1": "none", "priority": 22, "request": "storage" }, // Food: stored for later; no building asks for it.
+    "grain": { "counts": "low", "handover": "low", "resource1": "none", "priority": 19, "request": { "class": 4, "word": "first" } }, // The mill and the pig farm ask.
+    "flour": { "counts": "low", "handover": "low", "resource1": "none", "priority": 20, "request": { "class": 5, "word": "first" } }, // The baker asks for flour.
+    "bread": { "counts": "low", "handover": "low", "resource1": "none", "priority": 23, "request": "storage" }, // Food: stored for later; no building asks for it.
+    "log": { "counts": "high", "handover": "high", "resource1": "none", "priority": 24, "request": { "class": 1, "word": "first" } }, // The sawmill asks for logs.
+    "plank": { "counts": "low", "handover": "low", "resource1": "none", "priority": 26, "request": { "class": 2, "word": "first" } }, // Building sites ask: the most wanted good.
+    "boat": { "counts": "high", "handover": "high", "resource1": "none", "priority": 3, "request": "storage" }, // Nothing builds or uses boats yet.
+    "stone": { "counts": "high", "handover": "high", "resource1": "none", "priority": 25, "request": { "class": 3, "word": "second" } }, // Sites ask in the second word, apart from planks.
+    "iron-ore": { "counts": "high", "handover": "high", "resource1": "none", "priority": 7, "request": "storage" }, // No mine yet: stored.
+    "iron": { "counts": "high", "handover": "high", "resource1": "none", "priority": 8, "request": "storage" }, // No smelter yet: stored.
+    "coal": { "counts": "low", "handover": "low", "resource1": "none", "priority": 6, "request": "storage" }, // No mine yet: stored.
+    "gold-ore": { "counts": "high", "handover": "high", "resource1": "counts", "priority": 4, "request": "storage" }, // No mine yet: stored.
+    "gold": { "counts": "high", "handover": "high", "resource1": "counts", "priority": 5, "request": "storage" }, // No smelter yet: stored.
+    "shovel": { "counts": "high", "handover": "high", "resource1": "none", "priority": 17, "request": "storage" }, // Tools stay in the castle for jobless settlers.
+    "hammer": { "counts": "high", "handover": "high", "resource1": "none", "priority": 16, "request": "storage" }, // Tools stay in the castle for jobless settlers.
+    "fishing-rod": { "counts": "high", "handover": "high", "resource1": "none", "priority": 12, "request": "storage" }, // Tools stay in the castle for jobless settlers.
+    "butcher-knife": { "counts": "high", "handover": "high", "resource1": "none", "priority": 10, "request": "storage" }, // Tools stay in the castle for jobless settlers.
+    "scythe": { "counts": "high", "handover": "high", "resource1": "none", "priority": 11, "request": "storage" }, // Tools stay in the castle for jobless settlers.
+    "hatchet": { "counts": "high", "handover": "high", "resource1": "none", "priority": 15, "request": "storage" }, // Tools stay in the castle for jobless settlers.
+    "saw": { "counts": "high", "handover": "high", "resource1": "none", "priority": 14, "request": "storage" }, // Tools stay in the castle for jobless settlers.
+    "pickaxe": { "counts": "high", "handover": "high", "resource1": "none", "priority": 13, "request": "storage" }, // Tools stay in the castle for jobless settlers.
+    "pliers": { "counts": "high", "handover": "high", "resource1": "none", "priority": 9, "request": "storage" }, // Tools stay in the castle for jobless settlers.
+    "sword": { "counts": "high", "handover": "high", "resource1": "none", "priority": 2, "request": "storage" }, // Weapons wait in the castle: least urgent.
+    "shield": { "counts": "high", "handover": "high", "resource1": "none", "priority": 1, "request": "storage" }, // Weapons wait in the castle: least urgent.
   },
 
   // The order a storage serves requests in, as three lists of steps. A step names a request and the goods that answer

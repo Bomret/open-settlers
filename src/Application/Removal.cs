@@ -544,7 +544,7 @@ public sealed class Removal(
     // building, where the original reads a null pointer.
     void CountLost(Good good, int? destination)
     {
-        if (good.CountsAgainstResource1)
+        if (movement.Tables.CountsAgainstResource1(good))
         {
             Map.Resource1Total--;
         }

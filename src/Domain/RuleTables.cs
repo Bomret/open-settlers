@@ -46,9 +46,6 @@ public sealed class RuleTables
     /// </summary>
     public const int BuildingTypeCount = 24;
 
-    /// <summary>The number of goods of the class table at <c>0x464117</c> (good numbers are 5 bits).</summary>
-    public const int GoodClassCount = 32;
-
     /// <summary>The number of rows of the figure bases (the figure word's high byte, 0 to 0x88).</summary>
     public const int FigureBaseRowCount = 137;
 
@@ -67,9 +64,6 @@ public sealed class RuleTables
     /// <summary>The number of offsets of the waiting carriers.</summary>
     public const int IdleOffsetCount = 128;
 
-    /// <summary>The number of goods the good kind table covers (good numbers are 5 bits).</summary>
-    public const int GoodKindCount = 32;
-
     /// <summary>The number of length classes of a road.</summary>
     public const int RoadCapacityCount = 8;
 
@@ -80,15 +74,12 @@ public sealed class RuleTables
     public const int WalkRowSize = 8;
 
     readonly ImmutableArray<ObjectClass> _classes;
-    readonly ImmutableArray<byte> _goodKinds;
     readonly ImmutableArray<byte> _roadCapacities;
     readonly ImmutableArray<byte> _walkRows;
-    readonly ImmutableArray<byte> _transportPriorities;
     readonly ImmutableArray<byte> _doorSpeeds;
     readonly ImmutableArray<ushort> _scanWindows;
     readonly ImmutableArray<byte> _buildingSizes;
     readonly ImmutableArray<byte> _buildingNeeds;
-    readonly ImmutableArray<GoodClass?> _goodClasses;
     readonly ImmutableArray<ImmutableArray<DistributionStep>> _distribution;
     readonly ImmutableArray<WorkerRequest?> _workers;
     readonly ImmutableArray<ushort> _materialOrder;
@@ -109,23 +100,21 @@ public sealed class RuleTables
         short[]? figureOffsets = null,
         byte[]? walkRows = null,
         short[]? carriedFigures = null,
-        byte[]? goodKinds = null,
         byte[]? roadCapacities = null,
-        byte[]? transportPriorities = null,
         sbyte[]? frameRows = null,
         short[]? idlePhases = null,
         short[]? idleFigures = null,
         sbyte[]? idleOffsets = null,
         byte[]? buildingSizes = null,
         byte[]? buildingNeeds = null,
-        GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0,
         byte millRankBase = 0,
         WorkerRequest?[]? workers = null,
         ushort[]? materialOrder = null,
         ushort[]? blowSteps = null,
-        IEnumerable<(Job Job, object Data)>? jobData = null
+        IEnumerable<(Job Job, object Data)>? jobData = null,
+        ContentCatalog? goods = null
     )
     {
         if (
@@ -144,9 +133,9 @@ public sealed class RuleTables
         _doorSpeeds = [.. doorSpeeds ?? new byte[DoorSpeedCount]];
         _scanWindows = [.. scanWindows ?? new ushort[ScanWindowCount]];
         _walkRows = [.. walkRows ?? new byte[WalkRowCount * WalkRowSize]];
-        _goodKinds = [.. goodKinds ?? new byte[GoodKindCount]];
         _roadCapacities = [.. roadCapacities ?? new byte[RoadCapacityCount]];
-        _transportPriorities = [.. transportPriorities ?? new byte[Goods]];
+        // stand-in: a catalog a test does not give holds no good, so every good reads as the stand-in facts of the accessors below.
+        Catalog = goods ?? ContentCatalog.Empty;
         Figures = new FigureTables(
             figureBases,
             figureOffsets,
@@ -159,8 +148,7 @@ public sealed class RuleTables
         // stand-in: a table a test does not give makes every type small, so a test that places a building needs no table.
         _buildingSizes = [.. buildingSizes ?? [.. Enumerable.Repeat((byte)1, BuildingTypeCount)]];
         _buildingNeeds = [.. buildingNeeds ?? new byte[2 * BuildingTypeCount]];
-        // stand-in: a table a test does not give sends every good to storage at once, and no storage hands any good out.
-        _goodClasses = [.. goodClasses ?? new GoodClass?[GoodClassCount]];
+        // stand-in: a table a test does not give hands no good out.
         _distribution =
         [
             .. (
@@ -217,33 +205,33 @@ public sealed class RuleTables
     /// <summary>The figure tables the settlers are drawn from.</summary>
     public FigureTables Figures { get; }
 
-    /// <summary>The default transport priorities of the goods 1 to 26, as the importer read them (index good - 1).</summary>
-    public ImmutableArray<byte> TransportPriorities => _transportPriorities;
+    /// <summary>
+    /// The goods of the game, one entry each (ADR 0020): the content set's source builds it, and the accessors below read the facts of
+    /// a good from its entry. A good the catalog lacks reads as the stand-in facts the accessors state.
+    /// </summary>
+    public ContentCatalog Catalog { get; }
 
     /// <summary>
-    /// The default transport priority of the good <paramref name="good"/>, 1 to 26: its rank, 1 to 26, each once; the
-    /// carrier's exchange lines up the good of the highest rank next (<c>docs/rules/goods.md</c>). 0 for a number that is no
-    /// good, and for every good where a test needs none.
+    /// The default transport priority of the good <paramref name="good"/>: the rank of its entry, each rank given once; the carrier's
+    /// exchange lines up the good of the highest rank next (<c>docs/rules/goods.md</c>). 0 for no good and for a good the catalog lacks.
     /// </summary>
-    public int TransportPriority(Good good) => good.Code is >= 1 and <= Goods ? _transportPriorities[good.Code - 1] : 0;
-
-    /// <summary>The byte counts of the good kind table as the importer read them.</summary>
-    public ImmutableArray<byte> GoodKinds => _goodKinds;
+    public int TransportPriority(Good good) => Catalog.EntryOf(good)?.TransportRank ?? 0;
 
     /// <summary>
-    /// Which byte of a building's fill a good counts in: the table <c>0x462d6d</c> (<c>docs/rules/removal.md</c>), the one rule for
-    /// every place that counts a good on its way (the request search and the storage's hand-out), counts it back where it is lost
-    /// (<c>0x462ca4</c>, the removal's): the food goods 1 to 6 count in the low byte. The carrier's handover counts the delivery by the
-    /// good's code (<see cref="Good.FillsHigh"/>), which agrees.
-    /// <paramref name="good"/> is a good, its number taken to 0 to 31 (the original masks it with 0x1f).
+    /// Which byte of a building's fill a good counts in on its way: the counter of its entry, the one rule for every place that counts
+    /// a good on its way (the request search and the storage's hand-out) and counts it back where it is lost (<c>docs/rules/removal.md</c>).
+    /// A good the catalog lacks counts in the low byte.
     /// </summary>
-    public FillCounter FillCounterOf(Good good) =>
-        _goodKinds[good.Code & 0x1f] switch
-        {
-            0 => FillCounter.Low,
-            1 => FillCounter.High,
-            _ => FillCounter.None,
-        };
+    public FillCounter FillCounterOf(Good good) => Catalog.EntryOf(good)?.Counter ?? FillCounter.Low;
+
+    /// <summary>
+    /// Which byte of a building's fill the carrier's handover of <paramref name="good"/> counts in: the handover counter of its entry
+    /// (the rule at <c>0x43c4ea</c>, <c>docs/rules/goods.md</c>). A good the catalog lacks counts in the low byte.
+    /// </summary>
+    public FillCounter HandoverCounterOf(Good good) => Catalog.EntryOf(good)?.HandoverCounter ?? FillCounter.Low;
+
+    /// <summary>Whether a lost good of this kind counts against the total of resource 1, as its entry states; false for a good the catalog lacks.</summary>
+    public bool CountsAgainstResource1(Good good) => Catalog.EntryOf(good)?.CountsAgainstResource1 ?? false;
 
     /// <summary>The number of carriers each length class of a road holds at most, as the importer read them.</summary>
     public ImmutableArray<byte> RoadCapacities => _roadCapacities;
@@ -319,9 +307,9 @@ public sealed class RuleTables
 
     /// <summary>
     /// The request a good with no destination looks for (<c>0x464117</c>): its class and the request word of the flags that ask for
-    /// it; null for a good that goes to storage at once. The importer turns the program's table into these values.
+    /// it: the request of its entry; null for a good that goes to storage at once, and for a good the catalog lacks.
     /// </summary>
-    public GoodClass? ClassOfGood(Good good) => _goodClasses[good.Code & 0x1f];
+    public GoodClass? ClassOfGood(Good good) => Catalog.EntryOf(good)?.Request;
 
     /// <summary>
     /// The order a storage serves the requests in, by the draw the phase routine takes at each cycle (<c>0x42965c</c>): the draw taken

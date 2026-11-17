@@ -85,16 +85,6 @@ public readonly record struct Good
     /// <summary>Whether this is no good.</summary>
     public bool IsNone => Code == 0;
 
-    /// <summary>Whether a lost good of this kind counts against the total of resource 1: the goods 14 and 15, the number taken to 0 to 31 (0x462c8d).</summary>
-    public bool CountsAgainstResource1 => (Code & 0x1f) is 0xe or 0xf;
-
-    /// <summary>
-    /// Whether a good counts against the high byte of the fill it is handed into (the castle's): the goods from 9 on except 13, and the
-    /// log (7); every other good counts against the low byte. This is the carrier's handover rule (<c>0x43c4ea</c>), which reads the good's
-    /// code and not the kind table (<see cref="RuleTables.FillCounterOf"/>); the two agree on every good.
-    /// </summary>
-    public bool FillsHigh => Code >= 9 ? Code != 13 : Code == 7;
-
     /// <inheritdoc />
     public override string ToString() => Code.ToString(System.Globalization.CultureInfo.InvariantCulture);
 }
