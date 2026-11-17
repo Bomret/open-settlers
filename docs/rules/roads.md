@@ -252,9 +252,9 @@ objects. For each node, three directions are drawn from the node, the three othe
 
 | Direction | Routine | Mask entry | Strip |
 | --- | --- | --- | --- |
-| 0, east | `0x428008` (called by `0x427d3e`) | 234 plus the height difference | 32 pixels wide, as high as the higher of the two nodes |
-| 1, south-east | `0x428105` (`0x427e3a`) | 243 plus the height difference | 16 pixels wide, from the node's own height |
-| 2, south | `0x4281cc` (`0x427f1f`) | 252 plus the height difference | 16 pixels wide, from the node's own height |
+| 0, east | `0x428008` (called by `0x427d3e` and its second entry `0x427d16`) | 234 plus the height difference | 32 pixels wide, as high as the higher of the two nodes |
+| 1, south-east | `0x428105` (`0x427e3a`, `0x427f1f`) | 243 plus the height difference | 16 pixels wide, from the node's own height |
+| 2, south | `0x4281cc` (`0x427e3a`, `0x427f1f`) | 252 plus the height difference | 16 pixels wide, from the node's own height |
 
 The height difference is the node's height less the other end's (5 bits each). The archive holds the masks for a
 difference of 4 either way (entries 230 to 256, rows 5 to 41 high); a strip beyond that has no mask. The routine takes
@@ -269,15 +269,87 @@ node; south-east: both of the node; south: the upper of the node and the lower o
 road in water); above 7, 300 to 302 are raised by 3 (up to 13) or by 6. A road whose bit is set for a direction the
 passes do not draw (3, 4, 5) is drawn from the node at the other end.
 
-Where no road lies, a pair of neighbors with different owners takes the routines `0x428389`, `0x42846d`, and
-`0x428528`: the borders of the territories (inferred; not drawn). This replaces the reading of
-[Graphics images](graphics-images.md) that the masks 230 to 256 and the textures 300 to 309 are the edges between
-terrains: they are the roads.
+Where no road lies, a pair of neighbors with different owners gets a border post instead ([How a border is
+drawn](#how-a-border-is-drawn)). This replaces the reading of [Graphics images](graphics-images.md) that the masks 230
+to 256 and the textures 300 to 309 are the edges between terrains: they are the roads.
 
 **Inferred:** the position. The strips are placed from the geometry the masks have: an east strip is 32 pixels wide and
 starts at the node's column of pixels; the south-east strip is 16 wide and starts there; the south strip is 16 wide
 and ends there. The vertical placement is the one the routines compute. No run of the program's drawing confirms the
 alignment of the masks with the engine's terrain.
+
+## How a border is drawn
+
+**Status:** confirmed for the pairs, the directions, the slope sum, the ground, and the image; **inferred** for the pixel
+alignment and the order against the terrain.
+
+The territory border is a row of border posts: black and white poles on land and red posts in water
+(`THE SETTLERS - Manual-EN.pdf`, page 27 as printed, page 28 of the file). The program draws a post on an edge between
+two neighbor nodes in the same pass `Render_DrawRoadsAndBorders` (`0x427c09`) that draws the road strips, so every
+object drawn after that pass, a tree, a building, a flag, or a settler, covers it.
+
+**The pairs.** For each node the pass looks at the three directions east, south-east, and south, each toward the
+neighbor in that direction. Where the road bit of that direction is set on the node, the road strip is drawn and no
+post. Where it is clear, the pass compares the owner bits of the two nodes (the top 3 bits of the height byte; the
+owner is the player's number plus 4, or 0 for nobody, [Build sites](build-sites.md)): where they differ, the pass draws
+a post on that edge; where they are equal, nothing. A node nobody owns therefore differs from every player's node, and
+two players' nodes differ from each other. The pass reads the road bit of the drawing node only, the bit of the
+direction it draws (bit 0 east, bit 1 south-east, bit 2 south). Evidence: the owner test, the road bit test, and the
+calls in `0x427d3e` (with its second entry `0x427d16`), `0x427e3a`, and `0x427f1f`.
+
+**The routines.** Each direction has its own routine, called only where the pass found a post:
+
+| Direction | Routine | Called by | x offset | y offset |
+| --- | --- | --- | --- | --- |
+| 0, east | `Render_DrawBorderEast` (`0x428389`) | `0x427d3e` (and `0x427d16`) | 15 | -4 |
+| 1, south-east | `Render_DrawBorderSouthEast` (`0x42846d`) | `0x427e3a`, `0x427f1f` | 7 | 6 |
+| 2, south | `Render_DrawBorderSouth` (`0x428528`) | `0x427e3a`, `0x427f1f` | 7 | 6 |
+
+`0x427e3a` and `0x427f1f` each walk a zigzag down the view and call both the south-east and the south routine, in
+turn; the east routine is called by the east pass alone.
+
+**The slope sum.** Each routine computes the same slope sum as the road strip of its direction: for east, three times
+the height of the east node less the node's own, plus the height of the node north of the node, less that of the node
+south-east of it; for south-east, twice the height of the east node less that of the south node; for south, three
+times the node's height less the south node's, less the height of the west node, plus that of the south-east node.
+Heights are the low 5 bits of the height byte.
+
+**The ground.** Each routine reads the same two terrain nibbles as the road strip of its direction (east: the lower
+nibble of the node and the upper of the north node; south-east: both nibbles of the node; south: the upper nibble of
+the node and the lower of the west node) and keeps the larger.
+
+**The image.** The bands are the border's own, not the road's:
+
+| Slope sum | Image |
+| --- | --- |
+| 2 or more | 610 |
+| -8 to 1 | 611 |
+| below -8 | 612 |
+
+The ground then changes it: below 4 (water) the image is 619, whatever the slope; from 11 to 14 the image is raised
+by 3 (613 to 615); at 15 it is raised by 6 (616 to 618); from 4 to 10 it stays. The three routines carry the same
+bands and the same ground test. The images 610 to 619 are transparent sprites drawn in the palette
+([Graphics images](graphics-images.md)).
+
+**The placement.** Each routine takes the position the pass hands it, moves it up by twice the sum of the two nodes'
+heights (the mean height at 4 pixels per step), and adds the offsets of the table above: x plus 15 for east and plus 7
+for the other two, y minus 4 for east and plus 6 for the other two. It then subtracts the 38 pixels of the program's
+own layout from y, as the road strips do, and draws the sprite there.
+
+**The order.** `Render_DrawRoadsAndBorders` walks the view's window column by column, 16 pixels at a time. Each step
+runs the east pass of one half of the rows (`0x427d16`), the zigzag `0x427e3a`, the east pass of the other half
+(`0x427d3e`), and the zigzag `0x427f1f`. Each post and each strip is drawn as that walk reaches its edge, so a post
+lies over the strips and posts drawn before it.
+
+**Inferred:** the pixel alignment and the order against the terrain.
+
+- The alignment. Read with the screen layout of [Graphics images](graphics-images.md), the position the east pass
+  hands its routine is the node's own, and the zigzags hand the column of the upper node. The anchor of a post is then
+  one pixel left of the middle of its edge and 4 pixels above it, at the edge's mean height. The sprite's own header
+  offsets come on top. No run of the program's drawing confirms the alignment with the engine's terrain.
+- The order against the terrain. `Render_RedrawViewBase` (`0x427133`) calls `Render_DrawRoadsAndBorders` after
+  `0x427360`, `0x427375`, and `0x427507`. The reading that those three draw the whole terrain of the view first, so that
+  no terrain covers a post, is not confirmed: their roles are not recovered.
 
 ## Emulated
 

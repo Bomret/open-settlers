@@ -764,17 +764,23 @@ How the player draws a road between two flags, what the commit writes, and how a
 | `0x463ef9` | `Carrier_DismissWaiting` | Sends the carriers that wait on a node (states `0x42`, `0x43`, `0x45`) home as state `0x44`. | confirmed | game | Called by `0x463204` and `0x463a40`. |
 | `0x464008` | `Carrier_TakeWaiting` | A piece of the flag pass that finds a carrier waiting on a node and gives it state `0x45`. | inferred | game | Called by `0x463a40`. |
 | `0x444b29` | `Road_WalkEnds` | Finds the two directions of a node's road and runs `0x444c61` on each: a walk of the road to its ends, which the cursor update calls for a road under the cursor when a start-up option is set. | inferred | game | Called by `Road_UpdateCursor` and `Road_TakeDown`. |
-| `0x427c09` | `Render_DrawRoadsAndBorders` | For each pair of rows, the passes that draw the roads (and the territory borders where no road lies) of the view's window of nodes. | confirmed | game | Called at `0x427133`. |
-| `0x428008` | `Render_DrawRoadEast` | Draws the strip of the road that leaves a node east: the mask 234 plus the height difference, the road texture from the slope and the terrain. | confirmed | game | Called by `0x427d3e`. |
-| `0x428105` | `Render_DrawRoadSouthEast` | The same for the road leaving south-east: the mask 243 plus the height difference. | confirmed | game | Called by `0x427e3a`. |
-| `0x4281cc` | `Render_DrawRoadSouth` | The same for the road leaving south: the mask 252 plus the height difference. | confirmed | game | Called by `0x427f1f`. |
-| `0x428389` | — | Where no road lies and the owners of two neighbors differ, draws the border between them (east); with `0x42846d` and `0x428528` for the other two directions. | inferred | game | Called by `0x427d3e`, `0x427e3a`, `0x427f1f`. |
+| `0x427c09` | `Render_DrawRoadsAndBorders` | Walks the view's window of nodes column by column, 16 pixels a step, and runs the passes that draw the roads and, where no road lies and the owners differ, the border posts: `0x427d16`, `0x427e3a`, `0x427d3e`, `0x427f1f`. See [Roads](roads.md#how-a-border-is-drawn). | confirmed | game | Called at `0x427133`. |
+| `0x428008` | `Render_DrawRoadEast` | Draws the strip of the road that leaves a node east: the mask 234 plus the height difference, the road texture from the slope and the terrain. | confirmed | game | Called by `0x427d3e` (also reached from `0x427d16`). |
+| `0x428105` | `Render_DrawRoadSouthEast` | The same for the road leaving south-east: the mask 243 plus the height difference. | confirmed | game | Called by `0x427e3a` and `0x427f1f`. |
+| `0x4281cc` | `Render_DrawRoadSouth` | The same for the road leaving south: the mask 252 plus the height difference. | confirmed | game | Called by `0x427e3a` and `0x427f1f`. |
+| `0x427d16` | — | A second entry of the east pass of `0x427d3e`: sets up the other half of the rows and runs the same loop, with the road strip or the border post of each east edge. | confirmed | game | Called by `Render_DrawRoadsAndBorders`. |
+| `0x427d3e` | — | The east pass over half of the rows of one column: per node, `Render_DrawRoadEast` where the east road bit is set, else `Render_DrawBorderEast` where the owner bits of the node and its east neighbor differ. | confirmed | game | Called by `Render_DrawRoadsAndBorders`. |
+| `0x427e3a` | — | A zigzag pass down one column: per step the south-east and the south edge in turn, starting with south-east, each with its road strip where the road bit is set, else its border post where the owner bits differ. | confirmed | game | Called by `Render_DrawRoadsAndBorders`. |
+| `0x427f1f` | — | The same zigzag pass, starting with south. | confirmed | game | Called by `Render_DrawRoadsAndBorders`. |
+| `0x428389` | `Render_DrawBorderEast` | Draws the border post on the east edge of a node: the image 610 to 612 by the border's slope sum, raised by 3 or 6 by the ground, or 619 in water, placed at the edge's mean height. | confirmed | game | Called by `0x427d3e` (also reached from `0x427d16`). See [Roads](roads.md#how-a-border-is-drawn). |
+| `0x42846d` | `Render_DrawBorderSouthEast` | The same for the south-east edge. | confirmed | game | Called by `0x427e3a` and `0x427f1f`. |
+| `0x428528` | `Render_DrawBorderSouth` | The same for the south edge. | confirmed | game | Called by `0x427e3a` and `0x427f1f`. |
 | `0x444d24` | — | A step of the road walk: moves to the next node and returns 0 at an object code 1, else finds the road bits (`& 0x3f`) to go on. | inferred | game | Called by `0x444c74`; calls `0x444c61`. |
 | `0x462acd` | `Road_CarrierCapacities` | Data: 8 bytes, the number of carriers a road of each length class (`0x4454e7`) holds at most. | confirmed | game | Read at `0x46252a` (`Flag_TakeDown`), `0x465189` (`Flag_VisitRoads`), `0x466928`; ported as `RoadCapacities`. |
 
 Sites:
 
-- `0x427dc7`, `0x427eb3`, `0x427f98`: the calls of `Render_DrawRoadEast`, `Render_DrawRoadSouthEast`, and `Render_DrawRoadSouth` (in `0x427d3e`, `0x427e3a`, and `0x427f1f`).
+- `0x427dc7`, `0x427eb3`, `0x427f98`: calls of `Render_DrawRoadEast`, `Render_DrawRoadSouthEast`, and `Render_DrawRoadSouth` (in `0x427d3e`, `0x427e3a`, and `0x427f1f`); each zigzag pass also calls the other of the two diagonal routines.
 - `0x44426c`, `0x444491`: the calls of `Flag_Place` in `Road_ClickStep` (a click on a road node, a click on an empty node, each with bit 3 of the view's flag byte set); `0x444261`: the call of `Road_WalkEnds` before the first, which refuses the placement where the node's road leads to no flag (the road being drawn).
 - `0x444079`, `0x44439b`, `0x444544`, `0x4445b6`, `0x444608`, `0x444657`, `0x4446cb`, `0x4446f6`, `0x444716`, `0x444743`: the sound requests (`Sound_Request`); `0x4445a8`: the call of `0x42f7ea` (in `Road_ClickStep`).
 - `0x46358c`: the walk reaches the flag at the road's end and turns the direction round (direction minus 3, modulo 6) for the flag's side; code after the computed jump at `0x463308` that Ghidra left outside the function (in `Road_TakeDownWalk`).
@@ -1173,10 +1179,16 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x427b38` | `Render_TriangleVariantsLower` | confirmed | Graphics images |
 | `0x427b89` | `Render_TerrainTextures` | confirmed | Graphics images |
 | `0x427c09` | `Render_DrawRoadsAndBorders` | confirmed | Roads |
+| `0x427d16` | — | confirmed | Roads |
+| `0x427d3e` | — | confirmed | Roads |
+| `0x427e3a` | — | confirmed | Roads |
+| `0x427f1f` | — | confirmed | Roads |
 | `0x428008` | `Render_DrawRoadEast` | confirmed | Roads |
 | `0x428105` | `Render_DrawRoadSouthEast` | confirmed | Roads |
 | `0x4281cc` | `Render_DrawRoadSouth` | confirmed | Roads |
-| `0x428389` | — | inferred | Roads |
+| `0x428389` | `Render_DrawBorderEast` | confirmed | Roads |
+| `0x42846d` | `Render_DrawBorderSouthEast` | confirmed | Roads |
+| `0x428528` | `Render_DrawBorderSouth` | confirmed | Roads |
 | `0x4286d8` | — | unknown | Simulation |
 | `0x428728` | `Sim_ClearRetryBits` | confirmed | Simulation |
 | `0x428964` | `Sound_RunAmbient` | inferred | Sound |
@@ -1561,7 +1573,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 397 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 343 confirmed, 69 inferred, 51 unknown.
+Coverage: the index names 400 routines of the 513 functions in the dump's game code band and lists 69 more without a name: 350 confirmed, 68 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:
