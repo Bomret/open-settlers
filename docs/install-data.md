@@ -21,9 +21,9 @@ path segment without regard to letter case.
 | `snd/01.SND` to `snd/99.SND` | `SoundKind` | Previews | Asset browser |
 | `snd/music_1.midi` | `MusicKind` | Previews | Asset browser |
 
-Seed info reads only `Siedler1.exe`. The map view and the game view read `Siedler1.exe`, and `loca/SPAD.PA`
-under the History Edition graphics source. The game view also reads entry 2 of `loca/SPAD.PA` under the Open
-Settlers graphics source. The text, sound, and music files are read only by the asset browser and the asset check.
+Seed info reads only `Siedler1.exe`. The map view and the game view read `Siedler1.exe` and `loca/SPAD.PA`
+under the History Edition content set, which includes entry 2 of `loca/SPAD.PA` for the settlers' step offsets.
+Under the basic content set none of these is read: the rules and step offsets come from `content/basic/rules/`. The text, sound, and music files are read only by the asset browser and the asset check.
 
 ## `Siedler1.exe`
 

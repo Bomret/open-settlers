@@ -225,7 +225,7 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
   - `Generators/` holds the source generators that find the job modules ([ADR 0016](docs/adr/0016-jobs-are-types-and-each-layer-finds-its-job-modules.md)).
   - `Import/` holds the import ports, the interfaces through which the engine reads game data, and the terms they return ([ADR 0017](docs/adr/0017-install-data-enters-through-import-ports.md)): the rule tables, the walk steps, the assets, and the graphics source.
   - `Import.HistoryEdition/` is the source assembly for the install. It holds the file readers (`Formats/`), the asset kinds, the program tables importer, and the graphics reading and looks, and implements every port. Only this assembly reads the install.
-  - `Import.OpenSettlers/` is the source assembly for the repository's content set (`content/`). It implements the graphics source.
+  - `Import.OpenSettlers/` is the source assembly for the basic content set (`content/basic/`). It implements the graphics source, the rule tables port (stand-in rules read from `content/basic/rules/`), and the walk steps port.
   - `Assets/` holds the asset check and the asset browser state, which read assets through the assets port.
   - `Launch/` holds the command-line arguments, the decision whether a map launch opens or exits, and the text of a crash.
   - `MapView/` holds the terrain, object, road, and settler drawing plans, the click handling, and the camera.
