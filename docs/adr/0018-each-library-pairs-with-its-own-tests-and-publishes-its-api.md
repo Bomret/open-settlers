@@ -10,8 +10,8 @@ A test project references its library and test helpers, and no other library. Th
 library type live in `src/Testing/` (`OpenSettlers.Testing`), which references no library. The helpers
 that name a library's types live beside that library in `src/<Name>.Testing/`
 (`OpenSettlers.<Name>.Testing`), which references that library and the helper projects of the libraries it
-references. A test project references the helper projects of its own library and of the libraries its
-library references. The Godot host pairs with `OpenSettlers.Tests/` at the
+references. A test project references the helper projects of its own library and of every library its
+library references, directly or through another library. The Godot host pairs with `OpenSettlers.Tests/` at the
 repository root, which also holds the tests of the repository itself: the code-style build, the tools, the
 content set, and the test category filters.
 
