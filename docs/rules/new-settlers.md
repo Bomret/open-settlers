@@ -164,7 +164,7 @@ any other rate. A game without it reads no rate, makes no new settler and digest
   full makes nothing, and its period passes.
 - `MainPass.Run` works out the cap at phase 32 of each cycle, whether or not the game hands out goods
   (`SettlerSupply.UpdateCap`): while the table has a free slot, the one player's cap is C (its share K plus the floor B),
-  and the supply may make settlers while the table holds fewer. From the castle's placement until then it may make them.
+  and the supply may make settlers while the table holds fewer. From `SettlerSupply.Start` until the first phase-32 update, it may make them.
   A try the cap bars makes nothing, and its period passes.
 - The digest mixes the supply's state where the game runs it.
 - The game view runs the supply in every game, its play runs included. Its rate is the launch flag `--rate`

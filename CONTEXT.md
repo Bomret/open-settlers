@@ -263,8 +263,8 @@ _Avoid_: worker, unit, figure
 
 **Settler supply**
 A player's timer that makes one settler without a job in a storage for each period that passes. The player's settler
-rate, a start setting from 0 to 40, sets the period: the higher the rate, the shorter the period. Now and then the
-supply owes a knight, and the new settler becomes one where its storage holds a sword and a shield
+rate, a start setting from 0 to 40, sets the period: the higher the rate, the shorter the period. About 31 % of the new
+settlers are owed as knights, and the new settler becomes one where its storage holds a sword and a shield
 (`docs/rules/new-settlers.md`).
 _Avoid_: reproduction, spawning, birth, population growth
 
