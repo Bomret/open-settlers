@@ -87,3 +87,22 @@ Concepts: Import port, Graphics source, Install
 Statement: The engine reaches game data only through import ports. Only the History Edition source assembly reads the install or names a type of the original's file formats, and only the Open Settlers source assembly reads the content set. The map view, the asset check, the asset browser, the domain, and the application name no type of a source assembly. The Godot host names one only where it builds a source: the launch code and the main scene, `AssetBrowserView`. The adapter assembly is the one exception: it names `JobTableNames` of the History Edition source, through which the name table reads the job and state names (ADR 0017).
 Breaks: loudly
 Check: the format readers, the asset kinds, the graphics readers and figure tables, the program tables importer, the job tables modules, and the looks are internal to the History Edition assembly, so the compiler refuses a use from outside it. Its public types are the ones the host builds (`Install`, `HistoryEditionSource`, `HistoryEditionRuleTables`, `HistoryEditionAssets`, `StepOffsets`) and `JobTableNames`. The looks are internal to the Open Settlers assembly; its one public type is the one the host builds, `OpenSettlersSource`. `ImportPortBoundaryTests` checks that the domain and the application reference no source assembly and that the adapter assembly's metadata names no History Edition type but `JobTableNames`. The map view, `src/Assets`, and `src/Viewer` compile inside the Godot project, which references both source assemblies, so the compiler does not keep them from those public types: `GraphicsSourceBoundaryTests` scans the map view, `src/Assets`, and the viewer classes outside the composition root for History Edition names and for content-set names (the source, the looks, their namespace, and the content set's folder). Reviewers check that no port returns a format type.
+
+### INV-0012
+
+Class: architecture
+Concepts: Library, Test pair
+Statement: Every library has a test pair: a test project beside it that references the library and the shared test helpers, and no other library. Tests of the repository itself live in `OpenSettlers.Tests/` beside the Godot project (ADR 0018).
+Breaks: silently
+Check: `TestPairTests` in `OpenSettlers.Tests` reads every project under `src/` and fails on a library without a sibling `<Name>.Tests` project, and on a test project that references a library other than its own or `OpenSettlers.Testing`.
+Paths: src/**, OpenSettlers.Tests/**
+
+### INV-0013
+
+Class: architecture
+Concepts: Library, Test pair
+Statement: A library grants its internals to its own test project and to no other assembly. Another library reaches it only through its public types (ADR 0018).
+Breaks: silently
+Check: `TestPairTests` in `OpenSettlers.Tests` fails on an `InternalsVisibleTo` in any library that names an assembly other than `OpenSettlers.<Name>.Tests`.
+Symbols: InternalsVisibleTo
+Paths: src/**/*.csproj

@@ -275,6 +275,19 @@ A player's rank for each kind of good. Where several goods at one flag wait for 
 with the highest rank goes next. A new game starts every player with the same default order.
 _Avoid_: goods priority, transport order
 
+## Code layout
+
+**Library**
+An assembly of the engine other than the Godot host: a project `src/<Name>/OpenSettlers.<Name>.csproj`.
+Its public types are its API; everything else stays internal (ADR 0018).
+_Avoid_: module, layer (a layer is a role in the architecture, such as the domain or the adapters)
+
+**Test pair**
+A library and the test project beside it, `src/<Name>.Tests/OpenSettlers.<Name>.Tests.csproj`, the only
+assembly that sees the library's internals (ADR 0018). The Godot host pairs with `OpenSettlers.Tests/` at
+the repository root, which also holds the tests of the repository itself.
+_Avoid_: test suite, test assembly
+
 ## Roadmap
 
 **Free-play release**
