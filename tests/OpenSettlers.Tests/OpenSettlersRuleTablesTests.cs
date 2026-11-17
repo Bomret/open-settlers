@@ -159,8 +159,28 @@ public sealed partial class OpenSettlersRuleTablesTests
         Assert.AreEqual(58982, tables.Get<PigFarmRates>(new PigFarmer()).Growth[0], "90 percent of the 16-bit draw");
     }
 
+    [TestMethod]
+    public void TheCountsOfEveryGoodAgreeWithTheCarriersHandoverRule()
+    {
+        var tables = Checked();
+
+        foreach (var code in Enumerable.Range(1, RuleTables.Goods))
+        {
+            var good = new Good { Code = code };
+
+            Assert.AreEqual(
+                good.FillsHigh ? FillCounter.High : FillCounter.Low,
+                tables.FillCounterOf(good),
+                $"the counts of good {code}"
+            );
+        }
+    }
+
     [GeneratedRegex(@"\.Get<(\w+)>\(new (\w+)\(\)\)")]
     private static partial Regex JobDataRead();
+
+    [GeneratedRegex(@"\.Get<\w+>\(")]
+    private static partial Regex AnyGenericGet();
 
     // The simulation, the adapters, and the views read a job's data through RuleTables.Get<T>(new Job()). The History Edition
     // source's own looks read the install's figure adds and are no simulation; the content set's source reads none.
@@ -168,15 +188,27 @@ public sealed partial class OpenSettlersRuleTablesTests
     public void EveryJobDataTheSimulationReadsIsSuppliedByTheFiles()
     {
         var source = Path.Combine(RepositoryRoot(), "src");
-        var reads = Directory
+        var texts = Directory
             .EnumerateFiles(source, "*.cs", SearchOption.AllDirectories)
             .Where(file =>
                 !file.Contains($"{Path.DirectorySeparatorChar}Import.HistoryEdition{Path.DirectorySeparatorChar}")
                 && !file.Contains($"{Path.DirectorySeparatorChar}Import.OpenSettlers{Path.DirectorySeparatorChar}")
             )
-            .SelectMany(file =>
+            .Select(file => (File: file, Text: File.ReadAllText(file)))
+            .ToList();
+        foreach (var (file, text) in texts)
+        {
+            Assert.AreEqual(
+                AnyGenericGet().Count(text),
+                JobDataRead().Count(text),
+                $"{file} reads job data in a form the scan does not resolve: write Get<Data>(new Job())"
+            );
+        }
+
+        var reads = texts
+            .SelectMany(entry =>
                 JobDataRead()
-                    .Matches(File.ReadAllText(file))
+                    .Matches(entry.Text)
                     .Select(match => (Data: match.Groups[1].Value, Job: match.Groups[2].Value))
             )
             .Distinct()
@@ -216,12 +248,18 @@ public sealed partial class OpenSettlersRuleTablesTests
     }
 
     [TestMethod]
-    public void AMissingFileIsRefusedWithItsName()
+    public void AMissingFileIsRefusedWithItsNameAndTheRootKey()
     {
         using var folder = new RuleFolder();
         File.Delete(Path.Combine(folder.Root, Jobs));
 
-        Assert.StartsWith($"{Jobs}: ", folder.Refusal());
+        Assert.StartsWith($"{Jobs}: $: missing", folder.Refusal());
+    }
+
+    [TestMethod]
+    public void AFrameKeyThatIsNotInCanonicalSpellingIsRefused()
+    {
+        Refuses(World, "\"81\": -1,", "\"081\": -1,", "frameRows.frames.081", "not a frame number");
     }
 
     [TestMethod]

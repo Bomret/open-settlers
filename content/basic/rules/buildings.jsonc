@@ -16,7 +16,7 @@
   "buildings": {
     "castle": {
       // The castle only has a door: its site is not built from needs, and it asks for no worker.
-      "door": { "standing": 20, "constructing": 20 }, // A broad gate that takes a settler five eighths of a step to pass: the longest pass of any building.
+      "door": { "standing": 20, "constructing": 20 }, // A settler passes in five eighths of a step: the longest pass of any building, for the biggest building.
     },
     "woodcutter": {
       "size": "small", // A hut beside the trees.

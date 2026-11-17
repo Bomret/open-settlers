@@ -3,9 +3,12 @@
 // invention, never taken from the original game (INV-0001, ADR 0018); the comment on each line states why.
 {
   // The 26 goods, each by name, each with all three keys:
-  //   counts   which byte of a building's fill the good counts in: "low", "high", or "none".
+  //   counts   which byte of a building's fill the good counts in: "low", "high", or "none". It must agree with the
+  //            carrier's handover rule, which counts by the good's number: goods 1 to 6 (the food), 8 (plank), and 13
+  //            (coal) count low, every other good counts high. A test checks this.
   //   priority the transport priority, a rank from 1 to 26 that no other good shares; a carrier takes the good of the
-  //            highest rank first.
+  //            highest rank first. The order: building materials (plank, stone, log), then food, then grain, flour, and
+  //            pigs for the chain, then tools, then metals and ore, and last boats and weapons, which nothing uses yet.
   //   request  "storage" for a good that goes to storage at once, or { "class": 0 to 7, "word": "first" | "second" }
   //            for a good a flag asks for: the class names what is asked, the word is the request word that holds it.
   "goods": {

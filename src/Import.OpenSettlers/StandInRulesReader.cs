@@ -109,8 +109,7 @@ static class StandInRulesReader
         var buildings = Open(folder, OpenSettlersRuleTables.BuildingsFile).Fields(["buildings"]);
         var jobs = Open(folder, OpenSettlersRuleTables.JobsFile).Fields(["jobs"]);
         var ranks = goods["ranks"].Fields(["plank", "mill"]);
-        var castle = buildings["buildings"].Fields(Named().Select(entry => entry.Name))["castle"].Fields(["door"]);
-        var castleDoor = Door(castle["door"]);
+        var (buildingRules, castleDoor) = Buildings(buildings["buildings"]);
         var jobData = jobs["jobs"].Fields(["builder", "digger", "pig-farmer"]);
         var pig = jobData["pig-farmer"].Fields(["rankBase", "growth"]);
 
@@ -136,7 +135,7 @@ static class StandInRulesReader
             ],
             PlankRank = (byte)ranks["plank"].Int(1, 255),
             MillRank = (byte)ranks["mill"].Int(1, 255),
-            Buildings = Buildings(buildings["buildings"]),
+            Buildings = buildingRules,
             CastleDoor = castleDoor,
             BuilderTool = Tool(jobData["builder"].Fields(["tool"])["tool"]),
             DiggerTool = Tool(jobData["digger"].Fields(["tool"])["tool"]),
@@ -155,7 +154,7 @@ static class StandInRulesReader
         var path = Path.Combine(folder, file);
         if (!File.Exists(path))
         {
-            throw new InvalidDataException($"{file}: the content set has no such file in {folder}");
+            throw new InvalidDataException($"{file}: $: missing (looked in {folder})");
         }
 
         try
@@ -237,7 +236,7 @@ static class StandInRulesReader
             .ToArray();
         foreach (var (name, row) in fields["frames"].Members())
         {
-            if (!int.TryParse(name, out var frame) || frame < 0 || frame >= RuleTables.FrameRowCount)
+            if (!int.TryParse(name, out var frame) || frame.ToString() != name || frame < 0 || frame >= RuleTables.FrameRowCount)
             {
                 throw row.Fault($"not a frame number, 0 to {RuleTables.FrameRowCount - 1}");
             }
@@ -315,9 +314,12 @@ static class StandInRulesReader
         };
     }
 
-    static IReadOnlyDictionary<BuildingType, StandInBuilding> Buildings(RuleNode node)
+    static (IReadOnlyDictionary<BuildingType, StandInBuilding> Rules, (byte Standing, byte Constructing) CastleDoor) Buildings(
+        RuleNode node
+    )
     {
         var entries = node.Fields(Named().Select(entry => entry.Name));
+        var castleDoor = Door(entries["castle"].Fields(["door"])["door"]);
         var result = new Dictionary<BuildingType, StandInBuilding>();
         foreach (var (type, name) in Named().Where(entry => entry.Type != BuildingType.Castle))
         {
@@ -342,7 +344,7 @@ static class StandInRulesReader
             };
         }
 
-        return result;
+        return (result, castleDoor);
     }
 
     static (byte Standing, byte Constructing) Door(RuleNode node)
