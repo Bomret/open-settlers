@@ -198,7 +198,7 @@ draw record. `0x44fff3` reads it. The job does not index the tables. The constan
   (`0x43ff4b`, the walk). It gets `0x2f00` (`0x43ff40`) under the same test as the woodcutter's way back (byte 13 0x80,
   byte 14 1, state 0x10). A figure byte from 0x80 gets `0x2c80` (`0x43ff0f`). It gets `0x2d80` (`0x43ff1a`) where byte 14 is 1.
   The bytes 0x80, 0x87, 0x88, and 0x8f skip the sound request that the others make. The `job11` recording confirms the walk
-  (states 5, 2, and 4). The other adds are read from the code only.
+  (states 5, 2, and 4). The other adds are read from the code and seen in play runs ([Fishing](fishing.md#drawing)).
 
 **The tables** (confirmed: `0x44fff3` loads `0x4501a1` at `0x4500fb` and `0x4503c5` at `0x450128` with `lea esi, imm32`, and reads
 16-bit words from them with `mov ax, [ebx+esi]`). Both addresses are odd, so the words are read unaligned. Read from the even

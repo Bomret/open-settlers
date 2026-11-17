@@ -10,8 +10,9 @@
 // the pass 1730); a fisher who makes ten casts with no catch turns back with nothing (fisher-dry-lake, the pass 2076). The scenario fisher-dry-lake
 // runs the same game as fisher-lake and writes a lake detail of 0 into the nodes x 20 to 30, y 0 to 12 before the pass 940 (the verb's SET
 // of the form ld@PASS,X0,Y0,X1,Y1,VALUE; the rectangle holds no flag or building node, whose link takes the same byte). Its lines before
-// the pass 938 list only the lake details, and the ld= line of the pass 940 is the verb's own write. His ten casts draw nothing, so the
-// generator's words stay the same through them, and the detail of the node he casts at stays 0. Not production
+// the pass 938 list only the lake details, and the ld= line of the pass 940 is the verb's own write. His ten casts draw nothing: the
+// engine matches the rng= words of every line, and the words that change inside state 0x20 (the passes 1449, 1515, 1631, 1664, 1779,
+// 1895, 1994, 2010) are draws of the lake-detail pass for other nodes. The detail of the node he casts at stays 0. Not production
 // code: no routine of the program is transcribed here, only values the program produced.
 # fisher-lake goods:1:1234,5678,9ABC:0:15,5:13,4;13,7;14,8;17,3;18,6;19,4:16,6,00;18,6,550;17,3,01:17,3,1:3000
 pass=17 ld=23,4:05>06;24,5:06>05

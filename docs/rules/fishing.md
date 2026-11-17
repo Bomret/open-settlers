@@ -14,7 +14,7 @@ The engine runs the same commands. It matches these values in two games (`tests/
 
 The first game (`fisher-lake`) runs 3000 passes. The fisher finds a node, casts seven times at a lake detail of 1, and catches a fish at the seventh. The detail falls to 0. He lays the fish on the flag at pass 1928, and the fish reaches the castle at pass 2875, so the castle's count of fish is 1. The second game (`fisher-full-flag`) lays eight logs on the flag before the fish comes. The fish is lost, and nothing else changes.
 
-The third game (`fisher-dry-lake`) is the first game with a lake detail of 0 written into the nodes x 20 to 30, y 0 to 12 before the pass 940 (the verb's `ld@PASS,X0,Y0,X1,Y1,VALUE` field of the SET list). The fisher casts ten times from pass 954 on, and no cast draws, catches, or lowers a detail. The generator's words stay the same through the casts, and he turns back at pass 2076 with nothing.
+The third game (`fisher-dry-lake`) is the first game with a lake detail of 0 written into the nodes x 20 to 30, y 0 to 12 before the pass 940 (the verb's `ld@PASS,X0,Y0,X1,Y1,VALUE` field of the SET list). The fisher casts ten times from pass 954 on, and no cast draws, catches, or lowers a detail. The engine matches the generator's words at every line while its casts draw nothing, so no cast takes a draw. The words do change inside the casting state, at the passes 1449, 1515, 1631, 1664, 1779, 1895, 1994, and 2010. Those are draws of the lake-detail pass for other nodes of the map, the same passes that print `ld=` lines elsewhere. He turns back at pass 2076 with nothing.
 
 The removal of his building matches the original in three games (`removals.txt`: `fisher-inside`, `fisher-fishing`, `fisher-with-fish`).
 
@@ -110,7 +110,7 @@ Taking his building down sends the settlers inside it home (`0x461b77`, [Removal
 
 ## Drawing
 
-**Status:** the figure words are **confirmed** for the walk by the draw run of the `job11` recording (`settler-draws.txt`). The words of the cast with no catch (`0x2c80`) are read from the code and seen in a play run (`play/fisher.play` on `layouts/fisher.jsonc`): at the shore, frame `0x84`, the figure holds a rod out over the water. The words with a catch (`0x2d80`, and `0x2f00` on the way back) are read from the code only (**inferred**), because the hand-drawn lake of that layout holds no lake detail to catch from.
+**Status:** the figure words are **confirmed** for the walk by the draw run of the `job11` recording (`settler-draws.txt`). The words of the cast with no catch (`0x2c80`) are read from the code and seen in a play run (`play/fisher.play` on `layouts/fisher.jsonc`): at the shore, frame `0x84`, the figure holds a rod out over the water. The words with a catch are read from the code and seen in a second play run (`play/fisher-catch.play`, on the map of seed `4455544685788642`, size 1, whose generated lake holds lake details): at the shore with byte 14 set (frame `0x86`, the figure byte from 0x80) the figure holds the rod with a fish hanging at its end (`0x2d80`), on the way back with the fish (frame 34, `0x2f00`) the fish is at his side, and the fish lies on his flag. The run gives one digest under both graphics sources.
 
 The figure handler of job 11 is at `0x43fed8`, reached by the stub at `0x43f79c`. It adds a value to the figure byte:
 
