@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
-// The focused command (mise.toml, tasks.test) and the full command (tasks.check) filter out exactly the categories of Needs;
+// The unit-test command (mise.toml, tasks.test) and the full command (tasks.check) filter out exactly the categories of Needs;
 // the integration command (tasks."test:integration") selects exactly them.
 [TestClass]
 public sealed class NeedsTests
