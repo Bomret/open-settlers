@@ -42,9 +42,10 @@ public enum ContentSetName
 /// selects <see cref="LaunchMode.Browser"/>. <c>--game &lt;dir&gt;</c> names the install and wins over the
 /// <c>SIEDLER_DIR</c> value. <c>--seed &lt;seed&gt;</c> (every form <see cref="Seed.TryParse"/> takes, quoted when
 /// it holds spaces) and <c>--size &lt;1|2|3&gt;</c> belong to <c>--map</c>, <c>--game-view</c>, and <c>--seed-info</c> only.
-/// <c>--content-set &lt;basic|history-edition&gt;</c> names the <see cref="ContentSetName"/> of the map view and
-/// the game view (the History Edition without it) and belongs to <c>--map</c>, <c>--game-view</c>, and <c>--layout</c>
-/// only.
+/// <c>--content-set &lt;basic|history-edition&gt;</c> names the <see cref="ContentSetName"/> of the map view, the game
+/// view, and seed info (the History Edition without it) and belongs to <c>--map</c>, <c>--game-view</c>, <c>--layout</c>,
+/// and <c>--seed-info</c> only. The basic set reads no install: <see cref="Game"/> is null on it whatever the environment
+/// holds, and any <c>--game</c> (also repeated or empty) is a bad argument.
 /// <para>
 /// Every bad argument is a line in <see cref="Problems"/> and the launch exits with <see cref="BadArgumentExitCode"/>
 /// before it opens the install or a window, so that code wins over the exit code 2 of a missing install. The bad
@@ -54,8 +55,8 @@ public enum ContentSetName
 /// <c>--size</c> with <c>--check</c> or without a mode flag; a repeated <c>--seed</c>, <c>--size</c>, or
 /// <c>--play</c>, or <c>--layout</c> (a repeated <c>--game</c> keeps the first); <c>--layout</c> with <c>--seed</c>,
 /// <c>--size</c>, <c>--map</c>, <c>--check</c>, or <c>--seed-info</c> (the layout holds its own seed and size); a
-/// <c>--content-set</c> that names no known set, repeats, or comes with <c>--check</c>, <c>--seed-info</c>, or no mode
-/// flag and no layout; the retired <c>--graphics</c>, which names <c>--content-set</c>. Each <c>--content-set</c> problem
+/// <c>--content-set</c> that names no known set, repeats, or comes with <c>--check</c> or no mode
+/// flag and no layout; <c>--game</c> with <c>--content-set basic</c>; the retired <c>--graphics</c>, which names <c>--content-set</c>. Each <c>--content-set</c> problem
 /// names the known sets (<see cref="KnownContentSets"/>).
 /// <c>--stock &lt;0..40&gt;</c> sets the start stock level of the human player (<see cref="Stock"/>) and belongs to
 /// <c>--game-view</c> without a layout only; a value that is no integer from 0 to 40, a repeat, or another mode is a bad argument.
@@ -406,12 +407,18 @@ public sealed class LaunchArgs
             }
         }
 
-        if (contentSetGiven && !layoutGiven && modeFlag is null or CheckFlag or SeedInfoFlag)
+        if (contentSetGiven && !layoutGiven && modeFlag is null or CheckFlag)
         {
             var where = modeFlag is null ? "the asset browser" : modeFlag;
             problems.Add(
-                $"{ContentSetFlag} does not apply to {where}, use {MapFlag} or {GameViewFlag} (known sets: {KnownContentSets})"
+                $"{ContentSetFlag} does not apply to {where}, use {MapFlag}, {GameViewFlag}, or {SeedInfoFlag} (known sets: {KnownContentSets})"
             );
+        }
+
+        if (gameGiven && contentSet == ContentSetName.Basic)
+        {
+            // The basic set reads no install: a --game, repeated or empty too, names one for nothing.
+            problems.Add($"{GameFlag} does not apply to {ContentSetFlag} basic, which reads no install");
         }
 
         if (stockGiven && conflictFlag is null && (modeFlag != GameViewFlag || layoutGiven))
@@ -450,8 +457,10 @@ public sealed class LaunchArgs
             Play = play,
             Layout = layout,
             Mode = mode ?? (layoutGiven ? LaunchMode.GameView : LaunchMode.Browser),
+            // The basic set opens no install, so neither the flag nor the environment names one.
             Game =
-                gameGiven ? game
+                contentSet == ContentSetName.Basic ? null
+                : gameGiven ? game
                 : string.IsNullOrEmpty(siedlerDir) ? null
                 : siedlerDir,
             SeedText = seedText,

@@ -680,10 +680,6 @@ public sealed class LaunchArgsTests
     [DataRow(new[] { "--content-set", "history-edition" }, "--content-set does not apply to the asset browser")]
     [DataRow(new[] { "--check", "--content-set", "basic" }, "--content-set does not apply to --check")]
     [DataRow(new[] { "--check", "--content-set", "history-edition" }, "--content-set does not apply to --check")]
-    [DataRow(
-        new[] { "--seed-info", "--seed", "1234567812345678", "--content-set", "basic" },
-        "--content-set does not apply to --seed-info"
-    )]
     public void ABadContentSetArgumentIsAProblemThatNamesTheKnownSets(string[] flags, string reason)
     {
         var args = LaunchArgs.Parse(flags, null);
@@ -709,6 +705,54 @@ public sealed class LaunchArgsTests
         var args = LaunchArgs.Parse([mode, "--content-set", "basic"], null);
 
         Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    [DataRow("basic")]
+    [DataRow("history-edition")]
+    public void TheContentSetFlagGoesWithSeedInfo(string set)
+    {
+        var args = LaunchArgs.Parse(["--seed-info", "--seed", "1234567812345678", "--content-set", set], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual(LaunchMode.SeedInfo, args.Mode);
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--game-view")]
+    [DataRow("--layout")]
+    public void SiedlerDirInTheEnvironmentIsIgnoredOnTheBasicSet(string mode)
+    {
+        var args = LaunchArgs.Parse(mode == "--layout" ? [mode, "a.jsonc", "--content-set", "basic"] : [mode, "--content-set", "basic"], "/env/install");
+
+        Assert.IsNull(args.Game);
+        Assert.IsEmpty(args.Problems);
+    }
+
+    [TestMethod]
+    [DataRow("--game", "/siedler")]
+    [DataRow("--game", "/siedler", "--game", "/other")]
+    [DataRow("--game", "")]
+    [DataRow("--game")]
+    public void AnExplicitGameFlagIsABadArgumentOnTheBasicSet(params string[] game)
+    {
+        var args = LaunchArgs.Parse(["--map", "--content-set", "basic", .. game], "/env/install");
+
+        StringAssert.Contains(
+            string.Join("; ", args.Problems),
+            "--game does not apply to --content-set basic, which reads no install"
+        );
+        Assert.IsNull(args.Game);
+    }
+
+    [TestMethod]
+    public void TheGameFlagStillNamesTheInstallOnTheHistoryEdition()
+    {
+        var args = LaunchArgs.Parse(["--map", "--content-set", "history-edition", "--game", "/siedler"], null);
+
+        Assert.IsEmpty(args.Problems);
+        Assert.AreEqual("/siedler", args.Game);
     }
 
     [TestMethod]
