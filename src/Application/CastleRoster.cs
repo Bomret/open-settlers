@@ -39,7 +39,8 @@ public sealed class CastleRoster(
     // The number of jobs the castle's list of waiting settlers has an entry for (0x42 + 2 times the job, up to 0x82).
     const int JobCount = 32;
 
-    // The castle's status bit 4, the only status bit it has besides the bit of its worker inside, with no recovered meaning.
+    // The castle's status bit 4, the only status bit it has besides the bit of its worker inside, with no recovered meaning in the
+    // castle. It is the bit Building.AtWork names, so the castle reads at work from its placement.
     const int CastleOtherStatus = 0x10;
 
     // A fill counter that has overflowed: both fill bytes of the castle read full, as a delivery that carries out of the

@@ -52,6 +52,7 @@ public sealed class Building(BuildingType type, int x, int y, int flag, bool con
     /// The status bit that marks the building's worker at work (bit 4 of byte 5). The miller's state routine <c>0x43386b</c> sets it where he
     /// starts a grain (<c>0x4338d0</c>) and clears it with the flour (<c>0x433a0d</c>); the baker's, <c>0x433694</c>, sets it in the pause after
     /// the baking (<c>0x4337d1</c>) and clears it with the bread (<c>0x43383e</c>). The pig farmer's and the butcher's set no status bit.
+    /// The castle carries the bit from its placement, where it has no recovered meaning, so the castle reads at work.
     /// </summary>
     public bool AtWork
     {
