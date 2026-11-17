@@ -45,7 +45,7 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
     /// rank shifted right by the logs the building holds, on site and on the way, and 0 where it holds eight or more. A building of
     /// another type is left alone. The engine keeps the rank on every turn while the request-failed bit holds, where the program writes it
     /// only on the turn whose request failed (inferred as unobservable: the written value equals the stored one while the fill is unchanged,
-    /// and no log or input class is asked before the worker's first start).
+    /// and no log class is asked before the worker's first start).
     /// </summary>
     public override void Turn(Building mill)
     {
