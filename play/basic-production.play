@@ -52,7 +52,6 @@ click-tile 21 13
 button Road
 wait 0.3
 fast-forward until bread >= 6 max 200000
-wait 0.3
 expect bread = 6
 expect flour = 0
 expect grain = 0
@@ -93,7 +92,6 @@ click-tile 19 10
 button Road
 wait 0.3
 fast-forward until flour >= 6 max 300000
-wait 0.3
 expect flour >= 6
 shot flour 19 8 5 3
 dump flour
@@ -125,7 +123,6 @@ click-tile 19 10
 button Road
 wait 0.3
 fast-forward until ticks >= 8000 max 100000
-wait 0.3
 shot butcher-built 19 9 4 3
 button Pig farm
 wait 0.3
@@ -145,7 +142,6 @@ click-tile 21 13
 button Road
 wait 0.3
 fast-forward until meat >= 4 max 300000
-wait 0.3
 expect meat >= 4
 shot meat 19 9 5 3
 dump meat
@@ -172,7 +168,6 @@ click-tile 19 6
 button Road
 wait 0.3
 fast-forward until fish >= 5 max 200000
-wait 0.3
 expect fish >= 5
 shot fish 19 6 4 3
 dump fish
