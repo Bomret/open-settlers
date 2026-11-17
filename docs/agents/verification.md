@@ -249,6 +249,8 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
 - `layouts/mill.jsonc` and `play/mill.play`: a finished mill with its miller inside, a road to the castle, and two grains on the castle's flag,
   fast-forwarded to the castle's first flour.
+- `layouts/pig-farm.jsonc` and `play/pig-farm.play`: a finished pig farm with its pig farmer inside, a road to the castle, and two grains on
+  the castle's flag, fast-forwarded to the pig on the step out and then to the castle's first pig.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the

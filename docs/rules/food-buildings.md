@@ -167,5 +167,5 @@ at `0x44fcfe` the scaffold's: 186, 177, 184, 177, 187, and 183. A good on a flag
   the art of `tools/open-settlers-art.py`. The other goods 7 to 26 have `NameTable` entries only.
 - `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar.
   The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) through `NameTable.GoodName`.
-- **Stand-in:** the workers of the fisher, farm, pig farm, butcher, and baker run no work cycle yet: a settler who takes one of those jobs enters the building and stands. The
-  mill's miller works ([Milling](milling.md)); the job slices add the other cycles.
+- **Stand-in:** the workers of the fisher, farm, butcher, and baker run no work cycle yet: a settler who takes one of those jobs enters the building and stands. The
+  mill's miller works ([Milling](milling.md)) and so does the pig farmer ([Pig farming](pig-farming.md)); the job slices add the other cycles.

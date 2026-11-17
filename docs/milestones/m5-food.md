@@ -22,6 +22,7 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
   the classes of all goods: [Food buildings](../rules/food-buildings.md). The names of the two grain-fed chains, of the goods 9 and 11
   to 26, are inferred: [which evidence settles each](../rules/food-buildings.md#which-chain-is-which). known
 - The mill's work cycle (state `0x23`, `0x43386b`), its request for grain and its rank (`0x43d33d`, `0x42e2a0`, the player word at `+0x15a`), the miller's figure (`0x4400d3`), the castle's hand-out of grain, and the fill byte of a food good: [Milling](../rules/milling.md). known
+- The pig farm's work cycle (state `0x25`, `0x4333c1`), its request for grain and its rank (`0x43d179`, `0x42e0fa`, the player word at `+0x158`; the handler reads the player block through a scratch pointer), the growth of the pigs the farm holds (the table at `0x433684`), the round that may give a pig, and the pig farmer's figure (`0x43ff56`): [Pig farming](../rules/pig-farming.md). known
 - The original has no well: [Food buildings](../rules/food-buildings.md#the-well). known
 
 ## Open questions
