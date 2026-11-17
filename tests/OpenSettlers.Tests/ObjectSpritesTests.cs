@@ -34,7 +34,7 @@ public sealed class ObjectSpritesTests
     {
         var entries = OpenSettlers.Domain.Good.Foods.Select(ObjectSprites.GoodEntry).ToArray();
 
-        CollectionAssert.AreEqual(new[] { 321, 322, 323, 324, 325, 326 }, entries);
+        CollectionAssert.AreEqual(new int?[] { 321, 322, 323, 324, 325, 326 }, entries);
     }
 
     [TestMethod]

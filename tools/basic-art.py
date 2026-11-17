@@ -433,6 +433,38 @@ def heap(stage):
     return c, (-11, -15)
 
 
+# The set's 26 goods by stable name, in the order of the numbers 1 to 26 (the order of src/Import.OpenSettlers/StandInRulesReader.cs).
+# The set holds one image per name and none for a number without a good.
+GOODS = (
+    "fish",
+    "pig",
+    "meat",
+    "grain",
+    "flour",
+    "bread",
+    "log",
+    "plank",
+    "boat",
+    "stone",
+    "iron-ore",
+    "iron",
+    "coal",
+    "gold-ore",
+    "gold",
+    "shovel",
+    "hammer",
+    "fishing-rod",
+    "butcher-knife",
+    "scythe",
+    "hatchet",
+    "saw",
+    "pickaxe",
+    "pliers",
+    "sword",
+    "shield",
+)
+
+
 def good(code):
     """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar and the stone (10) a grey stone, and the
     food goods have a shape each: fish (1), a pig (2), a joint of meat (3), a sheaf of grain (4), a sack of flour (5), and
@@ -625,8 +657,8 @@ def main():
     add("building/site-large", "building/site-large.png", site(True))
     add("building/stage-small", "building/stage-small.png", scaffold(False))
     add("building/stage-large", "building/stage-large.png", scaffold(True))
-    for code in range(32):
-        add(f"good/{code}", f"good/{code}.png", good(code))
+    for code, name in enumerate(GOODS, 1):
+        add(f"good/{name}", f"good/{name}.png", good(code))
     for kind in ("flag", "mine", "small", "large"):
         add(f"marker/{kind}", f"marker/{kind}.png", marker(kind))
     for job, color in JOBS.items():

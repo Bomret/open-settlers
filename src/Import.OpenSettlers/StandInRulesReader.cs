@@ -19,7 +19,8 @@ static class StandInRulesReader
         AllowTrailingCommas = true,
     };
 
-    static readonly string[] GoodNames =
+    // The set's goods by stable name, in the order of their numbers 1 to 26; the graphics source keys a good's image by the name.
+    internal static readonly string[] GoodNames =
     [
         "fish",
         "pig",

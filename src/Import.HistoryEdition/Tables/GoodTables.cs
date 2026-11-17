@@ -166,6 +166,16 @@ static class GoodTables
     static readonly IReadOnlyDictionary<int, Known> ByCode = All.ToDictionary(good => good.Code);
 
     /// <summary>
+    /// The original's code of <paramref name="good"/>, or null for a good with no code in the original (a good of another set, no good).
+    /// A named good is found by its stable name; a good with no name, one made from a number alone, by its number where that is one of the
+    /// original's. No mask: a number past 26 is no good of the original.
+    /// </summary>
+    public static int? CodeOf(Good good) =>
+        good.Name.Length > 0 ? (CodeOfName.TryGetValue(good.Name, out var code) ? code : null)
+        : ByCode.ContainsKey(good.Code) ? good.Code
+        : null;
+
+    /// <summary>
     /// The good of the original with the code <paramref name="code"/>, with its stable name. Throws an <see cref="InvalidDataException"/>
     /// that names <paramref name="where"/> for a code with no entry: the program then names a good this importer does not know.
     /// </summary>

@@ -128,12 +128,13 @@ static class ObjectSprites
     /// <summary>The entry of the sprite of good 0; a good lying on a flag draws entry 320 plus the good (<c>0x44de9a</c>).</summary>
     public const int GoodsFirstEntry = 320;
 
-    /// <summary>The number of good sprites: the good's low 5 bits select one (<c>0x44db26</c> masks the byte with 0x1f).</summary>
+    /// <summary>The number of good sprites the archive holds after <see cref="GoodsFirstEntry"/>: the original's 26 goods and the codes 0, 27 to 31.</summary>
     public const int GoodsCount = 32;
 
-    /// <summary>The sprite entry of a good lying on a flag (<c>docs/rules/woodcutting.md</c>); a log is good 7, entry 327.
+    /// <summary>The sprite entry of a good lying on a flag (<c>docs/rules/woodcutting.md</c>); a log is good 7, entry 327. The good's original
+    /// code comes from its stable name (<see cref="GoodTables.CodeOf"/>); a good with no original code has no sprite, so null.
     /// <b>Inferred:</b> read from the decompile of <c>0x44de9a</c>; no emulator or debugger run of the draw confirms it.</summary>
-    public static int GoodEntry(Good good) => GoodsFirstEntry + (good.Code & 0x1f);
+    public static int? GoodEntry(Good good) => GoodTables.CodeOf(good) is { } code ? GoodsFirstEntry + code : null;
 
     /// <summary>The sprite entry of the flag marker, the first of the four build markers.</summary>
     public const int MarkerFirstEntry = 367;

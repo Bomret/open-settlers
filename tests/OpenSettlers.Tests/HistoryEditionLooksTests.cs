@@ -368,4 +368,25 @@ public sealed class HistoryEditionLooksTests
         );
         Assert.AreEqual(0, look.Add(Draw(new Carrier(), road, carried: new Good { Code = 99 }), 0));
     }
+
+    // The carrier carries the good its stable name gives, through the importer's name-to-code map: a good with no original code adds
+    // nothing, whatever number it holds.
+    [TestMethod]
+    public void ACarrierLookFindsTheWordOfAGoodByItsNameAndAddsNothingForAGoodWithNoOriginalCode()
+    {
+        var carried = new short[RuleTables.CarriedFigureCount];
+        carried[26] = 0x1a00;
+        var look = new CarrierLook(Tables(carried));
+        var road = new WalksRoad
+        {
+            Load = null,
+            Heading = new Heading { Value = 0 },
+        };
+
+        Assert.AreEqual(
+            0x1a00,
+            look.Add(Draw(new Carrier(), road, carried: new Good { Code = 1, Name = "shield" }), 0)
+        );
+        Assert.AreEqual(0, look.Add(Draw(new Carrier(), road, carried: new Good { Code = 26, Name = "wine" }), 0));
+    }
 }
