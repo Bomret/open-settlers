@@ -90,8 +90,8 @@ public sealed class BasicContentSetPlayTests
         var game = GameFactory.Create(tables, map, everyPassTurns: true, handsOutGoods: true);
 
         // The castle holds 5 planks and 4 stones (the first start stock row's 12 and 6 less its own site's 7 and 2): as
-        // many planks as the sawmill (3 planks, 2 stones) and the woodcutter's hut (2 planks) need. The sawmill's site at 25,1 has its flag at 26,2, the woodcutter's at 26,4 its
-        // flag at 27,5.
+        // many planks as the sawmill (3 planks, 2 stones) and the woodcutter's hut (2 planks) need. The sawmill's site at
+        // 25,1 has its flag at 26,2, the woodcutter's at 26,4 its flag at 27,5.
         Do(game, CommandKind.PlaceCastle, 24, 3);
         Do(game, CommandKind.PlaceBuilding, 25, 1, building: BuildingType.Sawmill);
         Do(game, CommandKind.PlaceBuilding, 26, 4, building: BuildingType.Woodcutter);
