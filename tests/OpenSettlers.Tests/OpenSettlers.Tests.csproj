@@ -60,6 +60,7 @@
     <None Include="pig-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="pig-removals.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="pig-materials.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="grain-split.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="flag-goods.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="home-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />

@@ -1,0 +1,132 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Domain;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// The lines of grain-split.txt are the output of the emulator verb construct (tools/GhidraDump/emulate.py, ADR 0008): the original's
+// passes of a game with a castle, flags, roads, a finished pig farm, and a finished mill, with the phase routine 0x42965c at the last
+// phase of each cycle. The click k@4,5 gives the castle five grains at the pass 700, when both buildings ask for grain. The engine runs
+// the same commands and must hand the grains out as the lines show: the request words of both flags, the fill bytes and status of both
+// buildings, the castle's grain and pig counts, and the generator (docs/rules/grain-split.md).
+[TestClass]
+[TestCategory(Needs.Install)]
+public sealed class GrainSplitTests
+{
+    const string Fixture = "grain-split.txt";
+    const int MillFlag = 1;
+    const int PigFarmFlag = 2;
+    const int PigFarm = 1;
+    const int Mill = 2;
+
+    [TestMethod]
+    public void TheCastleSharesGrainBetweenTheMillAndThePigFarmAsTheOriginalDoes()
+    {
+        var scenario = RemovalTests.Load(Fixture).Single();
+        // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:castle-off@PASS]
+        var parts = scenario.Command.Split(':');
+        var map = RemovalTests.MapOf(parts);
+        var game = RemovalTests.Started(parts, map, handsOutGoods: true);
+        var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
+        var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
+        var lines = scenario
+            .Lines.Where(line => line.ContainsKey("pass"))
+            .ToDictionary(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
+        var last = lines.Keys.Max();
+        var requests = new Dictionary<string, string>();
+        var buildings = new Dictionary<string, string>();
+        string? grains = null;
+        string? pigs = null;
+        string? rng = null;
+
+        for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
+        {
+            if (pass == at)
+            {
+                game.ApplyCommands();
+                Assert.AreEqual("k@4,5", scenario.Lines.Single(line => line.ContainsKey("click"))["click"]);
+                while (game.CastleStock.Count(Good.Grain) < 5)
+                {
+                    game.CastleStock.Add(Good.Grain);
+                }
+            }
+
+            game.Tick();
+            var line = lines.GetValueOrDefault(pass) ?? [];
+            foreach (var key in new[] { "f2", "f3" })
+            {
+                if (line.TryGetValue(key, out var flag))
+                {
+                    requests[key] = flag[(0x42 * 2)..(0x46 * 2)];
+                }
+            }
+
+            foreach (var key in new[] { "b2", "b3" })
+            {
+                if (line.TryGetValue(key, out var building))
+                {
+                    buildings[key] = building;
+                }
+            }
+
+            grains = line.GetValueOrDefault("grain") ?? grains;
+            pigs = line.GetValueOrDefault("pig") ?? pigs;
+            rng = line.GetValueOrDefault("rng") ?? rng;
+            foreach (var (key, slot) in new[] { ("f2", MillFlag), ("f3", PigFarmFlag) })
+            {
+                if (requests.TryGetValue(key, out var request))
+                {
+                    var asked = game.Flags[slot].RequestOf(RequestWord.First);
+                    var second = game.Flags[slot].RequestOf(RequestWord.Second);
+                    Assert.AreEqual(
+                        request,
+                        Convert.ToHexString([
+                            asked.Asks is { } a ? (byte)(1 << a.Class) : (byte)0,
+                            asked.Rank,
+                            second.Asks is { } b ? (byte)(1 << b.Class) : (byte)0,
+                            second.Rank,
+                        ]),
+                        $"the request words of the flag {key} after pass {pass}"
+                    );
+                }
+            }
+
+            foreach (var (key, slot) in new[] { ("b2", PigFarm), ("b3", Mill) })
+            {
+                if (buildings.TryGetValue(key, out var text))
+                {
+                    var building = game.Buildings[slot];
+                    var bytes = Convert.FromHexString(text);
+                    Assert.AreEqual(
+                        Convert.ToHexString(bytes[5..6]) + Convert.ToHexString(bytes[8..10]),
+                        Convert.ToHexString([
+                            (byte)BuildingEncoder.Status(building),
+                            (byte)building.FillLow,
+                            (byte)building.FillHigh,
+                        ]),
+                        $"the status and fill bytes of the building {key} after pass {pass}"
+                    );
+                }
+            }
+
+            if (grains is not null && pigs is not null)
+            {
+                Assert.AreEqual(
+                    $"grain={grains} pig={pigs}",
+                    $"grain={game.CastleStock.Count(Good.Grain)} pig={game.CastleStock.Count(Good.Pig)}",
+                    $"the castle's grain and pigs after pass {pass}"
+                );
+            }
+
+            if (rng is not null)
+            {
+                var words = game.Draws.Generator;
+                Assert.AreEqual(rng, $"{words.W0:X4},{words.W1:X4},{words.W2:X4}", $"the generator after pass {pass}");
+            }
+        }
+    }
+}
