@@ -81,8 +81,9 @@ _Avoid_: scenario, save, fixture
 
 **Graphics source**
 Where the map view gets the image for each draw term: the History Edition source, which reads the install's
-archives, or a content set the repository ships. The launch flag `--graphics` picks one. A source answers a
-term with an RGBA image and its anchor point, or with nothing for an effect it does not draw (ADR 0014).
+archives, or the images of a content set the repository ships. The content set a run uses brings its graphics
+source. A source answers a term with an RGBA image and its anchor point, or with nothing for an effect it does
+not draw (ADR 0014).
 _Avoid_: skin, theme, renderer, asset pack
 
 **Draw term**
@@ -100,10 +101,17 @@ that toggles it.
 _Avoid_: where-to-build overlay, placement overlay
 
 **Content set**
-A folder under `content/` that holds a graphics source as PNG images and one JSON manifest mapping draw terms
-to images and anchors (ADR 0015). It holds graphics only; rules always come from `Siedler1.exe`. `--graphics`
-names the shipped set `open-settlers`; a new folder under `content/` is not selectable.
-_Avoid_: mod, pack, theme
+Where a run gets its game data: its graphics source, its rule data, and its walk steps. There are two: the
+History Edition set, which is the install read through the History Edition source, and the basic set, which the
+repository ships in `content/basic/` with stand-in rules (ADR 0015, ADR 0018). The launch flag `--content-set`
+picks one; a new folder under `content/` is not selectable.
+_Avoid_: mod, pack, theme, graphics set
+
+**Stand-in rules**
+The rule data and walk steps of the basic content set: values of the project's own making that let the
+engine run a game without an install. They are not the original's rules, so a seed gives another map and
+another game than under the History Edition set (ADR 0018).
+_Avoid_: custom rules, rule mod, fake tables
 
 **Entry state**
 A state of a settler or a good that a routine of the original writes at the start of a behaviour, such as a
