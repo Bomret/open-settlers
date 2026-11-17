@@ -214,6 +214,33 @@ public sealed class WoodcuttingTests
     }
 
     [TestMethod]
+    public void TheObjectLayerWatchNoticesAGoodWithNoCodeArrivingOnAndLeavingAFlag()
+    {
+        var game = World(false, out _);
+        var watch = new OpenSettlers.MapView.ObjectLayerWatch();
+        game.Tick();
+        Assert.IsTrue(watch.Changed(game));
+        game.Tick();
+        Assert.IsFalse(watch.Changed(game), "nothing moves with no tree in reach");
+
+        game.Goods.LayGood(0, 7, new Good { Code = 0, Name = "wine" });
+        game.Tick();
+        Assert.IsTrue(watch.Changed(game), "a good with no code arrived");
+        game.Tick();
+        Assert.IsFalse(watch.Changed(game));
+
+        game.Goods.LayGood(0, 7, new Good { Code = 0, Name = "ale" });
+        game.Tick();
+        Assert.IsTrue(watch.Changed(game), "another good with no code took its place");
+        game.Tick();
+        Assert.IsFalse(watch.Changed(game));
+
+        game.Goods.LayGood(0, 7, Good.None);
+        game.Tick();
+        Assert.IsTrue(watch.Changed(game), "the good with no code left");
+    }
+
+    [TestMethod]
     public void TheObjectLayerWatchLooksOnlyAfterATickRan()
     {
         var game = World(true, out var map);

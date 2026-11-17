@@ -139,7 +139,8 @@ public sealed class HistoryEditionSource : IGraphicsSource
         : null;
 
     /// <inheritdoc />
-    public ObjectDrawing? Draw(GoodAtFlag draw) => Drawing(ObjectSprites.GoodEntry(draw.Good));
+    public ObjectDrawing? Draw(GoodAtFlag draw) =>
+        ObjectSprites.GoodEntry(draw.Good) is { } entry ? Drawing(entry) : null;
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(SettlerDraw draw) => _settlers?.Draw(draw);

@@ -123,7 +123,7 @@ public sealed class OpenSettlersSourceTests
             .Concat(["road/east", "road/south-east", "road/south", "object/flag"])
             .Concat(Enumerable.Range(8, 120).Select(code => $"object/{code}"))
             .Concat(BuildingKeys)
-            .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
+            .Concat(StandInRulesReader.GoodNames.Select(OpenSettlersSource.GoodKey))
             .Concat(["marker/flag", "marker/mine", "marker/small", "marker/large"])
             .Concat(
                 from job in new[]
@@ -599,47 +599,58 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
-    public void AGoodDrawsTheImageOfItsLowFiveBitsWithNoShadow()
+    public void AGoodDrawsTheImageOfItsStableNameWithNoShadow()
     {
         using var folder = new ContentFolder();
         folder.Png("log.png", "4x2:7");
-        folder.Entries["good/7"] = ContentFolder.Entry("log.png", "-2, -2");
+        folder.Entries["good/log"] = ContentFolder.Entry("log.png", "-2, -2");
         var source = folder.Load();
 
-        var drawing = source.Draw(
-            new GoodAtFlag
-            {
-                Row = 0,
-                X = 0,
-                Y = 0,
-                Good = new Good { Code = 7 },
-            }
-        )!;
+        var drawing = source.Draw(AtFlag(new Good { Code = 7, Name = "log" }))!;
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual(
             (4, 2, -2, -2),
             (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY)
         );
-        Assert.AreSame(
-            drawing.Image,
-            source
-                .Draw(
-                    new GoodAtFlag
-                    {
-                        Row = 0,
-                        X = 0,
-                        Y = 0,
-                        Good = new Good { Code = 7 + 32 },
-                    }
-                )!
-                .Image
-        );
+        Assert.AreSame(drawing.Image, source.Draw(AtFlag(new Good { Code = 0, Name = "log" }))!.Image);
+        Assert.AreSame(drawing.Image, source.Draw(AtFlag(new Good { Code = 7 }))!.Image);
     }
 
     [TestMethod]
-    [DataRow("good/0")]
-    [DataRow("good/31")]
+    public void AGoodWithNoImageDrawsNothingAndTheSetStillLoads()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("log.png", "4x2:7");
+        folder.Entries["good/log"] = ContentFolder.Entry("log.png", "0, 0");
+        var source = folder.Load();
+
+        Assert.IsNull(source.Draw(AtFlag(new Good { Code = 28, Name = "wine" })));
+        Assert.IsNull(source.Draw(AtFlag(new Good { Code = 7, Name = "wine" })), "no good draws another's image");
+        Assert.IsNull(source.Draw(AtFlag(new Good { Code = 7 + 32 })), "a code is no mask");
+        Assert.IsNull(source.Draw(AtFlag(Good.None)));
+    }
+
+    [TestMethod]
+    public void ACarriedGoodWithNoImageIsNotDrawnCarried()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:3");
+        folder.Entries["settler/woodcutter/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/woodcutter/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        var source = folder.Load();
+
+        var log = source.Draw(Settler(new Woodcutter(), Walking(), carried: new Good { Code = 7, Name = "log" }))!;
+        var wine = source.Draw(Settler(new Woodcutter(), Walking(), carried: new Good { Code = 28, Name = "wine" }))!;
+        var masked = source.Draw(Settler(new Woodcutter(), Walking(), carried: new Good { Code = 7, Name = "wine" }))!;
+
+        Assert.AreEqual((3, 1, 1), (log.Image!.Rgba[0], wine.Image!.Rgba[0], masked.Image!.Rgba[0]));
+    }
+
+    [TestMethod]
+    [DataRow("good/fish")]
+    [DataRow("good/shield")]
     public void AGoodKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();
@@ -647,6 +658,15 @@ public sealed class OpenSettlersSourceTests
 
         Refuses(folder, "manifest.json", key);
     }
+
+    static GoodAtFlag AtFlag(Good good) =>
+        new()
+        {
+            Row = 0,
+            X = 0,
+            Y = 0,
+            Good = good,
+        };
 
     static SettlerDraw Settler(
         Job job,
@@ -1550,21 +1570,17 @@ public sealed class OpenSettlersSourceTests
             );
         }
 
-        for (var code = 0; code < 32; code++)
+        for (var at = 0; at < StandInRulesReader.GoodNames.Length; at++)
         {
-            Assert.IsNotNull(
-                source
-                    .Draw(
-                        new GoodAtFlag
-                        {
-                            Row = 0,
-                            X = 0,
-                            Y = 0,
-                            Good = new Good { Code = code },
-                        }
-                    )
-                    ?.Image,
-                $"good {code}"
+            var name = StandInRulesReader.GoodNames[at];
+            Assert.IsNotNull(source.Draw(AtFlag(new Good { Code = at + 1, Name = name }))?.Image, $"good {name}");
+        }
+
+        foreach (var code in new[] { 0, 27, 31 })
+        {
+            Assert.IsNull(
+                source.Draw(AtFlag(new Good { Code = code })),
+                $"the set holds no image for the number {code}"
             );
         }
 
