@@ -65,7 +65,7 @@ So a grain takes two grindings of `0x17f` and two pauses of `0x5dc`, about 470 p
 ## The step out and the flour
 
 The step out (state `0xb`, `0x43e228`) and the put (state `0xd`, `0x43c6aa`) are the sawmiller's ([the step out](sawmilling.md#the-step-out-and-the-plank)); the flour goes on the flag's
-first empty place and then to a flag that asks for it or to the castle. No flag asks for flour yet: the baker is the next slice's. The count of goods made (`0x43e1d0`) is **not ported**.
+first empty place and then to a flag that asks for it or to the castle. The baker's flag asks for flour ([Baking](baking.md)). The count of goods made (`0x43e1d0`) is **not ported**.
 
 ## The castle's hand-out
 

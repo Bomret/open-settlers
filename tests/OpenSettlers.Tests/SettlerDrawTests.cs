@@ -319,6 +319,7 @@ public sealed class SettlerDrawTests
             },
             0x18 => new Saws { Sawing = mode != 0 },
             0x23 => new Grinds { Phase = mode },
+            0x24 => new Bakes { Phase = mode },
             0x19 => new SearchesHome { FarEndFirst = mode != 0, FarEndMark = mode },
             0x42 => new WaitsAtFlag
             {
