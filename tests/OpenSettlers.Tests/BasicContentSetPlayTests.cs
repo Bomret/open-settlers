@@ -372,7 +372,7 @@ public sealed class BasicContentSetPlayTests
     }
 
     // The settler supply at rate 40, a period of 125 passes, on the loop's map: the castle's first settlers take every sword and
-    // shield of the start stock, so the knight the second try owes is not made, and both new settlers are without a job.
+    // shield of the start stock, so the knight the second try owes is not made and stays owed, and both new settlers are without a job.
     [TestMethod]
     public void TheSettlerSupplyMakesSettlersWithoutAJobAndNoKnightOnTheBasicSet()
     {
@@ -396,6 +396,9 @@ public sealed class BasicContentSetPlayTests
             new Job[] { new Jobless(), new Jobless() },
             game.Settlers.Skip(count).Select(settler => settler.Job).ToArray()
         );
+        Assert.AreEqual(1, game.Supply!.KnightsOwed, "the knight the second try owes stays owed");
+        Assert.AreEqual(0, game.CastleStock.Count(Good.Sword), "the castle stock holds no sword");
+        Assert.AreEqual(0, game.CastleStock.Count(Good.Shield), "the castle stock holds no shield");
     }
 
     [TestMethod]
