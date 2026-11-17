@@ -37,17 +37,6 @@ public sealed class LaunchInstallTests
         Assert.AreEqual(LaunchArgs.BadArgumentExitCode, report.ExitCode);
     }
 
-    static string RepositoryRoot()
-    {
-        var folder = AppContext.BaseDirectory;
-        while (folder is not null && !File.Exists(Path.Combine(folder, "project.godot")))
-        {
-            folder = Path.GetDirectoryName(folder);
-        }
-
-        return folder ?? throw new InvalidOperationException("no project.godot above the test binaries");
-    }
-
     // Seed info on the basic set reads the rule files of content/basic/ and nothing else: no install is named anywhere,
     // and SIEDLER_DIR points at a folder that does not exist.
     [TestMethod]
@@ -58,7 +47,7 @@ public sealed class LaunchInstallTests
         Seed.TryParse("1234567812345678", out var seed, out _);
 
         var code = SeedInfo.Run(
-            LaunchInstall.RuleTables(args, RepositoryRoot()),
+            LaunchInstall.RuleTables(args, PythonTool.RepoRoot()),
             "1234567812345678",
             seed,
             MapSize.Offered[0],
@@ -77,7 +66,7 @@ public sealed class LaunchInstallTests
         Directory.CreateDirectory(Path.Combine(content, "rules"));
         foreach (var file in OpenSettlersRuleTables.Files)
         {
-            File.Copy(Path.Combine(RepositoryRoot(), "content", "basic", file), Path.Combine(content, file));
+            File.Copy(Path.Combine(PythonTool.RepoRoot(), "content", "basic", file), Path.Combine(content, file));
         }
 
         File.WriteAllText(Path.Combine(content, OpenSettlersRuleTables.WorldFile), "{ \"objectClasses\": 3 }");
@@ -109,7 +98,7 @@ public sealed class LaunchInstallTests
         Seed.TryParse("1234567812345678", out var seed, out _);
 
         var code = SeedInfo.Run(
-            LaunchInstall.RuleTables(LaunchArgs.Parse(["--game", folder], null), RepositoryRoot()),
+            LaunchInstall.RuleTables(LaunchArgs.Parse(["--game", folder], null), PythonTool.RepoRoot()),
             "1234567812345678",
             seed,
             MapSize.Offered[0],

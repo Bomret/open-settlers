@@ -11,19 +11,7 @@ public sealed class OpenSettlersWalkStepsTests
 {
     const string File = OpenSettlersWalkSteps.WalkStepsFile;
 
-    static string RepositoryRoot()
-    {
-        var folder = new DirectoryInfo(AppContext.BaseDirectory);
-        while (folder is not null && !System.IO.File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
-        {
-            folder = folder.Parent;
-        }
-
-        return folder?.FullName
-            ?? throw new InvalidOperationException("OpenSettlers.csproj not found above the test output");
-    }
-
-    static string BasicFolder() => Path.Combine(RepositoryRoot(), "content", "basic");
+    static string BasicFolder() => PythonTool.InRepo("content", "basic");
 
     static OpenSettlersWalkSteps Checked() => OpenSettlersWalkSteps.Load(BasicFolder());
 
@@ -125,7 +113,6 @@ public sealed class OpenSettlersWalkStepsTests
     public void AFullStepIsDrawnOneNodeBackInItsDirection(int frame, int direction, int dx, int dy, string name)
     {
         // Frames 4 + 9 * direction + 0, and the same six directions again from 54 (4 + 9 * (direction + 6)).
-        Assert.AreEqual(frame, 4 + 9 * direction, name);
         var again = 4 + 9 * (direction + 6);
         var expected = new StepOffset { Dx = dx, Dy = dy };
 

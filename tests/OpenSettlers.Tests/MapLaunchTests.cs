@@ -281,6 +281,18 @@ public sealed class MapLaunchTests
         );
     }
 
+    [TestMethod]
+    public void AValidLayoutOnTheBasicSetOpensWithNoInstall()
+    {
+        var read = Layout.Read(LayoutTests.Text(), "l.jsonc");
+        Assert.IsNotNull(read.Layout, string.Join("; ", read.Problems));
+
+        var open = (MapLaunch.Open)DecideOnTheBasicSet(["--layout", "l.jsonc"], layout: _ => (0, read.Layout, null));
+
+        Assert.AreSame(read.Layout, open.Layout);
+        Assert.IsNull(open.Install);
+    }
+
     // A layout entry the game refuses under the basic rules exits with the layout's problem, as under the History Edition: the
     // entry stands on the castle's own node.
     [TestMethod]
@@ -291,7 +303,7 @@ public sealed class MapLaunchTests
         );
         var read = Layout.Read(text, "refused.jsonc");
         Assert.IsNotNull(read.Layout, string.Join("; ", read.Problems));
-        var basicFolder = LaunchInstall.BasicFolder(RepositoryRoot());
+        var basicFolder = LaunchInstall.BasicFolder(PythonTool.RepoRoot());
         var game = GameFactory.Create(new OpenSettlersRuleTables(basicFolder).Read(), read.Layout.BuildMap(), 0);
 
         var code = LayoutLoad.Start(read.Layout, game, out var started, out var message);
@@ -299,17 +311,6 @@ public sealed class MapLaunchTests
         Assert.AreEqual(4, code);
         Assert.IsNull(started);
         StringAssert.StartsWith(message, "ERROR refused.jsonc: ");
-    }
-
-    static string RepositoryRoot()
-    {
-        var folder = AppContext.BaseDirectory;
-        while (folder is not null && !File.Exists(Path.Combine(folder, "project.godot")))
-        {
-            folder = Path.GetDirectoryName(folder);
-        }
-
-        return folder ?? throw new InvalidOperationException("no project.godot above the test binaries");
     }
 
     [TestMethod]
