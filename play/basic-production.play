@@ -13,7 +13,7 @@
 #   1. mill and baker: the castle's grain goes over the road to the mill, its flour on to the baker, and bread back (bread 2 -> 6, grain and
 #      flour used up);
 #   2. farm and mill: the farm's grain reaches the mill, and the flour piles up past the 4 the start stock could give (flour 1 -> 6);
-#   3. butcher, then pig farm (built in turn, so the one digger serves both): the pig farm's pigs reach the butcher, and meat rises past the
+#   3. butcher, then pig farm (built in turn: both sites at once leave the butcher without a settler): the pig farm's pigs reach the butcher, and meat rises past the
 #      3 the start stock could give;
 #   4. fisher: his catch reaches the castle (fish 2 -> 5).
 # So bread is proved in two games (farm to mill, mill to baker), never as one chain farm to baker. The rules are the basic set's stand-ins (ADR 0018).
