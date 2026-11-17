@@ -5,7 +5,8 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// The FNV-1a 64-bit fingerprint of the game state the ticks have produced (a command still queued is no part of it): the
 /// tick, the commands applied, the castle and its stock, the flags, the total of resource 1, the buildings and settlers as
-/// the original's items hold them, the goods, the random generator, and every map layer. Each part is written in the
+/// the original's items hold them, the goods, the random generator, every map layer, and the settler supply where the game runs
+/// it. Each part is written in the
 /// original's encoding (ADR 0013), so the digest does not change with the typed representation.
 /// </summary>
 public sealed class GameDigest : IGameDigest
@@ -50,6 +51,21 @@ public sealed class GameDigest : IGameDigest
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
             hash = Mix(hash, (long)layers.Digest(layer));
+        }
+
+        // A game without the supply mixes nothing for it, so its digest stays as it was.
+        if (game.Supply is { } supply)
+        {
+            hash = Mix(
+                Mix(
+                    Mix(
+                        Mix(Mix(Mix(hash, supply.Period), supply.Countdown), supply.LastClock),
+                        supply.KnightAccumulator
+                    ),
+                    supply.KnightsOwed
+                ),
+                supply.Running ? 1 : 0
+            );
         }
 
         return hash;

@@ -83,6 +83,9 @@ public sealed class GameParts
     /// <summary>One handler for each kind of command.</summary>
     public required IReadOnlyList<ICommandHandler> Handlers { get; init; }
 
+    /// <summary>The settler supply, or null in a game that does not run it.</summary>
+    public SettlerSupply? Supply { get; init; }
+
     /// <summary>The digest port.</summary>
     public required IGameDigest Digest { get; init; }
 }

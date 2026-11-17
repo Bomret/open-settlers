@@ -153,7 +153,9 @@ the tiles that put a flag; `castle` with sites adds the same count after the cas
 spiral table and the object codes of the large objects. The `supply` command runs the settler supply of the original in a castle game at a
 settler rate and start stock level it takes, for example `supply:1:1234,5678,9ABC:0:18,20:40:1200:25,0;26,0` (rate 40, no swords
 and shields in the castle). It prints a line for each pass where a settler was made or the knights or the stock changed:
-`tests/OpenSettlers.Tests/settler-supply.txt` holds its games, and `docs/rules/new-settlers.md` the rules it checks.
+`tests/OpenSettlers.Tests/settler-supply.txt` holds its games, each run in a launch of its own, and `docs/rules/new-settlers.md` the
+rules it checks. A command that runs after others in one launch can start from state their passes left, so its generator words can
+differ from those of a launch of its own.
 
 ### The draw verb
 

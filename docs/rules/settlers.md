@@ -156,8 +156,8 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
 - **A blocked step:** where the next node holds a settler, the timer is 0x7f, the frame `0x51 + direction`, and the heading
   the direction less 6; at the next turn after the timer the settler tries the same direction again.
 - **Passing:** see [Walking home](#walking-home).
-- **Not ported:** the chain of blocked settlers that ends in a step against the chain ([Walking home](#walking-home)), the
-  castle's own handler (`0x42e7e0`), and the settlers the storages make later ([New settlers](new-settlers.md)).
+- **Not ported:** the chain of blocked settlers that ends in a step against the chain ([Walking home](#walking-home)) and the
+  castle's own handler (`0x42e7e0`). The settlers the castle makes later are in [New settlers](new-settlers.md#in-the-engine).
 
 ## Drawing the walk: leads
 

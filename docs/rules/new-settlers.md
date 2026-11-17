@@ -133,5 +133,26 @@ The three dwords `+0x112`, `+0x116`, and `+0x11a` go back to 0 when they reach `
 
 ## In the engine
 
-**Not ported.** The engine makes the castle's 20 first settlers only (`CastleRoster.CreateCastleSettlers`), so the
-settlers without a job run out once five requests have taken them.
+`SettlerSupply` (`src/Application/SettlerSupply.cs`) holds the player's supply as typed state: the rate, the period, the
+countdown, the clock of its last turn, the knight accumulator, and the knights owed. It names the original's constants with
+their addresses. A game runs it where `GameFactory.Create` is given `settlerSupply` and a settler rate from 0 to 40, and refuses
+any other rate. A game without it makes no new settler and digests as before.
+
+- `PlaceCastleHandler` starts the supply at the castle's placement, with the clock of the placement. Before the placement the
+  supply does not turn.
+- `MainPass.Run` turns it after the objects' turn and before the phase step, as `0x4286d8` runs `Player_MakeSettlers`. The
+  turn follows [The settler timer](#the-settler-timer) in 16-bit arithmetic, so the period holds across the clock's wrap.
+- Each try feeds the knight accumulator, and makes a settler without a job in the next slot of `Game.Settlers`: on the
+  castle's node, waiting in the castle (`WaitsInCastle`), stamped with the clock, with the history fill and a `settler-made`
+  event. With a knight owed and a sword and a shield in `CastleStock`, it takes the knight's job 22 at once, the stock gives
+  up one of each, and the debt falls by one.
+- The digest mixes the supply's state where the game runs it.
+- `SettlerSupplyRecordingTests` matches `settler-supply.txt` pass by pass: the new settlers' bytes, the timer, the stock of
+  goods 25 and 26, and the generator's words. `SettlerSupplyTests` holds the rules the recording does not reach.
+
+Departures:
+
+- One player and one storage, the castle. The pick of the storage with the fewest settlers without a job is not ported, and
+  the castle always qualifies.
+- The player's 27 counts of settlers by kind, its count of knights at `+0x11a`, the storage's word `+0x40`, and the resets
+  of the player's counters at `0xffff0000` are not held.

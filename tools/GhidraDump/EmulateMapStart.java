@@ -154,17 +154,19 @@
 //                            tables (as remove), with a castle at cx,cy and no flag or road: before the castle the verb writes player 0's
 //                            start parameters as Game_SetStartParams (0x468717) does for a free game (12, the level L, 40, the settler
 //                            rate RATE, 0 to 40), the settler table's free count, share, and floor (+0x48, +0x4a, +0x58) as
-//                            Map_SetGeometry (0x42195c) works them out for one player, takes settler slot 0 as MapGen_InitParams
-//                            does, and sets the player block as 0x42055e does (byte 2 bit 6, the period (60 - RATE) * 50 at +0x122,
-//                            the countdown +0x120 at one period, the knight step 20000 at +0x124, the knight accumulator 0x8000 at
-//                            +0x126, the knights owed +0x10c at 0) and byte 3 bit 2. Each G,N sets the castle storage's stock word of
+//                            Map_SetGeometry (0x42195c) works them out for one player, and the player block as 0x42055e sets it
+//                            (byte 2 bit 6, the period (60 - RATE) * 50 at +0x122, the countdown +0x120 at one period, the knight
+//                            step 20000 at +0x124, the knight accumulator 0x8000 at +0x126, the knights owed +0x10c at 0) and byte 3
+//                            bit 2. Each G,N sets the castle storage's stock word of
 //                            the good G to N after the placement, as k@G,N of remove. The passes of home run, with Player_MakeSettlers
 //                            (0x428a75) for the four player blocks after the object pass, as 0x4286d8 runs it, and
 //                            Player_UpdateSettlerCaps (0x42a3f1) at the last phase, without the goods hand-out 0x42965c runs after it.
 //                            The start line gives the period, the state, the free count, and the share and floor; a line per pass
 //                            where a settler was made or the knights or the stock changed lists each new settler's 16 bytes
 //                            (s<slot>=), the countdown, the knight accumulator, and the knights owed (timer=), the castle storage's
-//                            stock of the goods 25 and 26 (goods=, decimal), and the generator's words (rng=)
+//                            stock of the goods 25 and 26 (goods=, decimal), and the generator's words (rng=). Run each supply
+//                            command in a launch of its own: a command after others in one launch can start from state their passes
+//                            left, and its generator words differ
 //   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -1984,7 +1986,7 @@ public class EmulateMapStart extends GhidraScript {
      * Sets up the settler supply before the castle's placement, as a free game's start leaves it: the start parameters of player
      * 0 (Game_SetStartParams, 0x468717: byte 0 12, byte 1 the start stock level, byte 2 40, byte 3 the rate), the numbers
      * Map_SetGeometry (0x42195c) derives from the map's size for one player (the free count +0x48, the share +0x4a, the floor
-     * +0x58), settler slot 0 taken as MapGen_InitParams (0x421530) takes it, and the player block as 0x42055e writes it: byte 2
+     * +0x58), and the player block as 0x42055e writes it: byte 2
      * bit 6 (in the game), the knights owed and the knight try at 0, the last clock at 0, the knight step 20000, the knight
      * accumulator 0x8000, the period (60 - rate) * 50, and the countdown at one period. Byte 3 bit 2 (the cap allows settlers)
      * is set as Castle_CreateSettlers sets it.
@@ -1995,7 +1997,6 @@ public class EmulateMapStart extends GhidraScript {
         putWord(STATE + 0x48, all);
         putWord(STATE + 0x58, all >> 3);
         putWord(STATE + 0x4a, all - (all >> 3));
-        call(0x45e121);
         byte[] bytes = emu.readMemory(toAddr(player + 2), 2);
         emu.writeMemory(toAddr(player + 2), new byte[] {(byte) (bytes[0] | 0x40), (byte) (bytes[1] | 4)});
         int period = (60 - supplyRate) * 50;
