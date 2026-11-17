@@ -16,12 +16,12 @@
   "buildings": {
     "castle": {
       // The castle only has a door: its site is not built from needs, and it asks for no worker.
-      "door": { "standing": 20, "constructing": 20 }, // A wide gate: settlers pass in two thirds of a step.
+      "door": { "standing": 20, "constructing": 20 }, // A broad gate that takes a settler five eighths of a step to pass: the longest pass of any building.
     },
     "woodcutter": {
       "size": "small", // A hut beside the trees.
       "needs": { "planks": 2, "stones": 0 }, // Timber only: the cheapest hut.
-      "door": { "standing": 12, "constructing": 12 }, // A narrow door: about a third of a step.
+      "door": { "standing": 12, "constructing": 12 }, // A quick door: a settler passes in three eighths of a step.
       "materials": ["plank", "plank"], // Two planks, in turn.
       "blows": { "firstHalf": 8, "secondHalf": 8 }, // Eight blows a material, two materials, split evenly.
       "worker": { "job": "woodcutter", "tool": "hatchet" }, // A woodcutter fells with a hatchet.
@@ -29,7 +29,7 @@
     "stonecutter": {
       "size": "small", // A hut beside the stones.
       "needs": { "planks": 2, "stones": 0 }, // Timber only: the stone is for others.
-      "door": { "standing": 12, "constructing": 12 }, // A narrow door.
+      "door": { "standing": 12, "constructing": 12 }, // A quick door: three eighths of a step.
       "materials": ["plank", "plank"], // Two planks, in turn.
       "blows": { "firstHalf": 8, "secondHalf": 8 }, // Eight blows a material, two materials, split evenly.
       "worker": { "job": "stonecutter", "tool": "pickaxe" }, // A stonecutter cuts with a pickaxe.
@@ -37,7 +37,7 @@
     "forester": {
       "size": "small", // A hut beside the meadows.
       "needs": { "planks": 2, "stones": 0 }, // Timber only.
-      "door": { "standing": 12, "constructing": 12 }, // A narrow door.
+      "door": { "standing": 12, "constructing": 12 }, // A quick door: three eighths of a step.
       "materials": ["plank", "plank"], // Two planks, in turn.
       "blows": { "firstHalf": 8, "secondHalf": 8 }, // Eight blows a material, two materials, split evenly.
       "worker": { "job": "forester", "tool": "none" }, // A forester plants with his hands: no tool.
@@ -45,7 +45,7 @@
     "fisher": {
       "size": "small", // A hut on the shore.
       "needs": { "planks": 2, "stones": 0 }, // Timber only.
-      "door": { "standing": 12, "constructing": 12 }, // A narrow door.
+      "door": { "standing": 12, "constructing": 12 }, // A quick door: three eighths of a step.
       "materials": ["plank", "plank"], // Two planks, in turn.
       "blows": { "firstHalf": 8, "secondHalf": 8 }, // Eight blows a material, two materials, split evenly.
       "worker": { "job": "fisher", "tool": "fishing-rod" }, // A fisher casts with a rod.
@@ -53,7 +53,7 @@
     "mill": {
       "size": "small", // The windmill stands on a small plot.
       "needs": { "planks": 3, "stones": 1 }, // Timber for the frame and a stone for the mill's base.
-      "door": { "standing": 12, "constructing": 12 }, // A narrow door.
+      "door": { "standing": 12, "constructing": 12 }, // A quick door: three eighths of a step.
       "materials": ["plank", "plank", "stone", "plank"], // The base stone goes in between the planks.
       "blows": { "firstHalf": 16, "secondHalf": 16 }, // Eight blows a material, four materials, split evenly.
       "worker": { "job": "miller", "tool": "none" }, // A miller grinds without a tool.
@@ -61,7 +61,7 @@
     "sawmill": {
       "size": "large", // The saw frame needs a large plot.
       "needs": { "planks": 3, "stones": 2 }, // A large building: more timber and some stone.
-      "door": { "standing": 16, "constructing": 16 }, // A wide door: a quarter turn faster than a hut's.
+      "door": { "standing": 16, "constructing": 16 }, // A slower door: a settler passes in half a step, for the larger building.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
       "worker": { "job": "sawmiller", "tool": "saw" }, // A sawmiller saws with a saw.
@@ -69,7 +69,7 @@
     "farm": {
       "size": "large", // The fields need a large plot.
       "needs": { "planks": 3, "stones": 2 }, // A large building: more timber and some stone.
-      "door": { "standing": 16, "constructing": 16 }, // A wide door.
+      "door": { "standing": 16, "constructing": 16 }, // A slower door: half a step.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
       "worker": { "job": "farmer", "tool": "scythe" }, // A farmer harvests with a scythe.
@@ -77,7 +77,7 @@
     "pig-farm": {
       "size": "large", // The pens need a large plot.
       "needs": { "planks": 3, "stones": 2 }, // The farm's twin in size and cost.
-      "door": { "standing": 16, "constructing": 16 }, // A wide door.
+      "door": { "standing": 16, "constructing": 16 }, // A slower door: half a step.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
       "worker": { "job": "pig-farmer", "tool": "none" }, // A pig farmer feeds the pigs by hand.
@@ -85,7 +85,7 @@
     "butcher": {
       "size": "large", // The slaughter house needs a large plot.
       "needs": { "planks": 3, "stones": 2 }, // A large building: more timber and some stone.
-      "door": { "standing": 16, "constructing": 16 }, // A wide door.
+      "door": { "standing": 16, "constructing": 16 }, // A slower door: half a step.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
       "worker": { "job": "butcher", "tool": "butcher-knife" }, // A butcher cuts with his knife.
@@ -93,7 +93,7 @@
     "baker": {
       "size": "large", // The oven needs a large plot.
       "needs": { "planks": 3, "stones": 2 }, // A large building: more timber and some stone.
-      "door": { "standing": 16, "constructing": 16 }, // A wide door.
+      "door": { "standing": 16, "constructing": 16 }, // A slower door: half a step.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
       "worker": { "job": "baker", "tool": "none" }, // A baker bakes without a tool.
