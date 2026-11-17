@@ -48,7 +48,10 @@ public sealed class Building(BuildingType type, int x, int y, int flag, bool con
     /// <summary>Whether the building was taken down: it burns until its countdown ends (<see cref="BurnLeft"/>).</summary>
     public bool IsDemolishing { get; set; }
 
-    /// <summary>The status bit the miller sets while he grinds and clears with the flour (bit 4 of byte 5, <c>0x4338d0</c>, <c>0x433a0d</c>).</summary>
+    /// <summary>
+    /// The status bit the miller sets while he grinds and clears with the flour (bit 4 of byte 5, <c>0x4338d0</c>, <c>0x433a0d</c>); the baker sets it
+    /// in the pause after the baking and clears it with the bread (<c>0x4337d1</c>, <c>0x43383e</c>).
+    /// </summary>
     public bool Grinding
     {
         get => (OtherStatus & GrindingBit) != 0;

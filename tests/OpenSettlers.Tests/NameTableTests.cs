@@ -47,6 +47,13 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
+    public void TheBakersJobAndStateGetTheirNames()
+    {
+        Assert.AreEqual("baker", NameTable.JobName(Baker.Number));
+        Assert.AreEqual("bakes", NameTable.StateName(0x24));
+    }
+
+    [TestMethod]
     public void TheStonecuttersJobAndStatesGetTheirNames()
     {
         Assert.AreEqual("stonecutter", NameTable.JobName(Stonecutter.Number));
@@ -170,6 +177,7 @@ public sealed class NameTableTests
                 "woodcutter",
                 "sawmiller",
                 "miller",
+                "baker",
                 "stonecutter",
                 "forester",
                 "farmer",

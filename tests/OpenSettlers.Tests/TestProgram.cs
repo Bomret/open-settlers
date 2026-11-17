@@ -71,9 +71,10 @@ static class TestProgram
     /// <summary>
     /// The workers made-up tables ask for: the woodcutter's hut a woodcutter with a made-up tool, the forester's building a forester
     /// with no tool, with <paramref name="stonecutter"/> the stonecutter's building a stonecutter with no tool, with
-    /// <paramref name="mill"/> the mill a miller with no tool, and with <paramref name="fisher"/> the fisher's building a fisher with no tool.
+    /// <paramref name="mill"/> the mill a miller with no tool, with <paramref name="fisher"/> the fisher's building a fisher with no tool, and with
+    /// <paramref name="baker"/> the bakery a baker with no tool.
     /// </summary>
-    public static WorkerRequest?[] MadeWorkers(bool stonecutter = false, bool mill = false, bool fisher = false)
+    public static WorkerRequest?[] MadeWorkers(bool stonecutter = false, bool mill = false, bool fisher = false, bool baker = false)
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
         workers[BuildingType.Woodcutter.Code] = new WorkerRequest
@@ -95,6 +96,11 @@ static class TestProgram
         if (fisher)
         {
             workers[BuildingType.Fisher.Code] = new WorkerRequest { Job = new Fisher(), Tool = Good.None };
+        }
+
+        if (baker)
+        {
+            workers[BuildingType.Baker.Code] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
         }
 
         return workers;

@@ -83,8 +83,10 @@ the [M5 scope](../milestones/m5-food.md) name them.
 **Status:** confirmed for the start routines, **inferred** for the pairing of job and building name (above).
 
 `Settler_JobStartTable` (`0x43ca54`) runs the start routine of the job where the settler has stepped through the door. The start
-routines of jobs 12, 13, 15, and 16 write the class of the good the building takes in into both request words of the building's
-flag (the class bytes at `+0x42` and `+0x44`, a set bit per class); the handler then keeps the rank of the first word. The routines of
+routines of jobs 12 and 13 write the class of the good the building takes in into the first request word of the building's flag
+(the class byte at `+0x42`, a set bit per class) and clear the class of the second (`+0x44`), as the miller's and the baker's do
+([Milling](milling.md#the-start-and-the-request-for-grain), [Baking](baking.md#the-start-and-the-request-for-flour));
+the handler then keeps the rank of the first word. **Inferred** for jobs 12 and 13 until their slices read them. The routines of
 jobs 11 and 14 write none, so the fisher's and the farm's buildings ask for no good.
 
 | Job | Start | Takes in (class) | Goes on to state | Puts (the state's byte 11) |
@@ -167,5 +169,5 @@ at `0x44fcfe` the scaffold's: 186, 177, 184, 177, 187, and 183. A good on a flag
   the art of `tools/open-settlers-art.py`. The other goods 7 to 26 have `NameTable` entries only.
 - `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar.
   The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) through `NameTable.GoodName`.
-- **Stand-in:** the workers of the fisher, farm, pig farm, butcher, and baker run no work cycle yet: a settler who takes one of those jobs enters the building and stands. The
-  mill's miller works ([Milling](milling.md)); the job slices add the other cycles.
+- **Stand-in:** the workers of the fisher, farm, pig farm, and butcher run no work cycle yet: a settler who takes one of those jobs enters the building and stands. The
+  mill's miller and the baker work ([Milling](milling.md), [Baking](baking.md)); the job slices add the other cycles.

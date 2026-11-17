@@ -29,6 +29,7 @@ public sealed class JobModulesTests
         CollectionAssert.AreEqual(
             new[]
             {
+                typeof(Baker),
                 typeof(Builder),
                 typeof(Digger),
                 typeof(Farmer),
@@ -44,11 +45,12 @@ public sealed class JobModulesTests
     }
 
     [TestMethod]
-    public void OnlyTheModulesOfTheWoodcutterTheStonecutterTheForesterTheMillerTheFisherAndTheFarmerLetTheirSettlerStandInTheHut()
+    public void OnlyTheModulesOfTheWoodcutterTheStonecutterTheForesterTheMillerTheFisherTheFarmerAndTheBakerLetTheirSettlerStandInTheHut()
     {
         CollectionAssert.AreEqual(
             new[]
             {
+                typeof(Baker),
                 typeof(Farmer),
                 typeof(Fisher),
                 typeof(Forester),
@@ -66,6 +68,7 @@ public sealed class JobModulesTests
         CollectionAssert.AreEqual(
             new[]
             {
+                Cause.Settlers,
                 Cause.Farming,
                 Cause.Fishing,
                 Cause.Forestry,

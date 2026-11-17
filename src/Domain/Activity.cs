@@ -259,6 +259,23 @@ public sealed record Grinds : Activity
 }
 
 /// <summary>
+/// State 0x24: the baker works in the bakery he stands in (<c>0x433694</c>, <c>docs/rules/baking.md</c>). Without flour on site he waits for
+/// some; with flour, he takes it out of the building's fill and bakes in two stretches (byte 11 counts them from 1): a baking of 0x2ff clock
+/// units with the node held, then a pause of 0x5dc units with the node free. After the pause he carries the bread out to the flag.
+/// </summary>
+public sealed record Bakes : Activity
+{
+    /// <summary>The stretch of the work (byte 11): 0 waits for flour, 1 bakes, 2 pauses.</summary>
+    public required int Phase { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x24;
+
+    /// <summary>Drawn while he bakes, with the node held (the stretch 1); waiting for flour or pausing he is not drawn.</summary>
+    public override bool IsDrawn => Phase == 1;
+}
+
+/// <summary>
 /// State 0xb: the sawmiller or the miller waits at his building's door with the good in his hands until the node of the flag is free and the
 /// flag has a free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the good down.
 /// </summary>

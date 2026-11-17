@@ -187,6 +187,15 @@ public static class SettlerEncoder
                 Heading = r.Heading,
                 Next = r.Next,
             },
+            // The baker's work: byte 11 counts the stretches of the work (0 while he waits for flour).
+            Bakes a => new()
+            {
+                State = a.Code,
+                Mode = a.Phase,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
             StepsOutWithGood a => new()
             {
                 State = a.Code,

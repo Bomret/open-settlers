@@ -22,6 +22,7 @@ public sealed class JobTests
         (11, typeof(Fisher)),
         (14, typeof(Farmer)),
         (15, typeof(Miller)),
+        (16, typeof(Baker)),
         (21, typeof(Jobless)),
     ];
 

@@ -196,6 +196,11 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.MillerWalkAddress, 0x1900);
         Add(ProgramTablesImporter.MillerCarryingAddress, 0x1980);
         Add(ProgramTablesImporter.MillerGrindAddress, 0x1a00);
+        var bakerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Baker.Number;
+        Write(bakerStub, [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.BakerHandlerAddress - (bakerStub + 5))]);
+        Add(ProgramTablesImporter.BakerWalkAddress, 0x1b00);
+        Add(ProgramTablesImporter.BakerCarryingAddress, 0x1b80);
+        Add(ProgramTablesImporter.BakerBakeAddress, 0x1c00);
     }
 
     static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -858,6 +863,46 @@ public sealed class ProgramTablesTests
             tables.Get<MillerFigureAdds>(new Miller())
         );
         Assert.AreEqual(0x7f, tables.MillRankBase);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheBakersFigureAddsOfTheInstallMatchTheProgram()
+    {
+        // The handler of the stub of job 16 (0x440112, read from the program's instructions): add word [edi+8], 0x4880 at 0x44011e for a
+        // figure byte from 0x80, 0x4a00 at 0x44013b for the state 5 that lays the bread down next (byte 15 is 0xd), and 0x4800 at 0x440146
+        // for the walk; the draw run of the recording (settler-draws.txt, baker) draws with them.
+        Assert.AreEqual(
+            new BakerFigureAdds
+            {
+                Walk = 0x4800,
+                Carrying = 0x4a00,
+                Bake = 0x4880,
+            },
+            TestProgram.Tables().Get<BakerFigureAdds>(new Baker())
+        );
+    }
+
+    [TestMethod]
+    public void TheBakersFigureAddsAreReadFromHisHandlerAndHisStubIsChecked()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(
+            new BakerFigureAdds
+            {
+                Walk = 0x1b00,
+                Carrying = 0x1b80,
+                Bake = 0x1c00,
+            },
+            tables.Get<BakerFigureAdds>(new Baker())
+        );
+
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Baker.Number;
+        var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "baker");
     }
 
     [TestMethod]

@@ -1867,5 +1867,47 @@
       -7,
       -21
     ]
+  },
+  "settler/baker/walks": {
+    "image": "settler/baker-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/carries": {
+    "image": "settler/baker-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/cuts": {
+    "image": "settler/baker-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/door": {
+    "image": "settler/baker-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/hands-over": {
+    "image": "settler/baker-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/waits": {
+    "image": "settler/baker-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
   }
 }

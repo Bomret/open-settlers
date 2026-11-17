@@ -441,6 +441,22 @@ public readonly record struct MillerFigureAdds
 }
 
 /// <summary>
+/// What the baker's handler adds to the figure byte (<c>0x440112</c>): <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in the
+/// step that takes the bread out (state 5 with state 0xd next), and <see cref="Bake"/> for a byte from 0x80, the bakery's frames.
+/// </summary>
+public readonly record struct BakerFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add in the step that takes the bread out (state 5 with state 0xd next).</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80: the baking frames.</summary>
+    public required ushort Bake { get; init; }
+}
+
+/// <summary>
 /// What the fisher's figure handler (<c>0x43fed8</c>) adds to the figure byte: for a byte below 0x80 <see cref="Walk"/>
 /// (or <see cref="Carrying"/> on the way back with a fish), for one from 0x80 <see cref="High"/>
 /// (<see cref="HighFacing"/> once he has caught a fish, byte 14 is 1).

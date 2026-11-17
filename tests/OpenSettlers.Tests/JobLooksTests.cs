@@ -19,6 +19,7 @@ public sealed class JobLooksTests
         new Digger(),
         new Sawmiller(),
         new Miller(),
+        new Baker(),
         new Farmer(),
     ];
 
@@ -58,6 +59,7 @@ public sealed class JobLooksTests
                 "digger",
                 "sawmiller",
                 "miller",
+                "baker",
                 "farmer",
             },
             looks.Select(look => look.Key).ToArray()

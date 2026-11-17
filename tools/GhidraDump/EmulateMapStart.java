@@ -89,7 +89,8 @@
 //                            (byte 0 of record B) into every node of the rectangle before a pass (docs/rules/fishing.md). A building of type 17 (the sawmill) or 12 (the farm) is a large building: its node takes
 //                            the object code 3 and its item the pointer to its flag at +0xe that a built site leaves (0x43ef82),
 //                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). A building of type 15 (the mill) is a
-//                            small building with the same pointer, which its handler 0x42e2a0 reads (docs/rules/milling.md). The lines also list the castle's item
+//                            small building with the same pointer, which its handler 0x42e2a0 reads (docs/rules/milling.md); a building of type 16 (the baker) is a
+//                            large building with it too, which its handler 0x42e37e reads (docs/rules/baking.md). The lines also list the castle's item
 //                            (c=) where it changed, and the start lines the castle's item and the transport priorities
 //                            (prio=, 32 bytes for the goods 0 to 31) that the flag exchange reads (0x43b054). Before the
 //                            castle the verb runs 0x445570 on the player block, as the player setup of a new game (0x42055e)
@@ -1119,14 +1120,17 @@ public class EmulateMapStart extends GhidraScript {
     // node to sow reads on the six nodes around a candidate (0x433b35).
     private static final int FARM = 0xc;
 
-    // What a placed building holds beyond the small building's: the object code at the node (2 for a small building, 3 for a large one,
-    // its top bit kept) and, for the sawmill and the mill, the flag pointer a building holds at +0xe once its site is built (0x43ef82),
-    // through which the handlers (0x42da0b, 0x42e2a0) keep their request's rank.
+    // The baker's building type, a large building (size table 0x42d307) whose handler (0x42e37e) reads the flag pointer too.
+    private static final int BAKER = 16;
+
+    // What a placed building holds beyond the small building's: the object code at the node (2 for a small building, 3 for a large one such as the sawmill, the farm, and the baker,
+    // its top bit kept) and, for the sawmill, the mill, and the baker, the flag pointer a building holds at +0xe once its site is built (0x43ef82),
+    // through which the handlers (0x42da0b, 0x42e2a0, 0x42e37e) keep their request's rank.
     private void markBuilding(int type, long item, long flag, long codeAddress) throws Exception {
-        if (type == SAWMILL || type == MILL) {
+        if (type == SAWMILL || type == MILL || type == BAKER) {
             putInt(item + 0xe, flag);
         }
-        emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL || type == FARM ? 3 : 2))});
+        emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL || type == FARM || type == BAKER ? 3 : 2))});
     }
 
     /** Draws one road as road does, silently: a start flag and its directions; returns whether it was built. */
