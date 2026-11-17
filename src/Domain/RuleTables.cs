@@ -441,6 +441,41 @@ public readonly record struct MillerFigureAdds
 }
 
 /// <summary>
+/// What the pig farmer's handler adds to the figure byte (<c>0x43ff56</c>): <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in the
+/// step that takes the pig out (state 5 with state 0xd next), and <see cref="Work"/> for a byte from 0x80, the pig farm's frames.
+/// </summary>
+public readonly record struct PigFarmerFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add in the step that takes the pig out (state 5 with state 0xd next).</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80: the work's frames.</summary>
+    public required ushort Work { get; init; }
+}
+
+/// <summary>
+/// The program's numbers of the pig farm (<c>docs/rules/pig-farming.md</c>): the rank its request for grain starts from and the odds with which the pigs
+/// it holds grow.
+/// </summary>
+public sealed record PigFarmRates
+{
+    /// <summary>
+    /// The rank the pig farm's request for grain starts from: the high byte of the player word at <c>+0x158</c>, which the player setup
+    /// of a new game writes (<c>0x44579c</c>). The handler (<c>0x42e0fa</c>) shifts it right by the goods the pig farm holds.
+    /// </summary>
+    public required byte RankBase { get; init; }
+
+    /// <summary>
+    /// The table at <c>0x433684</c> of eight words: for a pig farm that holds <c>n</c> pigs (0 to 7), at the index <c>n</c>, the draw
+    /// below which another pig grows in each pause of the work (the draw is the generator's 16-bit word).
+    /// </summary>
+    public required ImmutableArray<ushort> Growth { get; init; }
+}
+
+/// <summary>
 /// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <see cref="Walk"/>
 /// (or <see cref="Carrying"/> on the way back with a load), for one from 0x80 <see cref="High"/>
 /// (<see cref="HighFacing"/> where the settler's heading, byte 14, is 1).
