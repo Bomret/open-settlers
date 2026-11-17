@@ -19,8 +19,6 @@ static class StandInRulesReader
         AllowTrailingCommas = true,
     };
 
-    static readonly string[] Directions = ["east", "south-east", "south", "west", "north-west", "north"];
-
     static readonly string[] GoodNames =
     [
         "fish",
@@ -61,7 +59,15 @@ static class StandInRulesReader
         ["castle"] = 6,
     };
 
-    static readonly IReadOnlyDictionary<string, Direction> DirectionTerms = Directions
+    static readonly IReadOnlyDictionary<string, Direction> DirectionTerms = new[]
+    {
+        "east",
+        "south-east",
+        "south",
+        "west",
+        "north-west",
+        "north",
+    }
         .Select((name, at) => (name, direction: new Direction { Value = at }))
         .ToDictionary(entry => entry.name, entry => entry.direction);
 

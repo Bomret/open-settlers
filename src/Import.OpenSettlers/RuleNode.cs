@@ -109,9 +109,8 @@ sealed class RuleNode(string file, string key, JsonElement value)
     /// </summary>
     public (int First, int Last) Range(int min, int max)
     {
-        var (first, last) = IsList
-            ? (Items(2)[0].Int(min, max), Items(2)[1].Int(min, max))
-            : (Int(min, max), Int(min, max));
+        var bounds = IsList ? Items(2) : new[] { this, this };
+        var (first, last) = (bounds[0].Int(min, max), bounds[1].Int(min, max));
 
         return last < first ? throw Fault($"the range {first} to {last} runs backwards") : (first, last);
     }

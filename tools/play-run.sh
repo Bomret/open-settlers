@@ -235,7 +235,7 @@ hash=$(
     echo "fps $fps"
     echo "godot $version"
     # No install path on the basic set, so its result is the same whatever SIEDLER_DIR holds.
-    if [ "$content_set" = basic ]; then echo "siedler none"; else echo "siedler $SIEDLER_DIR"; fi
+    [ "$content_set" = basic ] && echo "siedler none" || echo "siedler $SIEDLER_DIR"
   } | git hash-object --stdin
 )
 

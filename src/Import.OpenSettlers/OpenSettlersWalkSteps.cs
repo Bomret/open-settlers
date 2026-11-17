@@ -23,7 +23,7 @@ public sealed class OpenSettlersWalkSteps : IWalkSteps
     /// <summary>The number of offsets every sequence holds: the time left, shifted right 3, picks one.</summary>
     public const int Entries = 16;
 
-    // The offset is a signed byte, as the install's walk steps hold it.
+    // The offset fits a signed byte, as the install's walk steps hold it; the bound is symmetric, -127 to 127.
     const int MaxOffset = 127;
 
     readonly StepOffset[][] _frames;

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
@@ -166,22 +167,30 @@ public partial class AssetBrowserView : Control
         var folder = open.PlayOutFolder;
         // MapLaunch opened the install on the History Edition and none on the basic set, so the install decides the content set
         // once and the History Edition's tables come from the install already open.
-        var basicFolder = LaunchInstall.BasicFolder(ProjectSettings.GlobalizePath("res://"));
-        IRuleTablesSource tablesSource = install is null
-            ? new OpenSettlersRuleTables(basicFolder)
-            : new HistoryEditionRuleTables(install);
-        // The view calls this where it catches a read failure: a broken content set names its file and key, and the view draws
-        // no map, as for a missing install file. The basic set reads its walk steps here too, so a broken walk steps file
-        // draws no map either; it reads no install.
-        Func<RuleTables?, GraphicsLoad> loadGraphics = install is null
-            ? _ => new GraphicsLoad
+        IRuleTablesSource tablesSource;
+        Func<RuleTables?, GraphicsLoad> loadGraphics;
+        Func<IWalkSteps> loadSteps;
+        if (install is null)
+        {
+            var basicFolder = LaunchInstall.BasicFolder(ProjectSettings.GlobalizePath("res://"));
+            tablesSource = new OpenSettlersRuleTables(basicFolder);
+            // The view calls this where it catches a read failure: a broken content set names its file and key, and the
+            // view draws no map, as for a missing install file. The walk steps arrive with the graphics, so a broken walk
+            // steps file draws no map either, and the view never calls loadSteps.
+            loadGraphics = _ => new GraphicsLoad
             {
                 Source = OpenSettlersSource.Load(basicFolder, new GodotImageDecoder()),
                 Steps = OpenSettlersWalkSteps.Load(basicFolder),
-            }
-            : tables => HistoryEditionSource.LoadGraphics(install, tables);
-        Func<IWalkSteps> loadSteps = () =>
-            install is null ? OpenSettlersWalkSteps.Load(basicFolder) : StepOffsets.Load(install);
+            };
+            loadSteps = () => throw new UnreachableException("the basic graphics load carries the walk steps");
+        }
+        else
+        {
+            tablesSource = new HistoryEditionRuleTables(install);
+            loadGraphics = tables => HistoryEditionSource.LoadGraphics(install, tables);
+            loadSteps = () => StepOffsets.Load(install);
+        }
+
         var view = layout is not null
             ? new MapViewControl(tablesSource, loadGraphics, loadSteps, layout)
             : new MapViewControl(

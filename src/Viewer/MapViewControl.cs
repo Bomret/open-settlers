@@ -25,12 +25,12 @@ namespace OpenSettlers.Viewer;
 /// The view of the map, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
 /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
 /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
-/// <paramref name="loadGraphics"/> gives the source the view draws from, which the host picks; the rules come from the install
-/// under every source.
+/// <paramref name="loadGraphics"/> gives the source the view draws from, which the host picks; <paramref name="tablesSource"/>
+/// gives the rules, read from the install on the History Edition and from <c>content/basic/rules/</c> on the basic set.
 /// </remarks>
 /// <param name="tablesSource">The rule tables port; reading it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the tables cannot be read.</param>
 /// <param name="loadGraphics">Loads the graphics source the view draws from, given the rule tables the settlers are drawn by (null outside the game view); it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the source cannot be read.</param>
-/// <param name="loadSteps">Reads the walk steps where the graphics source has none, as under the Open Settlers source.</param>
+/// <param name="loadSteps">Reads the walk steps where the graphics load carries none, as on the History Edition; on the basic set the walk steps arrive with the graphics load.</param>
 /// <param name="seedText">The seed the view opens on, as the seed field shows it.</param>
 /// <param name="sizeValue">The map size the view opens on.</param>
 /// <param name="gameView">Whether a game ticks on the shown map.</param>

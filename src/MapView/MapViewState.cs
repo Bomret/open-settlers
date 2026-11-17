@@ -87,14 +87,16 @@ public sealed class MapViewState
     /// </summary>
     public static MapViewState OpenLayout(Layout layout, string? tablesProblem = null)
     {
+        var (map, problem) = tablesProblem is null
+            ? (layout.BuildMap(), (string?)null)
+            : (null, $"Cannot start the game, the rule tables are unreadable: {tablesProblem}");
+
         return new MapViewState(null, tablesProblem, layout.Seed.ToScreen(), layout.Size.Value)
         {
             _applied = layout.Seed,
             _layout = true,
-            Map = tablesProblem is null ? layout.BuildMap() : null,
-            Problem = tablesProblem is null
-                ? null
-                : $"Cannot start the game, the rule tables are unreadable: {tablesProblem}",
+            Map = map,
+            Problem = problem,
         };
     }
 
