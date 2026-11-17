@@ -44,16 +44,17 @@ after each level of flags. Grain from either source therefore goes by these rule
 **Castle stock** (`grain-split.txt`, five grains at the pass 700; the pig farm's flag and the mill's flag each one level from the castle's flag, the pig farm's road leaving by a higher
 direction): the first four hand-outs go to the pig farm (`0xff` against `0x7f`), the pig farm (both `0x7f`, the pig farm met first), the mill (`0x7f` against `0x3f`), and the pig farm
 (both `0x3f`, the pig farm met first). The pig farm ends up with one grain more than the mill, and the fifth cycle's hand-out depends on the castle's outstanding slots, which the engine does not
-keep ([Materials](construction-materials.md#stand-ins-and-what-is-not-ported)): the original hands nothing out in the cycle of the pass 856 and the engine does.
+keep ([Materials](construction-materials.md#stand-ins-and-what-is-not-ported)): the original hands nothing out in the cycle of the pass 856 and gives the fifth grain to the mill at the pass 889 (both in the fixture's lines to the pass 899), and the engine hands the fifth out at 856, so the test checks the passes before 856.
 
-**Grain from a farm** (`grain-split-farm.txt`): a grain on the flag of a farm, one level from the mill's flag and two from the pig farm's, goes to the pig farm, where the pig farm's `0xff`
+**Grain from a farm** (`grain-split-farm.txt`): a grain on the flag of a farm, one level from the mill's flag and three from the pig farm's, goes to the pig farm, where the pig farm's `0xff`
 outranks the mill's `0x7f` grown by a quarter and one for the level between them (`0x9f`, then `0xc7` at the pig farm's level). The put and the hand-out take the same search, so the
 two sources share one rule in the engine (`FlagRequestSearch`).
 
 ## What the engine keeps
 
 The split has no state of its own: the counters it moves are the fill bytes of the two buildings, their request ranks, and the castle's stock, which the digest holds. The same seed
-and commands give the same digest (`play/food-chain.play`). `GrainSplitTests` pins the cases above.
+and commands give the same digest: `GrainSplitTests` runs the castle's split and the farm's split twice and compares the digests, and shows that a mill's fill byte, one more grain in
+the castle, or the farm's grain changes them. It also pins the cases above, with the case of both buildings full while neither asks.
 
 ## The second order of the goods
 
@@ -67,4 +68,4 @@ inferred from the branch's shape.
 
 ## The program's other default words
 
-`0x4457e6` and the sibling `0x445716` are not read by the split either; their roles stay open ([Program index](program-index.md#simulation)).
+`0x4457e6` and the sibling `0x445716` are not read by the split either; their roles stay open ([Program index](program-index.md#simulation), [M5 open questions](../milestones/m5-food.md#open-questions)).

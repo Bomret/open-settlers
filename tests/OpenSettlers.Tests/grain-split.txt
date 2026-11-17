@@ -5,14 +5,14 @@
 # mill (type 15, at the flag 18,6), both with their workers inside after the pass 362; the part castle-off@300 sets the castle's building
 # type to 0 before the pass 300 (docs/rules/pig-farming.md, "The rank"); the click k@4,5 sets the castle's stock word of the grain (good 4)
 # to 5 at the pass 700. Both ask for grain from the pass 362 on. The first four hand-outs, one per cycle (the passes 724, 757, 790, 823), go
-# to the pig farm, the pig farm, the mill, and the pig farm; the checks stop before the pass 856, where the original's castle hands nothing out
-# (its outstanding slots are full, the fifth grain goes to the mill at the pass 889) and the engine, which keeps no slots, hands the fifth out
-# (docs/rules/construction-materials.md, "Stand-ins"). The lines are the emulator's output reduced to what the engine
+# to the pig farm, the pig farm, the mill, and the pig farm; the lines run to the pass 899, where the original's castle hands nothing out
+# at the pass 856 (its outstanding slots are full) and gives the fifth grain to the mill at the pass 889; the engine, which keeps no slots,
+# hands the fifth out at 856 (docs/rules/construction-materials.md, "Stand-ins"), so the test checks only the passes before 856. The lines are the emulator's output reduced to what the engine
 # reproduces: the items of the mill's flag (f2) and of the pig farm's flag (f3) (70 bytes, the request words at 0x42 to 0x45), the pig
 # farm's item (b2) and the mill's (b3) (18 bytes: the status at 5, the fill bytes at 8 and 9; their flag pointers left out), the castle's
 # grain and pig counts, and the generator. The flag and building slots are one higher than the engine's (the dummies of the tables).
 # Not production code: no routine of the program is transcribed here, only values the program produced.
-# grain-split construct:1:1234,5678,9ABC:0:15,5:18,6;15,9:16,6,00;16,6,2223:15,9,14;18,6,15:700:850:k@4,5:castle-off@300
+# grain-split construct:1:1234,5678,9ABC:0:15,5:18,6;15,9:16,6,00;16,6,2223:15,9,14;18,6,15:700:900:k@4,5:castle-off@300
 pass=0 grain=0 pig=0 rng=AEC7,C7E8,B97D
 pass=5 rng=CFD2,A346,C0B2
 pass=6 rng=B3AA,605F,31FC
@@ -94,3 +94,10 @@ pass=791 f2=11000008480800000001000000000000000000000000000000000000000000000000
 pass=800 rng=7401,1446,4893
 pass=823 f2=120000084808000000010000000000000000000000000000000000000000000000000000000000000000000000000000460000233600022300000000000000000000103F0000 f3=12000001410111000000000000000000000000000000000000000000000000000000000046000023000000000000000000000000240002230000000010000000000010000000 b2=3808000038400300030103000000D2000000 grain=1 pig=0 rng=C0D4,A44F,AE6C
 pass=824 f3=120000014101110000000000000000000000000000000000000000000000000000000000460000230000000000000000000000002400022300000000100000000000101F0000
+pass=856 rng=CB4F,7B7A,A95D
+pass=857 f2=130000084808000000010000000000000000000000000000000000000000000000000000000000000000000000000000460000233600022300000000000000000000103F0000 f3=130002014101110000000000000000000000000000000000000000000000000000000000460000230000000000000000000000002400022300000000100000000000101F0000
+pass=872 rng=EF94,AFD6,926B
+pass=880 rng=0D01,F6CB,A120
+pass=889 f2=14000008480800000001000000000000000000000000000000000000000000000000000000000000000000000000000046000023360002230000000000000000000010000000 f3=140000014101110000000000000000000000000000000000000000000000000000000000460000230000000000000000000000002400022300000000100000000000101F0000 b3=440500003C4002000200020000008C000000 grain=0 pig=0 rng=A2EC,3090,CBF5
+pass=890 f2=140000084808000000010000000000000000000000000000000000000000000000000000000000000000000000000000460000233600022300000000000000000000101F0000
+pass=897 rng=1889,E60A,FE42

@@ -50,6 +50,107 @@ public sealed class GrainSplitTests
     }
 
     [TestMethod]
+    public void WithTheMillAndThePigFarmBothFullTheGrainStaysInTheCastle()
+    {
+        var game = Both(0);
+        foreach (var slot in new[] { PigFarm, Mill })
+        {
+            game.Buildings[slot].SetFill(FillCounter.Low, 0x77);
+        }
+
+        // The handlers rank their requests once in a cycle of passes.
+        for (var pass = 700; pass < 760; pass++)
+        {
+            game.Tick();
+        }
+
+        foreach (var slot in new[] { MillFlag, PigFarmFlag })
+        {
+            Assert.AreEqual(0, game.Flags[slot].RequestOf(RequestWord.First).Rank, $"the request rank of the flag {slot} while its building is full");
+        }
+
+        while (game.CastleStock.Count(Good.Grain) < 5)
+        {
+            game.CastleStock.Add(Good.Grain);
+        }
+
+        for (var pass = 760; pass < 900; pass++)
+        {
+            game.Tick();
+        }
+
+        Assert.AreEqual(5, game.CastleStock.Count(Good.Grain), "the castle's grain after 150 passes with both buildings full");
+    }
+
+    // The split's state is the fills, the request ranks, and the castle's stock, and the digest holds all three: the same seed and
+    // commands, twice, give the same digest, for grain from the castle's stock and for grain from a farm's flag.
+    [TestMethod]
+    public void TheSameRunTwiceGivesTheSameDigestWithBothBuildingsAsking()
+    {
+        Assert.AreEqual(CastleRunDigest(null), CastleRunDigest(null), "the digest of the castle's grain split, run twice");
+        Assert.AreEqual(FarmRunDigest(false), FarmRunDigest(false), "the digest of the farm's grain split, run twice");
+    }
+
+    // A digest that left a building's fill, or the castle's stock, out of the split's state would not tell these runs apart: the runs
+    // differ in one fill byte of the mill, in one grain served to the mill instead of the pig farm, or in the farm's grain.
+    [TestMethod]
+    public void TheDigestDiffersWhereTheSplitsStateDiffers()
+    {
+        var plain = CastleRunDigest(null);
+        Assert.AreNotEqual(plain, CastleRunDigest(game => game.Buildings[Mill].SetFill(FillCounter.Low, game.Buildings[Mill].FillLow + 1)), "one fill byte of the mill");
+        Assert.AreNotEqual(plain, CastleRunDigest(game => game.CastleStock.Add(Good.Grain)), "one more grain in the castle's stock");
+        Assert.AreNotEqual(FarmRunDigest(false), FarmRunDigest(true), "the farm's grain on its flag or not");
+    }
+
+    static ulong CastleRunDigest(Action<Game>? change)
+    {
+        var game = Both(5);
+        change?.Invoke(game);
+        for (var pass = 700; pass < 860; pass++)
+        {
+            game.Tick();
+        }
+
+        return new GameDigest().Of(game);
+    }
+
+    static ulong FarmRunDigest(bool grainOnTheFlag)
+    {
+        var parts = RemovalTests.Load("grain-split-farm.txt").Single().Command.Split(':');
+        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        for (var pass = 0; pass < 700; pass++)
+        {
+            if (pass == 500 && grainOnTheFlag)
+            {
+                game.Goods.LayGood(FarmFlag, 0, Good.Grain.Code);
+            }
+
+            game.Tick();
+        }
+
+        return new GameDigest().Of(game);
+    }
+
+    static Game Both(int grains)
+    {
+        var scenario = RemovalTests.Load(Fixture).Single();
+        var parts = scenario.Command.Split(':');
+        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        for (var pass = 0; pass < 700; pass++)
+        {
+            game.Tick();
+        }
+
+        game.ApplyCommands();
+        while (game.CastleStock.Count(Good.Grain) < grains)
+        {
+            game.CastleStock.Add(Good.Grain);
+        }
+
+        return game;
+    }
+
+    [TestMethod]
     public void TheCastleSharesGrainBetweenTheMillAndThePigFarmAsTheOriginalDoes() =>
         Replay(
             Fixture,
@@ -63,7 +164,8 @@ public sealed class GrainSplitTests
                         game.CastleStock.Add(Good.Grain);
                     }
                 }
-            }
+            },
+            to: 855
         );
 
     // The grain of a farm, put on the farm's flag three flags from the pig farm's and one from the mill's: the pig farm's request ranks 0xff
@@ -79,12 +181,12 @@ public sealed class GrainSplitTests
                     game.Goods.LayGood(FarmFlag, 0, Good.Grain.Code);
                 }
             },
-            from: 400
+            from: 300
         );
 
     // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS][:castle-off@PASS]; before runs ahead of each pass's tick.
-    // The checks start at the pass from.
-    static void Replay(string fixture, Action<Game, int> before, int from = 0)
+    // The checks run from the pass from to the pass to.
+    static void Replay(string fixture, Action<Game, int> before, int from = 0, int to = int.MaxValue)
     {
         var scenario = RemovalTests.Load(fixture).Single();
         var parts = scenario.Command.Split(':');
@@ -101,7 +203,7 @@ public sealed class GrainSplitTests
         string? pigs = null;
         string? rng = null;
 
-        for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
+        for (var pass = 0; pass <= Math.Min(Math.Min(last, passes - 1), to); pass++)
         {
             before(game, pass);
             game.Tick();

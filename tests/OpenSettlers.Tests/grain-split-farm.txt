@@ -7,9 +7,10 @@
 # away (the pass 527: the pig farm's fill byte is 1 and its request ranks 0x7f): a farther request must rank above the nearer one grown by
 # a quarter and one for each level between (docs/rules/goods.md, "The search for a request"). The lines are reduced as in grain-split.txt: the
 # items of the mill's flag (f2), the pig farm's flag (f3), and the third flag (f4) (70 bytes, the request words at 0x42 to 0x45), the pig farm's
-# item (b2) and the mill's (b3), the castle's grain and pig counts, and the generator. The checks run from the pass 400, after both workers
-# are inside (with the third road the original's pig farm flag shows rank 0 at the pass 98 where the engine shows 0xff: not traced, the
-# turn before the worker is inside, which the grain's search does not read), and stop at the pass 700, before the grain is
+# item (b2) and the mill's (b3), the castle's grain and pig counts, and the generator. The checks run from the pass 300, the first pass
+# with castle-off in effect. Before it the original's pig farm flag ranks 0 from the pass 98 to the pass 248 where the engine shows 0xff: that is
+# the castle-pointer regime of the pig farm's handler, which the engine replaces by the player word (a stand-in, docs/rules/pig-farming.md,
+# "The rank of the request for grain"), and the grain's search does not read it. The checks stop at the pass 700, before the grain is
 # carried the whole way (the engine's carriers are checked by their own fixtures).
 # farm-grain construct:1:1234,5678,9ABC:0:15,5:18,6;15,9;20,6:16,6,00;16,6,2223;18,6,00:15,9,14;18,6,15:700:700:k@4,0:500,4,0,4,0:castle-off@300
 pass=0 grain=0 pig=0 rng=AEC7,C7E8,B97D

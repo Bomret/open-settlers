@@ -10,8 +10,6 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
   (player `-0x54`): `Player_SetTransportPriorities` in the
   [program index](../rules/program-index.md#program-start-and-game-flow), ported
   ([Goods](../rules/goods.md#transport-priorities)). known
-- `0x445716` and `0x4457e6`: store default words at player `+0x140` to `+0x146` and around player `-0x80`; nothing in the
-  split of grain reads them. likely
 
 ## Known
 
@@ -42,6 +40,12 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
   order from the sprite of good 25; no routine read puts or asks either, and a layout cannot lay good 26 on a flag.
 - What are the player words at `+0x152`, `+0x154`, and `+0x156` (`0x44579c`) for? No read through a fixed displacement is found
   ([Grain split](../rules/grain-split.md#there-is-no-separate-split)).
+- What are the player words `0x445716` (`Player_SetDefaults1`) stores at `+0x140` to `+0x146`, and the nine words `0x4457e6` stores
+  from player `-0x80` to `-0x70`, for? Both are called by `0x42055e` only. The split of grain does not read them, and no other reader is
+  found; the roles are open ([Program index](../rules/program-index.md#simulation)).
+- What are the player words `0x445752` (`Player_SetDefaults2`) stores at `+0x14a` to `+0x150` for? Only the word at `+0x148` has a
+  known reader (the planks' rank, [Materials](../rules/construction-materials.md)); the four words after it have no read through a fixed
+  displacement that a search finds.
 - The castle's start holds 5 jobless settlers and the engine makes no more ([Castle](../rules/castle.md)): a carrier for each road and
   a worker for each food building without a tool need 11 for the whole chain. How the original brings new settlers is open
   ([Construction](../rules/construction.md): the player counter at `+0x116`, not ported); `play/food-chain.play` builds the three
