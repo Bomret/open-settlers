@@ -23,7 +23,7 @@ interface that returns dedicated types, never a format type.
 - `src/Import.HistoryEdition/` reads the install (formats, assets, program tables, graphics) and implements every
   port. Its readers and tables are internal; its public types are the ones the host builds, plus `JobTableNames`
   for the adapters.
-- `src/Import.OpenSettlers/` reads `content/open-settlers/` and implements the graphics source.
+- `src/Import.OpenSettlers/` reads `content/basic/` and implements the graphics source.
 - The map view, `src/Assets/`, the domain, and the application name no source type. The launch code and the asset
   browser build a source.
 

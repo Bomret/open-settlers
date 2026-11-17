@@ -1,9 +1,9 @@
 # The fisher's catch: he fishes at a lake the generator drew, which holds lake details above 0, and walks back with the fish to lay it on
 # his flag. The castle's click places it at 15,5 with its flag at 16,6; the fisher's site at 18,5 has its flag at 19,6 and a road of
 # three steps east joins the flags. The shots crop around the node he stands on at each moment.
-# Run it on the game view with seed 4455544685788642 and size 1, under either graphics source:
+# Run it on the game view with seed 4455544685788642 and size 1, under either content set:
 #   sh tools/play-run.sh fisher-catch --game-view --seed 4455544685788642 --size 1 --fps 10
-#   sh tools/play-run.sh fisher-catch --game-view --seed 4455544685788642 --size 1 --fps 10 --graphics open-settlers
+#   sh tools/play-run.sh fisher-catch --game-view --seed 4455544685788642 --size 1 --fps 10 --content-set basic
 expect seed = 4455544685788642
 expect size = 1
 wait 0.3

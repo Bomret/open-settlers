@@ -8,7 +8,7 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.Import.ContentSet;
 
 /// <summary>
-/// The graphics source of the repository's own content set <c>content/open-settlers/</c> (ADR 0014, ADR 0015). The set
+/// The graphics source of the repository's own content set <c>content/basic/</c> (ADR 0014, ADR 0015). The set
 /// holds PNG images and one JSON manifest, <see cref="ManifestFile"/>: an object whose keys name draw terms and whose
 /// values are <c>{ "image": "&lt;path&gt;", "anchor": [x, y] }</c>. The path is relative to the set's folder, and the
 /// anchor is the offset of the image's top left corner from the term's position. The keys: <see cref="TerrainKey"/> for

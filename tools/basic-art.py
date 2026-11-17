@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the art of the Open Settlers content set: content/open-settlers/manifest.json and its PNGs.
+"""Writes the art of the basic content set: content/basic/manifest.json and its PNGs.
 
 The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
 flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the six food
@@ -8,11 +8,11 @@ settlers, all drawn here from nothing but numbers. It holds nothing derived from
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
 
-    python3 tools/open-settlers-art.py [<folder>]
+    python3 tools/basic-art.py [<folder>]
 
-It writes into content/open-settlers, or into <folder> where given. The unit test
-RepositoryContentTests.TheOpenSettlersContentSetIsTheGeneratorsOutput writes the set into a temporary folder and fails
-where content/open-settlers holds any file it does not write the same, apart from the .gdignore. Run the script after a
+It writes into content/basic, or into <folder> where given. The unit test
+RepositoryContentTests.TheBasicContentSetIsTheGeneratorsOutput writes the set into a temporary folder and fails
+where content/basic holds any file it does not write the same, apart from the .gdignore. Run the script after a
 change to it and commit its output.
 
 The terrain triangles are 32 pixels wide and 20 high, the node spacing and row spacing of the map. An upper triangle
@@ -28,7 +28,7 @@ import struct
 import sys
 import zlib
 
-OUT = os.path.join("content", "open-settlers")
+OUT = os.path.join("content", "basic")
 WIDTH = 32
 HEIGHT = 20
 BLEED = 8

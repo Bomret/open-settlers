@@ -7,7 +7,7 @@ dotnet = ["10.0.402", "8.0.427"]
 # Ghidra and the build of its decompiler. Microsoft's build, because it covers Windows on ARM.
 java = "microsoft-25"
 gradle = "9"
-# program_index.py, and tools/open-settlers-art.py, which a unit test runs.
+# program_index.py, and tools/basic-art.py, which a unit test runs.
 python = "3.13"
 
 # Godot .NET build. The version must match Godot.NET.Sdk in OpenSettlers.csproj and GODOT below.
@@ -99,7 +99,7 @@ depends = ["build"]
 run = "{{ env.GODOT }} --headless --path . -- --seed-info"
 
 [tasks.play]
-description = "Run a play script under Movie Maker, reusing a stored result (needs SIEDLER_DIR): <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh] [--repro]"
+description = "Run a play script under Movie Maker, reusing a stored result (needs SIEDLER_DIR): <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--content-set <set>] --fps <n> [--fresh] [--repro]"
 run = "sh tools/play-run.sh"
 
 [tasks.editor]
