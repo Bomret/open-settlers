@@ -86,8 +86,8 @@ the [M5 scope](../milestones/m5-food.md) name them.
 routines of jobs 12 and 13 write the class of the good the building takes in into the first request word of the building's flag
 (the class byte at `+0x42`, a set bit per class) and clear the class of the second (`+0x44`), as the miller's and the baker's do
 ([Milling](milling.md#the-start-and-the-request-for-grain), [Baking](baking.md#the-start-and-the-request-for-flour));
-the handler then keeps the rank of the first word. **Confirmed** for jobs 13, 15, and 16, whose slices read their routines (each writes the first
-request word only, [Butchering](butchering.md#the-start-and-the-request-for-pigs)); **inferred** for job 12 until its slice reads it. The routines of
+the handler then keeps the rank of the first word. **Confirmed** for jobs 12, 13, 15, and 16, whose slices read their routines (each writes the first
+request word only, [Pig farming](pig-farming.md#the-start-and-the-request-for-grain), [Butchering](butchering.md#the-start-and-the-request-for-pigs)). The routines of
 jobs 11 and 14 write none, so the fisher's and the farm's buildings ask for no good.
 
 | Job | Start | Takes in (class) | Goes on to state | Puts (the state's byte 11) |
@@ -170,5 +170,4 @@ at `0x44fcfe` the scaffold's: 186, 177, 184, 177, 187, and 183. A good on a flag
   the art of `tools/open-settlers-art.py`. The other goods 7 to 26 have `NameTable` entries only.
 - `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar.
   The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) through `NameTable.GoodName`.
-- **Stand-in:** the workers of the pig farm run no work cycle yet: a settler who takes that job enters the building and stands. The
-  mill's miller, the farm's farmer, the baker, the butcher, and the fisher work ([Milling](milling.md), [Farming](farming.md), [Baking](baking.md), [Butchering](butchering.md), [Fishing](fishing.md)); the job slices add the other cycles.
+- The workers of the fisher, farm, mill, pig farm, butcher, and baker run their work cycles ([Fishing](fishing.md), [Farming](farming.md), [Milling](milling.md), [Pig farming](pig-farming.md), [Butchering](butchering.md), [Baking](baking.md)).

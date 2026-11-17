@@ -276,6 +276,24 @@ public sealed record Bakes : Activity
 }
 
 /// <summary>
+/// State 0x25: the pig farmer works in the pig farm he stands in (<c>0x4333c1</c>, <c>docs/rules/pig-farming.md</c>). Without grain on site he
+/// waits for some; with grain, he takes it out of the building's fill and works in stretches (byte 11 counts them): the odd ones work
+/// with the node held (0x17f clock units), the even ones pause with the node free (0x800 units) while the pigs the farm holds may grow.
+/// After the third stretch of a round the farm may give a pig, which he carries out to the flag.
+/// </summary>
+public sealed record TendsPigs : Activity
+{
+    /// <summary>The stretch of the work (byte 11): 0 waits for grain, 1, 3, and 5 work, 2, 4, and 6 pause.</summary>
+    public required int Phase { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x25;
+
+    /// <summary>Drawn while he works, with the node held (the stretches 1, 3, and 5); waiting for grain or pausing he is not drawn.</summary>
+    public override bool IsDrawn => Phase is 1 or 3 or 5;
+}
+
+/// <summary>
 /// State 0x26: the butcher works in the shop he stands in (<c>0x4332a8</c>, <c>docs/rules/butchering.md</c>). Without a pig on site he waits
 /// for one; with a pig he takes it out of the building's fill and works one stretch of 0x5ff clock units with the node held (byte 11 is
 /// then 0xff), after which he carries the meat out to the flag.
@@ -293,12 +311,12 @@ public sealed record Butchers : Activity
 }
 
 /// <summary>
-/// State 0xb: the sawmiller, the miller, the baker, or the butcher waits at his building's door with the good in his hands until the node of the flag is
+/// State 0xb: the sawmiller, the miller, the baker, the butcher, or the pig farmer waits at his building's door with the good in his hands until the node of the flag is
 /// free and the flag has a free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the good down.
 /// </summary>
 public sealed record StepsOutWithGood : Activity
 {
-    /// <summary>The good he carries out (byte 11): the plank, the flour, the meat.</summary>
+    /// <summary>The good he carries out (byte 11): the plank, the flour, the meat, the pig.</summary>
     public required Good Good { get; init; }
 
     /// <inheritdoc />

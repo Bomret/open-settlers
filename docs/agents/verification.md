@@ -259,6 +259,8 @@ script alone. Add a layout only where none of them holds the situation.
   fast-forwarded to the castle's first flour.
 - `layouts/baker.jsonc` and `play/baker.play`: a finished bakery with its baker inside, a road to the castle, and two flours on the castle's flag,
   fast-forwarded to the castle's first bread.
+- `layouts/pig-farm.jsonc` and `play/pig-farm.play`: a finished pig farm with its pig farmer inside, a road to the castle, and two grains on
+  the castle's flag, fast-forwarded to the pig on the step out and then to the castle's first pig.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the
@@ -292,7 +294,7 @@ The entries follow, and the game applies them in the file's order:
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
 - `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher (a
-  woodcutter's, stonecutter's, forester's, mill's, fisher's, farm's, butcher's, or baker's with its worker inside).
+  woodcutter's, stonecutter's, forester's, mill's, fisher's, farm's, butcher's, baker's, or pig farm's with its worker inside).
 - `settlers`: a carrier waiting on a road.
 - `goods`: `{"x","y","place","good"}` on a flag.
 

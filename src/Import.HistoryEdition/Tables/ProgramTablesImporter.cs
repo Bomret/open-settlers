@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 
@@ -202,6 +203,33 @@ static class ProgramTablesImporter
 
     /// <summary>The <c>add word [edi+8], imm16</c> of the butcher's handler for any other figure byte below 0x80 (the walk).</summary>
     public const int ButcherWalkAddress = 0x440020;
+
+    /// <summary>The handler of the pig farmer's figure (<c>0x43ff56</c>, the target of the stub of job 12).</summary>
+    public const int PigFarmerHandlerAddress = 0x43ff56;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the pig farmer's handler for a figure byte from 0x80 (the work).</summary>
+    public const int PigFarmerWorkAddress = 0x43ff5d;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the pig farmer's handler for the step that takes the pig out (state 5, byte 15 0xd).</summary>
+    public const int PigFarmerCarryingAddress = 0x43ff7a;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the pig farmer's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int PigFarmerWalkAddress = 0x43ff85;
+
+    /// <summary>
+    /// The instruction pair of the player setup's store of <c>0x44579c</c> at <c>+0x158</c> (<c>mov ax, imm16</c>, then the store): the high byte
+    /// of the word is the rank the pig farm's request for grain starts from (<c>docs/rules/pig-farming.md</c>).
+    /// </summary>
+    public const int PigRankAddress = 0x4457c6;
+
+    /// <summary>
+    /// The table of eight 16-bit words that the pig farmer's work (state <c>0x25</c>) reads at the index of the pigs the pig farm holds
+    /// (<c>0x433684</c>, the end of the routine): the draw below which another pig grows.
+    /// </summary>
+    public const int PigGrowthAddress = 0x433684;
+
+    /// <summary>The words of the pig growth table.</summary>
+    public const int PigGrowthCount = 8;
 
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
     static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
@@ -541,6 +569,29 @@ static class ProgramTablesImporter
         );
 
         return Slice(exe, MillRankAddress + 2, 2)[1];
+    }
+
+    // The rank the pig farm's request for grain starts from: the high byte of the word the player setup loads and stores at +0x158 of the
+    // player block (0x44579c: mov ax, imm16; mov ebx, [edi+0x30]; mov [ebx+0x158], ax).
+    internal static byte PigRankBase(byte[] exe)
+    {
+        Expect(exe, PigRankAddress, [0x66, 0xb8], "loads the word of the player's default");
+        Expect(
+            exe,
+            PigRankAddress + 4,
+            [0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x58, 0x01, 0x00, 0x00],
+            "stores the word at +0x158 of the player block"
+        );
+
+        return Slice(exe, PigRankAddress + 2, 2)[1];
+    }
+
+    // The words of the pig growth table (0x433684), where the pig farmer's work ends at the address.
+    internal static ImmutableArray<ushort> PigGrowth(byte[] exe)
+    {
+        var bytes = Slice(exe, PigGrowthAddress, 2 * PigGrowthCount);
+
+        return [.. Enumerable.Range(0, PigGrowthCount).Select(i => BitConverter.ToUInt16(bytes, 2 * i))];
     }
 
     internal static ushort Immediate(byte[] exe, int address)

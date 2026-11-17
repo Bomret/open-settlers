@@ -196,6 +196,15 @@ public static class SettlerEncoder
                 Heading = r.Heading,
                 Next = r.Next,
             },
+            // The pig farmer's work: byte 11 counts the stretches of the work (0 while he waits for grain).
+            TendsPigs a => new()
+            {
+                State = a.Code,
+                Mode = a.Phase,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
             // The butcher's work: byte 11 is 0xff while he works on a pig and 0 while he waits for one.
             Butchers a => new()
             {

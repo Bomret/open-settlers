@@ -126,7 +126,8 @@ public sealed class SettlerFiguresTests
         bases[2 * 0x20] = 2000;
         bases[2 * 0x20 + 1] = -1;
 
-        // The baker's and the butcher's rows (0x440112, 0x43ff90): 0x21 for the walk, 0x22 for the step that takes the bread or the meat out, and 0x24 for a figure byte from
+        // The baker's, the butcher's, and the pig farmer's rows (0x440112, 0x43ff90, 0x43ff56): 0x21 for the walk, 0x22 for the step that takes the
+        // bread, the meat, or the pig out, and 0x24 for a figure byte from
         // 0x80 (made up).
         bases[2 * 0x21] = 2100;
         bases[2 * 0x21 + 1] = -1;
@@ -148,7 +149,8 @@ public sealed class SettlerFiguresTests
             sawmiller: SawmillerAdds,
             miller: MillerAdds,
             baker: BakerAdds,
-            butcher: ButcherAdds
+            butcher: ButcherAdds,
+            pigFarmer: PigFarmerAdds
         );
     }
 
@@ -170,7 +172,8 @@ public sealed class SettlerFiguresTests
         MillerFigureAdds miller = default,
         FarmerFigureAdds farmer = default,
         BakerFigureAdds baker = default,
-        ButcherFigureAdds butcher = default
+        ButcherFigureAdds butcher = default,
+        PigFarmerFigureAdds pigFarmer = default
     ) =>
         new(
             new RuleTables(
@@ -195,6 +198,7 @@ public sealed class SettlerFiguresTests
                     (new Farmer(), farmer),
                     (new Baker(), baker),
                     (new Butcher(), butcher),
+                    (new PigFarmer(), pigFarmer),
                 ]
             ),
             sequences
@@ -230,6 +234,15 @@ public sealed class SettlerFiguresTests
     // The adds of the butcher's handler (0x43ff90), made up: 0x2100 for a figure byte below 0x80, 0x2200 for the step that takes the meat
     // out, and 0x2380 from 0x80 on.
     static readonly ButcherFigureAdds ButcherAdds = new()
+    {
+        Walk = 0x2100,
+        Carrying = 0x2200,
+        Work = 0x2380,
+    };
+
+    // The adds of the pig farmer's handler (0x43ff56), made up: 0x2100 for a figure byte below 0x80, 0x2200 for the step that takes the pig
+    // out, and 0x2380 from 0x80 on.
+    static readonly PigFarmerFigureAdds PigFarmerAdds = new()
     {
         Walk = 0x2100,
         Carrying = 0x2200,
@@ -871,6 +884,35 @@ public sealed class SettlerFiguresTests
         CollectionAssert.AreEqual(new[] { 4053, 4703 }, carries);
         CollectionAssert.AreEqual(new[] { 4251, 4901 }, works);
         Assert.IsEmpty(figures.Draws(map, [Butcher(8, new Butchers { Working = false })], 0));
+    }
+
+    [TestMethod]
+    public void APigFarmerWalkingWorkingAndCarryingAPigOutIsDrawnInTheRowsOfHisHandlerAndNotWhereHeWaitsOrPauses()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler PigFarmer(int frame, Activity activity) =>
+            new(new PigFarmer(), 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [PigFarmer(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var works = figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 1 })], 0).Select(d => d.Entry).ToArray();
+        var carries = figures
+            .Draws(map, [PigFarmer(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Pig } })], 0)
+            .Select(d => d.Entry)
+            .ToArray();
+
+        // Figure byte 3 in the row 0x21 (base 2100) for the walk and in the row 0x22 (base 2200) for the step with the pig, figure byte
+        // 0x81 in the work state: the word 0x2380 + 0x81 = 0x2401, the row 0x24 (base 2400) and the offset 1. Waiting for grain, or
+        // pausing with the node free, he is not drawn; he is drawn in each stretch that works (1, 3, and 5).
+        CollectionAssert.AreEqual(new[] { 3953, 4603 }, walk);
+        CollectionAssert.AreEqual(new[] { 4053, 4703 }, carries);
+        CollectionAssert.AreEqual(new[] { 4251, 4901 }, works);
+        Assert.IsEmpty(figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 0 })], 0));
+        Assert.IsEmpty(figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 2 })], 0));
+        Assert.AreEqual(4251, figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 3 })], 0).First().Entry);
+        Assert.IsEmpty(figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 4 })], 0));
+        Assert.AreEqual(4251, figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 5 })], 0).First().Entry);
+        Assert.IsEmpty(figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 6 })], 0));
     }
 
     [TestMethod]

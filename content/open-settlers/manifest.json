@@ -1826,6 +1826,48 @@
       -21
     ]
   },
+  "settler/pig-farmer/walks": {
+    "image": "settler/pig-farmer-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/carries": {
+    "image": "settler/pig-farmer-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/cuts": {
+    "image": "settler/pig-farmer-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/door": {
+    "image": "settler/pig-farmer-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/hands-over": {
+    "image": "settler/pig-farmer-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/waits": {
+    "image": "settler/pig-farmer-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
   "settler/farmer/walks": {
     "image": "settler/farmer-walks.png",
     "anchor": [

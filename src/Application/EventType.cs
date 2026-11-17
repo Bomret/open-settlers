@@ -128,6 +128,9 @@ public static class EventType
     /// <summary>A butcher's turn in the shop: a pig taken out of the building's fill, the work on it, or the wait for a pig.</summary>
     public const string Butchers = "butchers";
 
+    /// <summary>A pig farmer's turn in the pig farm: a grain taken out of the building's fill, a stretch of the work, a pig that grew, or the wait for grain.</summary>
+    public const string TendsPigs = "tends-pigs";
+
     /// <summary>The builder's last blow: the building is finished and its flag asks for nothing.</summary>
     public const string BuildingFinished = "building-finished";
 
@@ -309,6 +312,7 @@ public static class EventType
         Grinds,
         Bakes,
         Butchers,
+        TendsPigs,
         BuildingFinished,
         LeavesSite,
     ];

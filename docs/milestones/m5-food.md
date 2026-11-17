@@ -23,6 +23,7 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
   to 26, are inferred: [which evidence settles each](../rules/food-buildings.md#which-chain-is-which). known
 - The mill's work cycle (state `0x23`, `0x43386b`), its request for grain and its rank (`0x43d33d`, `0x42e2a0`, the player word at `+0x15a`), the miller's figure (`0x4400d3`), the castle's hand-out of grain, and the fill byte of a food good: [Milling](../rules/milling.md). known
 - The baker's work cycle (state `0x24`, `0x433694`), its request for flour and its rank (`0x43d3d9`, `0x42e37e`, a constant start rank of `0xff`), and the baker's figure (`0x440112`): [Baking](../rules/baking.md). known
+- The pig farm's work cycle (state `0x25`, `0x4333c1`), its request for grain and its rank (`0x43d179`, `0x42e0fa`, the player word at `+0x158`; the handler reads the player block through a scratch pointer), the growth of the pigs the farm holds (the table at `0x433684`), the round that may give a pig, and the pig farmer's figure (`0x43ff56`): [Pig farming](../rules/pig-farming.md). known
 - The original has no well: [Food buildings](../rules/food-buildings.md#the-well). known
 - The farmer's work cycle (the search at `0x433b35`, the sowing and harvest at `0x433a3a`, the arrival at `0x438391`), the fields' codes
   (`0x69` to `0x6f`, `0x79` to `0x7e`), their growth and decay in the object pass (the table entries 22 to 28 and 38 to 43, and the decay
@@ -33,7 +34,10 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
 
 ## Open questions
 
+- Which handlers between the castle's (`0x42e7e0`) and a pig farm's in the same group of 32 slots load the player block before the pig
+  farm's handler reads its rank, and which slot orders occur in a game? The engine always reads the player word, a stand-in:
+  [Pig farming](../rules/pig-farming.md#the-rank-of-the-request-for-grain).
 - Is good 25 the sword and good 26 the shield, or the reverse? [Food buildings](../rules/food-buildings.md#the-goods) names them in that
   order from the sprite of good 25; no routine read puts or asks either, and a layout cannot lay good 26 on a flag.
-- The work cycle of the pig farm's state `0x25`. The mill's `0x23` ([Milling](../rules/milling.md)), the baker's `0x24` ([Baking](../rules/baking.md)), the butcher's `0x26` ([Butchering](../rules/butchering.md)), the farm's fields
+- The mill's `0x23` ([Milling](../rules/milling.md)), the baker's `0x24` ([Baking](../rules/baking.md)), the pig farm's `0x25` ([Pig farming](../rules/pig-farming.md)), the butcher's `0x26` ([Butchering](../rules/butchering.md)), the farm's fields
   ([Farming](../rules/farming.md)), and the fisher's cycle ([Fishing](../rules/fishing.md)) are known.
