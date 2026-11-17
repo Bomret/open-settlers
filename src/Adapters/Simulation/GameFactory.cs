@@ -16,7 +16,8 @@ public static class GameFactory
     /// original's phase routine, which draws once from the generator and hands the castle's goods out to the requests of building
     /// sites (<see cref="StorageDistribution"/>); the scenarios that compare a game with an emulator verb that skips the phase routine
     /// leave it off. With <paramref name="settlerSupply"/> the castle gains new settlers and knights over time at the settler rate
-    /// <paramref name="settlerRate"/>, 0 to 40 (<see cref="SettlerSupply"/>); a rate outside that range is refused. The games that
+    /// <paramref name="settlerRate"/>, 0 to 40 (<see cref="SettlerSupply"/>); a rate outside that range is refused. Without the supply
+    /// the rate is not read. The games that
     /// replay a recording made without the supply leave it off.
     /// </summary>
     public static Game Create(
@@ -41,7 +42,7 @@ public static class GameFactory
         // The history reads the tick count of the game, which exists once the parts are wired.
         Game? game = null;
         var history = new GameHistory(new SnapshotExporter(settlers, buildings, flags), () => game!.TickCount);
-        var supply = new SettlerSupply(settlerRate, clock, castle, settlers, history);
+        var supply = settlerSupply ? new SettlerSupply(settlerRate, clock, castle, settlers, history) : null;
         var movement = new SettlerMovement(map, buildings, tables, () => clock.Now, SettlerEncoder.ResidueOf);
         int Route(int from, int to) => network.Route(flags.Count, from, to);
 
@@ -155,7 +156,7 @@ public static class GameFactory
             handsOutGoods
                 ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
                 : null,
-            settlerSupply ? supply : null
+            supply
         )
         {
             EveryPassTurns = everyPassTurns,
@@ -202,7 +203,7 @@ public static class GameFactory
                         roster,
                         history,
                         causes,
-                        settlerSupply ? supply : null
+                        supply
                     ),
                     new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal, buildings),
                     new BuildRoadHandler(planner, network, carriers, history, causes),
@@ -211,7 +212,7 @@ public static class GameFactory
                     new RemoveBuildingHandler(removal),
                     new RemoveRoadHandler(removal),
                 ],
-                Supply = settlerSupply ? supply : null,
+                Supply = supply,
                 Digest = digest ?? new GameDigest(),
             }
         );

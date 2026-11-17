@@ -149,7 +149,7 @@ The three dwords `+0x112`, `+0x116`, and `+0x11a` go back to 0 when they reach `
 `SettlerSupply` (`src/Application/SettlerSupply.cs`) holds the player's supply as typed state: the rate, the period, the
 countdown, the clock of its last turn, the knight accumulator, and the knights owed. It names the original's constants with
 their addresses. A game runs it where `GameFactory.Create` is given `settlerSupply` and a settler rate from 0 to 40, and refuses
-any other rate. A game without it makes no new settler and digests as before.
+any other rate. A game without it reads no rate, makes no new settler and digests as before.
 
 - `PlaceCastleHandler` starts the supply at the castle's placement, with the clock of the placement. Before the placement the
   supply does not turn.

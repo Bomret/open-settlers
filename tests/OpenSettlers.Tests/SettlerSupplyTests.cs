@@ -174,19 +174,19 @@ public sealed class SettlerSupplyTests
     public void AnOwedKnightIsMadeWhereTheStockHoldsASwordAndAShield()
     {
         var game = Town();
-        game.CastleStock.Add(new Good { Code = 25 });
-        game.CastleStock.Add(new Good { Code = 26 });
-        var swords = game.CastleStock.Count(new Good { Code = 25 });
-        var shields = game.CastleStock.Count(new Good { Code = 26 });
+        game.CastleStock.Add(Good.Sword);
+        game.CastleStock.Add(Good.Shield);
+        var swords = game.CastleStock.Count(Good.Sword);
+        var shields = game.CastleStock.Count(Good.Shield);
         var count = game.Settlers.Count;
 
         // From 0x8000, the second try carries: it owes a knight.
         Growth(game, 2 * PeriodForty + 1);
 
         Assert.AreEqual(new Jobless(), game.Settlers[count].Job);
-        Assert.AreEqual(Job.Of(22), game.Settlers[count + 1].Job);
-        Assert.AreEqual(swords - 1, game.CastleStock.Count(new Good { Code = 25 }));
-        Assert.AreEqual(shields - 1, game.CastleStock.Count(new Good { Code = 26 }));
+        Assert.AreEqual(new Knight(0), game.Settlers[count + 1].Job);
+        Assert.AreEqual(swords - 1, game.CastleStock.Count(Good.Sword));
+        Assert.AreEqual(shields - 1, game.CastleStock.Count(Good.Shield));
         Assert.AreEqual(0, game.Supply!.KnightsOwed);
     }
 
@@ -194,7 +194,7 @@ public sealed class SettlerSupplyTests
     public void WithoutSwordsOrShieldsTheKnightStaysOwedAndAThirdIsNotCounted()
     {
         var game = Town();
-        Empty(game, new Good { Code = 25 });
+        Empty(game, Good.Sword);
         var count = game.Settlers.Count;
 
         // The second, the fifth, and the eighth try carry.
@@ -315,6 +315,12 @@ public sealed class SettlerSupplyTests
     public void ARateOutside0To40IsRefused(int rate)
     {
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => Town(rate: rate, castle: false));
+    }
+
+    [TestMethod]
+    public void WithTheSupplyOffTheRateIsNotRead()
+    {
+        Assert.IsNull(Town(supply: false, rate: 41, castle: false).Supply);
     }
 
     [TestMethod]
