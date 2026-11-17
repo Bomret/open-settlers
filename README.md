@@ -9,7 +9,7 @@ Status: the engine reads the data files of an install and generates the map of a
 - [mise](https://mise.jdx.dev). It installs the pinned tools listed in `mise.toml`: the .NET SDKs 10 and 8, the Godot 4.7.2 .NET build, and, for rule recovery, a JDK, Gradle, Python, and Ghidra. Install mise on macOS or Linux with `curl https://mise.run | sh`, or on Windows with `winget install jdx.mise`.
 - Windows: the Microsoft Visual C++ Redistributable, which mise needs (`winget install Microsoft.VCRedist.2015+.x64`, or `.arm64` on ARM).
 - Linux: the ICU library, which .NET loads (Debian and Ubuntu: the `libicu` package).
-- A History Edition install (see below). Rule recovery from the game's program needs it too.
+- A History Edition install (see below) for the original's art and rules, and for rule recovery from the game's program. Without one, run on the basic content set ("Without the game").
 
 ## Set up
 
@@ -17,7 +17,7 @@ Status: the engine reads the data files of an install and generates the map of a
 mise install
 ```
 
-Then create `mise.local.toml`, a gitignored file per checkout, with the path of your install:
+Then, to use a History Edition install, create `mise.local.toml`, a gitignored file per checkout, with the path of your install (the basic content set needs no such file, see "Without the game"):
 
 ```toml
 [env]
@@ -25,6 +25,35 @@ SIEDLER_DIR = "/path/to/thesettlers"
 ```
 
 Run every command below from the repository root. `mise tasks` lists the tasks.
+
+## Without the game: the basic content set
+
+A contributor without a Die Siedler install builds, tests, and runs the engine on the basic content set. The set is the repository's own: `content/basic/` holds crude art (`tools/basic-art.py` writes it) and `content/basic/rules/` holds the rules of the game and the walk steps as JSONC files. Every value in those files is a stand-in the project invented ([ADR 0018](docs/adr/0018-a-content-set-carries-its-own-rules-and-one-flag-picks-it.md)). They are not the original's rules, so a game on the basic set plays the original's loops (construction, wood, stone, food) with its own numbers and looks. A fidelity check against the original needs the install.
+
+With no install, no `SIEDLER_DIR`, and no `mise.local.toml`, run these from the repository root:
+
+```sh
+mise install                                   # the pinned tools
+mise run test                                  # the unit tests, which need neither the install nor Ghidra
+mise run check                                 # format check, the unit tests, and build
+mise run map -- --content-set basic            # the map view; add --seed <seed> --size <1|2|3>
+mise run game -- --content-set basic           # the game view; add --seed <16 digits> --size <1|2|3>
+mise run seed-info -- --content-set basic --seed 1234567812345678
+sh tools/play-run.sh zoom-pan --content-set basic --fps 10   # a play script on the map view
+```
+
+`--content-set basic` is on every command that opens a game or a map. On it `--game` and `SIEDLER_DIR` are not read, and `--game` is a bad argument. A launch on the History Edition without an install exits with code 2 and a message that names the basic set as the way to run without one.
+
+Two play scripts prove the game's loops on the basic set. Each runs to its last step with no install and holds its `expect` lines ("Run a play script" lists the steps; `--repro` checks that two runs give the same files):
+
+```sh
+sh tools/play-run.sh basic-construction --game-view --content-set basic --seed 1234567812345634 --size 1 --fps 10
+sh tools/play-run.sh basic-production --game-view --content-set basic --seed 4455544685788642 --size 1 --fps 10
+```
+
+`basic-construction` builds a sawmill, a woodcutter's hut, and a stonecutter's hut from a fresh game: the castle's materials build the first two sites, the woodcutter's logs go to the sawmill, and its planks build the third. `basic-production` plays bread (mill and baker, farm and mill), meat (butcher and pig farm), and fish (fisher), each in a fresh game, because a game holds five settlers without a job and the whole chain needs more. The other scripts in `play/` that name no install in their header run on both sets, but their `expect` values are the History Edition's, so some fail on the basic set.
+
+These need the install: `mise run assets` and `mise run browser` (the asset check and the asset browser read the install), `mise run test:integration` (the `Install` and `Ghidra` test categories, which also need Ghidra), the commands above without `--content-set basic`, `--game <dir>`, and the rule recovery in `docs/rules/`.
 
 ## Get the History Edition install
 
@@ -38,7 +67,7 @@ The engine does not support an install of the DOS CD release.
 
 ## Run the asset check, the asset browser, and the map view
 
-All three modes need an install. The tasks take it from `SIEDLER_DIR`. Each task builds the C# project first, because without the build Godot cannot load the C# scripts: the asset check prints `Cannot instantiate C# script` and does not exit, and the browser shows an empty window.
+The asset check and the asset browser need an install. The map view needs one on the History Edition, which is its default. The tasks take it from `SIEDLER_DIR`. Each task builds the C# project first, because without the build Godot cannot load the C# scripts: the asset check prints `Cannot instantiate C# script` and does not exit, and the browser shows an empty window.
 
 The asset check runs without a window:
 
@@ -82,11 +111,11 @@ mise run map
 - The four build markers of the build-site overlay.
 - One figure per job and kind of activity for the settlers.
 
- A settler's heading, step, and frame all draw that one figure, and the player shows as a colored mark on it. It draws nothing for the water ripple and for shadows. The rules come from `Siedler1.exe` under both content sets, so the launch still needs the install. One seed, layout, and command list give the same game under both. A broken content set shows an error in the view that names `manifest.json` and the key, and draws no map. These break a set: a malformed manifest, a term with no image, a missing or undecodable PNG, a missing or non-integer anchor, a duplicate key, and an absolute path or one that leaves the set. A bad `--content-set` is a bad argument and exits with code 4, naming the known sets (`basic`, `history-edition`). The retired `--graphics` is a bad argument that names `--content-set`. These are bad: an unknown name, a missing value, a value that is another flag, a repeat, and use with the asset browser, `--check` (even with `history-edition`), or `--seed-info`.
+ A settler's heading, step, and frame all draw that one figure, and the player shows as a colored mark on it. It draws nothing for the water ripple and for shadows. The History Edition set's rules come from the install's `Siedler1.exe` and the basic set's from `content/basic/rules/`, so the basic set needs no install ("Without the game"). The two sets play by different rules, so one seed, layout, and command list give the same game under both only where the rules agree. A broken content set shows an error in the view that names `manifest.json` and the key, and draws no map. These break a set: a malformed manifest, a term with no image, a missing or undecodable PNG, a missing or non-integer anchor, a duplicate key, and an absolute path or one that leaves the set. A bad `--content-set` is a bad argument and exits with code 4, naming the known sets (`basic`, `history-edition`). The retired `--graphics` is a bad argument that names `--content-set`. These are bad: an unknown name, a missing value, a value that is another flag, a repeat, and use with the asset browser, `--check` (even with `history-edition`), or `--seed-info`.
 
 `--stock <0..40>` sets the start stock level of the castle in the game view (`-- --game-view --stock 20`), as the bar of the original's free-game screen does. The level holds for every game the view starts, a game on a new seed or size included. Without it the game takes the level the seed draws. The level picks the goods the castle starts with ([Castle](docs/rules/castle.md#the-start-stock)): at level 0 it holds no planks and no stones. A value that is no integer from 0 to 40, a missing value, a repeat, and use without `--game-view` or with `--layout` are bad arguments and exit with code 4.
 
-[Controls](docs/controls.md) describes how to use the map view and the game view. Without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. In the game view, unreadable settler sprites or step offsets (entry 2 of the install's graphics archive, read under either graphics source) show an error in the view, and no settler is drawn. An unreadable `Siedler1.exe` shows an error in the view and draws no map: the map generation reads which objects are large from it. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
+[Controls](docs/controls.md) describes how to use the map view and the game view. On the History Edition, without an install it prints the asset check's message and exits with its code 2. A missing or unreadable terrain graphic shows an error in the view. In the game view, unreadable settler sprites or step offsets (entry 2 of the install's graphics archive, read under either graphics source) show an error in the view, and no settler is drawn. An unreadable `Siedler1.exe` shows an error in the view and draws no map: the map generation reads which objects are large from it. Give one mode flag only: with both `--check` and `--map`, the launch reports that they are different modes and exits with code 4.
 
 The game view is the map view with a game on the shown map that starts at the original's normal speed. Its Speed button runs the game 2, 4, or 8 times as fast:
 
@@ -98,7 +127,7 @@ The task builds the C# project first, so the game runs the current code.
 
 It takes `--seed` and `--size` as the map view does, and it has the map view's exit codes. `--layout <file>` in place of `--seed` and `--size` starts it on a layout. "Layouts" under "Run a play script" describes layouts.
 
-Seed info prints the digests and counts of the map of one seed and size. It is headless and needs the install (`--game` or `SIEDLER_DIR`): the map generation reads which objects are large from its `Siedler1.exe`.
+Seed info prints the digests and counts of the map of one seed and size. It is headless. On the History Edition it needs the install (`--game` or `SIEDLER_DIR`): the map generation reads which objects are large from its `Siedler1.exe`. With `--content-set basic` it needs none.
 
 ```sh
 mise run seed-info -- --seed 1234567812345678 --size 3
