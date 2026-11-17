@@ -113,7 +113,7 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
 
             if (trip.Purpose is BackToHut { Carrying: true })
             {
-                _hut.PutGood(slot, settler, GoodLog, Cause);
+                _hut.PutGood(slot, settler, Good.Log, Cause);
             }
 
             _hut.ReturnToHut(slot, settler, trip);

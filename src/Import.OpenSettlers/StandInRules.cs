@@ -15,7 +15,13 @@ sealed record StandInGood
     /// <summary>Which byte of a building's fill the good counts in.</summary>
     public required FillCounter Counts { get; init; }
 
-    /// <summary>The transport priority, a rank from 1 to 26 that no other good shares.</summary>
+    /// <summary>Which byte of a building's fill the carrier's handover of the good counts in.</summary>
+    public required FillCounter Handover { get; init; }
+
+    /// <summary>Whether a lost good of this kind counts against the total of resource 1.</summary>
+    public required bool CountsAgainstResource1 { get; init; }
+
+    /// <summary>The transport priority, a rank from 1 up that no other good shares.</summary>
     public required int Priority { get; init; }
 
     /// <summary>The request the good looks for, or null for a good that goes to storage at once.</summary>
@@ -112,7 +118,6 @@ sealed record StandInRules
     public required ImmutableArray<int> PigGrowthPercent { get; init; }
 
     const int Whole = 0x8000;
-    const int NoneKind = 2;
 
     /// <summary>
     /// Encodes the rules into <see cref="RuleTables"/>. Throws <see cref="InvalidDataException"/> where the tables refuse them.
@@ -172,21 +177,6 @@ sealed record StandInRules
             }
         }
 
-        var kinds = Enumerable.Repeat((byte)NoneKind, RuleTables.GoodKindCount).ToArray();
-        var priorities = new byte[RuleTables.Goods];
-        var classes = new GoodClass?[RuleTables.GoodClassCount];
-        foreach (var good in Goods)
-        {
-            kinds[good.Good.Code] = good.Counts switch
-            {
-                FillCounter.Low => 0,
-                FillCounter.High => 1,
-                _ => NoneKind,
-            };
-            priorities[good.Good.Code - 1] = (byte)good.Priority;
-            classes[good.Good.Code] = good.Request;
-        }
-
         try
         {
             return new RuleTables(
@@ -200,13 +190,21 @@ sealed record StandInRules
                 doors,
                 windows,
                 walkRows: walk,
-                goodKinds: kinds,
                 roadCapacities: [.. RoadCapacities],
-                transportPriorities: priorities,
                 frameRows: [.. FrameRows],
                 buildingSizes: sizes,
                 buildingNeeds: needs,
-                goodClasses: classes,
+                goods: new ContentCatalog(
+                    Goods.Select(good => new GoodEntry
+                    {
+                        Name = good.Good.Name,
+                        Request = good.Request,
+                        Counter = good.Counts,
+                        HandoverCounter = good.Handover,
+                        CountsAgainstResource1 = good.CountsAgainstResource1,
+                        TransportRank = good.Priority,
+                    })
+                ),
                 distribution: [.. Distribution.Select(order => order.ToArray())],
                 plankRankBase: PlankRank,
                 millRankBase: MillRank,

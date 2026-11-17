@@ -76,7 +76,7 @@ no asker yet and stays inert (M7). With no grain in the stock the mill waits and
 ## The fill byte of a food good
 
 The table `0x462d6d` gives each good its counter: the food goods 1 to 6 count in byte 8, the low byte. The engine reads it in one place (`RuleTables.FillCounterOf`) for the count on the way (the request
-search and the hand-out) and the count back where a good is lost (`0x462ca4`, the removal's). The carrier's delivery reads the byte from the good's code (`Good.FillsHigh`), which agrees with the table on every good. For every good with a class it is the byte of the request word that asks for it.
+search and the hand-out) and the count back where a good is lost (`0x462ca4`, the removal's). The carrier's delivery reads the byte from the entry's handover counter (`RuleTables.HandoverCounterOf`), which the History Edition importer states from the rule at `0x43c4ea` and which agrees with the table on every good. For every good with a class it is the byte of the request word that asks for it.
 
 ## Removal
 

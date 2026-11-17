@@ -62,7 +62,7 @@ public sealed class ProgramTablesTests
     {
         void Write(int address, params byte[] code) => code.CopyTo(exe, FileOffset(address));
 
-        var classes = new byte[2 * RuleTables.GoodClassCount];
+        var classes = new byte[2 * ProgramTablesImporter.GoodSlots];
         Array.Fill(classes, (byte)0xff);
         classes[16] = 1;
         classes[17] = 0x42;
@@ -520,9 +520,9 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
         {
-            for (var good = 0; good < RuleTables.GoodKindCount; good++)
+            for (var good = 0; good < ProgramTablesImporter.GoodSlots; good++)
             {
-                bytes[FileOffset(ProgramTablesImporter.GoodKindAddress) + good] = (byte)(good + 3);
+                bytes[FileOffset(ProgramTablesImporter.GoodKindAddress) + good] = (byte)(good % 3);
             }
 
             for (var length = 0; length < RuleTables.RoadCapacityCount; length++)
@@ -533,7 +533,10 @@ public sealed class ProgramTablesTests
 
         var tables = ProgramTablesImporter.Import(exe);
 
-        Assert.AreEqual((byte)(9 + 3), tables.GoodKinds[9]);
+        // The kind byte of good g is g % 3: 0 counts low, 1 high, 2 in none.
+        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(new Good { Code = 9 }));
+        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(new Good { Code = 10 }));
+        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Code = 11 }));
         Assert.AreEqual((byte)(5 * 2), tables.RoadCapacities[5]);
     }
 
@@ -542,10 +545,21 @@ public sealed class ProgramTablesTests
     public void TheTablesOfTheRemovalOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
+        var kinds = ProgramTablesImporter.GoodKindBytes(TestProgram.OpenInstall().ReadAll(Install.Program));
 
         // peek:462d6d:32 (a byte for each of 32 goods) and peek:462acd:8 (a count for each of 8 length classes).
-        Assert.AreEqual(0x1C7E05E97572CBCBUL, Fnv(tables.GoodKinds));
+        Assert.AreEqual(0x1C7E05E97572CBCBUL, Fnv(kinds));
         Assert.AreEqual(0x6FC87DA442D34B9DUL, Fnv(tables.RoadCapacities));
+        foreach (var entry in tables.Catalog.Goods)
+        {
+            var expected = kinds[entry.OriginalCode!.Value] switch
+            {
+                0 => FillCounter.Low,
+                1 => FillCounter.High,
+                _ => FillCounter.None,
+            };
+            Assert.AreEqual(expected, entry.Counter, $"the counter of {entry.Name}");
+        }
     }
 
     [TestMethod]
@@ -1124,9 +1138,13 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(0xff, tables.PlankRankBase);
         // The whole class table (the class and request word of each of the 32 goods, the log's included) and all 36 steps of the three
         // orders, as text (the draws 0, 1, and 2 in turn): the digest is of that text built from the same peeks, decoded as the reader does.
-        var classes = Enumerable
-            .Range(0, RuleTables.GoodClassCount)
-            .Select(good => tables.ClassOfGood(new Good { Code = good }) is { } c ? $"{c.Word} {c.Class}" : "storage");
+        var table = ProgramTablesImporter.GoodClassTable(TestProgram.OpenInstall().ReadAll(Install.Program));
+        var classes = table.Select(c => c is { } asked ? $"{asked.Word} {asked.Class}" : "storage");
+        foreach (var entry in tables.Catalog.Goods)
+        {
+            Assert.AreEqual(table[entry.OriginalCode!.Value], entry.Request, $"the request of {entry.Name}");
+        }
+
         var orders = Enumerable.Range(0, 3).SelectMany(draw => Steps(tables.DistributionOrder(draw)));
         Assert.AreEqual(
             0xC2431101D4476AF0UL,
@@ -1140,8 +1158,116 @@ public sealed class ProgramTablesTests
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
-        Assert.AreEqual(26, tables.TransportPriorities[0], "good 1");
-        Assert.AreEqual(1, tables.TransportPriorities[25], "good 26");
+        Assert.AreEqual(26, tables.TransportPriority(Good.Fish), "good 1");
+        Assert.AreEqual(1, tables.TransportPriority(new Good { Code = 26, Name = "shield" }), "good 26");
+    }
+
+    [TestMethod]
+    public void TheCatalogHoldsTheOriginalsTwentySixGoodsWithTheirCodesNamesAndEvidence()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(26, tables.Catalog.Goods.Length);
+        CollectionAssert.AreEqual(
+            Enumerable.Range(1, 26).ToArray(),
+            tables.Catalog.Goods.Select(good => good.OriginalCode!.Value).Order().ToArray()
+        );
+        Assert.AreEqual("log", tables.Catalog.EntryOf(new Good { Code = 7 })!.Name);
+        Assert.AreEqual("iron-ore", tables.Catalog.EntryOf(new Good { Code = 11 })!.Name);
+        Assert.IsTrue(
+            tables.Catalog.Goods.All(good => !string.IsNullOrWhiteSpace(good.NameEvidence)),
+            "each name cites evidence"
+        );
+        CollectionAssert.AreEqual(
+            tables.Catalog.Goods.Select(good => good.Name).Order(StringComparer.Ordinal).ToArray(),
+            tables.Catalog.Goods.Select(good => good.Name).ToArray(),
+            "ordinal order of the stable names"
+        );
+    }
+
+    [TestMethod]
+    public void TheNameOfEachGoodInTheCatalogIsTheNameTablesNameUntilTheNameTableLetsGo()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        foreach (var entry in tables.Catalog.Goods)
+        {
+            Assert.AreEqual(OpenSettlers.Simulation.NameTable.GoodName(entry.OriginalCode!.Value), entry.Name);
+        }
+    }
+
+    // The handover counter and resource-1 counting the domain derived from a good's number before the entries stated them
+    // (0x43c4ea, 0x462c8d): the oracle the importer's facts are compared with.
+    static FillCounter OldHandover(int code) =>
+        (code >= 9 ? code != 13 : code == 7) ? FillCounter.High : FillCounter.Low;
+
+    [TestMethod]
+    public void TheHandoverCounterAndResource1CountingOfEveryOriginalGoodAreThoseTheProgramsRoutinesTest()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        foreach (var code in Enumerable.Range(1, 26))
+        {
+            var good = new Good { Code = code };
+
+            Assert.AreEqual(OldHandover(code), tables.HandoverCounterOf(good), $"the handover of the good {code}");
+            Assert.AreEqual(code is 14 or 15, tables.CountsAgainstResource1(good), $"resource 1 of the good {code}");
+        }
+    }
+
+    [TestMethod]
+    public void ADistributionStepThatNamesAGoodCodeWithNoEntryIsRefused()
+    {
+        var exe = Executable(bytes =>
+            BitConverter
+                .GetBytes((short)(2 * 30))
+                .CopyTo(bytes, FileOffset(ProgramTablesImporter.DistributionAddresses[0]) + 4)
+        );
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "good 31");
+        StringAssert.Contains(refusal.Message, "no entry");
+    }
+
+    [TestMethod]
+    public void AWorkersToolThatNamesAGoodCodeWithNoEntryIsRefused()
+    {
+        var address = ProgramTablesImporter.WorkerRequestAddresses[0].Address;
+        var exe = Executable(bytes => BitConverter.GetBytes(2 * 40).CopyTo(bytes, FileOffset(address) + 8));
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "good 40");
+        StringAssert.Contains(refusal.Message, "no entry");
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void EveryRuleOfTheInstallReadsTheValueItReadBeforeForEachOfTheGoods()
+    {
+        var tables = TestProgram.Tables();
+        var exe = TestProgram.OpenInstall().ReadAll(Install.Program);
+        var kinds = ProgramTablesImporter.GoodKindBytes(exe);
+        var classes = ProgramTablesImporter.GoodClassTable(exe);
+
+        Assert.AreEqual(26, tables.Catalog.Goods.Length);
+        foreach (var code in Enumerable.Range(1, 26))
+        {
+            var good = new Good { Code = code };
+
+            Assert.AreEqual(classes[code], tables.ClassOfGood(good), $"the request of the good {code}");
+            Assert.AreEqual(
+                kinds[code] switch
+                {
+                    0 => FillCounter.Low,
+                    1 => FillCounter.High,
+                    _ => FillCounter.None,
+                },
+                tables.FillCounterOf(good),
+                $"the counter of the good {code}"
+            );
+            Assert.AreEqual(OldHandover(code), tables.HandoverCounterOf(good), $"the handover of the good {code}");
+            Assert.AreEqual(code is 14 or 15, tables.CountsAgainstResource1(good), $"resource 1 of the good {code}");
+        }
     }
 
     [TestMethod]
@@ -1180,7 +1306,10 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         // The bytes 1 to 26 of the prio= line of the goods and remove verbs, which run 0x445570 at the game's start.
-        Assert.AreEqual(0xBBF1449BF71E9134UL, Fnv(tables.TransportPriorities));
+        Assert.AreEqual(
+            0xBBF1449BF71E9134UL,
+            Fnv(Enumerable.Range(1, 26).Select(code => (byte)tables.TransportPriority(new Good { Code = code })))
+        );
     }
 
     [TestMethod]

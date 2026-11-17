@@ -362,7 +362,12 @@ public sealed partial class Layout
                 {
                     Name = name,
                     Command = default,
-                    Place = game => game.Goods.PlaceGood(x, y, place, good),
+                    Place = game => game.Goods.PlaceGood(
+                            x,
+                            y,
+                            place,
+                            new Good { Code = good, Name = NameTable.GoodName(good) ?? "" }
+                        ),
                 }
             );
 

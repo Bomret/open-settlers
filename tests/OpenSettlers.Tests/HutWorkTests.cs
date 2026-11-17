@@ -41,7 +41,7 @@ public sealed class HutWorkTests
             bench.Draws,
             (_, _) => -1
         );
-        Action<int, int, int> layGood = (flagSlot, place, good) => laid.Add((flagSlot, place, good));
+        Action<int, int, Good> layGood = (flagSlot, place, good) => laid.Add((flagSlot, place, good.Code));
         var behaviour = new HutWork(
             bench.Movement,
             bench.Settlers,

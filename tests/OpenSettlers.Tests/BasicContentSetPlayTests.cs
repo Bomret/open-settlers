@@ -341,6 +341,34 @@ public sealed class BasicContentSetPlayTests
         public void Dispose() => Directory.Delete(Root, true);
     }
 
+    // A layout's good is given by number: under the basic set, whose catalog holds no original codes, the layout step gives it
+    // its stable name, so the carrier lines the log up with the log's rank and the good reads its request class.
+    [TestMethod]
+    public void ALayoutGoodOnTheBasicSetReadsItsTransportPriorityAndRequestClass()
+    {
+        var read = Layout.Read(
+            LayoutTests.Text(
+                extra: """
+
+                    "castle": {"x": 10, "y": 10},
+                    "flags": [{"x": 14, "y": 11}],
+                    "goods": [{"x": 14, "y": 11, "place": 0, "good": 7}]
+                    """
+            ),
+            "good.jsonc"
+        );
+        Assert.IsNotNull(read.Layout, string.Join("; ", read.Problems));
+        var tables = new OpenSettlersRuleTables(CheckedIn()).Read();
+        var game = GameFactory.Create(tables, read.Layout.BuildMap(), 0);
+        Assert.IsNull(read.Layout.Apply(game));
+
+        var placed = game.Flags[game.Flags.SlotAt(14, 11)].Places[0].Good;
+
+        Assert.AreEqual(tables.TransportPriority(Good.Log), tables.TransportPriority(placed));
+        Assert.AreNotEqual(0, tables.TransportPriority(placed), "the log is lined up");
+        Assert.IsNotNull(tables.ClassOfGood(placed), "the log has a request class");
+    }
+
     [TestMethod]
     public void TheConstructionLoopPlaysOnTheCheckedInFilesUntilASiteIsPaidWithTheSawmillsPlanks()
     {

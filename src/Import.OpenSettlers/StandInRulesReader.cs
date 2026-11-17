@@ -72,7 +72,7 @@ static class StandInRulesReader
         .ToDictionary(entry => entry.name, entry => entry.direction);
 
     static readonly IReadOnlyDictionary<string, Good> GoodTerms = GoodNames
-        .Select((name, at) => (name, good: new Good { Code = at + 1 }))
+        .Select((name, at) => (name, good: new Good { Code = at + 1, Name = name }))
         .ToDictionary(entry => entry.name, entry => entry.good);
 
     static readonly IReadOnlyDictionary<string, FillCounter> CounterTerms = new Dictionary<string, FillCounter>
@@ -80,6 +80,19 @@ static class StandInRulesReader
         ["low"] = FillCounter.Low,
         ["high"] = FillCounter.High,
         ["none"] = FillCounter.None,
+    };
+
+    // A handover fills the low or the high byte of a building's fill: a good counted in no byte is no handover.
+    static readonly IReadOnlyDictionary<string, FillCounter> HandoverTerms = new Dictionary<string, FillCounter>
+    {
+        ["low"] = FillCounter.Low,
+        ["high"] = FillCounter.High,
+    };
+
+    static readonly IReadOnlyDictionary<string, bool> Resource1Terms = new Dictionary<string, bool>
+    {
+        ["counts"] = true,
+        ["none"] = false,
     };
 
     static readonly IReadOnlyDictionary<string, RequestWord> WordTerms = new Dictionary<string, RequestWord>
@@ -256,8 +269,8 @@ static class StandInRulesReader
         var result = new List<StandInGood>();
         foreach (var name in GoodNames)
         {
-            var fields = entries[name].Fields(["counts", "priority", "request"]);
-            var priority = fields["priority"].Int(1, RuleTables.Goods);
+            var fields = entries[name].Fields(["counts", "handover", "resource1", "priority", "request"]);
+            var priority = fields["priority"].Int(1, GoodNames.Length);
             if (byRank.TryGetValue(priority, out var other))
             {
                 throw fields["priority"]
@@ -271,6 +284,8 @@ static class StandInRulesReader
                 {
                     Good = GoodTerms[name],
                     Counts = fields["counts"].Term(CounterTerms, "counting"),
+                    Handover = fields["handover"].Term(HandoverTerms, "handover counter"),
+                    CountsAgainstResource1 = fields["resource1"].Term(Resource1Terms, "resource 1 counting"),
                     Priority = priority,
                     Request = request.IsText ? NoRequest(request) : Request(request),
                     StartStock =

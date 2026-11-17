@@ -182,7 +182,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
         {
             if (trip.Purpose is BackToHut { Carrying: true })
             {
-                _hut.PutGood(slot, settler, GoodStone, Cause);
+                _hut.PutGood(slot, settler, Good.Stone, Cause);
             }
 
             _hut.ReturnToHut(slot, settler, trip);

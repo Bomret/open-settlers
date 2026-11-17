@@ -29,21 +29,28 @@ public sealed class GoodsTransport(
     /// A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that
     /// lays a good with a destination, and a way, for a test that lays a good with a direction) and the flag's turn is due.
     /// </summary>
-    public void LayGood(int flag, int place, int good, int? destination = null, int? way = null)
+    public void LayGood(int flag, int place, int good, int? destination = null, int? way = null) =>
+        LayGood(flag, place, new Good { Code = good }, destination, way);
+
+    /// <summary>
+    /// Lays <paramref name="good"/> as <see cref="LayGood(int, int, int, int?, int?)"/> does, keeping the good's stable name, so a good
+    /// the rules look up by name (a set with no original codes) is found on the flag.
+    /// </summary>
+    public void LayGood(int flag, int place, Good good, int? destination = null, int? way = null)
     {
         var laid = flags[flag].Places[place];
-        laid.Good = new Good { Code = good };
+        laid.Good = good;
         laid.Destination = destination;
         laid.Way = way;
         flags[flag].NeedsGoodsTurn = true;
     }
 
     /// <summary>
-    /// Puts a good on a place of the flag on the node as the settler's put does (0x436b46, <see cref="LayGood"/>). The
+    /// Puts a good on a place of the flag on the node as the settler's put does (0x436b46, <see cref="LayGood(int, int, int, int?, int?)"/>). The
     /// original's put takes the first empty place and checks nothing: this refuses a node that holds no flag and a place
     /// that holds a good. The place is 0 to 7, as the layout's read checks. It returns why it refused, or null.
     /// </summary>
-    public string? PlaceGood(int x, int y, int place, int good)
+    public string? PlaceGood(int x, int y, int place, Good good)
     {
         var flag = flags.SlotAt(x, y);
         if (flag < 0)

@@ -23,16 +23,19 @@ static class TestProgram
     /// Tables of made-up values, no restatement of the original's: every object code has class 0, so no object
     /// blocks a site, and the start stock rows count up from the row number. With every class 0 no object is large, so
     /// a map generated with these tables keeps every object and is not the original's map; tests that compare with the
-    /// original's data use <see cref="Tables"/>. The transport priorities are all 0.
+    /// original's data use <see cref="Tables"/>. The catalog holds no good, so every transport priority is 0.
     /// </summary>
     public static RuleTables Made() => Made(null);
 
-    /// <summary>The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1), or all 0 for none.</summary>
+    /// <summary>
+    /// The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1; a good of rank 0 has no entry), or a catalog
+    /// with no good for none.
+    /// </summary>
     public static RuleTables Made(byte[]? transportPriorities) =>
         new(
             new ObjectClass[RuleTables.ClassCount],
             MadeStartStock(),
-            transportPriorities: transportPriorities,
+            goods: transportPriorities is null ? null : TestCatalog.Of(ranks: transportPriorities),
             workers: MadeWorkers(),
             jobData: MadeJobData()
         );

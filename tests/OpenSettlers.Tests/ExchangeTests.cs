@@ -138,7 +138,8 @@ public sealed class ExchangeTests
     [TestMethod]
     public void AmongGoodsOfEqualTransportPriorityTheOneOnTheLowestPlaceWaitsNext()
     {
-        var (bench, goods) = WithFlag(Ranks(log: 5, ninth: 5, board: 2));
+        // The catalog gives each good a rank of its own, so goods of equal priority are goods of one kind.
+        var (bench, goods) = WithFlag(Ranks(log: 5, ninth: 3, board: 2));
         LayDirected(goods, 3, Ninth);
         LayDirected(goods, 1, Log);
         LayDirected(goods, 6, Log);

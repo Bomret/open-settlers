@@ -122,7 +122,7 @@ public sealed class MillTests
     {
         // The made-up kind table sends the grain to the high byte where its request word counts the low one: the byte a grain is counted
         // in on its way and the byte it is counted back from agree whichever table says it.
-        var kinds = new byte[RuleTables.GoodKindCount];
+        var kinds = new byte[TestCatalog.Slots];
         kinds[Good.Grain.Code] = 1;
         var (game, mill) = World(kinds: kinds);
         MillerInside(game);

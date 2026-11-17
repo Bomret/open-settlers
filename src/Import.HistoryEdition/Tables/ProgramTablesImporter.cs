@@ -382,24 +382,66 @@ static class ProgramTablesImporter
             Words(Slice(exe, FigureOffsetAddress, 1024)),
             Slice(exe, WalkRowAddress, RuleTables.WalkRowCount * RuleTables.WalkRowSize),
             Words(Slice(exe, CarriedFigureAddress, 2 * RuleTables.CarriedFigureCount)),
-            Slice(exe, GoodKindAddress, RuleTables.GoodKindCount),
             Slice(exe, RoadCapacityAddress, RuleTables.RoadCapacityCount),
-            TransportPriorityRanks(exe),
             [.. Slice(exe, FrameRowAddress, RuleTables.FrameRowCount).Select(row => (sbyte)row)],
             Words(Slice(exe, IdlePhaseAddress, 2 * RuleTables.IdlePhaseCount)),
             Words(Slice(exe, IdleFigureAddress, 2 * RuleTables.IdleFigureCount)),
             [.. Slice(exe, IdleOffsetAddress, RuleTables.IdleOffsetCount).Select(offset => (sbyte)offset)],
             Slice(exe, BuildingSizeAddress, RuleTables.BuildingTypeCount),
             Slice(exe, BuildingNeedsAddress, 2 * RuleTables.BuildingTypeCount),
-            GoodClasses(Slice(exe, GoodClassAddress, 2 * RuleTables.GoodClassCount)),
             [.. DistributionAddresses.Select(address => DistributionOrder(exe, address))],
             PlankRankBase(exe),
             MillRankBase(exe),
             Workers(exe),
             [.. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
-            JobData(exe, modules)
+            JobData(exe, modules),
+            Catalog(exe)
         );
+    }
+
+    /// <summary>The number of goods the good class table and the good kind table cover (good numbers are 5 bits).</summary>
+    internal const int GoodSlots = 32;
+
+    /// <summary>The good kind table as the program holds it: one byte for each of the 32 good numbers (<see cref="GoodKindAddress"/>).</summary>
+    internal static byte[] GoodKindBytes(byte[] exe) => Slice(exe, GoodKindAddress, GoodSlots);
+
+    /// <summary>The good class table as the program holds it, decoded: the request of each of the 32 good numbers, null for storage at once.</summary>
+    internal static GoodClass?[] GoodClassTable(byte[] exe) => GoodClasses(Slice(exe, GoodClassAddress, 2 * GoodSlots));
+
+    // The catalog of the original's 26 goods: each with its code, its name and evidence (GoodTables), its request from the class table, its
+    // counter from the kind table, its rank from the routine of the transport priorities, and the two rules the program holds as
+    // comparisons of the good's code (the handover's counter, resource 1).
+    internal static ContentCatalog Catalog(byte[] exe)
+    {
+        var classes = GoodClassTable(exe);
+        var kinds = GoodKindBytes(exe);
+        var ranks = TransportPriorityRanks(exe);
+        try
+        {
+            return new ContentCatalog(
+                GoodTables.All.Select(good => new GoodEntry
+                {
+                    Name = good.Name,
+                    NameEvidence = good.Evidence,
+                    OriginalCode = good.Code,
+                    Request = classes[good.Code],
+                    Counter = kinds[good.Code] switch
+                    {
+                        0 => FillCounter.Low,
+                        1 => FillCounter.High,
+                        _ => FillCounter.None,
+                    },
+                    HandoverCounter = GoodTables.HandoverCounter(good.Code),
+                    CountsAgainstResource1 = GoodTables.CountsAgainstResource1(good.Code),
+                    TransportRank = ranks[good.Code - 1],
+                })
+            );
+        }
+        catch (ArgumentException e)
+        {
+            throw new InvalidDataException($"Siedler1.exe holds no goods as expected: {e.Message}", e);
+        }
     }
 
     // What each job owns, read by its tables module (JobTablesRegistry, written by the generator from the modules). The draw routine
@@ -481,12 +523,12 @@ static class ProgramTablesImporter
             );
         }
 
-        return new WorkerRequest
-        {
-            Job = Job.Of(code[1]),
-            Tool = new Good { Code = BitConverter.ToInt32(code, 8) / 2 },
-        };
+        return new WorkerRequest { Job = Job.Of(code[1]), Tool = ToolGood(BitConverter.ToInt32(code, 8), address) };
     }
+
+    // The good a tool word names: twice the good's number, 0 for no tool. A tool with no entry in the goods refuses the program.
+    static Good ToolGood(int tool, int address) =>
+        tool == 0 ? Good.None : GoodTables.GoodOf(tool / 2, $"the tool of the request at 0x{address:x}");
 
     // The request word a flag item offset names: 0x42 is the first word, 0x44 the second (the class table's second byte takes the
     // second for 0x44 and the first for any other offset, as the flag pass does).
@@ -497,7 +539,7 @@ static class ProgramTablesImporter
     static GoodClass?[] GoodClasses(byte[] table) =>
         [
             .. Enumerable
-                .Range(0, RuleTables.GoodClassCount)
+                .Range(0, GoodSlots)
                 .Select(good =>
                     (sbyte)table[2 * good] < 0
                         ? (GoodClass?)null
@@ -532,14 +574,18 @@ static class ProgramTablesImporter
                     Class = new GoodClass { Class = words[1], Word = WordAt(words[0]) },
                     Goods =
                         words[2] < 0
-                            ? [new Good { Code = 1 }, new Good { Code = 3 }, new Good { Code = 6 }]
-                            : [new Good { Code = words[2] / 2 + 1 }],
+                            ? [StepGood(1, address), StepGood(3, address), StepGood(6, address)]
+                            : [StepGood(words[2] / 2 + 1, address)],
                 }
             );
         }
 
         return [.. steps];
     }
+
+    // The good a distribution step hands out. A code with no entry in the goods refuses the program.
+    static Good StepGood(int code, int address) =>
+        GoodTables.GoodOf(code, $"a step of the storage's hand-out at 0x{address:x}");
 
     // The rank the planks start from: the high byte of the word the player setup loads and stores at +0x148 of the player block
     // (0x445752: mov ax, imm16; mov ebx, [edi+0x30]; mov [ebx+0x148], ax).
