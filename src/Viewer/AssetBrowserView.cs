@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 using Godot;
 using OpenSettlers.Assets;
@@ -175,14 +174,14 @@ public partial class AssetBrowserView : Control
             var basicFolder = LaunchInstall.BasicFolder(ProjectSettings.GlobalizePath("res://"));
             tablesSource = new OpenSettlersRuleTables(basicFolder);
             // The view calls this where it catches a read failure: a broken content set names its file and key, and the
-            // view draws no map, as for a missing install file. The walk steps arrive with the graphics, so a broken walk
-            // steps file draws no map either, and the view never calls loadSteps.
+            // view draws no map, as for a missing install file. The walk steps arrive with the graphics, so the view calls
+            // loadSteps only where the graphics load failed, and the read raises the walk steps file's own fault.
             loadGraphics = _ => new GraphicsLoad
             {
                 Source = OpenSettlersSource.Load(basicFolder, new GodotImageDecoder()),
                 Steps = OpenSettlersWalkSteps.Load(basicFolder),
             };
-            loadSteps = () => throw new UnreachableException("the basic graphics load carries the walk steps");
+            loadSteps = () => OpenSettlersWalkSteps.Load(basicFolder);
         }
         else
         {

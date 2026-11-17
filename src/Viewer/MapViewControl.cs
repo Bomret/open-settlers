@@ -30,7 +30,7 @@ namespace OpenSettlers.Viewer;
 /// </remarks>
 /// <param name="tablesSource">The rule tables port; reading it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the tables cannot be read.</param>
 /// <param name="loadGraphics">Loads the graphics source the view draws from, given the rule tables the settlers are drawn by (null outside the game view); it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the source cannot be read.</param>
-/// <param name="loadSteps">Reads the walk steps where the graphics load carries none, as on the History Edition; on the basic set the walk steps arrive with the graphics load.</param>
+/// <param name="loadSteps">Reads the walk steps where the graphics load carries none, as on the History Edition or where the graphics load failed; it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the walk steps cannot be read.</param>
 /// <param name="seedText">The seed the view opens on, as the seed field shows it.</param>
 /// <param name="sizeValue">The map size the view opens on.</param>
 /// <param name="gameView">Whether a game ticks on the shown map.</param>
