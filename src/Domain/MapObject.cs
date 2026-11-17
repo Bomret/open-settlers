@@ -145,7 +145,10 @@ public readonly record struct MapObject
     public MapObject? AfterObjectPass =>
         Code switch
         {
-            >= SownFieldCode and < GrownFieldCode or (>= RipeFieldCode and < LastRipeFieldCode) => new() { Code = (byte)(Code + 1) },
+            >= SownFieldCode and < GrownFieldCode or (>= RipeFieldCode and < LastRipeFieldCode) => new()
+            {
+                Code = (byte)(Code + 1),
+            },
             GrownFieldCode => new() { Code = RipeFieldCode },
             LastRipeFieldCode => new() { Code = HarvestedFieldCode },
             HarvestedFieldCode => None,

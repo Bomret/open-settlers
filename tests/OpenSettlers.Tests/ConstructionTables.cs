@@ -21,6 +21,7 @@ static class ConstructionTables
 
     // The made-up flour class: class 7 of the first word, which the bakery's flag asks it in.
     public static readonly GoodClass FlourClass = new() { Class = 7, Word = RequestWord.First };
+
     // The made-up pig class: class 5 of the first word, which the butcher's flag asks it in.
     public static readonly GoodClass PigClass = new() { Class = 5, Word = RequestWord.First };
 
@@ -55,6 +56,7 @@ static class ConstructionTables
     // The made-up order of a castle that hands out flour: the order of PlanksFirst with the flour step last.
     public static DistributionStep[][] FlourOrders() =>
         [.. Orders().Select(order => order.Append(new() { Class = FlourClass, Goods = [Good.Flour] }).ToArray())];
+
     // The made-up order of a castle that hands out pigs too: the order of PlanksFirst with the pig step last.
     public static DistributionStep[][] PigOrders() =>
         [.. Orders().Select(order => order.Append(new() { Class = PigClass, Goods = [Good.Pig] }).ToArray())];

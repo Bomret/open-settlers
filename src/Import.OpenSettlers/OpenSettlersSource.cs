@@ -343,7 +343,18 @@ public sealed class OpenSettlersSource : IGraphicsSource
     static int KindOf(SettlerDraw draw) =>
         draw.Activity switch
         {
-            Cuts or CutsStone or Builds or Plants or TendsField or Digs or Saws or Grinds or Fishes or Bakes or Butchers or TendsPigs => 2,
+            Cuts
+            or CutsStone
+            or Builds
+            or Plants
+            or TendsField
+            or Digs
+            or Saws
+            or Grinds
+            or Fishes
+            or Bakes
+            or Butchers
+            or TendsPigs => 2,
             Door => 3,
             HandsOver => 4,
             WaitsOffRoad => 5,

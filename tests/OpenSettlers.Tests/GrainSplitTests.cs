@@ -66,7 +66,11 @@ public sealed class GrainSplitTests
 
         foreach (var slot in new[] { MillFlag, PigFarmFlag })
         {
-            Assert.AreEqual(0, game.Flags[slot].RequestOf(RequestWord.First).Rank, $"the request rank of the flag {slot} while its building is full");
+            Assert.AreEqual(
+                0,
+                game.Flags[slot].RequestOf(RequestWord.First).Rank,
+                $"the request rank of the flag {slot} while its building is full"
+            );
         }
 
         while (game.CastleStock.Count(Good.Grain) < 5)
@@ -79,7 +83,11 @@ public sealed class GrainSplitTests
             game.Tick();
         }
 
-        Assert.AreEqual(5, game.CastleStock.Count(Good.Grain), "the castle's grain after 150 passes with both buildings full");
+        Assert.AreEqual(
+            5,
+            game.CastleStock.Count(Good.Grain),
+            "the castle's grain after 150 passes with both buildings full"
+        );
     }
 
     // The split's state is the fills, the request ranks, and the castle's stock, and the digest holds all three: the same seed and
@@ -87,7 +95,11 @@ public sealed class GrainSplitTests
     [TestMethod]
     public void TheSameRunTwiceGivesTheSameDigestWithBothBuildingsAsking()
     {
-        Assert.AreEqual(CastleRunDigest(null), CastleRunDigest(null), "the digest of the castle's grain split, run twice");
+        Assert.AreEqual(
+            CastleRunDigest(null),
+            CastleRunDigest(null),
+            "the digest of the castle's grain split, run twice"
+        );
         Assert.AreEqual(FarmRunDigest(false), FarmRunDigest(false), "the digest of the farm's grain split, run twice");
     }
 
@@ -97,8 +109,16 @@ public sealed class GrainSplitTests
     public void TheDigestDiffersWhereTheSplitsStateDiffers()
     {
         var plain = CastleRunDigest(null);
-        Assert.AreNotEqual(plain, CastleRunDigest(game => game.Buildings[Mill].SetFill(FillCounter.Low, game.Buildings[Mill].FillLow + 1)), "one fill byte of the mill");
-        Assert.AreNotEqual(plain, CastleRunDigest(game => game.CastleStock.Add(Good.Grain)), "one more grain in the castle's stock");
+        Assert.AreNotEqual(
+            plain,
+            CastleRunDigest(game => game.Buildings[Mill].SetFill(FillCounter.Low, game.Buildings[Mill].FillLow + 1)),
+            "one fill byte of the mill"
+        );
+        Assert.AreNotEqual(
+            plain,
+            CastleRunDigest(game => game.CastleStock.Add(Good.Grain)),
+            "one more grain in the castle's stock"
+        );
         Assert.AreNotEqual(FarmRunDigest(false), FarmRunDigest(true), "the farm's grain on its flag or not");
     }
 

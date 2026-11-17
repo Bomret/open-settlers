@@ -132,9 +132,7 @@ public sealed class FisherTests
         lakes =
         [
             .. parts.Length > 13
-                ? parts[13]
-                    .Split(';')
-                    .Select(text => text["ld@".Length..].Split(',').Select(int.Parse).ToArray())
+                ? parts[13].Split(';').Select(text => text["ld@".Length..].Split(',').Select(int.Parse).ToArray())
                 : [],
         ];
 
