@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
@@ -97,11 +99,88 @@ public sealed class FocusedTestsTests
         CollectionAssert.AreEqual(new[] { "all" }, List("docs/notes.md", path));
 
     [TestMethod]
-    public void SelectingEveryClassSelectsTheWholeSuite() =>
+    [DataRow("src/Domain/Mill.cs")]
+    [DataRow("./src/Domain/Mill.cs")]
+    public void ASourceFileNoTestNamesSelectsTheWholeSuite(string path) =>
+        CollectionAssert.AreEqual(new[] { "all" }, List(path));
+
+    [TestMethod]
+    public void ASourceFileNoTestNamesSelectsTheWholeSuiteByItsAbsolutePath() =>
+        CollectionAssert.AreEqual(new[] { "all" }, List(Path.Combine(_folder, "src", "Domain", "Mill.cs")));
+
+    [TestMethod]
+    public void ADeletedSourceFileNoTestNamesSelectsTheWholeSuite()
+    {
+        File.Delete(Path.Combine(_folder, "src", "Domain", "Mill.cs"));
+
+        CollectionAssert.AreEqual(new[] { "all" }, List("src/Domain/Mill.cs"));
+    }
+
+    // The test project does not compile src/Viewer/.
+    [TestMethod]
+    public void AGodotOnlySourceFileNoTestNamesSelectsNothing() =>
+        CollectionAssert.AreEqual(Array.Empty<string>(), List("src/Viewer/Panel.cs"));
+
+    [TestMethod]
+    [DataRow("docs/rules/notes.md")]
+    [DataRow("NOTES.md")]
+    public void AMarkdownFileNoTestNamesSelectsNothingWhereATestNamesItsFolder(string path)
+    {
+        Write(path, "# Notes\n");
+        Test("RulesTests", "Path.Combine(root, \"docs\", \"rules\"); Path.Combine(root, \"docs/\");");
+
+        CollectionAssert.AreEqual(Array.Empty<string>(), List(path));
+    }
+
+    [TestMethod]
+    public void AMarkdownFileATestNamesSelectsThatTest()
+    {
+        Test("RulesTests", "Path.Combine(root, \"docs\", \"rules\", \"map-form.md\");");
+
+        CollectionAssert.AreEqual(Classes("RulesTests"), List("docs/rules/map-form.md"));
+    }
+
+    [TestMethod]
+    [DataRow("layouts/new.jsonc", "layouts")]
+    [DataRow("play/new.play", "play")]
+    public void ANewFileSelectsTheClassesNamingItsFolder(string path, string folder)
+    {
+        Test("ReadsEveryFileTests", $"Path.Combine(root, \"{folder}\");");
+
+        CollectionAssert.AreEqual(Classes("ReadsEveryFileTests"), List(path));
+    }
+
+    [TestMethod]
+    [DataRow]
+    [DataRow("--list")]
+    public void NoPathRefusesWithAUsageLine(params string[] arguments)
+    {
+        var run = Run(arguments);
+
+        Assert.AreEqual(2, run.Exit);
+        Assert.AreEqual("", run.Stdout);
+        StringAssert.StartsWith(run.Stderr, "usage: ");
+    }
+
+    // The selector run on this repository knows exactly the test classes of this assembly, by the names the test
+    // host matches (ClassName=<Type.FullName>).
+    [TestMethod]
+    public void TheSelectorKnowsExactlyTheTestClassesOfTheAssembly()
+    {
+        var run = PythonTool.Run(PythonTool.RepoRoot(), [PythonTool.InRepo("tools", "focused-tests.py"), "--classes"]);
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        var expected = typeof(FocusedTestsTests)
+            .Assembly.GetTypes()
+            .Where(type => type.GetCustomAttribute<TestClassAttribute>() is not null)
+            .Select(type => type.FullName!)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
         CollectionAssert.AreEqual(
-            new[] { "all" },
-            List("src/Domain/Hut.cs", "src/Domain/HutSite.cs", "tools/play-run.sh", "content/open-settlers")
+            expected,
+            run.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries).Order(StringComparer.Ordinal).ToArray()
         );
+    }
 
     [TestMethod]
     public void AChangeNamedOnlyInCommentsRunsNothingAndPasses()
@@ -109,7 +188,7 @@ public sealed class FocusedTestsTests
         Write("docs/notes.md", "# Notes\n");
         Test("CitingTests", "// docs/notes.md\n/* docs/notes.md */");
 
-        var run = Run("docs/notes.md", "src/Domain/Mill.cs");
+        var run = Run("docs/notes.md", "src/Viewer/Panel.cs");
 
         Assert.AreEqual(0, run.Exit, run.Stderr);
         Assert.AreEqual("focused-tests: no unit-test class names a changed path; nothing to run\n", run.Stdout);
