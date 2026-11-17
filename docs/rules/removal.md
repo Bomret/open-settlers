@@ -135,6 +135,15 @@ the player block, the storage items' request fields (the last loop of `0x4312ed`
 it comes back to a hut that is gone is not recovered), the military buildings' and the castle's branches (the territory), and a good whose
 destination flag holds no building (the program reads a null pointer there; the engine leaves it).
 
+### The butcher's shop
+
+**Status:** confirmed, emulated.
+
+The same routine takes a finished butcher's shop (type 0xd, a large building) down. The five games of `butcher-removals.txt` match the engine byte for byte: the
+butcher inside waiting for a pig, at work with the node held, out on the flag with the meat, and a pig on its way to the shop or held on site. The butcher inside
+loses his job and walks home as the miller does; the meat in his hand is lost, and the fill byte is cleared with the building, so no good stays counted as on its way
+([Butchering](butchering.md#removal)).
+
 ### The farm
 
 **Status:** confirmed, emulated.

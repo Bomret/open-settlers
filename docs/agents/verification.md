@@ -247,6 +247,8 @@ script alone. Add a layout only where none of them holds the situation.
   change after a flag is placed.
 - `play/build-help-start.play` runs on the game view of the default seed. It checks the castle sites before the castle stands.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
+- `layouts/butcher.jsonc` and `play/butcher.play`: a finished butcher's shop with its butcher inside, a road to the castle, and two pigs on the castle's flag,
+  fast-forwarded to the castle's first meat beyond its start stock.
 - `layouts/mill.jsonc` and `play/mill.play`: a finished mill with its miller inside, a road to the castle, and two grains on the castle's flag,
   fast-forwarded to the castle's first flour.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
@@ -282,7 +284,7 @@ The entries follow, and the game applies them in the file's order:
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
 - `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher (a
-  woodcutter's, stonecutter's, forester's, mill's, or farm's with its worker inside).
+  woodcutter's, stonecutter's, forester's, mill's, farm's, or butcher's with its worker inside).
 - `settlers`: a carrier waiting on a road.
 - `goods`: `{"x","y","place","good"}` on a flag.
 

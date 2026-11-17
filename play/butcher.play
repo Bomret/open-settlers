@@ -1,0 +1,14 @@
+# A butcher's shop makes meat of the pigs the castle sends it: the butcher stands inside from the start, two pigs lie on the castle's flag, a
+# carrier takes them over the road to the shop's flag and on into the shop, the butcher works on each, and the meat goes back to the castle.
+# The script fast-forwards to the castle's first meat beyond its start stock and takes a shot of the shop and its road. Run it on the layout,
+# under either graphics source:
+#   sh tools/play-run.sh butcher --layout layouts/butcher.jsonc --fps 10
+#   sh tools/play-run.sh butcher --layout layouts/butcher.jsonc --fps 10 --graphics open-settlers
+wait 0.3
+expect-at 13 10 building
+fast-forward until meat >= 2 max 30000
+scroll up 6 860 560
+wait 0.3
+dump meat-stored
+shot meat-stored
+expect meat >= 2

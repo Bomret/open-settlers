@@ -157,7 +157,11 @@ public sealed class ButcherShopTests
 
         Assert.IsNotInstanceOfType<StepsOutWithGood>(butcher.Activity, "a place freed and he stepped out");
         ConstructionWorld.Run(game, 3000);
-        Assert.AreEqual(laid, game.CastleStock.Count(Good.Stone) - stones, "every good laid on the flag reached the castle");
+        Assert.AreEqual(
+            laid,
+            game.CastleStock.Count(Good.Stone) - stones,
+            "every good laid on the flag reached the castle"
+        );
         Assert.AreEqual(meat + 1, game.CastleStock.Count(Good.Meat), "and so did the meat");
     }
 }

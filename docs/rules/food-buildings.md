@@ -91,7 +91,7 @@ jobs 11 and 14 write none, so the fisher's and the farm's buildings ask for no g
 | --- | --- | --- | --- | --- |
 | 11 fisher | `Fisher_Start` (`0x43d14d`) | nothing | `0x1f` | fish, by the put at `0x43837f` (the arrival `0x438232`) |
 | 12 pig farmer | `PigFarmer_Start` (`0x43d179`) | grain (class 4, first word) | `0x25` | pig, `0x433577` |
-| 13 butcher | `Butcher_Start` (`0x43d275`) | pig (class 3, first word) | `0x26` | meat, `0x4333a5` |
+| 13 butcher | `Butcher_Start` (`0x43d275`) | pig (class 3, first word; the start clears the second word's class, [Butchering](butchering.md#the-start-and-the-request-for-pigs)) | `0x26` | meat, `0x4333a5` |
 | 14 farm | `Farmer_Start` (`0x43d311`) | nothing | `0x21` | grain, by the put at `0x43847d` (the arrival `0x438391`) |
 | 15 miller | `MillWorker_Start` (`0x43d33d`) | grain (class 4, first word) | `0x23` | flour, `0x433a1e` |
 | 16 baker | `BakerWorker_Start` (`0x43d3d9`) | flour (class 5, first word) | `0x24` | bread, `0x43384f` |
@@ -167,5 +167,5 @@ at `0x44fcfe` the scaffold's: 186, 177, 184, 177, 187, and 183. A good on a flag
   the art of `tools/open-settlers-art.py`. The other goods 7 to 26 have `NameTable` entries only.
 - `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar.
   The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) through `NameTable.GoodName`.
-- **Stand-in:** the workers of the fisher, farm, pig farm, butcher, and baker run no work cycle yet: a settler who takes one of those jobs enters the building and stands. The
-  mill's miller works ([Milling](milling.md)); the job slices add the other cycles.
+- **Stand-in:** the workers of the fisher, pig farm, and baker run no work cycle yet: a settler who takes one of those jobs enters the building and stands. The
+  mill's miller, the farm's farmer, and the butcher work ([Milling](milling.md), [Farming](farming.md), [Butchering](butchering.md)); the job slices add the other cycles.

@@ -26,10 +26,11 @@ Goal and done condition: [roadmap, M5](../roadmap.md#m5-food). Marks: [Leads](AG
 - The farmer's work cycle (the search at `0x433b35`, the sowing and harvest at `0x433a3a`, the arrival at `0x438391`), the fields' codes
   (`0x69` to `0x6f`, `0x79` to `0x7e`), their growth and decay in the object pass (the table entries 22 to 28 and 38 to 43, and the decay
   counter at `+0x28c`), and the farm's removal: [Farming](../rules/farming.md). known
+- The butcher's work cycle (state `0x26`, `0x4332a8`), his request for pigs and its rank (`0x43d275`, `0x42e1b3`), the butcher's figure (`0x43ff90`), the castle's hand-out of pigs, and the shop's removal: [Butchering](../rules/butchering.md). known
 
 ## Open questions
 
 - Is good 25 the sword and good 26 the shield, or the reverse? [Food buildings](../rules/food-buildings.md#the-goods) names them in that
   order from the sprite of good 25; no routine read puts or asks either, and a layout cannot lay good 26 on a flag.
-- The work cycle of each food job: the fisher's walk to the water (`0x433f71`, `0x438232`) and the indoor jobs' states `0x24` to
-  `0x26`. The mill's `0x23` and the farm's fields are known ([Milling](../rules/milling.md), [Farming](../rules/farming.md)).
+- The work cycle of each food job: the fisher's walk to the water (`0x433f71`, `0x438232`) and the indoor jobs' states `0x24` and
+  `0x25`. The mill's `0x23`, the farm's fields, and the butcher's `0x26` are known ([Milling](../rules/milling.md), [Farming](../rules/farming.md), [Butchering](../rules/butchering.md)).
