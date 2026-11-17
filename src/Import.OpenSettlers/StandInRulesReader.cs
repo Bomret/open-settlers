@@ -236,7 +236,12 @@ static class StandInRulesReader
             .ToArray();
         foreach (var (name, row) in fields["frames"].Members())
         {
-            if (!int.TryParse(name, out var frame) || frame.ToString() != name || frame < 0 || frame >= RuleTables.FrameRowCount)
+            if (
+                !int.TryParse(name, out var frame)
+                || frame.ToString() != name
+                || frame < 0
+                || frame >= RuleTables.FrameRowCount
+            )
             {
                 throw row.Fault($"not a frame number, 0 to {RuleTables.FrameRowCount - 1}");
             }
@@ -314,9 +319,10 @@ static class StandInRulesReader
         };
     }
 
-    static (IReadOnlyDictionary<BuildingType, StandInBuilding> Rules, (byte Standing, byte Constructing) CastleDoor) Buildings(
-        RuleNode node
-    )
+    static (
+        IReadOnlyDictionary<BuildingType, StandInBuilding> Rules,
+        (byte Standing, byte Constructing) CastleDoor
+    ) Buildings(RuleNode node)
     {
         var entries = node.Fields(Named().Select(entry => entry.Name));
         var castleDoor = Door(entries["castle"].Fields(["door"])["door"]);

@@ -443,11 +443,7 @@ public sealed class BasicContentSetPlayTests
     public void AZeroBlowStepFailsTheLoops()
     {
         using var folder = new RuleFolder();
-        folder.ReplacePattern(
-            OpenSettlersRuleTables.BuildingsFile,
-            "(\"sawmill\".*?\"firstHalf\": )20",
-            "${1}0"
-        );
+        folder.ReplacePattern(OpenSettlersRuleTables.BuildingsFile, "(\"sawmill\".*?\"firstHalf\": )20", "${1}0");
 
         Assert.StartsWith("refused: rules/buildings.jsonc: buildings.sawmill.blows.firstHalf: ", Failure(folder.Root));
     }
