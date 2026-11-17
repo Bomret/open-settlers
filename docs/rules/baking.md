@@ -44,7 +44,7 @@ The settler takes state `0x24` with byte 11 at 0.
 
 The handler keeps the rank at `0x43` with the worker inside (status bit 6), and after its request for a worker found none: `0xff` shifted right by the goods that the building's
 fill byte 8 counts, the low nibble (on the way) and the high nibble (on site) together, and 0 where they are 8 or more. The start rank is a constant of the handler; the mill's handler reads
-a player word instead. Each flour that a request serves halves the served rank where its bit 0 is set, and the handler writes the rank again from the fill. The rank is 1 at seven flours held, the serve of the
+a player word instead. **Inferred** departure: the engine reads the building's request-failed bit, which stays set until the retry scan clears it, so it keeps the rank on every turn while the bit holds, where the program writes it only on the turn whose request failed. It is unobservable: the written value equals the stored one while the fill is unchanged, and no flour class is asked before the worker's first start. Each flour that a request serves halves the served rank where its bit 0 is set, and the handler writes the rank again from the fill. The rank is 1 at seven flours held, the serve of the
 eighth makes it 0, so a full store is eight flours and the ninth goes to the castle (`store-full` in `baker-walks.txt`).
 
 ## State 0x24

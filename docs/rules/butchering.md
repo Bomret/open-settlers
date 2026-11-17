@@ -46,7 +46,7 @@ So the start writes the first word only and clears the second word's class, as t
 The handler keeps the rank at `0x43` with the worker inside (status bit 6): `0xff` shifted right by the goods that the building's fill byte 8 counts, the low
 nibble (on the way) and the high nibble (on site) together, and 0 where they are 8 or more. The constant is in the handler (`0x42e1de`), where the mill's is a
 word of the player block. After the handler asks for a worker and the request finds none, it also writes the rank (the failed request leaves `[edi]` with bit 6
-set, which the handler tests next), as the mill's does. The emulated games show `0xff` at the first turn of the shop.
+set, which the handler tests next), as the mill's does. The emulated games show `0xff` at the first turn of the shop. **Inferred** departure: the engine reads the building's request-failed bit, which stays set until the retry scan clears it, so it keeps the rank on every turn while the bit holds, where the program writes it only on the turn whose request failed. It is unobservable: the written value equals the stored one while the fill is unchanged, and no grain class is asked before the worker's first start.
 
 Each pig that a request serves halves the served rank where its bit 0 is set, and the handler writes the rank again from the fill. The rank is 0 at eight pigs held, so a
 full store is eight pigs and the ninth goes to the castle (`store-full`).

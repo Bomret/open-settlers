@@ -8,6 +8,9 @@ namespace OpenSettlers.Simulation;
 /// the flag's request, and the start routine of the job at the door writes the request. What differs between the jobs stays with each job's
 /// rules: the rank base (the mill's reads a player word, the pig farm's another, the baker's and the butcher's are the immediate 0xff), the
 /// status bit the work sets (<see cref="Building.AtWork"/>: the miller and the baker only), and the pig farm's turns while the worker is on the way.
+/// The rules keep the rank on every turn while the building's request-failed bit holds, where the program writes it only on the turn whose
+/// request failed (inferred as unobservable: the written value equals the stored one while the fill is unchanged, and no input class is
+/// asked before the worker's first start).
 /// </summary>
 static class FoodHutRequest
 {
