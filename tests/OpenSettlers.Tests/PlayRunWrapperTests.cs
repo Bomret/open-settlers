@@ -137,7 +137,7 @@ public class PlayRunWrapperTests
         Put("Directory.Build.props", "<Project />");
         Put("play/demo.play", "wait 1");
         Put("play/.cache.play", "wait 1");
-        Put("content/open-settlers/manifest.json", "{}");
+        Put("content/basic/manifest.json", "{}");
         Put("README.md", "readme");
         Put("tests/T.cs", "class T {}");
         Put(".gitignore", "play-out/\nsrc/ignored.txt\n");
@@ -874,46 +874,46 @@ public class PlayRunWrapperTests
     }
 
     [TestMethod]
-    public void GodotGetsTheGraphicsFlagOnlyWhereTheRunGaveOne()
+    public void GodotGetsTheContentSetFlagOnlyWhereTheRunGaveOne()
     {
         string[] Launch() => File.ReadAllLines(Path.Combine(_fake, "args"));
 
-        Run([.. Args, "--graphics", "open-settlers"]);
+        Run([.. Args, "--content-set", "basic"]);
         CollectionAssert.AreEqual(
-            new[] { "--size", "2", "--graphics", "open-settlers", "--play", "play/demo.play" },
+            new[] { "--size", "2", "--content-set", "basic", "--play", "play/demo.play" },
             Launch()[^6..]
         );
 
-        Run(["demo", "--fps", "10", "--graphics", "history-edition"]);
-        CollectionAssert.AreEqual(new[] { "--graphics", "history-edition" }, Launch()[^4..^2]);
+        Run(["demo", "--fps", "10", "--content-set", "history-edition"]);
+        CollectionAssert.AreEqual(new[] { "--content-set", "history-edition" }, Launch()[^4..^2]);
 
         Run(["demo", "--fps", "10", "--seed", "abc"]);
-        CollectionAssert.DoesNotContain(Launch(), "--graphics");
+        CollectionAssert.DoesNotContain(Launch(), "--content-set");
     }
 
-    // The two sources never share a result, and the default is the History Edition: naming it changes nothing. A
-    // change to the content set, a new file in it included, starts Godot again.
+    // The two sets never share a result, and the default is the History Edition: naming it changes nothing. A
+    // change to the basic set's files, a new file in it included, starts Godot again.
     [TestMethod]
-    public void TheGraphicsSourceAndTheContentSetAreHashed()
+    public void TheContentSetAndItsFilesAreHashed()
     {
-        string[] History = [.. Args, "--graphics", "history-edition"];
-        string[] Own = [.. Args, "--graphics", "open-settlers"];
+        string[] History = [.. Args, "--content-set", "history-edition"];
+        string[] Own = [.. Args, "--content-set", "basic"];
 
         Run(Args);
         Run(History);
         Assert.AreEqual(1, Calls, "naming the History Edition is not the default");
         Run(Own);
-        Assert.AreEqual(2, Calls, "an open-settlers run reused a History Edition result");
+        Assert.AreEqual(2, Calls, "a basic run reused a History Edition result");
         Run(Own);
-        Assert.AreEqual(2, Calls, "a repeated open-settlers call did not reuse");
+        Assert.AreEqual(2, Calls, "a repeated basic call did not reuse");
 
-        Write("content/open-settlers/manifest.json", "{ }");
+        Write("content/basic/manifest.json", "{ }");
         Run(Own);
         Assert.AreEqual(3, Calls, "an edited manifest did not start Godot");
-        Write("content/open-settlers/terrain/new.png", "png");
+        Write("content/basic/terrain/new.png", "png");
         Run(Own);
         Assert.AreEqual(4, Calls, "a new image did not start Godot");
-        File.Delete(Path.Combine(_repo, "content/open-settlers/manifest.json"));
+        File.Delete(Path.Combine(_repo, "content/basic/manifest.json"));
         Run(Own);
         Assert.AreEqual(5, Calls, "a removed manifest did not start Godot");
     }
@@ -988,7 +988,7 @@ public class PlayRunWrapperTests
                 "seed=abc",
                 "size=2",
                 "fps=10",
-                "graphics=history-edition",
+                "content-set=history-edition",
                 "exit=0",
                 "run",
             },
@@ -1019,9 +1019,10 @@ public class PlayRunWrapperTests
     [DataRow("missing layout", "demo", "--layout", "play/none.layout", "--fps", "10")]
     [DataRow("layout with no value", "demo", "--fps", "10", "--layout")]
     [DataRow("empty layout", "demo", "--layout", "", "--fps", "10")]
-    [DataRow("unknown graphics source", "demo", "--graphics", "retro", "--fps", "10")]
-    [DataRow("graphics with no value", "demo", "--fps", "10", "--graphics")]
-    [DataRow("repeated graphics", "demo", "--graphics", "open-settlers", "--graphics", "open-settlers", "--fps", "10")]
+    [DataRow("unknown content set", "demo", "--content-set", "retro", "--fps", "10")]
+    [DataRow("content set with no value", "demo", "--fps", "10", "--content-set")]
+    [DataRow("repeated content set", "demo", "--content-set", "basic", "--content-set", "basic", "--fps", "10")]
+    [DataRow("retired graphics flag", "demo", "--graphics", "basic", "--fps", "10")]
     [DataRow("repeated repro", "demo", "--repro", "--fps", "10", "--repro")]
     [DataRow("no args")]
     public void BadArgumentsExitTwoAndLeaveNoTrace(string reason, params string[] args) =>

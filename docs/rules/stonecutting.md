@@ -112,7 +112,7 @@ The engine reads the three words from the program's instructions (`RuleTables.Ge
 
 The heap stages are the objects `0x48` to `0x4f`, drawn from the map like any object. A stone on a flag is the sprite `320` plus the good. The engine draws it as every good on a flag is ([Woodcutting](woodcutting.md#drawing)).
 
-The `open-settlers` content set draws the eight stages as a grey pile that shrinks (`object/72` to `object/79`). It draws the stone as a grey stone (`good/10`). It draws the stonecutter as a grey figure in each pose (`settler/stonecutter/*`). The way back with the stone has the pose of a carried load.
+The `basic` content set draws the eight stages as a grey pile that shrinks (`object/72` to `object/79`). It draws the stone as a grey stone (`good/10`). It draws the stonecutter as a grey figure in each pose (`settler/stonecutter/*`). The way back with the stone has the pose of a carried load.
 
 ## Removal
 

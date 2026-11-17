@@ -1425,7 +1425,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetLoadsAndDrawsEveryTerrainCodeAndRoadDirection()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
 
         for (var code = 0; code < OpenSettlersSource.TerrainCodes; code++)
         {
@@ -1459,7 +1459,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetCoversEveryObjectTermTheBuildersEmit()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         var map = MapGenerator.Generate(
             TestProgram.Made(),
             new MapSeed
@@ -1515,7 +1515,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetDrawsEveryObjectCodeFlagGoodAndBuildingTheGameCanName()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
 
         Assert.IsNotNull(
             source
@@ -1639,7 +1639,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetDrawsEverySettlerTheBuildersEmit()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         var map = MapGenerator.Generate(
             TestProgram.Made(),
             new MapSeed
@@ -1797,7 +1797,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void EveryTerrainImageCoversTheLargestDrop()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         const int LargestDrop = Node.MaxHeight * TerrainTriangles.HeightStep;
 
         for (var code = 0; code < OpenSettlersSource.TerrainCodes; code++)
@@ -1813,7 +1813,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetHoldsTheGdignoreThatKeepsGodotFromImportingIt()
     {
-        Assert.IsTrue(File.Exists(RepoPath("content/open-settlers/.gdignore")));
+        Assert.IsTrue(File.Exists(RepoPath("content/basic/.gdignore")));
     }
 
     [TestMethod]

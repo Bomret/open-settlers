@@ -167,11 +167,11 @@ public partial class AssetBrowserView : Control
         // The view calls this where it catches a read failure: a broken content set names its file and key, and the view draws
         // no map, as for a missing install file.
         Func<RuleTables?, GraphicsLoad> loadGraphics =
-            args.Graphics == GraphicsSourceName.OpenSettlers
+            args.ContentSet == ContentSetName.Basic
                 ? _ => new GraphicsLoad
                 {
                     Source = OpenSettlersSource.Load(
-                        ProjectSettings.GlobalizePath("res://content/open-settlers"),
+                        ProjectSettings.GlobalizePath("res://content/basic"),
                         new GodotImageDecoder()
                     ),
                 }

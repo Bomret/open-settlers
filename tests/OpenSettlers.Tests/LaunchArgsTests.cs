@@ -653,58 +653,68 @@ public sealed class LaunchArgsTests
     }
 
     [TestMethod]
-    public void WithoutTheGraphicsFlagTheSourceIsTheHistoryEdition()
+    public void WithoutTheContentSetFlagTheSetIsTheHistoryEdition()
     {
         var args = LaunchArgs.Parse(["--map"], null);
 
-        Assert.AreEqual(GraphicsSourceName.HistoryEdition, args.Graphics);
+        Assert.AreEqual(ContentSetName.HistoryEdition, args.ContentSet);
     }
 
     [TestMethod]
-    [DataRow("history-edition", GraphicsSourceName.HistoryEdition)]
-    [DataRow("open-settlers", GraphicsSourceName.OpenSettlers)]
-    public void TheGraphicsFlagNamesTheSource(string name, GraphicsSourceName source)
+    [DataRow("history-edition", ContentSetName.HistoryEdition)]
+    [DataRow("basic", ContentSetName.Basic)]
+    public void TheContentSetFlagNamesTheSet(string name, ContentSetName set)
     {
-        var args = LaunchArgs.Parse(["--map", "--graphics", name], null);
+        var args = LaunchArgs.Parse(["--map", "--content-set", name], null);
 
-        Assert.AreEqual(source, args.Graphics);
+        Assert.AreEqual(set, args.ContentSet);
         Assert.IsEmpty(args.Problems);
     }
 
     [TestMethod]
-    [DataRow(new[] { "--map", "--graphics", "retro" }, "bad --graphics 'retro'")]
-    [DataRow(new[] { "--map", "--graphics" }, "--graphics needs a value")]
-    [DataRow(new[] { "--graphics", "--map" }, "--graphics needs a value")]
-    [DataRow(new[] { "--map", "--graphics", "open-settlers", "--graphics", "open-settlers" }, "repeated --graphics")]
-    [DataRow(new[] { "--graphics", "open-settlers" }, "--graphics does not apply to the asset browser")]
-    [DataRow(new[] { "--check", "--graphics", "open-settlers" }, "--graphics does not apply to --check")]
+    [DataRow(new[] { "--map", "--content-set", "retro" }, "bad --content-set 'retro'")]
+    [DataRow(new[] { "--map", "--content-set" }, "--content-set needs a value")]
+    [DataRow(new[] { "--content-set", "--map" }, "--content-set needs a value")]
+    [DataRow(new[] { "--map", "--content-set", "basic", "--content-set", "basic" }, "repeated --content-set")]
+    [DataRow(new[] { "--content-set", "basic" }, "--content-set does not apply to the asset browser")]
+    [DataRow(new[] { "--content-set", "history-edition" }, "--content-set does not apply to the asset browser")]
+    [DataRow(new[] { "--check", "--content-set", "basic" }, "--content-set does not apply to --check")]
+    [DataRow(new[] { "--check", "--content-set", "history-edition" }, "--content-set does not apply to --check")]
     [DataRow(
-        new[] { "--seed-info", "--seed", "1234567812345678", "--graphics", "open-settlers" },
-        "--graphics does not apply to --seed-info"
+        new[] { "--seed-info", "--seed", "1234567812345678", "--content-set", "basic" },
+        "--content-set does not apply to --seed-info"
     )]
-    public void ABadGraphicsArgumentIsAProblemThatNamesTheKnownSources(string[] flags, string reason)
+    public void ABadContentSetArgumentIsAProblemThatNamesTheKnownSets(string[] flags, string reason)
     {
         var args = LaunchArgs.Parse(flags, null);
 
         var problems = string.Join("; ", args.Problems);
         StringAssert.Contains(problems, reason);
-        StringAssert.Contains(problems, "history-edition, open-settlers");
+        StringAssert.Contains(problems, "basic, history-edition");
+    }
+
+    [TestMethod]
+    public void TheGraphicsFlagIsRefusedWithAMessageThatNamesTheContentSetFlag()
+    {
+        var args = LaunchArgs.Parse(["--map", "--graphics", "basic"], null);
+
+        StringAssert.Contains(string.Join("; ", args.Problems), "--graphics is gone, use --content-set");
     }
 
     [TestMethod]
     [DataRow("--game-view")]
     [DataRow("--map")]
-    public void TheGraphicsFlagGoesWithTheMapViewAndTheGameView(string mode)
+    public void TheContentSetFlagGoesWithTheMapViewAndTheGameView(string mode)
     {
-        var args = LaunchArgs.Parse([mode, "--graphics", "open-settlers"], null);
+        var args = LaunchArgs.Parse([mode, "--content-set", "basic"], null);
 
         Assert.IsEmpty(args.Problems);
     }
 
     [TestMethod]
-    public void TheGraphicsFlagGoesWithALayout()
+    public void TheContentSetFlagGoesWithALayout()
     {
-        var args = LaunchArgs.Parse(["--layout", "a.jsonc", "--graphics", "open-settlers"], null);
+        var args = LaunchArgs.Parse(["--layout", "a.jsonc", "--content-set", "basic"], null);
 
         Assert.IsEmpty(args.Problems);
         Assert.AreEqual(LaunchMode.GameView, args.Mode);

@@ -38,8 +38,8 @@ build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on 
 `mise install` provides. Where it is missing, they fail with that hint, except `HeadlessEntryTests`, which reports
 inconclusive. Each spawns
 its tool through `PythonTool`. `PythonTool` removes `SIEDLER_DIR`, every `GIT_*` variable, and any host `analyzeHeadless` from the child's environment.
-`RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
-`content/open-settlers/` holds a file the generator does not write the same. `HeadlessEntryTests` runs
+`RepositoryContentTests` runs `tools/basic-art.py` into a temporary folder and fails where
+`content/basic/` holds a file the generator does not write the same. `HeadlessEntryTests` runs
 `tools/GhidraDump/headless.py` in a temporary folder on a path that holds only stand-in `analyzeHeadless` and `gradle`
 shell scripts, so a Ghidra or Gradle of the host never runs. Its worktree cases build a git repository with a linked
 worktree and add a stand-in `git` that runs the host's git. It reports inconclusive without python3, and its stand-in
@@ -128,13 +128,13 @@ situation and takes named screenshots and dumps, then run it under Movie Maker t
 wrapper, from the repository root, with `SIEDLER_DIR` set:
 
 ```sh
-sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--graphics <source>] --fps <fps> [--fresh] [--repro]
+sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--content-set <set>] --fps <fps> [--fresh] [--repro]
 ```
 
 Without `--game-view` the wrapper runs the map view. `--game-view` runs the game view on `--seed` and `--size`.
 `--layout <file>` runs the game view on a layout and implies `--game-view`. A layout holds its own seed and size.
 The wrapper exits 2 on `--layout` with `--seed` or `--size`, on an empty value, and on a missing file.
-`--graphics history-edition|open-settlers` picks the graphics source of the run (the History Edition without the flag).
+`--content-set basic|history-edition` picks the content set of the run (the History Edition without the flag).
 Another value, a missing value, and a repeat exit 2.
 `mise run play -- <stem> ...` runs the same wrapper. The wrapper clears `play-out/<stem>/`, builds
 `OpenSettlers.csproj`, and runs the Godot command `README.md`'s "Run a play script" gives, through
@@ -152,14 +152,14 @@ size, such as on a display that clamps or scales the window, exits 4 and stores 
   stored result.
 - The hash covers every tracked or untracked, not ignored file under `src/`, `scenes/`, and `content/` (content and
   path). It also covers `project.godot`, `OpenSettlers.csproj`, `global.json`, `Directory.Build.props`, the play script, the mode, the
-  layout's path and content, the seed, the size, the graphics source, the frame rate, the Godot version, and the
+  layout's path and content, the seed, the size, the content set, the frame rate, the Godot version, and the
   `SIEDLER_DIR` path.
   It leaves out the install's content and `.godot/`. After a change to the install, run with `--fresh`.
 - A failed build prints the build output, starts no Godot, stores nothing, and exits 3. Bad arguments
   exit 2 with a message and run, store, and log nothing.
 - Each call appends one tab-separated line of 13 fields to `play-out/runs.log`. The fields are the UTC time, the
   input hash, `HEAD`, `clean` or `dirty` (an untracked file counts), the stem, `mode=<map|game-view>`,
-  `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `graphics=<source>` (`history-edition` without the flag), `exit=<status>`, and `run`,
+  `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `content-set=<set>` (`history-edition` without the flag), `exit=<status>`, and `run`,
   `reused`, `build` (a failed build), or a `repro-` outcome (Repro mode below). A line proves a run at a tip when its `HEAD` equals the tip and it reads
   `clean`.
 - Calls for one stem run one at a time. A second call waits on the lock directory `play-out/.lock-<stem>`, says so
@@ -245,7 +245,7 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/woodcutter-figures.play` on the same layout: crops of the woodcutter at his door, on the way out, at the cut, and on the way back with the log.
 - `layouts/fisher.jsonc` and `play/fisher.play`: a fisher in his building beside a hand-drawn lake. The script fast-forwards to his
   walk out (state `0x10`) and to his cast (state `0x20`) and takes cropped shots of each. The lake holds a lake detail of 0, so he
-  catches nothing. The run gives one digest under both graphics sources.
+  catches nothing. The run gives one digest under both content sets.
 - `play/fisher-catch.play` on the game view with seed `4455544685788642` and size 1: the castle's click places it at 15,5, a fisher's site
   at 18,5 joins it by a road, and the fisher fishes at the generated lake to the east. The script fast-forwards to his cast, to his first
   catch (he carries the fish), and to the fish on his flag, with a shot of each and one of him on the way back.

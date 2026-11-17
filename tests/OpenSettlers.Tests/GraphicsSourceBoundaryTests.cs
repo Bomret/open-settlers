@@ -167,13 +167,7 @@ public sealed class GraphicsSourceBoundaryTests
             .Order(StringComparer.Ordinal);
         var found = new List<string>();
         foreach (
-            var forbidden in new[]
-            {
-                "OpenSettlersSource",
-                "OpenSettlersLook",
-                "Import.ContentSet",
-                "content/open-settlers",
-            }
+            var forbidden in new[] { "OpenSettlersSource", "OpenSettlersLook", "Import.ContentSet", "content/basic" }
         )
         {
             if (text.Contains(forbidden, StringComparison.Ordinal))
@@ -236,15 +230,15 @@ public sealed class GraphicsSourceBoundaryTests
     public void ThePortsOnlyCheckFailsOnAPlantedContentSetType()
     {
         CollectionAssert.AreEqual(
-            new[] { "OpenSettlersSource", "content/open-settlers" },
-            ContentSetNames("OpenSettlersSource.Load(\"res://content/open-settlers\", decoder)")
+            new[] { "OpenSettlersSource", "content/basic" },
+            ContentSetNames("OpenSettlersSource.Load(\"res://content/basic\", decoder)")
         );
         CollectionAssert.AreEqual(
             new[] { "Import.ContentSet" },
             ContentSetNames("using OpenSettlers.Import.ContentSet;")
         );
         CollectionAssert.AreEqual(new[] { "WoodcutterKey" }, ContentSetNames("new WoodcutterKey()"));
-        Assert.IsEmpty(ContentSetNames("GraphicsSourceName.OpenSettlers and InputEventKey"));
+        Assert.IsEmpty(ContentSetNames("ContentSetName.Basic and InputEventKey"));
     }
 
     // The positive control of the History Edition check: it fails on a planted violation.
@@ -259,7 +253,7 @@ public sealed class GraphicsSourceBoundaryTests
             new[] { "Import.HistoryEdition" },
             HistoryEditionNames("using OpenSettlers.Import.HistoryEdition;")
         );
-        Assert.IsEmpty(HistoryEditionNames("GraphicsSourceName.HistoryEdition and the install's folder"));
+        Assert.IsEmpty(HistoryEditionNames("ContentSetName.HistoryEdition and the install's folder"));
     }
 
     // A global using leaves the namespace out of the file: the check still finds the public types by name.
