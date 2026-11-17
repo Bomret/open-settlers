@@ -117,8 +117,9 @@ has a kind, a node, the raw values the engine holds for it, and a name where the
 _Avoid_: entity, item, object (a map object is one kind of thing)
 
 **Name table**
-A table of Open Settlers' own names for the original's bare codes: map object codes, settler jobs and states,
-and building types. Each entry cites its evidence. A code with no entry shows raw. The object names read the
+A table of Open Settlers' own names for the original's bare codes of map objects and settler states. Each entry
+cites its evidence. A code with no entry shows raw. Goods, building types, and jobs take their names from the
+content catalog instead. The object names read the
 loaded class table, so `stone` names a code only where the table says class 2.
 _Avoid_: lookup, code map
 
@@ -164,6 +165,27 @@ _Avoid_: mechanic, logic
 The tables of the program data that the rules read, as typed values (`src/Domain/RuleTables.cs`). The importer
 builds them from the bytes of `Siedler1.exe`. A test builds its own.
 _Avoid_: program tables
+
+**Content catalog**
+The engine's list of the goods, building types, and jobs a game knows, one catalog entry each, ordered by stable
+name (ADR 0020). A content set's source builds it: the History Edition importer builds the original's entries, the
+basic set's reader its own.
+_Avoid_: registry, content database, mod list
+
+**Catalog entry**
+One good, building type, or job of the content catalog: its stable name, its original code where it has one, and
+the facts the rules read about it, such as a good's request class or a building type's size.
+_Avoid_: definition, prototype, template
+
+**Stable name**
+The name that is a catalog entry's identity, such as `log`, `castle`, or `woodcutter`. It does not change between
+runs or releases, and the catalog orders its entries by it.
+_Avoid_: id, key, slug
+
+**Original code**
+The number the original game gives a good, building type, or job, kept as an optional attribute of its catalog
+entry. Only the History Edition importer and the exporters read it; an entry the original lacks has none.
+_Avoid_: id, type code (as identity)
 
 **ObjectClass**
 The class the rules give an object code (0 nothing, 3 a flag, 4 to 6 buildings), read with `RuleTables.ClassOf`.

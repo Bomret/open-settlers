@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 
-**Amended by:** [ADR 0017](0017-install-data-enters-through-import-ports.md)
+**Amended by:** [ADR 0017](0017-install-data-enters-through-import-ports.md), [ADR 0020](0020-content-is-a-catalog-of-named-entries-and-the-original-s-codes-stay-at-its-edge.md)
 
 The simulation has an onion shape. Its core is a typed domain model: the map's nodes, flags, roads,
 buildings, goods, and settlers, each with named fields and no packed bytes or bare codes of the original.
