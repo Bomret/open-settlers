@@ -73,11 +73,37 @@ public sealed class SettlerSupply
     /// <summary>Whether the castle stands, so the supply turns.</summary>
     public bool Running { get; private set; }
 
+    /// <summary>
+    /// The player's settler cap as last worked out at phase 32 (<c>Player_UpdateSettlerCap</c>, <c>0x42a567</c>); 0 before the first.
+    /// One player's share of the table is the whole table less the floor, so its cap is the table's size.
+    /// </summary>
+    public int Cap { get; private set; }
+
+    /// <summary>Whether the cap lets the supply make settlers (bit 2 of byte 3 of the player block).</summary>
+    public bool MayMake { get; private set; }
+
     /// <summary>The castle is placed: the supply counts from the clock now (<c>Castle_Place</c> stores it, <c>0x442e4c</c>).</summary>
     public void Start()
     {
         LastClock = _clock.Now;
         Running = true;
+        // Castle_CreateSettlers lets the supply make settlers before any cap is worked out.
+        MayMake = true;
+    }
+
+    /// <summary>
+    /// The cap at phase 32 of each cycle (<c>Player_UpdateSettlerCaps</c>, <c>0x42a3f1</c>): with fewer free slots in the table than
+    /// players nothing changes; else the player's cap is worked out, and the supply may make settlers while the player holds fewer.
+    /// </summary>
+    public void UpdateCap()
+    {
+        if (_settlers.IsFull)
+        {
+            return;
+        }
+
+        Cap = _settlers.Capacity;
+        MayMake = _settlers.Count < Cap;
     }
 
     /// <summary>
@@ -118,9 +144,15 @@ public sealed class SettlerSupply
     }
 
     // One try: a settler without a job waits in the castle, on the castle's node, stamped with the clock. With a knight owed and a
-    // sword and a shield in the stock it is made a knight at once and the stock gives up one of each.
+    // sword and a shield in the stock it is made a knight at once and the stock gives up one of each. Where the cap bars it or the
+    // table is full, the try makes nothing and the knight stays owed (Settler_CreateInStorage, 0x44333d).
     void MakeSettler()
     {
+        if (!MayMake || _settlers.IsFull)
+        {
+            return;
+        }
+
         var castle = _stock.Castle!.Value;
         var settler = new Settler(new Jobless(), 0, castle.X, castle.Y, _clock.Now, new WaitsInCastle());
         var slot = _settlers.Add(settler);
@@ -135,8 +167,4 @@ public sealed class SettlerSupply
 
         _history.RecordSettler(slot, EventType.SettlerMade, Cause.Settlers);
     }
-
-    /// <summary>The supply's state in one line, for a test that compares it.</summary>
-    public override string ToString() =>
-        $"rate={Rate} period={Period} countdown={Countdown} last={LastClock} knights={KnightAccumulator},{KnightsOwed} running={Running}";
 }

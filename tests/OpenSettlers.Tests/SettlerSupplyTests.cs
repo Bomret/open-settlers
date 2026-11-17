@@ -97,11 +97,15 @@ public sealed class SettlerSupplyTests
     public void BeforeTheCastleNoSettlerIsMadeAndTheSupplyStaysAtItsStart()
     {
         var game = Town(castle: false);
-        var start = game.Supply!.ToString();
+        var supply = game.Supply!;
+        // The timer's state; the cap is worked out at phase 32 for a player in the game whether or not its castle stands.
+        string Timer() =>
+            $"{supply.Countdown} {supply.LastClock} {supply.KnightAccumulator} {supply.KnightsOwed} {supply.Running}";
+        var start = Timer();
 
         Assert.AreEqual(0, Growth(game, 1000).Count);
-        Assert.AreEqual(start, game.Supply.ToString());
-        Assert.AreEqual(1000, game.Supply.Countdown);
+        Assert.AreEqual(start, Timer());
+        Assert.AreEqual(1000, supply.Countdown);
     }
 
     [TestMethod]
@@ -246,6 +250,63 @@ public sealed class SettlerSupplyTests
             carriers.All(carrier => carrier.Activity is not WaitsInCastle),
             "every carrier has left the castle"
         );
+    }
+
+    // Map_SetGeometry (0x42195c): (width / 32) * (height / 32) * 500 for the 32 x 32, 64 x 32, and 64 x 64 maps.
+    [TestMethod]
+    [DataRow(1, 500)]
+    [DataRow(2, 1000)]
+    [DataRow(3, 2000)]
+    public void EachMapSizeGivesItsSettlerTableSize(int value, int size)
+    {
+        MapSize.TryFromValue(value, out var mapSize, out _);
+
+        Assert.AreEqual(size, SettlerTable.SizeOf(mapSize!));
+    }
+
+    // The original's slot 0 is a dummy that MapGen_InitParams takes from the table's free count, so a game holds one settler less
+    // than the table's size; the engine's table has no dummy.
+    static void FillTo(Game game, int count)
+    {
+        var table = (SettlerTable)game.Settlers;
+        while (table.Count < count)
+        {
+            table.Add(new Settler(new Jobless(), 0, 0, 0, 0, new RawState { StateCode = 0 }));
+        }
+    }
+
+    [TestMethod]
+    public void ATableOneShortOfFullTakesOneMoreSettlerAndAFullTableNone()
+    {
+        var game = Town();
+        var held = ((SettlerTable)game.Settlers).Capacity - 1;
+        Assert.AreEqual(499, held);
+        FillTo(game, held - 1);
+
+        var grown = Growth(game, 3 * PeriodForty);
+
+        Assert.AreEqual(1, grown.Count, "one settler fills the table");
+        Assert.AreEqual(held, game.Settlers.Count);
+        Assert.AreEqual(
+            0x6A60, // 0x8000 and three tries of 20000, in 16 bits
+            game.Supply!.KnightAccumulator,
+            "the periods pass and feed the knight accumulator all the same"
+        );
+    }
+
+    [TestMethod]
+    public void TheCapIsWorkedOutAtPhase32WithoutTheGoodsHandOut()
+    {
+        var game = Town();
+        Assert.AreEqual(0, game.Supply!.Cap, "no cap is worked out before the first phase 32");
+
+        while (game.Pass.Phase != 32)
+        {
+            game.Tick();
+        }
+
+        Assert.AreEqual(500, game.Supply.Cap, "one player's cap is the table's size");
+        Assert.IsTrue(game.Supply.MayMake);
     }
 
     [TestMethod]

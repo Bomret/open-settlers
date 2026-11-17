@@ -70,7 +70,9 @@ public sealed class MainPass(
         Phase = (Phase + 1) % PhaseCount;
         if (Phase == TablePhases)
         {
-            // The phase routine (0x42965c) at the last phase of the cycle: the castle's goods go out to the requests.
+            // The phase routine (0x42965c) at the last phase of the cycle: the player's settler cap, then the castle's goods go out
+            // to the requests.
+            supply?.UpdateCap();
             distribution?.Run();
         }
 

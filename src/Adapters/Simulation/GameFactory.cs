@@ -35,7 +35,7 @@ public static class GameFactory
         var flags = new FlagTable();
         var network = new RoadNetwork();
         var buildings = new BuildingTable();
-        var settlers = new SettlerTable();
+        var settlers = new SettlerTable { Capacity = SettlerTable.SizeOf(map.Size) };
         var behaviours = new ActivityRegistry();
         var draws = new GeneratorDraws(map.Generator);
         // The history reads the tick count of the game, which exists once the parts are wired.

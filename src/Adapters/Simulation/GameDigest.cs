@@ -66,6 +66,7 @@ public sealed class GameDigest : IGameDigest
                 ),
                 supply.Running ? 1 : 0
             );
+            hash = Mix(Mix(hash, supply.Cap), supply.MayMake ? 1 : 0);
         }
 
         return hash;

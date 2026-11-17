@@ -126,6 +126,13 @@ new settler counts in `-0x10`, a knight in `-0xe`, and the castle's first settle
 `Castle_CreateSettlers` sets bit 2 of byte 3 before it makes the first settlers, so they are made before any cap was
 worked out.
 
+**Slot 0.** `MapGen_InitParams` (`0x421530`) takes the settler table's first slot with `Table16_Allocate` at a game's start,
+before any settler, and the allocator takes 1 off the free count `+0x48`. So the dummy in slot 0 counts against C: a game
+holds at most C − 1 settlers. **Emulated:** on the 32 × 32 map the harness read the free count 500 after `Map_SetGeometry`,
+(32 / 32) × (32 / 32) × 500. The maps of 64 × 32 and 64 × 64 nodes give 1000 and 2000. The table's slot count at `+0x25c`
+is a second limit, which `0x41dbea` works out from the memory the program has; the free count is the limit the supply
+checks.
+
 The three dwords `+0x112`, `+0x116`, and `+0x11a` go back to 0 when they reach `0xffff0000` or more, at each turn of
 `Player_MakeSettlers`, before its other checks.
 
@@ -152,6 +159,13 @@ any other rate. A game without it makes no new settler and digests as before.
   castle's node, waiting in the castle (`WaitsInCastle`), stamped with the clock, with the history fill and a `settler-made`
   event. With a knight owed and a sword and a shield in `CastleStock`, it takes the knight's job 22 at once, the stock gives
   up one of each, and the debt falls by one.
+- `SettlerTable.Capacity` is C for the game's map (`SettlerTable.SizeOf`): 500, 1000, or 2000. The engine's table has no
+  dummy in slot 0, so it is full at C − 1 settlers (`SettlerTable.IsFull`), as the original's is. A try while the table is
+  full makes nothing, and its period passes.
+- `MainPass.Run` works out the cap at phase 32 of each cycle, whether or not the game hands out goods
+  (`SettlerSupply.UpdateCap`): while the table has a free slot, the one player's cap is C (its share K plus the floor B),
+  and the supply may make settlers while the table holds fewer. From the castle's placement until then it may make them.
+  A try the cap bars makes nothing, and its period passes.
 - The digest mixes the supply's state where the game runs it.
 - The game view runs the supply in every game, its play runs included. Its rate is the launch flag `--rate`
   (`LaunchArgs.Rate`), which stands in for the free-game screen's bar, or else the rate the seed draws
@@ -164,5 +178,11 @@ Departures:
 
 - One player and one storage, the castle. The pick of the storage with the fewest settlers without a job is not ported, and
   the castle always qualifies.
+- The share of the cap by owned land among several players is not ported: one player's cap is the whole table, so the
+  player's owned nodes (`+0x112`) are not counted, and the cap counts all settlers of the table where the original counts the
+  player's 27 counts.
+- The table's slot count from the program's memory (`+0x25c`) is not held.
+- **Inferred:** a try that makes no settler, because the cap bars it or the table is full, makes no knight either, so an owed
+  knight stays owed. The decompiled code of `0x428a75` leaves open what the knight test reads after such a try.
 - The player's 27 counts of settlers by kind, its count of knights at `+0x11a`, the storage's word `+0x40`, and the resets
   of the player's counters at `0xffff0000` are not held.
