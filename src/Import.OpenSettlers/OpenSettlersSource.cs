@@ -139,7 +139,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     public const string SiteLargeKey = "building/site-large";
 
     // The finished buildings the set draws, by type, and the sites by their progress.
-    static readonly (BuildingType Type, string Key)[] FinishedKeys =
+    internal static readonly (BuildingType Type, string Key)[] FinishedKeys =
     [
         (BuildingType.Castle, CastleKey),
         (BuildingType.Woodcutter, WoodcutterKey),
@@ -317,7 +317,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     // The jobs the game draws a settler for, by the name their manifest keys carry: the looks of the source (the registry is
     // generated from the look modules).
-    static readonly IReadOnlyList<OpenSettlersLook> Jobs = OpenSettlersLookRegistry.Build();
+    internal static readonly IReadOnlyList<OpenSettlersLook> Jobs = OpenSettlersLookRegistry.Build();
 
     // The index of the job's look, or -1 for a job without one, which draws nothing.
     static int IndexOfLook(Job job)
