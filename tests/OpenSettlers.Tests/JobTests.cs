@@ -20,6 +20,7 @@ public sealed class JobTests
         (7, typeof(Stonecutter)),
         (8, typeof(Forester)),
         (11, typeof(Fisher)),
+        (13, typeof(Butcher)),
         (14, typeof(Farmer)),
         (15, typeof(Miller)),
         (16, typeof(Baker)),

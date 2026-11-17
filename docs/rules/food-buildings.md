@@ -86,14 +86,15 @@ the [M5 scope](../milestones/m5-food.md) name them.
 routines of jobs 12 and 13 write the class of the good the building takes in into the first request word of the building's flag
 (the class byte at `+0x42`, a set bit per class) and clear the class of the second (`+0x44`), as the miller's and the baker's do
 ([Milling](milling.md#the-start-and-the-request-for-grain), [Baking](baking.md#the-start-and-the-request-for-flour));
-the handler then keeps the rank of the first word. **Inferred** for jobs 12 and 13 until their slices read them. The routines of
+the handler then keeps the rank of the first word. **Confirmed** for jobs 13, 15, and 16, whose slices read their routines (each writes the first
+request word only, [Butchering](butchering.md#the-start-and-the-request-for-pigs)); **inferred** for job 12 until its slice reads it. The routines of
 jobs 11 and 14 write none, so the fisher's and the farm's buildings ask for no good.
 
 | Job | Start | Takes in (class) | Goes on to state | Puts (the state's byte 11) |
 | --- | --- | --- | --- | --- |
 | 11 fisher | `Fisher_Start` (`0x43d14d`) | nothing | `0x1f` | fish, by the put at `0x43837f` (the arrival `0x438232`) |
 | 12 pig farmer | `PigFarmer_Start` (`0x43d179`) | grain (class 4, first word) | `0x25` | pig, `0x433577` |
-| 13 butcher | `Butcher_Start` (`0x43d275`) | pig (class 3, first word) | `0x26` | meat, `0x4333a5` |
+| 13 butcher | `Butcher_Start` (`0x43d275`) | pig (class 3, first word; the start clears the second word's class, [Butchering](butchering.md#the-start-and-the-request-for-pigs)) | `0x26` | meat, `0x4333a5` |
 | 14 farm | `Farmer_Start` (`0x43d311`) | nothing | `0x21` | grain, by the put at `0x43847d` (the arrival `0x438391`) |
 | 15 miller | `MillWorker_Start` (`0x43d33d`) | grain (class 4, first word) | `0x23` | flour, `0x433a1e` |
 | 16 baker | `BakerWorker_Start` (`0x43d3d9`) | flour (class 5, first word) | `0x24` | bread, `0x43384f` |
@@ -169,5 +170,5 @@ at `0x44fcfe` the scaffold's: 186, 177, 184, 177, 187, and 183. A good on a flag
   the art of `tools/open-settlers-art.py`. The other goods 7 to 26 have `NameTable` entries only.
 - `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar.
   The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) through `NameTable.GoodName`.
-- **Stand-in:** the workers of the fisher, farm, pig farm, and butcher run no work cycle yet: a settler who takes one of those jobs enters the building and stands. The
-  mill's miller and the baker work ([Milling](milling.md), [Baking](baking.md)); the job slices add the other cycles.
+- **Stand-in:** the workers of the pig farm run no work cycle yet: a settler who takes that job enters the building and stands. The
+  mill's miller, the farm's farmer, the baker, the butcher, and the fisher work ([Milling](milling.md), [Farming](farming.md), [Baking](baking.md), [Butchering](butchering.md), [Fishing](fishing.md)); the job slices add the other cycles.

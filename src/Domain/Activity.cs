@@ -276,12 +276,29 @@ public sealed record Bakes : Activity
 }
 
 /// <summary>
-/// State 0xb: the sawmiller or the miller waits at his building's door with the good in his hands until the node of the flag is free and the
-/// flag has a free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the good down.
+/// State 0x26: the butcher works in the shop he stands in (<c>0x4332a8</c>, <c>docs/rules/butchering.md</c>). Without a pig on site he waits
+/// for one; with a pig he takes it out of the building's fill and works one stretch of 0x5ff clock units with the node held (byte 11 is
+/// then 0xff), after which he carries the meat out to the flag.
+/// </summary>
+public sealed record Butchers : Activity
+{
+    /// <summary>Whether he is at work on a pig (byte 11 0xff) and not waiting for one (byte 11 0).</summary>
+    public required bool Working { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x26;
+
+    /// <summary>Drawn while he works, with the node held; waiting for a pig he is not drawn.</summary>
+    public override bool IsDrawn => Working;
+}
+
+/// <summary>
+/// State 0xb: the sawmiller, the miller, the baker, or the butcher waits at his building's door with the good in his hands until the node of the flag is
+/// free and the flag has a free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the good down.
 /// </summary>
 public sealed record StepsOutWithGood : Activity
 {
-    /// <summary>The good he carries out (byte 11): the plank, the flour.</summary>
+    /// <summary>The good he carries out (byte 11): the plank, the flour, the meat.</summary>
     public required Good Good { get; init; }
 
     /// <inheritdoc />

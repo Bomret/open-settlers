@@ -196,6 +196,15 @@ public static class SettlerEncoder
                 Heading = r.Heading,
                 Next = r.Next,
             },
+            // The butcher's work: byte 11 is 0xff while he works on a pig and 0 while he waits for one.
+            Butchers a => new()
+            {
+                State = a.Code,
+                Mode = a.Working ? BlowingMode : 0,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
             StepsOutWithGood a => new()
             {
                 State = a.Code,

@@ -125,6 +125,9 @@ public static class EventType
     /// <summary>A baker's turn in the bakery: a flour taken out of the building's fill, a stretch of the baking, or the wait for flour.</summary>
     public const string Bakes = "bakes";
 
+    /// <summary>A butcher's turn in the shop: a pig taken out of the building's fill, the work on it, or the wait for a pig.</summary>
+    public const string Butchers = "butchers";
+
     /// <summary>The builder's last blow: the building is finished and its flag asks for nothing.</summary>
     public const string BuildingFinished = "building-finished";
 
@@ -305,6 +308,7 @@ public static class EventType
         Saws,
         Grinds,
         Bakes,
+        Butchers,
         BuildingFinished,
         LeavesSite,
     ];

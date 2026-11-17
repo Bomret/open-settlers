@@ -444,6 +444,14 @@ public sealed class SettlerEncoderTests
         Assert.AreEqual((0x18, 0, 0, 0, 0), Fields(new Saws { Sawing = false }));
     }
 
+    // butchering.md: state 0x26 holds byte 11 at 0xff while he works on a pig (0x4332a8 inverts the 0) and at 0 while he waits for one.
+    [TestMethod]
+    public void TheButcherHoldsMode0xffWhileWorkingAndZeroWhileWaitingForAPig()
+    {
+        Assert.AreEqual((0x26, 0xff, 0, 0, 0), Fields(new Butchers { Working = true }));
+        Assert.AreEqual((0x26, 0, 0, 0, 0), Fields(new Butchers { Working = false }));
+    }
+
     // sawmilling.md: with the plank out, "byte 11 is 8 (the plank), the word at 12 is 0, and byte 15 is 0xd" in state 0xb.
     [TestMethod]
     public void TheSawmillerAtTheDoorWithAPlankHoldsTheGoodAndTheStateHeLaysItDownIn()

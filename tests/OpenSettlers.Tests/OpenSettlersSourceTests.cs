@@ -139,6 +139,7 @@ public sealed class OpenSettlersSourceTests
                     "miller",
                     "baker",
                     "farmer",
+                    "butcher",
                 }
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
@@ -879,6 +880,7 @@ public sealed class OpenSettlersSourceTests
     [DataRow("miller")]
     [DataRow("baker")]
     [DataRow("farmer")]
+    [DataRow("butcher")]
     public void EachJobDrawsAnImageForEveryActivityKind(string job)
     {
         using var folder = new ContentFolder();
@@ -896,6 +898,7 @@ public sealed class OpenSettlersSourceTests
             ["miller"] = new Miller(),
             ["baker"] = new Baker(),
             ["farmer"] = new Farmer(),
+            ["butcher"] = new Butcher(),
         };
         Activity[] activities =
         [
@@ -1054,6 +1057,26 @@ public sealed class OpenSettlersSourceTests
             .Image!;
 
         Assert.AreEqual((3, 2), (baking.Rgba[0], carrying.Rgba[0]));
+    }
+
+    [TestMethod]
+    public void AButcherWorkingDrawsTheCutsFrameAndOneWhoStepsOutWithMeatTheCarriesFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:2");
+        folder.Png("cuts.png", "2x2:3");
+        folder.Entries["settler/butcher/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/butcher/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        folder.Entries["settler/butcher/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        var source = folder.Load();
+
+        var working = source.Draw(Settler(new Butcher(), new Butchers { Working = true }))!.Image!;
+        var carrying = source
+            .Draw(Settler(new Butcher(), new WaitsOutStep { Then = new PutsDownGood { Good = Good.Meat } }))!
+            .Image!;
+
+        Assert.AreEqual((3, 2), (working.Rgba[0], carrying.Rgba[0]));
     }
 
     [TestMethod]
