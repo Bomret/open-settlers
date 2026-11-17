@@ -50,7 +50,7 @@ public sealed class GoodsTransport(
     /// original's put takes the first empty place and checks nothing: this refuses a node that holds no flag and a place
     /// that holds a good. The place is 0 to 7, as the layout's read checks. It returns why it refused, or null.
     /// </summary>
-    public string? PlaceGood(int x, int y, int place, int good)
+    public string? PlaceGood(int x, int y, int place, Good good)
     {
         var flag = flags.SlotAt(x, y);
         if (flag < 0)
