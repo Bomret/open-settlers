@@ -2,8 +2,8 @@
 """Writes the art of the Open Settlers content set: content/open-settlers/manifest.json and its PNGs.
 
 The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
-flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the building
-sites that have not started with the scaffolds they grow, the goods, and one pose per job and kind of activity for the
+flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the six food
+buildings (fisher, farm, baker, mill, pig farm, butcher), the building sites that have not started with the scaffolds they grow, the goods, and one pose per job and kind of activity for the
 settlers, all drawn here from nothing but numbers. It holds nothing derived from an install (ADR 0015). A settler's
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
@@ -210,6 +210,24 @@ def sapling(variant):
     return c, (-5, -15)
 
 
+def field(stage):
+    """A field of the farmer, 24 by 14: rows of green shoots growing taller with the stage (0 to 5), of ripe ears that darken with each stage (6 to 11), or of
+    stubble (12, the harvested field)."""
+    c = Canvas(24, 14)
+    for row in range(3):
+        for column in range(5):
+            x, y = 2 + column * 4 + (row % 2) * 2, 4 + row * 4
+            if stage == 12:
+                c.rect(x, y + 2, 1, 2, (150, 125, 70))
+            elif stage < 6:
+                c.rect(x, y + 3 - stage // 2, 2, 1 + stage // 2, shade(LEAF, 10 * stage))
+            else:
+                age = stage - 6
+                c.rect(x, y, 2, 4, (225 - 5 * age, 195 - 6 * age, 70 - 4 * age))
+    c.outline(INK)
+    return c, (-12, -9)
+
+
 def falling(step, second):
     """A cut tree leaning over: step 1 to 5 of its fall, leaning further each step."""
     c = Canvas(40, 30)
@@ -299,6 +317,80 @@ def sawmill():
     return c, (-22, -35)
 
 
+def fisher():
+    """The fisher's hut: a small hut with a blue roof and a net hung on poles at its side."""
+    c = Canvas(34, 30)
+    c.rect(4, 14, 20, 16, shade(WOOD, 30))
+    c.triangle((14, 2), 13, 14, (50, 100, 170))
+    c.rect(11, 20, 7, 10, INK)
+    c.rect(26, 16, 2, 14, WOOD)
+    c.rect(32, 16, 2, 14, WOOD)
+    c.rect(26, 18, 8, 6, (170, 190, 200))
+    c.outline(INK)
+    return c, (-14, -29)
+
+
+def farm():
+    """The farm, a large building: a long barn with a yellow roof and a strip of grain in front."""
+    c = Canvas(52, 36)
+    c.rect(4, 12, 40, 24, (150, 70, 50))
+    c.triangle((24, 0), 12, 22, (220, 190, 70))
+    c.rect(18, 22, 12, 14, INK)
+    c.rect(44, 28, 8, 8, (230, 200, 80))
+    c.outline(INK)
+    return c, (-22, -35)
+
+
+def baker():
+    """The baker, a large building: a house with a chimney and a loaf over the door."""
+    c = Canvas(52, 36)
+    c.rect(4, 14, 36, 22, (210, 190, 150))
+    c.triangle((22, 2), 12, 20, (170, 80, 50))
+    c.rect(32, 0, 5, 12, (120, 70, 60))
+    c.rect(16, 22, 10, 14, INK)
+    c.disc(40, 28, 4, (200, 140, 70))
+    c.outline(INK)
+    return c, (-22, -35)
+
+
+def mill():
+    """The mill, a small building: a tower with four sails."""
+    c = Canvas(34, 30)
+    c.rect(9, 10, 16, 20, (200, 200, 195))
+    c.triangle((17, 2), 8, 10, (140, 90, 60))
+    c.rect(14, 20, 6, 10, INK)
+    c.line(17, 12, 2, 2, WOOD, 2)
+    c.line(17, 12, 32, 22, WOOD, 2)
+    c.line(17, 12, 32, 2, WOOD, 2)
+    c.line(17, 12, 2, 22, WOOD, 2)
+    c.outline(INK)
+    return c, (-14, -29)
+
+
+def pig_farm():
+    """The pig farm, a large building: a long sty with a pink pig in a pen at its side."""
+    c = Canvas(52, 36)
+    c.rect(4, 14, 36, 22, shade(WOOD, 10))
+    c.triangle((22, 4), 18, 14, (120, 90, 70))
+    c.rect(16, 24, 10, 12, INK)
+    c.rect(41, 26, 10, 10, shade(WOOD, 50))
+    c.disc(46, 31, 3, (240, 160, 170))
+    c.outline(INK)
+    return c, (-22, -35)
+
+
+def butcher():
+    """The butcher, a large building: a house with a red roof and a hook with a joint of meat over the door."""
+    c = Canvas(52, 36)
+    c.rect(4, 14, 36, 22, (225, 225, 225))
+    c.triangle((22, 2), 12, 20, (190, 40, 40))
+    c.rect(16, 24, 10, 12, INK)
+    c.rect(41, 14, 2, 6, INK)
+    c.disc(42, 24, 4, (200, 70, 80))
+    c.outline(INK)
+    return c, (-22, -35)
+
+
 def site(large):
     """A building site that has not started: stakes and a board, wider for a large building."""
     width = 34 if large else 22
@@ -341,7 +433,9 @@ def heap(stage):
 
 
 def good(code):
-    """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar and the stone (10) a grey stone."""
+    """A good, 8 by 8: its colour comes from its number; the log (7) is a brown bar and the stone (10) a grey stone, and the
+    food goods have a shape each: fish (1), a pig (2), a joint of meat (3), a sheaf of grain (4), a sack of flour (5), and
+    a loaf of bread (6)."""
     c = Canvas(8, 8)
     if code == 7:
         c.rect(0, 2, 8, 4, WOOD)
@@ -349,6 +443,25 @@ def good(code):
     elif code == 10:
         c.disc(4, 4, 3, STONE)
         c.disc(3, 3, 1, shade(STONE, 40))
+    elif code == 1:
+        c.disc(3, 4, 3, (110, 160, 210))
+        c.triangle((7, 4), 1, 1, (110, 160, 210))
+    elif code == 2:
+        c.disc(4, 4, 3, (240, 160, 170))
+        c.rect(1, 1, 2, 2, (240, 160, 170))
+    elif code == 3:
+        c.disc(4, 4, 3, (190, 60, 70))
+        c.disc(3, 3, 1, (230, 120, 120))
+    elif code == 4:
+        c.rect(3, 1, 2, 6, (230, 200, 80))
+        c.rect(1, 2, 2, 3, (230, 200, 80))
+        c.rect(5, 2, 2, 3, (230, 200, 80))
+    elif code == 5:
+        c.rect(1, 2, 6, 5, (245, 245, 240))
+        c.rect(2, 1, 4, 2, (225, 225, 215))
+    elif code == 6:
+        c.rect(0, 3, 8, 4, (200, 140, 70))
+        c.rect(1, 2, 6, 2, (220, 165, 90))
     else:
         hue = (code * 37) % 255
         color = (60 + hue % 160, 60 + (hue * 3) % 160, 60 + (hue * 7) % 160)
@@ -390,13 +503,20 @@ JOBS = {
     "carrier": (60, 100, 170),
     "woodcutter": (60, 130, 60),
     "stonecutter": (140, 140, 150),
-    "type-one-hut": (170, 110, 40),
+    "fisher": (170, 110, 40),
     "builder": (190, 90, 60),
     "forester": (90, 160, 80),
     "digger": (120, 90, 50),
     "sawmiller": (200, 160, 90),
+    "miller": (235, 230, 205),
+    "pig-farmer": (225, 150, 160),
+    "farmer": (210, 190, 80),
+    "baker": (225, 185, 120),
+    "butcher": (200, 70, 70),
 }
 STONE = (185, 185, 190)
+GRAIN = (225, 195, 70)
+FISH = (110, 160, 210)
 KINDS = ("walks", "carries", "cuts", "door", "hands-over", "waits")
 
 
@@ -460,7 +580,7 @@ def main():
     add("object/flag", "object/flag.png", flag())
     # Map objects by code (docs/rules/map-objects.md): trees 8 to 23, palms 24 to 27 and plants 28 to 31 (drawn as
     # bushes), boulders 32 to 71 and 80 to 82, stone heaps 72 to 79, the stump 83 (0x53), plants 84 to 92, falling trees
-    # 93 to 102 (0x5d to 0x66), saplings 103 and 104 (0x67, 0x68), and litter from 105. Codes of one kind that look alike
+    # 93 to 102 (0x5d to 0x66), saplings 103 and 104 (0x67, 0x68), fields 105 to 111 and 121 to 126 (0x69 to 0x6f, 0x79 to 0x7e), and litter in the rest. Codes of one kind that look alike
     # share a file and so an image.
     for code in range(8, 128):
         key = f"object/{code}"
@@ -481,6 +601,12 @@ def main():
             add(key, f"object/fall-{int(second)}-{step}.png", falling(step, second))
         elif code in (103, 104):
             add(key, f"object/sapling-{code - 103}.png", sapling(code - 103))
+        elif code < 111:
+            add(key, f"object/field-{code - 105}.png", field(code - 105))
+        elif code == 111:
+            add(key, "object/field-harvested.png", field(12))
+        elif 121 <= code < 127:
+            add(key, f"object/field-{code - 115}.png", field(code - 115))
         else:
             add(key, f"object/litter-{code % 4}.png", litter(code))
     add("building/castle", "building/castle.png", castle())
@@ -488,6 +614,12 @@ def main():
     add("building/stonecutter", "building/stonecutter.png", stonecutter())
     add("building/forester", "building/forester.png", forester())
     add("building/sawmill", "building/sawmill.png", sawmill())
+    add("building/fisher", "building/fisher.png", fisher())
+    add("building/farm", "building/farm.png", farm())
+    add("building/baker", "building/baker.png", baker())
+    add("building/mill", "building/mill.png", mill())
+    add("building/pig-farm", "building/pig-farm.png", pig_farm())
+    add("building/butcher", "building/butcher.png", butcher())
     add("building/site-small", "building/site-small.png", site(False))
     add("building/site-large", "building/site-large.png", site(True))
     add("building/stage-small", "building/stage-small.png", scaffold(False))
@@ -498,7 +630,7 @@ def main():
         add(f"marker/{kind}", f"marker/{kind}.png", marker(kind))
     for job, color in JOBS.items():
         for kind in KINDS:
-            load = STONE if job == "stonecutter" else WOOD
+            load = STONE if job == "stonecutter" else GRAIN if job == "farmer" else FISH if job == "fisher" else WOOD
             add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind, load))
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)

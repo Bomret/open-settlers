@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using OpenSettlers.Domain;
 
 namespace OpenSettlers.Import.HistoryEdition;
@@ -48,26 +50,6 @@ static class ObjectSprites
     public const int WoodcutterEntry = FirstEntry + 168;
 
     /// <summary>
-    /// The sprite entry of the finished building of type 4, the stonecutter's hut: the first instruction of the draw routine's
-    /// stub of the type (<c>0x44e329</c>, the jump table at <c>0x44e3aa</c>, the stub at <c>0x44e6cb</c>) stores the object
-    /// number 169, plus the 1250. **Inferred** name of the type (<c>docs/rules/build-sites.md</c>). The routine then draws a
-    /// second sprite while the building works, which a later slice reads.
-    /// </summary>
-    public const int StonecutterEntry = FirstEntry + 169;
-
-    /// <summary>
-    /// The sprite entry of the finished building of type 9, the forester's hut: the stub at <c>0x44ec0f</c> stores the object
-    /// number 170, plus the 1250. **Inferred** name of the type.
-    /// </summary>
-    public const int ForesterEntry = FirstEntry + 170;
-
-    /// <summary>
-    /// The sprite entry of the finished building of type 0x11, the sawmill: the stub at <c>0x44f443</c> stores the object number
-    /// 160, plus the 1250. **Inferred** name of the type.
-    /// </summary>
-    public const int SawmillEntry = FirstEntry + 160;
-
-    /// <summary>
     /// The sprite entry of a building site that has not started and whose progress word is 0, a large building waiting to be
     /// levelled: the draw routine of a building under construction (<c>0x44e329</c>, the jump table at <c>0x44e3aa</c>, the common
     /// part from <c>0x44fa79</c>) tests the progress word and, where it is 0, stores the object number 144 (<c>0x44fa69</c>) and
@@ -92,14 +74,38 @@ static class ObjectSprites
     /// <summary>The sprite entry of the scaffold the sawmill's site grows: the table at <c>0x44fcfe</c> holds the object 181 for the type 0x11.</summary>
     public const int ScaffoldLargeEntry = FirstEntry + 181;
 
+    // The object of the scaffold of each type's site, from the table at 0x44fcfe (the emulator's peek of it prints one byte for each type 0 to
+    // 0x17), and of its finished building, from the table at 0x44fd16: the types of the huts and the sawmill, then the six food types.
+    static readonly Dictionary<int, (int Scaffold, int Finished)> Objects = new()
+    {
+        [BuildingType.Woodcutter.Code] = (186, 168),
+        [BuildingType.Stonecutter.Code] = (186, 169),
+        [BuildingType.Forester.Code] = (186, 170),
+        [BuildingType.Sawmill.Code] = (181, 160),
+        [BuildingType.Fisher.Code] = (186, 167),
+        [BuildingType.Farm.Code] = (177, 154),
+        [BuildingType.Butcher.Code] = (184, 156),
+        [BuildingType.PigFarm.Code] = (177, 155),
+        [BuildingType.Mill.Code] = (187, 188),
+        [BuildingType.Baker.Code] = (183, 162),
+    };
+
+    /// <summary>
+    /// The sprite entries of the building types' sites and finished buildings, besides the castle's: the scaffolds, the finished buildings of
+    /// the huts, the sawmill, and the food types, and the two site bases.
+    /// </summary>
+    public static IEnumerable<int> BuildingEntries { get; } =
+    [
+        .. Objects
+            .Values.SelectMany(objects => new[] { objects.Scaffold, objects.Finished })
+            .Select(o => FirstEntry + o),
+        SiteLargeEntry,
+        SiteSmallEntry,
+    ];
+
     /// <summary>The sprite entry of the scaffold of the site of <paramref name="type"/>, or null for a type the view draws none for.</summary>
     public static int? StageEntry(BuildingType type) =>
-        SiteStages.ScaffoldIsLarge(type) switch
-        {
-            true => ScaffoldLargeEntry,
-            false => ScaffoldSmallEntry,
-            null => null,
-        };
+        Objects.TryGetValue(type.Code, out var objects) ? FirstEntry + objects.Scaffold : null;
 
     /// <summary>The sprite entry of a layer of the site of <paramref name="type"/> (<see cref="SiteStages"/>), or null for none.</summary>
     public static int? SiteLayerEntry(SiteLayer layer, BuildingType type) =>
@@ -116,10 +122,7 @@ static class ObjectSprites
     /// </summary>
     public static int? FinishedEntry(BuildingType type) =>
         type == BuildingType.Castle ? CastleEntry
-        : type == BuildingType.Woodcutter ? WoodcutterEntry
-        : type == BuildingType.Stonecutter ? StonecutterEntry
-        : type == BuildingType.Forester ? ForesterEntry
-        : type == BuildingType.Sawmill ? SawmillEntry
+        : Objects.TryGetValue(type.Code, out var objects) ? FirstEntry + objects.Finished
         : null;
 
     /// <summary>The entry of the sprite of good 0; a good lying on a flag draws entry 320 plus the good (<c>0x44de9a</c>).</summary>

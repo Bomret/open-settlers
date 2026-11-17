@@ -13,11 +13,16 @@ public sealed class JobLooksTests
         new Carrier(),
         new Woodcutter(),
         new Stonecutter(),
-        new TypeOneHut(),
+        new Fisher(),
         new Builder(),
         new Forester(),
         new Digger(),
         new Sawmiller(),
+        new Miller(),
+        new Baker(),
+        new Farmer(),
+        new Butcher(),
+        new PigFarmer(),
     ];
 
     static RuleTables Tables() =>
@@ -50,11 +55,16 @@ public sealed class JobLooksTests
                 "carrier",
                 "woodcutter",
                 "stonecutter",
-                "type-one-hut",
+                "fisher",
                 "builder",
                 "forester",
                 "digger",
                 "sawmiller",
+                "miller",
+                "baker",
+                "farmer",
+                "butcher",
+                "pig-farmer",
             },
             looks.Select(look => look.Key).ToArray()
         );

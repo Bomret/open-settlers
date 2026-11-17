@@ -198,9 +198,9 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AnUnknownJobNameIsRefusedWithTheNamesTheTableHolds()
     {
-        var problem = Problem("fast-forward miller state 1 max 5");
+        var problem = Problem("fast-forward chef state 1 max 5");
 
-        Assert.StartsWith("play/t.play line 1: 'miller' is not a job name, use ", problem);
+        Assert.StartsWith("play/t.play line 1: 'chef' is not a job name, use ", problem);
         foreach (var name in new[] { "carrier", "digger", "builder", "woodcutter", "stonecutter", "forester" })
         {
             Assert.Contains(name, problem);
@@ -443,7 +443,7 @@ public sealed class FastForwardTests
     public void AnUntilStepOnAnUnknownFieldListsOnlyTheGameFields()
     {
         Assert.AreEqual(
-            "play/t.play line 1: unknown field 'nosuch', use ticks, logs, planks, stones, flag-goods:<column>,<row>",
+            "play/t.play line 1: unknown field 'nosuch', use ticks, logs, planks, stones, fish, pigs, meat, grain, flour, bread, flag-goods:<column>,<row>",
             Problem("fast-forward until nosuch >= 1 max 5")
         );
     }

@@ -39,7 +39,8 @@ public sealed class CastleRoster(
     // The number of jobs the castle's list of waiting settlers has an entry for (0x42 + 2 times the job, up to 0x82).
     const int JobCount = 32;
 
-    // The castle's status bit 4, the only status bit it has besides the bit of its worker inside, with no recovered meaning.
+    // The castle's status bit 4, the only status bit it has besides the bit of its worker inside, with no recovered meaning in the
+    // castle. It is the bit Building.AtWork names, so the castle reads at work from its placement.
     const int CastleOtherStatus = 0x10;
 
     // A fill counter that has overflowed: both fill bytes of the castle read full, as a delivery that carries out of the
@@ -124,6 +125,12 @@ public sealed class CastleRoster(
         }
     }
 
+    /// <summary>Whether the castle's stock holds the tool a request names, or the request names none.</summary>
+    public bool HasTool(Good tool) => tool.IsNone || stock.Count(tool) > 0;
+
+    /// <summary>The castle's stock gives up the tool of a request that made a settler without a job into its worker (0x42be63).</summary>
+    public void TakeTool(Good tool) => stock.Take(tool);
+
     /// <summary>
     /// The castle's building and its 20 first settlers (0x442f0c with 0x44333d): all in the castle, in state 1 but the first,
     /// which stands by while the castle is built. Their time stamp is the clock of the placement.
@@ -187,8 +194,8 @@ public sealed class CastleRoster(
     /// building's flag; the castle's flag is the only storage, so it finds a settler where the flag is reached. The settler is the one
     /// the castle's list of waiting settlers holds for the job; where there is none, a settler without a job takes the job and the tool
     /// of the request from the stock (the second way, <c>docs/rules/construction.md</c>), where one waits and the stock holds the tool.
-    /// A request that finds neither returns false and changes nothing. **Not ported:** the second tool word (the five requests of the
-    /// program pass none), the storage's counter of settlers (word at <c>0x40</c>), and the player's counts per job.
+    /// A request that finds neither returns false and changes nothing. **Not ported:** the second tool word (the requests of the
+    /// engine's types pass none), the storage's counter of settlers (word at <c>0x40</c>), and the player's counts per job.
     /// </summary>
     public bool RequestWorker(Building building, WorkerRequest request)
     {

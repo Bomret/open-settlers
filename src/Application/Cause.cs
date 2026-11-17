@@ -41,6 +41,12 @@ public sealed record Cause
     /// <summary>The rule area of the forester's work (<c>forestry</c>).</summary>
     public static Cause Forestry { get; } = new() { Kind = "forestry" };
 
+    /// <summary>The rule area of the farmer's work (<c>farming</c>).</summary>
+    public static Cause Farming { get; } = new() { Kind = "farming" };
+
+    /// <summary>The rule area of the fisher's work (<c>fishing</c>).</summary>
+    public static Cause Fishing { get; } = new() { Kind = "fishing" };
+
     /// <summary>The rule area of the walk home to a storage (<c>walk-home</c>).</summary>
     public static Cause WalkHome { get; } = new() { Kind = "walk-home" };
 
@@ -67,6 +73,8 @@ public sealed record Cause
         "removal",
         LayoutKind,
         "forestry",
+        "farming",
+        "fishing",
     ];
 
     /// <summary>The cause of a place command for <paramref name="thing"/>.</summary>

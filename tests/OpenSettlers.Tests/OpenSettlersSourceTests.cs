@@ -104,6 +104,12 @@ public sealed class OpenSettlersSourceTests
         "building/stonecutter",
         "building/forester",
         "building/sawmill",
+        "building/fisher",
+        "building/farm",
+        "building/baker",
+        "building/mill",
+        "building/pig-farm",
+        "building/butcher",
         "building/site-small",
         "building/site-large",
         "building/stage-small",
@@ -125,11 +131,16 @@ public sealed class OpenSettlersSourceTests
                     "carrier",
                     "woodcutter",
                     "stonecutter",
-                    "type-one-hut",
+                    "fisher",
                     "builder",
                     "forester",
                     "digger",
                     "sawmiller",
+                    "miller",
+                    "baker",
+                    "farmer",
+                    "butcher",
+                    "pig-farmer",
                 }
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
@@ -389,6 +400,12 @@ public sealed class OpenSettlersSourceTests
     [DataRow(4, "building/stonecutter")]
     [DataRow(9, "building/forester")]
     [DataRow(0x11, "building/sawmill")]
+    [DataRow(1, "building/fisher")]
+    [DataRow(0xc, "building/farm")]
+    [DataRow(0xd, "building/butcher")]
+    [DataRow(0xe, "building/pig-farm")]
+    [DataRow(0xf, "building/mill")]
+    [DataRow(0x10, "building/baker")]
     public void ABuildingDrawsItsOwnImageWithNoShadow(int type, string key)
     {
         using var folder = new ContentFolder();
@@ -563,6 +580,12 @@ public sealed class OpenSettlersSourceTests
     [DataRow("building/stonecutter")]
     [DataRow("building/forester")]
     [DataRow("building/sawmill")]
+    [DataRow("building/fisher")]
+    [DataRow("building/farm")]
+    [DataRow("building/baker")]
+    [DataRow("building/mill")]
+    [DataRow("building/pig-farm")]
+    [DataRow("building/butcher")]
     [DataRow("building/site-small")]
     [DataRow("building/site-large")]
     [DataRow("building/stage-small")]
@@ -850,11 +873,16 @@ public sealed class OpenSettlersSourceTests
     [DataRow("carrier")]
     [DataRow("woodcutter")]
     [DataRow("stonecutter")]
-    [DataRow("type-one-hut")]
+    [DataRow("fisher")]
     [DataRow("builder")]
     [DataRow("forester")]
     [DataRow("digger")]
     [DataRow("sawmiller")]
+    [DataRow("miller")]
+    [DataRow("baker")]
+    [DataRow("farmer")]
+    [DataRow("butcher")]
+    [DataRow("pig-farmer")]
     public void EachJobDrawsAnImageForEveryActivityKind(string job)
     {
         using var folder = new ContentFolder();
@@ -864,11 +892,16 @@ public sealed class OpenSettlersSourceTests
             ["carrier"] = new Carrier(),
             ["woodcutter"] = new Woodcutter(),
             ["stonecutter"] = new Stonecutter(),
-            ["type-one-hut"] = new TypeOneHut(),
+            ["fisher"] = new Fisher(),
             ["builder"] = new Builder(),
             ["forester"] = new Forester(),
             ["digger"] = new Digger(),
             ["sawmiller"] = new Sawmiller(),
+            ["miller"] = new Miller(),
+            ["baker"] = new Baker(),
+            ["farmer"] = new Farmer(),
+            ["butcher"] = new Butcher(),
+            ["pig-farmer"] = new PigFarmer(),
         };
         Activity[] activities =
         [
@@ -892,6 +925,7 @@ public sealed class OpenSettlersSourceTests
                 Phase = 1,
             },
             new Saws { Sawing = true },
+            new TendsPigs { Phase = 1 },
             new WaitsOutStep { Then = new PutsDownGood { Good = Good.Plank } },
             Walking(),
             new Walks
@@ -990,9 +1024,89 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
+    public void AMillerGrindingDrawsTheCutsFrameAndOneWhoStepsOutWithFlourTheCarriesFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:2");
+        folder.Png("cuts.png", "2x2:3");
+        folder.Entries["settler/miller/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/miller/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        folder.Entries["settler/miller/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        var source = folder.Load();
+
+        var grinding = source.Draw(Settler(new Miller(), new Grinds { Phase = 3 }))!.Image!;
+        var carrying = source
+            .Draw(Settler(new Miller(), new WaitsOutStep { Then = new PutsDownGood { Good = Good.Flour } }))!
+            .Image!;
+
+        Assert.AreEqual((3, 2), (grinding.Rgba[0], carrying.Rgba[0]));
+    }
+
+    [TestMethod]
+    public void ABakerBakingDrawsTheCutsFrameAndOneWhoStepsOutWithBreadTheCarriesFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:2");
+        folder.Png("cuts.png", "2x2:3");
+        folder.Entries["settler/baker/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/baker/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        folder.Entries["settler/baker/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        var source = folder.Load();
+
+        var baking = source.Draw(Settler(new Baker(), new Bakes { Phase = 1 }))!.Image!;
+        var carrying = source
+            .Draw(Settler(new Baker(), new WaitsOutStep { Then = new PutsDownGood { Good = Good.Bread } }))!
+            .Image!;
+
+        Assert.AreEqual((3, 2), (baking.Rgba[0], carrying.Rgba[0]));
+    }
+
+    [TestMethod]
+    public void AButcherWorkingDrawsTheCutsFrameAndOneWhoStepsOutWithMeatTheCarriesFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:2");
+        folder.Png("cuts.png", "2x2:3");
+        folder.Entries["settler/butcher/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/butcher/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        folder.Entries["settler/butcher/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        var source = folder.Load();
+
+        var working = source.Draw(Settler(new Butcher(), new Butchers { Working = true }))!.Image!;
+        var carrying = source
+            .Draw(Settler(new Butcher(), new WaitsOutStep { Then = new PutsDownGood { Good = Good.Meat } }))!
+            .Image!;
+
+        Assert.AreEqual((3, 2), (working.Rgba[0], carrying.Rgba[0]));
+    }
+
+    [TestMethod]
+    public void APigFarmerWorkingDrawsTheCutsFrameAndOneWhoStepsOutWithAPigTheCarriesFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:2");
+        folder.Png("cuts.png", "2x2:3");
+        folder.Entries["settler/pig-farmer/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/pig-farmer/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        folder.Entries["settler/pig-farmer/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        var source = folder.Load();
+
+        var working = source.Draw(Settler(new PigFarmer(), new TendsPigs { Phase = 3 }))!.Image!;
+        var carrying = source
+            .Draw(Settler(new PigFarmer(), new WaitsOutStep { Then = new PutsDownGood { Good = Good.Pig } }))!
+            .Image!;
+
+        Assert.AreEqual((3, 2), (working.Rgba[0], carrying.Rgba[0]));
+    }
+
+    [TestMethod]
     [DataRow("settler/carrier/walks")]
     [DataRow("settler/woodcutter/cuts")]
-    [DataRow("settler/type-one-hut/waits")]
+    [DataRow("settler/fisher/waits")]
     public void ASettlerKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();

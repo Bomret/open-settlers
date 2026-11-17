@@ -30,7 +30,7 @@ public abstract partial record Job
 
     /// <summary>
     /// Whether the settler arrives at the end of a free walk home as the generic arrival of <c>0x4385ab</c> has it whatever
-    /// the vector (the table at <c>0x437dfb</c>): all but the woodcutter, the jobs 7, 8, 11 (the settler of the type 1 hut, <c>docs/rules/settlers.md</c>), 14, and
+    /// the vector (the table at <c>0x437dfb</c>): all but the woodcutter, the jobs 7, 8, 11 (the fisher, <c>docs/rules/fishing.md</c>), 14, and
     /// 20, and the knights. Those jobs' own branches hand over to it where the walk is a walk home. A job type that has a branch of its own overrides it.
     /// </summary>
     public virtual bool ArrivesHomeGenerically => true;

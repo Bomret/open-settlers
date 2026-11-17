@@ -178,6 +178,42 @@ public static class SettlerEncoder
                 Heading = r.Heading,
                 Next = r.Next,
             },
+            // The miller's work: byte 11 counts the stretches of the work (0 while he waits for grain).
+            Grinds a => new()
+            {
+                State = a.Code,
+                Mode = a.Phase,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
+            // The baker's work: byte 11 counts the stretches of the work (0 while he waits for flour).
+            Bakes a => new()
+            {
+                State = a.Code,
+                Mode = a.Phase,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
+            // The pig farmer's work: byte 11 counts the stretches of the work (0 while he waits for grain).
+            TendsPigs a => new()
+            {
+                State = a.Code,
+                Mode = a.Phase,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
+            // The butcher's work: byte 11 is 0xff while he works on a pig and 0 while he waits for one.
+            Butchers a => new()
+            {
+                State = a.Code,
+                Mode = a.Working ? BlowingMode : 0,
+                Target = r.Target,
+                Heading = r.Heading,
+                Next = r.Next,
+            },
             StepsOutWithGood a => new()
             {
                 State = a.Code,
@@ -220,6 +256,15 @@ public static class SettlerEncoder
                 Heading = a.Count,
                 Next = a.Memory,
             },
+            // The fisher's cast: the way back in bytes 11 and 12, the turns in byte 13, the catch in byte 14, the casts in byte 15.
+            Fishes a => new()
+            {
+                State = a.Code,
+                Mode = a.Back.East & 0xff,
+                Target = (a.Turns << 8) | (a.Back.South & 0xff),
+                Heading = a.Caught ? 1 : 0,
+                Next = a.Casts,
+            },
             // The stonecutter's cut: the way back in bytes 11 and 12, the part of the cut in byte 13, the quarter in the word at 14.
             CutsStone a => new()
             {
@@ -237,6 +282,15 @@ public static class SettlerEncoder
                 Mode = a.Back.East & 0xff,
                 Target = ((a.Back.East & 0xff) << 8) | (a.Back.South & 0xff),
                 Heading = a.Planted ? 0xff : 0,
+                Next = a.Memory,
+            },
+            // The farmer's wait: the way back in bytes 11 and 12, byte 13 1 while he harvests and 0 while he sows, and the walk's memory in byte 15.
+            TendsField a => new()
+            {
+                State = a.Code,
+                Mode = a.Back.East & 0xff,
+                Target = ((a.Harvests ? 1 : 0) << 8) | (a.Back.South & 0xff),
+                Heading = 0,
                 Next = a.Memory,
             },
             SearchesHome a => new()
@@ -292,7 +346,9 @@ public static class SettlerEncoder
         {
             ToTree tree => (tree.Back.East & 0xff, tree.Back.South),
             ToHeap heap => (heap.Back.East & 0xff, heap.Back.South),
+            ToWater water => (water.Back.East & 0xff, water.Back.South),
             ToSpot spot => (spot.Back.East & 0xff, spot.Back.South),
+            ToField field => (field.Back.East & 0xff, field.Back.South),
             BackToHut back => (WayBackMark, back.Carrying ? 1 : 0),
             _ => (WayBackMark, -1),
         };

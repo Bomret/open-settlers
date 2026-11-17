@@ -36,7 +36,7 @@ readonly record struct SettlerPick
 /// colour, and a second figure (<c>0x44fff3</c>). The figure 1850 + i takes its overlay from 2500 + i, filled with the
 /// player's colour. <b>Confirmed</b> by the draw runs of <c>tests/OpenSettlers.Tests/settler-draws.txt</c> (the emulator verb
 /// <c>draw</c> runs <c>0x42f4f1</c>, <c>0x43f537</c>, <c>0x44ffe7</c>, and <c>0x406610</c>), which the engine matches pass for pass
-/// for the carrier (with each good), the woodcutter, and the settler of the type 1 hut. <b>Inferred:</b> every state the
+/// for the carrier (with each good), the woodcutter, and the fisher. <b>Inferred:</b> every state the
 /// recordings hold no settler of.
 /// </summary>
 sealed class SettlerFigureTables

@@ -363,8 +363,12 @@ public sealed class RemovalTests
     )
     {
         var scenario = Load(fixture).Single(candidate => candidate.Name == name);
-        // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
-        var parts = scenario.Command.Split(':');
+        // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS[:SETS]][:castle-off@PASS], the last part for the emulator alone
+        // (the castle's handler, which the engine does not port, is switched off there: docs/rules/pig-farming.md)
+        var parts = scenario
+            .Command.Split(':')
+            .Where(part => !part.StartsWith("castle-off@", StringComparison.Ordinal))
+            .ToArray();
         var map = MapOf(parts);
         var width = map.Size.Width;
         // A construct scenario empties the castle of planks and stones before every pass (below), so the castle's hand-out, which
@@ -389,6 +393,11 @@ public sealed class RemovalTests
         var puts =
             parts.Length > 11 && parts[11].Length > 0
                 ? parts[11].Split(';').Select(text => text.Split(',').Select(int.Parse).ToArray()).ToList()
+                : [];
+        // The SETS write an object code (decimal) into a node's object byte before the pass, as the verb does: PASS,X,Y,CODE.
+        var sets =
+            parts.Length > 12 && parts[12].Length > 0
+                ? parts[12].Split(';').Select(text => text.Split(',').Select(int.Parse).ToArray()).ToList()
                 : [];
         var clickLines = scenario.Lines.Where(line => line.ContainsKey("click")).ToList();
         var passLines = scenario
@@ -501,6 +510,11 @@ public sealed class RemovalTests
             if (pass == at)
             {
                 game.ApplyCommands();
+            }
+
+            foreach (var set in sets.Where(candidate => candidate[0] == pass))
+            {
+                map.At(set[1], set[2]).Object = new MapObject { Code = (byte)set[3] };
             }
 
             var before = Snapshot(map);

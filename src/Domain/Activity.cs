@@ -241,12 +241,82 @@ public sealed record Saws : Activity
 }
 
 /// <summary>
-/// State 0xb: the sawmiller waits at the sawmill's door with the plank in his hands until the node of the flag is free and the flag has a
-/// free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the plank down.
+/// State 0x23: the miller works in the mill he stands in (<c>0x43386b</c>, <c>docs/rules/milling.md</c>). Without grain on site he waits for
+/// some; with grain, he takes it out of the building's fill and grinds in four stretches (byte 11 counts them from 1): two grindings of
+/// 0x17f clock units with the node held, each followed by a pause of 0x5dc units with the node free. After the fourth he carries
+/// the flour out to the flag.
+/// </summary>
+public sealed record Grinds : Activity
+{
+    /// <summary>The stretch of the work (byte 11): 0 waits for grain, 1 and 3 grind, 2 and 4 pause.</summary>
+    public required int Phase { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x23;
+
+    /// <summary>Drawn while he grinds, with the node held (the stretches 1 and 3); waiting for grain or pausing he is not drawn.</summary>
+    public override bool IsDrawn => Phase is 1 or 3;
+}
+
+/// <summary>
+/// State 0x24: the baker works in the bakery he stands in (<c>0x433694</c>, <c>docs/rules/baking.md</c>). Without flour on site he waits for
+/// some; with flour, he takes it out of the building's fill and bakes in two stretches (byte 11 counts them from 1): a baking of 0x2ff clock
+/// units with the node held, then a pause of 0x5dc units with the node free. After the pause he carries the bread out to the flag.
+/// </summary>
+public sealed record Bakes : Activity
+{
+    /// <summary>The stretch of the work (byte 11): 0 waits for flour, 1 bakes, 2 pauses.</summary>
+    public required int Phase { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x24;
+
+    /// <summary>Drawn while he bakes, with the node held (the stretch 1); waiting for flour or pausing he is not drawn.</summary>
+    public override bool IsDrawn => Phase == 1;
+}
+
+/// <summary>
+/// State 0x25: the pig farmer works in the pig farm he stands in (<c>0x4333c1</c>, <c>docs/rules/pig-farming.md</c>). Without grain on site he
+/// waits for some; with grain, he takes it out of the building's fill and works in stretches (byte 11 counts them): the odd ones work
+/// with the node held (0x17f clock units), the even ones pause with the node free (0x800 units) while the pigs the farm holds may grow.
+/// After the third stretch of a round the farm may give a pig, which he carries out to the flag.
+/// </summary>
+public sealed record TendsPigs : Activity
+{
+    /// <summary>The stretch of the work (byte 11): 0 waits for grain, 1, 3, and 5 work, 2, 4, and 6 pause.</summary>
+    public required int Phase { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x25;
+
+    /// <summary>Drawn while he works, with the node held (the stretches 1, 3, and 5); waiting for grain or pausing he is not drawn.</summary>
+    public override bool IsDrawn => Phase is 1 or 3 or 5;
+}
+
+/// <summary>
+/// State 0x26: the butcher works in the shop he stands in (<c>0x4332a8</c>, <c>docs/rules/butchering.md</c>). Without a pig on site he waits
+/// for one; with a pig he takes it out of the building's fill and works one stretch of 0x5ff clock units with the node held (byte 11 is
+/// then 0xff), after which he carries the meat out to the flag.
+/// </summary>
+public sealed record Butchers : Activity
+{
+    /// <summary>Whether he is at work on a pig (byte 11 0xff) and not waiting for one (byte 11 0).</summary>
+    public required bool Working { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x26;
+
+    /// <summary>Drawn while he works, with the node held; waiting for a pig he is not drawn.</summary>
+    public override bool IsDrawn => Working;
+}
+
+/// <summary>
+/// State 0xb: the sawmiller, the miller, the baker, the butcher, or the pig farmer waits at his building's door with the good in his hands until the node of the flag is
+/// free and the flag has a free place for it (<c>0x43e1d0</c>, <c>0x43e228</c>), then steps onto the flag and lays the good down.
 /// </summary>
 public sealed record StepsOutWithGood : Activity
 {
-    /// <summary>The good he carries out (byte 11), the plank.</summary>
+    /// <summary>The good he carries out (byte 11): the plank, the flour, the meat, the pig.</summary>
     public required Good Good { get; init; }
 
     /// <inheritdoc />
@@ -399,6 +469,32 @@ public sealed record Plants : Activity
     public override bool IsDrawn => true;
 }
 
+/// <summary>State 33 (0x21): the farmer inside his farm looks for a node to sow or a ripe field (<c>0x433b35</c>).</summary>
+public sealed record LooksForField : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x21;
+}
+
+/// <summary>State 34 (0x22): the farmer stands on a node and sows it or harvests the field on it (<c>0x433a3a</c>).</summary>
+public sealed record TendsField : Activity
+{
+    /// <summary>The steps of the way back to the farm's flag, east and south (bytes 11 and 12).</summary>
+    public required Vector Back { get; init; }
+
+    /// <summary>Whether he harvests a ripe field (byte 13 is 1) and not sows (byte 13 is 0).</summary>
+    public required bool Harvests { get; init; }
+
+    /// <summary>The memory the free walk to the node left (byte 15).</summary>
+    public required int Memory { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x22;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
+}
+
 /// <summary>State 21: the stonecutter inside his hut looks for a stone heap.</summary>
 public sealed record LooksForStone : Activity
 {
@@ -423,6 +519,39 @@ public sealed record CutsStone : Activity
 
     /// <inheritdoc />
     public override int Code => 0x17;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
+}
+
+/// <summary>State 0x1f: the fisher inside his building looks for a free node at a shore (<c>0x433f71</c>, <c>docs/rules/fishing.md</c>).</summary>
+public sealed record LooksForWater : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x1f;
+}
+
+/// <summary>
+/// State 0x20: the fisher stands on the node he found and casts for fish (<c>0x433e05</c>, <c>docs/rules/fishing.md</c>). Each cast
+/// takes two turns of the state; a cast draws against the lake detail of the water node beside him and lowers the detail by one
+/// where it catches, and the fisher turns back after a catch or ten casts.
+/// </summary>
+public sealed record Fishes : Activity
+{
+    /// <summary>The steps of the way back to the building's flag, east and south (bytes 11 and 12).</summary>
+    public required Vector Back { get; init; }
+
+    /// <summary>The turns made, a cast on each odd one (byte 13).</summary>
+    public required int Turns { get; init; }
+
+    /// <summary>Whether a fish is caught (byte 14).</summary>
+    public required bool Caught { get; init; }
+
+    /// <summary>The casts made (byte 15).</summary>
+    public required int Casts { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x20;
 
     /// <inheritdoc />
     public override bool IsDrawn => true;

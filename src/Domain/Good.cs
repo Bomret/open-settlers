@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace OpenSettlers.Domain;
 
 /// <summary>A kind of good (<c>docs/rules/goods.md</c>), by the number the original gives it: 1 to 26, 7 a log; 0 is no good.</summary>
@@ -27,6 +29,39 @@ public readonly record struct Good
     /// </summary>
     public static Good Stone => new() { Code = 10 };
 
+    /// <summary>
+    /// The fish, good 1: the fisher's walk ends with the put of it on his flag (<c>0x43837f</c>); its class is class 0 of the request word
+    /// at <c>0x42</c>, which goods 3 and 6 share (<c>docs/rules/food-buildings.md</c>). **Inferred** name.
+    /// </summary>
+    public static Good Fish => new() { Code = 1 };
+
+    /// <summary>
+    /// The pig, good 2: the job of the type 0xe puts it (<c>0x433577</c>) and the job of the type 0xd takes it in (class 3 of the
+    /// request word at <c>0x42</c>, <c>0x43d249</c>); the History Edition draws it as a pig. **Inferred** name.
+    /// </summary>
+    public static Good Pig => new() { Code = 2 };
+
+    /// <summary>The meat, good 3: the job of the type 0xd puts it (<c>0x4333a5</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
+    public static Good Meat => new() { Code = 3 };
+
+    /// <summary>
+    /// The grain, good 4: the farm's walk ends with the put of it (<c>0x43847d</c>), and the jobs of the types 0xe and 0xf take it in
+    /// (class 4 of the request word at <c>0x42</c>, <c>0x43d1e1</c> and <c>0x43d3b0</c>). **Inferred** name.
+    /// </summary>
+    public static Good Grain => new() { Code = 4 };
+
+    /// <summary>
+    /// The flour, good 5: the job of the type 0xf puts it (<c>0x433a1e</c>) and the job of the type 0x10 takes it in (class 5 of the
+    /// request word at <c>0x42</c>, <c>0x43d44c</c>). **Inferred** name.
+    /// </summary>
+    public static Good Flour => new() { Code = 5 };
+
+    /// <summary>The bread, good 6: the job of the type 0x10 puts it (<c>0x43384f</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
+    public static Good Bread => new() { Code = 6 };
+
+    /// <summary>The six food goods in the order of their numbers, 1 to 6: fish, pig, meat, grain, flour, bread.</summary>
+    public static IReadOnlyList<Good> Foods { get; } = [Fish, Pig, Meat, Grain, Flour, Bread];
+
     /// <summary>Whether this is no good.</summary>
     public bool IsNone => Code == 0;
 
@@ -34,8 +69,9 @@ public readonly record struct Good
     public bool CountsAgainstResource1 => (Code & 0x1f) is 0xe or 0xf;
 
     /// <summary>
-    /// Whether a good of this kind handed into a building counts against the high byte of its fill: the log (7) and the goods
-    /// from 9 on except 13; every other good counts against the low byte.
+    /// Whether a good counts against the high byte of the fill it is handed into (the castle's): the goods from 9 on except 13, and the
+    /// log (7); every other good counts against the low byte. This is the carrier's handover rule (<c>0x43c4ea</c>), which reads the good's
+    /// code and not the kind table (<see cref="RuleTables.FillCounterOf"/>); the two agree on every good.
     /// </summary>
     public bool FillsHigh => Code >= 9 ? Code != 13 : Code == 7;
 

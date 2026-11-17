@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
@@ -60,13 +62,16 @@ public sealed class LayoutSettlersTests
         GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0,
+        byte millRankBase = 0,
         WorkerRequest?[]? workers = null,
         WorkerRequest? builderRequest = null,
         ushort[]? materialOrder = null,
         ushort[]? blowSteps = null,
         ushort stepTime = 100,
         WorkerRequest? diggerRequest = null,
-        ushort[]? scanWindows = null
+        ushort[]? scanWindows = null,
+        byte[]? goodKinds = null,
+        IEnumerable<(Job Job, object Data)>? jobData = null
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -98,10 +103,12 @@ public sealed class LayoutSettlersTests
             transportPriorities: transportPriorities,
             buildingSizes: buildingSizes,
             buildingNeeds: buildingNeeds,
+            goodKinds: goodKinds ?? KindsOf(goodClasses),
             goodClasses: goodClasses,
             distribution: distribution,
             plankRankBase: plankRankBase,
-            workers: workers ?? TestProgram.MadeWorkers(stonecutter: true),
+            millRankBase: millRankBase,
+            workers: workers ?? TestProgram.MadeWorkers(stonecutter: true, fisher: true),
             materialOrder: materialOrder,
             blowSteps: blowSteps,
             // A request a test gives replaces the made-up one of the same job.
@@ -109,9 +116,21 @@ public sealed class LayoutSettlersTests
             [
                 (new Builder(), builderRequest ?? new WorkerRequest { Job = new Builder(), Tool = Good.None }),
                 (new Digger(), diggerRequest ?? new WorkerRequest { Job = new Digger(), Tool = Good.None }),
+                .. jobData ?? [],
             ]
         );
     }
+
+    // The made-up kind table of a made-up class table: a good counts in the byte of the word that asks for it (the first word's low
+    // byte, the second's high), and a good that no word asks for counts in none, as the program's table does.
+    static byte[]? KindsOf(GoodClass?[]? classes) =>
+        classes is null
+            ? null
+            :
+            [
+                .. classes.Select(asked => asked is { } c ? (byte)(c.Word == RequestWord.First ? 0 : 1) : (byte)0xff),
+                .. new byte[RuleTables.GoodKindCount - classes.Length],
+            ];
 
     static Game Applied(string extra, string objects = "[]")
     {
@@ -151,17 +170,144 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
+    public void AFinishedMillEntryStandsAMillerMadeOfASettlerWithoutAJobInItsDoorAndHeAsksForGrainAtHisNextTurn()
+    {
+        var layout = Read(Built.Replace("\"woodcutter\"", "\"mill\""));
+        var game = GameFactory.Create(
+            MadeTables(
+                workers: TestProgram.MadeWorkers(mill: true),
+                goodClasses: ConstructionTables.Classes(),
+                millRankBase: ConstructionTables.MillRankBase
+            ),
+            layout.BuildMap()
+        );
+
+        Assert.IsNull(layout.Apply(game));
+
+        var miller = game.Settlers.Single(settler => settler.Job == new Miller());
+        Assert.IsInstanceOfType<Door>(miller.Activity);
+        Assert.AreEqual((13, 10), (miller.X, miller.Y));
+        Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
+        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.Mill));
+        Run(game, 200);
+        Assert.AreEqual(new Grinds { Phase = 0 }.Code, miller.Activity.Code, "he waits for grain in the mill");
+        Assert.AreEqual(ConstructionTables.GrainClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
+        Assert.AreEqual(ConstructionTables.MillRankBase, game.Flags[1].RequestOf(RequestWord.First).Rank);
+    }
+
+    [TestMethod]
+    public void AFinishedFisherEntryStandsHisWorkerInTheDoorAndHeGoesOnToLookForAShore()
+    {
+        var game = Applied(Built.Replace("woodcutter", "fisher"));
+
+        var worker = game.Settlers.Single(settler => settler.Job == new Fisher() && settler.Activity is Door);
+        Assert.AreEqual((13, 10), (worker.X, worker.Y));
+        Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
+        Assert.AreEqual(game.Settlers.ToList().IndexOf(worker), game.Buildings[1].Worker);
+
+        Run(game, 200);
+
+        Assert.IsInstanceOfType<LooksForWater>(worker.Activity);
+    }
+
+    [TestMethod]
+    public void AFinishedBakerEntryStandsABakerMadeOfASettlerWithoutAJobInItsDoorAndHeAsksForFlourAtHisNextTurn()
+    {
+        var layout = Read(Built.Replace("\"woodcutter\"", "\"baker\""));
+        var game = GameFactory.Create(
+            MadeTables(workers: TestProgram.MadeWorkers(baker: true), goodClasses: ConstructionTables.Classes()),
+            layout.BuildMap()
+        );
+
+        Assert.IsNull(layout.Apply(game));
+
+        var baker = game.Settlers.Single(settler => settler.Job == new Baker());
+        Assert.IsInstanceOfType<Door>(baker.Activity);
+        Assert.AreEqual((13, 10), (baker.X, baker.Y));
+        Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
+        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.Baker));
+        Run(game, 200);
+        Assert.AreEqual(new Bakes { Phase = 0 }.Code, baker.Activity.Code, "he waits for flour in the bakery");
+        Assert.AreEqual(ConstructionTables.FlourClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
+        Assert.AreEqual(0xff, game.Flags[1].RequestOf(RequestWord.First).Rank);
+    }
+
+    [TestMethod]
+    public void AFinishedButcherEntryStandsAButcherMadeOfASettlerWithoutAJobAndTheKnifeFromTheCastlesStock()
+    {
+        var knife = new Good { Code = 19 };
+        var workers = TestProgram.MadeWorkers();
+        workers[BuildingType.Butcher.Code] = new WorkerRequest { Job = new Butcher(), Tool = knife };
+        var layout = Read(Built.Replace("\"woodcutter\"", "\"butcher\""));
+        var game = GameFactory.Create(
+            MadeTables(workers: workers, goodClasses: ConstructionTables.Classes()),
+            layout.BuildMap()
+        );
+
+        var control = GameFactory.Create(
+            MadeTables(workers: TestProgram.MadeWorkers(), goodClasses: ConstructionTables.Classes()),
+            layout.BuildMap()
+        );
+        Assert.IsNull(layout.Apply(control));
+
+        Assert.IsNull(layout.Apply(game));
+        Assert.AreEqual(
+            control.CastleStock.Count(knife) - 1,
+            game.CastleStock.Count(knife),
+            "the castle gave up one knife for the butcher"
+        );
+
+        var butcher = game.Settlers.Single(settler => settler.Job == new Butcher());
+        Assert.IsInstanceOfType<Door>(butcher.Activity);
+        Assert.AreEqual((13, 10), (butcher.X, butcher.Y));
+        Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
+        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.Butcher));
+        Run(game, 200);
+        Assert.AreEqual(new Butchers { Working = false }.Code, butcher.Activity.Code, "he waits for a pig in the shop");
+        Assert.AreEqual(ConstructionTables.PigClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
+        Assert.AreEqual(0xff, game.Flags[1].RequestOf(RequestWord.First).Rank);
+    }
+
+    [TestMethod]
+    public void AFinishedPigFarmEntryStandsAPigFarmerMadeOfASettlerWithoutAJobInItsDoorAndHeAsksForGrainAtHisNextTurn()
+    {
+        var layout = Read(Built.Replace("\"woodcutter\"", "\"pig-farm\""));
+        var game = GameFactory.Create(
+            MadeTables(
+                workers: TestProgram.MadeWorkers(pigFarm: true),
+                goodClasses: ConstructionTables.Classes(),
+                jobData: ConstructionTables.PigData()
+            ),
+            layout.BuildMap()
+        );
+
+        Assert.IsNull(layout.Apply(game));
+
+        var farmer = game.Settlers.Single(settler => settler.Job == new PigFarmer());
+        Assert.IsInstanceOfType<Door>(farmer.Activity);
+        Assert.AreEqual((13, 10), (farmer.X, farmer.Y));
+        Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
+        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.PigFarm));
+        Run(game, 200);
+        Assert.AreEqual(new TendsPigs { Phase = 0 }.Code, farmer.Activity.Code, "he waits for grain in the pig farm");
+        Assert.AreEqual(1, game.Buildings[1].FillHigh, "the farm holds one pig");
+        Assert.AreEqual(ConstructionTables.GrainClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
+        Assert.AreEqual(ConstructionTables.PigRankBase, game.Flags[1].RequestOf(RequestWord.First).Rank);
+    }
+
+    [TestMethod]
     public void ALayoutStandsAWorkerOnlyInTheHutOfAJobWhoseRulesLetItsSettlerStandInTheHut()
     {
         var game = Applied(Built);
 
         CollectionAssert.AreEqual(
-            new[] { true, true, true, false, false, false },
+            new[] { true, true, true, true, false, false, false },
             new[]
             {
                 BuildingType.Woodcutter,
                 BuildingType.Stonecutter,
                 BuildingType.Forester,
+                BuildingType.Fisher,
                 BuildingType.Sawmill,
                 BuildingType.Castle,
                 BuildingType.Storehouse,
@@ -331,7 +477,7 @@ public sealed class LayoutSettlersTests
         );
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, or forester's building stands on the node",
+            "no finished woodcutter's, stonecutter's, pig farmer's, miller's, forester's, fisher's, farmer's, butcher's, or baker's building stands on the node",
             game.Walks.StandWorkerInHut(x, y)
         );
     }
@@ -387,7 +533,7 @@ public sealed class LayoutSettlersTests
         Assert.IsTrue(game.Buildings[1].Constructing);
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, or forester's building stands on the node",
+            "no finished woodcutter's, stonecutter's, pig farmer's, miller's, forester's, fisher's, farmer's, butcher's, or baker's building stands on the node",
             game.Walks.StandWorkerInHut(13, 10)
         );
     }

@@ -10,7 +10,8 @@ namespace OpenSettlers.Simulation;
 /// the flag (state 0xd, <c>0x43c6aa</c>) and goes back in. **Not ported:** the player statistic the step out counts (the goods made, byte
 /// <c>-0x6f</c> plus the good of the player's block) and the sound of the saw's frames (<c>0x43fc85</c>). It is the rules module of the
 /// sawmiller job (<see cref="JobRules{TJob}"/>) and takes the movement, the flag table (the sawmill's flag holds its request and takes the
-/// planks), the history, the laying of a good, and the entry into the hut (which the put runs at once) from the <see cref="JobParts"/>.
+/// planks), the history, and the step out with the plank and the put of it (<see cref="HutWork.StepOutWithGood"/>, shared with the other
+/// workers of a building) from the <see cref="JobParts"/>.
 /// </summary>
 /// <param name="parts">The shared parts.</param>
 public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
@@ -18,17 +19,11 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
     readonly SettlerMovement _movement = parts.Movement;
     readonly FlagTable _flags = parts.Flags;
     readonly GameHistory _history = parts.History;
-    readonly Action<int, int, int> _layGood = parts.LayGood;
     readonly HutWork _hut = parts.Hut;
 
     // The time a log takes to saw, which the timer is set to (0x435a75), and the frame of the work (0x435a6d).
     const ushort SawTime = 0x93f;
     const int SawFrame = 0x7c;
-
-    // The frame of a settler that waits for a busy node (0x43e44b), and the step onto the flag south-east of the door.
-    const int WaitFrame = 0x52;
-    const int ToFlag = 1;
-    const int StepFrameBase = 0xd;
 
     // The fill byte of the logs counts the logs on site in its high nibble.
     const int OnSite = 0xf0;
@@ -37,24 +32,24 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
     // The most goods the building's fill counts (on site and on the way) before it asks for no more logs (0x42da84).
     const int StoreFull = 8;
 
-    const int FlagPlaces = 8;
-
     /// <summary>Registers the behaviour of the sawmiller's activities.</summary>
     public override void Register(ActivityRegistry registry)
     {
         registry.Register<Saws>((slot, settler, _) => Work(slot, settler));
-        registry.Register<StepsOutWithGood>((slot, settler, _) => StepOut(slot, settler));
-        registry.Register<PutsDownGood>((slot, settler, _) => PutDown(slot, settler));
     }
 
     /// <summary>
     /// The handler of the sawmill's type (<c>0x42da0b</c>) after its request for a worker, in the turn of each building that is no site:
-    /// with the worker inside, the rank of the flag's request for logs is the full rank shifted right by the logs the building holds, on
-    /// site and on the way, and 0 where it holds eight or more. A building of another type is left alone.
+    /// with the worker inside, or where the request it just made found no worker (the failed request leaves the word at <c>[edi]</c> with
+    /// bit 6 set, which the handler tests next at <c>0x42da4c</c>, as the mill's does), the rank of the flag's request for logs is the full
+    /// rank shifted right by the logs the building holds, on site and on the way, and 0 where it holds eight or more. A building of
+    /// another type is left alone. The engine keeps the rank on every turn while the request-failed bit holds, where the program writes it
+    /// only on the turn whose request failed (inferred as unobservable: the written value equals the stored one while the fill is unchanged,
+    /// and no log class is asked before the worker's first start).
     /// </summary>
     public override void Turn(Building mill)
     {
-        if (mill.Type != BuildingType.Sawmill || mill.Constructing || !mill.WorkerInside)
+        if (mill.Type != BuildingType.Sawmill || mill.Constructing || !(mill.WorkerInside || mill.RequestFailed))
         {
             return;
         }
@@ -121,54 +116,7 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
         _history.RecordSettler(slot, EventType.Saws, Cause.Settlers);
         if (done)
         {
-            StepOut(slot, settler);
+            _hut.StepOutWithGood(slot, settler);
         }
-    }
-
-    // State 0xb (0x43e228): the step from the door onto the flag south-east of it, as the step of state 7 is (0x43e036), with one more
-    // condition: the flag must have a free place. A node with another settler on it, or a flag with no free place, makes him wait
-    // with the frame 0x52. The time of the step is scaled by the door's speed, and he waits it out in state 5 before he lays the good down.
-    void StepOut(int slot, Settler settler)
-    {
-        var map = _movement.Map;
-        var here = map.Index(settler.X, settler.Y);
-        var (x, y, next) = _movement.Neighbour(settler, ToFlag);
-        var standing = _movement.Occupant(here);
-        if (
-            (standing == slot || standing == 0)
-            && _movement.Occupant(next) == 0
-            && _flags[map.At(next).LinkedSlot].FirstEmptyPlace() >= 0
-        )
-        {
-            var door = _movement.BuildingAt(here);
-            var shape = StepFrameBase + _movement.Height(next) - _movement.Height(here);
-            var carried = ((StepsOutWithGood)settler.Activity).Good;
-            _movement.Move(slot, settler, x, y, next);
-            settler.Frame = (byte)shape;
-            var speed = (byte)(_movement.Tables.DoorSpeed(door) ^ 0x1f);
-            settler.Timer = (ushort)((ushort)(_movement.Tables.StepTime(shape) * speed) >> 5);
-            settler.Stamp = _movement.Clock;
-            settler.Activity = new WaitsOutStep { Then = new PutsDownGood { Good = carried } };
-        }
-        else
-        {
-            settler.Frame = WaitFrame;
-            settler.Timer = 0;
-        }
-
-        _history.RecordSettler(slot, EventType.StepOut, Cause.Settlers);
-    }
-
-    // State 0xd (0x43c6aa): the good goes on the first empty place of the flag, or on the last place where the first seven hold goods;
-    // the flag's turn is due. The settler's byte 11 is 0 from here on, and he goes into the building (state 6).
-    void PutDown(int slot, Settler settler)
-    {
-        var good = ((PutsDownGood)settler.Activity).Good;
-        var flag = _movement.Map.At(settler.X, settler.Y).LinkedSlot;
-        var place = _flags[flag].FirstEmptyPlace();
-        _layGood(flag, place >= 0 ? place : FlagPlaces - 1, good.Code);
-        _history.RecordFlag(flag, EventType.PutGood, Cause.Settlers, _history.SettlerId(slot).ToString());
-        _movement.Become(settler, new EntersBuilding(), _movement.ResidueOf(settler.Activity) with { Mode = 0 });
-        _hut.EnterHut(slot, settler);
     }
 }

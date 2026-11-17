@@ -1,0 +1,46 @@
+# The build panel's six food toggles each place a building site of their type on the flat ground of layouts/food.jsonc: the fisher and
+# the mill (small buildings) and the farm, the pig farm, the butcher, and the baker (large buildings, which need the site of a large
+# building). Each site shows as the original draws a site that has not started; the list holds each site's needs and target height.
+# Run it on the layout, under either graphics source:
+#   sh tools/play-run.sh food-sites --layout layouts/food.jsonc --fps 10
+#   sh tools/play-run.sh food-sites --layout layouts/food.jsonc --fps 10 --graphics open-settlers
+# The castle stands at 10,10 with the six finished food buildings (7 buildings). Each site brings its flag south-east of it.
+expect-count building = 7
+wait 0.3
+
+button Fisher
+click-tile 12 10
+button Fisher
+button Mill
+click-tile 17 12
+button Mill
+button Farm
+click-tile 3 3
+button Farm
+button Pig farm
+click-tile 3 10
+button Pig farm
+button Butcher
+click-tile 17 16
+button Butcher
+button Baker
+click-tile 3 6
+button Baker
+wait 0.3
+expect-at 12 10 building
+expect-at 17 12 building
+expect-at 3 3 building
+expect-at 3 10 building
+expect-at 17 16 building
+expect-at 3 6 building
+expect-count building = 13
+shot food-sites 10 10 10 2
+list food-sites
+dump food-sites
+
+# A building on the node of a site is refused: the farm's node holds a site already.
+button Baker
+click-tile 3 3
+button Baker
+wait 0.3
+expect-count building = 13

@@ -27,10 +27,24 @@ public sealed record ToSpot : Purpose
     public required Vector Back { get; init; }
 }
 
-/// <summary>The way back to the hut's flag after the cut, or at once where the tree was gone.</summary>
+/// <summary>The walk of a farmer out to the node he found to sow or harvest; the vector is the way back to the farm's flag.</summary>
+public sealed record ToField : Purpose
+{
+    /// <summary>The steps of the way back, east and south.</summary>
+    public required Vector Back { get; init; }
+}
+
+/// <summary>The walk of a fisher out to the node he found at a shore; the vector is the way back to the building's flag.</summary>
+public sealed record ToWater : Purpose
+{
+    /// <summary>The steps of the way back, east and south.</summary>
+    public required Vector Back { get; init; }
+}
+
+/// <summary>The way back to the hut's flag after the work, or at once where the work was gone.</summary>
 public sealed record BackToHut : Purpose
 {
-    /// <summary>Whether the woodcutter carries the log, which it lays on the flag.</summary>
+    /// <summary>Whether the worker carries what he laid down at the flag: the woodcutter's log, the fisher's fish.</summary>
     public required bool Carrying { get; init; }
 }
 

@@ -31,8 +31,18 @@ public sealed class HistoryEditionLooksTests
                 (new Stonecutter(), Adds),
                 (new Forester(), new ForesterFigureAdds { Walk = 1, Work = 4 }),
                 (
-                    new TypeOneHut(),
-                    new HutFigureAdds
+                    new Farmer(),
+                    new FarmerFigureAdds
+                    {
+                        Walk = 1,
+                        Carrying = 2,
+                        Sow = 4,
+                        Harvest = 8,
+                    }
+                ),
+                (
+                    new Fisher(),
+                    new FisherFigureAdds
                     {
                         Walk = 1,
                         Carrying = 2,
@@ -150,6 +160,38 @@ public sealed class HistoryEditionLooksTests
         );
     }
 
+    // The farmer's handler at 0x44002b: the sowing's constant from figure byte 0x80, the harvest's while he harvests, the way back's with
+    // the grain below it, and the walk's.
+    [TestMethod]
+    public void AFarmersLookAddsTheSowingOrHarvestFromFigureByte0x80AndTheCarryingOrWalkBelowIt()
+    {
+        var look = new FarmerLook(Tables());
+        var sows = new TendsField
+        {
+            Back = new Vector(0, 0),
+            Harvests = false,
+            Memory = 0,
+        };
+        var carries = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = new Vector(0, 0),
+                Purpose = new BackToHut { Carrying = true },
+            },
+        };
+
+        Assert.AreEqual(
+            (4, 8, 2, 1),
+            (
+                look.Add(Draw(new Farmer(), sows), High),
+                look.Add(Draw(new Farmer(), sows with { Harvests = true }), High),
+                look.Add(Draw(new Farmer(), carries), 0),
+                look.Add(Draw(new Farmer(), carries with { Trip = carries.Trip with { Purpose = new Home() } }), 0)
+            )
+        );
+    }
+
     // The forester's handler at 0x43fd88: the work's constant for a figure byte from 0x80, the walk's below it.
     [TestMethod]
     public void AForestersLookAddsTheWorkFromFigureByte0x80AndTheWalkBelowIt()
@@ -171,17 +213,17 @@ public sealed class HistoryEditionLooksTests
         Assert.AreEqual(1, look.Add(draw, Low));
     }
 
-    // The type 1 hut's handler at 0x43fed8: a settler that walks with the heading 1 (byte 14) faces back, any other heading does not.
+    // The fisher's handler at 0x43fed8: a settler that walks with the heading 1 (byte 14) faces back, any other heading does not.
     [TestMethod]
-    public void ATypeOneHutLookAddsTheFacingBackWorkConstantForAWalkWithHeading1()
+    public void AFisherLookAddsTheFacingBackWorkConstantForAWalkWithHeading1()
     {
-        var look = new TypeOneHutLook(Tables());
+        var look = new FisherLook(Tables());
 
         Assert.AreEqual(
             8,
             look.Add(
                 Draw(
-                    new TypeOneHut(),
+                    new Fisher(),
                     new Walks
                     {
                         Errand = new ToStorage(),
@@ -195,15 +237,15 @@ public sealed class HistoryEditionLooksTests
     }
 
     [TestMethod]
-    public void ATypeOneHutLookAddsThePlainWorkConstantForAWalkWithAnotherHeading()
+    public void AFisherLookAddsThePlainWorkConstantForAWalkWithAnotherHeading()
     {
-        var look = new TypeOneHutLook(Tables());
+        var look = new FisherLook(Tables());
 
         Assert.AreEqual(
             4,
             look.Add(
                 Draw(
-                    new TypeOneHut(),
+                    new Fisher(),
                     new Walks
                     {
                         Errand = new ToStorage(),
@@ -218,7 +260,7 @@ public sealed class HistoryEditionLooksTests
             4,
             look.Add(
                 Draw(
-                    new TypeOneHut(),
+                    new Fisher(),
                     new Walks
                     {
                         Errand = new ToStorage(),
@@ -231,20 +273,39 @@ public sealed class HistoryEditionLooksTests
         );
     }
 
-    // The type 1 hut's handler at 0x43fed8 (docs/rules/settlers.md, job 11): the way back with a load sets byte 14 to 1, so at a
-    // work figure it adds the facing-back constant; a free walk with no load does not.
+    // The fisher's handler at 0x43fed8 (docs/rules/fishing.md): the way back with a fish sets byte 14 to 1, so at a work figure it
+    // adds the facing-back constant; a free walk with no load does not.
     [TestMethod]
-    public void ATypeOneHutLookAddsTheFacingBackWorkConstantOnTheWayBackWithALoad()
+    public void AFisherLookAddsTheFacingBackWorkConstantOnTheWayBackWithALoad()
     {
-        var look = new TypeOneHutLook(Tables());
+        var look = new FisherLook(Tables());
 
-        Assert.AreEqual(8, look.Add(Draw(new TypeOneHut(), BackWithLoad), High));
+        Assert.AreEqual(8, look.Add(Draw(new Fisher(), BackWithLoad), High));
+    }
+
+    // The cast keeps the catch in byte 14: the work figure of a cast that has caught adds the facing-back constant, one that has not
+    // adds the plain one.
+    [TestMethod]
+    public void AFisherLookAddsTheFacingBackWorkConstantOnlyOnceTheCastHasCaught()
+    {
+        var look = new FisherLook(Tables());
+        Activity Cast(bool caught) =>
+            new Fishes
+            {
+                Back = new Vector(0, 0),
+                Turns = 1,
+                Caught = caught,
+                Casts = 1,
+            };
+
+        Assert.AreEqual(8, look.Add(Draw(new Fisher(), Cast(true)), High));
+        Assert.AreEqual(4, look.Add(Draw(new Fisher(), Cast(false)), High));
     }
 
     [TestMethod]
-    public void ATypeOneHutLookAddsThePlainWorkConstantOnAFreeWalkWithNoLoad()
+    public void AFisherLookAddsThePlainWorkConstantOnAFreeWalkWithNoLoad()
     {
-        var look = new TypeOneHutLook(Tables());
+        var look = new FisherLook(Tables());
         var empty = new WalksFree
         {
             Trip = new Trip
@@ -254,7 +315,7 @@ public sealed class HistoryEditionLooksTests
             },
         };
 
-        Assert.AreEqual(4, look.Add(Draw(new TypeOneHut(), empty), High));
+        Assert.AreEqual(4, look.Add(Draw(new Fisher(), empty), High));
     }
 
     // The carrier's handler at 0x43f8ae (docs/rules/goods.md, "Drawing a carrier with a good"): good 0 never reads its word, so a

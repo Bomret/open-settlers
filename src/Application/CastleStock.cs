@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
@@ -25,6 +26,9 @@ public sealed class CastleStock
 
     /// <summary>The stones the castle holds.</summary>
     public int Stones => Count(Good.Stone);
+
+    /// <summary>The counts of the six food goods (<see cref="Good.Foods"/>) in the castle, in the order of their numbers.</summary>
+    public IReadOnlyList<int> FoodCounts => [.. Good.Foods.Select(Count)];
 
     /// <summary>The count of a good in the castle; 0 for a number that is no good of the stock, and before the castle is placed.</summary>
     public int Count(Good good) => Holds(good) ? Stock[good.Code - 1] : 0;

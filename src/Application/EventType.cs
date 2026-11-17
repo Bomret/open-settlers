@@ -35,6 +35,12 @@ public static class EventType
     /// <summary>The woodcutter's search for a tree.</summary>
     public const string SearchTree = "search-tree";
 
+    /// <summary>The fisher's search for a node at a shore.</summary>
+    public const string SearchWater = "search-water";
+
+    /// <summary>The fisher's turn of the cast: the timer runs down, a cast draws against the lake detail beside him.</summary>
+    public const string Fish = "fish";
+
     /// <summary>The stonecutter's search for a stone heap.</summary>
     public const string SearchStone = "search-stone";
 
@@ -46,6 +52,12 @@ public static class EventType
 
     /// <summary>The forester's planting; the other thing is the sapling, named by its node.</summary>
     public const string PlantSapling = "plant-sapling";
+
+    /// <summary>The farmer's search for a node to sow or a ripe field.</summary>
+    public const string SearchField = "search-field";
+
+    /// <summary>The farmer's sowing or harvest; the other thing is the field, named by its node.</summary>
+    public const string TendField = "tend-field";
 
     /// <summary>The woodcutter's step from the hut onto its flag.</summary>
     public const string StepOut = "step-out";
@@ -106,6 +118,18 @@ public static class EventType
 
     /// <summary>A sawmiller's turn in the sawmill: a log taken out of the building's fill, the sawing, or the wait for a log.</summary>
     public const string Saws = "saws";
+
+    /// <summary>A miller's turn in the mill: a grain taken out of the building's fill, a stretch of the grinding, or the wait for grain.</summary>
+    public const string Grinds = "grinds";
+
+    /// <summary>A baker's turn in the bakery: a flour taken out of the building's fill, a stretch of the baking, or the wait for flour.</summary>
+    public const string Bakes = "bakes";
+
+    /// <summary>A butcher's turn in the shop: a pig taken out of the building's fill, the work on it, or the wait for a pig.</summary>
+    public const string Butchers = "butchers";
+
+    /// <summary>A pig farmer's turn in the pig farm: a grain taken out of the building's fill, a stretch of the work, a pig that grew, or the wait for grain.</summary>
+    public const string TendsPigs = "tends-pigs";
 
     /// <summary>The builder's last blow: the building is finished and its flag asks for nothing.</summary>
     public const string BuildingFinished = "building-finished";
@@ -255,6 +279,8 @@ public static class EventType
         FreeFlagSlot,
         Door,
         SearchTree,
+        SearchWater,
+        Fish,
         SearchStone,
         CutStone,
         StepOut,
@@ -277,10 +303,16 @@ public static class EventType
         Handout,
         SearchSpot,
         PlantSapling,
+        SearchField,
+        TendField,
         Builds,
         Digs,
         Levelled,
         Saws,
+        Grinds,
+        Bakes,
+        Butchers,
+        TendsPigs,
         BuildingFinished,
         LeavesSite,
     ];

@@ -121,6 +121,7 @@ public sealed class RuleTables
         GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0,
+        byte millRankBase = 0,
         WorkerRequest?[]? workers = null,
         ushort[]? materialOrder = null,
         ushort[]? blowSteps = null,
@@ -175,6 +176,7 @@ public sealed class RuleTables
             ),
         ];
         PlankRankBase = plankRankBase;
+        MillRankBase = millRankBase;
         // stand-in: a table a test does not give makes no building ask for a worker.
         _workers = [.. workers ?? new WorkerRequest?[BuildingTypeCount]];
         // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
@@ -229,8 +231,11 @@ public sealed class RuleTables
     public ImmutableArray<byte> GoodKinds => _goodKinds;
 
     /// <summary>
-    /// Which byte of a building's fill a lost good counts against (<c>docs/rules/removal.md</c>). <paramref name="good"/> is a
-    /// good, its number taken to 0 to 31 (the original masks it with 0x1f).
+    /// Which byte of a building's fill a good counts in: the table <c>0x462d6d</c> (<c>docs/rules/removal.md</c>), the one rule for
+    /// every place that counts a good on its way (the request search and the storage's hand-out), counts it back where it is lost
+    /// (<c>0x462ca4</c>, the removal's): the food goods 1 to 6 count in the low byte. The carrier's handover counts the delivery by the
+    /// good's code (<see cref="Good.FillsHigh"/>), which agrees.
+    /// <paramref name="good"/> is a good, its number taken to 0 to 31 (the original masks it with 0x1f).
     /// </summary>
     public FillCounter FillCounterOf(Good good) =>
         _goodKinds[good.Code & 0x1f] switch
@@ -337,6 +342,13 @@ public sealed class RuleTables
     public byte PlankRankBase { get; }
 
     /// <summary>
+    /// The rank the mill's request for grain starts from: the high byte of the player word at <c>+0x15a</c>, which the player setup of a
+    /// new game writes (<c>0x44579c</c>, <c>docs/rules/milling.md</c>). The mill's handler (<c>0x42e2a0</c>) shifts it right by the goods
+    /// the mill holds.
+    /// </summary>
+    public byte MillRankBase { get; }
+
+    /// <summary>
     /// What a finished building of <paramref name="type"/> asks for as its worker (the handlers of the jump table <c>0x42cd1d</c>); null for
     /// a type whose handler asks for none of this kind, the castle included.
     /// </summary>
@@ -414,11 +426,48 @@ public readonly record struct SawmillerFigureAdds
 }
 
 /// <summary>
-/// What the handler of the settler of the type 1 hut adds to the figure byte: for a byte below 0x80 <see cref="Walk"/>
-/// (or <see cref="Carrying"/> on the way back with a load), for one from 0x80 <see cref="High"/>
-/// (<see cref="HighFacing"/> where the settler's heading, byte 14, is 1).
+/// What the figure handler of an indoor food job adds to the figure byte: <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in
+/// the step that takes the good out (state 5 with state 0xd next), and <see cref="Work"/> for a byte from 0x80, the building's frames. The
+/// handlers of the miller (<c>0x4400d3</c>, flour), the pig farmer (<c>0x43ff56</c>, pig), the butcher (<c>0x43ff90</c>, meat), and the baker
+/// (<c>0x440112</c>, bread) have this one shape, each with its own immediates.
 /// </summary>
-public readonly record struct HutFigureAdds
+public readonly record struct FoodHutFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add in the step that takes the good out (state 5 with state 0xd next).</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80: the work's frames.</summary>
+    public required ushort Work { get; init; }
+}
+
+/// <summary>
+/// The program's numbers of the pig farm (<c>docs/rules/pig-farming.md</c>): the rank its request for grain starts from and the odds with which the pigs
+/// it holds grow.
+/// </summary>
+public sealed record PigFarmRates
+{
+    /// <summary>
+    /// The rank the pig farm's request for grain starts from: the high byte of the player word at <c>+0x158</c>, which the player setup
+    /// of a new game writes (<c>0x44579c</c>). The handler (<c>0x42e0fa</c>) shifts it right by the goods the pig farm holds.
+    /// </summary>
+    public required byte RankBase { get; init; }
+
+    /// <summary>
+    /// The table at <c>0x433684</c> of eight words: for a pig farm that holds <c>n</c> pigs (0 to 7), at the index <c>n</c>, the draw
+    /// below which another pig grows in each pause of the work (the draw is the generator's 16-bit word).
+    /// </summary>
+    public required ImmutableArray<ushort> Growth { get; init; }
+}
+
+/// <summary>
+/// What the fisher's figure handler (<c>0x43fed8</c>) adds to the figure byte: for a byte below 0x80 <see cref="Walk"/>
+/// (or <see cref="Carrying"/> on the way back with a fish), for one from 0x80 <see cref="High"/>
+/// (<see cref="HighFacing"/> once he has caught a fish, byte 14 is 1).
+/// </summary>
+public readonly record struct FisherFigureAdds
 {
     /// <summary>The add for a figure byte below 0x80: the walk.</summary>
     public required ushort Walk { get; init; }
@@ -444,6 +493,26 @@ public readonly record struct BuilderFigureAdds
 
     /// <summary>The add for a figure byte from 0x80: the blows.</summary>
     public required ushort Work { get; init; }
+}
+
+/// <summary>
+/// What the farmer's figure handler (<c>0x44002b</c>) adds to the figure byte: <see cref="Walk"/> for a byte below 0x80,
+/// <see cref="Carrying"/> on the way back with the grain (byte 13 0x80, byte 14 1, state 0x10), <see cref="Sow"/> for a byte from
+/// 0x80 while he sows (byte 13 0), and <see cref="Harvest"/> while he harvests.
+/// </summary>
+public readonly record struct FarmerFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add for a figure byte below 0x80 on the way back with the grain.</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80 while he sows.</summary>
+    public required ushort Sow { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80 while he harvests.</summary>
+    public required ushort Harvest { get; init; }
 }
 
 /// <summary>

@@ -138,5 +138,14 @@ When the dump is missing, build it before you investigate.
 - [Forestry](forestry.md): the forester's work cycle and how a sapling grows into a tree.
 - [Stonecutting](stonecutting.md): the stonecutter's work cycle and how a stone heap leaves the map.
 - [Sawmilling](sawmilling.md): the sawmiller's work cycle and how a sawmill turns logs into planks.
+- [Food buildings](food-buildings.md): the six building types of the food chain, the jobs and tools they ask for, and the goods 1 to 26.
+- [Fishing](fishing.md): the fisher's work cycle, how he picks a node at a shore, and how a cast takes a fish from the lake detail.
+- [Farming](farming.md): the farmer's work cycle, how he sows and harvests a field, and how the fields grow and decay in the object pass.
+- [Milling](milling.md): the miller's work cycle, the mill's request for grain and its rank, and how a mill turns grain into flour.
+- [Baking](baking.md): the baker's work cycle, the bakery's request for flour and its rank, and how a bakery turns flour into bread.
+- [Pig farming](pig-farming.md): the pig farmer's work cycle, the pig farm's request for grain and its rank, and how the pigs grow.
+- [Butchering](butchering.md): the butcher's work cycle, the shop's request for pigs and its rank, and how a butcher's shop turns a pig
+  into meat.
+- [The split of grain](grain-split.md): how grain is shared when the mill and the pig farm both ask for it.
 - [Removal](removal.md): what taking down a flag, a road, or a building does.
 - [Layouts](layouts.md): how a layout starts settlers and puts goods on flags, and the entry states the engine allows.

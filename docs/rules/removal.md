@@ -135,6 +135,32 @@ the player block, the storage items' request fields (the last loop of `0x4312ed`
 it comes back to a hut that is gone is not recovered), the military buildings' and the castle's branches (the territory), and a good whose
 destination flag holds no building (the program reads a null pointer there; the engine leaves it).
 
+### The butcher's shop
+
+**Status:** confirmed, emulated.
+
+The same routine takes a finished butcher's shop (type 0xd, a large building) down. The five games of `butcher-removals.txt` match the engine byte for byte: the
+butcher inside waiting for a pig, at work with the node held, out on the flag with the meat, and a pig on its way to the shop or held on site. The butcher inside
+loses his job and walks home as the miller does; the meat in his hand is lost, and the fill byte is cleared with the building, so no good stays counted as on its way
+([Butchering](butchering.md#removal)).
+
+### The farm
+
+**Status:** confirmed, emulated.
+
+The same routine takes a finished farm (type 0xc, a large building) down. The games `farmer-inside` (the farmer searches for a node at the
+pass 600) and `farmer-tending` (he is out on the fields at the pass 1200) of `removals.txt` match the engine byte for byte. The farmer inside
+loses his job and walks home as the woodcutter does. A farmer outside is not touched by the routine, as no settler outside is. The fields are
+objects of the map and the routine does not read them: the field he sowed, and any other, stands on and goes on growing and decaying in
+the object pass ([Farming](farming.md#the-fields-in-the-object-pass)).
+
+Grain in play at the click is emulated in two games that set ripe fields in the farmer's reach (the verb's SETS field, as `goods:` sets
+them) and match the engine byte for byte. In `farmer-grain-walking` (the click at pass 1260) the farmer walks back from a harvest with
+the grain in hand (state `0x10`, byte 14 is 1). The click leaves the flag's goods alone, the farmer walks on to the castle as a settler
+sent home does, the building burns until its slot is free (pass 1517), and no line of the flag's goods follows the click: the grain in his hand is not put down. In `farmer-grain-on-flag` (the
+click at pass 1330) the farm's flag holds the harvested grain: the grain goes where the flag's goods go, the carriers take it on
+(the flag lines at passes 1352 and 1421), and the flag goes on carrying after the farm is gone.
+
 ## Taking a building site down
 
 **Status:** confirmed, emulated for the forester's site (small) and the sawmill's (large).

@@ -243,10 +243,29 @@ script alone. Add a layout only where none of them holds the situation.
 - `layouts/woodcutter.jsonc` and `play/woodcutter-cut.play`: a woodcutter in his hut beside trees,
   fast-forwarded to the cut (state `0x11`).
 - `play/woodcutter-figures.play` on the same layout: crops of the woodcutter at his door, on the way out, at the cut, and on the way back with the log.
+- `layouts/fisher.jsonc` and `play/fisher.play`: a fisher in his building beside a hand-drawn lake. The script fast-forwards to his
+  walk out (state `0x10`) and to his cast (state `0x20`) and takes cropped shots of each. The lake holds a lake detail of 0, so he
+  catches nothing. The run gives one digest under both graphics sources.
+- `play/fisher-catch.play` on the game view with seed `4455544685788642` and size 1: the castle's click places it at 15,5, a fisher's site
+  at 18,5 joins it by a road, and the fisher fishes at the generated lake to the east. The script fast-forwards to his cast, to his first
+  catch (he carries the fish), and to the fish on his flag, with a shot of each and one of him on the way back.
 - `play/build-help.play` on the same layout checks the build markers of the castle's territory, on and off. It checks their
   change after a flag is placed.
 - `play/build-help-start.play` runs on the game view of the default seed. It checks the castle sites before the castle stands.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
+- `layouts/butcher.jsonc` and `play/butcher.play`: a finished butcher's shop with its butcher inside, a road to the castle, and two pigs on the castle's flag,
+  fast-forwarded to the castle's second meat beyond its start stock (`meat >= 27` from a start of 25).
+- `layouts/mill.jsonc` and `play/mill.play`: a finished mill with its miller inside, a road to the castle, and two grains on the castle's flag,
+  fast-forwarded to the castle's first flour.
+- `layouts/baker.jsonc` and `play/baker.play`: a finished bakery with its baker inside, a road to the castle, and two flours on the castle's flag,
+  fast-forwarded to the castle's first bread.
+- `layouts/pig-farm.jsonc` and `play/pig-farm.play`: a finished pig farm with its pig farmer inside, a road to the castle, and two grains on
+  the castle's flag, fast-forwarded to the pig on the step out and then to the castle's first pig.
+- `play/food-chain.play` on the game view with seed `4455544685788642` and size 1: the fisher, the butcher, and the baker are built one after
+  the other and joined by roads from the castle, and the script runs to 8 breads in the castle (it starts with 4), with fish and meat
+  beyond their start stock too. The castle's 5 jobless settlers allow no more. The farm, the mill, and the pig farm would need 6 more.
+  The play therefore shows the stock's pigs and flour moving to the butcher and the baker. The roads and the next site are placed after a `shot`, since
+  the game's ticks run only after the first `shot` that follows a `fast-forward`.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the
@@ -279,8 +298,8 @@ The entries follow, and the game applies them in the file's order:
 - `castle`: `{"x","y"}`.
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
-- `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, or sawmill (a
-  woodcutter's, stonecutter's, or forester's with its worker inside).
+- `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher (a
+  woodcutter's, stonecutter's, forester's, mill's, fisher's, farm's, butcher's, baker's, or pig farm's with its worker inside).
 - `settlers`: a carrier waiting on a road.
 - `goods`: `{"x","y","place","good"}` on a flag.
 

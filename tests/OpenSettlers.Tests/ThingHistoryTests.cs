@@ -98,8 +98,9 @@ public sealed class ThingHistoryTests
     [TestMethod]
     public void TheDigestOfAFixedGameIsTheOneTakenBeforeThingHistory()
     {
-        // The digest takes each flag's two request words (FlagEncoder.Requests); the value was regenerated for them.
-        Assert.AreEqual(7057416915496346654UL, World().Digest());
+        // The digest takes each flag's two request words (FlagEncoder.Requests) and the object pass's decay counter; the value was
+        // regenerated for them.
+        Assert.AreEqual(15019566634781816344UL, World().Digest());
     }
 
     static Game Castle()

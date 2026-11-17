@@ -35,10 +35,10 @@ takes one of job 21, which is a jobless settler, and makes him a carrier, as `0x
 
 | Entry | Key | Routine that writes it |
 | --- | --- | --- |
-| Woodcutter, stonecutter, or forester in his building | the `buildings` entry of the type (below), the building's node | the entering of `Settler_Walk` (`0x4398ea`), which hands over to `Settler_PassDoor` (`0x43c96b`, then `0x43cf15`) |
+| Woodcutter, stonecutter, forester, miller, fisher, farmer, butcher, baker, or pig farmer in his building | the `buildings` entry of the type (below), the building's node | the entering of `Settler_Walk` (`0x4398ea`), which hands over to `Settler_PassDoor` (`0x43c96b`, then `0x43cf15`) |
 | Carrier waiting on his road | `{"job": "carrier", "state": "waiting-on-road", "x", "y", "direction"}`, a flag of the road and the direction the road leaves it | `Carrier_WaitAtEnd` (`0x43bc52`), after the road's entering in `Settler_Walk` (`0x4398ea`) |
 
-The woodcutter is in state 4 at the hut's node, with the step through the door just taken. The timer holds the step's
+The miller is a settler without a job that the castle makes the miller (the request names no tool), walked in as the forester is; his start routine `0x43d33d` then asks for grain ([Milling](milling.md)). The baker is made the same way, and his start routine `0x43d3d9` asks for flour ([Baking](baking.md)). The pig farmer is made and walked in the same way; his start routine `0x43d179` asks for grain too and sets the pigs the farm holds to one ([Pig farming](pig-farming.md)). The woodcutter is in state 4 at the hut's node, with the step through the door just taken. The timer holds the step's
 time. The target holds the part of it that the door's speed leaves. The stamp holds the clock, and the mode is 255.
 
 The carrier is in state `0x42` on the node of the road next to the flag at the road's far end. The far end is the end
@@ -48,6 +48,7 @@ that the castle is not reached from first.
 woodcutter's or a stonecutter's finished-building entry stands his worker in the building and the `settlers` list has no entry for
 either. The stonecutter's goes on at `0x43cfdd` into the search for a heap, state `0x15` ([Stonecutting](stonecutting.md)), and the
 forester's, a settler without a job made the forester, at `0x43d009` into the search for a node, state `0x13` ([Forestry](forestry.md)). The
+farmer's, a settler without a job made the farmer with a scythe, goes on at `0x43d311` into the search for a field, state `0x21` ([Farming](farming.md)). The
 entry takes the settler through the entering of `0x4398ea`. The hut's status gets bit 6, which
 means it has its worker, and loses bit 7, which means a worker is on the way. The hut's worker is the settler. The
 settler stands on the hut's node, and the node's settler word names him. The hut asks for no second worker, because
@@ -82,30 +83,31 @@ player block's counter of goods on flags (`0x436b46`).
 
 ## Finished buildings
 
-`{"type": "woodcutter" | "stonecutter" | "forester" | "sawmill", "x", "y"}` in the `buildings` list stands a finished building
+`{"type": "woodcutter" | "stonecutter" | "forester" | "sawmill" | "fisher" | "farm" | "baker" | "mill" | "pig-farm" | "butcher", "x", "y"}` in the `buildings` list stands a finished building
 of that type on the node, with its flag south-east of it. The entry state is the building the original's mission start
 leaves: `0x41f2d2` places it through `Building_Place` (`0x449a63`, at `0x41f2f6`) and finishes it ([Build
 sites](build-sites.md#the-building-types)). The placement and its refusals are those of the building site, since the evaluator
 judges the node the same way, and a node that holds no site for the type's size, or no room for the flag, fails the load with
-the entry named. A type that M4 does not build (the storehouse, the castle, any other name) and an entry with no type fail the
+the entry named. A type the placement does not build (the storehouse, the castle, any other name; the food types are in [Food buildings](food-buildings.md), and a mill's miller, a fisher's fisher, a farm's farmer, a baker's baker, and a pig farm's pig farmer are placed as below, the other food buildings' workers not yet) and an entry with no type fail the
 read, naming the types. **Stand-ins:** the finished building has no status bit 4 and no pointer in its item, and its progress
 word is 0, so the digests of the M3 layouts stay (`Game.PlaceFinishedBuilding`). Its object code is 2 for the three small
 types, following the size-table caller `0x42cf9d` of `Building_Place`, where the mission start writes 2 only for type `0xb` and
 3 for every other type. The woodcutter's worker is the castle's woodcutter, and the stonecutter's the castle's stonecutter, walked in as above, where the mission
 start creates a new settler. The forester's worker is a settler without a job that the castle makes the forester (the request's second way, no tool,
-[Forestry](forestry.md)), walked in the same way. The sawmill stands with no worker inside: its worker comes through the building's worker request as the game runs
+[Forestry](forestry.md)), walked in the same way, the fisher's worker is the castle's settler of job 11, walked in as the woodcutter's is ([Fishing](fishing.md)), and the farmer's a settler without a job and a scythe from the castle's stock (the request's second way with its tool; a castle whose
+stock holds no scythe refuses the entry, so a layout's seed must draw a start stock level that holds one: `layouts/farm.jsonc`'s draws 38). The butcher's is made the same way with the butcher's knife (good 19), walked in as the farmer is, and his start routine `0x43d275` then asks for pigs ([Butchering](butchering.md)); `layouts/butcher.jsonc` uses the seed of the farm layout. The sawmill stands with no worker inside: its worker comes through the building's worker request as the game runs
 (`CastleRoster.HandleBuilding`, [Sawmilling](sawmilling.md#the-building-and-the-job)). A player's command places a building
 site and never a finished building.
 
 ## Not supported
 
 Some settlers have no entry state here. These are every other state of a settler, every other job, and custom castle
-contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut, the stonecutter's, or the forester's, and a woodcutter, a stonecutter, or a forester apart from his finished-building entry. The file reader refuses the entry.
+contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut, the stonecutter's, the forester's, the fisher's, the farm, or the butcher's shop, and a woodcutter, a stonecutter, a forester, a fisher, a farmer, or a butcher apart from his finished-building entry. The file reader refuses the entry.
 
 ## In the engine
 
 `Layout.Placement.cs` reads the `buildings`, `settlers`, and `goods` keys. `Game.PlaceFinishedBuilding` stands the finished building
-(`BuildingPlacement.PlaceFinished`). For a building of a job whose rules module declares `CanStandInHut` (a woodcutter, a stonecutter, or a forester; `WalkBehavior.StandsWorker`) the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
+(`BuildingPlacement.PlaceFinished`). For a building of a job whose rules module declares `CanStandInHut` (a woodcutter, a stonecutter, a forester, a miller, a fisher, a farmer, a butcher, a baker, or a pig farmer; `WalkBehavior.StandsWorker`) the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
 the settler in his hut.
 `CarrierBehavior.PlaceCarrierOnRoad` and `GoodsTransport.PlaceGood` are the carrier's and the good's. A settler for a road that the layout has not built before it fails the
 load with the entry named. A good on a flag that does not stand fails it the same way.

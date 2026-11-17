@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
@@ -15,12 +16,24 @@ static class ConstructionTables
     public static readonly GoodClass StoneClass = new() { Class = 6, Word = RequestWord.Second };
     public static readonly GoodClass LogClass = new() { Class = 2, Word = RequestWord.Second };
 
+    // The made-up grain class: class 1 of the first word, which the mill's flag asks it in.
+    public static readonly GoodClass GrainClass = new() { Class = 1, Word = RequestWord.First };
+
+    // The made-up flour class: class 7 of the first word, which the bakery's flag asks it in.
+    public static readonly GoodClass FlourClass = new() { Class = 7, Word = RequestWord.First };
+
+    // The made-up pig class: class 5 of the first word, which the butcher's flag asks it in.
+    public static readonly GoodClass PigClass = new() { Class = 5, Word = RequestWord.First };
+
     public static GoodClass?[] Classes()
     {
         var table = new GoodClass?[RuleTables.GoodClassCount];
         table[Good.Plank.Code] = PlankClass;
         table[Good.Stone.Code] = StoneClass;
         table[Good.Log.Code] = LogClass;
+        table[Good.Grain.Code] = GrainClass;
+        table[Good.Flour.Code] = FlourClass;
+        table[Good.Pig.Code] = PigClass;
 
         return table;
     }
@@ -36,14 +49,43 @@ static class ConstructionTables
     // Every draw picks the first table below 0 and 1, so the draw 2 picks PlanksFirst, the draw 0 StonesFirst.
     public static DistributionStep[][] Orders() => [PlanksFirst(), StonesFirst(), PlanksFirst()];
 
-    // The sizes of the four types of M4: the sawmill (0x11) is large, the others small.
+    // The made-up order of a castle that hands out grain too: the order of PlanksFirst with the grain step last.
+    public static DistributionStep[][] GrainOrders() =>
+        [.. Orders().Select(order => order.Append(new() { Class = GrainClass, Goods = [Good.Grain] }).ToArray())];
+
+    // The made-up order of a castle that hands out flour: the order of PlanksFirst with the flour step last.
+    public static DistributionStep[][] FlourOrders() =>
+        [.. Orders().Select(order => order.Append(new() { Class = FlourClass, Goods = [Good.Flour] }).ToArray())];
+
+    // The made-up order of a castle that hands out pigs too: the order of PlanksFirst with the pig step last.
+    public static DistributionStep[][] PigOrders() =>
+        [.. Orders().Select(order => order.Append(new() { Class = PigClass, Goods = [Good.Pig] }).ToArray())];
+
+    // The made-up rank the mill's request for grain starts from, which differs from the program's own (0x7f).
+    public const byte MillRankBase = 0x3f;
+
+    // The sizes of the types: the sawmill (0x11) and the butcher's shop (0xd) are large, the others small.
     public static byte[] Sizes()
     {
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
         sizes[BuildingType.Sawmill.Code] = 2;
+        sizes[BuildingType.Butcher.Code] = 2;
+        sizes[BuildingType.PigFarm.Code] = 2;
 
         return sizes;
     }
+
+    // The made-up rank the pig farm's request for grain starts from. A request whose rank has bit 0 clear falls to 0 when it serves a good
+    // (docs/rules/goods.md), so the made-up base keeps bit 0 set through every shift below 8, as the program's 0xff does.
+    public const byte PigRankBase = 0xff;
+
+    // The made-up growth table of the pigs a pig farm holds: no pig grows where none is held, and each pause of the work makes one more
+    // where the draw is below 0x8000, which the first word of a draw is half of the time.
+    public static PigFarmRates PigRates(ushort draw = 0x8000) =>
+        new() { RankBase = PigRankBase, Growth = [0, draw, draw, draw, draw, draw, draw, draw] };
+
+    // The made-up job data of a game with a pig farm: the table above for the pig farmer's job.
+    public static (Job Job, object Data)[] PigData(ushort draw = 0x8000) => [(new PigFarmer(), PigRates(draw))];
 
     // The made-up planks the forester's site needs.
     public const int ForesterPlanks = 2;
@@ -68,13 +110,17 @@ static class ConstructionTables
     public static readonly Good SawTool = new() { Code = 20 };
 
     // The made-up workers: the woodcutter's hut asks for the woodcutter's job with no tool, the forester's for job 8 with a tool, the
-    // sawmill for the sawmiller's job with a tool.
+    // sawmill for the sawmiller's job with a tool, the mill for the miller's job with no tool.
     public static WorkerRequest?[] Workers()
     {
         var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
         workers[BuildingType.Woodcutter.Code] = new WorkerRequest { Job = new Woodcutter(), Tool = Good.None };
         workers[BuildingType.Forester.Code] = new WorkerRequest { Job = Job.Of(8), Tool = ForesterTool };
         workers[BuildingType.Sawmill.Code] = new WorkerRequest { Job = new Sawmiller(), Tool = SawTool };
+        workers[BuildingType.Mill.Code] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
+        workers[BuildingType.Baker.Code] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
+        workers[BuildingType.Butcher.Code] = new WorkerRequest { Job = new Butcher(), Tool = Good.None };
+        workers[BuildingType.PigFarm.Code] = new WorkerRequest { Job = new PigFarmer(), Tool = Good.None };
 
         return workers;
     }
@@ -109,23 +155,32 @@ static class ConstructionTables
         byte plankRankBase = 0xff,
         ushort stepTime = 100,
         byte[]? needs = null,
-        ushort[]? materialOrder = null
+        ushort[]? materialOrder = null,
+        byte[]? sizes = null,
+        WorkerRequest?[]? workers = null,
+        ushort[]? blowSteps = null,
+        DistributionStep[][]? distribution = null,
+        byte[]? goodKinds = null,
+        IEnumerable<(Job Job, object Data)>? jobData = null
     ) =>
         LayoutSettlersTests.MadeTables(
             stepTime: stepTime,
-            workers: Workers(),
+            workers: workers ?? Workers(),
             builderRequest: new WorkerRequest { Job = new Builder(), Tool = BuilderTool },
             materialOrder: materialOrder ?? MaterialOrder(),
-            blowSteps: BlowSteps(),
+            blowSteps: blowSteps ?? BlowSteps(),
             buildingClass: 4,
             // A made-up transport priority for each good (the good's own number): a carrier takes a waiting good only where its
             // priority is above 0.
             transportPriorities: [.. Enumerable.Range(1, RuleTables.Goods).Select(good => (byte)good)],
-            buildingSizes: Sizes(),
+            buildingSizes: sizes ?? Sizes(),
             buildingNeeds: needs ?? Needs(),
+            goodKinds: goodKinds,
             goodClasses: Classes(),
-            distribution: Orders(),
+            distribution: distribution ?? Orders(),
             plankRankBase: plankRankBase,
-            diggerRequest: new WorkerRequest { Job = new Digger(), Tool = DiggerTool }
+            millRankBase: MillRankBase,
+            diggerRequest: new WorkerRequest { Job = new Digger(), Tool = DiggerTool },
+            jobData: jobData
         );
 }

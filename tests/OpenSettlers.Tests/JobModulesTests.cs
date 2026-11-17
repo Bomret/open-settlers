@@ -29,12 +29,17 @@ public sealed class JobModulesTests
         CollectionAssert.AreEqual(
             new[]
             {
+                typeof(Baker),
                 typeof(Builder),
+                typeof(Butcher),
                 typeof(Digger),
+                typeof(Farmer),
+                typeof(Fisher),
                 typeof(Forester),
+                typeof(Miller),
+                typeof(PigFarmer),
                 typeof(Sawmiller),
                 typeof(Stonecutter),
-                typeof(TypeOneHut),
                 typeof(Woodcutter),
             },
             Modules().Select(module => module.JobType).ToArray()
@@ -42,10 +47,21 @@ public sealed class JobModulesTests
     }
 
     [TestMethod]
-    public void OnlyTheModulesOfTheWoodcutterTheStonecutterAndTheForesterLetTheirSettlerStandInTheHut()
+    public void OnlyTheModulesOfTheWoodcutterTheStonecutterTheForesterTheMillerTheFisherTheFarmerTheButcherTheBakerAndThePigFarmerLetTheirSettlerStandInTheHut()
     {
         CollectionAssert.AreEqual(
-            new[] { typeof(Forester), typeof(Stonecutter), typeof(Woodcutter) },
+            new[]
+            {
+                typeof(Baker),
+                typeof(Butcher),
+                typeof(Farmer),
+                typeof(Fisher),
+                typeof(Forester),
+                typeof(Miller),
+                typeof(PigFarmer),
+                typeof(Stonecutter),
+                typeof(Woodcutter),
+            },
             Modules().Where(module => module.CanStandInHut).Select(module => module.JobType).ToArray()
         );
     }
@@ -54,7 +70,18 @@ public sealed class JobModulesTests
     public void TheModulesOfTheHutsNameTheCauseOfTheirWork()
     {
         CollectionAssert.AreEqual(
-            new[] { Cause.Forestry, Cause.Stonecutting, Cause.Woodcutting },
+            new[]
+            {
+                Cause.Settlers,
+                Cause.Settlers,
+                Cause.Farming,
+                Cause.Fishing,
+                Cause.Forestry,
+                Cause.Settlers,
+                Cause.Settlers,
+                Cause.Stonecutting,
+                Cause.Woodcutting,
+            },
             Modules().Where(module => module.CanStandInHut).Select(module => module.Cause).ToArray()
         );
     }

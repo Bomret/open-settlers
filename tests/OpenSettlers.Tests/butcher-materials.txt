@@ -1,0 +1,75 @@
+# Expected values for the castle's hand-out of pigs to a butcher's shop (docs/rules/butchering.md, docs/rules/construction-materials.md),
+# captured from the original program in the emulator (ADR 0008): tools/GhidraDump/emulate.py, the verb construct, which is remove with the
+# phase routine 0x42965c at the last phase of each cycle (the castle's goods go out to the requests) and the player's default words 0x445752
+# and 0x44579c. A finished butcher's shop (type 13, at the flag 15,9) stands from the start with its butcher (the castle's jobless settler
+# and its knife, the start stock level 30) inside from the pass 362; the click k@2,0 sets the castle's stock word of the pig (good 2) to 0
+# at the pass 100 (the level's four pigs would be handed out first), and the click k@2,9 sets it to 9 at the pass 700. The lines are the emulator's output reduced to what the engine reproduces: the item of the shop's flag (f3, 70 bytes,
+# the request words at 0x42 to 0x45), the shop's item (b2, 18 bytes: the status at 5, the fill bytes at 8 and 9; its flag pointer left
+# out), the castle's pig and meat counts, and the generator. The flag and building slots are one higher than the engine's (the dummies of
+# the tables). The engine hands a good out by laying it on the castle's flag at once, where the original's first settler carries it out and
+# lays it there about 34 passes later: the checks stop before that pass, so they cover the first hand-out's count (the stock falls by one,
+# the shop counts one pig on its way, its request halves its rank). Not production code: no routine of the program is transcribed here, only
+# values the program produced.
+# hand-out construct:1:1234,5678,9ABC:30:15,5:18,6;15,9:16,6,00;16,6,2223:15,9,13:100:900:k@2,0;700=k@2,9
+pass=0 pig=4 meat=6 rng=AEC7,C7E8,B97D
+pass=5 rng=CFD2,A346,C0B2
+pass=6 rng=B3AA,605F,31FC
+pass=7 rng=25F5,7902,C92D
+pass=17 rng=57DA,9D96,A117
+pass=31 rng=5467,D19D,9F56
+pass=32 f3=1000FF01410090000000000000000000000000000000000000000000000000000000000046000023000000000000000000000000240002230000000010000000000000FF0000 b2=380800003404030000000000000000000000
+pass=33 b2=380800003400030000000000000000000000
+pass=35 rng=B952,50B7,B879
+pass=64 rng=B270,ACC3,0498
+pass=65 b2=380800003404030000000000000000000000
+pass=66 b2=380800003400030000000000000000000000
+pass=97 rng=5BAB,0ECC,D8AD
+pass=98 b2=380800003480030000000000000000000000
+click=k@2,0 pig=0 meat=6
+pass=100 pig=0 meat=6
+pass=107 rng=B2DA,F4DA,F3BC
+pass=115 rng=5408,0E26,744B
+pass=130 rng=1665,C62B,C138
+pass=132 rng=1DA8,20A4,C3B1
+pass=150 rng=FDFD,E278,F22A
+pass=163 rng=125F,1B6D,6A51
+pass=196 rng=479D,CF69,42DF
+pass=222 rng=55D9,EE90,0924
+pass=229 rng=4D4D,0C92,7BDA
+pass=240 rng=2205,427F,4436
+pass=262 rng=20B2,6265,C35A
+pass=295 rng=404D,23ED,92DF
+pass=299 b2=380800003440030000000300000000000000
+pass=312 rng=F6E5,CA90,5B66
+pass=328 rng=9A13,77B3,12FB
+pass=330 rng=033D,FE8E,4557
+pass=332 f3=79000001410111000000000000000000000000000000000000000000000000000000000046000023000000000000000000000000240002230000000010000000000008000000
+pass=337 rng=449C,DEB5,A1F2
+pass=347 rng=82A3,2F09,C053
+pass=355 rng=71FF,E02A,77AE
+pass=361 rng=2587,5BF9,2BEC
+pass=362 f3=84000001410111000000000000000000000000000000000000000000000000000000000046000023000000000000000000000000240002230000000010000000000008FF0000
+pass=372 rng=AA6C,6E0E,C3F2
+pass=394 rng=DB88,2E07,1900
+pass=427 rng=108F,3480,A383
+pass=452 rng=E68C,F641,EC01
+pass=460 rng=30CC,8A01,7121
+pass=493 rng=CBEC,B891,7D91
+pass=526 rng=F9EC,C759,1B11
+pass=559 rng=DA54,9299,7135
+pass=560 rng=1DD8,C8AB,01E7
+pass=577 rng=E764,811C,6549
+pass=592 rng=0DC9,B3BC,F332
+pass=610 rng=32B7,0AA9,5377
+pass=625 rng=6E17,AA44,2F10
+pass=658 rng=374B,3988,6CAA
+pass=667 rng=1C79,4FDD,5319
+pass=675 rng=3F4F,F695,517B
+pass=685 rng=649F,DF42,2408
+pass=691 rng=67E9,6E04,01A5
+pass=692 rng=D448,80D6,B7D4
+click=k@2,9 pig=9 meat=6
+pass=700 pig=9 meat=6
+pass=710 rng=E2CA,5C3E,1C55
+pass=724 pig=8 meat=6 f3=FE000001410111000000000000000000000000000000000000000000000000000000000046000023000000000000000000000000240002230000000010000000000008000000 b2=380800003440030001000300000000000000 rng=235D,9256,BC49
+pass=725 f3=FE0000014101110000000000000000000000000000000000000000000000000000000000460000230000000000000000000000002400022300000000100000000000087F0000

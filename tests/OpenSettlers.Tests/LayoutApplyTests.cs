@@ -126,7 +126,20 @@ public sealed class LayoutApplyTests
     static Game NewGameWithALargeSawmill(Layout layout)
     {
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
-        sizes[BuildingType.Sawmill.Code] = 2;
+        foreach (
+            var large in new[]
+            {
+                BuildingType.Sawmill,
+                BuildingType.Farm,
+                BuildingType.Butcher,
+                BuildingType.PigFarm,
+                BuildingType.Baker,
+            }
+        )
+        {
+            sizes[large.Code] = 2;
+        }
+
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
 
@@ -146,6 +159,12 @@ public sealed class LayoutApplyTests
     [DataRow("stonecutter", 4)]
     [DataRow("forester", 9)]
     [DataRow("sawmill", 0x11)]
+    [DataRow("fisher", 1)]
+    [DataRow("farm", 0xc)]
+    [DataRow("butcher", 0xd)]
+    [DataRow("pig-farm", 0xe)]
+    [DataRow("mill", 0xf)]
+    [DataRow("baker", 0x10)]
     public void AFinishedBuildingEntryStandsFinishedWithItsFlagAndNoSite(string name, int code)
     {
         var layout = Read(Castle + $$""" "buildings": [{"type": "{{name}}", "x": 13, "y": 10}] """);
@@ -157,6 +176,45 @@ public sealed class LayoutApplyTests
         Assert.IsFalse(building.Constructing, "a layout's building stands finished");
         Assert.IsNull(building.Site);
         Assert.AreEqual((14, 11), (game.Flags[building.Flag].X, game.Flags[building.Flag].Y));
+    }
+
+    [TestMethod]
+    public void AFarmEntryStandsAJoblessSettlerInsideAsTheFarmerInTheSearchForAField()
+    {
+        var layout = Read(Castle + Flag + Road + Hut.Replace("woodcutter", "farm"));
+        var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
+        sizes[BuildingType.Farm.Code] = 2;
+        var workers = TestProgram.MadeWorkers();
+        var scythe = new Good { Code = 20 };
+        workers[BuildingType.Farm.Code] = new WorkerRequest { Job = new Farmer(), Tool = scythe };
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[MapObject.Flag.Code] = 3;
+        Game Made(Layout of) =>
+            GameFactory.Create(
+                new RuleTables(
+                    classes,
+                    TestProgram.MadeStartStock(),
+                    buildingSizes: sizes,
+                    workers: workers,
+                    jobData: TestProgram.MadeJobData()
+                ),
+                of.BuildMap()
+            );
+        var game = Made(layout);
+        var without = Made(Read(Castle + Flag + Road));
+        Assert.IsNull(Read(Castle + Flag + Road).Apply(without));
+
+        Assert.IsNull(layout.Apply(game));
+
+        Assert.AreEqual(
+            without.CastleStock.Count(scythe) - 1,
+            game.CastleStock.Count(scythe),
+            "the castle gives up the scythe the farmer takes"
+        );
+        var worker = game.Settlers.Single(settler => settler.Job == new Farmer());
+        Assert.IsInstanceOfType<Door>(worker.Activity, "he stands in the doorway of his farm");
+        Assert.AreEqual((13, 10), (worker.X, worker.Y));
+        Assert.IsTrue(game.Buildings.Single(building => building.Type == BuildingType.Farm).WorkerInside);
     }
 
     [TestMethod]
@@ -173,8 +231,8 @@ public sealed class LayoutApplyTests
     [TestMethod]
     [DataRow("storehouse")]
     [DataRow("castle")]
-    [DataRow("farm")]
-    public void AnEntryThatNamesATypeM4DoesNotBuildFailsTheReadNamingTheTypes(string name)
+    [DataRow("well")]
+    public void AnEntryThatNamesATypeNoSliceBuildsFailsTheReadNamingTheTypes(string name)
     {
         var entry = $$""" "buildings": [{"type": "{{name}}", "x": 13, "y": 10}] """;
         var read = Layout.Read(LayoutTests.Text(extra: "\n" + entry), "test.jsonc");
@@ -183,7 +241,9 @@ public sealed class LayoutApplyTests
             read.Problems.Any(problem =>
                 problem.StartsWith("test.jsonc: buildings[0]: ")
                 && problem.Contains($"no building type {name}")
-                && problem.Contains("woodcutter, stonecutter, forester, or sawmill")
+                && problem.Contains(
+                    "woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher"
+                )
             ),
             string.Join("; ", read.Problems)
         );

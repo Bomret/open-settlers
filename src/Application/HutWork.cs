@@ -5,7 +5,7 @@ namespace OpenSettlers.Simulation;
 
 /// <summary>
 /// The states the workers who go out from a hut and come back to it share: the woodcutter's, the stonecutter's, the forester's, and the
-/// type 1 hut's settler (their rules modules hold what each does). The shared states are the door, the step out onto the hut's flag, the
+/// fisher's (their rules modules hold what each does). The shared states are the door, the step out onto the hut's flag, the
 /// free walk (the walk home's too), the entry into a hut, the search home, and the map's object pass (docs/rules/woodcutting.md). At the
 /// door a settler entering a storage goes first, then the start routine of the module of its job runs; at the end of a free walk the
 /// module's arrival runs; an event's cause is the layout's or the walk home's before the module's. A settler whose job has no module
@@ -38,9 +38,16 @@ public sealed class HutWork(
     int _objectX;
     int _objectY;
 
-    /// <summary>The object pass's state, for the digest: the clock at its last run, its countdown, and the cursor's column and row.</summary>
-    public (ushort Stamp, ushort Timer, int X, int Y) ObjectPassState =>
-        (_objectStamp, _objectTimer, _objectX, _objectY);
+    // The decay counter (+0x28c, 0x428da0): each node the pass visits takes one off it, and it starts again at 0x10 where it ran below 0.
+    // The handler of the codes 0x70 to 0x78 clears the object while it is 0.
+    ushort _objectDecay;
+
+    /// <summary>
+    /// The object pass's state, for the digest: the clock at its last run, its countdown, the cursor's column and row, and the decay
+    /// counter.
+    /// </summary>
+    public (ushort Stamp, ushort Timer, int X, int Y, ushort Decay) ObjectPassState =>
+        (_objectStamp, _objectTimer, _objectX, _objectY, _objectDecay);
 
     // The job rules modules by the type of their job: the hooks the shared states call. A job without a module has none.
     readonly System.Collections.Generic.Dictionary<Type, JobRules> _modules = [];
@@ -72,13 +79,70 @@ public sealed class HutWork(
         }
     }
 
-    /// <summary>Registers the behaviour of the shared activities: the door, the entry into a hut, the step onto the flag, and the free walk.</summary>
+    /// <summary>
+    /// Registers the behaviour of the shared activities: the door, the entry into a hut, the step onto the flag, the free walk, and the step
+    /// out with a good and its put (the sawmiller's and the miller's).
+    /// </summary>
     public void Register(ActivityRegistry registry)
     {
         registry.Register<Door>((slot, settler, _) => PassDoor(slot, settler));
         registry.Register<EntersBuilding>((slot, settler, _) => EnterHut(slot, settler));
         registry.Register<StepsOntoFlag>((slot, settler, _) => StepOut(slot, settler));
+        registry.Register<StepsOutWithGood>((slot, settler, _) => StepOutWithGood(slot, settler));
+        registry.Register<PutsDownGood>((slot, settler, _) => PutDownGood(slot, settler));
         registry.Register<WalksFree>((slot, settler, _) => FreeWalk(slot, settler));
+    }
+
+    // The frame of a settler that waits for a busy node (0x43e44b).
+    const int WaitFrame = 0x52;
+    const int FlagPlaces = 8;
+
+    /// <summary>
+    /// State 0xb (0x43e228): the step from the door onto the flag south-east of it, as the step of state 7 is (0x43e036), with one more
+    /// condition: the flag must have a free place. A node with another settler on it, or a flag with no free place, makes him wait
+    /// with the frame 0x52. The time of the step is scaled by the door's speed, and he waits it out in state 5 before he lays the good down.
+    /// </summary>
+    internal void StepOutWithGood(int slot, Settler settler)
+    {
+        var here = Map.Index(settler.X, settler.Y);
+        var (x, y, next) = movement.Neighbour(settler, 1);
+        var standing = movement.Occupant(here);
+        if (
+            (standing == slot || standing == 0)
+            && movement.Occupant(next) == 0
+            && flags[Map.At(next).LinkedSlot].FirstEmptyPlace() >= 0
+        )
+        {
+            var door = movement.BuildingAt(here);
+            var shape = 0xd + movement.Height(next) - movement.Height(here);
+            var carried = ((StepsOutWithGood)settler.Activity).Good;
+            movement.Move(slot, settler, x, y, next);
+            settler.Frame = (byte)shape;
+            var speed = (byte)(movement.Tables.DoorSpeed(door) ^ 0x1f);
+            settler.Timer = (ushort)((ushort)(movement.Tables.StepTime(shape) * speed) >> 5);
+            settler.Stamp = movement.Clock;
+            settler.Activity = new WaitsOutStep { Then = new PutsDownGood { Good = carried } };
+        }
+        else
+        {
+            settler.Frame = WaitFrame;
+            settler.Timer = 0;
+        }
+
+        history.RecordSettler(slot, EventType.StepOut, Cause.Settlers);
+    }
+
+    // State 0xd (0x43c6aa): the good goes on the first empty place of the flag, or on the last place where the first seven hold goods;
+    // the flag's turn is due. The settler's byte 11 is 0 from here on, and he goes into the building (state 6).
+    void PutDownGood(int slot, Settler settler)
+    {
+        var good = ((PutsDownGood)settler.Activity).Good;
+        var flag = Map.At(settler.X, settler.Y).LinkedSlot;
+        var place = flags[flag].FirstEmptyPlace();
+        layGood(flag, place >= 0 ? place : FlagPlaces - 1, good.Code);
+        history.RecordFlag(flag, EventType.PutGood, Cause.Settlers, history.SettlerId(slot).ToString());
+        movement.Become(settler, new EntersBuilding(), movement.ResidueOf(settler.Activity) with { Mode = 0 });
+        EnterHut(slot, settler);
     }
 
     // State 4, a settler that stepped through a door (0x43c96b): once its timer is down to the time the door leaves it, it
@@ -480,7 +544,8 @@ public sealed class HutWork(
     /// where it wraps: on a lake node with detail it may move the detail (the draws of the original), a node with an object code of 0x53
     /// or more takes its handler: the cut tree codes 0x5d to 0x66 become 0x53, and 0x53 vanishes when the draw's low two bits are 0; the
     /// saplings 0x67 and 0x68 grow into trees (GrowSapling), so a felled tree turns into nothing in the time the original takes.
-    /// **Not ported:** the handlers of the codes 0x69 and up (the original's growth and decay; the generation places none).
+    /// The fields grow and decay (<see cref="MapObject.AfterObjectPass"/>), and the object codes 0x70 to 0x78 vanish while the decay
+    /// counter, which each visited node counts down, is 0 (<c>docs/rules/farming.md</c>).
     /// </summary>
     public void ObjectPass()
     {
@@ -511,6 +576,11 @@ public sealed class HutWork(
                 _objectY = (_objectY + 1) & (Map.Size.Height - 1);
             }
 
+            if (_objectDecay-- == 0)
+            {
+                _objectDecay = 0x10;
+            }
+
             var node = Map.Index(_objectX, _objectY);
             ref var at = ref Map.At(node);
             if (at.WaterTriangle && at.LakeMark && at.LakeDetail != 0)
@@ -533,6 +603,17 @@ public sealed class HutWork(
             else if (kind == MapObjectKind.Sapling)
             {
                 GrowSapling(ref at);
+            }
+            else if (at.Object.AfterObjectPass is { } field)
+            {
+                at.Object = field;
+            }
+            else if (
+                at.Object.Code is >= MapObject.FirstDecayingCode and < MapObject.EndDecayingCode
+                && _objectDecay == 0
+            )
+            {
+                at.Object = MapObject.None;
             }
         }
     }

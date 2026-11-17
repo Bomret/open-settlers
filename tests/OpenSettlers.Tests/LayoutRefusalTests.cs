@@ -12,7 +12,7 @@ public sealed class LayoutRefusalTests
 {
     const string Shape = "{\"x\", \"y\"}";
     const string Building =
-        "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", or \"sawmill\", \"x\", \"y\"} (the node of the building, "
+        "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", \"sawmill\", \"fisher\", \"farm\", \"baker\", \"mill\", \"pig-farm\", or \"butcher\", \"x\", \"y\"} (the node of the building, "
         + "finished with its flag south-east of it)";
     const string Settler =
         "{\"job\": \"carrier\", \"state\": \"waiting-on-road\", \"x\", \"y\", \"direction\"} (a flag of the road and "

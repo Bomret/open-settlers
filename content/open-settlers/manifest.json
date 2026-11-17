@@ -931,52 +931,52 @@
     ]
   },
   "object/105": {
-    "image": "object/litter-1.png",
+    "image": "object/field-0.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/106": {
-    "image": "object/litter-2.png",
+    "image": "object/field-1.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/107": {
-    "image": "object/litter-3.png",
+    "image": "object/field-2.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/108": {
-    "image": "object/litter-0.png",
+    "image": "object/field-3.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/109": {
-    "image": "object/litter-1.png",
+    "image": "object/field-4.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/110": {
-    "image": "object/litter-2.png",
+    "image": "object/field-5.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/111": {
-    "image": "object/litter-3.png",
+    "image": "object/field-harvested.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/112": {
@@ -1043,45 +1043,45 @@
     ]
   },
   "object/121": {
-    "image": "object/litter-1.png",
+    "image": "object/field-6.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/122": {
-    "image": "object/litter-2.png",
+    "image": "object/field-7.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/123": {
-    "image": "object/litter-3.png",
+    "image": "object/field-8.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/124": {
-    "image": "object/litter-0.png",
+    "image": "object/field-9.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/125": {
-    "image": "object/litter-1.png",
+    "image": "object/field-10.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/126": {
-    "image": "object/litter-2.png",
+    "image": "object/field-11.png",
     "anchor": [
-      -6,
-      -7
+      -12,
+      -9
     ]
   },
   "object/127": {
@@ -1121,6 +1121,48 @@
   },
   "building/sawmill": {
     "image": "building/sawmill.png",
+    "anchor": [
+      -22,
+      -35
+    ]
+  },
+  "building/fisher": {
+    "image": "building/fisher.png",
+    "anchor": [
+      -14,
+      -29
+    ]
+  },
+  "building/farm": {
+    "image": "building/farm.png",
+    "anchor": [
+      -22,
+      -35
+    ]
+  },
+  "building/baker": {
+    "image": "building/baker.png",
+    "anchor": [
+      -22,
+      -35
+    ]
+  },
+  "building/mill": {
+    "image": "building/mill.png",
+    "anchor": [
+      -14,
+      -29
+    ]
+  },
+  "building/pig-farm": {
+    "image": "building/pig-farm.png",
+    "anchor": [
+      -22,
+      -35
+    ]
+  },
+  "building/butcher": {
+    "image": "building/butcher.png",
     "anchor": [
       -22,
       -35
@@ -1532,43 +1574,43 @@
       -21
     ]
   },
-  "settler/type-one-hut/walks": {
-    "image": "settler/type-one-hut-walks.png",
+  "settler/fisher/walks": {
+    "image": "settler/fisher-walks.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/carries": {
-    "image": "settler/type-one-hut-carries.png",
+  "settler/fisher/carries": {
+    "image": "settler/fisher-carries.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/cuts": {
-    "image": "settler/type-one-hut-cuts.png",
+  "settler/fisher/cuts": {
+    "image": "settler/fisher-cuts.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/door": {
-    "image": "settler/type-one-hut-door.png",
+  "settler/fisher/door": {
+    "image": "settler/fisher-door.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/hands-over": {
-    "image": "settler/type-one-hut-hands-over.png",
+  "settler/fisher/hands-over": {
+    "image": "settler/fisher-hands-over.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/waits": {
-    "image": "settler/type-one-hut-waits.png",
+  "settler/fisher/waits": {
+    "image": "settler/fisher-waits.png",
     "anchor": [
       -7,
       -21
@@ -1737,6 +1779,216 @@
   },
   "settler/sawmiller/waits": {
     "image": "settler/sawmiller-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/walks": {
+    "image": "settler/miller-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/carries": {
+    "image": "settler/miller-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/cuts": {
+    "image": "settler/miller-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/door": {
+    "image": "settler/miller-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/hands-over": {
+    "image": "settler/miller-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/miller/waits": {
+    "image": "settler/miller-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/walks": {
+    "image": "settler/pig-farmer-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/carries": {
+    "image": "settler/pig-farmer-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/cuts": {
+    "image": "settler/pig-farmer-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/door": {
+    "image": "settler/pig-farmer-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/hands-over": {
+    "image": "settler/pig-farmer-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/pig-farmer/waits": {
+    "image": "settler/pig-farmer-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/farmer/walks": {
+    "image": "settler/farmer-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/farmer/carries": {
+    "image": "settler/farmer-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/farmer/cuts": {
+    "image": "settler/farmer-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/farmer/door": {
+    "image": "settler/farmer-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/farmer/hands-over": {
+    "image": "settler/farmer-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/farmer/waits": {
+    "image": "settler/farmer-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/walks": {
+    "image": "settler/baker-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/carries": {
+    "image": "settler/baker-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/cuts": {
+    "image": "settler/baker-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/door": {
+    "image": "settler/baker-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/hands-over": {
+    "image": "settler/baker-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/baker/waits": {
+    "image": "settler/baker-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/walks": {
+    "image": "settler/butcher-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/carries": {
+    "image": "settler/butcher-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/cuts": {
+    "image": "settler/butcher-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/door": {
+    "image": "settler/butcher-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/hands-over": {
+    "image": "settler/butcher-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/waits": {
+    "image": "settler/butcher-waits.png",
     "anchor": [
       -7,
       -21

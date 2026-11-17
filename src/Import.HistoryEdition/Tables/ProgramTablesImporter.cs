@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 
@@ -101,20 +102,35 @@ static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte below 0x80 (the walk).</summary>
     public const int ForesterWalkAddress = 0x43fdea;
 
-    /// <summary>The handler of the figure of the settler of the type 1 hut (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
-    public const int TypeOneHutHandlerAddress = 0x43fed8;
+    /// <summary>The handler of the farmer's figure (<c>0x44002b</c>, the target of the stub of job 14).</summary>
+    public const int FarmerHandlerAddress = 0x44002b;
 
-    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where the heading is not 1.</summary>
-    public const int TypeOneHutHighAddress = 0x43ff0f;
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 while he sows (byte 13 0).</summary>
+    public const int FarmerSowAddress = 0x44003c;
 
-    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where the heading is 1.</summary>
-    public const int TypeOneHutHighFacingAddress = 0x43ff1a;
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 while he harvests (byte 13 not 0).</summary>
+    public const int FarmerHarvestAddress = 0x440097;
 
-    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the way back with a load (state 0x10, byte 13 0x80, byte 14 1).</summary>
-    public const int TypeOneHutCarryingAddress = 0x43ff40;
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the way back with the grain (byte 13 0x80, byte 14 1, state 0x10).</summary>
+    public const int FarmerCarryingAddress = 0x4400bd;
 
     /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
-    public const int TypeOneHutWalkAddress = 0x43ff4b;
+    public const int FarmerWalkAddress = 0x4400c8;
+
+    /// <summary>The handler of the figure of the fisher (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
+    public const int FisherHandlerAddress = 0x43fed8;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where byte 14 is not 1 (no catch yet).</summary>
+    public const int FisherHighAddress = 0x43ff0f;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 where byte 14 is 1 (a fish caught).</summary>
+    public const int FisherHighFacingAddress = 0x43ff1a;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the way back with a fish (state 0x10, byte 13 0x80, byte 14 1).</summary>
+    public const int FisherCarryingAddress = 0x43ff40;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int FisherWalkAddress = 0x43ff4b;
 
     /// <summary>The handler of the builder's figure (<c>0x43faf4</c>, the target of the stub of job 3).</summary>
     public const int BuilderHandlerAddress = 0x43faf4;
@@ -151,6 +167,69 @@ static class ProgramTablesImporter
 
     /// <summary>The <c>add word [edi+8], imm16</c> of the sawmiller's handler for any other figure byte below 0x80 (the walk).</summary>
     public const int SawmillerWalkAddress = 0x43fccd;
+
+    /// <summary>The handler of the miller's figure (<c>0x4400d3</c>, the target of the stub of job 15).</summary>
+    public const int MillerHandlerAddress = 0x4400d3;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the miller's handler for a figure byte from 0x80 (the grinding).</summary>
+    public const int MillerGrindAddress = 0x4400df;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the miller's handler for the step that takes the flour out (state 5, byte 15 0xd).</summary>
+    public const int MillerCarryingAddress = 0x4400fc;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the miller's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int MillerWalkAddress = 0x440107;
+
+    /// <summary>The handler of the baker's figure (<c>0x440112</c>, the target of the stub of job 16).</summary>
+    public const int BakerHandlerAddress = 0x440112;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the baker's handler for a figure byte from 0x80 (the baking).</summary>
+    public const int BakerBakeAddress = 0x44011e;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the baker's handler for the step that takes the bread out (state 5, byte 15 0xd).</summary>
+    public const int BakerCarryingAddress = 0x44013b;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the baker's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int BakerWalkAddress = 0x440146;
+
+    /// <summary>The handler of the butcher's figure (<c>0x43ff90</c>, the target of the stub of job 13).</summary>
+    public const int ButcherHandlerAddress = 0x43ff90;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the butcher's handler for a figure byte from 0x80 (the work).</summary>
+    public const int ButcherWorkAddress = 0x43fff8;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the butcher's handler for the step that takes the meat out (state 5, byte 15 0xd).</summary>
+    public const int ButcherCarryingAddress = 0x440015;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the butcher's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int ButcherWalkAddress = 0x440020;
+
+    /// <summary>The handler of the pig farmer's figure (<c>0x43ff56</c>, the target of the stub of job 12).</summary>
+    public const int PigFarmerHandlerAddress = 0x43ff56;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the pig farmer's handler for a figure byte from 0x80 (the work).</summary>
+    public const int PigFarmerWorkAddress = 0x43ff5d;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the pig farmer's handler for the step that takes the pig out (state 5, byte 15 0xd).</summary>
+    public const int PigFarmerCarryingAddress = 0x43ff7a;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of the pig farmer's handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int PigFarmerWalkAddress = 0x43ff85;
+
+    /// <summary>
+    /// The instruction pair of the player setup's store of <c>0x44579c</c> at <c>+0x158</c> (<c>mov ax, imm16</c>, then the store): the high byte
+    /// of the word is the rank the pig farm's request for grain starts from (<c>docs/rules/pig-farming.md</c>).
+    /// </summary>
+    public const int PigRankAddress = 0x4457c6;
+
+    /// <summary>
+    /// The table of eight 16-bit words that the pig farmer's work (state <c>0x25</c>) reads at the index of the pigs the pig farm holds
+    /// (<c>0x433684</c>, the end of the routine): the draw below which another pig grows.
+    /// </summary>
+    public const int PigGrowthAddress = 0x433684;
+
+    /// <summary>The words of the pig growth table.</summary>
+    public const int PigGrowthCount = 8;
 
     /// <summary>The bytes of <c>add word [edi+8], imm16</c> before the immediate.</summary>
     static readonly byte[] AddFigureWord = [0x66, 0x81, 0x47, 0x08];
@@ -225,6 +304,13 @@ static class ProgramTablesImporter
     public const int PlankRankAddress = 0x445752;
 
     /// <summary>
+    /// The instruction pair of the player setup's last store of <c>0x44579c</c> (called by <c>0x42055e</c>): it loads the word <c>0x7fee</c> and stores it
+    /// at <c>+0x15a</c> of the player block, whose high byte is the rank the mill's request for grain starts from
+    /// (<c>docs/rules/milling.md</c>).
+    /// </summary>
+    public const int MillRankAddress = 0x4457d4;
+
+    /// <summary>
     /// The instructions of the building under construction's request for a builder (<c>0x42d5fc</c>, in <c>0x42d55f</c>): <c>mov eax, job</c> and
     /// <c>mov [edi], eax</c>, <c>mov eax, tool</c> and <c>mov [edi+0x18], eax</c> before the call of <c>0x42be63</c>. The tool is the offset of the
     /// stock word in the storage item (from +4), which is twice the good's number.
@@ -232,8 +318,11 @@ static class ProgramTablesImporter
     public const int BuilderRequestAddress = 0x42d5fc;
 
     /// <summary>
-    /// The same instructions in the handlers of the four types: the woodcutter's (<c>0x42d945</c>), the stonecutter's (<c>0x42d987</c>), the
-    /// forester's (<c>0x42d9c9</c>), and the sawmill's (<c>0x42da0b</c>), each 13 bytes in.
+    /// The same instructions in the handlers of the ten types: the woodcutter's (<c>0x42d945</c>), the stonecutter's (<c>0x42d987</c>), the
+    /// forester's (<c>0x42d9c9</c>), the sawmill's (<c>0x42da0b</c>), the fisher's (<c>0x42e0b8</c>), the farm's (<c>0x42e25e</c>), the
+    /// butcher's (<c>0x42e1b3</c>), the pig farm's (<c>0x42e0fa</c>), the mill's (<c>0x42e2a0</c>), and the baker's (<c>0x42e37e</c>),
+    /// each 13 bytes in, except the mill's, whose handler first reads the building's bytes (<c>0x42e2a0</c> to <c>0x42e2c5</c>) and
+    /// asks at <c>0x42e2d2</c>.
     /// </summary>
     public static readonly (BuildingType Type, int Address)[] WorkerRequestAddresses =
     [
@@ -241,6 +330,12 @@ static class ProgramTablesImporter
         (BuildingType.Stonecutter, 0x42d994),
         (BuildingType.Forester, 0x42d9d6),
         (BuildingType.Sawmill, 0x42da18),
+        (BuildingType.Fisher, 0x42e0c5),
+        (BuildingType.Farm, 0x42e26b),
+        (BuildingType.Butcher, 0x42e1c0),
+        (BuildingType.PigFarm, 0x42e107),
+        (BuildingType.Mill, 0x42e2d2),
+        (BuildingType.Baker, 0x42e38b),
     ];
 
     /// <summary>The address of the builder's order of materials: a 16-bit word for each building type 0 to 0x17, a set bit meaning a stone (<c>0x43f0ba</c>).</summary>
@@ -299,6 +394,7 @@ static class ProgramTablesImporter
             GoodClasses(Slice(exe, GoodClassAddress, 2 * RuleTables.GoodClassCount)),
             [.. DistributionAddresses.Select(address => DistributionOrder(exe, address))],
             PlankRankBase(exe),
+            MillRankBase(exe),
             Workers(exe),
             [.. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
@@ -458,6 +554,44 @@ static class ProgramTablesImporter
         );
 
         return Slice(exe, PlankRankAddress + 2, 2)[1];
+    }
+
+    // The rank the mill's request for grain starts from: the high byte of the word the player setup loads and stores at +0x15a of the
+    // player block (0x44579c: mov ax, imm16; mov ebx, [edi+0x30]; mov [ebx+0x15a], ax).
+    static byte MillRankBase(byte[] exe)
+    {
+        Expect(exe, MillRankAddress, [0x66, 0xb8], "loads the word of the player's default");
+        Expect(
+            exe,
+            MillRankAddress + 4,
+            [0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x5a, 0x01, 0x00, 0x00],
+            "stores the word at +0x15a of the player block"
+        );
+
+        return Slice(exe, MillRankAddress + 2, 2)[1];
+    }
+
+    // The rank the pig farm's request for grain starts from: the high byte of the word the player setup loads and stores at +0x158 of the
+    // player block (0x44579c: mov ax, imm16; mov ebx, [edi+0x30]; mov [ebx+0x158], ax).
+    internal static byte PigRankBase(byte[] exe)
+    {
+        Expect(exe, PigRankAddress, [0x66, 0xb8], "loads the word of the player's default");
+        Expect(
+            exe,
+            PigRankAddress + 4,
+            [0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x58, 0x01, 0x00, 0x00],
+            "stores the word at +0x158 of the player block"
+        );
+
+        return Slice(exe, PigRankAddress + 2, 2)[1];
+    }
+
+    // The words of the pig growth table (0x433684), where the pig farmer's work ends at the address.
+    internal static ImmutableArray<ushort> PigGrowth(byte[] exe)
+    {
+        var bytes = Slice(exe, PigGrowthAddress, 2 * PigGrowthCount);
+
+        return [.. Enumerable.Range(0, PigGrowthCount).Select(i => BitConverter.ToUInt16(bytes, 2 * i))];
     }
 
     internal static ushort Immediate(byte[] exe, int address)

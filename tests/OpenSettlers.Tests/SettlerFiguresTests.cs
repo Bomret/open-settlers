@@ -42,9 +42,9 @@ public sealed class SettlerFiguresTests
         Cutting = 0x0e80,
     };
 
-    // The adds of the handler of the settler of the type 1 hut (0x43fed8), with made-up rows: 0x11 for the walk, 0x12 for the
-    // way back with a load, 0x13 and 0x14 for a figure byte from 0x80.
-    static readonly HutFigureAdds HutAdds = new()
+    // The adds of the fisher's handler (0x43fed8), with made-up rows: 0x11 for the walk, 0x12 for the way back with a load, 0x13 and
+    // 0x14 for a figure byte from 0x80.
+    static readonly FisherFigureAdds HutAdds = new()
     {
         Walk = 0x1100,
         Carrying = 0x1200,
@@ -117,6 +117,25 @@ public sealed class SettlerFiguresTests
         bases[2 * 0x1c] = 1600;
         bases[2 * 0x1c + 1] = -1;
 
+        // The miller's rows (0x4400d3): 0x1d for the walk, 0x1e for the step that takes the flour out, and 0x20 for a figure byte from
+        // 0x80 (made up).
+        bases[2 * 0x1d] = 1700;
+        bases[2 * 0x1d + 1] = -1;
+        bases[2 * 0x1e] = 1800;
+        bases[2 * 0x1e + 1] = -1;
+        bases[2 * 0x20] = 2000;
+        bases[2 * 0x20 + 1] = -1;
+
+        // The baker's, the butcher's, and the pig farmer's rows (0x440112, 0x43ff90, 0x43ff56): 0x21 for the walk, 0x22 for the step that takes the
+        // bread, the meat, or the pig out, and 0x24 for a figure byte from
+        // 0x80 (made up).
+        bases[2 * 0x21] = 2100;
+        bases[2 * 0x21 + 1] = -1;
+        bases[2 * 0x22] = 2200;
+        bases[2 * 0x22 + 1] = -1;
+        bases[2 * 0x24] = 2400;
+        bases[2 * 0x24 + 1] = -1;
+
         return TablesOf(
             bases,
             offsets,
@@ -127,7 +146,11 @@ public sealed class SettlerFiguresTests
             Idle(),
             BuilderAdds,
             digger: DiggerAdds,
-            sawmiller: SawmillerAdds
+            sawmiller: SawmillerAdds,
+            miller: MillerAdds,
+            baker: BakerAdds,
+            butcher: ButcherAdds,
+            pigFarmer: PigFarmerAdds
         );
     }
 
@@ -139,13 +162,18 @@ public sealed class SettlerFiguresTests
         byte[] sequences,
         short[]? carried = null,
         FigureAdds woodcutter = default,
-        HutFigureAdds typeOneHut = default,
+        FisherFigureAdds typeOneHut = default,
         (short[] Phases, short[] Figures, sbyte[] Offsets)? idle = null,
         BuilderFigureAdds builder = default,
         FigureAdds stonecutter = default,
         ForesterFigureAdds forester = default,
         FigureAdds digger = default,
-        SawmillerFigureAdds sawmiller = default
+        SawmillerFigureAdds sawmiller = default,
+        FoodHutFigureAdds miller = default,
+        FarmerFigureAdds farmer = default,
+        FoodHutFigureAdds baker = default,
+        FoodHutFigureAdds butcher = default,
+        FoodHutFigureAdds pigFarmer = default
     ) =>
         new(
             new RuleTables(
@@ -165,7 +193,12 @@ public sealed class SettlerFiguresTests
                     (new Builder(), builder),
                     (new Forester(), forester),
                     (new Sawmiller(), sawmiller),
-                    (new TypeOneHut(), typeOneHut),
+                    (new Miller(), miller),
+                    (new Fisher(), typeOneHut),
+                    (new Farmer(), farmer),
+                    (new Baker(), baker),
+                    (new Butcher(), butcher),
+                    (new PigFarmer(), pigFarmer),
                 ]
             ),
             sequences
@@ -178,6 +211,42 @@ public sealed class SettlerFiguresTests
         Walk = 0x1900,
         Carrying = 0x1a00,
         Saw = 0x1b80,
+    };
+
+    // The adds of the miller's handler (0x4400d3), made up: 0x1d00 for a figure byte below 0x80, 0x1e00 for the step that takes the flour
+    // out, and 0x1f80 from 0x80 on.
+    static readonly FoodHutFigureAdds MillerAdds = new()
+    {
+        Walk = 0x1d00,
+        Carrying = 0x1e00,
+        Work = 0x1f80,
+    };
+
+    // The adds of the baker's handler (0x440112), made up: 0x2100 for a figure byte below 0x80, 0x2200 for the step that takes the bread
+    // out, and 0x2380 from 0x80 on.
+    static readonly FoodHutFigureAdds BakerAdds = new()
+    {
+        Walk = 0x2100,
+        Carrying = 0x2200,
+        Work = 0x2380,
+    };
+
+    // The adds of the butcher's handler (0x43ff90), made up: 0x2100 for a figure byte below 0x80, 0x2200 for the step that takes the meat
+    // out, and 0x2380 from 0x80 on.
+    static readonly FoodHutFigureAdds ButcherAdds = new()
+    {
+        Walk = 0x2100,
+        Carrying = 0x2200,
+        Work = 0x2380,
+    };
+
+    // The adds of the pig farmer's handler (0x43ff56), made up: 0x2100 for a figure byte below 0x80, 0x2200 for the step that takes the pig
+    // out, and 0x2380 from 0x80 on.
+    static readonly FoodHutFigureAdds PigFarmerAdds = new()
+    {
+        Walk = 0x2100,
+        Carrying = 0x2200,
+        Work = 0x2380,
     };
 
     // The adds of the digger's handler (0x43fa87), made up: 0x1700 for a figure byte below 0x80 and 0x1780 from there on.
@@ -439,10 +508,10 @@ public sealed class SettlerFiguresTests
         CollectionAssert.AreEqual(new[] { 2353, 3003 }, draws.Select(d => d.Entry).ToArray());
     }
 
-    // The handler of the settler of the type 1 hut (0x43fed8) adds, for a figure byte below 0x80, 0x2c00 or 0x2f00 on the way back
-    // with a load and, from 0x80, 0x2c80 or, where the heading (byte 14) is 1, 0x2d80; the rows here are made up.
+    // The fisher's handler (0x43fed8) adds, for a figure byte below 0x80, 0x2c00 or 0x2f00 on the way back with a fish and, from
+    // 0x80, 0x2c80 or, where byte 14 is 1 (a catch), 0x2d80; the rows here are made up.
     static Settler Hut(int frame, Activity? activity = null) =>
-        new(new TypeOneHut(), 0, 4, 3, 0, activity ?? ActivityOf(2)) { Frame = frame };
+        new(new Fisher(), 0, 4, 3, 0, activity ?? ActivityOf(2)) { Frame = frame };
 
     // The free walk back to the hut's flag, with the log in the woodcutter's hands or without it.
     static Activity WayBack(bool carrying) =>
@@ -455,26 +524,26 @@ public sealed class SettlerFiguresTests
             },
         };
 
-    // The woodcutter's cut at the step `count`.
-    static Activity Cut(int count) =>
-        new Cuts
+    // The fisher's cast, with a fish caught or not.
+    static Activity Cast(bool caught) =>
+        new Fishes
         {
             Back = new Vector(0, 0),
-            SecondVariant = false,
-            Count = count,
-            Memory = 0,
+            Turns = 1,
+            Caught = caught,
+            Casts = 1,
         };
 
     [TestMethod]
-    public void TheSettlerOfTheTypeOneHutIsDrawnInTheRowsOfHisHandler()
+    public void TheFisherIsDrawnInTheRowsOfHisHandler()
     {
         var figures = Figures();
         var map = Map();
 
         var walk = figures.Draws(map, [Hut(7)], 0).Select(d => d.Entry).ToArray();
         var back = figures.Draws(map, [Hut(7, WayBack(true))], 0).Select(d => d.Entry).ToArray();
-        var high = figures.Draws(map, [Hut(8, Cut(0))], 0).Select(d => d.Entry).ToArray();
-        var highFacing = figures.Draws(map, [Hut(8, Cut(1))], 0).Select(d => d.Entry).ToArray();
+        var high = figures.Draws(map, [Hut(8, Cast(false))], 0).Select(d => d.Entry).ToArray();
+        var highFacing = figures.Draws(map, [Hut(8, Cast(true))], 0).Select(d => d.Entry).ToArray();
 
         // Figure byte 3 in the row 0x11 (base 600), in the row 0x12 (700) on the way back; byte 0x81 makes the word 0x1301 in the
         // row 0x13 (800), or 0x1401 in the row 0x14 (900), with the offset 1.
@@ -740,6 +809,110 @@ public sealed class SettlerFiguresTests
         CollectionAssert.AreEqual(new[] { 3353, 4003 }, carries);
         CollectionAssert.AreEqual(new[] { 3451, 4101 }, saws);
         Assert.IsEmpty(waits);
+    }
+
+    [TestMethod]
+    public void AMillerWalkingGrindingAndCarryingFlourOutIsDrawnInTheRowsOfHisHandlerAndNotWhereHeWaitsOrPauses()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Miller(int frame, Activity activity) =>
+            new(new Miller(), 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Miller(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var grinds = figures.Draws(map, [Miller(8, new Grinds { Phase = 1 })], 0).Select(d => d.Entry).ToArray();
+        var carries = figures
+            .Draws(map, [Miller(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Flour } })], 0)
+            .Select(d => d.Entry)
+            .ToArray();
+
+        // Figure byte 3 in the row 0x1d (base 1700) for the walk and in the row 0x1e (base 1800) for the step with the flour, figure byte
+        // 0x81 in the work state: the word 0x1f80 + 0x81 = 0x2001, the row 0x20 (base 2000) and the offset 1. Waiting for grain, or
+        // pausing with the node free, he is not drawn.
+        CollectionAssert.AreEqual(new[] { 3553, 4203 }, walk);
+        CollectionAssert.AreEqual(new[] { 3653, 4303 }, carries);
+        CollectionAssert.AreEqual(new[] { 3851, 4501 }, grinds);
+        Assert.IsEmpty(figures.Draws(map, [Miller(8, new Grinds { Phase = 0 })], 0));
+        Assert.IsEmpty(figures.Draws(map, [Miller(8, new Grinds { Phase = 2 })], 0));
+        Assert.AreEqual(3851, figures.Draws(map, [Miller(8, new Grinds { Phase = 3 })], 0).First().Entry);
+        Assert.IsEmpty(figures.Draws(map, [Miller(8, new Grinds { Phase = 4 })], 0));
+    }
+
+    [TestMethod]
+    public void ABakerWalkingBakingAndCarryingBreadOutIsDrawnInTheRowsOfHisHandlerAndNotWhereHeWaitsOrPauses()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Baker(int frame, Activity activity) =>
+            new(new Baker(), 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Baker(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var bakes = figures.Draws(map, [Baker(8, new Bakes { Phase = 1 })], 0).Select(d => d.Entry).ToArray();
+        var carries = figures
+            .Draws(map, [Baker(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Bread } })], 0)
+            .Select(d => d.Entry)
+            .ToArray();
+
+        // Figure byte 3 in the row 0x21 (base 2100) for the walk and in the row 0x22 (base 2200) for the step with the bread, figure byte
+        // 0x81 in the work state: the word 0x2380 + 0x81 = 0x2401, the row 0x24 (base 2400) and the offset 1. Waiting for flour, or
+        // pausing with the node free, he is not drawn.
+        CollectionAssert.AreEqual(new[] { 3953, 4603 }, walk);
+        CollectionAssert.AreEqual(new[] { 4053, 4703 }, carries);
+        CollectionAssert.AreEqual(new[] { 4251, 4901 }, bakes);
+        Assert.IsEmpty(figures.Draws(map, [Baker(8, new Bakes { Phase = 0 })], 0));
+        Assert.IsEmpty(figures.Draws(map, [Baker(8, new Bakes { Phase = 2 })], 0));
+    }
+
+    [TestMethod]
+    public void AButcherWalkingWorkingAndCarryingMeatOutIsDrawnInTheRowsOfHisHandlerAndNotWhereHeWaitsForAPig()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler Butcher(int frame, Activity activity) =>
+            new(new Butcher(), 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [Butcher(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var works = figures.Draws(map, [Butcher(8, new Butchers { Working = true })], 0).Select(d => d.Entry).ToArray();
+        var carries = figures
+            .Draws(map, [Butcher(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Meat } })], 0)
+            .Select(d => d.Entry)
+            .ToArray();
+
+        // The same figure bytes as the miller's, in the butcher's rows: byte 3 in the row 0x21 (base 2100) for the walk and in the row 0x22
+        // (base 2200) for the step with the meat, byte 0x81 in the work state: the word 0x2380 + 0x81 = 0x2401, the row 0x24 (base 2400).
+        CollectionAssert.AreEqual(new[] { 3953, 4603 }, walk);
+        CollectionAssert.AreEqual(new[] { 4053, 4703 }, carries);
+        CollectionAssert.AreEqual(new[] { 4251, 4901 }, works);
+        Assert.IsEmpty(figures.Draws(map, [Butcher(8, new Butchers { Working = false })], 0));
+    }
+
+    [TestMethod]
+    public void APigFarmerWalkingWorkingAndCarryingAPigOutIsDrawnInTheRowsOfHisHandlerAndNotWhereHeWaitsOrPauses()
+    {
+        var figures = Figures();
+        var map = Map();
+        Settler PigFarmer(int frame, Activity activity) =>
+            new(new PigFarmer(), 0, 4, 3, 0, activity) { Frame = frame, Timer = 0 };
+
+        var walk = figures.Draws(map, [PigFarmer(7, ActivityOf(2))], 0).Select(d => d.Entry).ToArray();
+        var works = figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 1 })], 0).Select(d => d.Entry).ToArray();
+        var carries = figures
+            .Draws(map, [PigFarmer(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Pig } })], 0)
+            .Select(d => d.Entry)
+            .ToArray();
+
+        // Figure byte 3 in the row 0x21 (base 2100) for the walk and in the row 0x22 (base 2200) for the step with the pig, figure byte
+        // 0x81 in the work state: the word 0x2380 + 0x81 = 0x2401, the row 0x24 (base 2400) and the offset 1. Waiting for grain, or
+        // pausing with the node free, he is not drawn; he is drawn in each stretch that works (1, 3, and 5).
+        CollectionAssert.AreEqual(new[] { 3953, 4603 }, walk);
+        CollectionAssert.AreEqual(new[] { 4053, 4703 }, carries);
+        CollectionAssert.AreEqual(new[] { 4251, 4901 }, works);
+        Assert.IsEmpty(figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 0 })], 0));
+        Assert.IsEmpty(figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 2 })], 0));
+        Assert.AreEqual(4251, figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 3 })], 0).First().Entry);
+        Assert.IsEmpty(figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 4 })], 0));
+        Assert.AreEqual(4251, figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 5 })], 0).First().Entry);
+        Assert.IsEmpty(figures.Draws(map, [PigFarmer(8, new TendsPigs { Phase = 6 })], 0));
     }
 
     [TestMethod]

@@ -52,6 +52,11 @@ public sealed record PlayState
     /// <summary>The castle's stone count, 0 before a castle stands; null in the map view.</summary>
     public int? Stones { get; init; } = null;
 
+    /// <summary>
+    /// The castle's count of each food good, in the order of <see cref="PlayFields.Food"/> (<c>Good.Foods</c>); null in the map view.
+    /// </summary>
+    public IReadOnlyList<int>? Food { get; init; } = null;
+
     /// <summary>The decimals zoom is written with and compared at.</summary>
     public const int ZoomDecimals = 4;
 
@@ -169,6 +174,8 @@ public sealed record PlayState
             PlayFields.Logs => Logs ?? throw new InvalidOperationException("the map view has no logs"),
             PlayFields.Planks => Planks ?? throw new InvalidOperationException("the map view has no planks"),
             PlayFields.Stones => Stones ?? throw new InvalidOperationException("the map view has no stones"),
+            _ when Array.IndexOf(PlayFields.Food, field) is >= 0 and var food => Food?[food]
+                ?? throw new InvalidOperationException($"the map view has no {field}"),
             _ when PlayFields.FlagNode(field) is { } node => FlagGoods?.GetValueOrDefault(node)
                 ?? throw new InvalidOperationException("the map view has no flag goods"),
             _ => throw new ArgumentOutOfRangeException(nameof(field), field, "no numeric play field"),
@@ -234,7 +241,7 @@ public static class PlayFields
     public const string Stones = "stones";
 
     /// <summary>
-    /// The game's digest (<c>Game.Digest()</c>) as 16 hex digits, in the game view's dump only after <see cref="Stones"/>. A
+    /// The game's digest (<c>Game.Digest()</c>) as 16 hex digits, in the game view's dump after the last game field. A
     /// dump only: no <c>expect</c> step names it.
     /// </summary>
     public const string Digest = "digest";
@@ -242,8 +249,14 @@ public static class PlayFields
     /// <summary>Every field of both views, in the order a dump lists them.</summary>
     public static readonly string[] All = [CameraX, CameraY, Zoom, Seed, Size];
 
-    /// <summary>The fields the game view dumps after <see cref="All"/>.</summary>
-    public static readonly string[] Game = [Ticks, Logs, Planks, Stones];
+    /// <summary>
+    /// The castle's counts of the food goods 1 to 6 (<c>Good.Foods</c>: fish, pig, meat, grain, flour, bread), in the game view only.
+    /// The field of the pig is <c>pigs</c>. The castle bar writes each field's word with a capital.
+    /// </summary>
+    public static readonly string[] Food = ["fish", "pigs", "meat", "grain", "flour", "bread"];
+
+    /// <summary>The fields the game view dumps after <see cref="All"/>: the log, plank, and stone counts, then <see cref="Food"/>.</summary>
+    public static readonly string[] Game = [Ticks, Logs, Planks, Stones, .. Food];
 
     /// <summary>
     /// The start of the field of a flag's goods, in the game view only: <c>flag-goods:&lt;column&gt;,&lt;row&gt;</c> is the

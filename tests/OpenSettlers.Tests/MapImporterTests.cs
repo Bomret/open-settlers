@@ -97,16 +97,16 @@ public sealed class MapImporterTests
     public void AnObjectCodeTheEngineHasNoNameForSurvivesImportAndExportAsItsRawValue()
     {
         var layers = new MapLayers(MapSize.Offered[0]);
-        layers.Bytes(MapLayer.Object)[5] = 0x7e;
-        layers.Bytes(MapLayer.Object)[6] = 0xfd;
+        layers.Bytes(MapLayer.Object)[5] = 0x7f;
+        layers.Bytes(MapLayer.Object)[6] = 0xa1;
 
         var map = MapImporter.Import(layers);
 
-        Assert.AreEqual((MapObjectKind.Other, (byte)0x7e), (map.At(5).Object.Kind, map.At(5).Object.Code));
-        Assert.AreEqual((MapObjectKind.Other, (byte)0x7d), (map.At(6).Object.Kind, map.At(6).Object.Code));
+        Assert.AreEqual((MapObjectKind.Other, (byte)0x7f), (map.At(5).Object.Kind, map.At(5).Object.Code));
+        Assert.AreEqual((MapObjectKind.Other, (byte)0x21), (map.At(6).Object.Kind, map.At(6).Object.Code));
         Assert.IsTrue(map.At(6).WaterTriangle);
         var exported = MapLayerExporter.Export(map).Layer(MapLayer.Object);
-        Assert.AreEqual((0x7e, 0xfd), ((int)exported[5], (int)exported[6]));
+        Assert.AreEqual((0x7f, 0xa1), ((int)exported[5], (int)exported[6]));
     }
 
     [TestMethod]

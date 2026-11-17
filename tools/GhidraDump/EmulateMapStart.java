@@ -72,7 +72,8 @@
 //                            worker for the woodcutter (docs/rules/woodcutting.md): the passes also run the map object pass
 //                            0x428d10 after 0x428728, as the main loop 0x4286d8 does, the hut node and its flag take the marks the castle leaves, and a line per pass also lists the object
 //                            bytes that changed (o=x,y:old>new;...), the flag bytes (byte 0 of record A) that changed
-//                            (fl=x,y:old>new;...), the flag items of slots 0 to 15 that changed (f<slot>=), and
+//                            (fl=x,y:old>new;...), the lake details (byte 0 of record B) that changed (ld=x,y:old>new;...),
+//                            the flag items of slots 0 to 15 that changed (f<slot>=), and
 //                            the random generator's words (rng=) when they moved. A building of type 2 is the woodcutter's hut.
 //                            worker, wood, and goods lines also carry m= as carrier does.
 //   goods:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PUT;PUT...[:SET;SET...]]]]
@@ -84,15 +85,22 @@
 //                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The SET field writes an object code into
 //                            a node's object byte before a pass (bit 7 of the byte kept): each SET is PASS,X,Y,CODE with the
 //                            code in decimal, as a stone heap's stage is set for the stonecutter's scenarios
-//                            (docs/rules/stonecutting.md). A building of type 17 (the sawmill) is a large building: its node takes
+//                            (docs/rules/stonecutting.md). A SET of the form ld@PASS,X0,Y0,X1,Y1,VALUE writes a lake detail
+//                            (byte 0 of record B) into every node of the rectangle before a pass (docs/rules/fishing.md). A building of type 17 (the sawmill) or 12 (the farm) is a large building: its node takes
 //                            the object code 3 and its item the pointer to its flag at +0xe that a built site leaves (0x43ef82),
-//                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). The lines also list the castle's item
+//                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). A building of type 15 (the mill) is a
+//                            small building with the same pointer, which its handler 0x42e2a0 reads (docs/rules/milling.md); a building of type 16 (the baker) is a
+//                            large building with it too, which its handler 0x42e37e reads (docs/rules/baking.md); a building of type 13 (the butcher) is a large building with
+//                            the pointer too, which its handler 0x42e1b3 reads (docs/rules/butchering.md); a building of type 14 (the pig farm) is a large one with it, read by
+//                            its handler 0x42e0fa (docs/rules/pig-farming.md). The lines also list the castle's item
 //                            (c=) where it changed, and the start lines the castle's item and the transport priorities
 //                            (prio=, 32 bytes for the goods 0 to 31) that the flag exchange reads (0x43b054). Before the
 //                            castle the verb runs 0x445570 on the player block, as the player setup of a new game (0x42055e)
 //                            does, so the priorities hold the original's default ranks; it then runs 0x445752, which writes the
 //                            player words at +0x148 to +0x150 (the high byte of the word at +0x148 is the rank a building site's
-//                            request for planks starts from, docs/rules/construction-materials.md)
+//                            request for planks starts from, docs/rules/construction-materials.md), and 0x44579c, which writes the
+//                            words at +0x152 to +0x15a (the high byte of the word at +0x15a is the rank the mill's request for
+//                            grain starts from, docs/rules/milling.md)
 //   carrier:N:S0,S1,S2:L:cx,cy:x,y;...:sx,sy,D;...:PASSES[:sx,sy,D;...:AT]
 //                            the passes of worker (docs/rules/carriers.md) on a game with a castle, flags, and roads and no
 //                            building: what the flag slice does for the roads, and the carriers. A line per pass
@@ -116,7 +124,7 @@
 //                            state byte and mode byte (+0xb) instead of 0x1c, to reach a branch the teardown does not (state 0x19 with
 //                            mode 1 searches the spiral from its far end). With WATCH (a settler slot) the lines also list that
 //                            settler's 16 bytes (o=) when they changed, for a settler the walk meets (a carrier on the road).
-//   remove:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
+//   remove:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS[:SETS]]
 //                            the removal clicks (docs/rules/removal.md) in a game that starts as the original's start leaves its
 //                            tables (the dummies of the flag and building tables are taken and the default transport priorities
 //                            written, as for goods, with the prio= start line): a castle at cx,cy, the
@@ -132,7 +140,8 @@
 //                            storage's stock word of the good G set to N (a stock written by hand). The sound
 //                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
-//                            before that pass, as goods does, with the destination word DEST. A line per click and per pass lists
+//                            before that pass, as goods does, with the destination word DEST. SETS (PASS,X,Y,CODE;...) write an object
+//                            code into a node's object byte before that pass, as the SET field of goods does (a field ripe in the farmer's reach). A line per click and per pass lists
 //                            what changed: the map bytes of flags, object, link, and the waiting carrier's mark (record B byte 1,
 //                            i=5) (m=x,y:i=old>new), the heights of the nodes (h=x,y:old>new), the settlers (s<slot>=, 16
 //                            bytes), the flag items (f<slot>=, 70 bytes), the building items (b<slot>=, 18 bytes), the storage item
@@ -182,6 +191,8 @@ public class EmulateMapStart extends GhidraScript {
             String rest = command.substring(colon + 1);
             emu = new EmulatorHelper(currentProgram);
             try {
+                castleOffAt = -1; // no verb inherits the castle-off part of an earlier one (see withoutCastleOff)
+                passesRun = 0;
                 switch (name) {
                     case "rng" -> rng(rest);
                     case "steps" -> steps(rest);
@@ -1055,6 +1066,7 @@ public class EmulateMapStart extends GhidraScript {
         if (defaultPriorities) {
             call(0x445570);
             call(0x445752);
+            call(0x44579c);
         }
         if (phaseRoutine) {
             // The clock step (+0x1fe, 2.0 while the clock runs) that the phase 32 routine tests.
@@ -1106,14 +1118,28 @@ public class EmulateMapStart extends GhidraScript {
     // The sawmill's building type, a large building (size table 0x42d307).
     private static final int SAWMILL = 17;
 
-    // What a placed building holds beyond the small building's: the object code at the node (2 for a small building, 3 for a large one,
-    // its top bit kept) and, for the sawmill, the flag pointer a building holds at +0xe once its site is built (0x43ef82), through which
-    // the sawmill's handler (0x42da0b) keeps its log request's rank.
+    // The mill's building type, a small building (size table 0x42d307) whose handler (0x42e2a0) reads the flag pointer too.
+    private static final int MILL = 15;
+    // The farm's building type, a large building (size table 0x42d307): its node takes the object code 3, which the farmer's search for a
+    // node to sow reads on the six nodes around a candidate (0x433b35).
+    private static final int FARM = 0xc;
+    // The butcher's building type, a large building whose handler (0x42e1b3) reads the flag pointer at +0xe too.
+    private static final int BUTCHER = 0xd;
+
+    // The baker's building type, a large building (size table 0x42d307) whose handler (0x42e37e) reads the flag pointer too.
+    private static final int BAKER = 16;
+
+    // The pig farm's building type, a large building (size table 0x42d307) whose handler (0x42e0fa) reads the flag pointer too.
+    private static final int PIG_FARM = 14;
+
+    // What a placed building holds beyond the small building's: the object code at the node (2 for a small building, 3 for a large one such as the sawmill, the farm, the baker,
+    // the butcher's shop, and the pig farm, its top bit kept) and, for the sawmill, the mill, the baker, the butcher's shop, and the pig farm, the flag pointer a building holds at +0xe once its site is built
+    // (0x43ef82), through which the handlers (0x42da0b, 0x42e2a0, 0x42e37e, 0x42e1b3, 0x42e0fa) keep their request's rank.
     private void markBuilding(int type, long item, long flag, long codeAddress) throws Exception {
-        if (type == SAWMILL) {
+        if (type == SAWMILL || type == MILL || type == BAKER || type == BUTCHER || type == PIG_FARM) {
             putInt(item + 0xe, flag);
         }
-        emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL ? 3 : 2))});
+        emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL || type == FARM || type == BAKER || type == BUTCHER || type == PIG_FARM ? 3 : 2))});
     }
 
     /** Draws one road as road does, silently: a start flag and its directions; returns whether it was built. */
@@ -1198,7 +1224,7 @@ public class EmulateMapStart extends GhidraScript {
      */
     protected void worker(String rest, boolean wood) throws Exception {
         objectPass = wood;
-        String[] parts = rest.split(":");
+        String[] parts = withoutCastleOff(rest.split(":"));
         String label = "worker size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
         int[] size = startWorld(parts, label);
         if (size == null) {
@@ -1286,6 +1312,22 @@ public class EmulateMapStart extends GhidraScript {
             for (String text : sets) {
                 // An object code written by hand into a node's object byte before a pass (bit 7 of the byte kept): PASS,X,Y,CODE
                 // with the code in decimal (a stone heap's code is 72 to 79).
+                if (text.startsWith("ld@")) {
+                    // Lake details written by hand into a rectangle of nodes before a pass: ld@PASS,X0,Y0,X1,Y1,VALUE (corners
+                    // included, the value in decimal), as the fisher's scenario of a lake with no fish has them. The byte is the
+                    // link of a flag or building node, so the rectangle must hold none.
+                    String[] lake = text.substring(3).split(",");
+                    if (pass != Integer.parseInt(lake[0])) {
+                        continue;
+                    }
+                    for (int ly = Integer.parseInt(lake[2]); ly <= Integer.parseInt(lake[4]); ly++) {
+                        for (int lx = Integer.parseInt(lake[1]); lx <= Integer.parseInt(lake[3]); lx++) {
+                            long detail = layerA + layerB + ((((long) ly << bits) + lx) * 4);
+                            emu.writeMemory(toAddr(detail), new byte[] {(byte) Integer.parseInt(lake[5])});
+                        }
+                    }
+                    continue;
+                }
                 String[] set = text.split(",");
                 if (pass != Integer.parseInt(set[0])) {
                     continue;
@@ -1340,6 +1382,20 @@ public class EmulateMapStart extends GhidraScript {
                 }
                 if (flagBytes.length() > 0) {
                     line.append(" fl=").append(flagBytes);
+                }
+                // ld= lists the nodes whose byte 0 of record B (the lake detail of a lake's middle, docs/rules/fishing.md) changed.
+                StringBuilder lakeBytes = new StringBuilder();
+                for (int ty = 0; ty < height; ty++) {
+                    for (int tx = 0; tx < width; tx++) {
+                        int at = ty * 8 * width + (width + tx) * 4;
+                        if (mapNow[at] != mapSeen[at]) {
+                            lakeBytes.append(lakeBytes.length() == 0 ? "" : ";").append(tx).append(",").append(ty).append(":")
+                                    .append(String.format("%02X>%02X", mapSeen[at] & 0xff, mapNow[at] & 0xff));
+                        }
+                    }
+                }
+                if (lakeBytes.length() > 0) {
+                    line.append(" ld=").append(lakeBytes);
                 }
                 mapSeen = mapNow.clone();
                 byte[] flagsNow = emu.readMemory(toAddr(TABLES), ITEM_SIZE * 16);
@@ -1540,7 +1596,7 @@ public class EmulateMapStart extends GhidraScript {
      */
     protected void remove(String rest) throws Exception {
         objectPass = true;
-        String[] parts = rest.split(":");
+        String[] parts = withoutCastleOff(rest.split(":"));
         String label = "remove size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2];
         int[] size = startWorld(parts, label);
         if (size == null) {
@@ -1602,8 +1658,19 @@ public class EmulateMapStart extends GhidraScript {
             clicksAt.computeIfAbsent(when, key -> new java.util.ArrayList<>()).add(spec.substring(equals + 1));
         }
 
+        String[] sets = parts.length > 11 && !parts[11].isEmpty() ? parts[11].split(";") : new String[0];
         int clock = 0;
         for (int pass = 0; pass < passes; pass++) {
+            for (String text : sets) {
+                // An object code written by hand into a node's object byte before a pass, as goods does: PASS,X,Y,CODE.
+                String[] set = text.split(",");
+                if (pass != Integer.parseInt(set[0])) {
+                    continue;
+                }
+                long setAt = layerA + (((long) Integer.parseInt(set[2]) << bits) + Integer.parseInt(set[1])) * 4 + 3;
+                int kept = emu.readMemory(toAddr(setAt), 1)[0] & 0x80;
+                emu.writeMemory(toAddr(setAt), new byte[] {(byte) (kept | Integer.parseInt(set[3]))});
+            }
             if (clicksAt.containsKey(pass)) {
                 for (String click : clicksAt.get(pass)) {
                     String kind = click.substring(0, 1);
@@ -1949,8 +2016,8 @@ public class EmulateMapStart extends GhidraScript {
 
     /**
      * Whether startWorld runs the default transport priority routine 0x445570 on the player block, as the player setup of a new
-     * game (0x42055e) does: it writes the rank of each good 1 to 26 at the player's block -0x55 + good. It also runs 0x445752,
-     * the next default routine of that setup (the words at +0x148 to +0x150).
+     * game (0x42055e) does: it writes the rank of each good 1 to 26 at the player's block -0x55 + good. It also runs 0x445752 and
+     * 0x44579c, the next default routines of that setup (the words at +0x148 to +0x150 and at +0x152 to +0x15a).
      */
     protected boolean defaultPriorities;
 
@@ -1968,7 +2035,34 @@ public class EmulateMapStart extends GhidraScript {
      */
     protected boolean reserveBuildingZero;
 
+    // The castle's handler (building type 0x18, 0x42e7e0, not ported) sets the scratch word [EDI+0x30] to a map-table address on every
+    // turn, and the pig farm's handler (0x42e0fa, which has no preamble of its own) reads its rank through that word as the handlers
+    // before it left it. In the original a pig farm whose handler runs after the castle's, with no handler between them that loads
+    // the player block, therefore reads its rank from unrelated memory (docs/rules/pig-farming.md). The engine does not model that
+    // value: it always reads the player word (a stand-in). The part "castle-off@PASS" of a goods or remove command makes the
+    // emulator take the player word, so the rest of the rule can be compared: it sets the castle's building type to 0, whose handler
+    // returns at once, for the building slice of each pass from that pass on (counted from the first pass the command runs); the
+    // type is back for the settler slice, which reads the door speed of the type.
+    private int castleOffAt = -1;
+    private int passesRun;
+
+    private String[] withoutCastleOff(String[] parts) {
+        castleOffAt = -1;
+        passesRun = 0;
+        java.util.List<String> kept = new java.util.ArrayList<>();
+        for (String part : parts) {
+            if (part.startsWith("castle-off@")) {
+                castleOffAt = Integer.parseInt(part.substring("castle-off@".length()));
+            } else {
+                kept.add(part);
+            }
+        }
+        return kept.toArray(new String[0]);
+    }
+
     private int simulationPass(int clock) throws Exception {
+        boolean castleOff = castleOffAt >= 0 && passesRun++ >= castleOffAt;
+        long castleType = getInt(STATE + 0x9c) + (reserveBuildingZero ? 0x12 : 0) + 4;
         putWord(STATE + CLOCK, clock);
         putInt(STATE + ELAPSED, 8);
         call(0x428728);
@@ -1981,7 +2075,14 @@ public class EmulateMapStart extends GhidraScript {
             call(0x42965c);
         }
         call(0x46414d);
+        byte[] kept = emu.readMemory(toAddr(castleType), 1);
+        if (castleOff) {
+            emu.writeMemory(toAddr(castleType), new byte[] {0});
+        }
         call(0x42cb2d);
+        if (castleOff) {
+            emu.writeMemory(toAddr(castleType), kept);
+        }
         call(0x42f3d9);
         return phase;
     }
