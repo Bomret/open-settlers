@@ -260,4 +260,20 @@ public sealed class MapViewStateTests
         Assert.IsNull(state.Map);
         StringAssert.Contains(state.Problem, "the program is unreadable");
     }
+
+    // A broken rule file of the basic set shows its file and key, and the view does not blame a program it never read.
+    [TestMethod]
+    public void ARuleFileThatFailsShowsItsFileAndKeyWithoutNamingAProgram()
+    {
+        var port = new FakeRuleTables(() =>
+            throw new InvalidDataException("rules/world.jsonc: stepTimes.-4: 0 is outside 1 to 65535")
+        );
+
+        var tables = MapViewState.ReadTables(port, out var problem);
+        var state = MapViewState.Open(tables, Seed, 1, problem);
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "rules/world.jsonc: stepTimes.-4: 0 is outside 1 to 65535");
+        Assert.DoesNotContain("program", state.Problem!);
+    }
 }

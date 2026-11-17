@@ -2,13 +2,14 @@
 # Runs a play script under Movie Maker, from the repository root, and reuses the stored result when its inputs
 # are unchanged:
 #   sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--content-set <set>] --fps <n> [--fresh] [--repro]
-# The script is play/<stem>.play and the install is SIEDLER_DIR. Without --game-view the map view runs;
+# The script is play/<stem>.play and the install is SIEDLER_DIR, which --content-set basic neither needs nor passes (the
+# result key and the Godot launch line then hold no install path). Without --game-view the map view runs;
 # --game-view runs the game view with --seed and --size; --layout runs the game view on the layout file and
 # implies --game-view (a layout holds its own seed and size, so --layout with --seed or --size exits 2, and so
 # does a missing layout file or an empty layout value). The input hash covers the mode, the layout's path and
 # content, the content and path of every tracked or untracked, not ignored file under src/, scenes/ and content/, the
 # project files (project.godot, OpenSettlers.csproj, global.json, Directory.Build.props), the play script, the seed, the size, the content set (history-edition when none is given), the
-# fps, the Godot version and the SIEDLER_DIR path. --content-set takes basic or history-edition, once. A result is stored in
+# fps, the Godot version and the SIEDLER_DIR path (not on the basic set). --content-set takes basic or history-edition, once. A result is stored in
 # play-out/.cache/<hash>/ only for exit status 0 or 1. Each call past the argument checks appends one line to
 # play-out/runs.log; the line names the mode (map or game-view), the layout, and the content set. Bad arguments exit 2 and leave no trace.
 # Calls for one stem run one at a time through the lock play-out/.lock-<stem>, which holds the owner's pid: a
@@ -105,7 +106,8 @@ if [ -n "$layout" ]; then
 fi
 script=play/$stem.play
 [ -f "$script" ] || usage "no play script $script"
-[ -n "${SIEDLER_DIR:-}" ] || usage "set SIEDLER_DIR to a History Edition install"
+# The basic content set reads no install: it needs no SIEDLER_DIR, passes no --game, and ignores the variable.
+[ "$content_set" = basic ] || [ -n "${SIEDLER_DIR:-}" ] || usage "set SIEDLER_DIR to a History Edition install, or run --content-set basic"
 mise=${PLAY_RUN_MISE:-mise}
 dotnet=${PLAY_RUN_DOTNET:-dotnet}
 
@@ -231,7 +233,8 @@ hash=$(
     echo "content-set ${content_set:-history-edition}"
     echo "fps $fps"
     echo "godot $version"
-    echo "siedler $SIEDLER_DIR"
+    # No install path on the basic set, so its result is the same whatever SIEDLER_DIR holds.
+    if [ "$content_set" = basic ]; then echo "siedler none"; else echo "siedler $SIEDLER_DIR"; fi
   } | git hash-object --stdin
 )
 
@@ -242,7 +245,8 @@ entry=$cache/$hash
 # Runs the play script under Godot with the arguments in $extra after it, writing into $out and the log into $log;
 # sets $status.
 play() {
-  set -- --path . --write-movie "$out/frame.png" --fixed-fps "$fps" -- --game "$SIEDLER_DIR"
+  set -- --path . --write-movie "$out/frame.png" --fixed-fps "$fps" --
+  [ "$content_set" = basic ] || set -- "$@" --game "$SIEDLER_DIR"
   if [ "$mode" = game-view ]; then set -- "$@" --game-view; else set -- "$@" --map; fi
   [ -n "$layout" ] && set -- "$@" --layout "$layout"
   [ -n "$seed" ] && set -- "$@" --seed "$seed"

@@ -724,7 +724,10 @@ public sealed class LaunchArgsTests
     [DataRow("--layout")]
     public void SiedlerDirInTheEnvironmentIsIgnoredOnTheBasicSet(string mode)
     {
-        var args = LaunchArgs.Parse(mode == "--layout" ? [mode, "a.jsonc", "--content-set", "basic"] : [mode, "--content-set", "basic"], "/env/install");
+        var args = LaunchArgs.Parse(
+            mode == "--layout" ? [mode, "a.jsonc", "--content-set", "basic"] : [mode, "--content-set", "basic"],
+            "/env/install"
+        );
 
         Assert.IsNull(args.Game);
         Assert.IsEmpty(args.Problems);

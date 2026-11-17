@@ -891,6 +891,55 @@ public class PlayRunWrapperTests
         CollectionAssert.DoesNotContain(Launch(), "--content-set");
     }
 
+    // The basic set reads no install: the wrapper neither requires SIEDLER_DIR nor passes --game, and the result does not depend
+    // on the variable, so a run with it unset and a run with it set share one stored result.
+    [TestMethod]
+    public void ABasicRunNeedsNoSiedlerDirPassesNoGameFlagAndStoresOneResultForAnyValue()
+    {
+        string[] Own = [.. Args, "--content-set", "basic"];
+        var unset = new Dictionary<string, string?> { ["SIEDLER_DIR"] = null };
+        var other = new Dictionary<string, string?> { ["SIEDLER_DIR"] = "/games/other" };
+
+        var (status, _, stderr) = Run(Own, unset);
+
+        Assert.AreEqual(0, status, stderr);
+        Assert.AreEqual(1, Calls);
+        CollectionAssert.DoesNotContain(File.ReadAllLines(Path.Combine(_fake, "args")), "--game");
+
+        var (reusedStatus, _, _) = Run(Own, other);
+        Assert.AreEqual(0, reusedStatus);
+        Assert.AreEqual(1, Calls, "a run with SIEDLER_DIR set did not reuse the result of a run with it unset");
+        Run(Own);
+        Assert.AreEqual(1, Calls, "a run with the install's own path did not reuse the stored result");
+        Assert.AreEqual(1, Directory.GetDirectories(Out(".cache")).Length, "one result is stored for every value");
+        CollectionAssert.AreEqual(new[] { "content-set=basic", "exit=0" }, LogLines[0].Split('\t')[10..12]);
+    }
+
+    [TestMethod]
+    public void ABasicRunPassesNoGameFlagWhereSiedlerDirIsSetToo()
+    {
+        Run([.. Args, "--content-set", "basic"]);
+
+        CollectionAssert.DoesNotContain(File.ReadAllLines(Path.Combine(_fake, "args")), "--game");
+        CollectionAssert.DoesNotContain(File.ReadAllLines(Path.Combine(_fake, "args")), Siedler);
+    }
+
+    [TestMethod]
+    public void AHistoryEditionRunStillNeedsSiedlerDirAndPassesItAsGame()
+    {
+        AssertUsageError(
+            Run(
+                [.. Args, "--content-set", "history-edition"],
+                new Dictionary<string, string?> { ["SIEDLER_DIR"] = null }
+            ),
+            "history edition, unset"
+        );
+
+        Run([.. Args, "--content-set", "history-edition"]);
+        var args = File.ReadAllLines(Path.Combine(_fake, "args"));
+        Assert.AreEqual(Siedler, args[Array.IndexOf(args, "--game") + 1]);
+    }
+
     // The two sets never share a result, and the default is the History Edition: naming it changes nothing. A
     // change to the basic set's files, a new file in it included, starts Godot again.
     [TestMethod]

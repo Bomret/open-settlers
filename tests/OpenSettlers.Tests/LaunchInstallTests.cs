@@ -54,10 +54,7 @@ public sealed class LaunchInstallTests
     public void SeedInfoOnTheBasicSetReadsTheRuleFilesAndNoInstall()
     {
         var missing = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        var args = LaunchArgs.Parse(
-            ["--seed-info", "--seed", "1234567812345678", "--content-set", "basic"],
-            missing
-        );
+        var args = LaunchArgs.Parse(["--seed-info", "--seed", "1234567812345678", "--content-set", "basic"], missing);
         Seed.TryParse("1234567812345678", out var seed, out _);
 
         var code = SeedInfo.Run(

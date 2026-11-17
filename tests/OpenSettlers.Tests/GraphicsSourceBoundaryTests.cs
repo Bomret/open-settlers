@@ -40,13 +40,23 @@ public sealed class GraphicsSourceBoundaryTests
         AssertMentions(path, []);
     }
 
-    // The settlers' step offsets come from the install under every graphics source (ADR 0014, Consequences; INV-0010): the
-    // class reads entry 2 of the graphics archive, and only through the one archive-entry helper of TerrainGraphics, which
-    // the terrain, road, object, and settler graphics read their entries through too.
+    // The settlers' step offsets of the History Edition come from the install (ADR 0014, Consequences; INV-0010): the class
+    // reads entry 2 of the graphics archive, and only through the one archive-entry helper of TerrainGraphics, which the
+    // terrain, road, object, and settler graphics read their entries through too. The exception holds for the History Edition
+    // only: the basic set brings its own walk steps (ADR 0018), and its class reads no archive and names no install.
     [TestMethod]
     public void TheStepOffsetsReadOnlyTheArchiveEntryOfTheWalkSequences()
     {
         AssertMentions("src/Import.HistoryEdition/StepOffsets.cs", ["TerrainGraphics"]);
+    }
+
+    [TestMethod]
+    public void TheBasicSetsWalkStepsReadNoArchiveEntryAndNameNoInstallOrHistoryEditionType()
+    {
+        var path = "src/Import.OpenSettlers/OpenSettlersWalkSteps.cs";
+
+        AssertMentions(path, []);
+        Assert.IsEmpty(HistoryEditionNames(Read(path)), $"{path} names a History Edition type");
     }
 
     [TestMethod]

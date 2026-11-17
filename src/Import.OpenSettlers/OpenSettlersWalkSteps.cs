@@ -86,7 +86,11 @@ public sealed class OpenSettlersWalkSteps : IWalkSteps
                 {
                     var pair = entry.Items(2);
 
-                    return new StepOffset { Dx = pair[0].Int(-MaxOffset, MaxOffset), Dy = pair[1].Int(-MaxOffset, MaxOffset) };
+                    return new StepOffset
+                    {
+                        Dx = pair[0].Int(-MaxOffset, MaxOffset),
+                        Dy = pair[1].Int(-MaxOffset, MaxOffset),
+                    };
                 }),
         ];
 }

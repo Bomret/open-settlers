@@ -163,12 +163,16 @@ public sealed class OpenSettlersWalkStepsTests
     }
 
     [TestMethod]
-    public void AMissingKeyIsRefusedAtThatKey() =>
-        Refuses("\"default\": \"still\",", "", "default", "missing");
+    public void AMissingKeyIsRefusedAtThatKey() => Refuses("\"default\": \"still\",", "", "default", "missing");
 
     [TestMethod]
     public void AMissingSequenceIsRefusedWhereAFrameNamesIt() =>
-        Refuses("\"east\": [[0, 8], [54, 62]],", "\"sprint\": [[0, 8], [54, 62]],", "frames.sprint", "unknown sequence");
+        Refuses(
+            "\"east\": [[0, 8], [54, 62]],",
+            "\"sprint\": [[0, 8], [54, 62]],",
+            "frames.sprint",
+            "unknown sequence"
+        );
 
     [TestMethod]
     public void ADefaultThatNamesNoSequenceIsRefused() =>
@@ -199,7 +203,12 @@ public sealed class OpenSettlersWalkStepsTests
 
     [TestMethod]
     public void ADuplicateKeyOfTheFileIsRefusedAtItsKey() =>
-        Refuses("\"default\": \"still\",", "\"default\": \"still\", \"default\": \"still\",", "default", "duplicate key");
+        Refuses(
+            "\"default\": \"still\",",
+            "\"default\": \"still\", \"default\": \"still\",",
+            "default",
+            "duplicate key"
+        );
 
     [TestMethod]
     [DataRow("[-4, 0], [-8, 0]", "[-4, 0], [-128, 0]", "sequences.east[2][0]", "-128 is outside -127 to 127")]
@@ -214,6 +223,10 @@ public sealed class OpenSettlersWalkStepsTests
     [DataRow("[[0, 8], [54, 62]]", "[[8, 0], [54, 62]]", "frames.east[0]", "runs backwards")]
     // The third case lets the east list reach frame 9, which the south-east list, read after it, lists again.
     [DataRow("[[0, 8], [54, 62]]", "[[0, 9], [54, 62]]", "frames.south-east[0]", "frame 9 is listed twice")]
-    public void AFrameOutOfRangeOrListedTwiceIsRefusedAtItsKey(string find, string replacement, string key, string reason) =>
-        Refuses(find, replacement, key, reason);
+    public void AFrameOutOfRangeOrListedTwiceIsRefusedAtItsKey(
+        string find,
+        string replacement,
+        string key,
+        string reason
+    ) => Refuses(find, replacement, key, reason);
 }

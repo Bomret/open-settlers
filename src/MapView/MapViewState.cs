@@ -8,7 +8,7 @@ namespace OpenSettlers.MapView;
 /// <summary>
 /// The map view's model: the seed and size last applied, the map they generated, and the reason the last change was
 /// refused. A valid change replaces the map; an invalid seed or size leaves the last map and the last applied seed
-/// and size in place and sets <see cref="Problem"/>. Without the program's rule tables no map generates.
+/// and size in place and sets <see cref="Problem"/>. Without the rule tables no map generates.
 /// </summary>
 public sealed class MapViewState
 {
@@ -67,7 +67,7 @@ public sealed class MapViewState
     }
 
     /// <summary>
-    /// Opens the state on the program's rule tables, a seed, and a size, generating their map unless one is refused.
+    /// Opens the state on the rule tables, a seed, and a size, generating their map unless one is refused.
     /// Null <paramref name="tables"/> generate no map, and <see cref="Problem"/> names
     /// <paramref name="tablesProblem"/>, why they could not be read.
     /// </summary>
@@ -108,7 +108,8 @@ public sealed class MapViewState
 
         if (_tables is null)
         {
-            Problem = $"Cannot generate the map, the program's rule tables are unreadable: {_tablesProblem}";
+            // The problem names the file and key (the basic set's rule files) or the install's entry, so it names no source.
+            Problem = $"Cannot generate the map, the rule tables are unreadable: {_tablesProblem}";
 
             return false;
         }
