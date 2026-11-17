@@ -7,10 +7,11 @@ is the input to that milestone's `/superdev:plan` interview.
 - [M3 First loop](m3-first-loop.md)
 - [M4 Construction](m4-construction.md)
 - [M5 Food](m5-food.md)
-- [M6 Mining and metal](m6-mining-and-metal.md)
-- [M7 Military and territory](m7-military-and-territory.md)
-- [M8 Computer opponent](m8-computer-opponent.md)
-- [M9 Free-play release](m9-free-play-release.md)
+- [M6 Content catalog](m6-content-catalog.md)
+- [M7 Mining and metal](m7-mining-and-metal.md)
+- [M8 Military and territory](m8-military-and-territory.md)
+- [M9 Computer opponent](m9-computer-opponent.md)
+- [M10 Free-play release](m10-free-play-release.md)
 
 ## Leads
 

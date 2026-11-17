@@ -68,7 +68,7 @@ So one pig takes one stretch of `0x5ff` clock units, about 190 passes, and one p
 ## The step out and the meat
 
 The step out (state `0xb`, `0x43e228`) and the put (state `0xd`, `0x43c6aa`) are the sawmiller's ([the step out](sawmilling.md#the-step-out-and-the-plank)); the meat goes on the flag's
-first empty place and then to a flag that asks for it or to the castle. No flag asks for meat yet: the mines are M6's. The count of goods made (`0x43e1d0`) is **not ported**.
+first empty place and then to a flag that asks for it or to the castle. No flag asks for meat yet: the mines are M7's. The count of goods made (`0x43e1d0`) is **not ported**.
 
 ## The castle's hand-out
 

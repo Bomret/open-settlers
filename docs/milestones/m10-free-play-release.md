@@ -1,6 +1,6 @@
-# M9 Free-play release: scope
+# M10 Free-play release: scope
 
-Goal and done condition: [roadmap, M9](../roadmap.md#m9-free-play-release). Marks:
+Goal and done condition: [roadmap, M10](../roadmap.md#m10-free-play-release). Marks:
 [Leads](AGENTS.md#leads).
 
 ## Start menu
@@ -17,7 +17,7 @@ Goal and done condition: [roadmap, M9](../roadmap.md#m9-free-play-release). Mark
 
 - `0x42639a`: sums player `+0x116` over the four players and, above 49, checks `+0x5e` and `+0x380`.
   The best candidate for the end of a game. guess
-- `0x4615cf`: see [M7](m7-military-and-territory.md); a lost castle can end a game. guess
+- `0x4615cf`: see [M8](m8-military-and-territory.md); a lost castle can end a game. guess
 
 ## Statistics
 

@@ -1,6 +1,6 @@
-# M8 Computer opponent: scope
+# M9 Computer opponent: scope
 
-Goal and done condition: [roadmap, M8](../roadmap.md#m8-computer-opponent). Marks:
+Goal and done condition: [roadmap, M9](../roadmap.md#m9-computer-opponent). Marks:
 [Leads](AGENTS.md#leads).
 
 ## Goal design

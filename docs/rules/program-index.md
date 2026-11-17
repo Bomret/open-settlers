@@ -130,7 +130,7 @@ wait, and the key handling.
 | `0x426664` | `Stats_Scale` | Fixed-point scaling of a value by a factor derived from a halved word plus `0x800`; never returns 0 for a non-zero input. | inferred | game | Called by `Stats_RecordHistory`. |
 | `0x4266d7` | `Stats_ComputeShares` | Turns four values into their shares of the sum in percent (halving all while the sum exceeds `0xfffe`). | confirmed | game | Called by `Stats_RecordHistory`. |
 | `0x446f54` | — | Toggles a game state and restarts the map: calls the map start routines and both palette loads (`0x4471f9`, `0x447200`). | unknown | game | Only caller is `Main_HandleKeys`, so a key reaches it. |
-| `0x44d19c` | — | Short helper of the message timers. | unknown | game | Only caller is `Msg_RunPlayerTimers`; [M9](../milestones/m9-free-play-release.md). |
+| `0x44d19c` | — | Short helper of the message timers. | unknown | game | Only caller is `Msg_RunPlayerTimers`; [M10](../milestones/m10-free-play-release.md). |
 | `0x44d1c0` | `Msg_DrawIcon` | Draws the message icon (raw images 1782 to 1785, site `0x44d24f`) through `Gfx_DrawSprite`. | inferred | game | Called by `Msg_RunPlayerTimers` and `Panel_HandleClick`. |
 | `0x44d263` | — | 13-byte helper of the message timers. | unknown | game | Only caller is `Msg_RunPlayerTimers`. |
 | `0x44d270` | `Msg_DrawIconAlt` | Draws the message icon (raw images 1782 to 1785, site `0x44d2e8`) through `Gfx_DrawSprite`; sibling of `Msg_DrawIcon`. | inferred | game | Only caller is `Msg_RunPlayerTimers`. |
@@ -351,7 +351,7 @@ Sites:
 | `0x44c8cf` | `Panel_WriteButtonList` | Writes a short button list through the EDI block's `+0x24` pointer (0, then 0x10 or 7 by bit 0 of byte 2 of the `+0x30` record) and stores 0x20 and 0x21 through the `+0x28` pointer. | confirmed | game | Only caller is `0x44c80f`; [M3](../milestones/m3-first-loop.md) guesses the build menu. |
 | `0x45080d` | `Render_MarkTwoDirty` | Sets bit 0x10 in the bytes that the game state block's `+0x78` and `+0x7c` pointers name, saving and restoring the EDI block's `+0x20`. Meaning of the bit unknown. | confirmed | game | Called by `Road_Cancel`, `Castle_Place`, and `Territory_Update`. |
 | `0x4513a8` | `Panel_UpdateView` | The part of `Panel_Update` for one view: runs the handler of the panel screen at view `+0x72`. | inferred | game | Only caller is `Panel_Update`. |
-| `0x45ac83` | `Minimap_DrawPanel` | Draws the minimap panel by calling sixteen layer routines from `0x45afcf` to `0x45ccc6`. | inferred | game | Only caller is `0x45591a`; [M9](../milestones/m9-free-play-release.md). |
+| `0x45ac83` | `Minimap_DrawPanel` | Draws the minimap panel by calling sixteen layer routines from `0x45afcf` to `0x45ccc6`. | inferred | game | Only caller is `0x45591a`; [M10](../milestones/m10-free-play-release.md). |
 | `0x45ae45` | `Minimap_DrawTiles` | Part of the minimap panel; draws raw images through `0x44de56`. | inferred | game | Only caller is `0x45591a`. |
 | `0x45afcf` | — | First layer routine of `Minimap_DrawPanel`; calls `0x406790`. | unknown | game | Only caller is `Minimap_DrawPanel`. |
 | `0x45bb96` | — | A layer routine of `Minimap_DrawPanel`; calls `0x406790`. | unknown | game | Only caller is `Minimap_DrawPanel`. |
