@@ -474,6 +474,26 @@ public readonly record struct BuilderFigureAdds
 }
 
 /// <summary>
+/// What the farmer's figure handler (<c>0x44002b</c>) adds to the figure byte: <see cref="Walk"/> for a byte below 0x80,
+/// <see cref="Carrying"/> on the way back with the grain (byte 13 0x80, byte 14 1, state 0x10), <see cref="Sow"/> for a byte from
+/// 0x80 while he sows (byte 13 0), and <see cref="Harvest"/> while he harvests.
+/// </summary>
+public readonly record struct FarmerFigureAdds
+{
+    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
+    public required ushort Walk { get; init; }
+
+    /// <summary>The add for a figure byte below 0x80 on the way back with the grain.</summary>
+    public required ushort Carrying { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80 while he sows.</summary>
+    public required ushort Sow { get; init; }
+
+    /// <summary>The add for a figure byte from 0x80 while he harvests.</summary>
+    public required ushort Harvest { get; init; }
+}
+
+/// <summary>
 /// What the forester's figure handler (<c>0x43fd88</c>) adds to the figure byte: <see cref="Walk"/> for a byte below 0x80
 /// (the walk, and the waiting and planting frames), <see cref="Work"/> for one from 0x80.
 /// </summary>

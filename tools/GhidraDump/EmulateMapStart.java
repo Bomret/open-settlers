@@ -84,7 +84,7 @@
 //                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The SET field writes an object code into
 //                            a node's object byte before a pass (bit 7 of the byte kept): each SET is PASS,X,Y,CODE with the
 //                            code in decimal, as a stone heap's stage is set for the stonecutter's scenarios
-//                            (docs/rules/stonecutting.md). A building of type 17 (the sawmill) is a large building: its node takes
+//                            (docs/rules/stonecutting.md). A building of type 17 (the sawmill) or 12 (the farm) is a large building: its node takes
 //                            the object code 3 and its item the pointer to its flag at +0xe that a built site leaves (0x43ef82),
 //                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). A building of type 15 (the mill) is a
 //                            small building with the same pointer, which its handler 0x42e2a0 reads (docs/rules/milling.md). The lines also list the castle's item
@@ -119,7 +119,7 @@
 //                            state byte and mode byte (+0xb) instead of 0x1c, to reach a branch the teardown does not (state 0x19 with
 //                            mode 1 searches the spiral from its far end). With WATCH (a settler slot) the lines also list that
 //                            settler's 16 bytes (o=) when they changed, for a settler the walk meets (a carrier on the road).
-//   remove:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
+//   remove:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS[:SETS]]
 //                            the removal clicks (docs/rules/removal.md) in a game that starts as the original's start leaves its
 //                            tables (the dummies of the flag and building tables are taken and the default transport priorities
 //                            written, as for goods, with the prio= start line): a castle at cx,cy, the
@@ -135,7 +135,8 @@
 //                            storage's stock word of the good G set to N (a stock written by hand). The sound
 //                            requests of the routines are skipped, and the line says which one was asked (8 flag, 0x4c building,
 //                            2 road, 4 refusal). PUTS (PASS,FLAG,PLACE,GOOD,DEST;...) lay a good on a place of the flag of that slot
-//                            before that pass, as goods does, with the destination word DEST. A line per click and per pass lists
+//                            before that pass, as goods does, with the destination word DEST. SETS (PASS,X,Y,CODE;...) write an object
+//                            code into a node's object byte before that pass, as the SET field of goods does (a field ripe in the farmer's reach). A line per click and per pass lists
 //                            what changed: the map bytes of flags, object, link, and the waiting carrier's mark (record B byte 1,
 //                            i=5) (m=x,y:i=old>new), the heights of the nodes (h=x,y:old>new), the settlers (s<slot>=, 16
 //                            bytes), the flag items (f<slot>=, 70 bytes), the building items (b<slot>=, 18 bytes), the storage item
@@ -1112,6 +1113,9 @@ public class EmulateMapStart extends GhidraScript {
 
     // The mill's building type, a small building (size table 0x42d307) whose handler (0x42e2a0) reads the flag pointer too.
     private static final int MILL = 15;
+    // The farm's building type, a large building (size table 0x42d307): its node takes the object code 3, which the farmer's search for a
+    // node to sow reads on the six nodes around a candidate (0x433b35).
+    private static final int FARM = 0xc;
 
     // What a placed building holds beyond the small building's: the object code at the node (2 for a small building, 3 for a large one,
     // its top bit kept) and, for the sawmill and the mill, the flag pointer a building holds at +0xe once its site is built (0x43ef82),
@@ -1120,7 +1124,7 @@ public class EmulateMapStart extends GhidraScript {
         if (type == SAWMILL || type == MILL) {
             putInt(item + 0xe, flag);
         }
-        emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL ? 3 : 2))});
+        emu.writeMemory(toAddr(codeAddress), new byte[] {(byte) ((emu.readMemory(toAddr(codeAddress), 1)[0] & 0x80) | (type == SAWMILL || type == FARM ? 3 : 2))});
     }
 
     /** Draws one road as road does, silently: a start flag and its directions; returns whether it was built. */
@@ -1609,8 +1613,19 @@ public class EmulateMapStart extends GhidraScript {
             clicksAt.computeIfAbsent(when, key -> new java.util.ArrayList<>()).add(spec.substring(equals + 1));
         }
 
+        String[] sets = parts.length > 11 && !parts[11].isEmpty() ? parts[11].split(";") : new String[0];
         int clock = 0;
         for (int pass = 0; pass < passes; pass++) {
+            for (String text : sets) {
+                // An object code written by hand into a node's object byte before a pass, as goods does: PASS,X,Y,CODE.
+                String[] set = text.split(",");
+                if (pass != Integer.parseInt(set[0])) {
+                    continue;
+                }
+                long setAt = layerA + (((long) Integer.parseInt(set[2]) << bits) + Integer.parseInt(set[1])) * 4 + 3;
+                int kept = emu.readMemory(toAddr(setAt), 1)[0] & 0x80;
+                emu.writeMemory(toAddr(setAt), new byte[] {(byte) (kept | Integer.parseInt(set[3]))});
+            }
             if (clicksAt.containsKey(pass)) {
                 for (String click : clicksAt.get(pass)) {
                     String kind = click.substring(0, 1);

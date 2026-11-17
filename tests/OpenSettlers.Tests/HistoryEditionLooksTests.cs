@@ -31,6 +31,16 @@ public sealed class HistoryEditionLooksTests
                 (new Stonecutter(), Adds),
                 (new Forester(), new ForesterFigureAdds { Walk = 1, Work = 4 }),
                 (
+                    new Farmer(),
+                    new FarmerFigureAdds
+                    {
+                        Walk = 1,
+                        Carrying = 2,
+                        Sow = 4,
+                        Harvest = 8,
+                    }
+                ),
+                (
                     new TypeOneHut(),
                     new HutFigureAdds
                     {
@@ -146,6 +156,38 @@ public sealed class HistoryEditionLooksTests
                     }
                 ),
                 Low
+            )
+        );
+    }
+
+    // The farmer's handler at 0x44002b: the sowing's constant from figure byte 0x80, the harvest's while he harvests, the way back's with
+    // the grain below it, and the walk's.
+    [TestMethod]
+    public void AFarmersLookAddsTheSowingOrHarvestFromFigureByte0x80AndTheCarryingOrWalkBelowIt()
+    {
+        var look = new FarmerLook(Tables());
+        var sows = new TendsField
+        {
+            Back = new Vector(0, 0),
+            Harvests = false,
+            Memory = 0,
+        };
+        var carries = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = new Vector(0, 0),
+                Purpose = new BackToHut { Carrying = true },
+            },
+        };
+
+        Assert.AreEqual(
+            (4, 8, 2, 1),
+            (
+                look.Add(Draw(new Farmer(), sows), High),
+                look.Add(Draw(new Farmer(), sows with { Harvests = true }), High),
+                look.Add(Draw(new Farmer(), carries), 0),
+                look.Add(Draw(new Farmer(), carries with { Trip = carries.Trip with { Purpose = new Home() } }), 0)
             )
         );
     }

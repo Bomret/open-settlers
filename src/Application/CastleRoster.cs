@@ -124,6 +124,12 @@ public sealed class CastleRoster(
         }
     }
 
+    /// <summary>Whether the castle's stock holds the tool a request names, or the request names none.</summary>
+    public bool HasTool(Good tool) => tool.IsNone || stock.Count(tool) > 0;
+
+    /// <summary>The castle's stock gives up the tool of a request that made a settler without a job into its worker (0x42be63).</summary>
+    public void TakeTool(Good tool) => stock.Take(tool);
+
     /// <summary>
     /// The castle's building and its 20 first settlers (0x442f0c with 0x44333d): all in the castle, in state 1 but the first,
     /// which stands by while the castle is built. Their time stamp is the clock of the placement.

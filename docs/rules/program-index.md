@@ -446,7 +446,15 @@ entries per phase (see "Item tables").
 | `0x43d33d` | `MillWorker_Start` | The start routine of job 15, the miller's, entry 0xf of `0x43ca54`: with byte 11 `0xfe` it goes into the storage as every job's does; else the node's settler word is cleared, and where byte 11 is not 0 the flag's class byte at `0x42` is `0x10` (class 4, grain), the one at `0x44` is 0, and its first rank at `0x43` is 0; the settler takes state `0x23` with byte 11 0 ([the start](milling.md#the-start-and-the-request-for-grain)). | confirmed | game | Entry 0xf of `0x43ca54`; the engine's `MillerRules.Start`. [Food buildings](food-buildings.md#the-jobs). |
 | `0x43d3d9` | `BakerWorker_Start` | The start routine of job 16, the baker's, entry 0x10 of `0x43ca54`: sets class 5 (flour) in both request words and takes state `0x24`. | confirmed | game | Entry 0x10 of `0x43ca54`. [Food buildings](food-buildings.md#the-jobs). |
 | `0x438232` | `Fisher_FreeWalkArrived` | The arrival of job 11 at the end of the free walk, entry 0xb of `0x437dfb`: its put of fish (good 1) is the call of `Flag_PutGood` at `0x43837f`. Its walk is a later slice's. | confirmed | game | Entry 0xb of `0x437dfb`. [Food buildings](food-buildings.md#the-goods). |
-| `0x438391` | `Farmer_FreeWalkArrived` | The arrival of job 14 at the end of the free walk, entry 0xe of `0x437dfb`: its put of grain (good 4) is the call of `Flag_PutGood` at `0x43847d`. Its walk is a later slice's. | confirmed | game | Entry 0xe of `0x437dfb`. [Food buildings](food-buildings.md#the-goods). |
+| `0x438391` | `Farmer_FreeWalkArrived` | The arrival of job 14 at the end of the free walk, entry 0xe of `0x437dfb`: on the node takes the way back as the vector and waits to harvest a field it may harvest (frame `0x88`, timer `0x7bf`), else to sow a node with no object and no road (frame `0x87`, timer `0x5bf`), else turns back; on the flag puts grain (good 4, the call of `Flag_PutGood` at `0x43847d`) and enters the building. | confirmed | game | Entry 0xe of `0x437dfb`. [Farming](farming.md#sowing-and-harvesting). |
+| `0x433b35` | `Farmer_SearchNode` | State `0x21`, the farmer's search: draws entries 7 to 38 of the spiral around the farm until a field he may harvest or a node he may sow comes up, adding `0x1f4` to the timer for each node refused. | confirmed | game | Entry `0x21` of `0x42fca1`. [Farming](farming.md#choosing-a-node). |
+| `0x433a3a` | `Farmer_TendField` | State `0x22`, the farmer on his node: harvests the field one stage on and takes grain, or sows the first growing field, then walks back. | confirmed | game | Entry `0x22` of `0x42fca1`. [Farming](farming.md#sowing-and-harvesting). |
+| `0x44002b` | `Farmer_FigureWord` | The farmer's figure handler, stub 14 of `0x43f744`: a figure byte from `0x80` gets `0x3d80` while byte 13 is 0 and `0x3e80` while it is not (with a sound request at the bytes `0x83`, `0x84`); below it `0x4000` on the way back with the grain and `0x3d00` otherwise. | confirmed | game | Stub 14 of `0x43f744`. [Farming](farming.md#drawing). |
+| `0x429146` | `Field_Grow` | The handler of the codes `0x69` to `0x6d` and (at `0x429165`) `0x79` to `0x7d` in the table at `0x428eb8`: the object code goes up by one. | confirmed | game | Entries 22 to 26 and 38 to 42 of `0x428eb8`. [Farming](farming.md#the-fields-in-the-object-pass). |
+| `0x429151` | `Field_Ripen` | The handler of the code `0x6e`: the object code becomes `0x79` (bit 7 kept). | confirmed | game | Entry 27 of `0x428eb8`. [Farming](farming.md#the-fields-in-the-object-pass). |
+| `0x429170` | `Field_Decay` | The handler of the code `0x7e`: the object code becomes `0x6f` (bit 7 kept). | confirmed | game | Entry 43 of `0x428eb8`. [Farming](farming.md#the-fields-in-the-object-pass). |
+| `0x429184` | `Field_Clear` | The handler of the code `0x6f`: the object is cleared (bit 7 kept). | confirmed | game | Entry 28 of `0x428eb8`. [Farming](farming.md#the-fields-in-the-object-pass). |
+| `0x42918f` | `Sign_Clear` | The handler of the codes `0x70` to `0x78`: the object is cleared where the decay counter at `+0x28c` is 0. | confirmed | game | Entries 29 to 37 of `0x428eb8`. [Farming](farming.md#the-fields-in-the-object-pass). |
 | `0x4333c1` | `PigFarmer_Work` | State `0x25`, the work of job 12: sets byte 11 to 2 (pig, `0x433577`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x25` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
 | `0x4332a8` | `Butcher_Work` | State `0x26`, the work of job 13: sets byte 11 to 3 (meat, `0x4333a5`) before the put of state `0xd`. Read only for the good it puts. | inferred | game | Entry `0x26` of `0x42fca1`. [Food buildings](food-buildings.md#the-goods). |
 | `0x43386b` | `MillWorker_Work` | State `0x23`, the work of job 15: with byte 11 0 and no grain on site (the high nibble of the building's byte 8) it changes nothing; with one it takes it out of the fill, sets bit 4 of the building's status, claims the node, and grinds (byte 11 1, frame `0x89`, timer `0x17f`). In the other stretches, when the timer has run out, byte 11 counts up: 2 and 4 let the node go and add `0x5dc` to the timer, 3 grinds again as 1 does, and at 5 bit 4 of the status is cleared, byte 11 is 5 (flour, `0x433a1e`), and the settler goes on at `0x43e1d0` ([state 0x23](milling.md#state-0x23)). | confirmed | game | Entry `0x23` of `0x42fca1`; the engine's `MillerRules.Work`. |
@@ -1170,6 +1178,11 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x428d10` | `Map_ObjectPass` | confirmed | Simulation |
 | `0x4290d5` | `Sapling_GrowFirst` | confirmed | Simulation |
 | `0x42910f` | `Sapling_GrowSecond` | confirmed | Simulation |
+| `0x429146` | `Field_Grow` | confirmed | Simulation |
+| `0x429151` | `Field_Ripen` | confirmed | Simulation |
+| `0x429170` | `Field_Decay` | confirmed | Simulation |
+| `0x429184` | `Field_Clear` | confirmed | Simulation |
+| `0x42918f` | `Sign_Clear` | confirmed | Simulation |
 | `0x4291c2` | `Sim_StepPhase` | confirmed | Simulation |
 | `0x4293f6` | — | confirmed | Simulation |
 | `0x429580` | `Ai_PhaseUpdate` | confirmed | Simulation |
@@ -1221,6 +1234,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4333c1` | `PigFarmer_Work` | inferred | Simulation |
 | `0x433694` | `BakerWorker_Work` | inferred | Simulation |
 | `0x43386b` | `MillWorker_Work` | confirmed | Simulation |
+| `0x433a3a` | `Farmer_TendField` | confirmed | Simulation |
+| `0x433b35` | `Farmer_SearchNode` | confirmed | Simulation |
 | `0x434946` | `Settler_ClaimNode` | confirmed | Simulation |
 | `0x4350f8` | — | unknown | Simulation |
 | `0x4353ef` | `Settler_SearchFlag` | confirmed | Simulation |
@@ -1296,6 +1311,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x43fcd8` | `Stonecutter_FigureWord` | confirmed | Simulation |
 | `0x43fd88` | `Forester_FigureWord` | confirmed | Simulation |
 | `0x43fed8` | `Settler_FigureJob11` | confirmed | Views, panels, and drawing |
+| `0x44002b` | `Farmer_FigureWord` | confirmed | Simulation |
 | `0x4400d3` | `MillWorker_FigureWord` | confirmed | Simulation |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
 | `0x440c24` | `View_HandleClick` | inferred | Roads |
@@ -1533,7 +1549,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 384 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 326 confirmed, 72 inferred, 51 unknown.
+Coverage: the index names 392 routines of the 513 functions in the dump's game code band and lists 65 more without a name: 334 confirmed, 72 inferred, 51 unknown.
 <!-- coverage:end -->
 
 Open anchors:

@@ -33,6 +33,12 @@ public enum MapObjectKind
     /// <summary>Codes 0x67 and 0x68: a small sapling a forester plants, which the object pass grows into a tree (<c>docs/rules/forestry.md</c>).</summary>
     Sapling,
 
+    /// <summary>
+    /// Codes 0x69 to 0x6e (a field growing), 0x6f (a harvested field), and 0x79 to 0x7e (a ripe field): a field a farmer sows and
+    /// harvests, which the object pass grows and lets decay (<c>docs/rules/farming.md</c>).
+    /// </summary>
+    Field,
+
     /// <summary>A code the engine has no name for: a stone, a plant, or a code not recovered yet.</summary>
     Other,
 }
@@ -74,6 +80,30 @@ public readonly record struct MapObject
     /// <summary>The object code of the second sapling, the one that grows into the trees 8 to 0xf (<c>0x42910f</c>).</summary>
     public const int SecondSaplingCode = 0x68;
 
+    /// <summary>The object code of a field just sown, the first of the growing codes 0x69 to 0x6e (<c>0x433b0e</c>).</summary>
+    public const int SownFieldCode = 0x69;
+
+    /// <summary>The object code of a fully grown field, which the object pass makes ripe (<c>0x429151</c>).</summary>
+    public const int GrownFieldCode = 0x6e;
+
+    /// <summary>The object code of a harvested field, which the object pass clears (<c>0x429184</c>).</summary>
+    public const int HarvestedFieldCode = 0x6f;
+
+    /// <summary>The object code of a field just ripe, the first of the ripe codes 0x79 to 0x7e.</summary>
+    public const int RipeFieldCode = 0x79;
+
+    /// <summary>The object code of the last ripe field, which the object pass makes the harvested field (<c>0x429184</c>).</summary>
+    public const int LastRipeFieldCode = 0x7e;
+
+    /// <summary>The object code after the last ripe field.</summary>
+    public const int EndRipeFieldCode = LastRipeFieldCode + 1;
+
+    /// <summary>The first object code the object pass clears while its decay counter is 0 (<c>0x42918f</c>): the signs 0x70 to 0x78.</summary>
+    public const int FirstDecayingCode = 0x70;
+
+    /// <summary>The object code after the last one the object pass clears while its decay counter is 0.</summary>
+    public const int EndDecayingCode = 0x79;
+
     /// <summary>The first sapling.</summary>
     public static MapObject Sapling => new() { Code = SaplingCode };
 
@@ -83,6 +113,44 @@ public readonly record struct MapObject
     /// </summary>
     public static MapObject Grown(MapObject sapling, int draw) =>
         new() { Code = (byte)((sapling.Code == SaplingCode ? 0x10 : 8) + (draw & 7)) };
+
+    /// <summary>
+    /// True for a field a farmer may harvest: the fully grown code 0x6e and the ripe codes 0x79 to 0x7e (<c>0x4383cd</c> to
+    /// <c>0x4383dd</c>).
+    /// </summary>
+    public bool IsHarvestable => Code is GrownFieldCode or (>= RipeFieldCode and < EndRipeFieldCode);
+
+    /// <summary>
+    /// The field after a harvest (<c>0x433aa0</c>): the code one up, where 0x6f becomes the first ripe code and 0x70 or 0x7f become the
+    /// harvested field.
+    /// </summary>
+    public MapObject Harvested() =>
+        new()
+        {
+            Code = (byte)(
+                (Code + 1) switch
+                {
+                    HarvestedFieldCode => RipeFieldCode,
+                    FirstDecayingCode or EndRipeFieldCode => HarvestedFieldCode,
+                    var next => next,
+                }
+            ),
+        };
+
+    /// <summary>
+    /// The field's code after one visit of the object pass (<c>0x429146</c> to <c>0x429184</c>), or null for a code the pass leaves:
+    /// the growing and ripe codes go one up, the fully grown code becomes the first ripe code, the last ripe code becomes the harvested
+    /// field, and the harvested field is cleared.
+    /// </summary>
+    public MapObject? AfterObjectPass =>
+        Code switch
+        {
+            >= SownFieldCode and < GrownFieldCode or (>= RipeFieldCode and < LastRipeFieldCode) => new() { Code = (byte)(Code + 1) },
+            GrownFieldCode => new() { Code = RipeFieldCode },
+            LastRipeFieldCode => new() { Code = HarvestedFieldCode },
+            HarvestedFieldCode => None,
+            _ => null,
+        };
 
     /// <summary>No object on the node.</summary>
     public static MapObject None => default;
@@ -138,6 +206,8 @@ public readonly record struct MapObject
             StumpCode => MapObjectKind.Stump,
             >= FirstFallingCode and < EndFallingCode => MapObjectKind.FallingTree,
             SaplingCode or SecondSaplingCode => MapObjectKind.Sapling,
+            >= SownFieldCode and <= HarvestedFieldCode => MapObjectKind.Field,
+            >= RipeFieldCode and < EndRipeFieldCode => MapObjectKind.Field,
             _ => MapObjectKind.Other,
         };
 }

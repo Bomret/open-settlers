@@ -45,6 +45,7 @@
     <None Include="stone-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="forester-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="saw-walks.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="farm-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="saw-removals.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="mill-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="mill-removals.txt" CopyToOutputDirectory="PreserveNewest" />

@@ -156,7 +156,8 @@ public sealed class SettlerFiguresTests
         ForesterFigureAdds forester = default,
         FigureAdds digger = default,
         SawmillerFigureAdds sawmiller = default,
-        MillerFigureAdds miller = default
+        MillerFigureAdds miller = default,
+        FarmerFigureAdds farmer = default
     ) =>
         new(
             new RuleTables(
@@ -178,6 +179,7 @@ public sealed class SettlerFiguresTests
                     (new Sawmiller(), sawmiller),
                     (new Miller(), miller),
                     (new TypeOneHut(), typeOneHut),
+                    (new Farmer(), farmer),
                 ]
             ),
             sequences

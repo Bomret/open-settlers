@@ -167,6 +167,15 @@ public sealed class ProgramTablesTests
         );
         Add(ProgramTablesImporter.ForesterWalkAddress, 0x0e00);
         Add(ProgramTablesImporter.ForesterWorkAddress, 0x1080);
+        var farmerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Farmer.Number;
+        Write(
+            farmerStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.FarmerHandlerAddress - (farmerStub + 5))]
+        );
+        Add(ProgramTablesImporter.FarmerWalkAddress, 0x3d00);
+        Add(ProgramTablesImporter.FarmerCarryingAddress, 0x4000);
+        Add(ProgramTablesImporter.FarmerSowAddress, 0x3d80);
+        Add(ProgramTablesImporter.FarmerHarvestAddress, 0x3e80);
         var diggerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Digger.Number;
         Write(
             diggerStub,
@@ -1129,6 +1138,43 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(
             new ForesterFigureAdds { Walk = 0x0e00, Work = 0x1080 },
             tables.Get<ForesterFigureAdds>(new Forester())
+        );
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheFarmersFigureWordsOfTheInstallAreThoseOfHisDrawHandler()
+    {
+        var adds = TestProgram.Tables().Get<FarmerFigureAdds>(new Farmer());
+
+        // 0x44002b, the handler of job 14: add word [edi+8], imm16 at 0x4400c8 (walk), 0x4400bd (the way back with the grain), 0x44003c
+        // (sowing, figure byte from 0x80), and 0x440097 (harvest).
+        Assert.AreEqual(
+            new FarmerFigureAdds
+            {
+                Walk = 0x3d00,
+                Carrying = 0x4000,
+                Sow = 0x3d80,
+                Harvest = 0x3e80,
+            },
+            adds
+        );
+    }
+
+    [TestMethod]
+    public void TheFarmersFigureWordsAreTheImmediatesOfHisHandler()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(
+            new FarmerFigureAdds
+            {
+                Walk = 0x3d00,
+                Carrying = 0x4000,
+                Sow = 0x3d80,
+                Harvest = 0x3e80,
+            },
+            tables.Get<FarmerFigureAdds>(new Farmer())
         );
     }
 

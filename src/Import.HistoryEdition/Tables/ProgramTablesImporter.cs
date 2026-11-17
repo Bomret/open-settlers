@@ -101,6 +101,21 @@ static class ProgramTablesImporter
     /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte below 0x80 (the walk).</summary>
     public const int ForesterWalkAddress = 0x43fdea;
 
+    /// <summary>The handler of the farmer's figure (<c>0x44002b</c>, the target of the stub of job 14).</summary>
+    public const int FarmerHandlerAddress = 0x44002b;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 while he sows (byte 13 0).</summary>
+    public const int FarmerSowAddress = 0x44003c;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for a figure byte from 0x80 while he harvests (byte 13 not 0).</summary>
+    public const int FarmerHarvestAddress = 0x440097;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for the way back with the grain (byte 13 0x80, byte 14 1, state 0x10).</summary>
+    public const int FarmerCarryingAddress = 0x4400bd;
+
+    /// <summary>The <c>add word [edi+8], imm16</c> of that handler for any other figure byte below 0x80 (the walk).</summary>
+    public const int FarmerWalkAddress = 0x4400c8;
+
     /// <summary>The handler of the figure of the settler of the type 1 hut (<c>0x43fed8</c>, the target of the stub of job 11).</summary>
     public const int TypeOneHutHandlerAddress = 0x43fed8;
 

@@ -38,9 +38,16 @@ public sealed class HutWork(
     int _objectX;
     int _objectY;
 
-    /// <summary>The object pass's state, for the digest: the clock at its last run, its countdown, and the cursor's column and row.</summary>
-    public (ushort Stamp, ushort Timer, int X, int Y) ObjectPassState =>
-        (_objectStamp, _objectTimer, _objectX, _objectY);
+    // The decay counter (+0x28c, 0x428da0): each node the pass visits takes one off it, and it starts again at 0x10 where it ran below 0.
+    // The handler of the codes 0x70 to 0x78 clears the object while it is 0.
+    ushort _objectDecay;
+
+    /// <summary>
+    /// The object pass's state, for the digest: the clock at its last run, its countdown, the cursor's column and row, and the decay
+    /// counter.
+    /// </summary>
+    public (ushort Stamp, ushort Timer, int X, int Y, ushort Decay) ObjectPassState =>
+        (_objectStamp, _objectTimer, _objectX, _objectY, _objectDecay);
 
     // The job rules modules by the type of their job: the hooks the shared states call. A job without a module has none.
     readonly System.Collections.Generic.Dictionary<Type, JobRules> _modules = [];
@@ -537,7 +544,8 @@ public sealed class HutWork(
     /// where it wraps: on a lake node with detail it may move the detail (the draws of the original), a node with an object code of 0x53
     /// or more takes its handler: the cut tree codes 0x5d to 0x66 become 0x53, and 0x53 vanishes when the draw's low two bits are 0; the
     /// saplings 0x67 and 0x68 grow into trees (GrowSapling), so a felled tree turns into nothing in the time the original takes.
-    /// **Not ported:** the handlers of the codes 0x69 and up (the original's growth and decay; the generation places none).
+    /// The fields grow and decay (<see cref="MapObject.AfterObjectPass"/>), and the object codes 0x70 to 0x78 vanish while the decay
+    /// counter, which each visited node counts down, is 0 (<c>docs/rules/farming.md</c>).
     /// </summary>
     public void ObjectPass()
     {
@@ -568,6 +576,11 @@ public sealed class HutWork(
                 _objectY = (_objectY + 1) & (Map.Size.Height - 1);
             }
 
+            if (_objectDecay-- == 0)
+            {
+                _objectDecay = 0x10;
+            }
+
             var node = Map.Index(_objectX, _objectY);
             ref var at = ref Map.At(node);
             if (at.WaterTriangle && at.LakeMark && at.LakeDetail != 0)
@@ -590,6 +603,17 @@ public sealed class HutWork(
             else if (kind == MapObjectKind.Sapling)
             {
                 GrowSapling(ref at);
+            }
+            else if (at.Object.AfterObjectPass is { } field)
+            {
+                at.Object = field;
+            }
+            else if (
+                at.Object.Code is >= MapObject.FirstDecayingCode and < MapObject.EndDecayingCode
+                && _objectDecay == 0
+            )
+            {
+                at.Object = MapObject.None;
             }
         }
     }

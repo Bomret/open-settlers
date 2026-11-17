@@ -137,6 +137,7 @@ public sealed class OpenSettlersSourceTests
                     "digger",
                     "sawmiller",
                     "miller",
+                    "farmer",
                 }
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
@@ -875,6 +876,7 @@ public sealed class OpenSettlersSourceTests
     [DataRow("digger")]
     [DataRow("sawmiller")]
     [DataRow("miller")]
+    [DataRow("farmer")]
     public void EachJobDrawsAnImageForEveryActivityKind(string job)
     {
         using var folder = new ContentFolder();
@@ -890,6 +892,7 @@ public sealed class OpenSettlersSourceTests
             ["digger"] = new Digger(),
             ["sawmiller"] = new Sawmiller(),
             ["miller"] = new Miller(),
+            ["farmer"] = new Farmer(),
         };
         Activity[] activities =
         [

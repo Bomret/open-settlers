@@ -248,6 +248,15 @@ public static class SettlerEncoder
                 Heading = a.Planted ? 0xff : 0,
                 Next = a.Memory,
             },
+            // The farmer's wait: the way back in bytes 11 and 12, byte 13 1 while he harvests and 0 while he sows, and the walk's memory in byte 15.
+            TendsField a => new()
+            {
+                State = a.Code,
+                Mode = a.Back.East & 0xff,
+                Target = ((a.Harvests ? 1 : 0) << 8) | (a.Back.South & 0xff),
+                Heading = 0,
+                Next = a.Memory,
+            },
             SearchesHome a => new()
             {
                 State = a.Code,
@@ -302,6 +311,7 @@ public static class SettlerEncoder
             ToTree tree => (tree.Back.East & 0xff, tree.Back.South),
             ToHeap heap => (heap.Back.East & 0xff, heap.Back.South),
             ToSpot spot => (spot.Back.East & 0xff, spot.Back.South),
+            ToField field => (field.Back.East & 0xff, field.Back.South),
             BackToHut back => (WayBackMark, back.Carrying ? 1 : 0),
             _ => (WayBackMark, -1),
         };

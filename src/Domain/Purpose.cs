@@ -27,6 +27,13 @@ public sealed record ToSpot : Purpose
     public required Vector Back { get; init; }
 }
 
+/// <summary>The walk of a farmer out to the node he found to sow or harvest; the vector is the way back to the farm's flag.</summary>
+public sealed record ToField : Purpose
+{
+    /// <summary>The steps of the way back, east and south.</summary>
+    public required Vector Back { get; init; }
+}
+
 /// <summary>The way back to the hut's flag after the cut, or at once where the tree was gone.</summary>
 public sealed record BackToHut : Purpose
 {
