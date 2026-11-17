@@ -191,10 +191,7 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.MillerCarryingAddress, 0x1980);
         Add(ProgramTablesImporter.MillerGrindAddress, 0x1a00);
         var bakerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Baker.Number;
-        Write(
-            bakerStub,
-            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.BakerHandlerAddress - (bakerStub + 5))]
-        );
+        Write(bakerStub, [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.BakerHandlerAddress - (bakerStub + 5))]);
         Add(ProgramTablesImporter.BakerWalkAddress, 0x1b00);
         Add(ProgramTablesImporter.BakerCarryingAddress, 0x1b80);
         Add(ProgramTablesImporter.BakerBakeAddress, 0x1c00);

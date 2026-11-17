@@ -105,7 +105,8 @@ public sealed class BakeryTests
                 marked.Add(bakery.Grinding);
             }
 
-            carriedOut |= baker.Activity is WaitsOutStep { Then: PutsDownGood { Good: var good } } && good == Good.Bread;
+            carriedOut |=
+                baker.Activity is WaitsOutStep { Then: PutsDownGood { Good: var good } } && good == Good.Bread;
         }
 
         CollectionAssert.AreEqual(new[] { 0, 1, 2, 0 }, phases, "waiting, baking, pausing, waiting for flour again");

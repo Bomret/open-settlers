@@ -197,10 +197,7 @@ public sealed class LayoutSettlersTests
     {
         var layout = Read(Built.Replace("\"woodcutter\"", "\"baker\""));
         var game = GameFactory.Create(
-            MadeTables(
-                workers: TestProgram.MadeWorkers(baker: true),
-                goodClasses: ConstructionTables.Classes()
-            ),
+            MadeTables(workers: TestProgram.MadeWorkers(baker: true), goodClasses: ConstructionTables.Classes()),
             layout.BuildMap()
         );
 
