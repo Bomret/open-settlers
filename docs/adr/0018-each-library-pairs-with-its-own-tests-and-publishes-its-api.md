@@ -6,8 +6,12 @@ Amends [ADR 0017](0017-install-data-enters-through-import-ports.md).
 
 Every library has a test project beside it: `src/<Name>/` pairs with `src/<Name>.Tests/`. A test lives in
 the test project of the lowest library that reaches, through its own references, every type the test uses.
-A test project references its library, and the shared test helpers in `src/Testing/`
-(`OpenSettlers.Testing`), and nothing else. The Godot host pairs with `OpenSettlers.Tests/` at the
+A test project references its library and test helpers, and no other library. The helpers that name no
+library type live in `src/Testing/` (`OpenSettlers.Testing`), which references no library. The helpers
+that name a library's types live beside that library in `src/<Name>.Testing/`
+(`OpenSettlers.<Name>.Testing`), which references that library and the helper projects of the libraries it
+references. A test project references the helper projects of its own library and of the libraries its
+library references. The Godot host pairs with `OpenSettlers.Tests/` at the
 repository root, which also holds the tests of the repository itself: the code-style build, the tools, the
 content set, and the test category filters.
 
@@ -20,7 +24,8 @@ libraries. `src/Viewer/` holds the Godot nodes and stays in the Godot project. A
 Launch does not reference Assets.
 
 The layout lets a change name the test projects it reaches through the project graph, so a run can test
-those projects and skip the rest.
+those projects and skip the rest. A helper project that referenced every library would put every test
+project above every library, so helpers split by library.
 
 ## Considered options
 
@@ -31,10 +36,13 @@ those projects and skip the rest.
   source, which the application itself never references (ADR 0017).
 - **Production grants between libraries.** They let one library write another's state, so the API a
   consumer sees is not the API a reader of the library sees.
+- **One helper project for every library.** Every test project would reach every library through it, so
+  every change would reach every test project.
 - **Launch and Assets as one library.** It keeps their mutual reference, but breaks one library per
   folder; the reference from Launch to Assets is one helper, which moves to Assets.
 
 ## Consequences
 
-The map view is a library that references the import ports and no source assembly, so the compiler holds it
-to the ports (INV-0011). The shared helpers are one more project that is no test pair.
+The map view references the adapters, which reference the History Edition source, so the compiler does not
+hold the map view to the ports, and the repository scan of INV-0011 stays. The helper projects are no
+test pairs and have no tests of their own.

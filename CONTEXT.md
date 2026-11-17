@@ -285,7 +285,8 @@ _Avoid_: module, layer (a layer is a role in the architecture, such as the domai
 **Test pair**
 A library and the test project beside it, `src/<Name>.Tests/OpenSettlers.<Name>.Tests.csproj`, the only
 assembly that sees the library's internals (ADR 0018). The Godot host pairs with `OpenSettlers.Tests/` at
-the repository root, which also holds the tests of the repository itself.
+the repository root, which also holds the tests of the repository itself. Test helpers are no part of a
+pair: they live in `src/Testing/` and in a helper project `src/<Name>.Testing/` beside each library.
 _Avoid_: test suite, test assembly
 
 ## Roadmap
