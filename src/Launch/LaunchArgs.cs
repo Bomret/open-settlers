@@ -24,14 +24,14 @@ public enum LaunchMode
     SeedInfo,
 }
 
-/// <summary>The graphics source the map view draws from (ADR 0014); the <c>--graphics</c> flag names it.</summary>
-public enum GraphicsSourceName
+/// <summary>The content set the run draws from (ADR 0018); the <c>--content-set</c> flag names it.</summary>
+public enum ContentSetName
 {
     /// <summary>The History Edition install's own art, the default (<c>history-edition</c>).</summary>
     HistoryEdition,
 
-    /// <summary>The repository's own content set <c>content/open-settlers/</c> (<c>open-settlers</c>).</summary>
-    OpenSettlers,
+    /// <summary>The repository's own content set <c>content/basic/</c> (<c>basic</c>).</summary>
+    Basic,
 }
 
 /// <summary>
@@ -42,9 +42,10 @@ public enum GraphicsSourceName
 /// selects <see cref="LaunchMode.Browser"/>. <c>--game &lt;dir&gt;</c> names the install and wins over the
 /// <c>SIEDLER_DIR</c> value. <c>--seed &lt;seed&gt;</c> (every form <see cref="Seed.TryParse"/> takes, quoted when
 /// it holds spaces) and <c>--size &lt;1|2|3&gt;</c> belong to <c>--map</c>, <c>--game-view</c>, and <c>--seed-info</c> only.
-/// <c>--graphics &lt;history-edition|open-settlers&gt;</c> names the <see cref="GraphicsSourceName"/> of the map view and
-/// the game view (the History Edition without it) and belongs to <c>--map</c>, <c>--game-view</c>, and <c>--layout</c>
-/// only.
+/// <c>--content-set &lt;basic|history-edition&gt;</c> names the <see cref="ContentSetName"/> of the map view, the game
+/// view, and seed info (the History Edition without it) and belongs to <c>--map</c>, <c>--game-view</c>, <c>--layout</c>,
+/// and <c>--seed-info</c> only. The basic set reads no install: <see cref="Game"/> is null on it whatever the environment
+/// holds, and any <c>--game</c> (also repeated or empty) is a bad argument.
 /// <para>
 /// Every bad argument is a line in <see cref="Problems"/> and the launch exits with <see cref="BadArgumentExitCode"/>
 /// before it opens the install or a window, so that code wins over the exit code 2 of a missing install. The bad
@@ -54,8 +55,9 @@ public enum GraphicsSourceName
 /// <c>--size</c> with <c>--check</c> or without a mode flag; a repeated <c>--seed</c>, <c>--size</c>, or
 /// <c>--play</c>, or <c>--layout</c> (a repeated <c>--game</c> keeps the first); <c>--layout</c> with <c>--seed</c>,
 /// <c>--size</c>, <c>--map</c>, <c>--check</c>, or <c>--seed-info</c> (the layout holds its own seed and size); a
-/// <c>--graphics</c> that names no known source, repeats, or comes with <c>--check</c>, <c>--seed-info</c>, or no mode
-/// flag and no layout. Each <c>--graphics</c> problem names the known sources (<see cref="KnownGraphics"/>).
+/// <c>--content-set</c> that names no known set, repeats, or comes with <c>--check</c> or no mode
+/// flag and no layout; <c>--game</c> with <c>--content-set basic</c>. Each <c>--content-set</c> problem
+/// names the known sets (<see cref="KnownContentSets"/>).
 /// <c>--stock &lt;0..40&gt;</c> sets the start stock level of the human player (<see cref="Stock"/>) and belongs to
 /// <c>--game-view</c> without a layout only; a value that is no integer from 0 to 40, a repeat, or another mode is a bad argument.
 /// Two different mode flags with <c>--stock</c> give only the mode problem. <c>--rate &lt;0..40&gt;</c> sets the settler rate of the
@@ -98,8 +100,14 @@ public sealed class LaunchArgs
     /// <summary>The flag that names the layout file of a game view (<see cref="LaunchMode.GameView"/>).</summary>
     public const string LayoutFlag = "--layout";
 
-    /// <summary>The flag that names the graphics source (<see cref="GraphicsSourceName"/>) of the map view.</summary>
-    public const string GraphicsFlag = "--graphics";
+    /// <summary>The flag that names the content set (<see cref="ContentSetName"/>) of the run.</summary>
+    public const string ContentSetFlag = "--content-set";
+
+    /// <summary>
+    /// A flag the launch refuses with a message that names <see cref="ContentSetFlag"/>, the flag that picks the content set
+    /// (and with it the graphics source).
+    /// </summary>
+    const string RetiredGraphicsFlag = "--graphics";
 
     /// <summary>The flag that gives the start stock level of the human player in the game view.</summary>
     public const string StockFlag = "--stock";
@@ -126,11 +134,11 @@ public sealed class LaunchArgs
     /// <summary>The highest settler rate the free-game screen's bar sets.</summary>
     const int MaxRate = 40;
 
-    /// <summary>The known graphics sources as the flag spells them, which the refusals name.</summary>
-    const string KnownGraphics = "history-edition, open-settlers";
+    /// <summary>The known content sets as the flag spells them, which the refusals name.</summary>
+    const string KnownContentSets = "basic, history-edition";
 
-    // The suffix that names the known sources on every refusal of the graphics flag.
-    static string Known(string flag) => flag == GraphicsFlag ? $" (known sources: {KnownGraphics})" : "";
+    // The suffix that names the known sets on every refusal of the content-set flag.
+    static string Known(string flag) => flag == ContentSetFlag ? $" (known sets: {KnownContentSets})" : "";
 
     /// <summary>The environment variable that stands in for <see cref="GameFlag"/>.</summary>
     public const string GameVariable = "SIEDLER_DIR";
@@ -150,8 +158,8 @@ public sealed class LaunchArgs
     /// <summary>The size the size flag gave; null when no valid size flag was given.</summary>
     public MapSize? Size { get; init; }
 
-    /// <summary>The graphics source the graphics flag named; <see cref="GraphicsSourceName.HistoryEdition"/> without it.</summary>
-    public GraphicsSourceName Graphics { get; init; }
+    /// <summary>The content set the content-set flag named; <see cref="ContentSetName.HistoryEdition"/> without it.</summary>
+    public ContentSetName ContentSet { get; init; }
 
     /// <summary>The layout file path as given; null when no valid layout flag was given.</summary>
     public string? Layout { get; init; }
@@ -207,8 +215,8 @@ public sealed class LaunchArgs
         MapSize? size = null;
         var seedGiven = false;
         var sizeGiven = false;
-        var graphics = GraphicsSourceName.HistoryEdition;
-        var graphicsGiven = false;
+        var contentSet = ContentSetName.HistoryEdition;
+        var contentSetGiven = false;
         int? stock = null;
         var stockGiven = false;
         int? rate = null;
@@ -224,7 +232,7 @@ public sealed class LaunchArgs
                     or SizeFlag
                     or PlayFlag
                     or LayoutFlag
-                    or GraphicsFlag
+                    or ContentSetFlag
                     or StockFlag
                     or RateFlag
             )
@@ -237,7 +245,7 @@ public sealed class LaunchArgs
                     gameGiven |= flag == GameFlag;
                     playGiven |= flag == PlayFlag;
                     layoutGiven |= flag == LayoutFlag;
-                    graphicsGiven |= flag == GraphicsFlag;
+                    contentSetGiven |= flag == ContentSetFlag;
                     stockGiven |= flag == StockFlag;
                     rateGiven |= flag == RateFlag;
 
@@ -263,29 +271,29 @@ public sealed class LaunchArgs
                     || flag == LayoutFlag && layoutGiven
                     || flag == SeedFlag && seedGiven
                     || flag == SizeFlag && sizeGiven
-                    || flag == GraphicsFlag && graphicsGiven
+                    || flag == ContentSetFlag && contentSetGiven
                     || flag == StockFlag && stockGiven
                     || flag == RateFlag && rateGiven
                 )
                 {
                     problems.Add($"repeated {flag}{Known(flag)}");
                 }
-                else if (flag == GraphicsFlag)
+                else if (flag == ContentSetFlag)
                 {
-                    graphicsGiven = true;
+                    contentSetGiven = true;
                     var named = value switch
                     {
-                        "history-edition" => GraphicsSourceName.HistoryEdition,
-                        "open-settlers" => GraphicsSourceName.OpenSettlers,
-                        _ => (GraphicsSourceName?)null,
+                        "history-edition" => ContentSetName.HistoryEdition,
+                        "basic" => ContentSetName.Basic,
+                        _ => (ContentSetName?)null,
                     };
-                    if (named is { } source)
+                    if (named is { } set)
                     {
-                        graphics = source;
+                        contentSet = set;
                     }
                     else
                     {
-                        problems.Add($"bad {GraphicsFlag} '{value}'{Known(flag)}");
+                        problems.Add($"bad {ContentSetFlag} '{value}'{Known(flag)}");
                     }
                 }
                 else if (flag == StockFlag)
@@ -390,6 +398,10 @@ public sealed class LaunchArgs
 
                 minimized = true;
             }
+            else if (flag == RetiredGraphicsFlag)
+            {
+                problems.Add($"{RetiredGraphicsFlag} is gone, use {ContentSetFlag} (known sets: {KnownContentSets})");
+            }
             else if (flag.StartsWith("--"))
             {
                 problems.Add($"unknown flag {flag}");
@@ -440,12 +452,18 @@ public sealed class LaunchArgs
             }
         }
 
-        if (graphicsGiven && !layoutGiven && modeFlag is null or CheckFlag or SeedInfoFlag)
+        if (contentSetGiven && !layoutGiven && modeFlag is null or CheckFlag)
         {
             var where = modeFlag is null ? "the asset browser" : modeFlag;
             problems.Add(
-                $"{GraphicsFlag} does not apply to {where}, use {MapFlag} or {GameViewFlag} (known sources: {KnownGraphics})"
+                $"{ContentSetFlag} does not apply to {where}, use {MapFlag}, {GameViewFlag}, or {SeedInfoFlag} (known sets: {KnownContentSets})"
             );
+        }
+
+        if (gameGiven && contentSet == ContentSetName.Basic)
+        {
+            // The basic set reads no install: a --game, repeated or empty too, names one for nothing.
+            problems.Add($"{GameFlag} does not apply to {ContentSetFlag} basic, which reads no install");
         }
 
         if (stockGiven && conflictFlag is null && (modeFlag != GameViewFlag || layoutGiven))
@@ -489,14 +507,16 @@ public sealed class LaunchArgs
             Play = play,
             Layout = layout,
             Mode = mode ?? (layoutGiven ? LaunchMode.GameView : LaunchMode.Browser),
+            // The basic set opens no install, so neither the flag nor the environment names one.
             Game =
-                gameGiven ? game
+                contentSet == ContentSetName.Basic ? null
+                : gameGiven ? game
                 : string.IsNullOrEmpty(siedlerDir) ? null
                 : siedlerDir,
             SeedText = seedText,
             Seed = seed,
             Size = size,
-            Graphics = graphics,
+            ContentSet = contentSet,
             Stock = stock,
             Rate = rate,
             Minimized = minimized,

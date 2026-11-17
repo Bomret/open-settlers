@@ -2,7 +2,8 @@
 
 **Status:** Accepted
 
-**Amended by:** [ADR 0017](0017-install-data-enters-through-import-ports.md)
+**Amended by:** [ADR 0017](0017-install-data-enters-through-import-ports.md),
+[ADR 0018](0018-a-content-set-carries-its-own-rules-and-one-flag-picks-it.md)
 
 Amends [ADR 0007](0007-the-engine-draws-the-map-on-the-gpu.md): the palette is no longer the one source of
 color.

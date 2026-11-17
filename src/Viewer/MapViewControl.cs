@@ -25,12 +25,12 @@ namespace OpenSettlers.Viewer;
 /// The view of the map, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
 /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
 /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
-/// <paramref name="loadGraphics"/> gives the source the view draws from, which the host picks; the rules come from the install
-/// under every source.
+/// <paramref name="loadGraphics"/> gives the source the view draws from, which the host picks; <paramref name="tablesSource"/>
+/// gives the rules, read from the install on the History Edition and from the set's own rule files on the basic set.
 /// </remarks>
 /// <param name="tablesSource">The rule tables port; reading it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the tables cannot be read.</param>
 /// <param name="loadGraphics">Loads the graphics source the view draws from, given the rule tables the settlers are drawn by (null outside the game view); it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the source cannot be read.</param>
-/// <param name="loadSteps">Reads the walk steps where the graphics source has none, as under the Open Settlers source.</param>
+/// <param name="loadSteps">Reads the walk steps where the graphics load carries none, as on the History Edition, and only where the graphics load succeeded; it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the walk steps cannot be read.</param>
 /// <param name="seedText">The seed the view opens on, as the seed field shows it.</param>
 /// <param name="sizeValue">The map size the view opens on.</param>
 /// <param name="gameView">Whether a game ticks on the shown map.</param>
@@ -462,7 +462,8 @@ public partial class MapViewControl(
             GD.PrintErr($"map view: {e.Message}");
         }
 
-        if (_gameView && _tables is not null)
+        // No map is drawn where the graphics load failed, so the settlers are not loaded and their fault is not read twice.
+        if (_gameView && _tables is not null && _graphicsProblem is null)
         {
             try
             {
@@ -477,7 +478,7 @@ public partial class MapViewControl(
 
         _state = _layout is null
             ? MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem)
-            : MapViewState.OpenLayout(_layout);
+            : MapViewState.OpenLayout(_layout, _tablesProblem);
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
         Redraw();

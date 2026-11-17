@@ -2,9 +2,9 @@
 # sites stand at 18,5, 18,9, and 20,12; one road leads from the castle's flag to the fisher's, one on to the butcher's, and one on to the
 # baker's. The castle's 20 first settlers hold 5 jobless ones, and each road's carrier and each worker without a tool takes one: the
 # butcher takes the knife from the stock and a jobless settler, the baker a jobless settler, and the fisher is among the 20.
-# Run it on the game view with seed 4455544685788642 and size 1, under either graphics source:
+# Run it on the game view with seed 4455544685788642 and size 1, with the install; its expect values are the History Edition's
+# (play/basic-production.play runs the food chains on the basic set):
 #   sh tools/play-run.sh food-chain --game-view --seed 4455544685788642 --size 1 --fps 10
-#   sh tools/play-run.sh food-chain --game-view --seed 4455544685788642 --size 1 --fps 10 --graphics open-settlers
 expect seed = 4455544685788642
 expect size = 1
 wait 0.3

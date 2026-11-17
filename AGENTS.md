@@ -2,8 +2,8 @@
 
 An open-source engine for Die Siedler (Blue Byte, 1993) on Godot 4 with C#. It ships no game content of
 the original and reads the files of a Die Siedler install the user owns. The map view and the game view draw
-through a graphics source: the install's art or the repository's own content set (`content/`, ADR 0014,
-ADR 0015). See `README.md` for layout and usage.
+through a content set: the History Edition install's art and rules, or the repository's basic set, which runs
+without an install (`content/`, ADR 0014, ADR 0015, ADR 0018). See `README.md` for layout and usage.
 
 ## Where to read
 
@@ -23,7 +23,7 @@ interface that returns dedicated types, never a format type.
 - `src/Import.HistoryEdition/` reads the install (formats, assets, program tables, graphics) and implements every
   port. Its readers and tables are internal; its public types are the ones the host builds, plus `JobTableNames`
   for the adapters.
-- `src/Import.OpenSettlers/` reads `content/open-settlers/` and implements the graphics source.
+- `src/Import.OpenSettlers/` reads `content/basic/` and implements the graphics source, the rule tables port, and the walk steps port.
 - The map view, `src/Assets/`, the domain, and the application name no source type. The launch code and the asset
   browser build a source.
 

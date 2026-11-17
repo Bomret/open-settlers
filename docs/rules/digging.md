@@ -107,7 +107,7 @@ The draw of the walk and of the dig is the settlers' ([Settlers](settlers.md#dra
 
 **Confirmed** by a draw run of the `digger` recording of `settler-draws.txt` on a `construct:` game. The run draws his walk out, his steps onto the nodes, and the dig, as the engine draws him.
 
-The `open-settlers` content set draws him with the `settler/digger/*` images (`tools/open-settlers-art.py`). It draws the dig as the "cuts" image.
+The `basic` content set draws him with the `settler/digger/*` images (`tools/basic-art.py`). It draws the dig as the "cuts" image.
 
 ## A site that waits, in the build-site evaluator
 

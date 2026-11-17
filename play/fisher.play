@@ -1,9 +1,9 @@
 # The fisher's own figures: out of his door, out along the free walk to a shore of the lake, at the cast, and back. The layout stands
 # the fisher in his building at 14,10 beside a lake to the east; each fast-forward stops at a moment, and each shot crops around
 # the node the fisher stands on then. The layout's lake holds a lake detail of 0, so he catches nothing and walks back with no fish.
-# Run it on the layout, under either graphics source:
+# Run it on the layout with the install; its expect values are the History Edition's (play/basic-production.play runs the food chains
+# on the basic set):
 #   sh tools/play-run.sh fisher --layout layouts/fisher.jsonc --fps 10
-#   sh tools/play-run.sh fisher --layout layouts/fisher.jsonc --fps 10 --graphics open-settlers
 wait 0.3
 fast-forward fisher state 0x10 max 20000
 wait 0.3

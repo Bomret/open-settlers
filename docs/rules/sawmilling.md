@@ -89,7 +89,7 @@ The handler requests a sound at some of the saw's frames, which is **not ported*
 
 The engine draws states 4, 5, `0x18` while he saws, and `0xd`. In state `0x18` with no log, byte 11 is 0 and the recording draws nothing. It also draws nothing for the stonecutter in the building. **Inferred:** state `0xb` is not drawn, as state 7 is not. In state `0xb` he waits at the door for the node or a place on the flag.
 
-The `open-settlers` content set draws him as a yellow-brown figure in each pose (`settler/sawmiller/*`). The plank he carries out has the pose of a carried load. The saw has the pose of work.
+The `basic` content set draws him as a yellow-brown figure in each pose (`settler/sawmiller/*`). The plank he carries out has the pose of a carried load. The saw has the pose of work.
 
 ## Removal
 

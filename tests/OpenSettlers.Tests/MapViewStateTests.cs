@@ -221,6 +221,30 @@ public sealed class MapViewStateTests
         Assert.IsNull(state.Problem);
     }
 
+    // A broken rule file draws no map and names its file and key, on a layout as on a seed.
+    [TestMethod]
+    public void OpeningOnALayoutWithUnreadableRuleTablesDrawsNoMapAndNamesTheProblem()
+    {
+        var layout = Layout.Read(LayoutTests.Text()).Layout!;
+
+        var state = MapViewState.OpenLayout(layout, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+    }
+
+    [TestMethod]
+    public void ApplyingOnALayoutWithUnreadableRuleTablesKeepsTheFileAndKeyInTheProblem()
+    {
+        var layout = Layout.Read(LayoutTests.Text()).Layout!;
+        var state = MapViewState.OpenLayout(layout, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+
+        state.Apply("abc", layout.Size.Value);
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+    }
+
     [TestMethod]
     public void ALayoutStateRefusesANewSeedAndKeepsItsMap()
     {
@@ -269,5 +293,21 @@ public sealed class MapViewStateTests
 
         Assert.IsNull(state.Map);
         StringAssert.Contains(state.Problem, "the program is unreadable");
+    }
+
+    // A broken rule file of the basic set shows its file and key, and the view does not blame a program it never read.
+    [TestMethod]
+    public void ARuleFileThatFailsShowsItsFileAndKeyWithoutNamingAProgram()
+    {
+        var port = new FakeRuleTables(() =>
+            throw new InvalidDataException("rules/world.jsonc: stepTimes.-4: 0 is outside 1 to 65535")
+        );
+
+        var tables = MapViewState.ReadTables(port, out var problem);
+        var state = MapViewState.Open(tables, Seed, 1, problem);
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "rules/world.jsonc: stepTimes.-4: 0 is outside 1 to 65535");
+        Assert.DoesNotContain("program", state.Problem!);
     }
 }

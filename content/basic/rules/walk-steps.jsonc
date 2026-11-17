@@ -1,0 +1,75 @@
+// The walk steps of the basic content set: how far a walking settler is drawn from its node while a step runs. Every value is
+// the project's own invention, never taken from the original game, its program, or the rules recovered from it (INV-0001,
+// ADR 0018); the comment on each sequence states why its values are what they are. The file loads as JSONC: comments and
+// trailing commas are allowed, and a repeated key is an error.
+//
+// A sequence is a list of exactly 16 [dx, dy] offsets in map pixels. The game moves a settler to the node it reaches when
+// the step starts and counts the step's time down from there, so the settler is drawn on that node and displaced back
+// toward the node it left. Entry i serves the time left 8 * i to 8 * i + 7 clock units; a time left past the last entry
+// takes the last entry, which is how a settler that stands at work or waits (a time of up to 65535) is always drawn.
+{
+  // The sequences, by name.
+  "sequences": {
+    // A settler that does not walk: it stands on its node at every time left.
+    "still": [
+      [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0],
+      [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0],
+    ],
+
+    // The six directions of a step. A step to the east crosses 32 pixels, to the south-east 16 across and 20 down, to the
+    // south -16 across and 20 down, and so on around the node (the map view's node spacing of 32 by 20 with a row lean
+    // of 16). A flat step takes 64 clock units, so the settler leaves the node it left at 64 time left, one eighth of the
+    // way per entry, and stands on the node it reaches at 0. A longer step (a climb) keeps the settler on the node it
+    // left for its first part: the offsets ignore the slope, which a taller step shifts in dy only a little.
+    // East: the settler is displaced west, 4 pixels per entry, to 32 at 64 time left.
+    "east": [
+      [0, 0], [-4, 0], [-8, 0], [-12, 0], [-16, 0], [-20, 0], [-24, 0], [-28, 0],
+      [-32, 0], [-32, 0], [-32, 0], [-32, 0], [-32, 0], [-32, 0], [-32, 0], [-32, 0],
+    ],
+    // South-east: displaced north-west by 2 across and 2.5 up per entry (rounded to whole pixels).
+    "south-east": [
+      [0, 0], [-2, -3], [-4, -5], [-6, -8], [-8, -10], [-10, -13], [-12, -15], [-14, -18],
+      [-16, -20], [-16, -20], [-16, -20], [-16, -20], [-16, -20], [-16, -20], [-16, -20], [-16, -20],
+    ],
+    // South: displaced north-east by 2 across and 2.5 up per entry.
+    "south": [
+      [0, 0], [2, -3], [4, -5], [6, -8], [8, -10], [10, -13], [12, -15], [14, -18],
+      [16, -20], [16, -20], [16, -20], [16, -20], [16, -20], [16, -20], [16, -20], [16, -20],
+    ],
+    // West: displaced east, 4 pixels per entry.
+    "west": [
+      [0, 0], [4, 0], [8, 0], [12, 0], [16, 0], [20, 0], [24, 0], [28, 0],
+      [32, 0], [32, 0], [32, 0], [32, 0], [32, 0], [32, 0], [32, 0], [32, 0],
+    ],
+    // North-west: displaced south-east by 2 across and 2.5 down per entry.
+    "north-west": [
+      [0, 0], [2, 3], [4, 5], [6, 8], [8, 10], [10, 13], [12, 15], [14, 18],
+      [16, 20], [16, 20], [16, 20], [16, 20], [16, 20], [16, 20], [16, 20], [16, 20],
+    ],
+    // North: displaced south-west by 2 across and 2.5 down per entry.
+    "north": [
+      [0, 0], [-2, 3], [-4, 5], [-6, 8], [-8, 10], [-10, 13], [-12, 15], [-14, 18],
+      [-16, 20], [-16, 20], [-16, 20], [-16, 20], [-16, 20], [-16, 20], [-16, 20], [-16, 20],
+    ],
+  },
+
+  // The sequence of each frame 0 to 255 (a settler's frame is a byte), listed by sequence name. A frame is a number or a
+  // [first, last] range, and no frame is listed twice. The simulation names a walk by 4 + 9 * direction + rise, with the
+  // rise from -4 to 4 and the direction number running 0 to 5 and again 6 to 11 (the second run is the same six directions),
+  // so nine frames in a row share a direction: the frames 0 to 53 and 54 to 107 hold the walks, direction by direction.
+  // Frames 81 to 107 also name the waits and the builder's and carrier's work frames; this set draws every frame of the
+  // range as the walk it is named for, so a settler that waits or works there leans toward its last node for as long as
+  // the time left runs.
+  "frames": {
+    "east": [[0, 8], [54, 62]],
+    "south-east": [[9, 17], [63, 71]],
+    "south": [[18, 26], [72, 80]],
+    "west": [[27, 35], [81, 89]],
+    "north-west": [[36, 44], [90, 98]],
+    "north": [[45, 53], [99, 107]],
+  },
+
+  // The sequence of every frame the list above leaves out: the frames 108 to 255 are settlers at work or at rest, and they
+  // stand on their node.
+  "default": "still",
+}

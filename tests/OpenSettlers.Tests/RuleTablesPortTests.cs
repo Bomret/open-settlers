@@ -13,7 +13,7 @@ public sealed class RuleTablesPortTests
         var args = LaunchArgs.Parse([], null);
         LaunchInstall.TryOpen(args, out _, out var problem);
 
-        var port = LaunchInstall.RuleTables(args);
+        var port = LaunchInstall.RuleTables(args, "project");
 
         var failure = Assert.ThrowsExactly<IOException>(port.Read);
         Assert.AreEqual(problem, failure.Message);
@@ -25,7 +25,7 @@ public sealed class RuleTablesPortTests
         using var fake = new FakeInstall();
         var expected = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import([1, 2, 3]));
 
-        var port = LaunchInstall.RuleTables(LaunchArgs.Parse(["--game", fake.Root], null));
+        var port = LaunchInstall.RuleTables(LaunchArgs.Parse(["--game", fake.Root], null), "project");
 
         var refusal = Assert.ThrowsExactly<InvalidDataException>(port.Read);
         Assert.AreEqual(expected.Message, refusal.Message);

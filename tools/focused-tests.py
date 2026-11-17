@@ -22,8 +22,8 @@ file of the test project. A name in a comment does not count.
 - A .cs file under src/ that selects no test class selects the whole unit suite, so a change no test names still gets a
   build. Files under src/Viewer/ are exempt: the test project does not compile them, and they may select nothing.
 - Any other file selects every test class whose file names its repository path or its file name. Where none does, the
-  folders above it are tried, deepest first, each written as a path (`content/open-settlers`) or as quoted segments
-  (`"content", "open-settlers"`). A Markdown (.md) file tries no folder.
+  folders above it are tried, deepest first, each written as a path (`content/basic`) or as quoted segments
+  (`"content", "basic"`). A Markdown (.md) file tries no folder.
 
 Where nothing is selected, as for a prose change, it prints one line and exits 0 without a build: a filter that
 matches no test makes the test host exit 8. A selected class whose tests all carry the category Install or Ghidra
