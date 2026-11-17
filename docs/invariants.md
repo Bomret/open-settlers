@@ -92,7 +92,7 @@ Check: the format readers, the asset kinds, the graphics readers and figure tabl
 
 Class: architecture
 Concepts: Library, Test pair
-Statement: Every library has a test pair: a test project beside it that references the library, `OpenSettlers.Testing`, and the helper projects (`OpenSettlers.<Name>.Testing`) of that library and of every library it references directly or through another library, and no other project. `OpenSettlers.Testing` references no library, and a helper project references only its library and the helper projects of the libraries that library references directly or through another library. Tests of the repository itself live in `OpenSettlers.Tests/` beside the Godot project (ADR 0018).
+Statement: Every library has a test pair: a test project beside it that references the library, `OpenSettlers.Testing`, and the helper projects (`OpenSettlers.<Name>.Testing`) of that library and of every library it references directly or through another library, and no other project. `OpenSettlers.Testing` references no library, and a helper project references only its library and the helper projects of the libraries that library references directly or through another library. Tests of the repository itself live in `OpenSettlers.Tests/` beside the Godot project (ADR 0019).
 Breaks: silently
 Check: `TestPairTests` in `OpenSettlers.Tests` reads every project under `src/` and fails on a library without a sibling `<Name>.Tests` project, on a test project that references a project outside its library's reach, and on a helper project that does.
 Paths: src/**, OpenSettlers.Tests/**
@@ -101,7 +101,7 @@ Paths: src/**, OpenSettlers.Tests/**
 
 Class: architecture
 Concepts: Library, Test pair
-Statement: A library grants its internals to its own test project and to no other assembly. Another library reaches it only through its public types (ADR 0018).
+Statement: A library grants its internals to its own test project and to no other assembly. Another library reaches it only through its public types (ADR 0019).
 Breaks: silently
 Check: `TestPairTests` in `OpenSettlers.Tests` fails on an `InternalsVisibleTo` in any library that names an assembly other than `OpenSettlers.<Name>.Tests`.
 Symbols: InternalsVisibleTo

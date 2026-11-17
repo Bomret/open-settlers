@@ -1,4 +1,4 @@
-# 18. Each library pairs with its own tests and publishes its API
+# 19. Each library pairs with its own tests and publishes its API
 
 **Status:** Accepted
 
