@@ -149,7 +149,8 @@ static class StandInRulesReader
     static IEnumerable<(BuildingType Type, string Name)> Named() =>
         OpenSettlersSource.FinishedKeys.Select(finished => (finished.Type, finished.Key["building/".Length..]));
 
-    static RuleNode Open(string folder, string file)
+    // The root of a rule file, which the walk steps file shares with the rule files.
+    internal static RuleNode Open(string folder, string file)
     {
         var path = Path.Combine(folder, file);
         if (!File.Exists(path))

@@ -21,8 +21,9 @@ namespace OpenSettlers.Viewer;
 ///   godot --path . -- --map --seed 1234567812345678 --size 2 --game &lt;install&gt;
 ///   godot --path . --write-movie play-out/&lt;stem&gt;/frame.png --fixed-fps 30 -- --map --play &lt;script&gt;
 ///   (a play run, <see cref="PlayDriver"/>; <c>--game-view</c> in place of <c>--map</c> runs it on the game view)
-/// <c>SIEDLER_DIR</c> stands in for <c>--game</c>. A bad argument prints its problem and quits with exit code 4
-/// before the install is opened.
+///   godot --path . -- --map --content-set basic   (the basic content set: no install, no <c>--game</c>, no <c>SIEDLER_DIR</c>)
+/// <c>SIEDLER_DIR</c> stands in for <c>--game</c> on the History Edition. A bad argument prints its problem and quits with
+/// exit code 4 before the install is opened.
 /// </summary>
 public partial class AssetBrowserView : Control
 {
@@ -58,7 +59,7 @@ public partial class AssetBrowserView : Control
             // Seed info reads the large objects through the rule tables port. A Godot callback exception does not set
             // the exit code, so this owns it.
             var code = SeedInfo.Run(
-                LaunchInstall.RuleTables(args),
+                LaunchInstall.RuleTables(args, ProjectSettings.GlobalizePath("res://")),
                 args.SeedText!,
                 args.Seed!.Value,
                 args.Size ?? MapSize.Offered[0],
@@ -163,20 +164,21 @@ public partial class AssetBrowserView : Control
         var install = open.Install;
         var script = open.Script;
         var folder = open.PlayOutFolder;
-        IRuleTablesSource tablesSource = new HistoryEditionRuleTables(install);
+        var project = ProjectSettings.GlobalizePath("res://");
+        var tablesSource = LaunchInstall.RuleTables(args, project);
         // The view calls this where it catches a read failure: a broken content set names its file and key, and the view draws
-        // no map, as for a missing install file.
-        Func<RuleTables?, GraphicsLoad> loadGraphics =
-            args.ContentSet == ContentSetName.Basic
-                ? _ => new GraphicsLoad
-                {
-                    Source = OpenSettlersSource.Load(
-                        ProjectSettings.GlobalizePath("res://content/basic"),
-                        new GodotImageDecoder()
-                    ),
-                }
-                : tables => HistoryEditionSource.LoadGraphics(install, tables);
-        Func<IWalkSteps> loadSteps = () => StepOffsets.Load(install);
+        // no map, as for a missing install file. The basic set reads its walk steps here too, so a broken walk steps file
+        // draws no map either; it reads no install.
+        var basicFolder = LaunchInstall.BasicFolder(project);
+        Func<RuleTables?, GraphicsLoad> loadGraphics = install is null
+            ? _ => new GraphicsLoad
+            {
+                Source = OpenSettlersSource.Load(basicFolder, new GodotImageDecoder()),
+                Steps = OpenSettlersWalkSteps.Load(basicFolder),
+            }
+            : tables => HistoryEditionSource.LoadGraphics(install, tables);
+        Func<IWalkSteps> loadSteps = () =>
+            install is null ? OpenSettlersWalkSteps.Load(basicFolder) : StepOffsets.Load(install);
         var view = layout is not null
             ? new MapViewControl(tablesSource, loadGraphics, loadSteps, layout)
             : new MapViewControl(

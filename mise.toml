@@ -79,12 +79,12 @@ depends = ["build"]
 run = "{{ env.GODOT }} --path ."
 
 [tasks.map]
-description = "Open the map view (needs SIEDLER_DIR)"
+description = "Open the map view (needs SIEDLER_DIR only on the History Edition; no install on --content-set basic): -- [--seed <seed>] [--size <n>] [--content-set <set>]"
 depends = ["build"]
 run = "{{ env.GODOT }} --path . -- --map"
 
 [tasks.game]
-description = "Open the game view (needs SIEDLER_DIR): -- [--seed <seed>] [--size <n>] [--layout <file>]"
+description = "Open the game view (needs SIEDLER_DIR only on the History Edition; no install on --content-set basic): -- [--seed <seed>] [--size <n>] [--layout <file>] [--content-set <set>]"
 depends = ["build"]
 run = "{{ env.GODOT }} --path . -- --game-view"
 
@@ -94,12 +94,12 @@ depends = ["build"]
 run = "{{ env.GODOT }} --path . --"
 
 [tasks.seed-info]
-description = "Print the digests and counts of one seed's map (needs SIEDLER_DIR: it opens the install and imports Siedler1.exe's tables): -- --seed <seed> [--size <n>]"
+description = "Print the digests and counts of one seed's map (needs SIEDLER_DIR only on the History Edition, where it opens the install and imports Siedler1.exe's tables; --content-set basic reads only the rule files): -- --seed <seed> [--size <n>] [--content-set <set>]"
 depends = ["build"]
 run = "{{ env.GODOT }} --headless --path . -- --seed-info"
 
 [tasks.play]
-description = "Run a play script under Movie Maker, reusing a stored result (needs SIEDLER_DIR): <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--content-set <set>] --fps <n> [--fresh] [--repro]"
+description = "Run a play script under Movie Maker, reusing a stored result (needs SIEDLER_DIR only on the History Edition; --content-set basic needs none): <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--content-set <set>] --fps <n> [--fresh] [--repro]"
 run = "sh tools/play-run.sh"
 
 [tasks.editor]

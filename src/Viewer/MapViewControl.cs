@@ -474,7 +474,7 @@ public partial class MapViewControl(
 
         _state = _layout is null
             ? MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem)
-            : MapViewState.OpenLayout(_layout);
+            : MapViewState.OpenLayout(_layout, _tablesProblem);
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
         Redraw();
