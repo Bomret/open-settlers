@@ -9,15 +9,25 @@ mise run check
 The focused command:
 
 ```sh
-mise run test
+mise run test:focused -- {paths}
 ```
 
 The full command restores the local tools, checks formatting, runs the unit tests, and builds the project.
 CSharpier names each unformatted file, and `mise run format` fixes them. `mise.toml` holds the steps.
 
+The focused command takes the changed paths for `{paths}` and runs the unit-test classes they can affect, through
+`tools/focused-tests.py`. The header of the script states the selection. A changed `.cs` file selects the test classes
+whose files name a type it declares. Another file selects the test classes whose files name its path or file name. A
+build or toolchain file, a file under `src/Generators/`, and a helper file of the test project select every unit test.
+A change that no test class names, such as prose, runs nothing and passes. The selection follows only the names a test
+file holds, so it misses a test that reaches a changed type through a type it does not name. The full command runs
+every unit test. `mise run test` runs every unit test with no selection, and
+`python3 -I tools/focused-tests.py --list <path>...` prints the selection without a run. `FocusedTestsTests` pins the
+selection.
+
 Every build enforces the code-style rules of `docs/agents/CODING.md` ("What the build enforces" and "Document").
 A violation fails the full command at its test step. That step builds the test project and the projects it references.
-The focused command fails at its build on the same violations.
+The focused command fails at its build on the same violations where it selects a test.
 
 Two kinds of violation fail only the build step of the full command, which builds `OpenSettlers.csproj`. The focused
 command does not report them:
@@ -30,7 +40,8 @@ A violation prints as
 `<file>(<line>,<column>): error <rule ID>: <message>`. A play run with a violation exits 3 and prints the build output.
 `docs/agents/toolchain.md` says how to fix a finding. The rules follow the .NET SDK version that `mise.toml` pins.
 
-Both commands run the unit tests: the tests that need neither the install nor Ghidra. Both skip the tests
+The full command runs the unit tests: the tests that need neither the install nor Ghidra. The focused command runs
+a part of them. Both skip the tests
 with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
 `TestProgram.Tables`). Both also skip the category `Ghidra` (they run `analyzeHeadless`). The filter is
 `TestCategory!=Install&TestCategory!=Ghidra`. Neither command needs the install, Ghidra, or Godot. The remaining tests
