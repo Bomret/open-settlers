@@ -65,7 +65,7 @@ carries on at once where the sum does not overflow the 16-bit timer, as the mill
 ## The step out and the bread
 
 The step out (state `0xb`, `0x43e228`) and the put (state `0xd`, `0x43c6aa`) are the sawmiller's ([the step out](sawmilling.md#the-step-out-and-the-plank)); the bread goes on the flag's
-first empty place and then to a flag that asks for it or to the castle. Only the mines ask for bread (class 0, M6), so the bread goes to the castle, whose bread count rises by one
+first empty place and then to a flag that asks for it or to the castle. Only the mines ask for bread (class 0, M7), so the bread goes to the castle, whose bread count rises by one
 (`bread=1` at the pass 1687 of the one-flour game). The count of goods made (`0x43e1d0`) is **not ported**.
 
 ## The castle's hand-out

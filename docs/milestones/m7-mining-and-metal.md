@@ -1,6 +1,6 @@
-# M6 Mining and metal: scope
+# M7 Mining and metal: scope
 
-Goal and done condition: [roadmap, M6](../roadmap.md#m6-mining-and-metal). Marks: [Leads](AGENTS.md#leads).
+Goal and done condition: [roadmap, M7](../roadmap.md#m7-mining-and-metal). Marks: [Leads](AGENTS.md#leads).
 
 ## Resources
 

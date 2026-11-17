@@ -71,7 +71,7 @@ first empty place and then to a flag that asks for it or to the castle. The bake
 
 The three orders of `0x42a313` hold a step for grain (class 4, first word, good 4) as they hold the plank's. The castle hands grain out to the asking mill as it hands out planks, and the
 mill counts one grain on its way in the low byte (`mill-materials.txt`: stock 3 to 2, fill byte 1, rank 0, then `0x3f`). The step for the food class 0 (fish, meat, bread; the mines ask them) finds
-no asker yet and stays inert (M6). With no grain in the stock the mill waits and the game runs on.
+no asker yet and stays inert (M7). With no grain in the stock the mill waits and the game runs on.
 
 ## The fill byte of a food good
 
