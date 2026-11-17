@@ -125,6 +125,7 @@ public sealed class OpenSettlersSourceTests
             .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
             .Concat(["marker/flag", "marker/mine", "marker/small", "marker/large"])
+            .Concat(["border/pole", "border/water"])
             .Concat(
                 from job in new[]
                 {
@@ -366,6 +367,49 @@ public sealed class OpenSettlersSourceTests
     [DataRow("marker/small")]
     [DataRow("marker/large")]
     public void AMarkerKeyTheManifestLacksIsRefusedByFileAndKey(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    static BorderPost Post(int ground, int slope = 0) =>
+        new()
+        {
+            Column = 0,
+            Row = 0,
+            X = 0,
+            Y = 0,
+            Direction = RoadDirection.East,
+            Slope = slope,
+            Ground = new Terrain { Code = ground },
+        };
+
+    [TestMethod]
+    public void ALandPostDrawsThePoleAndAWaterPostTheWaterPostTheSameInstanceForEqualPicks()
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["border/pole"] = ContentFolder.Entry("pole.png", "-1, -9");
+        folder.Entries["border/water"] = ContentFolder.Entry("water.png", "-2, -6");
+        folder.Png("pole.png", "3x10:4");
+        folder.Png("water.png", "5x7:6");
+        var source = folder.Load();
+
+        var pole = source.Draw(Post(5))!;
+        var water = source.Draw(Post(3))!;
+
+        Assert.AreEqual((3, 10, -1, -9), (pole.Width, pole.Height, pole.OffsetX, pole.OffsetY));
+        Assert.AreEqual((5, 7, -2, -6), (water.Width, water.Height, water.OffsetX, water.OffsetY));
+        // The slope does not change the pick, nor does the ground on land.
+        Assert.AreSame(pole, source.Draw(Post(15, slope: -20)));
+        Assert.AreSame(water, source.Draw(Post(0, slope: 7)));
+    }
+
+    [TestMethod]
+    [DataRow("border/pole")]
+    [DataRow("border/water")]
+    public void ABorderKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();
         folder.Entries.Remove(key);
