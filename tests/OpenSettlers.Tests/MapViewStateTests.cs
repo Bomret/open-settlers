@@ -211,6 +211,18 @@ public sealed class MapViewStateTests
         Assert.IsNull(state.Problem);
     }
 
+    // A broken rule file draws no map and names its file and key, on a layout as on a seed.
+    [TestMethod]
+    public void OpeningOnALayoutWithUnreadableRuleTablesDrawsNoMapAndNamesTheProblem()
+    {
+        var layout = Layout.Read(LayoutTests.Text()).Layout!;
+
+        var state = MapViewState.OpenLayout(layout, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+    }
+
     [TestMethod]
     public void ALayoutStateRefusesANewSeedAndKeepsItsMap()
     {

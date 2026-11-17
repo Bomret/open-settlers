@@ -82,14 +82,19 @@ public sealed class MapViewState
     /// <summary>
     /// Opens the state on the map a layout draws. The seed and size are the layout's, and the state refuses every
     /// change of them (<see cref="Apply"/>): the game runs on the layout's map.
+    /// Where <paramref name="tablesProblem"/> says the rule tables could not be read, no map is held and
+    /// <see cref="Problem"/> names it.
     /// </summary>
-    public static MapViewState OpenLayout(Layout layout)
+    public static MapViewState OpenLayout(Layout layout, string? tablesProblem = null)
     {
-        return new MapViewState(null, null, layout.Seed.ToScreen(), layout.Size.Value)
+        return new MapViewState(null, tablesProblem, layout.Seed.ToScreen(), layout.Size.Value)
         {
             _applied = layout.Seed,
             _layout = true,
-            Map = layout.BuildMap(),
+            Map = tablesProblem is null ? layout.BuildMap() : null,
+            Problem = tablesProblem is null
+                ? null
+                : $"Cannot start the game, the rule tables are unreadable: {tablesProblem}",
         };
     }
 
