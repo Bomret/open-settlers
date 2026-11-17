@@ -104,6 +104,14 @@ public sealed class MapLaunchTests
     }
 
     [TestMethod]
+    public void TheMissingInstallMessageNamesTheBasicSetAsTheWayToRunWithoutOne()
+    {
+        var outcome = Decide(Args("--map"));
+
+        StringAssert.Contains(((MapLaunch.Exit)outcome).Message, "--content-set basic");
+    }
+
+    [TestMethod]
     public void ABadPlayScriptExitsOneOnStderrWithItsProblemsJoined()
     {
         using var fake = new FakeInstall();
@@ -188,6 +196,99 @@ public sealed class MapLaunchTests
         {
             File.Delete(path);
         }
+    }
+
+    // The basic set reads no install (ADR 0018): the launch never asks for one, so no folder and no SIEDLER_DIR matter.
+    static MapLaunch DecideOnTheBasicSet(
+        string[] args,
+        Func<string, (int Code, Layout? Layout, string? Message)>? layout = null,
+        Func<string, PlayScript>? script = null,
+        string? siedlerDir = null
+    )
+    {
+        var asked = false;
+        var outcome = MapLaunch.Decide(
+            LaunchArgs.Parse([.. args, "--content-set", "basic"], siedlerDir, movieMaker: true, (1280, 720)),
+            layout ?? LoadsNothing,
+            _ =>
+            {
+                asked = true;
+
+                return (null, "an install was asked for");
+            },
+            script ?? Script,
+            () => Project
+        );
+        if (outcome is MapLaunch.Open)
+        {
+            Assert.IsFalse(asked, "the basic set asked for an install");
+        }
+
+        return outcome;
+    }
+
+    [TestMethod]
+    [DataRow("--map")]
+    [DataRow("--game-view")]
+    public void TheBasicSetOpensTheViewWithNoInstall(string mode)
+    {
+        var open = (MapLaunch.Open)DecideOnTheBasicSet([mode]);
+
+        Assert.IsNull(open.Install);
+    }
+
+    [TestMethod]
+    public void TheBasicSetIgnoresSiedlerDirInTheEnvironment()
+    {
+        var open = (MapLaunch.Open)DecideOnTheBasicSet(["--map"], siedlerDir: "/no/such/folder");
+
+        Assert.IsNull(open.Install);
+    }
+
+    [TestMethod]
+    public void TheBasicSetOpensAPlayRunWithItsScriptAndFolder()
+    {
+        var open = (MapLaunch.Open)DecideOnTheBasicSet(["--map", "--play", "play/walk.play"]);
+
+        Assert.AreEqual(Path.Combine(Project, "play-out", "walk"), open.PlayOutFolder);
+        Assert.IsNull(open.Install);
+    }
+
+    [TestMethod]
+    public void AGameFlagOnTheBasicSetExitsFourBeforeAnythingElse()
+    {
+        var outcome = DecideOnTheBasicSet(["--map", "--game", "/siedler"], layout: Fails);
+
+        var exit = (MapLaunch.Exit)outcome;
+        Assert.AreEqual(4, exit.Code);
+        Assert.AreEqual(LaunchStream.Stderr, exit.Stream);
+        StringAssert.Contains(exit.Message, "--game does not apply to --content-set basic");
+    }
+
+    [TestMethod]
+    public void ALayoutThatFailsToLoadOnTheBasicSetExitsFourWithItsOwnMessage()
+    {
+        var outcome = DecideOnTheBasicSet(["--layout", "l.jsonc"], layout: Fails);
+
+        Assert.AreEqual(
+            new MapLaunch.Exit
+            {
+                Code = 4,
+                Message = "ERROR bad layout",
+                Stream = LaunchStream.Stdout,
+            },
+            outcome
+        );
+    }
+
+    [TestMethod]
+    public void ABadPlayScriptOnTheBasicSetExitsOneOnStderr()
+    {
+        var outcome = DecideOnTheBasicSet(["--map", "--play", "x.play"], script: BadScript);
+
+        var exit = (MapLaunch.Exit)outcome;
+        Assert.AreEqual(1, exit.Code);
+        Assert.AreEqual(LaunchStream.Stderr, exit.Stream);
     }
 
     [TestMethod]

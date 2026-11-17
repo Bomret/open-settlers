@@ -58,7 +58,7 @@ public partial class AssetBrowserView : Control
             // Seed info reads the large objects through the rule tables port. A Godot callback exception does not set
             // the exit code, so this owns it.
             var code = SeedInfo.Run(
-                LaunchInstall.RuleTables(args),
+                LaunchInstall.RuleTables(args, ProjectSettings.GlobalizePath("res://")),
                 args.SeedText!,
                 args.Seed!.Value,
                 args.Size ?? MapSize.Offered[0],

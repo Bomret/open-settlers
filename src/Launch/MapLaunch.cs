@@ -37,8 +37,8 @@ public abstract record MapLaunch
     }
 
     /// <summary>
-    /// Every check passed: open the view on <see cref="Install"/> and <see cref="Layout"/> (null without
-    /// <c>--layout</c>). A play script comes with the folder its shots go to, <c>play-out/&lt;stem&gt;</c> under the
+    /// Every check passed: open the view on <see cref="Install"/> (none on the basic set) and <see cref="Layout"/> (null
+    /// without <c>--layout</c>). A play script comes with the folder its shots go to, <c>play-out/&lt;stem&gt;</c> under the
     /// project folder.
     /// </summary>
     public sealed record Open : MapLaunch
@@ -46,8 +46,8 @@ public abstract record MapLaunch
         /// <summary>The layout to open the view on; null without <c>--layout</c>.</summary>
         public required Layout? Layout { get; init; }
 
-        /// <summary>The install to open the view on.</summary>
-        public required Install Install { get; init; }
+        /// <summary>The install to open the view on; null on the basic set, which reads none.</summary>
+        public required Install? Install { get; init; }
 
         /// <summary>The play script to run; null without one.</summary>
         public required PlayScript? Script { get; init; }
@@ -74,8 +74,8 @@ public abstract record MapLaunch
     /// <summary>
     /// Decides a map launch, checking in this order, the first failure winning: a bad argument exits
     /// <see cref="LaunchArgs.BadArgumentExitCode"/> (stderr); a layout file that fails to load exits with its own code
-    /// and message (stdout); a missing install exits 2 (stdout, <c>ERROR problem</c>); an unreadable or bad play script
-    /// exits <see cref="PlayRun.FailedExitCode"/> (stderr). A layout entry the game refuses after the view opens
+    /// and message (stdout); a missing install exits 2 (stdout, <c>ERROR problem</c>), a step the basic set skips; an
+    /// unreadable or bad play script exits <see cref="PlayRun.FailedExitCode"/> (stderr). A layout entry the game refuses after the view opens
     /// (<see cref="LayoutLoad.Start"/>) is outside this decision. The engine services come in as delegates:
     /// <paramref name="loadLayout"/> (<see cref="LayoutLoad.Run"/>), <paramref name="openInstall"/>
     /// (<see cref="Install.TryOpen"/>), <paramref name="readScript"/> (<see cref="PlayScript.Read"/>), and
@@ -112,15 +112,22 @@ public abstract record MapLaunch
             layout = load.Layout;
         }
 
-        var (install, problem) = openInstall(args);
-        if (install is null)
+        // The basic set reads no install, so the step is skipped and the view opens with none.
+        Install? install = null;
+        if (args.ContentSet != ContentSetName.Basic)
         {
-            return new Exit
+            var (opened, problem) = openInstall(args);
+            if (opened is null)
             {
-                Code = 2,
-                Message = $"ERROR {problem}",
-                Stream = LaunchStream.Stdout,
-            };
+                return new Exit
+                {
+                    Code = 2,
+                    Message = $"ERROR {problem}",
+                    Stream = LaunchStream.Stdout,
+                };
+            }
+
+            install = opened;
         }
 
         PlayScript? script = null;
