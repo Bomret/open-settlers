@@ -23,9 +23,6 @@ public sealed class SettlerSupplyRecordingTests
 {
     const string Fixture = "settler-supply.txt";
 
-    static readonly Good Sword = new() { Code = 25 };
-    static readonly Good Shield = new() { Code = 26 };
-
     sealed record Scenario
     {
         public required string Name { get; init; }
@@ -68,7 +65,7 @@ public sealed class SettlerSupplyRecordingTests
     static string Timer(SettlerSupply supply) =>
         $"{supply.Countdown:X4},{supply.KnightAccumulator:X4},{supply.KnightsOwed:X4}";
 
-    static string Goods(Game game) => $"{game.CastleStock.Count(Sword)},{game.CastleStock.Count(Shield)}";
+    static string Goods(Game game) => $"{game.CastleStock.Count(Good.Sword)},{game.CastleStock.Count(Good.Shield)}";
 
     [TestMethod]
     [DynamicData(nameof(Scenarios))]

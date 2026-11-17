@@ -27,11 +27,8 @@ public sealed class SettlerSupply
     // The knights owed at most (0x428a75).
     const int MostKnightsOwed = 2;
 
-    // The job of a new knight (0x428a75 sets the job bits of byte 0 to 22), and the goods it takes from the stock: the sword and
-    // the shield, goods 25 and 26 (which one is which is open).
-    static readonly Job NewKnight = Job.Of(22);
-    static readonly Good Sword = new() { Code = 25 };
-    static readonly Good Shield = new() { Code = 26 };
+    // The job of a new knight: the first knight's (0x428a75 sets the job bits of byte 0 to 22).
+    static readonly Job NewKnight = new Knight(0);
 
     readonly GameClock _clock;
     readonly CastleStock _stock;
@@ -157,11 +154,11 @@ public sealed class SettlerSupply
         var settler = new Settler(new Jobless(), 0, castle.X, castle.Y, _clock.Now, new WaitsInCastle());
         var slot = _settlers.Add(settler);
         _history.FillSettler(slot);
-        if (KnightsOwed > 0 && _stock.Count(Sword) > 0 && _stock.Count(Shield) > 0)
+        if (KnightsOwed > 0 && _stock.Count(Good.Sword) > 0 && _stock.Count(Good.Shield) > 0)
         {
             settler.TakeUp(NewKnight);
-            _stock.Take(Sword);
-            _stock.Take(Shield);
+            _stock.Take(Good.Sword);
+            _stock.Take(Good.Shield);
             KnightsOwed--;
         }
 
