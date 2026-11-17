@@ -243,41 +243,50 @@ public sealed class BasicContentSetPlayTests
     static string? FarmAndMill(string folder, out ulong digest) =>
         Chain(
             folder,
-            0,
-            [("mill", 18, 10), ("farm", 18, 13)],
-            [CastleEast, (19, 14, [5, 5, 5])],
-            false,
-            Good.Flour,
-            2,
+            stockLevel: 0,
+            buildings: [("mill", 18, 10), ("farm", 18, 13)],
+            roads: [CastleEast, (19, 14, [5, 5, 5])],
+            lake: false,
+            good: Good.Flour,
+            gain: 2,
             out digest
         );
 
     static string? MillAndBaker(string folder, out ulong digest) =>
         Chain(
             folder,
-            GrainLevel,
-            [("mill", 18, 10), ("baker", 21, 10)],
-            [CastleEast, NextEast],
-            false,
-            Good.Bread,
-            2,
+            stockLevel: GrainLevel,
+            buildings: [("mill", 18, 10), ("baker", 21, 10)],
+            roads: [CastleEast, NextEast],
+            lake: false,
+            good: Good.Bread,
+            gain: 2,
             out digest
         );
 
     static string? PigFarmAndButcher(string folder, out ulong digest) =>
         Chain(
             folder,
-            GrainLevel,
-            [("pig-farm", 18, 10), ("butcher", 21, 10)],
-            [CastleEast, NextEast],
-            false,
-            Good.Meat,
-            2,
+            stockLevel: GrainLevel,
+            buildings: [("pig-farm", 18, 10), ("butcher", 21, 10)],
+            roads: [CastleEast, NextEast],
+            lake: false,
+            good: Good.Meat,
+            gain: 2,
             out digest
         );
 
     static string? Fisher(string folder, out ulong digest) =>
-        Chain(folder, 0, [("fisher", 18, 10)], [CastleEast], true, Good.Fish, 2, out digest);
+        Chain(
+            folder,
+            stockLevel: 0,
+            buildings: [("fisher", 18, 10)],
+            roads: [CastleEast],
+            lake: true,
+            good: Good.Fish,
+            gain: 2,
+            out digest
+        );
 
     // Every loop in turn; the first failure, or null. A file the reader refuses is a failure, with its message.
     static string? Failure(string folder)
@@ -410,7 +419,11 @@ public sealed class BasicContentSetPlayTests
     public void AZeroBlowStepFailsTheLoops()
     {
         using var folder = new RuleFolder();
-        folder.Replace(OpenSettlersRuleTables.BuildingsFile, "\"firstHalf\": 20", "\"firstHalf\": 0");
+        folder.ReplacePattern(
+            OpenSettlersRuleTables.BuildingsFile,
+            "(\"sawmill\".*?\"firstHalf\": )20",
+            "${1}0"
+        );
 
         Assert.StartsWith("refused: rules/buildings.jsonc: buildings.sawmill.blows.firstHalf: ", Failure(folder.Root));
     }
