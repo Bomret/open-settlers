@@ -12,7 +12,8 @@ The water ripple and the shadows have no art: the source draws nothing for them.
 
 It writes into content/basic, or into <folder> where given. The unit test
 RepositoryContentTests.TheBasicContentSetIsTheGeneratorsOutput writes the set into a temporary folder and fails
-where content/basic holds any file it does not write the same, apart from the .gdignore. Run the script after a
+where content/basic holds any file it does not write the same, apart from the .gdignore and the hand-written JSONC
+files of content/basic/rules/ that the rule tables port and the walk steps port read. Run the script after a
 change to it and commit its output.
 
 The terrain triangles are 32 pixels wide and 20 high, the node spacing and row spacing of the map. An upper triangle
