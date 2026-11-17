@@ -375,6 +375,7 @@ public sealed partial class Layout
         bool ReadEntry(string name, JsonElement entry, int kind, List<Step> steps)
         {
             var road = kind == CommandKind.BuildRoad;
+            var castle = kind == CommandKind.PlaceCastle;
             if (entry.ValueKind != JsonValueKind.Object)
             {
                 Fail(name, $"must be {Shape(kind)}");
@@ -385,7 +386,9 @@ public sealed partial class Layout
             var unknown = entry
                 .EnumerateObject()
                 .Select(p => p.Name)
-                .FirstOrDefault(n => n is not ("x" or "y") && !(road && n == "directions"));
+                .FirstOrDefault(n =>
+                    n is not ("x" or "y") && !(road && n == "directions") && !(castle && n == "stock")
+                );
             if (unknown is not null)
             {
                 Fail(name, $"unknown key {unknown}, an entry is {Shape(kind)}");
@@ -406,6 +409,12 @@ public sealed partial class Layout
                 return false;
             }
 
+            int[]? stock = null;
+            if (castle && entry.TryGetProperty("stock", out var stockEntry) && !ReadStock(name, stockEntry, out stock))
+            {
+                return false;
+            }
+
             var command = new Command
             {
                 Tick = 0,
@@ -414,6 +423,7 @@ public sealed partial class Layout
                 X = x,
                 Y = y,
                 Directions = directions,
+                Stock = stock,
             };
             var repeated = steps.FirstOrDefault(step => step.Place is null && step.Command == command);
             if (repeated is not null)
@@ -426,6 +436,58 @@ public sealed partial class Layout
             steps.Add(new Step { Name = name, Command = command });
 
             return true;
+        }
+
+        // The goods the name table names (NameTable.GoodName), by name: the good numbers 1 to 26.
+        static readonly Dictionary<string, int> GoodNumbers = Enumerable
+            .Range(1, StartStock.Goods)
+            .ToDictionary(good => NameTable.GoodName(good)!, good => good);
+
+        // The castle's stock key: an object of good names and counts, each a whole number from 0 to 50000 (the most a count of
+        // CastleStock holds). Every good it does not name counts 0. An engine stand-in: the original has no such start.
+        bool ReadStock(string name, JsonElement entry, out int[]? stock)
+        {
+            stock = null;
+            if (entry.ValueKind != JsonValueKind.Object)
+            {
+                Fail(name, "stock must be an object of good names and counts, such as {\"grain\": 1}");
+
+                return false;
+            }
+
+            var counts = new int[StartStock.Goods];
+            var named = new HashSet<string>();
+            var good = true;
+            foreach (var property in entry.EnumerateObject())
+            {
+                if (!GoodNumbers.TryGetValue(property.Name, out var number))
+                {
+                    Fail(name, $"stock: {property.Name} is no good's name");
+                    good = false;
+                }
+                else if (!named.Add(property.Name))
+                {
+                    Fail(name, $"stock: {property.Name} is given twice");
+                    good = false;
+                }
+                else if (
+                    property.Value.ValueKind != JsonValueKind.Number
+                    || !property.Value.TryGetInt32(out var count)
+                    || count is < 0 or > 50000
+                )
+                {
+                    Fail(name, $"stock: {property.Name}: the count must be a whole number from 0 to 50000");
+                    good = false;
+                }
+                else
+                {
+                    counts[number - 1] = count;
+                }
+            }
+
+            stock = good ? counts : null;
+
+            return good;
         }
 
         // The directions of a road: one or more whole numbers from 0 to 5. A bad list is a problem naming the entry.

@@ -7,7 +7,7 @@ namespace OpenSettlers.Simulation;
 /// <param name="tables">The rule tables.</param>
 /// <param name="map">The map the castle is written into: the castle, its flag, the heights, and the territory.</param>
 /// <param name="castle">The castle and its stock.</param>
-/// <param name="startStock">The stock the castle holds when it is placed.</param>
+/// <param name="startStock">The stock the castle holds when it is placed, unless the command names its own (<see cref="Command.Stock"/>).</param>
 /// <param name="flags">The flag table.</param>
 /// <param name="settlers">The settler table.</param>
 /// <param name="roster">The castle's settlers.</param>
@@ -52,7 +52,7 @@ public sealed class PlaceCastleHandler(
                 Y = y,
                 Height = site.Height,
             },
-            startStock
+            command.Stock ?? startStock
         );
         CastlePlacement.Apply(map, x, y, site.Height, 0);
         // The castle's flag stands south-east of it and takes the first slot of the flag table.

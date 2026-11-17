@@ -18,12 +18,12 @@ public sealed class CommandQueue
     /// <summary>
     /// Queues a command for its tick. Throws <see cref="ArgumentOutOfRangeException"/> when that tick is before
     /// <paramref name="tickCount"/>, the next tick to run. A command equal to one already queued is the same command and
-    /// queues once; the queue keeps its own copy of the directions.
+    /// queues once; the queue keeps its own copy of the directions and the stock.
     /// </summary>
     public void Add(Command command, long tickCount)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(command.Tick, tickCount);
-        _queue.Add(command with { Directions = command.Directions?.ToArray() });
+        _queue.Add(command with { Directions = command.Directions?.ToArray(), Stock = command.Stock?.ToArray() });
     }
 
     /// <summary>Takes the first command due at <paramref name="tick"/> out of the queue; false when none is.</summary>
