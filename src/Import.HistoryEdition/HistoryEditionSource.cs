@@ -165,6 +165,12 @@ public sealed class HistoryEditionSource : IGraphicsSource
     }
 
     /// <inheritdoc />
+    public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => [];
+
+    /// <inheritdoc />
+    public ObjectImage? Draw(FlameDraw flame) => null;
+
+    /// <inheritdoc />
     public ObjectImage? Draw(BuildMarker marker) =>
         Usable(_objects?.Sprites.GetValueOrDefault(ObjectSprites.MarkerEntry(marker)));
 

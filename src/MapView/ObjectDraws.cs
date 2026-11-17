@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenSettlers.Domain;
@@ -54,14 +55,18 @@ public static class ObjectDraws
     /// sprite's own header offsets apply where the sprite is drawn. Every object is a term, and a source that has no
     /// image for one draws nothing for it. Resources are no objects and are never drawn. With a
     /// <paramref name="castle"/>, it is drawn at its node, and each woodcutter's hut of <paramref name="buildings"/>
-    /// likewise. An animated object draws its frame at the frame counter <paramref name="counter"/>.
+    /// likewise. An animated object draws its frame at the frame counter <paramref name="counter"/>. A building that burns is
+    /// drawn with the <paramref name="flames"/> of its type right after it (ADR 0021), their phase taken from its countdown at
+    /// the game's clock <paramref name="clock"/>; once the countdown has run out, nothing is drawn for it.
     /// </summary>
     public static List<ObjectTerm> Of(
         Map map,
         Castle? castle = null,
         IReadOnlyList<Building>? buildings = null,
         IReadOnlyDictionary<(int X, int Y), IReadOnlyList<Good>>? flagGoods = null,
-        ushort counter = 0
+        ushort counter = 0,
+        ushort clock = 0,
+        Func<BuildingType, bool, IReadOnlyList<Flame>>? flames = null
     )
     {
         var objects = map.Objects;
@@ -108,34 +113,71 @@ public static class ObjectDraws
             );
         }
 
-        // A building that was taken down burns (docs/rules/removal.md); the burning is not drawn (the sprites of the fire are not
-        // read).
-        foreach (
-            var hut in buildings?.Where(building =>
-                BuildingPlacement.Types.Contains(building.Type) && !building.IsDemolishing
-            )
-                ?? []
-        )
+        foreach (var hut in buildings?.Where(building => BuildingPlacement.Types.Contains(building.Type)) ?? [])
         {
+            // A building that was taken down burns (docs/rules/removal.md). Its countdown runs down with the clock between
+            // its turns, so the view derives it anew for each frame and writes no game state (INV-0015). Once the countdown
+            // has run out, neither the building nor its flames are drawn.
+            var countdown = hut.IsDemolishing ? hut.BurnLeft - (ushort)(clock - hut.Stamp) : 0;
+            if (countdown < 0)
+            {
+                continue;
+            }
+
             // A building is drawn like the castle: at its node in the order of its row. inferred: the alignment is that of an
             // object, as for the castle. A site is drawn by its progress word (0x44e329 reads it at 0x44fa7c).
             var (x, y) = Camera.NodePosition(hut.X, hut.Y);
             var height = map.At(hut.X, hut.Y).Height;
+            var top = y - height * TerrainTriangles.HeightStep;
             var index = draws.FindIndex(draw => draw.Row > hut.Y);
+            var at = index < 0 ? draws.Count : index;
             draws.Insert(
-                index < 0 ? draws.Count : index,
+                at,
                 new BuildingDraw
                 {
                     Row = hut.Y,
                     X = x,
-                    Y = y - height * TerrainTriangles.HeightStep,
+                    Y = top,
                     Type = hut.Type,
                     SiteProgress = hut.Constructing ? hut.Progress : null,
                 }
             );
+            if (hut.IsDemolishing && flames is not null)
+            {
+                draws.InsertRange(at + 1, FlamesOf(hut, flames, countdown, hut.Y, x, top));
+            }
         }
 
         return draws;
+    }
+
+    /// <summary>The progress below which a building site takes the flames of an early site.</summary>
+    public const int EarlySiteProgress = 16000;
+
+    // The flames of a burning building at its draw position, in the source's order. The first flame's phase follows the
+    // countdown, and each further flame's is 3 more, modulo 8.
+    static IEnumerable<FlameDraw> FlamesOf(
+        Building hut,
+        Func<BuildingType, bool, IReadOnlyList<Flame>> flames,
+        int countdown,
+        int row,
+        int x,
+        int y
+    )
+    {
+        var phase = ((countdown >> 3) & 7) ^ 7;
+        foreach (var flame in flames(hut.Type, hut.Constructing && hut.Progress < EarlySiteProgress))
+        {
+            yield return new FlameDraw
+            {
+                Row = row,
+                X = x + flame.X,
+                Y = y + flame.Y,
+                Size = flame.Size,
+                Phase = phase,
+            };
+            phase = (phase + 3) & 7;
+        }
     }
 
     /// <summary>

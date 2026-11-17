@@ -15,7 +15,10 @@ namespace OpenSettlers.Import.ContentSet;
 /// each terrain code and triangle, <see cref="RoadKey"/> for each road direction, <see cref="FlagKey"/> and
 /// <see cref="ObjectKey"/> for the flag and the object codes 8 to 127, <see cref="CastleKey"/> and
 /// <see cref="WoodcutterKey"/> for the buildings, <see cref="GoodKey"/> for each of the 32 goods, <see cref="MarkerKey"/>
-/// for each of the four build markers, and <see cref="SettlerKey"/> for each job and kind of activity of a settler. The art is flat: one image per terrain code
+/// for each of the four build markers, <see cref="SettlerKey"/> for each job and kind of activity of a settler, and
+/// <see cref="FlameKey"/> for each flame size and phase. The keys <see cref="FlamesKey"/> of each finished building but the
+/// castle and <see cref="EarlySiteFlamesKey"/> hold no image but <c>{ "flames": [{ "size": "small" | "large", "at": [x, y] }, …] }</c>,
+/// the flames of a burning building in the order they are drawn, each at its offset from the building (ADR 0021). The art is flat: one image per terrain code
 /// and triangle, one strip per direction, whatever the slope, one frame per object, and one figure per job and kind of
 /// activity, whatever the settler's heading, step, or frame. A settler's pixels in <see cref="MarkColour"/> show the
 /// player's colour. The source draws no shadow, no water ripple, and no object of the codes 2 to 7. Every key above must
@@ -43,6 +46,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
     readonly ObjectDrawing[] _goods;
     readonly ObjectImage[] _settlers;
     readonly ObjectImage[] _markers;
+    readonly ObjectImage[] _flameImages;
+    readonly IReadOnlyDictionary<string, IReadOnlyList<Flame>> _flames;
     readonly int _headroom;
 
     // The figure of a job and kind in a player's colour, one instance per job, kind, and colour.
@@ -60,9 +65,13 @@ public sealed class OpenSettlersSource : IGraphicsSource
         ObjectDrawing[] goods,
         ObjectImage[] settlers,
         ObjectImage[] markers,
+        ObjectImage[] flameImages,
+        IReadOnlyDictionary<string, IReadOnlyList<Flame>> flames,
         int headroom
     )
     {
+        _flameImages = flameImages;
+        _flames = flames;
         _settlers = settlers;
         _markers = markers;
         _headroom = headroom;
@@ -195,6 +204,29 @@ public sealed class OpenSettlersSource : IGraphicsSource
     /// <summary>The manifest key of a build marker: <c>marker/flag</c>, <c>marker/mine</c>, <c>marker/small</c>, or <c>marker/large</c>.</summary>
     public static string MarkerKey(BuildMarker marker) => $"marker/{marker.ToString().ToLowerInvariant()}";
 
+    /// <summary>The number of phases a flame is drawn in, 0 to 7.</summary>
+    public const int FlamePhases = 8;
+
+    /// <summary>The manifest key of the image of a flame of a size at a phase, such as <c>flame/small/0</c>.</summary>
+    public static string FlameKey(FlameSize size, int phase) =>
+        $"flame/{size.ToString().ToLowerInvariant()}/{phase & (FlamePhases - 1)}";
+
+    /// <summary>The manifest key of the flames of a burning finished building, such as <c>flames/woodcutter</c> for <see cref="WoodcutterKey"/>.</summary>
+    public static string FlamesKey(string buildingKey) => $"flames/{buildingKey["building/".Length..]}";
+
+    /// <summary>The manifest key of the flames of a burning building site below 16000 progress.</summary>
+    public const string EarlySiteFlamesKey = "flames/early-site";
+
+    // The keys of the flame placements: each finished building the game can take down (every one but the castle), then
+    // the early site.
+    static readonly string[] FlamesKeys =
+    [
+        .. FinishedKeys
+            .Where(finished => finished.Type != BuildingType.Castle)
+            .Select(finished => FlamesKey(finished.Key)),
+        EarlySiteFlamesKey,
+    ];
+
     /// <summary>The manifest key of the flag.</summary>
     public const string FlagKey = "object/flag";
 
@@ -217,12 +249,12 @@ public sealed class OpenSettlersSource : IGraphicsSource
     /// Reads the content set in <paramref name="folder"/> and decodes each image through <paramref name="decoder"/>. Throws
     /// <see cref="InvalidDataException"/> with a message of the form <c>manifest.json: key: reason</c> for the first
     /// fault: malformed JSON (no key), a term with no image, a missing or undecodable PNG, a missing or non-integer
-    /// anchor, a duplicate key, and a path that is absolute or leaves the set. A broken set draws nothing, so the view
+    /// anchor, a duplicate key, a path that is absolute or leaves the set, and missing or malformed flames. A broken set draws nothing, so the view
     /// never meets a missing image mid-frame.
     /// </summary>
     public static OpenSettlersSource Load(string folder, IImageDecoder decoder)
     {
-        var entries = ReadManifest(folder);
+        var (entries, flameLists) = ReadManifest(folder);
         var images = new Dictionary<(string Path, int X, int Y), ObjectImage>();
         var decoded = new Dictionary<string, DecodedImage>();
         ObjectImage Image(string key)
@@ -305,6 +337,15 @@ public sealed class OpenSettlersSource : IGraphicsSource
         }
 
         ObjectImage[] markers = [.. Enum.GetValues<BuildMarker>().Select(marker => Image(MarkerKey(marker)))];
+        ObjectImage[] flameImages =
+        [
+            .. Enum.GetValues<FlameSize>()
+                .SelectMany(size => Enumerable.Range(0, FlamePhases).Select(phase => Image(FlameKey(size, phase)))),
+        ];
+        var flames = FlamesKeys.ToDictionary(
+            key => key,
+            key => flameLists.TryGetValue(key, out var list) ? list : throw Fault(key, "no flames")
+        );
 
         var headroom = objects
             .Concat([flag])
@@ -312,7 +353,19 @@ public sealed class OpenSettlersSource : IGraphicsSource
             .Concat(goods)
             .Max(drawing => drawing.Image!.Height);
 
-        return new OpenSettlersSource(terrain, roads, flag, objects, buildings, goods, settlers, markers, headroom);
+        return new OpenSettlersSource(
+            terrain,
+            roads,
+            flag,
+            objects,
+            buildings,
+            goods,
+            settlers,
+            markers,
+            flameImages,
+            flames,
+            headroom
+        );
     }
 
     // The jobs the game draws a settler for, by the name their manifest keys carry: the looks of the source (the registry is
@@ -364,8 +417,12 @@ public sealed class OpenSettlersSource : IGraphicsSource
             _ => draw.Carried.IsNone ? 0 : 1,
         };
 
-    // The manifest's entries by key, each as its image path and anchor, checked for everything but the image file.
-    static Dictionary<string, (string Path, int X, int Y)> ReadManifest(string folder)
+    // The manifest's entries by key, each as its image path and anchor, checked for everything but the image file, and its
+    // flame placements by key.
+    static (
+        Dictionary<string, (string Path, int X, int Y)> Entries,
+        Dictionary<string, IReadOnlyList<Flame>> Flames
+    ) ReadManifest(string folder)
     {
         var file = Path.Combine(folder, ManifestFile);
         if (!File.Exists(file))
@@ -391,18 +448,26 @@ public sealed class OpenSettlersSource : IGraphicsSource
             }
 
             var entries = new Dictionary<string, (string, int, int)>();
+            var flames = new Dictionary<string, IReadOnlyList<Flame>>();
             foreach (var property in document.RootElement.EnumerateObject())
             {
                 var key = property.Name;
-                if (entries.ContainsKey(key))
+                if (entries.ContainsKey(key) || flames.ContainsKey(key))
                 {
                     throw Fault(key, "duplicate key");
                 }
 
-                entries[key] = Entry(key, property.Value);
+                if (key.StartsWith("flames/", StringComparison.Ordinal))
+                {
+                    flames[key] = FlameList(key, property.Value);
+                }
+                else
+                {
+                    entries[key] = Entry(key, property.Value);
+                }
             }
 
-            return entries;
+            return (entries, flames);
         }
     }
 
@@ -436,6 +501,53 @@ public sealed class OpenSettlersSource : IGraphicsSource
         }
 
         return (path, x, y);
+    }
+
+    // The flames of a placement entry, each a size and an offset.
+    static List<Flame> FlameList(string key, JsonElement value)
+    {
+        if (
+            value.ValueKind != JsonValueKind.Object
+            || !value.TryGetProperty("flames", out var list)
+            || list.ValueKind != JsonValueKind.Array
+        )
+        {
+            throw Fault(key, "no flames");
+        }
+
+        var flames = new List<Flame>();
+        foreach (var flame in list.EnumerateArray())
+        {
+            if (
+                flame.ValueKind != JsonValueKind.Object
+                || !flame.TryGetProperty("size", out var size)
+                || size.ValueKind != JsonValueKind.String
+                || !flame.TryGetProperty("at", out var at)
+                || at.ValueKind != JsonValueKind.Array
+                || at.GetArrayLength() != 2
+                || !Integer(at[0], out var x)
+                || !Integer(at[1], out var y)
+            )
+            {
+                throw Fault(key, "a flame is not { \"size\": \"small\" or \"large\", \"at\": [x, y] }");
+            }
+
+            flames.Add(
+                new Flame
+                {
+                    Size = size.GetString() switch
+                    {
+                        "small" => FlameSize.Small,
+                        "large" => FlameSize.Large,
+                        var other => throw Fault(key, $"the flame size {other} is neither small nor large"),
+                    },
+                    X = x,
+                    Y = y,
+                }
+            );
+        }
+
+        return flames;
     }
 
     static bool Integer(JsonElement element, out int number)
@@ -531,4 +643,16 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectImage? Draw(BuildMarker marker) => _markers[(int)marker];
+
+    /// <inheritdoc />
+    public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) =>
+        earlySite ? _flames[EarlySiteFlamesKey]
+        : type != BuildingType.Castle
+        && FinishedKeys.FirstOrDefault(finished => finished.Type == type) is { Key: not null } known
+            ? _flames[FlamesKey(known.Key)]
+        : [];
+
+    /// <inheritdoc />
+    public ObjectImage? Draw(FlameDraw flame) =>
+        _flameImages[(int)flame.Size * FlamePhases + (flame.Phase & (FlamePhases - 1))];
 }

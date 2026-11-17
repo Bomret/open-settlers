@@ -1993,5 +1993,343 @@
       -7,
       -21
     ]
+  },
+  "flame/small/0": {
+    "image": "flame/small-0.png",
+    "anchor": [
+      -3,
+      -8
+    ]
+  },
+  "flame/small/1": {
+    "image": "flame/small-1.png",
+    "anchor": [
+      -3,
+      -9
+    ]
+  },
+  "flame/small/2": {
+    "image": "flame/small-2.png",
+    "anchor": [
+      -3,
+      -10
+    ]
+  },
+  "flame/small/3": {
+    "image": "flame/small-3.png",
+    "anchor": [
+      -3,
+      -9
+    ]
+  },
+  "flame/small/4": {
+    "image": "flame/small-4.png",
+    "anchor": [
+      -3,
+      -8
+    ]
+  },
+  "flame/small/5": {
+    "image": "flame/small-5.png",
+    "anchor": [
+      -3,
+      -10
+    ]
+  },
+  "flame/small/6": {
+    "image": "flame/small-6.png",
+    "anchor": [
+      -3,
+      -9
+    ]
+  },
+  "flame/small/7": {
+    "image": "flame/small-7.png",
+    "anchor": [
+      -3,
+      -10
+    ]
+  },
+  "flame/large/0": {
+    "image": "flame/large-0.png",
+    "anchor": [
+      -5,
+      -14
+    ]
+  },
+  "flame/large/1": {
+    "image": "flame/large-1.png",
+    "anchor": [
+      -5,
+      -15
+    ]
+  },
+  "flame/large/2": {
+    "image": "flame/large-2.png",
+    "anchor": [
+      -5,
+      -16
+    ]
+  },
+  "flame/large/3": {
+    "image": "flame/large-3.png",
+    "anchor": [
+      -5,
+      -15
+    ]
+  },
+  "flame/large/4": {
+    "image": "flame/large-4.png",
+    "anchor": [
+      -5,
+      -14
+    ]
+  },
+  "flame/large/5": {
+    "image": "flame/large-5.png",
+    "anchor": [
+      -5,
+      -16
+    ]
+  },
+  "flame/large/6": {
+    "image": "flame/large-6.png",
+    "anchor": [
+      -5,
+      -15
+    ]
+  },
+  "flame/large/7": {
+    "image": "flame/large-7.png",
+    "anchor": [
+      -5,
+      -16
+    ]
+  },
+  "flames/woodcutter": {
+    "flames": [
+      {
+        "size": "small",
+        "at": [
+          -6,
+          -12
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          4,
+          -18
+        ]
+      }
+    ]
+  },
+  "flames/stonecutter": {
+    "flames": [
+      {
+        "size": "small",
+        "at": [
+          -6,
+          -12
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          4,
+          -18
+        ]
+      }
+    ]
+  },
+  "flames/forester": {
+    "flames": [
+      {
+        "size": "small",
+        "at": [
+          -6,
+          -12
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          4,
+          -18
+        ]
+      }
+    ]
+  },
+  "flames/fisher": {
+    "flames": [
+      {
+        "size": "small",
+        "at": [
+          -6,
+          -12
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          4,
+          -18
+        ]
+      }
+    ]
+  },
+  "flames/butcher": {
+    "flames": [
+      {
+        "size": "small",
+        "at": [
+          -6,
+          -12
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          4,
+          -18
+        ]
+      }
+    ]
+  },
+  "flames/sawmill": {
+    "flames": [
+      {
+        "size": "large",
+        "at": [
+          -14,
+          -16
+        ]
+      },
+      {
+        "size": "small",
+        "at": [
+          2,
+          -26
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          14,
+          -14
+        ]
+      }
+    ]
+  },
+  "flames/farm": {
+    "flames": [
+      {
+        "size": "large",
+        "at": [
+          -14,
+          -16
+        ]
+      },
+      {
+        "size": "small",
+        "at": [
+          2,
+          -26
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          14,
+          -14
+        ]
+      }
+    ]
+  },
+  "flames/baker": {
+    "flames": [
+      {
+        "size": "large",
+        "at": [
+          -14,
+          -16
+        ]
+      },
+      {
+        "size": "small",
+        "at": [
+          2,
+          -26
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          14,
+          -14
+        ]
+      }
+    ]
+  },
+  "flames/mill": {
+    "flames": [
+      {
+        "size": "large",
+        "at": [
+          -14,
+          -16
+        ]
+      },
+      {
+        "size": "small",
+        "at": [
+          2,
+          -26
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          14,
+          -14
+        ]
+      }
+    ]
+  },
+  "flames/pig-farm": {
+    "flames": [
+      {
+        "size": "large",
+        "at": [
+          -14,
+          -16
+        ]
+      },
+      {
+        "size": "small",
+        "at": [
+          2,
+          -26
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          14,
+          -14
+        ]
+      }
+    ]
+  },
+  "flames/early-site": {
+    "flames": [
+      {
+        "size": "small",
+        "at": [
+          0,
+          -8
+        ]
+      }
+    ]
   }
 }

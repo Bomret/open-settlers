@@ -29,6 +29,10 @@ public sealed class TerrainQuadsTests
 
         public ObjectImage? Draw(BuildMarker marker) => null;
 
+        public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => [];
+
+        public ObjectImage? Draw(FlameDraw flame) => null;
+
         public ObjectImage? Draw(RoadStrip strip) =>
             strip.Difference == 0
                 ? new ObjectImage

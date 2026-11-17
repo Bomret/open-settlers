@@ -52,6 +52,23 @@ public sealed record BuildingDraw : ObjectTerm
     public override ObjectDrawing? Ask(IGraphicsSource source) => source.Draw(this);
 }
 
+/// <summary>
+/// One flame over a burning building (<c>CONTEXT.md</c>, "Flame"): its size and its phase, 0 to 7. <c>X</c> and <c>Y</c>
+/// already hold the flame's offset from the building. A source draws the flame with no shadow.
+/// </summary>
+public sealed record FlameDraw : ObjectTerm
+{
+    /// <summary>The flame's size.</summary>
+    public required FlameSize Size { get; init; }
+
+    /// <summary>The flame's phase, 0 to 7.</summary>
+    public required int Phase { get; init; }
+
+    /// <inheritdoc />
+    public override ObjectDrawing? Ask(IGraphicsSource source) =>
+        source.Draw(this) is { } image ? new ObjectDrawing { Image = image, Shadow = null } : null;
+}
+
 /// <summary>A good lying at a place of a flag; <c>X</c> and <c>Y</c> already hold the place's offset from the flag.</summary>
 public sealed record GoodAtFlag : ObjectTerm
 {
