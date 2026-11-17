@@ -363,8 +363,12 @@ public sealed class RemovalTests
     )
     {
         var scenario = Load(fixture).Single(candidate => candidate.Name == name);
-        // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
-        var parts = scenario.Command.Split(':');
+        // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS][:castle-off@PASS], the last part for the emulator alone
+        // (the castle's handler, which the engine does not port, is switched off there: docs/rules/pig-farming.md)
+        var parts = scenario
+            .Command.Split(':')
+            .Where(part => !part.StartsWith("castle-off@", StringComparison.Ordinal))
+            .ToArray();
         var map = MapOf(parts);
         var width = map.Size.Width;
         // A construct scenario empties the castle of planks and stones before every pass (below), so the castle's hand-out, which

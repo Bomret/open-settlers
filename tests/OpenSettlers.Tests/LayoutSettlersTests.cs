@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
@@ -69,7 +70,8 @@ public sealed class LayoutSettlersTests
         ushort stepTime = 100,
         WorkerRequest? diggerRequest = null,
         ushort[]? scanWindows = null,
-        byte[]? goodKinds = null
+        byte[]? goodKinds = null,
+        IEnumerable<(Job Job, object Data)>? jobData = null
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -114,6 +116,7 @@ public sealed class LayoutSettlersTests
             [
                 (new Builder(), builderRequest ?? new WorkerRequest { Job = new Builder(), Tool = Good.None }),
                 (new Digger(), diggerRequest ?? new WorkerRequest { Job = new Digger(), Tool = Good.None }),
+                .. jobData ?? [],
             ]
         );
     }
@@ -190,6 +193,33 @@ public sealed class LayoutSettlersTests
         Assert.AreEqual(new Grinds { Phase = 0 }.Code, miller.Activity.Code, "he waits for grain in the mill");
         Assert.AreEqual(ConstructionTables.GrainClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
         Assert.AreEqual(ConstructionTables.MillRankBase, game.Flags[1].RequestOf(RequestWord.First).Rank);
+    }
+
+    [TestMethod]
+    public void AFinishedPigFarmEntryStandsAPigFarmerMadeOfASettlerWithoutAJobInItsDoorAndHeAsksForGrainAtHisNextTurn()
+    {
+        var layout = Read(Built.Replace("\"woodcutter\"", "\"pig-farm\""));
+        var game = GameFactory.Create(
+            MadeTables(
+                workers: TestProgram.MadeWorkers(pigFarm: true),
+                goodClasses: ConstructionTables.Classes(),
+                jobData: ConstructionTables.PigData()
+            ),
+            layout.BuildMap()
+        );
+
+        Assert.IsNull(layout.Apply(game));
+
+        var farmer = game.Settlers.Single(settler => settler.Job == new PigFarmer());
+        Assert.IsInstanceOfType<Door>(farmer.Activity);
+        Assert.AreEqual((13, 10), (farmer.X, farmer.Y));
+        Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
+        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.PigFarm));
+        Run(game, 200);
+        Assert.AreEqual(new TendsPigs { Phase = 0 }.Code, farmer.Activity.Code, "he waits for grain in the pig farm");
+        Assert.AreEqual(1, game.Buildings[1].FillHigh, "the farm holds one pig");
+        Assert.AreEqual(ConstructionTables.GrainClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
+        Assert.AreEqual(ConstructionTables.PigRankBase, game.Flags[1].RequestOf(RequestWord.First).Rank);
     }
 
     [TestMethod]
@@ -373,7 +403,7 @@ public sealed class LayoutSettlersTests
         );
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, miller's, or forester's building stands on the node",
+            "no finished woodcutter's, stonecutter's, pigfarmer's, miller's, or forester's building stands on the node",
             game.Walks.StandWorkerInHut(x, y)
         );
     }
@@ -429,7 +459,7 @@ public sealed class LayoutSettlersTests
         Assert.IsTrue(game.Buildings[1].Constructing);
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, miller's, or forester's building stands on the node",
+            "no finished woodcutter's, stonecutter's, pigfarmer's, miller's, or forester's building stands on the node",
             game.Walks.StandWorkerInHut(13, 10)
         );
     }

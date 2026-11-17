@@ -83,6 +83,10 @@ public sealed class ProgramTablesTests
             ProgramTablesImporter.MillRankAddress,
             [0x66, 0xb8, 0x56, 0x6d, 0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x5a, 0x01, 0x00, 0x00]
         );
+        Write(
+            ProgramTablesImporter.PigRankAddress,
+            [0x66, 0xb8, 0x57, 0x6e, 0x8b, 0x5f, 0x30, 0x66, 0x89, 0x83, 0x58, 0x01, 0x00, 0x00]
+        );
     }
 
     // The handlers that ask for a worker, made up: each loads a job into [edi] and a tool word into [edi+0x18]; the builder's asks for
@@ -190,6 +194,15 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.MillerWalkAddress, 0x1900);
         Add(ProgramTablesImporter.MillerCarryingAddress, 0x1980);
         Add(ProgramTablesImporter.MillerGrindAddress, 0x1a00);
+        var pigFarmerStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * PigFarmer.Number;
+        Write(
+            pigFarmerStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.PigFarmerHandlerAddress - (pigFarmerStub + 5))]
+        );
+        Add(ProgramTablesImporter.PigFarmerWalkAddress, 0x1b00);
+        Add(ProgramTablesImporter.PigFarmerCarryingAddress, 0x1b80);
+        Add(ProgramTablesImporter.PigFarmerWorkAddress, 0x1c00);
+        Write(ProgramTablesImporter.PigGrowthAddress, [.. Enumerable.Range(0, 16).Select(i => (byte)(i * 3))]);
     }
 
     static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -599,6 +612,28 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
+    public void ThePigRankStartAndTheGrowthTableAreReadFromThePlayerSetupAndTheTableAtTheEndOfTheWork()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        var rates = tables.Get<PigFarmRates>(new PigFarmer());
+        Assert.AreEqual(0x6e, rates.RankBase, "the high byte of the word stored at the pig farm's offset");
+        CollectionAssert.AreEqual(
+            new ushort[] { 0x0300, 0x0906, 0x0f0c, 0x1512, 0x1b18, 0x211e, 0x2724, 0x2d2a },
+            rates.Growth.ToArray(),
+            "the eight words of the table"
+        );
+    }
+
+    [TestMethod]
+    public void APlayerSetupThatDoesNotStoreItsWordAtThePigFarmsOffsetIsRefused()
+    {
+        var exe = Executable(bytes => bytes[FileOffset(ProgramTablesImporter.PigRankAddress) + 10] = 0x5a);
+
+        Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+    }
+
+    [TestMethod]
     public void TheJobAndToolEachBuildingAsksForAreReadFromItsHandler()
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
@@ -852,6 +887,32 @@ public sealed class ProgramTablesTests
             tables.Get<MillerFigureAdds>(new Miller())
         );
         Assert.AreEqual(0x7f, tables.MillRankBase);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void ThePigFarmersFigureAddsRankStartAndGrowthTableOfTheInstallMatchTheProgram()
+    {
+        // The handler of the stub of job 12 (0x43ff56, read from the program's instructions): add word [edi+8], 0x3280 at 0x43ff5d for a
+        // figure byte from 0x80, 0x3400 at 0x43ff7a for the state 5 that lays the pig down next (byte 15 is 0xd), and 0x3200 at 0x43ff85
+        // for the walk. The player setup 0x44579c stores 0xffdc at +0x158, whose high byte the pig farm's handler shifts for the rank of its
+        // request for grain. The table at 0x433684 (peek:433684:16) holds eight words, the draw below which a pig grows at each held count.
+        var tables = TestProgram.Tables();
+        Assert.AreEqual(
+            new PigFarmerFigureAdds
+            {
+                Walk = 0x3200,
+                Carrying = 0x3400,
+                Work = 0x3280,
+            },
+            tables.Get<PigFarmerFigureAdds>(new PigFarmer())
+        );
+        var rates = tables.Get<PigFarmRates>(new PigFarmer());
+        Assert.AreEqual(0xff, rates.RankBase);
+        CollectionAssert.AreEqual(
+            new ushort[] { 0, 6000, 8000, 10000, 11000, 12000, 13000, 14000 },
+            rates.Growth.ToArray()
+        );
     }
 
     [TestMethod]

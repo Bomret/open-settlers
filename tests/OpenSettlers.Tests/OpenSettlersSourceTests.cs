@@ -137,6 +137,7 @@ public sealed class OpenSettlersSourceTests
                     "digger",
                     "sawmiller",
                     "miller",
+                    "pig-farmer",
                 }
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
@@ -875,6 +876,7 @@ public sealed class OpenSettlersSourceTests
     [DataRow("digger")]
     [DataRow("sawmiller")]
     [DataRow("miller")]
+    [DataRow("pig-farmer")]
     public void EachJobDrawsAnImageForEveryActivityKind(string job)
     {
         using var folder = new ContentFolder();
@@ -890,6 +892,7 @@ public sealed class OpenSettlersSourceTests
             ["digger"] = new Digger(),
             ["sawmiller"] = new Sawmiller(),
             ["miller"] = new Miller(),
+            ["pig-farmer"] = new PigFarmer(),
         };
         Activity[] activities =
         [
@@ -913,6 +916,7 @@ public sealed class OpenSettlersSourceTests
                 Phase = 1,
             },
             new Saws { Sawing = true },
+            new TendsPigs { Phase = 1 },
             new WaitsOutStep { Then = new PutsDownGood { Good = Good.Plank } },
             Walking(),
             new Walks
@@ -1028,6 +1032,26 @@ public sealed class OpenSettlersSourceTests
             .Image!;
 
         Assert.AreEqual((3, 2), (grinding.Rgba[0], carrying.Rgba[0]));
+    }
+
+    [TestMethod]
+    public void APigFarmerWorkingDrawsTheCutsFrameAndOneWhoStepsOutWithAPigTheCarriesFrame()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:2");
+        folder.Png("cuts.png", "2x2:3");
+        folder.Entries["settler/pig-farmer/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/pig-farmer/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        folder.Entries["settler/pig-farmer/cuts"] = ContentFolder.Entry("cuts.png", "0, 0");
+        var source = folder.Load();
+
+        var working = source.Draw(Settler(new PigFarmer(), new TendsPigs { Phase = 3 }))!.Image!;
+        var carrying = source
+            .Draw(Settler(new PigFarmer(), new WaitsOutStep { Then = new PutsDownGood { Good = Good.Pig } }))!
+            .Image!;
+
+        Assert.AreEqual((3, 2), (working.Rgba[0], carrying.Rgba[0]));
     }
 
     [TestMethod]

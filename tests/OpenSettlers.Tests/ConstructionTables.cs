@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
@@ -52,9 +53,22 @@ static class ConstructionTables
     {
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
         sizes[BuildingType.Sawmill.Code] = 2;
+        sizes[BuildingType.PigFarm.Code] = 2;
 
         return sizes;
     }
+
+    // The made-up rank the pig farm's request for grain starts from. A request whose rank has bit 0 clear falls to 0 when it serves a good
+    // (docs/rules/goods.md), so the made-up base keeps bit 0 set through every shift below 8, as the program's 0xff does.
+    public const byte PigRankBase = 0xff;
+
+    // The made-up growth table of the pigs a pig farm holds: no pig grows where none is held, and each pause of the work makes one more
+    // where the draw is below 0x8000, which the first word of a draw is half of the time.
+    public static PigFarmRates PigRates(ushort draw = 0x8000) =>
+        new() { RankBase = PigRankBase, Growth = [0, draw, draw, draw, draw, draw, draw, draw] };
+
+    // The made-up job data of a game with a pig farm: the table above for the pig farmer's job.
+    public static (Job Job, object Data)[] PigData(ushort draw = 0x8000) => [(new PigFarmer(), PigRates(draw))];
 
     // The made-up planks the forester's site needs.
     public const int ForesterPlanks = 2;
@@ -87,6 +101,7 @@ static class ConstructionTables
         workers[BuildingType.Forester.Code] = new WorkerRequest { Job = Job.Of(8), Tool = ForesterTool };
         workers[BuildingType.Sawmill.Code] = new WorkerRequest { Job = new Sawmiller(), Tool = SawTool };
         workers[BuildingType.Mill.Code] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
+        workers[BuildingType.PigFarm.Code] = new WorkerRequest { Job = new PigFarmer(), Tool = Good.None };
 
         return workers;
     }
@@ -126,7 +141,8 @@ static class ConstructionTables
         WorkerRequest?[]? workers = null,
         ushort[]? blowSteps = null,
         DistributionStep[][]? distribution = null,
-        byte[]? goodKinds = null
+        byte[]? goodKinds = null,
+        IEnumerable<(Job Job, object Data)>? jobData = null
     ) =>
         LayoutSettlersTests.MadeTables(
             stepTime: stepTime,
@@ -145,6 +161,7 @@ static class ConstructionTables
             distribution: distribution ?? Orders(),
             plankRankBase: plankRankBase,
             millRankBase: MillRankBase,
-            diggerRequest: new WorkerRequest { Job = new Digger(), Tool = DiggerTool }
+            diggerRequest: new WorkerRequest { Job = new Digger(), Tool = DiggerTool },
+            jobData: jobData
         );
 }
