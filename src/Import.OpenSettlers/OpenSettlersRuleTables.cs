@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 
 namespace OpenSettlers.Import.ContentSet;
 
@@ -32,17 +30,8 @@ public sealed class OpenSettlersRuleTables(string folder) : IRuleTablesSource
     /// Reads the rule files and encodes them into the tables. Throws an <see cref="InvalidDataException"/> of the form
     /// <c>&lt;file&gt;: &lt;key&gt;: &lt;reason&gt;</c> for the first fault of a file: malformed JSONC, a missing table, a missing
     /// job's data, a wrong count, a value outside what its table allows, or a duplicate key. An <see cref="IOException"/> or an
-    /// <see cref="UnauthorizedAccessException"/> reports a file that cannot be read.
+    /// <see cref="UnauthorizedAccessException"/> reports a file that cannot be read. Any other exception is a fault of the reader and
+    /// passes through as it is.
     /// </summary>
-    public RuleTables Read()
-    {
-        try
-        {
-            return StandInRulesReader.Read(folder).ToRuleTables();
-        }
-        catch (Exception e) when (e is JsonException or OverflowException or ArgumentException or KeyNotFoundException)
-        {
-            throw new InvalidDataException($"rules: {e.Message}", e);
-        }
-    }
+    public RuleTables Read() => StandInRulesReader.Read(folder).ToRuleTables();
 }

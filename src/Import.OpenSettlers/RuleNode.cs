@@ -103,6 +103,19 @@ sealed class RuleNode(string file, string key, JsonElement value)
         return number >= min && number <= max ? number : throw Fault($"{number} is outside {min} to {max}");
     }
 
+    /// <summary>
+    /// The numbers from <paramref name="min"/> to <paramref name="max"/> the value names: one number, or a list <c>[first, last]</c>
+    /// that runs from <c>first</c> to <c>last</c>. A range that runs backwards is a fault.
+    /// </summary>
+    public (int First, int Last) Range(int min, int max)
+    {
+        var (first, last) = IsList
+            ? (Items(2)[0].Int(min, max), Items(2)[1].Int(min, max))
+            : (Int(min, max), Int(min, max));
+
+        return last < first ? throw Fault($"the range {first} to {last} runs backwards") : (first, last);
+    }
+
     /// <summary>The text the value is.</summary>
     public string Text() => IsText ? value.GetString()! : throw Fault("not text");
 

@@ -164,12 +164,15 @@ public partial class AssetBrowserView : Control
         var install = open.Install;
         var script = open.Script;
         var folder = open.PlayOutFolder;
-        var project = ProjectSettings.GlobalizePath("res://");
-        var tablesSource = LaunchInstall.RuleTables(args, project);
+        // MapLaunch opened the install on the History Edition and none on the basic set, so the install decides the content set
+        // once and the History Edition's tables come from the install already open.
+        var basicFolder = LaunchInstall.BasicFolder(ProjectSettings.GlobalizePath("res://"));
+        IRuleTablesSource tablesSource = install is null
+            ? new OpenSettlersRuleTables(basicFolder)
+            : new HistoryEditionRuleTables(install);
         // The view calls this where it catches a read failure: a broken content set names its file and key, and the view draws
         // no map, as for a missing install file. The basic set reads its walk steps here too, so a broken walk steps file
         // draws no map either; it reads no install.
-        var basicFolder = LaunchInstall.BasicFolder(project);
         Func<RuleTables?, GraphicsLoad> loadGraphics = install is null
             ? _ => new GraphicsLoad
             {

@@ -182,17 +182,7 @@ static class StandInRulesReader
 
             foreach (var item in listing.Items())
             {
-                var (first, last) = item.IsList
-                    ? (
-                        item.Items(2)[0].Int(0, RuleTables.ClassCount - 1),
-                        item.Items(2)[1].Int(0, RuleTables.ClassCount - 1)
-                    )
-                    : (item.Int(0, RuleTables.ClassCount - 1), item.Int(0, RuleTables.ClassCount - 1));
-                if (last < first)
-                {
-                    throw item.Fault($"the range {first} to {last} runs backwards");
-                }
-
+                var (first, last) = item.Range(0, RuleTables.ClassCount - 1);
                 for (var code = first; code <= last; code++)
                 {
                     classes[code] = listed[code] ? throw item.Fault($"object code {code} is listed twice") : value;

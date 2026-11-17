@@ -52,14 +52,7 @@ public sealed class OpenSettlersWalkSteps : IWalkSteps
 
             foreach (var item in listing.Items())
             {
-                var (first, last) = item.IsList
-                    ? (item.Items(2)[0].Int(0, Frames - 1), item.Items(2)[1].Int(0, Frames - 1))
-                    : (item.Int(0, Frames - 1), item.Int(0, Frames - 1));
-                if (last < first)
-                {
-                    throw item.Fault($"the range {first} to {last} runs backwards");
-                }
-
+                var (first, last) = item.Range(0, Frames - 1);
                 for (var frame = first; frame <= last; frame++)
                 {
                     frames[frame] = listed[frame] ? throw item.Fault($"frame {frame} is listed twice") : sequence;

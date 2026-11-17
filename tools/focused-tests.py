@@ -19,8 +19,8 @@ file of the test project. A name in a comment does not count.
   class names that class, so a changed test file selects its own class. A helper file of the test project that names
   such a type adds its own types to the names. A deleted .cs file stands for the type named as the file.
 - Any other file selects every test class whose file names its repository path or its file name. Where none does, the
-  folders above it are tried, deepest first, each written as a path (`content/open-settlers`) or as quoted segments
-  (`"content", "open-settlers"`).
+  folders above it are tried, deepest first, each written as a path (`content/basic`) or as quoted segments
+  (`"content", "basic"`).
 - A selection of every test class runs the whole unit suite.
 
 Where nothing is selected, as for a prose change, it prints one line and exits 0 without a build: a filter that

@@ -102,7 +102,7 @@ public sealed class LaunchArgs
     /// <summary>The flag that names the content set (<see cref="ContentSetName"/>) of the run.</summary>
     public const string ContentSetFlag = "--content-set";
 
-    /// <summary>A flag the launch refuses with a message that names <see cref="ContentSetFlag"/>, the flag that picks the graphics source.</summary>
+    /// <summary>A flag the launch refuses with a message that names <see cref="ContentSetFlag"/>, the flag that picks the content set (and with it the graphics source).</summary>
     const string RetiredGraphicsFlag = "--graphics";
 
     /// <summary>The flag that gives the start stock level of the human player in the game view.</summary>
