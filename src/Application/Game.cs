@@ -74,7 +74,7 @@ public sealed class Game(GameParts parts)
     public GameClock Clock => _parts.Clock;
 
     /// <summary>The settler supply, or null in a game that does not run it.</summary>
-    public SettlerSupply? Supply => _parts.Supply;
+    internal SettlerSupply? Supply => _parts.Supply;
 
     /// <summary>The causes the rules give their events.</summary>
     internal Causes Causes => _parts.Causes;
